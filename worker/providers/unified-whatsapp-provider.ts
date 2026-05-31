@@ -1,3 +1,7 @@
+/**
+ * @capability UnifiedWhatsAppProvider
+ * @domain channel
+ */
 import { whatsappApiProvider } from './whatsapp-api-provider';
 import { getWhatsAppProviderFromEnv } from './whatsapp-provider-resolver';
 

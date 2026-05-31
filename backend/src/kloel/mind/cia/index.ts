@@ -23,18 +23,28 @@ export {
   CiaService as MindLearningAdapter,
   /** @deprecated Use {@link MindLearningAdapter} instead. */
   CiaService,
-} from '../../../cia/cia.service';
+} from './cia.service';
 
-export { CiaAutonomyAdvisorService } from '../../../cia/cia-autonomy-advisor.service';
-export { CiaBacklogRunService } from '../../../cia/cia-backlog-run.service';
-export { CiaBootstrapService } from '../../../cia/cia-bootstrap.service';
-export { CiaChatFilterService } from '../../../cia/cia-chat-filter.service';
-export { CiaCognitiveHealthService } from '../../../cia/cia-cognitive-health.service';
-export { CiaInlineFallbackService } from '../../../cia/cia-inline-fallback.service';
-export { CiaRemoteBacklogService } from '../../../cia/cia-remote-backlog.service';
-export { CiaRuntimeStateService } from '../../../cia/cia-runtime-state.service';
-export { CiaRuntimeService } from '../../../cia/cia-runtime.service';
-export { CiaSendHelpersService } from '../../../cia/cia-send-helpers.service';
+export { CiaAutonomyAdvisorService } from './cia-autonomy-advisor.service';
+export { CiaBacklogRunService } from './cia-backlog-run.service';
+export { CiaBootstrapService } from './cia-bootstrap.service';
+export { CiaChatFilterService } from './cia-chat-filter.service';
+export { CiaCognitiveHealthService } from './cia-cognitive-health.service';
+export { CiaInlineFallbackService } from './cia-inline-fallback.service';
+export { CiaRemoteBacklogService } from './cia-remote-backlog.service';
+export { CiaRuntimeStateService } from './cia-runtime-state.service';
+export { CiaRuntimeService } from './cia-runtime.service';
+export { CiaSendHelpersService } from './cia-send-helpers.service';
 
-export { CiaController } from '../../../cia/cia.controller';
-export { CiaModule } from '../../../cia/cia.module';
+export { CiaController } from './cia.controller';
+export { CiaModule } from './cia.module';
+
+// Wave M4 progress — physically moved here (no longer re-exported from legacy):
+export {
+  CIA_RUNTIME_SERVICE,
+  type CiaBacklogMode,
+  type CiaBacklogOptions,
+  type CiaRuntimePort,
+} from './cia-runtime.port';
+
+export { CiaRuntimeService as WhatsappCiaRuntimeService } from './cia-runtime.abstract';

@@ -1,15 +1,36 @@
 import { mutate } from 'swr';
 import { API_BASE } from '../http';
 import { tokenStorage, resolveWorkspaceFromAuthPayload } from './core-tokens';
+import { REFRESH_TOKEN_ERROR_CODES } from './auth-errors';
+import {
+  BACKOFF_DELAYS_MS,
+  appendQueryParams,
+  authHeaders,
+  buildAbsoluteRequestInit,
+  buildErrorResponse,
+  buildQuery,
+  buildRequestHeaders,
+  buildSuccessResponse,
+  extractFetchErrorMessage,
+  isAbsoluteHttpEndpoint,
+  isTrustedAbsoluteRequestTarget,
+  parseRefreshErrorCode,
+  pickAccessToken,
+  pickRefreshToken,
+  serializeApiBody,
+  type ApiResponse,
+  type RefreshTokenResponse,
+} from './core.helpers';
 
 export { tokenStorage, resolveWorkspaceFromAuthPayload };
+export { buildQuery, authHeaders };
 
 /** Invalidate SWR cache keys matching a prefix after a write operation */
 export function invalidateCache(prefix: string) {
   mutate((key: unknown) => typeof key === 'string' && key.startsWith(prefix));
 }
 
-/** Whats app connection status shape. */
+/** Whats app channel session status shape. */
 export interface WhatsAppConnectionStatus {
   /** Connected property. */
   connected: boolean;
@@ -154,35 +175,6 @@ export interface WhatsAppProofEntry {
 }
 
 // ============================================
-// Internal types
-// ============================================
-
-interface ApiResponse<T = unknown> {
-  data?: T;
-  error?: string;
-  status: number;
-}
-
-interface RefreshTokenResponse {
-  access_token?: string;
-  accessToken?: string;
-  refresh_token?: string;
-  refreshToken?: string;
-}
-
-function buildSuccessResponse<T>(payload: unknown, status: number): ApiResponse<T> {
-  if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
-    return {
-      ...(payload as Record<string, unknown>),
-      data: payload,
-      status,
-    } as ApiResponse<T>;
-  }
-
-  return { data: payload as T, status };
-}
-
-// ============================================
 // apiFetch - Base fetch with auth headers
 // ============================================
 
@@ -220,13 +212,53 @@ async function doRefreshAccessToken(): Promise<boolean> {
     });
 
     if (!res.ok) {
-      tokenStorage.clear();
-      return false;
+      // Snapshot-compare-clear: if another tab won the race and
+      // wrote fresh cookies while we were in-flight, skip the clear.
+      const currentRefresh = tokenStorage.getRefreshToken();
+      if (currentRefresh && currentRefresh !== refreshToken) {
+        return true; // winning tab already persisted new tokens
+      }
+
+      // Parse PI-μ error code for differentiated recovery
+      let errorCode: string | undefined;
+      try {
+        const errorBody = await res.json();
+        errorCode = parseRefreshErrorCode(errorBody);
+      } catch {
+        /* ignore parse errors */
+      }
+
+      switch (errorCode) {
+        case REFRESH_TOKEN_ERROR_CODES.RACE_LOST:
+          // Another process claimed the token first. Re-read from
+          // cookies in case the winner already wrote fresh tokens.
+          if (tokenStorage.getToken()) {
+            return true;
+          }
+          return false;
+
+        case REFRESH_TOKEN_ERROR_CODES.ISSUANCE_FAILED:
+          // Transient server error — caller should retry with backoff.
+          return false;
+
+        case REFRESH_TOKEN_ERROR_CODES.REPLAYED:
+          // Security event — log and clear.
+          console.error('[auth] Security: refresh token replay detected');
+          tokenStorage.clear();
+          return false;
+
+        case REFRESH_TOKEN_ERROR_CODES.UNKNOWN:
+        case REFRESH_TOKEN_ERROR_CODES.AGENT_MISSING:
+        case REFRESH_TOKEN_ERROR_CODES.EXPIRED:
+        default:
+          tokenStorage.clear();
+          return false;
+      }
     }
 
     const data: RefreshTokenResponse = await res.json();
-    const newToken = data.access_token || data.accessToken;
-    const newRefresh = data.refresh_token || data.refreshToken;
+    const newToken = pickAccessToken(data);
+    const newRefresh = pickRefreshToken(data);
     if (newToken) {
       tokenStorage.setToken(newToken);
       if (newRefresh) {
@@ -246,35 +278,17 @@ function resolveApiEndpoint(endpoint: string): string {
   return endpoint;
 }
 
-function isTrustedAbsoluteRequestTarget(value: string): boolean {
-  try {
-    const candidate = new URL(value);
-    if (candidate.protocol !== 'http:' && candidate.protocol !== 'https:') {
-      return false;
-    }
-
-    if (API_ORIGIN && candidate.origin === API_ORIGIN) {
-      return true;
-    }
-
-    if (typeof window !== 'undefined' && candidate.origin === window.location.origin) {
-      return true;
-    }
-
-    return false;
-  } catch {
-    return false;
-  }
+function currentWindowOrigin(): string | undefined {
+  return typeof window !== 'undefined' ? window.location.origin : undefined;
 }
 
 function createTrustedRequest(input: string, init?: RequestInit): Request {
   if (input.startsWith('/')) {
-    const sameOriginBase =
-      (typeof window !== 'undefined' && window.location.origin) || API_ORIGIN || 'http://localhost';
+    const sameOriginBase = currentWindowOrigin() || API_ORIGIN || 'http://localhost';
     return new Request(new URL(input, `${sameOriginBase}/`), init);
   }
 
-  if (!isTrustedAbsoluteRequestTarget(input)) {
+  if (!isTrustedAbsoluteRequestTarget(input, API_ORIGIN, currentWindowOrigin())) {
     throw new Error(`Blocked external request target: ${input}`);
   }
 
@@ -285,79 +299,12 @@ function buildApiHeaders(options: {
   headers?: HeadersInit;
   body?: unknown;
 }): Record<string, string> {
-  const isFormData = options.body instanceof FormData;
-  const token = tokenStorage.getToken();
-  const workspaceId = tokenStorage.getWorkspaceId();
-
-  const headers: Record<string, string> = {
-    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-    // CSRF mitigation: custom header prevents cross-origin form submissions
-    'X-Requested-With': 'XMLHttpRequest',
-    ...(options.headers as Record<string, string>),
-  };
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-  if (workspaceId) {
-    headers['x-workspace-id'] = workspaceId;
-  }
-  return headers;
-}
-
-function buildSearchParams(params: Record<string, string | undefined>): URLSearchParams {
-  const searchParams = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined) {
-      searchParams.set(key, value);
-    }
-  }
-  return searchParams;
-}
-
-function joinQueryString(baseUrl: string, qs: string): string {
-  if (!qs) {
-    return baseUrl;
-  }
-  const separator = baseUrl.includes('?') ? '&' : '?';
-  return `${baseUrl}${separator}${qs}`;
-}
-
-function appendQueryParams(baseUrl: string, params?: Record<string, string | undefined>): string {
-  if (!params) {
-    return baseUrl;
-  }
-  return joinQueryString(baseUrl, buildSearchParams(params).toString());
-}
-
-function isRawBinaryBody(body: unknown): boolean {
-  return body instanceof FormData || body instanceof Blob || body instanceof ArrayBuffer;
-}
-
-function shouldSerializeAsJson(body: unknown): body is object {
-  return Boolean(body) && typeof body === 'object' && !isRawBinaryBody(body);
-}
-
-function serializeApiBody(body: unknown): BodyInit | null {
-  if (shouldSerializeAsJson(body)) {
-    return JSON.stringify(body);
-  }
-  return (body ?? null) as BodyInit | null;
-}
-
-function normalizeErrorMessage(rawMessage: unknown): string | undefined {
-  if (Array.isArray(rawMessage)) {
-    return rawMessage.join(', ');
-  }
-  return rawMessage as string | undefined;
-}
-
-function buildErrorResponse<T>(
-  data: { message?: unknown; error?: string },
-  status: number,
-): ApiResponse<T> {
-  const message = normalizeErrorMessage(data.message);
-  return { error: message || data.error || `HTTP ${status}`, status };
+  return buildRequestHeaders({
+    headers: options.headers,
+    isFormData: options.body instanceof FormData,
+    token: tokenStorage.getToken(),
+    workspaceId: tokenStorage.getWorkspaceId(),
+  });
 }
 
 async function performApiRequest<T>(url: string, init: RequestInit): Promise<ApiResponse<T>> {
@@ -383,6 +330,36 @@ async function retryApiRequestWithRefreshedToken<T>(
   }
   headers.Authorization = `Bearer ${tokenStorage.getToken()}`;
   return performApiRequest<T>(url, { ...baseInit, headers });
+}
+
+async function retryAfterBackoff<T>(
+  url: string,
+  baseInit: RequestInit,
+  firstResponse: ApiResponse<T>,
+): Promise<ApiResponse<T>> {
+  let last = firstResponse;
+
+  for (let attempt = 0; attempt < BACKOFF_DELAYS_MS.length; attempt++) {
+    await new Promise((resolve) => setTimeout(resolve, BACKOFF_DELAYS_MS[attempt]));
+
+    // Re-read auth header — another tab may have refreshed tokens
+    const token = tokenStorage.getToken();
+    const headers: Record<string, string> = {
+      ...(baseInit.headers as Record<string, string>),
+    };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await performApiRequest<T>(url, { ...baseInit, headers });
+
+    if (response.status !== 429) {
+      return response;
+    }
+    last = response;
+  }
+
+  return last;
 }
 
 /** Api fetch. */
@@ -414,6 +391,10 @@ export async function apiFetch<T = unknown>(
       }
     }
 
+    if (response.status === 429) {
+      return retryAfterBackoff<T>(url, baseInit, response);
+    }
+
     return response;
   } catch (err: unknown) {
     return {
@@ -424,39 +405,26 @@ export async function apiFetch<T = unknown>(
 }
 
 // ============================================
-// Shared helpers
-// ============================================
-
-export const buildQuery = (params: Record<string, string | number | undefined | null>) => {
-  const search = new URLSearchParams();
-  Object.entries(params).forEach(([key, value]) => {
-    if (value === undefined || value === null) {
-      return;
-    }
-    search.append(key, String(value));
-  });
-  const qs = search.toString();
-  return qs ? `?${qs}` : '';
-};
-
-/** Auth headers. */
-export const authHeaders = (token?: string): Record<string, string> =>
-  token ? { authorization: `Bearer ${token}` } : {};
-
-// ============================================
 // Generic API client
 // ============================================
 
+async function fetchAbsoluteJson<T>(
+  endpoint: string,
+  init?: RequestInit,
+): Promise<{ data: T }> {
+  const res = await fetch(createTrustedRequest(endpoint, init));
+  if (!res.ok) {
+    const parsed = await res.json().catch(() => null);
+    throw new Error(extractFetchErrorMessage(parsed, res.statusText));
+  }
+  const data = await res.json();
+  return { data };
+}
+
 export const api = {
   async get<T = unknown>(endpoint: string): Promise<{ data: T }> {
-    if (endpoint.startsWith('http')) {
-      const res = await fetch(createTrustedRequest(endpoint));
-      if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: res.statusText }));
-        throw new Error(error.message || 'Request failed');
-      }
-      const data = await res.json();
-      return { data };
+    if (isAbsoluteHttpEndpoint(endpoint)) {
+      return fetchAbsoluteJson<T>(endpoint);
     }
 
     const res = await apiFetch<T>(endpoint, { method: 'GET' });
@@ -467,20 +435,8 @@ export const api = {
   },
 
   async post<T = unknown>(endpoint: string, body?: unknown): Promise<{ data: T }> {
-    if (endpoint.startsWith('http')) {
-      const res = await fetch(
-        createTrustedRequest(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: body ? JSON.stringify(body) : null,
-        }),
-      );
-      if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: res.statusText }));
-        throw new Error(error.message || 'Request failed');
-      }
-      const data = await res.json();
-      return { data };
+    if (isAbsoluteHttpEndpoint(endpoint)) {
+      return fetchAbsoluteJson<T>(endpoint, buildAbsoluteRequestInit('POST', body));
     }
 
     const res = await apiFetch<T>(endpoint, {
@@ -494,20 +450,8 @@ export const api = {
   },
 
   async put<T = unknown>(endpoint: string, body?: unknown): Promise<{ data: T }> {
-    if (endpoint.startsWith('http')) {
-      const res = await fetch(
-        createTrustedRequest(endpoint, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: body ? JSON.stringify(body) : null,
-        }),
-      );
-      if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: res.statusText }));
-        throw new Error(error.message || 'Request failed');
-      }
-      const data = await res.json();
-      return { data };
+    if (isAbsoluteHttpEndpoint(endpoint)) {
+      return fetchAbsoluteJson<T>(endpoint, buildAbsoluteRequestInit('PUT', body));
     }
 
     const res = await apiFetch<T>(endpoint, {
@@ -521,14 +465,8 @@ export const api = {
   },
 
   async delete<T = unknown>(endpoint: string): Promise<{ data: T }> {
-    if (endpoint.startsWith('http')) {
-      const res = await fetch(createTrustedRequest(endpoint, { method: 'DELETE' }));
-      if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: res.statusText }));
-        throw new Error(error.message || 'Request failed');
-      }
-      const data = await res.json();
-      return { data };
+    if (isAbsoluteHttpEndpoint(endpoint)) {
+      return fetchAbsoluteJson<T>(endpoint, { method: 'DELETE' });
     }
 
     const res = await apiFetch<T>(endpoint, { method: 'DELETE' });

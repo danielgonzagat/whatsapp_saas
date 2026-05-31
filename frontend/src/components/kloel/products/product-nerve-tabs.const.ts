@@ -33,5 +33,5 @@ export const PLAN_DETAIL_SUBTABS: readonly ProductNerveTab[] = [
   { k: 'pagamento', l: 'Pagamento' },
   { k: 'frete', l: 'Frete' },
   { k: 'afiliacao', l: 'Afiliação' },
-  { k: 'bump', l: 'Order Bump' },
+  { k: 'bump', l: 'Checkout' },
 ];

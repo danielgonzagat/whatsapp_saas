@@ -4,7 +4,7 @@ export interface SmartPaymentResultPayload {
   id: string;
   paymentLink?: string;
   pixCode?: string;
-  billingType?: 'PIX' | 'CREDIT_CARD';
+  billingType?: 'PIX' | 'BOLETO' | 'CREDIT_CARD';
   suggestedMessage?: string;
 }
 
@@ -19,6 +19,16 @@ interface SmartPaymentBackendResponse {
   suggestedMessage?: string;
 }
 
+
+interface SmartPaymentCreateRequestBody {
+  amount: number;
+  productName: string;
+  customerName: string;
+  phone: string;
+  customerEmail?: string;
+  method?: string;
+  dueDate?: string;
+}
 export function normalizeSmartPaymentResult(
   payload: SmartPaymentBackendResponse,
 ): SmartPaymentResultPayload {
@@ -36,7 +46,11 @@ export function normalizeSmartPaymentResult(
     result.pixCode = pixCode;
   }
 
-  if (payload.billingType === 'PIX' || payload.billingType === 'CREDIT_CARD') {
+  if (
+    payload.billingType === 'PIX' ||
+    payload.billingType === 'BOLETO' ||
+    payload.billingType === 'CREDIT_CARD'
+  ) {
     result.billingType = payload.billingType;
   }
 
@@ -60,9 +74,25 @@ export const smartPaymentApi = {
       dueDate?: string;
     },
   ) => {
+    const body: SmartPaymentCreateRequestBody = {
+      amount: data.amount,
+      productName: data.description,
+      customerName: data.customerName,
+      phone: data.customerPhone,
+    };
+    if (data.customerEmail) {
+      body.customerEmail = data.customerEmail;
+    }
+    if (data.method) {
+      body.method = data.method;
+    }
+    if (data.dueDate) {
+      body.dueDate = data.dueDate;
+    }
+
     const response = await apiFetch<SmartPaymentBackendResponse>(
       `/kloel/payment/${encodeURIComponent(workspaceId)}/create`,
-      { method: 'POST', body: data },
+      { method: 'POST', body },
     );
     return {
       ...response,

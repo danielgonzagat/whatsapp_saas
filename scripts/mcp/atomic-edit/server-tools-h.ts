@@ -1,21 +1,10 @@
-import * as childProcess from 'node:child_process';
 import * as fs from 'node:fs';
-import * as os from 'node:os';
-import * as path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { applyEdits, replaceText, renameSymbol, replaceLiteral, validate, wrapRange, type WrapKind, type TextEditSpec, type ApplyResult, type ValidationResult, computeZones } from './engine.js';
-import { resolveAllowedRootForAbsolutePath, resolveSafeTarget, REPO_ROOT } from './guard.js';
-import { buildTrace, levelFor, shapePayload, writeTrace } from './trace.js';
-import { browse, outline, readSymbol } from './nav.js';
-import { editSymbol, renameSymbolCrossFile, previewDiff, characterDiff, addNamedImport, removeNamedImport, replacePropertyValue, type SymbolOp, type SemanticEditResult, renamePropertyKey, addAwaitToCall } from './advanced.js';
-import { sha256, guardSha, log, atomicWrite, readUtf8, normalizeRepoRelPath, normalizeAllowedPath, relPathAllowed, changedSpanMetrics, hasArg, normalizeEslintDryRunArgs, requireEslintDryRunArgs, parseEslintJson, targetDetails, shellPath, nearestPackageRelPath, type EslintDryRunResult } from './server-helpers-io.js';
-import { runPostEditVerify, packageVerificationPlan, unusedSymbolFromLintMessage } from './server-helpers-verify.js';
-import { buildLintResidueActionCandidates, applyKnownLintResidueFixes } from './server-helpers-lint-fix.js';
-import { ok, fail, commit, type ToolOk } from './server-helpers-result.js';
-import { matchesGlob, matchesGlobPart, globFindFiles } from './server-helpers-glob.js';
-import { commitSemantic } from './server-helpers-commit-semantic.js';
-import { chooseIntegration, riskLevelFor, validationPlan, evidenceWeight, classifyTruth, readJsonOptional, readTextOptional, lockRoot, safeLockId, lockDir, lockFile, autoLockFile, autoLockCleanup, readLockRecord, listLocks, lowerText, PRODUCT_INTEGRATION_IDS, type ProductIntegrationId, type ProductIntegrationProfile, EvidenceKindSchema, EvidenceStatusSchema } from './server-helpers-product-locks.js';
+import { atomicWrite } from './server-helpers-io.js';
+import { ok, fail } from './server-helpers-result.js';
+import { chooseIntegration, riskLevelFor, validationPlan, evidenceWeight, classifyTruth, readJsonOptional, readTextOptional, lockRoot, safeLockId, lockDir, lockFile, readLockRecord, listLocks, PRODUCT_INTEGRATION_IDS, EvidenceKindSchema, EvidenceStatusSchema } from './server-helpers-product-locks.js';
+import { runProveDirective, isGateBackedRealProbe } from './gate-receipt-mapper.js';
 
 export function registerToolsH(server: McpServer): void {
 server.registerTool(
@@ -214,6 +203,11 @@ server.registerTool(
             status: EvidenceStatusSchema,
             artifactPaths: z.array(z.string()).optional(),
             externalBlocker: z.string().optional(),
+            // The unforgeable REAL token. A runtime_probe claim is only honoured as
+            // REAL when this id was MINTED by a real green gate run via atomic_prove
+            // (verified against the in-process gate-run registry). A fabricated or
+            // hand-typed runtime_probe carries no valid id and is REFUSED below.
+            gateRunId: z.string().optional(),
           }),
         )
         .min(1),
@@ -221,21 +215,86 @@ server.registerTool(
   },
   async (a) => {
     try {
-      const classified = a.claims.map((claim) => ({
-        ...claim,
-        truth: classifyTruth(claim.evidenceKind, claim.status, Boolean(claim.externalBlocker)),
-      }));
+      const classified = a.claims.map((claim) => {
+        // GATE-SOURCED TRUTH: a runtime_probe is the strongest REAL evidence, so it is
+        // also the easiest to FORGE — an agent could hand-attach a runtime_probe with no
+        // running system behind it and mint a REAL receipt. REFUSE it unless it carries a
+        // gateRunId that a real green gate run (atomic_prove) actually minted. Without a
+        // gate-backed id the probe is downgraded to UNPROVEN and a refusal reason is
+        // attached — the receipt can no longer be tricked into selling REAL on a fabrication.
+        const fabricatedProbe =
+          claim.evidenceKind === 'runtime_probe' &&
+          claim.status === 'passed' &&
+          !claim.externalBlocker &&
+          !isGateBackedRealProbe(claim.gateRunId);
+        if (fabricatedProbe) {
+          return {
+            ...claim,
+            truth: 'UNPROVEN',
+            refused: true,
+            refusalReason:
+              'runtime_probe REFUSED as REAL: no valid gateRunId from a real green gate run ' +
+              '(use atomic_prove to mint one). A hand-supplied runtime_probe cannot be sold as REAL.',
+          };
+        }
+        return {
+          ...claim,
+          truth: classifyTruth(claim.evidenceKind, claim.status, Boolean(claim.externalBlocker)),
+          refused: false as const,
+        };
+      });
       const blocking = classified.filter((claim) => claim.truth !== 'REAL');
+      const refused = classified.filter((claim) => claim.refused === true);
+      const refusalNote =
+        refused.length > 0
+          ? ` ${refused.length} runtime_probe(s) RECUSADA(s) por falta de gateRunId de gate real (use atomic_prove).`
+          : '';
       const summaryForHuman =
-        blocking.length === 0
+        (blocking.length === 0
           ? `Todas as ${classified.length} alegacoes tem prova de comportamento real.`
-          : `${blocking.length}/${classified.length} alegacao(oes) ainda nao sao REAL: ${blocking.map((claim) => `${claim.claim}=${claim.truth}`).join('; ')}`;
+          : `${blocking.length}/${classified.length} alegacao(oes) ainda nao sao REAL: ${blocking.map((claim) => `${claim.claim}=${claim.truth}`).join('; ')}`) +
+        refusalNote;
       return ok({
         ok: true,
         summaryForHuman,
         summary: summaryForHuman,
         claims: classified,
         blocking,
+        refused,
+      });
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : String(e));
+    }
+  },
+);
+
+server.registerTool(
+  'atomic_prove',
+  {
+    title: 'Run a real gate against a directive and mint a gate-sourced runtime_probe',
+    description:
+      'GATE-SOURCED TRUTH. Writes `directive` (e.g. a // @model … or // @probe-convergence … or a // @liveness call-site) into a THROWAWAY probe file through the atomicWrite byte-floor, runs the DYNAMIC gate set against it (apply→run→revert byte-exact), and maps the verdict into a receipt evidence item. On GREEN it MINTS an unforgeable gateRunId — the ONLY token truth_receipt will accept as a REAL runtime_probe. A failed/unjudged run mints nothing. This is what makes the REAL tier of a receipt impossible to fabricate by hand.',
+    inputSchema: {
+      claim: z.string().min(1),
+      directive: z
+        .string()
+        .min(1)
+        .describe(
+          'a self-driving gate directive, e.g. "// @model id=ctr init=\'[0]\' next=\'(s)=>s<3?[s+1]:[]\' invariant=\'(s)=>s<=3\' cap=16"',
+        ),
+    },
+  },
+  async (a) => {
+    try {
+      const result = await runProveDirective({ claim: a.claim, directive: a.directive });
+      return ok({
+        ok: true,
+        summaryForHuman: result.summaryForHuman,
+        summary: result.summaryForHuman,
+        evidence: result.evidence,
+        gateRunId: result.evidence.gateRunId ?? null,
+        run: result.run,
+        minted: result.record !== null,
       });
     } catch (e) {
       return fail(e instanceof Error ? e.message : String(e));

@@ -1,6 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DecisionOutcomeService } from './decision-outcome.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { MindBanditService } from './mind/policy/mind-bandit.service';
+import { partialMatch } from '../../test/helpers/match-instance';
+import { castMock } from '../../test/helpers/cast-mock';
 
 describe('DecisionOutcomeService', () => {
   let service: DecisionOutcomeService;
@@ -43,9 +46,9 @@ describe('DecisionOutcomeService', () => {
         contextSnapshot: { channel: 'whatsapp' },
       });
 
-      expect(prisma.decisionOutcome.create).toHaveBeenCalledWith(
+      expect((prisma.decisionOutcome as { create: jest.Mock }).create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: partialMatch({
             workspaceId: 'ws-1',
             decisionType: 'followup_timing',
             chosenAction: 'send_now',
@@ -67,18 +70,115 @@ describe('DecisionOutcomeService', () => {
         wonVsBaseline: true,
       });
 
-      expect(prisma.decisionOutcome.updateMany).toHaveBeenCalledWith({
-        where: {
-          outcomeKey: 'followup:ws-1:c1:123',
-          workspaceId: { not: '' },
-          outcomeAt: null,
+      expect((prisma.decisionOutcome as { updateMany: jest.Mock }).updateMany).toHaveBeenCalledWith(
+        {
+          where: {
+            outcomeKey: 'followup:ws-1:c1:123',
+            workspaceId: { not: '' },
+            outcomeAt: null,
+          },
+          data: partialMatch({
+            outcomeName: 'inbound.received',
+            economicValue: 99.9,
+            wonVsBaseline: true,
+          }),
         },
-        data: expect.objectContaining({
+      );
+    });
+  });
+
+  describe('closeOutcome → MindBandit learning feedback (L11 cognitive loop)', () => {
+    function buildModule(opts: {
+      wonVsBaseline: boolean;
+      closedRow: Record<string, unknown> | null;
+    }) {
+      const recordOutcome = jest.fn().mockResolvedValue(undefined);
+      const prismaMock = {
+        decisionOutcome: {
+          create: jest.fn().mockResolvedValue({ id: 'do-1' }),
+          findFirst: jest.fn().mockResolvedValue(opts.closedRow),
+          findMany: jest.fn().mockResolvedValue([]),
+          updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        },
+        decisionOutcomeEvent: { create: jest.fn().mockResolvedValue({ id: 'ev-1' }) },
+      };
+      return Test.createTestingModule({
+        providers: [
+          DecisionOutcomeService,
+          { provide: PrismaService, useValue: prismaMock },
+          { provide: MindBanditService, useValue: { recordOutcome } },
+        ],
+      })
+        .compile()
+        .then((m) => ({ svc: m.get(DecisionOutcomeService), recordOutcome }));
+    }
+
+    it('feeds a binary win (outcome=1) into the bandit arm', async () => {
+      const { svc, recordOutcome } = await buildModule({
+        wonVsBaseline: true,
+        closedRow: {
+          contextSnapshot: { channel: 'whatsapp' },
+          decisionType: 'chat_reply',
+          chosenAction: 'engage',
+          workspaceId: 'ws-1',
+        },
+      });
+
+      await svc.closeOutcome({
+        outcomeKey: 'chat:ws-1:1:abc',
+        outcomeName: 'inbound.received',
+        wonVsBaseline: true,
+      });
+
+      expect(recordOutcome).toHaveBeenCalledWith({
+        workspaceId: 'ws-1',
+        decisionType: 'chat_reply',
+        arm: 'engage',
+        outcome: 1,
+      });
+    });
+
+    it('feeds a binary loss (outcome=0) when wonVsBaseline is false', async () => {
+      const { svc, recordOutcome } = await buildModule({
+        wonVsBaseline: false,
+        closedRow: {
+          contextSnapshot: { channel: 'whatsapp' },
+          decisionType: 'chat_reply',
+          chosenAction: 'engage',
+          workspaceId: 'ws-2',
+        },
+      });
+
+      await svc.closeOutcome({
+        outcomeKey: 'chat:ws-2:1:def',
+        outcomeName: 'inbound.silent_24h',
+        wonVsBaseline: false,
+      });
+
+      expect(recordOutcome).toHaveBeenCalledWith(
+        expect.objectContaining({ workspaceId: 'ws-2', arm: 'engage', outcome: 0 }),
+      );
+    });
+
+    it('never throws when the bandit arm update fails (fire-and-forget)', async () => {
+      const { svc, recordOutcome } = await buildModule({
+        wonVsBaseline: true,
+        closedRow: {
+          contextSnapshot: {},
+          decisionType: 'chat_reply',
+          chosenAction: 'engage',
+          workspaceId: 'ws-3',
+        },
+      });
+      recordOutcome.mockRejectedValueOnce(new Error('arm row not found'));
+
+      await expect(
+        svc.closeOutcome({
+          outcomeKey: 'chat:ws-3:1:ghi',
           outcomeName: 'inbound.received',
-          economicValue: 99.9,
           wonVsBaseline: true,
         }),
-      });
+      ).resolves.toBeUndefined();
     });
   });
 
@@ -92,9 +192,9 @@ describe('DecisionOutcomeService', () => {
         expectedWindow: 24,
         contextSnapshot: { channel: 'whatsapp' },
       });
-      expect(prisma.decisionOutcome.create).toHaveBeenCalledWith(
+      expect((prisma.decisionOutcome as { create: jest.Mock }).create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ baselineAction: null }),
+          data: partialMatch({ baselineAction: null }),
         }),
       );
     });
@@ -112,9 +212,10 @@ describe('DecisionOutcomeService', () => {
           contextSnapshot: { channel: 'instagram', token: symbol },
         }),
       ).resolves.toBeUndefined();
-      const lastCall = (prisma.decisionOutcome.create as jest.Mock).mock.calls.at(-1);
-      const ctx = (lastCall![0].data as { contextSnapshot: Record<string, unknown> })
-        .contextSnapshot;
+      const lastCall = castMock<[{ data: { contextSnapshot: Record<string, unknown> } }][]>(
+        (prisma.decisionOutcome.create as jest.Mock).mock.calls,
+      ).at(-1);
+      const ctx = lastCall![0].data.contextSnapshot;
       expect(ctx.token).toBeUndefined();
       expect(ctx.channel).toBe('instagram');
     });
@@ -127,18 +228,17 @@ describe('DecisionOutcomeService', () => {
         outcomeName: 'payment.succeeded',
         outcomeValue: { amount: 99.9, currency: 'BRL' },
       });
-      const data = (prisma.decisionOutcome.updateMany as jest.Mock).mock.calls.at(-1)![0].data as {
-        outcomeValue?: { amount: number };
-      };
+      const data = castMock<[{ data: { outcomeValue?: { amount: number } } }][]>(
+        (prisma.decisionOutcome.updateMany as jest.Mock).mock.calls,
+      ).at(-1)![0].data;
       expect(data.outcomeValue).toEqual({ amount: 99.9, currency: 'BRL' });
     });
 
     it('defaults economicValue to null when not provided', async () => {
       await service.closeOutcome({ outcomeKey: 'k1', outcomeName: 'inbound.received' });
-      const data = (prisma.decisionOutcome.updateMany as jest.Mock).mock.calls.at(-1)![0].data as {
-        economicValue: number | null;
-        wonVsBaseline: boolean | null;
-      };
+      const data = castMock<
+        [{ data: { economicValue: number | null; wonVsBaseline: boolean | null } }][]
+      >((prisma.decisionOutcome.updateMany as jest.Mock).mock.calls).at(-1)![0].data;
       expect(data.economicValue).toBeNull();
       expect(data.wonVsBaseline).toBeNull();
     });
@@ -148,7 +248,9 @@ describe('DecisionOutcomeService', () => {
         outcomeKey: 'k-already-closed',
         outcomeName: 'payment.succeeded',
       });
-      const call = (prisma.decisionOutcome.updateMany as jest.Mock).mock.calls.at(-1);
+      const call = castMock<[{ where: Record<string, unknown> }][]>(
+        (prisma.decisionOutcome.updateMany as jest.Mock).mock.calls,
+      ).at(-1);
       expect(call![0].where).toEqual({
         outcomeKey: 'k-already-closed',
         workspaceId: { not: '' },
@@ -160,7 +262,7 @@ describe('DecisionOutcomeService', () => {
   describe('findOpenByWorkspace', () => {
     it('queries with outcomeAt: null and orders by createdAt desc', async () => {
       await service.findOpenByWorkspace('ws-1');
-      expect(prisma.decisionOutcome.findMany).toHaveBeenCalledWith({
+      expect((prisma.decisionOutcome as { findMany: jest.Mock }).findMany).toHaveBeenCalledWith({
         where: { workspaceId: 'ws-1', outcomeAt: null },
         orderBy: { createdAt: 'desc' },
       });
@@ -171,7 +273,7 @@ describe('DecisionOutcomeService', () => {
     it('filters by workspace, decisionType, and outcomeAt >= since', async () => {
       const since = new Date('2026-05-01T00:00:00Z');
       await service.findClosedByDecisionType('ws-1', 'followup_timing', since);
-      expect(prisma.decisionOutcome.findMany).toHaveBeenCalledWith({
+      expect((prisma.decisionOutcome as { findMany: jest.Mock }).findMany).toHaveBeenCalledWith({
         where: {
           workspaceId: 'ws-1',
           decisionType: 'followup_timing',
@@ -186,7 +288,7 @@ describe('DecisionOutcomeService', () => {
     it('returns all closed rows across workspaces since the given date', async () => {
       const since = new Date('2026-05-01T00:00:00Z');
       await service.findAllClosedSince(since);
-      expect(prisma.decisionOutcome.findMany).toHaveBeenCalledWith({
+      expect((prisma.decisionOutcome as { findMany: jest.Mock }).findMany).toHaveBeenCalledWith({
         where: { workspaceId: { not: '' }, outcomeAt: { not: null, gte: since } },
         orderBy: { outcomeAt: 'desc' },
       });
@@ -201,9 +303,9 @@ describe('DecisionOutcomeService', () => {
         eventKey: 'pay_123',
       });
 
-      expect(prisma.decisionOutcomeEvent.create).toHaveBeenCalledWith(
+      expect((prisma.decisionOutcomeEvent as { create: jest.Mock }).create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: partialMatch({
             workspaceId: 'ws-1',
             eventType: 'payment.succeeded',
             eventKey: 'pay_123',
@@ -253,18 +355,20 @@ describe('DecisionOutcomeService', () => {
       const count = await service.sweepExpired('ws-1', 24);
 
       expect(count).toBe(2);
-      expect(prisma.decisionOutcome.updateMany).toHaveBeenCalledWith({
-        where: { id: { in: ['do-1', 'do-2'] }, workspaceId: 'ws-1' },
-        data: expect.objectContaining({
-          outcomeName: 'inbound.silent_24h',
-          wonVsBaseline: false,
-          outcomeValue: expect.objectContaining({
-            reason: 'expired_without_reply',
-            maxAgeHours: 24,
-            outcomeKeys: ['expired-key-1', 'expired-key-2'],
+      expect((prisma.decisionOutcome as { updateMany: jest.Mock }).updateMany).toHaveBeenCalledWith(
+        {
+          where: { id: { in: ['do-1', 'do-2'] }, workspaceId: 'ws-1' },
+          data: partialMatch({
+            outcomeName: 'inbound.silent_24h',
+            wonVsBaseline: false,
+            outcomeValue: partialMatch({
+              reason: 'expired_without_reply',
+              maxAgeHours: 24,
+              outcomeKeys: ['expired-key-1', 'expired-key-2'],
+            }),
           }),
-        }),
-      });
+        },
+      );
     });
   });
 });

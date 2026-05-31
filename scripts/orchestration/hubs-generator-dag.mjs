@@ -1,3 +1,25 @@
+import { formatISO } from './hubs-generator-helpers.mjs';
+
+const DAG_MODULES = {
+  0: ['Auth', 'Workspaces', 'Settings', 'KYC'],
+  1: ['Products', 'Checkout', 'Wallet', 'Billing'],
+  2: ['WhatsApp', 'Inbox', 'Autopilot', 'Flows'],
+  3: ['CIA', 'CRM', 'Dashboard', 'Analytics', 'Reports'],
+  4: ['Vendas', 'Affiliate', 'Member Area', 'Campaigns', 'FollowUps'],
+  5: ['Marketing', 'Anuncios', 'Sites', 'Canvas', 'Funnels', 'Webinarios', 'Leads'],
+  6: ['Team', 'API Keys', 'Webhooks', 'Audit Log', 'Notifications', 'Marketplace', 'Video'],
+};
+
+const PHASE_NAMES = {
+  0: 'INFRAESTRUTURA',
+  1: 'MOTOR COMERCIAL',
+  2: 'COMUNICACAO',
+  3: 'INTELIGENCIA',
+  4: 'CRESCIMENTO',
+  5: 'PLATAFORMA AVANCADA',
+  6: 'OPERACIONAL',
+};
+
 // DAG section extracted from hubs-generator
 export function genDag(blockers) {
   const now = formatISO();

@@ -49,7 +49,7 @@ describe('CrmService', () => {
   beforeEach(async () => {
     prisma = createPartialPrismaMock({
       contact: ['create', 'upsert', 'findUnique', 'findMany', 'count'],
-      pipeline: ['create', 'findMany'],
+      pipeline: ['create', 'findMany', 'findFirst'],
       deal: ['findFirst', 'findUnique', 'delete'],
     });
     prisma.contact.create.mockImplementation(({ data }) => Promise.resolve({ id: 'c1', ...data }));
@@ -119,6 +119,91 @@ describe('CrmService', () => {
       await service.listPipelines('ws-tenant-A');
       const arg = firstMockArg<PipelineFindManyArg>(prisma.pipeline.findMany);
       expect(arg.where).toEqual({ workspaceId: 'ws-tenant-A' });
+    });
+  });
+
+  describe('getPipeline', () => {
+    it('throws NotFoundException when no pipeline exists for workspace', async () => {
+      prisma.pipeline.findFirst.mockResolvedValue(null);
+
+      await expect(service.getPipeline('ws-empty')).rejects.toThrow('Pipeline não encontrado');
+    });
+
+    it('returns stages with leads and totalValue as bigint', async () => {
+      const now = new Date('2026-05-29T12:00:00Z');
+      prisma.pipeline.findFirst.mockResolvedValue({
+        id: 'p1',
+        name: 'Sales Pipeline',
+        stages: [
+          {
+            id: 's1',
+            name: 'Lead',
+            order: 0,
+            deals: [
+              { id: 'd1', title: 'Deal A', value: 150.5, updatedAt: now },
+              { id: 'd2', title: 'Deal B', value: 99.99, updatedAt: now },
+            ],
+          },
+          {
+            id: 's2',
+            name: 'Negotiation',
+            order: 1,
+            deals: [{ id: 'd3', title: 'Deal C', value: 200, updatedAt: now }],
+          },
+          {
+            id: 's3',
+            name: 'Closed',
+            order: 2,
+            deals: [],
+          },
+        ],
+      });
+
+      const result = await service.getPipeline('ws-1');
+
+      expect(result.stages).toHaveLength(3);
+      expect(result.stages[0].name).toBe('Lead');
+      expect(result.stages[0].leads).toHaveLength(2);
+      expect(result.stages[0].leads[0]).toEqual({
+        id: 'd1',
+        name: 'Deal A',
+        value: 15050n,
+        lastActivity: now,
+      });
+      expect(result.stages[0].leads[1].value).toBe(9999n);
+      expect(result.stages[1].leads[0].value).toBe(20000n);
+      expect(result.stages[2].leads).toEqual([]);
+      // 15050 + 9999 + 20000 = 45049
+      expect(result.totalValue).toBe(45049n);
+    });
+
+    it('filters pipeline by workspaceId', async () => {
+      prisma.pipeline.findFirst.mockResolvedValue({
+        id: 'p-ws-A',
+        stages: [],
+      });
+
+      await service.getPipeline('ws-tenant-A');
+
+      expect(prisma.pipeline.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { workspaceId: 'ws-tenant-A' },
+        }),
+      );
+    });
+
+    it('returns zero totalValue for pipeline with no deals', async () => {
+      prisma.pipeline.findFirst.mockResolvedValue({
+        id: 'p-empty',
+        stages: [
+          { id: 's1', name: 'Lead', order: 0, deals: [] },
+          { id: 's2', name: 'Closed', order: 1, deals: [] },
+        ],
+      });
+
+      const result = await service.getPipeline('ws-1');
+
+      expect(result.totalValue).toBe(0n);
     });
   });
 

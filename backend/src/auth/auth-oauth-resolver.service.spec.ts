@@ -7,6 +7,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthOAuthResolverService, _buildAuthLogMessage } from './auth-oauth-resolver.service';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 const AGENT_STUB = {
   id: 'agent-1',
@@ -22,24 +23,31 @@ const AGENT_STUB = {
   deletedAt: null,
 };
 
+const mockAgentModel = {
+  findFirst: jest.fn(),
+  findMany: jest.fn(),
+  update: jest.fn(),
+  create: jest.fn(),
+};
+const mockWorkspaceModel = {
+  create: jest.fn(),
+};
 const mockPrismaService = {
   socialAccount: {
     findUnique: jest.fn(),
   },
-  agent: {
-    findFirst: jest.fn(),
-    findMany: jest.fn(),
-    update: jest.fn(),
-    create: jest.fn(),
-  },
-  workspace: {
-    create: jest.fn(),
-  },
+  agent: mockAgentModel,
+  workspace: mockWorkspaceModel,
   $transaction: jest.fn((arg: unknown) => {
     if (typeof arg === 'function') {
-      return arg({
-        agent: mockPrismaService.agent,
-        workspace: mockPrismaService.workspace,
+      return (
+        arg as (tx: {
+          agent: typeof mockAgentModel;
+          workspace: typeof mockWorkspaceModel;
+        }) => unknown
+      )({
+        agent: mockAgentModel,
+        workspace: mockWorkspaceModel,
       });
     }
     return Promise.all(arg as Array<Promise<unknown>>);
@@ -199,12 +207,12 @@ describe('AuthOAuthResolverService', () => {
       expect(result).toEqual(expect.objectContaining({ id: 'agent-new', workspaceId: 'ws-new' }));
       expect(prisma.workspace.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ name: "NewUser's Workspace" }),
+          data: partialMatch({ name: "NewUser's Workspace" }),
         }),
       );
       expect(prisma.agent.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: partialMatch({
             email: 'new@example.com',
             role: 'ADMIN',
             provider: 'google',
@@ -263,8 +271,8 @@ describe('AuthOAuthResolverService', () => {
   describe('_buildAuthLogMessage', () => {
     it('builds JSON log messages', () => {
       const msg = _buildAuthLogMessage('test_event', { key: 'val' });
-      expect(() => JSON.parse(msg)).not.toThrow();
-      const parsed = JSON.parse(msg);
+      expect(() => JSON.parse(msg) as unknown).not.toThrow();
+      const parsed = JSON.parse(msg) as { event: string; key: string };
       expect(parsed.event).toBe('test_event');
       expect(parsed.key).toBe('val');
     });

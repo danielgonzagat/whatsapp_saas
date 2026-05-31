@@ -150,7 +150,7 @@ export class CampaignEventEmitterService {
 
   private safeEmit(input: SpineEventInput): void {
     try {
-      this.spine.emit(input);
+      void this.spine.emit(input);
     } catch (err: unknown) {
       this.logger.error(
         `Failed to emit ${input.eventName} for workspace ${input.workspaceId ?? 'global'}: ${(err as Error).message}`,

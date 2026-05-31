@@ -116,7 +116,7 @@ function getQueueOptions() {
 export const connection = new Proxy({} as ReturnType<typeof createRedisClient>, {
   get(_, prop) {
     const currentConnection = getConnection();
-    return currentConnection ? Reflect.get(currentConnection, prop) : undefined;
+    return currentConnection ? (Reflect.get(currentConnection, prop) as unknown) : undefined;
   },
 });
 
@@ -380,7 +380,7 @@ export async function shutdownQueueSystem() {
 function lazyQueueProxy(name: string): BullQueue {
   return new Proxy({} as BullQueue, {
     get(_, prop) {
-      return Reflect.get(getOrCreateQueue(name), prop);
+      return Reflect.get(getOrCreateQueue(name), prop) as unknown;
     },
   });
 }

@@ -32,7 +32,14 @@ const logger = StructuredLogger.from('SplitEngine');
  * Invariant (verified by property test):
  *   Σ(splits.amount) + kloelTotal + residue === buyerPaid
  */
-function clamp(value: CentsBigInt, ceiling: CentsBigInt): CentsBigInt {
+/**
+ * Clamp `value` into the inclusive range `[0, ceiling]`.
+ *
+ * Exported for direct unit testing of the defensive `value < 0n` guard, which
+ * is unreachable through {@link calculateSplit} because negative inputs are
+ * rejected in {@link validateInput} before clamping.
+ */
+export function clamp(value: CentsBigInt, ceiling: CentsBigInt): CentsBigInt {
   if (value < 0n) {
     return 0n;
   }

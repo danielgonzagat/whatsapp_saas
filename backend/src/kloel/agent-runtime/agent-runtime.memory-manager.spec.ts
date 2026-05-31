@@ -129,6 +129,30 @@ describe('AgentRuntimeMemoryManagerService', () => {
     expect(sessions.search).toHaveBeenCalledWith('ws_1', 'checkout', 6);
   });
 
+  it('escapes HTML/XML entities in the provider attribute to prevent tag breakout', async () => {
+    class MaliciousNameProvider extends AgentRuntimeMemoryProviderBase {
+      readonly name = '"><script>alert(1)</script> & "more"';
+      readonly external = true;
+
+      override prefetch(): Promise<string> {
+        return Promise.resolve('recalled memory body');
+      }
+    }
+
+    const manager = new AgentRuntimeMemoryManagerService(
+      new AgentRuntimeBuiltinMemoryProvider(makeSessionStore() as never),
+    );
+    manager.registerProvider(new MaliciousNameProvider());
+
+    const prefetch = await manager.prefetchAll('ws_1', 'checkout');
+
+    expect(prefetch).toContain(
+      '<memory-context provider="&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt; &amp; &quot;more&quot;">',
+    );
+    expect(prefetch).not.toContain('<script>alert(1)</script>');
+    expect(prefetch).toContain('recalled memory body');
+  });
+
   it('allows only one external provider to avoid conflicting memory backends', () => {
     const manager = new AgentRuntimeMemoryManagerService(
       new AgentRuntimeBuiltinMemoryProvider(makeSessionStore() as never),
@@ -199,22 +223,22 @@ describe('AgentRuntimeMemoryManagerService', () => {
 
     expect(compressionInsight).toContain('provider-insight');
     expect(sessions.recordRuntimeEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: 'turn_start' }),
+      expect.objectContaining({ eventType: 'runtime.turn.started' }),
     );
     expect(sessions.recordRuntimeEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: 'pre_compress' }),
+      expect.objectContaining({ eventType: 'runtime.context.pre_compressed' }),
     );
     expect(sessions.recordRuntimeEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: 'memory_write' }),
+      expect.objectContaining({ eventType: 'runtime.memory.written' }),
     );
     expect(sessions.recordRuntimeEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: 'delegation' }),
+      expect.objectContaining({ eventType: 'runtime.delegation.recorded' }),
     );
     expect(sessions.recordRuntimeEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: 'session_switch' }),
+      expect.objectContaining({ eventType: 'runtime.session.switched' }),
     );
     expect(sessions.recordRuntimeEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: 'session_end' }),
+      expect.objectContaining({ eventType: 'runtime.session.ended' }),
     );
   });
 

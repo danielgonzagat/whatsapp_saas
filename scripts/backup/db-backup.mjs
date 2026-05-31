@@ -5,7 +5,7 @@
  * Usage: DATABASE_URL=postgres://... node scripts/backup/db-backup.mjs
  */
 import { execSync } from 'child_process';
-import { writeFileSync, mkdirSync, existsSync, statSync } from 'fs';
+import { writeFileSync, readFileSync, mkdirSync, existsSync, statSync } from 'fs';
 import { join } from 'path';
 
 const TIMESTAMP = new Date().toISOString().replace(/[:.]/g, '-');
@@ -33,7 +33,7 @@ try {
   console.log(`Done: ${mb} MB`);
 
   const manifest = existsSync(MANIFEST_FILE)
-    ? JSON.parse(fs.readFileSync(MANIFEST_FILE, 'utf8'))
+    ? JSON.parse(readFileSync(MANIFEST_FILE, 'utf8'))
     : { backups: [] };
 
   manifest.lastBackup = new Date().toISOString();

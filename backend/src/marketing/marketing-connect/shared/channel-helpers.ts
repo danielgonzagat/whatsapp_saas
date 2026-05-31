@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import type { ProviderSettings } from '../../../whatsapp/provider-settings.types';
+import type { ProviderSettings } from '../../channels/whatsapp/provider-settings.types';
 
 export type EmailSubSettings = Record<string, unknown> & { enabled?: boolean };
 export type WhatsAppStatusValue = Record<string, unknown>;

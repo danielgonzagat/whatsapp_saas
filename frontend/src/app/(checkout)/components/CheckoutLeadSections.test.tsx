@@ -1,17 +1,17 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { ChangeEvent } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { CheckoutLeadSections } from './CheckoutLeadSections';
+import { CheckoutContactSections } from './CheckoutLeadSections';
 import { buildBlancTheme } from './checkout-theme-tokens';
 
-describe('CheckoutLeadSections', () => {
+describe('CheckoutContactSections', () => {
   it('keeps name and email editable after quick social identification', () => {
     const updateField = vi.fn(() =>
       vi.fn((event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => event),
     );
 
     render(
-      <CheckoutLeadSections
+      <CheckoutContactSections
         theme={buildBlancTheme()}
         step={1}
         setStep={vi.fn()}
@@ -74,7 +74,7 @@ describe('CheckoutLeadSections', () => {
 
   it('renders done identity card when step > 1', () => {
     const { container } = render(
-      <CheckoutLeadSections
+      <CheckoutContactSections
         theme={buildBlancTheme()}
         step={2}
         setStep={vi.fn()}
@@ -119,7 +119,7 @@ describe('CheckoutLeadSections', () => {
 
   it('renders done identity with social provider label', () => {
     const { container } = render(
-      <CheckoutLeadSections
+      <CheckoutContactSections
         theme={buildBlancTheme()}
         step={2}
         setStep={vi.fn()}
@@ -166,7 +166,7 @@ describe('CheckoutLeadSections', () => {
 
   it('renders done identity with facebook provider label', () => {
     const { container } = render(
-      <CheckoutLeadSections
+      <CheckoutContactSections
         theme={buildBlancTheme()}
         step={2}
         setStep={vi.fn()}
@@ -215,7 +215,7 @@ describe('CheckoutLeadSections', () => {
 
   it('renders done delivery card when step > 2', () => {
     const { container } = render(
-      <CheckoutLeadSections
+      <CheckoutContactSections
         theme={buildBlancTheme()}
         step={3}
         setStep={vi.fn()}
@@ -259,7 +259,7 @@ describe('CheckoutLeadSections', () => {
 
   it('renders done delivery with complement when present', () => {
     render(
-      <CheckoutLeadSections
+      <CheckoutContactSections
         theme={buildBlancTheme()}
         step={3}
         setStep={vi.fn()}
@@ -301,7 +301,7 @@ describe('CheckoutLeadSections', () => {
 
   it('renders done delivery with paid shipping amount', () => {
     const { container } = render(
-      <CheckoutLeadSections
+      <CheckoutContactSections
         theme={buildBlancTheme()}
         step={3}
         setStep={vi.fn()}
@@ -345,7 +345,7 @@ describe('CheckoutLeadSections', () => {
 
   it('renders active delivery panel when step is exactly 2', () => {
     render(
-      <CheckoutLeadSections
+      <CheckoutContactSections
         theme={buildBlancTheme()}
         step={2}
         setStep={vi.fn()}
@@ -391,7 +391,7 @@ describe('CheckoutLeadSections', () => {
 
   it('renders locked delivery panel when step < 2', () => {
     render(
-      <CheckoutLeadSections
+      <CheckoutContactSections
         theme={buildBlancTheme()}
         step={1}
         setStep={vi.fn()}
@@ -437,7 +437,7 @@ describe('CheckoutLeadSections', () => {
 
   it('renders edit button in identity done card', () => {
     render(
-      <CheckoutLeadSections
+      <CheckoutContactSections
         theme={buildBlancTheme()}
         step={2}
         setStep={vi.fn()}
@@ -482,7 +482,7 @@ describe('CheckoutLeadSections', () => {
   it('renders edit button in delivery done card', () => {
     const setStep = vi.fn();
     render(
-      <CheckoutLeadSections
+      <CheckoutContactSections
         theme={buildBlancTheme()}
         step={3}
         setStep={setStep}

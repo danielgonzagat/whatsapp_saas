@@ -76,6 +76,21 @@ import {
   gitStateForSource,
 } from './obsidian-mirror-daemon-utils.mjs';
 
+import { extractInternalRelations } from './obsidian-mirror-daemon-content-relations.mjs';
+import {
+  buildRelationsSection,
+  clusterKeyForSource,
+  visualFactKey,
+} from './obsidian-mirror-daemon-content-helpers.mjs';
+import {
+  buildMirrorSignalIndex,
+  classifyMachineSource,
+  buildVisualFactsSection,
+  sourceBaseTags,
+  activeConstructionTags,
+} from './obsidian-mirror-daemon-content-index.mjs';
+import { extractVisualFacts } from './obsidian-mirror-daemon-content-extract.mjs';
+
 export function shouldOmitSourceBody(sourcePath, sourceSize) {
   return sourceSize > SOURCE_BODY_MIRROR_MAX_BYTES;
 }

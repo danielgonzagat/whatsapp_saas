@@ -1,6 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { KloelThreadSearchService } from './kloel-thread-search.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
+import { partialMatch } from '../../test/helpers/match-instance';
+import { castMock } from '../../test/helpers/cast-mock';
 
 type ThreadSearchPrismaMock = {
   $queryRaw: jest.Mock;
@@ -75,7 +78,7 @@ describe('KloelThreadSearchService', () => {
       await service.search('ws-tenant', 'suporte', undefined);
 
       expect(prisma.$queryRaw).toHaveBeenCalled();
-      const sql = prisma.$queryRaw.mock.calls[0][0];
+      const sql = castMock<unknown[][]>(prisma.$queryRaw.mock.calls)[0]?.[0];
       expect(sql).toBeDefined();
     });
 
@@ -109,7 +112,7 @@ describe('KloelThreadSearchService', () => {
 
       expect(prisma.chatThread.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({
+          where: partialMatch({
             workspaceId: wsId,
             title: { contains: 'suporte', mode: 'insensitive' },
           }),
@@ -125,7 +128,7 @@ describe('KloelThreadSearchService', () => {
 
       expect(prisma.chatThread.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: 'ws-fallback' }),
+          where: partialMatch({ workspaceId: 'ws-fallback' }),
         }),
       );
     });
@@ -133,7 +136,6 @@ describe('KloelThreadSearchService', () => {
 
   describe('result mapping', () => {
     it('maps row with Prisma.Decimal rank', async () => {
-      const { Prisma } = require('@prisma/client');
       prisma.$queryRaw.mockResolvedValue([
         {
           ...mockRow,
@@ -176,7 +178,7 @@ describe('KloelThreadSearchService', () => {
 
       expect(prisma.chatThread.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: 'ws-isolated' }),
+          where: partialMatch({ workspaceId: 'ws-isolated' }),
         }),
       );
     });
@@ -188,7 +190,7 @@ describe('KloelThreadSearchService', () => {
 
       expect(prisma.chatMessage.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({
+          where: partialMatch({
             thread: { workspaceId: 'ws-msg-iso' },
           }),
         }),

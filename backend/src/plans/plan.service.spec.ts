@@ -99,12 +99,12 @@ describe('PlanService', () => {
       );
     });
 
-    it('emits plan.created event', async () => {
+    it('emits mind.plan.observed event', async () => {
       prisma.product.findFirst.mockResolvedValue({ id: 'prod-1', workspaceId: ws });
       prisma.productPlan.create.mockResolvedValue({ id: 'p1', name: 'Pro', price: 49.9 });
       await service.create(ws, dto);
       expect(events.emit).toHaveBeenCalledWith(
-        'plan.created',
+        'mind.plan.observed',
         expect.objectContaining({ planId: 'p1', workspaceId: ws }),
       );
     });

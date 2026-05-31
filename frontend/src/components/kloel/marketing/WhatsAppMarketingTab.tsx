@@ -9,7 +9,7 @@ interface WhatsAppMarketingTabProps {
   mode?: string | undefined;
   workspaceId?: string | null | undefined;
   operator?: string | null | undefined;
-  connection?: WhatsAppChannelConnection | undefined;
+  channelSession?: WhatsAppChannelConnection | undefined;
   onRefreshConnectionStatus?: (() => Promise<unknown> | unknown) | undefined;
 }
 
@@ -19,7 +19,7 @@ export default function WhatsAppMarketingTab({
   mode,
   workspaceId,
   operator,
-  connection,
+  channelSession,
   onRefreshConnectionStatus,
 }: WhatsAppMarketingTabProps) {
   if (!workspaceId) {
@@ -29,7 +29,7 @@ export default function WhatsAppMarketingTab({
   const optionalProps: Record<string, unknown> = {};
   if (operator !== undefined) {optionalProps.operator = operator;}
   if (mode !== undefined) {optionalProps.mode = mode;}
-  if (connection !== undefined) {optionalProps.connection = connection;}
+  if (channelSession !== undefined) {optionalProps.channelSession = channelSession;}
   if (onRefreshConnectionStatus !== undefined)
     {optionalProps.onConnectionRefresh = onRefreshConnectionStatus;}
 

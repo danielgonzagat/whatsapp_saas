@@ -8,6 +8,9 @@ type CheckoutServicePrismaMock = {
   checkoutProductPlan: {
     findUnique: jest.Mock;
     findFirst: jest.Mock;
+    findMany: jest.Mock;
+    update: jest.Mock;
+    delete: jest.Mock;
   };
   checkoutConfig: {
     findUnique: jest.Mock;
@@ -91,6 +94,9 @@ describe('CheckoutService — duplicateCheckout', () => {
       checkoutProductPlan: {
         findUnique: jest.fn(),
         findFirst: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([]),
+        update: jest.fn().mockResolvedValue({}),
+        delete: jest.fn().mockResolvedValue({}),
       },
       checkoutConfig: {
         findUnique: jest.fn(),
@@ -267,6 +273,9 @@ describe('CheckoutService — getCheckoutBySlug', () => {
       checkoutProductPlan: {
         findUnique: jest.fn().mockResolvedValue(null),
         findFirst: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([]),
+        update: jest.fn().mockResolvedValue({}),
+        delete: jest.fn().mockResolvedValue({}),
       },
       checkoutConfig: {
         findUnique: jest.fn(),
@@ -372,3 +381,122 @@ describe('CheckoutService — getCheckoutBySlug', () => {
     expect(internal.publicPayloadBuilder.build).toHaveBeenCalled();
   });
 });
+
+// ─── PI-K32: 5 new domain-service methods for capability resolver ─────────
+
+describe('CheckoutService — create (resolver path)', () => {
+  let service: CheckoutService;
+  let productSvc: ProductServiceMock;
+  let eventEmitter: { checkoutCreated: jest.Mock };
+
+  beforeEach(() => {
+    const prisma = {
+      checkoutPlanLink: { findFirst: jest.fn().mockResolvedValue(null) },
+      checkoutProductPlan: {
+        findUnique: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+      checkoutConfig: { findUnique: jest.fn() },
+      checkoutPixel: { createMany: jest.fn() },
+      affiliateLink: { findFirst: jest.fn().mockResolvedValue(null), update: jest.fn() },
+    };
+
+    productSvc = {
+      createCheckout: jest.fn(),
+      updateConfig: jest.fn(),
+      syncCheckoutLinks: jest.fn(),
+      getPlanLinkManager: jest.fn().mockReturnValue({
+        ensurePlanReferenceCode: jest.fn().mockImplementation(async (p: unknown) => p),
+      }),
+    };
+
+    eventEmitter = { checkoutCreated: jest.fn() };
+
+    service = new CheckoutService(
+      prisma as never,
+      productSvc as never,
+      {} as never,
+      {} as never,
+      eventEmitter as never,
+    );
+
+    const internal = service as CheckoutServiceInternals;
+    jest.spyOn(internal.logger, 'log').mockImplementation(() => undefined);
+    internal.publicPayloadBuilder.build = jest
+      .fn()
+      .mockResolvedValue({ id: 'payload', slug: 'test' });
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('create — happy path: creates checkout and emits event', async () => {
+    productSvc.createCheckout.mockResolvedValue({ id: 'chk_new', name: 'Meu Checkout' });
+
+    const result = await service.create('ws_1', {
+      productId: 'prod_1',
+      name: 'Meu Checkout',
+      priceInCents: 19990,
+      currency: 'BRL',
+    });
+
+    expect(productSvc.createCheckout).toHaveBeenCalledWith(
+      'prod_1',
+      expect.objectContaining({ name: 'Meu Checkout', priceInCents: 19990, currency: 'BRL' }),
+      'ws_1',
+    );
+    expect(eventEmitter.checkoutCreated).toHaveBeenCalledWith({
+      workspaceId: 'ws_1',
+      checkoutId: 'chk_new',
+      productId: 'prod_1',
+    });
+    expect(result).toEqual({ id: 'chk_new', name: 'Meu Checkout' });
+  });
+
+  it('create — throws when productId is missing', async () => {
+    await expect(service.create('ws_1', { name: 'Sem Produto' })).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+
+  it('create — uses amount as priceInCents when priceInCents is absent', async () => {
+    productSvc.createCheckout.mockResolvedValue({ id: 'chk_amt' });
+
+    await service.create('ws_1', { productId: 'prod_1', amount: 5000 });
+
+    expect(productSvc.createCheckout).toHaveBeenCalledWith(
+      'prod_1',
+      expect.objectContaining({ priceInCents: 5000 }),
+      'ws_1',
+    );
+  });
+
+  it('create — defaults name to "Checkout" when missing', async () => {
+    productSvc.createCheckout.mockResolvedValue({ id: 'chk_def' });
+
+    await service.create('ws_1', { productId: 'prod_1', priceInCents: 999 });
+
+    expect(productSvc.createCheckout).toHaveBeenCalledWith(
+      'prod_1',
+      expect.objectContaining({ name: 'Checkout' }),
+      'ws_1',
+    );
+  });
+
+  it('create — does not emit event when createCheckout returns no id', async () => {
+    productSvc.createCheckout.mockResolvedValue(null);
+
+    const result = await service.create('ws_1', { productId: 'prod_1' });
+
+    expect(eventEmitter.checkoutCreated).not.toHaveBeenCalled();
+    expect(result).toBeNull();
+  });
+});
+
+// Moved to checkout.service.resolver-ops.spec.ts:
+//   - CheckoutService — update (resolver path)
+//   - CheckoutService — delete (resolver path)
+//   - CheckoutService — list (resolver path)
+//   - CheckoutService — createOrder (resolver path)

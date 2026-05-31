@@ -109,7 +109,7 @@ export default function VideoPage() {
 
   useEffect(() => {
     if (activeTab === 'voice') {
-      loadVoiceProfiles();
+      queueMicrotask(loadVoiceProfiles);
     }
   }, [activeTab, loadVoiceProfiles]);
 

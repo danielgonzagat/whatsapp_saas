@@ -1,5 +1,6 @@
 import { AgentRuntimeSkillRegistry } from './agent-runtime.skill-registry';
 import type { AgentSkillDefinition } from './agent-runtime.types';
+import { mindMemoryStub } from '../../../test/helpers/mind-memory-stub';
 
 function makePrisma(overrides: Record<string, unknown> = {}) {
   return {
@@ -42,7 +43,7 @@ function makeSkill(overrides: Partial<AgentSkillDefinition> = {}): AgentSkillDef
 describe('AgentRuntimeSkillRegistry', () => {
   it('creates a governed procedural skill with version metadata', async () => {
     const prisma = makePrisma();
-    const registry = new AgentRuntimeSkillRegistry(prisma as never);
+    const registry = new AgentRuntimeSkillRegistry(prisma as never, mindMemoryStub(prisma));
 
     const result = await registry.upsertSkill('ws_1', makeSkill());
 
@@ -55,8 +56,8 @@ describe('AgentRuntimeSkillRegistry', () => {
       }),
     );
     expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        create: expect.objectContaining({
+      expect.objectContaining<Record<string, unknown>>({
+        create: expect.objectContaining<Record<string, unknown>>({
           category: 'agent_skill',
           type: 'commercial',
           metadata: expect.objectContaining({
@@ -75,14 +76,14 @@ describe('AgentRuntimeSkillRegistry', () => {
     const prisma = makePrisma({
       findUnique: jest.fn().mockResolvedValue({ value: existing }),
     });
-    const registry = new AgentRuntimeSkillRegistry(prisma as never);
+    const registry = new AgentRuntimeSkillRegistry(prisma as never, mindMemoryStub(prisma));
 
     const result = await registry.upsertSkill('ws_1', makeSkill({ summary: 'Updated procedure' }));
 
     expect(result.version).toBe(4);
     expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        update: expect.objectContaining({
+      expect.objectContaining<Record<string, unknown>>({
+        update: expect.objectContaining<Record<string, unknown>>({
           value: expect.objectContaining({
             version: 4,
             summary: 'Updated procedure',
@@ -98,7 +99,7 @@ describe('AgentRuntimeSkillRegistry', () => {
 
   it('rejects unsafe or malformed procedural skills before persistence', async () => {
     const prisma = makePrisma();
-    const registry = new AgentRuntimeSkillRegistry(prisma as never);
+    const registry = new AgentRuntimeSkillRegistry(prisma as never, mindMemoryStub(prisma));
 
     const result = await registry.upsertSkill(
       'ws_1',
@@ -118,7 +119,7 @@ describe('AgentRuntimeSkillRegistry', () => {
 
   it('rejects delegation rules that reference tools outside the skill allowlist', async () => {
     const prisma = makePrisma();
-    const registry = new AgentRuntimeSkillRegistry(prisma as never);
+    const registry = new AgentRuntimeSkillRegistry(prisma as never, mindMemoryStub(prisma));
 
     const result = await registry.upsertSkill(
       'ws_1',
@@ -148,7 +149,7 @@ describe('AgentRuntimeSkillRegistry', () => {
     const prisma = makePrisma({
       findMany: jest.fn().mockResolvedValue([{ value: stored }]),
     });
-    const registry = new AgentRuntimeSkillRegistry(prisma as never);
+    const registry = new AgentRuntimeSkillRegistry(prisma as never, mindMemoryStub(prisma));
 
     const result = await registry.selectSkills('ws_1', 'pricing objection discount', 3);
 
@@ -158,7 +159,7 @@ describe('AgentRuntimeSkillRegistry', () => {
 
   it('records procedural skill usage counters as durable memory', async () => {
     const prisma = makePrisma();
-    const registry = new AgentRuntimeSkillRegistry(prisma as never);
+    const registry = new AgentRuntimeSkillRegistry(prisma as never, mindMemoryStub(prisma));
 
     const result = await registry.recordSkillUsage('ws_1', {
       skillId: 'checkout-recovery',
@@ -180,8 +181,8 @@ describe('AgentRuntimeSkillRegistry', () => {
       }),
     );
     expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        create: expect.objectContaining({
+      expect.objectContaining<Record<string, unknown>>({
+        create: expect.objectContaining<Record<string, unknown>>({
           key: 'agent_skill_usage:checkout-recovery',
           category: 'agent_skill_usage',
           content: expect.stringContaining('success=1'),
@@ -247,7 +248,7 @@ describe('AgentRuntimeSkillRegistry', () => {
         ]);
       }),
     });
-    const registry = new AgentRuntimeSkillRegistry(prisma as never);
+    const registry = new AgentRuntimeSkillRegistry(prisma as never, mindMemoryStub(prisma));
 
     const result = await registry.selectSkills('ws_1', 'checkout recovery', 2);
 

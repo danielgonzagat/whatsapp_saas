@@ -1,27 +1,4 @@
-import type { ConflictDetection } from './types';
-
 import { clamp, biasLevelFromDelta, weightedAverage, makeIncidentId } from './types';
-
-import { RecommendationExplainerService } from './recommendation-explainer.service';
-import type { ExplainInput } from './recommendation-explainer.service';
-
-import { ConflictDetectorService } from './conflict-detector.service';
-import type { ConflictInput } from './conflict-detector.service';
-
-import { ConflictSilenceEnforcerService } from './conflict-silence-enforcer.service';
-import type { SilenceInput } from './conflict-silence-enforcer.service';
-
-import { PlatformBiasMonitorService } from './platform-bias-monitor.service';
-import type { BiasAuditInput } from './platform-bias-monitor.service';
-
-import { DisclosureEngineService } from './disclosure-engine.service';
-import type { DisclosureInput } from './disclosure-engine.service';
-
-import { ThirdPartyAuditExportService } from './third-party-audit-export.service';
-import type { AuditRecommendationEntry } from './third-party-audit-export.service';
-
-import { UserFeedbackCorrectionService } from './user-feedback-correction.service';
-import type { FeedbackInput } from './user-feedback-correction.service';
 
 import { RecommendationAttributionBuilderService } from './recommendation-attribution-builder.service';
 import type {
@@ -30,84 +7,6 @@ import type {
 } from './recommendation-attribution-builder.service';
 
 const WKS = 'wks_incent_test';
-
-function makeExplainInput(over?: Partial<ExplainInput>): ExplainInput {
-  return {
-    workspaceId: over?.workspaceId ?? WKS,
-    recommendationId: over?.recommendationId ?? 'rec_001',
-    summary: over?.summary ?? 'Recomendação de teste',
-    reason: over?.reason ?? 'Esta recomendação é baseada no seu perfil de uso.',
-    evidence: over?.evidence ?? ['signal_a', 'signal_b'],
-    ...over,
-  };
-}
-
-function makeConflictInput(over?: Partial<ConflictInput>): ConflictInput {
-  return {
-    workspaceId: over?.workspaceId ?? WKS,
-    recommendationId: over?.recommendationId ?? 'rec_001',
-    involvedParties: over?.involvedParties ?? ['kloel', 'partner_x'],
-    ...over,
-  };
-}
-
-function makeConflict(over?: Partial<ConflictDetection>): ConflictDetection {
-  return {
-    id: over?.id ?? 'cfl_test_001',
-    workspaceId: over?.workspaceId ?? WKS,
-    recommendationId: over?.recommendationId ?? 'rec_001',
-    conflictDetected: over?.conflictDetected ?? true,
-    kind: over?.kind ?? 'commission_bias',
-    severity: over?.severity ?? 'actual',
-    affectedParties: over?.affectedParties ?? ['partner_x'],
-    evidence: over?.evidence ?? ['commission_on_recommendation_0.15'],
-    detectedAt: over?.detectedAt ?? new Date().toISOString(),
-  };
-}
-
-function makeSilenceInput(over?: Partial<SilenceInput>): SilenceInput {
-  return {
-    workspaceId: over?.workspaceId ?? WKS,
-    recommendationId: over?.recommendationId ?? 'rec_001',
-    ...over,
-  };
-}
-
-function makeBiasInput(over?: Partial<BiasAuditInput>): BiasAuditInput {
-  return {
-    workspaceId: over?.workspaceId ?? WKS,
-    recommendationId: over?.recommendationId ?? 'rec_001',
-    ...over,
-  };
-}
-
-function makeDisclosureInput(over?: Partial<DisclosureInput>): DisclosureInput {
-  return {
-    workspaceId: over?.workspaceId ?? WKS,
-    recommendationId: over?.recommendationId ?? 'rec_001',
-    relationshipType: over?.relationshipType ?? 'commission',
-    ...over,
-  };
-}
-
-function makeRecEntry(over?: Partial<AuditRecommendationEntry>): AuditRecommendationEntry {
-  return {
-    recommendationId: over?.recommendationId ?? 'rec_001',
-    summary: over?.summary ?? 'Test recommendation',
-    outcome: over?.outcome ?? 'accepted',
-    issuedAt: over?.issuedAt ?? new Date().toISOString(),
-  };
-}
-
-function makeFeedbackInput(over?: Partial<FeedbackInput>): FeedbackInput {
-  return {
-    workspaceId: over?.workspaceId ?? WKS,
-    recommendationId: over?.recommendationId ?? 'rec_001',
-    kind: over?.kind ?? 'corrected',
-    originalRecommendation: over?.originalRecommendation ?? 'Buy product A',
-    ...over,
-  };
-}
 
 function makeAttrInput(over?: Partial<AttributionInput>): AttributionInput {
   return {

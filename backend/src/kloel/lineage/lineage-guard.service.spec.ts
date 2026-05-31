@@ -1,6 +1,6 @@
 import { InMemoryLineageLedgerRepository, LineageLedgerService } from './lineage-ledger.service';
 import { LineageGuardService } from './lineage-guard.service';
-import { LineageEntry, ZERO_HASH } from './lineage-ledger.types';
+import { LineageEntry } from './lineage-ledger.types';
 
 /**
  * UTP-LINEAGE-003 contract spec.

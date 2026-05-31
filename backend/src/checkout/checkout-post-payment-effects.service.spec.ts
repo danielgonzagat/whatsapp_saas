@@ -1,30 +1,8 @@
 import { PrismaService } from '../prisma/prisma.service';
-import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
-
-type CheckoutOrderForEffects = {
-  id?: string;
-  orderNumber?: string | null;
-  customerName?: string | null;
-  customerEmail?: string | null;
-  customerPhone?: string | null;
-  totalInCents?: number | null;
-  ipAddress?: string | null;
-  userAgent?: string | null;
-  metadata?: Record<string, unknown> | null;
-  plan?: {
-    productId?: string | null;
-    product?: { name?: string | null } | null;
-    checkoutConfig?: {
-      pixels?: Array<{
-        type?: string | null;
-        isActive?: boolean | null;
-        trackPurchase?: boolean | null;
-        accessToken?: string | null;
-        pixelId?: string | null;
-      }> | null;
-    } | null;
-  } | null;
-};
+import {
+  type CheckoutOrderForEffects,
+  CheckoutPostPaymentEffectsService,
+} from './checkout-post-payment-effects.service';
 
 const makeOrder = (overrides: Partial<CheckoutOrderForEffects> = {}): CheckoutOrderForEffects => ({
   id: 'order_1',
@@ -57,7 +35,7 @@ const makeOrder = (overrides: Partial<CheckoutOrderForEffects> = {}): CheckoutOr
 describe('CheckoutPostPaymentEffectsService', () => {
   let service: CheckoutPostPaymentEffectsService;
   let prisma: {
-    memberArea: { findMany: jest.Mock };
+    memberArea: { findMany: jest.Mock; updateMany: jest.Mock };
     memberEnrollment: {
       findFirst: jest.Mock;
       create: jest.Mock;
@@ -74,7 +52,6 @@ describe('CheckoutPostPaymentEffectsService', () => {
     memberAreaUpdateMock = jest.fn().mockResolvedValue({ count: 1 });
     prisma = {
       memberArea: { findMany: jest.fn().mockResolvedValue([]), updateMany: memberAreaUpdateMock },
-      erArea: { findMany: jest.fn().mockResolvedValue([]) },
       memberEnrollment: {
         findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn().mockResolvedValue({ id: 'enr_1' }),
@@ -91,7 +68,7 @@ describe('CheckoutPostPaymentEffectsService', () => {
     checkoutEventEmitter = { leadConverted: jest.fn().mockResolvedValue(undefined) };
     spineEmitter = { emit: jest.fn().mockResolvedValue(undefined) };
 
-    const prismaAny = prisma as PrismaService & {
+    const prismaAny = prisma as unknown as PrismaService & {
       memberAreaUpdate: { updateMany: jest.Mock };
     };
     prismaAny.memberAreaUpdate = { updateMany: memberAreaUpdateMock };
@@ -424,9 +401,10 @@ describe('CheckoutPostPaymentEffectsService', () => {
 
     it('skips post-sale bridge events when spine emitter is absent', async () => {
       const serviceWithoutSpine = new CheckoutPostPaymentEffectsService(
-        prisma as PrismaService,
+        prisma as unknown as PrismaService,
         facebookCAPI as never,
         checkoutSocialLeadService as never,
+        checkoutEventEmitter as never,
       );
       const order = makeOrder({ workspaceId: 'ws_1', totalInCents: 9900 });
 
@@ -466,7 +444,10 @@ describe('CheckoutPostPaymentEffectsService', () => {
 
       await service.markLeadConverted(order, 'ws_1');
 
-      const createCall = prisma.memberEnrollment.create.mock.calls[0][0] as Record<string, unknown>;
+      const createCall = (prisma.memberEnrollment.create.mock.calls[0] as unknown[])[0] as Record<
+        string,
+        unknown
+      >;
       expect(createCall.data).toEqual(
         expect.objectContaining({
           workspaceId: 'ws_1',
@@ -481,7 +462,7 @@ describe('CheckoutPostPaymentEffectsService', () => {
           data: expect.objectContaining({
             totalStudents: 1,
             avgCompletion: 50,
-          }),
+          }) as unknown,
         }),
       );
     });
@@ -520,7 +501,10 @@ describe('CheckoutPostPaymentEffectsService', () => {
 
       await service.markLeadConverted(order, 'ws_1');
 
-      const createCall = prisma.memberEnrollment.create.mock.calls[0][0] as Record<string, unknown>;
+      const createCall = (prisma.memberEnrollment.create.mock.calls[0] as unknown[])[0] as Record<
+        string,
+        unknown
+      >;
       expect(createCall.data).toEqual(
         expect.objectContaining({
           studentName: 'Aluno',
@@ -537,7 +521,8 @@ describe('CheckoutPostPaymentEffectsService', () => {
       });
 
       expect(order.metadata).toHaveProperty('correlationId');
-      expect(typeof order.metadata!.correlationId).toBe('string');
+      const metadata = order.metadata as Record<string, unknown>;
+      expect(typeof metadata.correlationId).toBe('string');
 
       checkoutSocialLeadService.markConvertedFromOrder.mockResolvedValue(undefined);
 

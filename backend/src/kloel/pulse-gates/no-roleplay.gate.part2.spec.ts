@@ -75,15 +75,6 @@ function check(payload: unknown, mode?: 'log_only' | 'hard_fail'): GateVerdict {
   return makeNoRoleplayGate(mode).check(payload);
 }
 
-function tamperCurrentInput(
-  payload: Record<string, unknown>,
-  raw: string,
-): Record<string, unknown> {
-  const out = { ...payload };
-  out['currentInput'] = { ...(payload['currentInput'] as Record<string, unknown>), raw };
-  return out;
-}
-
 function tamperIdentityProjection(
   payload: Record<string, unknown>,
   patch: Record<string, unknown>,
@@ -93,24 +84,6 @@ function tamperIdentityProjection(
     ...(payload['identityProjection'] as Record<string, unknown>),
     ...patch,
   };
-  return out;
-}
-
-function tamperLineage(
-  payload: Record<string, unknown>,
-  patch: Record<string, unknown>,
-): Record<string, unknown> {
-  const out = { ...payload };
-  out['lineage'] = { ...(payload['lineage'] as Record<string, unknown>), ...patch };
-  return out;
-}
-
-function tamperPerception(
-  payload: Record<string, unknown>,
-  patch: Record<string, unknown>,
-): Record<string, unknown> {
-  const out = { ...payload };
-  out['perception'] = { ...(payload['perception'] as Record<string, unknown>), ...patch };
   return out;
 }
 

@@ -1,3 +1,7 @@
+/**
+ * @capability EmailProvider
+ * @domain notifications-copilot
+ */
 import nodemailer from 'nodemailer';
 import { resolveEmailConfig } from './email-config.helper';
 

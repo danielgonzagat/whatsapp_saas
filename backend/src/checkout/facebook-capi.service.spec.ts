@@ -3,6 +3,23 @@ import { FacebookCAPIService } from './facebook-capi.service';
 jest.mock('@sentry/node', () => ({
   captureException: jest.fn(),
 }));
+interface CapiUserData {
+  em?: string[];
+  ph?: string[];
+}
+
+interface CapiCustomData {
+  value?: number;
+}
+
+interface CapiEvent {
+  user_data?: CapiUserData;
+  custom_data?: CapiCustomData;
+}
+
+interface CapiRequestBody {
+  data: CapiEvent[];
+}
 
 describe('FacebookCAPIService', () => {
   let service: FacebookCAPIService;
@@ -31,7 +48,9 @@ describe('FacebookCAPIService', () => {
       currency: 'BRL',
     });
 
-    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    const body = JSON.parse(
+      ((fetchMock.mock.calls[0] as unknown[])[1] as RequestInit).body as string,
+    ) as CapiRequestBody;
     expect(body.data[0].user_data.em[0]).toMatch(/^[a-f0-9]{64}$/);
     expect(body.data[0].user_data.ph[0]).toMatch(/^[a-f0-9]{64}$/);
     // sha256 lowercase-trimmed test@example.com
@@ -50,7 +69,9 @@ describe('FacebookCAPIService', () => {
       amount: 12345,
       currency: 'BRL',
     });
-    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    const body = JSON.parse(
+      ((fetchMock.mock.calls[0] as unknown[])[1] as RequestInit).body as string,
+    ) as CapiRequestBody;
     expect(body.data[0].custom_data.value).toBe(123.45);
   });
 
@@ -101,6 +122,8 @@ describe('FacebookCAPIService', () => {
       amount: 100,
       currency: 'BRL',
     });
-    expect(fetchMock.mock.calls[0][0]).toBe('https://graph.facebook.com/v18.0/my-pixel/events');
+    expect((fetchMock.mock.calls[0] as unknown[])[0]).toBe(
+      'https://graph.facebook.com/v18.0/my-pixel/events',
+    );
   });
 });

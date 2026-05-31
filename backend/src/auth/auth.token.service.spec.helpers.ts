@@ -4,10 +4,14 @@
  */
 import type { Agent } from '@prisma/client';
 
+export interface RefreshTokenCreateArgs {
+  data: { agentId: string; token: string; expiresAt: Date };
+}
+
 export interface PrismaMock {
   agent: { findUnique: jest.Mock };
   refreshToken: {
-    create: jest.Mock;
+    create: jest.Mock<Promise<unknown>, [args: RefreshTokenCreateArgs]>;
     findUnique: jest.Mock;
     update: jest.Mock;
     updateMany: jest.Mock;
@@ -25,7 +29,7 @@ export function buildPrismaMock(): PrismaMock {
   const mock: PrismaMock = {
     agent: { findUnique: jest.fn() },
     refreshToken: {
-      create: jest.fn(),
+      create: jest.fn<Promise<unknown>, [args: RefreshTokenCreateArgs]>(),
       findUnique: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),

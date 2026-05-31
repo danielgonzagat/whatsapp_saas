@@ -24,6 +24,12 @@ import { LacunasController } from './lacunas.controller';
 const fsAppendFileSync = fs.appendFileSync as jest.Mock;
 const fsExistsSync = fs.existsSync as jest.Mock;
 const fsMkdirSync = fs.mkdirSync as jest.Mock;
+interface LacunaEntry {
+  suggestedAt: string;
+  workspaceId: string;
+  intent: string;
+  userMessage: string;
+}
 
 describe('LacunasController', () => {
   let controller: LacunasController;
@@ -36,9 +42,12 @@ describe('LacunasController', () => {
 
     controller = new LacunasController();
 
-    const loggerInstance = (StructuredLogger.from as jest.Mock).mock.results[0].value;
-    loggerLog = loggerInstance.log as jest.Mock;
-    loggerWarn = loggerInstance.warn as jest.Mock;
+    const loggerInstance = (StructuredLogger.from as jest.Mock).mock.results[0].value as {
+      log: jest.Mock;
+      warn: jest.Mock;
+    };
+    loggerLog = loggerInstance.log;
+    loggerWarn = loggerInstance.warn;
   });
 
   const req = {
@@ -51,11 +60,11 @@ describe('LacunasController', () => {
     it('records a lacuna suggestion with intent and userMessage (happy path)', async () => {
       const body = { intent: 'missing-feature', userMessage: 'Need a dark mode toggle' };
 
-      const result = await controller.suggest(body, req);
+      const result = controller.suggest(body, req);
 
       expect(fsAppendFileSync).toHaveBeenCalledTimes(1);
-      const [, content] = fsAppendFileSync.mock.calls[0];
-      const parsed = JSON.parse(content);
+      const [, content] = fsAppendFileSync.mock.calls[0] as [string, string];
+      const parsed = JSON.parse(content) as LacunaEntry;
       expect(parsed.workspaceId).toBe('ws-1');
       expect(parsed.intent).toBe('missing-feature');
       expect(parsed.userMessage).toBe('Need a dark mode toggle');
@@ -70,10 +79,10 @@ describe('LacunasController', () => {
     it('defaults intent to "unspecified" when not provided in body (alternate route)', async () => {
       const body = { userMessage: 'Something is broken' };
 
-      await controller.suggest(body, req);
+      controller.suggest(body, req);
 
-      const [, content] = fsAppendFileSync.mock.calls[0];
-      const parsed = JSON.parse(content);
+      const [, content] = fsAppendFileSync.mock.calls[0] as [string, string];
+      const parsed = JSON.parse(content) as LacunaEntry;
       expect(parsed.intent).toBe('unspecified');
       expect(parsed.userMessage).toBe('Something is broken');
     });
@@ -82,10 +91,10 @@ describe('LacunasController', () => {
       const longMessage = 'x'.repeat(1000);
       const body = { intent: 'bug', userMessage: longMessage };
 
-      await controller.suggest(body, req);
+      controller.suggest(body, req);
 
-      const [, content] = fsAppendFileSync.mock.calls[0];
-      const parsed = JSON.parse(content);
+      const [, content] = fsAppendFileSync.mock.calls[0] as [string, string];
+      const parsed = JSON.parse(content) as LacunaEntry;
       expect(parsed.userMessage).toHaveLength(500);
     });
 
@@ -93,7 +102,7 @@ describe('LacunasController', () => {
       fsExistsSync.mockReturnValue(false);
       const body = { intent: 'feature-request' };
 
-      await controller.suggest(body, req);
+      controller.suggest(body, req);
 
       expect(fsMkdirSync).toHaveBeenCalledWith(expect.stringContaining('artifacts'), {
         recursive: true,
@@ -109,10 +118,10 @@ describe('LacunasController', () => {
       } as never;
       const body = { intent: 'admin-report' };
 
-      await controller.suggest(body, adminReq);
+      controller.suggest(body, adminReq);
 
-      const [, content] = fsAppendFileSync.mock.calls[0];
-      const parsed = JSON.parse(content);
+      const [, content] = fsAppendFileSync.mock.calls[0] as [string, string];
+      const parsed = JSON.parse(content) as LacunaEntry;
       expect(parsed.workspaceId).toBe('ws-admin');
     });
 
@@ -123,10 +132,10 @@ describe('LacunasController', () => {
       } as never;
       const body = { intent: 'fallback-test' };
 
-      await controller.suggest(body, userReq);
+      controller.suggest(body, userReq);
 
-      const [, content] = fsAppendFileSync.mock.calls[0];
-      const parsed = JSON.parse(content);
+      const [, content] = fsAppendFileSync.mock.calls[0] as [string, string];
+      const parsed = JSON.parse(content) as LacunaEntry;
       expect(parsed.workspaceId).toBe('ws-user-only');
     });
 
@@ -134,10 +143,10 @@ describe('LacunasController', () => {
       const anonReq = { headers: {} } as never;
       const body = { intent: 'anon-report' };
 
-      await controller.suggest(body, anonReq);
+      controller.suggest(body, anonReq);
 
-      const [, content] = fsAppendFileSync.mock.calls[0];
-      const parsed = JSON.parse(content);
+      const [, content] = fsAppendFileSync.mock.calls[0] as [string, string];
+      const parsed = JSON.parse(content) as LacunaEntry;
       expect(parsed.workspaceId).toBe('unknown');
     });
 
@@ -148,7 +157,7 @@ describe('LacunasController', () => {
       });
       const body = { intent: 'error-test', userMessage: 'Should handle gracefully' };
 
-      const result = await controller.suggest(body, req);
+      const result = controller.suggest(body, req);
 
       expect(loggerWarn).toHaveBeenCalledWith(
         `Failed to persist lacuna suggestion: ${fsError.message}`,

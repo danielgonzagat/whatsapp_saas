@@ -10,6 +10,19 @@ export interface FlowMessageSenderDeps {
   sleep: (ms: number) => Promise<void>;
 }
 
+/**
+ * @canonical Worker-side send lifecycle — provider resolution
+ *   (ProviderRegistry.getProviderForUser), rate limiting (RateLimiter),
+ *   watchdog/circuit-breaker health, 3x exponential-backoff retry, DB
+ *   persistence (contact/conversation/message), and realtime pub/sub on the
+ *   `ws:inbox` transport channel. This is the single authoritative worker-side
+ *   send. See docs/architecture/SEND_MESSAGE_CANONICAL.md #9 / Step 10.
+ *
+ *   NOT the same capability as `handleSendMessage` (send-message-handler.ts):
+ *   that is the BullMQ job-processor entry point with a different contract
+ *   (Job payload, WhatsAppEngine, plan-limit gate, BullMQ-managed retry,
+ *   template/media support). They are intentionally distinct — do not merge.
+ */
 export async function sendMessage(
   deps: FlowMessageSenderDeps,
   user: string,

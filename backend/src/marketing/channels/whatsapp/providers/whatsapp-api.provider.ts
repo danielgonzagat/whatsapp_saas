@@ -1,0 +1,456 @@
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { MetaWhatsAppService } from '../../../../meta/meta-whatsapp.service';
+import { PrismaService } from '../../../../prisma/prisma.service';
+import { extractWhatsAppChatDigits as normalizePhoneFromChatId } from '../whatsapp-normalization.util';
+import {
+  buildEnvBackedSessionOverview,
+  buildRuntimeConfigDiagnostics,
+  buildSessionConfigDiagnosticsPayload,
+  clampChatMessagePagination,
+  deriveQrCodeMessage,
+  deriveSessionStateFromDetails,
+  mapContactRowToWahaContact,
+  mapConversationRowToWahaChat,
+  mapMessageRowToWahaMessage,
+} from './whatsapp-api.provider.helpers';
+import type {
+  QrCodeResponse,
+  SessionStatus,
+  WahaLidMapping,
+  WahaRuntimeConfigDiagnostics,
+  WahaSessionConfigDiagnostics,
+  WahaSessionOverview,
+} from './whatsapp-api.provider.types';
+
+export type {
+  QrCodeResponse,
+  SessionStatus,
+  WahaChatMessage,
+  WahaChatSummary,
+  WahaLidMapping,
+  WahaRuntimeConfigDiagnostics,
+  WahaSessionConfigDiagnostics,
+  WahaSessionOverview,
+} from './whatsapp-api.provider.types';
+
+/** Whats app api provider. */
+@Injectable()
+export class WhatsAppApiProvider {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+    private readonly metaWhatsApp: MetaWhatsAppService,
+  ) {}
+
+  /** Get resolved session id. */
+  getResolvedSessionId(workspaceId: string): string {
+    return String(workspaceId || '').trim();
+  }
+
+  /** Get runtime config diagnostics. */
+  getRuntimeConfigDiagnostics(): WahaRuntimeConfigDiagnostics {
+    return buildRuntimeConfigDiagnostics();
+  }
+
+  /** Ping. */
+  async ping(): Promise<boolean> {
+    const workspace = await this.prisma.workspace.findFirst({
+      where: {
+        providerSettings: {
+          path: ['whatsappProvider'],
+          equals: 'meta-cloud',
+        },
+      },
+      select: { id: true },
+    });
+
+    const workspaceId = workspace?.id || 'default';
+    const status = await this.metaWhatsApp.getPhoneNumberDetails(workspaceId);
+    return status.connected || Boolean(status.phoneNumberId);
+  }
+
+  /** Start session. */
+  async startSession(workspaceId: string): Promise<{
+    success: boolean;
+    qrCode?: string;
+    message?: string;
+    authUrl?: string;
+  }> {
+    const status = await this.metaWhatsApp.getPhoneNumberDetails(workspaceId);
+
+    if (status.connected) {
+      return {
+        success: true,
+        message: 'already_connected',
+      };
+    }
+
+    return {
+      success: true,
+      message: status.degradedReason || 'meta_connection_required',
+      authUrl: status.authUrl,
+    };
+  }
+
+  /** Restart session. */
+  async restartSession(workspaceId: string): Promise<{
+    success: boolean;
+    message?: string;
+    qrCode?: string;
+    authUrl?: string;
+  }> {
+    return this.startSession(workspaceId);
+  }
+
+  /** Get session status. */
+  async getSessionStatus(workspaceId: string): Promise<SessionStatus> {
+    const details = await this.metaWhatsApp.getPhoneNumberDetails(workspaceId);
+    return {
+      success: true,
+      state: deriveSessionStateFromDetails(details),
+      message: details.degradedReason || details.status,
+      phoneNumber: details.phoneNumber || null,
+      pushName: details.pushName || null,
+      selfIds: details.selfIds || [],
+    };
+  }
+
+  /** Get qr code. */
+  async getQrCode(workspaceId: string): Promise<QrCodeResponse> {
+    const details = await this.metaWhatsApp.getPhoneNumberDetails(workspaceId);
+    return {
+      success: true,
+      message: deriveQrCodeMessage(details),
+    };
+  }
+
+  /** Terminate session. */
+  terminateSession(workspaceId: string): Promise<{ success: boolean; message?: string }> {
+    return Promise.resolve({
+      success: true,
+      message: `Meta channel session for ${workspaceId} remains managed via Meta auth`,
+    });
+  }
+
+  /** Logout session. */
+  logoutSession(workspaceId: string): Promise<{ success: boolean; message?: string }> {
+    return Promise.resolve({
+      success: true,
+      message: `Meta channel session for ${workspaceId} remains managed via Meta auth`,
+    });
+  }
+
+  // messageLimit: enforced via PlanLimitsService.trackMessageSend
+  async sendMessage(
+    workspaceId: string,
+    to: string,
+    message: string,
+    options?: { quotedMessageId?: string },
+  ) {
+    const result = await this.metaWhatsApp.sendTextMessage(workspaceId, to, message, options);
+
+    if (!result.success) {
+      throw new Error(result.error || 'meta_send_failed');
+    }
+
+    return {
+      success: true,
+      message: {
+        id: result.messageId,
+      },
+    };
+  }
+
+  // messageLimit: enforced via PlanLimitsService.trackMessageSend
+  async sendMediaFromUrl(
+    workspaceId: string,
+    to: string,
+    mediaUrl: string,
+    caption?: string,
+    mediaType: 'image' | 'video' | 'audio' | 'document' = 'image',
+    options?: { quotedMessageId?: string },
+  ) {
+    const result = await this.metaWhatsApp.sendMediaMessage(
+      workspaceId,
+      to,
+      mediaType,
+      mediaUrl,
+      caption,
+      options,
+    );
+
+    if (!result.success) {
+      throw new Error(result.error || 'meta_send_media_failed');
+    }
+
+    return {
+      success: true,
+      message: {
+        id: result.messageId,
+      },
+    };
+  }
+
+  /** Is registered user. */
+  isRegisteredUser(_workspaceId: string, phone: string): Promise<boolean> {
+    return Promise.resolve(normalizePhoneFromChatId(phone).length >= 10);
+  }
+
+  /** Get client info. */
+  async getClientInfo(workspaceId: string): Promise<unknown> {
+    const details = await this.metaWhatsApp.getPhoneNumberDetails(workspaceId);
+    return {
+      provider: 'meta-cloud',
+      connected: details.connected,
+      phoneNumber: details.phoneNumber || null,
+      pushName: details.pushName || null,
+      phoneNumberId: details.phoneNumberId || null,
+      whatsappBusinessId: details.whatsappBusinessId || null,
+      instagramAccountId: details.instagramAccountId || null,
+      instagramUsername: details.instagramUsername || null,
+    };
+  }
+
+  /** Get contacts. */
+  async getContacts(workspaceId: string): Promise<unknown[]> {
+    const contacts = await this.prisma.contact.findMany({
+      take: 500,
+      where: { workspaceId },
+      orderBy: { updatedAt: 'desc' },
+      select: {
+        id: true,
+        phone: true,
+        name: true,
+        email: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return contacts.map(mapContactRowToWahaContact);
+  }
+
+  /** Upsert contact profile. */
+  async upsertContactProfile(
+    workspaceId: string,
+    contact: { phone: string; name?: string | null },
+  ) {
+    const normalizedPhone = normalizePhoneFromChatId(contact.phone);
+    if (!normalizedPhone) {
+      return false;
+    }
+
+    await this.prisma.contact.upsert({
+      where: {
+        workspaceId_phone: {
+          workspaceId,
+          phone: normalizedPhone,
+        },
+      },
+      update: {
+        ...(contact.name ? { name: contact.name } : {}),
+      },
+      create: {
+        workspaceId,
+        phone: normalizedPhone,
+        name: contact.name || null,
+      },
+    });
+
+    return true;
+  }
+
+  /** Get chats. */
+  async getChats(workspaceId: string): Promise<unknown[]> {
+    const conversations = await this.prisma.conversation.findMany({
+      take: 500,
+      where: { workspaceId, channel: 'WHATSAPP' },
+      orderBy: { lastMessageAt: 'desc' },
+      select: {
+        id: true,
+        unreadCount: true,
+        lastMessageAt: true,
+        contact: {
+          select: {
+            phone: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return conversations.map(mapConversationRowToWahaChat);
+  }
+
+  /** Get chat messages. */
+  async getChatMessages(
+    workspaceId: string,
+    chatId: string,
+    options?: { limit?: number; offset?: number; downloadMedia?: boolean },
+  ): Promise<unknown[]> {
+    const phone = normalizePhoneFromChatId(chatId);
+
+    if (!phone) {
+      return [];
+    }
+
+    const contact = await this.prisma.contact.findUnique({
+      where: {
+        workspaceId_phone: {
+          workspaceId,
+          phone,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!contact) {
+      return [];
+    }
+
+    const { take, skip } = clampChatMessagePagination(options);
+    const messages = await this.prisma.message.findMany({
+      take,
+      skip,
+      where: {
+        workspaceId,
+        contactId: contact.id,
+      },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        content: true,
+        direction: true,
+        status: true,
+        createdAt: true,
+        mediaUrl: true,
+        externalId: true,
+        type: true,
+      },
+    });
+
+    return messages.map((message) => mapMessageRowToWahaMessage(message, phone));
+  }
+
+  /** Read chat messages. */
+  async readChatMessages(workspaceId: string, chatId: string): Promise<void> {
+    const phone = normalizePhoneFromChatId(chatId);
+
+    if (!phone) {
+      return;
+    }
+
+    const conversation = await this.prisma.conversation.findFirst({
+      where: {
+        workspaceId,
+        channel: 'WHATSAPP',
+        contact: { phone },
+      },
+      select: { id: true },
+    });
+
+    if (!conversation) {
+      return;
+    }
+
+    await this.prisma.conversation.updateMany({
+      where: { id: conversation.id, workspaceId },
+      data: { unreadCount: 0 },
+    });
+  }
+
+  /** Set presence. */
+  setPresence(
+    _workspaceId: string,
+    _presence: 'available' | 'offline',
+    _chatId?: string,
+  ): Promise<void> {
+    return Promise.resolve();
+  }
+
+  /** Send typing. */
+  sendTyping(_workspaceId: string, _chatId: string): Promise<void> {
+    return Promise.resolve();
+  }
+
+  /** Stop typing. */
+  stopTyping(_workspaceId: string, _chatId: string): Promise<void> {
+    return Promise.resolve();
+  }
+
+  /** Send seen. */
+  async sendSeen(workspaceId: string, chatId: string): Promise<void> {
+    const phone = normalizePhoneFromChatId(chatId);
+
+    if (!phone) {
+      return;
+    }
+
+    const contact = await this.prisma.contact.findUnique({
+      where: {
+        workspaceId_phone: {
+          workspaceId,
+          phone,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!contact) {
+      return;
+    }
+
+    const lastInbound = await this.prisma.message.findFirst({
+      where: {
+        workspaceId,
+        contactId: contact.id,
+        direction: 'INBOUND',
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { externalId: true, conversationId: true },
+    });
+
+    if (lastInbound?.conversationId) {
+      await this.prisma.conversation.updateMany({
+        where: { id: lastInbound.conversationId, workspaceId },
+        data: { unreadCount: 0 },
+      });
+    }
+
+    if (lastInbound?.externalId) {
+      await this.metaWhatsApp.markMessageAsRead(workspaceId, lastInbound.externalId);
+    }
+  }
+
+  /** Get session config diagnostics. */
+  async getSessionConfigDiagnostics(workspaceId: string): Promise<WahaSessionConfigDiagnostics> {
+    const details = await this.metaWhatsApp.getPhoneNumberDetails(workspaceId);
+    return buildSessionConfigDiagnosticsPayload({
+      sessionName: this.getResolvedSessionId(workspaceId),
+      details,
+      runtimeConfig: this.getRuntimeConfigDiagnostics(),
+    });
+  }
+
+  /** Sync session config. */
+  syncSessionConfig(_workspaceId: string): Promise<void> {
+    return Promise.resolve();
+  }
+
+  /** Delete session. */
+  deleteSession(_workspaceId: string): Promise<boolean> {
+    return Promise.resolve(true);
+  }
+
+  /** List lid mappings. */
+  listLidMappings(_workspaceId: string): Promise<WahaLidMapping[]> {
+    return Promise.resolve([]);
+  }
+
+  /** List sessions. */
+  listSessions(): Promise<WahaSessionOverview[]> {
+    const envPhoneNumberId = this.configService.get<string>('META_PHONE_NUMBER_ID') || '';
+    return Promise.resolve(buildEnvBackedSessionOverview(envPhoneNumberId));
+  }
+}

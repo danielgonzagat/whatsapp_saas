@@ -7,7 +7,7 @@ import { ConnectService } from '../connect/connect.service';
 import { LedgerService } from '../ledger/ledger.service';
 import type { SplitRole } from '../split/split.types';
 
-import { StripeWebhookProcessor } from './stripe-webhook.processor';
+import { SplitLinesLimitError, StripeWebhookProcessor } from './stripe-webhook.processor';
 
 type StripeStub = {
   stripe: { transfers: { create: jest.Mock } };
@@ -365,5 +365,61 @@ describe('StripeWebhookProcessor.processSaleSucceeded — short-circuits', () =>
     expect(result.skippedReason).toBe('no_metadata');
     expect(stripe.stripe.transfers.create).not.toHaveBeenCalled();
     expect(ledger.creditPending).not.toHaveBeenCalled();
+  });
+
+  it('refuses an oversized split_lines payload with a clear domain error and dispatches nothing', async () => {
+    const stripe = makeStripeStub();
+    const connect = makeConnectStub({});
+    const ledger = makeLedgerStub();
+    const processor = await buildProcessor(stripe, connect, ledger);
+
+    // 65 entries — one past the bounded-input cap of 64. A legitimate split
+    // never exceeds five roles; this models a corrupted/adversarial payload.
+    const oversized = Array.from({ length: 65 }, (_unused, index) => ({
+      role: 'seller',
+      accountId: `acct_${index}`,
+      amountCents: '100',
+    }));
+
+    await expect(
+      processor.processSaleSucceeded(
+        buildPaymentIntent({
+          metadata: { type: 'sale', split_lines: JSON.stringify(oversized) },
+        }),
+        matureAt,
+      ),
+    ).rejects.toBeInstanceOf(SplitLinesLimitError);
+
+    expect(stripe.stripe.transfers.create).not.toHaveBeenCalled();
+    expect(ledger.creditPending).not.toHaveBeenCalled();
+  });
+
+  it('still processes a payload at the bounded-input cap without throwing', async () => {
+    const stripe = makeStripeStub();
+    const connect = makeConnectStub({ acct_seller: 'cab_seller' });
+    const ledger = makeLedgerStub();
+    const processor = await buildProcessor(stripe, connect, ledger);
+
+    // Exactly 64 entries: only the single non-zero seller line dispatches, all
+    // others are zero-amount and skipped — proving the cap is inclusive and the
+    // guard does not reject valid-shaped, in-bounds payloads.
+    const atCap = [
+      { role: 'seller' as SplitRole, accountId: 'acct_seller', amountCents: '500' },
+      ...Array.from({ length: 63 }, (_unused, index) => ({
+        role: 'manager',
+        accountId: `acct_zero_${index}`,
+        amountCents: '0',
+      })),
+    ];
+
+    const result = await processor.processSaleSucceeded(
+      buildPaymentIntent({
+        metadata: { type: 'sale', split_lines: JSON.stringify(atCap) },
+      }),
+      matureAt,
+    );
+
+    expect(result.transfersDispatched).toBe(1);
+    expect(result.ledgerEntriesCreated).toBe(1);
   });
 });

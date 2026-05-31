@@ -96,9 +96,10 @@ export class NotificationsService {
       .delete({
         where: { token },
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         void this.opsAlert?.alertOnCriticalError(err, 'NotificationsService.unregisterDevice');
-        this.logger.warn(`Failed to unregister device token: ${err?.message}`);
+        const message = err instanceof Error ? err.message : String(err);
+        this.logger.warn(`Failed to unregister device token: ${message}`);
         return null;
       });
   }

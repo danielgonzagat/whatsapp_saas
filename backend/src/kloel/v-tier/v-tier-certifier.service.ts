@@ -63,21 +63,21 @@ export class VtierCertifierService {
   ): Promise<VtierCertificationResult> {
     this.cycleCount += 1;
     const verdicts: VerificationVerdict[] = [];
-    verdicts.push(await this.v1NoBehavioralInstruction(opts));
+    verdicts.push(this.v1NoBehavioralInstruction(opts));
     verdicts.push(await this.v2AbiStructuralOnly());
-    verdicts.push(await this.v3SpineEventRatio());
-    verdicts.push(await this.v4BgActivityContinuous());
-    verdicts.push(await this.v5ValenceCoverage());
-    verdicts.push(await this.v6HebbianNonUniform());
+    verdicts.push(this.v3SpineEventRatio());
+    verdicts.push(this.v4BgActivityContinuous());
+    verdicts.push(this.v5ValenceCoverage());
+    verdicts.push(this.v6HebbianNonUniform());
     verdicts.push(await this.v7PulseCertifies());
     verdicts.push(this.v8ComponentAuditable());
-    verdicts.push(await this.v9GenesisVerifiable());
+    verdicts.push(this.v9GenesisVerifiable());
     verdicts.push(await this.v10IdentityProjectorAudience());
     verdicts.push(this.v11GoalFieldOperational());
     verdicts.push(this.v12MachineHumanAuditable());
     verdicts.push(this.v13WorkspaceLocalIdentity(opts));
     verdicts.push(this.v14GoalFieldCommercialDominance());
-    verdicts.push(await this.v15DissolucaoVerificavel());
+    verdicts.push(this.v15DissolucaoVerificavel());
     verdicts.push(this.v16RemocaoDegradaCognicao());
     const passCount = verdicts.filter((v) => v.status === 'PASS').length;
     const failCount = verdicts.filter((v) => v.status === 'FAIL').length;
@@ -102,10 +102,10 @@ export class VtierCertifierService {
       certifiedAt: new Date().toISOString(),
     };
   }
-  private async v1NoBehavioralInstruction(opts: {
+  private v1NoBehavioralInstruction(opts: {
     readonly kloelPromptsPath?: string;
     readonly kloelPromptsHelpersPath?: string;
-  }): Promise<VerificationVerdict> {
+  }): VerificationVerdict {
     const now = new Date().toISOString();
     const paths: string[] = [];
     const searchPaths = [
@@ -200,7 +200,7 @@ export class VtierCertifierService {
       };
     }
   }
-  private async v3SpineEventRatio(): Promise<VerificationVerdict> {
+  private v3SpineEventRatio(): VerificationVerdict {
     const now = new Date().toISOString();
     const events = this.spine.recentEvents();
     const bufferSize = this.spine.ringSize();
@@ -229,7 +229,7 @@ export class VtierCertifierService {
       measuredAt: now,
     };
   }
-  private async v4BgActivityContinuous(): Promise<VerificationVerdict> {
+  private v4BgActivityContinuous(): VerificationVerdict {
     const now = new Date().toISOString();
     if (this.mindBg !== undefined && this.mindBg !== null) {
       return {
@@ -246,7 +246,7 @@ export class VtierCertifierService {
       measuredAt: now,
     };
   }
-  private async v5ValenceCoverage(): Promise<VerificationVerdict> {
+  private v5ValenceCoverage(): VerificationVerdict {
     const now = new Date().toISOString();
     const events = this.spine.recentEventsAsRef();
     const cov = this.valenceTagger.coverage(events);
@@ -273,7 +273,7 @@ export class VtierCertifierService {
       measuredAt: now,
     };
   }
-  private async v6HebbianNonUniform(): Promise<VerificationVerdict> {
+  private v6HebbianNonUniform(): VerificationVerdict {
     const now = new Date().toISOString();
     const topAssoc = this.hebbian.top(1);
     const first = topAssoc[0];
@@ -343,7 +343,7 @@ export class VtierCertifierService {
       measuredAt: new Date().toISOString(),
     };
   }
-  private async v9GenesisVerifiable(): Promise<VerificationVerdict> {
+  private v9GenesisVerifiable(): VerificationVerdict {
     const now = new Date().toISOString();
     if (verifyGenesisEvent(GENESIS_EVENT)) {
       return {
@@ -381,7 +381,7 @@ export class VtierCertifierService {
       spine: this.spine,
     });
   }
-  private async v15DissolucaoVerificavel(): Promise<VerificationVerdict> {
+  private v15DissolucaoVerificavel(): VerificationVerdict {
     return certifyDissolucaoVerificavel(this.spine);
   }
   private v16RemocaoDegradaCognicao(): VerificationVerdict {

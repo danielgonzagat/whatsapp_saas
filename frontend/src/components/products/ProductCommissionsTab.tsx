@@ -1,56 +1,25 @@
 'use client';
-import { kloelFormatNumber, kloelT } from '@/lib/i18n/t';
+import { kloelT } from '@/lib/i18n/t';
 import { DataTable } from '@/components/kloel/FormExtras';
 import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
 import { Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { mutate } from 'swr';
-
-interface Commission {
-  id: string;
-  role: string;
-  percentage: number;
-  agentName: string | null;
-  agentEmail: string | null;
-}
-
-const ROLES = [
-  { value: 'COPRODUCER', label: 'Coprodutor' },
-  { value: 'MANAGER', label: 'Gerente' },
-  { value: 'AFFILIATE', label: 'Afiliado' },
-];
-
-const PRODUCT_COMMISSIONS_COPY = {
-  loadError: kloelT(`Falha ao carregar comissoes`),
-  saveError: kloelT(`Falha ao salvar comissao`),
-  deleteError: kloelT(`Falha ao excluir comissao`),
-  deleteTitle: kloelT(`Excluir comissao`),
-  deleteDescription: kloelT(`Tem certeza que deseja excluir esta comissao?`),
-  cancel: kloelT(`Cancelar`),
-  confirmDelete: kloelT(`Excluir`),
-  deleting: kloelT(`Excluindo...`),
-  editingTitle: kloelT(`Editar comissao`),
-  newTitle: kloelT(`Nova comissao`),
-  closeModalAria: kloelT(`Fechar modal`),
-  closeErrorAria: kloelT(`Fechar erro`),
-  saving: kloelT(`Salvando...`),
-  save: kloelT(`Salvar`),
-  add: kloelT(`Adicionar`),
-} as const;
-
-function toCommissionErrorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error && error.message ? error.message : fallback;
-}
-
-function buildCommissionPayload(form: {
-  role: string;
-  percentage: string;
-  agentName: string;
-  agentEmail: string;
-}) {
-  return { ...form, percentage: Number.parseFloat(form.percentage) || 0 };
-}
+import {
+  buildCommissionFormFromCommission,
+  buildCommissionPayload,
+  type Commission,
+  describeCommissionForDeletion,
+  EMPTY_COMMISSION_FORM,
+  formatCommissionPercentage,
+  isProductsSwrKey,
+  normalizeCommissionList,
+  PRODUCT_COMMISSIONS_COPY,
+  resolveCommissionRoleLabel,
+  ROLES,
+  toCommissionErrorMessage,
+} from './ProductCommissionsTab.helpers';
 
 /** Product commissions tab. */
 export function ProductCommissionsTab({ productId }: { productId: string }) {
@@ -60,12 +29,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState({
-    role: 'AFFILIATE',
-    percentage: '',
-    agentName: '',
-    agentEmail: '',
-  });
+  const [form, setForm] = useState({ ...EMPTY_COMMISSION_FORM });
   const [creating, setCreating] = useState(false);
   const [commissionPendingDelete, setCommissionPendingDelete] = useState<Commission | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -76,7 +40,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
       const response = await apiFetch<Commission[] | { data?: Commission[] }>(
         `/products/${productId}/commissions`,
       );
-      setItems(Array.isArray(response) ? response : []);
+      setItems(normalizeCommissionList(response));
       setError(null);
     } catch (caughtError: unknown) {
       setItems([]);
@@ -86,7 +50,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
     }
   }, [productId]);
   useEffect(() => {
-    fetch_();
+    queueMicrotask(fetch_);
   }, [fetch_]);
   const closeModal = () => {
     setShowModal(false);
@@ -94,17 +58,12 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
   };
   const openEditModal = (commission: Commission) => {
     setEditingId(commission.id);
-    setForm({
-      role: commission.role,
-      percentage: String(commission.percentage),
-      agentName: commission.agentName || '',
-      agentEmail: commission.agentEmail || '',
-    });
+    setForm(buildCommissionFormFromCommission(commission));
     setShowModal(true);
   };
   const openCreateModal = () => {
     setEditingId(null);
-    setForm({ role: 'AFFILIATE', percentage: '', agentName: '', agentEmail: '' });
+    setForm({ ...EMPTY_COMMISSION_FORM });
     setShowModal(true);
   };
   const handleSave = async () => {
@@ -121,7 +80,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
         await apiFetch(`/products/${productId}/commissions`, { method: 'POST', body: payload });
       }
       closeModal();
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
+      mutate(isProductsSwrKey);
       await fetch_();
     } catch (caughtError: unknown) {
       setError(toCommissionErrorMessage(caughtError, PRODUCT_COMMISSIONS_COPY.saveError));
@@ -219,7 +178,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
                 className="rounded-full px-2 py-0.5 text-xs font-medium"
                 style={{ backgroundColor: 'rgba(232,93,48,0.12)', color: colors.ember.primary }}
               >
-                {ROLES.find((r) => r.value === v)?.label || String(v ?? '')}
+                {resolveCommissionRoleLabel(v)}
               </span>
             ),
           },
@@ -229,11 +188,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
             width: '15%',
             render: (v) => (
               <span className="text-sm font-bold" style={{ color: colors.text.silver }}>
-                {kloelFormatNumber(Number(v), {
-                  minimumFractionDigits: 1,
-                  maximumFractionDigits: 1,
-                })}
-                %
+                {formatCommissionPercentage(v)}
               </span>
             ),
           },
@@ -419,9 +374,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
                 {PRODUCT_COMMISSIONS_COPY.deleteDescription}
               </p>
               <p className="text-xs font-medium" style={{ color: colors.text.dim }}>
-                {commissionPendingDelete.agentEmail ||
-                  commissionPendingDelete.agentName ||
-                  commissionPendingDelete.role}
+                {describeCommissionForDeletion(commissionPendingDelete)}
               </p>
             </div>
             <div className="mt-6 flex justify-end gap-3">

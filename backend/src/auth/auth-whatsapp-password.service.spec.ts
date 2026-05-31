@@ -4,32 +4,44 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthWhatsappPasswordService } from './auth-whatsapp-password.service';
 import { EmailService } from './email.service';
+import { partialMatch } from '../../test/helpers/match-instance';
+const mockAgentModel = {
+  findFirst: jest.fn(),
+  findUnique: jest.fn(),
+  create: jest.fn(),
+  update: jest.fn(),
+};
+const mockWorkspaceModel = {
+  create: jest.fn(),
+};
+const mockPasswordResetTokenModel = {
+  create: jest.fn(),
+  findUnique: jest.fn(),
+  update: jest.fn(),
+  updateMany: jest.fn(),
+};
+const mockRefreshTokenModel = {
+  updateMany: jest.fn(),
+};
 const mockPrismaService = {
-  agent: {
-    findFirst: jest.fn(),
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-  },
-  workspace: {
-    create: jest.fn(),
-  },
-  passwordResetToken: {
-    create: jest.fn(),
-    findUnique: jest.fn(),
-    update: jest.fn(),
-    updateMany: jest.fn(),
-  },
-  refreshToken: {
-    updateMany: jest.fn(),
-  },
+  agent: mockAgentModel,
+  workspace: mockWorkspaceModel,
+  passwordResetToken: mockPasswordResetTokenModel,
+  refreshToken: mockRefreshTokenModel,
   $transaction: jest.fn((arg: unknown) => {
     if (typeof arg === 'function') {
-      return arg({
-        agent: mockPrismaService.agent,
-        workspace: mockPrismaService.workspace,
-        passwordResetToken: mockPrismaService.passwordResetToken,
-        refreshToken: mockPrismaService.refreshToken,
+      return (
+        arg as (tx: {
+          agent: typeof mockAgentModel;
+          workspace: typeof mockWorkspaceModel;
+          passwordResetToken: typeof mockPasswordResetTokenModel;
+          refreshToken: typeof mockRefreshTokenModel;
+        }) => unknown
+      )({
+        agent: mockAgentModel,
+        workspace: mockWorkspaceModel,
+        passwordResetToken: mockPasswordResetTokenModel,
+        refreshToken: mockRefreshTokenModel,
       });
     }
     return Promise.all(arg as Array<Promise<unknown>>);
@@ -102,7 +114,7 @@ describe('AuthWhatsappPasswordService', () => {
         expect.stringMatching(/^\d{6}$/),
       );
       expect(fetchMock).toHaveBeenCalled();
-      expect(fetchMock.mock.calls[0][0]).toContain('graph.facebook.com');
+      expect((fetchMock.mock.calls[0] as string[])[0]).toContain('graph.facebook.com');
     });
     it('stores OTP in response when NODE_ENV is not production and Meta API fails', async () => {
       const prevEnv = process.env.NODE_ENV;
@@ -130,7 +142,7 @@ describe('AuthWhatsappPasswordService', () => {
     });
     it('logs warning when Redis is not available', async () => {
       const loggerWarnSpy = jest.spyOn(
-        (service as Record<string, unknown>)['logger'] as { warn: jest.Mock },
+        (service as unknown as Record<string, unknown>)['logger'] as { warn: jest.Mock },
         'warn',
       );
       const moduleNoRedis = await Test.createTestingModule({
@@ -174,7 +186,7 @@ describe('AuthWhatsappPasswordService', () => {
     });
     it('does not log the OTP code in debug log', async () => {
       const loggerDebugSpy = jest.spyOn(
-        (service as Record<string, unknown>)['logger'] as { debug: jest.Mock },
+        (service as unknown as Record<string, unknown>)['logger'] as { debug: jest.Mock },
         'debug',
       );
       await service.sendWhatsAppCode('+5511999999999', '1.2.3.4');
@@ -235,7 +247,7 @@ describe('AuthWhatsappPasswordService', () => {
       expect(prisma.workspace.create).toHaveBeenCalled();
       expect(prisma.agent.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: partialMatch({
             phone: normalizedPhone,
             provider: 'whatsapp',
             role: 'ADMIN',
@@ -262,7 +274,7 @@ describe('AuthWhatsappPasswordService', () => {
 
       expect(result.success).toBe(true);
       expect(result.message).toContain('Se o email existir');
-      const resetUrl = emailService.sendPasswordResetEmail.mock.calls[0]?.[1];
+      const resetUrl = (emailService.sendPasswordResetEmail.mock.calls[0] as string[])?.[1];
       expect(resetUrl).toContain('reset-password');
       expect(new URL(resetUrl).searchParams.has('token')).toBe(true);
     });
@@ -326,7 +338,7 @@ describe('AuthWhatsappPasswordService', () => {
       expect(prisma.agent.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'agent-1' },
-          data: expect.objectContaining({
+          data: partialMatch({
             password: expect.stringContaining('$2'),
           }),
         }),

@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
@@ -10,6 +11,8 @@ import {
   expireWaitTimeouts as expireWaitTimeoutsFn,
 } from './flows.wait-for-reply';
 import { NON_DIGIT_RE } from '../common/phone';
+import { Cron, CronExpression } from '@nestjs/schedule';
+
 export type { WaitForReplyNodeData, WaitState, ResumeResult };
 
 /** Flows service. */
@@ -21,6 +24,27 @@ export class FlowsService {
     private prisma: PrismaService,
     private audit: AuditService,
   ) {}
+
+  /**
+   * Canonical-name alias for the Kloel capability resolver
+   * (`FlowService.create`). Accepts the (workspaceId, args) signature
+   * used by `KloelDomainServiceResolver`. Generates a fresh UUID for
+   * the new flow then delegates to {@link save}, which performs the
+   * upsert. Args `name`, `nodes`, `edges` are forwarded; `nodes`/`edges`
+   * default to empty arrays so the resolver can create an empty flow
+   * even if the caller passes nothing.
+   */
+  async create(workspaceId: string, args?: { name?: string; nodes?: unknown; edges?: unknown }) {
+    const flowId = randomUUID();
+    const nodes = Array.isArray(args?.nodes) ? args.nodes : [];
+    const edges = Array.isArray(args?.edges) ? args.edges : [];
+    const name = typeof args?.name === 'string' ? args.name : undefined;
+    return this.save(workspaceId, flowId, {
+      nodes,
+      edges,
+      ...(name !== undefined ? { name } : {}),
+    });
+  }
 
   /** Save. */
   async save(
@@ -321,6 +345,31 @@ export class FlowsService {
       workspaceId,
       batchSize,
     );
+  }
+
+  /**
+   * Scheduled sweep that fires expired "wait for reply" timeouts across every
+   * workspace. Without this, a flow paused at a WaitForReply node whose contact
+   * never replies would stay in `WAITING_INPUT` forever — the "Timeout" edge
+   * would never be taken. Runs every minute (same cadence as FollowUpService),
+   * delegating to {@link expireWaitTimeouts} with no workspace filter so it
+   * spans all tenants. Errors are caught and logged: a cron handler must never
+   * throw, otherwise the scheduler stops invoking it.
+   */
+  @Cron(CronExpression.EVERY_MINUTE)
+  async sweepExpiredWaitTimeouts(): Promise<void> {
+    try {
+      const resumed = await this.expireWaitTimeouts();
+      if (resumed.length > 0) {
+        this.logger.log(
+          `[WaitForReply] Cron sweep resumed ${resumed.length} execution(s) via "Timeout"`,
+        );
+      }
+    } catch (err) {
+      this.logger.error(
+        `[WaitForReply] Cron sweep failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
   }
 
   // ── Flow Variables ──

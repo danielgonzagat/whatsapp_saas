@@ -85,23 +85,30 @@ export class MetaWebhookController {
     @Headers('x-hub-signature-256') signature: string,
     @Req() req: { rawBody?: Buffer },
   ) {
+    // Fail closed: reject when the secret is unset/empty OR the signature is
+    // missing/invalid. Never accept an unsigned webhook. The CI fallback keeps
+    // a deterministic secret for the e2e suite only.
     const appSecret =
       process.env.META_APP_SECRET || (process.env.CI === 'true' ? 'e2e-meta-secret' : '');
 
-    if (appSecret) {
-      if (!signature) {
-        this.logger.warn('Missing Meta Marketing webhook signature — rejecting');
-        throw new ForbiddenException('Missing Meta webhook signature');
-      }
-      const raw = req.rawBody || Buffer.from(JSON.stringify(body || {}));
-      const expected = `sha256=${createHmac('sha256', appSecret)
-        .update(Buffer.isBuffer(raw) ? raw : Buffer.from(String(raw)))
-        .digest('hex')}`;
+    if (!appSecret) {
+      this.logger.warn(
+        'META_APP_SECRET not configured — rejecting Meta Marketing webhook (fail-closed)',
+      );
+      throw new ForbiddenException('Meta webhook secret not configured');
+    }
+    if (!signature) {
+      this.logger.warn('Missing Meta Marketing webhook signature — rejecting');
+      throw new ForbiddenException('Missing Meta webhook signature');
+    }
+    const raw = req.rawBody || Buffer.from(JSON.stringify(body || {}));
+    const expected = `sha256=${createHmac('sha256', appSecret)
+      .update(Buffer.isBuffer(raw) ? raw : Buffer.from(String(raw)))
+      .digest('hex')}`;
 
-      if (!safeCompareStrings(signature, expected)) {
-        this.logger.warn('Invalid Meta Marketing webhook signature — rejecting');
-        throw new ForbiddenException('Invalid Meta webhook signature');
-      }
+    if (!safeCompareStrings(signature, expected)) {
+      this.logger.warn('Invalid Meta Marketing webhook signature — rejecting');
+      throw new ForbiddenException('Invalid Meta webhook signature');
     }
 
     // Redis SET NX per-entry dedup (fast gate before DB round-trip)

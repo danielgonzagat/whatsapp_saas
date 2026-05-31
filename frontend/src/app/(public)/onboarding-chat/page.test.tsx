@@ -88,16 +88,19 @@ describe('ConversationalOnboardingPage', () => {
     vi.restoreAllMocks();
   });
 
-  it('redirects unauthenticated users to login while rendering the chat shell', async () => {
+  it('renders the public hero with a login link for unauthenticated visitors', async () => {
     render(<ConversationalOnboardingPage />);
 
+    // Page no longer auto-redirects; it shows OnboardingChatHero with a deep
+    // link back to /login?callbackUrl=/onboarding-chat so the visitor keeps
+    // landing context after sign-in.
     await waitFor(() => {
-      expect(mockRouterPush).toHaveBeenCalledWith('/login?callbackUrl=%2Fonboarding-chat');
+      expect(screen.getByText('Sua conta Kloel em uma conversa')).toBeInTheDocument();
     });
-
-    expect(screen.getByText('Configuração Inteligente')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Entrar/i })).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Digite sua mensagem...')).toBeInTheDocument();
+    const loginLinks = screen.getAllByRole('link', { name: /Entrar/i });
+    expect(loginLinks.length).toBeGreaterThan(0);
+    expect(loginLinks[0]).toHaveAttribute('href', '/login?callbackUrl=%2Fonboarding-chat');
+    expect(mockRouterPush).not.toHaveBeenCalled();
   });
 
   it('triggers chat start flow when authenticated with workspace', async () => {
@@ -143,7 +146,9 @@ describe('ConversationalOnboardingPage', () => {
     fireEvent.change(input, { target: { value: 'test message' } });
 
     // Mock the fetch to reject for the send call
-    (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('SSE connection failed'));
+    (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error('SSE connection failed'),
+    );
 
     // Find the send button (the one with Send icon)
     const buttons = screen.getAllByRole('button');

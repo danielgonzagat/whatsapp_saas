@@ -3,7 +3,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
-import { type Lead } from '@/lib/api';
+import { type Contact } from '@/lib/api';
 import {
   LEAD_STATUS_LABEL as STATUS_LABEL,
   formatLeadTimeAgo as formatTimeAgo,
@@ -15,8 +15,8 @@ import Link from 'next/link';
 
 interface LeadsListPanelProps {
   loadingLeads: boolean;
-  leads: Lead[];
-  filteredLeads: Lead[];
+  leads: Contact[];
+  filteredLeads: Contact[];
   searchTerm: string;
   onSearchChange: (value: string) => void;
   status: string;

@@ -1,4 +1,8 @@
 /**
+ * @capability EmailConfigResolver
+ * @domain notifications-copilot
+ */
+/**
  * SMTP/email config shape used by worker email transport. Optional credentials
  * (user/pass) mean unauthenticated SMTP is allowed when MAIL_USER/MAIL_PASS
  * are unset.

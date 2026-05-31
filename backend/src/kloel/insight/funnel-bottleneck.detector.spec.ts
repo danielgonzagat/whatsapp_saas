@@ -354,3 +354,4 @@ describe('detectFunnelBottleneck', () => {
     expect(result.eventCount).toBe(178);
     expect(result.bottleneckStep).toBe('commerce.lead.replied');
   });
+});

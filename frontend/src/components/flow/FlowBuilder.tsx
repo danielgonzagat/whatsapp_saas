@@ -12,7 +12,6 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   type ReactFlowInstance,
-  MarkerType,
   Panel,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
@@ -31,7 +30,20 @@ import { WaitForReplyNode } from './nodes/WaitForReplyNode';
 
 import { Maximize, Play, Redo, Save, Trash2, Undo, ZoomIn, ZoomOut } from 'lucide-react';
 import { colors } from '@/lib/design-tokens';
-import { canvasPalette } from '@/lib/canvas-palette-tokens';
+import {
+  FLOW_DEFAULT_EDGE_OPTIONS,
+  FLOW_SNAP_GRID,
+  applyNodeDataUpdate,
+  buildEdgeFromConnection,
+  createNodeAtPosition,
+  ensureSeedNodes,
+  type FlowHistorySnapshot,
+  getHistorySnapshot,
+  pushHistorySnapshot,
+  removeOrphanEdges,
+  removeSelectedNodes,
+  resolveNodeMinimapColor,
+} from './FlowBuilder.helpers';
 
 // Node type registry
 const nodeTypes = {
@@ -44,27 +56,6 @@ const nodeTypes = {
   start: StartNode,
   end: EndNode,
   waitForReply: WaitForReplyNode,
-};
-
-// Default data for each node type
-const getDefaultData = (type: string) => {
-  const defaults: Record<string, Record<string, unknown>> = {
-    start: { label: 'Início', trigger: 'manual' },
-    message: { label: 'Mensagem', message: '' },
-    input: { label: 'Entrada', question: '', variableName: '', inputType: 'text' },
-    condition: { label: 'Condição', condition: '', operator: 'equals', value: '' },
-    delay: { label: 'Delay', delayType: 'seconds', delayValue: 5 },
-    action: { label: 'Ação', actionType: 'tag', config: {} },
-    ai: { label: 'KLOEL IA', aiRole: 'writer', prompt: '', temperature: 0.7, maxTokens: 500 },
-    waitForReply: {
-      label: 'Aguardar Resposta',
-      timeoutValue: 30,
-      timeoutUnit: 'minutes',
-      fallbackMessage: '',
-    },
-    end: { label: 'Fim', endAction: 'complete' },
-  };
-  return defaults[type] || { label: type };
 };
 
 interface FlowBuilderProps {
@@ -94,43 +85,28 @@ export default function FlowBuilder({
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [flowName, setFlowName] = useState('Novo Fluxo');
   const [isSaving, setIsSaving] = useState(false);
-  const [history, setHistory] = useState<{ nodes: Node[]; edges: Edge[] }[]>([]);
+  const [history, setHistory] = useState<FlowHistorySnapshot[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
 
   // Create default start node if no nodes exist
   useEffect(() => {
-    setNodes((currentNodes) =>
-      currentNodes.length === 0
-        ? [
-            {
-              id: 'start-1',
-              type: 'start',
-              position: { x: 250, y: 50 },
-              data: getDefaultData('start'),
-            },
-          ]
-        : currentNodes,
-    );
+    setNodes((currentNodes) => ensureSeedNodes(currentNodes));
   }, [setNodes]);
 
   // Save to history for undo/redo
   const saveToHistory = useCallback(() => {
-    const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push({ nodes: [...nodes], edges: [...edges] });
-    setHistory(newHistory.slice(-50)); // Keep last 50 states
-    setHistoryIndex(newHistory.length - 1);
+    const next = pushHistorySnapshot(history, historyIndex, {
+      nodes: [...nodes],
+      edges: [...edges],
+    });
+    setHistory(next.history);
+    setHistoryIndex(next.historyIndex);
   }, [nodes, edges, history, historyIndex]);
 
   // Handle node connection
   const onConnect = useCallback(
     (connection: Connection) => {
-      const newEdge = {
-        ...connection,
-        type: 'smoothstep',
-        animated: true,
-        markerEnd: { type: MarkerType.ArrowClosed },
-        style: { strokeWidth: 2 },
-      };
+      const newEdge = buildEdgeFromConnection(connection);
       setEdges((eds) => addEdge(newEdge, eds));
       saveToHistory();
     },
@@ -162,12 +138,7 @@ export default function FlowBuilder({
         y: event.clientY,
       });
 
-      const newNode: Node = {
-        id: `${type}-${Date.now()}`,
-        type,
-        position,
-        data: getDefaultData(type),
-      };
+      const newNode = createNodeAtPosition(type, position, Date.now());
 
       setNodes((nds) => [...nds, newNode]);
       saveToHistory();
@@ -183,9 +154,7 @@ export default function FlowBuilder({
   // Handle node update from properties panel
   const handleNodeUpdate = useCallback(
     (nodeId: string, newData: Record<string, unknown>) => {
-      setNodes((nds) =>
-        nds.map((node) => (node.id === nodeId ? { ...node, data: newData } : node)),
-      );
+      setNodes((nds) => applyNodeDataUpdate(nds, nodeId, newData));
       setSelectedNode((prev) => (prev?.id === nodeId ? { ...prev, data: newData } : prev));
     },
     [setNodes],
@@ -193,12 +162,9 @@ export default function FlowBuilder({
 
   // Handle delete selected nodes
   const handleDeleteSelected = useCallback(() => {
-    setNodes((nds) => nds.filter((node) => !node.selected));
-    setEdges((eds) =>
-      eds.filter(
-        (edge) => !nodes.find((n) => n.selected && (n.id === edge.source || n.id === edge.target)),
-      ),
-    );
+    const deletedNodes = nodes.filter((node) => node.selected);
+    setNodes((nds) => removeSelectedNodes(nds));
+    setEdges((eds) => removeOrphanEdges(eds, deletedNodes));
     setSelectedNode(null);
     saveToHistory();
   }, [nodes, setNodes, setEdges, saveToHistory]);
@@ -220,8 +186,8 @@ export default function FlowBuilder({
 
   // Undo
   const handleUndo = useCallback(() => {
-    if (historyIndex > 0) {
-      const prevState = history[historyIndex - 1];
+    const prevState = getHistorySnapshot(history, historyIndex, -1);
+    if (prevState) {
       setNodes(prevState.nodes);
       setEdges(prevState.edges);
       setHistoryIndex(historyIndex - 1);
@@ -230,8 +196,8 @@ export default function FlowBuilder({
 
   // Redo
   const handleRedo = useCallback(() => {
-    if (historyIndex < history.length - 1) {
-      const nextState = history[historyIndex + 1];
+    const nextState = getHistorySnapshot(history, historyIndex, 1);
+    if (nextState) {
       setNodes(nextState.nodes);
       setEdges(nextState.edges);
       setHistoryIndex(historyIndex + 1);
@@ -244,20 +210,7 @@ export default function FlowBuilder({
   }, [reactFlowInstance]);
 
   // Minimap node color
-  const nodeColor = useCallback((node: Node) => {
-    const nodeColors: Record<string, string> = {
-      start: 'var(--app-success)',
-      message: colors.checkout.success,
-      input: colors.semantic.info,
-      condition: colors.semantic.warning,
-      delay: colors.ember.primary,
-      waitForReply: colors.semantic.purple,
-      action: colors.semantic.purpleText,
-      ai: canvasPalette.indigo,
-      end: 'var(--app-error)',
-    };
-    return nodeColors[node.type || 'default'] || colors.text.muted;
-  }, []);
+  const nodeColor = useCallback((node: Node) => resolveNodeMinimapColor(node), []);
 
   return (
     <div className="flex h-full w-full">
@@ -277,13 +230,8 @@ export default function FlowBuilder({
           nodeTypes={nodeTypes}
           fitView
           snapToGrid
-          snapGrid={[15, 15]}
-          defaultEdgeOptions={{
-            type: 'smoothstep',
-            animated: true,
-            markerEnd: { type: MarkerType.ArrowClosed },
-            style: { strokeWidth: 2 },
-          }}
+          snapGrid={FLOW_SNAP_GRID}
+          defaultEdgeOptions={FLOW_DEFAULT_EDGE_OPTIONS}
           proOptions={{ hideAttribution: true }}
         >
           <Background color={colors.text.dim} gap={15} />

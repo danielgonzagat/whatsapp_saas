@@ -113,12 +113,12 @@ describe('API contract schemas — frontend freeze (P1-1)', () => {
       expect(AuthCheckEmailResponseSchema.safeParse({}).success).toBe(false);
     });
 
-    it('AuthRefreshResponseSchema accepts a token-only response', () => {
+    it('AuthRefreshResponseSchema rejects a token-only response (refresh_token required)', () => {
       expect(
         AuthRefreshResponseSchema.safeParse({
           access_token: 'new-token',
         }).success,
-      ).toBe(true);
+      ).toBe(false);
     });
 
     it('AuthRefreshResponseSchema accepts a rotated refresh response', () => {

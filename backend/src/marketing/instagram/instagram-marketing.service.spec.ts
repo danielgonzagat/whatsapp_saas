@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
+import { partialMatch } from '../../../test/helpers/match-instance';
 import { InstagramMarketingService } from './instagram-marketing.service';
-import * as tokenCrypto from '../../meta/meta-token-crypto';
 
 jest.mock('../../meta/meta-token-crypto', () => ({
   decryptMetaToken: jest.fn((token: string | null | undefined) => token || null),
@@ -10,6 +10,8 @@ describe('InstagramMarketingService', () => {
   const metaConnectionFindFirst = jest.fn();
   const publishPhoto = jest.fn();
   const getAccountInsights = jest.fn();
+  const sendMessage = jest.fn();
+  const getConversations = jest.fn();
   const igPostCreate = jest.fn();
   const igPostFindMany = jest.fn();
   const igPostCount = jest.fn();
@@ -33,7 +35,7 @@ describe('InstagramMarketingService', () => {
           upsert: igInsightUpsert,
         },
       } as never,
-      { publishPhoto, getAccountInsights } as never,
+      { publishPhoto, getAccountInsights, sendMessage, getConversations } as never,
     );
   });
 
@@ -115,7 +117,7 @@ describe('InstagramMarketingService', () => {
       );
       expect(igPostCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: partialMatch({
             workspaceId: 'ws-1',
             igAccountId: 'ig-123',
             status: 'published',
@@ -153,7 +155,7 @@ describe('InstagramMarketingService', () => {
 
       expect(igPostCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ status: 'failed' }),
+          data: partialMatch({ status: 'failed' }),
         }),
       );
       expect(result.post.status).toBe('failed');
@@ -192,7 +194,7 @@ describe('InstagramMarketingService', () => {
       );
       expect(igInsightUpsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          create: expect.objectContaining({
+          create: partialMatch({
             impressions: 1500,
             reach: 800,
             followerCount: 55,
@@ -229,7 +231,7 @@ describe('InstagramMarketingService', () => {
 
       expect(igInsightUpsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          create: expect.objectContaining({
+          create: partialMatch({
             impressions: 0,
             reach: 0,
           }),
@@ -273,7 +275,7 @@ describe('InstagramMarketingService', () => {
 
       expect(igInsightFindMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({
+          where: partialMatch({
             workspaceId: 'ws-1',
             igAccountId: 'ig-123',
           }),
@@ -287,7 +289,11 @@ describe('InstagramMarketingService', () => {
 
       await service.listInsights('ws-1', undefined, '2026-01-01', '2026-01-31');
 
-      const findManyArgs = igInsightFindMany.mock.calls[0][0];
+      const findManyArgs = (
+        igInsightFindMany.mock.calls as Array<
+          [{ where: { workspaceId: string; date: { gte: Date; lte: Date } } }]
+        >
+      )[0][0];
       expect(findManyArgs.where.workspaceId).toBe('ws-1');
       expect(findManyArgs.where.date.gte).toBeInstanceOf(Date);
       expect(findManyArgs.where.date.lte).toBeInstanceOf(Date);
@@ -303,6 +309,142 @@ describe('InstagramMarketingService', () => {
           where: { workspaceId: 'ws-1' },
         }),
       );
+    });
+  });
+
+  describe('sendDirectMessage', () => {
+    it('throws when text is empty after trim', async () => {
+      await expect(service.sendDirectMessage('ws-1', 'igsid-1', '   ')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+      expect(metaConnectionFindFirst).not.toHaveBeenCalled();
+    });
+
+    it('throws when recipientId is empty', async () => {
+      await expect(service.sendDirectMessage('ws-1', '', 'hi')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    });
+
+    it('throws when instagram account is not connected', async () => {
+      metaConnectionFindFirst.mockResolvedValue(null);
+
+      await expect(service.sendDirectMessage('ws-1', 'igsid-1', 'hi')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    });
+
+    it('throws when page access token is missing', async () => {
+      metaConnectionFindFirst.mockResolvedValue({
+        instagramAccountId: 'ig-123',
+        accessToken: '',
+        pageAccessToken: '',
+      });
+      const prevEnv = process.env.META_ACCESS_TOKEN;
+      delete process.env.META_ACCESS_TOKEN;
+
+      try {
+        await expect(service.sendDirectMessage('ws-1', 'igsid-1', 'hi')).rejects.toBeInstanceOf(
+          BadRequestException,
+        );
+      } finally {
+        if (prevEnv !== undefined) {
+          process.env.META_ACCESS_TOKEN = prevEnv;
+        }
+      }
+    });
+
+    it('delegates to InstagramService.sendMessage with resolved page token and returns messageId', async () => {
+      metaConnectionFindFirst.mockResolvedValue({
+        instagramAccountId: 'ig-123',
+        accessToken: 'user-token',
+        pageAccessToken: 'page-token',
+      });
+      sendMessage.mockResolvedValue({ message_id: 'mid-9' });
+
+      const result = await service.sendDirectMessage('ws-1', 'igsid-1', '  hello  ');
+
+      expect(sendMessage).toHaveBeenCalledWith('ig-123', 'igsid-1', 'hello', 'page-token');
+      expect(result.messageId).toBe('mid-9');
+    });
+
+    it('falls back to id field when message_id is absent', async () => {
+      metaConnectionFindFirst.mockResolvedValue({
+        instagramAccountId: 'ig-123',
+        accessToken: 'user-token',
+        pageAccessToken: 'page-token',
+      });
+      sendMessage.mockResolvedValue({ id: 'mid-fallback' });
+
+      const result = await service.sendDirectMessage('ws-1', 'igsid-1', 'hi');
+
+      expect(result.messageId).toBe('mid-fallback');
+    });
+  });
+
+  describe('listConversations', () => {
+    it('throws when instagram account is not connected', async () => {
+      metaConnectionFindFirst.mockResolvedValue(null);
+
+      await expect(service.listConversations('ws-1')).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('throws when pageId is missing', async () => {
+      metaConnectionFindFirst.mockResolvedValue({
+        instagramAccountId: 'ig-123',
+        accessToken: 'user-token',
+        pageAccessToken: 'page-token',
+        pageId: null,
+      });
+
+      await expect(service.listConversations('ws-1')).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('delegates to InstagramService.getConversations and returns payload with igAccountId', async () => {
+      metaConnectionFindFirst.mockResolvedValue({
+        instagramAccountId: 'ig-123',
+        accessToken: 'user-token',
+        pageAccessToken: 'page-token',
+        pageId: 'page-77',
+      });
+      getConversations.mockResolvedValue({ data: [{ id: 'thread-1' }] });
+
+      const result = await service.listConversations('ws-1');
+
+      expect(getConversations).toHaveBeenCalledWith('page-77', 'page-token');
+      expect(result).toEqual({
+        conversations: { data: [{ id: 'thread-1' }] },
+        igAccountId: 'ig-123',
+      });
+    });
+  });
+
+  describe('listMessages', () => {
+    it('returns instagram_account_not_connected when no connection row exists', async () => {
+      metaConnectionFindFirst.mockResolvedValue(null);
+
+      const result = await service.listMessages('ws-1');
+
+      expect(result).toEqual({
+        messages: [],
+        total: 0,
+        reason: 'instagram_account_not_connected',
+      });
+    });
+
+    it('returns instagram_messaging_pending when account is connected', async () => {
+      metaConnectionFindFirst.mockResolvedValue({
+        instagramAccountId: 'ig-123',
+        status: 'connected',
+      });
+
+      const result = await service.listMessages('ws-1', 'thread-9');
+
+      expect(result).toEqual({
+        messages: [],
+        total: 0,
+        reason: 'instagram_messaging_pending',
+      });
     });
   });
 });

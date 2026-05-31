@@ -1,6 +1,4 @@
-import * as childProcess from "node:child_process";
 import * as fs from "node:fs";
-import * as os from "node:os";
 import * as path from "node:path";
 import { check, sha, type PartBCtx } from "./smoke-state.js";
 
@@ -10,8 +8,25 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
   const tools = await client.listTools();
   const names = tools.tools.map((t: { name: string }) => t.name).sort();
     check(
-      'server lists all 37 tools (incl. atomic_create_file + atomic_delete_file + code_file_stat + analyzer transaction + product apex layer + rename property key + add await to call + insert after anchor + insert before anchor + replace between anchors + replace text in anchor region + atomic_edit unified router + code_outline_batch)',
-      names.length === 37 &&
+      'server lists all 74 tools (incl. Y apex: lens (atomic_lens/atomic_grep_calls/atomic_repair_scope) + atomic_session_* (begin/savepoint/rollback/commit) + atomic_prove (gate-sourced receipt) + atomic_exec shell operator + content-addressed atomic_replace_at + atomic_locate + universal native engine: atomic_grep + atomic_glob + atomic_outline + atomic_ast_search + atomic_ast_edit + atomic_ast_rewrite + atomic_apply_workspace_edit + atomic_native_status + atomic_create_file + atomic_delete_file + code_file_stat + analyzer transaction + product apex layer + rename property key + add await to call + insert after anchor + insert before anchor + replace between anchors + replace text in anchor region + atomic_edit unified router + code_outline_batch)',
+      names.length === 74 &&
+          names.includes('atomic_exec') &&
+          names.includes('atomic_converge') &&
+          names.includes('atomic_rename_symbol_universal') &&
+          names.includes('atomic_bypass_report') &&
+          names.includes('atomic_replace_at') &&
+          names.includes('atomic_locate') &&
+          names.includes('atomic_grep') &&
+          names.includes('atomic_glob') &&
+          names.includes('atomic_outline') &&
+        names.includes('atomic_lens') &&
+        names.includes('atomic_grep_calls') &&
+        names.includes('atomic_repair_scope') &&
+        names.includes('atomic_session_begin') &&
+        names.includes('atomic_session_savepoint') &&
+        names.includes('atomic_session_rollback') &&
+        names.includes('atomic_session_commit') &&
+        names.includes('atomic_prove') &&
         names.includes('atomic_create_file') &&
         names.includes('atomic_delete_file') &&
         names.includes('code_file_stat') &&
@@ -165,5 +180,82 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
       badSha.isError === true && /sha256 mismatch/.test(badSha.content[0].text),
       badSha.content[0].text,
     );
+
+    // ── Inescapable convergence at the byte floor (immutable; no env, no flag) ──
+    // EVERY write funnels through atomicWrite, which refuses any write that would
+    // INTRODUCE a dangling relative import — and commits one whose import resolves.
+    // Uses its own throwaway file so the shared fixture is untouched.
+    const convRel = path.join('scripts', 'mcp', 'atomic-edit', `.smoke-converge.${process.pid}.ts`);
+    const convAbs = path.join(repoRoot, convRel);
+    fs.writeFileSync(convAbs, 'export const y = 1;\n');
+    try {
+      const dangle = (await client.callTool({
+        name: 'atomic_add_import',
+        arguments: { file: convRel, module: './does_not_exist_zzz', name: 'Nope' },
+      })) as { content: { text: string }[]; isError?: boolean };
+      const dangleText = dangle.content.map((p) => p.text).join('\n');
+      check(
+        'byte-floor REFUSES a write that introduces a dangling relative import',
+        (dangle.isError === true || /refused \(convergence\)/.test(dangleText)) &&
+          fs.readFileSync(convAbs, 'utf8') === 'export const y = 1;\n',
+        dangleText,
+      );
+      const resolved = (await client.callTool({
+        name: 'atomic_add_import',
+        arguments: { file: convRel, module: './engine', name: 'applyEdits' },
+      })) as { content: { text: string }[]; isError?: boolean };
+      check(
+        'byte-floor COMMITS a write whose relative import resolves',
+        resolved.isError !== true && /from ['"]\.\/engine['"]/.test(fs.readFileSync(convAbs, 'utf8')),
+        resolved.content.map((p) => p.text).join('\n'),
+      );
+    } finally {
+      if (fs.existsSync(convAbs)) fs.unlinkSync(convAbs);
+    }
+
+    // ── The one-tool collapse: atomic_converge runs the full WRITE gate registry ──
+    // (preview/commit:false → nothing written; convergeStatic runs all gates first).
+    const convPreviewRel = path.join('scripts', 'mcp', 'atomic-edit', 'gates', `.smoke-converge-${process.pid}.ts`);
+    const convRed = (await client.callTool({
+      name: 'atomic_converge',
+      arguments: {
+        mutations: [{ file: convPreviewRel, newText: 'import { z } from "totally-absent-pkg-xyz";\nexport const y = z;\n' }],
+        commit: false,
+      },
+    })) as { content: { text: string }[] };
+    const convRedBody = JSON.parse(convRed.content.at(-1)?.text ?? '{}');
+    check(
+      'atomic_converge refuses a mutation that introduces a dangling dependency (supply-chain gate fires through the one tool)',
+      convRedBody.converged === false && convRedBody.refusedGate === 'supply-chain',
+      convRed.content[0]?.text ?? '',
+    );
+    const convGreen = (await client.callTool({
+      name: 'atomic_converge',
+      arguments: {
+        mutations: [{ file: convPreviewRel, newText: 'import * as fs from "node:fs";\nexport const reachable = fs.existsSync("/");\n' }],
+        commit: false,
+      },
+    })) as { content: { text: string }[] };
+    const convGreenBody = JSON.parse(convGreen.content.at(-1)?.text ?? '{}');
+    check(
+      'atomic_converge passes a clean mutation — no false red from the 7 folded write gates',
+      convGreenBody.converged === true,
+      convGreen.content[0]?.text ?? '',
+    );
+
+    // ── Byte-floor supply-chain: a NEW bare import to an absent package is refused at
+    // the floor (the dependency twin of the connection gate — inescapable per-write).
+    const bfRel = path.join('scripts', 'mcp', 'atomic-edit', 'gates', `.smoke-bf-${process.pid}.ts`);
+    const bf = (await client.callTool({
+      name: 'atomic_create_file',
+      arguments: { file: bfRel, content: 'import { x } from "totally-absent-pkg-zzz";\nexport const y = x;\n' },
+    })) as { content: { text: string }[]; isError?: boolean };
+    const bfText = bf.content.map((p) => p.text).join('\n');
+    check(
+      'byte-floor refuses a NEW bare import to an absent package (supply-chain at the floor)',
+      bf.isError === true || /dangling dependency/.test(bfText),
+      bfText,
+    );
+    if (fs.existsSync(path.join(repoRoot, bfRel))) fs.unlinkSync(path.join(repoRoot, bfRel));
 
 }

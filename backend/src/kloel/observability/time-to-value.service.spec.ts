@@ -1,4 +1,4 @@
-import { TimeToValueService, type TimeToValueDistribution } from './time-to-value.service';
+import { TimeToValueService } from './time-to-value.service';
 
 function ms(minutes: number): number {
   return minutes * 60 * 1000;

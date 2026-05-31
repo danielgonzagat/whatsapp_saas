@@ -88,44 +88,8 @@ describe('MetaAuthController', () => {
     });
   });
 
-  describe('parseState', () => {
-    it('parses JSON state from encoded URI', () => {
-      const result = (
-        controller as {
-          parseState: (s: string) => {
-            workspaceId: string;
-            channel?: string | null;
-            returnTo?: string | null;
-          };
-        }
-      ).parseState(
-        encodeURIComponent(JSON.stringify({ workspaceId: 'ws-1', channel: 'whatsapp' })),
-      );
-
-      expect(result.workspaceId).toBe('ws-1');
-      expect(result.channel).toBe('whatsapp');
-    });
-
-    it('falls back to raw string when not JSON', () => {
-      const result = (
-        controller as {
-          parseState: (s: string) => { workspaceId: string };
-        }
-      ).parseState('plain-state');
-
-      expect(result.workspaceId).toBe('plain-state');
-    });
-
-    it('returns empty workspaceId for empty state', () => {
-      const result = (
-        controller as {
-          parseState: (s: string) => { workspaceId: string };
-        }
-      ).parseState('');
-
-      expect(result.workspaceId).toBe('');
-    });
-  });
+  // parseState was extracted to `oauth/meta-auth-helpers.ts` as parseOAuthState
+  // and is covered by oauth/meta-auth-helpers.spec.ts (`describe('parseOAuthState')`).
 
   describe('getAuthUrl', () => {
     it('returns OAuth URL from metaWhatsApp service', () => {

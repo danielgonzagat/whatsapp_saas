@@ -52,7 +52,7 @@ describe('AdminUsersController', () => {
     it('invokes users.list and returns array', async () => {
       const expected = [
         { id: 'a-1', name: 'Owner Admin', role: AdminRole.OWNER },
-        { id: 'a-2', name: 'Member', role: AdminRole.ADMIN },
+        { id: 'a-2', name: 'Member', role: AdminRole.MANAGER },
       ];
       users.list.mockResolvedValue(expected);
 
@@ -70,13 +70,13 @@ describe('AdminUsersController', () => {
         name: 'New Admin',
         email: 'new@kloel.com',
         temporaryPassword: 'TempPass12345!',
-        role: AdminRole.ADMIN,
+        role: AdminRole.MANAGER,
       };
       const created = {
         id: 'a-3',
         name: 'New Admin',
         email: 'new@kloel.com',
-        role: AdminRole.ADMIN,
+        role: AdminRole.MANAGER,
       };
       users.create.mockResolvedValue(created);
 
@@ -86,7 +86,7 @@ describe('AdminUsersController', () => {
         name: 'New Admin',
         email: 'new@kloel.com',
         temporaryPassword: 'TempPass12345!',
-        role: AdminRole.ADMIN,
+        role: AdminRole.MANAGER,
         createdById: 'a-1',
         createdByRole: AdminRole.OWNER,
       });
@@ -98,24 +98,24 @@ describe('AdminUsersController', () => {
         name: 'Sub Admin',
         email: 'sub@kloel.com',
         temporaryPassword: 'TempPass12345!',
-        role: AdminRole.SUPPORT,
+        role: AdminRole.STAFF,
       };
       const subAdmin: AuthenticatedAdmin = {
         id: 'a-2',
         name: 'Sub',
         email: 'sub@kloel.com',
-        role: AdminRole.ADMIN,
+        role: AdminRole.MANAGER,
         sessionId: 's-2',
         scope: 'full',
       };
-      users.create.mockResolvedValue({ id: 'a-4', role: AdminRole.SUPPORT });
+      users.create.mockResolvedValue({ id: 'a-4', role: AdminRole.STAFF });
 
       await controller.create(dto, subAdmin);
 
       expect(users.create).toHaveBeenCalledWith(
         expect.objectContaining({
           createdById: 'a-2',
-          createdByRole: AdminRole.ADMIN,
+          createdByRole: AdminRole.MANAGER,
         }),
       );
     });
@@ -123,15 +123,15 @@ describe('AdminUsersController', () => {
 
   describe('PATCH /admin/users/:id (update)', () => {
     it('passes id and UpdateAdminUserDto to service with actor context', async () => {
-      const dto = { name: 'Updated Name', role: AdminRole.ADMIN };
-      const updated = { id: 'u-1', name: 'Updated Name', role: AdminRole.ADMIN };
+      const dto = { name: 'Updated Name', role: AdminRole.MANAGER };
+      const updated = { id: 'u-1', name: 'Updated Name', role: AdminRole.MANAGER };
       users.update.mockResolvedValue(updated);
 
       const result = await controller.update('u-1', dto, admin);
 
       expect(users.update).toHaveBeenCalledWith('u-1', {
         name: 'Updated Name',
-        role: AdminRole.ADMIN,
+        role: AdminRole.MANAGER,
         actorRole: AdminRole.OWNER,
         actorId: 'a-1',
       });

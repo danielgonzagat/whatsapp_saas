@@ -1,23 +1,27 @@
 import { Module } from '@nestjs/common';
 
 import { AuditModule } from '../audit/audit.module';
+import { BillingModule } from '../billing/billing.module';
 import { SpineModule } from '../kloel/spine/spine.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { PrismaModule } from '../prisma/prisma.module';
 
-import { SalesService } from './sales.service'; /**
+import { SalesService } from './sales.service';
+
+/**
  * Sales module — in-chat sales creation (PIX, card, boleto).
  *
  * Imports:
  * - PrismaModule for DB access
  * - AuditModule for audit logging
- * - PaymentsModule (re-exports MercadoPagoModule) for real PIX generation
+ * - BillingModule for Stripe card Checkout Sessions
+ * - PaymentsModule (re-exports MercadoPagoModule) for real PIX/boleto generation
  * - SpineModule for event emission (sale.created, payment.pending)
  *
  * Exports: SalesService
  */
 @Module({
-  imports: [PrismaModule, AuditModule, PaymentsModule, SpineModule],
+  imports: [PrismaModule, AuditModule, BillingModule, PaymentsModule, SpineModule],
   providers: [SalesService],
   exports: [SalesService],
 })

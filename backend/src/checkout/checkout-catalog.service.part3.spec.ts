@@ -1,6 +1,4 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { CheckoutCatalogService } from './checkout-catalog.service';
-import { Prisma } from '@prisma/client';
 
 type PrismaMock = {
   checkoutProductPlan: { findUnique: jest.Mock };
@@ -30,12 +28,6 @@ type PrismaMock = {
   checkoutPixel: { create: jest.Mock; update: jest.Mock; delete: jest.Mock; findUnique: jest.Mock };
   $transaction: jest.Mock;
 };
-
-const makePlan = (overrides: Record<string, unknown> = {}) => ({
-  id: 'plan_1',
-  name: 'Test Plan',
-  ...overrides,
-});
 
 describe('CheckoutCatalogService', () => {
   let service: CheckoutCatalogService;

@@ -5,13 +5,19 @@ import { authApi } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
 import { buildAppUrl, sanitizeNextPath } from '@/lib/subdomains';
 import Link from 'next/link';
-import { type FormEvent, useCallback, useEffect, useId, useRef, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useAuth } from './auth-provider';
 import { TheMachine } from './kloel-auth-screen.machine';
 import { useFacebookSignIn, useGoogleSignIn } from './kloel-auth-screen.hooks';
 import { SocialButtons } from './kloel-auth-screen.social-buttons';
 import { AuthFormFields } from './kloel-auth-screen.form-fields';
 import { AuthHeader } from './kloel-auth-screen.header';
+import {
+  KLOEL_AUTH_SCREEN_FONT,
+  KLOEL_AUTH_SCREEN_INPUT_BASE,
+  navigateCurrentWindow,
+  readAuthScreenUrlState,
+} from './kloel-auth-screen.helpers';
 
 /* ─── types ─── */
 interface KloelAuthScreenProps {
@@ -21,58 +27,7 @@ interface KloelAuthScreenProps {
 type Mode = 'login' | 'register';
 
 /* ─── constants ─── */
-const sora = "var(--font-sora), 'Sora', sans-serif";
-
-function navigateCurrentWindow(url: string) {
-  if (typeof document === 'undefined') {
-    return;
-  }
-  const link = document.createElement('a');
-  link.href = url;
-  link.rel = 'noopener noreferrer';
-  link.style.display = 'none';
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-}
-
-function resolveOAuthErrorMessage(errorCode: string, reason: string): string {
-  if (errorCode === 'apple_auth_failed') {
-    if (reason === 'missing_identity_token') {
-      return 'A Apple nao retornou o token de autenticacao. Tente novamente.';
-    }
-    if (reason === 'timeout') {
-      return 'A autenticacao com Apple expirou. Tente novamente.';
-    }
-    return 'Falha ao autenticar com Apple.';
-  }
-  if (errorCode === 'tiktok_auth_failed') {
-    if (reason === 'missing_code') {
-      return 'O TikTok nao retornou o codigo de autorizacao. Tente novamente.';
-    }
-    if (reason === 'state_mismatch') {
-      return 'A sessao de login com TikTok expirou ou ficou invalida. Tente novamente.';
-    }
-    if (reason === 'access_denied') {
-      return 'O login com TikTok foi cancelado ou negado.';
-    }
-    if (reason === 'timeout') {
-      return 'O TikTok demorou para responder. Tente novamente.';
-    }
-    if (
-      reason === 'client_key_missing' ||
-      reason === 'client_secret_missing' ||
-      reason === 'backend_not_configured'
-    ) {
-      return 'Login com TikTok indisponivel no momento.';
-    }
-    if (reason === 'token_exchange_failed') {
-      return 'Nao foi possivel validar o login com TikTok. Tente novamente.';
-    }
-    return 'Falha ao autenticar com TikTok.';
-  }
-  return 'Nao foi possivel concluir a autenticacao social.';
-}
+const sora = KLOEL_AUTH_SCREEN_FONT;
 
 /* ────────────────────────────────────────────────────────────
    MAIN EXPORT
@@ -89,16 +44,17 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   } = useAuth();
   const redirectingRef = useRef(false);
 
-  const [mode, setMode] = useState<Mode>(initialMode);
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const initialUrlState = useMemo(() => readAuthScreenUrlState(initialMode), [initialMode]);
+
+  const [mode, setMode] = useState<Mode>(initialUrlState.mode);
+  const [name, setName] = useState(initialUrlState.name);
+  const [email, setEmail] = useState(initialUrlState.email);
   const [password, setPassword] = useState('');
-  const [affiliateInviteToken, setAffiliateInviteToken] = useState('');
-  const [affiliateInviteWorkspaceName, setAffiliateInviteWorkspaceName] = useState('');
+  const { affiliateInviteToken, affiliateInviteWorkspaceName } = initialUrlState;
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isAppleLoading, setIsAppleLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(initialUrlState.error);
   const [forgotSent, setForgotSent] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState('');
   const shouldBypassExistingSessionRedirect = useCallback(() => {
@@ -137,42 +93,6 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
       redirectToApp();
     }
   }, [isAuthenticated, redirectToApp, shouldBypassExistingSessionRedirect]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    const params = new URLSearchParams(window.location.search);
-    const inviteToken = params.get('affiliateInviteToken')?.trim() || '';
-    if (!inviteToken) {
-      return;
-    }
-    const inviteEmail = params.get('email')?.trim() || '';
-    const inviteName = params.get('partnerName')?.trim() || '';
-    const inviterWorkspaceName = params.get('inviterWorkspaceName')?.trim() || '';
-    setMode('register');
-    setAffiliateInviteToken(inviteToken);
-    setAffiliateInviteWorkspaceName(inviterWorkspaceName);
-    if (inviteEmail) {
-      setEmail(inviteEmail);
-    }
-    if (inviteName) {
-      setName(inviteName);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    const params = new URLSearchParams(window.location.search);
-    const oauthError = params.get('error')?.trim() || '';
-    if (!oauthError) {
-      return;
-    }
-    const reason = params.get('reason')?.trim() || '';
-    setError(resolveOAuthErrorMessage(oauthError, reason));
-  }, []);
 
   const switchMode = (m: Mode) => {
     setMode(m);
@@ -327,20 +247,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
     window.location.assign(destination.toString());
   }, [resolveNextPath, tikTokAvailable]);
 
-  const inputBase: React.CSSProperties = {
-    width: '100%',
-    height: 44,
-    background: colors.background.surface,
-    border: `1px solid ${colors.border.space}`,
-    borderRadius: 6,
-    padding: '0 14px',
-    fontSize: 14,
-    fontFamily: sora,
-    color: colors.text.silver,
-    outline: 'none',
-    transition: 'border-color 150ms ease',
-    boxSizing: 'border-box',
-  };
+  const inputBase = KLOEL_AUTH_SCREEN_INPUT_BASE;
 
   return (
     <div

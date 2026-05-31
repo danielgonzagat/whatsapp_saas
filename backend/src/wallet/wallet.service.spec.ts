@@ -8,6 +8,7 @@ import type {
 
 import { StripeService } from '../billing/stripe.service';
 import { FraudEngine } from '../payments/fraud/fraud.engine';
+import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { WalletService } from './wallet.service';
@@ -21,8 +22,16 @@ type FraudEngineStub = {
   evaluate: jest.Mock;
 };
 
+type MercadoPagoPixStub = {
+  create: jest.Mock;
+};
+
 function makeStripeStub(): StripeStub {
   return { stripe: { paymentIntents: { create: jest.fn() } } };
+}
+
+function makeMercadoPagoPixStub(): MercadoPagoPixStub {
+  return { create: jest.fn() };
 }
 
 function makeFraudEngineStub(): FraudEngineStub {
@@ -170,6 +179,7 @@ async function buildService(
   stripe: StripeStub,
   prisma: ReturnType<typeof makePrismaStub>,
   fraudEngine = makeFraudEngineStub(),
+  mercadoPagoPix = makeMercadoPagoPixStub(),
 ) {
   const moduleRef: TestingModule = await Test.createTestingModule({
     providers: [
@@ -177,6 +187,7 @@ async function buildService(
       { provide: StripeService, useValue: stripe },
       { provide: PrismaService, useValue: prisma.prisma },
       { provide: FraudEngine, useValue: fraudEngine },
+      { provide: MercadoPagoPixChargeService, useValue: mercadoPagoPix },
     ],
   }).compile();
   return moduleRef.get(WalletService);
@@ -228,7 +239,7 @@ describe('WalletService.createTopupIntent', () => {
           type: 'wallet_topup',
           workspace_id: 'ws_new',
           method: 'card',
-        }),
+        }) as unknown,
       }),
     );
     expect(prisma.walletsByWorkspace.has('ws_new')).toBe(true);
@@ -294,31 +305,44 @@ describe('WalletService.createTopupIntent', () => {
     );
   });
 
-  it('returns PIX QR code data when next_action is pix_display_qr_code', async () => {
+  it('creates PIX top-ups through Mercado Pago and never asks Stripe for pix_display_qr_code', async () => {
     const stripe = makeStripeStub();
-    stripe.stripe.paymentIntents.create.mockResolvedValue({
-      id: 'pi_pix',
-      client_secret: 'pi_pix_secret',
-      amount: 10000,
-      next_action: {
-        type: 'pix_display_qr_code',
-        pix_display_qr_code: {
-          data: '00020126...',
-          image_url_png: 'https://stripe.com/pix.png',
-        },
-      },
+    const mercadoPagoPix = makeMercadoPagoPixStub();
+    mercadoPagoPix.create.mockResolvedValue({
+      externalId: 'mp_pix_wallet_1',
+      status: 'pending',
+      qrCode: '00020126...',
+      qrCodeBase64: 'base64-png',
+      ticketUrl: 'https://www.mercadopago.com.br/payments/123/ticket',
+      expiresAt: new Date('2026-05-28T01:30:00.000Z'),
+      raw: {},
     });
     const prisma = makePrismaStub();
-    const service = await buildService(stripe, prisma);
+    const service = await buildService(stripe, prisma, makeFraudEngineStub(), mercadoPagoPix);
 
     const result = await service.createTopupIntent({
       workspaceId: 'ws_pix',
       amountCents: 10_000n,
       method: 'pix',
+      buyerEmail: 'buyer@example.com',
+      buyerCpf: '123.456.789-01',
     });
 
+    expect(stripe.stripe.paymentIntents.create).not.toHaveBeenCalled();
+    expect(mercadoPagoPix.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        amountCents: 10_000n,
+        payerEmail: 'buyer@example.com',
+        payerDocument: '12345678901',
+        description: 'Kloel prepaid wallet top-up - workspace ws_pix',
+        externalReference: expect.stringMatching(/^wallet_topup:ws_pix:pwl_1:/) as unknown,
+        notificationUrl: expect.stringContaining('/webhooks/mercadopago') as unknown,
+      }),
+    );
+    expect(result.paymentIntentId).toBe('mp_pix_wallet_1');
+    expect(result.clientSecret).toBeNull();
     expect(result.pixQrCode).toBe('00020126...');
-    expect(result.pixQrCodeUrl).toBe('https://stripe.com/pix.png');
+    expect(result.pixQrCodeUrl).toBe('data:image/png;base64,base64-png');
   });
 
   it('rejects non-positive amount', async () => {
@@ -398,5 +422,62 @@ describe('WalletService.creditFromWebhook', () => {
         metadata: { wallet_id: 'pwl_does_not_exist' },
       } as never),
     ).rejects.toBeInstanceOf(WalletNotFoundError);
+  });
+});
+
+describe('WalletService.creditMercadoPagoTopup', () => {
+  it('credits an approved Mercado Pago wallet top-up idempotently', async () => {
+    const stripe = makeStripeStub();
+    const wallet = seedWallet({ id: 'pwl_mp', workspaceId: 'ws_mp', balanceCents: 500n });
+    const prisma = makePrismaStub({ wallets: [wallet] });
+    const service = await buildService(stripe, prisma);
+
+    const input = {
+      externalId: 'mp_pix_wallet_paid_1',
+      status: 'approved',
+      raw: {
+        external_reference: 'wallet_topup:ws_mp:pwl_mp:nonce-1',
+        transaction_amount: 25,
+      },
+    } as const;
+
+    const first = await service.creditMercadoPagoTopup(input);
+    const second = await service.creditMercadoPagoTopup(input);
+
+    expect(first).not.toBeNull();
+    expect(second?.id).toBe(first?.id);
+    expect(first?.amountCents).toBe(2_500n);
+    expect(first?.balanceAfterCents).toBe(3_000n);
+    expect(first?.referenceType).toBe('mercadopago_pix_topup');
+    expect(first?.referenceId).toBe('mp_pix_wallet_paid_1');
+    expect(prisma.transactions.filter((t) => t.type === 'TOPUP')).toHaveLength(1);
+    expect(prisma.wallets.get('pwl_mp')?.balanceCents).toBe(3_000n);
+  });
+
+  it('ignores non-wallet Mercado Pago payments and non-approved statuses', async () => {
+    const stripe = makeStripeStub();
+    const wallet = seedWallet({ id: 'pwl_mp_skip', workspaceId: 'ws_mp_skip', balanceCents: 500n });
+    const prisma = makePrismaStub({ wallets: [wallet] });
+    const service = await buildService(stripe, prisma);
+
+    await expect(
+      service.creditMercadoPagoTopup({
+        externalId: 'mp_other',
+        status: 'approved',
+        raw: { external_reference: 'order_1', transaction_amount: 25 },
+      }),
+    ).resolves.toBeNull();
+    await expect(
+      service.creditMercadoPagoTopup({
+        externalId: 'mp_pending',
+        status: 'pending',
+        raw: {
+          external_reference: 'wallet_topup:ws_mp_skip:pwl_mp_skip:nonce-1',
+          transaction_amount: 25,
+        },
+      }),
+    ).resolves.toBeNull();
+    expect(prisma.transactions).toHaveLength(0);
+    expect(prisma.wallets.get('pwl_mp_skip')?.balanceCents).toBe(500n);
   });
 });

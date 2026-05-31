@@ -3,266 +3,24 @@ import { StructuredLogger } from '../../logging/structured-logger';
 import type { ConnectAccountBalance } from '@prisma/client';
 
 import { StripeService } from '../../billing/stripe.service';
-import type { StripeAccount, StripeClient } from '../../billing/stripe-types';
+import type { StripeAccount } from '../../billing/stripe-types';
 import { PrismaService } from '../../prisma/prisma.service';
 
 import {
   ConnectAccountAlreadyExistsError,
-  type ConnectAddressInput,
-  type ConnectBusinessProfileInput,
-  type ConnectCompanyInput,
-  type ConnectExternalBankAccountInput,
-  type ConnectIndividualInput,
-  type ConnectTosAcceptanceInput,
   type CreateCustomAccountInput,
   type CreateCustomAccountResult,
   type OnboardingStatus,
   type SubmitOnboardingProfileInput,
 } from './connect.types';
-import { readTrimmedString as trimToUndefined } from '../../common/parse';
-import { digitsOrUndefined as digitsOnly } from '../../common/phone';
-
-type StripeAccountCreateParams = Parameters<StripeClient['accounts']['create']>[0];
-type StripeAccountUpdateParams = Parameters<StripeClient['accounts']['update']>[1];
-
-function compactObject<T extends Record<string, unknown>>(value: T): T | undefined {
-  const entries = Object.entries(value).filter(([, entry]) => entry !== undefined);
-  return entries.length > 0 ? (Object.fromEntries(entries) as T) : undefined;
-}
-
-function buildAddress(address?: ConnectAddressInput): Record<string, string> | undefined {
-  if (!address) {
-    return undefined;
-  }
-
-  const line1 = trimToUndefined(address.line1);
-  const line2 = trimToUndefined(address.line2);
-  const city = trimToUndefined(address.city);
-  const state = trimToUndefined(address.state);
-  const postal_code = trimToUndefined(address.postalCode);
-  const country = trimToUndefined(address.country);
-
-  const result: Record<string, string> = {};
-  if (line1 !== undefined) {
-    result.line1 = line1;
-  }
-  if (line2 !== undefined) {
-    result.line2 = line2;
-  }
-  if (city !== undefined) {
-    result.city = city;
-  }
-  if (state !== undefined) {
-    result.state = state;
-  }
-  if (postal_code !== undefined) {
-    result.postal_code = postal_code;
-  }
-  if (country !== undefined) {
-    result.country = country;
-  }
-
-  return Object.keys(result).length > 0 ? result : undefined;
-}
-
-function buildBusinessProfile(
-  profile?: ConnectBusinessProfileInput,
-): Record<string, string> | undefined {
-  if (!profile) {
-    return undefined;
-  }
-
-  const name = trimToUndefined(profile.name);
-  const url = trimToUndefined(profile.url);
-  const mcc = trimToUndefined(profile.mcc);
-  const product_description = trimToUndefined(profile.productDescription);
-  const support_email = trimToUndefined(profile.supportEmail);
-  const support_phone = trimToUndefined(profile.supportPhone);
-  const support_url = trimToUndefined(profile.supportUrl);
-
-  const result: Record<string, string> = {};
-  if (name !== undefined) {
-    result.name = name;
-  }
-  if (url !== undefined) {
-    result.url = url;
-  }
-  if (mcc !== undefined) {
-    result.mcc = mcc;
-  }
-  if (product_description !== undefined) {
-    result.product_description = product_description;
-  }
-  if (support_email !== undefined) {
-    result.support_email = support_email;
-  }
-  if (support_phone !== undefined) {
-    result.support_phone = support_phone;
-  }
-  if (support_url !== undefined) {
-    result.support_url = support_url;
-  }
-
-  return Object.keys(result).length > 0 ? result : undefined;
-}
-
-function buildIndividualProfile(
-  individual?: ConnectIndividualInput,
-): Record<string, unknown> | undefined {
-  if (!individual) {
-    return undefined;
-  }
-
-  const dob = compactObject({
-    day: Number.isFinite(individual.dateOfBirth?.day) ? individual.dateOfBirth?.day : undefined,
-    month: Number.isFinite(individual.dateOfBirth?.month)
-      ? individual.dateOfBirth?.month
-      : undefined,
-    year: Number.isFinite(individual.dateOfBirth?.year) ? individual.dateOfBirth?.year : undefined,
-  });
-
-  return compactObject({
-    first_name: trimToUndefined(individual.firstName),
-    last_name: trimToUndefined(individual.lastName),
-    email: trimToUndefined(individual.email),
-    phone: trimToUndefined(individual.phone),
-    id_number: digitsOnly(individual.idNumber),
-    dob,
-    address: buildAddress(individual.address),
-  });
-}
-
-function buildCompanyProfile(company?: ConnectCompanyInput): Record<string, unknown> | undefined {
-  if (!company) {
-    return undefined;
-  }
-
-  return compactObject({
-    name: trimToUndefined(company.name),
-    tax_id: digitsOnly(company.taxId),
-    phone: trimToUndefined(company.phone),
-    address: buildAddress(company.address),
-  });
-}
-
-function buildExternalAccount(
-  externalAccount?: ConnectExternalBankAccountInput,
-): string | Record<string, string> | undefined {
-  if (!externalAccount) {
-    return undefined;
-  }
-
-  const token = trimToUndefined(externalAccount.token);
-  if (token) {
-    return token;
-  }
-
-  const country = trimToUndefined(externalAccount.country) ?? 'BR';
-  const currency = trimToUndefined(externalAccount.currency)?.toLowerCase() ?? 'brl';
-  const account_holder_name = trimToUndefined(externalAccount.accountHolderName);
-  const account_holder_type = trimToUndefined(externalAccount.accountHolderType);
-  const routing_number = digitsOnly(externalAccount.routingNumber);
-  const account_number = digitsOnly(externalAccount.accountNumber);
-
-  const result: Record<string, string> = {};
-  result.object = 'bank_account';
-  if (country !== undefined) {
-    result.country = country;
-  }
-  if (currency !== undefined) {
-    result.currency = currency;
-  }
-  if (account_holder_name !== undefined) {
-    result.account_holder_name = account_holder_name;
-  }
-  if (account_holder_type !== undefined) {
-    result.account_holder_type = account_holder_type;
-  }
-  if (routing_number !== undefined) {
-    result.routing_number = routing_number;
-  }
-  if (account_number !== undefined) {
-    result.account_number = account_number;
-  }
-
-  return result;
-}
-
-function buildTosAcceptance(
-  tosAcceptance?: ConnectTosAcceptanceInput,
-): Record<string, unknown> | undefined {
-  if (!tosAcceptance) {
-    return undefined;
-  }
-
-  const acceptedAtRaw = trimToUndefined(tosAcceptance.acceptedAt);
-  const acceptedAtEpoch =
-    acceptedAtRaw && !Number.isNaN(Date.parse(acceptedAtRaw))
-      ? Math.floor(Date.parse(acceptedAtRaw) / 1000)
-      : undefined;
-
-  return compactObject({
-    date: acceptedAtEpoch,
-    ip: trimToUndefined(tosAcceptance.ipAddress),
-    user_agent: trimToUndefined(tosAcceptance.userAgent),
-  });
-}
-
-function buildMetadata(metadata?: Record<string, string>): Record<string, string> | undefined {
-  if (!metadata) {
-    return undefined;
-  }
-
-  const entries = Object.entries(metadata).filter(
-    ([key, value]) => trimToUndefined(key) && trimToUndefined(value),
-  );
-  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
-}
-
-function buildOnboardingAccountUpdate(
-  input: SubmitOnboardingProfileInput,
-): StripeAccountUpdateParams {
-  const payload: Record<string, unknown> = {};
-  const email = trimToUndefined(input.email);
-  const country = trimToUndefined(input.country);
-  const businessType = trimToUndefined(input.businessType);
-  const businessProfile = buildBusinessProfile(input.businessProfile);
-  const individual = buildIndividualProfile(input.individual);
-  const company = buildCompanyProfile(input.company);
-  const externalAccount = buildExternalAccount(input.externalAccount);
-  const tosAcceptance = buildTosAcceptance(input.tosAcceptance);
-  const metadata = buildMetadata(input.metadata);
-
-  if (email) {
-    payload.email = email;
-  }
-  if (country) {
-    payload.country = country;
-  }
-  if (businessType) {
-    payload.business_type = businessType;
-  }
-  if (businessProfile) {
-    payload.business_profile = businessProfile;
-  }
-  if (individual) {
-    payload.individual = individual;
-  }
-  if (company) {
-    payload.company = company;
-  }
-  if (externalAccount) {
-    payload.external_account = externalAccount;
-  }
-  if (tosAcceptance) {
-    payload.tos_acceptance = tosAcceptance;
-  }
-  if (metadata) {
-    payload.metadata = metadata;
-  }
-
-  return payload;
-}
+import {
+  buildCreateCustomAccountPayload,
+  buildOnboardingAccountUpdate,
+  CONNECT_REQUESTED_CAPABILITIES,
+  projectOnboardingStatus,
+  shouldRetryWithoutManualPayoutSchedule,
+  stripManualPayoutSchedule,
+} from './connect.service.helpers';
 
 /**
  * Stripe Connect orchestration. Creates `type: 'custom'` Connected Accounts
@@ -300,34 +58,13 @@ export class ConnectService {
         }
 
         const country = input.country ?? 'BR';
-        const requestedCapabilities = ['card_payments', 'transfers'];
-        const accountPayload: StripeAccountCreateParams = {
-          type: 'custom',
-          country,
-          email: input.email,
-          capabilities: {
-            card_payments: { requested: true },
-            transfers: { requested: true },
-          },
-          settings: {
-            payouts: {
-              schedule: {
-                interval: 'manual',
-              },
-            },
-          },
-          metadata: {
-            workspaceId: input.workspaceId,
-            accountType: input.accountType,
-            ...(input.displayName ? { displayName: input.displayName } : {}),
-          },
-        };
+        const accountPayload = buildCreateCustomAccountPayload(input, country);
 
         let account: StripeAccount;
         try {
           account = await this.stripeService.stripe.accounts.create(accountPayload);
         } catch (error) {
-          if (!this.shouldRetryWithoutManualPayoutSchedule(error, country)) {
+          if (!shouldRetryWithoutManualPayoutSchedule(error, country)) {
             throw error;
           }
 
@@ -335,9 +72,8 @@ export class ConnectService {
             `Stripe rejected manual payout schedule for country=${country}; retrying workspace=${input.workspaceId} type=${input.accountType} without schedule`,
           );
 
-          const { settings: _, ...payloadWithoutManualPayoutSchedule } = accountPayload;
           account = await this.stripeService.stripe.accounts.create(
-            payloadWithoutManualPayoutSchedule,
+            stripManualPayoutSchedule(accountPayload),
           );
         }
 
@@ -356,7 +92,7 @@ export class ConnectService {
         return {
           accountBalanceId: balance.id,
           stripeAccountId: account.id,
-          requestedCapabilities,
+          requestedCapabilities: [...CONNECT_REQUESTED_CAPABILITIES],
         };
       },
       { isolationLevel: 'ReadCommitted' },
@@ -373,23 +109,7 @@ export class ConnectService {
       stripeAccountId,
     )) as StripeAccount;
 
-    const reqs = account.requirements ?? null;
-    const capabilitiesEntries = Object.entries(account.capabilities ?? {});
-    const capabilities: Record<string, string> = {};
-    for (const [name, value] of capabilitiesEntries) {
-      capabilities[name] = String(value);
-    }
-
-    return {
-      stripeAccountId: account.id,
-      chargesEnabled: Boolean(account.charges_enabled),
-      payoutsEnabled: Boolean(account.payouts_enabled),
-      detailsSubmitted: Boolean(account.details_submitted),
-      requirementsCurrentlyDue: reqs?.currently_due ?? [],
-      requirementsPastDue: reqs?.past_due ?? [],
-      requirementsDisabledReason: reqs?.disabled_reason ?? null,
-      capabilities,
-    };
+    return projectOnboardingStatus(account);
   }
 
   /**
@@ -427,26 +147,5 @@ export class ConnectService {
       ...(workspaceId ? { where: { workspaceId } } : {}),
       orderBy: [{ workspaceId: 'asc' }, { accountType: 'asc' }, { createdAt: 'asc' }],
     });
-  }
-
-  private shouldRetryWithoutManualPayoutSchedule(error: unknown, country: string): boolean {
-    if (country !== 'BR') {
-      return false;
-    }
-
-    const message =
-      error instanceof Error
-        ? error.message
-        : typeof error === 'object' &&
-            error !== null &&
-            'message' in error &&
-            typeof error.message === 'string'
-          ? error.message
-          : '';
-
-    return (
-      message.toLowerCase().includes('manual payout plan') &&
-      message.toLowerCase().includes('country br')
-    );
   }
 }

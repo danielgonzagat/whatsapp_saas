@@ -82,12 +82,16 @@ export interface TeamInvite {
   id: string;
   email: string;
   role: string;
-  status: TeamInviteStatus | string;
+  status?: TeamInviteStatus | string;
 }
 
+/**
+ * Backend `/team` (TeamService.listMembers) response shape.
+ * Members live under `agents`, pending invites under `invitations`.
+ */
 export interface TeamApiResponse {
-  members?: TeamMember[];
-  invites?: TeamInvite[];
+  agents?: TeamMember[];
+  invitations?: TeamInvite[];
 }
 
 export type SettingsSectionKey =

@@ -28,14 +28,14 @@ describe('AdminSalesController', () => {
       deliveredCount: 0,
     },
     chart: [],
-    gatewayOptions: ['stripe', 'pix'],
+    gatewayOptions: ['mercadopago', 'stripe'],
     items: [],
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
     sales.overview.mockResolvedValue(mockOverviewResponse);
-    controller = new AdminSalesController(sales as never);
+    controller = new AdminSalesController(sales);
   });
 
   describe('GET admin/sales/overview', () => {
@@ -77,10 +77,9 @@ describe('AdminSalesController', () => {
     });
 
     it('admin id propagated — guard enforces identity', () => {
-      const guards: Array<{ new (...args: unknown[]): unknown }> = Reflect.getMetadata(
-        GUARDS_METADATA,
-        AdminSalesController,
-      );
+      const guards = Reflect.getMetadata(GUARDS_METADATA, AdminSalesController) as Array<{
+        new (...args: unknown[]): unknown;
+      }>;
 
       expect(guards).toBeDefined();
       expect(guards.length).toBeGreaterThanOrEqual(1);

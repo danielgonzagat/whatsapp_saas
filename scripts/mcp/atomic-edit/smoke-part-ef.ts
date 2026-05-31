@@ -1,14 +1,11 @@
 import { fileURLToPath } from 'node:url';
 import * as path from 'node:path';
-import { applyEdits, replaceText, validate } from './engine.js';
+import { applyEdits } from './engine.js';
 import { graphemes, measure, graphemeLength } from './textunit.js';
 import { characterDiff } from './advanced.js';
 import { check } from './smoke-state.js';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const SOURCE_DIR = path.basename(__dirname) === 'dist' ? path.dirname(__dirname) : __dirname;
-
 // ── Part E — text-unit / Unicode safety (lever #2) ───────────────────────
 export function partE(): void {
   // grapheme segmentation: ZWJ family is ONE user-perceived character
@@ -51,7 +48,11 @@ export function partF(): void {
     ]);
     check(
       'struct: py unbalanced paren refused',
-      r.validation.language === 'structural' && r.validation.ok === false,
+      // Refused regardless of which parser caught it: the native/python tree-sitter
+      // (language:'python') when available, else the structural-balance fallback
+      // (language:'structural'). Both are valid; the contract is ok===false.
+      r.validation.ok === false &&
+        (r.validation.language === 'structural' || r.validation.language === 'python'),
       JSON.stringify(r.validation),
     );
   }

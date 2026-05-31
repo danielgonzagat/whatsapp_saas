@@ -181,25 +181,30 @@ export function NP({
 
 export function Ticker({ value, prefix = '' }: { value: number; prefix?: string }) {
   const [display, setDisplay] = useState(0);
-  const displayRef = useRef(display);
-  displayRef.current = display;
   useEffect(() => {
-    const current = displayRef.current;
-    const diff = value - current;
-    if (Math.abs(diff) < 1) {
-      setDisplay(value);
-      return;
-    }
-    const steps = 30;
+    // Capture the animation's starting value via a functional updater so we
+    // never read mutable state (a ref) during render.
+    let start: number | null = null;
     let step = 0;
+    const steps = 30;
     const iv = setInterval(() => {
-      step += 1;
-      const ease = 1 - (1 - step / steps) ** 3;
-      setDisplay(current + diff * ease);
-      if (step >= steps) {
-        setDisplay(value);
-        clearInterval(iv);
-      }
+      setDisplay((current) => {
+        if (start === null) {
+          start = current;
+        }
+        const diff = value - start;
+        if (Math.abs(diff) < 1) {
+          clearInterval(iv);
+          return value;
+        }
+        step += 1;
+        const ease = 1 - (1 - step / steps) ** 3;
+        if (step >= steps) {
+          clearInterval(iv);
+          return value;
+        }
+        return start + diff * ease;
+      });
     }, 33);
     return () => clearInterval(iv);
   }, [value]);

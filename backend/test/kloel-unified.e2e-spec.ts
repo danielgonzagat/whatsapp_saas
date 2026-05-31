@@ -182,7 +182,7 @@ describe('SmartPayment (e2e)', () => {
         .send({
           contactId: 'test-contact-id',
           originalAmount: 100,
-          customerMessage: 'Tá caro, consegue um desconto?',
+          contactMessage: 'Tá caro, consegue um desconto?',
           maxDiscountPercent: 15,
         })
         .expect(201);

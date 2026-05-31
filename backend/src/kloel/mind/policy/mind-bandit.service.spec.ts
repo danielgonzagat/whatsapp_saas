@@ -1,17 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { MindBanditService } from './mind-bandit.service';
+import { partialMatch } from '../../../../test/helpers/match-instance';
 
 type BanditUpsertArgs = {
   where: { workspaceId_decisionType_arm: { workspaceId: string } };
-  create: { isActive: boolean };
-};
-
-type BanditUpdateArgs = {
-  data: {
+  update: {
+    alpha: { increment: number };
     beta: { increment: number };
     wins: { increment: number };
   };
+  create: { isActive: boolean; alpha: number; beta: number; wins: number };
 };
 
 function firstMockArg<T>(mock: jest.Mock, callIndex = 0): T {
@@ -97,7 +96,7 @@ describe('MindBanditService', () => {
         arm: 'A',
         outcome: 1,
       });
-      expect(prisma.mindBanditArm.update).toHaveBeenCalledWith({
+      expect(prisma.mindBanditArm.upsert).toHaveBeenCalledWith({
         where: {
           workspaceId_decisionType_arm: {
             workspaceId: 'ws-1',
@@ -105,11 +104,20 @@ describe('MindBanditService', () => {
             arm: 'A',
           },
         },
-        data: {
+        update: {
           alpha: { increment: 1 },
           beta: { increment: 0 },
           wins: { increment: 1 },
         },
+        create: partialMatch({
+          workspaceId: 'ws-1',
+          decisionType: 'subject',
+          arm: 'A',
+          isActive: true,
+          alpha: 2,
+          beta: 1,
+          wins: 1,
+        }),
       });
     });
 
@@ -121,9 +129,9 @@ describe('MindBanditService', () => {
         arm: 'B',
         outcome: 0,
       });
-      const data = firstMockArg<BanditUpdateArgs>(prisma.mindBanditArm.update).data;
-      expect(data.beta).toEqual({ increment: 1 });
-      expect(data.wins).toEqual({ increment: 0 });
+      const update = firstMockArg<BanditUpsertArgs>(prisma.mindBanditArm.upsert).update;
+      expect(update.beta).toEqual({ increment: 1 });
+      expect(update.wins).toEqual({ increment: 0 });
     });
   });
 

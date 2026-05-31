@@ -1,12 +1,16 @@
+/**
+ * @capability LeadScorer
+ * @domain crm
+ */
 import { prisma } from '../db';
 
 /**
  * Simplified lead scoring used in dev/test.
  * Computes a basic score from recent inbound activity and persists it on the contact.
  */
-async function analyze(_workspaceId: string, contactId: string) {
-  const contact = await prisma.contact.findUnique({
-    where: { id: contactId },
+async function analyze(workspaceId: string, contactId: string) {
+  const contact = await prisma.contact.findFirst({
+    where: { id: contactId, workspaceId },
     include: {
       messages: {
         take: 20,
@@ -34,8 +38,8 @@ async function analyze(_workspaceId: string, contactId: string) {
 
   const leadScore = Math.max(0, Math.min(100, Math.round(score)));
 
-  await prisma.contact.update({
-    where: { id: contactId },
+  await prisma.contact.updateMany({
+    where: { id: contactId, workspaceId },
     data: {
       leadScore,
       sentiment: contact.sentiment || 'NEUTRAL',

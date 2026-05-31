@@ -128,7 +128,7 @@ export class ReportsService {
       monthly = await this.prisma.$queryRaw<{ month: string; total: number }[]>`
         SELECT TO_CHAR("cancelledAt", 'Mon') as month,
           COUNT(*)::int as total
-        FROM "CustomerSubscription"
+        FROM "RAC_CustomerSubscription"
         WHERE "workspaceId" = ${workspaceId} AND status = 'CANCELLED'
           AND "cancelledAt" IS NOT NULL AND "cancelledAt" >= ${start}
         GROUP BY TO_CHAR("cancelledAt", 'Mon'), DATE_TRUNC('month', "cancelledAt")

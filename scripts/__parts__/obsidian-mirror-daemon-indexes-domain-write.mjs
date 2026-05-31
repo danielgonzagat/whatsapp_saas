@@ -81,7 +81,8 @@ import {
   isTestSource,
   buildMirrorSignalIndex,
 } from './obsidian-mirror-daemon-content.mjs';
-
+import { signalNotePath, writeGeneratedNote, buildSignalNote, listGeneratedMarkdownRelPaths } from './obsidian-mirror-daemon-indexes-notes.mjs';
+import { buildDomainNote, paginate, domainPageRelPath, buildDomainPageNote } from './obsidian-mirror-daemon-indexes-domain-pages.mjs';
 
 export function writeSignalNotes() {
   const signalRoot = join(SOURCE_MIRROR_DIR, '_signals');

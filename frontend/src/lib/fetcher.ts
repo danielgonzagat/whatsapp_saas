@@ -28,19 +28,3 @@ export async function swrFetcher<T = unknown>(endpoint: string): Promise<T> {
   return res.data as T;
 }
 
-/** Swr mutator. */
-export async function swrMutator<T = unknown>(
-  endpoint: string,
-  { arg }: { arg: { method?: string; body?: Record<string, unknown> } },
-): Promise<T> {
-  const res = await apiFetch<T>(endpoint, {
-    method: arg.method || 'POST',
-    body: arg.body,
-  });
-
-  if (res.error) {
-    throw createFetcherError(res.error, res.status);
-  }
-
-  return res.data as T;
-}

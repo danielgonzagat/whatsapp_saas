@@ -7,7 +7,31 @@ import {
 } from '@/components/kloel/AssistantResponseChrome';
 import { KloelMarkdown } from '@/components/kloel/KloelMarkdown';
 import { MessageActionBar } from '@/components/kloel/MessageActionBar';
-import { isRecord, type JsonRecord } from './KloelDashboard.helpers';
+import {
+  clampVersionIndex,
+  formatBrlCents,
+  pickAssistantFeedbackType,
+  pickContactDisplayName,
+  type JsonRecord,
+} from './KloelDashboard.helpers';
+import {
+  buildRevenueSummaryRows,
+  canSubmitUserEdit,
+  computeEditTextareaRows,
+  getBrainIntent,
+  getBrainResult,
+  hasBrainFallback,
+  hasBrainOperator,
+  isConversationStatusClosed,
+  mapContactRow,
+  mapConversationRow,
+  mapProductRow,
+  readSendMessageInfo,
+  resolveVisibleAssistantText,
+  shouldShowAssistantActions,
+  shouldShowThinkingPlaceholder,
+  toRecordArray,
+} from './KloelDashboard.message.helpers';
 import {
   getAssistantProcessingTrace,
   getAssistantResponseVersions,
@@ -26,8 +50,8 @@ export type DashboardMessage = {
 };
 
 function BrainOperatorResult({ metadata }: { metadata: JsonRecord }) {
-  const intent = typeof metadata.brainIntent === 'string' ? metadata.brainIntent : '';
-  const result = isRecord(metadata.brainResult) ? metadata.brainResult : null;
+  const intent = getBrainIntent(metadata);
+  const result = getBrainResult(metadata);
 
   if (!result) {
     return null;
@@ -36,7 +60,7 @@ function BrainOperatorResult({ metadata }: { metadata: JsonRecord }) {
   const data = result.data;
 
   if (intent === 'list_products') {
-    const products = Array.isArray(data) ? data : [];
+    const products = toRecordArray(data);
     if (products.length === 0) {
       return <p style={{ color: MUTED, fontSize: 14 }}>Nenhum produto encontrado no workspace.</p>;
     }
@@ -51,17 +75,18 @@ function BrainOperatorResult({ metadata }: { metadata: JsonRecord }) {
             </tr>
           </thead>
           <tbody>
-            {products.map((p: Record<string, unknown>, i: number) => (
-              <tr key={i} style={{ borderBottom: `1px solid ${DIVIDER}` }}>
-                <td style={{ padding: '8px 10px', color: TEXT }}>{String(p.name ?? '-')}</td>
-                <td style={{ padding: '8px 10px', color: TEXT }}>
-                  {typeof p.price === 'number' ? `R$ ${(p.price / 100).toFixed(2)}` : '-'}
-                </td>
-                <td style={{ padding: '8px 10px', color: p.active ? EMBER : MUTED }}>
-                  {p.active ? 'Sim' : 'Nao'}
-                </td>
-              </tr>
-            ))}
+            {products.map((p, i) => {
+              const row = mapProductRow(p);
+              return (
+                <tr key={i} style={{ borderBottom: `1px solid ${DIVIDER}` }}>
+                  <td style={{ padding: '8px 10px', color: TEXT }}>{row.name}</td>
+                  <td style={{ padding: '8px 10px', color: TEXT }}>{formatBrlCents(row.price)}</td>
+                  <td style={{ padding: '8px 10px', color: row.active ? EMBER : MUTED }}>
+                    {row.active ? 'Sim' : 'Nao'}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -69,48 +94,14 @@ function BrainOperatorResult({ metadata }: { metadata: JsonRecord }) {
   }
 
   if (intent === 'search_contact') {
-    const contacts = Array.isArray(data) ? data : [];
+    const contacts = toRecordArray(data);
     if (contacts.length === 0) {
       return <p style={{ color: MUTED, fontSize: 14 }}>Nenhum contato encontrado.</p>;
     }
     return (
       <div style={{ marginTop: 12 }}>
-        {contacts.map((c: Record<string, unknown>, i: number) => (
-          <div
-            key={i}
-            style={{
-              padding: '10px 14px',
-              borderBottom: `1px solid ${DIVIDER}`,
-              fontSize: 14,
-              color: TEXT,
-            }}
-          >
-            <strong>{String(c.name ?? '-')}</strong>
-            <span style={{ color: MUTED, marginLeft: 8 }}>{String(c.phone ?? '')}</span>
-            {c.email ? (
-              <span style={{ color: MUTED, marginLeft: 8 }}>{String(c.email)}</span>
-            ) : null}
-            {c.leadScore ? (
-              <span style={{ marginLeft: 8, color: EMBER, fontSize: 12 }}>
-                Score: {String(c.leadScore)}
-              </span>
-            ) : null}
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (intent === 'list_conversations') {
-    const conversations = Array.isArray(data) ? data : [];
-    if (conversations.length === 0) {
-      return <p style={{ color: MUTED, fontSize: 14 }}>Nenhuma conversa recente.</p>;
-    }
-    return (
-      <div style={{ marginTop: 12 }}>
-        {conversations.map((conv: Record<string, unknown>, i: number) => {
-          const contact = isRecord(conv.contact) ? conv.contact : null;
-          const agent = isRecord(conv.agent) ? conv.agent : null;
+        {contacts.map((c, i) => {
+          const row = mapContactRow(c);
           return (
             <div
               key={i}
@@ -121,22 +112,58 @@ function BrainOperatorResult({ metadata }: { metadata: JsonRecord }) {
                 color: TEXT,
               }}
             >
-              <strong>{contact ? String(contact.name ?? contact.phone ?? '-') : '-'}</strong>
+              <strong>{row.name}</strong>
+              <span style={{ color: MUTED, marginLeft: 8 }}>{row.phone}</span>
+              {row.email ? (
+                <span style={{ color: MUTED, marginLeft: 8 }}>{row.email}</span>
+              ) : null}
+              {row.leadScore ? (
+                <span style={{ marginLeft: 8, color: EMBER, fontSize: 12 }}>
+                  Score: {row.leadScore}
+                </span>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  if (intent === 'list_conversations') {
+    const conversations = toRecordArray(data);
+    if (conversations.length === 0) {
+      return <p style={{ color: MUTED, fontSize: 14 }}>Nenhuma conversa recente.</p>;
+    }
+    return (
+      <div style={{ marginTop: 12 }}>
+        {conversations.map((conv, i) => {
+          const row = mapConversationRow(conv);
+          return (
+            <div
+              key={i}
+              style={{
+                padding: '10px 14px',
+                borderBottom: `1px solid ${DIVIDER}`,
+                fontSize: 14,
+                color: TEXT,
+              }}
+            >
+              <strong>{pickContactDisplayName(row.contact)}</strong>
               <span style={{ color: MUTED, marginLeft: 8, fontSize: 13 }}>
-                {String(conv.lastMessagePreview ?? '').slice(0, 80)}
+                {row.preview}
               </span>
               <span
                 style={{
                   marginLeft: 8,
-                  color: conv.status === 'closed' ? MUTED : EMBER,
+                  color: isConversationStatusClosed(row.status) ? MUTED : EMBER,
                   fontSize: 12,
                 }}
               >
-                {String(conv.status ?? '-')}
+                {row.status}
               </span>
-              {agent ? (
+              {row.agentName ? (
                 <span style={{ marginLeft: 8, color: MUTED, fontSize: 12 }}>
-                  {String(agent.name ?? '')}
+                  {row.agentName}
                 </span>
               ) : null}
             </div>
@@ -147,10 +174,11 @@ function BrainOperatorResult({ metadata }: { metadata: JsonRecord }) {
   }
 
   if (intent === 'query_revenue_summary') {
-    const summary = isRecord(data) ? data : null;
-    if (!summary) {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
       return <p style={{ color: MUTED, fontSize: 14 }}>Dados de receita indisponiveis.</p>;
     }
+    const rows = buildRevenueSummaryRows(data as JsonRecord, formatBrlCents);
+    const lastIndex = rows.length - 1;
     return (
       <div style={{ marginTop: 12, overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, fontFamily: F }}>
@@ -161,40 +189,15 @@ function BrainOperatorResult({ metadata }: { metadata: JsonRecord }) {
             </tr>
           </thead>
           <tbody>
-            <tr style={{ borderBottom: `1px solid ${DIVIDER}` }}>
-              <td style={{ padding: '8px 10px', color: TEXT }}>Receita Total</td>
-              <td style={{ padding: '8px 10px', color: TEXT }}>
-                R$ {((Number(summary.totalRevenue) || 0) / 100).toFixed(2)}
-              </td>
-            </tr>
-            <tr style={{ borderBottom: `1px solid ${DIVIDER}` }}>
-              <td style={{ padding: '8px 10px', color: TEXT }}>Ticket Medio</td>
-              <td style={{ padding: '8px 10px', color: TEXT }}>
-                R$ {((Number(summary.ticketMedio) || 0) / 100).toFixed(2)}
-              </td>
-            </tr>
-            <tr style={{ borderBottom: `1px solid ${DIVIDER}` }}>
-              <td style={{ padding: '8px 10px', color: TEXT }}>Total de Pedidos</td>
-              <td style={{ padding: '8px 10px', color: TEXT }}>
-                {String(summary.totalCount ?? 0)}
-              </td>
-            </tr>
-            <tr style={{ borderBottom: `1px solid ${DIVIDER}` }}>
-              <td style={{ padding: '8px 10px', color: TEXT }}>Pedidos Pagos</td>
-              <td style={{ padding: '8px 10px', color: TEXT }}>{String(summary.paidCount ?? 0)}</td>
-            </tr>
-            <tr style={{ borderBottom: `1px solid ${DIVIDER}` }}>
-              <td style={{ padding: '8px 10px', color: TEXT }}>Conversao</td>
-              <td style={{ padding: '8px 10px', color: TEXT }}>
-                {String(summary.conversao ?? 0)}%
-              </td>
-            </tr>
-            <tr>
-              <td style={{ padding: '8px 10px', color: TEXT }}>Periodo</td>
-              <td style={{ padding: '8px 10px', color: TEXT }}>
-                {String(summary.periodDays ?? 30)} dias
-              </td>
-            </tr>
+            {rows.map((row, i) => (
+              <tr
+                key={row.label}
+                style={i < lastIndex ? { borderBottom: `1px solid ${DIVIDER}` } : undefined}
+              >
+                <td style={{ padding: '8px 10px', color: TEXT }}>{row.label}</td>
+                <td style={{ padding: '8px 10px', color: TEXT }}>{row.value}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -202,14 +205,14 @@ function BrainOperatorResult({ metadata }: { metadata: JsonRecord }) {
   }
 
   if (intent === 'send_message_via_channel') {
-    const info = isRecord(data) ? data : null;
+    const info = readSendMessageInfo(data);
     return (
       <div style={{ marginTop: 12, fontSize: 14, color: TEXT }}>
         <p>
-          Mensagem enviada para <strong>{String(info?.phone ?? '-')}</strong> via{' '}
-          {String(info?.channel ?? 'whatsapp')}.
+          Mensagem enviada para <strong>{info.phone}</strong> via{' '}
+          {info.channel}.
         </p>
-        <p style={{ color: MUTED, fontSize: 13 }}>{String(info?.messagePreview ?? '')}</p>
+        <p style={{ color: MUTED, fontSize: 13 }}>{info.preview}</p>
       </div>
     );
   }
@@ -278,7 +281,7 @@ export function MessageBlock({
     [message.metadata, processingTrace],
   );
   const [activeVersionIndex, setActiveVersionIndex] = useState(
-    Math.max(assistantVersions.length - 1, 0),
+    clampVersionIndex(assistantVersions.length - 1, assistantVersions.length),
   );
 
   useEffect(() => {
@@ -288,7 +291,9 @@ export function MessageBlock({
   }, [isEditing, message.text]);
 
   useEffect(() => {
-    queueMicrotask(() => setActiveVersionIndex(Math.max(assistantVersions.length - 1, 0)));
+    queueMicrotask(() =>
+      setActiveVersionIndex(clampVersionIndex(assistantVersions.length - 1, assistantVersions.length)),
+    );
   }, [assistantVersions.length]);
 
   if (message.role === 'user') {
@@ -307,7 +312,7 @@ export function MessageBlock({
               <textarea
                 value={draftText}
                 onChange={(event) => setDraftText(event.target.value)}
-                rows={Math.max(3, Math.min(10, draftText.split('\n').length + 1))}
+                rows={computeEditTextareaRows(draftText)}
                 style={{
                   width: '100%',
                   minHeight: 84,
@@ -353,7 +358,7 @@ export function MessageBlock({
                 </button>
                 <button
                   type="button"
-                  disabled={isBusy || !draftText.trim() || draftText.trim() === message.text.trim()}
+                  disabled={!canSubmitUserEdit(isBusy, draftText, message.text)}
                   onClick={async () => {
                     await onUserEdit?.(message.id, draftText.trim());
                     setIsEditing(false);
@@ -367,14 +372,10 @@ export function MessageBlock({
                     fontSize: 13,
                     fontWeight: 700,
                     padding: '8px 12px',
-                    cursor:
-                      isBusy || !draftText.trim() || draftText.trim() === message.text.trim()
-                        ? 'default'
-                        : 'pointer',
-                    opacity:
-                      isBusy || !draftText.trim() || draftText.trim() === message.text.trim()
-                        ? 0.45
-                        : 1,
+                    cursor: canSubmitUserEdit(isBusy, draftText, message.text)
+                      ? 'pointer'
+                      : 'default',
+                    opacity: canSubmitUserEdit(isBusy, draftText, message.text) ? 1 : 0.45,
                   }}
                 >
                   {kloelT(`Salvar`)}
@@ -428,18 +429,16 @@ export function MessageBlock({
     );
   }
 
-  const feedbackRecord = isRecord(message.metadata?.feedback) ? message.metadata.feedback : null;
-  const feedbackType =
-    feedbackRecord?.type === 'positive' || feedbackRecord?.type === 'negative'
-      ? (feedbackRecord.type as 'positive' | 'negative')
-      : null;
-  const visibleAssistantText =
-    assistantVersions[Math.min(activeVersionIndex, Math.max(assistantVersions.length - 1, 0))]
-      ?.content || message.text;
+  const feedbackType = pickAssistantFeedbackType(message.metadata);
+  const visibleAssistantText = resolveVisibleAssistantText(
+    assistantVersions,
+    clampVersionIndex(activeVersionIndex, assistantVersions.length),
+    message.text,
+  );
   const hasProcessingTrace = processingTrace.length > 0;
   const hasVisibleAssistantText = !!visibleAssistantText.trim();
 
-  if (isThinking && !hasVisibleAssistantText) {
+  if (shouldShowThinkingPlaceholder(isThinking, hasVisibleAssistantText)) {
     if (hasProcessingTrace) {
       return (
         <AssistantProcessingTraceCard
@@ -476,15 +475,17 @@ export function MessageBlock({
 
       <AssistantVersionNavigator
         total={assistantVersions.length}
-        activeIndex={Math.min(activeVersionIndex, Math.max(assistantVersions.length - 1, 0))}
+        activeIndex={clampVersionIndex(activeVersionIndex, assistantVersions.length)}
         onChange={setActiveVersionIndex}
       />
 
       <AssistantAssetBlock
         {...(message.metadata !== undefined ? { metadata: message.metadata } : {})}
       />
-      {message.metadata?.brainOperator ? <BrainOperatorResult metadata={message.metadata} /> : null}
-      {message.metadata?.brainFallback ? <BrainFallbackMessage /> : null}
+      {message.metadata && hasBrainOperator(message.metadata) ? (
+        <BrainOperatorResult metadata={message.metadata} />
+      ) : null}
+      {message.metadata && hasBrainFallback(message.metadata) ? <BrainFallbackMessage /> : null}
       <KloelMarkdown content={visibleAssistantText} />
       {isStreaming ? (
         <span
@@ -501,7 +502,7 @@ export function MessageBlock({
           }}
         />
       ) : null}
-      {!isThinking && hasVisibleAssistantText ? (
+      {shouldShowAssistantActions(isThinking, hasVisibleAssistantText) ? (
         <MessageActionBar
           content={visibleAssistantText}
           align="left"

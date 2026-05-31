@@ -1,9 +1,9 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { OrderStatus } from '@prisma/client';
 import Redis from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../marketing/channels/whatsapp/provider-settings.types';
 import {
   computeAverageResponseTimeSeconds,
   computeOperationalHealth,
@@ -12,53 +12,15 @@ import {
   sumByBuckets,
 } from './home-aggregation.util';
 import { computeProductRanking } from './dashboard.product-rank.helpers';
-type SetupChecklistItem = {
-  key: string;
-  completed: boolean;
-};
-const SETUP_CHECKPOINT_COPY: Record<string, { label: string; description: string }> = {
-  profile: {
-    label: 'Perfil comercial configurado',
-    description:
-      'O onboarding precisa salvar o tipo de usuário, canal principal e uso inicial da IA.',
-  },
-  product: {
-    label: 'Produto informado',
-    description:
-      'O workspace precisa ter produto próprio ou intenção clara de cadastrar um produto.',
-  },
-  checkout: {
-    label: 'Checkout informado',
-    description: 'O produtor precisa confirmar se já possui checkout ou criar um checkout Kloel.',
-  },
-  payment: {
-    label: 'Pagamentos conectados',
-    description: 'O workspace precisa ter provider de pagamento pronto para receber vendas reais.',
-  },
-  channel: {
-    label: 'Canal principal definido',
-    description: 'WhatsApp, Instagram, Messenger ou e-mail precisa estar definido no setup.',
-  },
-  ai: {
-    label: 'Uso da IA definido',
-    description: 'A IA precisa saber se começa em atendimento, venda ou recuperação.',
-  },
-};
-function readSetupChecklist(value: unknown): SetupChecklistItem[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-  return value.flatMap((item) => {
-    if (!item || typeof item !== 'object' || Array.isArray(item)) {
-      return [];
-    }
-    const record = item as Record<string, unknown>;
-    if (typeof record.key !== 'string' || typeof record.completed !== 'boolean') {
-      return [];
-    }
-    return [{ key: record.key, completed: record.completed }];
-  });
-}
+import { mapRecentConversation } from './dashboard.recent-conversations.helpers';
+import { buildSetupCheckpoints, readSetupChecklist } from './dashboard.setup-checklist.helpers';
+import {
+  aggregateStatusCounts,
+  computeOutboundMessageRates,
+  summarizeOperationalMetrics,
+} from './dashboard.stats.helpers';
+import { MindMemoryItemService } from '../kloel/mind/aliases/mind-memory-item.service';
+
 /** Dashboard service. */
 @Injectable()
 export class DashboardService {
@@ -66,7 +28,27 @@ export class DashboardService {
   constructor(
     private prisma: PrismaService,
     @InjectRedis() private readonly redis: Redis,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {}
+
+  /**
+   * Canonical Brain → Mind memory delegate. Routes through the
+   * `MindMemoryItemService` alias when DashboardModule wires it; otherwise
+   * falls back to the raw Prisma delegate (byte-identical surface, boot-safe).
+   */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
+  }
+  /**
+   * Canonical-name alias of {@link getStats} for the Kloel capability
+   * resolver (`DashboardService.summary`). Accepts the (workspaceId, args)
+   * signature used by `KloelDomainServiceResolver`; args are ignored —
+   * the summary is workspace-scoped only.
+   */
+  async summary(workspaceId: string) {
+    return this.getStats(workspaceId);
+  }
+
   async getStats(workspaceId: string) {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
@@ -88,21 +70,9 @@ export class DashboardService {
       },
       _count: { status: true },
     });
-    const statsMap = messageStats.reduce(
-      (acc, curr) => {
-        acc[curr.status] = curr._count.status;
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
-    const sent = statsMap.SENT || 0;
-    const delivered = statsMap.DELIVERED || 0;
-    const read = statsMap.READ || 0;
-    const failed = statsMap.FAILED || 0;
-    const totalOutbound = sent + delivered + read + failed;
-    const deliveryRate = totalOutbound > 0 ? ((delivered + read) / totalOutbound) * 100 : 0;
-    const deliveredOrRead = delivered + read;
-    const readRate = deliveredOrRead > 0 ? (read / deliveredOrRead) * 100 : 0;
+    const statsMap = aggregateStatusCounts(messageStats);
+    const { totalOutbound, deliveryRatePct, readRatePct, errorRatePct } =
+      computeOutboundMessageRates(statsMap);
     const activeConversations = await this.prisma.conversation.count({
       where: { workspaceId, status: 'OPEN' },
     });
@@ -116,47 +86,27 @@ export class DashboardService {
       },
       _count: { status: true },
     });
-    const flowStats = flowExecutions.reduce(
-      (acc, curr) => {
-        acc[curr.status] = curr._count.status;
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
+    const flowStats = aggregateStatusCounts(flowExecutions);
     const key = `metrics:${workspaceId}`;
     this.logger.log('Fetching Redis operational metrics', {
       context: 'DashboardService.getStats',
       workspaceId,
     });
     const events = await this.redis.lrange(key, 0, -1);
-    let healthScore = 100;
-    let avgLatency = 0;
-    if (events.length > 0) {
-      let success = 0;
-      let totalLatency = 0;
-      events.forEach((e) => {
-        const [ok, lat] = e.split(':');
-        if (ok === '1') {
-          success += 1;
-        }
-        totalLatency += Number(lat || 0);
-      });
-      healthScore = Math.round((success / events.length) * 100);
-      avgLatency = Math.round(totalLatency / events.length);
-    }
+    const { healthScore, avgLatencyMs } = summarizeOperationalMetrics(events);
     return {
       contacts: totalContacts,
       campaigns: totalCampaigns,
       flows: totalFlows,
       messages: totalOutbound,
       // Calculated Rates
-      deliveryRate: Number(deliveryRate.toFixed(1)),
-      readRate: Number(readRate.toFixed(1)),
-      errorRate: totalOutbound > 0 ? Number(((failed / totalOutbound) * 100).toFixed(1)) : 0,
+      deliveryRate: deliveryRatePct,
+      readRate: readRatePct,
+      errorRate: errorRatePct,
       // Operational
       activeConversations,
       healthScore,
-      avgLatency,
+      avgLatency: avgLatencyMs,
       // Flow Funnel (Today)
       flowCompleted: flowStats.COMPLETED || 0,
       flowRunning: flowStats.RUNNING || 0,
@@ -340,7 +290,7 @@ export class DashboardService {
         orderBy: { createdAt: 'asc' },
         take: 3000,
       }),
-      this.prisma.kloelMemory.findUnique({
+      this.mindMemoryItems.findUnique({
         where: { workspaceId_key: { workspaceId, key: 'onboarding_setup_checklist' } },
         select: { value: true },
       }),
@@ -404,18 +354,7 @@ export class DashboardService {
       recentConversations.length > 0,
     ]);
     const setupChecklist = readSetupChecklist(setupChecklistMemory?.value);
-    const setupCheckpoints = setupChecklist.map((item) => {
-      const copy = SETUP_CHECKPOINT_COPY[item.key] ?? {
-        label: `Setup: ${item.key}`,
-        description: 'Item de setup persistido pelo onboarding inicial.',
-      };
-      return {
-        id: `setup-${item.key}`,
-        label: copy.label,
-        description: copy.description,
-        active: item.completed,
-      };
-    });
+    const setupCheckpoints = buildSetupCheckpoints(setupChecklist);
     const setupActiveCheckpoints = setupCheckpoints.filter(
       (checkpoint) => checkpoint.active,
     ).length;
@@ -459,29 +398,7 @@ export class DashboardService {
         averageTicketInCents: averageTicketSeries,
       },
       products: topProducts,
-      recentConversations: recentConversations.map((conversation) => {
-        const lastMessage = conversation.messages?.[0];
-        const status =
-          conversation.status === 'CLOSED'
-            ? 'done'
-            : conversation.mode === 'AI' && conversation.unreadCount === 0
-              ? 'ai'
-              : 'waiting';
-        return {
-          id: conversation.id,
-          contactName:
-            conversation.contact?.name ||
-            conversation.contact?.phone ||
-            'Contato sem identificação',
-          contactPhone: conversation.contact?.phone || null,
-          avatarUrl: conversation.contact?.avatarUrl || null,
-          preview: String(lastMessage?.content || '').trim(),
-          lastMessageAt:
-            (lastMessage?.createdAt || conversation.lastMessageAt)?.toISOString?.() || null,
-          status,
-          unreadCount: conversation.unreadCount,
-        };
-      }),
+      recentConversations: recentConversations.map(mapRecentConversation),
       health: {
         operationalScorePct: operationalHealth.operationalScorePct,
         checkoutCompletionRatePct,

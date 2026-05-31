@@ -5,12 +5,18 @@ export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** For each sequential. */
+/**
+ * For each sequential.
+ *
+ * Cross-boundary canonical. Mirror lives at worker/utils/async-sequence.ts.
+ * Drift detection: scripts/ops/check-cross-boundary-utils-drift.mjs.
+ * Per ADR-pending docs/architecture/CROSS_BOUNDARY_UTILS_DECISION.md.
+ */
 export async function forEachSequential<T>(
   items: Iterable<T>,
   callback: (item: T, index: number) => Promise<void>,
 ): Promise<void> {
-  const list = Array.isArray(items) ? [...items] : Array.from(items);
+  const list: T[] = Array.from(items);
 
   const run = async (index: number): Promise<void> => {
     if (index >= list.length) {
@@ -23,12 +29,18 @@ export async function forEachSequential<T>(
   await run(0);
 }
 
-/** Find first sequential. */
+/**
+ * Find first sequential.
+ *
+ * Cross-boundary canonical. Mirror lives at worker/utils/async-sequence.ts.
+ * Drift detection: scripts/ops/check-cross-boundary-utils-drift.mjs.
+ * Per ADR-pending docs/architecture/CROSS_BOUNDARY_UTILS_DECISION.md.
+ */
 export async function findFirstSequential<T, R>(
   items: Iterable<T>,
   callback: (item: T, index: number) => Promise<R | null | undefined | false>,
 ): Promise<R | undefined> {
-  const list = Array.isArray(items) ? [...items] : Array.from(items);
+  const list: T[] = Array.from(items);
 
   const run = async (index: number): Promise<R | undefined> => {
     if (index >= list.length) {
@@ -44,7 +56,13 @@ export async function findFirstSequential<T, R>(
   return run(0);
 }
 
-/** Poll until. */
+/**
+ * Poll until.
+ *
+ * Cross-boundary canonical. Mirror lives at worker/utils/async-sequence.ts.
+ * Drift detection: scripts/ops/check-cross-boundary-utils-drift.mjs.
+ * Per ADR-pending docs/architecture/CROSS_BOUNDARY_UTILS_DECISION.md.
+ */
 export async function pollUntil<T>(options: {
   timeoutMs: number;
   intervalMs: number;

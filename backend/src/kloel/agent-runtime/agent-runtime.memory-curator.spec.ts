@@ -1,4 +1,23 @@
 import { AgentRuntimeMemoryCuratorService } from './agent-runtime.memory-curator';
+import { mindMemoryStub } from '../../../test/helpers/mind-memory-stub';
+
+interface CuratedUpsertArg {
+  create: {
+    value: Record<string, unknown>;
+    metadata: Record<string, unknown>;
+  };
+}
+
+interface CuratedUpdateManyArg {
+  data: {
+    metadata: Record<string, unknown>;
+  };
+}
+
+function firstMockArg<T>(mock: jest.Mock, callIndex = 0): T {
+  const call = mock.mock.calls[callIndex] as readonly unknown[] | undefined;
+  return call?.[0] as T;
+}
 
 function makePrisma(overrides: Record<string, unknown> = {}) {
   return {
@@ -15,7 +34,7 @@ function makePrisma(overrides: Record<string, unknown> = {}) {
 describe('AgentRuntimeMemoryCuratorService', () => {
   it('persists failed tool outcomes as curated operational memory', async () => {
     const prisma = makePrisma();
-    const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+    const curator = new AgentRuntimeMemoryCuratorService(prisma as never, mindMemoryStub(prisma));
 
     const key = await curator.curateTurnOutcome({
       workspaceId: 'ws_1',
@@ -28,11 +47,11 @@ describe('AgentRuntimeMemoryCuratorService', () => {
 
     expect(key).toMatch(/^agent_curated_turn:/);
     expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
+      expect.objectContaining<Record<string, unknown>>({
+        where: expect.objectContaining<Record<string, unknown>>({
           workspaceId_key: expect.objectContaining({ workspaceId: 'ws_1' }),
         }),
-        create: expect.objectContaining({
+        create: expect.objectContaining<Record<string, unknown>>({
           category: 'agent_curated',
           type: 'action_failure',
           content: expect.stringContaining('failedTools=agent.job.due'),
@@ -48,7 +67,7 @@ describe('AgentRuntimeMemoryCuratorService', () => {
 
   it('persists unresolved operational context without saving ordinary turns', async () => {
     const prisma = makePrisma();
-    const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+    const curator = new AgentRuntimeMemoryCuratorService(prisma as never, mindMemoryStub(prisma));
 
     const unresolvedKey = await curator.curateTurnOutcome({
       workspaceId: 'ws_1',
@@ -72,7 +91,7 @@ describe('AgentRuntimeMemoryCuratorService', () => {
   it('returns null instead of throwing when persistence fails', async () => {
     const prisma = makePrisma();
     prisma.kloelMemory.upsert.mockRejectedValue(new Error('db down'));
-    const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+    const curator = new AgentRuntimeMemoryCuratorService(prisma as never, mindMemoryStub(prisma));
 
     const key = await curator.curateTurnOutcome({
       workspaceId: 'ws_1',
@@ -86,7 +105,7 @@ describe('AgentRuntimeMemoryCuratorService', () => {
 
   it('includes confidence and retentionScore in curated memory value', async () => {
     const prisma = makePrisma();
-    const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+    const curator = new AgentRuntimeMemoryCuratorService(prisma as never, mindMemoryStub(prisma));
 
     await curator.curateTurnOutcome({
       workspaceId: 'ws_1',
@@ -96,7 +115,7 @@ describe('AgentRuntimeMemoryCuratorService', () => {
     });
 
     expect(prisma.kloelMemory.upsert).toHaveBeenCalled();
-    const callArg = prisma.kloelMemory.upsert.mock.calls[0][0];
+    const callArg = firstMockArg<CuratedUpsertArg>(prisma.kloelMemory.upsert);
     expect(typeof callArg.create.value.confidence).toBe('number');
     expect(typeof callArg.create.value.retentionScore).toBe('number');
     expect(typeof callArg.create.metadata.curatedConfidence).toBe('number');
@@ -106,7 +125,7 @@ describe('AgentRuntimeMemoryCuratorService', () => {
 
   it('assigns higher confidence to action_failure than unresolved context', async () => {
     const prisma = makePrisma();
-    const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+    const curator = new AgentRuntimeMemoryCuratorService(prisma as never, mindMemoryStub(prisma));
 
     await curator.curateTurnOutcome({
       workspaceId: 'ws_1',
@@ -114,7 +133,7 @@ describe('AgentRuntimeMemoryCuratorService', () => {
       userMessage: 'test',
       assistantMessage: 'Webhook proof is pending.',
     });
-    const unresolvedCall = prisma.kloelMemory.upsert.mock.calls[0][0];
+    const unresolvedCall = firstMockArg<CuratedUpsertArg>(prisma.kloelMemory.upsert, 0);
 
     await curator.curateTurnOutcome({
       workspaceId: 'ws_1',
@@ -123,18 +142,17 @@ describe('AgentRuntimeMemoryCuratorService', () => {
       assistantMessage: 'failed',
       actions: [{ toolName: 'send_message', success: false }],
     });
-    const failureCall = prisma.kloelMemory.upsert.mock.calls[1][0];
+    const failureCall = firstMockArg<CuratedUpsertArg>(prisma.kloelMemory.upsert, 1);
 
-    const unresolvedC = (unresolvedCall.create.value as Record<string, unknown>)
-      .confidence as number;
-    const failureC = (failureCall.create.value as Record<string, unknown>).confidence as number;
+    const unresolvedC = unresolvedCall.create.value.confidence as number;
+    const failureC = failureCall.create.value.confidence as number;
     expect(failureC).toBeGreaterThan(unresolvedC);
   });
 
   describe('cleanupStaleMemories', () => {
     it('returns empty hygiene result when no curated memories exist', async () => {
       const prisma = makePrisma();
-      const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+      const curator = new AgentRuntimeMemoryCuratorService(prisma as never, mindMemoryStub(prisma));
 
       const result = await curator.cleanupStaleMemories('ws_1');
 
@@ -157,7 +175,7 @@ describe('AgentRuntimeMemoryCuratorService', () => {
           },
         ]),
       });
-      const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+      const curator = new AgentRuntimeMemoryCuratorService(prisma as never, mindMemoryStub(prisma));
 
       const result = await curator.cleanupStaleMemories('ws_1', { minRetentionScore: 0.3 });
 
@@ -165,7 +183,7 @@ describe('AgentRuntimeMemoryCuratorService', () => {
       expect(result.expired).toBe(1);
       expect(result.staleKeys).toContain('agent_curated_turn:abc123');
       expect(prisma.kloelMemory.updateMany).toHaveBeenCalledTimes(1);
-      const updateCall = prisma.kloelMemory.updateMany.mock.calls[0][0];
+      const updateCall = firstMockArg<CuratedUpdateManyArg>(prisma.kloelMemory.updateMany);
       expect(updateCall).toMatchObject({
         where: { id: 'mem_a', workspaceId: 'ws_1' },
         data: {
@@ -189,7 +207,7 @@ describe('AgentRuntimeMemoryCuratorService', () => {
           },
         ]),
       });
-      const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+      const curator = new AgentRuntimeMemoryCuratorService(prisma as never, mindMemoryStub(prisma));
 
       const result = await curator.cleanupStaleMemories('ws_1');
 
@@ -202,7 +220,7 @@ describe('AgentRuntimeMemoryCuratorService', () => {
       const prisma = makePrisma({
         findMany: jest.fn().mockRejectedValue(new Error('db down')),
       });
-      const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+      const curator = new AgentRuntimeMemoryCuratorService(prisma as never, mindMemoryStub(prisma));
 
       const result = await curator.cleanupStaleMemories('ws_1');
 
@@ -212,7 +230,7 @@ describe('AgentRuntimeMemoryCuratorService', () => {
 
     it('respects maxItems option', async () => {
       const prisma = makePrisma();
-      const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+      const curator = new AgentRuntimeMemoryCuratorService(prisma as never, mindMemoryStub(prisma));
 
       await curator.cleanupStaleMemories('ws_1', { maxItems: 10 });
 

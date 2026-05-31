@@ -1,3 +1,7 @@
+/**
+ * @capability FlowNodeDataHelpers
+ * @domain flows-automation
+ */
 import type { FlowNodeData } from './flow-engine.types';
 
 // Narrowing helpers for FlowNodeData — data is a runtime JSON bag, so we pull

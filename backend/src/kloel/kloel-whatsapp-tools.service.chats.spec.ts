@@ -1,14 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { WHATSAPP_MESSAGING } from '../whatsapp/whatsapp.tokens';
-import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
+import { WHATSAPP_MESSAGING } from '../marketing/channels/whatsapp/whatsapp.tokens';
+import { WhatsAppProviderRegistry } from '../marketing/channels/whatsapp/providers/provider-registry';
 import { AudioService } from './audio.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { ChannelTransportRegistry } from './channel-transport.registry';
 
-jest.mock('../whatsapp/providers/provider-registry');
+jest.mock('../marketing/channels/whatsapp/providers/provider-registry');
 jest.mock('./audio.service');
 jest.mock('../billing/plan-limits.service');
 jest.mock('../observability/ops-alert.service');

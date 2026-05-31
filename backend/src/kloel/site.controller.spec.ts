@@ -1,6 +1,10 @@
 import { HttpException, ServiceUnavailableException } from '@nestjs/common';
 import { SiteController } from './site.controller';
 import { InsufficientWalletBalanceError } from '../wallet/wallet.types';
+import { partialMatch } from '../../test/helpers/match-instance';
+
+// Typed wrappers so nested jest matcher values stay typed (eslint no-unsafe-assignment).
+const anyValue = (): jest.AsymmetricMatcher => expect.anything() as jest.AsymmetricMatcher;
 
 describe('SiteController', () => {
   const originalOpenAiKey = process.env.OPENAI_API_KEY;
@@ -31,9 +35,9 @@ describe('SiteController', () => {
           updateMany: jest.fn(),
           deleteMany: jest.fn(),
         },
-      } as never,
-      { log: jest.fn() } as never,
-      walletService as never,
+      },
+      { log: jest.fn() },
+      walletService,
     );
   });
 
@@ -62,11 +66,14 @@ describe('SiteController', () => {
           prompt_tokens_details: { cached_tokens: 0 },
         },
       }),
-    } as never);
-
-    const result = await controller.generateSite({ user: { workspaceId: 'ws_1' } } as never, {
-      prompt: 'Crie uma landing page',
     });
+
+    const result = await controller.generateSite(
+      { user: { workspaceId: 'ws_1' } },
+      {
+        prompt: 'Crie uma landing page',
+      },
+    );
 
     expect(result).toEqual({
       success: true,
@@ -74,17 +81,17 @@ describe('SiteController', () => {
       message: 'Generated via OpenAI',
     });
     expect(walletService.chargeForUsage).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         workspaceId: 'ws_1',
         operation: 'ai_message',
-        quotedCostCents: expect.anything(),
+        quotedCostCents: anyValue(),
       }),
     );
     expect(walletService.settleUsageCharge).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         workspaceId: 'ws_1',
         operation: 'ai_message',
-        actualCostCents: expect.anything(),
+        actualCostCents: anyValue(),
         reason: 'site_generation_provider_usage',
       }),
     );
@@ -104,11 +111,14 @@ describe('SiteController', () => {
           cache_creation_input_tokens: 0,
         },
       }),
-    } as never);
-
-    const result = await controller.generateSite({ user: { workspaceId: 'ws_1' } } as never, {
-      prompt: 'Crie uma landing page',
     });
+
+    const result = await controller.generateSite(
+      { user: { workspaceId: 'ws_1' } },
+      {
+        prompt: 'Crie uma landing page',
+      },
+    );
 
     expect(result).toEqual({
       success: true,
@@ -116,17 +126,17 @@ describe('SiteController', () => {
       message: 'Generated via Anthropic',
     });
     expect(walletService.chargeForUsage).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         workspaceId: 'ws_1',
         operation: 'ai_message',
-        quotedCostCents: expect.anything(),
+        quotedCostCents: anyValue(),
       }),
     );
     expect(walletService.settleUsageCharge).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         workspaceId: 'ws_1',
         operation: 'ai_message',
-        actualCostCents: expect.anything(),
+        actualCostCents: anyValue(),
       }),
     );
   });
@@ -137,9 +147,12 @@ describe('SiteController', () => {
     );
 
     try {
-      await controller.generateSite({ user: { workspaceId: 'ws_1' } } as never, {
-        prompt: 'Crie',
-      });
+      await controller.generateSite(
+        { user: { workspaceId: 'ws_1' } },
+        {
+          prompt: 'Crie',
+        },
+      );
       throw new Error('expected wallet payment required exception');
     } catch (error) {
       expect(error).toBeInstanceOf(HttpException);
@@ -153,14 +166,14 @@ describe('SiteController', () => {
     fetchMock.mockResolvedValue({
       ok: false,
       text: async () => 'boom',
-    } as never);
+    });
 
     await expect(
-      controller.generateSite({ user: { workspaceId: 'ws_1' } } as never, { prompt: 'Crie' }),
+      controller.generateSite({ user: { workspaceId: 'ws_1' } }, { prompt: 'Crie' }),
     ).rejects.toBeInstanceOf(ServiceUnavailableException);
 
     expect(walletService.refundUsageCharge).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         workspaceId: 'ws_1',
         operation: 'ai_message',
         reason: 'site_generation_provider_exception',

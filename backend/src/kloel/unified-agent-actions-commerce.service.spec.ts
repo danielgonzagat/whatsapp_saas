@@ -6,6 +6,7 @@ import { AuditService } from '../audit/audit.service';
 import { PaymentService } from './payment.service';
 import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { partialMatch, stringContains } from '../../test/helpers/match-instance';
 
 jest.mock('./money-format.util', () => ({
   formatBrlAmount: jest.fn((n: number) => `R$ ${n.toFixed(2)}`),
@@ -42,7 +43,7 @@ describe('UnifiedAgentActionsCommerceService', () => {
       },
       $transaction: jest.fn().mockImplementation((arg: unknown) => {
         if (typeof arg === 'function') {
-          return arg(prisma);
+          return (arg as (tx: unknown) => unknown)(prisma);
         }
         return Promise.resolve(undefined);
       }),
@@ -109,7 +110,7 @@ describe('UnifiedAgentActionsCommerceService', () => {
       expect(messaging.actionSendMessage).toHaveBeenCalledWith(
         wsId,
         phone,
-        expect.objectContaining({ message: expect.stringContaining('Produto Mem') }),
+        partialMatch({ message: stringContains('Produto Mem') }),
         undefined,
       );
     });
@@ -129,10 +130,10 @@ describe('UnifiedAgentActionsCommerceService', () => {
       expect(result.success).toBe(true);
       expect(result.product.name).toBe('DB Product');
       expect(prisma.product.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           where: {
             workspaceId: wsId,
-            name: expect.objectContaining({ contains: 'DB Product' }),
+            name: partialMatch({ contains: 'DB Product' }),
             active: true,
           },
         }),
@@ -170,7 +171,7 @@ describe('UnifiedAgentActionsCommerceService', () => {
       });
 
       expect(prisma.kloelMemory.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ workspaceId: 'ws-tenant' }) }),
+        partialMatch({ where: partialMatch({ workspaceId: 'ws-tenant' }) }),
       );
     });
   });
@@ -186,7 +187,7 @@ describe('UnifiedAgentActionsCommerceService', () => {
       expect(result.success).toBe(true);
       expect(result.paymentLink).toBe('https://pay.test/link');
       expect(paymentService.createPayment).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           workspaceId: wsId,
           amount: 99.9,
           description: 'Pagamento curso',
@@ -201,10 +202,18 @@ describe('UnifiedAgentActionsCommerceService', () => {
         productName: 'Prod',
       });
 
-      expect(auditService.logWithTx).toHaveBeenCalled();
+      expect(auditService.logWithTx).toHaveBeenCalledWith(
+        prisma,
+        partialMatch({
+          details: partialMatch({
+            method: 'PIX',
+            provider: 'mercadopago',
+          }),
+        }),
+      );
     });
 
-    it('uses fallback when paymentService throws', async () => {
+    it('returns an honest failure when paymentService throws', async () => {
       paymentService.createPayment = jest.fn().mockRejectedValue(new Error('payment failed'));
 
       const result = await service.actionCreatePaymentLink(wsId, phone, {
@@ -212,9 +221,13 @@ describe('UnifiedAgentActionsCommerceService', () => {
         productName: 'Prod',
       });
 
-      expect(result.success).toBe(true);
-      expect(result.fallback).toBe(true);
-      expect(result.paymentLink).toContain('https://kloel.com/pay/');
+      expect(result).toMatchObject({
+        success: false,
+        error: 'payment_failed',
+        provider: 'mercadopago',
+      });
+      expect(result.paymentLink).toBeUndefined();
+      expect(messaging.actionSendMessage).not.toHaveBeenCalled();
     });
 
     it('uses contact name from db when available', async () => {
@@ -230,7 +243,7 @@ describe('UnifiedAgentActionsCommerceService', () => {
       });
 
       expect(paymentService.createPayment).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           customerName: 'João Silva',
           customerPhone: phone,
           customerEmail: 'joao@test.com',
@@ -238,23 +251,17 @@ describe('UnifiedAgentActionsCommerceService', () => {
       );
     });
 
-    it('creates fallback kloelSale when payment service fails', async () => {
+    it('does not create fallback kloelSale when payment service fails', async () => {
       paymentService.createPayment = jest.fn().mockRejectedValue(new Error('down'));
 
-      await service.actionCreatePaymentLink(wsId, phone, {
+      const result = await service.actionCreatePaymentLink(wsId, phone, {
         amount: 75,
         productName: 'Fallback Prod',
       });
 
-      expect(prisma.kloelSale.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            workspaceId: wsId,
-            leadPhone: phone,
-            amount: 75,
-          }),
-        }),
-      );
+      expect(result.success).toBe(false);
+      expect(prisma.kloelSale.findFirst).not.toHaveBeenCalled();
+      expect(prisma.kloelSale.create).not.toHaveBeenCalled();
     });
   });
 
@@ -265,13 +272,13 @@ describe('UnifiedAgentActionsCommerceService', () => {
       });
 
       expect(prisma.product.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: 'ws-isolated' }),
+        partialMatch({
+          where: partialMatch({ workspaceId: 'ws-isolated' }),
         }),
       );
       expect(prisma.kloelMemory.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: 'ws-isolated' }),
+        partialMatch({
+          where: partialMatch({ workspaceId: 'ws-isolated' }),
         }),
       );
     });
@@ -283,7 +290,7 @@ describe('UnifiedAgentActionsCommerceService', () => {
       });
 
       expect(prisma.contact.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           where: { workspaceId: 'ws-isolated', phone },
         }),
       );
@@ -308,7 +315,7 @@ describe('UnifiedAgentActionsCommerceService', () => {
       expect(result.success).toBe(false);
     });
 
-    it('actionCreatePaymentLink handles messaging failure gracefully', async () => {
+    it('actionCreatePaymentLink reports provider failure without fake fallback', async () => {
       messaging.actionSendMessage = jest.fn().mockResolvedValue({ success: true });
       paymentService.createPayment = jest.fn().mockRejectedValue(new Error('down'));
 
@@ -317,7 +324,11 @@ describe('UnifiedAgentActionsCommerceService', () => {
         productName: 'Prod',
       });
 
-      expect(result.fallback).toBe(true);
+      expect(result).toMatchObject({
+        success: false,
+        error: 'payment_failed',
+        provider: 'mercadopago',
+      });
     });
   });
 });

@@ -7,11 +7,25 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { renderTemplate } from '../common/sales-templates';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
-import { MindPolicyService } from '../kloel/mind-policy.service';
+import { MindPolicyService } from '../kloel/mind/policy/mind-policy.service';
 import type { MindJson, MindPolicyOption } from '../kloel/mind.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { flowQueue } from '../queue/queue';
+import {
+  AUTOPILOT_MIND_DECISION_TYPE,
+  autopilotOutcomeKey as helpersAutopilotOutcomeKey,
+  autopilotSubject as helpersAutopilotSubject,
+  buildMindActionContext as helpersBuildMindActionContext,
+  buildMindActionOptions as helpersBuildMindActionOptions,
+  decideActionBaseline as helpersDecideActionBaseline,
+  formatProductContext,
+  isCommercialAction as helpersIsCommercialAction,
+  readRecord as helpersReadRecord,
+  resolveHardcodedNightResponse,
+  resolveResponseTemplate,
+  resolveResponseType,
+} from './autopilot-cycle-executor.helpers';
 
 /** Lightweight shape used by autopilot cycle executor. */
 /**
@@ -42,22 +56,6 @@ export interface ConversationAnalysis {
   stage?: string;
 }
 
-const AUTOPILOT_MIND_DECISION_TYPE = 'autopilot_action';
-const AUTOPILOT_ACTIONS = [
-  'send_offer',
-  'send_offer_soft',
-  'send_price',
-  'send_calendar',
-  'handover_human',
-  'handle_objection',
-  'qualify',
-  'try_upsell',
-  'send_cta',
-  'soft_close_night',
-  'auto_reply_night',
-  'ai_chat',
-] as const;
-
 /**
  * Handles AI response generation, action execution, and compliance for autopilot cycles.
  * Extracted from AutopilotCycleService to keep each file under 400 lines.
@@ -79,7 +77,7 @@ export class AutopilotCycleExecutorService {
   }
 
   private readRecord(value: unknown): Record<string, unknown> {
-    return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
+    return helpersReadRecord(value);
   }
 
   async analyzeContext(
@@ -124,7 +122,16 @@ export class AutopilotCycleExecutorService {
       buyingSignal: false,
     };
     try {
-      analysisResult = JSON.parse(completion.choices[0]?.message?.content || '{}');
+      const parsed: unknown = JSON.parse(completion.choices[0]?.message?.content || '{}');
+      if (parsed && typeof parsed === 'object') {
+        const record = parsed as Record<string, unknown>;
+        analysisResult = {
+          intent: typeof record.intent === 'string' ? record.intent : 'unknown',
+          sentiment: typeof record.sentiment === 'string' ? record.sentiment : 'neutral',
+          buyingSignal: typeof record.buyingSignal === 'boolean' ? record.buyingSignal : false,
+          stage: typeof record.stage === 'string' ? record.stage : undefined,
+        };
+      }
     } catch {
       /* invalid JSON from model */
     }
@@ -169,55 +176,7 @@ export class AutopilotCycleExecutorService {
     analysis: { intent?: string; sentiment?: string; buyingSignal?: boolean; stage?: string },
     isOptimalTime: boolean,
   ): string {
-    const { intent, sentiment, buyingSignal, stage } = analysis;
-    const hour = new Date().getHours();
-    const isNight = hour > 22 || hour < 7;
-
-    return (
-      this.decideNightAction(isNight, buyingSignal) ??
-      this.decideBuyingAction(buyingSignal, isOptimalTime) ??
-      this.decideIntentAction(intent) ??
-      this.decideStageAction(stage, sentiment, buyingSignal) ??
-      'ai_chat'
-    );
-  }
-
-  private decideNightAction(isNight: boolean, buyingSignal?: boolean): string | null {
-    if (!isNight) {
-      return null;
-    }
-    return buyingSignal ? 'soft_close_night' : 'auto_reply_night';
-  }
-
-  private decideBuyingAction(buyingSignal?: boolean, isOptimalTime?: boolean): string | null {
-    if (!buyingSignal) {
-      return null;
-    }
-    return isOptimalTime ? 'send_offer' : 'send_offer_soft';
-  }
-
-  private decideIntentAction(intent?: string): string | null {
-    const INTENT_ACTION_MAP: Record<string, string> = {
-      question_price: 'send_price',
-      scheduling: 'send_calendar',
-      complaint: 'handover_human',
-      objection: 'handle_objection',
-    };
-    return intent ? (INTENT_ACTION_MAP[intent] ?? null) : null;
-  }
-
-  private decideStageAction(
-    stage?: string,
-    sentiment?: string,
-    buyingSignal?: boolean,
-  ): string | null {
-    if (stage === 'new') {
-      return 'qualify';
-    }
-    if (stage === 'closing') {
-      return sentiment === 'positive' && !buyingSignal ? 'try_upsell' : 'send_cta';
-    }
-    return null;
+    return helpersDecideActionBaseline(analysis, isOptimalTime);
   }
 
   private buildMindActionContext(
@@ -225,38 +184,19 @@ export class AutopilotCycleExecutorService {
     conv: AutopilotConversation,
     isOptimalTime: boolean,
   ): MindJson {
-    const lastInbound = conv.messages.find((message) => message.direction === 'INBOUND');
-    return {
-      channel: 'whatsapp',
-      conversationId: conv.id,
-      contactId: conv.contact?.id ?? conv.contactId ?? null,
-      hour: new Date().getHours(),
-      intent: analysis.intent ?? 'unknown',
-      sentiment: analysis.sentiment ?? 'neutral',
-      buyingSignal: analysis.buyingSignal === true,
-      stage: analysis.stage ?? 'unknown',
-      isOptimalTime,
-      lastInboundAt: lastInbound?.createdAt?.toISOString?.() ?? null,
-    };
+    return helpersBuildMindActionContext(analysis, conv, isOptimalTime);
   }
 
   private buildMindActionOptions(context: MindJson): MindPolicyOption[] {
-    return AUTOPILOT_ACTIONS.map((action) => ({
-      action,
-      predicate: 'P(success|autopilot_action,intent,stage,channel,hour)',
-      context: { ...context, action },
-    }));
+    return helpersBuildMindActionOptions(context);
   }
 
   private autopilotSubject(conv: AutopilotConversation): string {
-    const contactId = conv.contact?.id ?? conv.contactId;
-    return contactId ? `contact:${contactId}` : `conversation:${conv.id}`;
+    return helpersAutopilotSubject(conv);
   }
 
   private autopilotOutcomeKey(conv: AutopilotConversation): string {
-    const lastInbound = conv.messages.find((message) => message.direction === 'INBOUND');
-    const lastInboundAt = lastInbound?.createdAt?.toISOString?.() ?? 'no-inbound';
-    return `autopilot_action:${conv.workspaceId}:${conv.id}:${lastInboundAt}`;
+    return helpersAutopilotOutcomeKey(conv);
   }
 
   async executeAction(
@@ -329,19 +269,7 @@ export class AutopilotCycleExecutorService {
     conv: AutopilotConversation,
     analysis?: ConversationAnalysis,
   ): Promise<string | null> {
-    const ACTION_TO_RESPONSE_TYPE: Record<string, string> = {
-      send_offer: 'offer',
-      send_offer_soft: 'offer_soft',
-      send_price: 'price',
-      follow_up: 'follow_up',
-      lead_unlocker: 'lead_unlocker',
-      handle_objection: 'objection',
-      qualify: 'qualify',
-      try_upsell: 'upsell',
-      ai_chat: 'chat',
-    };
-
-    const responseType = ACTION_TO_RESPONSE_TYPE[action];
+    const responseType = resolveResponseType(action);
     if (responseType) {
       return await this.generateResponse(responseType, conv, analysis);
     }
@@ -356,15 +284,9 @@ export class AutopilotCycleExecutorService {
       });
     }
 
-    const HARDCODED_RESPONSES: Record<string, string> = {
-      soft_close_night:
-        'Oi! Vi seu interesse. Já deixei tudo preparado para você. Amanhã cedo eu retomo para concluirmos, tudo bem?',
-      auto_reply_night:
-        'Opa! Agora estou offline, mas já anotei sua dúvida. Amanhã 8h te respondo sem falta!',
-    };
-
-    if (action in HARDCODED_RESPONSES) {
-      return HARDCODED_RESPONSES[action] ?? null;
+    const hardcodedNight = resolveHardcodedNightResponse(action);
+    if (hardcodedNight !== null) {
+      return hardcodedNight;
     }
 
     if (action === 'handover_human') {
@@ -397,7 +319,45 @@ export class AutopilotCycleExecutorService {
   }
 
   private isCommercialAction(type: string): boolean {
-    return ['offer', 'offer_soft', 'price', 'upsell', 'lead_unlocker'].includes(type);
+    return helpersIsCommercialAction(type);
+  }
+
+  /**
+   * Honestly record that an autopilot reply was skipped (e.g. the LLM client is
+   * unavailable) instead of emitting a canned reply. Mirrors the compliance-skip
+   * audit-trail pattern in {@link executeAction} — best-effort, never throws.
+   */
+  private async recordSkippedEvent(
+    action: string,
+    conv: AutopilotConversation,
+    reason: string,
+    analysis?: ConversationAnalysis,
+  ): Promise<void> {
+    this.logger.warn({
+      operation: 'autopilot.reply_skipped',
+      workspaceId: conv.workspaceId,
+      conversationId: conv.id,
+      action,
+      reason,
+    });
+    try {
+      await this.prisma.autopilotEvent.create({
+        data: {
+          workspaceId: conv.workspaceId,
+          ...(conv.contact?.id !== undefined ? { contactId: conv.contact.id } : {}),
+          intent: analysis?.intent || 'UNKNOWN',
+          action,
+          status: 'skipped',
+          reason,
+        },
+      });
+    } catch {
+      void this.opsAlert?.alertOnCriticalError(
+        new Error('autopilotEvent.create failed silently'),
+        'AutopilotCycleExecutorService.recordSkippedEvent',
+        { workspaceId: conv.workspaceId },
+      );
+    }
   }
 
   private async generateResponse(
@@ -406,22 +366,12 @@ export class AutopilotCycleExecutorService {
     analysis?: ConversationAnalysis,
   ) {
     if (!this.openai) {
-      return 'Olá, como posso ajudar?';
+      // No LLM configured in a production-reachable path. Do NOT emit a canned
+      // greeting masquerading as AI — honestly record a skipped event so the
+      // conversation waits / hands off to a human instead.
+      await this.recordSkippedEvent(type, conv, 'ai_unavailable', analysis);
+      return null;
     }
-
-    const templates: Record<string, string> = {
-      offer:
-        'Generate an irresistible offer closing for this context. Create Urgency. Keep it short.',
-      offer_soft: 'Generate a gentle offer closing. Focus on value, no pressure.',
-      price: 'Explain the price/value proposition. Be direct but persuasive.',
-      follow_up: 'Re-engage this lead who went silent. Be polite but intriguing.',
-      lead_unlocker:
-        "The lead disappeared. Send a 'mental trigger' question to unlock them (e.g., 'Did you give up on X?'). Short and punchy.",
-      objection: "Overcome the user's objection with empathy and authority.",
-      qualify: 'Ask a qualifying question to understand their needs better.',
-      upsell: 'Suggest a complementary product or upgrade (Upsell) naturally.',
-      chat: "Reply naturally to the user's last message. Be helpful and concise.",
-    };
 
     let productContext = '';
     if (this.isCommercialAction(type) && conv.workspaceId) {
@@ -429,18 +379,13 @@ export class AutopilotCycleExecutorService {
       if (!info.hasProducts) {
         return 'Olá! No momento não temos produtos disponíveis para oferecer. Um consultor entrará em contato em breve com mais informações. Posso ajudar com outra dúvida enquanto isso?';
       }
-      productContext = info.products
-        .map(
-          (p) =>
-            `- ${p.name}: ${p.currency === 'BRL' ? 'R$' : `${p.currency} `}${p.price.toFixed(2)}${p.description ? ` — ${p.description}` : ''}`,
-        )
-        .join('\n');
+      productContext = formatProductContext(info.products);
     }
 
     const prompt = `
     You are a top-tier sales assistant on WhatsApp.
     Context: User is ${analysis?.intent || 'interested'}.
-    Task: ${templates[type] || templates.chat}
+    Task: ${resolveResponseTemplate(type)}
     Last Message: ${conv.messages[0]?.content}
 ${productContext ? `\nAVAILABLE PRODUCTS (use ONLY these real products in your response — never invent or hallucinate names, prices, or features):\n${productContext}` : ''}
 

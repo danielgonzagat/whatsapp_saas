@@ -5,6 +5,23 @@ import type {
 } from './ad-provider.interface';
 import { GOOGLE_ADS_PLATFORM } from './google-ads.helpers';
 
+/**
+ * Safely stringifies an unknown Google Ads API field, replicating
+ * `String(value || fallback)` semantics for primitives while avoiding
+ * `[object Object]` for unexpected non-primitive shapes.
+ */
+function toStringValue(value: unknown, fallback = ''): string {
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean' ||
+    typeof value === 'bigint'
+  ) {
+    return value ? String(value) : fallback;
+  }
+  return fallback;
+}
+
 export function buildGoogleAdsAccount(
   customerId: string,
   descriptiveName?: string,
@@ -30,9 +47,9 @@ export function mapGoogleAdsCampaignRow(
   return {
     platform: GOOGLE_ADS_PLATFORM,
     accountId,
-    campaignId: String(c.id || ''),
-    campaignName: String(c.name || ''),
-    status: String(c.status || 'UNKNOWN'),
+    campaignId: toStringValue(c.id),
+    campaignName: toStringValue(c.name),
+    status: toStringValue(c.status, 'UNKNOWN'),
     spend,
     revenue,
     roas: spend > 0 ? revenue / spend : 0,
@@ -62,7 +79,7 @@ export function mapGoogleAdsInsightRows(
   for (const row of rows) {
     const metrics = (row.metrics as Record<string, unknown>) || {};
     const segments = (row.segments as Record<string, unknown>) || {};
-    const dateKey = String(segments.date || '');
+    const dateKey = toStringValue(segments.date);
     if (!dateKey) {
       continue;
     }

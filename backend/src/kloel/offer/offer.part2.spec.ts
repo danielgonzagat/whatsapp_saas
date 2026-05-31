@@ -1,19 +1,5 @@
-import type { SpineEventRef } from '../mind/mind.types';
-import type {
-  OfferDetectorInput,
-  OfferInsight,
-  RankedOfferInsight,
-} from './offer.types';
+import type { OfferInsight, RankedOfferInsight } from './offer.types';
 
-import { detectBonusDesirability } from './detectors/bonus-desirability.detector';
-import { detectPromiseStrength } from './detectors/promise-strength.detector';
-import { detectProductVersionFit } from './detectors/product-version-fit.detector';
-import { detectPositioningMismatch } from './detectors/positioning-mismatch.detector';
-import { detectPagePromiseMismatch } from './detectors/page-promise-mismatch.detector';
-import { detectPricingPsychologySignal } from './detectors/pricing-psychology-signal.detector';
-
-import { rankOfferInsights } from './offer-insight.ranker';
-import { offerConfidenceFloor, filterOfferAboveFloor } from './offer-confidence.guard';
 import { OfferDeliveryService } from './offer-delivery.service';
 
 import type {
@@ -29,20 +15,6 @@ import { median } from './offer.types';
 
 const NOW = Date.parse('2026-05-13T22:00:00.000Z');
 const WKS = 'wks_offer_test';
-
-function ev(over?: Partial<SpineEventRef>): SpineEventRef {
-  const defaults: Record<string, unknown> = {
-    eventId: over?.eventId ?? `e_${Math.random().toString(36).slice(2, 8)}`,
-    eventName: over?.eventName ?? 'commerce.lead.replied',
-    workspaceId: over?.workspaceId ?? WKS,
-    occurredAt: over?.occurredAt ?? '2026-05-13T20:00:00.000Z',
-    truthMode: over?.truthMode ?? ('observed' as const),
-  };
-  if (over?.entityRef !== undefined) defaults['entityRef'] = over.entityRef;
-  if (over?.valence !== undefined) defaults['valence'] = over.valence;
-  if (over?.payload !== undefined) defaults['payload'] = over.payload;
-  return defaults as SpineEventRef;
-}
 
 function makeInsight(over?: Partial<OfferInsight>): OfferInsight {
   return {
@@ -62,22 +34,13 @@ function makeInsight(over?: Partial<OfferInsight>): OfferInsight {
   };
 }
 
-function makeRanked(
-  over?: Partial<OfferInsight>,
-  product?: number,
-): RankedOfferInsight {
+function makeRanked(over?: Partial<OfferInsight>, product?: number): RankedOfferInsight {
   const insight = makeInsight(over);
   return {
     ...insight,
     rankedProduct: product ?? insight.impactMultiplicative * insight.confidence,
   };
 }
-
-const input = (over?: Partial<OfferDetectorInput>): OfferDetectorInput => ({
-  events: over?.events ?? ([] as readonly SpineEventRef[]),
-  workspaceId: over?.workspaceId ?? WKS,
-  nowMs: over?.nowMs ?? NOW,
-});
 
 // =========================================================================
 // UTP-OFFER-001 — Bonus Desirability Detector
@@ -86,7 +49,11 @@ describe('UTP-OFFER-009 — OfferDeliveryService', () => {
   const svc = new OfferDeliveryService();
 
   it('delivers urgent insights via whatsapp now', () => {
-    const insight = makeRanked({ kind: 'promise_strength', recommendedChannel: 'whatsapp', recommendedTiming: 'now' });
+    const insight = makeRanked({
+      kind: 'promise_strength',
+      recommendedChannel: 'whatsapp',
+      recommendedTiming: 'now',
+    });
     const d = svc.decide(insight);
     expect(d.deliver).toBe(true);
   });
@@ -120,8 +87,18 @@ describe('UTP-OFFER-009 — OfferDeliveryService', () => {
   });
 
   it('deliveryPlan returns sorted channel priorities', () => {
-    const i1 = makeRanked({ insightId: 'a', kind: 'promise_strength', recommendedChannel: 'whatsapp', recommendedTiming: 'now' });
-    const i2 = makeRanked({ insightId: 'b', kind: 'product_version_fit', recommendedChannel: 'dashboard', recommendedTiming: 'weekly' });
+    const i1 = makeRanked({
+      insightId: 'a',
+      kind: 'promise_strength',
+      recommendedChannel: 'whatsapp',
+      recommendedTiming: 'now',
+    });
+    const i2 = makeRanked({
+      insightId: 'b',
+      kind: 'product_version_fit',
+      recommendedChannel: 'dashboard',
+      recommendedTiming: 'weekly',
+    });
     const plan = svc.deliveryPlan([i1, i2]);
     expect(plan.length).toBeGreaterThanOrEqual(2);
     expect(plan[0]?.channel).toBe('whatsapp');
@@ -134,8 +111,10 @@ describe('UTP-OFFER-009 — OfferDeliveryService', () => {
 describe('UTP-OFFER-002 — PromiseStrengthDetector', () => {
   const detector = new PromiseStrengthDetector();
 
-  const strongCopy = 'Método comprovado para multiplicar seus resultados em apenas 7 dias. Garantia incondicional de 30 dias. +200 casos de sucesso documentados.';
-  const moderateCopy = 'Aprenda a melhorar seus resultados com nosso sistema. Passo a passo simples.';
+  const strongCopy =
+    'Método comprovado para multiplicar seus resultados em apenas 7 dias. Garantia incondicional de 30 dias. +200 casos de sucesso documentados.';
+  const moderateCopy =
+    'Aprenda a melhorar seus resultados com nosso sistema. Passo a passo simples.';
   const weakCopy = 'curso legal';
   const emptyCopy = '';
 
@@ -220,7 +199,8 @@ describe('UTP-OFFER-004 — PositioningMismatchDetector', () => {
   const detector = new PositioningMismatchDetector();
 
   const promiseTrust = 'Acelere seus resultados com método garantido. +500 clientes satisfeitos.';
-  const promiseMismatched = 'Sistema premium exclusivo para empresas de alto nível. Resultados garantidos em 30 dias.';
+  const promiseMismatched =
+    'Sistema premium exclusivo para empresas de alto nível. Resultados garantidos em 30 dias.';
   const promiseBasic = 'curso online';
 
   const audiencePremium: AudienceProfile = {
@@ -331,6 +311,8 @@ describe('UTP-OFFER-004 — PositioningMismatchDetector', () => {
     expect(rMismatch.confidence).toBeGreaterThan(rClean.confidence);
   });
 });
+
+describe('UTP-OFFER — median utility', () => {
   it('returns median for odd array', () => {
     expect(median([1, 3, 5])).toBe(3);
   });

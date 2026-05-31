@@ -1,3 +1,7 @@
+/**
+ * @capability CampaignProcessor
+ * @domain campaign
+ */
 import { randomInt } from 'node:crypto';
 import { type Job, Worker } from 'bullmq';
 import { prisma } from './db';

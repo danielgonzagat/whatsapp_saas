@@ -2,12 +2,17 @@ import OpenAI from 'openai';
 import { PrismaService } from '../prisma/prisma.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { StructuredLogger } from '../logging/structured-logger';
+import { resolveTextLlmProvider } from '../lib/llm-provider';
+
+const helperLogger = StructuredLogger.from('KloelReplyEngineHelpers');
 import { KloelContextFormatter } from './kloel-context-formatter';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
 import { KloelThreadService } from './kloel-thread.service';
 import { KloelToolRouter } from './kloel-tool-router';
 import { createKloelStatusEvent, type KloelStreamEvent } from './kloel-stream-events';
 import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
+import { SpineEmitterService } from './spine/spine-emitter.service';
 import { chatCompletionWithFallback, LLM_MAX_COMPLETION_TOKENS } from './openai-wrapper';
 import { KLOEL_CHAT_TOOLS } from './kloel-chat-tools.definition';
 import type { ExpertiseLevel, LocalToolExecutor, ReplyMessage } from './kloel-reply-engine.types';
@@ -24,6 +29,8 @@ export const PRODUTO_CAT_A__LOGO_AUT_RE =
   /(produto|cat[aá]logo|autopilot|marca|voz|brand voice|fluxo|flow|dashboard|painel|whatsapp|contato|contatos|chat|chats|mensagem|mensagens|backlog|hist[oó]rico|presen[cç]a|presence|link de pagamento|pagamento|payment|web|internet|google|site|landing|homepage|copy|email|campanha|campanhas|checkout|carrinho|afiliad|seo|not[ií]cia|noticias|hoje|status)/i;
 
 import type { UnknownRecord } from '../common/types';
+import { type MindPredictorService } from './mind/inference/mind-predictor.service';
+import { predictChatReply } from './kloel-reply-engine.decision-outcome.helpers';
 
 /** Builds the dynamic runtime context string for the reply engine. */
 export async function buildDynamicRuntimeContextHelper(params: {
@@ -127,8 +134,8 @@ export async function buildDynamicRuntimeContextHelper(params: {
       : {};
   const whatsappConnected =
     providerSettings.whatsappConnected === true ||
-    (providerSettings.whatsapp as UnknownRecord | null)?.connected === true ||
-    (providerSettings.connection as UnknownRecord | null)?.status === 'connected' ||
+    (providerSettings.whatsapp as UnknownRecord | undefined)?.connected === true ||
+    (providerSettings.connection as UnknownRecord | undefined)?.status === 'connected' ||
     providerSettings.status === 'connected';
   const resolvedUserName = contextFormatter.sanitizeUserNameForAssistant(
     userName || agent?.name || 'Usuário',
@@ -143,7 +150,7 @@ export async function buildDynamicRuntimeContextHelper(params: {
     `WhatsApp conectado: ${whatsappConnected ? 'Sim' : 'Não'}`,
     `Autopilot ativo: ${autopilotSettings.enabled === true ? 'Sim' : 'Não'}`,
     `Conversas registradas: ${threadCount}`,
-    contextFormatter.buildAgentProfileContext(agent as UnknownRecord | null | undefined),
+    contextFormatter.buildAgentProfileContext(agent),
     `Quando fizer sentido, trate o usuário pelo primeiro nome "${resolvedUserName}" de forma natural ao longo da conversa.`,
     companyContext ? `Contexto adicional enviado pelo frontend:\n${companyContext}` : null,
     baseContext ? `Base de contexto do workspace:\n${baseContext}` : null,
@@ -192,6 +199,7 @@ interface BuildAssistantReplyDeps {
     };
     toolMessages?: Array<{ role?: 'tool'; tool_call_id: string; name: string; content: string }>;
     prebuiltCognitiveState?: Record<string, unknown>;
+    workspaceId?: string | null;
   }) => Promise<ChatCompletionMessageParam[]>;
   buildDynamicRuntimeContext: (params: {
     workspaceId?: string;
@@ -200,6 +208,8 @@ interface BuildAssistantReplyDeps {
     expertiseLevel: ExpertiseLevel;
     companyContext?: string;
   }) => Promise<string>;
+  spine?: SpineEmitterService;
+  mindPredictorService?: MindPredictorService;
 }
 
 /** buildAssistantReply extracted to keep KloelReplyEngineService ≤ 400 lines. */
@@ -231,9 +241,25 @@ export async function buildAssistantReplyImpl(
     onTraceEvent,
     executeLocalTool,
   } = params;
-  const { openai, prisma, planLimits, threadService, wsContextService, toolRouter } = deps;
+  const { openai, prisma, planLimits, threadService, wsContextService, toolRouter, spine } = deps;
+
+  // w2-loop-replypath: activate the cognitive prediction loop on the real chat
+  // reply path. Fail-open and fire-and-forget — mirrors the decision recorded
+  // upstream in KloelReplyEngineService.buildAssistantReply.
+  if (workspaceId) {
+    predictChatReply(deps.mindPredictorService, helperLogger, {
+      workspaceId,
+      surface: 'dashboard',
+    });
+  }
 
   if (!deps.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
+    helperLogger.error('kloel_motor_unavailable', {
+      reason: 'no_llm_key_and_no_anthropic',
+      resolvedProvider: resolveTextLlmProvider() ?? null,
+      mode,
+      hasWorkspaceId: !!workspaceId,
+    });
     return deps.unavailableMessage;
   }
 
@@ -306,6 +332,7 @@ export async function buildAssistantReplyImpl(
       ? { prebuiltCognitiveState: params.prebuiltCognitiveState }
       : {}),
     userMessage: message,
+    workspaceId,
   });
   onTraceEvent?.(createKloelStatusEvent('thinking'));
   if (workspaceId) {
@@ -314,10 +341,12 @@ export async function buildAssistantReplyImpl(
 
   const isChatMode = mode === 'chat';
   const chatTools = filterChatToolsByAllowedTools(allowedTools);
+  const primaryModel = resolveBackendOpenAIModel(isChatMode ? 'brain' : 'writer');
+  const completionStartMs = Date.now();
   const response = await chatCompletionWithFallback(
     openai,
     {
-      model: resolveBackendOpenAIModel(isChatMode ? 'brain' : 'writer'),
+      model: primaryModel,
       messages,
       ...(isChatMode ? { tools: chatTools } : {}),
       ...(isChatMode
@@ -333,6 +362,46 @@ export async function buildAssistantReplyImpl(
     },
     resolveBackendOpenAIModel(isChatMode ? 'brain_fallback' : 'writer_fallback'),
   );
+
+  // PI-k6: emit cognition.decision_made after the primary LLM completion
+  const fallbackModel = resolveBackendOpenAIModel(
+    isChatMode ? 'brain_fallback' : 'writer_fallback',
+  );
+  const toolCallsCount = response.choices[0]?.message?.tool_calls?.length ?? 0;
+  void (async () => {
+    if (spine && workspaceId) {
+      try {
+        await spine.emit({
+          eventName: 'cognition.decision_made',
+          workspaceId,
+          truthMode: 'observed',
+          provenance: {
+            source: 'production',
+            processor: 'kloel-reply-engine',
+            processorVersion: '1.0.0',
+            schemaVersion: '1.0.0',
+          },
+          payload: {
+            surface: 'dashboard',
+            toolCallsCount,
+            fallbackReason:
+              response.model === fallbackModel ? 'primary_failed_fallback_used' : null,
+            durationMs: Date.now() - completionStartMs,
+            modelUsed: response.model,
+          },
+        });
+      } catch (err: unknown) {
+        helperLogger.warn('kloel_cognition_event_skipped', {
+          reason: err instanceof Error ? err.message : String(err),
+        });
+      }
+    } else {
+      helperLogger.warn('kloel_cognition_event_skipped', {
+        reason: spine ? 'workspace_id_missing' : 'spine_not_injected',
+      });
+    }
+  })();
+
   if (workspaceId) {
     await planLimits
       .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
@@ -348,6 +417,16 @@ export async function buildAssistantReplyImpl(
     if (initialMsgWithReasoning.reasoning_content !== undefined) {
       delete initialMsgWithReasoning.reasoning_content;
     }
+  }
+  if (!initialMsg?.content) {
+    helperLogger.warn('kloel_motor_unavailable', {
+      reason: 'empty_llm_response',
+      mode,
+      hasToolCalls: !!initialMsg?.tool_calls?.length,
+      finishReason: response?.choices?.[0]?.finish_reason ?? null,
+      model: resolveBackendOpenAIModel(isChatMode ? 'brain' : 'writer'),
+      hasWorkspaceId: !!workspaceId,
+    });
   }
   let assistantMessage = initialMsg?.content || deps.unavailableMessage;
 

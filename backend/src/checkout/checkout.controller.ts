@@ -13,14 +13,18 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
-import { Prisma, TimerType } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
-import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { syncAllWorkspaceCheckoutCouponsForProduct } from '../kloel/product-coupon-sync.util';
 import { Metrics } from '../observability/metrics';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  buildCheckoutConfigUpdateInput,
+  buildCheckoutSlug,
+  buildProductSlug,
+  extractErrorCode,
+} from './checkout.controller.helpers';
 import { CheckoutService } from './checkout.service';
 import { CreateBumpDto } from './dto/create-bump.dto';
 import { CreateCouponDto } from './dto/create-coupon.dto';
@@ -32,33 +36,6 @@ import { UpdateConfigDto } from './dto/update-config.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 
-import { SLUG_EDGE_HYPHEN_RE } from '../common/regex';
-
-import { DIACRITICS_RE } from '../common/regex';
-const A_Z0_9_RE = /[^a-z0-9]+/g;
-
-function normalizeTimerType(value: unknown): TimerType | undefined {
-  if (typeof value !== 'string' && typeof value !== 'number' && typeof value !== 'boolean') {
-    return undefined;
-  }
-
-  const normalized = String(value).trim().toUpperCase();
-
-  if (normalized === 'COUNTDOWN' || normalized === 'EVERGREEN') {
-    return TimerType.COUNTDOWN;
-  }
-
-  if (normalized === 'EXPIRATION' || normalized === 'FIXED') {
-    return TimerType.EXPIRATION;
-  }
-
-  if (normalized === TimerType.STOCK) {
-    return TimerType.STOCK;
-  }
-
-  return undefined;
-}
-
 /** Checkout controller. */
 @Controller('checkout')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -68,18 +45,6 @@ export class CheckoutController {
     private readonly checkoutService: CheckoutService,
     private readonly prisma: PrismaService,
   ) {}
-
-  private buildSlug(value: string) {
-    const base = String(value || 'checkout')
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(DIACRITICS_RE, '')
-      .replace(A_Z0_9_RE, '-')
-      .replace(SLUG_EDGE_HYPHEN_RE, '')
-      .slice(0, 48);
-
-    return `${base || 'checkout'}-${Date.now().toString(36)}`;
-  }
 
   private async verifyPlanOwnership(planId: string, workspaceId: string) {
     const plan = await this.prisma.checkoutProductPlan.findFirst({
@@ -135,12 +100,7 @@ export class CheckoutController {
 
     // Auto-generate slug from name if not provided
     if (!dto.slug) {
-      dto.slug = `${(dto.name || 'product')
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(DIACRITICS_RE, '')
-        .replace(A_Z0_9_RE, '-')
-        .replace(SLUG_EDGE_HYPHEN_RE, '')}-${Date.now().toString(36)}`;
+      dto.slug = buildProductSlug(dto.name);
     }
 
     try {
@@ -149,8 +109,10 @@ export class CheckoutController {
       Metrics.endpoint.duration('checkout.createProduct', Date.now() - start, { workspaceId });
       return result;
     } catch (err: unknown) {
-      const code = (err as { code?: string })?.code ?? 'unknown';
-      Metrics.endpoint.failure('checkout.createProduct', { workspaceId, code });
+      Metrics.endpoint.failure('checkout.createProduct', {
+        workspaceId,
+        code: extractErrorCode(err),
+      });
       throw err;
     }
   }
@@ -206,7 +168,7 @@ export class CheckoutController {
     if (!product) {
       throw new NotFoundException('Produto nao encontrado');
     }
-    dto.slug = this.buildSlug(
+    dto.slug = buildCheckoutSlug(
       dto.slug || `${product.slug || product.name || 'checkout'}-${dto.name || 'oferta'}`,
     );
     dto.brandName = dto.brandName || product.name;
@@ -217,8 +179,10 @@ export class CheckoutController {
       Metrics.endpoint.duration('checkout.createPlan', Date.now() - start, { workspaceId });
       return createdPlan;
     } catch (err: unknown) {
-      const code = (err as { code?: string })?.code ?? 'unknown';
-      Metrics.endpoint.failure('checkout.createPlan', { workspaceId, code });
+      Metrics.endpoint.failure('checkout.createPlan', {
+        workspaceId,
+        code: extractErrorCode(err),
+      });
       throw err;
     }
   }
@@ -265,7 +229,7 @@ export class CheckoutController {
     if (!product) {
       throw new NotFoundException('Produto nao encontrado');
     }
-    dto.slug = this.buildSlug(
+    dto.slug = buildCheckoutSlug(
       dto.slug || `${product.slug || product.name || 'checkout'}-${dto.name || 'layout'}`,
     );
     dto.brandName = dto.brandName || product.name;
@@ -275,8 +239,10 @@ export class CheckoutController {
       Metrics.endpoint.duration('checkout.createCheckout', Date.now() - start, { workspaceId });
       return result;
     } catch (err: unknown) {
-      const code = (err as { code?: string })?.code ?? 'unknown';
-      Metrics.endpoint.failure('checkout.createCheckout', { workspaceId, code });
+      Metrics.endpoint.failure('checkout.createCheckout', {
+        workspaceId,
+        code: extractErrorCode(err),
+      });
       throw err;
     }
   }
@@ -339,22 +305,12 @@ export class CheckoutController {
       trustBadges,
       ...configDto
     } = dto;
-    const normalizedTimer = timerType !== undefined ? normalizeTimerType(timerType) : undefined;
-    const normalizedTestimonials =
-      testimonials !== undefined ? toPrismaJsonValue(testimonials) : undefined;
-    const normalizedTrustBadges =
-      trustBadges !== undefined ? toPrismaJsonValue(trustBadges) : undefined;
-
-    const configInput: Prisma.CheckoutConfigUpdateInput = {
-      ...(normalizedTimer !== undefined ? { timerType: normalizedTimer } : {}),
-      ...(normalizedTestimonials !== undefined ? { testimonials: normalizedTestimonials } : {}),
-      ...(normalizedTrustBadges !== undefined ? { trustBadges: normalizedTrustBadges } : {}),
-    };
-    for (const [key, value] of Object.entries(configDto)) {
-      if (value !== undefined) {
-        (configInput as Record<string, unknown>)[key] = value;
-      }
-    }
+    const configInput = buildCheckoutConfigUpdateInput({
+      timerType,
+      testimonials,
+      trustBadges,
+      rest: configDto,
+    });
     return this.checkoutService.updateConfig(planId, configInput);
   }
 
@@ -470,8 +426,10 @@ export class CheckoutController {
       Metrics.endpoint.duration('checkout.createCoupon', Date.now() - start, { workspaceId });
       return result;
     } catch (err: unknown) {
-      const code = (err as { code?: string })?.code ?? 'unknown';
-      Metrics.endpoint.failure('checkout.createCoupon', { workspaceId, code });
+      Metrics.endpoint.failure('checkout.createCoupon', {
+        workspaceId,
+        code: extractErrorCode(err),
+      });
       throw err;
     }
   }
@@ -562,8 +520,10 @@ export class CheckoutController {
       Metrics.endpoint.duration('checkout.updateOrderStatus', Date.now() - start, { workspaceId });
       return result;
     } catch (err: unknown) {
-      const code = (err as { code?: string })?.code ?? 'unknown';
-      Metrics.endpoint.failure('checkout.updateOrderStatus', { workspaceId, code });
+      Metrics.endpoint.failure('checkout.updateOrderStatus', {
+        workspaceId,
+        code: extractErrorCode(err),
+      });
       throw err;
     }
   }

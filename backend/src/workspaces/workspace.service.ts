@@ -3,14 +3,54 @@ import { Workspace } from '@prisma/client';
 import { CacheService } from '../common/cache/cache.service';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../marketing/channels/whatsapp/provider-settings.types';
 import {
   normalizeWhatsAppProvider,
   resolveDefaultWhatsAppProvider,
-} from '../whatsapp/providers/provider-env';
+} from '../marketing/channels/whatsapp/providers/provider-env';
 
 type SettingsPatch = Record<string, unknown>;
 type EmailSubSettings = Record<string, unknown> & { enabled?: boolean };
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Deep merge two plain objects. Arrays and scalars in `patch` replace `base`.
+ * Nested plain objects are merged recursively. Undefined keys in `patch` are skipped.
+ */
+function deepMergePlainObjects(
+  base: Record<string, unknown>,
+  patch: Record<string, unknown>,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...base };
+  for (const [key, patchValue] of Object.entries(patch)) {
+    if (patchValue === undefined) {
+      continue;
+    }
+    const baseValue = out[key];
+    if (isPlainObject(baseValue) && isPlainObject(patchValue)) {
+      out[key] = deepMergePlainObjects(baseValue, patchValue);
+    } else {
+      out[key] = patchValue;
+    }
+  }
+  return out;
+}
+
+const TIME_HHMM_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+function isValidTimeHHmm(value: unknown): value is string {
+  return typeof value === 'string' && TIME_HHMM_RE.test(value);
+}
+
+function toMinutes(time: string): number {
+  const parts = time.split(':');
+  const hours = Number(parts[0] ?? '0');
+  const minutes = Number(parts[1] ?? '0');
+  return hours * 60 + minutes;
+}
 
 /** Workspace service. */
 @Injectable()
@@ -56,7 +96,7 @@ export class WorkspaceService {
     await this.prisma.workspace.delete({ where: { id } });
   }
 
-  private async updateSettings(id: string, patch: Record<string, unknown>) {
+  private async mergeSettingsShallow(id: string, patch: Record<string, unknown>) {
     const ws = await this.getWorkspace(id);
     const currentSettings = asProviderSettings(ws.providerSettings);
     const newSettings = { ...currentSettings, ...patch };
@@ -121,7 +161,7 @@ export class WorkspaceService {
   async setProvider(id: string, _provider: string) {
     const normalized = normalizeWhatsAppProvider(_provider) || this.getDefaultWhatsAppProvider();
     await this.invalidateWorkspaceCache(id);
-    return this.updateSettings(id, { whatsappProvider: normalized });
+    return this.mergeSettingsShallow(id, { whatsappProvider: normalized });
   }
 
   /**
@@ -261,5 +301,167 @@ export class WorkspaceService {
   async getGlobalPriorOptOut(id: string): Promise<boolean> {
     const ws = await this.getWorkspace(id);
     return ws.globalPriorOptOut;
+  }
+
+  /**
+   * Atualiza informações de negócio do workspace (nome + businessInfo).
+   * K30 capability: save_business_info.
+   */
+  async updateInfo(
+    workspaceId: string,
+    dto: { name?: string; businessType?: string; cnpj?: string },
+  ): Promise<Workspace> {
+    await this.invalidateWorkspaceCache(workspaceId);
+    const ws = await this.getWorkspace(workspaceId);
+    const settings = asProviderSettings(ws.providerSettings);
+    const currentBusinessInfo =
+      (settings.businessInfo as Record<string, unknown> | undefined) || {};
+
+    const nextBusinessInfo: Record<string, unknown> = { ...currentBusinessInfo };
+    if (dto.businessType !== undefined) {
+      nextBusinessInfo.businessType = dto.businessType;
+    }
+    if (dto.cnpj !== undefined) {
+      nextBusinessInfo.cnpj = dto.cnpj;
+    }
+
+    const data: Record<string, unknown> = {
+      providerSettings: toPrismaJsonValue({
+        ...settings,
+        businessInfo: nextBusinessInfo,
+      }),
+    };
+    if (dto.name !== undefined) {
+      data.name = dto.name;
+    }
+
+    return this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: data as never,
+    });
+  }
+
+  /**
+   * Canonical-name alias of {@link getAccountSettings} for the Kloel
+   * capability resolver (`WorkspaceService.getSettings`). Accepts the
+   * (workspaceId, args) signature used by `KloelDomainServiceResolver`;
+   * args are ignored — settings are scoped to the workspace alone.
+   */
+  async getSettings(workspaceId: string) {
+    return this.getAccountSettings(workspaceId);
+  }
+
+  /**
+   * Atualiza providerSettings com deep merge (mantém chaves aninhadas existentes).
+   * K30 capability: update_workspace_settings.
+   */
+  async updateSettings(workspaceId: string, dto: Record<string, unknown>): Promise<Workspace> {
+    await this.invalidateWorkspaceCache(workspaceId);
+    const ws = await this.getWorkspace(workspaceId);
+    const current = asProviderSettings(ws.providerSettings);
+    const merged = deepMergePlainObjects(current, dto || {});
+
+    return this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: { providerSettings: toPrismaJsonValue(merged) },
+    });
+  }
+
+  /**
+   * Define horário comercial. Armazena em providerSettings.businessHours.
+   * K30 capability: set_business_hours.
+   */
+  async setHours(
+    workspaceId: string,
+    dto: { hours: Array<{ dayOfWeek: 0 | 1 | 2 | 3 | 4 | 5 | 6; open: string; close: string }> },
+  ): Promise<{ updated: true }> {
+    const hours = Array.isArray(dto?.hours) ? dto.hours : [];
+    for (const entry of hours) {
+      if (!Number.isInteger(entry?.dayOfWeek) || entry.dayOfWeek < 0 || entry.dayOfWeek > 6) {
+        throw new Error(`Invalid dayOfWeek: ${entry?.dayOfWeek}`);
+      }
+      if (!isValidTimeHHmm(entry?.open) || !isValidTimeHHmm(entry?.close)) {
+        throw new Error(
+          `Invalid time format (expected HH:mm): open=${entry?.open} close=${entry?.close}`,
+        );
+      }
+      if (toMinutes(entry.open) >= toMinutes(entry.close)) {
+        throw new Error(`open must be before close (got ${entry.open}-${entry.close})`);
+      }
+    }
+
+    await this.invalidateWorkspaceCache(workspaceId);
+    const ws = await this.getWorkspace(workspaceId);
+    const settings = asProviderSettings(ws.providerSettings);
+
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: {
+        providerSettings: toPrismaJsonValue({
+          ...settings,
+          businessHours: hours,
+        }),
+      },
+    });
+    return { updated: true };
+  }
+
+  /**
+   * Define política de vendas/reembolso/termos. Armazena em providerSettings.salesPolicy.
+   * K30 capability: set_sales_policy.
+   */
+  async setPolicy(
+    workspaceId: string,
+    dto: { refundPolicy?: string; salesPolicy?: string; termsUrl?: string },
+  ): Promise<{ updated: true }> {
+    await this.invalidateWorkspaceCache(workspaceId);
+    const ws = await this.getWorkspace(workspaceId);
+    const settings = asProviderSettings(ws.providerSettings);
+    const currentPolicy = (settings.salesPolicy as Record<string, unknown> | undefined) || {};
+
+    const nextPolicy: Record<string, unknown> = { ...currentPolicy };
+    if (dto?.refundPolicy !== undefined) {
+      nextPolicy.refundPolicy = dto.refundPolicy;
+    }
+    if (dto?.salesPolicy !== undefined) {
+      nextPolicy.salesPolicy = dto.salesPolicy;
+    }
+    if (dto?.termsUrl !== undefined) {
+      nextPolicy.termsUrl = dto.termsUrl;
+    }
+
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: {
+        providerSettings: toPrismaJsonValue({
+          ...settings,
+          salesPolicy: nextPolicy,
+        }),
+      },
+    });
+    return { updated: true };
+  }
+
+  /**
+   * Armazena preferência de tema (light|dark) no providerSettings.ui.
+   * Tema inválido retorna erro sem alterar workspace.
+   */
+  async updateThemePreference(
+    workspaceId: string,
+    theme: 'light' | 'dark',
+  ): Promise<{ theme: string }> {
+    await this.invalidateWorkspaceCache(workspaceId);
+    const ws = await this.getWorkspace(workspaceId);
+    const settings = asProviderSettings(ws.providerSettings);
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: {
+        providerSettings: toPrismaJsonValue({
+          ...settings,
+          ui: { ...((settings.ui as Record<string, unknown>) || {}), theme },
+        }),
+      },
+    });
+    return { theme };
   }
 }

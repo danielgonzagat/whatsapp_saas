@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutCatalogService } from './checkout-catalog.service';
@@ -9,15 +9,29 @@ import { CheckoutProductService } from './checkout-product.service';
 import { CheckoutPublicPayloadBuilder } from './checkout-public-payload.builder';
 import { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-event-emitter.service';
 import { getCheckoutByCode as companionGetCheckoutByCode } from './checkout-code-lookup.helper';
-import type { CreateCheckoutInput } from './checkout-product.types';
+import {
+  buildCreateCheckoutInput,
+  buildDuplicateCheckoutInput,
+  buildExitIntentConfig,
+  buildResolverOrderCustomerFields,
+  buildTestimonialsConfig,
+  buildWarrantyConfig,
+  CHECKOUT_LIST_INCLUDE,
+  CHECKOUT_PLAN_LINK_INCLUDE,
+  isActivePlanKind,
+  isLegacyPlanEligibleForMigration,
+  mapPixelsForDuplicate,
+  PLAN_INCLUDE,
+  stripCheckoutId,
+  stripConfigMetadata,
+} from './checkout.service.helpers';
+import type { UnknownRecord } from '../common/types';
 import type { SetCheckoutThemeDto } from './dto/set-checkout-theme.dto';
 import type { SetCheckoutCouponsDto } from './dto/set-checkout-coupons.dto';
 import type { SetCheckoutTimerDto } from './dto/set-checkout-timer.dto';
 import type { SetCheckoutSocialProofDto } from './dto/set-checkout-social-proof.dto';
 
 export type { CheckoutOrderStatusValue } from './checkout-order-status';
-
-type CheckoutConfigRecord = Record<string, unknown>;
 
 /**
  * Checkout façade — delegates product/plan, catalog, and order concerns to
@@ -44,7 +58,6 @@ export class CheckoutService {
     this.logger.log(JSON.stringify({ event, ...payload }));
   }
 
-  // ─── Product delegation ───────────────────────────────────────────────────
   async createProduct(...args: Parameters<CheckoutProductService['createProduct']>) {
     return this.productService.createProduct(...args);
   }
@@ -139,8 +152,50 @@ export class CheckoutService {
   }
 
   // ─── Order delegation ─────────────────────────────────────────────────────
-  async createOrder(...args: Parameters<CheckoutOrderService['createOrder']>) {
-    return this.orderService.createOrder(...args);
+  async createOrder(
+    workspaceIdOrData: string | Parameters<CheckoutOrderService['createOrder']>[0],
+    resolverArgs?: UnknownRecord,
+  ) {
+    if (resolverArgs !== undefined) {
+      const workspaceId = workspaceIdOrData as string;
+      const productId = typeof resolverArgs.productId === 'string' ? resolverArgs.productId : '';
+      if (!productId) {
+        throw new BadRequestException('productId required');
+      }
+
+      const product = await this.prisma.product.findFirst({
+        where: { id: productId, workspaceId },
+        select: { id: true },
+      });
+      if (!product) {
+        throw new NotFoundException('Produto nao encontrado');
+      }
+
+      const plan = await this.prisma.checkoutProductPlan.findFirst({
+        where: { productId, kind: 'PLAN', isActive: true },
+        select: { id: true, priceInCents: true },
+      });
+      if (!plan) {
+        throw new NotFoundException('Nenhum plano ativo encontrado para o produto');
+      }
+
+      const amountInCents =
+        typeof resolverArgs.amount === 'number' && Number.isFinite(resolverArgs.amount)
+          ? Math.round(resolverArgs.amount)
+          : plan.priceInCents;
+
+      return this.orderService.createOrder({
+        planId: plan.id,
+        workspaceId,
+        ...buildResolverOrderCustomerFields(resolverArgs),
+        subtotalInCents: amountInCents,
+        totalInCents: amountInCents,
+        shippingAddress: {},
+      });
+    }
+    return this.orderService.createOrder(
+      workspaceIdOrData as Parameters<CheckoutOrderService['createOrder']>[0],
+    );
   }
   async getOrder(...args: Parameters<CheckoutOrderService['getOrder']>) {
     return this.orderService.getOrder(...args);
@@ -189,17 +244,7 @@ export class CheckoutService {
         checkout: { isActive: true, kind: 'CHECKOUT' },
         plan: { isActive: true, kind: 'PLAN' },
       },
-      include: {
-        checkout: { include: { checkoutConfig: { include: { pixels: true } } } },
-        plan: {
-          include: {
-            product: true,
-            checkoutConfig: { include: { pixels: true } },
-            orderBumps: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-            upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-          },
-        },
-      },
+      include: CHECKOUT_PLAN_LINK_INCLUDE,
     });
 
     if (checkoutLink) {
@@ -220,15 +265,10 @@ export class CheckoutService {
 
     const planRecord = await this.prisma.checkoutProductPlan.findUnique({
       where: { slug },
-      include: {
-        product: true,
-        checkoutConfig: { include: { pixels: true } },
-        orderBumps: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-        upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-      },
+      include: PLAN_INCLUDE,
     });
 
-    if (planRecord?.isActive && planRecord.kind === 'PLAN' && planRecord.legacyCheckoutEnabled) {
+    if (isLegacyPlanEligibleForMigration(planRecord)) {
       await this.productService.ensureLegacyCheckoutForPlan(planRecord.id);
       const migratedLink = await this.prisma.checkoutPlanLink.findFirst({
         where: {
@@ -237,17 +277,7 @@ export class CheckoutService {
           checkout: { isActive: true, kind: 'CHECKOUT' },
           plan: { isActive: true, kind: 'PLAN' },
         },
-        include: {
-          checkout: { include: { checkoutConfig: { include: { pixels: true } } } },
-          plan: {
-            include: {
-              product: true,
-              checkoutConfig: { include: { pixels: true } },
-              orderBumps: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-              upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-            },
-          },
-        },
+        include: CHECKOUT_PLAN_LINK_INCLUDE,
       });
 
       if (migratedLink) {
@@ -267,7 +297,7 @@ export class CheckoutService {
       }
     }
 
-    if (planRecord?.isActive && planRecord.kind === 'PLAN') {
+    if (isActivePlanKind(planRecord)) {
       const plan = await planLinkManager.ensurePlanReferenceCode(planRecord);
       this.logCheckoutEvent('checkout_public_lookup_resolved', {
         correlationId,
@@ -313,7 +343,13 @@ export class CheckoutService {
   }
 
   /** Create checkout page — emits checkout.created event. */
-  async create(workspaceId: string, productId: string, dto: CreateCheckoutInput) {
+  async create(workspaceId: string, args: UnknownRecord) {
+    const productId = typeof args.productId === 'string' ? args.productId : '';
+    if (!productId) {
+      throw new BadRequestException('productId required');
+    }
+
+    const dto = buildCreateCheckoutInput(args);
     const result = await this.productService.createCheckout(productId, dto, workspaceId);
     if (result?.id) {
       await this.eventEmitter.checkoutCreated({
@@ -326,15 +362,37 @@ export class CheckoutService {
   }
 
   /** Update checkout page — emits checkout.updated event. */
-  async update(
-    workspaceId: string,
-    checkoutId: string,
-    dto: Prisma.CheckoutProductPlanUpdateInput,
-  ) {
+  async update(workspaceId: string, args: UnknownRecord) {
+    const checkoutId = typeof args.checkoutId === 'string' ? args.checkoutId : '';
+    if (!checkoutId) {
+      throw new BadRequestException('checkoutId required');
+    }
+
     await this.verifyCheckoutOwnership(checkoutId, workspaceId);
-    const result = await this.productService.updatePlan(checkoutId, dto);
+    const { checkoutId: _, ...updateData } = args;
+    const result = await this.productService.updatePlan(checkoutId, updateData);
     await this.eventEmitter.checkoutUpdated({ workspaceId, checkoutId });
     return result;
+  }
+
+  /** Delete checkout page — workspace-scoped. */
+  async delete(workspaceId: string, args: UnknownRecord) {
+    const checkoutId = typeof args.checkoutId === 'string' ? args.checkoutId : '';
+    if (!checkoutId) {
+      throw new BadRequestException('checkoutId required');
+    }
+
+    await this.verifyCheckoutOwnership(checkoutId, workspaceId);
+    return this.deletePlan(checkoutId, workspaceId);
+  }
+
+  /** List all checkouts for a workspace. */
+  async list(workspaceId: string, _args?: UnknownRecord) {
+    return this.prisma.checkoutProductPlan.findMany({
+      where: { kind: 'CHECKOUT', product: { workspaceId } },
+      include: CHECKOUT_LIST_INCLUDE,
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   /** Find checkouts by product. */
@@ -348,15 +406,7 @@ export class CheckoutService {
     }
     return this.prisma.checkoutProductPlan.findMany({
       where: { productId, kind: 'CHECKOUT' },
-      include: {
-        checkoutConfig: true,
-        checkoutLinks: {
-          include: {
-            plan: { select: { id: true, name: true, priceInCents: true, isActive: true } },
-          },
-          orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
-        },
-      },
+      include: CHECKOUT_LIST_INCLUDE,
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -397,6 +447,97 @@ export class CheckoutService {
     return this.productService.updateConfig(checkoutId, { enableExitIntent: enabled });
   }
 
+  // ─── Resolver-shaped capability methods ─────────────────────────────────────
+  // These (workspaceId, args) wrappers are dispatched by KloelDomainServiceResolver
+  // for the fine-grained `checkouts.*` capabilities. They validate inputs and
+  // delegate to the typed 3-arg config methods above, emitting checkout.updated.
+
+  private requireCheckoutId(args: UnknownRecord): string {
+    const checkoutId = typeof args.checkoutId === 'string' ? args.checkoutId : '';
+    if (!checkoutId) {
+      throw new BadRequestException('checkoutId required');
+    }
+    return checkoutId;
+  }
+
+  private async emitUpdated(workspaceId: string, checkoutId: string): Promise<void> {
+    await this.eventEmitter.checkoutUpdated({ workspaceId, checkoutId });
+  }
+
+  /** Verify ownership, build+persist the config payload via `build`, emit checkout.updated. */
+  private async updateConfigVia(
+    workspaceId: string,
+    args: UnknownRecord,
+    build: (input: UnknownRecord) => Prisma.CheckoutConfigUpdateInput,
+  ) {
+    const checkoutId = this.requireCheckoutId(args);
+    await this.verifyCheckoutOwnership(checkoutId, workspaceId);
+    const result = await this.productService.updateConfig(checkoutId, build(args));
+    await this.emitUpdated(workspaceId, checkoutId);
+    return result;
+  }
+
+  /** Strip checkoutId, apply the stripped payload via `set`, emit checkout.updated. */
+  private async stripUpdateVia(
+    workspaceId: string,
+    args: UnknownRecord,
+    set: (workspaceId: string, checkoutId: string, payload: UnknownRecord) => Promise<unknown>,
+  ) {
+    const checkoutId = this.requireCheckoutId(args);
+    const result = await set(workspaceId, checkoutId, stripCheckoutId(args));
+    await this.emitUpdated(workspaceId, checkoutId);
+    return result;
+  }
+
+  /** Customize checkout theme (accent/background/text/button colors, layout/theme). */
+  async customizeTheme(workspaceId: string, args: UnknownRecord) {
+    return this.stripUpdateVia(workspaceId, args, this.setTheme.bind(this));
+  }
+
+  /** Configure the checkout countdown/expiration timer. */
+  async configureTimer(workspaceId: string, args: UnknownRecord) {
+    return this.stripUpdateVia(workspaceId, args, this.setTimer.bind(this));
+  }
+
+  /** Configure social-proof alerts on the checkout. */
+  async configureSocialProof(workspaceId: string, args: UnknownRecord) {
+    return this.stripUpdateVia(workspaceId, args, this.setSocialProof.bind(this));
+  }
+
+  /** Configure testimonials displayed on the checkout. */
+  async configureTestimonials(workspaceId: string, args: UnknownRecord) {
+    return this.updateConfigVia(workspaceId, args, buildTestimonialsConfig);
+  }
+
+  /** Configure the money-back warranty/guarantee block on the checkout. */
+  async configureWarranty(workspaceId: string, args: UnknownRecord) {
+    return this.updateConfigVia(workspaceId, args, buildWarrantyConfig);
+  }
+
+  /** Configure the exit-intent popup on the checkout. */
+  async configureExitIntent(workspaceId: string, args: UnknownRecord) {
+    return this.updateConfigVia(workspaceId, args, buildExitIntentConfig);
+  }
+
+  /** Link plans to a checkout. */
+  async linkPlansToCheckout(workspaceId: string, args: UnknownRecord) {
+    const checkoutId = this.requireCheckoutId(args);
+    const planIds = Array.isArray(args.planIds)
+      ? args.planIds.filter((p): p is string => typeof p === 'string')
+      : [];
+    if (planIds.length === 0) {
+      throw new BadRequestException('planIds required');
+    }
+    const result = await this.linkPlans(workspaceId, checkoutId, planIds);
+    await this.emitUpdated(workspaceId, checkoutId);
+    return result;
+  }
+
+  /** Configure coupon usage on the checkout. */
+  async configureCoupon(workspaceId: string, args: UnknownRecord) {
+    return this.stripUpdateVia(workspaceId, args, this.setCoupons.bind(this));
+  }
+
   /** Duplicate checkout. */
   async duplicateCheckout(checkoutId: string, workspaceId: string) {
     const checkout = await this.prisma.checkoutProductPlan.findUnique({
@@ -411,18 +552,7 @@ export class CheckoutService {
       throw new NotFoundException('Checkout nao encontrado');
     }
 
-    const createInput = {
-      name: `${checkout.name} (Copia)`,
-      priceInCents: checkout.priceInCents,
-      currency: checkout.currency,
-      maxInstallments: checkout.maxInstallments,
-      installmentsFee: checkout.installmentsFee,
-      quantity: checkout.quantity,
-      freeShipping: checkout.freeShipping,
-      brandName: checkout.checkoutConfig?.brandName ?? checkout.name,
-      ...(checkout.compareAtPrice != null ? { compareAtPrice: checkout.compareAtPrice } : {}),
-      ...(checkout.shippingPrice != null ? { shippingPrice: checkout.shippingPrice } : {}),
-    };
+    const createInput = buildDuplicateCheckoutInput(checkout);
     const duplicated = await this.productService.createCheckout(
       checkout.productId,
       createInput,
@@ -435,14 +565,7 @@ export class CheckoutService {
     }
 
     if (checkout.checkoutConfig) {
-      const {
-        id: _id,
-        planId: _planId,
-        pixels: _pixels,
-        createdAt: _ca,
-        updatedAt: _ua,
-        ...configRest
-      } = checkout.checkoutConfig as CheckoutConfigRecord;
+      const configRest = stripConfigMetadata(checkout.checkoutConfig);
       await this.productService.updateConfig(duplicatedId, configRest);
 
       if (checkout.checkoutConfig.pixels?.length) {
@@ -452,16 +575,7 @@ export class CheckoutService {
         });
         if (createdConfig?.id) {
           await this.prisma.checkoutPixel.createMany({
-            data: checkout.checkoutConfig.pixels.map((pixel) => ({
-              checkoutConfigId: createdConfig.id,
-              type: pixel.type,
-              pixelId: pixel.pixelId,
-              accessToken: pixel.accessToken,
-              trackPageView: pixel.trackPageView,
-              trackInitiateCheckout: pixel.trackInitiateCheckout,
-              trackAddPaymentInfo: pixel.trackAddPaymentInfo,
-              trackPurchase: pixel.trackPurchase,
-            })),
+            data: mapPixelsForDuplicate(checkout.checkoutConfig.pixels, createdConfig.id),
           });
         }
       }

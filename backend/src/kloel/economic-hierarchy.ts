@@ -213,8 +213,10 @@ function ruleAggressivenessCeilingUx(decision: HierarchyDecision): HierarchyJust
   if (decision.type !== 'cia_aggressiveness') {
     return null;
   }
-  const ceiling = String(decision.context.aggressivenessCeiling ?? '').toLowerCase();
-  const brainAggressiveness = String(decision.context.brainAggressiveness ?? '').toLowerCase();
+  const ceilingRaw = decision.context.aggressivenessCeiling;
+  const ceiling = (typeof ceilingRaw === 'string' ? ceilingRaw : '').toLowerCase();
+  const brainRaw = decision.context.brainAggressiveness;
+  const brainAggressiveness = (typeof brainRaw === 'string' ? brainRaw : '').toLowerCase();
   const effective = String(decision.chosen).toLowerCase();
 
   if (!ceiling && !brainAggressiveness) {

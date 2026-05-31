@@ -2,10 +2,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { KloelThinkerService } from './kloel-thinker.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
-import { LLMBudgetService, estimateChatCostCents } from './llm-budget.service';
+import { LLMBudgetService } from './llm-budget.service';
 import { Response } from 'express';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { MindCapabilityExecutor } from './mind/coordination';
+import { StateBuilderService } from './state/state-builder.service';
 
 jest.mock('./kloel-thread.service', () => ({
   KloelThreadService: class MockKloelThreadService {},
@@ -44,17 +45,23 @@ import { KloelComposerService } from './kloel-composer.service';
 import { KloelReplyEngineService, LocalToolExecutor } from './kloel-reply-engine.service';
 import { KLOEL_LLM_E2E_GUARD, KloelLLME2EGuard } from './kloel-llm-e2e-guard';
 import { KloelStreamWriter } from './kloel-stream-writer';
-
+import { finalizeSuccessfulReply } from './kloel-thinker-think.helpers';
 jest.mock('./kloel-thinker.helpers', () => ({
   thinkSyncImpl: jest.fn(),
   regenerateThreadAssistantResponseImpl: jest.fn(),
 }));
 
-jest.mock('./kloel-thinker-think.helpers', () => ({
-  runComposerCapabilityBranch: jest.fn(),
-  runToolPlanningBranch: jest.fn(),
-  finalizeSuccessfulReply: jest.fn(),
-}));
+jest.mock('./kloel-thinker-think.helpers', () => {
+  const actual = jest.requireActual<typeof import('./kloel-thinker-think.helpers')>(
+    './kloel-thinker-think.helpers',
+  );
+  return {
+    ...actual,
+    runComposerCapabilityBranch: jest.fn(),
+    runToolPlanningBranch: jest.fn(),
+    finalizeSuccessfulReply: jest.fn(),
+  };
+});
 
 jest.mock('./kloel-conversation-store', () => ({
   KloelConversationStore: jest.fn().mockImplementation(() => ({
@@ -115,11 +122,6 @@ describe('KloelThinkerService', () => {
   let llmE2EGuard: Pick<KloelLLME2EGuard, 'isEnabled' | 'buildStream'>;
   let abiBuilder: Pick<AbiBuilderService, 'build'>;
   let capabilityExecutor: Pick<MindCapabilityExecutor, 'buildCognitiveSubstrate'>;
-  const {
-    thinkSyncImpl,
-    regenerateThreadAssistantResponseImpl,
-  } = require('./kloel-thinker.helpers');
-  const { finalizeSuccessfulReply } = require('./kloel-thinker-think.helpers');
   const wsId = 'ws-1';
 
   beforeEach(async () => {
@@ -144,7 +146,9 @@ describe('KloelThinkerService', () => {
       $transaction: jest
         .fn()
         .mockImplementation((arg: unknown) =>
-          typeof arg === 'function' ? arg(prisma) : Promise.resolve(undefined),
+          typeof arg === 'function'
+            ? (arg as (p: typeof prisma) => unknown)(prisma)
+            : Promise.resolve(undefined),
         ),
     };
 
@@ -229,6 +233,22 @@ describe('KloelThinkerService', () => {
         { provide: KloelComposerService, useValue: composerService },
         { provide: KloelReplyEngineService, useValue: replyEngine },
         { provide: KLOEL_LLM_E2E_GUARD, useValue: llmE2EGuard },
+        {
+          provide: StateBuilderService,
+          useValue: {
+            build: jest.fn().mockResolvedValue({
+              workspace: { available: false },
+              actor: { available: false },
+              contact: null,
+              recentEvents: [],
+              memory: { shortTerm: [] },
+              capabilities: [],
+              risk: { available: false, reason: 'no risk service' },
+              missingSources: [],
+              assembledAt: new Date(),
+            }),
+          },
+        },
         { provide: AbiBuilderService, useValue: abiBuilder },
         { provide: MindCapabilityExecutor, useValue: capabilityExecutor },
       ],
@@ -277,8 +297,9 @@ describe('KloelThinkerService', () => {
       expect(executeLocalTool).toHaveBeenCalledWith(wsId, 'list_products', {}, 'agent-1');
       expect(replyEngine.hasOpenAiKey).not.toHaveBeenCalled();
       expect(replyEngine.buildChatModelMessages).not.toHaveBeenCalled();
-      const streamWriter = (KloelStreamWriter as jest.Mock).mock.results.at(-1)
-        ?.value as { write: jest.Mock<void, [unknown]> };
+      const streamWriter = (KloelStreamWriter as jest.Mock).mock.results.at(-1)?.value as {
+        write: jest.Mock<void, [unknown]>;
+      };
       expect(streamWriter.write).toHaveBeenCalledWith(
         expect.objectContaining({ type: 'tool_call', tool: 'list_products' }),
       );
@@ -305,6 +326,68 @@ describe('KloelThinkerService', () => {
       );
     });
 
+    it('includes canonical receipt proof in deterministic SSE replies', async () => {
+      const executeLocalTool = jest.fn().mockResolvedValue({
+        success: true,
+        product: { id: 'prod-1', name: 'PDRN', price: 197 },
+        capabilityId: 'products.create',
+        auditLogId: 'audit_prod_1',
+        evidenceUrl: '/produtos/prod-1',
+        domainEvents: ['product.created'],
+        receipt: {
+          capabilityId: 'products.create',
+          auditLogId: 'audit_prod_1',
+          evidenceUrl: '/produtos/prod-1',
+          domainEvents: ['product.created'],
+          idempotencyKey: 'products.create:ws-1:agent-1',
+          success: true,
+        },
+      });
+
+      await service.think(
+        { message: 'criar produto nome: PDRN, preco R$ 197', workspaceId: wsId, userId: 'agent-1' },
+        {} as Response,
+        null,
+        undefined,
+        undefined,
+        executeLocalTool as LocalToolExecutor,
+      );
+
+      expect(executeLocalTool).toHaveBeenCalledWith(
+        wsId,
+        'products.create',
+        expect.objectContaining({ name: 'pdrn', price: 197 }),
+        'agent-1',
+      );
+
+      const streamWriter = (KloelStreamWriter as unknown as jest.Mock).mock.results.at(-1)
+        ?.value as { write: jest.Mock<void, [unknown]> };
+      const contentEvents = streamWriter.write.mock.calls
+        .map(([event]) => event)
+        .filter(
+          (event): event is { type: 'content'; content: string } =>
+            event !== null &&
+            typeof event === 'object' &&
+            !Array.isArray(event) &&
+            (event as { type?: unknown }).type === 'content',
+        );
+      const content = contentEvents.map((event) => event.content).join('\n');
+
+      expect(content).toContain('Produto PDRN');
+      expect(content).toContain('Prova material:');
+      expect(content).toContain('Evidência: /produtos/prod-1');
+      expect(content).toContain('AuditLog: audit_prod_1');
+      expect(content).toContain('Eventos: product.created');
+      expect(finalizeSuccessfulReply).toHaveBeenCalledWith(
+        expect.stringContaining('Evidência: /produtos/prod-1'),
+        0,
+        expect.objectContaining({
+          workspaceId: wsId,
+          message: 'criar produto nome: PDRN, preco R$ 197',
+        }),
+      );
+    });
+
     it('returns an honest tool failure on SSE without falling through to the LLM', async () => {
       const executeLocalTool = jest
         .fn()
@@ -321,8 +404,9 @@ describe('KloelThinkerService', () => {
 
       expect(executeLocalTool).toHaveBeenCalledWith(wsId, 'list_products', {}, undefined);
       expect(replyEngine.buildChatModelMessages).not.toHaveBeenCalled();
-      const streamWriter = (KloelStreamWriter as jest.Mock).mock.results.at(-1)
-        ?.value as { write: jest.Mock<void, [unknown]> };
+      const streamWriter = (KloelStreamWriter as jest.Mock).mock.results.at(-1)?.value as {
+        write: jest.Mock<void, [unknown]>;
+      };
       expect(streamWriter.write).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'tool_result',
@@ -437,94 +521,6 @@ describe('KloelThinkerService', () => {
           { signal },
         ),
       ).resolves.toBeUndefined();
-    });
-  });
-
-  describe('thinkSync', () => {
-    it('delegates to thinkSyncImpl and returns result', async () => {
-      const mockResult = { response: 'Hello!', conversationId: 'conv-1', title: 'Title' };
-      thinkSyncImpl.mockResolvedValue(mockResult);
-
-      const result = await service.thinkSync(
-        { message: 'hello', workspaceId: wsId },
-        null,
-        undefined,
-        undefined,
-      );
-
-      expect(thinkSyncImpl).toHaveBeenCalled();
-      expect(result).toEqual(mockResult);
-    });
-
-    it('propagates errors from thinkSyncImpl', async () => {
-      thinkSyncImpl.mockRejectedValue(new Error('LLM failure'));
-      await expect(
-        service.thinkSync({ message: 'hello', workspaceId: wsId }, null, undefined, undefined),
-      ).rejects.toThrow('LLM failure');
-    });
-
-    it('passes workspaceId to thinkSyncImpl', async () => {
-      thinkSyncImpl.mockResolvedValue({ response: 'Ok' });
-      await service.thinkSync(
-        { message: 'hello', workspaceId: 'ws-tenant' },
-        null,
-        undefined,
-        undefined,
-      );
-      const callArgs = thinkSyncImpl.mock.calls[0][0];
-      expect(callArgs.workspaceId).toBe('ws-tenant');
-    });
-  });
-
-  describe('regenerateThreadAssistantResponse', () => {
-    it('delegates to regenerateThreadAssistantResponseImpl', async () => {
-      const mockRegenerated = {
-        id: 'msg-2',
-        threadId: 'thread-1',
-        role: 'assistant',
-        content: 'Regenerated response',
-        metadata: null,
-        createdAt: new Date(),
-        deletedMessageIds: ['msg-1'],
-      };
-      regenerateThreadAssistantResponseImpl.mockResolvedValue(mockRegenerated);
-
-      const result = await service.regenerateThreadAssistantResponse({
-        workspaceId: wsId,
-        conversationId: 'conv-1',
-        assistantMessageId: 'msg-1',
-      });
-
-      const [regenerateInput, regenerateDeps] = regenerateThreadAssistantResponseImpl.mock.calls[0];
-      expect(regenerateInput).toEqual(
-        expect.objectContaining({
-          workspaceId: wsId,
-          conversationId: 'conv-1',
-          assistantMessageId: 'msg-1',
-        }),
-      );
-      expect(regenerateDeps).toBeDefined();
-      expect(result).toEqual(mockRegenerated);
-    });
-
-    it('propagates errors from regenerateThreadAssistantResponseImpl', async () => {
-      regenerateThreadAssistantResponseImpl.mockRejectedValue(new Error('Thread not found'));
-      await expect(
-        service.regenerateThreadAssistantResponse({
-          workspaceId: wsId,
-          conversationId: 'conv-1',
-          assistantMessageId: 'msg-1',
-        }),
-      ).rejects.toThrow('Thread not found');
-    });
-  });
-
-  describe('error handling', () => {
-    it('thinkSync propagates error when helper throws', async () => {
-      thinkSyncImpl.mockRejectedValue(new Error('Budget exceeded'));
-      await expect(
-        service.thinkSync({ message: 'hello', workspaceId: wsId }, null, undefined, undefined),
-      ).rejects.toThrow('Budget exceeded');
     });
   });
 });

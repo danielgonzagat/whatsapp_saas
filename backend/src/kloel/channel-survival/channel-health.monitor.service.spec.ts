@@ -2,17 +2,19 @@ import { expectValueOf } from '../../../test/expect-value-of';
 import { ChannelHealthMonitorService } from './channel-health.monitor.service';
 import { ChannelHealth, RECENT_WINDOW_SIZE } from './channel-health.types';
 
-function makeEvent(
-  workspaceId: string,
-  channel: string,
-  overrides: { eventName?: string; occurredAt?: string; success?: boolean } = {},
-) {
+interface AsymmetricStringMatcher {
+  asymmetricMatch(value: unknown): boolean;
+  toString(): string;
+}
+
+function expectStringMatching(pattern: RegExp): AsymmetricStringMatcher {
   return {
-    workspaceId,
-    channel,
-    eventName: overrides.eventName ?? 'commerce.whatsapp.message_replied',
-    occurredAt: overrides.occurredAt ?? new Date().toISOString(),
-    success: overrides.success ?? true,
+    asymmetricMatch(value: unknown): boolean {
+      return typeof value === 'string' && pattern.test(value);
+    },
+    toString(): string {
+      return `StringMatching(${pattern.source})`;
+    },
   };
 }
 
@@ -370,7 +372,7 @@ describe('ChannelHealthMonitorService', () => {
         banRiskScore: expectValueOf(Number),
         policyViolationCount: expectValueOf(Number),
         recentFailureBurst: expectValueOf(Boolean),
-        healthStatus: expect.stringMatching(/^(healthy|degraded|at_risk|critical)$/),
+        healthStatus: expectStringMatching(/^(healthy|degraded|at_risk|critical)$/),
       });
     });
   });

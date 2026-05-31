@@ -8,8 +8,6 @@
 import { validate, type ValidationResult, type EditZones, computeZones, EMPTY_ZONES, type Position } from './engine.js';
 export type { EditZones } from './engine.js';
 export { EMPTY_ZONES, computeZones } from './engine.js';
-import { replaceText } from './engine.js';
-
 // ─────────────────────────── helpers ───────────────────────────
 
 function posToOffset(text: string, pos: Position): number {
@@ -32,14 +30,6 @@ function offsetToPos(text: string, offset: number): Position {
 }
 
 // ═══════════════════════ 5: replace_operator ═══════════════════════
-
-const OPERATORS = new Set([
-  '<', '<=', '>', '>=', '==', '===', '!=', '!==',
-  '&&', '||', '??', '&', '|', '^', '<<', '>>',
-  '+', '-', '*', '/', '%', '**', '//',
-  '=', '+=', '-=', '*=', '/=', '%=',
-  'and', 'or', 'not', 'in', 'is',
-]);
 
 export interface OperatorReplaceResult {
   newText: string;
@@ -135,7 +125,6 @@ export function reorderListItem(
   if (listEnd < 0) throw new Error('unclosed list');
 
   // Parse comma-separated items
-  const listContent = original.slice(listStart + 1, listEnd);
   const items: { text: string; start: number; end: number }[] = [];
   let itemStart = listStart + 1;
   let depth2 = 0;

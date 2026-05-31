@@ -281,6 +281,43 @@ export class MindPredictionService {
       .sort((a, b) => b.confidence - a.confidence);
   }
 
+  /**
+   * Predict next-user-behavior from user message + workspace state.
+   * Returns the best-matching active prediction or null when no predictions exist.
+   * Synchronous (in-memory) — called on the chat hot path.
+   */
+  predict(ctx: {
+    workspaceId: string;
+    userMessage: string;
+    state?: Record<string, unknown>;
+  }): { expected: string; confidence: number } | null {
+    const active = this.activePredictions;
+    if (active.length === 0) {
+      return null;
+    }
+
+    const normalized = ctx.userMessage.toLowerCase();
+
+    // Find predictions whose expectedOutcome or predicate relates to the message
+    const matching = active.filter((p) => {
+      const expectedWords = p.expectedOutcome.replace(/_/g, ' ').toLowerCase();
+      const predicateWords = p.predicate.replace(/_/g, ' ').toLowerCase();
+      return (
+        normalized.includes(expectedWords) ||
+        predicateWords.split(' ').some((w) => w.length > 2 && normalized.includes(w))
+      );
+    });
+
+    if (matching.length === 0) {
+      // Return highest-confidence prediction as fallback
+      const best = active.reduce((a, b) => (a.confidence > b.confidence ? a : b));
+      return { expected: best.expectedOutcome, confidence: best.confidence };
+    }
+
+    const best = matching.reduce((a, b) => (a.confidence > b.confidence ? a : b));
+    return { expected: best.expectedOutcome, confidence: best.confidence };
+  }
+
   /** Get active predictions for inspection */
   getActivePredictions(): GeneratedPrediction[] {
     return this.activePredictions;

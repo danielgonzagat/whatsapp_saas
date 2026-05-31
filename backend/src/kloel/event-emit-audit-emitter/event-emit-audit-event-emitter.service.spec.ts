@@ -33,7 +33,7 @@ describe('EventEmitAuditEventEmitterService', () => {
 
   it('emits pulse.gate_failed when one or more surfaces have zero coverage', () => {
     const { emitter, svc } = build();
-    emitter.emit(input({ eventName: 'commerce.cart.created' }));
+    void emitter.emit(input({ eventName: 'commerce.cart.created' }));
     const report = svc.auditAndEmit();
 
     const events = emitter.recentEvents();
@@ -62,7 +62,7 @@ describe('EventEmitAuditEventEmitterService', () => {
       input({ eventName: 'commerce.post_sale.delivery_completed' }),
     ];
     for (const ev of onePerSurface) {
-      emitter.emit(ev);
+      void emitter.emit(ev);
     }
     const report = svc.auditAndEmit();
 
@@ -82,8 +82,8 @@ describe('EventEmitAuditEventEmitterService', () => {
 
   it('includes coverage report in the emitted event payload', () => {
     const { emitter, svc } = build();
-    emitter.emit(input({ eventName: 'commerce.cart.created' }));
-    emitter.emit(input({ eventName: 'commerce.payment.approved' }));
+    void emitter.emit(input({ eventName: 'commerce.cart.created' }));
+    void emitter.emit(input({ eventName: 'commerce.payment.approved' }));
     svc.auditAndEmit();
 
     const events = emitter.recentEvents();
@@ -118,16 +118,16 @@ describe('EventEmitAuditEventEmitterService', () => {
     const auditor = new SpineCoverageAuditorService(emitter);
     const svc = new EventEmitAuditEventEmitterService(emitter, auditor);
     for (let i = 0; i < 20; i += 1) {
-      emitter.emit(input({ eventName: 'commerce.lead.replied', payload: { i } }));
+      void emitter.emit(input({ eventName: 'commerce.lead.replied', payload: { i } }));
     }
     expect(() => svc.auditAndEmit()).not.toThrow();
   });
 
   it('two consecutive auditAndEmit calls produce two distinct gate events', () => {
     const { emitter, svc } = build();
-    emitter.emit(input({ eventName: 'commerce.cart.created' }));
+    void emitter.emit(input({ eventName: 'commerce.cart.created' }));
     svc.auditAndEmit();
-    emitter.emit(input({ eventName: 'commerce.crm.stage_changed' }));
+    void emitter.emit(input({ eventName: 'commerce.crm.stage_changed' }));
     svc.auditAndEmit();
 
     const events = emitter.recentEvents();

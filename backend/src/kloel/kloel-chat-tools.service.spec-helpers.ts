@@ -9,6 +9,7 @@ import {
   AgentRuntimeSkillRegistry,
   AgentRuntimeEvidenceStoreService,
 } from './agent-runtime';
+import { MemoryService } from './memory.service';
 
 jest.mock('../common/products/legacy-products.util', () => ({
   filterLegacyProducts: jest.fn((products: unknown[]) => products),
@@ -16,12 +17,13 @@ jest.mock('../common/products/legacy-products.util', () => ({
 
 export type ChatToolsPrismaMock = {
   product: { create: jest.Mock; findMany: jest.Mock; findFirst: jest.Mock; updateMany: jest.Mock };
+  productCoupon: { findFirst: jest.Mock };
   workspace: { findUnique: jest.Mock; update: jest.Mock };
   kloelMemory: { upsert: jest.Mock; findUnique: jest.Mock };
   flow: { create: jest.Mock; findMany: jest.Mock; count: jest.Mock };
   contact: { count: jest.Mock };
   message: { count: jest.Mock };
-  checkoutOrder: { aggregate: jest.Mock };
+  checkoutOrder: { aggregate: jest.Mock; count: jest.Mock; findMany: jest.Mock };
   kloelWallet: { findUnique: jest.Mock };
   auditLog: { create: jest.Mock };
   $transaction: jest.Mock;
@@ -44,6 +46,7 @@ export type ChatToolsSetup = {
   prisma: ChatToolsPrismaMock;
   productService: ProductServiceMock;
   smartPayment: Pick<SmartPaymentService, 'createSmartPayment'>;
+  memoryService: Pick<MemoryService, 'saveMemory'>;
   agentScheduler: {
     upsertJob: jest.Mock;
     listJobs: jest.Mock;
@@ -78,6 +81,7 @@ export async function setupChatToolsService(): Promise<ChatToolsSetup> {
       findFirst: jest.fn().mockResolvedValue(null),
       updateMany: jest.fn().mockResolvedValue({ count: 1 }),
     },
+    productCoupon: { findFirst: jest.fn().mockResolvedValue(null) },
     workspace: {
       findUnique: jest.fn().mockResolvedValue({ providerSettings: {} }),
       update: jest.fn().mockResolvedValue({}),
@@ -95,12 +99,14 @@ export async function setupChatToolsService(): Promise<ChatToolsSetup> {
     message: { count: jest.fn().mockResolvedValue(0) },
     checkoutOrder: {
       aggregate: jest.fn().mockResolvedValue({ _count: { _all: 0 }, _sum: { totalInCents: 0 } }),
+      count: jest.fn().mockResolvedValue(0),
+      findMany: jest.fn().mockResolvedValue([]),
     },
     kloelWallet: { findUnique: jest.fn().mockResolvedValue(null) },
     auditLog: { create: jest.fn().mockResolvedValue({}) },
     $transaction: jest.fn().mockImplementation((arg: unknown) => {
       if (typeof arg === 'function') {
-        return arg(prisma);
+        return (arg as (p: ChatToolsPrismaMock) => unknown)(prisma);
       }
       return Promise.resolve(undefined);
     }),
@@ -108,6 +114,17 @@ export async function setupChatToolsService(): Promise<ChatToolsSetup> {
 
   const smartPayment: Pick<SmartPaymentService, 'createSmartPayment'> = {
     createSmartPayment: jest.fn().mockResolvedValue({ paymentUrl: 'https://pay.test' }),
+  };
+
+  const memoryService: Pick<MemoryService, 'saveMemory'> = {
+    saveMemory: jest.fn().mockResolvedValue({
+      id: 'mem-1',
+      workspaceId: wsId,
+      key: 'brandVoice',
+      value: { style: 'formal', personality: 'profissional' },
+      category: 'preferences',
+      content: 'Tom: formal. profissional',
+    }),
   };
 
   const agentScheduler = {
@@ -181,6 +198,7 @@ export async function setupChatToolsService(): Promise<ChatToolsSetup> {
       KloelChatToolsService,
       { provide: PrismaService, useValue: prisma },
       { provide: SmartPaymentService, useValue: smartPayment },
+      { provide: MemoryService, useValue: memoryService },
       { provide: AgentRuntimeSchedulerService, useValue: agentScheduler },
       { provide: AgentRuntimeSessionStore, useValue: agentSessions },
       { provide: AgentRuntimeSkillRegistry, useValue: agentSkills },
@@ -196,6 +214,7 @@ export async function setupChatToolsService(): Promise<ChatToolsSetup> {
     prisma,
     productService: mockProductService,
     smartPayment,
+    memoryService,
     agentScheduler,
     agentSessions,
     agentSkills,

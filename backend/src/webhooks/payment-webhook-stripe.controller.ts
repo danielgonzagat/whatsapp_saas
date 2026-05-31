@@ -227,18 +227,7 @@ export class PaymentWebhookStripeController {
                   typeof intent.latest_charge === 'string' ? intent.latest_charge : null,
                 transfer_group: intent.transfer_group ?? null,
                 metadata: intent.metadata ?? null,
-                next_action:
-                  intent.next_action?.type === 'pix_display_qr_code'
-                    ? {
-                        type: intent.next_action.type,
-                        pix_display_qr_code: {
-                          data: intent.next_action.pix_display_qr_code?.data ?? null,
-                          image_url_png:
-                            intent.next_action.pix_display_qr_code?.image_url_png ?? null,
-                          expires_at: intent.next_action.pix_display_qr_code?.expires_at ?? null,
-                        },
-                      }
-                    : null,
+                next_action: null,
                 last_payment_error: intent.last_payment_error
                   ? { message: intent.last_payment_error.message ?? null }
                   : null,
@@ -278,6 +267,22 @@ export class PaymentWebhookStripeController {
           return { received: true, skipped: true, reason: 'duplicate_webhook_event' };
         }
         this.logger.warn(`Failed to log Stripe webhook event: ${errMsg?.message}`);
+      }
+
+      // Post-TTL replay guard: WebhooksService.logWebhookEvent is an `upsert`,
+      // so on a second delivery the existing row is updated rather than
+      // throwing P2002. Combined with the 300s Redis NX TTL, a Stripe retry
+      // arriving > 5 minutes later (Stripe can retry for up to 3 days) would
+      // re-enter the handler chain and double-process the sale, ledger
+      // credit, autopilot conversion, and post-purchase flow. Short-circuit
+      // here when the event was already marked `processed` on a previous
+      // delivery to preserve financial idempotency.
+      // Also short-circuit when the event is still `processing`: a concurrent
+      // in-flight duplicate that lost the atomic claim-once race must not
+      // re-enter the handler chain and double-process the sale/ledger/flow.
+      if (webhookEvent?.status === 'processed' || webhookEvent?.status === 'processing') {
+        this.logger.log(`Stripe webhook ${stripeExternalId} already processed; skipping replay`);
+        return { received: true, skipped: true, reason: 'already_processed' };
       }
 
       if (event?.type === 'refund.created') {

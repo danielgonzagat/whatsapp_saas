@@ -37,7 +37,7 @@ export class AlertsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     await this.sub.subscribe('alerts');
     this.sub.on('message', (_channel, message) => {
       try {
-        const payload = JSON.parse(message);
+        const payload = JSON.parse(message) as { workspaceId?: string };
         const workspaceId = payload.workspaceId;
         // Emite para room do workspace; se não houver, emite broadcast
         if (workspaceId) {

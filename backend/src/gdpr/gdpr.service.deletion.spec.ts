@@ -1,4 +1,3 @@
-import { BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { GdprStatus, GdprType } from '@prisma/client';
@@ -9,8 +8,8 @@ import { GdprService } from './gdpr.service';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 jest.mock('node:fs', () => {
-  const { Writable } = jest.requireActual('node:stream');
-  const actual = jest.requireActual('node:fs');
+  const { Writable } = jest.requireActual<typeof import('node:stream')>('node:stream');
+  const actual = jest.requireActual<typeof import('node:fs')>('node:fs');
   const stream = new Writable({ write: (_ch: unknown, _enc: unknown, cb: () => void) => cb() });
   stream.on = jest.fn().mockImplementation(function (
     this: Record<string, unknown>,
@@ -34,17 +33,21 @@ jest.mock('node:fs', () => {
 });
 
 jest.mock('node:os', () => ({
-  ...jest.requireActual('node:os'),
+  ...jest.requireActual<typeof import('node:os')>('node:os'),
   tmpdir: jest.fn(() => '/tmp'),
 }));
 
 jest.mock('../common/redis/redis.util', () => ({
   createBullMqConnectionOptions: jest.fn(() => {
-    const { RedisConfigurationError } = jest.requireActual('../common/redis/resolve-redis-url');
+    const { RedisConfigurationError } = jest.requireActual<
+      typeof import('../common/redis/resolve-redis-url')
+    >('../common/redis/resolve-redis-url');
     throw new RedisConfigurationError('Redis not available in test');
   }),
   createRedisClient: jest.fn(() => {
-    const { RedisConfigurationError } = jest.requireActual('../common/redis/resolve-redis-url');
+    const { RedisConfigurationError } = jest.requireActual<
+      typeof import('../common/redis/resolve-redis-url')
+    >('../common/redis/resolve-redis-url');
     throw new RedisConfigurationError('Redis not available in test');
   }),
 }));
@@ -97,7 +100,7 @@ describe('GdprService', () => {
     message: ['findMany', 'updateMany'],
     chatMessage: ['findMany', 'updateMany'],
   });
-  (prismaMock as any).$transaction = jest.fn((arg: unknown, _opts?: unknown) => {
+  prismaMock.$transaction = jest.fn((arg: unknown, _opts?: unknown) => {
     if (typeof arg === 'function') {
       return (arg as (tx: unknown) => unknown)(prismaMock);
     }
@@ -169,14 +172,14 @@ describe('GdprService', () => {
       expect(prismaMock.gdprRequest.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'gdpr_1', workspaceId: 'ws_1' },
-          data: expect.objectContaining({ status: GdprStatus.PROCESSING }),
+          data: expect.objectContaining({ status: GdprStatus.PROCESSING }) as unknown,
         }),
       );
       expect(prismaMock.$transaction).toHaveBeenCalled();
       expect(prismaMock.gdprRequest.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'gdpr_1', workspaceId: 'ws_1' },
-          data: expect.objectContaining({ status: GdprStatus.COMPLETE }),
+          data: expect.objectContaining({ status: GdprStatus.COMPLETE }) as unknown,
         }),
       );
     });
@@ -193,7 +196,7 @@ describe('GdprService', () => {
       expect(prismaMock.gdprRequest.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'gdpr_1', workspaceId: 'ws_1' },
-          data: expect.objectContaining({ status: GdprStatus.FAILED }),
+          data: expect.objectContaining({ status: GdprStatus.FAILED }) as unknown,
         }),
       );
       expect(prismaMock.$transaction).not.toHaveBeenCalled();
@@ -202,7 +205,7 @@ describe('GdprService', () => {
     it('executes transaction for cascade anonymization', async () => {
       await service.processDeletion('gdpr_1');
 
-      const txCall = prismaMock.$transaction.mock.calls[0]?.[0] as (
+      const txCall = (prismaMock.$transaction.mock.calls as unknown[][])[0]?.[0] as (
         tx: typeof prismaMock,
       ) => unknown;
       expect(txCall).toBeDefined();
@@ -211,10 +214,12 @@ describe('GdprService', () => {
     it('sets evidenceUrl after cascade completion', async () => {
       await service.processDeletion('gdpr_1');
 
-      const evidenceCall = prismaMock.gdprRequest.updateMany.mock.calls.find((call: unknown[]) => {
-        const arg = call[0] as { data?: { evidenceUrl?: string } };
-        return Boolean(arg?.data?.evidenceUrl);
-      });
+      const evidenceCall = (prismaMock.gdprRequest.updateMany.mock.calls as unknown[][]).find(
+        (call: unknown[]) => {
+          const arg = call[0] as { data?: { evidenceUrl?: string } };
+          return Boolean(arg?.data?.evidenceUrl);
+        },
+      );
       expect(evidenceCall).toBeDefined();
     });
 
@@ -223,21 +228,23 @@ describe('GdprService', () => {
 
       await service.processDeletion('gdpr_1');
 
-      const updateArgs = prismaMock.chatMessage.updateMany.mock.calls[0][0];
+      const updateArgs = (prismaMock.chatMessage.updateMany.mock.calls as unknown[][])[0][0] as {
+        data: { deletedAt: Date };
+      };
       expect(updateArgs).toEqual({
         where: { workspaceId: 'ws_1', userId: 'agent_1', deletedAt: null },
         data: expect.objectContaining({
           userId: null,
           content: '[deleted by GDPR request]',
           deletedAt: updateArgs.data.deletedAt,
-        }),
+        }) as unknown,
       });
       expect(updateArgs.data.deletedAt).toBeInstanceOf(Date);
       expect(prismaMock.auditLog.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            details: expect.objectContaining({ chatMessagesAnonymized: 3 }),
-          }),
+            details: expect.objectContaining({ chatMessagesAnonymized: 3 }) as unknown,
+          }) as unknown,
         }),
       );
     });
@@ -262,8 +269,8 @@ describe('GdprService', () => {
             details: expect.objectContaining({
               conversationsUnassigned: 2,
               messagesUnassigned: 5,
-            }),
-          }),
+            }) as unknown,
+          }) as unknown,
         }),
       );
     });

@@ -6,33 +6,13 @@ import type { AuthenticatedAdmin } from './admin-token.types';
 import { AdminPublic } from './decorators/admin-public.decorator';
 import { AllowPendingMfa } from './decorators/allow-pending-mfa.decorator';
 import { CurrentAdmin } from './decorators/current-admin.decorator';
-import { ChangePasswordDto } from './dto/change-password.dto';
-import { LoginDto } from './dto/login.dto';
+import { AdminChangePasswordDto } from './dto/change-password.dto';
+import { AdminLoginDto } from './dto/login.dto';
 import { MfaVerifyDto } from './dto/mfa-verify.dto';
-import { RefreshDto } from './dto/refresh.dto';
+import { AdminRefreshDto } from './dto/refresh.dto';
 import { AdminAuthGuard } from './guards/admin-auth.guard';
 import { RouteClass } from '../../common/throttler/route-class.decorator';
-
-function readForwardedForIp(header: string | string[] | undefined): string | null {
-  if (typeof header !== 'string' || header.length === 0) {
-    return null;
-  }
-  const first = header.split(',')[0]!.trim();
-  return first.length > 0 ? first : null;
-}
-
-function extractClientIp(req: Request): string {
-  const forwarded = readForwardedForIp(req.headers['x-forwarded-for']);
-  if (forwarded) {
-    return forwarded;
-  }
-  return req.ip ?? req.socket?.remoteAddress ?? '0.0.0.0';
-}
-
-function extractUserAgent(req: Request): string {
-  const ua = req.headers['user-agent'];
-  return typeof ua === 'string' ? ua : 'unknown';
-}
+import { extractClientIp, extractUserAgent } from './admin-auth.service.helpers';
 
 /** Admin auth controller. */
 @Public()
@@ -45,7 +25,7 @@ export class AdminAuthController {
   @Post('login')
   @AdminPublic()
   @HttpCode(HttpStatus.OK)
-  async login(@Body() dto: LoginDto, @Req() req: Request) {
+  async login(@Body() dto: AdminLoginDto, @Req() req: Request) {
     return this.auth.login(dto.email, dto.password, extractClientIp(req), extractUserAgent(req));
   }
 
@@ -56,7 +36,7 @@ export class AdminAuthController {
   @HttpCode(HttpStatus.OK)
   async changePassword(
     @CurrentAdmin() admin: AuthenticatedAdmin,
-    @Body() dto: ChangePasswordDto,
+    @Body() dto: AdminChangePasswordDto,
     @Req() req: Request,
   ) {
     return this.auth.changePassword(
@@ -106,7 +86,7 @@ export class AdminAuthController {
   @Post('refresh')
   @AdminPublic()
   @HttpCode(HttpStatus.OK)
-  async refresh(@Body() dto: RefreshDto, @Req() req: Request) {
+  async refresh(@Body() dto: AdminRefreshDto, @Req() req: Request) {
     return this.auth.refresh(dto.refreshToken, extractClientIp(req), extractUserAgent(req));
   }
 

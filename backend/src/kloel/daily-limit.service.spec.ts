@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { DailyLimitService } from './daily-limit.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { castMock } from '../../test/helpers/cast-mock';
 
 describe('DailyLimitService', () => {
   let service: DailyLimitService;
@@ -90,7 +91,14 @@ describe('DailyLimitService', () => {
       prisma.dailyLimitCounter.upsert.mockResolvedValue({ used: 2, capAtDay: 5 });
 
       await service.ensureProactiveDailyLimit(wsId, ch);
-      const callArgs = prisma.dailyLimitCounter.upsert.mock.calls[0][0];
+      const callArgs = castMock<
+        [
+          {
+            where: { workspaceId_channel_day: { channel: string; day: Date } };
+            create: { day: Date };
+          },
+        ][]
+      >(prisma.dailyLimitCounter.upsert.mock.calls)[0]?.[0];
       expect(callArgs.where).toEqual({
         workspaceId_channel_day: {
           workspaceId: wsId,
@@ -109,7 +117,7 @@ describe('DailyLimitService', () => {
         used: 1,
         capAtDay: 5,
       });
-      const createDay = callArgs.create.day as Date;
+      const createDay = callArgs.create.day;
       expect(createDay).toBeInstanceOf(Date);
       expect(isNaN(createDay.getTime())).toBe(false);
     });
@@ -128,7 +136,9 @@ describe('DailyLimitService', () => {
       prisma.dailyLimitCounter.upsert.mockResolvedValue({ used: 1, capAtDay: 10 });
 
       await service.ensureProactiveDailyLimit(wsId, 'WHATSAPP');
-      const callArgs = prisma.dailyLimitCounter.upsert.mock.calls[0][0];
+      const callArgs = castMock<[{ where: { workspaceId_channel_day: { channel: string } } }][]>(
+        prisma.dailyLimitCounter.upsert.mock.calls,
+      )[0]?.[0];
       expect(callArgs.where.workspaceId_channel_day.channel).toBe('whatsapp');
     });
   });

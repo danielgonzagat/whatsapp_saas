@@ -18,7 +18,7 @@ import {
   ChannelSendInput,
   ChannelSendResult,
 } from '../../../common/channel-dispatch/channel-dispatch.port';
-import { InstagramService } from '../../../meta/instagram/instagram.service';
+import { InstagramService } from './instagram.service';
 
 @Injectable()
 export class InstagramDispatchAdapter implements ChannelDispatchPort {
@@ -57,6 +57,11 @@ export class InstagramDispatchAdapter implements ChannelDispatchPort {
         error: error instanceof Error ? error.message : 'instagram_send_failed',
       };
     }
+  }
+
+  /** Canonical alias of {@link send} (Wave 21 unification — task d). */
+  sendMessage(input: ChannelSendInput): Promise<ChannelSendResult> {
+    return this.send(input);
   }
 
   isConfigured(): boolean {

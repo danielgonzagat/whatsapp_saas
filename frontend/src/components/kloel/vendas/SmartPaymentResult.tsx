@@ -7,7 +7,7 @@ export interface SmartPaymentResultData {
   id?: string;
   paymentLink?: string;
   pixCode?: string;
-  billingType?: 'PIX' | 'CREDIT_CARD';
+  billingType?: 'PIX' | 'BOLETO' | 'CREDIT_CARD';
   suggestedMessage?: string;
 }
 

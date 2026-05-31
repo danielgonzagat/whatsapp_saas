@@ -51,7 +51,7 @@ describe('UnifiedAgentResponseService', () => {
         CANONICAL_MODEL_IDS.openAiLegacyGpt4,
         CANONICAL_MODEL_IDS.openAiLegacyGpt35,
         {
-          customerMessage: 'Oi',
+          contactMessage: 'Oi',
           assistantDraft: 'Olá, como vai?',
           actions: [],
           historyTurns: 0,
@@ -67,7 +67,7 @@ describe('UnifiedAgentResponseService', () => {
         CANONICAL_MODEL_IDS.openAiLegacyGpt4,
         CANONICAL_MODEL_IDS.openAiLegacyGpt35,
         {
-          customerMessage: '',
+          contactMessage: '',
           assistantDraft: null,
           actions: [],
           historyTurns: 0,
@@ -90,7 +90,7 @@ describe('UnifiedAgentResponseService', () => {
         CANONICAL_MODEL_IDS.openAiLegacyGpt35,
         {
           workspaceId: wsId,
-          customerMessage: 'Oi',
+          contactMessage: 'Oi',
           assistantDraft: 'Rascunho',
           actions: [{ tool: 'send_message', args: { message: 'Oi' }, result: 'ok' }],
           historyTurns: 2,
@@ -110,7 +110,7 @@ describe('UnifiedAgentResponseService', () => {
         CANONICAL_MODEL_IDS.openAiLegacyGpt4,
         CANONICAL_MODEL_IDS.openAiLegacyGpt35,
         {
-          customerMessage: 'Oi',
+          contactMessage: 'Oi',
           assistantDraft: 'Olá, como vai?',
           actions: [],
           historyTurns: 0,
@@ -132,7 +132,7 @@ describe('UnifiedAgentResponseService', () => {
         CANONICAL_MODEL_IDS.openAiLegacyGpt35,
         {
           workspaceId: wsId,
-          customerMessage: 'Oi',
+          contactMessage: 'Oi',
           assistantDraft: null,
           actions: [],
           historyTurns: 0,

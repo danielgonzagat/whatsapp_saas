@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { AiBrainModule } from '../ai-brain/ai-brain.module';
+import { MindKnowledgeModule } from '../kloel/mind/knowledge/knowledge.module';
 import { CampaignsModule } from '../campaigns/campaigns.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { GrowthController } from './growth.controller';
@@ -8,7 +8,7 @@ import { MoneyMachineService } from './money-machine.service';
 
 /** Growth module. */
 @Module({
-  imports: [PrismaModule, CampaignsModule, AiBrainModule],
+  imports: [PrismaModule, CampaignsModule, MindKnowledgeModule],
   controllers: [GrowthController, MoneyMachineController],
   providers: [MoneyMachineService],
 })

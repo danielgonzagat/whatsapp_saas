@@ -1,0 +1,125 @@
+{
+  "note": "Verified-safe tenant-isolation sites. Each query is workspace-isolated through an indirection the regex scanner cannot statically follow (a `where` variable built with workspaceId, a buildXWhere(workspaceId, ...) helper, or a multiline inline workspaceId), is a JSDoc-comment text match (not executable code), or is an intentional cross-workspace query documented below. Each was read and confirmed during PR #462 review. Match key = file + line + model; if a flagged line shifts, re-verify and re-pin the entry.",
+  "entries": [
+    {
+      "file": "backend/src/audit/audit.service.ts",
+      "line": 153,
+      "model": "auditLog",
+      "method": "findMany",
+      "kind": "SCOPED_VIA_WHERE_VAR",
+      "reason": "recent(workspaceId) builds `const where: Prisma.AuditLogWhereInput = { workspaceId }` then passes `{ where }`; isolation present, scanner cannot follow the where variable."
+    },
+    {
+      "file": "backend/src/kloel/mind/aliases/mind-message.service.ts",
+      "line": 30,
+      "model": "kloelMessage",
+      "method": "findMany",
+      "kind": "COMMENT_MATCH",
+      "reason": "Line 30 is inside a JSDoc comment that literally references `prisma.kloelMessage.findMany(...)`; it is not an executable query. The real reads (L49 raw-delegate escape hatch, L77 findMany) are scoped by workspaceId/conversation per their own JSDoc."
+    },
+    {
+      "file": "backend/src/kloel/mind/memory/mind-global-prior.service.ts",
+      "line": 251,
+      "model": "mindBanditArm",
+      "method": "findMany",
+      "kind": "INTENTIONAL_GLOBAL",
+      "reason": "getPriorTuple intentionally aggregates Thompson-sampling bandit priors ACROSS workspaces (global prior); documented in the method JSDoc, no per-workspace narrowing until a future `channel` column migration. Read-only aggregate of alpha/beta/pulls only."
+    },
+    {
+      "file": "backend/src/kloel/services-v2/abandonment.service.ts",
+      "line": 41,
+      "model": "checkoutSocialLead",
+      "method": "findMany",
+      "kind": "SCOPED_VIA_WHERE_VAR",
+      "reason": "list(workspaceId) builds `const where = { workspaceId, convertedAt: null, createdAt: { gte }, ...productId }` then passes `{ where }`; isolation present via the where variable."
+    },
+    {
+      "file": "backend/src/kloel/services-v2/abandonment.service.ts",
+      "line": 59,
+      "model": "checkoutSocialLead",
+      "method": "count",
+      "kind": "SCOPED_VIA_WHERE_VAR",
+      "reason": "Same `where` variable (carrying workspaceId) as the sibling findMany at L41; counted within the same Promise.all."
+    },
+    {
+      "file": "backend/src/kloel/services-v2/agent-job.service.ts",
+      "line": 92,
+      "model": "agentWorkItem",
+      "method": "findMany",
+      "kind": "SCOPED_VIA_WHERE_VAR",
+      "reason": "list(workspaceId) builds `const where: Record<string, unknown> = { workspaceId }` (plus optional state/kind) then passes `{ where }`; isolation present via the where variable."
+    },
+    {
+      "file": "backend/src/kloel/services-v2/lead.service.ts",
+      "line": 66,
+      "model": "checkoutSocialLead",
+      "method": "findMany",
+      "kind": "SCOPED_VIA_WHERE_VAR",
+      "reason": "list path builds `const where: Prisma.CheckoutSocialLeadWhereInput = { workspaceId }` (plus optional email/phone) then passes `{ where }`; isolation present via the where variable."
+    },
+    {
+      "file": "backend/src/marketing/facebook-messenger.service.ts",
+      "line": 382,
+      "model": "fbMessage",
+      "method": "groupBy",
+      "kind": "SCOPED_VIA_WHERE_VAR",
+      "reason": "builds `const where = { workspaceId, direction: 'INBOUND', senderPsid: { not: null }, ...pageId }` then passes `{ where }` to groupBy; isolation present via the where variable."
+    },
+    {
+      "file": "backend/src/marketplace/marketplace.service.ts",
+      "line": 72,
+      "model": "product",
+      "method": "count",
+      "kind": "SCOPED_VIA_WHERE_VAR",
+      "reason": "list(workspaceId) builds `const where: Prisma.ProductWhereInput = { workspaceId, active: true, ... }` then passes `{ where }`; this is the workspace-scoped listing. The cross-workspace catalog is a SEPARATE listPublic() method below."
+    },
+    {
+      "file": "backend/src/marketplace/marketplace.service.ts",
+      "line": 73,
+      "model": "product",
+      "method": "findMany",
+      "kind": "SCOPED_VIA_WHERE_VAR",
+      "reason": "Same `where` variable (carrying workspaceId, active:true) as the sibling count at L72; both inside the same Promise.all of the workspace-scoped list()."
+    },
+    {
+      "file": "backend/src/products/product.service.ts",
+      "line": 196,
+      "model": "product",
+      "method": "findMany",
+      "kind": "SCOPED_VIA_HELPER",
+      "reason": "list(workspaceId, filters) builds `const where = buildListWhere(workspaceId, filters)`; the sibling count re-applies `{ ...where, workspaceId }`. Isolation present via the buildListWhere helper."
+    },
+    {
+      "file": "backend/src/sales/sales.service.ts",
+      "line": 408,
+      "model": "kloelSale",
+      "method": "findFirst",
+      "kind": "SCOPED_INLINE_MULTILINE",
+      "reason": "Inline `where: { id: orderId, workspaceId }` — workspaceId is on the following physical line so the single-line scanner missed it. Refund path that explicitly throws NotFound when the sale is not in this workspace."
+    },
+    {
+      "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.helpers.ts",
+      "line": 113,
+      "model": "kloelSale",
+      "method": "updateMany",
+      "kind": "SCOPED_VIA_HELPER",
+      "reason": "where = buildKloelSaleStripeWhere(workspaceId, stripePaymentExternalId, saleId) which ALWAYS returns `{ workspaceId, ... }` (verified in handlers2.helpers.ts:26). Stripe webhook sale-paid update, workspace-isolated."
+    },
+    {
+      "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
+      "line": 69,
+      "model": "kloelSale",
+      "method": "updateMany",
+      "kind": "SCOPED_VIA_HELPER",
+      "reason": "where = buildKloelSaleStripeWhere(workspaceId, intent.id, orderId) which ALWAYS returns `{ workspaceId, ... }`; runs inside a `if (workspaceId ...)`-guarded $transaction. Workspace-isolated."
+    },
+    {
+      "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
+      "line": 106,
+      "model": "kloelSale",
+      "method": "updateMany",
+      "kind": "SCOPED_VIA_HELPER",
+      "reason": "where = buildKloelSaleStripeWhere(workspaceId, intent.id, orderId) which ALWAYS returns `{ workspaceId, ... }`; runs inside the approved-sale $transaction guarded by `if (workspaceId)`. Workspace-isolated."
+    }
+  ]
+}

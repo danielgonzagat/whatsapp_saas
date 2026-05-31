@@ -1,8 +1,5 @@
 import type { PrismaService } from '../../prisma/prisma.service';
-import type { InboundProcessorService } from '../../whatsapp/inbound-processor.service';
 import type { WebhooksService } from '../../webhooks/webhooks.service';
-import type { MetaWhatsAppService } from '../meta-whatsapp.service';
-import type { OmnichannelService } from '../../inbox/omnichannel.service';
 import { MetaWebhookController } from './meta-webhook.controller';
 
 describe('Core MetaWebhookController', () => {
@@ -45,6 +42,20 @@ describe('Core MetaWebhookController', () => {
         rawBody: Buffer.from(JSON.stringify(body)),
       } as never),
     ).rejects.toThrow('Missing Meta webhook signature');
+
+    expect(redis.set).not.toHaveBeenCalled();
+    expect(webhooksService.logWebhookEvent).not.toHaveBeenCalled();
+  });
+
+  it('fails closed (rejects) when META_APP_SECRET is unset', async () => {
+    delete process.env.META_APP_SECRET;
+    const body = { object: 'page', entry: [] };
+
+    await expect(
+      controller.handleWebhook(body, 'sha256=anything', undefined, {
+        rawBody: Buffer.from(JSON.stringify(body)),
+      } as never),
+    ).rejects.toThrow('Meta webhook secret not configured');
 
     expect(redis.set).not.toHaveBeenCalled();
     expect(webhooksService.logWebhookEvent).not.toHaveBeenCalled();

@@ -11,4 +11,4 @@ export {
   VectorService as MindVectorStore,
   /** @deprecated Use {@link MindVectorStore} instead. */
   VectorService,
-} from '../../../ai-brain/vector.service';
+} from './vector.service';

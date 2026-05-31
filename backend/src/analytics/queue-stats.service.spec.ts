@@ -38,7 +38,10 @@ describe('QueueStatsService', () => {
   it('caps results at 100 and only counts OPEN unassigned conversations', async () => {
     prisma.queue.findMany.mockResolvedValue([]);
     await service.getQueueStats('ws-1');
-    const arg = prisma.queue.findMany.mock.calls[0][0];
+    const arg = (prisma.queue.findMany.mock.calls as unknown[][])[0][0] as {
+      take: number;
+      select: { _count: { select: { conversations: { where: unknown } } } };
+    };
     expect(arg.take).toBe(100);
     expect(arg.select._count.select.conversations.where).toEqual({
       status: 'OPEN',

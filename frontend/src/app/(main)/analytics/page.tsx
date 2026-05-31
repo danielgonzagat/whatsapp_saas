@@ -9,7 +9,7 @@ import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useCallback } from 'react';
 import { V, FONT_SORA } from './analytics.design-tokens';
-import { ICONS } from './shared/Icons';
+import { TABS } from './tabs.config';
 import { useAnalyticsFilters, normalizeVisibleReportTab } from './use-analytics-filters';
 import { useExportReport } from './AnalyticsExportPanel';
 import { AnalyticsHeader } from './AnalyticsHeader';
@@ -35,13 +35,6 @@ import {
 } from './tabs';
 
 export const dynamic = 'force-dynamic';
-
-const TABS = [
-  { k: 'vendas', l: 'Operacoes', ic: ICONS.dollar },
-  { k: 'abandonos', l: 'Abandonos', ic: ICONS.ban },
-  { k: 'assinaturas', l: 'Assinaturas', ic: ICONS.repeat },
-  { k: 'estornos', l: 'Estornos', ic: ICONS.undo },
-];
 
 export default function KloelRelatorio() {
   const { isMobile } = useResponsiveViewport();

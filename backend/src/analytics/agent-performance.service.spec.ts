@@ -23,12 +23,12 @@ describe('AgentPerformanceService', () => {
     await service.getAgentPerformance('ws-A', new Date('2026-01-01'), new Date('2026-01-31'));
     expect(prisma.message.groupBy).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ workspaceId: 'ws-A' }),
+        where: expect.objectContaining({ workspaceId: 'ws-A' }) as unknown,
       }),
     );
     expect(prisma.message.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ workspaceId: 'ws-A' }),
+        where: expect.objectContaining({ workspaceId: 'ws-A' }) as unknown,
       }),
     );
   });

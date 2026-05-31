@@ -52,7 +52,7 @@ export class InboxEventsService implements OnModuleInit, OnModuleDestroy {
 
   private handleMessage(raw: string) {
     try {
-      const event: WsEvent = JSON.parse(raw);
+      const event = JSON.parse(raw) as WsEvent;
       if (!event?.workspaceId || !event?.type) {
         return;
       }

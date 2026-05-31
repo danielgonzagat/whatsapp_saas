@@ -76,6 +76,8 @@ import {
   gitStateForSource,
 } from './obsidian-mirror-daemon-utils.mjs';
 
+import { visualFactKey } from './obsidian-mirror-daemon-content-helpers.mjs';
+
 export function addVisualFact(facts, kind, value, label = value, detail = null) {
   const normalizedKind = String(kind || '').trim();
   const normalizedValue = String(value || '').trim();

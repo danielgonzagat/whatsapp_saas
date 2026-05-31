@@ -30,6 +30,8 @@ jest.mock('./memory-stats', () => ({
 
 import { computeMemoryStats } from './memory-stats';
 import type { MemoryStats } from './memory-stats';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 type MemoryManagementPrismaMock = {
   kloelMemory: {
@@ -99,6 +101,14 @@ describe('MemoryManagementService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: auditService },
         { provide: OpsAlertService, useValue: opsAlert },
+        {
+          provide: MindMemoryItemService,
+          useValue: {
+            get items() {
+              return prisma.kloelMemory;
+            },
+          },
+        },
       ],
     }).compile();
 
@@ -179,12 +189,12 @@ describe('MemoryManagementService', () => {
 
       await service.normalizeSemanticDuplicates('ws-1', 'product');
 
-      const semanticAuditDetails: Record<string, unknown> = expect.objectContaining({
+      const semanticAuditDetails: jest.AsymmetricMatcher = partialMatch({
         category: 'product',
         mergedCount: 1,
       });
       expect(auditService.log).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           workspaceId: 'ws-1',
           action: 'DELETE_SEMANTIC_DUPLICATES',
           resource: 'KloelMemory',

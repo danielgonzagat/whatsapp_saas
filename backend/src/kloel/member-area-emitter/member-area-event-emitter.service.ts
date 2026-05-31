@@ -164,7 +164,7 @@ export class MemberAreaEventEmitterService {
 
   private safeEmit(input: SpineEventInput): void {
     try {
-      this.spine.emit(input);
+      void this.spine.emit(input);
     } catch (err) {
       this.logger.error(
         `Failed to emit spine event ${input.eventName}: ${(err as Error).message}`,

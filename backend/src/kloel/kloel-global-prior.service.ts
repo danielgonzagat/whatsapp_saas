@@ -10,6 +10,24 @@ export interface KloelGlobalPriorResult {
   observations: number;
 }
 
+/**
+ * @deprecated Use {@link MindGlobalPriorService} from `./mind/memory/mind-global-prior.service`.
+ *
+ * Migration status (PI-K29):
+ * - DecisionOutcomeService: MIGRATED — `globalPrior` dependency removed (brainmind-cleanup).
+ * - MindPolicyService#mixWithGlobalPrior: PENDING (owner-gated: kloel.module.ts + mind-policy.service.ts).
+ *
+ * Remaining migration path:
+ * 1. MindGlobalPriorService must gain per-tuple `getPrior(channel, decisionType, action)` returning
+ *    `{mean: number, observations: number} | null`, and `recordObservation(channel, decisionType,
+ *    action, success)` — bridge methods that delegate to `mindGlobalPrior` table or `mindBanditArm`.
+ * 2. Update {@link MindPolicyService#mixWithGlobalPrior} to inject `MindGlobalPriorService` instead.
+ * 3. Remove `KloelGlobalPriorService` from kloel.module.ts providers/exports.
+ * 4. Once all callers are migrated, delete this file and the `kloelGlobalPrior` Prisma model/table
+ *    (requires owner-approved migration).
+ *
+ * See `docs/architecture/MIND_SERVICE_CONSOLIDATION.md` §1 for full plan.
+ */
 @Injectable()
 export class KloelGlobalPriorService {
   private readonly logger = StructuredLogger.from(KloelGlobalPriorService.name);

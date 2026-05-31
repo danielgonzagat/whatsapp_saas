@@ -1,4 +1,5 @@
 import { WhatsAppSummaryService } from './whatsapp-summary.service';
+import { partialMatch } from '../../../test/helpers/match-instance';
 import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 describe('WhatsAppSummaryService', () => {
@@ -131,7 +132,7 @@ describe('WhatsAppSummaryService', () => {
       expect.objectContaining({ where: { id: 'ws-tenant-42' } }),
     );
     expect(kloelSaleGroupBy).toHaveBeenCalledWith(
-      expect.objectContaining({ where: expect.objectContaining({ workspaceId: 'ws-tenant-42' }) }),
+      expect.objectContaining({ where: partialMatch({ workspaceId: 'ws-tenant-42' }) }),
     );
   });
 });

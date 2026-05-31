@@ -2,7 +2,7 @@
 
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { useEffect, useState } from 'react';
+import { useClientMounted } from '@/lib/use-client-mounted';
 
 /**
  * Light/dark toggle button for the admin topbar.
@@ -13,11 +13,7 @@ import { useEffect, useState } from 'react';
  */
 export function AdminThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useClientMounted();
 
   const isDark = mounted && resolvedTheme === 'dark';
   const next = isDark ? 'light' : 'dark';

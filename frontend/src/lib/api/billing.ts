@@ -35,6 +35,27 @@ export const billingApi = {
     return res;
   },
 
+  cancelSubscription: async () => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    if (!workspaceId) {
+      throw new Error('missing_workspaceId');
+    }
+    const res = await apiFetch(
+      `/billing/cancel?workspaceId=${encodeURIComponent(workspaceId)}`,
+      { method: 'POST' },
+    );
+    invalidateBilling();
+    return res;
+  },
+
+  getBillingUsage: () => {
+    const workspaceId = tokenStorage.getWorkspaceId();
+    if (!workspaceId) {
+      throw new Error('missing_workspaceId');
+    }
+    return apiFetch<Record<string, unknown>>(`/billing/usage?workspaceId=${encodeURIComponent(workspaceId)}`);
+  },
+
   addPaymentMethod: async (paymentMethodId: string) => {
     const res = await apiFetch(`/billing/payment-methods/attach`, {
       method: 'POST',

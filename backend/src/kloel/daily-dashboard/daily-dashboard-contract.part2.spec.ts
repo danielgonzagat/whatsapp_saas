@@ -43,7 +43,7 @@ async function buildSvc(
         schemaVersion: '1.0.0',
       },
       valence: e.valence,
-      payload: e.payload as Record<string, unknown> | undefined,
+      payload: e.payload,
       correlationId: e.correlationId,
       occurredAt: e.occurredAt,
     });
@@ -346,3 +346,4 @@ describe('DailyDashboardService contract (UTP-R6)', () => {
     const d = await svcOther.generate(WKS);
     expect(d.abandonedCarts).toBe(0);
   });
+});

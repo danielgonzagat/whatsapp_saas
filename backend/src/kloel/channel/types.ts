@@ -12,15 +12,19 @@
 
 import type { SpineEventRef } from '../mind/mind.types';
 
-export type ChannelKind =
-  | 'whatsapp'
-  | 'email'
-  | 'instagram'
-  | 'messenger'
-  | 'tiktok'
-  | 'sms'
-  | 'push'
-  | 'owned_site';
+/**
+ * Channel taxonomy for channel-survival intelligence (concentration / ban-risk
+ * / diversification). This is a deliberate SUPERSET of the canonical dispatch
+ * vocabulary {@link CanonicalChannelName} (channel-dispatch.port): it adds
+ * channels that are NOT message-dispatchable today (`sms`, `push`,
+ * `owned_site`) because diversification reasoning has to account for owned
+ * audiences and channels Kloel does not actively send through.
+ *
+ * The dispatch-capable members reuse {@link CanonicalChannelName} so the
+ * channel string vocabulary has ONE source of truth (Wave 21 task c); the
+ * survival-only members are added explicitly here.
+ */
+export type ChannelKind = CanonicalChannelName | 'sms' | 'push' | 'owned_site';
 
 export type ConcentrationLevel = 'low' | 'moderate' | 'high' | 'critical';
 
@@ -141,4 +145,6 @@ import { clamp, daysSince } from '../../common/math';
 export { clamp, daysSince };
 
 import { filterByWorkspace } from '../spine-events.helpers';
+import { type CanonicalChannelName } from '../../common/channel-dispatch/channel-dispatch.port';
+
 export { filterByWorkspace };

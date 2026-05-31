@@ -35,54 +35,26 @@ if (!specArg) {
 
 const specPath = specArg.startsWith('/') ? specArg : join(ROOT, specArg);
 
-async function main() {
-  const spec = JSON.parse(await readFile(specPath, 'utf8'));
-  console.log(`[spec-to-code] compiling: ${spec.name}`);
+async function emitFiles(spec) {
   const files = [];
-
-  // 1. Prisma migration (additive)
-  for (const ent of spec.entities || []) {
-    files.push(emitPrismaModel(ent));
-  }
-
-  // 2. Backend module/controller/service
-  for (const flow of spec.flows || []) {
-    files.push(...await emitBackendFlow(spec, flow));
-  }
-
-  // 3. Frontend pages (declarative skeleton)
+  for (const ent of spec.entities || []) files.push(emitPrismaModel(ent));
+  for (const flow of spec.flows || []) files.push(...await emitBackendFlow(spec, flow));
   for (const route of spec.files_to_create || []) {
-    if (route.startsWith('frontend/src/app/')) {
-      files.push(emitFrontendPage(route, spec));
-    }
+    if (route.startsWith('frontend/src/app/')) files.push(emitFrontendPage(route, spec));
   }
-
-  // 4. Tests per invariant
-  for (const [i, inv] of (spec.invariants || []).entries()) {
-    files.push(emitInvariantTest(spec, inv, i));
-  }
-
-  // 5. E2E fingerprint test
-  if (spec.fingerprint_test) {
-    files.push(emitFingerprintE2E(spec));
-  }
-
-  // 6. Feature flag default-off entry in config (advisory)
-  if (spec.feature_flag) {
-    files.push(emitFlagAdvisory(spec));
-  }
-
+  for (const [i, inv] of (spec.invariants || []).entries()) files.push(emitInvariantTest(spec, inv, i));
+  if (spec.fingerprint_test) files.push(emitFingerprintE2E(spec));
+  if (spec.feature_flag) files.push(emitFlagAdvisory(spec));
   // Dedupe by path — multiple flows share the same module/controller/service
   // skeleton. The last-write wins, which is fine because we only emit the
   // skeleton when no real file exists yet.
   const dedup = new Map();
-  for (const f of files.filter(Boolean)) {
-    dedup.set(f.path, f);
-  }
-  const finalFiles = [...dedup.values()];
+  for (const f of files.filter(Boolean)) dedup.set(f.path, f);
+  return { files, finalFiles: [...dedup.values()] };
+}
 
-  const branch = `auto/compiled-${spec.name}-${Date.now()}`;
-  const job = {
+function buildJob(spec, finalFiles, branch) {
+  return {
     title: `feat(${spec.name}): compiled from intent`,
     body: composePRBody(spec, finalFiles),
     branch,
@@ -95,6 +67,15 @@ async function main() {
       'cd frontend && npx tsc --noEmit -p tsconfig.json || true',
     ],
   };
+}
+
+async function main() {
+  const spec = JSON.parse(await readFile(specPath, 'utf8'));
+  console.log(`[spec-to-code] compiling: ${spec.name}`);
+
+  const { files, finalFiles } = await emitFiles(spec);
+  const branch = `auto/compiled-${spec.name}-${Date.now()}`;
+  const job = buildJob(spec, finalFiles, branch);
 
   const outDir = join(ROOT, 'graphify-out/auto-pr-jobs');
   await mkdir(outDir, { recursive: true });

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, type FormEvent, useEffect, useState } from 'react';
 import { AuthScreenChrome } from '@/components/admin/auth-screen-chrome';
@@ -85,11 +86,12 @@ function MfaSetupScreen() {
         {loading ? (
           <Skeleton className="size-[240px]" />
         ) : payload ? (
-          <img
+          <Image
             src={payload.qrDataUrl}
             alt="QR code do segundo fator"
             width={240}
             height={240}
+            unoptimized
             className="rounded-sm border border-border"
           />
         ) : null}

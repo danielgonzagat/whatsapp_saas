@@ -9,7 +9,7 @@ import { IsString, Matches, MaxLength, MinLength } from 'class-validator';
  * Kept deliberately simple and deterministic so the frontend can mirror the
  * same checks without diverging.
  */
-export class ChangePasswordDto {
+export class AdminChangePasswordDto {
   /** New password property. */
   @IsString()
   @MinLength(12)

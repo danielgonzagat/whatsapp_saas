@@ -57,7 +57,11 @@ describe('GoogleAdsProvider', () => {
       expect(result.authUrl).toContain('accounts.google.com');
       expect(result.authUrl).toContain('code_challenge_method=S256');
       expect(result.authUrl).toContain('code_challenge=');
-      const upsertPayload = mockPrisma.integrationCredential.upsert.mock.calls[0]?.[0];
+      const upsertPayload = (
+        mockPrisma.integrationCredential.upsert.mock.calls[0] as
+          | [IntegrationCredentialUpsertPayload]
+          | undefined
+      )?.[0];
       expect(upsertPayload?.where).toEqual({
         workspaceId_platform: { workspaceId: 'ws-1', platform: 'google' },
       });

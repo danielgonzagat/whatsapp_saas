@@ -40,7 +40,7 @@ export type PrismaMockRecord = Record<string, PrismaMockModel> & {
  * same FlexMock (rather than `jest.Mock`). Replaces 6 local copies of
  * this type across `contacts/*.spec.ts`, `autopilot/*.spec.ts`, etc.
  */
-export type FlexMock<T extends (...args: never[]) => unknown = (...args: never[]) => unknown> =
+export type FlexMock<T extends (...args: never[]) => unknown = (...args: unknown[]) => unknown> =
   jest.Mock<ReturnType<T>, Parameters<T>> & {
     mockResolvedValue: (v: Awaited<ReturnType<T>>) => FlexMock<T>;
     mockResolvedValueOnce: (v: Awaited<ReturnType<T>>) => FlexMock<T>;
@@ -49,6 +49,19 @@ export type FlexMock<T extends (...args: never[]) => unknown = (...args: never[]
     mockReturnValue: (v: ReturnType<T>) => FlexMock<T>;
     mockImplementation: (fn: T) => FlexMock<T>;
   };
+
+/**
+ * Builds a fresh {@link FlexMock}. Casting `jest.fn()` straight to `FlexMock`
+ * before chaining `.mockResolvedValue(...)` keeps the resolved value typed as
+ * `unknown` (the FlexMock default) instead of `never`, so specs no longer need
+ * the brittle `jest.fn().mockResolvedValue(x) as FlexMock` pattern that TS
+ * rejects under `@jest/globals`.
+ */
+export function mockFlex<
+  T extends (...args: never[]) => unknown = (...args: unknown[]) => unknown,
+>(): FlexMock<T> {
+  return jest.fn();
+}
 
 const COMMON_MODELS = [
   'agent',
@@ -132,7 +145,7 @@ export function createPrismaMock(options: CreatePrismaMockOptions = {}): PrismaM
         return (arg as (tx: PrismaMockRecord) => unknown)(prisma);
       }
       // $transaction([promises...]) → resolve all
-      return Promise.all(arg as Promise<unknown>[]);
+      return Promise.all(arg);
     });
 
   if (options.overrides) {
@@ -172,7 +185,7 @@ export function createPartialPrismaMock(
     if (typeof arg === 'function') {
       return (arg as (tx: PrismaMockRecord) => unknown)(prisma);
     }
-    return Promise.all(arg as Promise<unknown>[]);
+    return Promise.all(arg);
   });
 
   if (overrides) {

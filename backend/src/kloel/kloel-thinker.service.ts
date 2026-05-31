@@ -9,34 +9,40 @@ import { KloelComposerService } from './kloel-composer.service';
 import { KloelConversationStore } from './kloel-conversation-store';
 import { KLOEL_LLM_E2E_GUARD, KloelLLME2EGuard } from './kloel-llm-e2e-guard';
 import {
-  createKloelContentEvent,
   createKloelErrorEvent,
   createKloelStatusEvent,
   createKloelThreadEvent,
-  createKloelToolCallEvent,
-  createKloelToolResultEvent,
   type KloelStreamEvent,
+  createKloelContentEvent,
 } from './kloel-stream-events';
 import { KloelStreamWriter } from './kloel-stream-writer';
 import { KloelThreadService, StoredProcessingTraceEntry } from './kloel-thread.service';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
 import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
-import { LLM_MAX_COMPLETION_TOKENS } from './openai-wrapper';
-import { OPERATOR_CAPABILITIES } from './brain-capabilities.const';
 import { AbiBuilderService } from './abi/abi-builder.service';
-import { BrainCapabilityExecutorService } from './brain-capability-executor.service';
-import { validateAbiPayload } from './abi/abi-validator';
-import { computeHandoffConfidence, HANDOFF_THRESHOLD } from './handoff-confidence.helper';
+import { MindCapabilityExecutor } from './mind/coordination';
 import { ChatCompletionMessageParam } from 'openai/resources/chat';
+import { detectActionIntent } from './guest-chat.action-intent.helpers';
 import { KloelReplyEngineService, LocalToolExecutor } from './kloel-reply-engine.service';
 import { thinkSyncImpl, regenerateThreadAssistantResponseImpl } from './kloel-thinker.helpers';
+import { runAbiEnrichmentBranch } from './kloel-thinker.abi.helpers';
+import { resolveThinkContext } from './kloel-thinker.think-context.helpers';
+import { StateBuilderService } from './state/state-builder.service';
+import { summarizeConversationState } from './state/conversation-state.helpers';
+import {
+  AI_KEY_MISSING_MESSAGE,
+  isAiProviderConfigured,
+  resolveThinkErrorCode,
+  resolveThinkerSystemPrompt,
+} from './kloel-thinker.substrate.helpers';
 import {
   finalizeSuccessfulReply,
+  persistChatTurnToSpine,
   runComposerCapabilityBranch,
+  runDeterministicActionBranch,
   runToolPlanningBranch,
   type ThinkBranchContext,
 } from './kloel-thinker-think.helpers';
-import { detectActionIntent, formatToolResult } from './guest-chat.action-intent.helpers';
 
 export type { LocalToolExecutor } from './kloel-reply-engine.service';
 
@@ -44,9 +50,6 @@ type ComposerCapability = 'create_image' | 'create_site' | 'search_web';
 
 export type { ChatMessage, ThinkRequest, ThinkSyncResult } from './kloel-thinker.types';
 import type { ThinkRequest, ThinkSyncResult } from './kloel-thinker.types';
-
-const CANONICAL_FALLBACK_SYSTEM =
-  'cognitive_state_boundary=distributed; verbalization_source=state_payload; fact_boundary=state_payload';
 
 /** Orchestrates the Kloel thinking loop — SSE streaming and sync variants. */
 @Injectable()
@@ -63,8 +66,9 @@ export class KloelThinkerService {
     private readonly composerService: KloelComposerService,
     private readonly replyEngine: KloelReplyEngineService,
     @Inject(KLOEL_LLM_E2E_GUARD) private readonly llmE2EGuard: KloelLLME2EGuard,
+    private readonly stateBuilder: StateBuilderService,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
-    @Optional() private readonly capabilityExecutor?: BrainCapabilityExecutorService,
+    @Optional() private readonly capabilityExecutor?: MindCapabilityExecutor,
   ) {
     this.conversationStore = new KloelConversationStore(prisma, this.logger);
   }
@@ -91,7 +95,7 @@ export class KloelThinkerService {
     } = request;
     const signal = opts?.signal;
     const isAborted = () => !!signal?.aborted;
-    const abortReason = () => signal?.reason;
+    const abortReason = (): unknown => signal?.reason;
     const isClientDisconnected = () => this.replyEngine.isClientDisconnected(abortReason());
     const streamWriter = new KloelStreamWriter(res, {
       ...(signal !== undefined ? { signal } : {}),
@@ -104,60 +108,43 @@ export class KloelThinkerService {
       streamWriter.write(event);
     };
     streamWriter.init();
+    const thinkStartedAt = Date.now();
+    let thinkErrorCode: string | null = null;
 
     try {
-      if (mode === 'chat' && workspaceId) {
-        const deterministicAction = detectActionIntent(message);
-        if (deterministicAction) {
-          const callId = `detected_${deterministicAction.tool}`;
-          safeWrite(
-            createKloelToolCallEvent(callId, deterministicAction.tool, deterministicAction.args),
-          );
-          const toolResult = await executeLocalTool(
-            workspaceId,
-            deterministicAction.tool,
-            deterministicAction.args,
-            userId,
-          );
-          const toolError = typeof toolResult.error === 'string' ? toolResult.error : undefined;
-          safeWrite(
-            createKloelToolResultEvent({
-              callId,
-              tool: deterministicAction.tool,
-              success: toolResult.success !== false,
-              result: toolResult,
-              ...(toolError !== undefined ? { error: toolError } : {}),
-            }),
-          );
-          const reply = formatToolResult(deterministicAction.tool, toolResult);
-          safeWrite(createKloelContentEvent(reply));
-          await finalizeSuccessfulReply(reply, 0, {
-            workspaceId,
+      const deterministicWorkspaceId =
+        mode === 'chat' && typeof workspaceId === 'string' && workspaceId.length > 0
+          ? workspaceId
+          : undefined;
+      const deterministicAction = deterministicWorkspaceId ? detectActionIntent(message) : null;
+      if (deterministicAction && deterministicWorkspaceId) {
+        await runDeterministicActionBranch(
+          deterministicAction,
+          executeLocalTool,
+          {
+            workspaceId: deterministicWorkspaceId,
             userId,
             message,
             mode,
             metadata,
-            clientRequestId: undefined,
-            thread: null,
-            persistedUserMessage: null,
+            conversationId,
             processingTraceEntries,
             safeWrite,
             streamWriter,
-            replyEngine: this.replyEngine,
             threadService: this.threadService,
+            replyEngine: this.replyEngine,
             conversationStore: this.conversationStore,
             planLimits: this.planLimits,
-          });
-          streamWriter.close();
-          return;
-        }
+          },
+          finalizeSuccessfulReply,
+        );
+        return;
       }
 
-      if (!this.replyEngine.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
+      if (!isAiProviderConfigured({ hasOpenAiKey: this.replyEngine.hasOpenAiKey() })) {
         safeWrite(
           createKloelErrorEvent({
-            content:
-              'Assistente IA não disponível no momento. Configure DEEPSEEK_API_KEY, LLM_API_KEY, OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.',
+            content: AI_KEY_MISSING_MESSAGE,
             error: 'ai_api_key_missing',
             done: true,
           }),
@@ -171,7 +158,9 @@ export class KloelThinkerService {
             createKloelErrorEvent({
               content: this.replyEngine.buildStreamAbortMessage(abortReason(), opts?.timeoutMs),
               error:
-                typeof abortReason() === 'string' ? abortReason() : 'request_aborted_before_start',
+                typeof abortReason() === 'string'
+                  ? (abortReason() as string)
+                  : 'request_aborted_before_start',
               done: true,
             }),
           );
@@ -180,215 +169,86 @@ export class KloelThinkerService {
         return;
       }
 
-      let context = enrichedCompanyContext || '';
-      let companyName = 'sua empresa';
-      let userName = 'Usuário';
-      const marketingPromptAddendum = await this.replyEngine.buildMarketingPromptAddendum(
+      const {
+        companyName,
+        userName,
+        marketingPromptAddendum,
+        thread,
+        historyState,
+        expertiseLevel,
+        dynamicContext,
+        summaryMessage,
+        shouldPlanWithTools,
+        responseTemperature,
+        responseMaxTokens,
+        clientRequestId,
+      } = await resolveThinkContext({
+        prisma: this.prisma,
+        wsContextService: this.wsContextService,
+        threadService: this.threadService,
+        replyEngine: this.replyEngine,
         workspaceId,
+        userId,
+        reqUserName,
+        conversationId,
         mode,
         message,
-      );
-      const thread =
-        workspaceId && mode === 'chat'
-          ? await this.threadService.resolveThread(workspaceId, conversationId)
-          : null;
-
-      if (workspaceId) {
-        const [, agent] = await Promise.all([
-          this.prisma.workspace.findUnique({ where: { id: workspaceId } }),
-          userId
-            ? this.prisma.agent.findFirst({
-                where: { id: userId, workspaceId },
-                select: { name: true },
-              })
-            : Promise.resolve(null),
-        ]);
-        companyName = 'sua empresa';
-        context = await this.wsContextService.getWorkspaceContext(workspaceId, userId);
-        if (enrichedCompanyContext) {
-          context = [context, enrichedCompanyContext].filter(Boolean).join('\n\n');
-        }
-        userName = this.replyEngine.contextFormatter.sanitizeUserNameForAssistant(
-          reqUserName || agent?.name || userName,
-        );
-      }
-
-      const historyState = thread?.id
-        ? await this.threadService.getThreadConversationState(thread.id, workspaceId)
-        : { recentMessages: [], totalMessages: 0 };
-      const expertiseLevel = this.replyEngine.detectExpertiseLevel(
-        message,
-        historyState.recentMessages,
-      );
-      const dynamicContext = await this.replyEngine.buildDynamicRuntimeContext({
-        ...(workspaceId !== undefined ? { workspaceId } : {}),
-        ...(userId !== undefined ? { userId } : {}),
-        userName,
-        expertiseLevel,
-        ...(enrichedCompanyContext !== undefined ? { companyContext: enrichedCompanyContext } : {}),
+        metadata,
+        enrichedCompanyContext,
       });
-      const summaryMessage = this.threadService.buildThreadSummarySystemMessage(
-        historyState.summary,
-      );
-      const shouldPlanWithTools =
-        mode === 'chat' && !!workspaceId && this.replyEngine.shouldAttemptToolPlanningPass(message);
-      // No hardcoded output cap: operator/model decides via the
-      // LLM_MAX_COMPLETION_TOKENS env (DeepSeek V4 Pro's real ceiling).
-      // Long-form signal kept for telemetry; it no longer halves replies.
-      void this.replyEngine.shouldUseLongFormBudget(message);
-      const responseTemperature = 0.7;
-      const responseMaxTokens = LLM_MAX_COMPLETION_TOKENS;
-      const clientRequestId = this.threadService.resolveClientRequestId(metadata);
 
-      void context;
-      const systemPrompt =
-        mode === 'onboarding'
-          ? CANONICAL_FALLBACK_SYSTEM_PROMPT
-          : mode === 'sales'
-            ? CANONICAL_FALLBACK_SYSTEM_PROMPT
-            : this.replyEngine.buildDashboardPrompt({
-                userName,
-                workspaceName: companyName,
-                expertiseLevel,
-              });
-
-      let finalSystemPrompt = systemPrompt;
-      let finalUserMessage = message;
-      let prebuiltCognitiveState: Record<string, unknown> | undefined;
-
-      const useAbi = process.env['KLOEL_THINKER_USE_ABI'] !== 'off';
-      let abiOutcome = useAbi ? (this.abiBuilder ? 'attempted' : 'no_abiBuilder') : 'flag_off';
-      let substrateBuilt = false;
-      if (useAbi && this.abiBuilder) {
-        try {
-          // Close the read-back loop: feed the REAL persisted cognitive
-          // substrate (memory/beliefs/predictions/valence/pulseTruth from
-          // the spine via #363) into the CONVERSATIONAL ABI — previously
-          // only inspect_self got it, so the chat had no cross-session
-          // memory. Safe: whole block is try/caught with legacy fallback.
-          const chatSubstrate =
-            workspaceId && this.capabilityExecutor
-              ? await this.capabilityExecutor.buildCognitiveSubstrate(workspaceId)
-              : undefined;
-          substrateBuilt = !!chatSubstrate;
-          const abiResult = await this.abiBuilder.build({
-            audience: 'public',
-            currentInput: {
-              raw: message,
-              channel: 'web',
-              arrivalTimestamp: new Date().toISOString(),
-            },
-            perceptionSnapshot: {
-              channel: 'web',
-              ...(workspaceId ? { workspaceId } : {}),
-            },
-            // Real capability registry so the chat ABI is not hollow
-            // (was the cause of Kloel reporting "ABI inteiramente vazio").
-            capabilityIds: [...OPERATOR_CAPABILITIES],
-            ...(chatSubstrate ? { cognitiveSubstrate: chatSubstrate } : {}),
-          });
-
-          if (abiResult.status !== 'ok') {
-            abiOutcome = `build_failed:${abiResult.reason}`;
-            this.logger.warn(
-              `ABI build failed: ${abiResult.reason}, falling back to legacy thinker prompt`,
-            );
-          } else {
-            const validation = validateAbiPayload(abiResult.abi);
-
-            if (validation.status === 'FAIL') {
-              abiOutcome = `validation_failed:${JSON.stringify(validation.issues).slice(0, 240)}`;
-              this.logger.warn(
-                `ABI validation failed: ${JSON.stringify(validation.issues)}, falling back to legacy thinker prompt`,
-              );
-            } else {
-              prebuiltCognitiveState = { ...abiResult.abi };
-              // BOUNDED ABI: cap arrays + hard size limit so a long
-              // user prompt is NEVER inflated/crashed by the state
-              // payload. The ABI goes to SYSTEM (structured state, B2 —
-              // not a behavioral instruction); the user message stays
-              // EXACTLY the user's input (fixes long-message hang).
-              const capArrays = (_k: string, v: unknown): unknown =>
-                Array.isArray(v) ? v.slice(0, 8) : v;
-              let abiStr = JSON.stringify(abiResult.abi, capArrays);
-              // ROOT-CAUSE FIX (runtime-evidenced via KLOEL_ABI_PATH
-              // abiLen=6018): the 6000 hard cap blind-sliced the JSON
-              // and decapitated memory/episodicRefs/recentSalientEvents
-              // (where recallable facts live) → cross-session recall
-              // never worked substrate-driven. Arrays are already capped
-              // to 8 (capArrays); 24000 fits the full enriched ABI well
-              // within DeepSeek V4 Pro's context. Slice stays only as a
-              // never-reached last resort.
-              const ABI_MAX = 24000;
-              if (abiStr.length > ABI_MAX) {
-                abiStr = `${abiStr.slice(0, ABI_MAX)}…(state_truncated)`;
-              }
-              finalSystemPrompt = `${CANONICAL_FALLBACK_SYSTEM}\nstate_payload=${abiStr}`;
-              finalUserMessage = message;
-              abiOutcome = `success(abiLen=${abiStr.length})`;
-
-              // Wave 10 Phase 2: handoff-confidence collection (flag-gated,
-              // observe-only). Gate defaults OFF — no escalation, no
-              // blocking, just a structured log for telemetry baselining.
-              if (
-                process.env['HANDOFF_CONFIDENCE_GATE_ENABLED'] === 'true' ||
-                process.env['HANDOFF_CONFIDENCE_GATE_BLOCKING_ENABLED'] === 'true'
-              ) {
-                const snapshot = computeHandoffConfidence(
-                  abiResult.abi.beliefs,
-                  abiResult.abi.pulseTruth,
-                );
-                this.logger.log('Handoff confidence snapshot', {
-                  context: 'kloel.handoff.confidence',
-                  ...snapshot,
-                });
-
-                if (
-                  process.env['HANDOFF_CONFIDENCE_GATE_BLOCKING_ENABLED'] === 'true' &&
-                  snapshot.wouldEscalateAtThreshold04
-                ) {
-                  this.logger.warn('Handoff confidence gate: escalation to human', {
-                    context: 'kloel.handoff.confidence.blocking',
-                    workspaceId,
-                    composite: snapshot.composite,
-                    meanBeliefConfidence: snapshot.meanBeliefConfidence,
-                    capabilityHealth: snapshot.capabilityHealth,
-                    overclaimRisk: snapshot.overclaimRisk,
-                    beliefCount: snapshot.beliefCount,
-                    threshold: HANDOFF_THRESHOLD,
-                  });
-                  safeWrite(
-                    createKloelErrorEvent({
-                      content:
-                        'Estou analisando sua mensagem com mais cuidado. ' +
-                        'Um atendente humano vai revisar e responder em breve.',
-                      error: 'confidence_gate_escalation',
-                      done: true,
-                    }),
-                  );
-                  streamWriter.close();
-                  return;
-                }
-              }
-            }
-          }
-        } catch (error: unknown) {
-          const msg =
-            error instanceof Error
-              ? error.message
-              : typeof error === 'string'
-                ? error
-                : 'unknown error';
-          abiOutcome = `exception:${msg}`;
-          this.logger.warn(`ABI build exception: ${msg}, falling back to legacy thinker prompt`);
-        }
+      // Y-4 / X §2.6/3.4: assemble the REAL per-turn ConversationState
+      // from production sources. The LLM verbalizes this State; it does
+      // not invent it. Logged structured for diagnosis (no UX surface,
+      // no other-lane mutation).
+      const conversationState = await this.stateBuilder.build({
+        workspaceId,
+        userId,
+        conversationId,
+        workspaceContext: enrichedCompanyContext,
+        surface: mode,
+        ...(allowedTools !== undefined ? { permissions: allowedTools } : {}),
+      });
+      const conversationStateSummary = summarizeConversationState(conversationState);
+      if (conversationStateSummary) {
+        this.logger.debug('ConversationState assembled', {
+          workspaceId,
+          hasActor: !!conversationState.actor,
+          hasContact: !!conversationState.contact,
+          recentEvents: conversationState.recentEvents.length,
+          shortTermTurns: conversationState.memory.shortTerm.length,
+          capabilities: conversationState.capabilities.length,
+          missingSources: conversationState.missingSources,
+        });
       }
-      // RUNTIME TRUTH: greppable, severity=log so it is never filtered.
-      // Tells us definitively whether the chat actually uses the
-      // cognitive substrate or silently falls back to the legacy prompt.
-      this.logger.log(
-        `KLOEL_ABI_PATH useAbi=${useAbi} substrateBuilt=${substrateBuilt} outcome=${abiOutcome}`,
-      );
+
+      const systemPrompt = resolveThinkerSystemPrompt({
+        mode,
+        canonicalFallbackPrompt: CANONICAL_FALLBACK_SYSTEM_PROMPT,
+        buildDashboardPrompt: () =>
+          this.replyEngine.buildDashboardPrompt({
+            userName,
+            workspaceName: companyName,
+            expertiseLevel,
+          }),
+      });
+
+      const abiResult = await runAbiEnrichmentBranch({
+        abiBuilder: this.abiBuilder,
+        capabilityExecutor: this.capabilityExecutor,
+        workspaceId,
+        message,
+        defaultSystemPrompt: systemPrompt,
+        logger: this.logger,
+        safeWrite,
+        streamWriter,
+      });
+      if (abiResult.handled) {
+        return;
+      }
+      const finalSystemPrompt = abiResult.finalSystemPrompt;
+      const finalUserMessage = abiResult.finalUserMessage;
+      const prebuiltCognitiveState = abiResult.prebuiltCognitiveState;
 
       if (thread?.id) {
         safeWrite(createKloelThreadEvent(thread.id, thread.title));
@@ -445,6 +305,7 @@ export class KloelThinkerService {
         recentMessages: historyState.recentMessages,
         ...(prebuiltCognitiveState !== undefined ? { prebuiltCognitiveState } : {}),
         userMessage: finalUserMessage,
+        workspaceId,
       });
       const streamWriterResponse = (
         writerMessages: ChatCompletionMessageParam[],
@@ -494,14 +355,14 @@ export class KloelThinkerService {
       }
       let fullResponse = streamedReply.fullResponse;
       if (!fullResponse.trim()) {
-        safeWrite(
-          createKloelErrorEvent({
-            content: this.replyEngine.unavailableMessage,
-            error: 'empty_stream',
-            done: false,
-          }),
-        );
+        // Recoverable (non-terminal) empty-stream: stream the fallback text as
+        // a content event so the UI renders it, then let
+        // finalizeSuccessfulReply emit the terminal `done`. `type:'error'` is
+        // reserved for terminal failures (done:true) — the frontend treats any
+        // error event as terminal and stops reading the stream.
         fullResponse = this.replyEngine.unavailableMessage;
+        safeWrite(createKloelStatusEvent('streaming_token'));
+        safeWrite(createKloelContentEvent(fullResponse));
       }
       await finalizeSuccessfulReply(fullResponse, streamedReply.estimatedTokens, branchCtx);
       // Persist this conversational turn to the cognitive spine so it
@@ -510,38 +371,51 @@ export class KloelThinkerService {
       // B4: memory is a structural effect of the operation, not an LLM
       // decision. Fire-and-forget — never blocks or fails the reply.
       if (workspaceId) {
-        void this.prisma.autopilotEvent
-          .create({
-            data: {
-              workspaceId,
-              intent: 'kloel_chat_turn',
-              action: 'kloel.chat.turn',
-              status: 'executed',
-              meta: {
-                userPreview: message.slice(0, 280),
-                replyPreview: fullResponse.slice(0, 280),
-                mode,
-                conversationId: conversationId ?? null,
-              },
-            },
-          })
-          .catch((e: unknown) => {
-            this.logger.warn(
-              `chat-turn spine persist failed: ${e instanceof Error ? e.message : 'unknown'}`,
-            );
-          });
+        persistChatTurnToSpine(this.prisma, this.logger, {
+          workspaceId,
+          message,
+          fullResponse,
+          mode,
+          conversationId,
+        });
       }
     } catch (error: unknown) {
       this.logger.error('Erro no KLOEL Thinker:', error);
-      if (!isClientDisconnected()) {
-        const code =
-          typeof abortReason() === 'string' ? String(abortReason()) : 'Erro ao processar mensagem';
-        const content = isAborted()
-          ? this.replyEngine.buildStreamAbortMessage(abortReason(), opts?.timeoutMs)
-          : this.replyEngine.unavailableMessage;
-        safeWrite(createKloelErrorEvent({ content, error: code, done: true }));
+      thinkErrorCode = resolveThinkErrorCode(abortReason(), 'think_unhandled_error');
+      try {
+        if (!isClientDisconnected()) {
+          const code = resolveThinkErrorCode(abortReason(), 'Erro ao processar mensagem');
+          const content = isAborted()
+            ? this.replyEngine.buildStreamAbortMessage(abortReason(), opts?.timeoutMs)
+            : this.replyEngine.unavailableMessage;
+          safeWrite(createKloelErrorEvent({ content, error: code, done: true }));
+        }
+      } catch (writeError: unknown) {
+        // Never let terminal-error reporting itself wedge the stream; the
+        // finally block below still guarantees a terminal `done` + res.end().
+        this.logger.error('Falha ao emitir evento de erro terminal do Thinker:', writeError);
       }
+    } finally {
+      // Terminal-event guarantee for EVERY exit path of think() — success,
+      // early return, tool-error, LLM-error, timeout, or a throw inside the
+      // catch above. close() is idempotent and synthesizes a terminal `done`
+      // if none was emitted, so the frontend's isReplyInFlight flag is always
+      // released and the chat never silently dies ("Perdi acesso ao motor de
+      // conversa"). Branches that already emitted done+close are unaffected.
       streamWriter.close();
+      // Structured observability for the SSE chat lifecycle. errorCode is null on
+      // success; durationMs and the abort/disconnect flags let us diagnose
+      // stream-wedge incidents in Railway without leaking message content/secrets.
+      this.logger.log('kloel_think_stream_closed', {
+        tag: 'kloel_think_stream_closed',
+        ...(workspaceId !== undefined ? { workspaceId } : {}),
+        ...(conversationId !== undefined ? { conversationId } : {}),
+        mode,
+        durationMs: Date.now() - thinkStartedAt,
+        aborted: isAborted(),
+        clientDisconnected: isClientDisconnected(),
+        errorCode: thinkErrorCode,
+      });
     }
   }
 

@@ -84,7 +84,10 @@ describe('CheckoutProductConfigService', () => {
 
       expect(result).toBe(8.9);
       expect(prisma.marketplaceFee.findMany).toHaveBeenCalled();
-      const callArg = prisma.marketplaceFee.findMany.mock.calls[0][0] as Record<string, unknown>;
+      const callArg = (prisma.marketplaceFee.findMany.mock.calls[0] as unknown[])[0] as Record<
+        string,
+        unknown
+      >;
       expect(callArg.where).toEqual(expect.objectContaining({ method: { in: ['PIX', '*'] } }));
     });
 
@@ -153,7 +156,10 @@ describe('CheckoutProductConfigService', () => {
       await service.resolveMarketplaceFeePercent('CREDIT_CARD', 999.9);
 
       expect(prisma.marketplaceFee.findMany).toHaveBeenCalled();
-      const callArg = prisma.marketplaceFee.findMany.mock.calls[0][0] as Record<string, unknown>;
+      const callArg = (prisma.marketplaceFee.findMany.mock.calls[0] as unknown[])[0] as Record<
+        string,
+        unknown
+      >;
       expect(callArg.where).toEqual(
         expect.objectContaining({
           volumeFloorInCents: { lte: 1000n },

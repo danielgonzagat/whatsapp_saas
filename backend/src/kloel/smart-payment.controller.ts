@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -22,6 +23,61 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 
+type CreateSmartPaymentBody = {
+  phone?: string;
+  customerPhone?: string;
+  customerName: string;
+  customerEmail?: string;
+  amount: number;
+  productName?: string;
+  description?: string;
+  contactId?: string;
+  conversation?: string;
+  method?: string;
+  dueDate?: string;
+};
+
+function normalizeSmartPaymentMethod(
+  method?: string,
+): 'PIX' | 'BOLETO' | 'CREDIT_CARD' | undefined {
+  const normalized = String(method || '')
+    .trim()
+    .toUpperCase();
+  if (!normalized) {
+    return undefined;
+  }
+  if (normalized === 'PIX') {
+    return 'PIX';
+  }
+  if (normalized === 'BOLETO') {
+    return 'BOLETO';
+  }
+  if (normalized === 'CREDIT_CARD' || normalized === 'CARD' || normalized === 'CARTAO') {
+    return 'CREDIT_CARD';
+  }
+  throw new BadRequestException(`smart_payment_method_unknown:${normalized}`);
+}
+
+export function buildCreateSmartPaymentContext(workspaceId: string, body: CreateSmartPaymentBody) {
+  const requestedMethod = normalizeSmartPaymentMethod(body.method);
+  if (requestedMethod && requestedMethod !== 'PIX') {
+    throw new BadRequestException(`smart_payment_method_not_connected:${requestedMethod}`);
+  }
+
+  const phone = body.phone || body.customerPhone || '';
+  const productName = body.productName || body.description;
+
+  return {
+    workspaceId,
+    phone,
+    customerName: body.customerName,
+    ...(body.customerEmail !== undefined ? { customerEmail: body.customerEmail } : {}),
+    amount: body.amount,
+    ...(productName !== undefined ? { productName } : {}),
+    ...(body.contactId !== undefined ? { contactId: body.contactId } : {}),
+    ...(body.conversation !== undefined ? { conversation: body.conversation } : {}),
+  };
+}
 // All dates stored as UTC via Prisma DateTime (toISOString)
 @ApiTags('smart-payment')
 @Controller('kloel/payment')
@@ -101,25 +157,12 @@ export class SmartPaymentController {
     @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Body()
-    body: {
-      phone: string;
-      customerName: string;
-      amount: number;
-      productName?: string;
-      contactId?: string;
-      conversation?: string;
-    },
+    body: CreateSmartPaymentBody,
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    const result = await this.paymentService.createSmartPayment({
-      workspaceId: effectiveWorkspaceId,
-      phone: body.phone,
-      customerName: body.customerName,
-      amount: body.amount,
-      ...(body.productName !== undefined ? { productName: body.productName } : {}),
-      ...(body.contactId !== undefined ? { contactId: body.contactId } : {}),
-      ...(body.conversation !== undefined ? { conversation: body.conversation } : {}),
-    });
+    const result = await this.paymentService.createSmartPayment(
+      buildCreateSmartPaymentContext(effectiveWorkspaceId, body),
+    );
 
     return {
       success: true,
@@ -141,7 +184,7 @@ export class SmartPaymentController {
     body: {
       contactId: string;
       originalAmount: number;
-      customerMessage: string;
+      contactMessage: string;
       maxDiscountPercent?: number;
     },
   ) {
@@ -150,7 +193,7 @@ export class SmartPaymentController {
       workspaceId: effectiveWorkspaceId,
       contactId: body.contactId,
       originalAmount: body.originalAmount,
-      customerMessage: body.customerMessage,
+      contactMessage: body.contactMessage,
       ...(body.maxDiscountPercent !== undefined
         ? { maxDiscountPercent: body.maxDiscountPercent }
         : {}),

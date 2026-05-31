@@ -1,4 +1,4 @@
-import type { ProviderSessionSnapshot } from '../whatsapp/provider-settings.types';
+import type { ProviderSessionSnapshot } from '../marketing/channels/whatsapp/provider-settings.types';
 import type {
   NormalizedConnectionStatus,
   WhatsAppProviderType,

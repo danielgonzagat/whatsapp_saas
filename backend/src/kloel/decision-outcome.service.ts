@@ -3,8 +3,7 @@ import { StructuredLogger } from '../logging/structured-logger';
 import { randomUUID } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { KloelGlobalPriorService } from './kloel-global-prior.service';
-import { extractChannel } from './mind-belief-by-channel';
+import { MindBanditService } from './mind/policy/mind-bandit.service';
 
 function inputJson(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
@@ -34,7 +33,7 @@ export class DecisionOutcomeService {
 
   constructor(
     private readonly prisma: PrismaService,
-    @Optional() private readonly globalPrior?: KloelGlobalPriorService,
+    @Optional() private readonly mindBandit?: MindBanditService,
   ) {}
 
   async recordDecision(input: RecordDecisionInput) {
@@ -50,6 +49,34 @@ export class DecisionOutcomeService {
         contextSnapshot: inputJson(input.contextSnapshot),
       },
     });
+
+    // Close the bandit loop: idempotently register the arms of this decision
+    // (the chosen action + its baseline, e.g. 'engage'/'silence' for
+    // 'chat_reply') so the matching mindBanditArm rows exist before
+    // closeOutcome later calls recordOutcome. register() upserts, so this is
+    // safe to call on every decision. Fire-and-forget — a learning-side
+    // failure must never break the decision-recording path.
+    if (this.mindBandit) {
+      const arms = Array.from(
+        new Set([input.chosenAction, input.baselineAction].filter((a): a is string => !!a)),
+      );
+      if (arms.length > 0) {
+        this.mindBandit
+          .register({
+            workspaceId: input.workspaceId,
+            decisionType: input.decisionType,
+            arms,
+            context: input.contextSnapshot,
+          })
+          .catch((err: unknown) => {
+            this.logger.warn('Failed to register bandit arms from recordDecision', {
+              outcomeKey: input.outcomeKey,
+              decisionType: input.decisionType,
+              error: err instanceof Error ? err.message : String(err),
+            });
+          });
+      }
+    }
   }
 
   async closeOutcome(input: CloseOutcomeInput) {
@@ -68,25 +95,30 @@ export class DecisionOutcomeService {
       const closed = await this.prisma.decisionOutcome.findFirst({
         where: { outcomeKey: input.outcomeKey, workspaceId: { not: '' } },
         orderBy: { outcomeAt: 'desc' },
-        select: { contextSnapshot: true, decisionType: true, chosenAction: true },
+        select: {
+          contextSnapshot: true,
+          decisionType: true,
+          chosenAction: true,
+          workspaceId: true,
+        },
       });
 
-      if (closed && this.globalPrior) {
-        const channel = extractChannel(closed.contextSnapshot as Record<string, unknown>);
-        if (channel) {
-          try {
-            await this.globalPrior.recordObservation(
-              channel,
-              closed.decisionType,
-              closed.chosenAction,
-              input.wonVsBaseline ?? false,
-            );
-          } catch (err: unknown) {
-            this.logger.error('Failed to record global prior observation from closeOutcome', {
-              outcomeKey: input.outcomeKey,
-              error: err instanceof Error ? err.message : String(err),
-            });
-          }
+      if (closed && this.mindBandit) {
+        // Append-only learning signal: feed the closed outcome's win/loss back
+        // into the contextual bandit arm so Kloel learns from chat outcomes.
+        // Fire-and-forget — a learning failure must never break the decision path.
+        try {
+          await this.mindBandit.recordOutcome({
+            workspaceId: closed.workspaceId,
+            decisionType: closed.decisionType,
+            arm: closed.chosenAction,
+            outcome: input.wonVsBaseline ? 1 : 0,
+          });
+        } catch (err: unknown) {
+          this.logger.warn('Failed to record bandit outcome from closeOutcome', {
+            outcomeKey: input.outcomeKey,
+            error: err instanceof Error ? err.message : String(err),
+          });
         }
       }
     }

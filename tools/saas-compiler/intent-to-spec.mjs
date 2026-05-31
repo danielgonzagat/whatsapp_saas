@@ -91,26 +91,28 @@ Output JSON SCHEMA:
 Be conservative: only propose changes that respect existing entity names; reuse existing services where possible; never invent integrations not present in the codebase context.`;
 }
 
+function ingestEnrichedGraph(enriched, out) {
+  const modRegex = /backend\/src\/.*?\/(\w+)\.module\.ts$/;
+  let data;
+  try {
+    data = JSON.parse(enriched);
+  } catch {
+    return;
+  }
+  for (const n of data.nodes || []) {
+    if (n.file && modRegex.test(n.file)) out.modules.push(n.file.match(modRegex)[1]);
+    if (n.type === 'bullmq-queue' && n.label) out.queues.push(n.label);
+  }
+}
+
 async function buildContext() {
   const out = { entities: [], modules: [], queues: [] };
   const schema = await readSafe(join(ROOT, 'backend/prisma/schema.prisma'));
   if (schema) {
     out.entities = [...schema.matchAll(/^model\s+(\w+)\s*\{/gm)].map((m) => m[1]);
   }
-  // Light scan for NestJS modules
-  const modRegex = /backend\/src\/.*?\/(\w+)\.module\.ts$/;
   const enriched = await readSafe(join(ROOT, 'graphify-out/enriched-graph.json'));
-  if (enriched) {
-    try {
-      const data = JSON.parse(enriched);
-      for (const n of data.nodes || []) {
-        if (n.file && modRegex.test(n.file)) out.modules.push(n.file.match(modRegex)[1]);
-      }
-      for (const n of data.nodes || []) {
-        if (n.type === 'bullmq-queue' && n.label) out.queues.push(n.label);
-      }
-    } catch { /* ignore */ }
-  }
+  if (enriched) ingestEnrichedGraph(enriched, out);
   out.modules = [...new Set(out.modules)];
   out.queues = [...new Set(out.queues)];
   return out;
@@ -121,18 +123,20 @@ async function readSafe(path) {
   try { return await readFile(path, 'utf8'); } catch { return null; }
 }
 
+const SPEC_RULES = [
+  { ok: (s) => s.name && /^[a-z][a-z0-9-]+$/.test(s.name), msg: 'name must be kebab-case' },
+  { ok: (s) => !!s.summary, msg: 'summary required' },
+  { ok: (s) => Array.isArray(s.entities), msg: 'entities must be array' },
+  { ok: (s) => Array.isArray(s.flows), msg: 'flows must be array' },
+  { ok: (s) => Array.isArray(s.invariants), msg: 'invariants must be array' },
+  { ok: (s) => s.metrics && typeof s.metrics === 'object', msg: 'metrics required' },
+  { ok: (s) => !!s.fingerprint_test, msg: 'fingerprint_test required' },
+  { ok: (s) => Array.isArray(s.files_to_create), msg: 'files_to_create must be array' },
+];
+
 function validateSpec(spec) {
-  const errs = [];
   if (!spec || typeof spec !== 'object') return ['root not object'];
-  if (!spec.name || !/^[a-z][a-z0-9-]+$/.test(spec.name)) errs.push('name must be kebab-case');
-  if (!spec.summary) errs.push('summary required');
-  if (!Array.isArray(spec.entities)) errs.push('entities must be array');
-  if (!Array.isArray(spec.flows)) errs.push('flows must be array');
-  if (!Array.isArray(spec.invariants)) errs.push('invariants must be array');
-  if (!spec.metrics || typeof spec.metrics !== 'object') errs.push('metrics required');
-  if (!spec.fingerprint_test) errs.push('fingerprint_test required');
-  if (!Array.isArray(spec.files_to_create)) errs.push('files_to_create must be array');
-  return errs;
+  return SPEC_RULES.filter((r) => !r.ok(spec)).map((r) => r.msg);
 }
 
 function deterministicSpec(intent) {

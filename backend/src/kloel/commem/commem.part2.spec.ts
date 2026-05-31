@@ -1,12 +1,9 @@
 import { CommemLedgerService } from './ledger.service';
-import { MemoryProjector } from './memory.projector';
 import { ExporterService } from './exporter.service';
-import { TimeMachineService } from './time-machine.service';
 import { ValueQuantifier } from './value-quantifier';
 import { NarrativeBuilder } from './narrative.builder';
 import { AttributionGuard } from './attribution.guard';
-import type { SpineEventRef } from '../mind/mind.types';
-import type { MemoryDimension, MemoryProjection, ProjectionInput } from './commem.types';
+import type { MemoryProjection } from './commem.types';
 import { makeEventFactoryMs } from '../../../test/helpers/spine-event-factory';
 
 const makeEvent = makeEventFactoryMs();

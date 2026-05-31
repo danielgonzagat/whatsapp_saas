@@ -1,4 +1,8 @@
 /**
+ * @capability WorkerColorTokens
+ * @domain lib
+ */
+/**
  * KLOEL Worker — Color Tokens
  *
  * Single source of truth for colors used in worker-generated HTML

@@ -10,6 +10,7 @@ import type {
   AgentRuntimeHygieneState,
   AgentRuntimeTurnRecord,
 } from './agent-runtime.types';
+import { MindMemoryItemService } from '../mind/aliases/mind-memory-item.service';
 
 @Injectable()
 export class AgentRuntimeMemoryCuratorService {
@@ -23,7 +24,8 @@ export class AgentRuntimeMemoryCuratorService {
   private static readonly DEFAULT_CURATED_TTL_MS = 180 * 24 * 60 * 60 * 1000;
 
   constructor(
-    private readonly prisma: PrismaService,
+    _prisma: PrismaService,
+    private readonly mindMemory: MindMemoryItemService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
@@ -45,7 +47,7 @@ export class AgentRuntimeMemoryCuratorService {
       AgentRuntimeMemoryCuratorService.DEFAULT_CURATED_TTL_MS;
     const retentionScore = this.computeCuratedRetentionScore(insight.kind, confidence);
     try {
-      await this.prisma.kloelMemory.upsert({
+      await this.mindMemory.items.upsert({
         where: { workspaceId_key: { workspaceId: turn.workspaceId, key } },
         update: {
           category: 'agent_curated',
@@ -207,7 +209,7 @@ export class AgentRuntimeMemoryCuratorService {
     };
 
     try {
-      const rows = await this.prisma.kloelMemory.findMany({
+      const rows = await this.mindMemory.items.findMany({
         where: {
           workspaceId,
           category: 'agent_curated',
@@ -238,7 +240,7 @@ export class AgentRuntimeMemoryCuratorService {
           const hygieneState = this.computeHygieneState(ageMs, ttlMs);
 
           if (hygieneState === 'retired' && retentionScore < minRetention) {
-            await this.prisma.kloelMemory.updateMany({
+            await this.mindMemory.items.updateMany({
               where: { id: row.id, workspaceId },
               data: {
                 category: 'agent_curated',
@@ -253,7 +255,7 @@ export class AgentRuntimeMemoryCuratorService {
             result.expired += 1;
             result.staleKeys.push(row.key);
           } else if (hygieneState === 'expired') {
-            await this.prisma.kloelMemory.updateMany({
+            await this.mindMemory.items.updateMany({
               where: { id: row.id, workspaceId },
               data: {
                 metadata: {

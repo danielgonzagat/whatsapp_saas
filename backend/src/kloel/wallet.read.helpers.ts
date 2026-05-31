@@ -1,3 +1,4 @@
+import { NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 // @@index: read-only wallet queries extracted from wallet.service.ts (Wave 19)
@@ -94,4 +95,34 @@ export async function getWalletTransactionHistory(
   ]);
 
   return { transactions, total };
+}
+
+/**
+ * 💰 K30 resolver entry-point: returns balances in bigint cents (the
+ * source-of-truth representation post Wave 2 P6-2 / I11).
+ *
+ * Workspace isolation: filters by workspaceId. Throws NotFoundException
+ * if the wallet row does not exist (matches resolver contract — never
+ * lazily creates wallets on a query path).
+ */
+export async function getWalletBalanceCents(
+  prisma: PrismaService,
+  workspaceId: string,
+): Promise<{ available: bigint; pending: bigint; blocked: bigint }> {
+  const wallet = await prisma.kloelWallet.findUnique({
+    where: { workspaceId },
+    select: {
+      availableBalanceInCents: true,
+      pendingBalanceInCents: true,
+      blockedBalanceInCents: true,
+    },
+  });
+  if (!wallet) {
+    throw new NotFoundException(`KloelWallet not found for workspace ${workspaceId}`);
+  }
+  return {
+    available: wallet.availableBalanceInCents,
+    pending: wallet.pendingBalanceInCents,
+    blocked: wallet.blockedBalanceInCents,
+  };
 }

@@ -1,93 +1,33 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
-import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { formatBrlAmount } from './money-format.util';
 import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
 import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
-import { actionHandleObjection as actionHandleObjectionFn } from './unified-agent-actions-sales.helpers';
-import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
+import {
+  actionHandleObjection as actionHandleObjectionFn,
+  antiChurnMessage,
+  clampDiscountPercent,
+  describeUnknownError,
+  discountPercentFromMind,
+  getStagePurchaseProbabilityBucket,
+  isDeterministicPipeline,
+  isRecord,
+  MEETING_TYPE_LABELS,
+  priceBandFor,
+  REACTIVATION_MESSAGES,
+  toJsonValue,
+} from './unified-agent-actions-sales.service.helpers';
+import { MindGuardContextBuilderService } from './mind/policy/mind-guard-context-builder.service';
 import { MindGuardsService } from './mind/policy/mind-guards.service';
-import type { MindActionContext } from './mind-code-native.types';
+import type { MindActionContext } from './mind/policy/mind-code-native.types';
 import { MindService } from './mind.service';
 
 import type { UnknownRecord } from '../common/types';
 
 import { readStringOr as readString } from '../common/parse';
-function describeUnknownError(error: unknown): string {
-  if (error instanceof Error && error.message.trim()) {
-    return error.message.trim();
-  }
-  if (typeof error === 'string' && error.trim()) {
-    return error.trim();
-  }
-  return 'Unknown error';
-}
-
-function isRecord(value: unknown): value is UnknownRecord {
-  return typeof value === 'object' && value !== null;
-}
-
-function isDeterministicPipeline(context?: UnknownRecord): boolean {
-  return context?.deterministicPipeline === true;
-}
-
-function toJsonValue(value: unknown): Prisma.InputJsonValue | null {
-  if (value === null) {
-    return null;
-  }
-  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-    return value;
-  }
-  if (Array.isArray(value)) {
-    const output: Array<Prisma.InputJsonValue | null> = [];
-    for (const item of value) {
-      output.push(toJsonValue(item));
-    }
-    return output;
-  }
-  if (isRecord(value)) {
-    const output: { [key: string]: Prisma.InputJsonValue | null } = {};
-    for (const [key, item] of Object.entries(value)) {
-      output[key] = toJsonValue(item);
-    }
-    return output;
-  }
-  return null;
-}
-
-function priceBandFor(price: number): string {
-  if (price >= 1000) {
-    return 'over_1000';
-  }
-  if (price >= 500) {
-    return 'over_500';
-  }
-  if (price >= 300) {
-    return 'over_300';
-  }
-  if (price >= 100) {
-    return 'over_100';
-  }
-  return 'under_100';
-}
-
-function discountPercentFromMind(action: string | undefined, requestedPercent: number): number {
-  if (action === 'coupon_5') {
-    return 5;
-  }
-  if (action === 'coupon_10') {
-    return 10;
-  }
-  if (action === 'coupon_15') {
-    return 15;
-  }
-  if (action === 'coupon_20') {
-    return 20;
-  }
-  return requestedPercent;
-}
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 
 /**
  * Handles sales/negotiation tool actions: discount, objection handling,
@@ -104,7 +44,13 @@ export class UnifiedAgentActionsSalesService {
     @Optional() private readonly mind?: MindService,
     @Optional() private readonly guardContextBuilder?: MindGuardContextBuilderService,
     @Optional() private readonly guards?: MindGuardsService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {}
+
+  /** Canonical Brain → Mind memory delegate (raw-Prisma fallback). */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
+  }
 
   async actionApplyDiscount(
     workspaceId: string,
@@ -114,20 +60,17 @@ export class UnifiedAgentActionsSalesService {
     context?: UnknownRecord,
   ) {
     try {
-      const requestedDiscountPercent = Math.min(
-        Math.max(Number(args?.discountPercent) || 10, 1),
-        30,
-      );
+      const requestedDiscountPercent = clampDiscountPercent(args?.discountPercent);
       const reason = args?.reason || 'Oferta especial';
       const expiresIn = args?.expiresIn || '24h';
-      const recentMemory = await this.prisma.kloelMemory.findFirst({
+      const recentMemory = await this.mindMemoryItems.findFirst({
         where: { workspaceId, category: 'products' },
         orderBy: { createdAt: 'desc' },
       });
       let originalPrice = 0;
       let productName = 'produto';
       if (recentMemory?.value) {
-        const productData =
+        const productData: unknown =
           typeof recentMemory.value === 'string'
             ? JSON.parse(recentMemory.value)
             : recentMemory.value;
@@ -300,6 +243,7 @@ export class UnifiedAgentActionsSalesService {
       args,
       context,
       prisma: this.prisma,
+      mindMemory: this.mindMemoryItems,
       messaging: this.messaging,
       logger: this.logger,
       ...(this.opsAlert !== undefined ? { opsAlert: this.opsAlert } : {}),
@@ -323,7 +267,7 @@ export class UnifiedAgentActionsSalesService {
       await this.prisma.contact
         .update({
           where: { id: contactId },
-          data: { purchaseProbability: this.getStagePurchaseProbabilityBucket(stage) },
+          data: { purchaseProbability: getStagePurchaseProbabilityBucket(stage) },
         })
         .catch((err: unknown) => {
           const errStr = describeUnknownError(err);
@@ -361,16 +305,6 @@ export class UnifiedAgentActionsSalesService {
     }
   }
 
-  private getStagePurchaseProbabilityBucket(stage: string): string {
-    const buckets: Record<string, string> = {
-      awareness: 'LOW',
-      interest: 'MEDIUM',
-      decision: 'HIGH',
-      action: 'VERY_HIGH',
-    };
-    return buckets[stage] || 'LOW';
-  }
-
   async actionScheduleMeeting(
     workspaceId: string,
     contactId: string,
@@ -386,13 +320,7 @@ export class UnifiedAgentActionsSalesService {
         'Amanhã às 15h',
         'Sexta às 14h',
       ];
-      const typeLabels: Record<string, string> = {
-        demo: 'Demonstracao do Produto',
-        consultation: 'Consultoria',
-        followup: 'Conversa de Acompanhamento',
-        support: 'Suporte Tecnico',
-      };
-      const message = `${typeLabels[meetingType] || 'Agendamento'}\n\nQual horário funciona melhor para você?\n\n${suggestedTimes.map((t: string, i: number) => `${i + 1}. ${t}`).join('\n')}\n\nOu me diga um horário de sua preferência!`;
+      const message = `${MEETING_TYPE_LABELS[meetingType] || 'Agendamento'}\n\nQual horário funciona melhor para você?\n\n${suggestedTimes.map((t: string, i: number) => `${i + 1}. ${t}`).join('\n')}\n\nOu me diga um horário de sua preferência!`;
       try {
         await this.prisma.autopilotEvent.create({
           data: {
@@ -443,20 +371,7 @@ export class UnifiedAgentActionsSalesService {
       const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
       const strategy = args?.strategy || 'discount';
       const offer = args?.offer || '';
-      const strategyMessages: Record<string, string> = {
-        discount: `Antes de concluir seu cancelamento, tenho uma condição comercial para você.\n\nQue tal um desconto exclusivo de 30% para continuar conosco? ${offer || 'Você é um cliente valioso e queremos mantê-lo!'}`,
-        upgrade:
-          'Que tal um upgrade gratuito?\n\nPosso liberar recursos premium para você experimentar por 30 dias, sem custo adicional!',
-        downgrade:
-          'Entendo que às vezes precisamos ajustar.\n\nTemos um plano mais acessível que pode atender suas necessidades. Quer conhecer?',
-        pause:
-          'Sem problemas. Que tal pausar sua assinatura por um mês?\n\nAssim você pode voltar quando for mais conveniente, sem perder nada.',
-        feedback:
-          'Sua opinião é muito importante para nós.\n\nO que podemos melhorar? Estou aqui para ouvir e resolver qualquer problema.',
-        vip_support:
-          'Você está em atendimento prioritário.\n\nVou te conectar com nosso time de suporte prioritário para resolver qualquer questão.',
-      };
-      const message = strategyMessages[strategy] || strategyMessages.feedback;
+      const message = antiChurnMessage(strategy, offer || '');
       if (!message) {
         return { success: false, error: 'No strategy message found' };
       }
@@ -509,19 +424,7 @@ export class UnifiedAgentActionsSalesService {
     try {
       const strategy = args?.strategy || 'curiosity';
       const daysSilent = args?.daysSilent || 7;
-      const reactivationMessages: Record<string, string> = {
-        curiosity:
-          'Oi! Percebi que você se afastou da conversa.\n\nAconteceu algo? Tenho novidades que podem te interessar.',
-        urgency:
-          'Última chance.\n\nAquela oferta que conversamos está acabando. Não quero que você perca essa oportunidade!',
-        value:
-          'Lembrei de você hoje.\n\nVi um caso de sucesso de um cliente parecido com você e pensei: isso pode te ajudar muito!',
-        question:
-          'Posso te fazer uma pergunta rápida?\n\nO que te fez não seguir em frente naquele momento? Sua opinião me ajuda a melhorar!',
-        social_proof:
-          'Mais de 500 pessoas já estão usando.\n\nOs resultados têm sido incríveis. Dá uma olhada no que estão falando!',
-      };
-      const message = reactivationMessages[strategy] || reactivationMessages.curiosity;
+      const message = REACTIVATION_MESSAGES[strategy] || REACTIVATION_MESSAGES.curiosity;
       if (!message) {
         return { success: false, error: 'No reactivation message found' };
       }

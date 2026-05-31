@@ -3,6 +3,7 @@
 import { Search } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { startTransition, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useClientMounted } from '@/lib/use-client-mounted';
 import { AdminSearchModal } from './admin-search-modal';
 import {
   AdminSidebar,
@@ -75,14 +76,16 @@ function labelForPath(pathname: string) {
 export function AdminAppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const mounted = useClientMounted();
+  // `null` means the user has not toggled this session yet, so the persisted
+  // localStorage value (read only after mount, to stay hydration-safe) wins.
+  const [sidebarOverride, setSidebarOverride] = useState<boolean | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const activeLabel = useMemo(() => labelForPath(pathname), [pathname]);
 
-  useEffect(() => {
-    setSidebarExpanded(getInitialAdminSidebarExpanded());
-  }, []);
+  const sidebarExpanded =
+    sidebarOverride ?? (mounted ? getInitialAdminSidebarExpanded() : false);
 
   useEffect(() => {
     const media = window.matchMedia('(min-width: 1024px)');
@@ -98,11 +101,9 @@ export function AdminAppShell({ children }: { children: ReactNode }) {
   }, []);
 
   const toggleSidebar = () => {
-    setSidebarExpanded((current) => {
-      const next = !current;
-      persistAdminSidebarExpanded(next);
-      return next;
-    });
+    const next = !sidebarExpanded;
+    persistAdminSidebarExpanded(next);
+    setSidebarOverride(next);
   };
 
   const handleNewChat = () => {

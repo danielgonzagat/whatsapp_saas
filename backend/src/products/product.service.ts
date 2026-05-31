@@ -8,69 +8,31 @@ import {
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
-import type { Product, Prisma } from '@prisma/client';
+import type { Product } from '@prisma/client';
 import { MindEventSpine } from '../kloel/mind/coordination';
+import {
+  assertWorkspaceId,
+  buildCommercialPayload,
+  buildListWhere,
+  resolvePagination,
+} from './product.helpers';
+import type {
+  CreateProductDto,
+  UpdateProductDto,
+  ProductListFilters,
+  ProductResult,
+  ProductListResult,
+} from './product.types';
+import { emitCommerceAlias } from '../kloel/event-taxonomy.canonical-aliases';
 
-export interface CreateProductDto {
-  name: string;
-  description?: string;
-  price: number;
-  category?: string;
-  sku?: string;
-  tags?: string[];
-  format?: 'PHYSICAL' | 'DIGITAL' | 'HYBRID';
-  imageUrl?: string;
-  salesPageUrl?: string;
-  thankyouUrl?: string;
-  thankyouBoletoUrl?: string;
-  thankyouPixUrl?: string;
-  reclameAquiUrl?: string;
-  supportEmail?: string;
-  warrantyDays?: number;
-  shippingType?: string;
-  shippingValue?: number;
-  originCep?: string;
-  affiliateEnabled?: boolean;
-  affiliateVisible?: boolean;
-  affiliateAutoApprove?: boolean;
-  affiliateAccessData?: boolean;
-  affiliateAccessAbandoned?: boolean;
-  affiliateFirstInstallment?: boolean;
-  commissionType?: string;
-  commissionPercent?: number;
-  commissionCookieDays?: number;
-  stockQuantity?: number;
-  trackStock?: boolean;
-}
-
-export interface UpdateProductDto extends Partial<CreateProductDto> {
-  active?: boolean;
-  status?: string;
-}
-
-export interface ProductListFilters {
-  search?: string;
-  category?: string;
-  active?: boolean;
-  status?: string;
-  format?: string;
-  page?: number;
-  limit?: number;
-}
-
-export interface ProductResult {
-  success: boolean;
-  product?: Product;
-  message?: string;
-}
-
-export interface ProductListResult {
-  success: boolean;
-  products: Product[];
-  count: number;
-  page: number;
-  limit: number;
-}
+// Re-export DTOs / result shapes to preserve the historical import surface.
+export type {
+  CreateProductDto,
+  UpdateProductDto,
+  ProductListFilters,
+  ProductResult,
+  ProductListResult,
+};
 
 @Injectable()
 export class ProductService {
@@ -85,14 +47,15 @@ export class ProductService {
 
   /**
    * Create a new product under the given workspace.
-   * Emits `product.created` and writes an audit entry.
+   * Emits `mind.product.observed` and writes an audit entry.
    */
   async create(
     workspaceId: string,
     dto: CreateProductDto,
-    actor: { id: string; email?: string },
+    actor?: { id: string; email?: string },
   ): Promise<ProductResult> {
-    this.assertWorkspace(workspaceId);
+    const resolvedActor = actor ?? { id: 'kloel-resolver' };
+    assertWorkspaceId(workspaceId);
 
     const product = await this.prisma.product.create({
       data: {
@@ -104,10 +67,10 @@ export class ProductService {
       },
     });
 
-    await this.eventEmitter.emit('product.created', {
+    this.eventEmitter.emit('mind.product.observed', {
       productId: product.id,
       workspaceId,
-      agentId: actor.id,
+      agentId: resolvedActor.id,
       name: product.name,
       price: product.price,
       format: product.format,
@@ -115,7 +78,7 @@ export class ProductService {
 
     await this.audit.log({
       workspaceId,
-      agentId: actor.id,
+      agentId: resolvedActor.id,
       action: 'product.create',
       resource: 'Product',
       resourceId: product.id,
@@ -126,17 +89,12 @@ export class ProductService {
     await this.brainSpine?.recordCommercial({
       workspaceId,
       subject: `product:${product.id}`,
-      eventType: 'product.created',
+      eventType: 'mind.product.observed',
       occurredAt: new Date(),
-      payload: {
-        productId: product.id,
-        name: product.name,
-        priceInCents: Math.round(product.price * 100),
-        format: product.format,
-      },
+      payload: buildCommercialPayload(product),
     });
 
-    this.logger.log(`Product created: ${product.id} by ${actor.id}`);
+    this.logger.log(`Product created: ${product.id} by ${resolvedActor.id}`);
     return { success: true, product };
   }
 
@@ -145,30 +103,40 @@ export class ProductService {
    */
   async update(
     workspaceId: string,
-    productId: string,
-    dto: UpdateProductDto,
-    actor: { id: string; email?: string },
+    productIdOrArgs: string | Record<string, unknown>,
+    dtoOrActor?: UpdateProductDto | { id: string; email?: string },
+    actorOpt?: { id: string; email?: string },
   ): Promise<ProductResult> {
-    this.assertWorkspace(workspaceId);
+    // Resolve calling convention:
+    //  - Old (direct): update(ws, productId, dto, actor)
+    //  - New (resolver): update(ws, { productId, ...dtoFields })
+    let productId: string;
+    let dto: UpdateProductDto;
+    let actor: { id: string; email?: string };
 
-    const existing = await this.prisma.product.findUnique({
-      where: { id: productId, workspaceId },
-    });
-
-    if (!existing) {
-      throw new NotFoundException(`Product ${productId} not found`);
+    if (typeof productIdOrArgs === 'object') {
+      // Resolver path: extract productId from args, remaining fields = dto
+      const args = productIdOrArgs;
+      productId = typeof args.productId === 'string' ? args.productId : '';
+      const { productId: _, ...rest } = args;
+      dto = rest;
+      actor = { id: 'kloel-resolver' };
+    } else {
+      // Direct path: traditional 4-arg call
+      productId = productIdOrArgs;
+      dto = (dtoOrActor as UpdateProductDto) ?? {};
+      actor = (actorOpt as { id: string; email?: string }) ?? { id: 'kloel-resolver' };
     }
 
-    if (existing.workspaceId !== workspaceId) {
-      throw new ForbiddenException('Cross-workspace access denied');
-    }
+    assertWorkspaceId(workspaceId);
+    await this.assertOwnedProduct(workspaceId, productId);
 
     const product = await this.prisma.product.update({
       where: { id: productId, workspaceId },
       data: dto,
     });
 
-    await this.eventEmitter.emit('product.updated', {
+    emitCommerceAlias((name, payload) => this.eventEmitter.emit(name, payload), 'product.updated', {
       productId: product.id,
       workspaceId,
       agentId: actor.id,
@@ -189,15 +157,7 @@ export class ProductService {
       subject: `product:${product.id}`,
       eventType: 'product.updated',
       occurredAt: new Date(),
-      payload: {
-        productId: product.id,
-        name: product.name,
-        priceInCents: Math.round(Number(product.price) * 100),
-        format: product.format,
-        status: product.status,
-        active: product.active,
-        changes: Object.keys(dto),
-      },
+      payload: buildCommercialPayload(product, { changes: Object.keys(dto) }),
     });
 
     return { success: true, product };
@@ -213,36 +173,29 @@ export class ProductService {
   }
 
   /**
+   * Get a product by ID (resolver-compatible 2-arg thin wrapper).
+   * Extracts `productId` from args, workspace-scoped lookup, throws on missing.
+   */
+  async get(workspaceId: string, args: { productId: string }): Promise<ProductResult> {
+    assertWorkspaceId(workspaceId);
+    const product = await this.findById(workspaceId, args.productId);
+    if (!product) {
+      throw new NotFoundException(`Product ${args.productId} not found`);
+    }
+    return { success: true, product };
+  }
+
+  /**
    * List products for a workspace with optional filters.
    */
   async list(workspaceId: string, filters: ProductListFilters = {}): Promise<ProductListResult> {
-    const { search, category, active, status, format, page = 1, limit = 20 } = filters;
-
-    const where: Prisma.ProductWhereInput = { workspaceId };
-
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-    if (category) {
-      where.category = category;
-    }
-    if (active !== undefined) {
-      where.active = active;
-    }
-    if (status) {
-      where.status = status;
-    }
-    if (format) {
-      where.format = format;
-    }
+    const where = buildListWhere(workspaceId, filters);
+    const { page, limit, skip } = resolvePagination(filters);
 
     const [products, count] = await Promise.all([
       this.prisma.product.findMany({
-        where: { ...where, workspaceId },
-        skip: (page - 1) * limit,
+        where: { workspaceId, ...where },
+        skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
       }),
@@ -261,26 +214,15 @@ export class ProductService {
     imageUrl: string,
     actor: { id: string },
   ): Promise<ProductResult> {
-    this.assertWorkspace(workspaceId);
-
-    const existing = await this.prisma.product.findUnique({
-      where: { id: productId, workspaceId },
-    });
-
-    if (!existing) {
-      throw new NotFoundException(`Product ${productId} not found`);
-    }
-
-    if (existing.workspaceId !== workspaceId) {
-      throw new ForbiddenException('Cross-workspace access denied');
-    }
+    assertWorkspaceId(workspaceId);
+    await this.assertOwnedProduct(workspaceId, productId);
 
     const product = await this.prisma.product.update({
       where: { id: productId, workspaceId },
       data: { imageUrl },
     });
 
-    this.eventEmitter.emit('product.updated', {
+    emitCommerceAlias((name, payload) => this.eventEmitter.emit(name, payload), 'product.updated', {
       productId: product.id,
       workspaceId,
       agentId: actor.id,
@@ -301,16 +243,7 @@ export class ProductService {
       subject: `product:${product.id}`,
       eventType: 'product.updated',
       occurredAt: new Date(),
-      payload: {
-        productId: product.id,
-        name: product.name,
-        priceInCents: Math.round(Number(product.price) * 100),
-        format: product.format,
-        status: product.status,
-        active: product.active,
-        imageUrl,
-        changes: ['imageUrl'],
-      },
+      payload: buildCommercialPayload(product, { imageUrl, changes: ['imageUrl'] }),
     });
 
     return { success: true, product };
@@ -324,30 +257,23 @@ export class ProductService {
     productId: string,
     actor: { id: string },
   ): Promise<ProductResult> {
-    this.assertWorkspace(workspaceId);
-
-    const existing = await this.prisma.product.findUnique({
-      where: { id: productId, workspaceId },
-    });
-
-    if (!existing) {
-      throw new NotFoundException(`Product ${productId} not found`);
-    }
-
-    if (existing.workspaceId !== workspaceId) {
-      throw new ForbiddenException('Cross-workspace access denied');
-    }
+    assertWorkspaceId(workspaceId);
+    await this.assertOwnedProduct(workspaceId, productId);
 
     const product = await this.prisma.product.update({
       where: { id: productId, workspaceId },
       data: { status: 'APPROVED', active: true },
     });
 
-    await this.eventEmitter.emit('product.published', {
-      productId: product.id,
-      workspaceId,
-      agentId: actor.id,
-    });
+    emitCommerceAlias(
+      (name, payload) => this.eventEmitter.emit(name, payload),
+      'product.published',
+      {
+        productId: product.id,
+        workspaceId,
+        agentId: actor.id,
+      },
+    );
 
     await this.audit.log({
       workspaceId,
@@ -362,14 +288,7 @@ export class ProductService {
       subject: `product:${product.id}`,
       eventType: 'product.published',
       occurredAt: new Date(),
-      payload: {
-        productId: product.id,
-        name: product.name,
-        priceInCents: Math.round(Number(product.price) * 100),
-        format: product.format,
-        status: product.status,
-        active: product.active,
-      },
+      payload: buildCommercialPayload(product),
     });
 
     return { success: true, product };
@@ -384,26 +303,15 @@ export class ProductService {
     available: boolean,
     actor: { id: string },
   ): Promise<ProductResult> {
-    this.assertWorkspace(workspaceId);
-
-    const existing = await this.prisma.product.findUnique({
-      where: { id: productId, workspaceId },
-    });
-
-    if (!existing) {
-      throw new NotFoundException(`Product ${productId} not found`);
-    }
-
-    if (existing.workspaceId !== workspaceId) {
-      throw new ForbiddenException('Cross-workspace access denied');
-    }
+    assertWorkspaceId(workspaceId);
+    await this.assertOwnedProduct(workspaceId, productId);
 
     const product = await this.prisma.product.update({
       where: { id: productId, workspaceId },
       data: { active: available },
     });
 
-    await this.eventEmitter.emit(available ? 'product.activated' : 'product.deactivated', {
+    this.eventEmitter.emit(available ? 'product.activated' : 'product.deactivated', {
       productId: product.id,
       workspaceId,
       agentId: actor.id,
@@ -422,15 +330,7 @@ export class ProductService {
       subject: `product:${product.id}`,
       eventType: 'product.updated',
       occurredAt: new Date(),
-      payload: {
-        productId: product.id,
-        name: product.name,
-        priceInCents: Math.round(Number(product.price) * 100),
-        format: product.format,
-        status: product.status,
-        active: product.active,
-        changes: ['active'],
-      },
+      payload: buildCommercialPayload(product, { changes: ['active'] }),
     });
 
     return { success: true, product };
@@ -444,26 +344,15 @@ export class ProductService {
     productId: string,
     actor: { id: string },
   ): Promise<ProductResult> {
-    this.assertWorkspace(workspaceId);
-
-    const existing = await this.prisma.product.findUnique({
-      where: { id: productId, workspaceId },
-    });
-
-    if (!existing) {
-      throw new NotFoundException(`Product ${productId} not found`);
-    }
-
-    if (existing.workspaceId !== workspaceId) {
-      throw new ForbiddenException('Cross-workspace access denied');
-    }
+    assertWorkspaceId(workspaceId);
+    await this.assertOwnedProduct(workspaceId, productId);
 
     const product = await this.prisma.product.update({
       where: { id: productId, workspaceId },
       data: { status: 'DELETED', active: false },
     });
 
-    await this.eventEmitter.emit('product.deleted', {
+    emitCommerceAlias((name, payload) => this.eventEmitter.emit(name, payload), 'product.deleted', {
       productId: product.id,
       workspaceId,
       agentId: actor.id,
@@ -482,22 +371,203 @@ export class ProductService {
       subject: `product:${product.id}`,
       eventType: 'product.deleted',
       occurredAt: new Date(),
-      payload: {
-        productId: product.id,
-        name: product.name,
-        priceInCents: Math.round(Number(product.price) * 100),
-        format: product.format,
-        status: product.status,
-        active: product.active,
-      },
+      payload: buildCommercialPayload(product),
     });
 
     return { success: true, message: 'Product deleted' };
   }
 
-  private assertWorkspace(workspaceId: string): void {
-    if (!workspaceId) {
-      throw new ForbiddenException('Workspace ID is required');
+  /**
+   * Set marketing pixels on a product (resolver-compatible 2-arg).
+   *
+   * Fine-grained capability `products.set_pixels`. Reuses {@link update}; the
+   * pixel array is persisted under the typed `metadata.pixels` slot so we never
+   * fork a parallel write path. `args.pixels` may be an array of pixel configs.
+   */
+  async setPixels(
+    workspaceId: string,
+    args: { productId?: string; pixels?: unknown },
+  ): Promise<ProductResult> {
+    const productId = typeof args.productId === 'string' ? args.productId : '';
+    const current = await this.findById(workspaceId, productId);
+    const baseMetadata =
+      current && current.metadata && typeof current.metadata === 'object'
+        ? (current.metadata as Record<string, unknown>)
+        : {};
+    const metadata = { ...baseMetadata, pixels: args.pixels ?? [] };
+    return this.update(workspaceId, { productId, metadata });
+  }
+
+  /**
+   * Set shipping configuration on a product (resolver-compatible 2-arg).
+   *
+   * Fine-grained capability `products.set_shipping`. Reuses {@link update};
+   * writes the real Product shipping columns (shippingType / shippingValue /
+   * originCep / warrantyDays).
+   */
+  async setShipping(
+    workspaceId: string,
+    args: {
+      productId?: string;
+      shippingType?: string;
+      shippingValue?: number;
+      originCep?: string;
+      warrantyDays?: number;
+    },
+  ): Promise<ProductResult> {
+    const { productId: _id, ...rest } = args;
+    const fields: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(rest)) {
+      if (v !== undefined) {
+        fields[k] = v;
+      }
     }
+    return this.update(workspaceId, {
+      productId: typeof args.productId === 'string' ? args.productId : '',
+      ...fields,
+    });
+  }
+
+  /**
+   * Set fulfillment configuration on a product (resolver-compatible 2-arg).
+   *
+   * Fine-grained capability `products.set_fulfillment`. Reuses {@link update};
+   * writes the real `afterPayShippingProvider` column and persists the
+   * remaining fulfillment options under typed `metadata.fulfillment`.
+   */
+  async setFulfillment(
+    workspaceId: string,
+    args: { productId?: string; provider?: string; [key: string]: unknown },
+  ): Promise<ProductResult> {
+    const productId = typeof args.productId === 'string' ? args.productId : '';
+    const { productId: _id, provider, ...rest } = args;
+    const current = await this.findById(workspaceId, productId);
+    const baseMetadata =
+      current && current.metadata && typeof current.metadata === 'object'
+        ? (current.metadata as Record<string, unknown>)
+        : {};
+    const fulfillment = { ...rest };
+    const dto: Record<string, unknown> = {
+      productId,
+      metadata: { ...baseMetadata, fulfillment },
+    };
+    if (typeof provider === 'string') {
+      dto.afterPayShippingProvider = provider;
+    }
+    return this.update(workspaceId, dto);
+  }
+
+  /**
+   * Set the sales-page URL of a product (resolver-compatible 2-arg).
+   *
+   * Fine-grained capability `products.set_sales_page`. Reuses {@link update};
+   * writes the real `salesPageUrl` column.
+   */
+  async setSalesPage(
+    workspaceId: string,
+    args: { productId?: string; salesPageUrl?: string },
+  ): Promise<ProductResult> {
+    return this.update(workspaceId, {
+      productId: typeof args.productId === 'string' ? args.productId : '',
+      salesPageUrl: typeof args.salesPageUrl === 'string' ? args.salesPageUrl : undefined,
+    });
+  }
+
+  /**
+   * Update the post-purchase / display URLs of a product (resolver-compatible).
+   *
+   * Fine-grained capability `products.update_urls`. Reuses {@link update};
+   * writes the real Product URL columns (thankyou / boleto / pix / reclameAqui /
+   * supportEmail).
+   */
+  async updateUrls(
+    workspaceId: string,
+    args: {
+      productId?: string;
+      thankyouUrl?: string;
+      thankyouBoletoUrl?: string;
+      thankyouPixUrl?: string;
+      reclameAquiUrl?: string;
+      supportEmail?: string;
+    },
+  ): Promise<ProductResult> {
+    const { productId: _id, ...rest } = args;
+    const fields: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(rest)) {
+      if (v !== undefined) {
+        fields[k] = v;
+      }
+    }
+    return this.update(workspaceId, {
+      productId: typeof args.productId === 'string' ? args.productId : '',
+      ...fields,
+    });
+  }
+
+  /**
+   * Toggle product availability for sale (resolver-compatible 2-arg).
+   *
+   * Fine-grained capability `products.toggle_availability`. Thin wrapper over
+   * {@link toggleAvailability} so the resolver can call it as `(ws, args)`.
+   */
+  async toggleAvailabilityFor(
+    workspaceId: string,
+    args: { productId?: string; available?: boolean },
+  ): Promise<ProductResult> {
+    const productId = typeof args.productId === 'string' ? args.productId : '';
+    const available = args.available !== false;
+    return this.toggleAvailability(workspaceId, productId, available, {
+      id: 'kloel-resolver',
+    });
+  }
+
+  /**
+   * Review & publish a product (resolver-compatible 2-arg).
+   *
+   * Fine-grained capability `products.review_and_publish`. Thin wrapper over
+   * {@link publish} so the resolver can call it as `(ws, args)`; marks the
+   * product APPROVED + active in one sensitive, confirmed step.
+   */
+  async reviewAndPublish(
+    workspaceId: string,
+    args: { productId?: string },
+  ): Promise<ProductResult> {
+    const productId = typeof args.productId === 'string' ? args.productId : '';
+    return this.publish(workspaceId, productId, { id: 'kloel-resolver' });
+  }
+
+  /**
+   * Ensure the product exists and belongs to the workspace.
+   * Throws NotFound / Forbidden — callers don't need to repeat the pattern.
+   *
+   * The data-returning read is workspace-scoped (`findFirst({ id, workspaceId })`).
+   * Only the existence-disambiguation probe is intentionally cross-workspace:
+   * it selects `{ id: true }` ONLY (no PII, no business data) so the guard can
+   * raise the contractually-required `ForbiddenException` for a product that
+   * exists in another workspace instead of masking it as `NotFound`. This is a
+   * by-design cross-tenant existence check, not an unscoped data query.
+   */
+  private async assertOwnedProduct(workspaceId: string, productId: string): Promise<Product> {
+    const existing = await this.prisma.product.findFirst({
+      where: { id: productId, workspaceId },
+    });
+
+    if (existing) {
+      return existing;
+    }
+
+    // Distinguish "does not exist" (NotFound) from "exists in another
+    // workspace" (Forbidden) without leaking the other workspace's data.
+    // Existence-only probe: id is selected, nothing else. workspaceId does not
+    // (and must not) appear here — the whole point is to detect rows OUTSIDE
+    // the caller's workspace.
+    const crossWorkspace = await this.prisma.product.findUnique({
+      where: { id: productId },
+      select: { id: true },
+    });
+    if (crossWorkspace) {
+      throw new ForbiddenException('Cross-workspace access denied');
+    }
+    throw new NotFoundException(`Product ${productId} not found`);
   }
 }

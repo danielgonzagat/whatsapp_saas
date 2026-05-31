@@ -189,7 +189,7 @@ describe('GoogleAuthService', () => {
       expect.objectContaining({
         headers: expect.objectContaining({
           Authorization: 'Bearer access-token',
-        }),
+        }) as unknown,
       }),
     );
     expect(profile).toMatchObject({

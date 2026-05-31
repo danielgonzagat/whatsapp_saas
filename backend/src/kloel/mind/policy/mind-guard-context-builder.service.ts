@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { PrismaService } from '../../../prisma/prisma.service';
 import type { ChannelSendRequest } from '../../channel-transport.types';
-import type { MindActionContext } from '../../mind-code-native.types';
+import type { MindActionContext } from './mind-code-native.types';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

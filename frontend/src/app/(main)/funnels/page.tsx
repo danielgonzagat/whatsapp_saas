@@ -77,7 +77,7 @@ export default function FunnelsPage() {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated && workspaceId) {
-      refresh();
+      queueMicrotask(refresh);
     }
   }, [isLoading, isAuthenticated, workspaceId, refresh]);
 

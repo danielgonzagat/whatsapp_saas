@@ -35,8 +35,3 @@ export function getStripeClient(): Promise<Stripe | null> {
   stripePromise = loadStripe(publishableKey);
   return stripePromise;
 }
-
-/** Reset stripe client for tests. */
-export function resetStripeClientForTests(): void {
-  stripePromise = null;
-}

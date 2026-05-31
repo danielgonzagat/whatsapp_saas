@@ -92,7 +92,9 @@ describe('SmartTimeService', () => {
 
     await service.getBestTime('ws-1');
 
-    const args = prismaFindMany.mock.calls[0][0];
+    const args = (prismaFindMany.mock.calls as unknown[][])[0][0] as {
+      where: { direction: string; createdAt: { gte: unknown } };
+    };
     expect(args.where.direction).toBe('INBOUND');
     expect(args.where.createdAt.gte).toBeInstanceOf(Date);
   });

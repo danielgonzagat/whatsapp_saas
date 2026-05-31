@@ -7,11 +7,15 @@ import { StructuredLogger } from '../logging/structured-logger';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { getTraceHeaders } from '../common/trace-headers';
-import { escapeHtml } from '../common/utils/html-escape.util';
 import {
-  buildListUnsubscribeHeader,
-  buildUnsubscribeFooterHtml,
-} from '../common/utils/unsubscribe-footer.util';
+  ONBOARDING_SUBJECTS,
+  buildResendBody,
+  buildSendGridBody,
+  buildSmtpMessage,
+  buildUnsubscribeBundle,
+  renderEmailTemplate,
+  selectEmailProvider,
+} from './email.helpers';
 
 /** Names of every HTML template shipped with the auth module. */
 /**
@@ -44,7 +48,6 @@ const TEMPLATE_NAMES: ReadonlyArray<TemplateName> = [
 ];
 
 const TEMPLATE_DIR = join(__dirname, 'email-templates');
-import { PLACEHOLDER_RE } from '../common/regex';
 
 /**
  * Load every email template from disk once at module init. Templates live as
@@ -90,16 +93,7 @@ export class EmailService {
   }
 
   private getProvider(): 'resend' | 'sendgrid' | 'smtp' | 'log' {
-    if (process.env.RESEND_API_KEY) {
-      return 'resend';
-    }
-    if (process.env.SENDGRID_API_KEY) {
-      return 'sendgrid';
-    }
-    if (process.env.SMTP_HOST) {
-      return 'smtp';
-    }
-    return 'log'; // Fallback: apenas loga (dev)
+    return selectEmailProvider();
   }
 
   /**
@@ -186,21 +180,9 @@ export class EmailService {
     const subject = 'Bem-vindo ao KLOEL!';
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const html = this.renderTemplate('welcome', { agentName, workspaceName, frontendUrl });
-    const htmlWithUnsub =
-      html +
-      buildUnsubscribeFooterHtml({ email, ...(workspaceId !== undefined ? { workspaceId } : {}) });
-    const headers = buildListUnsubscribeHeader({
-      email,
-      ...(workspaceId !== undefined ? { workspaceId } : {}),
-    })
-      ? {
-          'List-Unsubscribe': buildListUnsubscribeHeader({
-            email,
-            ...(workspaceId !== undefined ? { workspaceId } : {}),
-          }),
-          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-        }
-      : undefined;
+    const audience: { email: string; workspaceId?: string } =
+      workspaceId !== undefined ? { email, workspaceId } : { email };
+    const { html: htmlWithUnsub, headers } = buildUnsubscribeBundle(html, audience);
     return this.send(email, subject, htmlWithUnsub, headers);
   }
 
@@ -211,29 +193,12 @@ export class EmailService {
     template: 'onboarding-day1' | 'onboarding-day3' | 'onboarding-day7',
     workspaceId?: string,
   ): Promise<boolean> {
-    const subjects: Record<typeof template, string> = {
-      'onboarding-day1': 'Primeiros passos no KLOEL',
-      'onboarding-day3': 'Recursos avancados que voce precisa conhecer',
-      'onboarding-day7': 'Hora de escalar com o KLOEL!',
-    };
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const html = this.renderTemplate(template, { agentName, frontendUrl });
-    const htmlWithUnsub =
-      html +
-      buildUnsubscribeFooterHtml({ email, ...(workspaceId !== undefined ? { workspaceId } : {}) });
-    const headers = buildListUnsubscribeHeader({
-      email,
-      ...(workspaceId !== undefined ? { workspaceId } : {}),
-    })
-      ? {
-          'List-Unsubscribe': buildListUnsubscribeHeader({
-            email,
-            ...(workspaceId !== undefined ? { workspaceId } : {}),
-          }),
-          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-        }
-      : undefined;
-    return this.send(email, subjects[template], htmlWithUnsub, headers);
+    const audience: { email: string; workspaceId?: string } =
+      workspaceId !== undefined ? { email, workspaceId } : { email };
+    const { html: htmlWithUnsub, headers } = buildUnsubscribeBundle(html, audience);
+    return this.send(email, ONBOARDING_SUBJECTS[template], htmlWithUnsub, headers);
   }
 
   /**
@@ -291,15 +256,13 @@ export class EmailService {
     headers?: Record<string, string>,
   ): Promise<boolean> {
     // Not SSRF: hardcoded Resend API endpoint
-    const bodyPayload: Record<string, unknown> = {
+    const bodyPayload = buildResendBody({
       from: this.fromEmail,
       to,
       subject,
       html,
-    };
-    if (headers) {
-      bodyPayload.headers = headers;
-    }
+      ...(headers ? { headers } : {}),
+    });
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -330,10 +293,6 @@ export class EmailService {
     headers?: Record<string, string>,
   ): Promise<boolean> {
     // Not SSRF: hardcoded SendGrid API endpoint
-    const personalization: Record<string, unknown> = { to: [{ email: to }] };
-    if (headers) {
-      personalization.headers = headers;
-    }
     const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
       method: 'POST',
       headers: {
@@ -341,12 +300,15 @@ export class EmailService {
         Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        personalizations: [personalization],
-        from: { email: this.fromEmail },
-        subject,
-        content: [{ type: 'text/html', value: html }],
-      }),
+      body: JSON.stringify(
+        buildSendGridBody({
+          from: this.fromEmail,
+          to,
+          subject,
+          html,
+          ...(headers ? { headers } : {}),
+        }),
+      ),
       signal: AbortSignal.timeout(30000),
     });
 
@@ -374,7 +336,7 @@ export class EmailService {
       return Promise.resolve(false);
     }
 
-    const message = this.buildSmtpMessage(to, subject, html);
+    const message = buildSmtpMessage({ from: this.fromEmail, to, subject, html });
 
     return new Promise((resolve, reject) => {
       const socket = secure
@@ -439,51 +401,16 @@ export class EmailService {
     });
   }
 
-  private buildSmtpMessage(to: string, subject: string, html: string): string {
-    const boundary = `BOUNDARY_${Date.now()}`;
-    const lines = [
-      `From: ${this.fromEmail}`,
-      `To: ${to}`,
-      `Subject: ${subject}`,
-      'MIME-Version: 1.0',
-      `Content-Type: multipart/alternative; boundary="${boundary}"`,
-      '',
-      `--${boundary}`,
-      'Content-Type: text/plain; charset=UTF-8',
-      '',
-      this.stripHtmlTagsSafely(html),
-      `--${boundary}`,
-      'Content-Type: text/html; charset=UTF-8',
-      '',
-      html,
-      `--${boundary}--`,
-      '',
-    ];
-    return lines.join('\r\n');
-  }
-
-  private stripHtmlTagsSafely(input: string): string {
-    let previous: string;
-    let current = input;
-    do {
-      previous = current;
-      current = current.replace(/<[^>]*>/g, '');
-    } while (current !== previous);
-    return current;
-  }
-
   // ============================================
   // TEMPLATE RENDERING
   // ============================================
 
   /**
-   * Render a cached HTML template, replacing every `{{name}}` placeholder
-   * with the HTML-escaped value of `vars[name]`. Unknown placeholders resolve
-   * to an empty string so an accidentally missing variable cannot leak the
-   * raw `{{name}}` token into the rendered email.
+   * Render a cached HTML template by name. Delegates the actual placeholder
+   * substitution + escaping to {@link renderEmailTemplate}; this method just
+   * looks the template source up in the immutable in-memory cache.
    */
   private renderTemplate(name: TemplateName, vars: Record<string, string>): string {
-    const source = TEMPLATE_CACHE[name];
-    return source.replace(PLACEHOLDER_RE, (_match, key: string) => escapeHtml(vars[key] ?? ''));
+    return renderEmailTemplate(TEMPLATE_CACHE[name], vars);
   }
 }

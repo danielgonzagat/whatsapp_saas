@@ -1,3 +1,7 @@
+/**
+ * @capability CrmContactProvider
+ * @domain crm
+ */
 import type { Prisma } from '@prisma/client';
 import { prisma } from '../db';
 

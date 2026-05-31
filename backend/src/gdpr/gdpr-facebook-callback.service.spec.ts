@@ -62,7 +62,7 @@ describe('GdprFacebookCallbackService', () => {
         workspaceId: 'ws-A',
         userId: 'agent-1',
         code: 'GEN-CODE-1',
-      }),
+      }) as unknown,
     });
     expect(result.confirmation_code).toBe('GEN-CODE-1');
     expect(result.url).toBe('https://kloel.com/data-deletion/status/GEN-CODE-1');

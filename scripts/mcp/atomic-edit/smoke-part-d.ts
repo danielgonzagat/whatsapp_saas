@@ -1,6 +1,3 @@
-import * as childProcess from 'node:child_process';
-import * as fs from 'node:fs';
-import * as os from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -10,8 +7,6 @@ import {
 import { check } from './smoke-state.js';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const SOURCE_DIR = path.basename(__dirname) === 'dist' ? path.dirname(__dirname) : __dirname;
 
 export async function partD(): Promise<void> {
   process.stdout.write('Part D — v3 import + property ops + sha guard\n');

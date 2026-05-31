@@ -8,51 +8,10 @@
  * construction.
  */
 
-import { AssetRegistry } from './asset-registry';
-import { GrowthTracker } from './growth-tracker';
-import { OwnedAudienceBuilder } from './owned-audience.builder';
-import { SocialProofHarvester } from './social-proof.harvester';
-import { CaseLibraryBuilder } from './case-library.builder';
-import { PositioningUniquenessDetector } from './positioning-uniqueness.detector';
-import { AuthorityBuilder } from './authority.builder';
 import { TacticalTradeoffAdvisor } from './tactical-tradeoff.advisor';
 import { DefensibilityNarrativeBuilder } from './defensibility-narrative.builder';
 
-import type {
-  EvidenceInput,
-  DefensibleAsset,
-  OwnedAudience,
-  PositioningUniqueness,
-  AuthorityBuilding,
-} from './types';
-import type { SpineEventRef } from '../mind/mind.types';
-
-const baseSpineEvent = (over: Partial<SpineEventRef> = {}): SpineEventRef => ({
-  eventId: over.eventId ?? `evt_${Math.random().toString(36).slice(2, 8)}`,
-  eventName: over.eventName ?? 'commerce.lead.replied',
-  workspaceId: over.workspaceId ?? 'wks_demo',
-  occurredAt: over.occurredAt ?? new Date().toISOString(),
-  truthMode: over.truthMode ?? 'observed',
-  ...(over.entityRef !== undefined ? { entityRef: over.entityRef } : {}),
-  ...(over.valence !== undefined ? { valence: over.valence } : {}),
-  ...(over.payload !== undefined ? { payload: over.payload } : {}),
-});
-
-const wsInput = (workspaceId: string, events: readonly SpineEventRef[]): EvidenceInput => ({
-  events,
-  workspaceId,
-  nowMs: Date.now(),
-});
-
-const makeConversionEvents = (workspaceId: string, count: number): SpineEventRef[] =>
-  Array.from({ length: count }, () =>
-    baseSpineEvent({ eventName: 'commerce.lead.converted', workspaceId }),
-  );
-
-const makeDealWonEvents = (workspaceId: string, count: number): SpineEventRef[] =>
-  Array.from({ length: count }, () =>
-    baseSpineEvent({ eventName: 'commerce.crm.deal_won', workspaceId }),
-  );
+import type { DefensibleAsset, PositioningUniqueness, AuthorityBuilding } from './types';
 
 // ─── DEFENS-001: Asset Registry ──────────────────────────────────────
 

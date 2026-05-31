@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnifiedAgentActionsBillingService } from './unified-agent-actions-billing.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 jest.mock('./unified-agent-actions-billing.helpers', () => ({
   createFunnelFlows: jest.fn().mockResolvedValue([
@@ -88,7 +89,7 @@ describe('UnifiedAgentActionsBillingService', () => {
       $queryRaw: jest.fn().mockResolvedValue([{ avg_minutes: 2.5 }]),
       $transaction: jest.fn().mockImplementation((arg: unknown) => {
         if (typeof arg === 'function') {
-          return arg(prisma);
+          return (arg as (tx: unknown) => unknown)(prisma);
         }
         return Promise.resolve(undefined);
       }),
@@ -116,9 +117,11 @@ describe('UnifiedAgentActionsBillingService', () => {
 
       expect(result.success).toBe(true);
       expect(result.data.total).toBe(100);
-      const messageCountArgs = prisma.message.count.mock.calls[0][0];
+      const messageCountArgs = (prisma.message.count.mock.calls as unknown[][])[0][0] as {
+        where: Record<string, unknown>;
+      };
       expect(messageCountArgs.where).toEqual(
-        expect.objectContaining({
+        partialMatch({
           workspaceId: wsId,
           createdAt: messageCountArgs.where.createdAt,
         }),
@@ -142,7 +145,9 @@ describe('UnifiedAgentActionsBillingService', () => {
         period: 'week',
       });
 
-      const eventCountArgs = prisma.autopilotEvent.count.mock.calls[0][0];
+      const eventCountArgs = (prisma.autopilotEvent.count.mock.calls as unknown[][])[0][0] as {
+        where: Record<string, unknown>;
+      };
       expect(eventCountArgs.where).toEqual({
         workspaceId: wsId,
         action: 'PAYMENT_RECEIVED',
@@ -271,8 +276,8 @@ describe('UnifiedAgentActionsBillingService', () => {
       await service.actionGetAnalytics('ws-tenant', { metric: 'messages' });
 
       expect(prisma.message.count).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: 'ws-tenant' }),
+        partialMatch({
+          where: partialMatch({ workspaceId: 'ws-tenant' }),
         }),
       );
     });

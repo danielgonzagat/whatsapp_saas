@@ -91,7 +91,7 @@ export default function FacebookMarketingTab({
   }
 
   const connecting = connectingKey === 'facebook';
-  const connection = connectionStatus?.channels?.facebook;
+  const channelSession = connectionStatus?.channels?.facebook;
 
   return (
     <div>
@@ -139,8 +139,8 @@ export default function FacebookMarketingTab({
         }}
       >
         {[
-          { label: 'Pagina vinculada', value: connection?.pageName || 'Nao resolvida' },
-          { label: 'Page ID', value: connection?.pageId || 'Pendente' },
+          { label: 'Pagina vinculada', value: channelSession?.pageName || 'Nao resolvida' },
+          { label: 'Page ID', value: channelSession?.pageId || 'Pendente' },
           { label: 'Canal', value: 'Messenger do Facebook' },
         ].map((item) => (
           <ChannelInfoGridCard key={item.label} label={item.label} value={item.value} />

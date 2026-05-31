@@ -15,11 +15,12 @@ jest.mock('./channel-setup.service', () => ({
 
 import { ChannelSetupService } from './channel-setup.service';
 import { BadRequestException } from '@nestjs/common';
+import { castMock } from '../../test/helpers/cast-mock';
 
 const serviceMock = new ChannelSetupService('fake' as never, 'fake' as never);
-const getStateMock = serviceMock.getState as jest.Mock;
-const saveProductsMock = serviceMock.saveProducts as jest.Mock;
-const saveConfigMock = serviceMock.saveConfig as jest.Mock;
+const getStateMock = (serviceMock as { getState: jest.Mock }).getState;
+const saveProductsMock = (serviceMock as { saveProducts: jest.Mock }).saveProducts;
+const saveConfigMock = (serviceMock as { saveConfig: jest.Mock }).saveConfig;
 
 describe('ChannelSetupController', () => {
   let controller: ChannelSetupController;
@@ -88,7 +89,7 @@ describe('ChannelSetupController', () => {
       await controller.getState(req, 'instagram');
 
       expect(getStateMock).toHaveBeenCalledTimes(1);
-      expect(getStateMock.mock.calls[0][0]).toBe('ws-2');
+      expect(castMock<string[][]>(getStateMock.mock.calls)[0]?.[0]).toBe('ws-2');
     });
   });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getLeads } from './leads';
+import { getContacts } from './leads';
 
 beforeEach(() => {
   document.cookie = 'kloel_access_token=test-token; path=/';
@@ -30,26 +30,26 @@ function lastFetch(): { url: string; method: string; headers: Record<string, str
 
 describe('getLeads', () => {
   it('GETs /kloel/leads/:workspaceId', async () => {
-    await getLeads('ws-1');
+    await getContacts('ws-1');
     const { url, method } = lastFetch();
     expect(method).toBe('GET');
     expect(url).toContain('/kloel/leads/ws-1');
   });
 
   it('appends status and search query params', async () => {
-    await getLeads('ws-1', { status: 'hot', search: 'Alice' });
+    await getContacts('ws-1', { status: 'hot', search: 'Alice' });
     const { url } = lastFetch();
     expect(url).toContain('status=hot');
     expect(url).toContain('q=Alice');
   });
 
   it('appends limit query param', async () => {
-    await getLeads('ws-1', { limit: 25 });
+    await getContacts('ws-1', { limit: 25 });
     expect(lastFetch().url).toContain('limit=25');
   });
 
   it('sends Authorization header', async () => {
-    await getLeads('ws-1');
+    await getContacts('ws-1');
     expect(lastFetch().headers.authorization).toBe('Bearer test-token');
   });
 
@@ -59,7 +59,7 @@ describe('getLeads', () => {
       status: 200,
       json: async () => ({}),
     } as Response);
-    const leads = await getLeads('ws-1');
+    const leads = await getContacts('ws-1');
     expect(leads).toEqual([]);
   });
 
@@ -69,7 +69,7 @@ describe('getLeads', () => {
       status: 200,
       json: async () => ({ leads: [{ id: 'l2', phone: '55', status: 'cold' }] }),
     } as Response);
-    const leads = await getLeads('ws-1');
+    const leads = await getContacts('ws-1');
     expect(leads).toHaveLength(1);
     expect(leads[0].id).toBe('l2');
   });
@@ -81,7 +81,7 @@ describe('getLeads', () => {
         status: 500,
         json: async () => ({ error: 'Server error' }),
       } as Response);
-      await expect(getLeads('ws-1')).rejects.toThrow('Server error');
+      await expect(getContacts('ws-1')).rejects.toThrow('Server error');
     });
   });
 });

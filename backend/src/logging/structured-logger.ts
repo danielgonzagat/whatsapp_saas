@@ -72,7 +72,7 @@ export class StructuredLogger extends Logger {
   override log(message: string, extra?: LogExtra): void;
   override log(data: LogExtra, message?: string): void;
   override log(message: string, err: unknown): void;
-  override log(a: string | LogExtra, b?: string | LogExtra | unknown): void {
+  override log(a: string | LogExtra, b?: unknown): void {
     this.info(a as never, b as never);
   }
 
@@ -80,7 +80,7 @@ export class StructuredLogger extends Logger {
   info(message: string, extra?: LogExtra): void;
   info(data: LogExtra, message?: string): void;
   info(message: string, err: unknown): void;
-  info(a: string | LogExtra, b?: string | LogExtra | unknown): void {
+  info(a: string | LogExtra, b?: unknown): void {
     if (this.isTestEnv()) {
       return;
     }
@@ -93,11 +93,7 @@ export class StructuredLogger extends Logger {
   override warn(data: LogExtra, message?: string): void;
   override warn(message: string, err: unknown): void;
   override warn(message: string, context: string, extra: LogExtra): void;
-  override warn(
-    a: string | LogExtra,
-    b?: string | LogExtra | unknown,
-    c?: string | LogExtra,
-  ): void {
+  override warn(a: string | LogExtra, b?: unknown, c?: string | LogExtra): void {
     if (this.isTestEnv()) {
       return;
     }
@@ -125,13 +121,9 @@ export class StructuredLogger extends Logger {
   override error(message: string, extra?: LogExtra): void;
   override error(message: string, err: unknown): void;
   override error(data: LogExtra, message?: string): void;
-  override error(data: LogExtra, stack?: string, context?: string | unknown): void;
+  override error(data: LogExtra, stack?: string, context?: unknown): void;
   override error(message: unknown, extra?: LogExtra): void;
-  override error(
-    a: string | LogExtra | unknown,
-    b?: string | LogExtra | unknown,
-    c?: string | LogExtra,
-  ): void {
+  override error(a: unknown, b?: unknown, c?: string | LogExtra): void {
     if (this.isTestEnv()) {
       return;
     }
@@ -193,7 +185,7 @@ export class StructuredLogger extends Logger {
   override debug(message: string, extra?: LogExtra): void;
   override debug(data: LogExtra, message?: string): void;
   override debug(message: string, err: unknown): void;
-  override debug(a: string | LogExtra, b?: string | LogExtra | unknown): void {
+  override debug(a: string | LogExtra, b?: unknown): void {
     this.info(a as never, b as never);
   }
 
@@ -201,7 +193,7 @@ export class StructuredLogger extends Logger {
   override verbose(message: string, extra?: LogExtra): void;
   override verbose(data: LogExtra, message?: string): void;
   override verbose(message: string, err: unknown): void;
-  override verbose(a: string | LogExtra, b?: string | LogExtra | unknown): void {
+  override verbose(a: string | LogExtra, b?: unknown): void {
     this.info(a as never, b as never);
   }
 }

@@ -11,4 +11,4 @@ export {
   KnowledgeBaseService as MindKnowledgeBase,
   /** @deprecated Use {@link MindKnowledgeBase} instead. */
   KnowledgeBaseService,
-} from '../../../ai-brain/knowledge-base.service';
+} from './knowledge-base.service';

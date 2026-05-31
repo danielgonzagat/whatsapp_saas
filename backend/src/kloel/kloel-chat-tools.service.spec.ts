@@ -3,6 +3,7 @@ import {
   type ChatToolsPrismaMock,
   type ChatToolsSetup,
 } from './kloel-chat-tools.service.spec-helpers';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 type ProductRecord = {
   id: string;
@@ -222,24 +223,113 @@ describe('KloelChatToolsService — produto, autopilot e identidade', () => {
   });
 
   describe('toolDeleteProduct', () => {
-    it('soft-deletes product with audit log in transaction', async () => {
-      prisma.product.findFirst.mockResolvedValue({
-        id: 'p-1',
-        name: 'Curso Antigo',
+    it('deletes by id through ProductService without direct product transaction', async () => {
+      ctx.productService.delete.mockResolvedValue({ success: true, message: 'Product deleted' });
+
+      const result = await service.toolDeleteProduct(ctx.wsId, {
+        productId: 'p-1',
+        actorId: 'user-42',
       });
 
-      const result = await service.toolDeleteProduct(ctx.wsId, { productName: 'Curso' });
-
       expect(result.success).toBe(true);
-      expect(prisma.$transaction).toHaveBeenCalled();
+      expect(ctx.productService.delete).toHaveBeenCalledWith(ctx.wsId, 'p-1', {
+        id: 'user-42',
+      });
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(prisma.product.updateMany).not.toHaveBeenCalled();
+      expect(prisma.auditLog.create).not.toHaveBeenCalled();
     });
 
-    it('returns error when product not found', async () => {
+    it('resolves product name read-only before deleting through ProductService', async () => {
+      prisma.product.findFirst.mockResolvedValueOnce({ id: 'p-2' });
+      ctx.productService.delete.mockResolvedValue({ success: true, message: 'Product deleted' });
+
+      const result = await service.toolDeleteProduct(ctx.wsId, {
+        productName: 'Curso',
+        actorId: 'user-42',
+      });
+
+      expect(result.success).toBe(true);
+      expect(prisma.product.findFirst).toHaveBeenCalledWith({
+        where: { workspaceId: ctx.wsId, name: { contains: 'Curso', mode: 'insensitive' } },
+        select: { id: true },
+      });
+      expect(ctx.productService.delete).toHaveBeenCalledWith(ctx.wsId, 'p-2', {
+        id: 'user-42',
+      });
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(prisma.product.updateMany).not.toHaveBeenCalled();
+      expect(prisma.auditLog.create).not.toHaveBeenCalled();
+    });
+
+    it('returns error when product is missing', async () => {
       prisma.product.findFirst.mockResolvedValue(null);
 
-      const result = await service.toolDeleteProduct(ctx.wsId, { productId: 'no-exist' });
+      const result = await service.toolDeleteProduct(ctx.wsId, { productName: 'no-exist' });
 
-      expect(result.success).toBe(false);
+      expect(result).toEqual({ success: false, error: 'Produto não encontrado.' });
+      expect(ctx.productService.delete).not.toHaveBeenCalled();
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('toolValidateCoupon', () => {
+    it('does not pass non-string product or coupon values into coupon lookup', async () => {
+      const result = await service.toolValidateCoupon(ctx.wsId, {
+        productId: 123,
+        code: ['SAVE10'],
+      });
+
+      expect(result).toEqual({ success: false, error: 'productId_and_code_required' });
+      expect(prisma.productCoupon.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('validates coupon using normalized string inputs', async () => {
+      prisma.productCoupon.findFirst.mockResolvedValueOnce({
+        id: 'coupon-1',
+        code: 'SAVE10',
+        discountValue: 10,
+        discountType: 'PERCENTAGE',
+        expiresAt: null,
+        maxUses: null,
+        usedCount: 0,
+      });
+
+      const result = await service.toolValidateCoupon(ctx.wsId, {
+        productId: 'prod-1',
+        code: 'SAVE10',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.valid).toBe(true);
+      expect(prisma.productCoupon.findFirst).toHaveBeenCalledWith({
+        where: { productId: 'prod-1', code: 'SAVE10', active: true },
+      });
+    });
+  });
+
+  describe('toolGetAnalytics', () => {
+    it('normalizes non-string analytics period to the helper default', async () => {
+      const result = await service.toolGetAnalytics(ctx.wsId, {
+        metric: 123,
+        period: ['today'],
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.period).toBe('month');
+      expect(prisma.checkoutOrder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: partialMatch({ workspaceId: ctx.wsId }) }),
+      );
+    });
+
+    it('keeps valid string analytics period values', async () => {
+      const result = await service.toolGetAnalytics(ctx.wsId, {
+        metric: 'revenue',
+        period: 'today',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.period).toBe('today');
     });
   });
 
@@ -268,19 +358,21 @@ describe('KloelChatToolsService — produto, autopilot e identidade', () => {
   });
 
   describe('toolSetBrandVoice', () => {
-    it('upserts brandVoice in kloelMemory', async () => {
+    it('stores brandVoice through MemoryService without direct kloelMemory writes', async () => {
       const result = await service.toolSetBrandVoice(ctx.wsId, {
         tone: 'formal',
         personality: 'profissional',
       });
 
       expect(result.success).toBe(true);
-      expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { workspaceId_key: { workspaceId: ctx.wsId, key: 'brandVoice' } },
-          create: expect.objectContaining({ workspaceId: ctx.wsId }),
-        }),
+      expect(ctx.memoryService.saveMemory).toHaveBeenCalledWith(
+        ctx.wsId,
+        'brandVoice',
+        { style: 'formal', personality: 'profissional' },
+        'preferences',
+        'Tom: formal. profissional',
       );
+      expect(prisma.kloelMemory.upsert).not.toHaveBeenCalled();
     });
   });
 });

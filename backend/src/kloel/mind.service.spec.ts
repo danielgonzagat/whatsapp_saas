@@ -12,60 +12,75 @@ function buildService(
     watermark: jest.fn(async (_workspaceId: string, fallback: Date) => fallback),
   };
   const events = {
-    process: jest.fn(async (event) => {
-      let predicted = 0;
-      let resolved = 0;
-      let surpriseTotal = 0;
-      let beliefsUpdated = 0;
+    process: jest.fn(
+      async (event: {
+        kind: string;
+        workspaceId: string;
+        subject: string;
+        occurredAt: Date;
+        payload: {
+          channel?: string;
+          messageType?: string;
+          priceBand?: string;
+          utmSource?: string;
+        };
+      }) => {
+        let predicted = 0;
+        let resolved = 0;
+        let surpriseTotal = 0;
+        let beliefsUpdated = 0;
 
-      if (event.kind === 'message.sent') {
-        await (predictor as { predictReply: jest.Mock }).predictReply(
-          {
-            workspaceId: event.workspaceId,
-            subject: event.subject,
-            features: {
-              channel: event.payload.channel ?? 'unknown',
-              hour: event.occurredAt.getHours(),
-              template: String(event.payload.messageType ?? 'text').toLowerCase(),
+        if (event.kind === 'message.sent') {
+          await (predictor as { predictReply: jest.Mock }).predictReply(
+            {
+              workspaceId: event.workspaceId,
+              subject: event.subject,
+              features: {
+                channel: event.payload.channel ?? 'unknown',
+                hour: event.occurredAt.getHours(),
+                template: String(event.payload.messageType ?? 'text').toLowerCase(),
+              },
             },
-          },
-          24 * 3600,
-        );
-        predicted += 1;
-      }
-      if (event.kind === 'message.received') {
-        const value = await (surprise as { resolveBinary: jest.Mock }).resolveBinary();
-        if (value > 0) {
-          resolved += 1;
-          beliefsUpdated += 1;
-          surpriseTotal += value;
+            24 * 3600,
+          );
+          predicted += 1;
         }
-        resolved += await (policy as { resolveOpenForSubject: jest.Mock }).resolveOpenForSubject({
-          workspaceId: event.workspaceId,
-          subject: event.subject,
-          decisionType: 'followup_timing',
-          outcome: 1,
-        });
-      }
-      if (event.kind === 'checkout.pending') {
-        await (predictor as { predictConversion: jest.Mock }).predictConversion(
-          {
+        if (event.kind === 'message.received') {
+          const value = await (
+            surprise as { resolveBinary: jest.Mock<Promise<number>, []> }
+          ).resolveBinary();
+          if (value > 0) {
+            resolved += 1;
+            beliefsUpdated += 1;
+            surpriseTotal += value;
+          }
+          resolved += await (policy as { resolveOpenForSubject: jest.Mock }).resolveOpenForSubject({
             workspaceId: event.workspaceId,
             subject: event.subject,
-            features: {
-              channel: 'checkout',
-              hour: event.occurredAt.getHours(),
-              price_band: event.payload.priceBand,
-              segment: event.payload.utmSource,
+            decisionType: 'followup_timing',
+            outcome: 1,
+          });
+        }
+        if (event.kind === 'checkout.pending') {
+          await (predictor as { predictConversion: jest.Mock }).predictConversion(
+            {
+              workspaceId: event.workspaceId,
+              subject: event.subject,
+              features: {
+                channel: 'checkout',
+                hour: event.occurredAt.getHours(),
+                price_band: event.payload.priceBand,
+                segment: event.payload.utmSource,
+              },
             },
-          },
-          48 * 3600,
-        );
-        predicted += 1;
-      }
+            48 * 3600,
+          );
+          predicted += 1;
+        }
 
-      return { beliefsUpdated, predicted, resolved, surpriseTotal };
-    }),
+        return { beliefsUpdated, predicted, resolved, surpriseTotal };
+      },
+    ),
   };
 
   return new MindService(

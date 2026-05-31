@@ -39,35 +39,46 @@ export function KnowledgeBaseSection({ onSourcesLoaded }: KnowledgeBaseSectionPr
   const [knowledgeSourceType, setKnowledgeSourceType] = useState<'TEXT' | 'URL' | 'PDF'>('TEXT');
   const [knowledgeSourceContent, setKnowledgeSourceContent] = useState('');
 
-  const hydrateKnowledgeBase = useCallback(async () => {
+  // Promise-chain (non-async) so no setState runs synchronously in the effect
+  // tick (react-hooks/set-state-in-effect).
+  const hydrateKnowledgeBase = useCallback(() => {
     if (!workspaceId) {
-      setKnowledgeBases([]);
-      setKnowledgeSources([]);
-      setSelectedKnowledgeBaseId('');
-      return;
-    }
-    setKnowledgeLoading(true);
-    setKnowledgeError('');
-    try {
-      const response = await knowledgeBaseApi.list();
-      const items = (response.data as KnowledgeBaseItem[]) || [];
-      setKnowledgeBases(items);
-      const nextSelectedId = selectedKnowledgeBaseId || items[0]?.id || '';
-      setSelectedKnowledgeBaseId(nextSelectedId);
-      if (nextSelectedId) {
-        const sourcesResponse = await knowledgeBaseApi.listSources(nextSelectedId);
-        const sources = (sourcesResponse.data as KnowledgeSourceItem[]) || [];
-        setKnowledgeSources(sources);
-        onSourcesLoaded?.(sources.length);
-      } else {
+      return Promise.resolve().then(() => {
+        setKnowledgeBases([]);
         setKnowledgeSources([]);
-        onSourcesLoaded?.(0);
-      }
-    } catch (error: unknown) {
-      setKnowledgeError(error instanceof Error ? error.message : 'Nao foi possivel carregar a base.');
-    } finally {
-      setKnowledgeLoading(false);
+        setSelectedKnowledgeBaseId('');
+      });
     }
+    return Promise.resolve()
+      .then(() => {
+        setKnowledgeLoading(true);
+        setKnowledgeError('');
+        return knowledgeBaseApi.list();
+      })
+      .then((response) => {
+        const items = (response.data as KnowledgeBaseItem[]) || [];
+        setKnowledgeBases(items);
+        const nextSelectedId = selectedKnowledgeBaseId || items[0]?.id || '';
+        setSelectedKnowledgeBaseId(nextSelectedId);
+        if (!nextSelectedId) {
+          setKnowledgeSources([]);
+          onSourcesLoaded?.(0);
+          return undefined;
+        }
+        return knowledgeBaseApi.listSources(nextSelectedId).then((sourcesResponse) => {
+          const sources = (sourcesResponse.data as KnowledgeSourceItem[]) || [];
+          setKnowledgeSources(sources);
+          onSourcesLoaded?.(sources.length);
+        });
+      })
+      .catch((error: unknown) => {
+        setKnowledgeError(
+          error instanceof Error ? error.message : 'Nao foi possivel carregar a base.',
+        );
+      })
+      .finally(() => {
+        setKnowledgeLoading(false);
+      });
   }, [selectedKnowledgeBaseId, workspaceId, onSourcesLoaded]);
 
   useEffect(() => {

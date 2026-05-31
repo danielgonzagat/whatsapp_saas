@@ -1,0 +1,349 @@
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  Headers,
+  Inject,
+  Optional,
+  Post,
+  Query,
+  UnauthorizedException,
+  forwardRef,
+} from '@nestjs/common';
+import { StructuredLogger } from '../../../../logging/structured-logger';
+import { Public } from '../../../../auth/public.decorator';
+import { ChannelTransportRegistry } from '../../../../kloel/channel-transport.registry';
+import { OpsAlertService } from '../../../../observability/ops-alert.service';
+import { PrismaService } from '../../../../prisma/prisma.service';
+import { WorkspaceService } from '../../../../workspaces/workspace.service';
+import { InboundMessage, InboundProcessorService } from '../inbound-processor.service';
+import { toPrismaJsonValue } from '../../../../common/prisma/prisma-json.util';
+import type { ContactCustomFields } from '../../../../contacts/contact-custom-fields.types';
+import { WhatsappService } from '../whatsapp.service';
+import { RouteClass } from '../../../../common/throttler/route-class.decorator';
+import { WebhookEndpoint } from '../../../../common/decorators/webhook-endpoint.decorator';
+import { InternalEndpoint } from '../../../../common/decorators/internal-endpoint.decorator';
+import { WhatsAppEventEmitterService } from '../../../../kloel/whatsapp-emitter/whatsapp-event-emitter.service';
+import { NON_DIGIT_RE } from '../../../../common/phone';
+
+/** Internal whats app runtime controller. */
+@Controller('internal/whatsapp-runtime')
+@RouteClass('mutate')
+export class InternalWhatsAppRuntimeController {
+  private readonly logger = StructuredLogger.from(InternalWhatsAppRuntimeController.name);
+
+  constructor(
+    private readonly inboundProcessor: InboundProcessorService,
+    private readonly workspaceService: WorkspaceService,
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => WhatsappService))
+    private readonly whatsappService: WhatsappService,
+    private readonly transports: ChannelTransportRegistry,
+    @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly whatsappEmitter?: WhatsAppEventEmitterService,
+  ) {}
+
+  /** Ingest inbound. */
+  @WebhookEndpoint('WhatsApp runtime inbound messages webhook')
+  @Post('inbound')
+  @Public()
+  async ingestInbound(
+    @Body() body: InboundMessage,
+    @Headers('x-internal-key') internalKey?: string,
+  ) {
+    const expectedInternalKey = String(process.env.INTERNAL_API_KEY || '').trim();
+    if (!expectedInternalKey) {
+      throw new UnauthorizedException('INTERNAL_API_KEY not configured');
+    }
+    if (internalKey !== expectedInternalKey) {
+      throw new ForbiddenException('Invalid internal key');
+    }
+
+    const result = await this.inboundProcessor.process({
+      ...body,
+      provider: 'meta-cloud',
+      ingestMode: body?.ingestMode || 'live',
+    });
+
+    return {
+      success: true,
+      ...result,
+    };
+  }
+
+  /** Session connected. */
+  @WebhookEndpoint('WhatsApp session connected webhook')
+  @Post('session-connected')
+  @Public()
+  async sessionConnected(
+    @Body()
+    body: {
+      workspaceId: string;
+      phoneNumber?: string;
+      pushName?: string;
+    },
+    @Headers('x-internal-key') internalKey?: string,
+  ) {
+    const expectedInternalKey = String(process.env.INTERNAL_API_KEY || '').trim();
+    if (!expectedInternalKey) {
+      throw new UnauthorizedException('INTERNAL_API_KEY not configured');
+    }
+    if (internalKey !== expectedInternalKey) {
+      throw new ForbiddenException('Invalid internal key');
+    }
+
+    const { workspaceId } = body;
+    if (!workspaceId) {
+      return { success: false, reason: 'missing_workspace_id' };
+    }
+
+    try {
+      await this.workspaceService.patchSettings(workspaceId, {
+        whatsappProvider: 'meta-cloud',
+        whatsappApiSession: {
+          status: 'connected',
+          provider: 'meta-cloud',
+          phoneNumber: body.phoneNumber || null,
+          pushName: body.pushName || null,
+          connectedAt: new Date().toISOString(),
+        },
+        autonomy: {
+          mode: 'LIVE',
+          reactiveEnabled: true,
+          reason: 'browser_session_connected',
+          lastTransitionAt: new Date().toISOString(),
+        },
+        autopilot: {
+          enabled: true,
+        },
+      });
+
+      this.logger.log(
+        `Autopilot auto-activated for workspace ${workspaceId} (browser session connected)`,
+      );
+
+      if (this.whatsappEmitter) {
+        this.whatsappEmitter.emitSessionLifecycle({
+          workspaceId,
+          event: 'connected',
+          phoneNumber: body.phoneNumber ?? undefined,
+          reason: 'browser_session_connected',
+        });
+      }
+
+      return { success: true, workspaceId, autopilotEnabled: true };
+    } catch (err: unknown) {
+      void this.opsAlert?.alertOnDegradation(
+        err instanceof Error ? err.message : 'unknown_error',
+        'InternalWhatsAppRuntimeController.sessionConnected.autopilot',
+        { workspaceId },
+      );
+      this.logger.warn(
+        `Failed to auto-activate autopilot for ${workspaceId}: ${err instanceof Error ? err.message : 'unknown_error'}`,
+      );
+      return { success: false, reason: err instanceof Error ? err.message : 'unknown_error' };
+    }
+  }
+
+  @InternalEndpoint('worker whatsapp send-text handler')
+  @Post('send-text')
+  @Public()
+  async sendText(
+    @Body()
+    body: {
+      workspaceId: string;
+      to: string;
+      message: string;
+      quotedMessageId?: string;
+      externalId?: string;
+    },
+    @Headers('x-internal-key') internalKey?: string,
+  ) {
+    this.assertInternalKey(internalKey);
+    return this.whatsappService.sendMessage(body.workspaceId, body.to, body.message, {
+      ...(body.quotedMessageId !== undefined ? { quotedMessageId: body.quotedMessageId } : {}),
+      ...(body.externalId !== undefined ? { externalId: body.externalId } : {}),
+      forceDirect: true,
+    });
+  }
+
+  @InternalEndpoint('worker whatsapp send-media handler')
+  @Post('send-media')
+  @Public()
+  async sendMedia(
+    @Body()
+    body: {
+      workspaceId: string;
+      to: string;
+      mediaUrl: string;
+      mediaType?: 'image' | 'video' | 'audio' | 'document';
+      caption?: string;
+      quotedMessageId?: string;
+      externalId?: string;
+    },
+    @Headers('x-internal-key') internalKey?: string,
+  ) {
+    this.assertInternalKey(internalKey);
+    return this.transports.send(body.workspaceId, {
+      workspaceId: body.workspaceId,
+      channel: 'whatsapp',
+      recipientId: body.to,
+      content: body.caption || '',
+      mediaUrl: body.mediaUrl,
+      ...(body.mediaType !== undefined ? { mediaType: body.mediaType } : {}),
+      ...(body.caption !== undefined ? { caption: body.caption } : {}),
+      ...(body.quotedMessageId !== undefined ? { quotedMessageId: body.quotedMessageId } : {}),
+      ...(body.externalId !== undefined ? { externalId: body.externalId } : {}),
+      forceDirect: true,
+    });
+  }
+
+  @InternalEndpoint('worker whatsapp status probe')
+  @Get('status')
+  @Public()
+  async getStatus(
+    @Query('workspaceId') workspaceId: string,
+    @Headers('x-internal-key') internalKey?: string,
+  ) {
+    this.assertInternalKey(internalKey);
+    return this.whatsappService.getConnectionStatus(workspaceId);
+  }
+
+  @InternalEndpoint('worker whatsapp chats query')
+  @Get('chats')
+  @Public()
+  async getChats(
+    @Query('workspaceId') workspaceId: string,
+    @Headers('x-internal-key') internalKey?: string,
+  ) {
+    this.assertInternalKey(internalKey);
+    return this.whatsappService.listChats(workspaceId);
+  }
+
+  @InternalEndpoint('worker whatsapp messages query')
+  @Get('messages')
+  @Public()
+  async getMessages(
+    @Query('workspaceId') workspaceId: string,
+    @Query('chatId') chatId: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+    @Headers('x-internal-key') internalKey?: string,
+  ) {
+    this.assertInternalKey(internalKey);
+    const clampedLimit = Math.min(Math.max(Number(limit) || 100, 1), 100);
+    const clampedOffset = Math.max(Number(offset) || 0, 0);
+    return this.whatsappService.getChatMessages(workspaceId, chatId, {
+      limit: clampedLimit,
+      offset: clampedOffset,
+    });
+  }
+
+  @InternalEndpoint('worker whatsapp read chat handler')
+  @Post('read')
+  @Public()
+  async readChat(
+    @Body() body: { workspaceId: string; chatId: string },
+    @Headers('x-internal-key') internalKey?: string,
+  ) {
+    this.assertInternalKey(internalKey);
+    return this.whatsappService.setPresence(body.workspaceId, body.chatId, 'seen');
+  }
+
+  @InternalEndpoint('worker whatsapp sync-contact handler')
+  @Post('sync-contact')
+  @Public()
+  async syncContact(
+    @Body()
+    body: {
+      workspaceId: string;
+      phone: string;
+      name: string;
+    },
+    @Headers('x-internal-key') internalKey?: string,
+  ) {
+    const expectedInternalKey = String(process.env.INTERNAL_API_KEY || '').trim();
+    if (!expectedInternalKey) {
+      throw new UnauthorizedException('INTERNAL_API_KEY not configured');
+    }
+    if (internalKey !== expectedInternalKey) {
+      throw new ForbiddenException('Invalid internal key');
+    }
+
+    const { workspaceId, phone, name } = body;
+    if (!workspaceId || !phone || !name) {
+      return { success: false, reason: 'missing_fields' };
+    }
+
+    const normalizedPhone = phone.replace(NON_DIGIT_RE, '');
+
+    try {
+      const existing = await this.prisma.contact.findUnique({
+        where: {
+          workspaceId_phone: { workspaceId, phone: normalizedPhone },
+        },
+        select: { id: true, customFields: true },
+      });
+
+      const now = new Date().toISOString();
+      const existingFields = (existing?.customFields as ContactCustomFields) || {};
+
+      const contact = await this.prisma.contact.upsert({
+        where: {
+          workspaceId_phone: { workspaceId, phone: normalizedPhone },
+        },
+        update: {
+          name,
+          customFields: toPrismaJsonValue({
+            ...existingFields,
+            remotePushName: name,
+            remotePushNameUpdatedAt: now,
+            whatsappSavedAt: now,
+            nameResolutionStatus: 'resolved',
+          }),
+        },
+        create: {
+          workspaceId,
+          phone: normalizedPhone,
+          name,
+          customFields: toPrismaJsonValue({
+            remotePushName: name,
+            remotePushNameUpdatedAt: now,
+            whatsappSavedAt: now,
+            nameResolutionStatus: 'resolved',
+          }),
+        },
+      });
+
+      this.logger.log(`Contact synced: ${name} (${normalizedPhone}) for workspace ${workspaceId}`);
+
+      return {
+        success: true,
+        contactId: contact.id,
+        name,
+        phone: normalizedPhone,
+      };
+    } catch (err: unknown) {
+      void this.opsAlert?.alertOnDegradation(
+        err instanceof Error ? err.message : 'unknown_error',
+        'InternalWhatsAppRuntimeController.sessionConnected.contactSync',
+        { workspaceId },
+      );
+      this.logger.warn(
+        `Contact sync failed: ${err instanceof Error ? err.message : 'unknown_error'}`,
+      );
+      return { success: false, reason: err instanceof Error ? err.message : 'unknown_error' };
+    }
+  }
+
+  private assertInternalKey(internalKey?: string) {
+    const expectedInternalKey = String(process.env.INTERNAL_API_KEY || '').trim();
+    if (!expectedInternalKey) {
+      throw new UnauthorizedException('INTERNAL_API_KEY not configured');
+    }
+    if (internalKey !== expectedInternalKey) {
+      throw new ForbiddenException('Invalid internal key');
+    }
+  }
+}

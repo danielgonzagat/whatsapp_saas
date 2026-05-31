@@ -1,20 +1,25 @@
 import { MindService } from './mind.service';
+import { partialMatch } from '../../test/helpers/match-instance';
+
+// Typed wrappers so nested jest matcher values stay typed (eslint no-unsafe-assignment).
+const arrayContains = (items: unknown[]): jest.AsymmetricMatcher =>
+  expect.arrayContaining(items) as jest.AsymmetricMatcher;
 
 function buildService(policy: unknown, cases?: unknown): MindService {
   return new MindService(
-    { since: jest.fn().mockResolvedValue([]) } as never,
-    { sweepExpired: jest.fn().mockResolvedValue(0) } as never,
-    { list: jest.fn() } as never,
-    policy as never,
+    { since: jest.fn().mockResolvedValue([]) },
+    { sweepExpired: jest.fn().mockResolvedValue(0) },
+    { list: jest.fn() },
+    policy,
     {
       recordFailure: jest.fn(),
       recordSuccess: jest.fn(),
       tryAcquireTickLease: jest.fn().mockResolvedValue(true),
       releaseTickLease: jest.fn().mockResolvedValue(undefined),
       watermark: jest.fn(async (_workspaceId: string, fallback: Date) => fallback),
-    } as never,
-    { process: jest.fn() } as never,
-    (cases ?? { similar: jest.fn().mockResolvedValue([]) }) as never,
+    },
+    { process: jest.fn() },
+    cases ?? { similar: jest.fn().mockResolvedValue([]) },
   );
 }
 
@@ -35,13 +40,13 @@ describe('MindService decision delegation', () => {
       const result = await buildService(policy).resolveAudioVsText('ws-1', 'whatsapp', 0.05);
 
       expect(policy.choose).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           workspaceId: 'ws-1',
           decisionType: 'audio_vs_text',
           baseline: 'text',
-          options: expect.arrayContaining([
-            expect.objectContaining({ action: 'audio' }),
-            expect.objectContaining({ action: 'text' }),
+          options: arrayContains([
+            partialMatch({ action: 'audio' }),
+            partialMatch({ action: 'text' }),
           ]),
         }),
       );
@@ -64,7 +69,7 @@ describe('MindService decision delegation', () => {
 
       const result = await buildService(policy).resolveAudioVsText('ws-1', 'whatsapp', 0.25);
 
-      expect(policy.choose).toHaveBeenCalledWith(expect.objectContaining({ baseline: 'audio' }));
+      expect(policy.choose).toHaveBeenCalledWith(partialMatch({ baseline: 'audio' }));
       expect(result.choice).toBe('audio');
     });
   });
@@ -85,20 +90,20 @@ describe('MindService decision delegation', () => {
       const result = await buildService(policy).resolveTone('ws-1', 'whatsapp', 0.5, 0.2);
 
       expect(policy.choose).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           workspaceId: 'ws-1',
           decisionType: 'tom',
           baseline: 'FRIENDLY',
-          options: expect.arrayContaining([
-            expect.objectContaining({ action: 'DIRECT' }),
-            expect.objectContaining({ action: 'CONSULTIVE' }),
-            expect.objectContaining({ action: 'FRIENDLY' }),
-            expect.objectContaining({ action: 'CASUAL' }),
-            expect.objectContaining({ action: 'EMPATHETIC' }),
-            expect.objectContaining({ action: 'EDUCATIVE' }),
-            expect.objectContaining({ action: 'URGENT' }),
-            expect.objectContaining({ action: 'TECHNICAL' }),
-            expect.objectContaining({ action: 'AGGRESSIVE' }),
+          options: arrayContains([
+            partialMatch({ action: 'DIRECT' }),
+            partialMatch({ action: 'CONSULTIVE' }),
+            partialMatch({ action: 'FRIENDLY' }),
+            partialMatch({ action: 'CASUAL' }),
+            partialMatch({ action: 'EMPATHETIC' }),
+            partialMatch({ action: 'EDUCATIVE' }),
+            partialMatch({ action: 'URGENT' }),
+            partialMatch({ action: 'TECHNICAL' }),
+            partialMatch({ action: 'AGGRESSIVE' }),
           ]),
         }),
       );
@@ -121,9 +126,7 @@ describe('MindService decision delegation', () => {
 
       await buildService(policy).resolveTone('ws-1', 'email', 0.1, 0.2);
 
-      expect(policy.choose).toHaveBeenCalledWith(
-        expect.objectContaining({ baseline: 'CONSULTIVE' }),
-      );
+      expect(policy.choose).toHaveBeenCalledWith(partialMatch({ baseline: 'CONSULTIVE' }));
     });
 
     it('passes segment to policy context when provided', async () => {
@@ -147,8 +150,8 @@ describe('MindService decision delegation', () => {
       );
 
       expect(policy.choose).toHaveBeenCalledWith(
-        expect.objectContaining({
-          context: expect.objectContaining({ segment: 'premium' }),
+        partialMatch({
+          context: partialMatch({ segment: 'premium' }),
         }),
       );
       expect(result.fallback).toBe(true);
@@ -174,13 +177,13 @@ describe('MindService decision delegation', () => {
       ]);
 
       expect(policy.choose).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           workspaceId: 'ws-1',
           decisionType: 'message_format',
           baseline: 'audio',
-          options: expect.arrayContaining([
-            expect.objectContaining({ action: 'text' }),
-            expect.objectContaining({ action: 'audio' }),
+          options: arrayContains([
+            partialMatch({ action: 'text' }),
+            partialMatch({ action: 'audio' }),
           ]),
         }),
       );
@@ -211,14 +214,14 @@ describe('MindService decision delegation', () => {
       );
 
       expect(policy.choose).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           workspaceId: 'ws-1',
           decisionType: 'objection_response',
           baseline: 'social_proof',
-          options: expect.arrayContaining([
-            expect.objectContaining({ action: 'value_focus' }),
-            expect.objectContaining({ action: 'social_proof' }),
-            expect.objectContaining({ action: 'guarantee' }),
+          options: arrayContains([
+            partialMatch({ action: 'value_focus' }),
+            partialMatch({ action: 'social_proof' }),
+            partialMatch({ action: 'guarantee' }),
           ]),
         }),
       );
@@ -243,15 +246,15 @@ describe('MindService decision delegation', () => {
       const result = await buildService(policy).resolveCoupon('ws-1', 'over_300', 0.08);
 
       expect(policy.choose).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           workspaceId: 'ws-1',
           decisionType: 'coupon_offer',
           baseline: 'coupon_10',
-          options: expect.arrayContaining([
-            expect.objectContaining({ action: 'no_coupon' }),
-            expect.objectContaining({ action: 'coupon_5' }),
-            expect.objectContaining({ action: 'coupon_10' }),
-            expect.objectContaining({ action: 'human_negotiate' }),
+          options: arrayContains([
+            partialMatch({ action: 'no_coupon' }),
+            partialMatch({ action: 'coupon_5' }),
+            partialMatch({ action: 'coupon_10' }),
+            partialMatch({ action: 'human_negotiate' }),
           ]),
         }),
       );
@@ -274,9 +277,7 @@ describe('MindService decision delegation', () => {
 
       await buildService(policy).resolveCoupon('ws-1', 'under_100', 0.05);
 
-      expect(policy.choose).toHaveBeenCalledWith(
-        expect.objectContaining({ baseline: 'no_coupon' }),
-      );
+      expect(policy.choose).toHaveBeenCalledWith(partialMatch({ baseline: 'no_coupon' }));
     });
 
     it('defaults to coupon_10 when high price and low soldRate', async () => {
@@ -293,9 +294,7 @@ describe('MindService decision delegation', () => {
 
       await buildService(policy).resolveCoupon('ws-1', 'over_500', 0.05);
 
-      expect(policy.choose).toHaveBeenCalledWith(
-        expect.objectContaining({ baseline: 'coupon_10' }),
-      );
+      expect(policy.choose).toHaveBeenCalledWith(partialMatch({ baseline: 'coupon_10' }));
     });
 
     it('passes segment to policy context when provided', async () => {
@@ -313,8 +312,8 @@ describe('MindService decision delegation', () => {
       await buildService(policy).resolveCoupon('ws-1', 'over_300', 0.08, 'premium');
 
       expect(policy.choose).toHaveBeenCalledWith(
-        expect.objectContaining({
-          context: expect.objectContaining({ segment: 'premium', priceBand: 'over_300' }),
+        partialMatch({
+          context: partialMatch({ segment: 'premium', priceBand: 'over_300' }),
         }),
       );
     });

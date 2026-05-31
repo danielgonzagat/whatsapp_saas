@@ -81,7 +81,9 @@ import {
   isTestSource,
   buildMirrorSignalIndex,
 } from './obsidian-mirror-daemon-content.mjs';
-
+import { buildIncomingCount, buildMachineMainNote, writeMachineCategory } from './obsidian-mirror-daemon-indexes-domain-pages.mjs';
+import { writeGeneratedNote, listGeneratedMarkdownRelPaths } from './obsidian-mirror-daemon-indexes-notes.mjs';
+import { sourceEntryLink } from './obsidian-mirror-daemon-indexes-domain-write.mjs';
 
 export function writeMachineIndexes(manifest) {
   const entries = Object.values(manifest.files)

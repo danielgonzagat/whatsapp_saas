@@ -8,23 +8,35 @@ import {
   Optional,
   forwardRef,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import type { Redis } from 'ioredis';
 import { getCorrelationId } from '../common/observability/correlation-store';
 import { InboxGateway } from '../inbox/inbox.gateway';
 import { OmnichannelService } from '../inbox/omnichannel.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../marketing/channels/whatsapp/provider-settings.types';
 import { flowQueue } from '../queue/queue';
+import {
+  buildConversationPubSubEnvelope,
+  buildConversationUpdatePayload,
+  buildFinanceAuditDetails,
+  buildStatusEventPayload,
+  buildStatusPubSubEnvelope,
+  extractPhone as extractPhoneHelper,
+  mapFinanceLogToEvent,
+  normalizeMessageStatus,
+  resolveFinanceFlowId,
+  toPrismaJsonValue,
+  type MessageStatusTarget,
+  type PhoneBearingPayload,
+  type WebhookFinanceSettings,
+} from './webhooks.service.helpers';
+import { extractAsciiDigits } from '../common/phone/phone-normalization.util';
 
 /** Arbitrary JSON payload received on the generic catch-hook endpoint. */
 type WebhookJsonPayload = Record<string, unknown>;
 
 import type { UnknownRecord } from '../common/types';
-import { NON_DIGIT_RE } from '../common/phone';
-type WebhookLogDetails = { status?: string; phone?: string; [key: string]: unknown };
-type WebhookFinanceSettings = Record<string, unknown>;
 
 /** Finance trigger body: status + phone + any extra provider-specific fields. */
 interface FinanceWebhookBody {
@@ -38,36 +50,6 @@ interface FinanceWebhookBody {
 
 /** Instagram / Meta Graph webhook envelope — opaque beyond workspace routing. */
 type InstagramWebhookBody = Record<string, unknown>;
-
-/**
- * Loose shape consumed by {@link WebhooksService.extractPhone} — arbitrary
- * JSON bag from an upstream provider (Stripe, Hotmart, Shopify, etc.).
- */
-type PhoneBearingPayload = Record<string, unknown>;
-
-/** Minimal message row shape emitted over gateway/pubsub after a status update. */
-interface MessageStatusTarget {
-  id: string;
-  conversationId: string | null;
-  contactId: string | null;
-  externalId: string | null;
-}
-
-/** Runtime-narrow helper: returns an object when `value` is a non-null record. */
-function asRecord(value: unknown): UnknownRecord | null {
-  return typeof value === 'object' && value !== null ? (value as UnknownRecord) : null;
-}
-
-function toPrismaJsonValue(value: unknown): Prisma.InputJsonValue {
-  try {
-    return JSON.parse(JSON.stringify(value ?? null)) as Prisma.InputJsonValue;
-  } catch {
-    return {
-      serializationError: true,
-      valueType: typeof value,
-    };
-  }
-}
 
 /** Webhooks service. */
 @Injectable()
@@ -150,13 +132,7 @@ export class WebhooksService {
     const finance = ((settings as UnknownRecord).finance as WebhookFinanceSettings) || {};
 
     const status = String(payload?.status || '').toLowerCase();
-    const map: Record<string, string | undefined> = {
-      paid: finance.flowPaidId as string | undefined,
-      pending: finance.flowPendingId as string | undefined,
-      canceled: finance.flowCanceledId as string | undefined,
-      overdue: finance.flowOverdueId as string | undefined,
-    };
-    const flowId = map[status] || (finance.flowDefaultId as string | undefined);
+    const flowId = resolveFinanceFlowId(finance, status);
     if (!flowId) {
       this.logger.warn(
         `No finance flow configured for status ${status} in workspace ${workspaceId}`,
@@ -188,12 +164,12 @@ export class WebhooksService {
           action: 'FINANCE_EVENT',
           resource: 'finance',
           resourceId: flowId,
-          details: {
+          details: buildFinanceAuditDetails({
             status,
             phone,
             amount: payload?.amount,
             provider: payload?.provider,
-          },
+          }),
         },
       });
     } catch (err: unknown) {
@@ -226,52 +202,11 @@ export class WebhooksService {
         resourceId: true,
       },
     });
-    return logs.map((l) => {
-      const details = (l.details as WebhookLogDetails) || {};
-      return {
-        at: l.createdAt,
-        flowId: l.resourceId,
-        status: details.status,
-        phone: details.phone,
-        amount: details.amount as number | undefined,
-        provider: details.provider as string | undefined,
-      };
-    });
+    return logs.map((l) => mapFinanceLogToEvent(l));
   }
 
   private extractPhone(payload: PhoneBearingPayload): string | null {
-    // Recursive search or specific field check?
-    // Let's check common flat fields first.
-    const data = asRecord(payload.data);
-    const dataObject = data ? asRecord(data.object) : null;
-    const customerDetails = dataObject ? asRecord(dataObject.customer_details) : null;
-    const buyer = asRecord(payload.buyer);
-    const candidates: unknown[] = [
-      payload.phone,
-      payload.mobile,
-      payload.whatsapp,
-      payload.telephone,
-      payload.celular,
-      payload.contact_phone,
-      // Stripe specific
-      customerDetails?.phone,
-      dataObject?.phone,
-      // Hotmart specific
-      buyer?.phone,
-      payload.checkout_phone,
-    ];
-
-    for (const c of candidates) {
-      if (c && typeof c === 'string') {
-        // Clean string
-        const cleaned = c.replace(NON_DIGIT_RE, '');
-        if (cleaned.length >= 10) {
-          return cleaned;
-        } // Basic validation
-      }
-    }
-
-    return null;
+    return extractPhoneHelper(payload);
   }
 
   private async updateMessagesByExternalId(
@@ -339,51 +274,19 @@ export class WebhooksService {
     status: string,
     errorCode: string | null,
   ): Promise<void> {
-    this.inboxGateway.emitToWorkspace(workspaceId, 'message:status', {
-      id: m.id,
-      conversationId: m.conversationId,
-      contactId: m.contactId,
-      externalId: m.externalId,
-      status,
-      errorCode,
-    });
-    if (m.conversationId) {
-      this.inboxGateway.emitToWorkspace(workspaceId, 'conversation:update', {
-        id: m.conversationId,
-        lastMessageStatus: status,
-        lastMessageErrorCode: errorCode,
-        lastMessageId: m.id,
-      });
+    const statusPayload = buildStatusEventPayload(m, status, errorCode);
+    const conversationPayload = buildConversationUpdatePayload(m, status, errorCode);
+
+    this.inboxGateway.emitToWorkspace(workspaceId, 'message:status', statusPayload);
+    if (conversationPayload) {
+      this.inboxGateway.emitToWorkspace(workspaceId, 'conversation:update', conversationPayload);
     }
     try {
-      await this.redis.publish(
-        'ws:inbox',
-        JSON.stringify({
-          type: 'message:status',
-          workspaceId,
-          payload: {
-            id: m.id,
-            conversationId: m.conversationId,
-            contactId: m.contactId,
-            externalId: m.externalId,
-            status,
-            errorCode,
-          },
-        }),
-      );
-      if (m.conversationId) {
+      await this.redis.publish('ws:inbox', buildStatusPubSubEnvelope(workspaceId, statusPayload));
+      if (conversationPayload) {
         await this.redis.publish(
           'ws:inbox',
-          JSON.stringify({
-            type: 'conversation:update',
-            workspaceId,
-            conversation: {
-              id: m.conversationId,
-              lastMessageStatus: status,
-              lastMessageErrorCode: errorCode,
-              lastMessageId: m.id,
-            },
-          }),
+          buildConversationPubSubEnvelope(workspaceId, conversationPayload),
         );
       }
     } catch (err: unknown) {
@@ -403,10 +306,13 @@ export class WebhooksService {
     phone?: string | undefined;
     channel?: string | undefined;
   }) {
-    const status = (input.status || '').toUpperCase();
+    const status = normalizeMessageStatus(input.status);
     const workspaceId = input.workspaceId;
     const externalId = input.externalId;
-    const phone = input.phone?.replace(NON_DIGIT_RE, '') || undefined;
+    // Canonical phone normalization (ADR-0012): use `extractAsciiDigits` and
+    // collapse the empty-string result to `undefined` so the downstream
+    // Prisma write skips the field when the inbound webhook lacks a phone.
+    const phone = extractAsciiDigits(input.phone) || undefined;
     const errorCode = input.errorCode || null;
 
     if (!workspaceId) {
@@ -499,12 +405,55 @@ export class WebhooksService {
     // Normalize to Prisma's JSON shape; malformed provider payloads must not
     // turn audit logging into a webhook-processing failure.
     const jsonPayload = toPrismaJsonValue(payload);
-    return this.prisma.webhookEvent.upsert({
+
+    // Claim-once idempotency. Providers such as Stripe retry a delivery for up
+    // to 3 days, far beyond the ~5-minute Redis NX dedup window. The earlier
+    // implementation reset `status` to 'received' on every redelivery, which
+    // silently downgraded an already-`processed` row and re-armed the handler
+    // chain — double-crediting the ledger, re-running the sale/autopilot/
+    // post-purchase flow. We must NEVER downgrade a row that has advanced past
+    // 'received'.
+    //
+    // 1) Upsert the audit row without touching `status` on update — an
+    //    existing 'processed' / 'processing' / 'failed' row keeps its state.
+    const row = await this.prisma.webhookEvent.upsert({
       where: { provider_externalId: { provider, externalId } },
       create: { provider, eventType, externalId, payload: jsonPayload, status: 'received' },
-      update: { status: 'received', receivedAt: new Date() },
+      update: { receivedAt: new Date() },
     });
-  }
+
+    // Already advanced past 'received' on a prior delivery (processed, in
+    // flight, or terminally failed): hand the caller the authoritative status
+    // so its `status === 'processed'` guard short-circuits the replay. Do not
+    // attempt to claim — the row is not ours.
+    if (row.status !== 'received') {
+      return row;
+    }
+
+    // 2) Atomic claim: flip exactly one 'received' row to 'processing'. Two
+    //    deliveries racing through the upsert both observe 'received', but only
+    //    the writer whose conditional UPDATE matches the still-'received' row
+    //    gets count === 1. The loser sees count === 0 and must not proceed.
+    const claim = await this.prisma.webhookEvent.updateMany({
+      where: { provider, externalId, status: 'received' },
+      data: { status: 'processing' },
+    });
+
+    if (claim.count === 0) {
+      // Another concurrent delivery won the claim. Return the freshest status
+      // so the caller skips instead of double-processing.
+      const current = await this.prisma.webhookEvent.findUnique({
+        where: { provider_externalId: { provider, externalId } },
+      });
+      return current ?? row;
+    }
+
+    // We own this delivery. Report 'received' so the caller runs the handler
+    // chain and finalizes via markWebhookProcessed(). The DB row is already
+    // 'processing', which blocks any concurrent or post-TTL replay from
+    // re-claiming it.
+    return { ...row, status: 'received' as const };
+}
 
   /** Mark webhook processed. */
   async markWebhookProcessed(id: string) {

@@ -1,0 +1,279 @@
+import { AdminPipelineService, type DecisionShadowInput } from './admin-pipeline.service';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
+
+// Typed wrapper around expect.objectContaining so the resulting matcher is typed
+// `unknown` (not `any`) when nested as a property value — satisfies
+// @typescript-eslint/no-unsafe-assignment while keeping matcher semantics intact.
+const oc = (o: Record<string, unknown>): unknown => expect.objectContaining(o);
+
+describe('AdminPipelineService', () => {
+  const prisma = createPartialPrismaMock({
+    pipelineState: ['findUnique', 'create', 'upsert', 'update', 'updateMany'],
+    decisionShadow: ['upsert'],
+  });
+  const events = {
+    recordCommercial: jest.fn(),
+  };
+
+  let service: AdminPipelineService;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    events.recordCommercial.mockResolvedValue(undefined);
+    service = new AdminPipelineService(prisma as never, events as never);
+  });
+
+  describe('getState', () => {
+    it('returns existing PipelineState when present', async () => {
+      const existing = {
+        id: 'p1',
+        workspaceId: 'ws-1',
+        state: 'shadow',
+        transitionedAt: new Date(),
+        transitionedBy: null,
+        snapshot: null,
+        fallbackRate1h: 0,
+      };
+      prisma.pipelineState.findUnique.mockResolvedValue(existing);
+      await expect(service.getState('ws-1')).resolves.toEqual(existing);
+      expect(prisma.pipelineState.create).not.toHaveBeenCalled();
+    });
+
+    it('auto-creates a legacy PipelineState when missing (no surprises in prod)', async () => {
+      prisma.pipelineState.findUnique.mockResolvedValueOnce(null);
+      prisma.pipelineState.create.mockResolvedValueOnce({
+        id: 'p2',
+        workspaceId: 'ws-2',
+        state: 'legacy',
+        transitionedAt: new Date(),
+        transitionedBy: null,
+        snapshot: null,
+        fallbackRate1h: 0,
+      });
+      const result = await service.getState('ws-2');
+      expect(result.state).toBe('legacy');
+      expect(prisma.pipelineState.create).toHaveBeenCalledWith({
+        data: { workspaceId: 'ws-2', state: 'legacy' },
+      });
+    });
+  });
+
+  describe('setState', () => {
+    it('upserts state and emits the canonical cognition.pipeline.state_changed event', async () => {
+      prisma.pipelineState.findUnique.mockResolvedValueOnce({
+        state: 'legacy',
+      });
+      prisma.pipelineState.upsert.mockResolvedValueOnce({
+        id: 'p1',
+        workspaceId: 'ws-1',
+        state: 'shadow',
+        transitionedAt: new Date(),
+        transitionedBy: 'admin',
+        snapshot: { previousState: 'legacy', reason: 'manual' },
+        fallbackRate1h: 0,
+      });
+
+      await service.setState('ws-1', 'shadow', 'admin', 'manual');
+
+      expect(prisma.pipelineState.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { workspaceId: 'ws-1' },
+          create: oc({
+            workspaceId: 'ws-1',
+            state: 'shadow',
+            transitionedBy: 'admin',
+            fallbackRate1h: 0,
+          }),
+          update: oc({
+            state: 'shadow',
+            transitionedBy: 'admin',
+            fallbackRate1h: 0,
+          }),
+        }),
+      );
+      expect(events.recordCommercial).toHaveBeenCalledWith(
+        expect.objectContaining({
+          workspaceId: 'ws-1',
+          eventType: 'cognition.pipeline.state_changed',
+          payload: oc({
+            previousState: 'legacy',
+            newState: 'shadow',
+            reason: 'manual',
+            by: 'admin',
+          }),
+        }),
+      );
+    });
+
+    it('records "manual transition" when reason is omitted', async () => {
+      prisma.pipelineState.findUnique.mockResolvedValueOnce({ state: 'shadow' });
+      prisma.pipelineState.upsert.mockResolvedValueOnce({});
+      await service.setState('ws-9', 'active');
+      expect(events.recordCommercial).toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: oc({ reason: 'manual transition' }),
+        }),
+      );
+    });
+
+    it('resets fallbackRate1h to 0 on every transition (clean slate per state)', async () => {
+      prisma.pipelineState.findUnique.mockResolvedValueOnce({ state: 'active' });
+      prisma.pipelineState.upsert.mockResolvedValueOnce({});
+      await service.setState('ws-1', 'shadow', 'system', 'auto-fallback');
+      expect(prisma.pipelineState.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          update: oc({ fallbackRate1h: 0 }),
+        }),
+      );
+    });
+  });
+
+  describe('recordShadow', () => {
+    const input: DecisionShadowInput = {
+      workspaceId: 'ws-1',
+      channel: 'instagram',
+      inboundCorrelationId: 'abc123',
+      orchestratorDecision: { audio: 'text' },
+      legacyBaseline: { audio: 'text' },
+      outcomeKey: 'shadow:ws-1:abc123',
+    };
+
+    it('upserts DecisionShadow keyed on (workspaceId, inboundCorrelationId) and emits event', async () => {
+      prisma.decisionShadow.upsert.mockResolvedValueOnce(undefined);
+      await service.recordShadow(input);
+      expect(prisma.decisionShadow.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            workspaceId_inboundCorrelationId: {
+              workspaceId: 'ws-1',
+              inboundCorrelationId: 'abc123',
+            },
+          },
+        }),
+      );
+      expect(events.recordCommercial).toHaveBeenCalledWith(
+        expect.objectContaining({
+          workspaceId: 'ws-1',
+          subject: 'channel:instagram',
+          eventType: 'cognition.pipeline.shadow_recorded',
+          payload: oc({
+            channel: 'instagram',
+            inboundCorrelationId: 'abc123',
+            outcomeKey: 'shadow:ws-1:abc123',
+          }),
+        }),
+      );
+    });
+
+    it('idempotency key is stable across replays (no duplicate events)', async () => {
+      prisma.decisionShadow.upsert.mockResolvedValue(undefined);
+      await service.recordShadow(input);
+      await service.recordShadow(input);
+      const calls = (events.recordCommercial.mock.calls as Array<[Record<string, unknown>]>).filter(
+        ([arg]) =>
+          (arg as { eventType?: string }).eventType === 'cognition.pipeline.shadow_recorded',
+      );
+      // Both calls happen, but each uses the same idempotencyKey shape so
+      // upstream BrainEventSpine de-dupes. The test verifies the contract.
+      expect(calls.length).toBe(2);
+      const firstKey = (calls[0]?.[0] as { idempotencyKey: string }).idempotencyKey;
+      const secondKey = (calls[1]?.[0] as { idempotencyKey: string }).idempotencyKey;
+      expect(firstKey).toBe(secondKey);
+    });
+  });
+
+  describe('incrementFallback (auto-shadow guard)', () => {
+    it('increments fallbackRate1h by 0.01', async () => {
+      prisma.pipelineState.updateMany.mockResolvedValueOnce(undefined);
+      prisma.pipelineState.findUnique.mockResolvedValueOnce({
+        id: 'p1',
+        workspaceId: 'ws-1',
+        state: 'shadow',
+        fallbackRate1h: 0.02,
+      });
+      await service.incrementFallback('ws-1');
+      expect(prisma.pipelineState.updateMany).toHaveBeenCalledWith({
+        where: { workspaceId: 'ws-1' },
+        data: { fallbackRate1h: { increment: 0.01 } },
+      });
+    });
+
+    it('AUTO-FALLBACK: moves active workspace to shadow when fallbackRate1h crosses 0.05 (5%)', async () => {
+      prisma.pipelineState.updateMany.mockResolvedValueOnce(undefined);
+      // First findUnique inside incrementFallback's getState call:
+      prisma.pipelineState.findUnique.mockResolvedValueOnce({
+        id: 'p1',
+        workspaceId: 'ws-1',
+        state: 'active',
+        fallbackRate1h: 0.06,
+        transitionedAt: new Date(),
+        transitionedBy: null,
+        snapshot: null,
+      });
+      // Second findUnique inside setState (previous):
+      prisma.pipelineState.findUnique.mockResolvedValueOnce({ state: 'active' });
+      prisma.pipelineState.upsert.mockResolvedValueOnce({
+        id: 'p1',
+        workspaceId: 'ws-1',
+        state: 'shadow',
+        transitionedAt: new Date(),
+        transitionedBy: 'system',
+        snapshot: { previousState: 'active' },
+        fallbackRate1h: 0,
+      });
+
+      await service.incrementFallback('ws-1');
+
+      // setState was called transitioning active -> shadow with reason
+      const upsertCalls = prisma.pipelineState.upsert.mock.calls as Array<
+        [{ update: { state: string; transitionedBy: string } }]
+      >;
+      const setStateCall = upsertCalls[0]?.[0] as {
+        update: { state: string; transitionedBy: string };
+      };
+      expect(setStateCall.update.state).toBe('shadow');
+      expect(setStateCall.update.transitionedBy).toBe('system');
+
+      // event spine recorded the auto-fallback
+      const recordCommercialCalls = events.recordCommercial.mock.calls as Array<
+        [{ eventType?: string; payload: { reason: string; by: string } }]
+      >;
+      const stateChangedEvent = recordCommercialCalls.find(
+        ([arg]) => arg.eventType === 'cognition.pipeline.state_changed',
+      );
+      expect(stateChangedEvent).toBeDefined();
+      expect(stateChangedEvent?.[0].payload.reason).toMatch(/auto-fallback/);
+      expect(stateChangedEvent?.[0].payload.by).toBe('system');
+    });
+
+    it('does NOT auto-fallback when current state is shadow (already fallen back)', async () => {
+      prisma.pipelineState.updateMany.mockResolvedValueOnce(undefined);
+      prisma.pipelineState.findUnique.mockResolvedValueOnce({
+        id: 'p1',
+        workspaceId: 'ws-1',
+        state: 'shadow',
+        fallbackRate1h: 0.08,
+        transitionedAt: new Date(),
+        transitionedBy: null,
+        snapshot: null,
+      });
+      await service.incrementFallback('ws-1');
+      expect(prisma.pipelineState.upsert).not.toHaveBeenCalled();
+    });
+
+    it('does NOT auto-fallback when below threshold even for active', async () => {
+      prisma.pipelineState.updateMany.mockResolvedValueOnce(undefined);
+      prisma.pipelineState.findUnique.mockResolvedValueOnce({
+        id: 'p1',
+        workspaceId: 'ws-1',
+        state: 'active',
+        fallbackRate1h: 0.04,
+        transitionedAt: new Date(),
+        transitionedBy: null,
+        snapshot: null,
+      });
+      await service.incrementFallback('ws-1');
+      expect(prisma.pipelineState.upsert).not.toHaveBeenCalled();
+    });
+  });
+});

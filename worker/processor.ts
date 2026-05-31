@@ -1,3 +1,7 @@
+/**
+ * @capability AutopilotMessageProcessor
+ * @domain autopilot
+ */
 import { type Job, Worker } from 'bullmq';
 import { FlowEngineGlobal } from './flow-engine-global';
 import { WorkerLogger } from './logger';
@@ -24,6 +28,7 @@ import './processors/webhook-processor'; // Start Webhook Worker
 import './processors/crm-processor'; // Start CRM Worker
 import './processors/silent-24h-resolver-processor'; // Start Silent 24h Resolver Worker
 import './processors/mass-send-processor'; // Start Mass Send Worker
+import './processors/mind-self-evolution-cron'; // Start Mind Self-Evolution Cron Worker (6h)
 import './metrics-server'; // Expose /metrics and /health
 import './dlq-monitor'; // Monitor DLQs and alert ops
 import { redisPub } from './redis-client';

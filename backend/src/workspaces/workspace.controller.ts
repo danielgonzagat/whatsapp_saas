@@ -7,8 +7,8 @@ import {
   asProviderSettings,
   type ProviderSettings,
   type ProviderSessionSnapshot,
-} from '../whatsapp/provider-settings.types';
-import { resolveWhatsAppProvider } from '../whatsapp/providers/provider-env';
+} from '../marketing/channels/whatsapp/provider-settings.types';
+import { resolveWhatsAppProvider } from '../marketing/channels/whatsapp/providers/provider-env';
 import { SetSettingsDto } from './dto/set-settings.dto';
 import {
   buildProviderSessionSnapshot,

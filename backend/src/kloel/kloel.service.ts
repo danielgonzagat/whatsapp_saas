@@ -12,42 +12,26 @@ import { Response } from 'express';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelConversationStore } from './kloel-conversation-store';
-import { KloelLeadBrainService as LeadMindCoordinator } from './kloel-lead-brain.service';
+import { LeadMindCoordinator } from './mind/coordination/lead-mind-coordinator.service';
+import { MindMessageService } from './mind/aliases/mind-message.service';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import { KloelThreadService } from './kloel-thread.service';
 import { KloelThinkerService, ThinkRequest, ThinkSyncResult } from './kloel-thinker.service';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
 import { AgentRuntimeContextService } from './agent-runtime';
-import { detectActionIntent } from './guest-chat.action-intent.helpers';
-import { formatToolResult } from './guest-chat.action-intent.helpers';
-
-type ComposerCapability = 'create_image' | 'create_site' | 'search_web';
+import {
+  appendToolResultProof,
+  detectActionIntent,
+  formatToolResult,
+} from './guest-chat.action-intent.helpers';
+import {
+  buildAttachmentPromptContext,
+  extractComposerMetadata,
+  resolveComposerCapability,
+} from './kloel.service.composer.helpers';
 import type { UnknownRecord } from '../common/types';
-
-interface ComposerAttachmentMetadata {
-  id?: string;
-  name?: string;
-  size?: number;
-  mimeType?: string;
-  kind?: 'image' | 'document' | 'audio';
-  url?: string | null;
-}
-
-interface ComposerLinkedProductMetadata {
-  id?: string;
-  source?: 'owned' | 'affiliate';
-  name?: string;
-  status?: 'published' | 'draft' | 'affiliate';
-  productId?: string | null;
-  affiliateProductId?: string | null;
-}
-
-interface ComposerMetadata {
-  capability?: ComposerCapability | null;
-  attachments?: ComposerAttachmentMetadata[];
-  linkedProduct?: ComposerLinkedProductMetadata | null;
-}
 
 /** Followup list item shape. */
 export type { FollowupListItem } from './kloel.service.lists.helpers';
@@ -61,95 +45,33 @@ export class KloelService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly planLimits: PlanLimitsService,
-    private readonly threadService: KloelThreadService,
+    // Reserved DI slot — composer metadata helpers no longer need direct access,
+    // but the dependency stays wired for downstream services that resolve the same token.
+    _threadService: KloelThreadService,
     private readonly wsContextService: KloelWorkspaceContextService,
     private readonly leadBrainService: LeadMindCoordinator,
     private readonly thinkerService: KloelThinkerService,
     private readonly replyEngineService: KloelReplyEngineService,
     private readonly toolDispatcher: KloelToolDispatcherService,
     @Optional() private readonly agentRuntime?: AgentRuntimeContextService,
+    @Optional() private readonly mindMessage?: MindMessageService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {
-    this.conversationStore = new KloelConversationStore(prisma, this.logger);
+    this.conversationStore = new KloelConversationStore(
+      prisma,
+      this.logger,
+      undefined,
+      this.mindMessage,
+      this.mindMemory,
+    );
+  }
+
+  /** Canonical Brain → Mind memory delegate (raw-Prisma fallback). */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
   }
 
   // ── Context helpers ──
-
-  private extractComposerMetadata(
-    metadata?: Prisma.InputJsonValue | Prisma.JsonValue | null,
-  ): ComposerMetadata {
-    const normalized = this.threadService.normalizeThreadMessageMetadataRecord(metadata);
-    const capability =
-      normalized.capability === 'create_image' ||
-      normalized.capability === 'create_site' ||
-      normalized.capability === 'search_web'
-        ? normalized.capability
-        : null;
-    const attachments = Array.isArray(normalized.attachments)
-      ? (normalized.attachments as ComposerAttachmentMetadata[])
-      : [];
-    const linkedProduct =
-      normalized.linkedProduct &&
-      typeof normalized.linkedProduct === 'object' &&
-      !Array.isArray(normalized.linkedProduct)
-        ? (normalized.linkedProduct as ComposerLinkedProductMetadata)
-        : null;
-    return { capability, attachments, linkedProduct };
-  }
-
-  private inferImplicitComposerCapability(
-    message: string,
-    mode: ThinkRequest['mode'],
-  ): ComposerCapability | null {
-    if (mode !== 'chat') {
-      return null;
-    }
-    const normalized = String(message || '')
-      .trim()
-      .toLowerCase();
-    if (!normalized) {
-      return null;
-    }
-    const wantsSite = [
-      'landing',
-      'landing page',
-      'pagina de vendas',
-      'página de vendas',
-      'pagina de captura',
-      'página de captura',
-      'homepage',
-      'home page',
-      'site',
-    ].some((t) => normalized.includes(t));
-    const wantsCreation = [
-      'crie',
-      'criar',
-      'gere',
-      'gerar',
-      'monte',
-      'montar',
-      'faça',
-      'faca',
-      'fazer',
-      'construa',
-      'construir',
-      'desenvolva',
-      'desenvolver',
-      'quero criar',
-      'preciso criar',
-    ].some((t) => normalized.includes(t));
-    if (wantsSite && wantsCreation) {
-      return 'create_site';
-    }
-    return null;
-  }
-
-  private resolveComposerCapability(
-    message: string,
-    mode: ThinkRequest['mode'],
-    explicitCapability?: ComposerCapability | null,
-  ): ComposerCapability | null {
-    return explicitCapability || this.inferImplicitComposerCapability(message, mode);
-  }
 
   private async buildComposerContext(params: {
     workspaceId?: string;
@@ -157,12 +79,12 @@ export class KloelService {
     companyContext?: string;
   }): Promise<string | undefined> {
     const { workspaceId, metadata, companyContext } = params;
-    const composerMetadata = this.extractComposerMetadata(metadata);
+    const composerMetadata = extractComposerMetadata(metadata);
     const blocks: string[] = [];
     if (companyContext) {
       blocks.push(companyContext);
     }
-    const attachmentBlock = this.buildAttachmentPromptContext(composerMetadata.attachments);
+    const attachmentBlock = buildAttachmentPromptContext(composerMetadata.attachments);
     if (attachmentBlock) {
       blocks.push(attachmentBlock);
     }
@@ -176,31 +98,6 @@ export class KloelService {
       }
     }
     return blocks.length > 0 ? blocks.join('\n\n') : undefined;
-  }
-
-  private buildAttachmentPromptContext(
-    attachments: ComposerAttachmentMetadata[] | null | undefined,
-  ): string | null {
-    if (!Array.isArray(attachments) || attachments.length === 0) {
-      return null;
-    }
-    const lines = attachments
-      .slice(0, 10)
-      .map((a, i) => {
-        const parts = [
-          `ANEXO ${i + 1}: ${String(a.name || 'arquivo').trim() || 'arquivo'}`,
-          a.kind ? `tipo ${a.kind}` : null,
-          a.mimeType ? `mime ${a.mimeType}` : null,
-          Number.isFinite(Number(a.size)) ? `tamanho ${Number(a.size)} bytes` : null,
-          a.url ? `url ${a.url}` : null,
-        ].filter(Boolean);
-        return `- ${parts.join(' | ')}`;
-      })
-      .filter(Boolean);
-    if (lines.length === 0) {
-      return null;
-    }
-    return ['ANEXOS VINCULADOS AO PROMPT:', ...lines].join('\n');
   }
 
   // ── Tool executor (dispatches to sub-services) ──
@@ -235,8 +132,8 @@ export class KloelService {
     opts?: { signal?: AbortSignal; timeoutMs?: number },
   ): Promise<void> {
     const { message, workspaceId, mode = 'chat', metadata, companyContext } = request;
-    const composerMetadata = this.extractComposerMetadata(metadata);
-    const composerCapability = this.resolveComposerCapability(
+    const composerMetadata = extractComposerMetadata(metadata);
+    const composerCapability = resolveComposerCapability(
       message,
       mode,
       composerMetadata.capability,
@@ -284,7 +181,7 @@ export class KloelService {
   /** Sync think. */
   async thinkSync(request: ThinkRequest): Promise<ThinkSyncResult> {
     const { message, workspaceId, mode = 'chat', metadata, companyContext } = request;
-    const composerMetadata = this.extractComposerMetadata(metadata);
+    const composerMetadata = extractComposerMetadata(metadata);
     // ── DETERMINISTIC ACTION ROUTER ──
     // When the user requests a real action, execute the tool MANDATORILY
     // rather than relying on the LLM to probabilistically decide to use tools.
@@ -299,7 +196,7 @@ export class KloelService {
             action.args,
             request.userId,
           );
-          const reply = formatToolResult(action.tool, result);
+          const reply = appendToolResultProof(formatToolResult(action.tool, result), result);
           // Persist to conversation store and spine
           void this.conversationStore.saveMessage(workspaceId, 'user', message);
           void this.conversationStore.saveMessage(workspaceId, 'assistant', reply);
@@ -330,7 +227,7 @@ export class KloelService {
       }
     }
 
-    const composerCapability = this.resolveComposerCapability(
+    const composerCapability = resolveComposerCapability(
       message,
       mode,
       composerMetadata.capability,
@@ -389,9 +286,17 @@ export class KloelService {
   }
 
   /** Get message history. */
+  /** Get message history. */
   async getHistory(
     workspaceId: string,
   ): Promise<{ id: string; role: string; content: string; timestamp: Date }[]> {
+    if (this.mindMessage) {
+      try {
+        return await this.mindMessage.getHistory(workspaceId, 50);
+      } catch {
+        return [];
+      }
+    }
     if (!workspaceId) {
       return [];
     }
@@ -491,7 +396,7 @@ export class KloelService {
   /** List follow-ups. */
 
   async listFollowups(workspaceId: string, contactId?: string) {
-    return runListFollowups(this.prisma, workspaceId, contactId);
+    return runListFollowups(this.prisma, workspaceId, contactId, this.mindMemoryItems);
   }
 
   async listPersonas(workspaceId: string) {

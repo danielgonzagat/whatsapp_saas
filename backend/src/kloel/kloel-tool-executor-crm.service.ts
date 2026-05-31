@@ -3,7 +3,7 @@ import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../marketing/channels/whatsapp/provider-settings.types';
 import type {
   ToolResult,
   ToolCreateCampaignArgs,
@@ -15,13 +15,17 @@ import type {
 
 import { digitsOnly } from '../common/phone';
 import { centsFromUnknown } from './kloel-chat-tools.service';
+import { CampaignsService } from '../campaigns/campaigns.service';
 
 /** CRM, campaign, and business-config tool implementations for KloelToolExecutorService. */
 @Injectable()
 export class KloelToolExecutorCrmService {
   private readonly logger = StructuredLogger.from(KloelToolExecutorCrmService.name);
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly campaigns: CampaignsService,
+  ) {
     this.logger.log('KloelToolExecutorCrmService initialized');
   }
 
@@ -176,18 +180,13 @@ export class KloelToolExecutorCrmService {
     const contactCount = await this.prisma.contact.count({
       where: { ...contactFilter, workspaceId },
     });
-    const campaign = await this.prisma.campaign.create({
-      data: {
-        workspaceId,
-        name,
-        messageTemplate: message,
-        status: 'DRAFT',
-        scheduledAt: null,
-        filters: {
-          targetAudience: targetAudience || 'all',
-          createdByKloel: true,
-          estimatedRecipients: contactCount,
-        },
+    const campaign = await this.campaigns.create(workspaceId, {
+      name,
+      messageTemplate: message,
+      filters: {
+        targetAudience: targetAudience || 'all',
+        createdByKloel: true,
+        estimatedRecipients: contactCount,
       },
     });
     return {

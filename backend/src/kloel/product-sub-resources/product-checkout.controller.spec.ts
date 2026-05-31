@@ -3,7 +3,7 @@ import { NotFoundException } from '@nestjs/common';
 jest.mock('./helpers/common.helpers', () => ({
   ensureWorkspaceProductAccess: jest.fn().mockResolvedValue(undefined),
   getWorkspaceId: jest.fn(),
-  safeStr: jest.fn((v: unknown, fb = '') => (typeof v === 'string' ? v : fb)),
+  safeStr: jest.fn((v: unknown, fb: string = ''): string => (typeof v === 'string' ? v : fb)),
 }));
 
 jest.mock('./helpers/plan.helpers', () => ({
@@ -40,11 +40,15 @@ describe('ProductCheckoutController', () => {
     prismaMock = createPartialPrismaMock({
       productCheckout: ['findMany', 'create', 'findFirst', 'delete'],
     });
-    (prismaMock as any).$transaction = jest.fn().mockImplementation((cb: any) => cb(txClient));
+    (prismaMock as unknown as { $transaction: jest.Mock }).$transaction = jest
+      .fn()
+      .mockImplementation((cb: (tx: typeof txClient) => unknown) => cb(txClient));
 
     jest.clearAllMocks();
     getWorkspaceIdMock.mockReturnValue('ws-1');
-    safeStrMock.mockImplementation((v: unknown, fb = '') => (typeof v === 'string' ? v : fb));
+    safeStrMock.mockImplementation((v: unknown, fb = ''): string =>
+      typeof v === 'string' ? v : fb,
+    );
     buildCheckoutDataMock.mockImplementation((body: Record<string, unknown>) => body);
     serializeCheckoutMock.mockImplementation((c: Record<string, unknown>) => c);
 
@@ -97,7 +101,11 @@ describe('ProductCheckoutController', () => {
       expect(ensureWorkspaceProductAccessMock).toHaveBeenCalledWith(prismaMock, 'p-1', 'ws-1');
       expect(buildCheckoutDataMock).toHaveBeenCalledWith(body);
       expect(prismaMock.productCheckout.create).toHaveBeenCalledTimes(1);
-      const createCall = prismaMock.productCheckout.create.mock.calls[0][0];
+      const createMock = prismaMock.productCheckout.create as jest.Mock<
+        unknown,
+        [{ data: { productId: unknown } }]
+      >;
+      const createCall = createMock.mock.calls[0][0];
       expect(createCall.data.productId).toBe('p-1');
       expect(serializeCheckoutMock).toHaveBeenCalledTimes(1);
       expect(result).toMatchObject({ id: 'co-1' });

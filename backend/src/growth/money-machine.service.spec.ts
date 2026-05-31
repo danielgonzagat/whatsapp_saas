@@ -3,6 +3,7 @@ import { CampaignsService } from '../campaigns/campaigns.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { MoneyMachineService } from './money-machine.service';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
+import { castMock } from '../../test/helpers/cast-mock';
 
 describe('MoneyMachineService', () => {
   let service: MoneyMachineService;
@@ -67,12 +68,16 @@ describe('MoneyMachineService', () => {
       expect(prisma.flow.create).toHaveBeenCalledTimes(1);
       expect(campaigns.create).toHaveBeenCalledTimes(1);
 
-      const flowCall = prisma.flow.create.mock.calls[0][0];
+      const flowCall = castMock<[{ data: { name: string; nodes: { type: string }[] } }]>(
+        prisma.flow.create.mock.calls[0],
+      )[0];
       expect(flowCall.data.name).toContain('MoneyMachine');
       expect(flowCall.data.nodes).toHaveLength(1);
       expect(flowCall.data.nodes[0].type).toBe('messageNode');
 
-      const campaignCall = campaigns.create.mock.calls[0];
+      const campaignCall = castMock<[string, { name: string; filters: unknown }]>(
+        campaigns.create.mock.calls[0],
+      );
       expect(campaignCall[0]).toBe('ws-1');
       expect(campaignCall[1].name).toContain('MoneyMachine');
       expect(campaignCall[1].filters).toEqual({ lastActive: '30d' });
@@ -83,7 +88,9 @@ describe('MoneyMachineService', () => {
 
       await service.activate('ws-1');
 
-      const countCall = prisma.contact.count.mock.calls[0][0];
+      const countCall = castMock<
+        [{ where: { conversations: { some: { lastMessageAt: { lt: unknown } } } } }]
+      >(prisma.contact.count.mock.calls[0])[0];
       expect(countCall.where.conversations.some.lastMessageAt.lt).toBeInstanceOf(Date);
     });
   });
@@ -117,11 +124,15 @@ describe('MoneyMachineService', () => {
 
       await service.getDailyReport('ws-1');
 
-      const outboundCall = prisma.message.count.mock.calls[0][0];
+      const outboundCall = castMock<
+        [{ where: { createdAt: { gte: unknown }; direction: string } }]
+      >(prisma.message.count.mock.calls[0])[0];
       expect(outboundCall.where.createdAt.gte).toBeInstanceOf(Date);
       expect(outboundCall.where.direction).toBe('OUTBOUND');
 
-      const inboundCall = prisma.message.count.mock.calls[1][0];
+      const inboundCall = castMock<[{ where: { createdAt: { gte: unknown }; direction: string } }]>(
+        prisma.message.count.mock.calls[1],
+      )[0];
       expect(inboundCall.where.createdAt.gte).toBeInstanceOf(Date);
       expect(inboundCall.where.direction).toBe('INBOUND');
     });

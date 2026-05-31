@@ -3,7 +3,7 @@ import { StructuredLogger } from '../../../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
 import { createHash, randomUUID } from 'crypto';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { BrainEventSpineService } from '../../brain-event-spine.service';
+import { MindEventSpine } from '../coordination/mind-event-spine.service';
 
 type ConceptRule = { concept: string; patterns: RegExp[] };
 
@@ -47,7 +47,7 @@ export class MindConceptService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly events: BrainEventSpineService,
+    private readonly events: MindEventSpine,
   ) {
     this.logger.debug?.(`MindConceptService initialized`);
   }

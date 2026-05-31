@@ -1,0 +1,25 @@
+pi-natives vendored binaries — @oh-my-pi/pi-natives v15.5.13 (napi addon).
+
+Source: npm tarball `npm pack @oh-my-pi/pi-natives@15.5.13` -> package/native/*.node
+(the published package ships prebuilt binaries for every platform; no compile needed).
+
+Vendored (all gitignored via .gitignore `vendor/pi-natives/*.node`, ~105-108 MB each):
+  pi_natives.darwin-arm64.node          Mach-O arm64        (this dev Mac)
+  pi_natives.darwin-x64-baseline.node   Mach-O x86_64
+  pi_natives.linux-x64-baseline.node    ELF x86-64          (CI / Railway, no-AVX2)
+  pi_natives.linux-x64-modern.node      ELF x86-64          (CI / Railway, AVX2)
+  pi_natives.linux-arm64.node           ELF aarch64
+  pi_natives.win32-x64-baseline.node    PE32+ x86-64
+
+The worker (native-worker.mjs) picks the binary by process.platform/arch, trying
+the most-capable variant first (modern -> baseline -> legacy gnu/musl/msvc names).
+
+Loaded by require()-ing the .node DIRECTLY (NOT via the package index.js, whose
+loader-state.js uses the Bun-only `import.meta.dir` and crashes under Node).
+
+API verified compatible on darwin-arm64 15.5.13 (astEdit dryRun returns
+before/after + byteStart/byteEnd + startLine/Col; applied=false). Linux binaries
+are valid ELF x86-64/aarch64 shared objects; runtime load on a real Linux host
+is the one remaining check that cannot be performed from macOS.
+
+Restore: re-run the npm pack above and copy the .node files here.

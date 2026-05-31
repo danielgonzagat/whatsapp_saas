@@ -6,6 +6,20 @@ import type { PublicCheckoutConfig } from '@/lib/public-checkout-contract';
 import { StripePaymentElement } from './StripePaymentElement';
 import { Bc, Cc, Px, ValidationInput } from './checkout-theme-shared';
 import type { CheckoutVisualTheme } from './checkout-theme-tokens';
+import {
+  buildActiveCardStyle,
+  buildInstallmentSelectStyle,
+  buildLabelStyle,
+  buildLockedCardStyle,
+  buildManualCardFormId,
+  buildSubmitButtonStyle,
+  isSectionLocked,
+  resolveSubmitButtonFormId,
+  resolveSubmitButtonLabel,
+  resolveSubmitButtonType,
+  shouldShowSubmitError,
+  usesStripePaymentElement,
+} from './CheckoutPaymentSection.helpers';
 
 type FormState = {
   cpf: string;
@@ -68,29 +82,15 @@ export function CheckoutPaymentSection(props: Props) {
     onStripeSuccess,
     onStripeError,
   } = props;
-  const labelStyle = {
-    display: 'block',
-    fontSize: 14,
-    fontWeight: 500,
-    color: theme.mode === 'NOIR' ? theme.mutedText : theme.text,
-    marginBottom: 6,
-  } satisfies React.CSSProperties;
-  const activeCard = {
-    background: theme.cardBackground,
-    border: `1px solid ${theme.cardBorder}`,
-    boxShadow: theme.cardShadow,
-    borderRadius: theme.input.radius === 6 ? 6 : 12,
-    padding: '24px 20px',
-    animation: 'fadeIn 0.3s',
-  } satisfies React.CSSProperties;
-  const usesStripePaymentElement =
-    payMethod === 'card' && Boolean(stripeClientSecret && stripeReturnUrl);
-  const manualCardFormId = `${fid}-card-form`;
+  const labelStyle = buildLabelStyle(theme);
+  const activeCard = buildActiveCardStyle(theme);
+  const stripeFlowActive = usesStripePaymentElement(payMethod, stripeClientSecret, stripeReturnUrl);
+  const manualCardFormId = buildManualCardFormId(fid);
 
-  if (step < 3) {
+  if (isSectionLocked(step)) {
     return (
       <div className="ck-col" style={{ flex: '0 0 34%', minWidth: 280 }}>
-        <div style={{ ...activeCard, opacity: 0.35 }}>
+        <div style={buildLockedCardStyle(theme)}>
           <SectionHeader theme={theme} title={t(`Pagamento`)} number={3} locked />
           <p style={{ fontSize: 13, color: theme.mutedText, marginTop: 4 }}>
             {t(`Preencha suas informações de entrega para continuar`)}
@@ -168,27 +168,17 @@ export function CheckoutPaymentSection(props: Props) {
             </p>
           </PaymentOption>
         ) : null}
-        {submitError && step === 3 ? (
+        {shouldShowSubmitError(submitError, step) ? (
           <div style={{ marginTop: 14, fontSize: 13, color: theme.errorText }}>{submitError}</div>
         ) : null}
-        {!usesStripePaymentElement ? (
+        {!stripeFlowActive ? (
           <button
-            type={payMethod === 'card' ? 'submit' : 'button'}
-            form={payMethod === 'card' ? manualCardFormId : undefined}
+            type={resolveSubmitButtonType(payMethod)}
+            form={resolveSubmitButtonFormId(payMethod, manualCardFormId)}
             onClick={payMethod === 'card' ? undefined : () => void finalizeOrder()}
-            style={{
-              width: '100%',
-              marginTop: 20,
-              padding: 16,
-              background: theme.accent,
-              border: 'none',
-              borderRadius: theme.input.radius,
-              color: theme.buttonText,
-              fontSize: 18,
-              fontWeight: 700,
-            }}
+            style={buildSubmitButtonStyle(theme)}
           >
-            {isSubmitting ? 'Processando...' : config?.btnFinalizeText || 'Finalizar compra'}
+            {resolveSubmitButtonLabel(isSubmitting, config)}
           </button>
         ) : null}
       </div>
@@ -377,17 +367,7 @@ function renderCardForm(
           name="installments"
           value={form.installments}
           onChange={updateField('installments')}
-          style={{
-            width: '100%',
-            padding: '13px 16px',
-            background: theme.input.background,
-            border: `1px solid ${theme.input.border}`,
-            borderRadius: theme.input.radius,
-            fontSize: 15,
-            color: theme.text,
-            fontFamily: "'DM Sans', sans-serif",
-            outline: 'none',
-          }}
+          style={buildInstallmentSelectStyle(theme)}
         >
           {installmentOptions.map((option) => (
             <option key={option.value} value={option.value}>

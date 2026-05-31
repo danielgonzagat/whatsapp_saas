@@ -1,3 +1,7 @@
+/**
+ * @capability AntiBanGuard
+ * @domain channel
+ */
 import { randomInt, randomUUID } from 'node:crypto';
 import { ContextStore } from '../context-store';
 import { HealthMonitor } from './health-monitor';

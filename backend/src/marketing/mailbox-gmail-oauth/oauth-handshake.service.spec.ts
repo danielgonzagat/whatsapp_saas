@@ -3,9 +3,22 @@ import { MailboxProvider, MailboxStatus } from '@prisma/client';
 import { GmailOAuthHandshakeService } from './oauth-handshake.service';
 import type { SignedGmailState } from './types';
 
+type MailboxUpsertArg = {
+  where: {
+    workspaceId_provider_email: {
+      workspaceId: string;
+      provider: MailboxProvider;
+      email: string;
+    };
+  };
+  create: Record<string, unknown>;
+  update: Record<string, unknown>;
+  select: Record<string, boolean>;
+};
+
 const mockExchangeCode = jest.fn();
 const mockFetchUserInfo = jest.fn();
-const mockMailboxUpsert = jest.fn();
+const mockMailboxUpsert = jest.fn<(args: MailboxUpsertArg) => Promise<unknown>>();
 
 jest.mock('../mailbox-token-crypto', () => ({
   encryptMailboxToken: jest.fn((token: string | null | undefined) =>
@@ -79,7 +92,7 @@ describe('GmailOAuthHandshakeService', () => {
       expect(mockFetchUserInfo).toHaveBeenCalledWith('access-token-abc');
 
       expect(mockMailboxUpsert).toHaveBeenCalledTimes(1);
-      const upsertCall = mockMailboxUpsert.mock.calls[0][0];
+      const [upsertCall] = mockMailboxUpsert.mock.calls[0] as [MailboxUpsertArg];
 
       expect(upsertCall.where).toEqual({
         workspaceId_provider_email: {
@@ -188,11 +201,9 @@ describe('GmailOAuthHandshakeService', () => {
 
       await service.persistOAuthResult(isolatedState, 'auth-code-456');
 
-      const whereClause = mockMailboxUpsert.mock.calls[0][0].where;
-      expect(whereClause.workspaceId_provider_email.workspaceId).toBe('ws-isolated-999');
-
-      const createClause = mockMailboxUpsert.mock.calls[0][0].create;
-      expect(createClause.workspaceId).toBe('ws-isolated-999');
+      const [isolatedCall] = mockMailboxUpsert.mock.calls[0] as [MailboxUpsertArg];
+      expect(isolatedCall.where.workspaceId_provider_email.workspaceId).toBe('ws-isolated-999');
+      expect(isolatedCall.create.workspaceId).toBe('ws-isolated-999');
     });
   });
 });

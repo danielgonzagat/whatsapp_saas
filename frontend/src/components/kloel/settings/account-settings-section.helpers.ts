@@ -113,3 +113,96 @@ export function buildAccountSettingsPayload(
     channels: extractAccountChannels(workspace, settings, channelData),
   };
 }
+
+/** Body sent to workspaceApi.updateAccount. */
+export interface UpdateAccountBody {
+  /** Workspace / account name. */
+  name: string;
+  /** Business phone. */
+  phone: string;
+  /** Outbound webhook URL. */
+  webhookUrl: string;
+  /** Public website / domain. */
+  website: string;
+  /** IANA timezone identifier. */
+  timezone: string;
+  /** Locale code (e.g. pt-BR). */
+  language: string;
+  /** Date format token. */
+  dateFormat: string;
+  /** Email notification toggles. */
+  notifications: {
+    /** Important account emails. */
+    emailImportant: boolean;
+    /** Tips / growth emails. */
+    emailTips: boolean;
+  };
+}
+
+/**
+ * Build the request body for workspaceApi.updateAccount from the
+ * component's profile + preferences slices. Pure: no I/O, no mutation.
+ */
+export function buildUpdateAccountBody(
+  profile: AccountProfile,
+  preferences: AccountPreferences,
+): UpdateAccountBody {
+  return {
+    name: profile.name,
+    phone: profile.phone,
+    webhookUrl: profile.webhookUrl,
+    website: profile.website,
+    timezone: preferences.timezone,
+    language: preferences.language,
+    dateFormat: preferences.dateFormat,
+    notifications: {
+      emailImportant: preferences.emailImportant,
+      emailTips: preferences.emailTips,
+    },
+  };
+}
+
+/** Body sent to workspaceApi.updateChannels. */
+export interface UpdateChannelsBody {
+  /** Whether the e-mail channel is enabled. */
+  email: boolean;
+}
+
+/**
+ * Build the request body for workspaceApi.updateChannels from the
+ * component's channels slice. Pure: no I/O, no mutation.
+ */
+export function buildUpdateChannelsBody(channels: AccountChannels): UpdateChannelsBody {
+  return {
+    email: channels.emailEnabled,
+  };
+}
+
+/**
+ * Pick the first non-empty error string from a list of API response
+ * envelopes. Returns null when all envelopes are successful. Pure.
+ */
+export function firstApiError(
+  responses: ReadonlyArray<{ error?: string | null | undefined }>,
+): string | null {
+  for (const response of responses) {
+    if (response?.error) {
+      return response.error;
+    }
+  }
+  return null;
+}
+
+/**
+ * Coerce a free-form number input value (string from <input type="number">
+ * or already-numeric) into a finite non-negative integer-or-float, defaulting
+ * to 0 on empty / NaN. Mirrors the inline `Number(e.target.value || 0)`
+ * pattern used previously in the component. Pure.
+ */
+export function coerceJitterInput(value: string | number | null | undefined): number {
+  if (value === null || value === undefined || value === '') {
+    return 0;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}

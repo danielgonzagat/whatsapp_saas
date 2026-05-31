@@ -4,6 +4,9 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AdminSessionsService } from './admin-sessions.service';
 import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
+// Typed wrapper around expect.objectContaining so nested matcher values are typed
+const oc = (o: Record<string, unknown>): unknown => expect.objectContaining(o);
+
 describe('AdminSessionsService', () => {
   let service: AdminSessionsService;
 
@@ -106,14 +109,16 @@ describe('AdminSessionsService', () => {
       expect(mockSessionUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'session_1' },
-          data: expect.objectContaining({}),
+          data: oc({}),
         }),
       );
-      const revokeArg = mockSessionUpdate.mock.calls[0][0] as { data: { revokedAt: Date } };
+      const revokeArg = (mockSessionUpdate.mock.calls[0] as unknown[])[0] as {
+        data: { revokedAt: Date };
+      };
       expect(revokeArg.data.revokedAt).toBeInstanceOf(Date);
       expect(mockAuditLogCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: oc({
             adminUserId,
             action: 'admin.sessions.revoked',
             entityType: 'AdminSession',

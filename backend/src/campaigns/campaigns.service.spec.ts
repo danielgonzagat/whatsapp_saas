@@ -7,6 +7,7 @@ import { AuditService } from '../audit/audit.service';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 const mockQueueAdd = jest.fn();
 
@@ -118,7 +119,7 @@ describe('CampaignsService', () => {
       });
 
       expect(mockPrisma.campaign.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
+        data: partialMatch({
           name: 'Summer Sale',
           status: 'DRAFT',
           workspace: { connect: { id: 'ws-1' } },
@@ -390,7 +391,7 @@ describe('CampaignsService', () => {
       expect(mockPrisma.campaign.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'parent-1', workspaceId: 'ws-1' },
-          data: expect.objectContaining({ messageTemplate: 'better copy' }),
+          data: partialMatch({ messageTemplate: 'better copy' }),
         }),
       );
     });

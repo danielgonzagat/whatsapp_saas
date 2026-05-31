@@ -7,13 +7,28 @@ import { promisify } from 'util';
 import { REPO_ROOT, repoPath } from './kloel-code-analysis.service';
 import { CognitiveBridgeService } from './self-awareness/cognitive-bridge.service';
 import { PulseRuntimeService } from './self-awareness/pulse-runtime.service';
+import {
+  MAX_FILE_BYTES,
+  buildDirEntries,
+  buildJestCommand,
+  buildSearchCommand,
+  buildSliceContent,
+  clampGitLogCount,
+  extractErrorMessage,
+  extractExecOutput,
+  extractOutlineSymbols,
+  fileTooLargeMessage,
+  isCodeGraphTimeoutError,
+  isFileNotFoundError,
+  isRgNoMatchError,
+  mapJestTestResults,
+  parsePrismaSchema,
+  parseRgResults,
+  resolveBuildScopes,
+  sanitizeCodeGraphQuery,
+} from './kloel-code-tools.service.helpers';
 
 const exec = promisify(cpExec);
-
-const MAX_FILE_BYTES = 100_000;
-const MAX_GREP_RESULTS = 30;
-const GIT_LOG_MAX_COUNT = 20;
-const DIR_MAX_ENTRIES = 50;
 
 interface ToolResult {
   success: boolean;
@@ -60,8 +75,7 @@ export class KloelCodeToolsService {
       const diagnostics = await this.cognitiveBridge.getLspDiagnostics(file);
       return { success: true, file, total: diagnostics.length, diagnostics };
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      return { success: false, error: msg };
+      return { success: false, error: extractErrorMessage(err) };
     }
   }
 
@@ -70,8 +84,7 @@ export class KloelCodeToolsService {
       const routes = await this.cognitiveBridge.getOpenApiRoute(pathOrController);
       return { success: true, query: pathOrController, total: routes.length, routes };
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      return { success: false, error: msg };
+      return { success: false, error: extractErrorMessage(err) };
     }
   }
 
@@ -80,8 +93,7 @@ export class KloelCodeToolsService {
       const events = await this.cognitiveBridge.getAsyncApiEvents(domain);
       return { success: true, domain, total: events.length, events };
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      return { success: false, error: msg };
+      return { success: false, error: extractErrorMessage(err) };
     }
   }
 
@@ -90,8 +102,7 @@ export class KloelCodeToolsService {
       const issues = await this.cognitiveBridge.getStaticAnalysisIssues(file);
       return { success: true, file, total: issues.length, issues };
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      return { success: false, error: msg };
+      return { success: false, error: extractErrorMessage(err) };
     }
   }
 
@@ -109,20 +120,11 @@ export class KloelCodeToolsService {
       if (stat.size > MAX_FILE_BYTES) {
         return {
           success: false,
-          error: `file_too_large: ${stat.size} bytes, max ${MAX_FILE_BYTES}`,
+          error: fileTooLargeMessage(stat.size),
         };
       }
-      let content = await fs.readFile(absPath, 'utf-8');
-      const lines = content.split('\n');
-      const totalLines = lines.length;
-      if (startLine && endLine) {
-        const s = Math.max(1, startLine);
-        const e = Math.min(totalLines, endLine);
-        content = lines
-          .slice(s - 1, e)
-          .map((l, i) => `${s + i}: ${l}`)
-          .join('\n');
-      }
+      const raw = await fs.readFile(absPath, 'utf-8');
+      const { content, totalLines } = buildSliceContent(raw, startLine, endLine);
       return {
         success: true,
         file: relPath,
@@ -130,8 +132,8 @@ export class KloelCodeToolsService {
         content,
       };
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes('ENOENT')) {
+      const msg = extractErrorMessage(err);
+      if (isFileNotFoundError(msg)) {
         return { success: false, error: 'file_not_found' };
       }
       this.logger.error(`read_source_file failed: ${msg}`);
@@ -143,68 +145,40 @@ export class KloelCodeToolsService {
     try {
       const dirPath = relDir ? repoPath(relDir) : REPO_ROOT;
       const entries = await fs.readdir(dirPath, { withFileTypes: true });
-      const sorted = entries
-        .filter((e) => !e.name.startsWith('.') || e.name === '.env.example')
-        .slice(0, DIR_MAX_ENTRIES)
-        .map((e) => ({
-          name: e.name,
-          kind: e.isDirectory() ? 'directory' : e.isSymbolicLink() ? 'symlink' : 'file',
-        }));
-      sorted.sort((a, b) => {
-        if (a.kind !== b.kind) {
-          return a.kind === 'directory' ? -1 : 1;
-        }
-        return a.name.localeCompare(b.name);
-      });
+      const sorted = buildDirEntries(entries);
       return { success: true, path: relDir || '.', entries: sorted, total: sorted.length };
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      return { success: false, error: msg };
+      return { success: false, error: extractErrorMessage(err) };
     }
   }
 
   async toolSearchCodebase(pattern: string, glob?: string): Promise<ToolResult> {
     try {
-      const globArg = glob ? `--glob '${glob.replace(/'/g, "'\\''")}'` : '';
-      const searchPath = glob ? '' : ' backend/src/ frontend/src/ worker/src/';
-      const cmd = `cd '${REPO_ROOT}' && rg --line-number -i --max-count ${MAX_GREP_RESULTS} ${globArg} '${pattern.replace(/'/g, "'\\''")}'${searchPath} 2>&1`;
+      const cmd = buildSearchCommand(pattern, glob, REPO_ROOT);
       const { stdout, stderr } = await exec(cmd, { timeout: 15_000, maxBuffer: 1024 * 1024 });
       if (stderr && !stdout) {
         return { success: false, error: stderr.trim() };
       }
-      const lines = stdout.trim().split('\n').filter(Boolean);
+      const results = parseRgResults(stdout);
       return {
         success: true,
         pattern,
         glob: glob || null,
-        matchCount: lines.length,
-        results: lines.map((line) => {
-          const [file, lnum, ...rest] = line.split(':');
-          return { file, line: Number(lnum), content: rest.join(':').trim() };
-        }),
+        matchCount: results.length,
+        results,
       };
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      // child_process exec errors carry stdout/stderr fields not on the base Error type;
-      // narrow with a structural cast instead of `as any` to keep type safety.
-      const ce = err as { stdout?: unknown; stderr?: unknown };
-      const stderrOut = typeof ce.stdout === 'string' ? ce.stdout : undefined;
-      const stderrErr = typeof ce.stderr === 'string' ? ce.stderr : undefined;
+      const msg = extractErrorMessage(err);
+      const { stdout, stderr } = extractExecOutput(err);
       // rg exits with code 1 when no matches found — not an error
-      if (
-        (msg.includes('exit code 1') || msg.includes('Command failed')) &&
-        (stderrOut || stderrErr)
-      ) {
-        const lines = (stderrOut || '').trim().split('\n').filter(Boolean);
-        if (lines.length > 0) {
+      if (isRgNoMatchError(msg) && (stdout || stderr)) {
+        const results = parseRgResults(stdout || '');
+        if (results.length > 0) {
           return {
             success: true,
             pattern,
-            matchCount: lines.length,
-            results: lines.map((line: string) => {
-              const [file, lnum, ...rest] = line.split(':');
-              return { file, line: Number(lnum), content: rest.join(':').trim() };
-            }),
+            matchCount: results.length,
+            results,
           };
         }
         return { success: true, pattern, matchCount: 0, results: [] };
@@ -215,15 +189,14 @@ export class KloelCodeToolsService {
 
   async toolGitLog(count?: number): Promise<ToolResult> {
     try {
-      const n = count && count > 0 ? Math.min(count, GIT_LOG_MAX_COUNT) : 10;
+      const n = clampGitLogCount(count);
       const { stdout } = await exec(`cd '${REPO_ROOT}' && git log --oneline -${n}`, {
         timeout: 10_000,
       });
       const entries = stdout.trim().split('\n').filter(Boolean);
       return { success: true, count: entries.length, entries };
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      return { success: false, error: msg };
+      return { success: false, error: extractErrorMessage(err) };
     }
   }
 
@@ -235,8 +208,7 @@ export class KloelCodeToolsService {
       });
       return { success: true, target, summary: stdout.trim() || 'no changes' };
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      return { success: false, error: msg };
+      return { success: false, error: extractErrorMessage(err) };
     }
   }
 
@@ -246,8 +218,7 @@ export class KloelCodeToolsService {
       const files = stdout.trim().split('\n').filter(Boolean);
       return { success: true, fileCount: files.length, files };
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      return { success: false, error: msg };
+      return { success: false, error: extractErrorMessage(err) };
     }
   }
 
@@ -269,77 +240,22 @@ export class KloelCodeToolsService {
         }
       }
       const content = await fs.readFile(absPath, 'utf-8');
-      const lines = content.split('\n');
-      const symbols: Array<{ name: string; kind: string; line: number }> = [];
-
-      const patterns: Array<{
-        regex: RegExp;
-        kind: string;
-        extract: (m: RegExpMatchArray) => string;
-      }> = [
-        {
-          regex: /^\s*export\s+(async\s+)?function\s+(\w+)/,
-          kind: 'function',
-          extract: (m) => m[2] ?? 'unknown',
-        },
-        {
-          regex: /^\s*(async\s+)?function\s+(\w+)/,
-          kind: 'function',
-          extract: (m) => m[2] ?? 'unknown',
-        },
-        { regex: /^\s*export\s+class\s+(\w+)/, kind: 'class', extract: (m) => m[1] ?? 'unknown' },
-        { regex: /^\s*class\s+(\w+)/, kind: 'class', extract: (m) => m[1] ?? 'unknown' },
-        {
-          regex: /^\s*export\s+interface\s+(\w+)/,
-          kind: 'interface',
-          extract: (m) => m[1] ?? 'unknown',
-        },
-        { regex: /^\s*export\s+type\s+(\w+)/, kind: 'type', extract: (m) => m[1] ?? 'unknown' },
-        { regex: /^\s*export\s+const\s+(\w+)/, kind: 'const', extract: (m) => m[1] ?? 'unknown' },
-        {
-          regex: /^\s*(?:public|private|protected)?\s*(?:async\s+)?(\w+)\s*\(/,
-          kind: 'method',
-          extract: (m) => m[1] ?? 'unknown',
-        },
-        { regex: /@Injectable\(\)/, kind: 'decorator', extract: () => 'Injectable' },
-        { regex: /@Controller\(/, kind: 'decorator', extract: () => 'Controller' },
-        { regex: /@Module\(/, kind: 'decorator', extract: () => 'Module' },
-      ];
-
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        if (!line) {
-          continue;
-        }
-        for (const p of patterns) {
-          const m = line.match(p.regex);
-          if (m) {
-            symbols.push({ name: p.extract(m), kind: p.kind, line: i + 1 });
-            break;
-          }
-        }
-      }
-
+      const { symbols, totalLines } = extractOutlineSymbols(content);
       return {
         success: true,
         file: relPath,
-        totalLines: lines.length,
+        totalLines,
         symbolCount: symbols.length,
         symbols,
       };
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      return { success: false, error: msg };
+      return { success: false, error: extractErrorMessage(err) };
     }
   }
 
   async toolRunBackendTests(pattern?: string): Promise<ToolResult> {
     try {
-      const testPattern = pattern || '';
-      const cmd = testPattern
-        ? `cd '${REPO_ROOT}/backend' && npx jest --no-coverage -t '${testPattern.replace(/'/g, "'\\''")}' --forceExit --json 2>&1`
-        : `cd '${REPO_ROOT}/backend' && npx jest --no-coverage --forceExit --json 2>&1`;
-
+      const cmd = buildJestCommand(REPO_ROOT, pattern);
       const { stdout } = await exec(cmd, { timeout: 120_000, maxBuffer: 10 * 1024 * 1024 });
       const result = JSON.parse(stdout) as JestOutput;
       return {
@@ -347,13 +263,10 @@ export class KloelCodeToolsService {
         numTotalTests: result.numTotalTests,
         numPassedTests: result.numPassedTests,
         numFailedTests: result.numFailedTests,
-        testResults: (result.testResults ?? []).map((r) => ({
-          file: r.name.replace(REPO_ROOT + '/', ''),
-          status: r.status,
-        })),
+        testResults: mapJestTestResults(result.testResults, REPO_ROOT),
       };
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = extractErrorMessage(err);
       return { success: false, error: `test execution failed: ${msg.slice(0, 500)}` };
     }
   }
@@ -361,26 +274,21 @@ export class KloelCodeToolsService {
   async toolBuildStatus(scope?: string): Promise<ToolResult> {
     try {
       const results: Record<string, string> = {};
-      const scopes = scope ? [scope] : ['backend', 'frontend', 'worker'];
+      const scopes = resolveBuildScopes(scope);
 
       for (const s of scopes) {
-        if (!['backend', 'frontend', 'worker'].includes(s)) {
-          continue;
-        }
         try {
           const { stdout, stderr } = await exec(`cd '${REPO_ROOT}/${s}' && npx tsc --noEmit 2>&1`, {
             timeout: 60_000,
           });
           results[s] = stderr || stdout || 'clean';
         } catch (e: unknown) {
-          const errStr = e instanceof Error ? e.message : String(e);
-          results[s] = errStr.slice(0, 300);
+          results[s] = extractErrorMessage(e).slice(0, 300);
         }
       }
       return { success: true, results };
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      return { success: false, error: msg };
+      return { success: false, error: extractErrorMessage(err) };
     }
   }
 
@@ -392,8 +300,8 @@ export class KloelCodeToolsService {
       const { stdout, stderr } = await exec(cmd, { timeout: timeoutMs, maxBuffer: 500_000 });
       return (stdout + stderr).trim().slice(0, 8000);
     } catch (e: unknown) {
-      const errStr = e instanceof Error ? e.message : String(e);
-      return errStr.includes('ETIMEDOUT') || errStr.includes('killed')
+      const errStr = extractErrorMessage(e);
+      return isCodeGraphTimeoutError(errStr)
         ? 'CodeGraph timeout. Tente uma query mais especifica.'
         : `CodeGraph error: ${errStr.slice(0, 500)}`;
     }
@@ -405,19 +313,19 @@ export class KloelCodeToolsService {
   }
 
   async toolCodeGraphSearch(query: string): Promise<ToolResult> {
-    const q = query.replace(/["'`]/g, '').trim() || 'overview';
+    const q = sanitizeCodeGraphQuery(query) || 'overview';
     const output = await this.runCodeGraph(`query "${q}"`);
     return { success: true, text: output };
   }
 
   async toolCodeGraphContext(task: string): Promise<ToolResult> {
-    const t = task.replace(/["'`]/g, '').trim() || 'overview';
+    const t = sanitizeCodeGraphQuery(task) || 'overview';
     const output = await this.runCodeGraph(`context "${t}"`, 30_000);
     return { success: true, text: output };
   }
 
   async toolCodeGraphCallers(symbol: string): Promise<ToolResult> {
-    const s = symbol.replace(/["'`]/g, '').trim();
+    const s = sanitizeCodeGraphQuery(symbol);
     if (!s) {
       return { success: true, text: 'Informe o simbolo para buscar callers.' };
     }
@@ -427,7 +335,7 @@ export class KloelCodeToolsService {
   }
 
   async toolCodeGraphCallees(symbol: string): Promise<ToolResult> {
-    const s = symbol.replace(/["'`]/g, '').trim();
+    const s = sanitizeCodeGraphQuery(symbol);
     if (!s) {
       return { success: true, text: 'Informe o simbolo para buscar callees.' };
     }
@@ -436,7 +344,7 @@ export class KloelCodeToolsService {
   }
 
   async toolCodeGraphImpact(symbol: string): Promise<ToolResult> {
-    const s = symbol.replace(/["'`]/g, '').trim();
+    const s = sanitizeCodeGraphQuery(symbol);
     if (!s) {
       return { success: true, text: 'Informe o simbolo para analisar impacto.' };
     }
@@ -445,7 +353,7 @@ export class KloelCodeToolsService {
   }
 
   async toolCodeGraphNode(symbol: string): Promise<ToolResult> {
-    const s = symbol.replace(/["'`]/g, '').trim();
+    const s = sanitizeCodeGraphQuery(symbol);
     if (!s) {
       return { success: true, text: 'Informe o simbolo para detalhes.' };
     }
@@ -462,29 +370,17 @@ export class KloelCodeToolsService {
     try {
       const schemaPath = path.join(REPO_ROOT, 'backend', 'prisma', 'schema.prisma');
       const content = await fs.readFile(schemaPath, 'utf-8');
-      const modelMatches = [...content.matchAll(/^model\s+(\w+)\s*\{/gm)];
-      const models = modelMatches.map((m) => ({
-        name: m[1],
-        line: content.slice(0, m.index).split('\n').length,
-      }));
-
-      const enumMatches = [...content.matchAll(/^enum\s+(\w+)\s*\{/gm)];
-      const enums = enumMatches.map((m) => ({
-        name: m[1],
-        line: content.slice(0, m.index).split('\n').length,
-      }));
-
+      const parsed = parsePrismaSchema(content);
       return {
         success: true,
-        modelCount: models.length,
-        enumCount: enums.length,
-        models,
-        enums,
-        totalLines: content.split('\n').length,
+        modelCount: parsed.models.length,
+        enumCount: parsed.enums.length,
+        models: parsed.models,
+        enums: parsed.enums,
+        totalLines: parsed.totalLines,
       };
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      return { success: false, error: msg };
+      return { success: false, error: extractErrorMessage(err) };
     }
   }
 }

@@ -3,6 +3,7 @@ import {
   makeFinancialAlertStub,
   makePrisma,
 } from './connect-ledger-reconciliation.service.spec-helpers';
+import { partialMatch } from '../../../test/helpers/match-instance';
 
 /**
  * ConnectLedgerReconciliationService — audit + zero-state behaviours.
@@ -45,7 +46,7 @@ describe('ConnectLedgerReconciliationService — audit & zero-state', () => {
     expect(financialAlert.reconciliationAlert).toHaveBeenCalledWith(
       'connect ledger reconciliation audit failed',
       expect.objectContaining({
-        details: expect.objectContaining({
+        details: partialMatch({
           error: 'audit boom',
         }),
       }),

@@ -3,6 +3,7 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { InsufficientAvailableBalanceError } from '../ledger/ledger.types';
 
 import { buildService } from './connect-payout-approval.e2e.spec-helpers';
+import { partialMatch } from '../../../test/helpers/match-instance';
 
 /**
  * ConnectPayoutApprovalService — request creation and listing.
@@ -28,7 +29,7 @@ describe('ConnectPayoutApprovalService — full payout lifecycle', () => {
         where: { id: 'cab_seller', workspaceId: 'ws-1' },
       });
       expect(prisma.approvalRequest.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
+        data: partialMatch({
           workspaceId: 'ws-1',
           kind: 'connect_payout',
           state: 'OPEN',
@@ -55,7 +56,7 @@ describe('ConnectPayoutApprovalService — full payout lifecycle', () => {
           action: 'system.connect.withdrawal_approval_requested',
           entityType: 'connect_account_balance',
           entityId: 'cab_seller',
-          details: expect.objectContaining({
+          details: partialMatch({
             workspaceId: 'ws-1',
             accountType: 'SELLER',
             stripeAccountId: 'acct_seller',
@@ -153,7 +154,7 @@ describe('ConnectPayoutApprovalService — full payout lifecycle', () => {
       expect(result.items[0]).toEqual(
         expect.objectContaining({
           state: 'APPROVED',
-          decision: expect.objectContaining({
+          decision: partialMatch({
             payoutId: 'po_123',
             status: 'paid',
             approvedByAdminId: 'admin-1',

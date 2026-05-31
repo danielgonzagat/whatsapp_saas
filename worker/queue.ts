@@ -1,4 +1,8 @@
 /**
+ * @capability LazyQueueSystem
+ * @domain queue
+ */
+/**
  * ARCHITECTURAL COHESION: This file is a single organism — the Lazy Queue
  * System. It manages the complete lifecycle of BullMQ queues: lazy Redis
  * connection, lazy queue/DLQ/QueueEvents creation via Proxy, DLQ-to-ops
@@ -50,6 +54,16 @@ import {
   Worker,
 } from 'bullmq';
 import Redis, { type RedisOptions } from 'ioredis';
+import {
+  awaitCloserOrTimeout,
+  closeWithWarn,
+  collectRedisDuplicateOverrides,
+  extractWorkspaceIdFromJobData,
+  hasErrorEmitter,
+  logBullMqBackgroundError,
+  resolveQueueAttempts,
+  resolveQueueBackoffMs,
+} from './queue.helpers';
 import { maskRedisUrl, resolveRedisUrl } from './resolve-redis-url';
 
 // ─── Lazy Redis connection ────────────────────────────────────────────────
@@ -75,16 +89,6 @@ const resolveRequiredRedisUrl = (context: string): string => {
     process.exit(1);
   }
   return resolved;
-};
-
-const collectRedisDuplicateOverrides = (args: unknown[]): RedisOptions => {
-  const overrides: RedisOptions = {};
-  for (const arg of args) {
-    if (arg && typeof arg === 'object' && !Array.isArray(arg)) {
-      Object.assign(overrides, arg);
-    }
-  }
-  return overrides;
 };
 
 const createRedisConnection = (
@@ -152,11 +156,8 @@ export const connection = new Proxy({} as Redis, {
 
 // ─── Lazy queue, DLQ, QueueEvents creation ────────────────────────────────
 
-const defaultAttempts = Math.max(1, Number.parseInt(process.env.QUEUE_ATTEMPTS || '3', 10) || 3);
-const defaultBackoff = Math.max(
-  1000,
-  Number.parseInt(process.env.QUEUE_BACKOFF_MS || '5000', 10) || 5000,
-);
+const defaultAttempts = resolveQueueAttempts(process.env.QUEUE_ATTEMPTS);
+const defaultBackoff = resolveQueueBackoffMs(process.env.QUEUE_BACKOFF_MS);
 
 export function buildQueueOptions(): QueueOptions {
   return {
@@ -175,23 +176,6 @@ const dlqRegistryMap = new Map<string, BullQueue>();
 const queueEventsRegistry = new Map<string, QueueEvents>();
 const additionalWorkers: Worker[] = [];
 
-function logBullMqBackgroundError(label: string, err: Error): void {
-  console.warn(`[QUEUE] ${label} background error: ${err.message}`);
-}
-
-type ErrorEmitter = {
-  on: (event: 'error', handler: (err: Error) => void) => unknown;
-};
-
-function hasErrorEmitter(value: unknown): value is ErrorEmitter {
-  return Boolean(
-    value &&
-    typeof value === 'object' &&
-    'on' in value &&
-    typeof (value as { on?: unknown }).on === 'function',
-  );
-}
-
 function attachQueueErrorLogger(queue: BullQueue, label: string): void {
   if (hasErrorEmitter(queue)) {
     queue.on('error', (err) => logBullMqBackgroundError(label, err));
@@ -208,21 +192,6 @@ function attachWorkerErrorLogger(worker: Worker, label: string): void {
   if (hasErrorEmitter(worker)) {
     worker.on('error', (err) => logBullMqBackgroundError(label, err));
   }
-}
-
-function extractWorkspaceIdFromJobData(data: unknown): unknown {
-  if (!data || typeof data !== 'object' || Array.isArray(data)) {
-    return undefined;
-  }
-  const record = data as Record<string, unknown>;
-  if (typeof record.workspaceId === 'string') {
-    return record.workspaceId;
-  }
-  const workspace = record.workspace;
-  if (workspace && typeof workspace === 'object' && !Array.isArray(workspace)) {
-    return (workspace as Record<string, unknown>).id;
-  }
-  return undefined;
 }
 
 function getOrCreateQueue(name: string): BullQueue {
@@ -354,6 +323,8 @@ export const webhookQueue = lazyQueue('webhook-jobs');
 export const silent24hResolverQueue = lazyQueue('silent-24h-resolver');
 /** Mass send queue. */
 export const massSendQueue = lazyQueue('mass-send');
+/** Mind self-evolution cron queue (fires every 6h, hits backend /internal/mind-self-evolution/trigger). */
+export const mindSelfEvolutionQueue = lazyQueue('mind-self-evolution');
 
 // queueOptions is built lazily so reading it does not trigger
 // connection creation unless someone actually consumes it.
@@ -379,6 +350,7 @@ export const queueRegistry: BullQueue[] = [
   webhookQueue,
   silent24hResolverQueue,
   massSendQueue,
+  mindSelfEvolutionQueue,
 ];
 
 // ─── DLQ webhook notifier ─────────────────────────────────────────────────
@@ -459,12 +431,6 @@ export class Queue {
  * @param timeoutMs Maximum total time to wait for all closes. After
  *                   this elapses the function returns regardless.
  */
-interface Closeable {
-  close: () => Promise<unknown>;
-}
-
-const closeWithWarn = (item: Closeable, label: string): Promise<unknown> =>
-  item.close().catch((err) => console.warn(`[SHUTDOWN] ${label} close failed:`, err));
 
 const collectClosers = (): Promise<unknown>[] => {
   const closers: Promise<unknown>[] = [];
@@ -481,16 +447,6 @@ const collectClosers = (): Promise<unknown>[] => {
     closers.push(closeWithWarn(q, 'queue'));
   }
   return closers;
-};
-
-const awaitCloserOrTimeout = async (
-  closers: Promise<unknown>[],
-  timeoutMs: number,
-): Promise<void> => {
-  await Promise.race([
-    Promise.allSettled(closers),
-    new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
-  ]);
 };
 
 const closeSharedConnection = async (): Promise<void> => {

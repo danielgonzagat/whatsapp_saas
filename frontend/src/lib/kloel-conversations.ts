@@ -7,12 +7,28 @@ import { type KloelChatRequestMetadata } from '@/lib/kloel-chat';
 import { mutate } from 'swr';
 import { tokenStorage } from './api/core';
 import {
-  type KloelStreamErrorEvent,
+  STREAM_INTERRUPTED_MESSAGE,
+  clampThreadSearchLimit,
+  consumeSseBuffer,
+  createKloelStreamError,
+  describeStreamAbortReason,
+  extractSseDataPayload,
+  extractWrappedPayload,
+  normalizeThreadSearchQuery,
+  toErrorMessage,
+} from './kloel-conversations.helpers';
+import {
   type KloelStreamEvent,
   parseKloelStreamPayload,
 } from './kloel-stream-events';
 
 type JsonRecord = Record<string, unknown>;
+
+// Preserve the public API: `extractWrappedPayload` was previously declared
+// inline in this module. After the Wave 117 helper extraction it lives in
+// `kloel-conversations.helpers.ts`, but we keep re-exporting it from here so
+// existing external consumers continue to import from `kloel-conversations`.
+export { extractWrappedPayload };
 
 /** Kloel sync response shape. */
 export interface KloelSyncResponse {
@@ -100,30 +116,6 @@ export interface KloelStreamOptions {
   signal?: AbortSignal;
 }
 
-function isRecord(value: unknown): value is JsonRecord {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function toErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof Error && error.message.trim()) {
-    return error.message;
-  }
-
-  if (isRecord(error) && typeof error.message === 'string' && error.message.trim()) {
-    return error.message;
-  }
-
-  return fallback;
-}
-
-/** Extract wrapped payload. */
-export function extractWrappedPayload<T>(payload: unknown): T {
-  if (isRecord(payload) && payload.data !== undefined) {
-    return payload.data as T;
-  }
-  return payload as T;
-}
-
 /** Send authenticated kloel message. */
 export async function sendAuthenticatedKloelMessage(
   input: {
@@ -164,7 +156,12 @@ export function streamAuthenticatedKloelMessage(
 ) {
   const controller = new AbortController();
   const token = tokenStorage.getToken();
+  // Time allowed between consecutive SSE chunks once the stream is flowing.
   const SSE_IDLE_TIMEOUT_MS = 45_000;
+  // Extra grace period for the *first* byte after headers are accepted.
+  // LLM cold-starts can take longer than 45s; starting the strict inter-chunk
+  // timer before any data arrives would abort valid but slow responses.
+  const SSE_FIRST_BYTE_TIMEOUT_MS = 90_000;
 
   if (options.signal) {
     if (options.signal.aborted) {
@@ -205,9 +202,14 @@ export function streamAuthenticatedKloelMessage(
       const decoder = new TextDecoder();
       let buffer = '';
       let hasTerminalEvent = false;
+      // The initial timeout is the longer first-byte budget (90s). Every call
+      // to resetIdleTimeout() — which fires on each received chunk — arms the
+      // shorter inter-chunk budget (45s). This way slow LLM cold-starts don't
+      // time out before the first token, while a stalled mid-stream is caught
+      // quickly once data has started flowing.
       let idleTimeoutId: ReturnType<typeof setTimeout> | null = setTimeout(
         () => controller.abort('stream_idle_timeout'),
-        SSE_IDLE_TIMEOUT_MS,
+        SSE_FIRST_BYTE_TIMEOUT_MS,
       );
 
       const resetIdleTimeout = () => {
@@ -229,12 +231,8 @@ export function streamAuthenticatedKloelMessage(
       };
 
       const consumeLine = (line: string) => {
-        if (!line.startsWith('data: ')) {
-          return false;
-        }
-
-        const raw = line.slice(6);
-        if (!raw || raw === '[DONE]') {
+        const raw = extractSseDataPayload(line);
+        if (raw === null) {
           return false;
         }
 
@@ -257,6 +255,18 @@ export function streamAuthenticatedKloelMessage(
           }
 
           if (event.type === 'error') {
+            // Only a terminal error (done:true) stops the stream. A
+            // non-terminal error (done:false) is recoverable: surface any
+            // carried content as a chunk and keep reading so the trailing
+            // content + the real terminal `done` still render. Backends should
+            // emit content/status events for recoverable cases, but we stay
+            // defensive here so a stray done:false error never wedges the chat.
+            if (event.done !== true) {
+              if (typeof event.content === 'string' && event.content.length > 0) {
+                options.onChunk(event.content);
+              }
+              continue;
+            }
             hasTerminalEvent = true;
             throw createKloelStreamError(event);
           }
@@ -278,10 +288,10 @@ export function streamAuthenticatedKloelMessage(
           async ({ value }) => {
             resetIdleTimeout();
             buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || '';
+            const split = consumeSseBuffer(buffer);
+            buffer = split.remainder;
 
-            for (const line of lines) {
+            for (const line of split.lines) {
               try {
                 const shouldStop = consumeLine(line);
                 if (shouldStop) {
@@ -319,27 +329,16 @@ export function streamAuthenticatedKloelMessage(
       }
 
       if (!hasTerminalEvent) {
-        options.onError?.(
-          'A resposta foi interrompida antes da conclusão. Sua mensagem foi preservada. Tente novamente.',
-        );
+        options.onError?.(STREAM_INTERRUPTED_MESSAGE);
         return;
       }
     } catch (error: unknown) {
       if (controller.signal.aborted) {
-        const abortReason =
-          typeof controller.signal.reason === 'string'
-            ? controller.signal.reason
-            : 'stream_aborted';
-
-        if (abortReason === 'cancelled_by_client') {
+        const message = describeStreamAbortReason(controller.signal.reason);
+        if (message === null) {
           return;
         }
-
-        options.onError?.(
-          abortReason === 'stream_idle_timeout'
-            ? 'A resposta ficou inativa por muito tempo. Sua mensagem foi preservada. Tente novamente.'
-            : abortReason,
-        );
+        options.onError?.(message);
         return;
       }
 
@@ -352,12 +351,6 @@ export function streamAuthenticatedKloelMessage(
   return {
     abort: () => controller.abort('cancelled_by_client'),
   };
-}
-
-function createKloelStreamError(event: KloelStreamErrorEvent) {
-  const error = new Error(event.content || event.error || 'stream_failed');
-  (error as Error & { code?: string }).code = event.error || 'stream_failed';
-  return error;
 }
 
 /** Load kloel thread messages. */
@@ -437,13 +430,13 @@ export async function searchKloelThreads(
   query: string,
   limit = 20,
 ): Promise<ThreadSearchPayload[]> {
-  const normalizedQuery = String(query || '').trim();
-  if (normalizedQuery.length < 2) {
+  const normalizedQuery = normalizeThreadSearchQuery(query);
+  if (normalizedQuery === null) {
     return [];
   }
 
   const res = await apiFetch<ThreadSearchPayload[]>(
-    `/kloel/conversations/search?q=${encodeURIComponent(normalizedQuery)}&limit=${Math.min(Math.max(limit, 1), 20)}`,
+    `/kloel/conversations/search?q=${encodeURIComponent(normalizedQuery)}&limit=${clampThreadSearchLimit(limit)}`,
   );
   const payload = extractWrappedPayload<ThreadSearchPayload[] | undefined>(res);
   return Array.isArray(payload) ? payload : [];

@@ -1,7 +1,7 @@
 import { apiFetch } from './core';
 
 /** Lead shape. */
-export interface Lead {
+export interface Contact {
   /** Id property. */
   id: string;
   /** Phone property. */
@@ -26,10 +26,10 @@ export interface Lead {
   updatedAt?: string;
 }
 
-export async function getLeads(
+export async function getContacts(
   workspaceId: string,
   params?: { status?: string; search?: string; limit?: number },
-): Promise<Lead[]> {
+): Promise<Contact[]> {
   const query = new URLSearchParams();
   if (params?.status) {
     query.set('status', params.status);
@@ -45,7 +45,7 @@ export async function getLeads(
     query.toString() ? `?${query.toString()}` : ''
   }`;
 
-  const res = await apiFetch<Lead[] | { leads: Lead[] }>(endpoint);
+  const res = await apiFetch<Contact[] | { leads: Contact[] }>(endpoint);
   if (res.error) {
     throw new Error(res.error);
   }
@@ -58,9 +58,9 @@ export async function getLeads(
     data &&
     typeof data === 'object' &&
     'leads' in data &&
-    Array.isArray((data as { leads: Lead[] }).leads)
+    Array.isArray((data as { leads: Contact[] }).leads)
   ) {
-    return (data as { leads: Lead[] }).leads;
+    return (data as { leads: Contact[] }).leads;
   }
   return [];
 }

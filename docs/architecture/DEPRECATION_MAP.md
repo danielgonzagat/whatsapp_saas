@@ -1,139 +1,120 @@
 # Kloel Deprecation Map
 
-> Tracks each symbol marked as deprecated, with its replacement and migration deadline.
-> Populated 2026-05-26 from `DUPLICATION_REGISTER.md`, `SEND_MESSAGE_CANONICAL.md`,
-> ADR-0012 (OmniCore), and ADR-0013 (Kloel Mind unification).
+> **PI Task K24** — Every deprecated symbol, with canonical replacement and migration deadline.
+> Populated from `@deprecated` JSDoc annotations, re-export shims, and ADR-0013 alias window entries.
 
-## Conventions
+---
 
-- **Deadline**: deletion target. Code is removed when deadline passes AND
-  `scripts/ops/check-canonical-services.mjs` confirms 0 callers.
-- **Status**: `proposed` (not yet aliased) / `aliased` (deprecated re-export
-  in place) / `unwired` (no callers detected) / `removed` (final state).
-- **Replacement**: file path of canonical symbol. Codemod can read this
-  map and apply renames via `mcp__atomic-edit__atomic_rename_symbol_cross_file`.
+## Active Deprecations
 
-## Channel dispatch (ADR-0012, SEND_MESSAGE_CANONICAL.md)
+| # | Deprecated symbol | Replacement | Source file | Deadline | Status |
+|---|---|---|---|---|---|
+| 1 | `AuthService.refreshToken()` (legacy function) | `AuthTokenService.refresh()` | `backend/src/auth/auth-service.tokens.ts:194` | ADR-0013 +4wk | 🔴 P0 |
+| 2 | `CiaService` (legacy path `backend/src/cia/`) | `MindLearningAdapter` (`kloel/mind/cia/cia.service.ts`) | `backend/src/kloel/mind/cia/index.ts:24` | ADR-0013 +4wk | 🔴 P0 |
+| 3 | `KloelLeadBrainService` | `LeadMindCoordinator` | `backend/src/kloel/mind/coordination/lead-mind-coordinator.service.ts:434` | ADR-0013 +4wk | 🔴 P0 |
+| 4 | `BrainAutonomyService` | `MindAutonomyCoordinator` | `backend/src/kloel/mind/coordination/mind-autonomy-coordinator.service.ts:104` | ADR-0013 +4wk | 🔴 P0 |
+| 5 | `BrainCapabilityExecutorService` | `MindCapabilityExecutor` | `backend/src/kloel/mind/coordination/mind-capability-executor.service.ts:534` | ADR-0013 +4wk | 🔴 P0 |
+| 6 | `BrainCapabilityRegistryService` | `MindCapabilityRegistry` | `backend/src/kloel/mind/coordination/mind-capability-registry.service.ts:108` | ADR-0013 +4wk | 🔴 P0 |
+| 7 | `BrainCommercialGraphService` | `MindCommercialGraph` | `backend/src/kloel/mind/coordination/mind-commercial-graph.service.ts:407` | ADR-0013 +4wk | 🔴 P0 |
+| 8 | `BrainEventSpineService` | `MindEventSpine` | `backend/src/kloel/mind/coordination/mind-event-spine.service.ts:402` | ADR-0013 +4wk | 🔴 P0 |
+| 9 | `BrainRuntimeService` | `MindRuntime` | `backend/src/kloel/mind/coordination/mind-runtime.service.ts:436` | ADR-0013 +4wk | 🔴 P0 |
+| 10 | `WhatsAppBrainService` | `WhatsAppMindCoordinator` | `backend/src/kloel/mind/coordination/whatsapp-mind-coordinator.service.ts:198` | ADR-0013 +4wk | 🔴 P0 |
+| 11 | `CapabilityRegistry` (v1) | `CapabilityRegistryV2Service` | `backend/src/kloel/capability-registry/capability-registry.service.spec.ts:9` | M5 | 🟡 P1 |
+| 12 | `generate_pix` capability | `sales.create_pix` | `backend/src/kloel/intent-router/intent-router.integration.spec.ts:35` | M5 | 🟡 P1 |
+| 13 | `generate_boleto` capability | `sales.create_boleto` | `backend/src/kloel/intent-router/intent-router.integration.spec.ts:41` | M5 | 🟡 P1 |
+| 14 | `AuthController.oauth()` POST endpoint | Returns error (legacy OAuth removed) | `backend/src/auth/auth.controller.ts:144` | Now | 🟡 P1 |
+| 15 | `refreshToken` DTO field | `accessToken` | `backend/src/auth/dto/refresh.dto.ts:12` | +2wk | 🟢 P2 |
+| 16 | `PlanServiceDeprecated` → `PlanService` (param duplication) | `PlanService.create()` | `backend/src/plans/plan.service.ts` (inferred) | +4wk | 🟢 P2 |
+| 17 | EventEmitter2 `.emit()` calls (product/plan) | `SpineEmitterService.emit()` | `backend/src/products/product.service.ts:107`, `backend/src/plans/plan.service.ts:120` | +8wk | 🟢 P2 |
+| 18 | Legacy `kloel/` top-level Mind* services | `kloel/mind/<sub-area>/` per ADR-0013 M5 | 23 services listed in [MIND_SERVICES_CANONICAL.md](./MIND_SERVICES_CANONICAL.md) §1.2 | ADR-0013 M5 | 🟡 P1 |
 
-| # | Deprecated symbol | Replacement | Deadline | Status |
+---
+
+## Completed Migrations (historical)
+
+| # | Deprecated symbol | Replacement | Date | ADR |
 |---|---|---|---|---|
-| 1 | `sendMessage` in `backend/src/whatsapp/providers/provider-registry-messaging.ts:28` | `WhatsAppDispatchAdapter.send()` (new, `backend/src/common/channel-dispatch/adapters/`) | 2 weeks after Step 8 of SEND_MESSAGE_CANONICAL.md migration | proposed |
-| 2 | `sendMessage` in `backend/src/whatsapp/providers/provider-send-message.helpers.ts:28` | `WhatsAppDispatchAdapter.send()` | 2 weeks after Step 8 | proposed |
-| 3 | `sendMessage` in `backend/src/partnerships/partnerships.chat.helpers.ts:105` | `InternalPartnershipDispatchAdapter.send()` (new) | 2 weeks after Step 8 | proposed |
-| 4 | `sendWhatsappMessage` in `frontend/src/lib/api/whatsapp.ts:424` | Inline `apiFetch('/whatsapp/:ws/send', ...)` (zero consumers detected) | Immediate on Step 9 | unwired |
-| 5 | `sendWhatsappTemplate` in `frontend/src/lib/api/whatsapp.ts:444` | Inline `apiFetch` (zero consumers) | Immediate on Step 9 | unwired |
-| 6 | `WhatsAppProviderRegistry.sendMessage()` in `backend/src/whatsapp/providers/provider-registry.ts:168` | `ChannelDispatchRegistry.send({ channelKind: WHATSAPP })` | After Steps 5–7 of SEND_MESSAGE_CANONICAL.md | proposed |
+| C1 | `HiddenDataExtractorService` (`ai-brain/hidden-data.service.ts`) | `MindHiddenDataExtractor` (`kloel/mind/knowledge/`) | Wave M2 | ADR-0013 |
+| C2 | `AgentAssistService` (`ai-brain/agent-assist.service.ts`) | `MindKnowledgeAssist` (`kloel/mind/knowledge/`) | Wave M2 | ADR-0013 |
+| C3 | `KnowledgeBaseService` (`ai-brain/knowledge-base.service.ts`) | `MindKnowledgeBase` (`kloel/mind/knowledge/`) | Wave M2 | ADR-0013 |
+| C4 | `MediaFactoryService` (`ai-brain/media-factory.service.ts`) | `MindMediaFactory` (`kloel/mind/knowledge/`) | Wave M2 | ADR-0013 |
+| C5 | `VectorService` (`ai-brain/vector.service.ts`) | `MindVectorStore` (`kloel/mind/knowledge/`) | Wave M2 | ADR-0013 |
+| C6 | `BrainSpineAuditService` (`brain/brain-spine-audit.service.ts`) | `MindSpineAudit` (`kloel/mind/observability/`) | Wave M3 | ADR-0013 |
+| C7 | `ExperimentRunnerService` (`kloel/hypproof/`) | Retired (feature decommissioned) | Wave 35 | [CANONICAL_MOVES.md](./CANONICAL_MOVES.md) |
+| C8 | `ProofEvaluatorService` (`kloel/hypproof/`) | Retired (feature decommissioned) | Wave 35 | [CANONICAL_MOVES.md](./CANONICAL_MOVES.md) |
+| C9 | `mercado-pago-webhook.controller.spec.ts` | Consolidated into `mercado-pago-webhook-signature.util.spec.ts` | Wave 21 | PR #462 |
+| C10 | `email-inbound.controller.spec.ts` | Consolidated into `email-inbound.service.spec.ts` | Wave 21 | PR #462 |
 
-## Channel domain (ADR-0012)
+---
 
-| # | Deprecated path | Replacement | Deadline | Status |
-|---|---|---|---|---|
-| 7 | `backend/src/whatsapp/` (entire folder, top-level domain) | `backend/src/marketing/channels/whatsapp/` | Wave W4 (2 weeks after W3 alias lands) | proposed |
-| 8 | `backend/src/whatsapp/whatsapp-normalization.util.ts` (`normalizePhone`, etc.) | `backend/src/common/phone/phone-normalization.util.ts` (canonical cross-channel) | After common util created | proposed |
-| 9 | `SessionStatus` in `backend/src/whatsapp/providers/{provider-registry.types,waha-types,whatsapp-api.provider.types}.ts` (×3) | Single canonical type in `backend/src/marketing/channels/whatsapp/types.ts` | After W3 of ADR-0012 | proposed |
-| 10 | `backend/src/meta/instagram/` (will be moved) | `backend/src/marketing/channels/instagram/` | Wave W3 of ADR-0012 | proposed |
-| 11 | `backend/src/meta/messenger/` (will be moved) | `backend/src/marketing/channels/messenger/` | Wave W3 of ADR-0012 | proposed |
+## Canonical Moves (from PR #462)
 
-## Cognitive domain (ADR-0013 — Kloel Mind unification)
+See [CANONICAL_MOVES.md](./CANONICAL_MOVES.md) for the human-authored delete manifesto.
 
-### Service renames (alias-first, 4-week window)
+---
 
-| # | Deprecated symbol | Replacement | Deadline | Status |
-|---|---|---|---|---|
-| 12 | `BrainAutonomyService` (`backend/src/kloel/brain-autonomy.service.ts`) | `MindAutonomyCoordinator` | 4 weeks after M1 | aliased |
-| 13 | `BrainCapabilityExecutorService` (`backend/src/kloel/brain-capability-executor.service.ts`) | `MindCapabilityExecutor` | 4 weeks after M1 | aliased |
-| 14 | `BrainCapabilityRegistryService` (`backend/src/kloel/brain-capability-registry.service.ts`) | `MindCapabilityRegistry` | 4 weeks after M1 | aliased |
-| 15 | `BrainCommercialGraphService` (`backend/src/kloel/brain-commercial-graph.service.ts`) | `MindCommercialGraph` | 4 weeks after M1 | aliased |
-| 16 | `BrainEventSpineService` (`backend/src/kloel/brain-event-spine.service.ts`) | `MindEventSpine` | 4 weeks after M1 | aliased |
-| 17 | `BrainRuntimeService` (`backend/src/kloel/brain-runtime.service.ts`) | `MindRuntime` | 4 weeks after M1 | aliased |
-| 18 | `WhatsAppBrainService` (`backend/src/kloel/whatsapp-brain.service.ts`) | `WhatsAppMindCoordinator` | 4 weeks after M1 | aliased |
-| 19 | `KloelLeadBrainService` (`backend/src/kloel/kloel-lead-brain.service.ts`) | `LeadMindCoordinator` | 4 weeks after M1 | aliased |
-| 20 | `BrainSpineAuditService` (`backend/src/brain/brain-spine-audit.service.ts`) | `MindSpineAudit` in `backend/src/kloel/mind/observability/` | 4 weeks after M3 | aliased |
+## Migration Cadence
 
-### Domain folder moves
+1. **P0 (ADR-0013 aliases)**: 4-week alias window — remove deprecated re-exports after zero grep hits.
+2. **P1 (capability + top-level)**: M5 Wave — move remaining 23 Mind* services under `kloel/mind/`.
+3. **P2 (cleanup)**: Remove dead EventEmitter2 emissions, legacy DTO fields, retired features.
 
-| # | Deprecated path | Replacement | Deadline | Status |
-|---|---|---|---|---|
-| 21 | `backend/src/ai-brain/` (all 9 files / 5 services) | `backend/src/kloel/mind/knowledge/` | 4 weeks after M2 | aliased |
-| 22 | `AgentAssistService` (`backend/src/ai-brain/agent-assist.service.ts`) | `MindKnowledgeAssist` | 4 weeks after M2 | aliased |
-| 23 | `KnowledgeBaseService` (`backend/src/ai-brain/knowledge-base.service.ts`) | `MindKnowledgeBase` | 4 weeks after M2 | aliased |
-| 24 | `MediaFactoryService` (`backend/src/ai-brain/media-factory.service.ts`) | `MindMediaFactory` | 4 weeks after M2 | aliased |
-| 25 | `VectorService` (`backend/src/ai-brain/vector.service.ts`) | `MindVectorStore` | 4 weeks after M2 | aliased |
-| 26 | `HiddenDataExtractorService` (`backend/src/ai-brain/hidden-data.service.ts`) | `MindHiddenDataExtractor` | 4 weeks after M2 | aliased |
-| 27 | `backend/src/brain/` (1 file) | `backend/src/kloel/mind/observability/` | 4 weeks after M3 | aliased |
-| 28 | `backend/src/cia/` (all 16 files / 11 services) | `backend/src/kloel/mind/cia/` (kept as learning adapter per ADR-0006) | 4 weeks after M4 | aliased |
+---
 
-### Event taxonomy
+## Brain* identifiers retained for backwards compatibility
 
-| # | Deprecated event name | Canonical | Deadline | Status |
-|---|---|---|---|---|
-| 29 | `kloel.message.created` | `mind.message.received` | 4 weeks after M6 | proposed |
-| 30 | `kloel.action.executed` | `mind.action.executed` | 4 weeks after M6 | proposed |
-| 31 | `kloel.product.created` | `mind.product.observed` (re-emitted by MindEventSpine from raw `product.created`) | 4 weeks after M6 | proposed |
-| 32 | `kloel.plan.created` | `mind.plan.observed` | 4 weeks after M6 | proposed |
+These `Brain*`-named exports survive after the Mind unification because external callers (frontend-admin, observability metric keys, audit-log SQL filters, and re-exported tests) still bind to the legacy names. Each entry below was verified live via `rg`.
 
-## Cross-cutting duplications (DUPLICATION_REGISTER.md top entries)
+| Identifier | Kind | Declared at | Reason kept | Sunset target | Replacement |
+|---|---|---|---|---|---|
+| `BrainCapabilityRisk` | type alias | `backend/src/kloel/mind/coordination/mind-capability-policy.ts:3` | Used by `unified-agent-predecided-actions.part.ts:3` and risk-class mapping (`mapBrainRiskToRiskClass`). Renaming touches the production risk-router. | Indefinite — load-bearing | None planned; surface stays under the `Brain*` family for risk semantics. |
+| `BrainCapabilityRiskClass` | type alias | `backend/src/kloel/mind/coordination/mind-capability-policy.ts:4` | Pairs with the above. | Indefinite — load-bearing | n/a |
+| `BrainCapabilityDelegationMode` | type alias | `backend/src/kloel/mind/coordination/mind-capability-policy.ts:5` | Defines `'allowed_alone' \| 'owner_review'` consumed by delegation contract callers. | Indefinite — load-bearing | n/a |
+| `BrainCapabilityDelegationContract` | interface | `backend/src/kloel/mind/coordination/mind-capability-policy.ts:7` | Public DI contract returned by `getBrainCapabilityDelegationContract`. | Indefinite — load-bearing | n/a |
+| `getBrainCapabilityRisk` | function | `backend/src/kloel/mind/coordination/mind-capability-policy.ts:46` | Public consumer in `unified-agent-predecided-actions.part.ts`. | Indefinite — load-bearing | n/a |
+| `getBrainCapabilityDelegationContract` | function | `backend/src/kloel/mind/coordination/mind-capability-policy.ts:56` | Public consumer in `mind-capability-registry.service.ts:22`. | Indefinite — load-bearing | n/a |
+| `isBrainCapabilityAllowed` | function | `backend/src/kloel/mind/coordination/mind-capability-policy.ts:92` | Guard called from the unified-agent action path. | Indefinite — load-bearing | n/a |
+| `BrainEventName` | type alias | `backend/src/kloel/mind/coordination/mind-event-taxonomy.ts:73` | Union derived from `BRAIN_EVENT_TAXONOMY`. Referenced by `mind-event-spine.helpers.spec.ts` and the audit-log row decoder. | Indefinite — load-bearing | n/a |
+| `BrainRuntimeController` | class | `backend/src/kloel/mind/coordination/mind-runtime.controller.ts:37` | Registered in `kloel.module.ts:287`. Renaming changes the public HTTP class name observed in stack traces and Sentry. | ADR-0013 M5 (renamed file, not symbol) | `MindRuntimeController` (symbol rename when M5 finalises). |
+| `BrainMessageDto` | class | `backend/src/kloel/mind/coordination/mind-runtime.dto.ts:27` | DTO type referenced by `messages?: BrainMessageDto[]` at line 49 of the same file. Renaming breaks `class-validator` decorators registered against the class identity. | ADR-0013 M5 | `MindMessageDto` |
+| `MindAuditController` (was `BrainAuditController`) | class | `backend/src/admin/brain/mind-audit.controller.ts:16` | Symbol already renamed `BrainAuditController` → `MindAuditController`; registered in `admin-brain.module.ts:9`. The HTTP route `@Controller('admin/brain')` (`GET /admin/brain/audit`) is preserved for URL stability — it is part of the frontend-admin runtime contract. | Symbol done; route indefinite — load-bearing | Route URL-stable rename requires a coordinated frontend-admin release. |
+| `BrainCapabilityExecutorService` (alias) | class re-export | `backend/src/kloel/mind/coordination/mind-capability-executor.service.ts:538` | Re-exports `MindCapabilityExecutor` under the legacy name for the ADR-0013 alias window. Already tracked in the active deprecations table as row #5. | ADR-0013 +4wk | `MindCapabilityExecutor` |
 
-These are eligible for canonicalization but require per-case ADR or focused
-PR before the deprecation alias lands. Listed for visibility:
+### Brain* identifier search — full verification
 
-| # | Symbol(s) | Files | Resolution path |
+`rg -n 'BrainCapability' backend/src/ --type ts -g '!*.spec.ts'` returns 16 production hits across 4 files (`unified-agent-predecided-actions.part.ts`, `mind-capability-policy.ts`, `mind-capability-executor.service.ts`, `mind-capability-registry.service.ts`). `rg -n 'BrainEventName'` returns hits only in a single spec file (`mind-event-spine.helpers.spec.ts`); the runtime audit decoder no longer types-annotates against the alias. `rg -n 'BrainRuntimeController|BrainMessageDto'` returns hits in module wiring, spec files, and the DTO self-reference described above. `BrainAuditController` no longer exists as a symbol — it was renamed to `MindAuditController` (`backend/src/admin/brain/mind-audit.controller.ts:16`); only the `admin/brain` folder name and the `@Controller('admin/brain')` route URL survive.
+
+> Note: the task brief listed a `BrainCapabilityPolicy` interface at `mind-capability-policy.ts:7`. That exact identifier does not exist in the file. Line 7 declares `BrainCapabilityDelegationContract` (the canonical contract type). Row 4 of this table reflects the actual source-of-truth identifier; no `BrainCapabilityPolicy` shim exists and none should be created.
+
+---
+
+## `brain.*` event string literals retained intentionally
+
+The Mind unification kept four production event-name string literals on the `brain.*` namespace because metrics keys, audit-log SQL filters, and historical rows in `AuditLog.action` already bind to them. Renaming them would break dashboards and rewrite-historicals semantics that ADR-0013 explicitly forbids.
+
+| Literal | Producers | Consumers | Retention reason |
 |---|---|---|---|
-| 33 | `CheckoutService` (×2) | `backend/src/checkout/checkout.service.ts`, `backend/src/kloel/checkout.service.ts` | **Decide canonical**: `backend/src/checkout/` is canonical (older, broader caller graph). `kloel/checkout.service.ts` becomes adapter or removed. See "Wave W22 — 4 P0 dups" below. |
-| 34 | `PipelineService` / `PipelineController` (×2) | `backend/src/admin/pipeline/*`, `backend/src/pipeline/*` | **NOT yet aliased.** Admin variant is admin-scoped (208 LOC, registered in `AdminPipelineModule` at `backend/src/admin/admin.module.ts:21`). Product variant is the multi-tenant canon (143 LOC). Resolution: rename admin variant to `AdminPipelineService` + `AdminPipelineController` in a follow-up PR — codemod must update the module, controller route prefix, and any spec that references the class. NO @deprecated applied this session (both are live). |
-| 35 | `MercadoPagoWebhookController` (×2) | `backend/src/checkout/mercado-pago-webhook.controller.ts`, `backend/src/payments/mercadopago/mercadopago-webhook.controller.ts` | Canonical: `backend/src/payments/mercadopago/`. Checkout variant deletes after caller migration. |
-| 36 | `EmailInboundController` (×2) | `backend/src/email/email-inbound.controller.ts`, `backend/src/marketing/email-inbound.controller.ts` | Canonical: `backend/src/marketing/email-inbound.controller.ts` (consistent with ADR-0012 OmniCore). `email/` variant deletes after caller migration. |
-| 37 | `LoginDto` / `RefreshDto` / `ChangePasswordDto` (×2 each) | `backend/src/auth/dto/*` + `backend/src/admin/auth/dto/*` (or `kyc/dto/`) | Decide: are admin/main auth flows distinct? If yes, prefix admin variant `AdminLoginDto`. If shape identical, consolidate. |
-| 38 | `forEachSequential` / `findFirstSequential` / `pollUntil` / `resolveRedisUrl` / `safeResolve` / `renderTemplate` / `toPrismaJsonValue` / `maskRedisUrl` / `RedisConfigurationError` (×2-3 each) | `backend/src/common/*`, `worker/utils/*` | Either single shared package OR keep parallel with explicit JSDoc cross-link. Decide cross-boundary policy. |
-| 39 | `normalizePhone` / `normalizeNumber` / `formatPhone` / `normalizePhoneDigits` (×6+) | `backend/src/whatsapp/*`, `backend/src/autopilot/*`, `backend/src/meta/meta-whatsapp.service.ts`, `backend/src/checkout/checkout-order-support.ts`, `frontend/src/app/(main)/followups/followups.helpers.ts`, `worker/processors/checkout-social-lead-enrichment.ts` | Canonical: `backend/src/common/phone/phone-normalization.util.ts` (NEW). All call sites migrate via codemod. |
-| 40 | `ChannelSendResult` / `ChannelCapability` (×2 each) | `backend/src/common/channel-dispatch/channel-dispatch.port.ts`, `backend/src/kloel/channel-transport.types.ts` | Canonical: `backend/src/common/channel-dispatch/`. `kloel/channel-transport.types.ts` becomes thin re-export. |
-| 41 | `OmnichannelService` (`backend/src/inbox/`) + `OmnichannelContactResolutionService` (`backend/src/omnichannel/`) | `backend/src/inbox/omnichannel.service.ts`, `backend/src/omnichannel/contact-resolution.service.ts` | Both kept (different responsibilities) but **document the boundary** in SERVICE_CATALOG. |
-| 42 | `CiaRuntimeService` (×2) | `backend/src/cia/cia-runtime.abstract.ts`, `backend/src/cia/cia-runtime.service.ts` | Already correct (abstract + impl). No action. |
-| 43 | `PulseTruthSnapshotService` (×2) | `backend/src/kloel/abi/pulse-truth-snapshot.service.ts`, `backend/src/kloel/pulse-gates/pulse-truth-snapshot.service.ts` | Investigate intent: are they intentionally separate (ABI vs gates) or accidental fork? |
+| `'brain.decide'` | `mind-runtime.service.ts:217,344`, `mind-runtime.controller.ts:87-92` | `observability/metrics.ts:150-154` (`increment`, `histogram`), Sentry, Grafana dashboards | Metric-key historical continuity. |
+| `'brain.observe'` | `mind-runtime.service.ts:406`, `mind-runtime.controller.ts:129-134` | Same metrics path | Metric-key historical continuity. |
+| `'brain.stream'` | `mind-runtime.controller.ts:177-181` | Same metrics path | Metric-key historical continuity. |
+| `'brain.autonomy.propose'` | `mind-autonomy-coordinator.service.ts:70`, `mind-event-taxonomy.ts:4` | Audit log; spine emitter | Historical audit rows. |
+| `'brain.capability.invoked'` | `mind-capability-executor.service.ts:494,518`, `mind-event-taxonomy.ts:5` | `mind-spine-audit.service.ts:65` (literal SQL: `WHERE action IN ('brain.capability.invoked', ...)`) and the row decoder at line 93 | Audit-log SQL filter literal; renaming requires a data migration. |
+| `'brain.commercial_graph.build'` / `'brain.commercial_graph.recommendations'` | `mind-commercial-graph.service.ts:110,378` | Operation-name tag on logger/tracing spans | Trace continuity. |
 
-## Risks flagged during canonicalization
-
-From `SEND_MESSAGE_CANONICAL.md` §5 Risk Register:
-
-| Risk | Action |
+| Sunset target | Indefinite |
 |---|---|
-| R2: `AuthWhatsappPasswordService` + `AuthVerificationService` not registered in `auth.module.ts` — appear dead | **Verify** dead-code status via runtime coverage; if confirmed, delete (separate PR). |
-| R5: `AdminChatService.sendMessage()` is copilot interface, NOT a channel send | **Revise** Step 3 of SEND_MESSAGE_CANONICAL.md: do NOT wrap as `InternalAdminDispatchAdapter`. |
-| R6: `BrainCapabilityExecutorService.sendMessageViaChannel` returns `queued:true` only — may not deliver | **Investigate** if brain-sourced messages reach the channel. |
-| R7: No `EmailDispatchAdapter` exists yet | ✅ **Built** in Wave W1 of ADR-0012 at `backend/src/marketing/channels/email/email-dispatch.adapter.ts` — resolves mailbox via @Optional injection of Gmail / Microsoft / IMAP-SMTP, tries in priority order, surfaces first non-not_connected result. |
+| Replacement | None planned. The `mind.*` namespace is for new events; `brain.*` is frozen as the legacy audit/metric surface. |
+| Enforcement | New event literals MUST be `mind.*` per `EVENT_TAXONOMY.md`. Adding a new `brain.*` literal requires an ADR amendment. |
 
-## Wave M5 physical-move progress (top-level kloel/mind-*.service.ts)
+---
 
-| Batch | Services moved | Sub-areas affected | Status |
+## Legacy paths
+
+| Path | Status | Verified | Notes |
 |---|---|---|---|
-| 1 | MindBanditService → policy/, MindBeliefService → inference/, MindGlobalPriorService → memory/ | policy, inference, memory | landed (PI-I) |
-| 2 | MindCaseMemoryService → memory/, MindConceptService → memory/, MindPolicyService → policy/ | policy, memory | landed (PI-J) |
-| 3 | MindPredictorService → inference/, MindSurpriseService → inference/, MindVerbalizerService → synthetic/ | inference, synthetic | landed (PI-K) |
-| 4 | MindLiftReportService → observability/, MindObservabilityService → observability/, MindReportService → observability/ | observability | in flight (PI-L) |
-| 5 | mind-event-processor/mind-processor/mind-replay → runtime/ | runtime | planned |
-| 6 | mind-guards/mind-guard-context-builder/mind-quality → policy/ | policy | planned |
-| 7 | mind-simulator/mind-synthetic-generator/mind-workspace-state → synthetic, memory | synthetic, memory | planned |
-| 8 | mind-perception (held — parallel agent owns) | perception | held |
-
-After Wave M5: top-level `kloel/mind-*.service.ts` files become @deprecated
-re-exports for the 4-week alias window; physical code lives at
-`kloel/mind/<sub-area>/`. Gate G4 (`check-mind-canonical-imports.mjs`)
-will promote to `--strict` after the window closes, blocking pre-push
-on any legacy import.
-
-## Gates that enforce this map
-
-| Gate | Script | What it blocks |
-|---|---|---|
-| G1 (vocabulary) | `scripts/ops/check-canonical-vocabulary.mjs` | Alias-name usage in new code (currently 1416 occurrences, soft mode) |
-| G2 (events) | `scripts/ops/check-canonical-events.mjs` | Non-canonical `.emit('…')` strings outside the EVENT_TAXONOMY allowlist |
-| G3 (services) | `scripts/ops/check-canonical-services.mjs` | Duplicate `@Injectable()` class names not registered in this map |
-| G4 (mind imports) | `scripts/ops/check-mind-canonical-imports.mjs` | Imports pointing at the 15 legacy `brain-*` / `ai-brain/*` / `brain/*` / `cia/*` paths (currently 0; soft mode until 2026-06-23) |
-
-## How to add an entry
-
-1. Confirm the deprecation is decided in an ADR or in a canonical inventory doc.
-2. Apply `@deprecated` JSDoc to the symbol in source, pointing to replacement file:line.
-3. Add row above with status `aliased`.
-4. When deadline passes and `check-canonical-services.mjs` shows 0 callers, delete + set status `removed`.
-5. Keep removed rows in this table for 90 days as historical record, then archive to `DEPRECATION_HISTORY.md`.
+| `backend/src/whatsapp/` | Removed | `ls backend/src/whatsapp` → `No such file or directory` (verified during K62 and re-verified for this entry) | Canonical location is `backend/src/marketing/channels/whatsapp/`. The frontend proxy path `/api/whatsapp-api/*` (e.g. `frontend/src/app/api/whatsapp-api/agent/stream/route.ts`) is retained for URL stability — it forwards to the new backend location. |
+| `backend/src/ai-brain/` | Removed | Wave M2 (see Completed Migrations C1–C5) | Renamed to `backend/src/kloel/mind/knowledge/`. |
+| `backend/src/brain/` | Removed | Wave M3 (see Completed Migrations C6) | `BrainSpineAuditService` moved to `kloel/mind/observability/`. |
+| `backend/src/cia/` | Removed | Active deprecation row #2 | Replaced by `backend/src/kloel/mind/cia/`. |
+| `backend/src/kloel/hypproof/` | Removed | Wave 35 (Completed Migrations C7–C8) | Feature decommissioned; see `CANONICAL_MOVES.md`. |
+| `backend/src/admin/brain/` | Retained (folder name) | `MindAuditController` (`mind-audit.controller.ts`, renamed from `BrainAuditController`) lives here, registered via `admin-brain.module.ts` | The class is already `Mind*`; only the folder name and the `@Controller('admin/brain')` route URL are kept to preserve the admin URL `/admin/brain/audit` until a coordinated frontend-admin release renames the route. |

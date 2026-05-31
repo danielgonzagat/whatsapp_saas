@@ -5,6 +5,10 @@ import { CachePurgeHandler, NotConfiguredException } from './cache-purge.handler
 
 const FAKE_REDIS_URL = 'redis://localhost:6379';
 
+// Typed wrappers around jest matchers so nested matcher values are typed
+const oc = (o: Record<string, unknown>): unknown => expect.objectContaining(o);
+const sc = (s: string): unknown => expect.stringContaining(s);
+
 function fakeIntent(overrides?: Partial<DestructiveIntentRecord>): DestructiveIntentRecord {
   return {
     id: 'intent-1',
@@ -108,7 +112,7 @@ describe('CachePurgeHandler', () => {
             action: 'CACHE_PURGE',
             entityType: 'workspace',
             entityId: 'ws-123',
-            details: expect.objectContaining({
+            details: oc({
               redisKeysDeleted: 2,
               cdnPurged: false,
             }),
@@ -177,7 +181,7 @@ describe('CachePurgeHandler', () => {
               'https://api.cloudflare.com/client/v4/zones/cf-zone/purge_cache',
               expect.objectContaining({
                 method: 'POST',
-                headers: expect.objectContaining({
+                headers: oc({
                   Authorization: 'Bearer cf-token',
                 }),
                 body: JSON.stringify({ tags: ['kloel-workspace-ws-123'] }),
@@ -257,9 +261,9 @@ describe('CachePurgeHandler', () => {
             entityType: 'product',
             entityId: 'prod-99',
             action: 'CACHE_PURGE',
-            details: expect.objectContaining({
+            details: oc({
               redisKeysDeleted: 1,
-              redisPattern: expect.stringContaining('product'),
+              redisPattern: sc('product'),
             }),
           }),
         );

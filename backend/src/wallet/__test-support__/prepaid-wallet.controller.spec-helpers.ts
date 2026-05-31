@@ -7,6 +7,7 @@ import type { PrepaidWallet, PrepaidWalletTransaction, PrepaidWalletTxType } fro
 
 import { StripeService } from '../../billing/stripe.service';
 import { FraudEngine } from '../../payments/fraud/fraud.engine';
+import { MercadoPagoPixChargeService } from '../../payments/mercadopago/mercadopago-pix-charge.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
 import { PrepaidWalletController } from '../prepaid-wallet.controller';
@@ -22,6 +23,11 @@ type FraudEngineStub = {
   evaluate: jest.Mock;
 };
 
+/** Mercado Pago PIX stub shape used by prepaid wallet specs. */
+export type MercadoPagoPixStub = {
+  create: jest.Mock;
+};
+
 // Test-only helper: bridges in-memory stubs to the Nest provider type. The
 // stub satisfies the subset of the surface area exercised by the suite.
 const asMock = <T>(value: unknown): T => value as T;
@@ -29,6 +35,11 @@ const asMock = <T>(value: unknown): T => value as T;
 /** Build a fresh Stripe stub with a `paymentIntents.create` jest mock. */
 export function makeStripeStub(): StripeStub {
   return { stripe: { paymentIntents: { create: jest.fn() } } };
+}
+
+/** Build a fresh Mercado Pago PIX stub. */
+export function makeMercadoPagoPixStub(): MercadoPagoPixStub {
+  return { create: jest.fn() };
 }
 
 /** Build a fresh FraudEngine stub that allows by default. */
@@ -193,6 +204,7 @@ export async function buildModule(
   stripe: StripeStub,
   factory: ReturnType<typeof makePrismaStub>,
   fraudEngine = makeFraudEngineStub(),
+  mercadoPagoPix = makeMercadoPagoPixStub(),
 ) {
   const moduleRef: TestingModule = await Test.createTestingModule({
     imports: [ThrottlerModule.forRoot([{ ttl: 60_000, limit: 1_000 }])],
@@ -202,6 +214,7 @@ export async function buildModule(
       { provide: StripeService, useValue: stripe },
       { provide: PrismaService, useValue: factory.prisma },
       { provide: FraudEngine, useValue: fraudEngine },
+      { provide: MercadoPagoPixChargeService, useValue: mercadoPagoPix },
     ],
   }).compile();
   return {

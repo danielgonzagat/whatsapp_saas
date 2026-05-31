@@ -2,6 +2,7 @@ import { ChatCompletionTool } from 'openai/resources/chat';
 import { KLOEL_CHAT_TOOLS_MEDIA_BILLING } from './kloel-chat-tools-b.definition';
 import { KLOEL_CHAT_TOOLS_SETTINGS_CAMPAIGNS } from './kloel-chat-tools.definition-extras';
 import { KLOEL_CHAT_TOOLS_CODE } from './kloel-code-tools.definition';
+import { KLOEL_CHAT_TOOLS_QUERY } from './kloel-chat-tools.definition-query';
 
 /** Core tool definitions (products, automation, metrics, payments, whatsapp, leads). */
 const KLOEL_CHAT_TOOLS_CORE: ChatCompletionTool[] = [
@@ -244,23 +245,6 @@ const KLOEL_CHAT_TOOLS_CORE: ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
-      name: 'create_whatsapp_contact',
-      description:
-        'Cria ou atualiza um contato operacional no CRM para uso imediato pela IA no WhatsApp',
-      parameters: {
-        type: 'object',
-        properties: {
-          phone: { type: 'string', description: 'Número do telefone (apenas números ou chatId)' },
-          name: { type: 'string', description: 'Nome do contato' },
-          email: { type: 'string', description: 'E-mail opcional do contato' },
-        },
-        required: ['phone'],
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
       name: 'list_whatsapp_chats',
       description: 'Lista as conversas reais do WhatsApp, incluindo não lidas e pendentes',
       parameters: {
@@ -330,24 +314,6 @@ const KLOEL_CHAT_TOOLS_CORE: ChatCompletionTool[] = [
       },
     },
   },
-  // === LEADS/CRM ===
-  {
-    type: 'function',
-    function: {
-      name: 'list_leads',
-      description: 'Lista os leads/contatos recentes',
-      parameters: {
-        type: 'object',
-        properties: {
-          limit: { type: 'number', description: 'Quantidade máxima de leads' },
-          status: {
-            type: 'string',
-            description: 'Filtrar por status (new, contacted, qualified, converted)',
-          },
-        },
-      },
-    },
-  },
   {
     type: 'function',
     function: {
@@ -362,6 +328,71 @@ const KLOEL_CHAT_TOOLS_CORE: ChatCompletionTool[] = [
       },
     },
   },
+  // === SELF / META ===
+  {
+    type: 'function',
+    function: {
+      name: 'self_list_capabilities',
+      description: 'Lista o que o Kloel sabe fazer agora neste workspace.',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'self_recent_events',
+      description: 'Lista os últimos eventos comerciais do workspace nos últimos 30 minutos.',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  // === EMAIL ===
+  {
+    type: 'function',
+    function: {
+      name: 'send_email',
+      description: 'Envia um email para um cliente',
+      parameters: {
+        type: 'object',
+        properties: {
+          email: { type: 'string', description: 'Email do destinatário' },
+          message: { type: 'string', description: 'Conteúdo da mensagem' },
+        },
+        required: ['email', 'message'],
+      },
+    },
+  },
+  // === INSTAGRAM ===
+  {
+    type: 'function',
+    function: {
+      name: 'send_instagram_dm',
+      description: 'Envia uma mensagem direta no Instagram',
+      parameters: {
+        type: 'object',
+        properties: {
+          handle: { type: 'string', description: 'Username ou ID do usuário Instagram' },
+          message: { type: 'string', description: 'Conteúdo da mensagem' },
+        },
+        required: ['handle', 'message'],
+      },
+    },
+  },
+  // === MESSENGER ===
+  {
+    type: 'function',
+    function: {
+      name: 'send_messenger_message',
+      description: 'Envia uma mensagem no Facebook Messenger',
+      parameters: {
+        type: 'object',
+        properties: {
+          recipientId: { type: 'string', description: 'ID do destinatário' },
+          message: { type: 'string', description: 'Conteúdo da mensagem' },
+        },
+        required: ['recipientId', 'message'],
+      },
+    },
+  },
 ];
 
 /** Tool definitions available in the KLOEL dashboard chat. */
@@ -370,6 +401,7 @@ export const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
   ...KLOEL_CHAT_TOOLS_MEDIA_BILLING,
   ...KLOEL_CHAT_TOOLS_SETTINGS_CAMPAIGNS,
   ...KLOEL_CHAT_TOOLS_CODE,
+  ...KLOEL_CHAT_TOOLS_QUERY,
 ];
 
 const KLOEL_SAFE_READ_TOOL_NAMES = [
@@ -388,10 +420,26 @@ const KLOEL_SAFE_READ_TOOL_NAMES = [
   'list_whatsapp_chats',
   'get_whatsapp_messages',
   'get_whatsapp_backlog',
-  'list_leads',
   'get_lead_details',
   'transcribe_audio',
   'get_billing_status',
+  'self_list_capabilities',
+  'self_recent_events',
+  // L14 — canonical read-only QUERY capabilities now exposed to the chat LLM.
+  // Executable via KloelDomainServiceResolver; all category QUERY, no mutation.
+  'get_wallet_balance',
+  'get_wallet_statement',
+  'get_analytics',
+  'get_settings',
+  'list_orders',
+  'get_order_details',
+  'list_checkouts',
+  'get_product_details',
+  // Wave3 — read-only sales/subscriptions/abandonments/coupon QUERY caps.
+  'get_sales_summary',
+  'list_subscriptions',
+  'get_abandonments',
+  'validate_coupon',
 ] as const;
 
 function isFunctionChatTool(

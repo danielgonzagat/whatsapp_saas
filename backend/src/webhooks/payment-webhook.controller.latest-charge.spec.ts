@@ -10,6 +10,7 @@ jest.mock('../billing/stripe-runtime', () => ({
   })),
 }));
 
+import { describe, expect, it, jest } from '@jest/globals';
 import { PaymentWebhookStripeController as PaymentWebhookController } from './payment-webhook-stripe.controller';
 
 type LatestChargeWebhookPrismaMock = {
@@ -37,24 +38,31 @@ type LatestChargeWebhookPrismaMock = {
 describe('PaymentWebhookController.handleStripe latest_charge normalization', () => {
   function buildController() {
     const stripeWebhookProcessor = {
-      processSaleSucceeded: jest.fn().mockResolvedValue({
-        paymentIntentId: 'pi_sale_signed_expanded',
-        transfersDispatched: 1,
-        ledgerEntriesCreated: 2,
-        connectPostSale: {
-          transferGroup: 'sale:order-1',
-          sellerStripeAccountId: 'acct_seller',
-          sellerDestinationAmountCents: 656n,
-          transfers: [
-            {
-              role: 'supplier',
-              accountId: 'acct_supplier',
-              amountCents: 4_210n,
-              stripeTransferId: 'tr_supplier_1',
-            },
-          ],
-        },
-      }),
+      processSaleSucceeded: jest
+        .fn<
+          (
+            paymentIntent: Record<string, unknown>,
+            matureAtResolver: (...args: unknown[]) => unknown,
+          ) => Promise<Record<string, unknown>>
+        >()
+        .mockResolvedValue({
+          paymentIntentId: 'pi_sale_signed_expanded',
+          transfersDispatched: 1,
+          ledgerEntriesCreated: 2,
+          connectPostSale: {
+            transferGroup: 'sale:order-1',
+            sellerStripeAccountId: 'acct_seller',
+            sellerDestinationAmountCents: 656n,
+            transfers: [
+              {
+                role: 'supplier',
+                accountId: 'acct_supplier',
+                amountCents: 4_210n,
+                stripeTransferId: 'tr_supplier_1',
+              },
+            ],
+          },
+        }),
     };
 
     const prisma: LatestChargeWebhookPrismaMock = {

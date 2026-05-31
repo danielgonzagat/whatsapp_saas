@@ -15,8 +15,32 @@ import {
 } from './useCheckoutExperience.effects';
 import type { UseCheckoutExperienceOptions } from './useCheckoutExperience.types';
 import {
+  isCouponFlowEnabled,
+  normalizeCouponDiscountInCents,
+  resolveAppliedCouponCode,
+  resolveCouponCodeForSubmission as resolveCouponCodeForSubmissionHelper,
+  resolveCouponErrorMessage,
+  validateCouponPrerequisites as validateCouponPrerequisitesHelper,
+} from './useCheckoutExperience.coupon.helpers';
+import {
   buildOrderPayload as buildOrderPayloadHelper,
+  computeSubtotal,
+  computeTotal,
+  isCouponPopupEligible,
+  isStep1Valid,
+  isStep2Valid,
+  normalizePopupCouponCode,
+  parseInstallments,
+  resolveBrandName,
+  resolveFixedShippingInCents,
+  resolveFooterLegal,
+  resolveHeaderPrimary,
+  resolveHeaderSecondary,
+  resolveProductName,
+  resolveSubmitErrorMessage,
   resolveSuccessRedirect as resolveSuccessRedirectHelper,
+  resolveUnitPriceInCents,
+  resolveVariableShippingFloorInCents,
 } from './useCheckoutExperience.helpers';
 import { EMPTY_CHECKOUT_EXPERIENCE_FORM, applyFieldFormatter, buildCheckoutFormDraftKey, buildInstallmentOptions, computeShippingInCents, preflightFinalizeOrder, resolveCheckoutUnavailableReason, resolveProductImage, resolveShippingMode } from './useCheckoutExperience.utils';
 
@@ -76,24 +100,12 @@ export function useCheckoutExperience({
     setCouponCode,
   });
 
-  const productName =
-    config?.productDisplayName || plan?.name || product?.name || defaults.product.name;
-  const brandName =
-    config?.brandName ||
-    merchant?.companyName ||
-    merchant?.workspaceName ||
-    product?.name ||
-    defaults.product.brand;
-  const unitPriceInCents = Math.max(
-    0,
-    Math.round(Number(plan?.priceInCents || defaults.product.priceInCents)),
-  );
+  const productName = resolveProductName(config, plan, product, defaults.product.name);
+  const brandName = resolveBrandName(config, merchant, product, defaults.product.brand);
+  const unitPriceInCents = resolveUnitPriceInCents(plan, defaults.product.priceInCents);
   const shippingMode = resolveShippingMode(config, plan);
-  const fixedShippingInCents = Math.max(0, Math.round(Number(plan?.shippingPrice || 0)));
-  const variableShippingFloorInCents = Math.max(
-    0,
-    Math.round(Number(config?.shippingVariableMinInCents || 0)),
-  );
+  const fixedShippingInCents = resolveFixedShippingInCents(plan);
+  const variableShippingFloorInCents = resolveVariableShippingFloorInCents(config);
   const shippingInCents = computeShippingInCents(
     shippingMode,
     fixedShippingInCents,
@@ -122,14 +134,11 @@ export function useCheckoutExperience({
     ],
   );
   const pixels = config?.pixels || [];
-  const subtotal = unitPriceInCents * qty;
-  const total = Math.max(0, subtotal + shippingInCents - discount);
-  const installments = Math.max(1, Number.parseInt(form.installments || '1', 10) || 1);
-  const popupCouponCode = String(config?.autoCouponCode || '')
-    .trim()
-    .toUpperCase();
-  const couponPopupEligible =
-    config?.enableCoupon !== false && config?.showCouponPopup === true && Boolean(popupCouponCode);
+  const subtotal = computeSubtotal(unitPriceInCents, qty);
+  const total = computeTotal(subtotal, shippingInCents, discount);
+  const installments = parseInstallments(form.installments);
+  const popupCouponCode = normalizePopupCouponCode(config?.autoCouponCode);
+  const couponPopupEligible = isCouponPopupEligible(config, popupCouponCode);
   const pricing = useMemo(
     () =>
       buildCheckoutPricing({
@@ -155,13 +164,17 @@ export function useCheckoutExperience({
 
   const footerPrimary = buildFooterPrimaryLine(brandName, merchant);
   const footerSecondary = merchant?.addressLine || '';
-  const footerLegal =
-    config?.footerText ||
-    `Copyright ${new Date().getFullYear()} ${merchant?.companyName || brandName}${merchant?.cnpj ? ` - CNPJ: ${formatCnpj(merchant.cnpj)}` : ''}`;
+  const footerLegal = resolveFooterLegal(
+    config,
+    merchant,
+    brandName,
+    formatCnpj,
+    new Date().getFullYear(),
+  );
   const mobileCanOpenStep1 = step > 1;
   const mobileCanOpenStep2 = step > 2;
-  const headerPrimary = config?.headerMessage || 'Envio Imediato após o Pagamento';
-  const headerSecondary = config?.headerSubMessage || 'OFERTA ESPECIAL DO MÊS!!!';
+  const headerPrimary = resolveHeaderPrimary(config);
+  const headerSecondary = resolveHeaderSecondary(config);
 
   useAutoSelectAvailablePayMethod(
     payMethod,
@@ -197,30 +210,12 @@ export function useCheckoutExperience({
     [fmt],
   );
 
-  const validateStep1 = useCallback(() => {
-    if (!form.name.trim() || !form.email.trim()) {
-      return false;
-    }
-    const D_RE = /\D/g;
-    if ((config?.requireCPF ?? true) && form.cpf.replace(D_RE, '').length < 11) {
-      return false;
-    }
-    if ((config?.requirePhone ?? true) && form.phone.replace(D_RE, '').length < 10) {
-      return false;
-    }
-    return true;
-  }, [config?.requireCPF, config?.requirePhone, form.cpf, form.email, form.name, form.phone]);
+  const validateStep1 = useCallback(
+    () => isStep1Valid(form, config),
+    [config, form],
+  );
 
-  const validateStep2 = useCallback(() => {
-    return Boolean(
-      form.cep.trim() &&
-      form.street.trim() &&
-      form.number.trim() &&
-      form.neighborhood.trim() &&
-      form.city.trim() &&
-      form.state.trim(),
-    );
-  }, [form.cep, form.city, form.neighborhood, form.number, form.state, form.street]);
+  const validateStep2 = useCallback(() => isStep2Valid(form), [form]);
 
   const goStep = useCallback(
     (target: number) => {
@@ -261,15 +256,6 @@ export function useCheckoutExperience({
     [mobileCanOpenStep1, mobileCanOpenStep2, step, validateStep1, validateStep2],
   );
 
-  const resolveCouponCodeForSubmission = useCallback(
-    (explicitCode?: string) => {
-      return String(explicitCode || couponCode || '')
-        .trim()
-        .toUpperCase();
-    },
-    [couponCode],
-  );
-
   const handleCouponFailure = useCallback((message: string) => {
     setCouponApplied(false);
     setDiscount(0);
@@ -278,26 +264,13 @@ export function useCheckoutExperience({
 
   const handleCouponSuccess = useCallback(
     (nextCode: string, result: Awaited<ReturnType<typeof validateCoupon>>) => {
-      setDiscount(Math.max(0, Math.round(Number(result.discountAmount || 0))));
+      setDiscount(normalizeCouponDiscountInCents(result.discountAmount));
       setCouponApplied(true);
-      setCouponCode((result.code || nextCode).toUpperCase());
+      setCouponCode(resolveAppliedCouponCode(result.code, nextCode));
       setCouponPopupHandled(true);
       setShowCouponPopup(false);
     },
     [],
-  );
-
-  const validateCouponPrerequisites = useCallback(
-    (nextCode: string): string | null => {
-      if (!nextCode) {
-        return 'Digite um cupom.';
-      }
-      if (!workspaceId || !plan?.id) {
-        return 'Checkout sem contexto para validar cupom.';
-      }
-      return null;
-    },
-    [plan?.id, workspaceId],
   );
 
   const runCouponValidation = useCallback(
@@ -315,7 +288,7 @@ export function useCheckoutExperience({
         handleCouponSuccess(nextCode, result);
         return true;
       } catch (error) {
-        handleCouponFailure(error instanceof Error ? error.message : 'Cupom inválido ou expirado.');
+        handleCouponFailure(resolveCouponErrorMessage(error));
         return false;
       }
     },
@@ -325,23 +298,22 @@ export function useCheckoutExperience({
   const applyCoupon = useCallback(
     async (explicitCode?: string) => {
       setCouponError('');
-      if (config?.enableCoupon === false) {
+      if (!isCouponFlowEnabled(config?.enableCoupon)) {
         return false;
       }
-      const nextCode = resolveCouponCodeForSubmission(explicitCode);
-      const prerequisiteError = validateCouponPrerequisites(nextCode);
+      const nextCode = resolveCouponCodeForSubmissionHelper(explicitCode, couponCode);
+      const prerequisiteError = validateCouponPrerequisitesHelper(
+        nextCode,
+        workspaceId,
+        plan?.id,
+      );
       if (prerequisiteError) {
         setCouponError(prerequisiteError);
         return false;
       }
       return runCouponValidation(nextCode);
     },
-    [
-      config?.enableCoupon,
-      resolveCouponCodeForSubmission,
-      runCouponValidation,
-      validateCouponPrerequisites,
-    ],
+    [config?.enableCoupon, couponCode, plan?.id, runCouponValidation, workspaceId],
   );
 
   const resolveSuccessRedirect = useCallback(
@@ -488,9 +460,7 @@ export function useCheckoutExperience({
 
       dispatchOrderCompletion(result, successPath);
     } catch (error) {
-      setSubmitError(
-        error instanceof Error ? error.message : 'Erro ao processar o checkout. Tente novamente.',
-      );
+      setSubmitError(resolveSubmitErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }

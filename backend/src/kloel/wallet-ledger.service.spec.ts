@@ -26,7 +26,9 @@ describe('WalletLedgerService — I12 append-only', () => {
       );
 
       expect(txClient.kloelWalletLedger.create).toHaveBeenCalledTimes(1);
-      const call = txClient.kloelWalletLedger.create.mock.calls[0][0];
+      const call = (txClient.kloelWalletLedger.create.mock.calls as unknown[][])[0][0] as {
+        data: { transactionId: string | null; metadata?: Record<string, string> };
+      };
       expect(call.data).toMatchObject({
         workspaceId: 'ws-1',
         walletId: 'wallet-1',
@@ -53,7 +55,9 @@ describe('WalletLedgerService — I12 append-only', () => {
         },
       );
 
-      const call = txClient.kloelWalletLedger.create.mock.calls[0][0];
+      const call = (txClient.kloelWalletLedger.create.mock.calls as unknown[][])[0][0] as {
+        data: { transactionId: string | null; metadata?: Record<string, string> };
+      };
       expect(call.data.transactionId).toBeNull();
       expect(call.data.metadata).toBeUndefined();
     });
@@ -112,7 +116,9 @@ describe('WalletLedgerService — I12 append-only', () => {
       // The exact object identity is NOT preserved (we JSON.parse(JSON.stringify(...))).
       // Mutating the original after the call must not affect the persisted snapshot.
       metadata.saleId = 'mutated';
-      const call = txClient.kloelWalletLedger.create.mock.calls[0][0];
+      const call = (txClient.kloelWalletLedger.create.mock.calls as unknown[][])[0][0] as {
+        data: { transactionId: string | null; metadata?: Record<string, string> };
+      };
       expect(call.data.metadata.saleId).toBe('sale-1');
     });
   });

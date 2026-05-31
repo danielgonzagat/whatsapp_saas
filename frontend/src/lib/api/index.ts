@@ -38,51 +38,22 @@ export {
   searchMemory,
 } from './memory';
 
-// Leads
-export { type Lead, getLeads } from './leads';
+// Contacts (canonical entity; "Lead" is the legacy commercial-stage alias)
+export { type Contact, getContacts } from './leads';
+/** @deprecated Use `Contact` — kept for backward compatibility. */
+export type { Contact as Lead } from './leads';
+/** @deprecated Use `getContacts` — kept for backward compatibility. */
+export { getContacts as getLeads } from './leads';
 
-// WhatsApp connection + messaging
+// WhatsApp channel session + messaging
 export {
   getWhatsAppScreencastWsBase,
-  buildWhatsAppScreencastWsUrl,
   getWhatsAppStatus,
   initiateWhatsAppConnection,
   getWhatsAppQR,
+  getWhatsAppQrImageOnly,
   disconnectWhatsApp,
   logoutWhatsApp,
-  getWhatsAppViewer,
-  getWhatsAppScreencastToken,
-  performWhatsAppViewerAction,
-  takeoverWhatsAppViewer,
-  resumeWhatsAppAgent,
-  pauseWhatsAppAgent,
-  reconcileWhatsAppSession,
-  getWhatsAppProofs,
-  runWhatsAppActionTurn,
-  // Session management (advanced)
-  getWhatsAppSessionDiagnostics,
-  forceWhatsAppSessionCheck,
-  forceWhatsAppReconnect,
-  repairWhatsAppSessionConfig,
-  linkWhatsAppSession,
-  recreateWhatsAppSessionIfInvalid,
-  getWhatsAppProviderStatus,
-  checkWhatsAppPhone,
-  // Catalog
-  type WhatsAppCatalogContact,
-  getWhatsAppCatalogContacts,
-  getWhatsAppCatalogRanking,
-  refreshWhatsAppCatalog,
-  scoreWhatsAppCatalog,
-  // WhatsApp messaging
-  type WhatsappTemplate,
-  connectWhatsapp,
-  sendWhatsappMessage,
-  sendWhatsappTemplate,
-  listWhatsappTemplates,
-  whatsappOptIn,
-  whatsappOptOut,
-  whatsappOptStatus,
 } from './whatsapp';
 
 // Analytics
@@ -250,20 +221,6 @@ export {
   listApiKeys,
   createApiKey,
   deleteApiKey,
-  type CheckoutResponse,
-  createCheckoutSession,
-  type SubscriptionStatus,
-  getSubscriptionStatus,
-  activateTrial,
-  cancelSubscription,
-  getBillingUsage,
-  type PaymentMethod,
-  type SetupIntentResponse,
-  createSetupIntent,
-  attachPaymentMethod,
-  listPaymentMethods,
-  setDefaultPaymentMethod,
-  removePaymentMethod,
   type WorkspaceInfo,
   getWorkspace,
   regenerateApiKey,
@@ -321,7 +278,6 @@ export { importProducts } from './product-import';
 export { campaignMassSendApi } from './campaign-mass-send';
 export { onboardingApi } from './onboarding';
 export { adRulesApi } from './ad-rules';
-export { kloelLeadsApi } from './kloel-leads';
 
 // Copilot suggestions
 export { type CopilotSuggestionsResponse, getCopilotSuggestions } from './copilot';

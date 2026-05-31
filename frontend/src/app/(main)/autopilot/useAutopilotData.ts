@@ -150,7 +150,7 @@ export function useAutopilotData(workspaceId: string | null) {
   }, [effectiveWorkspaceId, token]);
 
   useEffect(() => {
-    fetchAutopilotData();
+    queueMicrotask(fetchAutopilotData);
     const interval = setInterval(fetchAutopilotData, 30000);
     return () => clearInterval(interval);
   }, [fetchAutopilotData]);

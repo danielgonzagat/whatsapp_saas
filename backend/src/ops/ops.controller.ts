@@ -49,7 +49,7 @@ export class OpsController {
     return jobs.map((job) => ({
       id: job.id,
       name: job.name,
-      data: job.data,
+      data: job.data as unknown,
       opts: job.opts,
       failedReason: job.failedReason,
       attemptsMade: (job as { attemptsMade?: number }).attemptsMade,
@@ -94,9 +94,9 @@ export class OpsController {
   async listWebhookAlerts(@Query('limit', new PaginationLimitPipe()) limit: number) {
     const rows = await this.redis.lrange('alerts:webhooks', 0, limit - 1);
     return rows
-      .map((r) => {
+      .map((r): unknown => {
         try {
-          return JSON.parse(r);
+          return JSON.parse(r) as unknown;
         } catch {
           return { raw: r };
         }

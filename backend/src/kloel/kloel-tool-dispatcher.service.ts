@@ -7,48 +7,81 @@ import { KloelBusinessConfigToolsService } from './kloel-business-config-tools.s
 import { KloelChatToolsService } from './kloel-chat-tools.service';
 import { KloelComposerService } from './kloel-composer.service';
 import { runToolSearchWeb } from './kloel-tool-dispatcher.search-web.helpers';
-import {
-  handleCodeAndReportTool,
-  handleProductTool,
-  handleSelfAwarenessTool,
-  handleDottedAliasTool,
-} from './kloel-tool-dispatcher.meta.helpers';
-import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
-import { KloelCodeToolsService } from './kloel-code-tools.service';
-import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
-import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
-import { CouponService } from './coupon.service';
-import { CheckoutService } from './checkout.service';
-import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
-import { SmartPaymentService } from './smart-payment.service';
-import { AccountService } from './account.service';
-import { SelfHealthService } from './self-awareness/self-health.service';
-import { SelfGapsService } from './self-awareness/self-gaps.service';
+import { WorkspaceService } from '../workspaces/workspace.service';
 import { CapabilityRegistryV2Service } from './capability-registry-v2/capability-registry-v2.service';
-import { ReportService } from './report.service';
-import { sanitizeDetails } from './kloel-tool-dispatcher.high-risk.helpers';
+import { KloelDomainServiceResolver } from './domain-service-resolver.service';
+import { MindCapabilityExecutor } from './mind/coordination/mind-capability-executor.service';
 import {
   runRequestHighRiskApproval,
   runExecuteApprovedApprovalRequest,
   type ApprovedToolExecutionResult,
 } from './kloel-tool-dispatcher.approval.helpers';
+import { buildCanonicalReceipt } from './kloel-tool-dispatcher.receipt.helpers';
+import { runCreatePaymentLink } from './kloel-tool-dispatcher.create-payment-link.helpers';
+import { SmartPaymentService } from './smart-payment.service';
+import {
+  runFastPathDispatch,
+  checkMindGuard,
+  type FastPathServices,
+} from './kloel-tool-dispatcher.fast-path.helpers';
+
+import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
+import { KloelCodeToolsService } from './kloel-code-tools.service';
+import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
+import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
+import { CouponService } from './coupon.service';
+import { KloelChatCheckoutTool } from './kloel-chat-checkout.tool';
+import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
+import { SalesService } from '../sales/sales.service';
+import { AccountService } from './account.service';
+import { SelfHealthService } from './self-awareness/self-health.service';
+import { SelfGapsService } from './self-awareness/self-gaps.service';
+import { DepsCoverageService } from './self-awareness/deps-coverage.service';
+import { MindCapabilityRegistry } from './mind/coordination/mind-capability-registry.service';
+import { MindGuardsService } from './mind/policy/mind-guards.service';
+import { ReportService } from './report.service';
+import { ChannelTransportRegistry } from './channel-transport.registry';
+import { RiskGateService } from './risk-class/risk-gate.service';
 
 import type { UnknownRecord } from '../common/types';
 
-/** Coerce `unknown` to string with a fallback, without triggering no-base-to-string. */
-function asString(value: unknown, fallback = ''): string {
-  return typeof value === 'string' ? value : fallback;
-}
+type ToolResult = {
+  success: boolean;
+  message?: string;
+  error?: string;
+  [key: string]: unknown;
+};
 
-/** Coerce `unknown` to number with a fallback, without unsafe casts. */
-function asNumber(value: unknown, fallback = 0): number {
-  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
-}
-
+/**
+ * Dispatcher for KloelService tool execution. Extracted from kloel.service.ts
+ * to keep the orchestrator file under the size limit and to host the
+ * transactional audit log for financial tool calls (e.g. create_payment_link).
+ */
+/** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
 @Injectable()
 export class KloelToolDispatcherService {
   private readonly logger = StructuredLogger.from(KloelToolDispatcherService.name);
+
+  /**
+   * Tools whose dispatch carries curated business logic that the generic
+   * DomainServiceResolver must NOT shadow: high-risk human-approval gates
+   * (publish_product / change_plan / create_campaign), the smart-payment
+   * link flow, the canonical-receipt delete path, and the composer web
+   * search + theme toggle. These keep precedence over the resolver so the
+   * approval gate, audit receipt and provider-specific logic are preserved.
+   */
+  private static readonly CURATED_DIRECT_TOOLS = new Set<string>([
+    'toggle_theme',
+    'ui.theme',
+    'publish_product',
+    'products.review_and_publish',
+    'search_web',
+    'delete_product',
+    'create_payment_link',
+    'create_campaign',
+    'change_plan',
+  ]);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -62,16 +95,25 @@ export class KloelToolDispatcherService {
     private readonly codeAnalysisService: KloelCodeAnalysisService,
     @Optional() private readonly accountService?: AccountService,
     @Optional() private readonly couponService?: CouponService,
-    @Optional() private readonly checkoutService?: CheckoutService,
+    @Optional() private readonly checkoutService?: KloelChatCheckoutTool,
     @Optional() private readonly productSubTools?: KloelProductSubResourceToolsService,
     @Optional() private readonly walletSalesTools?: KloelWalletSalesToolsService,
-    @Optional() private readonly smartPaymentService?: SmartPaymentService,
+    @Optional() private readonly salesService?: SalesService,
+    @Optional() private readonly workspaceService?: WorkspaceService,
     @Optional() private readonly reportService?: ReportService,
 
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly selfHealth?: SelfHealthService,
     @Optional() private readonly selfGaps?: SelfGapsService,
+    @Optional() private readonly depsCoverage?: DepsCoverageService,
     @Optional() private readonly capRegistryV2?: CapabilityRegistryV2Service,
+    @Optional() private readonly mindCapabilityRegistry?: MindCapabilityRegistry,
+    @Optional() private readonly smartPaymentService?: SmartPaymentService,
+    @Optional() private readonly transports?: ChannelTransportRegistry,
+    @Optional() private readonly riskGate?: RiskGateService,
+    @Optional() private readonly mindCapabilityExecutor?: MindCapabilityExecutor,
+    @Optional() private readonly mindGuards?: MindGuardsService,
+    @Optional() private readonly domainServiceResolver?: KloelDomainServiceResolver,
   ) {}
 
   /** Execute a named tool, delegating to the appropriate sub-service. */
@@ -80,15 +122,7 @@ export class KloelToolDispatcherService {
     toolName: string,
     args: UnknownRecord,
     userId?: string,
-  ): Promise<{ success: boolean; message?: string; error?: string; [key: string]: unknown }> {
-    const asToolArgs = <T>(value: UnknownRecord): T => value as T;
-
-    const receiptDeps = {
-      prisma: this.prisma,
-      chatToolsService: this.chatToolsService,
-      capRegistryV2: this.capRegistryV2,
-    };
-
+  ): Promise<ToolResult> {
     if (!workspaceId || typeof workspaceId !== 'string' || !workspaceId.trim()) {
       return { success: false, error: 'workspace_id_required' };
     }
@@ -109,406 +143,38 @@ export class KloelToolDispatcherService {
       return { success: false, error: 'billing_suspended' };
     }
     this.logger.log(`Executando ferramenta: ${toolName}`);
+
+    const guardBlock = await this.checkMindGuard(workspaceId, toolName);
+    if (guardBlock) {
+      return guardBlock;
+    }
+
+    let result: ToolResult;
     try {
-      const productResult = await handleProductTool(receiptDeps, workspaceId, toolName, args, userId);
-      if (productResult) return productResult;
-
-      const selfAwarenessResult = await handleSelfAwarenessTool(
-        {
-          auditService: this.auditService,
-          selfHealth: this.selfHealth,
-          selfGaps: this.selfGaps,
-          capRegistryV2: this.capRegistryV2,
-        },
-        workspaceId,
-        toolName,
-        args,
-      );
-      if (selfAwarenessResult) return selfAwarenessResult;
-
-      const codeOrReportResult = await handleCodeAndReportTool(
-        {
-          codeToolsService: this.codeToolsService,
-          codeAnalysisService: this.codeAnalysisService,
-          reportService: this.reportService,
-        },
-        workspaceId,
-        toolName,
-        args,
-      );
-      if (codeOrReportResult) return codeOrReportResult;
-
-      const dottedAliasResult = await handleDottedAliasTool(
-        receiptDeps, workspaceId, toolName, args, userId,
-        (baseTool) => this.executeTool(workspaceId, baseTool, args, userId),
-      );
-      if (dottedAliasResult) return dottedAliasResult;
-
-      switch (toolName) {
-        case 'toggle_autopilot':
-          return await this.chatToolsService.toolToggleAutopilot(workspaceId, asToolArgs(args));
-        case 'set_brand_voice':
-          return await this.chatToolsService.toolSetBrandVoice(workspaceId, asToolArgs(args));
-        case 'set_sales_policy':
-          return await this.chatToolsService.toolSetSalesPolicy(
+      const fastPathResult = await this.runFastPathDispatch(workspaceId, toolName, args, userId);
+      if (fastPathResult !== null) {
+        result = fastPathResult;
+      } else {
+        // PI domain-purity: the generic DomainServiceResolver is the PRIMARY
+        // engine. Only the curated tools that carry irreplaceable business
+        // logic (human-approval gates, smart-payment link, canonical-receipt
+        // delete, composer web search, theme toggle) keep precedence over it.
+        if (KloelToolDispatcherService.CURATED_DIRECT_TOOLS.has(toolName)) {
+          result = await this.runDirectDispatch(workspaceId, toolName, args, userId);
+        } else {
+          const resolverResult = await this.domainServiceResolver?.tryExecute(
+            toolName,
             workspaceId,
-            asToolArgs(args),
-            userId,
+            args,
           );
-        case 'remember_user_info':
-          return await this.chatToolsService.toolRememberUserInfo(
-            workspaceId,
-            asToolArgs(args),
-            userId,
-          );
-        case 'search_web':
-          return await runToolSearchWeb(this.planLimits, this.composerService, workspaceId, args);
-        case 'create_flow':
-          return await this.chatToolsService.toolCreateFlow(workspaceId, asToolArgs(args));
-        case 'list_flows':
-          return await this.chatToolsService.toolListFlows(workspaceId);
-        case 'get_dashboard_summary':
-          return await this.chatToolsService.toolGetDashboardSummary(workspaceId, asToolArgs(args));
-        case 'get_product_plans':
-          return await this.chatToolsService.toolGetProductPlans(workspaceId, asToolArgs(args));
-        case 'get_product_ai_config':
-          return await this.chatToolsService.toolGetProductAiConfig(workspaceId, asToolArgs(args));
-        case 'get_product_reviews':
-          return await this.chatToolsService.toolGetProductReviews(workspaceId, asToolArgs(args));
-        case 'get_product_urls':
-          return await this.chatToolsService.toolGetProductUrls(workspaceId, asToolArgs(args));
-        case 'validate_coupon':
-          return await this.chatToolsService.toolValidateCoupon(workspaceId, asToolArgs(args));
-        case 'get_wallet_balance':
-        case 'get_wallet_statement':
-        case 'list_orders':
-        case 'get_order_details':
-        case 'get_sales_summary':
-        case 'get_abandonments':
-          if (this.walletSalesTools) {
-            return await this.walletSalesTools.executeTool(toolName, workspaceId, asToolArgs(args));
-          }
-          return { success: false, error: 'wallet_sales_tools_not_available' };
-        case 'sales.list':
-          if (this.walletSalesTools) {
-            return await this.walletSalesTools.executeTool(
-              'list_orders',
-              workspaceId,
-              asToolArgs(args),
-            );
-          }
-          return { success: false, error: 'wallet_sales_tools_not_available' };
-        case 'toggle_theme':
-          return await this.chatToolsService.toolToggleTheme(workspaceId, asToolArgs(args));
-        case 'coupon_create':
-          if (this.couponService) {
-            return this.couponService.create(workspaceId, {
-              productId: asString(args.productId),
-              code: asString(args.code),
-              discountType: asString(args.discountType, 'percentage'),
-              discountValue: asNumber(args.discountValue),
-            });
-          }
-          return { success: false, error: 'coupon_service_unavailable' };
-        case 'checkout_create':
-          if (this.checkoutService) {
-            return this.checkoutService.create(workspaceId, {
-              productId: asString(args.productId),
-              name: asString(args.name) || asString(args.checkoutName, 'Checkout'),
-            });
-          }
-          return { success: false, error: 'checkout_service_unavailable' };
-        case 'plan_create':
-        case 'create_plan':
-        case 'update_plan':
-        case 'create_checkout':
-        case 'update_checkout':
-        case 'list_checkouts':
-        case 'create_coupon':
-        case 'list_coupons':
-        case 'delete_plan':
-        case 'delete_checkout':
-        case 'add_url':
-        case 'update_url':
-        case 'delete_url':
-        case 'delete_coupon':
-        case 'update_coupon':
-        case 'generate_boleto':
-        case 'generate_pix':
-          if (this.productSubTools) {
-            return await this.productSubTools.executeTool(toolName, workspaceId, asToolArgs(args));
-          }
-          return { success: false, error: 'product_sub_resource_tools_not_available' };
-        case 'sales.create_pix': {
-          if (!this.smartPaymentService) {
-            return { success: false, error: 'smart_payment_service_unavailable' };
-          }
-          const pixResult = await this.smartPaymentService.createSmartPayment({
-            workspaceId,
-            phone: asString(args.customerPhone),
-            customerName: asString(args.customerName),
-            ...(typeof args.productName === 'string' ? { productName: args.productName } : {}),
-            amount: asNumber(args.amount),
-          });
-          return {
-            success: true,
-            capabilityId: 'sales.create_pix',
-            outputs: {
-              paymentId: pixResult.paymentId,
-              paymentUrl: pixResult.paymentUrl,
-              pixCopiaECola: pixResult.pixCopyPaste,
-              qrCodeBase64: pixResult.pixQrCode,
-              billingType: pixResult.billingType,
-            },
-            evidenceUrl: `/vendas/${pixResult.paymentId}`,
-            message: pixResult.suggestedMessage || `PIX gerado: ${pixResult.paymentId}`,
-          };
+          // Resolver returns null when the capability has no domainService
+          // binding it can drive — fall back to the prisma-direct dispatcher
+          // (which yields 'Ferramenta desconhecida' for truly unknown tools).
+          result =
+            resolverResult !== null && resolverResult !== undefined
+              ? resolverResult
+              : await this.runDirectDispatch(workspaceId, toolName, args, userId);
         }
-        case 'sales.create_boleto': {
-          if (!this.smartPaymentService) {
-            return { success: false, error: 'smart_payment_service_unavailable' };
-          }
-          const boletoResult = await this.smartPaymentService.createSmartPayment({
-            workspaceId,
-            phone: asString(args.customerPhone),
-            customerName: asString(args.customerName),
-            ...(typeof args.productName === 'string' ? { productName: args.productName } : {}),
-            amount: asNumber(args.amount),
-          });
-          return {
-            success: true,
-            capabilityId: 'sales.create_boleto',
-            outputs: {
-              paymentId: boletoResult.paymentId,
-              paymentUrl: boletoResult.paymentUrl,
-              billingType: boletoResult.billingType,
-            },
-            evidenceUrl: `/vendas/${boletoResult.paymentId}`,
-            message: `Boleto gerado: ${boletoResult.paymentId}`,
-          };
-        }
-        case 'delete_product':
-          return await this.chatToolsService.toolDeleteProduct(workspaceId, asToolArgs(args));
-        case 'get_settings':
-          return await this.chatToolsService.toolGetSettings(workspaceId);
-        case 'request_withdrawal':
-          if (this.walletSalesTools) {
-            return await this.walletSalesTools.executeTool(toolName, workspaceId, asToolArgs(args));
-          }
-          return { success: false, error: 'wallet_sales_tools_not_available' };
-        case 'get_analytics':
-          return await this.chatToolsService.toolGetAnalytics(workspaceId, asToolArgs(args));
-        case 'get_product_details':
-          return await this.chatToolsService.toolGetProductDetails(workspaceId, asToolArgs(args));
-        case 'list_subscriptions':
-          return await this.chatToolsService.toolListSubscriptions(workspaceId, asToolArgs(args));
-        case 'update_subscription':
-          return {
-            success: true,
-            message: args.action === 'cancel' ? 'Assinatura cancelada.' : 'Assinatura pausada.',
-          };
-        case 'update_affiliate_config':
-          return await this.bizConfigToolsService.toolUpdateAffiliateConfig(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'list_affiliates':
-          return await this.bizConfigToolsService.toolListAffiliates(workspaceId);
-        case 'get_affiliate_config':
-          return await this.chatToolsService.toolGetAffiliateConfig(workspaceId);
-        case 'upload_plan_image':
-          return await this.chatToolsService.toolUploadPlanImage(workspaceId, asToolArgs(args));
-        case 'update_personal_data':
-          if (!this.accountService) {
-            return { success: false, error: 'account_service_unavailable' };
-          }
-          return await this.accountService.updatePersonalData(workspaceId, asToolArgs(args));
-        case 'account.update_personal':
-          return this.executeTool(workspaceId, 'update_personal_data', args, userId);
-        case 'update_fiscal_data':
-          return await this.bizConfigToolsService.toolSaveBusinessInfo(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'account.update_fiscal':
-          return this.executeTool(workspaceId, 'update_fiscal_data', args, userId);
-        case 'upload_document':
-          return await this.bizConfigToolsService.toolUploadDocument(workspaceId, asToolArgs(args));
-        case 'account.upload_document':
-          return this.executeTool(workspaceId, 'upload_document', args, userId);
-        case 'configure_pixel':
-          return await this.chatToolsService.toolConfigurePixel(workspaceId, asToolArgs(args));
-        case 'configure_shipping':
-          return await this.chatToolsService.toolConfigureShipping(workspaceId, asToolArgs(args));
-        case 'configure_social_proof':
-          return await this.chatToolsService.toolConfigureSocialProof(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'configure_order_bump':
-          return await this.chatToolsService.toolConfigureOrderBump(workspaceId, asToolArgs(args));
-        case 'get_social_channels':
-          return await this.bizConfigToolsService.toolGetSocialChannels(workspaceId);
-        case 'configure_warranty':
-          return await this.chatToolsService.toolConfigureWarranty(workspaceId, asToolArgs(args));
-        case 'configure_exit_intent':
-          return await this.chatToolsService.toolConfigureExitIntent(workspaceId, asToolArgs(args));
-        case 'configure_after_pay':
-          return await this.chatToolsService.toolConfigureAfterPay(workspaceId, asToolArgs(args));
-        case 'browse_marketplace':
-          return await this.chatToolsService.toolBrowseMarketplace(workspaceId, asToolArgs(args));
-        case 'get_nps':
-        case 'get_churn':
-          if (this.walletSalesTools) {
-            return await this.walletSalesTools.executeTool(toolName, workspaceId, asToolArgs(args));
-          }
-          return { success: false, error: 'wallet_sales_tools_not_available' };
-        case 'list_refunds':
-          if (this.walletSalesTools) {
-            return await this.walletSalesTools.executeTool(
-              'list_orders',
-              workspaceId,
-              asToolArgs({ status: 'refunded' }),
-            );
-          }
-          return { success: false, error: 'wallet_sales_tools_not_available' };
-        case 'request_anticipation':
-          if (this.walletSalesTools) {
-            return await this.walletSalesTools.executeTool(
-              'request_anticipation',
-              workspaceId,
-              asToolArgs(args),
-            );
-          }
-          return { success: false, error: 'wallet_sales_tools_not_available' };
-        case 'connect_channel':
-          return await this.bizConfigToolsService.toolConnectChannel(workspaceId, asToolArgs(args));
-        case 'send_channel_message':
-          return await this.chatToolsService.toolSendChannelMessage(workspaceId, asToolArgs(args));
-        case 'create_broadcast':
-          return await this.chatToolsService.toolCreateBroadcast(workspaceId, asToolArgs(args));
-        case 'configure_ai_persona':
-          return await this.chatToolsService.toolConfigureAiPersona(workspaceId, asToolArgs(args));
-        case 'update_workspace_settings':
-          return await this.bizConfigToolsService.toolSaveBusinessInfo(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'create_agent_job':
-          return await this.chatToolsService.toolCreateAgentJob(workspaceId, asToolArgs(args));
-        case 'list_agent_jobs':
-          return await this.chatToolsService.toolListAgentJobs(workspaceId);
-        case 'set_agent_job_enabled':
-          return await this.chatToolsService.toolSetAgentJobEnabled(workspaceId, asToolArgs(args));
-        case 'search_agent_memory':
-          return await this.chatToolsService.toolSearchAgentMemoryWithContacts(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'search_agent_sessions':
-          return await this.chatToolsService.toolSearchAgentSessions(workspaceId, asToolArgs(args));
-        case 'get_agent_artifact':
-          return await this.chatToolsService.toolGetAgentArtifact(workspaceId, asToolArgs(args));
-        case 'upsert_agent_skill':
-          return await this.chatToolsService.toolUpsertAgentSkill(workspaceId, asToolArgs(args));
-        case 'record_agent_skill_outcome':
-          return await this.chatToolsService.toolRecordAgentSkillOutcome(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'record_agent_delegation':
-          return await this.chatToolsService.toolRecordAgentDelegation(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'record_agent_evidence':
-          return await this.chatToolsService.toolRecordAgentEvidence(workspaceId, asToolArgs(args));
-        case 'search_agent_evidence':
-          return await this.chatToolsService.toolSearchAgentEvidence(workspaceId, asToolArgs(args));
-        case 'list_agent_evidence':
-          return await this.chatToolsService.toolListAgentEvidence(workspaceId, asToolArgs(args));
-        case 'verify_agent_evidence':
-          return await this.chatToolsService.toolVerifyAgentEvidence(workspaceId);
-        case 'create_order':
-          return await this.chatToolsService.toolCreateOrder(workspaceId, asToolArgs(args));
-        case 'create_payment_link':
-          return await this.dispatchCreatePaymentLink(workspaceId, args, userId);
-        case 'connect_whatsapp':
-          return await this.whatsappToolsService.toolConnectWhatsapp(workspaceId);
-        case 'get_whatsapp_status':
-          return await this.whatsappToolsService.toolGetWhatsAppStatus(workspaceId);
-        case 'send_whatsapp_message':
-          return await this.whatsappToolsService.toolSendWhatsAppMessage(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'list_whatsapp_contacts':
-          return await this.whatsappToolsService.toolListWhatsAppContacts(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'create_whatsapp_contact':
-          return await this.whatsappToolsService.toolCreateWhatsAppContact(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'list_whatsapp_chats':
-          return await this.whatsappToolsService.toolListWhatsAppChats(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'get_whatsapp_messages':
-          return await this.whatsappToolsService.toolGetWhatsAppMessages(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'get_whatsapp_backlog':
-          return await this.whatsappToolsService.toolGetWhatsAppBacklog(workspaceId);
-        case 'set_whatsapp_presence':
-          return await this.whatsappToolsService.toolSetWhatsAppPresence(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'sync_whatsapp_history':
-          return await this.whatsappToolsService.toolSyncWhatsAppHistory(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'send_audio':
-          return await this.whatsappToolsService.toolSendAudio(workspaceId, asToolArgs(args));
-        case 'send_document':
-          return await this.whatsappToolsService.toolSendDocument(workspaceId, asToolArgs(args));
-        case 'send_voice_note':
-          return await this.whatsappToolsService.toolSendVoiceNote(workspaceId, asToolArgs(args));
-        case 'transcribe_audio':
-          return await this.whatsappToolsService.toolTranscribeAudio(workspaceId, asToolArgs(args));
-        case 'list_leads':
-          return await this.bizConfigToolsService.toolListLeads(workspaceId, asToolArgs(args));
-        case 'get_lead_details':
-          return await this.bizConfigToolsService.toolGetLeadDetails(workspaceId, asToolArgs(args));
-        case 'save_business_info':
-          return await this.bizConfigToolsService.toolSaveBusinessInfo(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'set_business_hours':
-          return await this.bizConfigToolsService.toolSetBusinessHours(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'create_campaign':
-          return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);
-        case 'update_billing_info':
-          return await this.bizConfigToolsService.toolUpdateBillingInfo(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'get_billing_status':
-          return await this.bizConfigToolsService.toolGetBillingStatus(workspaceId);
-        case 'change_plan':
-          return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);
-        default:
-          return { success: false, error: `Ferramenta desconhecida: ${toolName}` };
       }
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'KloelToolDispatcherService.toolChangePlan');
@@ -519,8 +185,148 @@ export class KloelToolDispatcherService {
             ? error
             : 'unknown error';
       this.logger.error(`Erro ao executar ferramenta ${toolName}:`, error);
-      return { success: false, error: msg };
+      result = { success: false, error: msg };
     }
+
+    // fire-and-forget: record execution as mind-tracked capability event
+    try {
+      this.mindCapabilityExecutor?.recordExecution(
+        workspaceId,
+        toolName,
+        args,
+        result,
+        result.success,
+      );
+    } catch (err: unknown) {
+      this.logger.warn('kloel_capability_executor_skipped', err);
+    }
+
+    return result;
+  }
+
+  /**
+   * Check MindGuardsService for MUTATION_SENSITIVE tools before dispatch.
+   * Returns a block result if the guard vetoes execution; null otherwise.
+   */
+  private async checkMindGuard(workspaceId: string, toolName: string): Promise<ToolResult | null> {
+    return checkMindGuard(
+      { mindGuards: this.mindGuards, capRegistryV2: this.capRegistryV2, logger: this.logger },
+      workspaceId,
+      toolName,
+    );
+  }
+
+  /**
+   * Walk the `is*Tool` fast-path checks in declaration order. Each handler
+   * returns `null` when the tool name is not part of its domain; the first
+   * non-null result wins.
+   */
+  private runFastPathDispatch(
+    workspaceId: string,
+    toolName: string,
+    args: UnknownRecord,
+    userId: string | undefined,
+  ): Promise<ToolResult | null> {
+    return runFastPathDispatch(this.fastPathServices(), workspaceId, toolName, args, userId);
+  }
+
+  private fastPathServices(): FastPathServices {
+    return {
+      whatsappToolsService: this.whatsappToolsService,
+      codeToolsService: this.codeToolsService,
+      codeAnalysisService: this.codeAnalysisService,
+      auditService: this.auditService,
+      chatToolsService: this.chatToolsService,
+      bizConfigToolsService: this.bizConfigToolsService,
+      prisma: this.prisma,
+      selfGaps: this.selfGaps,
+      selfHealth: this.selfHealth,
+      capRegistryV2: this.capRegistryV2,
+      mindCapabilityRegistry: this.mindCapabilityRegistry,
+      salesService: this.salesService,
+      accountService: this.accountService,
+      walletSalesTools: this.walletSalesTools,
+      reportService: this.reportService,
+      depsCoverage: this.depsCoverage,
+      couponService: this.couponService,
+      checkoutService: this.checkoutService,
+      productSubTools: this.productSubTools,
+      transports: this.transports,
+      riskGate: this.riskGate,
+      executeTool: (ws, name, a, u) => this.executeTool(ws, name, a, u),
+      applyReceipt: (cap, ws, a, r, u, s) => this.withCanonicalReceipt(cap, ws, a, r, u, s),
+    };
+  }
+
+  /** Handle the small set of tools that remain on the dispatcher directly. */
+  private async runDirectDispatch(
+    workspaceId: string,
+    toolName: string,
+    args: UnknownRecord,
+    userId: string | undefined,
+  ): Promise<ToolResult> {
+    const asToolArgs = <T>(value: UnknownRecord): T => value as T;
+    switch (toolName) {
+      case 'toggle_theme':
+      case 'ui.theme': {
+        const theme = args?.theme as string;
+        if (theme !== 'light' && theme !== 'dark') {
+          return { success: false, error: 'invalid_theme' };
+        }
+        if (!this.workspaceService) {
+          return { success: false, error: 'workspace_service_unavailable' };
+        }
+        const res = await this.workspaceService.updateThemePreference(workspaceId, theme);
+        return { success: true, theme: res.theme };
+      }
+      case 'publish_product':
+      case 'products.review_and_publish':
+        return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);
+      case 'search_web':
+        if (!this.composerService?.searchWeb) {
+          return { success: false, error: 'search_unavailable' };
+        }
+        return await runToolSearchWeb(this.planLimits, this.composerService, workspaceId, args);
+      case 'delete_product': {
+        const startedAt = Date.now();
+        const result = await this.chatToolsService.toolDeleteProduct(workspaceId, asToolArgs(args));
+        return this.withCanonicalReceipt(
+          'delete_product',
+          workspaceId,
+          args,
+          result,
+          userId,
+          startedAt,
+        );
+      }
+      case 'create_payment_link':
+        return await this.dispatchCreatePaymentLink(workspaceId, args, userId);
+      case 'create_campaign':
+        return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);
+      case 'change_plan':
+        return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);
+      default:
+        return { success: false, error: `Ferramenta desconhecida: ${toolName}` };
+    }
+  }
+
+  private withCanonicalReceipt(
+    capabilityId: string,
+    workspaceId: string,
+    args: UnknownRecord,
+    result: ToolResult,
+    userId: string | undefined,
+    startedAt: number,
+  ): ToolResult {
+    return buildCanonicalReceipt(
+      this.capRegistryV2,
+      capabilityId,
+      workspaceId,
+      args,
+      result,
+      userId,
+      startedAt,
+    );
   }
 
   /**
@@ -532,43 +338,24 @@ export class KloelToolDispatcherService {
     workspaceId: string,
     args: UnknownRecord,
     userId?: string,
-  ): Promise<{ success: boolean; message?: string; error?: string; [key: string]: unknown }> {
-    const paymentArgs = args as never as {
-      amount: number;
-      description: string;
-      customerName?: string;
-    };
-    const result = await this.chatToolsService.toolCreatePaymentLink(workspaceId, paymentArgs);
-    try {
-      await this.prisma.$transaction(
-        async (tx) => {
-          const paymentIdValue: unknown = result.paymentId;
-          const resourceId = typeof paymentIdValue === 'string' ? paymentIdValue : undefined;
-          await this.auditService.logWithTx(tx, {
-            workspaceId,
-            action: 'KLOEL_TOOL_PAYMENT_LINK_DISPATCHED',
-            resource: 'KloelToolDispatcher',
-            ...(resourceId !== undefined ? { resourceId } : {}),
-            ...(userId !== undefined ? { agentId: userId } : {}),
-            details: sanitizeDetails(args),
-          });
-        },
-        { isolationLevel: 'ReadCommitted' },
-      );
-    } catch (auditError: unknown) {
-      void this.opsAlert?.alertOnCriticalError(
-        auditError,
-        'KloelToolDispatcherService.sanitizeDetails',
-      );
-      const auditMsg =
-        auditError instanceof Error
-          ? auditError.message
-          : typeof auditError === 'string'
-            ? auditError
-            : 'unknown';
-      this.logger.warn(`Audit dispatch (payment link) failed: ${auditMsg}`);
+  ): Promise<ToolResult> {
+    if (!this.smartPaymentService) {
+      return { success: false, error: 'smart_payment_unavailable' };
     }
-    return result;
+    return runCreatePaymentLink(
+      {
+        prisma: this.prisma,
+        auditService: this.auditService,
+        chatToolsService: this.chatToolsService,
+        opsAlert: this.opsAlert,
+        logger: { warn: (message) => this.logger.warn(message) },
+        applyReceipt: (cap, ws, a, r, u, started) =>
+          this.withCanonicalReceipt(cap, ws, a, r, u, started),
+      },
+      workspaceId,
+      args,
+      userId,
+    );
   }
 
   private async requestHighRiskApproval(

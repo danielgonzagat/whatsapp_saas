@@ -5,10 +5,7 @@
  * increments on positive conversions, decrements on disengagement.
  */
 
-import {
-  CreatorTrustCapitalTrackerService,
-  type CreatorTrustConfig,
-} from './creator-trust-capital.tracker';
+import { CreatorTrustCapitalTrackerService } from './creator-trust-capital.tracker';
 
 import type { CreatorEvent } from './types';
 import type { TrustState } from '../trust/trust.types';

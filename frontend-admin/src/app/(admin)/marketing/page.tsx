@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import {
   AdminPage,
   AdminSectionHeader,
@@ -158,9 +159,15 @@ export default function MarketingPage() {
                 className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] p-4"
               >
                 <div className="mb-3 flex items-center gap-3">
-                  <div className="flex size-12 items-center justify-center overflow-hidden rounded-[10px] border border-[var(--app-border-primary)] bg-[var(--app-bg-card)]">
+                  <div className="relative flex size-12 items-center justify-center overflow-hidden rounded-[10px] border border-[var(--app-border-primary)] bg-[var(--app-bg-card)]">
                     {product.imageUrl ? (
-                      <img src={product.imageUrl} alt="" className="h-full w-full object-cover" />
+                      <Image
+                        src={product.imageUrl}
+                        alt=""
+                        fill
+                        sizes="48px"
+                        className="object-cover"
+                      />
                     ) : (
                       <span className="text-[10px] text-[var(--app-text-tertiary)]">Kloel</span>
                     )}

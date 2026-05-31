@@ -1,4 +1,6 @@
 import { AgentRuntimeDelegationService } from './agent-runtime.delegation';
+import { mindMemoryStub } from '../../../test/helpers/mind-memory-stub';
+
 function makeDelegationValue(params: {
   parentSessionId: string;
   childSessionId?: string | null;
@@ -47,7 +49,7 @@ describe('AgentRuntimeDelegationService', () => {
         findUnique: jest.fn().mockResolvedValue(null),
       },
     };
-    const service = new AgentRuntimeDelegationService(prisma as never);
+    const service = new AgentRuntimeDelegationService(prisma as never, mindMemoryStub(prisma));
     const record = await service.create({
       workspaceId: 'ws_1',
       parentSessionId: 'sess_parent',
@@ -84,7 +86,7 @@ describe('AgentRuntimeDelegationService', () => {
         findUnique: jest.fn().mockResolvedValue(null),
       },
     };
-    const service = new AgentRuntimeDelegationService(prisma as never);
+    const service = new AgentRuntimeDelegationService(prisma as never, mindMemoryStub(prisma));
     const record = await service.create({
       workspaceId: 'ws_1',
       parentSessionId: 'sess_parent',
@@ -119,7 +121,7 @@ describe('AgentRuntimeDelegationService', () => {
         findUnique: jest.fn().mockResolvedValue(null),
       },
     };
-    const service = new AgentRuntimeDelegationService(prisma as never);
+    const service = new AgentRuntimeDelegationService(prisma as never, mindMemoryStub(prisma));
     const record = await service.accept({
       workspaceId: 'ws_1',
       parentSessionId: 'sess_parent',
@@ -147,7 +149,7 @@ describe('AgentRuntimeDelegationService', () => {
         findUnique: jest.fn().mockResolvedValue(null),
       },
     };
-    const service = new AgentRuntimeDelegationService(prisma as never);
+    const service = new AgentRuntimeDelegationService(prisma as never, mindMemoryStub(prisma));
     const record = await service.accept({
       workspaceId: 'ws_1',
       parentSessionId: 'sess_parent',
@@ -178,7 +180,7 @@ describe('AgentRuntimeDelegationService', () => {
         findUnique: jest.fn().mockResolvedValue(null),
       },
     };
-    const service = new AgentRuntimeDelegationService(prisma as never);
+    const service = new AgentRuntimeDelegationService(prisma as never, mindMemoryStub(prisma));
     const record = await service.transitionToRunning({
       workspaceId: 'ws_1',
       childSessionId: 'sess_child',
@@ -206,7 +208,7 @@ describe('AgentRuntimeDelegationService', () => {
         findUnique: jest.fn().mockResolvedValue(null),
       },
     };
-    const service = new AgentRuntimeDelegationService(prisma as never);
+    const service = new AgentRuntimeDelegationService(prisma as never, mindMemoryStub(prisma));
     const record = await service.transitionToRunning({
       workspaceId: 'ws_1',
       childSessionId: 'sess_child',
@@ -235,7 +237,7 @@ describe('AgentRuntimeDelegationService', () => {
         findUnique: jest.fn().mockResolvedValue(null),
       },
     };
-    const service = new AgentRuntimeDelegationService(prisma as never);
+    const service = new AgentRuntimeDelegationService(prisma as never, mindMemoryStub(prisma));
     const record = await service.completeWithSummary({
       workspaceId: 'ws_1',
       childSessionId: 'sess_child',

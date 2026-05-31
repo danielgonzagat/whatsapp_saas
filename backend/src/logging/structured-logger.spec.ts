@@ -1,3 +1,4 @@
+import { castMock } from '../../test/helpers/cast-mock';
 import { StructuredLogger } from './structured-logger';
 
 describe('StructuredLogger', () => {
@@ -63,8 +64,8 @@ describe('StructuredLogger', () => {
       logger.info('hello world');
 
       expect(spy).toHaveBeenCalledTimes(1);
-      const logged = spy.mock.calls[0][0];
-      const parsed = JSON.parse(logged as string);
+      const logged = castMock<string>(spy.mock.calls[0][0]);
+      const parsed = JSON.parse(logged) as Record<string, unknown>;
 
       expect(parsed).toMatchObject({
         level: 'info',
@@ -81,8 +82,8 @@ describe('StructuredLogger', () => {
       logger.warn('warning message');
 
       expect(spy).toHaveBeenCalledTimes(1);
-      const logged = spy.mock.calls[0][0];
-      const parsed = JSON.parse(logged as string);
+      const logged = castMock<string>(spy.mock.calls[0][0]);
+      const parsed = JSON.parse(logged) as Record<string, unknown>;
 
       expect(parsed).toMatchObject({
         level: 'warn',
@@ -98,8 +99,8 @@ describe('StructuredLogger', () => {
       logger.error('error occurred');
 
       expect(spy).toHaveBeenCalledTimes(1);
-      const logged = spy.mock.calls[0][0];
-      const parsed = JSON.parse(logged as string);
+      const logged = castMock<string>(spy.mock.calls[0][0]);
+      const parsed = JSON.parse(logged) as Record<string, unknown>;
 
       expect(parsed).toMatchObject({
         level: 'error',
@@ -114,8 +115,8 @@ describe('StructuredLogger', () => {
 
       logger.info('message with extra', { userId: 'u-1', count: 42 });
 
-      const logged = spy.mock.calls[0][0];
-      const parsed = JSON.parse(logged as string);
+      const logged = castMock<string>(spy.mock.calls[0][0]);
+      const parsed = JSON.parse(logged) as Record<string, unknown>;
 
       expect(parsed.userId).toBe('u-1');
       expect(parsed.count).toBe(42);
@@ -128,8 +129,8 @@ describe('StructuredLogger', () => {
       const sentinelNull: string = null as string;
       logger.warn('null extra', { nullable: sentinelNull });
 
-      const logged = spy.mock.calls[0][0];
-      const parsed = JSON.parse(logged as string);
+      const logged = castMock<string>(spy.mock.calls[0][0]);
+      const parsed = JSON.parse(logged) as Record<string, unknown>;
 
       expect(parsed.nullable).toBeNull();
       spy.mockRestore();
@@ -140,8 +141,8 @@ describe('StructuredLogger', () => {
 
       logger.error('undefined extra', {});
 
-      const logged = spy.mock.calls[0][0];
-      const parsed = JSON.parse(logged as string);
+      const logged = castMock<string>(spy.mock.calls[0][0]);
+      const parsed = JSON.parse(logged) as Record<string, unknown>;
 
       // Only core fields present, no extras
       expect(Object.keys(parsed).sort()).toEqual(
@@ -155,8 +156,8 @@ describe('StructuredLogger', () => {
 
       logger.info('timestamped');
 
-      const logged = spy.mock.calls[0][0];
-      const parsed = JSON.parse(logged as string);
+      const logged = castMock<string>(spy.mock.calls[0][0]);
+      const parsed = JSON.parse(logged) as Record<string, unknown>;
 
       expect(parsed.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
       spy.mockRestore();
@@ -172,7 +173,7 @@ describe('StructuredLogger', () => {
       logger.error('msg');
 
       [logSpy, warnSpy, errorSpy].forEach((spy) => {
-        expect(() => JSON.parse(spy.mock.calls[0][0] as string)).not.toThrow();
+        expect(() => JSON.parse(castMock<string>(spy.mock.calls[0][0])) as unknown).not.toThrow();
       });
 
       logSpy.mockRestore();
@@ -206,7 +207,7 @@ describe('StructuredLogger', () => {
 
       logger.log('operation started', 'MyService.run');
 
-      const parsed = JSON.parse(spy.mock.calls[0][0] as string);
+      const parsed = JSON.parse(castMock<string>(spy.mock.calls[0][0])) as Record<string, unknown>;
       expect(parsed).toMatchObject({
         level: 'info',
         message: 'operation started',
@@ -220,7 +221,7 @@ describe('StructuredLogger', () => {
 
       logger.warn('deprecation warning', 'OldService.call');
 
-      const parsed = JSON.parse(spy.mock.calls[0][0] as string);
+      const parsed = JSON.parse(castMock<string>(spy.mock.calls[0][0])) as Record<string, unknown>;
       expect(parsed).toMatchObject({
         level: 'warn',
         message: 'deprecation warning',
@@ -234,7 +235,7 @@ describe('StructuredLogger', () => {
 
       logger.error('something broke', 'Error: boom\n  at foo.js:1', 'MyService');
 
-      const parsed = JSON.parse(spy.mock.calls[0][0] as string);
+      const parsed = JSON.parse(castMock<string>(spy.mock.calls[0][0])) as Record<string, unknown>;
       expect(parsed).toMatchObject({
         level: 'error',
         message: 'something broke',
@@ -251,7 +252,7 @@ describe('StructuredLogger', () => {
         context: 'AdminMfaService.resumeSetup',
       });
 
-      const parsed = JSON.parse(spy.mock.calls[0][0] as string);
+      const parsed = JSON.parse(castMock<string>(spy.mock.calls[0][0])) as Record<string, unknown>;
       expect(parsed).toMatchObject({
         level: 'error',
         message: 'Failed to decrypt MFA secret',
@@ -267,7 +268,7 @@ describe('StructuredLogger', () => {
       const err = new Error('connection refused');
       logger.error('DB query failed', err);
 
-      const parsed = JSON.parse(spy.mock.calls[0][0] as string);
+      const parsed = JSON.parse(castMock<string>(spy.mock.calls[0][0])) as Record<string, unknown>;
       expect(parsed).toMatchObject({
         level: 'error',
         message: 'DB query failed',
@@ -281,7 +282,7 @@ describe('StructuredLogger', () => {
 
       logger.log({ workspaceId: 'ws-1', durationMs: 42 }, 'Autopilot impact succeeded');
 
-      const parsed = JSON.parse(spy.mock.calls[0][0] as string);
+      const parsed = JSON.parse(castMock<string>(spy.mock.calls[0][0])) as Record<string, unknown>;
       expect(parsed).toMatchObject({
         level: 'info',
         message: 'Autopilot impact succeeded',
@@ -299,7 +300,7 @@ describe('StructuredLogger', () => {
         retryable: true,
       });
 
-      const parsed = JSON.parse(spy.mock.calls[0][0] as string);
+      const parsed = JSON.parse(castMock<string>(spy.mock.calls[0][0])) as Record<string, unknown>;
       expect(parsed).toMatchObject({
         level: 'warn',
         message: 'Failed to track AI usage',
@@ -320,7 +321,7 @@ describe('StructuredLogger', () => {
         err,
       );
 
-      const parsed = JSON.parse(spy.mock.calls[0][0] as string);
+      const parsed = JSON.parse(castMock<string>(spy.mock.calls[0][0])) as Record<string, unknown>;
       expect(parsed).toMatchObject({
         level: 'error',
         message: 'Financial operation failed',
@@ -340,7 +341,7 @@ describe('StructuredLogger', () => {
         value: '-1',
       });
 
-      const parsed = JSON.parse(spy.mock.calls[0][0] as string);
+      const parsed = JSON.parse(castMock<string>(spy.mock.calls[0][0])) as Record<string, unknown>;
       expect(parsed).toMatchObject({
         level: 'error',
         message: 'split validation: field must be >= 0',
@@ -358,9 +359,15 @@ describe('StructuredLogger', () => {
       logger.verbose('verbose message', { detail: 42 });
 
       expect(spy).toHaveBeenCalledTimes(2);
-      const debugParsed = JSON.parse(spy.mock.calls[0][0] as string);
+      const debugParsed = JSON.parse(castMock<string>(spy.mock.calls[0][0])) as Record<
+        string,
+        unknown
+      >;
       expect(debugParsed).toMatchObject({ level: 'info', message: 'debug message' });
-      const verboseParsed = JSON.parse(spy.mock.calls[1][0] as string);
+      const verboseParsed = JSON.parse(castMock<string>(spy.mock.calls[1][0])) as Record<
+        string,
+        unknown
+      >;
       expect(verboseParsed).toMatchObject({
         level: 'info',
         message: 'verbose message',

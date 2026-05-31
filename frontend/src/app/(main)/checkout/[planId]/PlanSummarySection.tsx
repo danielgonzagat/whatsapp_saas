@@ -318,10 +318,9 @@ export function PlanSummarySection({
           onChange={(v) => void patch({ enablePix: v })}
         />
         <Toggle
-          label={kloelT('Boleto indisponivel no checkout Stripe atual')}
-          checked={false}
-          onChange={() => void patch({ enableBoleto: false })}
-          disabled
+          label={kloelT('Boleto')}
+          checked={config.enableBoleto}
+          onChange={(v) => void patch({ enableBoleto: v })}
         />
       </div>
     </>

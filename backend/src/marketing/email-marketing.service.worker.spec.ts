@@ -1,4 +1,5 @@
 import { EmailMarketingService } from './email-marketing.service';
+import { partialMatch, stringContains } from '../../test/helpers/match-instance';
 
 type WorkerCb = (job: { data: { campaignId: string; workspaceId: string } }) => Promise<void>;
 
@@ -106,13 +107,11 @@ describe('EmailMarketingService', () => {
       await workerCallback({ data: { campaignId: 'camp-1', workspaceId: 'ws-1' } });
 
       expect(sendEmail).toHaveBeenCalledTimes(2);
-      const finalCalls = campaignUpdate.mock.calls;
-      const sendingCall = finalCalls.find(
-        (c: unknown[]) => (c[0] as Record<string, unknown>)?.data !== undefined,
-      );
+      const finalCalls = campaignUpdate.mock.calls as Array<[{ data?: unknown }]>;
+      const sendingCall = finalCalls.find((c) => c[0]?.data !== undefined);
       expect(sendingCall?.[0]).toEqual(
         expect.objectContaining({
-          data: expect.objectContaining({ status: 'SENDING' }),
+          data: partialMatch({ status: 'SENDING' }),
         }),
       );
     });
@@ -166,7 +165,7 @@ describe('EmailMarketingService', () => {
 
       expect(deliveryCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: partialMatch({
             event: 'FAILED',
             campaignId: 'camp-1',
             recipientId: 'r-1',
@@ -175,7 +174,7 @@ describe('EmailMarketingService', () => {
       );
       expect(recipientUpdateMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: partialMatch({
             status: 'FAILED',
             errorMessage: 'Provider returned failure',
           }),
@@ -205,7 +204,7 @@ describe('EmailMarketingService', () => {
 
       expect(deliveryCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: partialMatch({
             event: 'FAILED',
             campaignId: 'camp-1',
           }),
@@ -213,7 +212,7 @@ describe('EmailMarketingService', () => {
       );
       expect(recipientUpdateMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: partialMatch({
             status: 'FAILED',
             errorMessage: 'SMTP connection refused',
           }),
@@ -245,7 +244,7 @@ describe('EmailMarketingService', () => {
 
       expect(sendEmail).toHaveBeenCalledWith(
         expect.objectContaining({
-          html: expect.stringContaining('footer-unsub'),
+          html: stringContains('footer-unsub'),
         }),
       );
     });

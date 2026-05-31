@@ -2,6 +2,7 @@ import { Module, forwardRef } from '@nestjs/common';
 
 import { BillingModule } from '../billing/billing.module';
 import { FraudModule } from '../payments/fraud/fraud.module';
+import { MercadoPagoModule } from '../payments/mercadopago/mercadopago.module';
 import { PrismaModule } from '../prisma/prisma.module';
 
 import { PrepaidWalletController } from './prepaid-wallet.controller';
@@ -14,7 +15,12 @@ import { WalletService } from './wallet.service';
  * middleware) inject WalletService to debit usage atomically.
  */
 @Module({
-  imports: [PrismaModule, forwardRef(() => BillingModule), FraudModule],
+  imports: [
+    PrismaModule,
+    forwardRef(() => BillingModule),
+    FraudModule,
+    forwardRef(() => MercadoPagoModule),
+  ],
   controllers: [PrepaidWalletController],
   providers: [WalletService],
   exports: [WalletService],

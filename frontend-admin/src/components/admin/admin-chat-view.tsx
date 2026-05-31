@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowUp, Plus, X } from 'lucide-react';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
 import { adminChatApi, type AdminChatSessionView } from '@/lib/api/admin-chat-api';
@@ -233,10 +234,13 @@ export function AdminChatView() {
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center">
             <div className="mx-auto flex w-full max-w-[760px] flex-col items-center px-2 text-center">
-              <img
+              <Image
                 src="/kloel-mushroom-animated.svg"
                 alt=""
                 aria-hidden="true"
+                width={48}
+                height={48}
+                unoptimized
                 className="mb-5 h-12 w-12"
               />
               <h1 className="mb-2 text-[34px] font-bold leading-none tracking-[-0.04em] text-[var(--app-text-primary)] md:text-[42px]">

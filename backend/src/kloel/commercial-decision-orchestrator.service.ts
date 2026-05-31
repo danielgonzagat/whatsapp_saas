@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { MindEventSpine } from './mind/coordination';
 import { ChannelSetupService } from './channel-setup.service';
-import { MindConceptService } from './mind-concepts.service';
+import { MindConceptService } from './mind/memory/mind-concepts.service';
 import { MindService } from './mind.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ContactIdentityResolverService } from '../contacts/contact-identity-resolver.service';
@@ -297,10 +297,10 @@ export class CommercialDecisionOrchestratorService {
       channelSetup,
       tone: tone.tone,
     });
-    const customerMessage = composeCustomerMessage(plan);
-    assertCustomerSafe(customerMessage);
+    const contactMessage = composeCustomerMessage(plan);
+    assertCustomerSafe(contactMessage);
 
-    traceComposerProduced({ ...traceCtx, messageLength: customerMessage.length, concept });
+    traceComposerProduced({ ...traceCtx, messageLength: contactMessage.length, concept });
 
     const actions = buildActions({
       ...(scored.couponDecision !== undefined ? { couponDecision: scored.couponDecision } : {}),
@@ -313,7 +313,7 @@ export class CommercialDecisionOrchestratorService {
         : {}),
       decisionTraceId: inboundKey,
       inboundKey,
-      customerMessage,
+      contactMessage,
       internalReplyPlan: plan,
       priceBand,
       segment: concept,

@@ -54,7 +54,8 @@ export class CookieConsentController {
       }
     }
 
-    return request.cookies?.kloel_access_token || request.cookies?.kloel_token || null;
+    const cookies = request.cookies as Record<string, string | undefined> | undefined;
+    return cookies?.kloel_access_token || cookies?.kloel_token || null;
   }
 
   private async resolveAgentId(request: Request): Promise<string | null> {
@@ -100,8 +101,9 @@ export class CookieConsentController {
       return { consent };
     }
 
+    const cookies = request.cookies as Record<string, string | undefined> | undefined;
     return {
-      consent: this.cookieConsentService.parseCookieValue(request.cookies?.[COOKIE_NAME] || null),
+      consent: this.cookieConsentService.parseCookieValue(cookies?.[COOKIE_NAME] || null),
     };
   }
 

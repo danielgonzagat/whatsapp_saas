@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { escapeHtml } from '../../common/utils/html-escape.util';
 import { BRAND_COLORS } from '../../common/kloel-colors';
+import { renderEmailTemplate } from '../../common/utils/email-template-renderer.util';
 import { formatBrlAmount } from '../../kloel/money-format.util';
 import { PaidCheckoutEffectClient, readPaidCheckoutOrderScope } from './shared';
 
@@ -103,7 +104,6 @@ function buildPurchaseConfirmationEmailHtml(input: {
   totalInCents: number;
   memberAreaUrl?: string;
 }) {
-  const { renderEmailTemplate } = require('../../common/utils/email-template-renderer.util');
   const formattedAmount = formatBrlAmount(input.totalInCents / 100);
   const memberAreaSection = input.memberAreaUrl
     ? [

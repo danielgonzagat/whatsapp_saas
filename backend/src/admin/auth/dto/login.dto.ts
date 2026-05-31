@@ -1,7 +1,7 @@
 import { IsEmail, IsString, MaxLength, MinLength } from 'class-validator';
 
-/** Login dto. */
-export class LoginDto {
+/** Admin login dto. */
+export class AdminLoginDto {
   /** Email property. */
   @IsEmail()
   @MaxLength(320)

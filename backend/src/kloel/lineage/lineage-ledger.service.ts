@@ -189,27 +189,36 @@ export class LineageLedgerService {
 export class InMemoryLineageLedgerRepository implements LineageLedgerRepository {
   private readonly entries: LineageEntry[] = [];
 
-  public async count(): Promise<number> {
-    return this.entries.length;
+  public count(): Promise<number> {
+    return Promise.resolve(this.entries.length);
   }
 
-  public async tail(): Promise<LineageEntry | null> {
+  public tail(): Promise<LineageEntry | null> {
     if (this.entries.length === 0) {
-      return null;
+      return Promise.resolve(null);
     }
     const last = this.entries[this.entries.length - 1];
-    return last ?? null;
+    return Promise.resolve(last ?? null);
   }
 
-  public async listAll(): Promise<readonly LineageEntry[]> {
-    return Object.freeze([...this.entries]);
+  public listAll(): Promise<readonly LineageEntry[]> {
+    return Promise.resolve(Object.freeze([...this.entries]));
   }
 
-  public async listFromSequence(from: number): Promise<readonly LineageEntry[]> {
-    return Object.freeze(this.entries.filter((e) => e.sequenceNumber >= from));
+  public listFromSequence(from: number): Promise<readonly LineageEntry[]> {
+    return Promise.resolve(Object.freeze(this.entries.filter((e) => e.sequenceNumber >= from)));
   }
 
-  public async append(entry: LineageEntry): Promise<void> {
+  public append(entry: LineageEntry): Promise<void> {
+    try {
+      this.appendSync(entry);
+      return Promise.resolve();
+    } catch (err) {
+      return Promise.reject(err instanceof Error ? err : new Error(String(err)));
+    }
+  }
+
+  private appendSync(entry: LineageEntry): void {
     const existingByHash = this.entries.find((e) => e.hash === entry.hash);
     if (existingByHash) {
       throw new LineageLedgerError(

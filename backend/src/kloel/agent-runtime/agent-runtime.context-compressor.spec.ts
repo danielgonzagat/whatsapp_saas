@@ -1,4 +1,5 @@
 import { AgentRuntimeContextCompressorService } from './agent-runtime.context-compressor';
+import { mindMemoryStub } from '../../../test/helpers/mind-memory-stub';
 
 function makePrisma() {
   return {
@@ -19,9 +20,11 @@ function makeMemoryManager() {
 
 describe('AgentRuntimeContextCompressorService', () => {
   it('detects when a message set exceeds the compression budget', () => {
+    const ccPrisma = makePrisma();
     const service = new AgentRuntimeContextCompressorService(
-      makePrisma() as never,
+      ccPrisma as never,
       makeMemoryManager() as never,
+      mindMemoryStub(ccPrisma),
     );
 
     expect(
@@ -41,6 +44,7 @@ describe('AgentRuntimeContextCompressorService', () => {
     const service = new AgentRuntimeContextCompressorService(
       prisma as never,
       memoryManager as never,
+      mindMemoryStub(prisma),
     );
 
     const result = await service.compressAndPersist({
@@ -70,11 +74,11 @@ describe('AgentRuntimeContextCompressorService', () => {
       ],
     });
     expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
+      expect.objectContaining<Record<string, unknown>>({
         where: {
           workspaceId_key: { workspaceId: 'ws_1', key: 'agent_compressed_context:thread_1' },
         },
-        update: expect.objectContaining({
+        update: expect.objectContaining<Record<string, unknown>>({
           category: 'agent_curated',
           type: 'context_summary',
           content: expect.stringContaining('REFERENCE ONLY'),
@@ -95,6 +99,7 @@ describe('AgentRuntimeContextCompressorService', () => {
     const service = new AgentRuntimeContextCompressorService(
       prisma as never,
       makeMemoryManager() as never,
+      mindMemoryStub(prisma),
     );
 
     const result = await service.loadCompressedContext('ws_1', 'thread_1');

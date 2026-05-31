@@ -1,7 +1,7 @@
 import { AdminAuditController } from './admin-audit.controller';
 
 describe('AdminAuditController', () => {
-  const list = jest.fn();
+  const list = jest.fn<unknown, [Record<string, unknown>]>();
 
   let controller: AdminAuditController;
 

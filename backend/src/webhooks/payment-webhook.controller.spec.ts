@@ -1,8 +1,9 @@
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { expectValueOf } from '../../test/expect-value-of';
 // Webhook specs exercise sendMessage-adjacent flows through the shared
 // messageLimit/dailyLimit enforcement in WhatsappService.sendMessage().
-const mockConstructEvent = jest.fn();
-const mockRetrieveEvent = jest.fn();
+const mockConstructEvent = jest.fn<(...args: unknown[]) => unknown>();
+const mockRetrieveEvent = jest.fn<(...args: unknown[]) => unknown>();
 
 jest.mock('../billing/stripe-runtime', () => ({
   StripeRuntime: jest.fn().mockImplementation(() => ({

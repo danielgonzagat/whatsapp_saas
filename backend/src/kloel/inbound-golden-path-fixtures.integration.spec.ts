@@ -1,21 +1,16 @@
 import { RuntimeConversationTracerService } from './runtime-conversation-tracer.service';
 import {
-  CommercialDecisionOrchestratorService,
   composeCustomerMessage,
   assertCustomerSafe,
 } from './commercial-decision-orchestrator.service';
-import { DecisionOutcomeService } from './decision-outcome.service';
-import { MindLiftReportService } from './mind-lift-report.service';
 import {
   buildWhatsappInboundText,
   buildPriceObjectionInbound,
   buildInboundReply,
   buildPipelineActiveState,
   buildChannelConfig,
-  buildDecisionOutcomeKey,
 } from '../../test/fixtures/whatsapp-inbound.fixture';
 const WS = 'ws-golden-path';
-const CHANNEL = 'whatsapp';
 const CONTACT_ID = 'contact-gp-1';
 const PHONE = '5511998887777';
 type ConceptRow = { concept: string; confidence: number };
@@ -23,7 +18,9 @@ function buildTracerInstrumentedEvents(
   tracer: RuntimeConversationTracerService,
   baseEvents: { recordCommercial: jest.Mock },
 ) {
-  const originalRecordCommercial = baseEvents.recordCommercial.getMockImplementation();
+  const originalRecordCommercial = baseEvents.recordCommercial.getMockImplementation() as
+    | ((event: unknown) => unknown)
+    | undefined;
   let policyChoseEmitted = false;
   let determinismGateEmitted = false;
   let composerProducedEmitted = false;
@@ -82,8 +79,6 @@ function buildTracerInstrumentedEvents(
 }
 describe('Inbound Golden Path — P12 WhatsApp integration proof', () => {
   let tracer: RuntimeConversationTracerService;
-  let outcome: DecisionOutcomeService;
-  let liftReport: MindLiftReportService;
   const concepts = { detect: jest.fn() };
   const events = { recordCommercial: jest.fn() };
   const mind = {
@@ -124,8 +119,6 @@ describe('Inbound Golden Path — P12 WhatsApp integration proof', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     tracer = new RuntimeConversationTracerService();
-    outcome = new DecisionOutcomeService(prisma as never);
-    liftReport = new MindLiftReportService(outcome);
     concepts.detect.mockImplementation(
       async (input: {
         workspaceId: string;
@@ -246,33 +239,6 @@ describe('Inbound Golden Path — P12 WhatsApp integration proof', () => {
     prisma.decisionOutcome.findMany.mockResolvedValue([]);
     buildTracerInstrumentedEvents(tracer, events);
   });
-  function makeOrchestrator() {
-    return new CommercialDecisionOrchestratorService(
-      mind as never,
-      concepts as never,
-      events as never,
-      identity as never,
-      setupService as never,
-      prisma as never,
-      tracer,
-    );
-  }
-  function traceBeforeOrchestration(input: {
-    workspaceId: string;
-    contactId?: string;
-    channel: string;
-  }) {
-    tracer.record('step1_inbox_recorded', {
-      workspaceId: input.workspaceId,
-      channel: input.channel,
-    });
-    if (input.contactId) {
-      tracer.record('step2_contact_resolved', {
-        contactId: input.contactId,
-        channel: input.channel,
-      });
-    }
-  }
   describe('Composition and fixture synthesis', () => {
     it('produces deterministic reply composition that passes customer-safety check', () => {
       const message = composeCustomerMessage({

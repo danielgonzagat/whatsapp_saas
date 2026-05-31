@@ -82,7 +82,10 @@ describe('CheckoutService — PI-008 checkout page configuration', () => {
       const created = { id: 'chk_new', name: 'Meu Checkout', kind: 'CHECKOUT' };
       productSvc.createCheckout.mockResolvedValue(created);
 
-      const result = await service.create('ws_1', 'prod_1', dto);
+      const result = await service.create('ws_1', {
+        productId: 'prod_1',
+        ...dto,
+      });
 
       expect(productSvc.createCheckout).toHaveBeenCalledWith('prod_1', dto, 'ws_1');
       expect(eventEmitter.checkoutCreated).toHaveBeenCalledWith({
@@ -95,7 +98,11 @@ describe('CheckoutService — PI-008 checkout page configuration', () => {
 
     it('does not emit when createCheckout returns null', async () => {
       productSvc.createCheckout.mockResolvedValue(null);
-      const result = await service.create('ws_1', 'prod_1', { name: 'X', priceInCents: 1000 });
+      const result = await service.create('ws_1', {
+        productId: 'prod_1',
+        name: 'X',
+        priceInCents: 1000,
+      });
       expect(eventEmitter.checkoutCreated).not.toHaveBeenCalled();
       expect(result).toBeNull();
     });
@@ -114,7 +121,10 @@ describe('CheckoutService — PI-008 checkout page configuration', () => {
         kind: 'CHECKOUT',
       });
 
-      const result = await service.update('ws_1', 'chk_1', { name: 'Atualizado' });
+      const result = await service.update('ws_1', {
+        checkoutId: 'chk_1',
+        name: 'Atualizado',
+      });
 
       expect(prisma.checkoutProductPlan.findFirst).toHaveBeenCalledWith({
         where: { id: 'chk_1', kind: 'CHECKOUT', product: { workspaceId: 'ws_1' } },
@@ -130,7 +140,9 @@ describe('CheckoutService — PI-008 checkout page configuration', () => {
 
     it('rejects when checkout not found in workspace', async () => {
       prisma.checkoutProductPlan.findFirst.mockResolvedValueOnce(null);
-      await expect(service.update('ws_1', 'chk_missing', {})).rejects.toThrow(NotFoundException);
+      await expect(service.update('ws_1', { checkoutId: 'chk_missing' })).rejects.toThrow(
+        NotFoundException,
+      );
       expect(productSvc.updatePlan).not.toHaveBeenCalled();
     });
   });

@@ -1,3 +1,7 @@
+/**
+ * @capability AiCompletionProvider
+ * @domain commercial-intelligence
+ */
 import OpenAI from 'openai';
 import type {
   ChatCompletionMessage,

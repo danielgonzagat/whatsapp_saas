@@ -2,21 +2,24 @@ import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { BadRequestException, Injectable, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { getTraceHeaders } from '../common/trace-headers';
 import {
-  collectAllowedHosts,
   validateAllowlistedUserUrl,
   validateNoInternalAccess,
 } from '../common/utils/url-validator';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { OpsAlertService } from '../observability/ops-alert.service';
-
-const DATA_AUDIO___A_Z___BASE_RE = /^data:audio\/[a-z]+;base64,/;
+import {
+  buildAllowlistedAudioFetchUrl,
+  collectAudioAllowlist,
+  estimateAudioTextTokens,
+  stripAudioBase64Prefix,
+} from './audio.helpers';
 
 /** Audio service. */
 @Injectable()
@@ -36,14 +39,6 @@ export class AudioService {
     });
   }
 
-  private estimateTextTokens(...chunks: Array<string | undefined>) {
-    const text = chunks.filter(Boolean).join(' ').trim();
-    if (!text) {
-      return 500;
-    }
-    return Math.max(200, Math.ceil(text.length / 4));
-  }
-
   private async ensureBudget(workspaceId?: string) {
     if (!workspaceId) {
       this.logger.debug(
@@ -61,8 +56,9 @@ export class AudioService {
       );
       return;
     }
-    await this.planLimits.trackAiUsage(workspaceId, tokens).catch((error) => {
-      this.logger.warn(`[${feature}] failed to track AI usage: ${error?.message || error}`);
+    await this.planLimits.trackAiUsage(workspaceId, tokens).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`[${feature}] failed to track AI usage: ${message}`);
     });
   }
 
@@ -113,7 +109,7 @@ export class AudioService {
       this.logger.log(`Transcription completed: ${transcription.text?.substring(0, 50)}...`);
       await this.trackUsage(
         workspaceId,
-        this.estimateTextTokens(transcription.text, language),
+        estimateAudioTextTokens(transcription.text, language),
         'audio.transcribe',
       );
       return {
@@ -159,7 +155,7 @@ export class AudioService {
       // taken verbatim from the server-controlled allowlist and a path that
       // has passed a strict whitelist regex. Both barriers (constant origin +
       // sanitized path) cut the taint flow from the user-supplied string.
-      const fetchUrl = this.buildAllowlistedFetchUrl(safeUrl);
+      const fetchUrl = buildAllowlistedAudioFetchUrl(safeUrl, collectAudioAllowlist());
 
       const response = await fetch(fetchUrl.toString(), {
         headers: getTraceHeaders(),
@@ -182,70 +178,8 @@ export class AudioService {
   }
 
   private validateAudioSourceUrl(rawUrl: string): void {
-    const allowedHosts = this.collectAudioAllowlist();
+    const allowedHosts = collectAudioAllowlist();
     validateAllowlistedUserUrl(rawUrl, allowedHosts);
-  }
-
-  private collectAudioAllowlist(): Set<string> {
-    const allowedHosts = collectAllowedHosts(
-      process.env.AUDIO_FETCH_ALLOWLIST,
-      process.env.CDN_BASE_URL,
-      process.env.MEDIA_BASE_URL,
-      process.env.R2_PUBLIC_URL,
-    );
-
-    if (allowedHosts.size === 0) {
-      throw new BadRequestException('AUDIO_FETCH_ALLOWLIST not configured');
-    }
-
-    return allowedHosts;
-  }
-
-  private buildAllowlistedFetchUrl(safeUrl: URL): URL {
-    const allowedHosts = this.collectAudioAllowlist();
-    const requestedHost = safeUrl.hostname.toLowerCase();
-
-    // Path/query barrier: only allow conservative, file-like characters. Any
-    // value outside this set is rejected, ensuring user-supplied path/query
-    // cannot smuggle hostname-changing constructs (e.g. backslashes, '@',
-    // '\\\\', or protocol-relative payloads) into the rebuilt URL.
-    const safePath = AudioService.sanitizeAudioPath(safeUrl.pathname);
-    const safeQuery = AudioService.sanitizeAudioQuery(safeUrl.search);
-
-    for (const allowed of allowedHosts) {
-      if (allowed.toLowerCase() === requestedHost) {
-        // Origin is taken verbatim from the allowlist entry, not from user
-        // input. CodeQL's SSRF data flow sees the URL host as derived from a
-        // closed, configuration-supplied set, and the path/query have passed
-        // a strict whitelist regex (treated as a sanitizer barrier).
-        const origin = `https://${allowed}`;
-        return new URL(`${safePath}${safeQuery}`, origin);
-      }
-    }
-
-    throw new BadRequestException('Host not allowed');
-  }
-
-  private static readonly SAFE_AUDIO_PATH_RE = /^\/[A-Za-z0-9._~\-/%]*$/;
-  private static readonly SAFE_AUDIO_QUERY_RE = /^\??[A-Za-z0-9._~\-=&%]*$/;
-
-  private static sanitizeAudioPath(rawPath: string): string {
-    const candidate = rawPath || '/';
-    if (!AudioService.SAFE_AUDIO_PATH_RE.test(candidate)) {
-      throw new BadRequestException('Audio URL path contains unsupported characters');
-    }
-    return candidate;
-  }
-
-  private static sanitizeAudioQuery(rawQuery: string): string {
-    const candidate = rawQuery || '';
-    if (!candidate) {
-      return '';
-    }
-    if (!AudioService.SAFE_AUDIO_QUERY_RE.test(candidate)) {
-      throw new BadRequestException('Audio URL query contains unsupported characters');
-    }
-    return candidate;
   }
 
   /**
@@ -261,7 +195,7 @@ export class AudioService {
     language: string;
   }> {
     // Remove data URL prefix if present
-    const base64Data = base64Audio.replace(DATA_AUDIO___A_Z___BASE_RE, '');
+    const base64Data = stripAudioBase64Prefix(base64Audio);
     const buffer = Buffer.from(base64Data, 'base64');
 
     return this.transcribe(buffer, language, workspaceId);
@@ -284,7 +218,7 @@ export class AudioService {
         speed: ttsSpeed,
         response_format: 'opus',
       });
-      await this.trackUsage(workspaceId, this.estimateTextTokens(text), 'audio.textToSpeech');
+      await this.trackUsage(workspaceId, estimateAudioTextTokens(text), 'audio.textToSpeech');
 
       const arrayBuffer = await response.arrayBuffer();
       return Buffer.from(arrayBuffer);
@@ -314,7 +248,7 @@ export class AudioService {
       });
       await this.trackUsage(
         workspaceId,
-        this.estimateTextTokens(text) + 200,
+        estimateAudioTextTokens(text) + 200,
         'audio.textToSpeechHD',
       );
 

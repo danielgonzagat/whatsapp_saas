@@ -1,12 +1,22 @@
 import { cpus } from 'node:os';
-import { Controller, Get, NotFoundException, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  NotFoundException,
+  Optional,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ObservabilityQueriesService } from '../metrics/observability-queries.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../marketing/channels/whatsapp/provider-settings.types';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
+import { resolveTextLlmProvider, hasTextLlmApiKey } from '../lib/llm-provider';
+import { MindObservabilityService } from './mind/observability/mind-observability.service';
 
 interface SystemMetrics {
   cpu: { usage: number; cores: number };
@@ -57,6 +67,7 @@ export class DiagnosticsController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly observabilityQueries: ObservabilityQueriesService,
+    @Optional() private readonly mindObservability?: MindObservabilityService,
   ) {}
 
   /** Basic health. */
@@ -312,19 +323,76 @@ kloel_uptime_seconds ${process.uptime()}
       }
     }
 
-    // Check OpenAI
-    const openaiKey = process.env.OPENAI_API_KEY;
+    // Check the actual primary text LLM (DeepSeek / generic / OpenAI in that order).
+    // Reporting only `OPENAI_API_KEY` lies in environments where the real provider
+    // is DeepSeek or a generic OpenAI-compatible endpoint — the chat would work
+    // but operators saw `openai: degraded`. Surface the resolved provider instead.
+    const llmProvider = resolveTextLlmProvider();
+    const llmKeyPresent = hasTextLlmApiKey();
     services.push({
-      name: 'openai',
-      status: openaiKey ? 'healthy' : 'degraded',
+      name: 'kloel_motor',
+      status: llmKeyPresent ? 'healthy' : 'degraded',
       latencyMs: 0,
       lastCheck: new Date().toISOString(),
       details: {
-        configured: !!openaiKey,
+        provider: llmProvider ?? 'none',
+        configured: llmKeyPresent,
+        anthropicFallback: !!process.env.ANTHROPIC_API_KEY,
       },
     });
 
     return services;
+  }
+
+  /** Kloel motor probe — surfaces why the chat fallback message would fire. */
+  @InternalEndpoint('diagnostics kloel motor')
+  @Get('kloel-motor')
+  @ApiOperation({ summary: 'Estado real do motor LLM do Kloel (sem expor chave)' })
+  kloelMotor(): {
+    status: 'healthy' | 'degraded';
+    provider: 'deepseek' | 'generic' | 'openai' | null;
+    hasPrimaryKey: boolean;
+    hasAnthropicFallback: boolean;
+    notes: string[];
+  } {
+    const provider = resolveTextLlmProvider();
+    const hasPrimary = hasTextLlmApiKey();
+    const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
+    const notes: string[] = [];
+    if (!hasPrimary) {
+      notes.push(
+        'Nenhuma chave LLM primária encontrada (DEEPSEEK_API_KEY / LLM_API_KEY / OPENAI_API_KEY). Cada mensagem retornará a frase de fallback "sem acesso ao motor de resposta".',
+      );
+    }
+    if (!hasPrimary && !hasAnthropic) {
+      notes.push(
+        'Sem ANTHROPIC_API_KEY também — buildAssistantReplyImpl curto-circuita imediatamente.',
+      );
+    }
+    if (hasPrimary && provider === 'openai' && !process.env.OPENAI_API_KEY) {
+      notes.push('Provider resolvido como openai mas process.env.OPENAI_API_KEY ausente (drift).');
+    }
+    return {
+      status: hasPrimary ? 'healthy' : 'degraded',
+      provider,
+      hasPrimaryKey: hasPrimary,
+      hasAnthropicFallback: hasAnthropic,
+      notes,
+    };
+  }
+
+  /** Aggregated Kloel Motor reply metrics for the admin dashboard. */
+  @InternalEndpoint('diagnostics kloel motor metrics')
+  @Get('kloel-motor/metrics')
+  @ApiOperation({ summary: 'Métricas agregadas de replies do Kloel Motor por workspace' })
+  kloelMotorMetrics(@Query('workspaceId') workspaceId: string) {
+    if (!this.mindObservability) {
+      return { status: 'unavailable', reason: 'MindObservabilityService not wired' };
+    }
+    if (!workspaceId) {
+      return { status: 'error', reason: 'workspaceId query parameter is required' };
+    }
+    return this.mindObservability.getSnapshot(workspaceId);
   }
 
   private async getKloelMetrics(): Promise<{

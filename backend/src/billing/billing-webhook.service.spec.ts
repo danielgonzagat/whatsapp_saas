@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { BillingWebhookService } from './billing-webhook.service';
+import { partialMatch } from '../../test/helpers/match-instance';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 const constructEventMock = jest.fn();
@@ -173,7 +174,7 @@ describe('BillingWebhookService', () => {
       expect(txCreate).toHaveBeenCalled();
       expect(prisma.webhookEvent.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ status: 'processed' }),
+          data: partialMatch({ status: 'processed' }),
         }),
       );
     });

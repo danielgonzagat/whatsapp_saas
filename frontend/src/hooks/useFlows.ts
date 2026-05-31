@@ -3,8 +3,6 @@
 import { api } from '@/lib/api';
 import type {
   FlowExecutionSummary,
-  FlowJsonValue,
-  FlowLogEntry,
   FlowRunResult,
   FlowTemplate,
   Flow as LibFlow,
@@ -30,33 +28,6 @@ export interface Flow {
   triggerType: string;
   /** Trigger condition property. */
   triggerCondition?: string;
-  /** Created at property. */
-  createdAt: string;
-  /** Updated at property. */
-  updatedAt: string;
-}
-
-/** Flow execution shape. */
-export interface FlowExecution {
-  /** Id property. */
-  id: string;
-  /** Status property. */
-  status: string;
-  /** Current node id property. */
-  currentNodeId?: string;
-  /** State property. */
-  state?: Record<string, FlowJsonValue | undefined>;
-  /** Logs property. */
-  logs?: FlowLogEntry[];
-  /** Contact property. */
-  contact: {
-    name: string;
-    phone: string;
-  };
-  /** Flow property. */
-  flow: {
-    name: string;
-  };
   /** Created at property. */
   createdAt: string;
   /** Updated at property. */

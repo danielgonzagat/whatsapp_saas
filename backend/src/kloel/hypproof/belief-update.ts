@@ -1,7 +1,7 @@
 import { Injectable, Optional, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type { ProofEvaluation, BeliefUpdate } from './types';
-import type { MindBeliefService } from '../mind-belief.service';
+import type { MindBeliefService } from '../mind/inference/mind-belief.service';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
 
 @Injectable()

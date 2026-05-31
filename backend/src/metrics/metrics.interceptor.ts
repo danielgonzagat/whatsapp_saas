@@ -13,6 +13,18 @@ import { MetricsService } from './metrics.service';
 const KLOEL_HTTP_INFLIGHT = 'http.requests_inflight';
 let inflightRequests = 0;
 
+/** Minimal shape of the incoming HTTP request this interceptor reads. */
+interface MetricsHttpRequest {
+  readonly method?: string;
+  readonly route?: { readonly path?: string };
+  readonly user?: { readonly id?: string; readonly workspaceId?: string };
+}
+
+/** Minimal shape of the outgoing HTTP response this interceptor reads. */
+interface MetricsHttpResponse {
+  readonly statusCode?: number;
+}
+
 /**
  * HTTP metrics emitter.
  *
@@ -39,7 +51,7 @@ export class MetricsInterceptor implements NestInterceptor {
 
   /** Intercept. */
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<MetricsHttpRequest>();
     const method = request.method || 'UNKNOWN';
     const route: string = request.route?.path || 'unmatched';
     const start = process.hrtime.bigint();
@@ -47,7 +59,7 @@ export class MetricsInterceptor implements NestInterceptor {
     // Mirror per-request workspace/user context into Sentry. Pulls from
     // `request.user` shape populated by the auth guards (JwtAuthGuard /
     // WorkspaceGuard); skipped for anonymous endpoints.
-    const authedUser = request?.user as { id?: string; workspaceId?: string } | undefined;
+    const authedUser = request.user;
     if (authedUser?.workspaceId) {
       setSentryWorkspaceContext(authedUser.workspaceId, authedUser.id);
     }
@@ -68,13 +80,15 @@ export class MetricsInterceptor implements NestInterceptor {
       tap({
         next: () => {
           const diff = Number(process.hrtime.bigint() - start) / 1e9;
-          const status = context.switchToHttp().getResponse()?.statusCode || 200;
+          const status =
+            context.switchToHttp().getResponse<MetricsHttpResponse>()?.statusCode || 200;
           this.metrics.observeHttp(method, route, status, diff);
           recordRequestOutcome(method, route, status, diff);
         },
         error: () => {
           const diff = Number(process.hrtime.bigint() - start) / 1e9;
-          const status = context.switchToHttp().getResponse()?.statusCode || 500;
+          const status =
+            context.switchToHttp().getResponse<MetricsHttpResponse>()?.statusCode || 500;
           this.metrics.observeHttp(method, route, status, diff);
           recordRequestOutcome(method, route, status, diff);
         },

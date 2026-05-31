@@ -1,4 +1,10 @@
-import type { CapabilityRegistrySnapshot } from '../capability-registry/capability-registry.types';
+/** Minimal subset of the former CapabilityRegistrySnapshot — only fields consumed by this spec. */
+interface CapabilityRegistrySnapshot {
+  readonly records: ReadonlyArray<{
+    readonly id: string;
+    readonly consecutiveFailures: number;
+  }>;
+}
 import { makeNoOverclaimGate, NoOverclaimInput } from './no-overclaim.gate';
 
 function abiPayload(overrides?: Record<string, unknown>): Record<string, unknown> {
@@ -67,8 +73,6 @@ function registrySnapshot(
 function gateInput(abi: unknown, registry?: CapabilityRegistrySnapshot): NoOverclaimInput {
   return { abiPayload: abi, registrySnapshot: registry };
 }
-
-const HARD_FAIL = 'hard_fail' as const;
 
 describe('no-overclaim gate', () => {
   // ──────────────────────────────

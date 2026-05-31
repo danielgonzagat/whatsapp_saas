@@ -171,7 +171,7 @@ describe('CheckoutCatalogConfigService', () => {
 
       await service.resetConfig('plan_1');
 
-      const callData = txUpdate.mock.calls[0][0] as Record<string, unknown>;
+      const callData = (txUpdate.mock.calls[0] as unknown[])[0] as Record<string, unknown>;
       expect(callData.where).toEqual({ planId: 'plan_1' });
       expect(callData.data).toEqual(
         expect.objectContaining({

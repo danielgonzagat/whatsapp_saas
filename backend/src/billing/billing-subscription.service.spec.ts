@@ -133,14 +133,19 @@ describe('BillingSubscriptionService', () => {
       });
       await service.activateTrial('ws-1');
       expect(prisma.subscription.upsert).toHaveBeenCalled();
-      const upsertCall = prisma.subscription.upsert.mock.calls[0][0];
+      const upsertCall = (
+        prisma.subscription.upsert.mock.calls as Array<
+          [{ create: { status: string }; update: { status: string } }]
+        >
+      )[0][0];
       expect(upsertCall.create.status).toBe('TRIAL');
       expect(upsertCall.update.status).toBe('TRIAL');
+      const expectedAuditData: unknown = expect.objectContaining({
+        workspaceId: 'ws-1',
+        action: 'TRIAL_ACTIVATED',
+      });
       expect(prisma.auditLog.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          workspaceId: 'ws-1',
-          action: 'TRIAL_ACTIVATED',
-        }),
+        data: expectedAuditData,
       });
     });
   });
@@ -152,8 +157,13 @@ describe('BillingSubscriptionService', () => {
       prisma.contact.count.mockResolvedValue(99);
       const result = await service.getUsage('ws-1');
       expect(result).toEqual({ messages: 123, flows: 5, contacts: 99 });
-      expect(prisma.message.count.mock.calls[0][0].where.workspaceId).toBe('ws-1');
-      expect(prisma.message.count.mock.calls[0][0].where.direction).toBe('OUTBOUND');
+      const countCall = (
+        prisma.message.count.mock.calls as Array<
+          [{ where: { workspaceId: string; direction: string } }]
+        >
+      )[0][0];
+      expect(countCall.where.workspaceId).toBe('ws-1');
+      expect(countCall.where.direction).toBe('OUTBOUND');
     });
   });
 
@@ -198,7 +208,21 @@ describe('BillingSubscriptionService', () => {
         providerSettings: { billingSuspended: true },
       });
       await service.activatePlanFeatures('ws-1', 'PRO');
-      const update = prisma.workspace.update.mock.calls[0][0];
+      const update = (
+        prisma.workspace.update.mock.calls as Array<
+          [
+            {
+              data: {
+                providerSettings: {
+                  billingSuspended: boolean;
+                  plan: { name: string; limits: { monthlyMessages: number } };
+                  autopilot: { enabled: boolean };
+                };
+              };
+            },
+          ]
+        >
+      )[0][0];
       expect(update.data.providerSettings.billingSuspended).toBe(false);
       expect(update.data.providerSettings.plan.name).toBe('PRO');
       expect(update.data.providerSettings.plan.limits.monthlyMessages).toBe(10000);
@@ -208,7 +232,11 @@ describe('BillingSubscriptionService', () => {
     it('falls back to STARTER limits for unknown plan', async () => {
       prisma.workspace.findUnique.mockResolvedValue({ providerSettings: {} });
       await service.activatePlanFeatures('ws-1', 'UNKNOWN_PLAN');
-      const update = prisma.workspace.update.mock.calls[0][0];
+      const update = (
+        prisma.workspace.update.mock.calls as Array<
+          [{ data: { providerSettings: { plan: { limits: { monthlyMessages: number } } } } }]
+        >
+      )[0][0];
       expect(update.data.providerSettings.plan.limits.monthlyMessages).toBe(1000);
     });
   });

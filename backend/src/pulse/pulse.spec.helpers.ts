@@ -37,6 +37,6 @@ export function testMissingCanonicalArtifacts(artifactRootDir: string) {
     missingArtifacts: expect.arrayContaining([
       'PULSE_CLI_DIRECTIVE.json',
       'PULSE_CERTIFICATE.json',
-    ]),
+    ]) as unknown,
   });
 }

@@ -21,11 +21,14 @@ export function CustomRangePopover({
 }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<CustomRangeValue>(value);
-  const rootRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
+  // Re-sync the editable draft when the controlled `value` prop changes, using
+  // the "adjust state while rendering" idiom instead of a setState-in-effect.
+  const [syncedValue, setSyncedValue] = useState(value);
+  if (syncedValue.from !== value.from || syncedValue.to !== value.to) {
+    setSyncedValue(value);
     setDraft({ from: value.from, to: value.to });
-  }, [value.from, value.to]);
+  }
+  const rootRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!open) {

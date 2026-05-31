@@ -1,16 +1,8 @@
-import { scoreRevenueQuality } from './revenue-quality.scorer';
-import { projectMargin } from './margin.projector';
-import { projectRefundRisk } from './refund-risk.projector';
-import { projectSupportCost } from './support-cost.projector';
-import { detectBrandWear } from './brand-wear.detector';
-import { evaluateSaleBlock } from './unhealthy-sale.blocker';
 import { BlockerPolicyService } from './blocker-policy.service';
 import { buildDashboard } from './healthy-vs-unhealthy.dashboard';
 import { tierFromScore, clampScore } from './healthy-money.types';
-import type { SpineEventRef } from '../mind/mind.types';
 import type {
   RevenueQualityScore,
-  BlockerPolicy,
   MarginProjection,
   UnhealthySaleBlock,
 } from './healthy-money.types';
@@ -18,19 +10,6 @@ import type {
 const NOW = Date.parse('2026-05-13T22:00:00.000Z');
 const WINDOW_START = NOW - 30 * 24 * 60 * 60 * 1000;
 const WKS = 'wks_healthymoney_test';
-
-function ev(over?: Partial<SpineEventRef>): SpineEventRef {
-  return {
-    eventId: over?.eventId ?? `e_${Math.random().toString(36).slice(2, 10)}`,
-    eventName: over?.eventName ?? 'commerce.payment.approved',
-    workspaceId: over?.workspaceId ?? WKS,
-    occurredAt: over?.occurredAt ?? '2026-05-13T20:00:00.000Z',
-    truthMode: over?.truthMode ?? ('observed' as const),
-    ...(over?.entityRef !== undefined ? { entityRef: over.entityRef } : {}),
-    ...(over?.valence !== undefined ? { valence: over.valence } : {}),
-    ...(over?.payload !== undefined ? { payload: over.payload } : {}),
-  };
-}
 
 function dummyQualityScore(over?: Partial<RevenueQualityScore>): RevenueQualityScore {
   return {
@@ -183,22 +162,3 @@ describe('HEALTHYMONEY — utility functions', () => {
 // =========================================================================
 // Helpers
 // =========================================================================
-
-function makePolicy(active: boolean): BlockerPolicy {
-  return {
-    policyId: 'policy_test',
-    workspaceId: WKS,
-    active,
-    rules: [
-      {
-        ruleId: 'rule_quality_toxic',
-        label: 'Block toxic',
-        condition: 'quality_tier_toxic' as const,
-        action: 'block' as const,
-        priority: 1,
-      },
-    ],
-    lastRevisedAt: new Date(NOW).toISOString(),
-    revisedBy: 'system',
-  };
-}

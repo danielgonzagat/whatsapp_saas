@@ -85,7 +85,7 @@ beforeEach(() => {
       update: jest.fn(),
       findUnique: jest.fn(),
     },
-    $transaction: jest.fn().mockImplementation(async (fn) => fn(prisma)),
+    $transaction: jest.fn().mockImplementation(async (fn: (tx: unknown) => unknown) => fn(prisma)),
   };
 
   auditService = { log: jest.fn().mockResolvedValue(undefined) };
@@ -115,7 +115,7 @@ describe('CheckoutProductService', () => {
       const result = await service.createProduct('ws_1', { name: 'Test Product' });
 
       expect(prisma.product.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ workspaceId: 'ws_1', name: 'Test Product' }),
+        data: expect.objectContaining({ workspaceId: 'ws_1', name: 'Test Product' }) as unknown,
       });
       expect(result).toEqual(product);
     });
@@ -159,8 +159,8 @@ describe('CheckoutProductService', () => {
         take: 200,
         where: { workspaceId: 'ws_1' },
         include: expect.objectContaining({
-          checkoutPlans: expect.objectContaining({ where: { kind: 'PLAN' } }),
-        }),
+          checkoutPlans: expect.objectContaining({ where: { kind: 'PLAN' } }) as unknown,
+        }) as unknown,
         orderBy: { createdAt: 'desc' },
       });
       expect(result).toEqual(products);
@@ -203,7 +203,7 @@ describe('CheckoutProductService', () => {
     it('throws NotFoundException inside transaction when product not found', async () => {
       prisma.$transaction.mockImplementation(async (fn) => {
         prisma.product.findFirst.mockResolvedValue(null);
-        return fn(prisma);
+        return (fn as (tx: unknown) => unknown)(prisma);
       });
 
       await expect(service.deleteProduct('prod_1', 'ws_1')).rejects.toThrow(NotFoundException);
@@ -341,7 +341,7 @@ describe('CheckoutProductService', () => {
 
       expect(prisma.checkoutConfig.findUnique).toHaveBeenCalledWith({
         where: { planId: 'plan_1' },
-        include: expect.objectContaining({ pixels: true, plan: expectValueOf(Object) }),
+        include: expect.objectContaining({ pixels: true, plan: expectValueOf(Object) }) as unknown,
       });
       expect(productConfigService.buildPricingPreview).toHaveBeenCalledWith(19990);
       expect(result).toHaveProperty('pricing');

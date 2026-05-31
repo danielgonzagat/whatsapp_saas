@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MemorySearchService } from './memory-search.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 type MemorySearchPrismaMock = {
   kloelMemory: {
@@ -77,8 +78,8 @@ describe('MemorySearchService', () => {
       expect(result.memories[0].key).toBe('product_1');
       expect(result.memories[0].content).toBe('Curso de vendas');
       expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
+        partialMatch({
+          where: partialMatch({
             workspaceId: wsId,
             OR: [
               { content: { contains: 'vendas', mode: 'insensitive' } },
@@ -120,8 +121,8 @@ describe('MemorySearchService', () => {
       await service.searchMemory(wsId, 'query', 5, 'product');
 
       expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
+        partialMatch({
+          where: partialMatch({
             category: 'product',
           }),
         }),
@@ -133,9 +134,7 @@ describe('MemorySearchService', () => {
 
       await service.searchMemory(wsId, 'query', 10);
 
-      expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ take: 10 }),
-      );
+      expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(partialMatch({ take: 10 }));
     });
 
     it('handles null content in returned rows', async () => {
@@ -284,8 +283,8 @@ describe('MemorySearchService', () => {
       await service.searchMemory('ws-tenant', 'q');
 
       expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: 'ws-tenant' }),
+        partialMatch({
+          where: partialMatch({ workspaceId: 'ws-tenant' }),
         }),
       );
     });
@@ -296,8 +295,8 @@ describe('MemorySearchService', () => {
       await service.getSalesContext('ws-tenant', 'msg');
 
       expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
+        partialMatch({
+          where: partialMatch({
             workspaceId: 'ws-tenant',
             category: 'product',
           }),
@@ -313,14 +312,14 @@ describe('MemorySearchService', () => {
 
       expect(prisma.kloelMemory.findMany).toHaveBeenNthCalledWith(
         1,
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: 'ws-alpha' }),
+        partialMatch({
+          where: partialMatch({ workspaceId: 'ws-alpha' }),
         }),
       );
       expect(prisma.kloelMemory.findMany).toHaveBeenNthCalledWith(
         2,
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: 'ws-beta' }),
+        partialMatch({
+          where: partialMatch({ workspaceId: 'ws-beta' }),
         }),
       );
     });

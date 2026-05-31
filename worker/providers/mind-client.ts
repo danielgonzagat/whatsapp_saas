@@ -1,16 +1,9 @@
 import { WorkerLogger } from '../logger';
+import { resolveBackendUrl } from '../utils/backend-url.helpers';
 
-const TRAILING_SLASHES_RE = /\/+$/;
 const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || '';
 
 const log = new WorkerLogger('mind-client');
-
-function resolveBackendUrl(): string | null {
-  const configured =
-    process.env.BACKEND_URL || process.env.API_URL || process.env.SERVICE_BASE_URL || '';
-  const normalized = configured.trim().replace(TRAILING_SLASHES_RE, '');
-  return normalized || null;
-}
 
 export interface MindVariantDecisionResult {
   variant: string;

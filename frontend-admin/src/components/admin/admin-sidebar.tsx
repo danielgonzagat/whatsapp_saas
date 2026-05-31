@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { ChevronRight, Plus, Search } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ADMIN_SIDEBAR_SECTIONS,
   HomeIcon,
@@ -68,19 +68,29 @@ export function AdminSidebar({ expanded, onToggle, onNewChat, onSearch }: AdminS
   const searchParams = useSearchParams();
   const router = useRouter();
   const { admin } = useAdminSession();
-  const [expandedNav, setExpandedNav] = useState<string | null>(null);
-
-  useEffect(() => {
+  // The parent group that owns the active route — derived from the URL during
+  // render rather than synced via an effect (which the React Compiler flags).
+  const routeActiveNav = useMemo(() => {
     for (const section of ADMIN_SIDEBAR_SECTIONS) {
       const activeParent = section.items.find((item) =>
         item.sub?.some((sub) => routeMatches(sub.href, pathname, searchParams)),
       );
       if (activeParent) {
-        setExpandedNav(activeParent.key);
-        return;
+        return activeParent.key;
       }
     }
+    return null;
   }, [pathname, searchParams]);
+
+  // Manual expand/collapse overrides the route-derived default until the route
+  // changes (which resets the override back to `undefined`).
+  const [override, setOverride] = useState<{ route: string | null; key: string | null }>({
+    route: routeActiveNav,
+    key: routeActiveNav,
+  });
+  const expandedNav = override.route === routeActiveNav ? override.key : routeActiveNav;
+  const setExpandedNav = (next: string | null) =>
+    setOverride({ route: routeActiveNav, key: next });
 
   const quickButtonBase =
     'flex w-full items-center rounded-md border-none bg-transparent px-2.5 py-2 text-left transition-colors hover:bg-[var(--app-bg-hover)]';
@@ -207,7 +217,7 @@ export function AdminSidebar({ expanded, onToggle, onNewChat, onSearch }: AdminS
                     searchParams={searchParams}
                     onNavigate={(href) => router.push(href)}
                     onToggleNav={(key) =>
-                      setExpandedNav((current) => (current === key ? null : key))
+                      setExpandedNav(expandedNav === key ? null : key)
                     }
                   />
                 ))}

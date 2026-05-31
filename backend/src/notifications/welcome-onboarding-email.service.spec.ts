@@ -31,7 +31,11 @@ describe('WelcomeAndOnboardingEmailService', () => {
   let mockWorkerClose: jest.Mock;
 
   beforeEach(async () => {
-    const bullmq = jest.requireMock('bullmq');
+    const bullmq = jest.requireMock<{
+      __add: jest.Mock;
+      __queueClose: jest.Mock;
+      __workerClose: jest.Mock;
+    }>('bullmq');
     mockAdd = bullmq.__add;
     mockQueueClose = bullmq.__queueClose;
     mockWorkerClose = bullmq.__workerClose;

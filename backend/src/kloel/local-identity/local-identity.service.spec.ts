@@ -1,6 +1,10 @@
 import { LocalIdentityService } from './local-identity.service';
 import { VOLUME_THRESHOLD } from './local-identity.types';
-import { makeEvent, makeWorkspaceEvents, synthetic100 } from './local-identity.service.spec.helpers';
+import {
+  makeEvent,
+  makeWorkspaceEvents,
+  synthetic100,
+} from './local-identity.service.spec.helpers';
 
 describe('LocalIdentityService', () => {
   let service: LocalIdentityService;
@@ -39,9 +43,7 @@ describe('LocalIdentityService', () => {
     expect(profile).toBeDefined();
     expect(profile!.workspaceId).toBe('wks_test_001');
     expect(profile!.derivedFromEventsCount).toBeGreaterThanOrEqual(VOLUME_THRESHOLD);
-    expect(profile!.derivedAt).toMatch(
-      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
-    );
+    expect(profile!.derivedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
 
     // Operational
     const op = profile!.operational;
@@ -166,7 +168,9 @@ describe('LocalIdentityService', () => {
     ];
     for (let i = 0; i < hours.length; i++) {
       const h = hours[i]!;
-      const t = new Date(`2026-05-10T${String(h).padStart(2, '0')}:${String(i % 60).padStart(2, '0')}:00.000Z`);
+      const t = new Date(
+        `2026-05-10T${String(h).padStart(2, '0')}:${String(i % 60).padStart(2, '0')}:00.000Z`,
+      );
       events.push(
         makeEvent({
           eventName: 'commerce.lead.created',
@@ -328,3 +332,4 @@ describe('LocalIdentityService', () => {
     expect(vocab).not.toContain('seu');
     expect(vocab).not.toContain('está');
   });
+});

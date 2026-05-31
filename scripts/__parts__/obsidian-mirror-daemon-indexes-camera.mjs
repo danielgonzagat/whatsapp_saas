@@ -81,7 +81,7 @@ import {
   isTestSource,
   buildMirrorSignalIndex,
 } from './obsidian-mirror-daemon-content.mjs';
-
+import { writeGeneratedNote, listGeneratedMarkdownRelPaths } from './obsidian-mirror-daemon-indexes-notes.mjs';
 
 export function cameraRelPath(name) {
   return join(CAMERA_DIR, `${name}.md`);

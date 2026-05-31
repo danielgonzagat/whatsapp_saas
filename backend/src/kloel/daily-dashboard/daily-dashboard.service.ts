@@ -23,7 +23,7 @@ export class DailyDashboardService {
     private readonly valenceAggregator: ValenceAggregatorService,
     private readonly attention: AttentionService,
   ) {}
-  public async generate(workspaceId: string): Promise<DailyDashboard> {
+  public generate(workspaceId: string): Promise<DailyDashboard> {
     const nowMs = Date.now();
     const cutoffMs = nowMs - 24 * 60 * 60 * 1000;
     const allEvents = this.spine.recentEventsAsRef();
@@ -74,7 +74,7 @@ export class DailyDashboardService {
       },
       buildNoRegretHighlight(events),
     );
-    return {
+    return Promise.resolve({
       workspaceId,
       generatedAt: new Date(nowMs).toISOString(),
       hotLeadsWithoutResponse,
@@ -92,7 +92,7 @@ export class DailyDashboardService {
         ambiguous: mood.ambiguous,
         windowHours: mood.windowHours,
       },
-    };
+    });
   }
   private countHotLeadsWithoutResponse(events: readonly SpineEventRef[], _nowMs: number): number {
     const repliedSet = new Set<string>();

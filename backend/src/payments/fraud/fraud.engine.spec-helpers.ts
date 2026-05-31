@@ -29,42 +29,45 @@ export function makePrismaStub(initial: FraudBlacklist[] = []) {
     fraudRowSeq += 1;
     return `fb_${fraudRowSeq}`;
   };
+  // Typed handle to the `findMany` mock so specs can assert against it without
+  // tripping `unbound-method` (the `prisma` field below is cast to the real
+  // `PrismaService`, whose methods are not jest mocks).
+  const findManyMock = jest.fn(
+    ({
+      where,
+    }: {
+      where: {
+        OR?: Array<{ type: FraudBlacklistType; value: string }>;
+        type?: FraudBlacklistType;
+        value?: { contains: string; mode: string };
+      };
+    }) => {
+      if (!where) {
+        return rows;
+      }
+      let filtered = rows;
+      if (where.type) {
+        filtered = filtered.filter((r) => r.type === where.type);
+      }
+      if (where.value?.contains) {
+        const needle: string = where.value.contains;
+        filtered = filtered.filter((r) => r.value.toLowerCase().includes(needle.toLowerCase()));
+      }
+      if (where.OR) {
+        const or = where.OR;
+        filtered = filtered.filter((r) =>
+          or.some((cand) => cand.type === r.type && cand.value === r.value),
+        );
+      }
+      return filtered;
+    },
+  );
   return {
     rows,
+    findManyMock,
     prisma: asMock<PrismaService>({
       fraudBlacklist: {
-        findMany: jest.fn(
-          ({
-            where,
-          }: {
-            where: {
-              OR?: Array<{ type: FraudBlacklistType; value: string }>;
-              type?: FraudBlacklistType;
-              value?: { contains: string; mode: string };
-            };
-          }) => {
-            if (!where) {
-              return rows;
-            }
-            let filtered = rows;
-            if (where.type) {
-              filtered = filtered.filter((r) => r.type === where.type);
-            }
-            if (where.value?.contains) {
-              const needle: string = where.value.contains;
-              filtered = filtered.filter((r) =>
-                r.value.toLowerCase().includes(needle.toLowerCase()),
-              );
-            }
-            if (where.OR) {
-              const or = where.OR;
-              filtered = filtered.filter((r) =>
-                or.some((cand) => cand.type === r.type && cand.value === r.value),
-              );
-            }
-            return filtered;
-          },
-        ),
+        findMany: findManyMock,
         upsert: jest.fn(
           ({
             where,

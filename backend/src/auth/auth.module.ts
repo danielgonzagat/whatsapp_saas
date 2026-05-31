@@ -6,6 +6,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { AppleLoginDiagnosticController } from './apple-login-diagnostic.controller';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { AuthTokenService } from './auth.token.service';
 import { AppleAuthService } from './apple-auth.service';
 import { EmailService } from './email.service';
 import { FacebookAuthService } from './facebook-auth.service';
@@ -38,6 +39,7 @@ import { getJwtExpiresIn, getJwtSecret } from './jwt-config';
   controllers: [AuthController, AppleLoginDiagnosticController],
   providers: [
     AuthService,
+    AuthTokenService,
     EmailService,
     GoogleAuthService,
     FacebookAuthService,
@@ -47,6 +49,7 @@ import { getJwtExpiresIn, getJwtSecret } from './jwt-config';
   ],
   exports: [
     AuthService,
+    AuthTokenService,
     JwtModule,
     EmailService,
     GoogleAuthService,

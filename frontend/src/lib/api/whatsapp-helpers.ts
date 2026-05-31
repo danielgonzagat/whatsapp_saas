@@ -175,23 +175,3 @@ export function resolveWhatsAppQrConnectedFlag(rawStatus: string, connected?: bo
   return connected === true || rawStatus === 'connected' || rawStatus === 'working';
 }
 
-export interface WhatsAppCatalogContact {
-  contactId: string;
-  name?: string | null;
-  phone?: string | null;
-  leadScore?: number;
-  purchaseProbabilityScore?: number;
-  lastMessageAt?: string | null;
-  catalogedAt?: string | null;
-  [key: string]: unknown;
-}
-
-export function extractWhatsAppContactList(data: Record<string, unknown> | undefined): {
-  contacts: WhatsAppCatalogContact[];
-  total: number;
-} {
-  return {
-    contacts: Array.isArray(data?.contacts) ? (data.contacts as WhatsAppCatalogContact[]) : [],
-    total: Number(data?.total || 0),
-  };
-}

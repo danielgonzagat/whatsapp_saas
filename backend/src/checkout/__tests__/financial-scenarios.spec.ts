@@ -78,7 +78,7 @@ describe('Financial Scenarios', () => {
   describe('Withdrawal — correct flow', () => {
     it('decrements balance and creates transaction atomically', async () => {
       const createdTx = { id: 'tx-withdraw-1' };
-      prismaMock.$transaction.mockImplementation(async (cb: Function) => {
+      prismaMock.$transaction.mockImplementation(async (cb: (tx: unknown) => Promise<unknown>) => {
         return cb({
           kloelWallet: {
             updateMany: jest.fn().mockResolvedValue({ count: 1 }),
@@ -96,6 +96,9 @@ describe('Financial Scenarios', () => {
       });
 
       expect(result.success).toBe(true);
+      if (!result.success) {
+        throw new Error('expected requestWithdrawal to succeed');
+      }
       expect(result.transactionId).toBe('tx-withdraw-1');
       expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
     });
@@ -106,7 +109,7 @@ describe('Financial Scenarios', () => {
     it('only one of two simultaneous withdrawals succeeds when combined exceeds balance', async () => {
       let callCount = 0;
 
-      prismaMock.$transaction.mockImplementation(async (cb: Function) => {
+      prismaMock.$transaction.mockImplementation(async (cb: (tx: unknown) => Promise<unknown>) => {
         callCount++;
         if (callCount === 1) {
           // First call succeeds
@@ -149,7 +152,7 @@ describe('Financial Scenarios', () => {
   describe('Sale — correct fee calculation', () => {
     it('processes sale and splits marketplace fee correctly', async () => {
       const createdTx = { id: 'tx-sale-1' };
-      prismaMock.$transaction.mockImplementation(async (cb: Function) => {
+      prismaMock.$transaction.mockImplementation(async (cb: (tx: unknown) => Promise<unknown>) => {
         return cb({
           kloelWallet: {
             updateMany: jest.fn().mockResolvedValue({ count: 1 }),

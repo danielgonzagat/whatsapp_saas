@@ -117,7 +117,10 @@ describe('SmartRoutingService', () => {
     prisma.queue.findFirst.mockResolvedValue({ id: 'q-general' });
     await service.routeConversation('ws-1', 'conv-1');
     // first update queueId, then update assignedAgentId
-    expect(prisma.conversation.updateMany.mock.calls[1][0].data.assignedAgentId).toBe('a1');
+    const updateArg = (prisma.conversation.updateMany.mock.calls as unknown[][])[1][0] as {
+      data: { assignedAgentId: string };
+    };
+    expect(updateArg.data.assignedAgentId).toBe('a1');
     expect(redis.set).toHaveBeenCalledWith('queue:q-general:rr_index', 1);
     expect(redis.expire).toHaveBeenCalledWith('queue:q-general:rr_index', 86400);
   });

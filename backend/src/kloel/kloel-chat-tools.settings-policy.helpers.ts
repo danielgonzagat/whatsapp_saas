@@ -3,6 +3,8 @@ import { safeStr } from '../common/string';
 import type { Prisma } from '@prisma/client';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { ToolResult } from './kloel-chat-tools.agent-runtime.helpers';
+import { type MemoryService } from './memory.service';
+
 const NON_SLUG_CHAR_RE = /[^a-z0-9_:-]+/g;
 export interface ToolToggleAutopilotArgs {
   enabled: boolean;
@@ -73,30 +75,28 @@ export async function runToggleAutopilot(
   });
 }
 export async function runSetBrandVoice(
-  prisma: PrismaService,
+  memoryService: Pick<MemoryService, 'saveMemory'> | undefined,
   workspaceId: string,
   args: ToolSetBrandVoiceArgs,
 ): Promise<ToolResult> {
-  await prisma.kloelMemory.upsert({
-    where: { workspaceId_key: { workspaceId, key: 'brandVoice' } },
-    update: {
-      value: { style: args.tone, personality: args.personality || '' },
-      category: 'preferences',
-      type: 'persona',
-      content: `Tom: ${args.tone}. ${args.personality || ''}`.trim(),
-      metadata: { tone: args.tone, personality: args.personality || '' },
-    },
-    create: {
-      workspaceId,
-      key: 'brandVoice',
-      value: { style: args.tone, personality: args.personality || '' },
-      category: 'preferences',
-      type: 'persona',
-      content: `Tom: ${args.tone}. ${args.personality || ''}`.trim(),
-      metadata: { tone: args.tone, personality: args.personality || '' },
-    },
-  });
-  return { success: true, message: `Tom de voz definido como "${args.tone}"` };
+  if (!memoryService) {
+    return {
+      success: false,
+      error: 'memory_service_required',
+      message: 'set_brand_voice exige MemoryService.saveMemory antes de declarar tom salvo.',
+    };
+  }
+
+  const tone = safeStr(args.tone, '').trim();
+  const personality = safeStr(args.personality, '').trim();
+  if (!tone) {
+    return { success: false, error: 'missing_brand_voice_tone' };
+  }
+
+  const value = { style: tone, personality };
+  const content = `Tom: ${tone}. ${personality}`.trim();
+  await memoryService.saveMemory(workspaceId, 'brandVoice', value, 'preferences', content);
+  return { success: true, message: `Tom de voz definido como "${tone}"` };
 }
 export async function runSetSalesPolicy(
   prisma: PrismaService,
@@ -146,7 +146,7 @@ export async function runSetSalesPolicy(
   };
 }
 export async function runRememberUserInfo(
-  prisma: PrismaService,
+  memoryService: Pick<MemoryService, 'saveMemory'> | undefined,
   workspaceId: string,
   args: ToolRememberUserInfoArgs,
   userId?: string,
@@ -160,46 +160,22 @@ export async function runRememberUserInfo(
   if (!normalizedKey || !value) {
     return { success: false, error: 'missing_user_memory_payload' };
   }
+  if (!memoryService) {
+    return {
+      success: false,
+      error: 'memory_service_required',
+      message: 'remember_user_info exige MemoryService.saveMemory antes de declarar memoria salva.',
+    };
+  }
+
   const profileKey = `user_profile:${userId || 'workspace_owner'}`;
-  const existing = await prisma.kloelMemory.findUnique({
-    where: { workspaceId_key: { workspaceId, key: profileKey } },
-  });
-  const currentValue =
-    existing?.value && typeof existing.value === 'object'
-      ? (existing.value as Record<string, Prisma.JsonValue>)
-      : {};
-  const nextValue: Record<string, Prisma.JsonValue> = {
-    ...currentValue,
+  const nextValue = {
     [normalizedKey]: value,
     updatedAt: new Date().toISOString(),
     userId: userId || null,
-  };
-  const contentLines = Object.entries(nextValue)
-    .filter(([k]) => !['updatedAt', 'userId'].includes(k))
-    .map(([k, v]) => k + ': ' + safeStr(v))
-    .join('\n');
-  await prisma.kloelMemory.upsert({
-    where: { workspaceId_key: { workspaceId, key: profileKey } },
-    update: {
-      value: nextValue,
-      category: 'user_preferences',
-      type: 'user_profile',
-      content: contentLines,
-      metadata: {
-        ...((existing?.metadata as Record<string, unknown>) || {}),
-        userId: userId || null,
-        source: 'remember_user_info',
-      },
-    },
-    create: {
-      workspaceId,
-      key: profileKey,
-      value: nextValue,
-      category: 'user_preferences',
-      type: 'user_profile',
-      content: contentLines,
-      metadata: { userId: userId || null, source: 'remember_user_info' },
-    },
-  });
+  } satisfies Record<string, string | null>;
+  const content = `${normalizedKey}: ${value}`;
+
+  await memoryService.saveMemory(workspaceId, profileKey, nextValue, 'user_preferences', content);
   return { success: true, message: `Memória "${normalizedKey}" salva.` };
 }

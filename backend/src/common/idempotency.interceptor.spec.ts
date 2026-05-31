@@ -79,7 +79,10 @@ describe('IdempotencyInterceptor — invariant I1 (idempotency correctness)', ()
     // And the Redis write must have been recorded.
     expect(redis.setCalls).toHaveLength(1);
     expect(redis.setCalls[0].key).toBe('idempotency:xyz');
-    const stored = JSON.parse(redis.setCalls[0].value);
+    const stored = JSON.parse(redis.setCalls[0].value) as {
+      body: unknown;
+      statusCode: number;
+    };
     expect(stored.body).toEqual({ id: 1 });
     expect(stored.statusCode).toBe(200);
   });

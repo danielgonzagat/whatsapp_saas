@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { BrainEventSpineService } from '../../brain-event-spine.service';
+import { MindEventSpine } from '../coordination/mind-event-spine.service';
 import { MindConceptService } from './mind-concepts.service';
 
 describe('MindConceptService', () => {
@@ -26,7 +26,7 @@ describe('MindConceptService', () => {
       providers: [
         MindConceptService,
         { provide: PrismaService, useValue: prisma },
-        { provide: BrainEventSpineService, useValue: events },
+        { provide: MindEventSpine, useValue: events },
       ],
     }).compile();
     service = module.get(MindConceptService);

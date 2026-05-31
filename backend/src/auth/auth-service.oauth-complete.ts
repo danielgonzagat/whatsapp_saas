@@ -280,7 +280,9 @@ export async function completeTrustedOAuthLogin(
             response: safeResponse,
           }),
         );
-      } catch {}
+      } catch (logError) {
+        void logError;
+      }
       throw error;
     }
 

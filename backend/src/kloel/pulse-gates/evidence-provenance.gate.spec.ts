@@ -84,7 +84,7 @@ describe('evidence-provenance gate — complete detection surface (>= 15 scenari
     );
     expect(v.status).toBe('FAIL');
     expect(v.evidence).toContainEqual(
-      expect.objectContaining({
+      expect.objectContaining<Record<string, unknown>>({
         path: '$.provenance.source',
         detail: expect.stringMatching(/syntheticOverride/),
       }),
@@ -117,7 +117,7 @@ describe('evidence-provenance gate — complete detection surface (>= 15 scenari
     const v = gate.check(validInput({ provenance: { ...prov, workerId: undefined } }));
     expect(v.status).toBe('FAIL');
     expect(v.evidence).toContainEqual(
-      expect.objectContaining({
+      expect.objectContaining<Record<string, unknown>>({
         path: '$.provenance.processor',
         detail: expect.stringMatching(/processor or workerId/),
       }),
@@ -177,7 +177,7 @@ describe('evidence-provenance gate — complete detection surface (>= 15 scenari
     );
     expect(v.status).toBe('FAIL');
     expect(v.evidence).toContainEqual(
-      expect.objectContaining({
+      expect.objectContaining<Record<string, unknown>>({
         path: '$.causedBy',
         detail: expect.stringMatching(/proof anchor/),
       }),

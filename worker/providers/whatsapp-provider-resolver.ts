@@ -1,4 +1,8 @@
 /**
+ * @capability WhatsAppProviderResolver
+ * @domain channel
+ */
+/**
  * Worker WhatsApp provider resolver — ADR 0001 §D7.
  *
  * Before P2-4 the worker hardcoded "meta-cloud" in 6 different files,

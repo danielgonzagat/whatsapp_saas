@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import OpenAI, { AuthenticationError, APIConnectionError } from 'openai';
 import { ConfigService } from '@nestjs/config';
 
 type ConfigLike = Pick<ConfigService, 'get'> | undefined;
@@ -100,4 +100,131 @@ export function createTextLlmClient(
     timeout: options?.timeout ?? 60_000,
     maxRetries: options?.maxRetries ?? 0,
   });
+}
+
+// --- Provider-level fallback chain (PI-k1) ------------------------------
+
+/** Base URL resolution for a specific provider (deepseek/generic/openai). */
+function resolveProviderBaseUrl(
+  provider: TextLlmProvider,
+  config?: ConfigLike,
+): string | undefined {
+  if (provider === 'deepseek') {
+    return (
+      readFirstConfig(['DEEPSEEK_BASE_URL', 'LLM_BASE_URL'], config) || DEFAULT_DEEPSEEK_BASE_URL
+    );
+  }
+  if (provider === 'generic') {
+    return (
+      readFirstConfig(['LLM_BASE_URL', 'DEEPSEEK_BASE_URL'], config) || DEFAULT_DEEPSEEK_BASE_URL
+    );
+  }
+  if (provider === 'openai') {
+    return readConfig('OPENAI_BASE_URL', config);
+  }
+  return undefined;
+}
+
+/** API key for a specific provider (deepseek/generic/openai). */
+function resolveProviderApiKey(provider: TextLlmProvider, config?: ConfigLike): string | undefined {
+  if (provider === 'deepseek') {
+    return readConfig('DEEPSEEK_API_KEY', config);
+  }
+  if (provider === 'generic') {
+    return readConfig('LLM_API_KEY', config);
+  }
+  if (provider === 'openai') {
+    return readConfig('OPENAI_API_KEY', config);
+  }
+  return undefined;
+}
+
+/**
+ * Returns an ordered pool of OpenAI clients — one per configured provider.
+ * Order follows env precedence: deepseek > generic > openai.
+ * Only providers whose API key is set are included.
+ * If no key is set, returns an empty array.
+ */
+export function createTextLlmClientPool(
+  config?: ConfigLike,
+  options?: { timeout?: number; maxRetries?: number },
+): OpenAI[] {
+  const providers: TextLlmProvider[] = ['deepseek', 'generic', 'openai'];
+  const pool: OpenAI[] = [];
+  for (const provider of providers) {
+    const apiKey = resolveProviderApiKey(provider, config);
+    if (!apiKey) {
+      continue;
+    }
+    const baseURL = resolveProviderBaseUrl(provider, config);
+    pool.push(
+      new OpenAI({
+        apiKey,
+        ...(baseURL !== undefined ? { baseURL } : {}),
+        timeout: options?.timeout ?? 60_000,
+        maxRetries: options?.maxRetries ?? 0,
+      }),
+    );
+  }
+  return pool;
+}
+
+/** Error class for when every provider in the pool has been exhausted. */
+export class ProviderPoolExhaustedError extends Error {
+  constructor(public readonly errors: unknown[]) {
+    super('All configured LLM providers exhausted');
+    this.name = 'ProviderPoolExhaustedError';
+  }
+}
+
+/**
+ * Tries each client in `pool` in order, catching AuthenticationError
+ * and APIConnectionError and advancing to the next provider.
+ *
+ * @param pool       Ordered list of OpenAI clients (from {@link createTextLlmClientPool}).
+ * @param params     Chat completion params (non-streaming).
+ * @param fallbackModel  Model name to use on the last provider when the
+ *                   primary model fails (same semantics as
+ *                   {@link chatCompletionWithFallback}). Optional.
+ * @returns The first successful chat completion response.
+ * @throws  ProviderPoolExhaustedError when every provider fails.
+ */
+export async function chatCompletionWithProviderFallback(
+  pool: OpenAI[],
+  params: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
+  fallbackModel?: string,
+): Promise<OpenAI.Chat.ChatCompletion> {
+  if (pool.length === 0) {
+    throw new ProviderPoolExhaustedError([]);
+  }
+
+  const errors: unknown[] = [];
+
+  for (let i = 0; i < pool.length; i++) {
+    const client = pool[i];
+    try {
+      return await client.chat.completions.create(params);
+    } catch (err: unknown) {
+      if (err instanceof AuthenticationError || err instanceof APIConnectionError) {
+        errors.push(err);
+        const isLast = i === pool.length - 1;
+        if (isLast && fallbackModel) {
+          try {
+            return await client.chat.completions.create({
+              ...params,
+              model: fallbackModel,
+            });
+          } catch (fallbackErr: unknown) {
+            errors.push(fallbackErr);
+            throw new ProviderPoolExhaustedError(errors);
+          }
+        }
+        continue;
+      }
+      // Non-fallbackable error: surface immediately.
+      throw err;
+    }
+  }
+
+  throw new ProviderPoolExhaustedError(errors);
 }

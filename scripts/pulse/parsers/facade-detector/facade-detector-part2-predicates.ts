@@ -167,15 +167,23 @@ export function isServiceEmptyReturn(line: string): boolean {
 
 export function contextAllowsEmptyReturn(context: string): boolean {
   const compacted = compactCode(context);
+  // Whitespace-insensitive tokens (operators / call shapes) must be tested
+  // against the compacted context. Word tokens that survive spacing
+  // (`catch`, `fallback`, `normalize`, ...) are tested against the raw context.
   return includesAny(context, [
     'catch',
     'default',
     'fallback',
+    'normalize',
+    'sanitize',
+    'earlyreturn',
+    'early_return',
+    'guardreturn',
+    'guard_return',
+  ]) || includesAny(compacted, [
     'if(!',
     '<=0',
     'length===0',
-    'normalize',
-    'sanitize',
     'safeparse',
     'json.parse',
     'if(!items',
@@ -185,24 +193,12 @@ export function contextAllowsEmptyReturn(context: string): boolean {
     'if(!rows',
     'if(!collection',
     'if(!records',
-    'earlyreturn',
-    'early_return',
-    'guardreturn',
-    'guard_return',
     'if(error)',
     'if(err)',
     'if(e)',
     'catch(',
-  ]) || includesAny(compacted, [
-    'if(!',
-    'if(!items',
-    'if(!data',
-    'if(!input',
     'if(!text',
     'if(!value',
     'if(!result',
-    'if(error)',
-    'if(err)',
-    'if(e)',
   ]);
 }

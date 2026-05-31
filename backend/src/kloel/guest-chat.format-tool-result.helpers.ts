@@ -16,24 +16,34 @@ export function formatToolResult(tool: string, result: unknown): string {
       }
       return `Produtos: ${products.map((p) => `${s(p.name)} - R$ ${s(p.price)}`).join(', ')}`;
     }
-    case 'create_product': {
+    case 'create_product':
+    case 'products.create': {
       const p = (r.product as Record<string, unknown> | undefined) ?? {};
-      const fmt = p.format ? ` (${p.format})` : '';
-      const cat = p.category ? ` [${p.category}]` : '';
+      const format = s(p.format);
+      const category = s(p.category);
+      const fmt = format ? ` (${format})` : '';
+      const cat = category ? ` [${category}]` : '';
       return `Produto ${s(p.name)}${cat}${fmt} criado! R$ ${s(p.price)}`;
     }
-    case 'update_product': {
+    case 'update_product':
+    case 'products.update': {
       const p = (r.product as Record<string, unknown> | undefined) ?? {};
       return `Produto ${s(p.name)} atualizado. Preco: R$ ${s(p.price)}`;
     }
     case 'delete_product':
       return 'Produto removido.';
-    case 'create_plan': {
+    case 'create_plan':
+    case 'plans.create': {
       const p = (r.plan as Record<string, unknown> | undefined) ?? {};
       const pn = s(p.name);
       return pn === 'Plano'
         ? `Plano criado! R$ ${s(p.price)}`
         : `Plano ${pn} criado! R$ ${s(p.price)}`;
+    }
+    case 'update_plan':
+    case 'plans.update': {
+      const p = (r.plan as Record<string, unknown> | undefined) ?? {};
+      return `Plano ${s(p.name)} atualizado. Preco: R$ ${s(p.price)}`;
     }
     case 'get_product_plans': {
       const plans = Array.isArray(r.plans) ? (r.plans as Array<Record<string, unknown>>) : [];
@@ -43,8 +53,13 @@ export function formatToolResult(tool: string, result: unknown): string {
       return `Planos: ${plans.map((p) => `${s(p.name)} - R$ ${s(p.price)}`).join(', ')}`;
     }
     case 'create_checkout':
+    case 'checkouts.create':
       return `Checkout ${s(r.name || r.checkoutName, 'criado')}!`;
-    case 'create_coupon': {
+    case 'update_checkout':
+    case 'checkouts.update':
+      return `Checkout ${s(r.name || r.checkoutName, 'criado')} atualizado.`;
+    case 'create_coupon':
+    case 'coupons.create': {
       const cc = (r.coupon as Record<string, unknown> | undefined) ?? {};
       return `Cupom ${s(cc.code || r.code)} criado!`;
     }
@@ -61,6 +76,7 @@ export function formatToolResult(tool: string, result: unknown): string {
       return `Checkouts: ${chk.map((c) => s(c.name || c.id)).join(', ')}`;
     }
     case 'delete_coupon':
+    case 'coupons.delete':
       return 'Cupom removido.';
     case 'list_coupons': {
       const coupons = Array.isArray(r.coupons) ? (r.coupons as Array<Record<string, unknown>>) : [];
@@ -105,30 +121,70 @@ export function formatToolResult(tool: string, result: unknown): string {
       if (revs.length === 0) {
         return 'Nenhuma avaliação encontrada.';
       }
-      return `Avaliações (${revs.length}): ${revs.map((rv) => `★${rv.rating || '?'} ${s(rv.comment)}`.substring(0, 60)).join(' | ')}`;
+      return `Avaliações (${revs.length}): ${revs
+        .map((rv) => `★${s(rv.rating, '?')} ${s(rv.comment)}`.substring(0, 60))
+        .join(' | ')}`;
     }
     case 'get_product_ai_config':
-    case 'create_payment_link': {
-      const pix = s(r.pixCopyPaste);
-      const qr = s(r.pixQrCode);
-      if (qr) {
-        return `PIX gerado! QR code disponivel (base64). Copia e cola: ${pix}`;
-      }
+      return s(r.message, 'Configuracao de IA consultada.');
+    case 'create_payment_link':
+    case 'generate_pix':
+    case 'sales.create_pix': {
+      const outputs = readRecord(r.outputs);
+      const pix = s(
+        r.pixCopiaECola || r.pixCopyPaste || outputs.pixCopiaECola || outputs.pixCopyPaste,
+      );
+      const qr = s(r.pixQrCode || r.qrCodeBase64 || outputs.pixQrCode || outputs.qrCodeBase64);
+      const link = s(
+        r.paymentLink || r.paymentUrl || r.url || outputs.paymentLink || outputs.paymentUrl,
+      );
+      const id = s(
+        r.saleId || r.orderId || r.paymentId || r.id || outputs.saleId || outputs.orderId,
+      );
       if (pix) {
-        return `PIX copia e cola: ${pix}`;
+        const proofId = id ? ` ID: ${id}.` : '';
+        const qrProof = qr ? ' QR code disponivel.' : '';
+        return `PIX gerado.${proofId}${qrProof} PIX copia e cola: ${pix}`;
       }
-      const link = s(r.paymentLink || r.url);
       if (link) {
         return `Link de pagamento: ${link}`;
       }
-      const boleto = s(r.boletoCode || r.boletoBarcode, 'N/A');
-      if (boleto !== 'N/A') {
-        return `Boleto: ${boleto}`;
-      }
-      return `Pagamento gerado. ID: ${s(r.paymentId || r.id, 'N/A')}`;
+      return 'Erro: pix_receipt_missing';
     }
-    case 'generate_boleto':
-      return `Boleto: ${s(r.boletoUrl || r.boletoCode, 'gerado')}`;
+    case 'sales.create_card_link': {
+      const outputs = readRecord(r.outputs);
+      const link = s(
+        r.checkoutUrl || r.paymentUrl || r.paymentLink || outputs.checkoutUrl || outputs.paymentUrl,
+      );
+      if (!link) {
+        return 'Erro: card_link_receipt_missing';
+      }
+      const id = s(
+        r.saleId || r.orderId || r.paymentId || r.id || outputs.saleId || outputs.orderId,
+      );
+      return `Link de cartão gerado${id ? ` para venda ${id}` : ''}: ${link}`;
+    }
+    case 'sales.create_boleto':
+    case 'generate_boleto': {
+      const outputs = readRecord(r.outputs);
+      const boleto = s(
+        r.boletoCode ||
+          r.boletoBarcode ||
+          r.boletoUrl ||
+          r.boletoPdf ||
+          outputs.boletoCode ||
+          outputs.boletoBarcode ||
+          outputs.boletoUrl ||
+          outputs.boletoPdf,
+      );
+      if (!boleto) {
+        return 'Erro: boleto_receipt_missing';
+      }
+      const id = s(
+        r.saleId || r.orderId || r.paymentId || r.id || outputs.saleId || outputs.orderId,
+      );
+      return `Boleto gerado${id ? ` para venda ${id}` : ''}: ${boleto}`;
+    }
     case 'get_wallet_balance': {
       const bal = (r.balance as Record<string, unknown> | undefined) ?? {};
       const avail = typeof bal.available === 'number' ? bal.available : 0;
@@ -200,11 +256,6 @@ export function formatToolResult(tool: string, result: unknown): string {
     }
     case 'request_withdrawal':
       return s(r.message, 'Saque processado.');
-    case 'upload_product_image':
-    case 'upload_document':
-    case 'configure_pixel':
-    case 'configure_shipping':
-      return s(r.message, 'Acao concluida.');
     case 'update_fiscal_data':
       return 'Dados atualizados com sucesso.';
     case 'search_agent_memory': {
@@ -300,6 +351,7 @@ export function formatToolResult(tool: string, result: unknown): string {
       return `Testes: ${passed} pass, ${failed} fail.`;
     }
     case 'code_lint':
+      return typeof r.message === 'string' ? r.message : 'Lint executado.';
     // ── NOVAS TOOLS ──
     case 'delete_plan':
       return typeof r.message === 'string' ? r.message : 'Plano removido.';
@@ -364,4 +416,66 @@ export function formatToolResult(tool: string, result: unknown): string {
           ? r.message
           : 'Acao concluida.';
   }
+}
+
+function readStringField(...values: unknown[]): string {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+  return '';
+}
+
+function readRecord(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function readStringList(...values: unknown[]): string[] {
+  for (const value of values) {
+    if (Array.isArray(value)) {
+      return value.filter(
+        (item): item is string => typeof item === 'string' && item.trim().length > 0,
+      );
+    }
+  }
+  return [];
+}
+
+export function appendToolResultProof(reply: string, result: unknown): string {
+  const r = readRecord(result);
+  if (r.success === false) {
+    return reply;
+  }
+
+  const receipt = readRecord(r.receipt);
+  const executionRail = readRecord(r.executionRail ?? receipt.executionRail);
+  const capabilityId = readStringField(r.capabilityId, receipt.capabilityId);
+  const evidenceUrl = readStringField(r.evidenceUrl, receipt.evidenceUrl);
+  const auditLogId = readStringField(r.auditLogId, receipt.auditLogId);
+  const idempotencyKey = readStringField(r.idempotencyKey, receipt.idempotencyKey);
+  const domainEvents = readStringList(r.domainEvents, receipt.domainEvents);
+  const provider = readStringField(executionRail.provider);
+  const paymentMethod = readStringField(executionRail.paymentMethod);
+  const providerMethod = readStringField(executionRail.providerMethod);
+  const proofFields = readStringList(executionRail.proofFields);
+  const proofLines = [
+    capabilityId ? `Capacidade: ${capabilityId}` : '',
+    evidenceUrl ? `Evidência: ${evidenceUrl}` : '',
+    auditLogId ? `AuditLog: ${auditLogId}` : '',
+    provider ? `Provedor: ${provider}` : '',
+    paymentMethod ? `Método: ${paymentMethod}` : '',
+    providerMethod ? `Método do provedor: ${providerMethod}` : '',
+    proofFields.length > 0 ? `Contrato de prova: ${proofFields.join(', ')}` : '',
+    domainEvents.length > 0 ? `Eventos: ${domainEvents.join(', ')}` : '',
+    idempotencyKey ? `Idempotência: ${idempotencyKey}` : '',
+  ].filter((line) => line.length > 0);
+
+  if (proofLines.length === 0) {
+    return reply;
+  }
+
+  return `${reply}\n\nProva material:\n${proofLines.map((line) => `- ${line}`).join('\n')}`;
 }

@@ -4,11 +4,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ReportsOrdersService } from './reports-orders.service';
 import { ReportsAffiliateService } from './reports-affiliate.service';
 import { ReportsService } from './reports.service';
-import type { ReportFiltersDto } from './dto/report-filters.dto';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 jest.mock('./reports-orders.service', () => {
-  const actual = jest.requireActual('./reports-orders.service');
+  const actual = jest.requireActual<typeof import('./reports-orders.service')>(
+    './reports-orders.service',
+  );
   return {
     ...actual,
     dateRange: (f: { startDate?: string; endDate?: string }) => ({
@@ -112,7 +113,9 @@ describe('ReportsService', () => {
       prisma.customerSubscription.count.mockResolvedValue(7);
       const result = await service.getChurn('ws-1', { perPage: 5, page: 1 });
       expect(result.total).toBe(7);
-      const countArg = prisma.customerSubscription.count.mock.calls[0][0];
+      const countArg = (prisma.customerSubscription.count.mock.calls as unknown[][])[0][0] as {
+        where: { workspaceId: string; status: string };
+      };
       expect(countArg.where.workspaceId).toBe('ws-1');
       expect(countArg.where.status).toBe('CANCELLED');
     });
@@ -122,19 +125,38 @@ describe('ReportsService', () => {
       const result = await service.getChurn('ws-1', {});
       expect(result.monthly).toEqual([]);
     });
+
+    it('monthly raw query targets the @@map-ed table "RAC_CustomerSubscription"', async () => {
+      prisma.$queryRaw.mockResolvedValue([{ month: 'Jan', total: 3 }]);
+      const result = await service.getChurn('ws-1', { startDate: '2026-01-01' });
+
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+      // $queryRaw is a tagged template: the first arg is the static SQL fragments.
+      const templateParts = (prisma.$queryRaw.mock.calls as unknown[][])[0][0] as string[];
+      const sql = templateParts.join(' ');
+      // The Prisma model `CustomerSubscription` is @@map-ed to "RAC_CustomerSubscription";
+      // the raw SQL MUST reference the physical table, not the model name.
+      expect(sql).toContain('FROM "RAC_CustomerSubscription"');
+      expect(sql).not.toContain('FROM "CustomerSubscription"');
+      expect(result.monthly).toEqual([{ month: 'Jan', total: 3 }]);
+    });
   });
 
   describe('getAssinaturas', () => {
     it('filters by status when supplied', async () => {
       await service.getAssinaturas('ws-1', { status: 'ACTIVE' });
-      const findManyArg = prisma.customerSubscription.findMany.mock.calls[0][0];
+      const findManyArg = (
+        prisma.customerSubscription.findMany.mock.calls as unknown[][]
+      )[0][0] as { where: { status: string; workspaceId: string } };
       expect(findManyArg.where.status).toBe('ACTIVE');
       expect(findManyArg.where.workspaceId).toBe('ws-1');
     });
 
     it('caps perPage at 100', async () => {
       await service.getAssinaturas('ws-1', { perPage: 999, page: 1 });
-      const findManyArg = prisma.customerSubscription.findMany.mock.calls[0][0];
+      const findManyArg = (
+        prisma.customerSubscription.findMany.mock.calls as unknown[][]
+      )[0][0] as { take: number };
       expect(findManyArg.take).toBe(100);
     });
   });

@@ -1,41 +1,9 @@
-import { rankAttention } from './attention.ranker';
-import { projectHierarchy } from './hierarchy.projector';
-import { applyNoiseFilter } from './noise.filter';
-import { detectAnxietyMode } from './anxiety-mode.detector';
-import { applyFeedback } from './feedback.loop';
 import { buildShortNarrative } from './short-narrative.builder';
 import { clampScore } from './clarity.types';
-import type {
-  RankingInput,
-  AttentionRanking,
-  AnxietyMode,
-  ClarityFeedback,
-  AnxietyTrigger,
-} from './clarity.types';
+import type { AttentionRanking, AnxietyMode } from './clarity.types';
 
 const NOW = Date.parse('2026-05-14T12:00:00.000Z');
 const WKS = 'wks_clarity_test';
-
-function makeItem(over?: Partial<RankingInput>): RankingInput {
-  return {
-    itemId: over?.itemId ?? 'it_test',
-    workspaceId: over?.workspaceId ?? WKS,
-    label: over?.label ?? 'Test item',
-    urgency: over?.urgency ?? 0.5,
-    impact: over?.impact ?? 0.5,
-    reversibility: over?.reversibility ?? 0.5,
-  };
-}
-
-function makeItemFull(
-  itemId: string,
-  label: string,
-  urgency: number,
-  impact: number,
-  reversibility: number,
-): RankingInput {
-  return { itemId, workspaceId: WKS, label, urgency, impact, reversibility };
-}
 
 function makeAnxietyMode(over?: Partial<AnxietyMode>): AnxietyMode {
   return {
@@ -43,18 +11,6 @@ function makeAnxietyMode(over?: Partial<AnxietyMode>): AnxietyMode {
     triggeredAt: over?.triggeredAt ?? null,
     triggerReason: over?.triggerReason ?? null,
     cooldownUntil: over?.cooldownUntil ?? null,
-  };
-}
-
-function makeFeedback(over?: Partial<ClarityFeedback>): ClarityFeedback {
-  return {
-    feedbackId: over?.feedbackId ?? 'fb_test',
-    itemId: over?.itemId ?? 'it_test',
-    workspaceId: over?.workspaceId ?? WKS,
-    rating: over?.rating ?? 0,
-    comment: over?.comment ?? null,
-    receivedAt: over?.receivedAt ?? new Date(NOW).toISOString(),
-    appliedToRanking: over?.appliedToRanking ?? false,
   };
 }
 

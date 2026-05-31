@@ -1,4 +1,5 @@
 import { InsufficientAvailableBalanceError } from '../ledger/ledger.types';
+import { partialMatch } from '../../../test/helpers/match-instance';
 
 import { ConnectPayoutsNotEnabledError } from './connect-payout.service';
 import {
@@ -36,10 +37,10 @@ describe('ConnectPayoutService.createPayout', () => {
 
       expect(ledger.debitAvailableForPayout).toHaveBeenCalledWith(
         expect.objectContaining({
-          reference: expect.objectContaining({
+          reference: partialMatch({
             id: 'po_req_audit_pair',
           }),
-          metadata: expect.objectContaining({
+          metadata: partialMatch({
             requestId: 'po_req_audit_pair',
           }),
         }),
@@ -70,10 +71,10 @@ describe('ConnectPayoutService.createPayout', () => {
         }),
       });
 
-      const error = await service.createPayout(makePayoutRequest()).catch((e) => e);
+      const error = await service.createPayout(makePayoutRequest()).catch((e: unknown) => e);
 
       expect(error).toBeInstanceOf(ConnectPayoutsNotEnabledError);
-      expect(error.message).toContain('identity_verification_required');
+      expect((error as Error).message).toContain('identity_verification_required');
     });
 
     it('handles disabled_reason null gracefully in error message', async () => {
@@ -84,10 +85,10 @@ describe('ConnectPayoutService.createPayout', () => {
         }),
       });
 
-      const error = await service.createPayout(makePayoutRequest()).catch((e) => e);
+      const error = await service.createPayout(makePayoutRequest()).catch((e: unknown) => e);
 
       expect(error).toBeInstanceOf(ConnectPayoutsNotEnabledError);
-      expect(error.message).not.toContain('(null)');
+      expect((error as Error).message).not.toContain('(null)');
     });
   });
 
@@ -153,7 +154,7 @@ describe('ConnectPayoutService.createPayout', () => {
         payoutError: originalError,
       });
 
-      const thrownError = await service.createPayout(makePayoutRequest()).catch((e) => e);
+      const thrownError = await service.createPayout(makePayoutRequest()).catch((e: unknown) => e);
 
       expect(thrownError).toBe(originalError);
     });

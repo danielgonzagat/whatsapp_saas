@@ -1,4 +1,5 @@
 import { KloelGlobalPriorService } from './kloel-global-prior.service';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 describe('KloelGlobalPriorService', () => {
   describe('getPrior', () => {
@@ -68,8 +69,8 @@ describe('KloelGlobalPriorService', () => {
               action: 'DIRECT',
             },
           },
-          create: expect.objectContaining({ observations: 1, successes: 1 }),
-          update: expect.objectContaining({
+          create: partialMatch({ observations: 1, successes: 1 }),
+          update: partialMatch({
             observations: { increment: 1 },
             successes: { increment: 1 },
           }),
@@ -93,8 +94,8 @@ describe('KloelGlobalPriorService', () => {
               action: 'text',
             },
           },
-          create: expect.objectContaining({ observations: 1, successes: 0 }),
-          update: expect.objectContaining({ observations: { increment: 1 } }),
+          create: partialMatch({ observations: 1, successes: 0 }),
+          update: partialMatch({ observations: { increment: 1 } }),
         }),
       );
     });

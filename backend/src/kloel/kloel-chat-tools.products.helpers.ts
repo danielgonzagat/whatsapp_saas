@@ -1,4 +1,3 @@
-import { Prisma } from '@prisma/client';
 import { filterLegacyProducts } from '../common/products/legacy-products.util';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { ToolResult } from './kloel-chat-tools.agent-runtime.helpers';
@@ -22,6 +21,7 @@ export interface ToolSaveProductArgs {
 export interface ToolDeleteProductArgs {
   productId?: string;
   productName?: string;
+  actorId?: string;
 }
 export async function runSaveProduct(
   prisma: PrismaService,
@@ -67,44 +67,4 @@ export async function runListProducts(
   }
   const list = products.map((p) => `- ${p.name}: R$ ${p.price}`).join('\n');
   return { success: true, products, message: `Aqui estão seus produtos:\n\n${list}` };
-}
-export async function runDeleteProduct(
-  prisma: PrismaService,
-  workspaceId: string,
-  args: ToolDeleteProductArgs,
-): Promise<ToolResult> {
-  const { productId, productName } = args;
-  const where: Prisma.ProductWhereInput = { workspaceId };
-  if (productId) {
-    where.id = productId;
-  } else if (productName) {
-    where.name = { contains: productName, mode: 'insensitive' };
-  }
-  const product = await prisma.product.findFirst({ where: { ...where, workspaceId } });
-  if (!product) {
-    return { success: false, error: 'Produto não encontrado.' };
-  }
-  await prisma.$transaction(
-    [
-      prisma.product.updateMany({
-        where: { id: product.id, workspaceId },
-        data: { active: false },
-      }),
-      prisma.auditLog.create({
-        data: {
-          workspaceId,
-          action: 'USER_DATA_DELETED',
-          resource: 'Product',
-          resourceId: product.id,
-          details: {
-            source: 'kloel_tool_delete_product',
-            softDelete: true,
-            productName: product.name,
-          },
-        },
-      }),
-    ],
-    { isolationLevel: 'ReadCommitted' },
-  );
-  return { success: true, message: `Produto "${product.name}" removido com sucesso.` };
 }

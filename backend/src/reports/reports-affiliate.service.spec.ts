@@ -58,7 +58,11 @@ describe('ReportsAffiliateService', () => {
     it('selects only commission fields, ordered by totalCommission desc', async () => {
       prisma.affiliatePartner.findMany.mockResolvedValue([{ partnerName: 'a' }]);
       await service.getIndicadores('ws-1', {});
-      const callArg = prisma.affiliatePartner.findMany.mock.calls[0][0];
+      const callArg = (prisma.affiliatePartner.findMany.mock.calls as unknown[][])[0][0] as {
+        where: unknown;
+        orderBy: unknown;
+        select: unknown;
+      };
       expect(callArg.where).toEqual({ workspaceId: 'ws-1' });
       expect(callArg.orderBy).toEqual({ totalCommission: 'desc' });
       expect(callArg.select).toEqual(

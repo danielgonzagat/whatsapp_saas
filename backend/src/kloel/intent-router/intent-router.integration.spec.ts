@@ -20,6 +20,7 @@ describe('IntentRouter + CapabilityRegistry Integration', () => {
     const capIds = caps.map((c) => c.id);
     expect(capIds).toContain('products.create');
     expect(capIds).toContain('sales.create_pix');
+    expect(capIds).toContain('sales.create_card_link');
     expect(capIds).toContain('self.capabilities');
     expect(capIds).toContain('plans.create');
     expect(capIds).toContain('checkouts.create');
@@ -28,12 +29,76 @@ describe('IntentRouter + CapabilityRegistry Integration', () => {
     expect(capIds).toContain('account.update_fiscal');
     expect(capIds).toContain('crm.pipeline');
   });
+
+  it('declares legacy payment aliases as deprecated wrappers over canonical sales capabilities', () => {
+    expect(registry.get('generate_pix')).toMatchObject({
+      maturity: 'deprecated',
+      domainService: 'Alias for sales.create_pix',
+      emits: [],
+      dependsOn: ['sales.create_pix'],
+    });
+    expect(registry.get('generate_boleto')).toMatchObject({
+      maturity: 'deprecated',
+      domainService: 'Alias for sales.create_boleto',
+      emits: [],
+      dependsOn: ['sales.create_boleto'],
+    });
+  });
+
+  it('declares sales.create_pix as a real Mercado Pago PIX capability', () => {
+    expect(registry.get('sales.create_pix')).toMatchObject({
+      domainService: 'SalesService.createPixOrder',
+      emits: ['sale.created', 'payment.pending'],
+      evidenceUrlBuilder: '/vendas/${orderId}',
+      executionRail: {
+        provider: 'mercadopago',
+        paymentMethod: 'PIX',
+        providerMethod: 'pix',
+        providerService: 'MercadoPagoPixChargeService.create',
+        webhookPath: '/webhooks/mercadopago',
+        proofFields: ['saleId', 'externalPaymentId', 'pixCopiaECola', 'pixQrCode'],
+      },
+    });
+  });
+
+  it('declares sales.create_boleto as a real Mercado Pago boleto capability', () => {
+    expect(registry.get('sales.create_boleto')).toMatchObject({
+      domainService: 'SalesService.createBoletoOrder',
+      emits: ['sale.created', 'payment.pending'],
+      evidenceUrlBuilder: '/vendas/${orderId}',
+      executionRail: {
+        provider: 'mercadopago',
+        paymentMethod: 'BOLETO',
+        providerMethod: 'boleto',
+        providerService: 'MercadoPagoBoletoChargeService.create',
+        webhookPath: '/webhooks/mercadopago',
+        proofFields: ['saleId', 'externalPaymentId', 'boletoBarcode', 'boletoUrl'],
+      },
+    });
+  });
+
+  it('declares sales.create_card_link as the real Stripe card capability', () => {
+    expect(registry.get('sales.create_card_link')).toMatchObject({
+      domainService: 'SalesService.createStripeCardLink',
+      emits: ['sale.created', 'payment.pending'],
+      evidenceUrlBuilder: '/vendas/${orderId}',
+      executionRail: {
+        provider: 'stripe',
+        paymentMethod: 'CREDIT_CARD',
+        providerMethod: 'card',
+        providerService: 'StripeCheckout.sessions.create',
+        webhookPath: '/webhook/payment/stripe',
+        proofFields: ['saleId', 'externalPaymentId', 'checkoutSessionId', 'checkoutUrl'],
+      },
+    });
+  });
+
   it('classifies product creation', () => {
     const result = router.classify('Cria um produto chamado PDRN por R$197', 'dashboard-chat', [
       '*',
     ]);
     expect(result.isChat).toBe(false);
-    expect(result.classification?.capabilityId).toBe('create_product');
+    expect(result.classification?.capabilityId).toBe('products.create');
     expect(result.classification?.confidence).toBeGreaterThanOrEqual(0.9);
   });
   it('classifies product listing', () => {
@@ -48,7 +113,7 @@ describe('IntentRouter + CapabilityRegistry Integration', () => {
       ['*'],
     );
     expect(result.isChat).toBe(false);
-    expect(result.classification?.capabilityId).toBe('generate_pix');
+    expect(result.classification?.capabilityId).toBe('sales.create_pix');
     expect(result.classification?.requiresConfirmation).toBe(true);
   });
   it('classifies plan creation', () => {
@@ -69,7 +134,7 @@ describe('IntentRouter + CapabilityRegistry Integration', () => {
   it('classifies Boleto generation', () => {
     const result = router.classify('Gera um boleto para João', 'dashboard-chat', ['*']);
     expect(result.isChat).toBe(false);
-    expect(result.classification?.capabilityId).toBe('generate_boleto');
+    expect(result.classification?.capabilityId).toBe('sales.create_boleto');
   });
   it('classifies wallet balance query', () => {
     const result = router.classify('Qual meu saldo?', 'dashboard-chat', ['*']);
@@ -85,6 +150,17 @@ describe('IntentRouter + CapabilityRegistry Integration', () => {
     const result = router.classify('O que voce consegue fazer?', 'dashboard-chat', ['*']);
     expect(result.isChat).toBe(false);
     expect(result.classification?.capabilityId).toBe('self.capabilities');
+  });
+  it('classifies card payment links as the canonical Stripe capability', () => {
+    const result = router.classify(
+      'Gerar link de pagamento no cartao para Joao',
+      'dashboard-chat',
+      ['*'],
+    );
+
+    expect(result.isChat).toBe(false);
+    expect(result.classification?.capabilityId).toBe('sales.create_card_link');
+    expect(result.classification?.requiresConfirmation).toBe(true);
   });
   it('classifies health check', () => {
     const result = router.classify('Qual a saude do sistema?', 'dashboard-chat', ['*']);
@@ -105,10 +181,10 @@ describe('IntentRouter + CapabilityRegistry Integration', () => {
     expect(result.isChat).toBe(false);
     expect(result.classification?.capabilityId).toBe('reports.abandonments');
   });
-  it('classifies CRM pipeline query', () => {
-    const result = router.classify('Mostra meu pipeline CRM', 'dashboard-chat', ['*']);
+  it('classifies CRM lead detail query', () => {
+    const result = router.classify('Detalhes do lead de maria', 'dashboard-chat', ['*']);
     expect(result.isChat).toBe(false);
-    expect(result.classification?.capabilityId).toBe('list_leads');
+    expect(result.classification?.capabilityId).toBe('crm.get_lead');
   });
   it('classifies theme toggle', () => {
     const result = router.classify('Muda para tema escuro', 'dashboard-chat', ['*']);

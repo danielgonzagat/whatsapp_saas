@@ -3,11 +3,14 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AdminSupportService } from './admin-support.service';
 import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
+// Typed wrappers around jest matchers so nested matcher values are typed
+const oc = (o: Record<string, unknown>): unknown => expect.objectContaining(o);
+const ac = (a: unknown[]): unknown => expect.arrayContaining(a);
+
 describe('AdminSupportService', () => {
   let service: AdminSupportService;
 
   const actorId = 'admin_1';
-  const conversationId = 'conv_1';
 
   const mockTxMessageCreate = jest.fn<Promise<unknown>, unknown[]>();
   const mockTxConversationUpdateMany = jest.fn<Promise<unknown>, unknown[]>();
@@ -83,10 +86,8 @@ describe('AdminSupportService', () => {
 
       expect(mockConversationFindMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({
-            OR: expect.arrayContaining([
-              { workspace: { name: { contains: 'test', mode: 'insensitive' } } },
-            ]),
+          where: oc({
+            OR: ac([{ workspace: { name: { contains: 'test', mode: 'insensitive' } } }]),
           }),
         }),
       );
@@ -158,12 +159,12 @@ describe('AdminSupportService', () => {
       );
       expect(mockTxAuditLogCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: oc({
             adminUserId: actorId,
             action: 'admin.support.status_updated',
             entityType: 'Conversation',
             entityId: 'conv_1',
-            details: expect.objectContaining({
+            details: oc({
               previousStatus: 'OPEN',
               nextStatus: 'CLOSED',
             }),
@@ -197,7 +198,7 @@ describe('AdminSupportService', () => {
 
       expect(mockTxMessageCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: oc({
             direction: 'OUTBOUND',
             type: 'NOTE',
             content: 'Support reply',
@@ -208,12 +209,12 @@ describe('AdminSupportService', () => {
       expect(mockTxConversationUpdateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'conv_1', workspaceId: 'ws_1' },
-          data: expect.objectContaining({ unreadCount: 0 }),
+          data: oc({ unreadCount: 0 }),
         }),
       );
       expect(mockTxAuditLogCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: oc({
             adminUserId: actorId,
             action: 'admin.support.replied',
             entityType: 'Conversation',

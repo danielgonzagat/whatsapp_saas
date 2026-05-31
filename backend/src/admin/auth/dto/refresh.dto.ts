@@ -1,7 +1,7 @@
 import { IsString, MaxLength, MinLength } from 'class-validator';
 
-/** Refresh dto. */
-export class RefreshDto {
+/** Admin refresh dto. */
+export class AdminRefreshDto {
   /** Refresh token property. */
   @IsString()
   @MinLength(10)

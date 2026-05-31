@@ -1,3 +1,7 @@
+/**
+ * @capability FlowExternalIdResolver
+ * @domain flows-automation
+ */
 const readIdFromObject = (value: unknown): string | null => {
   if (!value || typeof value !== 'object') {
     return null;

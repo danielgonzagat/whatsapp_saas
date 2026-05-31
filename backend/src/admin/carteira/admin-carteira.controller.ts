@@ -1,21 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import {
-  BadRequestException,
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { parseDateOrFail } from '../../common/parse-date-or-fail.helper';
-import {
-  AdminAction,
-  AdminModule,
-  FraudBlacklistType,
-  MarketplaceTreasuryLedgerKind,
-} from '@prisma/client';
+import { AdminAction, AdminModule, MarketplaceTreasuryLedgerKind } from '@prisma/client';
 import { Public } from '../../auth/public.decorator';
 import { CurrentAdmin } from '../auth/decorators/current-admin.decorator';
 import { RequireAdminPermission } from '../auth/decorators/admin-permission.decorator';
@@ -34,22 +20,25 @@ import { MarketplaceTreasuryService } from '../../marketplace-treasury/marketpla
 import { AddFraudBlacklistDto } from './dto/add-fraud-blacklist.dto';
 import { AdminCarteiraLedgerQueryDto } from './dto/admin-carteira-ledger-query.dto';
 import { RouteClass } from '../../common/throttler/route-class.decorator';
-
-function parseSkip(value?: string): number | undefined {
-  if (!value) {
-    return undefined;
-  }
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? Math.max(0, Math.trunc(parsed)) : undefined;
-}
-
-function parseTake(value?: string): number | undefined {
-  if (!value) {
-    return undefined;
-  }
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? Math.min(200, Math.max(1, Math.trunc(parsed))) : undefined;
-}
+import {
+  buildFraudBlacklistAddedDetails,
+  buildFraudBlacklistEntityId,
+  buildFraudBlacklistRemovedDetails,
+  buildTreasuryPayoutFailedDetails,
+  buildTreasuryPayoutRequestedDetails,
+  buildTreasuryPayoutResponse,
+  mapConnectAccount,
+  mapFraudBlacklistRow,
+  mapPayoutAuditItem,
+  normalizeCurrency,
+  parseFraudBlacklistType,
+  parseSkip,
+  parseTake,
+  requireNonEmpty,
+  resolveTreasuryPayoutRequestId,
+  trimOptional,
+  validatePayoutAmount,
+} from './admin-carteira.controller.helpers';
 
 /**
  * Admin endpoints for the marketplace treasury. Exposes read surfaces
@@ -116,9 +105,7 @@ export class AdminCarteiraController {
   @Get('connect/accounts')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async listConnectAccounts(@Query('workspaceId') workspaceId?: string) {
-    const balances = await this.connectService.listBalances(
-      workspaceId ? String(workspaceId).trim() : undefined,
-    );
+    const balances = await this.connectService.listBalances(trimOptional(workspaceId));
 
     const accounts = await Promise.all(
       balances.map(async (balance) => {
@@ -127,18 +114,7 @@ export class AdminCarteiraController {
           this.connectService.getOnboardingStatus(balance.stripeAccountId).catch(() => null),
         ]);
 
-        return {
-          accountBalanceId: balance.id,
-          workspaceId: balance.workspaceId,
-          stripeAccountId: balance.stripeAccountId,
-          accountType: balance.accountType,
-          pendingCents: snapshot.pendingCents.toString(),
-          availableCents: snapshot.availableCents.toString(),
-          lifetimeReceivedCents: snapshot.lifetimeReceivedCents.toString(),
-          lifetimePaidOutCents: snapshot.lifetimePaidOutCents.toString(),
-          lifetimeChargebacksCents: snapshot.lifetimeChargebacksCents.toString(),
-          onboarding,
-        };
+        return mapConnectAccount(balance, snapshot, onboarding);
       }),
     );
 
@@ -149,8 +125,9 @@ export class AdminCarteiraController {
   @Get('connect/reconcile')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async reconcileConnect(@Query('workspaceId') workspaceId?: string) {
+    const trimmedWorkspaceId = trimOptional(workspaceId);
     return this.connectReconcile.reconcile({
-      ...(workspaceId ? { workspaceId: String(workspaceId).trim() } : {}),
+      ...(trimmedWorkspaceId ? { workspaceId: trimmedWorkspaceId } : {}),
     });
   }
 
@@ -168,29 +145,7 @@ export class AdminCarteiraController {
     });
 
     return {
-      items: result.items.map((item) => {
-        const details =
-          item.details && typeof item.details === 'object' && !Array.isArray(item.details)
-            ? (item.details as Record<string, unknown>)
-            : {};
-        const adminUser =
-          'adminUser' in item && item.adminUser && typeof item.adminUser === 'object'
-            ? item.adminUser
-            : null;
-
-        return {
-          id: item.id,
-          action: item.action,
-          createdAt: item.createdAt.toISOString(),
-          requestId: typeof details.requestId === 'string' ? details.requestId : null,
-          payoutId: typeof details.payoutId === 'string' ? details.payoutId : null,
-          status: typeof details.status === 'string' ? details.status : null,
-          amountCents: typeof details.amountCents === 'string' ? details.amountCents : null,
-          currency: typeof details.currency === 'string' ? details.currency : null,
-          error: typeof details.error === 'string' ? details.error : null,
-          adminUser,
-        };
-      }),
+      items: result.items.map((item) => mapPayoutAuditItem(item)),
       total: result.total,
     };
   }
@@ -206,9 +161,11 @@ export class AdminCarteiraController {
   ) {
     const parsedSkip = parseSkip(skip);
     const parsedTake = parseTake(take);
+    const trimmedWorkspaceId = trimOptional(workspaceId);
+    const trimmedState = trimOptional(state);
     return this.connectPayoutApprovalService.listAdminRequests({
-      ...(workspaceId ? { workspaceId: String(workspaceId).trim() } : {}),
-      ...(state ? { state: String(state).trim() } : {}),
+      ...(trimmedWorkspaceId ? { workspaceId: trimmedWorkspaceId } : {}),
+      ...(trimmedState ? { state: trimmedState } : {}),
       ...(parsedSkip !== undefined ? { skip: parsedSkip } : {}),
       ...(parsedTake !== undefined ? { take: parsedTake } : {}),
     });
@@ -223,7 +180,7 @@ export class AdminCarteiraController {
     @Query('skip') skip?: string,
     @Query('take') take?: string,
   ) {
-    const parsedType = type ? this.parseFraudBlacklistType(type) : undefined;
+    const parsedType = type ? parseFraudBlacklistType(type) : undefined;
     const parsedSkip = parseSkip(skip);
     const parsedTake = parseTake(take);
     const result = await this.fraudEngine.listBlacklist({
@@ -234,15 +191,7 @@ export class AdminCarteiraController {
     });
 
     return {
-      items: result.items.map((row) => ({
-        id: row.id,
-        type: row.type,
-        value: row.value,
-        reason: row.reason,
-        addedBy: row.addedBy,
-        expiresAt: row.expiresAt?.toISOString() ?? null,
-        createdAt: row.createdAt.toISOString(),
-      })),
+      items: result.items.map((row) => mapFraudBlacklistRow(row)),
       total: result.total,
     };
   }
@@ -254,15 +203,9 @@ export class AdminCarteiraController {
     @Body() body: AddFraudBlacklistDto,
     @CurrentAdmin() admin: AuthenticatedAdmin,
   ) {
-    const type = this.parseFraudBlacklistType(body.type);
-    const value = String(body.value || '').trim();
-    const reason = String(body.reason || '').trim();
-    if (!value) {
-      throw new BadRequestException('value is required');
-    }
-    if (!reason) {
-      throw new BadRequestException('reason is required');
-    }
+    const type = parseFraudBlacklistType(body.type);
+    const value = requireNonEmpty(body.value, 'value is required');
+    const reason = requireNonEmpty(body.reason, 'reason is required');
 
     const expiresAt = parseDateOrFail(body.expiresAt ?? undefined, 'expiresAt');
     const row = await this.fraudEngine.addToBlacklist({
@@ -277,25 +220,11 @@ export class AdminCarteiraController {
       adminUserId: admin.id,
       action: 'admin.carteira.fraud_blacklist_added',
       entityType: 'fraud_blacklist',
-      entityId: `${row.type}:${row.value}`,
-      details: {
-        fraudBlacklistId: row.id,
-        type: row.type,
-        value: row.value,
-        reason: row.reason,
-        expiresAt: row.expiresAt?.toISOString() ?? null,
-      },
+      entityId: buildFraudBlacklistEntityId(row.type, row.value),
+      details: buildFraudBlacklistAddedDetails(row),
     });
 
-    return {
-      id: row.id,
-      type: row.type,
-      value: row.value,
-      reason: row.reason,
-      addedBy: row.addedBy,
-      expiresAt: row.expiresAt?.toISOString() ?? null,
-      createdAt: row.createdAt.toISOString(),
-    };
+    return mapFraudBlacklistRow(row);
   }
 
   /** Remove fraud blacklist row. */
@@ -309,11 +238,8 @@ export class AdminCarteiraController {
     },
     @CurrentAdmin() admin: AuthenticatedAdmin,
   ) {
-    const type = this.parseFraudBlacklistType(body.type);
-    const value = String(body.value || '').trim();
-    if (!value) {
-      throw new BadRequestException('value is required');
-    }
+    const type = parseFraudBlacklistType(body.type);
+    const value = requireNonEmpty(body.value, 'value is required');
 
     const result = await this.fraudEngine.removeFromBlacklist({ type, value });
 
@@ -321,12 +247,12 @@ export class AdminCarteiraController {
       adminUserId: admin.id,
       action: 'admin.carteira.fraud_blacklist_removed',
       entityType: 'fraud_blacklist',
-      entityId: `${type}:${value}`,
-      details: {
+      entityId: buildFraudBlacklistEntityId(type, value),
+      details: buildFraudBlacklistRemovedDetails({
         type,
         value,
         removedCount: result.removedCount,
-      },
+      }),
     });
 
     return result;
@@ -344,21 +270,15 @@ export class AdminCarteiraController {
     },
     @CurrentAdmin() admin: AuthenticatedAdmin,
   ) {
-    const amountCents = Math.trunc(Number(body.amountCents ?? 0));
-    if (!Number.isSafeInteger(amountCents) || amountCents <= 0) {
-      throw new BadRequestException('amountCents must be a positive integer');
-    }
+    const { amountCents, amountCentsBig } = validatePayoutAmount(body.amountCents);
 
-    const currency = String(body.currency || 'BRL')
-      .trim()
-      .toUpperCase();
-    const requestId =
-      String(body.requestId || '').trim() || `marketplace_treasury_po_${randomUUID()}`;
+    const currency = normalizeCurrency(body.currency);
+    const requestId = resolveTreasuryPayoutRequestId(body.requestId, randomUUID);
 
     let result;
     try {
       result = await this.marketplaceTreasuryPayout.createPayout({
-        amountCents: BigInt(amountCents),
+        amountCents: amountCentsBig,
         requestId,
         currency,
       });
@@ -368,12 +288,12 @@ export class AdminCarteiraController {
         action: 'admin.carteira.payout_request_failed',
         entityType: 'marketplace_treasury',
         entityId: currency,
-        details: {
+        details: buildTreasuryPayoutFailedDetails({
           requestId,
-          amountCents: String(amountCents),
+          amountCents,
           currency,
-          error: error instanceof Error ? error.message : String(error),
-        },
+          error,
+        }),
       });
       throw error;
     }
@@ -383,21 +303,10 @@ export class AdminCarteiraController {
       action: 'admin.carteira.payout_requested',
       entityType: 'marketplace_treasury',
       entityId: currency,
-      details: {
-        requestId,
-        payoutId: result.payoutId,
-        status: result.status,
-        amountCents: result.amountCents.toString(),
-      },
+      details: buildTreasuryPayoutRequestedDetails({ requestId, result }),
     });
 
-    return {
-      success: true,
-      payoutId: result.payoutId,
-      status: result.status,
-      amountCents: result.amountCents.toString(),
-      currency: result.currency,
-    };
+    return buildTreasuryPayoutResponse(result);
   }
 
   /** Approve connect payout request. */
@@ -407,10 +316,7 @@ export class AdminCarteiraController {
     @Param('approvalRequestId') approvalRequestId: string,
     @CurrentAdmin() admin: AuthenticatedAdmin,
   ) {
-    const normalizedId = String(approvalRequestId || '').trim();
-    if (!normalizedId) {
-      throw new BadRequestException('approvalRequestId is required');
-    }
+    const normalizedId = requireNonEmpty(approvalRequestId, 'approvalRequestId is required');
 
     return {
       success: true,
@@ -429,28 +335,16 @@ export class AdminCarteiraController {
     @Body() body: { reason?: string },
     @CurrentAdmin() admin: AuthenticatedAdmin,
   ) {
-    const normalizedId = String(approvalRequestId || '').trim();
-    if (!normalizedId) {
-      throw new BadRequestException('approvalRequestId is required');
-    }
+    const normalizedId = requireNonEmpty(approvalRequestId, 'approvalRequestId is required');
+    const trimmedReason = trimOptional(body?.reason);
 
     return {
       success: true,
       ...(await this.connectPayoutApprovalService.rejectRequest({
         approvalRequestId: normalizedId,
         adminUserId: admin.id,
-        ...(typeof body?.reason === 'string' && body.reason.trim()
-          ? { reason: body.reason.trim() }
-          : {}),
+        ...(trimmedReason ? { reason: trimmedReason } : {}),
       })),
     };
-  }
-
-  private parseFraudBlacklistType(value: unknown): FraudBlacklistType {
-    const normalized = (typeof value === 'string' ? value : '').trim().toUpperCase();
-    if (Object.values(FraudBlacklistType).includes(normalized as FraudBlacklistType)) {
-      return normalized as FraudBlacklistType;
-    }
-    throw new BadRequestException('type must be a valid FraudBlacklistType');
   }
 }

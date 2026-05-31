@@ -6,7 +6,7 @@ import { resolveRedisUrl } from '../../common/redis/resolve-redis-url';
 import { attachDlq } from '../../queue/queue';
 import { PrismaService } from '../../prisma/prisma.service';
 import { type SpineEventRef } from './mind.types';
-import { CiaCognitiveHealthService } from '../../cia/cia-cognitive-health.service';
+import { CiaCognitiveHealthService } from './cia/cia-cognitive-health.service';
 
 const MIND_BG_QUEUE = 'mind-bg-tick';
 
@@ -23,6 +23,22 @@ export class MindBackgroundScheduler implements OnModuleInit, OnModuleDestroy {
   private dlq: Queue | null = null;
 
   private readonly enabled: boolean;
+
+  /**
+   * Workspaces explicitly registered for MIND ticking by the autonomy
+   * lifecycle (CIA bootstrap activates, pause deregisters). This is the fast,
+   * in-memory source of truth for the current process; executeTick UNIONs it
+   * with the durable set persisted in RAC_MindWorkspaceState so a process
+   * restart keeps ticking already-active workspaces.
+   */
+  private readonly registered = new Set<string>();
+
+  /**
+   * Dev/bootstrap workspace ticked only when no real workspace is discoverable
+   * (empty registry AND empty MindWorkspaceState). Keeps local/test loops alive
+   * without a seeded tenant; production ticks the real, discovered workspaces.
+   */
+  private static readonly DEFAULT_WORKSPACE_ID = 'ws-test-001';
 
   public constructor(
     private readonly processor: MindBackgroundProcessor,
@@ -106,22 +122,84 @@ export class MindBackgroundScheduler implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /** Register a workspace for MIND tick scheduling (no-op stub — policy TBD). */
-  public registerWorkspace(_workspaceId: string): void {
-    // No-op: scheduling policy will be wired in a future wave.
+  /**
+   * Register a workspace so the background loop ticks its Mind. Called by the
+   * CIA autonomy bootstrap when a workspace activates. Idempotent — a Set keeps
+   * the registry deduped; executeTick reads it on the next tick.
+   */
+  public registerWorkspace(workspaceId: string): void {
+    if (workspaceId.length === 0) {
+      return;
+    }
+    this.registered.add(workspaceId);
   }
 
-  /** Deregister a workspace from MIND tick scheduling (no-op stub — policy TBD). */
-  public deregisterWorkspace(_workspaceId: string): void {
-    // No-op: scheduling policy will be wired in a future wave.
+  /**
+   * Deregister a workspace from the in-memory tick registry. Called when CIA
+   * autonomy is paused. Note: the workspace may still be ticked if it has a
+   * durable RAC_MindWorkspaceState row — the persisted set survives a pause,
+   * which is intentional (Mind keeps learning from already-observed evidence).
+   */
+  public deregisterWorkspace(workspaceId: string): void {
+    this.registered.delete(workspaceId);
   }
 
   async executeTick(): Promise<void> {
-    // Primary: spine ring (in-memory, real-time)
+    const workspaceIds = await this.resolveWorkspaceIds();
+    // Primary: spine ring (in-memory, real-time) — a single global ring shared
+    // across workspaces, so we read it ONCE and partition per workspace below.
     const spineEvents = this.spine.recentEventsAsRef(500);
-    // Fallback: database (persisted, survives restart)
+
+    for (const workspaceId of workspaceIds) {
+      await this.tickWorkspace(workspaceId, spineEvents);
+    }
+  }
+
+  /**
+   * Resolve the set of workspaces to tick. UNION of:
+   *   1. the in-memory registry (CIA autonomy lifecycle, fast path), and
+   *   2. distinct workspaceIds persisted in RAC_MindWorkspaceState (durable —
+   *      survives a process restart so already-active tenants keep ticking).
+   * Falls back to the dev/bootstrap default ONLY when nothing is discoverable
+   * (no registered tenant AND no persisted state, e.g. a fresh/test process).
+   */
+  private async resolveWorkspaceIds(): Promise<string[]> {
+    const ids = new Set<string>(this.registered);
+    try {
+      const rows = await this.prisma.mindWorkspaceState.findMany({
+        distinct: ['workspaceId'],
+        select: { workspaceId: true },
+      });
+      for (const row of rows) {
+        if (row.workspaceId.length > 0) {
+          ids.add(row.workspaceId);
+        }
+      }
+    } catch (err: unknown) {
+      this.logger.warn(
+        `Workspace discovery query failed, using registry only: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+    if (ids.size === 0) {
+      return [MindBackgroundScheduler.DEFAULT_WORKSPACE_ID];
+    }
+    return [...ids];
+  }
+
+  /** Run one MIND tick for a single workspace with workspace-isolated events. */
+  private async tickWorkspace(
+    workspaceId: string,
+    spineEvents: readonly SpineEventRef[],
+  ): Promise<void> {
+    // Workspace isolation: only this workspace's events feed its Mind. Events
+    // with no workspaceId are ambient and not attributable to a tenant, so they
+    // are excluded to avoid cross-tenant belief contamination.
+    const scopedSpine = spineEvents.filter((e) => e.workspaceId === workspaceId);
+
+    // Fallback: database (persisted, survives restart). Only when the in-memory
+    // ring has nothing for this workspace.
     let dbEvents: SpineEventRef[] = [];
-    if (spineEvents.length === 0) {
+    if (scopedSpine.length === 0) {
       try {
         type AutopilotEventRow = {
           id: string;
@@ -137,37 +215,37 @@ export class MindBackgroundScheduler implements OnModuleInit, OnModuleDestroy {
            FROM "RAC_AutopilotEvent"
            WHERE "workspaceId" = $1 AND "createdAt" > $2
            ORDER BY "createdAt" DESC LIMIT 500`,
-          'ws-test-001',
+          workspaceId,
           since,
         );
         dbEvents = (rows || []).map((r: AutopilotEventRow) => ({
           eventId: r.id,
           eventName: r.action || r.intent || 'unknown',
-          workspaceId: 'ws-test-001',
+          workspaceId,
           occurredAt: new Date(r.createdAt).toISOString(),
           truthMode: 'observed' as const,
         }));
       } catch (err: unknown) {
         this.logger.warn(
-          `DB fallback query failed: ${err instanceof Error ? err.message : String(err)}`,
+          `DB fallback query failed for ws ${workspaceId}: ${err instanceof Error ? err.message : String(err)}`,
         );
       }
     }
-    const mergedEvents = spineEvents.length > 0 ? spineEvents : dbEvents;
+    const mergedEvents = scopedSpine.length > 0 ? scopedSpine : dbEvents;
     this.processor.tick({
       nowMs: Date.now(),
       recentEvents: mergedEvents,
       workingMemory: [],
-      workspaceId: 'ws-test-001',
+      workspaceId,
     });
 
     // Wave 15: cognitive health on-tick scan (flag-gated, shipped off by default)
     if (process.env['CIA_COGNITIVE_HEALTH_TICK_ENABLED'] === 'true') {
       try {
-        await this.cognitiveHealth?.scanAndEscalate('ws-test-001');
+        await this.cognitiveHealth?.scanAndEscalate(workspaceId);
       } catch (err: unknown) {
         this.logger.warn(
-          `Cognitive health scan failed for ws-test-001: ${err instanceof Error ? err.message : String(err)}`,
+          `Cognitive health scan failed for ${workspaceId}: ${err instanceof Error ? err.message : String(err)}`,
         );
       }
     }

@@ -1,25 +1,14 @@
-import * as childProcess from 'node:child_process';
-import * as fs from 'node:fs';
-import * as os from 'node:os';
-import * as path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { applyEdits, replaceText, renameSymbol, replaceLiteral, validate, wrapRange, type WrapKind, type TextEditSpec, type ApplyResult, type ValidationResult, computeZones } from './engine.js';
-import { resolveAllowedRootForAbsolutePath, resolveSafeTarget, REPO_ROOT } from './guard.js';
-import { buildTrace, levelFor, shapePayload, writeTrace } from './trace.js';
-import { browse, outline, readSymbol } from './nav.js';
-import { editSymbol, renameSymbolCrossFile, previewDiff, characterDiff, addNamedImport, removeNamedImport, replacePropertyValue, type SymbolOp, type SemanticEditResult, renamePropertyKey, addAwaitToCall } from './advanced.js';
-import { sha256, guardSha, log, atomicWrite, readUtf8, normalizeRepoRelPath, normalizeAllowedPath, relPathAllowed, changedSpanMetrics, hasArg, normalizeEslintDryRunArgs, requireEslintDryRunArgs, parseEslintJson, targetDetails, shellPath, nearestPackageRelPath, type EslintDryRunResult } from './server-helpers-io.js';
-import { runPostEditVerify, packageVerificationPlan, unusedSymbolFromLintMessage } from './server-helpers-verify.js';
-import { buildLintResidueActionCandidates, applyKnownLintResidueFixes } from './server-helpers-lint-fix.js';
-import { ok, fail, commit, type ToolOk } from './server-helpers-result.js';
+import { applyEdits, replaceText, renameSymbol, replaceLiteral } from './engine.js';
+import { resolveSafeTarget } from './guard.js';
+import { editSymbol, addNamedImport, removeNamedImport, replacePropertyValue, type SymbolOp, renamePropertyKey } from './advanced.js';
+import { guardSha, readUtf8 } from './server-helpers-io.js';
+import { ok, fail, commit, writeWithTrace } from './server-helpers-result.js';
 import { commitSemantic } from './server-helpers-commit-semantic.js';
-import { replaceCalleeKeepArgs, replaceCallArg, insertCallArg, removeCallArg } from './engine-ops.js';
-import { universalReplaceLiteral, universalReplacePropertyValue, universalRenamePropertyKey } from './engine-universal.js';
-import { replaceOperator, reorderListItem, changeSignature, replaceBodyKeepSignature, addDecorator, replaceDecorator, moveIntoScope } from './engine-complete.js';
 import { registerToolsA2 } from './server-tools-a-2.js';
 import { registerToolsA3 } from './server-tools-a-3.js';
-
+import { doReplaceAt } from './server-tools-locate.js';
 
 export function registerToolsA(server: McpServer): void {
 server.registerTool(
@@ -38,7 +27,7 @@ server.registerTool(
         'replace_text', 'replace_range', 'replace_literal',
         'insert_at', 'delete_range', 'edit_symbol',
         'add_import', 'remove_import', 'rename_symbol',
-        'replace_property_value', 'rename_property_key',
+        'replace_property_value', 'rename_property_key', 'replace_at',
       ]),
       file: z.string(),
       oldText: z.string().optional(),
@@ -58,6 +47,8 @@ server.registerTool(
       property: z.string().optional(),
       value: z.string().optional(),
       newKey: z.string().optional(),
+      mode: z.enum(['content', 'after_anchor', 'before_anchor']).optional(),
+      anchor: z.string().optional(),
       expectedSha256: z.string().optional(),
       preview: z.boolean().optional(),
       verify: z.enum(['typecheck', 'lint']).optional(),
@@ -66,6 +57,22 @@ server.registerTool(
   },
   async (a) => {
     try {
+      if (a.op === 'replace_at') {
+        if (!a.mode || a.anchor === undefined || a.newText === undefined) {
+          return fail('replace_at requires mode, anchor, newText');
+        }
+        return doReplaceAt({
+          file: a.file,
+          mode: a.mode,
+          anchor: a.anchor,
+          newText: a.newText,
+          occurrence: a.occurrence,
+          expectedSha256: a.expectedSha256,
+          preview: a.preview,
+          verify: a.verify,
+          lock: a.lock,
+        });
+      }
       const { absPath, relPath, repoRoot } = resolveSafeTarget(a.file);
       const before = readUtf8(absPath);
       guardSha(before, a.expectedSha256);
@@ -86,7 +93,7 @@ server.registerTool(
           const r = await replaceLiteral(relPath, before, a.oldText, a.newText, a.startLine);
           if (!r.validation.ok) return fail('rejected: replace_literal would break syntax. ' + (r.validation.introduced ?? ''));
           if (r.newText === before) return ok({ ok: true, changed: false, note: 'no change', file: relPath });
-          if (!a.preview) atomicWrite(absPath, r.newText);
+          if (!a.preview) writeWithTrace(relPath, absPath, before, r.newText, 'atomic_edit:replace_literal', r.validation);
           return ok({ ok: true, changed: !a.preview, file: relPath, matched: r.matched });
         }
         case 'insert_at': {
@@ -105,7 +112,7 @@ server.registerTool(
           const r = await editSymbol(relPath, before, a.selector, a.symbolOp as SymbolOp, a.code);
           if (!r.validation.ok) return fail('rejected: ' + a.symbolOp + ' on ' + r.selector + ' would introduce a syntax error. ' + (r.validation.introduced ?? ''));
           if (r.newText === before) return ok({ ok: true, changed: false, note: 'no change', file: relPath });
-          if (!a.preview) atomicWrite(absPath, r.newText);
+          if (!a.preview) writeWithTrace(relPath, absPath, before, r.newText, 'atomic_edit:edit_symbol', r.validation);
           return ok({ ok: true, changed: !a.preview, preview: a.preview ?? false, file: relPath, selector: r.selector, op: r.op });
         }
         case 'add_import': {
@@ -132,7 +139,7 @@ server.registerTool(
           if (!a.startLine || !a.startColumn || !a.newText) throw new Error('rename_symbol requires position+newText');
           const r = await renameSymbol(relPath, before, { line: a.startLine, column: a.startColumn }, a.newText);
           if (!r.validation.ok) return fail('Rename rejected: ' + (r.validation.introduced ?? ''));
-          if (!a.preview) atomicWrite(absPath, r.newText);
+          if (!a.preview) writeWithTrace(relPath, absPath, before, r.newText, 'atomic_edit:rename_symbol', r.validation);
           return ok({ ok: true, changed: !a.preview, file: relPath, symbol: r.symbol, occurrences: r.occurrences });
         }
         default:
@@ -149,6 +156,8 @@ server.registerTool(
   {
     title: 'Replace an exact character range',
     description:
+      'PREFER atomic_replace_at (content/anchor-addressed — you never type line/column, which is the #1 ' +
+      'edit-error source). This coordinate tool remains the internal compilation target and back-compat path. ' +
       'Replace text between (startLine,startColumn) and (endLine,endColumn) — 1-based, end-exclusive — ' +
       'with newText. Structurally validated before write. Use this instead of rewriting a whole line ' +
       'when the real intention is sub-line (a literal, an argument, a token).',

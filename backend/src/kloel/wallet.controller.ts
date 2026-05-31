@@ -284,31 +284,43 @@ export class WalletController {
         createdAt: { gte: startOfMonth, lte: endOfMonth },
       },
       orderBy: { createdAt: 'asc' },
+      select: { amountInCents: true, createdAt: true },
     });
-    const income = transactions.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
-    const expense = transactions
-      .filter((t) => t.amount < 0)
-      .reduce((s, t) => s + Math.abs(t.amount), 0);
+    // Source of truth = bigint `amountInCents`. Sum in integer cents, then
+    // project to Real (cents / 100) for the response contract. The deprecated
+    // Float `amount` column is never read here.
+    const incomeCents = transactions
+      .filter((t) => t.amountInCents > 0n)
+      .reduce((s, t) => s + t.amountInCents, 0n);
+    const expenseCents = transactions
+      .filter((t) => t.amountInCents < 0n)
+      .reduce((s, t) => s + -t.amountInCents, 0n);
+    const income = Number(incomeCents) / 100;
+    const expense = Number(expenseCents) / 100;
     const daysInMonth = endOfMonth.getDate();
-    const daily = Array.from({ length: daysInMonth }, (_, i) => ({
-      day: i + 1,
-      income: 0,
-      expense: 0,
+    const dailyCents = Array.from({ length: daysInMonth }, () => ({
+      incomeCents: 0n,
+      expenseCents: 0n,
     }));
     transactions.forEach((t) => {
       const day = new Date(t.createdAt).getDate() - 1;
       if (day >= 0 && day < daysInMonth) {
-        const entry = daily[day];
+        const entry = dailyCents[day];
         if (!entry) {
           return;
         }
-        if (t.amount > 0) {
-          entry.income += t.amount;
-        } else {
-          entry.expense += Math.abs(t.amount);
+        if (t.amountInCents > 0n) {
+          entry.incomeCents += t.amountInCents;
+        } else if (t.amountInCents < 0n) {
+          entry.expenseCents += -t.amountInCents;
         }
       }
     });
+    const daily = dailyCents.map((entry, i) => ({
+      day: i + 1,
+      income: Number(entry.incomeCents) / 100,
+      expense: Number(entry.expenseCents) / 100,
+    }));
     return { income, expense, balance: income - expense, daily };
   }
 
@@ -328,20 +340,23 @@ export class WalletController {
     const transactions = await this.prisma.kloelWalletTransaction.findMany({
       where: {
         walletId: wallet.id,
-        amount: { gt: 0 },
+        amountInCents: { gt: 0 },
         createdAt: { gte: sevenDaysAgo },
       },
-      select: { amount: true, createdAt: true },
+      select: { amountInCents: true, createdAt: true },
       take: 500,
     });
-    const result = Array(7).fill(0);
+    // Bucket positive revenue per day in integer cents (source of truth),
+    // then project each bucket to Real (cents / 100) for the chart contract.
+    const bucketsCents: bigint[] = Array.from({ length: 7 }, () => 0n);
     transactions.forEach((t) => {
       const daysAgo = Math.floor((Date.now() - new Date(t.createdAt).getTime()) / 86400000);
       const idx = 6 - daysAgo;
       if (idx >= 0 && idx < 7) {
-        result[idx] += t.amount;
+        bucketsCents[idx] += t.amountInCents;
       }
     });
+    const result = bucketsCents.map((cents) => Number(cents) / 100);
     return { chart: result };
   }
 

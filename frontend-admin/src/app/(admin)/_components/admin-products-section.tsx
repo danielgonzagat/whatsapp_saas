@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { AdminSurface } from '@/components/admin/admin-monitor-ui';
 import type { AdminHomeResponse } from '@/lib/api/admin-dashboard-api';
@@ -52,9 +53,15 @@ export function AdminProductsSection({
                 className="flex w-full items-center justify-between gap-3 rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-3 text-left transition hover:border-[var(--app-accent-medium)]"
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-elevated)] text-[var(--app-accent)]">
+                  <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-elevated)] text-[var(--app-accent)]">
                     {product.imageUrl ? (
-                      <img src={product.imageUrl} alt="" className="h-full w-full object-cover" />
+                      <Image
+                        src={product.imageUrl}
+                        alt=""
+                        fill
+                        sizes="40px"
+                        className="object-cover"
+                      />
                     ) : (
                       <span className="font-semibold">
                         {product.name.slice(0, 1).toUpperCase()}

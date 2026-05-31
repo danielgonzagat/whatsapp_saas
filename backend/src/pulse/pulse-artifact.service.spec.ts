@@ -2,7 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { PulseArtifactService } from './pulse-artifact.service';
 
 jest.mock('node:fs', () => {
-  const actualFs = jest.requireActual('node:fs');
+  const actualFs = jest.requireActual<typeof import('node:fs')>('node:fs');
   return {
     ...actualFs,
     existsSync: jest.fn(),

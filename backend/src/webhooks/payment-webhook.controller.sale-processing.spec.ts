@@ -2,6 +2,53 @@
 // messageLimit/dailyLimit enforcement in WhatsappService.sendMessage().
 import { buildPaymentWebhookController as buildController } from '../../test/payment-webhook-controller-harness';
 
+type KloelSaleUpdateArgs = {
+  where: {
+    workspaceId?: string;
+    externalPaymentId?: string;
+    OR?: Array<{ externalPaymentId?: string; id?: string }>;
+  };
+  data: {
+    status?: string;
+    paidAt?: unknown;
+    externalPaymentId?: string;
+  };
+};
+
+type ProcessSaleSucceededCall = [
+  paymentIntentArg: { id?: string; transfer_group?: string },
+  matureAtForRole: (role: string) => Date,
+];
+
+type MockWithCalls = { mock: { calls: unknown[][] } };
+
+function firstMockCall<TArgs extends unknown[]>(mock: MockWithCalls, label: string): TArgs {
+  const [call] = mock.mock.calls;
+  if (!call) {
+    throw new Error(`${label} was not called`);
+  }
+  return call as TArgs;
+}
+
+function firstKloelSaleUpdate(
+  prisma: ReturnType<typeof buildController>['prisma'],
+): KloelSaleUpdateArgs {
+  const [args] = firstMockCall<[KloelSaleUpdateArgs]>(
+    prisma.kloelSale.updateMany,
+    'kloelSale.updateMany',
+  );
+  return args;
+}
+
+function firstProcessSaleSucceededCall(
+  stripeWebhookProcessor: ReturnType<typeof buildController>['stripeWebhookProcessor'],
+): ProcessSaleSucceededCall {
+  return firstMockCall<ProcessSaleSucceededCall>(
+    stripeWebhookProcessor.processSaleSucceeded,
+    'processSaleSucceeded',
+  );
+}
+
 describe('PaymentWebhookController.handleStripe — sale payment intents', () => {
   it('marks generic KloelSale records as paid when a Stripe payment intent succeeds outside checkout orders', async () => {
     const { controller, prisma } = buildController();
@@ -43,12 +90,154 @@ describe('PaymentWebhookController.handleStripe — sale payment intents', () =>
       },
     );
 
-    expect(prisma.kloelSale.updateMany).toHaveBeenCalledWith({
-      where: { workspaceId: 'ws-1', externalPaymentId: 'pi_generic_123' },
-      data: expect.objectContaining({ status: 'paid' }),
+    expect(prisma.kloelSale.updateMany).toHaveBeenCalledTimes(1);
+    const saleUpdate = firstKloelSaleUpdate(prisma);
+    expect(saleUpdate.where).toEqual({
+      workspaceId: 'ws-1',
+      externalPaymentId: 'pi_generic_123',
     });
-    const saleUpdate = prisma.kloelSale.updateMany.mock.calls[0]?.[0];
+    expect(saleUpdate.data.status).toBe('paid');
     expect(saleUpdate.data.paidAt).toBeInstanceOf(Date);
+  });
+
+  it('reconciles Stripe card payment intents by Kloel sale id metadata', async () => {
+    const { controller, prisma } = buildController();
+
+    await controller.handleStripe(
+      {
+        body: {
+          id: 'evt_card_pi_paid',
+          type: 'payment_intent.succeeded',
+          data: {
+            object: {
+              id: 'pi_card_1',
+              status: 'succeeded',
+              metadata: {
+                type: 'sale',
+                workspace_id: 'ws-1',
+                workspaceId: 'ws-1',
+                kloel_order_id: 'sale-card-1',
+                orderId: 'sale-card-1',
+                saleId: 'sale-card-1',
+                sourceCapability: 'sales.create_card_link',
+                payment_method: 'CREDIT_CARD',
+              },
+            },
+          },
+        },
+        rawBody: '',
+        url: '/webhook/payment/stripe',
+      },
+      undefined,
+      undefined,
+      {
+        id: 'evt_card_pi_paid',
+        type: 'payment_intent.succeeded',
+        data: {
+          object: {
+            id: 'pi_card_1',
+            status: 'succeeded',
+            metadata: {
+              type: 'sale',
+              workspace_id: 'ws-1',
+              workspaceId: 'ws-1',
+              kloel_order_id: 'sale-card-1',
+              orderId: 'sale-card-1',
+              saleId: 'sale-card-1',
+              sourceCapability: 'sales.create_card_link',
+              payment_method: 'CREDIT_CARD',
+            },
+          },
+        },
+      },
+    );
+
+    expect(prisma.kloelSale.updateMany).toHaveBeenCalledTimes(1);
+    const saleUpdate = firstKloelSaleUpdate(prisma);
+    expect(saleUpdate.where).toEqual({
+      workspaceId: 'ws-1',
+      OR: [{ externalPaymentId: 'pi_card_1' }, { id: 'sale-card-1' }],
+    });
+    expect(saleUpdate.data.status).toBe('paid');
+    expect(saleUpdate.data.externalPaymentId).toBe('pi_card_1');
+    expect(saleUpdate.data.paidAt).toBeInstanceOf(Date);
+  });
+
+  it('reconciles Stripe checkout sessions by Kloel sale id metadata', async () => {
+    const { controller, prisma, autopilot } = buildController();
+
+    await controller.handleStripe(
+      {
+        body: {
+          id: 'evt_card_checkout_paid',
+          type: 'checkout.session.completed',
+          data: {
+            object: {
+              id: 'cs_card_1',
+              payment_intent: 'pi_card_1',
+              payment_status: 'paid',
+              amount_total: 19700,
+              currency: 'brl',
+              customer_details: { email: 'buyer@example.com' },
+              metadata: {
+                workspace_id: 'ws-1',
+                workspaceId: 'ws-1',
+                kloel_order_id: 'sale-card-1',
+                orderId: 'sale-card-1',
+                saleId: 'sale-card-1',
+                productName: 'PDRN',
+                sourceCapability: 'sales.create_card_link',
+                payment_method: 'CREDIT_CARD',
+              },
+            },
+          },
+        },
+        rawBody: '',
+        url: '/webhook/payment/stripe',
+      },
+      undefined,
+      undefined,
+      {
+        id: 'evt_card_checkout_paid',
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_card_1',
+            payment_intent: 'pi_card_1',
+            payment_status: 'paid',
+            amount_total: 19700,
+            currency: 'brl',
+            customer_details: { email: 'buyer@example.com' },
+            metadata: {
+              workspace_id: 'ws-1',
+              workspaceId: 'ws-1',
+              kloel_order_id: 'sale-card-1',
+              orderId: 'sale-card-1',
+              saleId: 'sale-card-1',
+              productName: 'PDRN',
+              sourceCapability: 'sales.create_card_link',
+              payment_method: 'CREDIT_CARD',
+            },
+          },
+        },
+      },
+    );
+
+    expect(prisma.kloelSale.updateMany).toHaveBeenCalledTimes(1);
+    const saleUpdate = firstKloelSaleUpdate(prisma);
+    expect(saleUpdate.where).toEqual({
+      workspaceId: 'ws-1',
+      OR: [{ externalPaymentId: 'pi_card_1' }, { id: 'sale-card-1' }],
+    });
+    expect(saleUpdate.data.status).toBe('paid');
+    expect(saleUpdate.data.externalPaymentId).toBe('pi_card_1');
+    expect(saleUpdate.data.paidAt).toBeInstanceOf(Date);
+    expect(autopilot.markConversion).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        reason: 'stripe_paid',
+      }),
+    );
   });
 
   it('dispatches the Connect post-sale processor for sale payment intents using product-specific maturation rules', async () => {
@@ -127,7 +316,7 @@ describe('PaymentWebhookController.handleStripe — sale payment intents', () =>
 
       expect(stripeWebhookProcessor.processSaleSucceeded).toHaveBeenCalledTimes(1);
       const [paymentIntentArg, matureAtForRole] =
-        stripeWebhookProcessor.processSaleSucceeded.mock.calls[0];
+        firstProcessSaleSucceededCall(stripeWebhookProcessor);
       expect(paymentIntentArg).toEqual(
         expect.objectContaining({
           id: 'pi_sale_1',

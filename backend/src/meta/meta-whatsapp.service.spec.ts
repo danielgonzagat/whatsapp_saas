@@ -1,3 +1,4 @@
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { expectValueOf } from '../../test/expect-value-of';
 import type { PrismaService } from '../prisma/prisma.service';
 import { MetaWhatsAppService } from './meta-whatsapp.service';

@@ -2,9 +2,6 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { z } from 'zod';
 import { REPO_ROOT } from './guard.js';
-import { sha256, normalizeRepoRelPath } from './server-helpers-io.js';
-
-
 // ───────────────────────── v4: product-oriented operating layer ───────────
 // These tools do not replace product engineering. They make the principle
 // executable for every CLI that loads this MCP: convert a human goal into a

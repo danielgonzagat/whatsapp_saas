@@ -7,11 +7,7 @@
  */
 
 import { Test } from '@nestjs/testing';
-import {
-  WisdomPrivacyGuardService,
-  diffPrivacyNoise,
-  WisdomPrivacyViolationError,
-} from './wisdom-privacy-guard.service';
+import { WisdomPrivacyGuardService } from './wisdom-privacy-guard.service';
 import { WisdomOptService } from './wisdom-opt';
 import type { CandidatePattern, WisdomPattern } from './wisdom.types';
 

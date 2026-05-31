@@ -4,7 +4,6 @@ import {
   Controller,
   Delete,
   Get,
-  NotFoundException,
   Param,
   Post,
   Put,
@@ -17,7 +16,6 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Prisma } from '@prisma/client';
 import { Response } from 'express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -42,34 +40,37 @@ import {
   updateThreadMessage,
   updateMessageFeedback,
 } from './kloel-thread.controller-helpers';
-import { handleUploadFile, handleUploadChatFile } from './kloel-upload.controller-helpers';
+import {
+  handleUploadFile,
+  handleUploadChatFile,
+  KLOEL_UPLOAD_GENERIC_MIME_RE,
+  KLOEL_UPLOAD_CHAT_MIME_RE,
+  KLOEL_UPLOAD_MAX_BYTES,
+  kloelGenericUploadFileFilter,
+  kloelChatUploadFileFilter,
+} from './kloel-upload.controller-helpers';
+import {
+  ApprovalDecisionDto,
+  readUserId,
+  readWorkspaceId,
+  transitionApprovalRequest,
+} from './kloel-approval.controller-helpers';
+import {
+  KLOEL_PENDING_APPROVALS_SELECT,
+  buildKloelMemoryArgs,
+  buildKloelThinkPayload,
+  buildRegenerateMessageArgs,
+  parseListThreadsQuery,
+  type KloelMemoryDto,
+  type KloelThinkDto,
+} from './kloel.controller.helpers';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
-interface ThinkDto {
-  message: string;
-  workspaceId?: string;
-  conversationId?: string;
-  mode?: 'chat' | 'onboarding' | 'sales';
-  metadata?: Record<string, unknown>;
-}
-interface MemoryDto {
-  workspaceId: string;
-  type: string;
-  content: string;
-  metadata?: Record<string, unknown>;
-}
+type ThinkDto = KloelThinkDto;
+type MemoryDto = KloelMemoryDto;
 interface OnboardingChatDto {
   message: string;
 }
-interface ApprovalDecisionDto {
-  note?: string;
-  adjustment?: Prisma.InputJsonValue;
-}
-const KLOEL_UPLOAD_GENERIC_MIME_RE =
-  /^(image\/(jpeg|png|gif|webp)|application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document)$/;
-const KLOEL_UPLOAD_CHAT_MIME_RE =
-  /^(image\/(jpeg|png|gif|webp)|application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document|application\/vnd\.ms-excel|application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet|text\/plain|text\/csv|audio\/(mpeg|wav|webm|ogg|mp4|x-m4a))$/;
-const UPLOAD_MAX = 25 * 1024 * 1024;
 @Controller('kloel')
 @RouteClass('ai')
 export class KloelController {
@@ -81,75 +82,6 @@ export class KloelController {
     private readonly threadSearchService: KloelThreadSearchService,
     private readonly toolDispatcher: KloelToolDispatcherService,
   ) {}
-  private readUserId(user: unknown) {
-    if (!user || typeof user !== 'object') {
-      return undefined;
-    }
-    const sub = 'sub' in user ? user.sub : undefined;
-    if (typeof sub === 'string' && sub.trim()) {
-      return sub;
-    }
-    const legacyId = 'id' in user ? user.id : undefined;
-    return typeof legacyId === 'string' && legacyId.trim() ? legacyId : undefined;
-  }
-  private readWorkspaceId(req: AuthenticatedRequest) {
-    const workspaceId = req.workspaceId || req.user?.workspaceId;
-    if (!workspaceId) {
-      throw new BadRequestException('workspace_id_required');
-    }
-    return workspaceId;
-  }
-  private normalizeApprovalNote(body?: ApprovalDecisionDto) {
-    return typeof body?.note === 'string' && body.note.trim() ? body.note.trim() : null;
-  }
-  private async transitionApprovalRequest(input: {
-    approvalRequestId: string;
-    req: AuthenticatedRequest;
-    state: 'APPROVED' | 'REJECTED' | 'ADJUSTMENT_REQUESTED';
-    body?: ApprovalDecisionDto;
-  }) {
-    const approvalRequestId = String(input.approvalRequestId || '').trim();
-    if (!approvalRequestId) {
-      throw new BadRequestException('approval_request_id_required');
-    }
-    const workspaceId = this.readWorkspaceId(input.req);
-    const approval = await this.prisma.approvalRequest.findFirst({
-      where: { id: approvalRequestId, workspaceId },
-      select: { id: true, state: true },
-    });
-    if (!approval) {
-      throw new NotFoundException('approval_request_not_found');
-    }
-    if (approval.state !== 'OPEN') {
-      throw new BadRequestException('approval_request_not_open');
-    }
-    const userId = this.readUserId(input.req.user);
-    const response: Prisma.InputJsonObject = {
-      action: input.state.toLowerCase(),
-      decidedAt: new Date().toISOString(),
-      ...(userId ? { decidedByUserId: userId } : {}),
-      note: this.normalizeApprovalNote(input.body),
-      ...(input.state === 'ADJUSTMENT_REQUESTED'
-        ? { adjustment: input.body?.adjustment ?? null }
-        : {}),
-    };
-    const result = await this.prisma.approvalRequest.updateMany({
-      where: { id: approvalRequestId, workspaceId, state: 'OPEN' },
-      data: {
-        state: input.state,
-        respondedAt: new Date(),
-        response,
-      },
-    });
-    if (result.count !== 1) {
-      throw new BadRequestException('approval_request_not_open');
-    }
-    return {
-      success: true,
-      approvalRequestId,
-      state: input.state,
-    };
-  }
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('think')
   async think(
@@ -157,9 +89,6 @@ export class KloelController {
     @Res() res: Response,
     @Request() req: AuthenticatedRequest,
   ): Promise<void> {
-    const workspaceId = req.workspaceId || req.user?.workspaceId;
-    const userId = this.readUserId(req.user);
-    const userName = typeof req.user?.name === 'string' ? req.user.name : undefined;
     const abortController = new AbortController();
     const abortWithReason = (reason: string) => {
       if (!abortController.signal.aborted) {
@@ -171,19 +100,10 @@ export class KloelController {
     req.on('close', () => abortWithReason('client_disconnected'));
     res.on('close', () => abortWithReason('client_disconnected'));
     try {
-      const { metadata: rawMetadata, ...requestDto } = dto;
-      const metadata = rawMetadata as Prisma.InputJsonValue | undefined;
-      return await this.kloelService.think(
-        {
-          ...requestDto,
-          workspaceId,
-          ...(userId !== undefined ? { userId } : {}),
-          ...(userName !== undefined ? { userName } : {}),
-          ...(metadata !== undefined ? { metadata } : {}),
-        },
-        res,
-        { signal: abortController.signal, timeoutMs },
-      );
+      return await this.kloelService.think(buildKloelThinkPayload(dto, req, readUserId), res, {
+        signal: abortController.signal,
+        timeoutMs,
+      });
     } finally {
       clearTimeout(timeout);
     }
@@ -204,19 +124,7 @@ export class KloelController {
       where: { workspaceId, state: 'OPEN' },
       orderBy: { createdAt: 'desc' },
       take: 50,
-      select: {
-        id: true,
-        kind: true,
-        scope: true,
-        entityType: true,
-        entityId: true,
-        state: true,
-        title: true,
-        prompt: true,
-        payload: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: { ...KLOEL_PENDING_APPROVALS_SELECT },
     });
     return { approvals };
   }
@@ -228,15 +136,13 @@ export class KloelController {
     @Body() body: ApprovalDecisionDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    const transition = await this.transitionApprovalRequest({
-      approvalRequestId,
-      req,
-      state: 'APPROVED',
-      body,
-    });
-    const userId = this.readUserId(req.user);
+    const transition = await transitionApprovalRequest(
+      { prisma: this.prisma },
+      { approvalRequestId, req, state: 'APPROVED', body },
+    );
+    const userId = readUserId(req.user);
     const execution = await this.toolDispatcher.executeApprovedApprovalRequest({
-      workspaceId: this.readWorkspaceId(req),
+      workspaceId: readWorkspaceId(req),
       approvalRequestId: transition.approvalRequestId,
       ...(userId !== undefined ? { userId } : {}),
     });
@@ -257,12 +163,10 @@ export class KloelController {
     @Body() body: ApprovalDecisionDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.transitionApprovalRequest({
-      approvalRequestId,
-      req,
-      state: 'REJECTED',
-      body,
-    });
+    return transitionApprovalRequest(
+      { prisma: this.prisma },
+      { approvalRequestId, req, state: 'REJECTED', body },
+    );
   }
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @InternalEndpoint('approval request adjust')
@@ -272,38 +176,21 @@ export class KloelController {
     @Body() body: ApprovalDecisionDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.transitionApprovalRequest({
-      approvalRequestId,
-      req,
-      state: 'ADJUSTMENT_REQUESTED',
-      body,
-    });
+    return transitionApprovalRequest(
+      { prisma: this.prisma },
+      { approvalRequestId, req, state: 'ADJUSTMENT_REQUESTED', body },
+    );
   }
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('think/sync')
   async thinkSync(@Body() dto: ThinkDto, @Request() req: AuthenticatedRequest) {
-    const workspaceId = req.workspaceId || req.user?.workspaceId;
-    const userId = this.readUserId(req.user);
-    const userName = typeof req.user?.name === 'string' ? req.user.name : undefined;
-    const { metadata: rawMetadata, ...requestDto } = dto;
-    const metadata = rawMetadata as Prisma.InputJsonValue | undefined;
-    return this.kloelService.thinkSync({
-      ...requestDto,
-      workspaceId,
-      ...(userId !== undefined ? { userId } : {}),
-      ...(userName !== undefined ? { userName } : {}),
-      ...(metadata !== undefined ? { metadata } : {}),
-    });
+    return this.kloelService.thinkSync(buildKloelThinkPayload(dto, req, readUserId));
   }
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('memory/save')
   async saveMemory(@Body() dto: MemoryDto, @Request() req: AuthenticatedRequest) {
-    await this.kloelService.saveMemory(
-      req.workspaceId || req.user?.workspaceId,
-      dto.type,
-      dto.content,
-      dto.metadata as Prisma.InputJsonValue | undefined,
-    );
+    const args = buildKloelMemoryArgs(dto, req);
+    await this.kloelService.saveMemory(args.workspaceId, args.type, args.content, args.metadata);
     return { success: true };
   }
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -330,29 +217,15 @@ export class KloelController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
-      limits: { fileSize: UPLOAD_MAX },
-      fileFilter: (_req, file, cb) => {
-        const allowed = [
-          'image/jpeg',
-          'image/png',
-          'image/gif',
-          'image/webp',
-          'application/pdf',
-          'application/msword',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        ];
-        cb(
-          allowed.includes(file.mimetype) ? null : new Error('Tipo de arquivo não permitido'),
-          allowed.includes(file.mimetype),
-        );
-      },
+      limits: { fileSize: KLOEL_UPLOAD_MAX_BYTES },
+      fileFilter: kloelGenericUploadFileFilter,
     }),
   )
   async uploadGenericFile(
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: UPLOAD_MAX }),
+          new MaxFileSizeValidator({ maxSize: KLOEL_UPLOAD_MAX_BYTES }),
           new FileTypeValidator({ fileType: KLOEL_UPLOAD_GENERIC_MIME_RE }),
         ],
         fileIsRequired: false,
@@ -365,7 +238,7 @@ export class KloelController {
       { storage: this.storageService },
       file,
       req.workspaceId || req.user?.workspaceId,
-      req.body?.folder || 'general',
+      (req.body as { folder?: string } | undefined)?.folder || 'general',
       req,
     );
   }
@@ -374,39 +247,15 @@ export class KloelController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
-      limits: { fileSize: UPLOAD_MAX },
-      fileFilter: (_req, file, cb) => {
-        const allowed = [
-          'image/jpeg',
-          'image/png',
-          'image/gif',
-          'image/webp',
-          'application/pdf',
-          'application/msword',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          'application/vnd.ms-excel',
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          'text/plain',
-          'text/csv',
-          'audio/mpeg',
-          'audio/wav',
-          'audio/webm',
-          'audio/ogg',
-          'audio/mp4',
-          'audio/x-m4a',
-        ];
-        cb(
-          allowed.includes(file.mimetype) ? null : new Error('Tipo de arquivo não permitido'),
-          allowed.includes(file.mimetype),
-        );
-      },
+      limits: { fileSize: KLOEL_UPLOAD_MAX_BYTES },
+      fileFilter: kloelChatUploadFileFilter,
     }),
   )
   async uploadFile(
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: UPLOAD_MAX }),
+          new MaxFileSizeValidator({ maxSize: KLOEL_UPLOAD_MAX_BYTES }),
           new FileTypeValidator({ fileType: KLOEL_UPLOAD_CHAT_MIME_RE }),
         ],
         fileIsRequired: false,
@@ -454,11 +303,40 @@ export class KloelController {
     @Body() dto: OnboardingChatDto,
     @Res() res: Response,
   ) {
-    await this.conversationalOnboarding.chat(
-      resolveWorkspaceId(req, workspaceId),
-      dto.message,
-      res,
-    );
+    try {
+      await this.conversationalOnboarding.chat(
+        resolveWorkspaceId(req, workspaceId),
+        dto.message,
+        res,
+      );
+    } catch {
+      // Terminal-event guarantee: chat() handles its own happy/error SSE paths,
+      // but a throw BEFORE its internal try (history/state/decision setup) would
+      // otherwise leave the SSE socket open with no terminal event — wedging the
+      // frontend's isReplyInFlight flag. Emit a terminal `done` payload (only if
+      // the response is still writable) and end the socket. Best-effort: this
+      // must never throw.
+      try {
+        const response = res as Response & { writableEnded?: boolean; headersSent?: boolean };
+        if (response.writableEnded !== true) {
+          if (response.headersSent !== true) {
+            res.setHeader('Content-Type', 'text/event-stream');
+            res.setHeader('Cache-Control', 'no-cache');
+            res.setHeader('Connection', 'keep-alive');
+          }
+          const payload = {
+            content:
+              'Tive uma instabilidade momentânea pra processar agora. Pode repetir a mensagem em alguns segundos?',
+            error: 'onboarding_chat_failed',
+            done: true,
+          };
+          res.write('data: ' + JSON.stringify(payload) + '\n\n');
+          res.end();
+        }
+      } catch {
+        // ignore — the socket is already broken; nothing more to do
+      }
+    }
   }
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('onboarding/:workspaceId/status')
@@ -488,15 +366,11 @@ export class KloelController {
     @Query('limit') limit?: string,
     @Query('cursor') cursor?: string,
   ) {
-    const parsedLimit = limit ? Number.parseInt(limit, 10) : undefined;
-    const parsedCursor = cursor ? Number.parseInt(cursor, 10) : undefined;
-    const numericLimit = Number.isFinite(parsedLimit) ? parsedLimit : undefined;
-    const numericCursor = Number.isFinite(parsedCursor) ? parsedCursor : undefined;
-    return listThreads({ prisma: this.prisma }, resolveWorkspaceId(req), {
-      ...(numericLimit !== undefined ? { limit: numericLimit } : {}),
-      ...(numericCursor !== undefined ? { cursor: numericCursor } : {}),
-      paginated: Boolean(limit || cursor),
-    });
+    return listThreads(
+      { prisma: this.prisma },
+      resolveWorkspaceId(req),
+      parseListThreadsQuery(limit, cursor),
+    );
   }
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('threads')
@@ -577,18 +451,8 @@ export class KloelController {
     @Body() dto: { messageId?: string },
     @Req() req: AuthenticatedRequest,
   ) {
-    const messageId = String(dto?.messageId || '').trim();
-    if (!messageId) {
-      throw new BadRequestException('messageId é obrigatório.');
-    }
-    const userId = typeof req.user?.sub === 'string' ? req.user.sub : undefined;
-    const userName = typeof req.user?.name === 'string' ? req.user.name : undefined;
-    return this.kloelService.regenerateThreadAssistantResponse({
-      workspaceId: resolveWorkspaceId(req),
-      conversationId: id,
-      assistantMessageId: messageId,
-      ...(userId !== undefined ? { userId } : {}),
-      ...(userName !== undefined ? { userName } : {}),
-    });
+    return this.kloelService.regenerateThreadAssistantResponse(
+      buildRegenerateMessageArgs(id, dto, req, resolveWorkspaceId(req)),
+    );
   }
 }

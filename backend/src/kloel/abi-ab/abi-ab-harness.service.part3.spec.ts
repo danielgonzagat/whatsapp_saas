@@ -10,12 +10,7 @@
  */
 
 import { AbiAbHarnessService } from './abi-ab-harness.service';
-import type {
-  AbHarnessRecord,
-  AbPathRunnerFn,
-  AbPathRunnerResult,
-  AbRCriterionDelta,
-} from './abi-ab.types';
+import type { AbPathRunnerFn, AbPathRunnerResult } from './abi-ab.types';
 
 function makePathRunner(overrides: Partial<AbPathRunnerResult> = {}): AbPathRunnerFn {
   return async () => ({
@@ -51,35 +46,6 @@ function makeFailingPathRunner(): AbPathRunnerFn {
     latencyMs: 100,
     tokensUsed: 10,
     responseText: '',
-  });
-}
-
-function makeConversionRichRunner(): AbPathRunnerFn {
-  return async () => ({
-    success: true,
-    latencyMs: 180,
-    tokensUsed: 200,
-    responseText:
-      'Excelente! Aproveite nossa oferta exclusiva. Clique aqui para comprar com desconto. Muito obrigado pela confiança.',
-  });
-}
-
-function makeHallucinatedRunner(): AbPathRunnerFn {
-  return async () => ({
-    success: true,
-    latencyMs: 220,
-    tokensUsed: 180,
-    responseText:
-      'O produto X é o melhor do mercado. A empresa Y recomenda este serviço. A pesquisa Z comprovou eficácia de 99%.',
-  });
-}
-
-function makeBalancedRunner(): AbPathRunnerFn {
-  return async () => ({
-    success: true,
-    latencyMs: 200,
-    tokensUsed: 200,
-    responseText: 'Bom dia! Conforme sua solicitação, aqui está o resumo.',
   });
 }
 
@@ -130,9 +96,7 @@ describe('AbiAbHarnessService', () => {
         responseText: '',
       });
 
-      let callCount = 0;
       const switchingRunner: AbPathRunnerFn = async (params) => {
-        callCount++;
         if (params.workspaceId === 'ws_good') {
           return goodRunner(params);
         }
@@ -182,9 +146,7 @@ describe('AbiAbHarnessService', () => {
       const baselineRunner = makePathRunner({ latencyMs: 100 });
       const variantRunner = makeSlowPathRunner();
 
-      let callCount = 0;
       const switchingRunner: AbPathRunnerFn = async (params) => {
-        callCount++;
         if (params.useAbi) {
           return variantRunner(params);
         }
@@ -207,9 +169,7 @@ describe('AbiAbHarnessService', () => {
       const baselineRunner = makePathRunner({ tokensUsed: 100 });
       const variantRunner = makeHighTokenPathRunner();
 
-      let callCount = 0;
       const switchingRunner: AbPathRunnerFn = async (params) => {
-        callCount++;
         if (params.useAbi) {
           return variantRunner(params);
         }

@@ -4,6 +4,7 @@ import { MetaMarketingProvider } from '../integrations/meta-marketing.provider';
 import { GoogleAdsProvider } from '../integrations/google-ads.provider';
 import { TikTokAdsProvider } from '../integrations/tiktok-ads.provider';
 import { AnunciosService } from './anuncios.service';
+import { castMock } from '../../test/helpers/cast-mock';
 
 function makeProvider(platform: string) {
   return {
@@ -137,7 +138,14 @@ describe('AnunciosService', () => {
     });
     await service.syncAccounts('ws-1');
     expect(prisma.adAccount.upsert).toHaveBeenCalled();
-    const upsertArg = prisma.adAccount.upsert.mock.calls[0][0];
+    const upsertArg = castMock<
+      [
+        {
+          where: { workspaceId_platform_accountId: { workspaceId: string } };
+          create: { status: string };
+        },
+      ]
+    >(prisma.adAccount.upsert.mock.calls[0])[0];
     expect(upsertArg.where.workspaceId_platform_accountId.workspaceId).toBe('ws-1');
     expect(upsertArg.create.status).toBe('connected');
   });

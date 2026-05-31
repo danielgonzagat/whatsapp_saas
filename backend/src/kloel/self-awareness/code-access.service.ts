@@ -165,7 +165,19 @@ export class CodeAccessService {
       }
     }
     return hits;
-  } /** Find usages of a symbol across the codebase */
+  }
+
+  /**
+   * Canonical-name alias of {@link list} for the Kloel capability resolver
+   * (`CodeAccessService.listDir`). Accepts the (workspaceId, args)
+   * signature; workspaceId is ignored (repo-scoped global access).
+   */
+  listDir(_workspaceId: string, args?: { path?: string }): FileEntry[] {
+    const dirPath = typeof args?.path === 'string' ? args.path : '';
+    return this.list(dirPath);
+  }
+
+  /** Find usages of a symbol across the codebase */
   findUsages(symbol: string): CodeHit[] {
     // Use ripgrep with word boundaries for symbol search
     return this.search(`\\b${symbol}\\b`, {

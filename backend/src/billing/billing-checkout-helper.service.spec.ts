@@ -3,13 +3,27 @@ import { ModuleRef } from '@nestjs/core';
 import { PrismaService } from '../prisma/prisma.service';
 import { BillingCheckoutHelperService } from './billing-checkout-helper.service';
 import type { StripeClient } from './stripe-types';
+import { partialMatch } from '../../test/helpers/match-instance';
+
+type WorkspaceUpdateCall = {
+  where?: unknown;
+  data: {
+    providerSettings: {
+      billingSuspended?: boolean;
+      autopilot?: { enabled?: boolean };
+    };
+  };
+};
 
 describe('BillingCheckoutHelperService', () => {
   let service: BillingCheckoutHelperService;
   let prisma: {
     contact: { findFirst: jest.Mock };
     subscription: { findFirst: jest.Mock; update: jest.Mock };
-    workspace: { findUnique: jest.Mock; update: jest.Mock };
+    workspace: {
+      findUnique: jest.Mock;
+      update: jest.Mock<Promise<unknown>, [WorkspaceUpdateCall]>;
+    };
     auditLog: { create: jest.Mock };
     $transaction: jest.Mock;
   };
@@ -26,7 +40,7 @@ describe('BillingCheckoutHelperService', () => {
       },
       workspace: {
         findUnique: jest.fn().mockResolvedValue({ providerSettings: {} }),
-        update: jest.fn().mockResolvedValue({}),
+        update: jest.fn<Promise<unknown>, [WorkspaceUpdateCall]>().mockResolvedValue({}),
       },
       auditLog: { create: jest.fn().mockResolvedValue({}) },
       $transaction: jest.fn().mockImplementation(async (cb: (tx: unknown) => Promise<unknown>) => {
@@ -66,9 +80,9 @@ describe('BillingCheckoutHelperService', () => {
       });
       const wsUpdate = prisma.workspace.update.mock.calls[0][0];
       expect(wsUpdate.data.providerSettings.billingSuspended).toBe(true);
-      expect(wsUpdate.data.providerSettings.autopilot.enabled).toBe(false);
+      expect(wsUpdate.data.providerSettings.autopilot?.enabled).toBe(false);
       expect(prisma.auditLog.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
+        data: partialMatch({
           workspaceId: 'ws-1',
           action: 'SUBSCRIPTION_STATUS',
           details: { status: 'PAST_DUE', billingSuspended: true },

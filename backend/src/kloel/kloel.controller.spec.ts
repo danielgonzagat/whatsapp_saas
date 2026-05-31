@@ -1,4 +1,5 @@
 import { KloelController } from './kloel.controller';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 describe('KloelController', () => {
   let kloelService: {
@@ -216,9 +217,9 @@ describe('KloelController', () => {
     expect(prisma.approvalRequest.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'approval-1', workspaceId: 'ws-1', state: 'OPEN' },
-        data: expect.objectContaining({
+        data: partialMatch({
           state: 'APPROVED',
-          response: expect.objectContaining({
+          response: partialMatch({
             action: 'approved',
             decidedByUserId: 'user-1',
             note: 'Pode executar',
@@ -301,9 +302,9 @@ describe('KloelController', () => {
     expect(prisma.approvalRequest.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'approval-1', workspaceId: 'ws-1', state: 'OPEN' },
-        data: expect.objectContaining({
+        data: partialMatch({
           state: 'ADJUSTMENT_REQUESTED',
-          response: expect.objectContaining({
+          response: partialMatch({
             action: 'adjustment_requested',
             adjustment: { targetAudience: 'warm_leads' },
           }),

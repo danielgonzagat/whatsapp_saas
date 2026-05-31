@@ -5,14 +5,14 @@ import { AlertTriangle, ArrowRight, Info, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { SettingsCard, SettingsHeader, SettingsNotice } from './contract';
 
-/** Legacy payment providers (Asaas, MercadoPago, PIX) migration notice section. */
+/** Payment provider routing notice section. */
 export function BillingLegacyProvidersSection() {
   return (
     <SettingsCard>
       <SettingsHeader
-        title={kloelT(`Provedores de pagamento legados`)}
+        title={kloelT(`Roteamento de pagamentos`)}
         description={kloelT(
-          `Os provedores de pagamento antigos (Asaas, MercadoPago, PIX externo e links de pagamento) foram migrados para Stripe Connect ou descontinuados.`,
+          `PIX e boleto usam Mercado Pago. Cartao e recebimento de conta continuam em Stripe Connect.`,
         )}
       />
 
@@ -44,10 +44,10 @@ export function BillingLegacyProvidersSection() {
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold">{kloelT(`MercadoPago — Descontinuado`)}</p>
+              <p className="text-sm font-semibold">{kloelT(`Mercado Pago — PIX e boleto`)}</p>
               <p className="mt-1 text-xs opacity-85">
                 {kloelT(
-                  `MercadoPago foi descontinuado. Use Stripe para receber pagamentos dos seus clientes. O Stripe oferece checkout, PIX e cartao de credito.`,
+                  `Mercado Pago processa PIX e boleto no checkout do Kloel. Cartao de credito continua no Stripe.`,
                 )}
               </p>
             </div>
@@ -58,10 +58,10 @@ export function BillingLegacyProvidersSection() {
           <div className="flex items-start gap-3">
             <Zap className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold">{kloelT(`PIX e Links de Pagamento Externos`)}</p>
+              <p className="text-sm font-semibold">{kloelT(`Cartao e links de checkout`)}</p>
               <p className="mt-1 text-xs opacity-85">
                 {kloelT(
-                  `PIX agora e processado via Stripe. Configure em Configuracoes > Pagamentos. Links de pagamento externos sao gerados automaticamente pelo Stripe Checkout.`,
+                  `Stripe fica restrito ao cartao. Links de checkout podem oferecer PIX e boleto quando o plano estiver configurado com Mercado Pago.`,
                 )}
               </p>
             </div>

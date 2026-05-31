@@ -1,4 +1,8 @@
 /**
+ * @capability VoiceProcessor
+ * @domain media-content
+ */
+/**
  * ARCHITECTURAL COHESION: Voice Processor — one BullMQ worker lifecycle handling all voice
  * processing jobs (audio transcription, TTS generation, voice synthesis). Dispatches to TTS
  * providers, handles chunked audio processing, and manages voice profile resolution through a

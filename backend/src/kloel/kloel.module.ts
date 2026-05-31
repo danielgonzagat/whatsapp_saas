@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
+import { WhatsappModule } from '../marketing/channels/whatsapp/whatsapp.module';
 import { ConversationalOnboardingService } from './conversational-onboarding.service';
 import { ConversationalOnboardingToolsService } from './conversational-onboarding-tools.service';
 import { KloelToolExecutorBillingService } from './kloel-tool-executor-billing.service';
@@ -23,7 +24,16 @@ import { KLOEL_COMPOSER_E2E_GUARD, NoopKloelComposerE2EGuard } from './kloel-com
 import { KLOEL_LLM_E2E_GUARD, NoopKloelLLME2EGuard } from './kloel-llm-e2e-guard';
 import { KloelController } from './kloel.controller';
 import { KloelDataController } from './kloel-data.controller';
-import { KloelLeadBrainService } from './kloel-lead-brain.service';
+import {
+  LeadMindCoordinator,
+  MindAutonomyCoordinator,
+  MindCapabilityExecutor,
+  MindCapabilityRegistry,
+  MindCommercialGraph,
+  MindEventSpine,
+  MindRuntime,
+  WhatsAppMindCoordinator,
+} from './mind/coordination';
 import { KloelLeadProcessorService } from './kloel-lead-processor.service';
 import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import { KloelService } from './kloel.service';
@@ -31,6 +41,7 @@ import { KloelThreadSearchService } from './kloel-thread-search.service';
 import { KloelThreadService } from './kloel-thread.service';
 import { KloelThreadSummaryService } from './kloel-thread-summary.service';
 import { KloelThinkerService } from './kloel-thinker.service';
+import { StateBuilderService } from './state/state-builder.service';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { KloelToolExecutorService } from './kloel-tool-executor.service';
 import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
@@ -40,7 +51,6 @@ import { OnboardingService } from './onboarding.service';
 import { PaymentController } from './payment.controller';
 import { PaymentService } from './payment.service';
 import { WhatsAppBrainController } from './whatsapp-brain.controller';
-import { WhatsAppBrainService } from './whatsapp-brain.service';
 
 import { LLMBudgetService } from './llm-budget.service';
 import { MemoryManagementService } from './memory-management.service';
@@ -48,6 +58,30 @@ import { MemoryController } from './memory.controller';
 import { MemoryCrudService } from './memory-crud.service';
 import { MemorySearchService } from './memory-search.service';
 import { MemoryService } from './memory.service';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
+import { MindMessageService } from './mind/aliases/mind-message.service';
+// ── services-v2 (Wave 1) — boot-safe capability domain services ──
+import { ThemeService } from './services-v2/theme.service';
+import { AIConfigService } from './services-v2/ai-config.service';
+import { ProductAIConfigService } from './services-v2/product-ai-config.service';
+import { NpsService } from './services-v2/nps.service';
+import { ChurnService } from './services-v2/churn.service';
+import { AbandonmentService } from './services-v2/abandonment.service';
+import { RefundService } from './services-v2/refund.service';
+import { ReviewService } from './services-v2/review.service';
+import { SubscriptionService } from './services-v2/subscription.service';
+import { ShippingService } from './services-v2/shipping.service';
+import { BrandService } from './services-v2/brand.service';
+import { LeadService } from './services-v2/lead.service';
+import { DocumentService } from './services-v2/document.service';
+import { SessionService } from './services-v2/session.service';
+import { PixelService } from './services-v2/pixel.service';
+// ── services-v2 (Wave 3) — dep-gated capability domain services ──
+import { ChannelService } from './services-v2/channel.service';
+import { MessagingService } from './services-v2/messaging.service';
+import { AgentJobService } from './services-v2/agent-job.service';
+import { SearchService } from './services-v2/search.service';
+import { MarketingChannelsModule } from '../marketing/channels/marketing-channels.module';
 import { MarketingSkillContextBuilder } from './marketing-skills/marketing-skill.context';
 import { MarketingSkillLoader } from './marketing-skills/marketing-skill.loader';
 import { MarketingSkillRouter } from './marketing-skills/marketing-skill.router';
@@ -64,6 +98,7 @@ import { CampaignsModule } from '../campaigns/campaigns.module';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { KycModule } from '../kyc/kyc.module';
 import { FraudModule } from '../payments/fraud/fraud.module';
+import { PaymentsModule } from '../payments/payments.module';
 import { MetricsModule } from '../metrics/metrics.module';
 import { PartnershipsModule } from '../partnerships/partnerships.module';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -96,6 +131,7 @@ import {
   ProductUrlController,
 } from './product-sub-resources.controller';
 import { ProductController } from './product.controller';
+import { ProductUrlService } from './product-sub-resources/product-url.service';
 import { SalesController } from './sales.controller';
 import { SalesOrdersController } from './sales-orders.controller';
 import { SalesSubscriptionsController } from './sales-subscriptions.controller';
@@ -118,14 +154,8 @@ import { UnifiedAgentService } from './unified-agent.service';
 import { UNIFIED_AGENT_TOKEN } from './tokens';
 import { UploadController } from './upload.controller';
 import { WebinarController } from './webinar.controller';
-import { BrainCapabilityRegistryService } from './brain-capability-registry.service';
-import { BrainCapabilityExecutorService } from './brain-capability-executor.service';
-import { BrainAutonomyService } from './brain-autonomy.service';
 import { LacunasController } from './lacunas.controller';
-import { BrainCommercialGraphService } from './brain-commercial-graph.service';
-import { BrainEventSpineService } from './brain-event-spine.service';
-import { BrainRuntimeController } from './brain-runtime.controller';
-import { BrainRuntimeService } from './brain-runtime.service';
+import { BrainRuntimeController } from './mind/coordination/mind-runtime.controller';
 import {
   EmailChannelTransport,
   InstagramChannelTransport,
@@ -140,32 +170,45 @@ import { CommercialDecisionOrchestratorService } from './commercial-decision-orc
 import { RuntimeConversationTracerService } from './runtime-conversation-tracer.service';
 import { DailyLimitService } from './daily-limit.service';
 import { KloelGlobalPriorService } from './kloel-global-prior.service';
-import { MindBeliefService } from './mind-belief.service';
-import { MindBanditService } from './mind-bandit.service';
-import { MindCaseMemoryService } from './mind-case-memory.service';
-import { MindConceptService } from './mind-concepts.service';
-import { MindGlobalPriorService } from './mind-global-prior.service';
-import { MindController } from './mind-controller';
-import { MindEventProcessorService } from './mind-event-processor.service';
-import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
-import { MindGuardsService } from './mind-guards.service';
-import { MindObservabilityService } from './mind-observability.service';
-import { MindPerceptionService } from './mind-perception.service';
-import { MindPolicyService } from './mind-policy.service';
-import { MindPredictorService } from './mind-predictor.service';
-import { MindProcessorService } from './mind-processor.service';
-import { MindQualityService } from './mind-quality.service';
-import { MindReportService } from './mind-report.service';
-import { MindReplayService } from './mind-replay.service';
-import { MindSimulatorService } from './mind-simulator.service';
-import { MindSyntheticGeneratorService } from './mind-synthetic-generator.service';
+import { MindBeliefService } from './mind/inference/mind-belief.service';
+import { CommerceOutcomeLearnerService } from './mind/coordination/commerce-outcome-learner.service';
+import { MindBanditService } from './mind/policy/mind-bandit.service';
+import { MindCaseMemoryService } from './mind/memory/mind-case-memory.service';
+import { MindConceptService } from './mind/memory/mind-concepts.service';
+import { MindLongTermMemoryService } from './mind/memory/mind-long-term-memory.service';
+import { MindSelfModificationService } from './mind/self-evolution/mind-self-modification.service';
+import { MindGlobalPriorService } from './mind/memory/mind-global-prior.service';
+import { MindController } from './mind/coordination/mind-controller';
+import { InternalMindSelfEvolutionController } from './mind/self-evolution/internal-mind-self-evolution.controller';
+import { MindEventProcessorService } from './mind/runtime/mind-event-processor.service';
+import { MindGuardContextBuilderService } from './mind/policy/mind-guard-context-builder.service';
+import { MindGuardsService } from './mind/policy/mind-guards.service';
+import { MindObservabilityService } from './mind/observability/mind-observability.service';
+import { MindPerceptionService } from './mind/perception/mind-perception.service';
+import { MindPolicyService } from './mind/policy/mind-policy.service';
+import { MindPredictorService } from './mind/inference/mind-predictor.service';
+import { MindProcessorService } from './mind/runtime/mind-processor.service';
+import { MindQualityService } from './mind/policy/mind-quality.service';
+import { MindReportService } from './mind/observability/mind-report.service';
+import { MindReplayService } from './mind/runtime/mind-replay.service';
+import { MindAutonomyService } from './mind/autonomy/mind-autonomy.service';
+import { MindCausalModelService } from './mind/causal/mind-causal-model.service';
+import { MindCuriosityService } from './mind/curiosity/mind-curiosity.service';
+import { MindSimulatorService } from './mind/synthetic/mind-simulator.service';
+import { MindSyntheticGeneratorService } from './mind/synthetic/mind-synthetic-generator.service';
+import { MindEmotionalIntelligenceService } from './mind/emotional/mind-emotional-intelligence.service';
+import { MindConsciousnessService } from './mind/consciousness/mind-consciousness.service';
+import { MindMultiModalPerceptionService } from './mind/perception/mind-multimodal-perception.service';
 import { MindService } from './mind.service';
+import { AttentionService } from './mind/attention.service';
+import { ValenceAggregatorService } from './mind/valence-aggregator.service';
 import { DecisionOutcomeService } from './decision-outcome.service';
 import { DriftModule } from './drift/drift.module';
-import { MindLiftReportService } from './mind-lift-report.service';
-import { MindSurpriseService } from './mind-surprise.service';
-import { MindVerbalizerService } from './mind-verbalizer.service';
-import { MindWorkspaceStateService } from './mind-workspace-state.service';
+import { MindLiftReportService } from './mind/observability/mind-lift-report.service';
+import { MindSurpriseService } from './mind/inference/mind-surprise.service';
+import { MindVerbalizerService } from './mind/synthetic/mind-verbalizer.service';
+import { MindWorkspaceStateService } from './mind/memory/mind-workspace-state.service';
+import { VectorService } from './mind/knowledge/vector.service';
 import { AgentRuntimeJobRunnerService } from './agent-runtime/agent-runtime.job-runner';
 import {
   AgentRuntimeContextService,
@@ -185,30 +228,41 @@ import { LineageModule } from './lineage/lineage.module';
 import { RiskClassModule } from './risk-class/risk-class.module';
 import { InboxModule } from '../inbox/inbox.module';
 import { AccountService } from './account.service';
-import { CheckoutService } from './checkout.service';
+import { KloelChatCheckoutTool } from './kloel-chat-checkout.tool';
 import { CouponService } from './coupon.service';
 import { ProductCouponDomainService } from './product-coupon-domain.service';
 import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
 import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
 import { ToolPlannerModule } from './toolplanner/toolplanner.module';
 import { CapabilityRegistryV2Module } from './capability-registry-v2/capability-registry-v2.module';
+import { KloelDomainServiceResolver } from './domain-service-resolver.service';
 import { IntentRouterModule } from './intent-router/intent-router.module';
 import { SelfAwarenessModule } from './self-awareness/self-awareness.module';
+import { SpineModule } from './spine/spine.module';
 import { ProductsModule } from '../products/products.module';
 import { PlansModule } from '../plans/plans.module';
+import { SalesModule } from '../sales/sales.module';
+import { WorkspaceModule } from '../workspaces/workspace.module';
+import { LongTermMemoryService } from './mind/memory/long-term-memory.service';
+import { ConversationArchiveService } from './mind/memory/conversation-archive.service';
+import { EpisodeService } from './mind/memory/episode.service';
+import { MindSelfModelService } from './mind/self-model/mind-self-model.service';
+import { CrmModule } from '../crm/crm.module';
 
 /** Kloel module. */
 @Module({
   imports: [
     PrismaModule,
-    forwardRef(() => require('../whatsapp/whatsapp.module').WhatsappModule),
+    forwardRef(() => WhatsappModule),
     ScheduleModule.forRoot(),
     KycModule,
     forwardRef(() => CampaignsModule),
+    forwardRef(() => CrmModule),
     forwardRef(() => BillingModule),
     AuditModule,
     forwardRef(() => WalletModule),
     FraudModule,
+    PaymentsModule,
     PartnershipsModule,
     MetricsModule,
     KloelAudioModule,
@@ -222,8 +276,12 @@ import { PlansModule } from '../plans/plans.module';
     IntentRouterModule,
     ToolPlannerModule,
     SelfAwarenessModule,
+    SpineModule,
     ProductsModule,
     PlansModule,
+    SalesModule,
+    WorkspaceModule,
+    forwardRef(() => MarketingChannelsModule),
   ],
   controllers: [
     KloelController,
@@ -262,12 +320,14 @@ import { PlansModule } from '../plans/plans.module';
     BrainRuntimeController,
     LacunasController,
     MindController,
+    InternalMindSelfEvolutionController,
   ],
   providers: [
     { provide: KLOEL_COMPOSER_E2E_GUARD, useClass: NoopKloelComposerE2EGuard },
     { provide: KLOEL_LLM_E2E_GUARD, useClass: NoopKloelLLME2EGuard },
     KloelService,
     KloelThinkerService,
+    StateBuilderService,
     KloelReplyEngineService,
     KloelThreadSearchService,
     KloelThreadService,
@@ -275,10 +335,11 @@ import { PlansModule } from '../plans/plans.module';
     KloelChatToolsService,
     KloelCodeToolsService,
     AccountService,
-    CheckoutService,
+    KloelChatCheckoutTool,
     CouponService,
     ProductCouponDomainService,
     KloelProductSubResourceToolsService,
+    ProductUrlService,
     KloelWalletSalesToolsService,
     KloelBusinessConfigToolsService,
     KloelCodeAnalysisService,
@@ -288,19 +349,22 @@ import { PlansModule } from '../plans/plans.module';
     KloelWhatsAppToolsService,
     UnifiedAgentToolExecutorService,
 
-    KloelLeadBrainService,
+    KloelDomainServiceResolver,
+    LeadMindCoordinator,
     KloelToolDispatcherService,
     KloelToolExecutorService,
     KloelComposerService,
     KloelLeadProcessorService,
     KloelWorkspaceContextService,
     GuestChatService,
-    WhatsAppBrainService,
+    WhatsAppMindCoordinator,
     PaymentService,
     OnboardingService,
     ConversationalOnboardingService,
     ConversationalOnboardingToolsService,
     AbiBuilderService,
+    AttentionService,
+    ValenceAggregatorService,
     KloelToolExecutorBillingService,
     KloelToolExecutorCrmService,
     KloelToolExecutorWhatsAppService,
@@ -340,12 +404,12 @@ import { PlansModule } from '../plans/plans.module';
     CartRecoveryService,
     WebhooksService,
     WebhookDispatcherService,
-    BrainCapabilityRegistryService,
-    BrainCapabilityExecutorService,
-    BrainAutonomyService,
-    BrainCommercialGraphService,
-    BrainEventSpineService,
-    BrainRuntimeService,
+    MindCapabilityRegistry,
+    MindCapabilityExecutor,
+    MindAutonomyCoordinator,
+    MindCommercialGraph,
+    MindEventSpine,
+    MindRuntime,
     InstagramChannelTransport,
     MessengerChannelTransport,
     TikTokChannelTransport,
@@ -358,9 +422,18 @@ import { PlansModule } from '../plans/plans.module';
     ContactIdentityResolverService,
     DailyLimitService,
     MindBeliefService,
+    MindEmotionalIntelligenceService,
+    CommerceOutcomeLearnerService,
+    MindConsciousnessService,
     MindBanditService,
     MindCaseMemoryService,
     MindConceptService,
+    MindLongTermMemoryService,
+    LongTermMemoryService,
+    ConversationArchiveService,
+    EpisodeService,
+    MindSelfModelService,
+    MindSelfModificationService,
     KloelGlobalPriorService,
     MindGlobalPriorService,
     MindEventProcessorService,
@@ -368,9 +441,13 @@ import { PlansModule } from '../plans/plans.module';
     MindGuardsService,
     MindObservabilityService,
     MindPerceptionService,
+    MindMultiModalPerceptionService,
     MindPolicyService,
     MindPredictorService,
     MindProcessorService,
+    MindAutonomyService,
+    MindCausalModelService,
+    MindCuriosityService,
     MindQualityService,
     MindReportService,
     MindReplayService,
@@ -382,6 +459,7 @@ import { PlansModule } from '../plans/plans.module';
     MindLiftReportService,
     MindVerbalizerService,
     MindWorkspaceStateService,
+    VectorService,
     PulseArtifactService,
     AgentRuntimeContextService,
     AgentRuntimeContextCompressorService,
@@ -395,6 +473,29 @@ import { PlansModule } from '../plans/plans.module';
     AgentRuntimeSchedulerService,
     AgentRuntimeSessionStore,
     AgentRuntimeSkillRegistry,
+    MindMessageService,
+    MindMemoryItemService,
+    // ── services-v2 (Wave 1) capability domain services ──
+    ThemeService,
+    AIConfigService,
+    ProductAIConfigService,
+    NpsService,
+    ChurnService,
+    AbandonmentService,
+    RefundService,
+    ReviewService,
+    SubscriptionService,
+    ShippingService,
+    BrandService,
+    LeadService,
+    DocumentService,
+    SessionService,
+    PixelService,
+    // ── services-v2 (Wave 3) dep-gated capability domain services ──
+    ChannelService,
+    MessagingService,
+    AgentJobService,
+    SearchService,
   ],
   exports: [
     KloelService,
@@ -408,20 +509,22 @@ import { PlansModule } from '../plans/plans.module';
     KloelChatToolsService,
     KloelBusinessConfigToolsService,
     KloelWhatsAppToolsService,
-    KloelLeadBrainService,
+    LeadMindCoordinator,
     KloelToolDispatcherService,
     KloelToolExecutorService,
     KloelComposerService,
     KloelLeadProcessorService,
     KloelWorkspaceContextService,
     GuestChatService,
-    WhatsAppBrainService,
+    WhatsAppMindCoordinator,
     PaymentService,
 
     OnboardingService,
     ConversationalOnboardingService,
     MemoryCrudService,
     MemorySearchService,
+    ConversationArchiveService,
+    EpisodeService,
     MemoryService,
     MemoryManagementService,
     PdfProcessorService,
@@ -443,7 +546,7 @@ import { PlansModule } from '../plans/plans.module';
     AdRulesEngineService,
     EmailCampaignService,
     ChannelTransportRegistry,
-    BrainEventSpineService,
+    MindEventSpine,
     CommercialDecisionOrchestratorService,
     RuntimeConversationTracerService,
     MindBeliefService,
@@ -470,6 +573,8 @@ import { PlansModule } from '../plans/plans.module';
     AgentRuntimeSchedulerService,
     AgentRuntimeSessionStore,
     AgentRuntimeSkillRegistry,
+    MindMessageService,
+    MindMemoryItemService,
   ],
 })
 export class KloelModule {}

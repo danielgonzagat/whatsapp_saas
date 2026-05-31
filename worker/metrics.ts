@@ -1,3 +1,7 @@
+/**
+ * @capability WorkerPrometheusMetrics
+ * @domain metrics
+ */
 import { Queue } from 'bullmq';
 import { Counter, Gauge, Histogram, Registry, collectDefaultMetrics } from 'prom-client';
 import { autopilotQueue, buildQueueOptions, connection, queueRegistry } from './queue';

@@ -3,11 +3,15 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AdminConfigService } from './admin-config.service';
 import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
-const mockAsProviderSettings = jest.fn();
+const mockAsProviderSettings = jest.fn<unknown, unknown[]>();
 
-jest.mock('../../whatsapp/provider-settings.types', () => ({
+jest.mock('../../marketing/channels/whatsapp/provider-settings.types', () => ({
   asProviderSettings: (...args: unknown[]) => mockAsProviderSettings(...args),
 }));
+
+// Typed wrappers around jest matchers so nested matcher values are typed
+const oc = (o: Record<string, unknown>): unknown => expect.objectContaining(o);
+const ac = (a: unknown[]): unknown => expect.arrayContaining(a);
 
 describe('AdminConfigService', () => {
   let service: AdminConfigService;
@@ -82,8 +86,8 @@ describe('AdminConfigService', () => {
 
       expect(mockWorkspaceFindMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({
-            OR: expect.arrayContaining([{ name: { contains: 'test', mode: 'insensitive' } }]),
+          where: oc({
+            OR: ac([{ name: { contains: 'test', mode: 'insensitive' } }]),
           }),
         }),
       );
@@ -119,7 +123,7 @@ describe('AdminConfigService', () => {
       expect(mockTxWorkspaceUpdate).toHaveBeenCalled();
       expect(mockTxAuditLogCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: oc({
             adminUserId: actorId,
             action: 'admin.config.workspace_updated',
             entityType: 'Workspace',

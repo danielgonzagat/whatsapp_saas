@@ -1,4 +1,8 @@
 /**
+ * @capability WhatsAppEngine
+ * @domain channel
+ */
+/**
  * ARCHITECTURAL COHESION: WhatsApp Engine — the single provider-agnostic facade over multiple
  * WhatsApp providers. Covers message sending with anti-ban protection, session management,
  * message queueing, and media/video/voice/document/audio/sticker dispatch. All channel types
@@ -6,10 +10,19 @@
  * session, and queue concerns across files.
  */
 
-import { randomInt, randomUUID, timingSafeEqual } from 'node:crypto';
+import { randomInt, randomUUID } from 'node:crypto';
 import { autoProvider } from './auto-provider';
 import { unifiedWhatsAppProvider } from './unified-whatsapp-provider';
 
+import {
+  assertProviderSendResult,
+  errorMessage,
+  errorStatus,
+  isSameLockToken,
+  resolveActionLockConfig,
+  shouldBypassActionLock,
+  sleep,
+} from './whatsapp-engine.helpers';
 import { redis } from '../redis-client';
 import { AntiBan } from './anti-ban';
 import { HealthMonitor } from './health-monitor';
@@ -20,21 +33,6 @@ type WorkspaceLike = {
   id: string;
   whatsappProvider?: string;
   [key: string]: unknown;
-};
-
-type ProviderSendResult = {
-  error?: unknown;
-  reason?: unknown;
-  message?: unknown;
-  success?: boolean;
-  [key: string]: unknown;
-};
-
-type ProviderErrorLike = {
-  message?: string;
-  response?: {
-    status?: number;
-  };
 };
 
 function normalizeWorkspace<T extends WorkspaceLike>(
@@ -51,92 +49,11 @@ function resolvePrimaryProvider(_workspace: WorkspaceLike) {
   return unifiedWhatsAppProvider;
 }
 
-function asProviderError(error: unknown): ProviderErrorLike {
-  return error && typeof error === 'object' ? (error as ProviderErrorLike) : {};
-}
-
-function errorMessage(error: unknown): string {
-  return asProviderError(error).message || 'unknown_error';
-}
-
-function errorStatus(error: unknown): number | undefined {
-  return asProviderError(error).response?.status;
-}
-
-function asReasonString(value: unknown, fallback: string): string {
-  return typeof value === 'string' && value.trim().length > 0 ? value : fallback;
-}
-
-function assertProviderSendResult<T extends ProviderSendResult>(
-  result: T | null | undefined,
-  channel: 'text' | 'media',
-) {
-  if (!result) {
-    throw new Error(`Meta ${channel} returned empty response`);
-  }
-
-  if (result?.error) {
-    const reason =
-      typeof result.error === 'string'
-        ? result.error
-        : asReasonString(result.reason, asReasonString(result.message, `unknown_${channel}_error`));
-    throw new Error(reason);
-  }
-
-  if (result?.success === false) {
-    throw new Error(
-      asReasonString(result.reason, asReasonString(result.message, `Meta ${channel} send failed`)),
-    );
-  }
-
-  return result;
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-type ActionLockConfig = {
-  readonly isTestEnv: boolean;
-  readonly ttlMs: number;
-  readonly backoffMin: number;
-  readonly backoffJitter: number;
-};
-
-function shouldBypassActionLock(): boolean {
-  const testEnforce = process.env.WHATSAPP_ACTION_LOCK_TEST_ENFORCE === 'true';
-  const isTestEnv = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
-  return isTestEnv && !testEnforce;
-}
-
-function resolveActionLockConfig(): ActionLockConfig {
-  const isTestEnv = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
-  // Production minimum: 15s. Test mode: allow shorter values so the
-  // lock-deadline test path runs quickly.
-  const ttlMs = Math.max(
-    isTestEnv ? 100 : 15_000,
-    Number.parseInt(process.env.WHATSAPP_ACTION_LOCK_MS || '45000', 10) || 45_000,
-  );
-  // Keep production backoff at 250-500ms. Shorter in test mode only.
-  const backoffMin = isTestEnv ? 50 : 250;
-  const backoffJitter = isTestEnv ? 50 : 250;
-  return { isTestEnv, ttlMs, backoffMin, backoffJitter };
-}
-
 async function releaseLockIfOwned(key: string, token: string): Promise<void> {
   const current = await redis.get(key).catch(() => null /* not found */);
   if (isSameLockToken(current, token)) {
     await redis.del(key).catch(() => undefined /* fire-and-forget: lock cleanup */);
   }
-}
-
-function isSameLockToken(current: string | null, token: string): boolean {
-  if (!current) {
-    return false;
-  }
-  const currentBytes = Buffer.from(current);
-  const tokenBytes = Buffer.from(token);
-  return currentBytes.length === tokenBytes.length && timingSafeEqual(currentBytes, tokenBytes);
 }
 
 async function tryAcquireAndRun<T>(

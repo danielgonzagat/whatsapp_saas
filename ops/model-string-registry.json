@@ -2,11 +2,20 @@
   "allowedFiles": [
     "backend/src/lib/openai-models.ts",
     "backend/src/lib/ai-models.ts",
+    "backend/src/lib/llm-provider.spec.ts",
     "backend/src/wallet/provider-pricing.ts",
     "backend/src/wallet/provider-pricing.helpers.ts",
     "backend/src/wallet/provider-pricing.helpers.spec.ts",
     "backend/src/kloel/unified-agent.service.spec.ts",
+    "backend/src/kloel/site.controller.helpers.spec.ts",
+    "backend/src/kloel/mind/knowledge/agent-assist.helpers.spec.ts",
+    "backend/src/kloel/mind/knowledge/agent-assist.helpers.charging.spec.ts",
     "backend/src/ai-brain/agent-assist.helpers.spec.ts",
-    "backend/src/ai-brain/agent-assist.helpers.charging.spec.ts"
+    "backend/src/ai-brain/agent-assist.helpers.charging.spec.ts",
+    "backend/src/kloel/kloel-chat-surprise-detection.spec.ts",
+    "backend/src/kloel/kloel-chat-surprise-detection.extended.spec.ts",
+    "backend/src/kloel/kloel-chat-surprise-detection.onboarding.spec.ts",
+    "backend/src/kloel/kloel-decision-outcome-wiring.spec.ts",
+    "backend/src/kloel/kloel-decision-outcome-wiring.onboarding.spec.ts"
   ]
 }

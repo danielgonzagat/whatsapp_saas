@@ -248,15 +248,16 @@ describe('LedgerReconciliationService — divergence reporting & audit trail', (
         },
       }),
     );
+    const checkoutDetailsMatcher: unknown = expect.objectContaining({
+      scannedOrders: 2,
+      driftCount: 2,
+    });
     expect(prisma.adminAuditLog.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: {
           action: 'system.checkout.reconcile_drift',
           entityType: 'checkout_order',
-          details: expect.objectContaining({
-            scannedOrders: 2,
-            driftCount: 2,
-          }),
+          details: checkoutDetailsMatcher,
         },
       }),
     );
@@ -331,26 +332,29 @@ describe('LedgerReconciliationService — divergence reporting & audit trail', (
 
     await service.runWalletReconciliation();
 
+    const bucketDrift = (bucket: string): unknown => {
+      const detailsBucketMatcher: unknown = expect.objectContaining({ bucket });
+      return expect.objectContaining({
+        details: detailsBucketMatcher,
+      });
+    };
+    const sampleDriftsMatcher: unknown = expect.arrayContaining([
+      bucketDrift('available'),
+      bucketDrift('pending'),
+      bucketDrift('blocked'),
+    ]);
+    const detailsMatcher: unknown = expect.objectContaining({
+      driftCount: 3,
+      sampleDrifts: sampleDriftsMatcher,
+    });
+    const dataMatcher: unknown = expect.objectContaining({
+      action: 'system.wallet.reconcile_drift',
+      entityType: 'kloel_wallet',
+      details: detailsMatcher,
+    });
     expect(prisma.adminAuditLog.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          action: 'system.wallet.reconcile_drift',
-          entityType: 'kloel_wallet',
-          details: expect.objectContaining({
-            driftCount: 3,
-            sampleDrifts: expect.arrayContaining([
-              expect.objectContaining({
-                details: expect.objectContaining({ bucket: 'available' }),
-              }),
-              expect.objectContaining({
-                details: expect.objectContaining({ bucket: 'pending' }),
-              }),
-              expect.objectContaining({
-                details: expect.objectContaining({ bucket: 'blocked' }),
-              }),
-            ]),
-          }),
-        }),
+        data: dataMatcher,
       }),
     );
   });

@@ -1,6 +1,8 @@
 import { MarketplaceTreasuryBucket, MarketplaceTreasuryLedgerKind } from '@prisma/client';
 
 import { MarketplaceTreasuryMaturationService } from './marketplace-treasury-maturation.service';
+import { partialMatch } from '../../test/helpers/match-instance';
+
 describe('MarketplaceTreasuryMaturationService.matureDueCredits', () => {
   it('moves due marketplace fee credits from pending to available using append-only entries', async () => {
     const prisma = {
@@ -42,7 +44,7 @@ describe('MarketplaceTreasuryMaturationService.matureDueCredits', () => {
 
     expect(prisma.marketplaceTreasuryLedger.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({
+        where: partialMatch({
           kind: MarketplaceTreasuryLedgerKind.MARKETPLACE_FEE_CREDIT,
           direction: 'credit',
           bucket: MarketplaceTreasuryBucket.PENDING,

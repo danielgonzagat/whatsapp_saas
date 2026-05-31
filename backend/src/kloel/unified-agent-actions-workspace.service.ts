@@ -8,23 +8,34 @@ import { chatCompletionWithFallback } from './openai-wrapper';
 import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { actionGetWorkspaceStatus as actionGetWorkspaceStatusFn } from './unified-agent-actions-workspace.helpers';
-import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
-import { MindGuardsService } from './mind-guards.service';
-import type { MindActionContext } from './mind-code-native.types';
+import { MindGuardContextBuilderService } from './mind/policy/mind-guard-context-builder.service';
+import { MindGuardsService } from './mind/policy/mind-guards.service';
+import type { MindActionContext } from './mind/policy/mind-code-native.types';
 import { MindService } from './mind.service';
 
 import type { UnknownRecord } from '../common/types';
-import { readStringOr as readString } from '../common/parse';
-import { WHITESPACE_G_RE } from '../common/regex';
+import {
+  broadcastDecisionSource,
+  buildAIPersonaData,
+  buildAutopilotConfig,
+  buildFlowMemoryKey,
+  buildFlowMemoryValue,
+  buildProductMemoryKey,
+  buildProductMemoryUpdate,
+  buildProductMemoryValue,
+  coerceString,
+  defaultBroadcastWindowWhenMindUnavailable,
+  defaultChannelChoiceWhenMindUnavailable,
+  isDeterministicPipeline,
+  readRecord,
+  resolveBroadcastChannels,
+  resolveBroadcastScheduleAt,
+  resolvePredecidedBroadcastWindow,
+  resolvePredecidedChannelChoice,
+} from './unified-agent-actions-workspace.helpers';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
+
 type MemoryValue = Record<string, unknown>;
-
-function isDeterministicPipeline(context?: UnknownRecord): boolean {
-  return context?.deterministicPipeline === true;
-}
-
-function readRecord(value: unknown): UnknownRecord | null {
-  return typeof value === 'object' && value !== null ? (value as UnknownRecord) : null;
-}
 
 /**
  * Handles workspace, product, flow, and AI persona tool actions for the Unified Agent.
@@ -42,16 +53,16 @@ export class UnifiedAgentActionsWorkspaceService {
     @Optional() private readonly mind?: MindService,
     @Optional() private readonly guardContextBuilder?: MindGuardContextBuilderService,
     @Optional() private readonly guards?: MindGuardsService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {}
 
-  // ───────── helpers ─────────
-
-  str(v: unknown, fb = ''): string {
-    return typeof v === 'string'
-      ? v
-      : typeof v === 'number' || typeof v === 'boolean'
-        ? String(v)
-        : fb;
+  /**
+   * Canonical Brain → Mind memory delegate. Routes through the
+   * `MindMemoryItemService` alias when injected, falling back to the raw
+   * Prisma delegate so DI gaps never break behaviour. Byte-identical surface.
+   */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
   }
 
   private async updateWorkspaceProviderSettings(
@@ -96,7 +107,7 @@ export class UnifiedAgentActionsWorkspaceService {
       };
     }
 
-    const existingMem = await this.prisma.kloelMemory.findFirst({
+    const existingMem = await this.mindMemoryItems.findFirst({
       where: { workspaceId, type: 'product' },
       orderBy: { createdAt: 'desc' },
       select: { key: true, value: true },
@@ -114,25 +125,14 @@ export class UnifiedAgentActionsWorkspaceService {
       };
     }
 
-    const productKey = `product_${Date.now()}_${String(args.name || '')
-      .toLowerCase()
-      .replace(WHITESPACE_G_RE, '_')}`;
-    await this.prisma.kloelMemory.create({
+    const productKey = buildProductMemoryKey(args);
+    await this.mindMemoryItems.create({
       data: {
         workspaceId,
         key: productKey,
         type: 'product',
         category: 'products',
-        value: {
-          name: args.name,
-          price: args.price,
-          description: args.description || '',
-          category: args.category || 'default',
-          imageUrl: args.imageUrl || null,
-          paymentLink: args.paymentLink || null,
-          active: true,
-          createdAt: new Date().toISOString(),
-        },
+        value: buildProductMemoryValue(args),
       },
     });
     let dbProductId: string | null = null;
@@ -140,7 +140,7 @@ export class UnifiedAgentActionsWorkspaceService {
       const dbProduct = await this.prisma.product.create({
         data: {
           workspaceId,
-          name: this.str(args.name),
+          name: coerceString(args.name),
           price: args.price || 0,
           description: args.description || '',
           category: args.category || 'default',
@@ -175,14 +175,7 @@ export class UnifiedAgentActionsWorkspaceService {
           return { success: false as const, error: 'Produto não encontrado' };
         }
         const currentValue = product.value as MemoryValue;
-        const updatedValue = {
-          ...currentValue,
-          ...(args.name && { name: args.name }),
-          ...(args.price !== undefined && { price: args.price }),
-          ...(args.description && { description: args.description }),
-          ...(args.active !== undefined && { active: args.active }),
-          updatedAt: new Date().toISOString(),
-        };
+        const updatedValue = buildProductMemoryUpdate(currentValue, args);
         await tx.kloelMemory.updateMany({
           where: { id: product.id, workspaceId },
           data: { value: updatedValue },
@@ -201,21 +194,14 @@ export class UnifiedAgentActionsWorkspaceService {
     if (!args.name) {
       return { success: false, error: 'Flow name is required' };
     }
-    const flowKey = `flow_${Date.now()}_${args.name.toLowerCase().replace(WHITESPACE_G_RE, '_')}`;
-    await this.prisma.kloelMemory.create({
+    const flowKey = buildFlowMemoryKey(args);
+    await this.mindMemoryItems.create({
       data: {
         workspaceId,
         key: flowKey,
         type: 'flow',
         category: 'automation',
-        value: {
-          name: args.name,
-          trigger: args.trigger,
-          triggerValue: args.triggerValue || null,
-          steps: args.steps || [],
-          active: true,
-          createdAt: new Date().toISOString(),
-        },
+        value: buildFlowMemoryValue(args),
       },
     });
     return {
@@ -234,14 +220,14 @@ export class UnifiedAgentActionsWorkspaceService {
       await this.prisma.workspace.update({ where: { id: workspaceId }, data: updates });
     }
     if (args.businessHours) {
-      await this.prisma.kloelMemory.upsert({
+      await this.mindMemoryItems.upsert({
         where: { workspaceId_key: { workspaceId, key: 'businessHours' } },
         create: { workspaceId, key: 'businessHours', type: 'settings', value: args.businessHours },
         update: { value: args.businessHours },
       });
     }
     if (args.autoReplyEnabled !== undefined) {
-      await this.prisma.kloelMemory.upsert({
+      await this.mindMemoryItems.upsert({
         where: { workspaceId_key: { workspaceId, key: 'autoReply' } },
         create: {
           workspaceId,
@@ -260,20 +246,13 @@ export class UnifiedAgentActionsWorkspaceService {
 
   async actionCreateBroadcast(workspaceId: string, args: ToolArgs, context?: UnknownRecord) {
     const broadcastKey = `broadcast_${Date.now()}`;
-    const segment = this.str(args.stage, 'general');
-    const availableChannels = this.resolveBroadcastChannels(args);
+    const segment = coerceString(args.stage, 'general');
+    const availableChannels = resolveBroadcastChannels(args);
     const predecided = isDeterministicPipeline(context);
     const predecidedChannelChoice = readRecord(args.channelChoice);
     const predecidedBroadcastWindow = readRecord(args.broadcastWindow);
     const channelChoice = predecided
-      ? {
-          channel: readString(predecidedChannelChoice?.channel, availableChannels[0] ?? 'whatsapp'),
-          confidence:
-            typeof predecidedChannelChoice?.confidence === 'number'
-              ? predecidedChannelChoice.confidence
-              : 0,
-          fallback: predecidedChannelChoice?.fallback === true,
-        }
+      ? resolvePredecidedChannelChoice(predecidedChannelChoice, availableChannels)
       : this.mind
         ? await this.mind.resolveChannelChoice(
             workspaceId,
@@ -282,23 +261,13 @@ export class UnifiedAgentActionsWorkspaceService {
             new Date().getHours(),
             'broadcast',
           )
-        : { channel: availableChannels[0] ?? 'whatsapp', confidence: 0, fallback: true };
+        : defaultChannelChoiceWhenMindUnavailable(availableChannels);
     const broadcastWindow = predecided
-      ? {
-          window: readString(
-            predecidedBroadcastWindow?.window,
-            args.scheduleAt ? 'operator_fixed' : 'now',
-          ),
-          confidence:
-            typeof predecidedBroadcastWindow?.confidence === 'number'
-              ? predecidedBroadcastWindow.confidence
-              : 0,
-          fallback: predecidedBroadcastWindow?.fallback === true,
-        }
+      ? resolvePredecidedBroadcastWindow(predecidedBroadcastWindow, args.scheduleAt)
       : this.mind
         ? await this.mind.resolveBroadcastWindow(workspaceId, channelChoice.channel, segment)
-        : { window: args.scheduleAt ? 'operator_fixed' : 'now', confidence: 0, fallback: true };
-    const scheduleAt = args.scheduleAt || this.resolveBroadcastScheduleAt(broadcastWindow.window);
+        : defaultBroadcastWindowWhenMindUnavailable(args.scheduleAt);
+    const scheduleAt = args.scheduleAt || resolveBroadcastScheduleAt(broadcastWindow.window);
     const broadcastContext = await this.buildBroadcastGuardContext(workspaceId, {
       campaignActive: true,
       campaignBudgetExhausted: false,
@@ -329,7 +298,7 @@ export class UnifiedAgentActionsWorkspaceService {
     } else {
       contactCount = await this.prisma.contact.count({ where: { workspaceId } });
     }
-    await this.prisma.kloelMemory.create({
+    await this.mindMemoryItems.create({
       data: {
         workspaceId,
         key: broadcastKey,
@@ -344,7 +313,7 @@ export class UnifiedAgentActionsWorkspaceService {
           status: 'pending',
           channel: channelChoice.channel,
           mind: { channelChoice, broadcastWindow },
-          source: predecided ? 'orchestrator_predecided' : 'legacy_action_decision',
+          source: broadcastDecisionSource(predecided),
           decisionTraceId: args.decisionTraceId || null,
           inboundCorrelationId: args.inboundCorrelationId || null,
           createdAt: new Date().toISOString(),
@@ -358,45 +327,9 @@ export class UnifiedAgentActionsWorkspaceService {
       channel: channelChoice.channel,
       scheduleAt,
       mind: { channelChoice, broadcastWindow },
-      source: predecided ? 'orchestrator_predecided' : 'legacy_action_decision',
+      source: broadcastDecisionSource(predecided),
       message: `Broadcast "${args.name}" criado para ${contactCount} contatos`,
     };
-  }
-
-  private resolveBroadcastChannels(args: ToolArgs): string[] {
-    const requested = this.str(args.source).toLowerCase();
-    if (requested) {
-      return [requested];
-    }
-    return ['whatsapp', 'instagram', 'messenger', 'email'];
-  }
-
-  private resolveBroadcastScheduleAt(window: string): string | null {
-    const now = new Date();
-    if (window === 'pause') {
-      return null;
-    }
-    if (window === 'now') {
-      return now.toISOString();
-    }
-    const scheduled = new Date(now);
-    if (window === 'tonight_20h') {
-      scheduled.setHours(20, 0, 0, 0);
-      if (scheduled <= now) {
-        scheduled.setDate(scheduled.getDate() + 1);
-      }
-      return scheduled.toISOString();
-    }
-    if (window === 'friday_21h') {
-      const friday = 5;
-      const daysUntilFriday = (friday - scheduled.getDay() + 7) % 7 || 7;
-      scheduled.setDate(scheduled.getDate() + daysUntilFriday);
-      scheduled.setHours(21, 0, 0, 0);
-      return scheduled.toISOString();
-    }
-    scheduled.setDate(scheduled.getDate() + 1);
-    scheduled.setHours(9, 0, 0, 0);
-    return scheduled.toISOString();
   }
 
   private async buildBroadcastGuardContext(
@@ -407,15 +340,8 @@ export class UnifiedAgentActionsWorkspaceService {
   }
 
   async actionConfigureAIPersona(workspaceId: string, args: ToolArgs) {
-    const personaData = {
-      name: args.name || 'KLOEL',
-      personality: args.personality || 'Profissional, amigável e focada em resultados',
-      tone: args.tone || 'friendly',
-      language: args.language || 'pt-BR',
-      useEmojis: args.useEmojis !== undefined ? args.useEmojis : true,
-      updatedAt: new Date().toISOString(),
-    };
-    await this.prisma.kloelMemory.upsert({
+    const personaData = buildAIPersonaData(args);
+    await this.mindMemoryItems.upsert({
       where: { workspaceId_key: { workspaceId, key: 'aiPersona' } },
       create: {
         workspaceId,
@@ -433,21 +359,14 @@ export class UnifiedAgentActionsWorkspaceService {
   }
 
   async actionToggleAutopilot(workspaceId: string, args: ToolArgs) {
-    const { enabled, mode = 'full', workingHoursOnly = false } = args;
-    const autopilotConfig = {
-      enabled,
-      mode,
-      workingHoursOnly,
-      updatedAt: new Date().toISOString(),
-      updatedBy: 'kloel-ai',
-    };
+    const autopilotConfig = buildAutopilotConfig(args);
     await this.updateWorkspaceProviderSettings(workspaceId, (s) => ({
       ...s,
       autopilot: autopilotConfig,
     }));
     return {
       success: true,
-      message: `Autopilot ${enabled ? 'ativado' : 'desativado'} no modo ${mode}`,
+      message: `Autopilot ${autopilotConfig.enabled ? 'ativado' : 'desativado'} no modo ${autopilotConfig.mode}`,
       config: autopilotConfig,
     };
   }
@@ -480,7 +399,11 @@ Tipos de nós disponíveis: message, wait, condition, aiNode, mediaNode, endNode
       await this.planLimits
         .trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500)
         .catch(() => {});
-      const flowData = JSON.parse(completion.choices[0]?.message?.content || '{}');
+      const flowData = JSON.parse(completion.choices[0]?.message?.content || '{}') as {
+        name?: string;
+        nodes?: Prisma.InputJsonValue[];
+        edges?: Prisma.InputJsonValue[];
+      };
       const flow = await this.prisma.flow.create({
         data: {
           name: flowData.name || `Fluxo: ${objective}`,

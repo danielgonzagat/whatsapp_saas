@@ -2,7 +2,7 @@
 
 import { readFileSync, existsSync, readdirSync, unlinkSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
-import { SOURCE_DIR } from './hud-audit.constants.mjs';
+import { MIRROR_ROOT, SOURCE_DIR } from './hud-audit.constants.mjs';
 
 export function findOrphans() {
   const sidecarSuffixes = ['.tier.json', '.phase.json', '.coverage.json', '.findings.json'];

@@ -12,7 +12,7 @@ import { ValidationInput } from './checkout-theme-shared';
 import type { CheckoutVisualTheme } from './checkout-theme-tokens';
 
 /** Lead form state type. */
-export type LeadFormState = {
+export type ContactFormState = {
   name: string;
   email: string;
   cpf: string;
@@ -29,7 +29,7 @@ export type LeadFormState = {
 
 /** Lead field change type. */
 export type LeadFieldChange = (
-  field: keyof LeadFormState,
+  field: keyof ContactFormState,
 ) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
 
 interface FieldProps {
@@ -154,7 +154,7 @@ interface IdentityPanelProps {
   theme: CheckoutVisualTheme;
   config?: PublicCheckoutConfig | undefined;
   fid: string;
-  form: LeadFormState;
+  form: ContactFormState;
   updateField: LeadFieldChange;
   submitError: string;
   step: number;
@@ -294,7 +294,7 @@ interface DeliveryPanelProps {
   theme: CheckoutVisualTheme;
   config?: PublicCheckoutConfig | undefined;
   fid: string;
-  form: LeadFormState;
+  form: ContactFormState;
   updateField: LeadFieldChange;
   submitError: string;
   step: number;

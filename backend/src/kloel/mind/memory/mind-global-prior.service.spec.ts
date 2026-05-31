@@ -1,6 +1,85 @@
 import { MindGlobalPriorService } from './mind-global-prior.service';
+import { partialMatch } from '../../../../test/helpers/match-instance';
 
 describe('MindGlobalPriorService', () => {
+  describe('getPriorTuple', () => {
+    it('returns null when no arms exist for the action', async () => {
+      const prisma = {
+        mindGlobalPrior: { findFirst: jest.fn() },
+        workspace: { findMany: jest.fn() },
+        mindBanditArm: { findMany: jest.fn().mockResolvedValue([]) },
+      };
+      const service = new MindGlobalPriorService(prisma as never);
+
+      const result = await service.getPriorTuple('whatsapp', 'followup', 'send_audio');
+
+      expect(result).toBeNull();
+      expect(prisma.mindBanditArm.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { decisionType: 'followup', arm: 'send_audio', pulls: { gt: 0 } },
+        }),
+      );
+    });
+
+    it('aggregates alpha/beta from multiple workspace arms and returns Beta-posterior mean', async () => {
+      const prisma = {
+        mindGlobalPrior: { findFirst: jest.fn() },
+        workspace: { findMany: jest.fn() },
+        mindBanditArm: {
+          findMany: jest.fn().mockResolvedValue([
+            { alpha: 9, beta: 3, pulls: 12 },
+            { alpha: 5, beta: 5, pulls: 10 },
+          ]),
+        },
+      };
+      const service = new MindGlobalPriorService(prisma as never);
+
+      const result = await service.getPriorTuple('whatsapp', 'offer', 'offer_a');
+
+      expect(result).not.toBeNull();
+      // totalAlpha = 1 + 9 + 5 = 15, totalBeta = 1 + 3 + 5 = 9 → mean = 15/24 ≈ 0.625
+      expect(result!.mean).toBeCloseTo(15 / 24, 5);
+      expect(result!.observations).toBe(22);
+    });
+
+    it('returns correct observations as sum of pulls across workspaces', async () => {
+      const prisma = {
+        mindGlobalPrior: { findFirst: jest.fn() },
+        workspace: { findMany: jest.fn() },
+        mindBanditArm: {
+          findMany: jest.fn().mockResolvedValue([
+            { alpha: 3, beta: 7, pulls: 10 },
+            { alpha: 2, beta: 8, pulls: 10 },
+          ]),
+        },
+      };
+      const service = new MindGlobalPriorService(prisma as never);
+
+      const result = await service.getPriorTuple('sms', 'timing', 'send_at_9am');
+
+      expect(result!.observations).toBe(20);
+    });
+
+    it('channel parameter is forwarded (does not throw) and query filters by decisionType+arm', async () => {
+      const prisma = {
+        mindGlobalPrior: { findFirst: jest.fn() },
+        workspace: { findMany: jest.fn() },
+        mindBanditArm: {
+          findMany: jest.fn().mockResolvedValue([{ alpha: 2, beta: 2, pulls: 4 }]),
+        },
+      };
+      const service = new MindGlobalPriorService(prisma as never);
+
+      await service.getPriorTuple('email', 'promo', 'coupon_10pct');
+
+      expect(prisma.mindBanditArm.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: partialMatch({ decisionType: 'promo', arm: 'coupon_10pct' }),
+        }),
+      );
+    });
+  });
+
   describe('lookupPrior', () => {
     it('returns alpha/beta derived from prior mean/variance', async () => {
       const prior = {

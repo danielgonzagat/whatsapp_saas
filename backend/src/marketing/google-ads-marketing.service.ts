@@ -1,7 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { createHmac, timingSafeEqual } from 'crypto';
-import { decryptMetaToken, encryptMetaToken } from '../meta/meta-token-crypto';
+import {
+  computeGoogleAdsExpiresAt,
+  decryptGoogleAdsTokenOrPlain,
+  encryptGoogleAdsTokenOrPlain,
+  GOOGLE_ADS_CURRENT_KEY_VERSION,
+  GOOGLE_ADS_PLATFORM,
+  googleAdsCredentialWhere,
+} from '../integrations/google-ads.helpers';
+import { decryptMetaToken } from '../meta/meta-token-crypto';
 import { PrismaService } from '../prisma/prisma.service';
 
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
@@ -76,11 +84,6 @@ function verifyState(rawState: unknown, secret: string): SignedStatePayload | nu
   }
 }
 
-function expiresAtFromSeconds(seconds: unknown) {
-  const expiresIn = Number(seconds || 0);
-  return expiresIn > 0 ? new Date(Date.now() + expiresIn * 1000).toISOString() : null;
-}
-
 function normalizeCustomerId(input: unknown): string {
   if (typeof input === 'number' && Number.isFinite(input)) {
     return String(input).replace(/\D/g, '');
@@ -108,14 +111,23 @@ export class GoogleAdsMarketingService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getStatus(workspaceId: string) {
+    const credential = await this.readCanonicalCredential(workspaceId);
     const googleAds = await this.readGoogleAdsSettings(workspaceId);
+    // Canonical IntegrationCredential is the source of truth for connection state.
+    // providerSettings supplies customerIds (no canonical column) and a legacy fallback.
+    const connected = credential ? credential.status === 'connected' : Boolean(googleAds.connected);
+    const loginCustomerId =
+      credential?.loginCustomerId ??
+      (typeof googleAds.loginCustomerId === 'string' ? googleAds.loginCustomerId : null);
+    const expiresAt =
+      credential?.expiresAt?.toISOString() ??
+      (typeof googleAds.expiresAt === 'string' ? googleAds.expiresAt : null);
     return {
-      connected: Boolean(googleAds.connected),
-      status: googleAds.connected ? 'connected' : 'disconnected',
+      connected,
+      status: connected ? 'connected' : credential?.status || 'disconnected',
       customerIds: Array.isArray(googleAds.customerIds) ? googleAds.customerIds : [],
-      loginCustomerId:
-        typeof googleAds.loginCustomerId === 'string' ? googleAds.loginCustomerId : null,
-      expiresAt: typeof googleAds.expiresAt === 'string' ? googleAds.expiresAt : null,
+      loginCustomerId,
+      expiresAt,
       clientConfigured: Boolean(this.tryReadClientId()),
       secretConfigured: Boolean(this.tryReadClientSecret()),
       developerTokenConfigured: Boolean(this.tryReadDeveloperToken()),
@@ -172,18 +184,53 @@ export class GoogleAdsMarketingService {
     }
 
     const currentSettings = await this.readWorkspaceProviderSettings(workspaceId);
+    const loginCustomerId = readString(currentSettings.googleAds?.loginCustomerId);
+
+    // Canonical token store: persist OAuth tokens into the typed IntegrationCredential
+    // model (single source of truth, shared with the integrations Google Ads provider).
+    const encryptedAccessToken =
+      encryptGoogleAdsTokenOrPlain(token.access_token) || token.access_token;
+    const refreshTokenInput = token.refresh_token
+      ? encryptGoogleAdsTokenOrPlain(token.refresh_token) || token.refresh_token
+      : this.resolveExistingRefreshToken(currentSettings);
+    const expiresAt = computeGoogleAdsExpiresAt(
+      typeof token.expires_in === 'number' ? token.expires_in : undefined,
+    );
+
+    await this.prisma.integrationCredential.upsert({
+      where: googleAdsCredentialWhere(workspaceId),
+      create: {
+        workspaceId,
+        platform: GOOGLE_ADS_PLATFORM,
+        accessToken: encryptedAccessToken,
+        refreshToken: refreshTokenInput || null,
+        expiresAt,
+        keyVersion: GOOGLE_ADS_CURRENT_KEY_VERSION,
+        loginCustomerId,
+        status: 'connected',
+      },
+      update: {
+        accessToken: encryptedAccessToken,
+        refreshToken: refreshTokenInput || null,
+        expiresAt,
+        keyVersion: GOOGLE_ADS_CURRENT_KEY_VERSION,
+        loginCustomerId,
+        status: 'connected',
+        updatedAt: new Date(),
+      },
+    });
+
+    // providerSettings retains only non-token metadata (customerIds list has no
+    // canonical column) and a connection marker for legacy readers; tokens are
+    // intentionally NOT written here anymore.
     const nextGoogleAds = {
       connected: true,
       status: 'connected',
-      accessToken: encryptMetaToken(token.access_token),
-      refreshToken: token.refresh_token
-        ? encryptMetaToken(token.refresh_token)
-        : readString(currentSettings.googleAds?.refreshToken),
       scope: token.scope || 'https://www.googleapis.com/auth/adwords',
-      expiresAt: expiresAtFromSeconds(token.expires_in),
+      expiresAt: expiresAt.toISOString(),
       connectedAt: new Date().toISOString(),
       customerIds: readStringArray(currentSettings.googleAds?.customerIds),
-      loginCustomerId: readString(currentSettings.googleAds?.loginCustomerId),
+      loginCustomerId,
     };
 
     await this.prisma.workspace.update({
@@ -291,12 +338,52 @@ export class GoogleAdsMarketingService {
   }
 
   private async resolveAccessToken(workspaceId: string) {
-    const settings = await this.readGoogleAdsSettings(workspaceId);
-    const accessToken = decryptMetaToken(readString(settings.accessToken));
-    if (!accessToken) {
-      throw new Error('google_ads_not_connected');
+    // Canonical source of truth: the typed IntegrationCredential model.
+    const credential = await this.readCanonicalCredential(workspaceId);
+    if (credential?.accessToken) {
+      const canonicalToken = decryptGoogleAdsTokenOrPlain(credential.accessToken);
+      if (canonicalToken) {
+        return canonicalToken;
+      }
     }
-    return accessToken;
+
+    // Migration-safe read fallback for workspaces connected before unification,
+    // whose tokens still live in providerSettings.googleAds (Meta-crypto encoded).
+    const settings = await this.readGoogleAdsSettings(workspaceId);
+    const legacyToken = decryptMetaToken(readString(settings.accessToken));
+    if (legacyToken) {
+      return legacyToken;
+    }
+
+    throw new Error('google_ads_not_connected');
+  }
+
+  private async readCanonicalCredential(workspaceId: string) {
+    return this.prisma.integrationCredential.findUnique({
+      where: googleAdsCredentialWhere(workspaceId),
+      select: {
+        accessToken: true,
+        refreshToken: true,
+        expiresAt: true,
+        loginCustomerId: true,
+        status: true,
+      },
+    });
+  }
+
+  private resolveExistingRefreshToken(
+    currentSettings: Awaited<
+      ReturnType<GoogleAdsMarketingService['readWorkspaceProviderSettings']>
+    >,
+  ): string | null {
+    const legacyRefresh = readString(currentSettings.googleAds?.refreshToken);
+    if (!legacyRefresh) {
+      return null;
+    }
+    // Re-encrypt legacy Meta-crypto refresh tokens under the canonical Google-Ads
+    // crypto so the unified store stays consistently encoded.
+    const decoded = decryptMetaToken(legacyRefresh) || legacyRefresh;
+    return encryptGoogleAdsTokenOrPlain(decoded) || decoded;
   }
 
   private async googleAdsFetch(path: string, accessToken: string, init?: RequestInit) {

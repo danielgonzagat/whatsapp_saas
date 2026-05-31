@@ -6,6 +6,8 @@ import { SmartPaymentService } from './smart-payment.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
+import { partialMatch, stringContains } from '../../test/helpers/match-instance';
+import { castMock } from '../../test/helpers/cast-mock';
 
 jest.mock('./openai-wrapper', () => ({
   chatCompletionWithFallback: jest.fn().mockResolvedValue({
@@ -209,20 +211,22 @@ describe('KloelLeadProcessorService', () => {
       expect(abiBuilder.build).toHaveBeenCalledWith(
         expect.objectContaining({
           audience: 'public',
-          currentInput: expect.objectContaining({
+          currentInput: partialMatch({
             raw: 'Mensagem',
             channel: 'whatsapp',
           }),
         }),
       );
-      const completionInput = (chatCompletionWithFallback as jest.Mock).mock.calls.at(-1)?.[1];
+      const completionInput = castMock<[unknown, { messages: { at(i: number): unknown }[] }][]>(
+        (chatCompletionWithFallback as jest.Mock).mock.calls,
+      ).at(-1)?.[1];
       expect(completionInput.messages).toEqual(
         expect.not.arrayContaining([expect.objectContaining({ role: 'system' })]),
       );
       expect(completionInput.messages.at(-1)).toEqual(
         expect.objectContaining({
           role: 'user',
-          content: expect.stringContaining('"cognitiveState"'),
+          content: stringContains('"cognitiveState"'),
         }),
       );
     });

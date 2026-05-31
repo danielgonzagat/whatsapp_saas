@@ -93,16 +93,14 @@ describe('AuthPasswordService — lookup, anonymous, register', () => {
         3,
         60_000,
       );
-      expect(ctx.prismaMock.workspace.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            name: 'Guest Workspace',
-            providerSettings: expect.objectContaining({
-              guestMode: true,
-            }),
-          }),
-        }),
-      );
+      expect(ctx.prismaMock.workspace.create).toHaveBeenCalledTimes(1);
+      const workspaceCreateArg = (
+        ctx.prismaMock.workspace.create.mock.calls[0] as unknown[]
+      )[0] as {
+        data: { name: string; providerSettings: { guestMode: boolean } };
+      };
+      expect(workspaceCreateArg.data.name).toBe('Guest Workspace');
+      expect(workspaceCreateArg.data.providerSettings.guestMode).toBe(true);
       expect(result.access_token).toBe('token123');
     });
 

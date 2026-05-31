@@ -5,25 +5,14 @@ import { StripeService } from '../../billing/stripe.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { forEachSequential } from '../../common/async-sequence';
 import { LedgerService } from '../ledger/ledger.service';
-import type { SplitRole } from '../split/split.types';
 
 import { ConnectService } from './connect.service';
-
-import { asRecord, asString } from '../../common/types';
-interface PersistedManualTransfer {
-  role: SplitRole;
-  accountId: string;
-  amountCents: string;
-  stripeTransferId: string;
-}
-
-interface ReversalSnapshot {
-  buyerPaidCents: bigint;
-  transferGroup: string | null;
-  sellerStripeAccountId: string | null;
-  sellerDestinationAmountCents: bigint;
-  manualTransfers: PersistedManualTransfer[];
-}
+import {
+  buildSnapshot,
+  planProportionalReversals,
+  type PlannedReversal,
+  type ReversalSnapshot,
+} from './connect-reversal.service.helpers';
 
 /** Process refund reversal input shape. */
 export interface ProcessRefundReversalInput {
@@ -57,127 +46,6 @@ export interface ProcessReversalResult {
   ledgerDebits: number;
   /** Reversed amount cents property. */
   reversedAmountCents: bigint;
-}
-
-type PlannedReversal = {
-  role: SplitRole;
-  accountId: string;
-  amountCents: bigint;
-  stripeTransferId: string;
-};
-
-const ROLE_PRIORITY: Record<SplitRole, number> = {
-  supplier: 1,
-  affiliate: 2,
-  coproducer: 3,
-  manager: 4,
-  seller: 5,
-};
-
-function parseBigIntString(value: unknown): bigint {
-  if (typeof value === 'string' && /^-?\d+$/.test(value)) {
-    return BigInt(value);
-  }
-  if (typeof value === 'number' && Number.isInteger(value)) {
-    return BigInt(value);
-  }
-  return 0n;
-}
-
-function parseManualTransfers(value: unknown): PersistedManualTransfer[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-  return value.filter((item): item is PersistedManualTransfer => {
-    const row = asRecord(item);
-    return (
-      row !== null &&
-      typeof row.role === 'string' &&
-      typeof row.accountId === 'string' &&
-      typeof row.amountCents === 'string' &&
-      typeof row.stripeTransferId === 'string'
-    );
-  });
-}
-
-function buildSnapshot(webhookData: unknown): ReversalSnapshot | null {
-  const root = asRecord(webhookData);
-  if (!root) {
-    return null;
-  }
-
-  const splitInput = asRecord(root.splitInput);
-  const connectPostSale = asRecord(root.connectPostSale);
-  if (!splitInput || !connectPostSale) {
-    return null;
-  }
-
-  return {
-    buyerPaidCents: parseBigIntString(splitInput.buyerPaidCents),
-    transferGroup: asString(connectPostSale.transferGroup),
-    sellerStripeAccountId: asString(connectPostSale.sellerStripeAccountId),
-    sellerDestinationAmountCents: parseBigIntString(connectPostSale.sellerDestinationAmountCents),
-    manualTransfers: parseManualTransfers(connectPostSale.transfers),
-  };
-}
-
-function planProportionalReversals(
-  lines: Array<{
-    role: SplitRole;
-    accountId: string;
-    amountCents: bigint;
-    stripeTransferId: string;
-  }>,
-  requestedAmountCents: bigint,
-  buyerPaidCents: bigint,
-): PlannedReversal[] {
-  if (requestedAmountCents <= 0n || buyerPaidCents <= 0n || lines.length === 0) {
-    return [];
-  }
-
-  const totalEligible = lines.reduce((sum, line) => sum + line.amountCents, 0n);
-  const totalTarget = (totalEligible * requestedAmountCents) / buyerPaidCents;
-  const withFractions = lines.map((line) => {
-    const numerator = line.amountCents * requestedAmountCents;
-    return {
-      ...line,
-      floorAmount: numerator / buyerPaidCents,
-      remainder: numerator % buyerPaidCents,
-    };
-  });
-  const sumFloors = withFractions.reduce((sum, line) => sum + line.floorAmount, 0n);
-  let remainderToDistribute = totalTarget - sumFloors;
-
-  const sorted = [...withFractions].sort((a, b) => {
-    if (a.remainder === b.remainder) {
-      if (ROLE_PRIORITY[a.role] === ROLE_PRIORITY[b.role]) {
-        return a.stripeTransferId.localeCompare(b.stripeTransferId);
-      }
-      return ROLE_PRIORITY[a.role] - ROLE_PRIORITY[b.role];
-    }
-    return a.remainder > b.remainder ? -1 : 1;
-  });
-
-  const bonus = new Map<string, bigint>();
-  for (const line of sorted) {
-    if (remainderToDistribute <= 0n) {
-      break;
-    }
-    if (line.floorAmount >= line.amountCents) {
-      continue;
-    }
-    bonus.set(line.stripeTransferId, (bonus.get(line.stripeTransferId) ?? 0n) + 1n);
-    remainderToDistribute -= 1n;
-  }
-
-  return withFractions
-    .map((line) => ({
-      role: line.role,
-      accountId: line.accountId,
-      stripeTransferId: line.stripeTransferId,
-      amountCents: line.floorAmount + (bonus.get(line.stripeTransferId) ?? 0n),
-    }))
-    .filter((line) => line.amountCents > 0n);
 }
 
 /** Connect reversal service. */

@@ -59,7 +59,7 @@ describe('TeamService', () => {
       invitation: {
         findMany: jest.fn(),
         findUnique: jest.fn(),
-        create: jest.fn(),
+        create: jest.fn<Promise<unknown>, [InvitationCreateArgs]>(),
         delete: jest.fn(),
       },
       workspace: { findUnique: jest.fn() },
@@ -260,7 +260,7 @@ describe('TeamService', () => {
   describe('acceptInvite', () => {
     const token = 'valid-token';
     const name = 'Bob';
-    const password = 'pass' + 'word123';
+    const plainCredential = 'fixture-plain-credential';
 
     it('creates agent and deletes invitation on valid token', async () => {
       const invite = {
@@ -280,7 +280,7 @@ describe('TeamService', () => {
       });
       prisma.invitation.delete.mockResolvedValue(invite);
 
-      const result = await service.acceptInvite(token, name, password);
+      const result = await service.acceptInvite(token, name, plainCredential);
 
       expect(result.id).toBe('a-new');
       expect(prisma.agent.create).toHaveBeenCalledWith({
@@ -300,7 +300,7 @@ describe('TeamService', () => {
     it('throws BadRequestException when token does not exist', async () => {
       prisma.invitation.findUnique.mockResolvedValue(null);
 
-      await expect(service.acceptInvite(token, name, password)).rejects.toThrow(
+      await expect(service.acceptInvite(token, name, plainCredential)).rejects.toThrow(
         BadRequestException,
       );
     });
@@ -311,7 +311,7 @@ describe('TeamService', () => {
         expiresAt: new Date(Date.now() - 86400000), // yesterday
       });
 
-      await expect(service.acceptInvite(token, name, password)).rejects.toThrow(
+      await expect(service.acceptInvite(token, name, plainCredential)).rejects.toThrow(
         BadRequestException,
       );
     });

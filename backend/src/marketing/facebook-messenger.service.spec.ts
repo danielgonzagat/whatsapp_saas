@@ -1,4 +1,5 @@
 import { FacebookMessengerService } from './facebook-messenger.service';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 describe('FacebookMessengerService', () => {
   const graphApiPost = jest.fn();
@@ -6,13 +7,22 @@ describe('FacebookMessengerService', () => {
 
   const fbMessageCreate = jest.fn();
   const fbMessageFindMany = jest.fn();
+  const fbMessageFindFirst = jest.fn();
   const fbMessageFindUnique = jest.fn();
   const fbMessageUpsert = jest.fn();
   const fbMessageUpdateMany = jest.fn();
+  const fbMessageCount = jest.fn();
+  const fbMessageGroupBy = jest.fn();
   const metaConnectionFindUnique = jest.fn();
   const metaConnectionFindFirst = jest.fn();
 
   let service: FacebookMessengerService;
+
+  type PrismaWriteArg = {
+    where: Record<string, unknown>;
+    data: Record<string, unknown>;
+    take?: number;
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -21,9 +31,12 @@ describe('FacebookMessengerService', () => {
         fbMessage: {
           create: fbMessageCreate,
           findMany: fbMessageFindMany,
+          findFirst: fbMessageFindFirst,
           findUnique: fbMessageFindUnique,
           upsert: fbMessageUpsert,
           updateMany: fbMessageUpdateMany,
+          count: fbMessageCount,
+          groupBy: fbMessageGroupBy,
         },
         metaConnection: {
           findFirst: metaConnectionFindFirst,
@@ -61,7 +74,7 @@ describe('FacebookMessengerService', () => {
       );
       expect(fbMessageCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: partialMatch({
             workspaceId: 'ws-1',
             pageId: 'page-1',
             direction: 'OUTBOUND',
@@ -83,7 +96,7 @@ describe('FacebookMessengerService', () => {
 
       expect(fbMessageCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: partialMatch({
             deliveryStatus: 'FAILED',
             errorCode: '100',
             errorMessage: 'Invalid PSID',
@@ -118,7 +131,7 @@ describe('FacebookMessengerService', () => {
       expect(fbMessageUpsert).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { workspaceId_mid: { workspaceId: 'ws-1', mid: 'inbound-mid-1' } },
-          create: expect.objectContaining({
+          create: partialMatch({
             direction: 'INBOUND',
             deliveryStatus: 'DELIVERED',
             text: 'Hello support',
@@ -151,7 +164,7 @@ describe('FacebookMessengerService', () => {
 
       expect(fbMessageUpsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          create: expect.objectContaining({
+          create: partialMatch({
             text: null,
           }),
         }),
@@ -167,6 +180,7 @@ describe('FacebookMessengerService', () => {
         delivery: { mids: ['mid-1', 'mid-2'], watermark: 12345 },
       });
 
+      const [deliveredArg] = fbMessageUpdateMany.mock.calls[0] as [PrismaWriteArg];
       expect(fbMessageUpdateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: {
@@ -174,13 +188,13 @@ describe('FacebookMessengerService', () => {
             mid: { in: ['mid-1', 'mid-2'] },
             direction: 'OUTBOUND',
           },
-          data: expect.objectContaining({
+          data: partialMatch({
             deliveryStatus: 'DELIVERED',
-            deliveredAt: fbMessageUpdateMany.mock.calls[0][0].data.deliveredAt,
+            deliveredAt: deliveredArg.data.deliveredAt,
           }),
         }),
       );
-      expect(fbMessageUpdateMany.mock.calls[0][0].data.deliveredAt).toBeInstanceOf(Date);
+      expect(deliveredArg.data.deliveredAt).toBeInstanceOf(Date);
     });
 
     it('skips update when mids array is empty', async () => {
@@ -207,6 +221,7 @@ describe('FacebookMessengerService', () => {
         read: { watermark: 1712350000 },
       });
 
+      const [readArg] = fbMessageUpdateMany.mock.calls[0] as [PrismaWriteArg];
       expect(fbMessageUpdateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: {
@@ -214,13 +229,13 @@ describe('FacebookMessengerService', () => {
             senderPsid: 'psid-user',
             deliveryStatus: 'DELIVERED',
           },
-          data: expect.objectContaining({
+          data: partialMatch({
             deliveryStatus: 'READ',
-            readAt: fbMessageUpdateMany.mock.calls[0][0].data.readAt,
+            readAt: readArg.data.readAt,
           }),
         }),
       );
-      expect(fbMessageUpdateMany.mock.calls[0][0].data.readAt).toBeInstanceOf(Date);
+      expect(readArg.data.readAt).toBeInstanceOf(Date);
     });
 
     it('skips when watermark is absent', async () => {
@@ -260,7 +275,7 @@ describe('FacebookMessengerService', () => {
 
       expect(fbMessageUpdateMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ mid: { in: ['mid-1'] } }),
+          where: partialMatch({ mid: { in: ['mid-1'] } }),
         }),
       );
     });
@@ -275,7 +290,7 @@ describe('FacebookMessengerService', () => {
 
       expect(fbMessageUpdateMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ deliveryStatus: 'READ' }),
+          data: partialMatch({ deliveryStatus: 'READ' }),
         }),
       );
     });
@@ -351,6 +366,119 @@ describe('FacebookMessengerService', () => {
         pageId: null,
         pageName: null,
       });
+    });
+  });
+
+  describe('getSummary', () => {
+    it('returns aggregated counters and ISO timestamps scoped to workspace when page is connected', async () => {
+      metaConnectionFindFirst.mockResolvedValue({
+        pageId: 'page-1',
+        pageName: 'My Page',
+      });
+      // Order: inbound, outbound, delivered, read, failed, lastInbound, lastOutbound
+      fbMessageCount
+        .mockResolvedValueOnce(12)
+        .mockResolvedValueOnce(7)
+        .mockResolvedValueOnce(5)
+        .mockResolvedValueOnce(3)
+        .mockResolvedValueOnce(1);
+      const inboundDate = new Date('2026-05-29T10:00:00.000Z');
+      const outboundDate = new Date('2026-05-29T11:30:00.000Z');
+      fbMessageFindFirst
+        .mockResolvedValueOnce({ createdAt: inboundDate })
+        .mockResolvedValueOnce({ createdAt: outboundDate });
+
+      const result = await service.getSummary('ws-1');
+
+      expect(result).toEqual({
+        configured: true,
+        pageId: 'page-1',
+        pageName: 'My Page',
+        totals: { inbound: 12, outbound: 7, delivered: 5, read: 3, failed: 1 },
+        lastInboundAt: inboundDate.toISOString(),
+        lastOutboundAt: outboundDate.toISOString(),
+      });
+      // every count must be scoped to workspaceId
+      for (const call of fbMessageCount.mock.calls as [PrismaWriteArg][]) {
+        expect(call[0]).toMatchObject({ where: partialMatch({ workspaceId: 'ws-1' }) });
+      }
+    });
+
+    it('returns configured=false with zero counters when page is not connected', async () => {
+      metaConnectionFindFirst.mockResolvedValue(null);
+      fbMessageCount.mockResolvedValue(0);
+      fbMessageFindFirst.mockResolvedValue(null);
+
+      const result = await service.getSummary('ws-1');
+
+      expect(result.configured).toBe(false);
+      expect(result.pageId).toBeNull();
+      expect(result.pageName).toBeNull();
+      expect(result.totals).toEqual({ inbound: 0, outbound: 0, delivered: 0, read: 0, failed: 0 });
+      expect(result.lastInboundAt).toBeNull();
+      expect(result.lastOutboundAt).toBeNull();
+    });
+  });
+
+  describe('getContacts', () => {
+    it('returns distinct sender PSIDs with message counts and ISO last-inbound, ordered by recency', async () => {
+      const lastA = new Date('2026-05-29T12:00:00.000Z');
+      const lastB = new Date('2026-05-29T11:00:00.000Z');
+      fbMessageGroupBy.mockResolvedValue([
+        { senderPsid: 'psid-A', _count: { id: 4 }, _max: { createdAt: lastA } },
+        { senderPsid: 'psid-B', _count: { id: 2 }, _max: { createdAt: lastB } },
+      ]);
+
+      const result = await service.getContacts('ws-1', { pageId: 'page-1', limit: 50 });
+
+      expect(fbMessageGroupBy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          by: ['senderPsid'],
+          where: partialMatch({
+            workspaceId: 'ws-1',
+            direction: 'INBOUND',
+            senderPsid: { not: null },
+            pageId: 'page-1',
+          }),
+          orderBy: { _max: { createdAt: 'desc' } },
+          take: 50,
+        }),
+      );
+      expect(result).toEqual([
+        { psid: 'psid-A', messageCount: 4, lastInboundAt: lastA.toISOString() },
+        { psid: 'psid-B', messageCount: 2, lastInboundAt: lastB.toISOString() },
+      ]);
+    });
+
+    it('omits pageId from where clause when not provided', async () => {
+      fbMessageGroupBy.mockResolvedValue([]);
+
+      await service.getContacts('ws-1', { limit: 25 });
+
+      const [callArg] = fbMessageGroupBy.mock.calls[0] as [PrismaWriteArg];
+      expect(callArg.where).not.toHaveProperty('pageId');
+      expect(callArg.take).toBe(25);
+    });
+
+    it('filters out grouped rows with null senderPsid defensively', async () => {
+      fbMessageGroupBy.mockResolvedValue([
+        { senderPsid: null, _count: { id: 99 }, _max: { createdAt: new Date() } },
+        {
+          senderPsid: 'psid-real',
+          _count: { id: 1 },
+          _max: { createdAt: new Date('2026-05-29T00:00:00.000Z') },
+        },
+      ]);
+
+      const result = await service.getContacts('ws-1', { limit: 10 });
+
+      expect(result).toEqual([
+        {
+          psid: 'psid-real',
+          messageCount: 1,
+          lastInboundAt: '2026-05-29T00:00:00.000Z',
+        },
+      ]);
     });
   });
 });

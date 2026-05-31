@@ -81,7 +81,8 @@ import {
   isTestSource,
   buildMirrorSignalIndex,
 } from './obsidian-mirror-daemon-content.mjs';
-
+import { writeGeneratedIndexes } from './obsidian-mirror-daemon-indexes-generated.mjs';
+import { writeGeneratedNote } from './obsidian-mirror-daemon-indexes-notes.mjs';
 
 export function persistManifestState(manifest) {
   withMirrorLock('persist-mirror-state', () => {

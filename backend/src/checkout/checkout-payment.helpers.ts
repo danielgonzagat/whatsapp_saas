@@ -1,59 +1,83 @@
-import { Prisma } from '@prisma/client';
+/**
+ * Checkout payment helpers — barrel re-export.
+ *
+ * Wave 83 split the original 1153-LOC helpers file into four focused modules
+ * to honor the 800-LOC ratchet without touching the money path or any
+ * consumer's import surface. Every symbol historically imported from
+ * `./checkout-payment.helpers` continues to resolve here, byte-for-byte.
+ *
+ * Layout:
+ *   - checkout-payment.types       — pure types + frozen constants
+ *   - checkout-payment.mappers     — pure formatters / normalizers / value mappers
+ *   - checkout-payment.builders    — pure input/output envelope builders
+ *   - checkout-payment.guards      — pure domain guards / asserts
+ *   - checkout-payment.lifecycle   — orchestration (audit / DB tx / lifecycle events)
+ *
+ * No symbol is added, removed, or renamed by this refactor. Money values
+ * remain BigInt-of-integer-cents end-to-end.
+ */
 
-/** Payment status discriminated union used by checkout payment flows. */
-export type CheckoutPaymentStatus = 'APPROVED' | 'DECLINED' | 'PENDING' | 'PROCESSING' | 'CANCELED';
+export {
+  type AuditableFraudAction,
+  BOLETO_EXPIRATION_DAYS,
+  type BoletoDisplayData,
+  type CheckoutLifecycleEmitter,
+  type CheckoutOrderMetadataView,
+  type CheckoutPaymentFailureLogger,
+  type CheckoutPaymentHelperLogger,
+  type CheckoutPaymentMethod,
+  type CheckoutPaymentStatus,
+  EMPTY_BOLETO_DATA,
+  EMPTY_PIX_DATA,
+  FRAUD_ACTION_AUDIT_MAP,
+  MP_WEBHOOK_PATH,
+  PIX_EXPIRATION_MINUTES,
+  type PixDisplayData,
+  STRIPE_THREE_DS_REQUEST_ANY,
+} from './checkout-payment.types';
 
-/** PIX display payload extracted from Stripe PaymentIntent next_action. */
-export type PixDisplayData = {
-  pixQrCode: string | null;
-  pixCopyPaste: string | null;
-  pixExpiresAt: string | null;
-};
+export {
+  buildMercadoPagoBoletoDisplay,
+  buildMercadoPagoPixDisplay,
+  buildPaymentDescription,
+  describeError,
+  extractOrderMetadataView,
+  extractProductName,
+  formatMercadoPagoQrImage,
+  mapMercadoPagoPaymentStatus,
+  mapStripePaymentStatus,
+  normalizeBoletoAddress,
+  readBoletoAddressField,
+  resolveBackendOrigin,
+  toJsonValue,
+  toProviderPaymentMethod,
+} from './checkout-payment.mappers';
 
-/** Map a Stripe PaymentIntent status string to the checkout payment status. */
-export function mapStripePaymentStatus(status?: string | null): CheckoutPaymentStatus {
-  switch (String(status || '').toLowerCase()) {
-    case 'succeeded':
-      return 'APPROVED';
-    case 'processing':
-      return 'PROCESSING';
-    case 'canceled':
-      return 'CANCELED';
-    default:
-      return 'PENDING';
-  }
-}
+export {
+  buildCheckoutPaymentCreatedAuditPayload,
+  buildCheckoutPaymentResult,
+  buildFinancialAlertContext,
+  buildMercadoPagoBoletoChargeInput,
+  buildMercadoPagoBoletoPaymentData,
+  buildMercadoPagoPixChargeInput,
+  buildMercadoPagoPixPaymentData,
+  buildPaymentBreadcrumb,
+  buildPaymentCaptureContext,
+  buildStripeChargeInput,
+  buildStripePaymentData,
+  type CheckoutPaymentFinancialAlert,
+  type CheckoutPaymentSentryCapture,
+} from './checkout-payment.builders';
 
-/** Extract PIX display data from a Stripe PaymentIntent next_action payload. */
-export function extractPixDisplayData(paymentIntent: {
-  next_action?: {
-    type?: string | null;
-    pix_display_qr_code?: {
-      data?: string | null;
-      image_url_png?: string | null;
-      expires_at?: number | null;
-    } | null;
-  } | null;
-}): PixDisplayData {
-  const nextAction = paymentIntent.next_action;
-  const pixAction =
-    nextAction?.type === 'pix_display_qr_code' ? nextAction.pix_display_qr_code : null;
+export { assertCanonicalProvider, enforceCheckoutFraudGate } from './checkout-payment.guards';
 
-  return {
-    pixQrCode: pixAction?.image_url_png || null,
-    pixCopyPaste: pixAction?.data || null,
-    pixExpiresAt:
-      typeof pixAction?.expires_at === 'number'
-        ? new Date(pixAction.expires_at * 1000).toISOString()
-        : null,
-  };
-}
-
-/** Serialize a value to Prisma InputJsonValue, converting BigInt to string. */
-export function toJsonValue(value: unknown): Prisma.InputJsonValue {
-  return JSON.parse(
-    JSON.stringify(value, (_key, currentValue) =>
-      typeof currentValue === 'bigint' ? currentValue.toString() : currentValue,
-    ),
-  ) as Prisma.InputJsonValue;
-}
+export {
+  emitPaymentDeclined,
+  emitPaymentLifecycleEvents,
+  finalizeApprovedCheckoutPayment,
+  logCheckoutFraudDecision,
+  reportCheckoutPaymentFailure,
+  resolveExistingCheckoutPaymentForIdempotency,
+  runApprovedCheckoutPostPaymentEffects,
+  transitionCheckoutOrderToApproved,
+} from './checkout-payment.lifecycle';

@@ -4,6 +4,7 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { MemoryService } from './memory.service';
 import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
 import { chatCompletionWithRetry } from './openai-wrapper';
+import { partialMatch, stringContains } from '../../test/helpers/match-instance';
 
 jest.mock('openai', () => ({
   default: jest.fn().mockImplementation(() => ({
@@ -114,12 +115,12 @@ describe('PdfProcessorService', () => {
 
       const completionInput = mockChatCompletionWithRetry.mock.calls[0][1];
       expect(completionInput.messages).toEqual(
-        expect.not.arrayContaining([expect.objectContaining({ role: 'system' })]),
+        expect.not.arrayContaining([partialMatch({ role: 'system' })]),
       );
       expect(completionInput.messages[0]).toEqual(
-        expect.objectContaining({
+        partialMatch({
           role: 'user',
-          content: expect.stringContaining('contract'),
+          content: stringContains('contract'),
         }),
       );
     });
@@ -129,8 +130,8 @@ describe('PdfProcessorService', () => {
 
       expect(memoryService.saveProduct).toHaveBeenCalledWith(
         wsId,
-        expect.stringContaining('documento_pdf_product_0'),
-        expect.objectContaining({
+        stringContains('documento_pdf_product_0'),
+        partialMatch({
           name: 'Produto A',
           description: 'Descrição A',
           price: 99.9,
@@ -143,7 +144,7 @@ describe('PdfProcessorService', () => {
 
       expect(memoryService.saveMemory).toHaveBeenCalledWith(
         wsId,
-        expect.stringContaining('company_info'),
+        stringContains('company_info'),
         { source: 'doc.pdf' },
         'company_info',
         'Empresa XYZ',
@@ -155,7 +156,7 @@ describe('PdfProcessorService', () => {
 
       expect(memoryService.saveMemory).toHaveBeenCalledWith(
         wsId,
-        expect.stringContaining('sales_script'),
+        stringContains('sales_script'),
         { source: 'doc.pdf' },
         'script',
         'Script de vendas',
@@ -167,10 +168,10 @@ describe('PdfProcessorService', () => {
 
       expect(memoryService.saveMemory).toHaveBeenCalledWith(
         wsId,
-        expect.stringContaining('objection_0'),
+        stringContains('objection_0'),
         { objection: 'Muito caro', response: 'Mas vale a pena' },
         'objection',
-        expect.stringContaining('Muito caro'),
+        stringContains('Muito caro'),
       );
     });
 
@@ -186,7 +187,7 @@ describe('PdfProcessorService', () => {
       const result = await service.processTextWithUsage(wsId, 'Texto', 'doc.pdf');
 
       expect(result.usage).toEqual({ total_tokens: 100 });
-      expect(result.analysis).toEqual(expect.objectContaining({ companyInfo: 'Empresa XYZ' }));
+      expect(result.analysis).toEqual(partialMatch({ companyInfo: 'Empresa XYZ' }));
     });
 
     it('handles empty analysis gracefully', async () => {

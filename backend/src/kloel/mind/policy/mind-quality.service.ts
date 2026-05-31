@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
-import type { MindActionContext } from '../../mind-code-native.types';
+import type { MindActionContext } from './mind-code-native.types';
 
 export type QualityInvariant =
   | 'no_cross_workspace_reads'

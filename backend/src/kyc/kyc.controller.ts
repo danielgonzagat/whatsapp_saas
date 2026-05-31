@@ -22,7 +22,7 @@ import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
-import { ChangePasswordDto } from './dto/change-password.dto';
+import { KycChangePasswordDto } from './dto/change-password.dto';
 import { KycDocumentTypeDto } from './dto/kyc-document-type.dto';
 import { UpdateBankDto } from './dto/update-bank.dto';
 import { UpdateFiscalDto } from './dto/update-fiscal.dto';
@@ -194,9 +194,9 @@ export class KycController {
   @ApiOperation({ summary: 'Change the user password' })
   @ApiResponse({ status: 200, description: 'Password changed' })
   @ApiResponse({ status: 400, description: 'Invalid password' })
-  @ApiBody({ type: ChangePasswordDto })
+  @ApiBody({ type: KycChangePasswordDto })
   @Post('security/change-password')
-  async changePassword(@Req() req: AuthenticatedRequest, @Body() dto: ChangePasswordDto) {
+  async changePassword(@Req() req: AuthenticatedRequest, @Body() dto: KycChangePasswordDto) {
     return this.kycService.changePassword(req.user.sub, dto);
   }
 

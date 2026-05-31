@@ -153,7 +153,7 @@ export function ProductNerveCenterCampanhasTab({
         <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
           <Bt
             onClick={() =>
-              router.push(`/products/${productId}?tab=planos&planSub=bump&focus=order-bump`)
+              router.push(`/products/${productId}?tab=checkouts&focus=order-bump`)
             }
             style={{ padding: '6px 12px' }}
           >

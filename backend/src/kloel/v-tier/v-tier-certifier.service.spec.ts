@@ -19,34 +19,16 @@ import { ValenceTaggerService } from '../mind/valence-tagger.service';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
 import { VtierCertifierService } from './v-tier-certifier.service';
 import { VerificationVerdict } from './v-tier.types';
-import type { SpineEventRef } from '../mind/mind.types';
-
-function ev(over: Partial<SpineEventRef> = {}): SpineEventRef {
-  return {
-    eventId: over.eventId ?? `evt_${randomUUID()}`,
-    eventName: over.eventName ?? 'commerce.lead.replied',
-    workspaceId: over.workspaceId ?? 'wks_test',
-    occurredAt: over.occurredAt ?? new Date().toISOString(),
-    truthMode: over.truthMode ?? 'observed',
-    ...(over.entityRef !== undefined ? { entityRef: over.entityRef } : {}),
-    ...(over.valence !== undefined ? { valence: over.valence } : {}),
-    ...(over.payload !== undefined ? { payload: over.payload } : {}),
-    ...(over.correlationId !== undefined
-      ? { correlationId: over.correlationId }
-      : {}),
-  };
-}
-
-function makeCertifier(over: {
-  readonly spine?: SpineEmitterService;
-  readonly workspaceCount?: number;
-} = {}): VtierCertifierService {
+function makeCertifier(
+  over: {
+    readonly spine?: SpineEmitterService;
+    readonly workspaceCount?: number;
+  } = {},
+): VtierCertifierService {
   const repo = new InMemoryLineageLedgerRepository();
-  const ledger = new LineageLedgerService(repo);
   const guard = new LineageGuardService(repo);
   const projector = new IdentityProjectorService(guard);
-  const spine =
-    over.spine ?? new SpineEmitterService(new ValenceTaggerService());
+  const spine = over.spine ?? new SpineEmitterService(new ValenceTaggerService());
   const abiBuilder = new AbiBuilderService(projector);
   const valenceTagger = new ValenceTaggerService();
   const hebbian = new HebbianService();
@@ -54,12 +36,7 @@ function makeCertifier(over: {
   const coordinator = new MultiTimescaleCoordinator();
   const valenceAgg = new ValenceAggregatorService();
   const consolidation = new ConsolidationService();
-  const mindBg = new MindBackgroundProcessor(
-    coordinator,
-    valenceAgg,
-    hebbian,
-    consolidation,
-  );
+  const mindBg = new MindBackgroundProcessor(coordinator, valenceAgg, hebbian, consolidation);
   return new VtierCertifierService(
     spine,
     guard,
@@ -72,10 +49,7 @@ function makeCertifier(over: {
   );
 }
 
-function expectStatus(
-  v: VerificationVerdict,
-  expected: VerificationVerdict['status'],
-): void {
+function expectStatus(v: VerificationVerdict, expected: VerificationVerdict['status']): void {
   expect(v.status).toBe(expected);
 }
 
@@ -123,11 +97,7 @@ describe('VtierCertifierService', () => {
       const repo = new InMemoryLineageLedgerRepository();
       const ledger = new LineageLedgerService(repo);
       await ledger.bootstrapGenesis();
-      const guard = new LineageGuardService(repo);
-      const projector = new IdentityProjectorService(guard);
-      const abiBuilder = new AbiBuilderService(projector);
       const c = makeCertifier();
-      // Override the private abiBuilder with our bootstrapped one
       const certResult = await c.certify();
       const v2 = certResult.verdicts.find((v) => v.criterionId === 'V2')!;
       // With lineage bootstrapped, ABI should build ok
@@ -305,7 +275,9 @@ describe('VtierCertifierService', () => {
 
     it('evaluates dominance after 20 cycles', async () => {
       const c = makeCertifier();
-      for (let i = 0; i < 19; i++) await c.certify();
+      for (let i = 0; i < 19; i++) {
+        await c.certify();
+      }
       const result = await c.certify();
       const v14 = result.verdicts.find((v) => v.criterionId === 'V14')!;
       expect(['PASS', 'FAIL', 'INSUFFICIENT_EVIDENCE']).toContain(v14.status);
@@ -354,3 +326,4 @@ describe('VtierCertifierService', () => {
       expectStatus(v15, 'PASS');
     });
   });
+});

@@ -11,6 +11,11 @@ type PermissionRow = {
   allowed: boolean;
 };
 
+// Typed wrappers around jest matchers so nested matcher values are typed
+const oc = (o: Record<string, unknown>): unknown => expect.objectContaining(o);
+const ac = (a: unknown[]): unknown => expect.arrayContaining(a);
+const an = (): unknown => expect.anything();
+
 function buildPrismaMock(
   overrides: Record<string, unknown> = {},
 ): ReturnType<typeof createPartialPrismaMock> {
@@ -100,7 +105,7 @@ describe('AdminPermissionsService', () => {
       await service.seedDefaults('admin-1', AdminRole.STAFF);
       expect(prismaMock.adminPermission.createMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.anything(),
+          data: an(),
           skipDuplicates: true,
         }),
       );
@@ -108,8 +113,10 @@ describe('AdminPermissionsService', () => {
 
     it('passes adminUserId into every seed row', async () => {
       await service.seedDefaults('target-admin', AdminRole.STAFF);
-      const [call] = prismaMock.adminPermission.createMany.mock.calls;
-      const data = call[0].data as PermissionRow[];
+      const [call] = prismaMock.adminPermission.createMany.mock.calls as [
+        [{ data: PermissionRow[] }],
+      ];
+      const data = call[0].data;
       expect(data.length).toBeGreaterThan(0);
       for (const row of data) {
         expect(row.adminUserId).toBe('target-admin');
@@ -138,9 +145,9 @@ describe('AdminPermissionsService', () => {
           action: 'PERMISSION_REPLACE',
           entityType: 'admin_permission',
           entityId: targetUserId,
-          details: expect.objectContaining({
-            before: expect.anything(),
-            after: expect.arrayContaining([
+          details: oc({
+            before: an(),
+            after: ac([
               expect.objectContaining({ module: 'CONTAS', action: 'VIEW', allowed: true }),
             ]),
           }),
@@ -167,7 +174,9 @@ describe('AdminPermissionsService', () => {
 
       await service.replace(targetUserId, AdminRole.STAFF, newPermissions);
 
-      const auditCall = prismaMock.adminAuditLog.create.mock.calls[0];
+      const auditCall = prismaMock.adminAuditLog.create.mock.calls[0] as [
+        { data: { details: { before: unknown[] } } },
+      ];
       const details = auditCall[0].data.details;
       expect(details.before).toEqual([
         { module: 'CONTAS', action: 'VIEW', allowed: false },
@@ -183,7 +192,7 @@ describe('AdminPermissionsService', () => {
       });
       expect(prismaMock.adminPermission.createMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.arrayContaining([
+          data: ac([
             expect.objectContaining({
               adminUserId: targetUserId,
               module: 'CONTAS',
@@ -235,7 +244,7 @@ describe('AdminPermissionsService', () => {
     it('all transaction operations use the same typed tx client', async () => {
       await service.replace(targetUserId, AdminRole.STAFF, newPermissions);
 
-      const txCallback = prismaMock.$transaction.mock.calls[0][0] as unknown;
+      const txCallback = (prismaMock.$transaction.mock.calls[0] as unknown[])[0];
       expect(typeof txCallback).toBe('function');
     });
   });

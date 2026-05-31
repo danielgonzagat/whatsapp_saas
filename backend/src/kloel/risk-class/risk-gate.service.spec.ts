@@ -1,12 +1,9 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { RiskClassService } from './risk-class.service';
 import { RiskGateService } from './risk-gate.service';
-import type { GateVerdict } from './risk-gate.types';
+import type { GateVerdict, type RiskGateDecision } from './risk-gate.types';
 
-function expectVerdict(
-  result: { verdict: GateVerdict; reason: string },
-  expectedVerdict: GateVerdict,
-) {
+function expectVerdict(result: RiskGateDecision, expectedVerdict: GateVerdict) {
   expect(result.verdict).toBe(expectedVerdict);
   expect(typeof result.reason).toBe('string');
   expect(result.reason.length).toBeGreaterThan(0);

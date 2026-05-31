@@ -7,6 +7,13 @@ import { apiFetch } from '@/lib/api';
 import { AlertTriangle, Check, CreditCard, FileText, QrCode } from 'lucide-react';
 import { useEffect, useState, useId } from 'react';
 import { mutate } from 'swr';
+import {
+  buildPlanPaymentPayload,
+  hydratePlanPaymentState,
+  isProductsSwrKey,
+  PLAN_PAYMENT_DEFAULTS,
+  type PlanPaymentApiRecord,
+} from './PlanPaymentTab.helpers';
 
 const PaymentToggle = ({
   checked,
@@ -100,22 +107,32 @@ const PaymentMethodCard = ({
 /** Plan payment tab. */
 export function PlanPaymentTab({ planId, productId }: { planId: string; productId: string }) {
   const fid = useId();
-  const [maxInstallments, setMaxInstallments] = useState('12');
-  const [maxNoInterest, setMaxNoInterest] = useState('3');
-  const [discountByPayment, setDiscountByPayment] = useState(false);
-  const [billingType, setBillingType] = useState('ONE_TIME');
-  const [recurringInterval, setRecurringInterval] = useState('MONTHLY');
-  const [trialEnabled, setTrialEnabled] = useState(false);
-  const [trialDays, setTrialDays] = useState('7');
-  const [trialPrice, setTrialPrice] = useState('');
-  const [limitedBilling, setLimitedBilling] = useState(false);
-  const [affiliateRecurring, setAffiliateRecurring] = useState(true);
-  const [boletoInstallment, setBoletoInstallment] = useState(false);
-  const [boletoMaxInstallments, setBoletoMaxInstallments] = useState('6');
-  const [boletoInterest, setBoletoInterest] = useState(false);
-  const [creditEnabled, setCreditEnabled] = useState(true);
-  const [boletoEnabled, setBoletoEnabled] = useState(false);
-  const [pixEnabled, setPixEnabled] = useState(true);
+  const [maxInstallments, setMaxInstallments] = useState(PLAN_PAYMENT_DEFAULTS.maxInstallments);
+  const [maxNoInterest, setMaxNoInterest] = useState(PLAN_PAYMENT_DEFAULTS.maxNoInterest);
+  const [discountByPayment, setDiscountByPayment] = useState(
+    PLAN_PAYMENT_DEFAULTS.discountByPayment,
+  );
+  const [billingType, setBillingType] = useState(PLAN_PAYMENT_DEFAULTS.billingType);
+  const [recurringInterval, setRecurringInterval] = useState(
+    PLAN_PAYMENT_DEFAULTS.recurringInterval,
+  );
+  const [trialEnabled, setTrialEnabled] = useState(PLAN_PAYMENT_DEFAULTS.trialEnabled);
+  const [trialDays, setTrialDays] = useState(PLAN_PAYMENT_DEFAULTS.trialDays);
+  const [trialPrice, setTrialPrice] = useState(PLAN_PAYMENT_DEFAULTS.trialPrice);
+  const [limitedBilling, setLimitedBilling] = useState(PLAN_PAYMENT_DEFAULTS.limitedBilling);
+  const [affiliateRecurring, setAffiliateRecurring] = useState(
+    PLAN_PAYMENT_DEFAULTS.affiliateRecurring,
+  );
+  const [boletoInstallment, setBoletoInstallment] = useState(
+    PLAN_PAYMENT_DEFAULTS.boletoInstallment,
+  );
+  const [boletoMaxInstallments, setBoletoMaxInstallments] = useState(
+    PLAN_PAYMENT_DEFAULTS.boletoMaxInstallments,
+  );
+  const [boletoInterest, setBoletoInterest] = useState(PLAN_PAYMENT_DEFAULTS.boletoInterest);
+  const [creditEnabled, setCreditEnabled] = useState(PLAN_PAYMENT_DEFAULTS.creditEnabled);
+  const [boletoEnabled, setBoletoEnabled] = useState(PLAN_PAYMENT_DEFAULTS.boletoEnabled);
+  const [pixEnabled, setPixEnabled] = useState(PLAN_PAYMENT_DEFAULTS.pixEnabled);
   const [saving, setSaving] = useState(false);
   const { showToast } = useToast();
 
@@ -128,57 +145,23 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
         if (res.error || !res.data) {
           return;
         }
-        const d = res.data as Record<string, unknown>;
-        if (d.maxInstallments != null) {
-          setMaxInstallments(String(d.maxInstallments));
-        }
-        if (d.interestFreeInstallments != null) {
-          setMaxNoInterest(String(d.interestFreeInstallments));
-        }
-        if (d.discountByPayment != null) {
-          setDiscountByPayment(d.discountByPayment as boolean);
-        }
-        if (d.billingType != null) {
-          setBillingType(d.billingType as string);
-        }
-        if (d.subscriptionPeriod != null) {
-          setRecurringInterval(d.subscriptionPeriod as string);
-        }
-        if (d.trialEnabled != null) {
-          setTrialEnabled(d.trialEnabled as boolean);
-        }
-        if (d.trialDays != null) {
-          setTrialDays(String(d.trialDays));
-        }
-        if (d.trialPrice != null) {
-          setTrialPrice(String(d.trialPrice));
-        }
-        if (d.limitedBilling != null) {
-          setLimitedBilling(d.limitedBilling as boolean);
-        }
-        if (d.affiliateRecurring != null) {
-          setAffiliateRecurring(d.affiliateRecurring as boolean);
-        }
-        if (d.boletoInstallment != null) {
-          setBoletoInstallment(d.boletoInstallment as boolean);
-        }
-        if (d.boletoInstallments != null) {
-          setBoletoMaxInstallments(String(d.boletoInstallments));
-        }
-        if (d.boletoInterest != null) {
-          setBoletoInterest(d.boletoInterest as boolean);
-        }
-        const pm = d.paymentMethods as Record<string, unknown> | undefined;
-        if (pm) {
-          if (pm.credit != null) {
-            setCreditEnabled(pm.credit as boolean);
-          }
-          setBoletoEnabled(false);
-          if (pm.pix != null) {
-            setPixEnabled(pm.pix as boolean);
-          }
-        }
-        setBoletoEnabled(false);
+        const next = hydratePlanPaymentState(res.data as PlanPaymentApiRecord);
+        setMaxInstallments(next.maxInstallments);
+        setMaxNoInterest(next.maxNoInterest);
+        setDiscountByPayment(next.discountByPayment);
+        setBillingType(next.billingType);
+        setRecurringInterval(next.recurringInterval);
+        setTrialEnabled(next.trialEnabled);
+        setTrialDays(next.trialDays);
+        setTrialPrice(next.trialPrice);
+        setLimitedBilling(next.limitedBilling);
+        setAffiliateRecurring(next.affiliateRecurring);
+        setBoletoInstallment(next.boletoInstallment);
+        setBoletoMaxInstallments(next.boletoMaxInstallments);
+        setBoletoInterest(next.boletoInterest);
+        setCreditEnabled(next.creditEnabled);
+        setBoletoEnabled(next.boletoEnabled);
+        setPixEnabled(next.pixEnabled);
       },
     );
   }, [productId, planId]);
@@ -186,25 +169,29 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
   const handleSave = async () => {
     setSaving(true);
     try {
+      const body = buildPlanPaymentPayload({
+        maxInstallments,
+        maxNoInterest,
+        discountByPayment,
+        billingType,
+        recurringInterval,
+        trialEnabled,
+        trialDays,
+        trialPrice,
+        limitedBilling,
+        affiliateRecurring,
+        boletoInstallment,
+        boletoMaxInstallments,
+        boletoInterest,
+        creditEnabled,
+        boletoEnabled,
+        pixEnabled,
+      });
       await apiFetch(
         `/products/${encodeURIComponent(productId)}/plans/${encodeURIComponent(planId)}`,
-        {
-          method: 'PUT',
-          body: {
-            maxInstallments: Number(maxInstallments),
-            interestFreeInstallments: Number(maxNoInterest),
-            billingType,
-            subscriptionPeriod: recurringInterval,
-            trialEnabled,
-            trialDays: Number(trialDays),
-            paymentMethods: { credit: creditEnabled, boleto: false, pix: pixEnabled },
-            boletoEnabled: false,
-            notifyBoleto: false,
-            boletoInstallments: Number(boletoMaxInstallments),
-          },
-        },
+        { method: 'PUT', body },
       );
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
+      mutate(isProductsSwrKey);
       showToast('Configurações salvas!', 'success');
     } catch (e) {
       console.error('Save failed', e);

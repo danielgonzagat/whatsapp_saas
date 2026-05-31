@@ -5,20 +5,32 @@ import { KloelLLME2EGuard } from 'src/kloel/kloel-llm-e2e-guard';
 const LINKED_PRODUCT_HEADER = 'PRODUTO VINCULADO AO PROMPT:';
 
 export function isKloelLlmTestStubEnabled(): boolean {
-  if (process.env.NODE_ENV === 'production') return false;
-  if (process.env.E2E_TEST_MODE === 'true') return true;
-  if (process.env.KLOEL_LLM_STUB === 'true') return true;
-  if (process.env.OPENAI_API_KEY === 'e2e-dummy-key') return true;
+  if (process.env.NODE_ENV === 'production') {
+    return false;
+  }
+  if (process.env.E2E_TEST_MODE === 'true') {
+    return true;
+  }
+  if (process.env.KLOEL_LLM_STUB === 'true') {
+    return true;
+  }
+  if (process.env.OPENAI_API_KEY === 'e2e-dummy-key') {
+    return true;
+  }
   return false;
 }
 
 function readMessageContent(message: ChatCompletionMessageParam): string {
   const content = message.content;
-  if (typeof content === 'string') return content;
+  if (typeof content === 'string') {
+    return content;
+  }
   if (Array.isArray(content)) {
     return content
       .map((part) => {
-        if (typeof part === 'string') return part;
+        if (typeof part === 'string') {
+          return part;
+        }
         if (part && typeof part === 'object' && 'text' in part && typeof part.text === 'string') {
           return part.text;
         }
@@ -31,7 +43,9 @@ function readMessageContent(message: ChatCompletionMessageParam): string {
 
 function extractLinkedProductBlock(systemContent: string): string | null {
   const headerIndex = systemContent.indexOf(LINKED_PRODUCT_HEADER);
-  if (headerIndex < 0) return null;
+  if (headerIndex < 0) {
+    return null;
+  }
   const block = systemContent.slice(headerIndex);
   const stopIndex = block.indexOf('\n\n');
   return stopIndex >= 0 ? block.slice(0, stopIndex) : block;
@@ -42,11 +56,17 @@ function findProductNameInBlock(block: string): string | null {
   for (const rawLine of lines) {
     const line = rawLine.trim();
     const productHeader = /^PRODUTO\s+\d+\s*[:-]\s*(.+)$/i.exec(line);
-    if (productHeader?.[1]) return productHeader[1].trim();
+    if (productHeader?.[1]) {
+      return productHeader[1].trim();
+    }
     const directMatch = /^Nome\s*[:-]\s*(.+)$/i.exec(line);
-    if (directMatch?.[1]) return directMatch[1].trim();
+    if (directMatch?.[1]) {
+      return directMatch[1].trim();
+    }
     const dashMatch = /^[-•]\s*Nome\s*[:-]\s*(.+)$/i.exec(line);
-    if (dashMatch?.[1]) return dashMatch[1].trim();
+    if (dashMatch?.[1]) {
+      return dashMatch[1].trim();
+    }
   }
   return null;
 }
@@ -65,10 +85,14 @@ export function extractLinkedProductHints(
   writerMessages: readonly ChatCompletionMessageParam[],
 ): KloelStubExtraction {
   for (const message of writerMessages) {
-    if (message.role !== 'system') continue;
+    if (message.role !== 'system') {
+      continue;
+    }
     const content = readMessageContent(message);
     const block = extractLinkedProductBlock(content);
-    if (!block) continue;
+    if (!block) {
+      continue;
+    }
     return {
       productName: findProductNameInBlock(block),
       productPrice: findPriceInBlock(block),
@@ -123,7 +147,9 @@ export function buildKloelLlmTestStubStream(
             return Promise.resolve({ done: true } as IteratorResult<ChatCompletionChunk>);
           }
           const chunk = chunks[index];
-          if (!chunk) return Promise.resolve({ done: true } as IteratorResult<ChatCompletionChunk>);
+          if (!chunk) {
+            return Promise.resolve({ done: true } as IteratorResult<ChatCompletionChunk>);
+          }
           const value = buildChunk(chunk);
           index += 1;
           return Promise.resolve({ value, done: false });

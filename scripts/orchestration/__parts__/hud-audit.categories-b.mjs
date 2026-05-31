@@ -1,7 +1,8 @@
 // hud-audit categories F-H — split from hud-audit.mjs for line budget.
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { OBSIDIAN_CONFIG, ORCHESTRATION_DIR, PLUGINS_DIR, REPO_ROOT } from './hud-audit.constants.mjs';
+import { execSync } from 'node:child_process';
+import { OBSIDIAN_CONFIG, ORCHESTRATION_DIR, PLUGINS_DIR, REPO_ROOT, VAULT_ROOT } from './hud-audit.constants.mjs';
 import { checkFile } from './hud-audit.helpers.mjs';
 
 export function catF_plugins() {

@@ -1,27 +1,35 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnifiedAgentActionsCrmService } from './unified-agent-actions-crm.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
+import { WhatsAppProviderRegistry } from '../marketing/channels/whatsapp/providers/provider-registry';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { partialMatch } from '../../test/helpers/match-instance';
 jest.mock('../queue/queue', () => ({
   flowQueue: {
     add: jest.fn().mockResolvedValue({ id: 'job-1' }),
   },
 }));
-jest.mock('./unified-agent-actions-crm.helpers', () => ({
-  actionImportContacts: jest.fn().mockResolvedValue({
-    success: true,
-    message: '5 contatos importados com sucesso',
-    total: 5,
-    created: 5,
-  }),
-}));
+jest.mock('./unified-agent-actions-crm.helpers', () => {
+  // Keep the real pure helpers available; only mock the IO action.
+  const actual = jest.requireActual<typeof import('./unified-agent-actions-crm.helpers')>(
+    './unified-agent-actions-crm.helpers',
+  );
+  return {
+    ...actual,
+    actionImportContacts: jest.fn().mockResolvedValue({
+      success: true,
+      message: '5 contatos importados com sucesso',
+      total: 5,
+      created: 5,
+    }),
+  };
+});
 jest.mock('../common/kloel-colors', () => ({
   TAG_DEFAULT_COLORS: {
     CRM_AUTO_BLUE: '#0000FF',
   },
 }));
-const { flowQueue } = jest.requireMock('../queue/queue');
+const { flowQueue }: { flowQueue: { add: jest.Mock } } = jest.requireMock('../queue/queue');
 type CrmPrismaMock = {
   contact: {
     findFirst: jest.Mock;
@@ -98,7 +106,7 @@ describe('UnifiedAgentActionsCrmService', () => {
       },
       $transaction: jest.fn().mockImplementation((arg: unknown) => {
         if (typeof arg === 'function') {
-          return arg(prisma);
+          return (arg as (tx: unknown) => unknown)(prisma);
         }
         return Promise.resolve(undefined);
       }),
@@ -146,7 +154,7 @@ describe('UnifiedAgentActionsCrmService', () => {
         status: 'lead',
       });
       expect(prisma.contact.updateMany).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           where: { id: contactId, workspaceId: 'ws-tenant' },
         }),
       );
@@ -187,8 +195,8 @@ describe('UnifiedAgentActionsCrmService', () => {
       });
       expect(result.success).toBe(true);
       expect(prisma.followUp.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        partialMatch({
+          data: partialMatch({
             workspaceId: wsId,
             contactId,
           }),
@@ -211,8 +219,8 @@ describe('UnifiedAgentActionsCrmService', () => {
         delayHours: 24,
       });
       expect(prisma.followUp.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: 'ws-tenant' }),
+        partialMatch({
+          where: partialMatch({ workspaceId: 'ws-tenant' }),
         }),
       );
     });
@@ -225,7 +233,7 @@ describe('UnifiedAgentActionsCrmService', () => {
       });
       expect(result.success).toBe(true);
       expect(prisma.conversation.updateMany).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           data: { mode: 'HUMAN' },
         }),
       );
@@ -245,16 +253,16 @@ describe('UnifiedAgentActionsCrmService', () => {
       expect(result.success).toBe(true);
       expect(result.results).toHaveLength(1);
       expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: wsId }),
+        partialMatch({
+          where: partialMatch({ workspaceId: wsId }),
         }),
       );
     });
     it('scopes results to workspaceId', async () => {
       await service.actionSearchKnowledgeBase('ws-tenant', { query: 'x' });
       expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: 'ws-tenant' }),
+        partialMatch({
+          where: partialMatch({ workspaceId: 'ws-tenant' }),
         }),
       );
     });
@@ -269,7 +277,7 @@ describe('UnifiedAgentActionsCrmService', () => {
       expect(result.triggered).toBe(true);
       expect(flowQueue.add).toHaveBeenCalledWith(
         'run-flow',
-        expect.objectContaining({
+        partialMatch({
           workspaceId: wsId,
           flowId: 'f-1',
           user: phone,
@@ -282,8 +290,8 @@ describe('UnifiedAgentActionsCrmService', () => {
       });
       expect(result.success).toBe(true);
       expect(prisma.flow.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: wsId }),
+        partialMatch({
+          where: partialMatch({ workspaceId: wsId }),
         }),
       );
     });
@@ -348,7 +356,7 @@ describe('UnifiedAgentActionsCrmService', () => {
         status: 'test',
       });
       expect(prisma.contact.updateMany).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           where: { id: contactId, workspaceId: 'ws-isolated' },
         }),
       );
@@ -356,8 +364,8 @@ describe('UnifiedAgentActionsCrmService', () => {
     it('actionSearchKnowledgeBase filters by correct workspaceId', async () => {
       await service.actionSearchKnowledgeBase('ws-isolated', { query: 'x' });
       expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: 'ws-isolated' }),
+        partialMatch({
+          where: partialMatch({ workspaceId: 'ws-isolated' }),
         }),
       );
     });
@@ -366,7 +374,7 @@ describe('UnifiedAgentActionsCrmService', () => {
         flowId: 'f-1',
       });
       expect(prisma.flow.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           where: { id: 'f-1', workspaceId: 'ws-isolated' },
         }),
       );

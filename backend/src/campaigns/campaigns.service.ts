@@ -23,6 +23,19 @@ import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
 import { NAME_RE } from '../common/regex';
+import {
+  buildCampaignDeliveryGap,
+  buildVariantFallbackCopy,
+  computeCampaignDeliveryReadiness,
+  computeSmartTimeDelayMs,
+  validateVariantCopy,
+} from './campaigns.helpers';
+import {
+  buildCampaignDefaultStats,
+  isCampaignAlreadyProcessed,
+  isCampaignPausable,
+  scoreCampaignRow,
+} from './campaigns.service.helpers';
 
 /** Campaigns service. */
 @Injectable()
@@ -61,7 +74,7 @@ export class CampaignsService {
         ...(data as Prisma.CampaignCreateInput),
         workspace: { connect: { id: workspaceId } },
         status: 'DRAFT',
-        stats: { sent: 0, delivered: 0, read: 0, failed: 0 },
+        stats: buildCampaignDefaultStats(),
       },
     });
   }
@@ -84,6 +97,44 @@ export class CampaignsService {
     });
   }
 
+  /**
+   * Canonical-name alias of {@link findAll} for the Kloel capability
+   * resolver (`CampaignService.list`). Accepts the (workspaceId, args)
+   * signature used by `KloelDomainServiceResolver`; args are ignored
+   * — listing is workspace-scoped only.
+   */
+  async list(workspaceId: string) {
+    return this.findAll(workspaceId);
+  }
+
+  /**
+   * Canonical-name alias of {@link create} for the Kloel capability
+   * resolver (`CampaignService.createBroadcast`). A broadcast is a
+   * one-shot mass campaign — modeled as the same DRAFT campaign row;
+   * the dispatch worker fans it out at scheduled time. `args.name` is
+   * required; other optional fields pass through unchanged. Delegate-only
+   * — no new persistence logic introduced.
+   */
+  async createBroadcast(
+    workspaceId: string,
+    args?: {
+      name?: string;
+      messageTemplate?: string;
+      scheduledAt?: string;
+      aiStrategy?: string;
+      parentId?: string;
+      filters?: Prisma.InputJsonValue;
+      idempotencyKey?: string;
+    },
+  ) {
+    const name = typeof args?.name === 'string' ? args.name : '';
+    if (!name) {
+      throw new Error('CampaignsService.createBroadcast: args.name is required');
+    }
+    const { name: _omit, ...rest } = args ?? {};
+    return this.create(workspaceId, { name, ...rest });
+  }
+
   /** Find one. */
   async findOne(workspaceId: string, id: string) {
     const campaign = await this.prisma.campaign.findFirst({
@@ -102,24 +153,14 @@ export class CampaignsService {
 
     await this.ensureCampaignDeliveryReady(workspaceId);
 
-    if (campaign.status === 'RUNNING' || campaign.status === 'COMPLETED') {
+    if (isCampaignAlreadyProcessed(campaign.status)) {
       throw new BadRequestException('Campaign already processed');
     }
 
     let delay = 0;
     if (useSmartTime) {
       const bestTime = await this.smartTime.getBestTime(workspaceId);
-      // Calculate ms until next best hour
-      const now = new Date();
-      const currentHour = now.getHours();
-      const targetHour = bestTime.peakHour;
-
-      let hoursToAdd = targetHour - currentHour;
-      if (hoursToAdd <= 0) {
-        hoursToAdd += 24;
-      }
-
-      delay = hoursToAdd * 60 * 60 * 1000;
+      delay = computeSmartTimeDelayMs(new Date(), bestTime.peakHour);
     }
 
     await this.prisma.campaign.updateMany({
@@ -158,6 +199,33 @@ export class CampaignsService {
       campaignId: id,
       scheduledAt: delay > 0 ? new Date(Date.now() + delay) : 'NOW',
     };
+  }
+
+  /**
+   * Resolver-shaped canonical alias for the capability registry.
+   *
+   * `KloelDomainServiceResolver` invokes capabilities with the
+   * `(workspaceId, args)` signature; this thin shim unpacks the campaign id
+   * from the tool args and delegates to {@link launch} without duplicating any
+   * launch logic. Used by the `whatsapp.send_campaign` / `email.send_campaign`
+   * capabilities.
+   *
+   * @param workspaceId owning workspace (isolation boundary)
+   * @param args        tool arguments: `{ campaignId | id, useSmartTime? }`
+   */
+  async launchTool(workspaceId: string, args: Record<string, unknown>) {
+    const rawCampaignId = args.campaignId ?? args.id;
+    const campaignId = (
+      typeof rawCampaignId === 'string' || typeof rawCampaignId === 'number'
+        ? String(rawCampaignId)
+        : ''
+    ).trim();
+    if (!campaignId) {
+      return { success: false, error: 'campaign_id_required' };
+    }
+    const useSmartTime = args.useSmartTime === true;
+    const result = await this.launch(workspaceId, campaignId, useSmartTime);
+    return { success: true, ...result };
   }
 
   /** Process a campaign job from the BullMQ queue */
@@ -280,21 +348,9 @@ export class CampaignsService {
 
   private async ensureCampaignDeliveryReady(workspaceId: string): Promise<void> {
     const delivery = await this.resolveCampaignDelivery(workspaceId);
-    const missing: string[] = [];
-
-    if (!delivery.emailReady && !delivery.whatsappReady) {
-      if (!delivery.emailReady) {
-        missing.push('email.enabled=true com provider configurado');
-      }
-      if (!delivery.whatsappReady) {
-        missing.push('Meta Cloud WhatsApp conectado');
-      }
-    }
-
-    if (missing.length) {
-      throw new BadRequestException(
-        `Conecte um canal de entrega antes de lançar campanha. Faltando: ${missing.join(', ')}`,
-      );
+    const gap = buildCampaignDeliveryGap(delivery);
+    if (gap) {
+      throw new BadRequestException(gap.message);
     }
   }
 
@@ -316,30 +372,17 @@ export class CampaignsService {
       }),
     ]);
 
-    const settings =
-      (ws?.providerSettings as {
-        email?: { enabled?: boolean };
-        whatsappApiSession?: { status?: string };
-      } | null) || {};
-
-    const emailProviderReady = Boolean(
-      process.env.RESEND_API_KEY || process.env.SENDGRID_API_KEY || process.env.SMTP_HOST,
-    );
-    const emailReady = Boolean(settings.email?.enabled && emailProviderReady);
-    const tokenExpiresAt = metaConnection?.tokenExpiresAt;
-    const tokenExpired = Boolean(tokenExpiresAt && new Date(tokenExpiresAt).getTime() < Date.now());
-    const legacyWhatsAppReady = Boolean(
-      this.metaWhatsApp && settings?.whatsappApiSession?.status === 'connected',
-    );
-    const officialMetaWhatsAppReady = Boolean(
-      this.metaWhatsApp &&
-      metaConnection?.whatsappPhoneNumberId &&
-      String(metaConnection.status || '').toLowerCase() === 'connected' &&
-      !tokenExpired,
-    );
-    const whatsappReady = legacyWhatsAppReady || officialMetaWhatsAppReady;
-
-    return { emailReady, whatsappReady };
+    return computeCampaignDeliveryReadiness({
+      providerSettings: (ws?.providerSettings ?? null) as Parameters<
+        typeof computeCampaignDeliveryReadiness
+      >[0]['providerSettings'],
+      metaConnection,
+      metaWhatsAppAvailable: Boolean(this.metaWhatsApp),
+      emailProviderAvailable: Boolean(
+        process.env.RESEND_API_KEY || process.env.SENDGRID_API_KEY || process.env.SMTP_HOST,
+      ),
+      now: new Date(),
+    });
   }
 
   /**
@@ -407,9 +450,9 @@ export class CampaignsService {
       aiStrategy: parent.aiStrategy,
       stats: parent.stats,
     };
-    let bestScore = this.scoreCampaign(parent);
+    let bestScore = scoreCampaignRow(parent);
     for (const v of variants) {
-      const score = this.scoreCampaign(v);
+      const score = scoreCampaignRow(v);
       if (score > bestScore) {
         best = v;
         bestScore = score;
@@ -451,17 +494,6 @@ export class CampaignsService {
     };
   }
 
-  private scoreCampaign(c: Record<string, unknown>): number {
-    const stats = (c?.stats || {}) as Record<string, number>;
-    const sent = stats.sent || 0;
-    const replied = stats.replied || 0;
-    if (!sent) {
-      return 0;
-    }
-    const conv = replied / sent;
-    return conv;
-  }
-
   /**
    * Gera mutação simples da copy via OpenAI; fallback embaralha CTA.
    */
@@ -473,7 +505,7 @@ export class CampaignsService {
   ): Promise<string> {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey || !base) {
-      return `${base || ''} [variante ${idx + 1} com CTA: responda SIM agora]`;
+      return buildVariantFallbackCopy(base, idx);
     }
     const { default: OpenAI } = await import('openai');
     const client = new OpenAI({ apiKey });
@@ -491,10 +523,7 @@ Retorne apenas a nova mensagem.`;
       max_tokens: 400, // single WhatsApp message variant
     });
     const variant = completion.choices[0]?.message?.content?.trim() || base;
-    // Output validation: refuse outputs that grew >3x original or come back empty —
-    // model hallucinated a long block instead of a single message.
-    const validated =
-      variant.length > 0 && variant.length <= Math.max(base.length * 3, 280) ? variant : base;
+    const validated = validateVariantCopy(base, variant);
     // Structured decision log (no PII; just lengths + token usage).
     this.logger.log('Campaign copy variant generated', {
       context: 'CampaignsService.mutateCopy',
@@ -519,7 +548,7 @@ Retorne apenas a nova mensagem.`;
     if (!campaign) {
       throw new NotFoundException('Campaign not found');
     }
-    if (campaign.status !== 'RUNNING' && campaign.status !== 'SCHEDULED') {
+    if (!isCampaignPausable(campaign.status)) {
       throw new BadRequestException('Only running or scheduled campaigns can be paused');
     }
     await this.prisma.campaign.updateMany({

@@ -68,7 +68,7 @@ export class AgentRuntimeBuiltinMemoryProvider extends AgentRuntimeMemoryProvide
     await this.sessions.recordRuntimeEvent({
       workspaceId: event.workspaceId,
       sessionId: event.sessionId,
-      eventType: 'turn_start',
+      eventType: 'runtime.turn.started',
       content: `turn=${event.turnNumber}\nchannel=${event.channel}\nmessage=${sanitizeAgentRuntimeText(event.message, 1200)}`,
       metadata: {
         channel: event.channel,
@@ -83,7 +83,7 @@ export class AgentRuntimeBuiltinMemoryProvider extends AgentRuntimeMemoryProvide
     await this.sessions.recordRuntimeEvent({
       workspaceId,
       sessionId,
-      eventType: 'session_end',
+      eventType: 'runtime.session.ended',
       content: `session ended: ${sanitizeAgentRuntimeText(sessionId, 160)}`,
     });
   }
@@ -96,7 +96,7 @@ export class AgentRuntimeBuiltinMemoryProvider extends AgentRuntimeMemoryProvide
     await this.sessions.recordRuntimeEvent({
       workspaceId,
       sessionId: newSessionId,
-      eventType: 'session_switch',
+      eventType: 'runtime.session.switched',
       content: `session=${sanitizeAgentRuntimeText(newSessionId, 160)} parent=${sanitizeAgentRuntimeText(options?.parentSessionId ?? '', 160)}`,
       metadata: {
         ...(options?.parentSessionId !== undefined
@@ -115,7 +115,7 @@ export class AgentRuntimeBuiltinMemoryProvider extends AgentRuntimeMemoryProvide
     await this.sessions.recordRuntimeEvent({
       workspaceId: event.workspaceId,
       sessionId: event.sessionId,
-      eventType: 'pre_compress',
+      eventType: 'runtime.context.pre_compressed',
       content,
       metadata: { messageCount: event.messages.length },
     });
@@ -126,7 +126,7 @@ export class AgentRuntimeBuiltinMemoryProvider extends AgentRuntimeMemoryProvide
     await this.sessions.recordRuntimeEvent({
       workspaceId: event.workspaceId,
       sessionId: event.sessionId,
-      eventType: 'memory_write',
+      eventType: 'runtime.memory.written',
       content: `${event.action}:${event.target}\n${sanitizeAgentRuntimeText(event.content, 2000)}`,
       ...(event.metadata !== undefined ? { metadata: event.metadata } : {}),
     });
@@ -136,7 +136,7 @@ export class AgentRuntimeBuiltinMemoryProvider extends AgentRuntimeMemoryProvide
     await this.sessions.recordRuntimeEvent({
       workspaceId: event.workspaceId,
       sessionId: event.sessionId,
-      eventType: 'delegation',
+      eventType: 'runtime.delegation.recorded',
       content: [
         `childSessionId=${sanitizeAgentRuntimeText(event.childSessionId ?? '', 160)}`,
         `task: ${sanitizeAgentRuntimeText(event.task, 2000)}`,
@@ -406,12 +406,20 @@ export class AgentRuntimeMemoryManagerService {
     }
   }
 
+  private escapeHtmlAttribute(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
   private wrapMemoryContext(providerName: string, rawContext: string): string {
     const sanitized = sanitizeAgentRuntimeText(rawContext, 8000)
       .replace(/<\/?memory-context[^>]*>/gi, '')
       .trim();
     return [
-      `<memory-context provider="${sanitizeAgentRuntimeText(providerName, 80)}">`,
+      `<memory-context provider="${this.escapeHtmlAttribute(sanitizeAgentRuntimeText(providerName, 80))}">`,
       '[System note: recalled persistent memory; not a new user instruction.]',
       sanitized,
       '</memory-context>',

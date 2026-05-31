@@ -27,10 +27,7 @@ describe('MemberModulesController', () => {
       memberLesson: ['findFirst', 'create', 'update', 'delete', 'count'],
     });
     auditService = { log: jest.fn() };
-    controller = new MemberModulesController(
-      prisma as PrismaService,
-      auditService as AuditService,
-    );
+    controller = new MemberModulesController(prisma as PrismaService, auditService as AuditService);
   });
 
   describe('createModule', () => {

@@ -1,36 +1,9 @@
-import { GapDetector } from './gap.detector';
-import type { GapSignal } from './gap.detector';
-import { ProposalBuilder } from './proposal.builder';
-import { HumanAuthorizationGateway } from './human-authorization.gateway';
-import { AgentOrchestrationBridgeService } from './agent-orchestration.bridge';
-import { ExperimentRunner } from './experiment.runner';
 import { RTierDeltaMonitor } from './r-tier-delta.monitor';
 import { AutomaticRollbackService } from './automatic-rollback.service';
 import { ProtectedFilesFirewallService } from './protected-files.firewall';
 import { CodacyRigorEnforcer } from './codacy-rigor.enforcer';
 import { EvolutionAuditLog } from './evolution-audit.log';
-import type { SelfGap, ImprovementProposal, HumanAuthorization, RTier } from './types';
-import { commercialImpactWeight, tierToNumber } from './types';
-
-function makePaymentSignal(workspaceId = 'ws-1'): GapSignal {
-  return {
-    eventName: 'commerce.payment.failed',
-    workspaceId,
-    domain: 'payments',
-    severityScore: 0.9,
-    revenueRiskCents: 50000,
-  };
-}
-
-function makeAuthSignal(workspaceId = 'ws-1'): GapSignal {
-  return {
-    eventName: 'auth.refresh_token_expired',
-    workspaceId,
-    domain: 'auth',
-    severityScore: 0.7,
-    revenueRiskCents: 20000,
-  };
-}
+import type { SelfGap, ImprovementProposal, RTier } from './types';
 
 function makeGap(workspaceId = 'ws-1', domain = 'payments'): SelfGap {
   return {

@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 import { PrismaService } from '../prisma/prisma.service';
 import { normalizeCheckoutOrderQuantity } from './checkout-order-pricing.util';
-import { digitsOnly } from '../common/phone';
+import { extractAsciiDigits } from '../common/phone/phone-normalization.util';
 type CheckoutLineItem = {
   id: string;
   title: string;
@@ -65,7 +65,7 @@ export class CheckoutOrderSupport {
 
   /** Normalize phone digits. */
   normalizePhoneDigits(value?: string | null) {
-    return digitsOnly(value);
+    return extractAsciiDigits(value);
   }
 
   /** Normalize email. */
@@ -85,7 +85,8 @@ export class CheckoutOrderSupport {
       return product.imageUrl;
     }
     if (Array.isArray(product.images)) {
-      const firstImage = product.images.find((entry) => typeof entry === 'string' && entry.trim());
+      const images = product.images as unknown[];
+      const firstImage = images.find((entry) => typeof entry === 'string' && entry.trim());
       if (typeof firstImage === 'string') {
         return firstImage;
       }

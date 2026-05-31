@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { KloelToolExecutorBillingService } from './kloel-tool-executor-billing.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 jest.mock('../billing/stripe-runtime', () => ({
   StripeRuntime: jest.fn().mockImplementation(() => ({
@@ -98,7 +99,7 @@ describe('KloelToolExecutorBillingService', () => {
       expect(result.hasPaymentMethod).toBe(true);
       expect(prisma.workspace.findUnique).toHaveBeenCalledWith({
         where: { id: wsId },
-        select: expect.objectContaining({
+        select: partialMatch({
           providerSettings: true,
           stripeCustomerId: true,
         }),
@@ -182,7 +183,7 @@ describe('KloelToolExecutorBillingService', () => {
       expect(prisma.subscription.upsert).toHaveBeenCalledWith({
         where: { workspaceId: wsId },
         update: { plan: 'FREE' },
-        create: expect.objectContaining({
+        create: partialMatch({
           workspaceId: wsId,
           plan: 'FREE',
           status: 'ACTIVE',

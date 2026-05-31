@@ -89,7 +89,7 @@ type LedgerMock = {
 };
 
 type FinancialAlertMock = {
-  withdrawalFailed: jest.Mock;
+  withdrawalFailed: jest.Mock<void, [Error, { workspaceId?: string; amount?: number }]>;
 };
 
 type BuildServiceDeps = {
@@ -208,7 +208,7 @@ export async function createHarness(options: HarnessOptions = {}) {
   };
 
   const financialAlert: FinancialAlertMock = {
-    withdrawalFailed: jest.fn(),
+    withdrawalFailed: jest.fn<void, [Error, { workspaceId?: string; amount?: number }]>(),
   };
 
   const service = await buildService({ prisma, stripe, ledger, financialAlert });

@@ -13,6 +13,57 @@ export interface UploadedControllerFile {
   size?: number;
 }
 
+export const KLOEL_UPLOAD_GENERIC_MIME_RE =
+  /^(image\/(jpeg|png|gif|webp)|application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document)$/;
+
+export const KLOEL_UPLOAD_CHAT_MIME_RE =
+  /^(image\/(jpeg|png|gif|webp)|application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document|application\/vnd\.ms-excel|application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet|text\/plain|text\/csv|audio\/(mpeg|wav|webm|ogg|mp4|x-m4a))$/;
+
+export const KLOEL_UPLOAD_MAX_BYTES = 25 * 1024 * 1024;
+
+const KLOEL_UPLOAD_GENERIC_MIMES = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
+
+const KLOEL_UPLOAD_CHAT_MIMES = [
+  ...KLOEL_UPLOAD_GENERIC_MIMES,
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/plain',
+  'text/csv',
+  'audio/mpeg',
+  'audio/wav',
+  'audio/webm',
+  'audio/ogg',
+  'audio/mp4',
+  'audio/x-m4a',
+];
+
+type MulterFileFilter = (
+  _req: unknown,
+  file: { mimetype: string },
+  cb: (error: Error | null, accept: boolean) => void,
+) => void;
+
+function buildMimeFilter(allowed: string[]): MulterFileFilter {
+  return (_req, file, cb) => {
+    const accept = allowed.includes(file.mimetype);
+    cb(accept ? null : new Error('Tipo de arquivo não permitido'), accept);
+  };
+}
+
+export const kloelGenericUploadFileFilter: MulterFileFilter = buildMimeFilter(
+  KLOEL_UPLOAD_GENERIC_MIMES,
+);
+
+export const kloelChatUploadFileFilter: MulterFileFilter = buildMimeFilter(KLOEL_UPLOAD_CHAT_MIMES);
+
 export async function handleUploadFile(
   deps: { storage: StorageService },
   file: UploadedControllerFile,

@@ -6,7 +6,7 @@
  * draws a whole-line +/- block ONLY for the built-in Edit/Write/MultiEdit/
  * NotebookEdit tools — and that renderer cannot be disabled from inside.
  * So we BAN those tools for code: every code mutation must go through
- * mcp__atomic_edit__* (whose result carries the char-level atomicDiff +
+ * mcp__atomic-edit__* (whose result carries the char-level atomicDiff +
  * FounderBlock — the only permitted visual proof).
  *
  * PreToolUse hook protocol: read the tool call on stdin. For allowed tools,
@@ -37,11 +37,14 @@ function readStdinRaw() {
 // FAIL CLOSED: an enforcement gate that cannot parse its own input must not
 // wave the call through (the A/B loop proved fail-open lets large-heredoc
 // writes slip past). On parse failure we DENY; the agent simply retries
-// (transient) or routes the code change through mcp__atomic_edit__*.
+// (transient) or routes the code change through mcp__atomic-edit__*.
 const rawStdin = readStdinRaw();
 let input;
 try {
-  input = JSON.parse(rawStdin || '{}');
+  // Empty stdin is NOT valid input — JSON.parse('') throws here and the catch
+  // below denies (fail-closed), matching the documented contract. (Do NOT
+  // default to '{}': that silently allowed an empty/truncated hook payload.)
+  input = JSON.parse(rawStdin);
 } catch {
   process.stdout.write(
     JSON.stringify({
@@ -51,7 +54,7 @@ try {
         permissionDecisionReason:
           'atomic-only hook could not parse the tool call; refusing for safety ' +
           '(fail-closed). Retry the call, or make code changes via ' +
-          'mcp__atomic_edit__* (atomic_create_file / atomic_replace_range / …).',
+          'mcp__atomic-edit__* (atomic_create_file / atomic_replace_range / …).',
       },
     }),
   );
@@ -84,16 +87,16 @@ const STEER =
   `The atomic-edit tools ARE active in this session — call them DIRECTLY by ` +
   `their exact name, do NOT use ToolSearch to look for them, and do NOT ` +
   `conclude they are absent. To create a NEW file: call the tool named ` +
-  `mcp__atomic_edit__atomic_create_file with { "file": "<repo-relative path>", ` +
+  `mcp__atomic-edit__atomic_create_file with { "file": "<repo-relative path>", ` +
   `"content": "<full file content>" }. To change an existing file: ` +
-  `mcp__atomic_edit__atomic_replace_range / atomic_edit_symbol / ` +
+  `mcp__atomic-edit__atomic_replace_range / atomic_edit_symbol / ` +
   `atomic_replace_text / atomic_apply_edits / atomic_add_import. To read ` +
-  `structure first: mcp__atomic_edit__code_outline / code_read_symbol. ` +
+  `structure first: mcp__atomic-edit__code_outline / code_read_symbol. ` +
   `Each returns the char-level [-removed-]{+added+} + FounderBlock proof. ` +
   `If (and only if) a tool's schema is not visible, run ToolSearch with the ` +
-  `EXACT query "select:mcp__atomic_edit__atomic_create_file,` +
-  `mcp__atomic_edit__atomic_replace_range,mcp__atomic_edit__atomic_edit_symbol,` +
-  `mcp__atomic_edit__atomic_apply_edits,mcp__atomic_edit__code_outline" then ` +
+  `EXACT query "select:mcp__atomic-edit__atomic_create_file,` +
+  `mcp__atomic-edit__atomic_replace_range,mcp__atomic-edit__atomic_edit_symbol,` +
+  `mcp__atomic-edit__atomic_apply_edits,mcp__atomic-edit__code_outline" then ` +
   `call them. NEVER fall back to a native or shell edit; that path is blocked.`;
 
 // Camada 3 (Bash leg): a shell command can edit a code file too (sed -i,
@@ -172,12 +175,12 @@ if (filePath && !CODE_EXT.test(String(filePath))) allow(); // prose/docs OK
 
 deny(
   `TUI-abolished rule: native ${tool} on code is banned so the harness never ` +
-    `renders its whole-line +/- diff. Use mcp__atomic_edit__* instead ` +
+    `renders its whole-line +/- diff. Use mcp__atomic-edit__* instead ` +
     `(atomic_replace_range / atomic_replace_text / atomic_edit_symbol / ` +
     `atomic_replace_literal / atomic_replace_property_value / atomic_wrap_range / ` +
     `atomic_transaction / atomic_add_import …). The tool returns the char-level ` +
     `atomicDiff [-removed-]{+added+} + FounderBlock — the only permitted visual ` +
-    `proof. If mcp__atomic_edit__* is not in this session's tools, the server ` +
+    `proof. If mcp__atomic-edit__* is not in this session's tools, the server ` +
     `is not loaded: say so and start a fresh session (it is enabled in ` +
     `.mcp.json + ~/.claude.json). Do NOT silently fall back to native edit.`,
 );

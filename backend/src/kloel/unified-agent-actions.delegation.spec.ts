@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
-jest.mock('../whatsapp/whatsapp.tokens', () => ({
+jest.mock('../marketing/channels/whatsapp/whatsapp.tokens', () => ({
   WHATSAPP_MESSAGING: Symbol('WHATSAPP_MESSAGING'),
 }));
 
@@ -38,7 +38,7 @@ jest.mock('./unified-agent-actions-commerce.service', () => ({
 import { UnifiedAgentActionsService } from './unified-agent-actions.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../common/storage/storage.service';
-import { WHATSAPP_MESSAGING } from '../whatsapp/whatsapp.tokens';
+import { WHATSAPP_MESSAGING } from '../marketing/channels/whatsapp/whatsapp.tokens';
 import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
 import { UnifiedAgentActionsCrmService } from './unified-agent-actions-crm.service';
 import { UnifiedAgentActionsSalesService } from './unified-agent-actions-sales.service';
@@ -85,7 +85,9 @@ describe('UnifiedAgentActionsService', () => {
       $transaction: jest
         .fn()
         .mockImplementation((fnOrArg: unknown) =>
-          typeof fnOrArg === 'function' ? fnOrArg(prisma) : Promise.resolve(undefined),
+          typeof fnOrArg === 'function'
+            ? (fnOrArg as (tx: unknown) => unknown)(prisma)
+            : Promise.resolve(undefined),
         ),
     };
     storageService = {

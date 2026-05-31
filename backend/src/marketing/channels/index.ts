@@ -20,5 +20,6 @@ export { InstagramDispatchAdapter } from './instagram';
 export { MessengerDispatchAdapter } from './messenger';
 export { FacebookDispatchAdapter } from './facebook';
 export { EmailDispatchAdapter } from './email';
+export { TikTokDispatchAdapter } from './tiktok';
 export { InternalPartnershipDispatchAdapter } from './internal-partnership';
 export { MarketingChannelsModule } from './marketing-channels.module';

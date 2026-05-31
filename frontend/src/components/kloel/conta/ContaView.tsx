@@ -42,15 +42,19 @@ import { ContaReferralSection } from './ContaReferralSection';
 import { ContaInfoSection } from './ContaInfoSection';
 import { StatusBadge } from './ContaShared';
 import Icons from './ContaIcons';
-import {
-  SORA,
-  MONO,
-  EMBER,
-  DEFAULT_SETTINGS_SECTION,
-  resolveSettingsSection,
-} from './ContaConstants';
+import { SORA, MONO, EMBER, resolveSettingsSection } from './ContaConstants';
 import { colors } from '@/lib/design-tokens';
 import { getErrorMessage } from './ContaHelpers';
+import {
+  buildSectionUrl,
+  canSubmitKyc,
+  getCompletionPercentage,
+  getKycStatusValue,
+  getSectionStatus,
+  isKycBlocked,
+  parseBillingSummary,
+  shouldShowSystemAlerts,
+} from './ContaView.helpers';
 import type { SettingsSectionKey } from './ContaTypes';
 
 export default function ContaView() {
@@ -83,14 +87,11 @@ export default function ContaView() {
   const [hasCard, setHasCard] = useState(false);
 
   const completionData: KycCompletion = completion || { percentage: 0, sections: [] };
-  const sectionStatus = (name: string) => {
-    const s = completionData.sections?.find((sec) => sec.name === name);
-    return s?.complete ? 'approved' : 'pending';
-  };
+  const sectionStatus = (name: string) => getSectionStatus(completionData, name);
 
-  const kycStatus = status?.kycStatus || 'pending';
-  const pct = completionData.percentage || 0;
-  const isBlocked = pct < 100 || kycStatus !== 'approved';
+  const kycStatus = getKycStatusValue(status);
+  const pct = getCompletionPercentage(completionData);
+  const isBlocked = isKycBlocked(pct, kycStatus);
 
   const loadBillingSummary = useCallback(async () => {
     try {
@@ -99,17 +100,14 @@ export default function ContaView() {
         billingApi.getPaymentMethods(),
       ]);
 
-      if (subscriptionResponse.data) {
-        setSubscriptionStatus(subscriptionResponse.data.status ?? 'none');
-        setTrialDaysLeft(subscriptionResponse.data.trialDaysLeft ?? 0);
-        setCreditsBalance(subscriptionResponse.data.creditsBalance ?? 0);
-      } else {
-        setSubscriptionStatus('none');
-        setTrialDaysLeft(0);
-        setCreditsBalance(0);
-      }
-
-      setHasCard(!!paymentMethodsResponse.data?.paymentMethods?.length);
+      const summary = parseBillingSummary(
+        subscriptionResponse.data,
+        paymentMethodsResponse.data,
+      );
+      setSubscriptionStatus(summary.subscriptionStatus);
+      setTrialDaysLeft(summary.trialDaysLeft);
+      setCreditsBalance(summary.creditsBalance);
+      setHasCard(summary.hasCard);
     } catch {
       setSubscriptionStatus('none');
       setTrialDaysLeft(0);
@@ -134,14 +132,8 @@ export default function ContaView() {
   const handleSelectSection = useCallback(
     (nextSection: SettingsSectionKey) => {
       setSection(nextSection);
-      const params = new URLSearchParams(searchParams.toString());
-      if (nextSection === DEFAULT_SETTINGS_SECTION) {
-        params.delete('section');
-      } else {
-        params.set('section', nextSection);
-      }
-      const query = params.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+      const url = buildSectionUrl(pathname, searchParams.toString(), nextSection);
+      router.replace(url, { scroll: false });
     },
     [pathname, router, searchParams],
   );
@@ -151,14 +143,7 @@ export default function ContaView() {
     await loadBillingSummary();
   }, [loadBillingSummary]);
 
-  const showSystemAlerts =
-    section === 'account' ||
-    section === 'billing' ||
-    section === 'apps' ||
-    section === 'brain' ||
-    section === 'crm' ||
-    section === 'analytics' ||
-    section === 'activity';
+  const showSystemAlerts = shouldShowSystemAlerts(section);
 
   const SECTIONS: Array<{
     key: SettingsSectionKey;
@@ -496,7 +481,7 @@ export default function ContaView() {
           </div>
         </div>
 
-        {pct >= 100 && kycStatus === 'pending' && (
+        {canSubmitKyc(pct, kycStatus) && (
           <div style={{ marginTop: 32, textAlign: 'center' as const }}>
             {submitError && (
               <span

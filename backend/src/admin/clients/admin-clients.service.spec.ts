@@ -3,11 +3,15 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AdminClientsService } from './admin-clients.service';
 import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
-const mockBuildRow = jest.fn();
+const mockBuildRow = jest.fn<unknown, unknown[]>();
 
 jest.mock('./admin-client-row.builder', () => ({
   buildAdminClientRow: (...args: unknown[]) => mockBuildRow(...args),
 }));
+
+// Typed wrappers around jest matchers so nested matcher values are typed
+const oc = (o: Record<string, unknown>): unknown => expect.objectContaining(o);
+const ac = (a: unknown[]): unknown => expect.arrayContaining(a);
 
 describe('AdminClientsService', () => {
   let service: AdminClientsService;
@@ -111,8 +115,8 @@ describe('AdminClientsService', () => {
 
       expect(mockWorkspaceFindMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({
-            OR: expect.arrayContaining([{ name: { contains: 'test', mode: 'insensitive' } }]),
+          where: oc({
+            OR: ac([{ name: { contains: 'test', mode: 'insensitive' } }]),
           }),
         }),
       );

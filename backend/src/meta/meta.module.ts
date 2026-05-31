@@ -3,13 +3,13 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { InboxModule } from '../inbox/inbox.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WebhooksModule } from '../webhooks/webhooks.module';
-import { WhatsappModule } from '../whatsapp/whatsapp.module';
+import { WhatsappModule } from '../marketing/channels/whatsapp/whatsapp.module';
 import { MetaAdsController } from './ads/meta-ads.controller';
 import { MetaAdsService } from './ads/meta-ads.service';
-import { InstagramController } from './instagram/instagram.controller';
-import { InstagramService } from './instagram/instagram.service';
-import { MessengerController } from './messenger/messenger.controller';
-import { MessengerService } from './messenger/messenger.service';
+import { InstagramController } from '../marketing/channels/instagram/instagram.controller';
+import { InstagramService } from '../marketing/channels/instagram/instagram.service';
+import { MessengerController } from '../marketing/channels/messenger/messenger.controller';
+import { MessengerService } from '../marketing/channels/messenger/messenger.service';
 import { MetaAuthController } from './meta-auth.controller';
 import { MetaSdkService } from './meta-sdk.service';
 import { MetaWhatsAppService } from './meta-whatsapp.service';
@@ -21,7 +21,7 @@ import { MetaWebhookController } from './meta-webhook.controller';
 // timestamps from Meta Graph API; duplicate entries skipped by externalId.
 @Global()
 @Module({
-  imports: [PrismaModule, InboxModule, WebhooksModule, forwardRef(() => WhatsappModule)],
+  imports: [PrismaModule, forwardRef(() => InboxModule), WebhooksModule, forwardRef(() => WhatsappModule)],
   controllers: [
     MetaAuthController,
     MetaCoreWebhookController,

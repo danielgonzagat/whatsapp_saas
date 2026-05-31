@@ -1,3 +1,4 @@
+import { beforeEach, describe, expect, it } from '@jest/globals';
 import { buildPaymentWebhookController as buildController } from '../../test/payment-webhook-controller-harness';
 import { registerWooCommerceIdempotencyTests } from './payment-webhook.controller.idempotency.spec.helpers';
 
@@ -336,6 +337,157 @@ describe('PaymentWebhookController — idempotency and replay safety', () => {
     );
     expect(webhooksService.markWebhookProcessed).toHaveBeenCalledWith('we_1');
     expect(result).toEqual({ received: true });
+  });
+
+  // Regression guard for Claude-W4 2026-05-28 idempotency audit.
+  //
+  // GAP: WebhooksService.logWebhookEvent uses Prisma `upsert`, which UPDATES the
+  // existing row to status='received' on the second delivery instead of throwing
+  // P2002. Combined with the Redis NX cache having a 300s TTL, Stripe retries
+  // arriving > 5 min later (Stripe can retry up to 3 days) would bypass both
+  // idempotency layers and re-run handlers — double-processing sale, ledger
+  // credit, autopilot conversion, post-purchase flow.
+  //
+  // Fix: when logWebhookEvent returns an existing row whose status is already
+  // 'processed', short-circuit with `already_processed` instead of re-invoking
+  // the handler chain.
+  it('returns already_processed on post-TTL replay when WebhookEvent.status is already processed', async () => {
+    const { controller, redis, webhooksService, prisma, autopilot, stripeWebhookProcessor } =
+      buildController();
+    redis.set.mockResolvedValueOnce('OK');
+    // upsert returns the existing row already marked processed (post-TTL replay).
+    webhooksService.logWebhookEvent.mockResolvedValueOnce({
+      id: 'we_replayed_1',
+      provider: 'stripe',
+      externalId: 'evt_replay_after_ttl',
+      eventType: 'checkout.session.completed',
+      status: 'processed',
+      processedAt: new Date(),
+      receivedAt: new Date(),
+      error: null,
+      payload: {},
+    });
+
+    const result = await controller.handleStripe(
+      {
+        body: {
+          id: 'evt_replay_after_ttl',
+          type: 'checkout.session.completed',
+          data: {
+            object: {
+              id: 'cs_replay_1',
+              payment_intent: 'pi_replay_1',
+              amount_total: 5_000,
+              currency: 'brl',
+              customer_email: 'buyer@example.com',
+              customer_details: { email: 'buyer@example.com', phone: '+5511999999999' },
+              metadata: { workspaceId: 'ws-1', kloel_order_id: 'order-1' },
+            },
+          },
+        },
+        rawBody: '',
+        url: '/webhook/payment/stripe',
+      },
+      undefined,
+      'evt_replay_after_ttl',
+      {
+        id: 'evt_replay_after_ttl',
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_replay_1',
+            payment_intent: 'pi_replay_1',
+            amount_total: 5_000,
+            currency: 'brl',
+            customer_email: 'buyer@example.com',
+            customer_details: { email: 'buyer@example.com', phone: '+5511999999999' },
+            metadata: { workspaceId: 'ws-1', kloel_order_id: 'order-1' },
+          },
+        },
+      },
+    );
+
+    expect(result).toEqual({
+      received: true,
+      skipped: true,
+      reason: 'already_processed',
+    });
+    // No re-processing of sale / ledger / autopilot / whatsapp side-effects.
+    expect(stripeWebhookProcessor.processSaleSucceeded).not.toHaveBeenCalled();
+    expect(prisma.kloelSale.updateMany).not.toHaveBeenCalled();
+    expect(autopilot.markConversion).not.toHaveBeenCalled();
+    expect(autopilot.triggerPostPurchaseFlow).not.toHaveBeenCalled();
+  });
+
+  // Concurrent in-flight duplicate: a second delivery arrives while the first is
+  // still being handled, so the existing WebhookEvent row is marked 'processing'
+  // (not yet 'processed'). The replay guard must also short-circuit here to avoid
+  // double-processing when the duplicate lost the atomic claim-once race.
+  it('returns already_processed when WebhookEvent.status is processing (concurrent in-flight duplicate)', async () => {
+    const { controller, redis, webhooksService, prisma, autopilot, stripeWebhookProcessor } =
+      buildController();
+    redis.set.mockResolvedValueOnce('OK');
+    webhooksService.logWebhookEvent.mockResolvedValueOnce({
+      id: 'we_inflight_1',
+      provider: 'stripe',
+      externalId: 'evt_inflight_dupe',
+      eventType: 'checkout.session.completed',
+      status: 'processing',
+      processedAt: null,
+      receivedAt: new Date(),
+      error: null,
+      payload: {},
+    });
+
+    const result = await controller.handleStripe(
+      {
+        body: {
+          id: 'evt_inflight_dupe',
+          type: 'checkout.session.completed',
+          data: {
+            object: {
+              id: 'cs_inflight_1',
+              payment_intent: 'pi_inflight_1',
+              amount_total: 5_000,
+              currency: 'brl',
+              customer_email: 'buyer@example.com',
+              customer_details: { email: 'buyer@example.com', phone: '+5511999999999' },
+              metadata: { workspaceId: 'ws-1', kloel_order_id: 'order-1' },
+            },
+          },
+        },
+        rawBody: '',
+        url: '/webhook/payment/stripe',
+      },
+      undefined,
+      'evt_inflight_dupe',
+      {
+        id: 'evt_inflight_dupe',
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_inflight_1',
+            payment_intent: 'pi_inflight_1',
+            amount_total: 5_000,
+            currency: 'brl',
+            customer_email: 'buyer@example.com',
+            customer_details: { email: 'buyer@example.com', phone: '+5511999999999' },
+            metadata: { workspaceId: 'ws-1', kloel_order_id: 'order-1' },
+          },
+        },
+      },
+    );
+
+    expect(result).toEqual({
+      received: true,
+      skipped: true,
+      reason: 'already_processed',
+    });
+    // No re-processing of sale / ledger / autopilot / whatsapp side-effects.
+    expect(stripeWebhookProcessor.processSaleSucceeded).not.toHaveBeenCalled();
+    expect(prisma.kloelSale.updateMany).not.toHaveBeenCalled();
+    expect(autopilot.markConversion).not.toHaveBeenCalled();
+    expect(autopilot.triggerPostPurchaseFlow).not.toHaveBeenCalled();
   });
 
   it('proceeds normally when Redis returns OK (no existing key) for a new webhook event', async () => {

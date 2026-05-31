@@ -8,7 +8,9 @@ import { PublicApiModule } from './public-api.module';
 
 describe('PublicApiModule', () => {
   it('imports PrismaModule, InboxModule and ApiKeysModule', () => {
-    const imports = Reflect.getMetadata(MODULE_METADATA.IMPORTS, PublicApiModule) ?? [];
+    const imports =
+      (Reflect.getMetadata(MODULE_METADATA.IMPORTS, PublicApiModule) as unknown[] | undefined) ??
+      [];
 
     expect(imports).toContain(PrismaModule);
     expect(imports).toContain(InboxModule);
@@ -16,13 +18,18 @@ describe('PublicApiModule', () => {
   });
 
   it('registers PublicApiController', () => {
-    const controllers = Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, PublicApiModule) ?? [];
+    const controllers =
+      (Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, PublicApiModule) as
+        | unknown[]
+        | undefined) ?? [];
 
     expect(controllers).toContain(PublicApiController);
   });
 
   it('provides ApiKeyGuard', () => {
-    const providers = Reflect.getMetadata(MODULE_METADATA.PROVIDERS, PublicApiModule) ?? [];
+    const providers =
+      (Reflect.getMetadata(MODULE_METADATA.PROVIDERS, PublicApiModule) as unknown[] | undefined) ??
+      [];
 
     expect(providers).toContain(ApiKeyGuard);
   });

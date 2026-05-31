@@ -59,7 +59,7 @@ function makeBehaviorGraphJson(overrides: Record<string, unknown> = {}) {
         id: 'node-1',
         kind: 'handler',
         name: 'handleCheckout',
-        filePath: 'backend/src/kloel/checkout.service.ts',
+        filePath: 'backend/src/kloel/kloel-chat-checkout.tool.ts',
         line: 42,
         executionMode: 'ai_safe',
         risk: 'medium',

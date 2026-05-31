@@ -3,7 +3,7 @@ import { StorageService } from '../common/storage/storage.service';
 import { getTraceHeaders } from '../common/trace-headers';
 import { QueueHealthService } from '../metrics/queue-health.service';
 import { ObservabilityQueriesService } from '../metrics/observability-queries.service';
-import { WhatsAppApiProvider } from '../whatsapp/providers/whatsapp-api.provider';
+import { WhatsAppApiProvider } from '../marketing/channels/whatsapp/providers/whatsapp-api.provider';
 
 import { TRAILING_SLASH_RE } from '../common/regex';
 
@@ -145,7 +145,7 @@ export async function checkWorker(config: ConfigService) {
       };
     }
 
-    const payload = await response.json().catch(() => ({}));
+    const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
     return {
       status: payload?.status === 'ok' ? 'UP' : 'DEGRADED',
       url: maskUrl(workerHealthUrl),

@@ -26,13 +26,15 @@ import type {
   AgentRuntimeSessionRecallResult,
   AgentRuntimeTurnRecord,
 } from './agent-runtime.types';
+import { MindMemoryItemService } from '../mind/aliases/mind-memory-item.service';
 
 @Injectable()
 export class AgentRuntimeSessionStore {
   private readonly logger = StructuredLogger.from(AgentRuntimeSessionStore.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    _prisma: PrismaService,
+    private readonly mindMemory: MindMemoryItemService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
@@ -52,7 +54,7 @@ export class AgentRuntimeSessionStore {
         actions: toInputJsonValue(turn.actions ?? []),
       } satisfies Prisma.InputJsonObject;
 
-      await this.prisma.kloelMemory.create({
+      await this.mindMemory.items.create({
         data: {
           workspaceId: turn.workspaceId,
           key,
@@ -84,7 +86,7 @@ export class AgentRuntimeSessionStore {
     const id = randomUUID();
     const key = `agent_runtime:${params.eventType}:${params.sessionId}:${id}`;
     try {
-      await this.prisma.kloelMemory.create({
+      await this.mindMemory.items.create({
         data: {
           workspaceId: params.workspaceId,
           key,
@@ -133,7 +135,7 @@ export class AgentRuntimeSessionStore {
       { key: { contains: token, mode: 'insensitive' as const } },
     ]);
 
-    const rows = await this.prisma.kloelMemory.findMany({
+    const rows = await this.mindMemory.items.findMany({
       where: {
         workspaceId,
         category: { in: [...SEARCH_CATEGORIES] },
@@ -222,7 +224,7 @@ export class AgentRuntimeSessionStore {
       { key: { contains: token, mode: 'insensitive' as const } },
     ]);
 
-    const rows = await this.prisma.kloelMemory.findMany({
+    const rows = await this.mindMemory.items.findMany({
       where: {
         workspaceId,
         category: { in: [...SEARCH_CATEGORIES] },

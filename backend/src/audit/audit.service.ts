@@ -1,5 +1,5 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { AuditLog, Prisma } from '@prisma/client';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -125,6 +125,33 @@ export class AuditService {
   async recentForWorkspace(workspaceId: string, limit = 20) {
     return this.prisma.auditLog.findMany({
       where: { workspaceId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      include: {
+        agent: {
+          select: { name: true, email: true },
+        },
+      },
+    });
+  }
+
+  /**
+   * Return recent audit entries for a workspace with optional filtering.
+   * Default limit 50, max 200. Ordered by createdAt desc.
+   */
+  async recent(
+    workspaceId: string,
+    filter?: { limit?: number; type?: string },
+  ): Promise<AuditLog[]> {
+    const rawLimit = filter?.limit ?? 50;
+    const limit = Math.min(Math.max(Math.trunc(rawLimit), 1), 200);
+    const where: Prisma.AuditLogWhereInput = { workspaceId };
+    if (filter?.type) {
+      where.action = filter.type;
+    }
+
+    return this.prisma.auditLog.findMany({
+      where,
       orderBy: { createdAt: 'desc' },
       take: limit,
       include: {

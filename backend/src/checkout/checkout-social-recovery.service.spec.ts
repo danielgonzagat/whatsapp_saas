@@ -107,7 +107,7 @@ describe('CheckoutSocialRecoveryService', () => {
 
       expect(prisma.checkoutSocialLead.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ status: CheckoutSocialLeadStatus.ABANDONED }),
+          data: expect.objectContaining({ status: CheckoutSocialLeadStatus.ABANDONED }) as unknown,
         }),
       );
     });
@@ -173,7 +173,7 @@ describe('CheckoutSocialRecoveryService', () => {
       expect(emailService.sendEmail).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'email@test.com',
-          subject: expect.stringContaining('checkout'),
+          subject: expect.stringContaining('checkout') as unknown,
         }),
       );
     });

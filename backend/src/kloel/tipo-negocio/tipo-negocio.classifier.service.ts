@@ -22,7 +22,7 @@ import type {
 } from './tipo-negocio.types';
 import { clampConfidence } from './tipo-negocio.types';
 
-interface ApprovedPayment {
+export interface ApprovedPayment {
   readonly amount: number;
   readonly occurredAt: string;
   readonly payerId: string | undefined;

@@ -30,6 +30,8 @@ jest.mock('./memory-stats', () => ({
 
 import { computeMemoryStats } from './memory-stats';
 import type { MemoryStats } from './memory-stats';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 type MemoryManagementPrismaMock = {
   kloelMemory: {
@@ -99,6 +101,14 @@ describe('MemoryManagementService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: auditService },
         { provide: OpsAlertService, useValue: opsAlert },
+        {
+          provide: MindMemoryItemService,
+          useValue: {
+            get items() {
+              return prisma.kloelMemory;
+            },
+          },
+        },
       ],
     }).compile();
 
@@ -222,7 +232,7 @@ describe('MemoryManagementService', () => {
       await service.cleanupAll();
 
       expect(auditService.log).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           workspaceId: 'SYSTEM',
           action: 'DELETE_MEMORY_CLEANUP',
           resource: 'KloelMemory',
@@ -285,11 +295,11 @@ describe('MemoryManagementService', () => {
 
       expect(count).toBe(2);
       expect(prisma.kloelMemory.deleteMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: wsId }),
+        partialMatch({
+          where: partialMatch({ workspaceId: wsId }),
         }),
       );
-      const deleteArg = prisma.kloelMemory.deleteMany.mock.calls[0][0] as {
+      const deleteArg = (prisma.kloelMemory.deleteMany.mock.calls as unknown[][])[0][0] as {
         where: { updatedAt: { lt: Date } };
       };
       expect(deleteArg.where.updatedAt.lt).toBeInstanceOf(Date);
@@ -300,11 +310,11 @@ describe('MemoryManagementService', () => {
 
       await service.cleanupWorkspace(wsId);
 
-      const workspaceAuditDetails: Record<string, unknown> = expect.objectContaining({
+      const workspaceAuditDetails: jest.AsymmetricMatcher = partialMatch({
         deletedCount: 7,
       });
       expect(auditService.log).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           workspaceId: wsId,
           action: 'DELETE_WORKSPACE_MEMORIES',
           details: workspaceAuditDetails,

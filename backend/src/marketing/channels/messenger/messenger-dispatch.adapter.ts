@@ -17,7 +17,7 @@ import {
   ChannelSendInput,
   ChannelSendResult,
 } from '../../../common/channel-dispatch/channel-dispatch.port';
-import { MessengerService } from '../../../meta/messenger/messenger.service';
+import { MessengerService } from './messenger.service';
 
 @Injectable()
 export class MessengerDispatchAdapter implements ChannelDispatchPort {
@@ -65,6 +65,11 @@ export class MessengerDispatchAdapter implements ChannelDispatchPort {
         error: error instanceof Error ? error.message : 'messenger_send_failed',
       };
     }
+  }
+
+  /** Canonical alias of {@link send} (Wave 21 unification — task d). */
+  sendMessage(input: ChannelSendInput): Promise<ChannelSendResult> {
+    return this.send(input);
   }
 
   isConfigured(): boolean {

@@ -2,11 +2,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { KloelToolExecutorWhatsAppService } from './kloel-tool-executor-whatsapp.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
-import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { WhatsAppProviderRegistry } from '../marketing/channels/whatsapp/providers/provider-registry';
+import { WhatsappService } from '../marketing/channels/whatsapp/whatsapp.service';
 import { AudioService } from './audio.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { ChannelTransportRegistry } from './channel-transport.registry';
+import { partialMatch } from '../../test/helpers/match-instance';
+import { castMock } from '../../test/helpers/cast-mock';
 
 type WhatsAppPrismaMock = {
   contact: { findFirst: jest.Mock; create: jest.Mock };
@@ -147,7 +149,7 @@ describe('KloelToolExecutorWhatsAppService', () => {
 
       expect(result.success).toBe(true);
       expect(result.count).toBe(2);
-      const getMessagesArgs = whatsappService.getChatMessages.mock.calls[0];
+      const getMessagesArgs = castMock<unknown[][]>(whatsappService.getChatMessages.mock.calls)[0];
       expect(getMessagesArgs.slice(0, 2)).toEqual([wsId, 'chat-1']);
       expect(getMessagesArgs[2]).toBeDefined();
     });
@@ -355,7 +357,7 @@ describe('KloelToolExecutorWhatsAppService', () => {
         }),
       );
       expect(prisma.contact.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ workspaceId: 'ws-isolated' }) }),
+        expect.objectContaining({ data: partialMatch({ workspaceId: 'ws-isolated' }) }),
       );
     });
 

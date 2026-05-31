@@ -1,33 +1,35 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { createHmac, timingSafeEqual } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { decryptMetaToken, encryptMetaToken } from '../meta/meta-token-crypto';
 import { PrismaService } from '../prisma/prisma.service';
-import { asProviderSettings, type ProviderSettings } from '../whatsapp/provider-settings.types';
-
-interface TikTokProviderSubsettings {
-  connected?: boolean;
-  status?: string;
-  kind?: string;
-  accessToken?: string;
-  refreshToken?: string | null;
-  openId?: string | null;
-  advertiserIds?: string[];
-  scope?: string | null;
-  expiresAt?: string | null;
-  connectedAt?: string;
-  [key: string]: unknown;
-}
-
-const CREATOR_AUTH_URL = 'https://www.tiktok.com/v2/auth/authorize/';
-const CREATOR_TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
-const CREATOR_USER_INFO_URL = 'https://open.tiktokapis.com/v2/user/info/';
-const ADVERTISER_AUTH_URL = 'https://business-api.tiktok.com/portal/auth';
-const ADVERTISER_TOKEN_URL = 'https://business-api.tiktok.com/open_api/v1.3/oauth2/access_token/';
-const BUSINESS_API_BASE_URL = 'https://business-api.tiktok.com/open_api/v1.3';
-const STATE_TTL_MS = 10 * 60 * 1000;
-
-type TikTokKind = 'creator' | 'advertiser';
+import {
+  asProviderSettings,
+  type ProviderSettings,
+} from './channels/whatsapp/provider-settings.types';
+import {
+  ADVERTISER_TOKEN_URL,
+  BUSINESS_API_BASE_URL,
+  CREATOR_TOKEN_URL,
+  CREATOR_USER_INFO_URL,
+  TIKTOK_CLIENT_KEY_ENV_KEYS,
+  TIKTOK_CREATOR_PROFILE_FIELDS,
+  TIKTOK_SECRET_ENV_KEYS,
+  TIKTOK_STATE_SECRET_ENV_KEYS,
+  type TikTokKind,
+  type TikTokProviderSubsettings,
+  type TikTokTokenPayload,
+  buildAuthUrl,
+  expiresAtFromSeconds,
+  readRequiredEnv,
+  readString,
+  resolveAdvertiserId,
+  resolveKind,
+  resolveRedirectUri,
+  resolveStatus,
+  signPayload,
+  tryReadEnv,
+  verifyState,
+} from './tiktok-marketing.helpers';
 
 export interface TikTokCompleteBody {
   code?: string;
@@ -35,95 +37,6 @@ export interface TikTokCompleteBody {
   kind?: TikTokKind;
   redirectUri?: string;
   state?: string;
-}
-
-interface TikTokTokenPayload {
-  access_token?: string;
-  refresh_token?: string;
-  expires_in?: number;
-  open_id?: string;
-  scope?: string;
-  advertiser_ids?: string[];
-  data?: {
-    access_token?: string;
-    refresh_token?: string;
-    expires_in?: number;
-    advertiser_ids?: string[];
-  };
-  message?: string;
-  error?: string;
-}
-
-interface SignedStatePayload {
-  workspaceId: string;
-  kind: TikTokKind;
-  ts: number;
-}
-
-function resolveKind(raw: unknown): TikTokKind {
-  return raw === 'advertiser' ? 'advertiser' : 'creator';
-}
-
-function readRequiredEnv(keys: string[], label: string): string {
-  const value = keys.map((key) => String(process.env[key] || '').trim()).find(Boolean);
-  if (!value) {
-    throw new Error(`${label}_not_configured`);
-  }
-  return value;
-}
-
-function expiresAtFromSeconds(seconds: unknown) {
-  const expiresIn = Number(seconds || 0);
-  return expiresIn > 0 ? new Date(Date.now() + expiresIn * 1000).toISOString() : null;
-}
-
-function readString(value: unknown): string | null {
-  const result = typeof value === 'string' ? value.trim() : '';
-  return result || null;
-}
-
-function readStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-  return value.map((item) => readString(item)).filter((item): item is string => Boolean(item));
-}
-
-function signPayload(payload: SignedStatePayload, secret: string): string {
-  const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
-  const signature = createHmac('sha256', secret).update(encoded).digest('base64url');
-  return `${encoded}.${signature}`;
-}
-
-function verifyState(rawState: unknown, secret: string): SignedStatePayload | null {
-  const state = typeof rawState === 'string' ? rawState.trim() : '';
-  const [encoded, signature] = state.split('.');
-  if (!encoded || !signature) {
-    return null;
-  }
-
-  const expected = createHmac('sha256', secret).update(encoded).digest('base64url');
-  const signatureBuffer = Buffer.from(signature);
-  const expectedBuffer = Buffer.from(expected);
-  if (
-    signatureBuffer.length !== expectedBuffer.length ||
-    !timingSafeEqual(signatureBuffer, expectedBuffer)
-  ) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'));
-    const workspaceId = String(parsed?.workspaceId || '').trim();
-    const kind = resolveKind(parsed?.kind);
-    const ts = Number(parsed?.ts || 0);
-    if (!workspaceId || !Number.isFinite(ts) || Date.now() - ts > STATE_TTL_MS) {
-      return null;
-    }
-    return { workspaceId, kind, ts };
-  } catch {
-    return null;
-  }
 }
 
 @Injectable()
@@ -140,85 +53,31 @@ export class TikTokMarketingService {
     const settings = asProviderSettings(workspace?.providerSettings);
     const tiktok = (settings.tiktok || {}) as TikTokProviderSubsettings;
 
-    const expiresAt = typeof tiktok.expiresAt === 'string' ? tiktok.expiresAt : null;
-    const expired = expiresAt ? new Date(expiresAt).getTime() < Date.now() : false;
-    const clientConfigured = Boolean(this.tryReadTikTokClientKey());
-    const secretConfigured = Boolean(this.tryReadTikTokSecret());
-
-    const connected = Boolean(tiktok.connected) && !expired;
-    const status =
-      !clientConfigured || !secretConfigured
-        ? 'config_missing'
-        : connected
-          ? 'connected'
-          : expired && tiktok.connected
-            ? 'expired'
-            : 'disconnected';
-
-    return {
-      connected,
-      status,
-      kind: typeof tiktok.kind === 'string' ? tiktok.kind : null,
-      openId: typeof tiktok.openId === 'string' ? tiktok.openId : null,
-      advertiserIds: Array.isArray(tiktok.advertiserIds) ? tiktok.advertiserIds : [],
-      expiresAt,
-      expired,
-      clientConfigured,
-      secretConfigured,
-      configReady: clientConfigured && secretConfigured,
-    };
+    return resolveStatus({
+      tiktok,
+      clientConfigured: Boolean(tryReadEnv(TIKTOK_CLIENT_KEY_ENV_KEYS)),
+      secretConfigured: Boolean(tryReadEnv(TIKTOK_SECRET_ENV_KEYS)),
+    });
   }
 
   generateAuthUrl(workspaceId: string, rawKind?: TikTokKind) {
     const kind = resolveKind(rawKind);
-    const clientKey = this.readTikTokClientKey();
-    const state = signPayload({ workspaceId, kind, ts: Date.now() }, this.readStateSecret());
-    const redirectUri = this.resolveRedirectUri(kind);
-
-    if (kind === 'advertiser') {
-      const url = new URL(ADVERTISER_AUTH_URL);
-      url.searchParams.set('app_id', clientKey);
-      url.searchParams.set('state', state);
-      url.searchParams.set('redirect_uri', redirectUri);
-      return { url: url.toString(), kind, redirectUri };
-    }
-
-    const url = new URL(CREATOR_AUTH_URL);
-    url.searchParams.set('client_key', clientKey);
-    url.searchParams.set(
-      'scope',
-      [
-        'user.info.basic',
-        'user.info.username',
-        'user.info.stats',
-        'user.info.profile',
-        'user.account.type',
-        'user.insights',
-        'biz.brand.insights',
-        'video.list',
-        'video.insights',
-        'comment.list',
-        'comment.list.manage',
-        'video.publish',
-        'video.upload',
-        'biz.spark.auth',
-        'discovery.search.words',
-        'biz.ads.recommend',
-        'biz.creator.info',
-        'biz.creator.insights',
-        'tto.campaign.link',
-      ].join(','),
+    const clientKey = readRequiredEnv(TIKTOK_CLIENT_KEY_ENV_KEYS, 'tiktok_client_key');
+    const state = signPayload(
+      { workspaceId, kind, ts: Date.now() },
+      readRequiredEnv(TIKTOK_STATE_SECRET_ENV_KEYS, 'tiktok_state_secret'),
     );
-    url.searchParams.set('response_type', 'code');
-    url.searchParams.set('redirect_uri', redirectUri);
-    url.searchParams.set('state', state);
-    return { url: url.toString(), kind, redirectUri };
+    const redirectUri = resolveRedirectUri(kind);
+    return buildAuthUrl({ kind, clientKey, state, redirectUri });
   }
 
   async completeOAuth(workspaceId: string, body: TikTokCompleteBody) {
     const kind = resolveKind(body.kind);
     const code = String(body.code || body.auth_code || '').trim();
-    const state = verifyState(body.state, this.readStateSecret());
+    const state = verifyState(
+      body.state,
+      readRequiredEnv(TIKTOK_STATE_SECRET_ENV_KEYS, 'tiktok_state_secret'),
+    );
 
     if (!code) {
       return { connected: false, status: 'missing_code' };
@@ -230,8 +89,8 @@ export class TikTokMarketingService {
     let clientKey = '';
     let secret = '';
     try {
-      clientKey = this.readTikTokClientKey();
-      secret = this.readTikTokSecret();
+      clientKey = readRequiredEnv(TIKTOK_CLIENT_KEY_ENV_KEYS, 'tiktok_client_key');
+      secret = readRequiredEnv(TIKTOK_SECRET_ENV_KEYS, 'tiktok_client_secret');
     } catch (error) {
       this.logger.error(
         'Failed to read TikTok client credentials',
@@ -241,7 +100,7 @@ export class TikTokMarketingService {
       return { connected: false, status: 'server_not_configured' };
     }
 
-    const redirectUri = this.resolveRedirectUri(kind, body.redirectUri);
+    const redirectUri = resolveRedirectUri(kind, body.redirectUri);
     const token = await this.exchangeToken({ kind, code, clientKey, secret, redirectUri });
     const tokenData = token.data || token;
     const accessToken = tokenData.access_token || token.access_token || '';
@@ -289,26 +148,13 @@ export class TikTokMarketingService {
 
   async getCreatorProfile(workspaceId: string) {
     const settings = await this.readTikTokSettings(workspaceId);
-    const accessToken = this.decryptStoredAccessToken(settings);
+    const accessToken = decryptMetaToken(readString(settings.accessToken));
     if (!accessToken) {
       return { status: 'not_connected', profile: null };
     }
 
     const url = new URL(CREATOR_USER_INFO_URL);
-    url.searchParams.set(
-      'fields',
-      [
-        'open_id',
-        'union_id',
-        'avatar_url',
-        'display_name',
-        'username',
-        'follower_count',
-        'following_count',
-        'likes_count',
-        'video_count',
-      ].join(','),
-    );
+    url.searchParams.set('fields', TIKTOK_CREATOR_PROFILE_FIELDS.join(','));
     const response = await fetch(url, {
       headers: { Authorization: `Bearer ${accessToken}` },
       signal: AbortSignal.timeout(30000),
@@ -330,11 +176,11 @@ export class TikTokMarketingService {
 
   async listAdvertiserCampaigns(workspaceId: string, rawAdvertiserId?: string) {
     const settings = await this.readTikTokSettings(workspaceId);
-    const accessToken = this.decryptStoredAccessToken(settings);
+    const accessToken = decryptMetaToken(readString(settings.accessToken));
     if (!accessToken) {
       return { status: 'not_connected', campaigns: [] };
     }
-    const advertiserId = this.resolveAdvertiserId(settings, rawAdvertiserId);
+    const advertiserId = resolveAdvertiserId(settings, rawAdvertiserId);
     if (!advertiserId) {
       return { status: 'missing_advertiser_id', campaigns: [] };
     }
@@ -386,60 +232,6 @@ export class TikTokMarketingService {
     return { status: 'disconnected' };
   }
 
-  private tryReadTikTokClientKey() {
-    return (
-      String(process.env.TIKTOK_CLIENT_KEY || '').trim() ||
-      String(process.env.TIKTOK_APP_ID || '').trim() ||
-      String(process.env.TIKTOK_CLIENT_ID || '').trim() ||
-      String(process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY || '').trim() ||
-      String(process.env.NEXT_PUBLIC_TIKTOK_APP_ID || '').trim()
-    );
-  }
-
-  private tryReadTikTokSecret() {
-    return (
-      String(process.env.TIKTOK_CLIENT_SECRET || '').trim() ||
-      String(process.env.TIKTOK_APP_SECRET || '').trim()
-    );
-  }
-
-  private readTikTokClientKey() {
-    return readRequiredEnv(
-      [
-        'TIKTOK_CLIENT_KEY',
-        'TIKTOK_APP_ID',
-        'TIKTOK_CLIENT_ID',
-        'NEXT_PUBLIC_TIKTOK_CLIENT_KEY',
-        'NEXT_PUBLIC_TIKTOK_APP_ID',
-      ],
-      'tiktok_client_key',
-    );
-  }
-
-  private readTikTokSecret() {
-    return readRequiredEnv(['TIKTOK_CLIENT_SECRET', 'TIKTOK_APP_SECRET'], 'tiktok_client_secret');
-  }
-
-  private readStateSecret() {
-    return readRequiredEnv(
-      ['TIKTOK_STATE_SECRET', 'JWT_SECRET', 'TIKTOK_CLIENT_SECRET', 'TIKTOK_APP_SECRET'],
-      'tiktok_state_secret',
-    );
-  }
-
-  private resolveRedirectUri(kind: TikTokKind, explicit?: string) {
-    if (explicit) {
-      return explicit;
-    }
-    const frontendUrl = String(process.env.FRONTEND_URL || 'https://app.kloel.com').replace(
-      /\/+$/,
-      '',
-    );
-    return kind === 'advertiser'
-      ? `${frontendUrl}/integrations/tiktok/callback`
-      : `${frontendUrl}/integrations/tiktok/auth/callback`;
-  }
-
   private async readTikTokSettings(workspaceId: string) {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
@@ -447,19 +239,6 @@ export class TikTokMarketingService {
     });
     const settings = asProviderSettings(workspace?.providerSettings);
     return (settings.tiktok || {}) as Record<string, unknown>;
-  }
-
-  private decryptStoredAccessToken(settings: Record<string, unknown>) {
-    return decryptMetaToken(readString(settings.accessToken));
-  }
-
-  private resolveAdvertiserId(settings: Record<string, unknown>, rawAdvertiserId?: string) {
-    const explicit = readString(rawAdvertiserId);
-    if (explicit) {
-      return explicit.replace(/\D/g, '');
-    }
-    const advertiserIds = readStringArray(settings.advertiserIds);
-    return advertiserIds[0]?.replace(/\D/g, '') || '';
   }
 
   private async exchangeToken(input: {

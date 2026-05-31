@@ -37,7 +37,7 @@ const PROPOSED_FIXES: Readonly<
   },
   whatsapp: {
     description: 'Add rate-limit backoff to WhatsApp message sender',
-    targetPattern: ['backend/src/whatsapp/**', 'worker/**'],
+    targetPattern: ['backend/src/marketing/channels/whatsapp/**', 'worker/**'],
     risk: 'high',
   },
   checkout: {

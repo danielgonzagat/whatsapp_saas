@@ -5,6 +5,7 @@ import {
   extractTextBody,
   normalizeGmailMessage,
 } from './message-parser';
+import { partialMatch, stringContains } from '../../../test/helpers/match-instance';
 
 describe('message-parser', () => {
   describe('readHeader', () => {
@@ -127,8 +128,8 @@ describe('message-parser', () => {
           externalId: 'gmail:msg-1',
           from: 'sender@example.com',
           fromName: 'Sender',
-          content: expect.stringContaining('Test Subject'),
-          metadata: expect.objectContaining({
+          content: stringContains('Test Subject'),
+          metadata: partialMatch({
             provider: 'gmail',
             mailboxConnectionId: 'mb-1',
           }),

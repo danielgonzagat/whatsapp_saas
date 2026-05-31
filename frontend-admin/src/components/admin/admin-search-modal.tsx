@@ -37,7 +37,18 @@ export function AdminSearchModal({ open, onClose }: { open: boolean; onClose: ()
   const inputRef = useRef<HTMLInputElement | null>(null);
   const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const [query, setQuery] = useState('');
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [rawSelectedIndex, setSelectedIndex] = useState(0);
+
+  // Clear the transient search state whenever the modal transitions to closed,
+  // using the "adjust state while rendering" idiom rather than an effect.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (wasOpen !== open) {
+    setWasOpen(open);
+    if (!open) {
+      setQuery('');
+      setSelectedIndex(0);
+    }
+  }
 
   useEffect(() => {
     if (!open) {
@@ -53,13 +64,6 @@ export function AdminSearchModal({ open, onClose }: { open: boolean; onClose: ()
     };
   }, [open]);
 
-  useEffect(() => {
-    if (!open) {
-      setQuery('');
-      setSelectedIndex(0);
-    }
-  }, [open]);
-
   const results = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) {
@@ -71,9 +75,9 @@ export function AdminSearchModal({ open, onClose }: { open: boolean; onClose: ()
       .slice(0, 20);
   }, [query, sessions]);
 
-  useEffect(() => {
-    setSelectedIndex((current) => Math.min(current, Math.max(results.length - 1, 0)));
-  }, [results]);
+  // Keep the highlighted row within the current result bounds without an
+  // effect: clamp during render.
+  const selectedIndex = Math.min(rawSelectedIndex, Math.max(results.length - 1, 0));
 
   useEffect(() => {
     itemRefs.current[selectedIndex]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -149,11 +153,11 @@ export function AdminSearchModal({ open, onClose }: { open: boolean; onClose: ()
           onKeyDown={(event) => {
             if (event.key === 'ArrowDown') {
               event.preventDefault();
-              setSelectedIndex((current) => Math.min(current + 1, Math.max(results.length - 1, 0)));
+              setSelectedIndex(Math.min(selectedIndex + 1, Math.max(results.length - 1, 0)));
             }
             if (event.key === 'ArrowUp') {
               event.preventDefault();
-              setSelectedIndex((current) => Math.max(current - 1, 0));
+              setSelectedIndex(Math.max(selectedIndex - 1, 0));
             }
             if (event.key === 'Enter' && results[selectedIndex]) {
               event.preventDefault();

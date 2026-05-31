@@ -9,7 +9,6 @@ import { check } from "./smoke-state.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const SOURCE_DIR = path.basename(__dirname) === "dist" ? path.dirname(__dirname) : __dirname;
 
 export function partG(): void {
   const fb = buildFounderBlock({

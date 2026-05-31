@@ -1,7 +1,7 @@
 import { Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
-import { createTextLlmClient, hasTextLlmApiKey } from '../lib/llm-provider';
+import { createTextLlmClient, hasTextLlmApiKey, resolveTextLlmProvider } from '../lib/llm-provider';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelContextFormatter } from './kloel-context-formatter';
@@ -12,24 +12,67 @@ import { KloelWorkspaceContextService } from './kloel-workspace-context.service'
 import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
 import { MarketingSkillService } from './marketing-skills/marketing-skill.service';
 import { MindService } from './mind.service';
+import { AttentionService } from './mind/attention.service';
+import { ValenceAggregatorService } from './mind/valence-aggregator.service';
+import { ValenceTaggerService } from './mind/valence-tagger.service';
+import { MindBeliefService } from './mind/inference/mind-belief.service';
+import { MindConceptService } from './mind/memory/mind-concepts.service';
+import { SelfHealthService } from './self-awareness/self-health.service';
+import { SelfGapsService } from './self-awareness/self-gaps.service';
+import { RiskClassService } from './risk-class/risk-class.service';
+import { SpineEmitterService } from './spine/spine-emitter.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
-import { validateAbiPayload } from './abi/abi-validator';
 import {
-  WHITESPACE_RE,
-  RELAT_O__RIO_DOCUMENTO_RE,
-  CRIE_CADASTRAR_CADASTRE_RE,
-  PRODUTO_CAT_A__LOGO_AUT_RE,
   KLOEL_STREAM_ABORT_REASON_TIMEOUT,
   KLOEL_STREAM_ABORT_REASON_CLIENT_DISCONNECTED,
   buildDynamicRuntimeContextHelper,
   buildAssistantReplyImpl,
 } from './kloel-reply-engine.helpers';
+import {
+  detectExpertiseLevel,
+  shouldUseLongFormBudget,
+  shouldAttemptToolPlanningPass,
+} from './kloel-reply-engine.expertise.helpers';
+import { buildInternalKloelRuntimeContext } from './kloel-reply-engine.runtime-context.helpers';
+import { buildChatModelMessagesPayload } from './kloel-reply-engine.build-messages.helpers';
+import { DecisionOutcomeService } from './decision-outcome.service';
+import { MindSurpriseService } from './mind/inference/mind-surprise.service';
+import { MindPredictionService } from './mind/mind-prediction.service';
+import { MindVerbalizerService } from './mind/synthetic/mind-verbalizer.service';
+import { MindAutonomyCoordinator } from './mind/coordination/mind-autonomy-coordinator.service';
+import { MindBanditService } from './mind/policy/mind-bandit.service';
+import { MindCaseMemoryService } from './mind/memory/mind-case-memory.service';
+import { MindGlobalPriorService } from './mind/memory/mind-global-prior.service';
+import { MindPerceptionService } from './mind/perception/mind-perception.service';
+import { AgentAssistService } from './mind/knowledge/agent-assist.service';
+import { MindWorkspaceStateService } from './mind/memory/mind-workspace-state.service';
+import { VectorService } from './mind/knowledge/vector.service';
+import { randomUUID } from 'crypto';
+import {
+  buildChatOutcomeKey,
+  recordChatReplyDecision,
+  closeChatReplyOutcome,
+} from './kloel-reply-engine.decision-outcome.helpers';
+import {
+  applyReplyEngineDegradedPath,
+  applyReplyEnginePostReply,
+} from './kloel-reply-engine.degraded-path.helper';
+import { buildKloelAbiCognitiveState } from './kloel-reply-engine.cognitive-state.helpers';
+import { MindEventProcessorService } from './mind/runtime/mind-event-processor.service';
+import { MindEmotionalIntelligenceService } from './mind/emotional/mind-emotional-intelligence.service';
+import {
+  buildToneDirective,
+  logPostReplySentiment,
+} from './kloel-reply-engine.emotional-tone.helpers';
+import { buildRecallDirective } from './kloel-reply-engine.recall.helpers';
+import { LongTermMemoryService } from './mind/memory/long-term-memory.service';
 
 type ChatCompletionMessageParam = OpenAI.Chat.ChatCompletionMessageParam;
 
 export type { ExpertiseLevel, ReplyMessage, LocalToolExecutor } from './kloel-reply-engine.types';
 import type { ExpertiseLevel, ReplyMessage, LocalToolExecutor } from './kloel-reply-engine.types';
+import { MindPredictorService } from './mind/inference/mind-predictor.service';
 
 /** Provides reply-building helpers: prompt assembly, expertise detection, context enrichment. */
 @Injectable()
@@ -50,6 +93,32 @@ export class KloelReplyEngineService {
     @Optional() private readonly marketingSkillService?: MarketingSkillService,
     @Optional() private readonly mindService?: MindService,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
+    @Optional() private readonly attentionService?: AttentionService,
+    @Optional() private readonly valenceAggregatorService?: ValenceAggregatorService,
+    @Optional() private readonly mindBeliefService?: MindBeliefService,
+    @Optional() private readonly mindConceptService?: MindConceptService,
+    @Optional() private readonly spine?: SpineEmitterService,
+    @Optional() private readonly selfHealthService?: SelfHealthService,
+    @Optional() private readonly selfGapsService?: SelfGapsService,
+    @Optional() private readonly decisionOutcomeService?: DecisionOutcomeService,
+    @Optional() private readonly riskClassService?: RiskClassService,
+    @Optional() private readonly mindSurpriseService?: MindSurpriseService,
+    @Optional() private readonly mindPredictionService?: MindPredictionService,
+    @Optional() private readonly mindVerbalizerService?: MindVerbalizerService,
+    @Optional() private readonly mindAutonomyCoordinator?: MindAutonomyCoordinator,
+    @Optional() private readonly mindBanditService?: MindBanditService,
+    @Optional() private readonly mindCaseMemoryService?: MindCaseMemoryService,
+    @Optional() private readonly mindGlobalPriorService?: MindGlobalPriorService,
+    @Optional() private readonly agentAssistService?: AgentAssistService,
+    @Optional() private readonly mindPerceptionService?: MindPerceptionService,
+    @Optional() private readonly mindWorkspaceStateService?: MindWorkspaceStateService,
+    @Optional() private readonly vectorService?: VectorService,
+    @Optional() private readonly valenceTagger?: ValenceTaggerService,
+    @Optional() private readonly mindEventProcessorService?: MindEventProcessorService,
+    @Optional()
+    private readonly emotionalIntelligenceService?: MindEmotionalIntelligenceService,
+    @Optional() private readonly longTermMemoryService?: LongTermMemoryService,
+    @Optional() private readonly mindPredictor?: MindPredictorService,
   ) {
     this.openai = createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 });
     this.toolRouter = new KloelToolRouter(
@@ -83,81 +152,15 @@ export class KloelReplyEngineService {
   }
 
   detectExpertiseLevel(message: string, history: ReplyMessage[] = []): ExpertiseLevel {
-    const combined = [message, ...history.slice(-6).map((e) => e.content || '')]
-      .join(' ')
-      .toLowerCase();
-    const expertSignals = [
-      'latência',
-      'backpressure',
-      'idempot',
-      'throughput',
-      'benchmark',
-      'trade-off',
-      'event-driven',
-      'sse',
-      'webhook',
-      'prisma',
-      'postgres',
-      'fallback',
-      'observabilidade',
-    ];
-    const advancedSignals = [
-      'api',
-      'integra',
-      'crm',
-      'automa',
-      'segmenta',
-      'conversão',
-      'cta',
-      'pipeline',
-      'copilot',
-      'autopilot',
-      'checkout',
-      'upsell',
-    ];
-    const expertScore = expertSignals.filter((s) => combined.includes(s)).length;
-    const advancedScore = advancedSignals.filter((s) => combined.includes(s)).length;
-    if (expertScore >= 3) {
-      return 'EXPERT';
-    }
-    if (expertScore >= 1 || advancedScore >= 5) {
-      return 'AVANÇADO';
-    }
-    if (
-      advancedScore >= 2 ||
-      String(message || '')
-        .trim()
-        .split(WHITESPACE_RE).length >= 14
-    ) {
-      return 'INTERMEDIÁRIO';
-    }
-    return 'INICIANTE';
+    return detectExpertiseLevel(message, history);
   }
 
   shouldUseLongFormBudget(message: string): boolean {
-    return RELAT_O__RIO_DOCUMENTO_RE.test(
-      String(message || '')
-        .trim()
-        .toLowerCase(),
-    );
+    return shouldUseLongFormBudget(message);
   }
 
   shouldAttemptToolPlanningPass(message: string): boolean {
-    const normalized = String(message || '')
-      .trim()
-      .toLowerCase();
-    if (!normalized || /ideias?/.test(normalized)) {
-      return false;
-    }
-    if (
-      CRIE_CADASTRAR_CADASTRE_RE.test(normalized) &&
-      PRODUTO_CAT_A__LOGO_AUT_RE.test(normalized)
-    ) {
-      return true;
-    }
-    return /\b(liste|listar|mostre|mostrar|busque|buscar|pesquise|pesquisar|procure|procurar|consulte|consultar|verifique|verificar|analise|analisar|resuma|resumo|status|dashboard|produtos?|leads?|contatos?|conversas?|whatsapp|mensagens?|evid[eê]ncias?|mem[oó]ria|sess(ões|oes)|jobs?|billing|cobran[çc]a|faturamento|receita|vendas?|pagamentos?)\b/i.test(
-      normalized,
-    );
+    return shouldAttemptToolPlanningPass(message);
   }
 
   buildStreamAbortMessage(reason: unknown, timeoutMs?: number): string {
@@ -173,6 +176,10 @@ export class KloelReplyEngineService {
     if (reason === KLOEL_STREAM_ABORT_REASON_CLIENT_DISCONNECTED) {
       return 'client_disconnected';
     }
+    this.logger.warn('kloel_motor_unavailable', {
+      reason: 'stream_aborted_unknown',
+      abortReason: String(reason).slice(0, 200),
+    });
     return this.unavailableMessage;
   }
 
@@ -193,6 +200,7 @@ export class KloelReplyEngineService {
     };
     toolMessages?: Array<{ role?: 'tool'; tool_call_id: string; name: string; content: string }>;
     prebuiltCognitiveState?: Record<string, unknown>;
+    workspaceId?: string | null;
   }): Promise<ChatCompletionMessageParam[]> {
     const currentInput = {
       raw: params.userMessage,
@@ -200,106 +208,63 @@ export class KloelReplyEngineService {
       arrivalTimestamp: new Date().toISOString(),
     };
     void params.systemPrompt;
-    let cognitiveState: Record<string, unknown> = {
-      abiStatus: this.abiBuilder ? 'unavailable_or_invalid' : 'builder_not_injected',
-      audience: 'public',
-      perceptionSnapshot: { channel: 'web' },
+
+    const cognitiveStateParams: {
+      workspaceId?: string | null;
+      userMessage: string;
+      prebuiltCognitiveState?: Record<string, unknown>;
+    } = {
+      workspaceId: params.workspaceId ?? null,
+      userMessage: params.userMessage,
     };
-
-    if (this.abiBuilder) {
-      if (params.prebuiltCognitiveState) {
-        cognitiveState = params.prebuiltCognitiveState;
-      } else {
-        try {
-          const abiResult = await this.abiBuilder.build({
-            audience: 'public',
-            currentInput,
-            perceptionSnapshot: {
-              channel: 'web',
-            },
-          });
-
-          if (abiResult.status !== 'ok') {
-            this.logger.warn(
-              `ABI build failed: ${abiResult.reason}, using structured reply fallback`,
-            );
-          } else {
-            const validation = validateAbiPayload(abiResult.abi);
-
-            if (validation.status === 'FAIL') {
-              this.logger.warn(
-                `ABI validation failed: ${JSON.stringify(validation.issues)}, using structured reply fallback`,
-              );
-            } else {
-              cognitiveState = { ...abiResult.abi };
-            }
-          }
-        } catch (error: unknown) {
-          const msg =
-            error instanceof Error
-              ? error.message
-              : typeof error === 'string'
-                ? error
-                : 'unknown error';
-          this.logger.warn(`ABI build exception: ${msg}, using structured reply fallback`);
-        }
-      }
+    if (params.prebuiltCognitiveState !== undefined) {
+      cognitiveStateParams.prebuiltCognitiveState = params.prebuiltCognitiveState;
     }
-
-    const msgs: ChatCompletionMessageParam[] = [
-      {
-        role: 'user',
-        content: JSON.stringify({
-          runtimeContext: {
-            dynamicContext: params.dynamicContext,
-            marketingContext: params.marketingPromptAddendum ?? null,
-          },
-        }),
+    const cognitiveStateDeps = {
+      prisma: this.prisma,
+      logger: this.logger,
+      services: {
+        attentionService: this.attentionService,
+        valenceAggregatorService: this.valenceAggregatorService,
+        mindBeliefService: this.mindBeliefService,
+        mindConceptService: this.mindConceptService,
+        mindPredictionService: this.mindPredictionService,
+        selfHealthService: this.selfHealthService,
+        selfGapsService: this.selfGapsService,
+        riskClassService: this.riskClassService,
+        mindVerbalizerService: this.mindVerbalizerService,
+        mindAutonomyCoordinator: this.mindAutonomyCoordinator,
+        mindBanditService: this.mindBanditService,
+        mindCaseMemoryService: this.mindCaseMemoryService,
+        mindGlobalPriorService: this.mindGlobalPriorService,
+        mindPerceptionService: this.mindPerceptionService,
+        agentAssistService: this.agentAssistService,
+        vectorService: this.vectorService,
       },
-    ];
-    if (params.summaryMessage) {
-      msgs.push({
-        role: 'user',
-        content: JSON.stringify({
-          conversationSummary:
-            typeof params.summaryMessage.content === 'string' ? params.summaryMessage.content : '',
-        }),
-      });
-    }
-    for (const entry of params.recentMessages) {
-      msgs.push({ role: entry.role as 'user' | 'assistant', content: entry.content });
-    }
-    msgs.push({
-      role: 'user',
-      content: JSON.stringify({
-        cognitiveState,
-        currentInput,
-      }),
+      ...(this.abiBuilder !== undefined ? { abiBuilder: this.abiBuilder } : {}),
+    };
+    const cognitiveState = await buildKloelAbiCognitiveState(
+      cognitiveStateDeps,
+      cognitiveStateParams,
+      currentInput,
+    );
+
+    const msgs = buildChatModelMessagesPayload({
+      dynamicContext: params.dynamicContext,
+      marketingPromptAddendum: params.marketingPromptAddendum,
+      summaryMessage: params.summaryMessage,
+      recentMessages: params.recentMessages,
+      cognitiveState,
+      currentInput,
+      assistantMessage: params.assistantMessage,
+      toolMessages: params.toolMessages,
     });
-    if (params.assistantMessage) {
-      const toolCalls = Array.isArray(params.assistantMessage.tool_calls)
-        ? params.assistantMessage.tool_calls
-        : undefined;
-      msgs.push({
-        role: 'assistant',
-        content:
-          typeof params.assistantMessage.content === 'string'
-            ? params.assistantMessage.content
-            : '',
-        ...(toolCalls !== undefined ? { tool_calls: toolCalls } : {}),
-      });
-    }
-    if (params.toolMessages?.length) {
-      msgs.push(
-        ...params.toolMessages.map((m) => ({
-          role: 'tool' as const,
-          tool_call_id: m.tool_call_id,
-          content: m.content,
-        })),
-      );
-    }
+    this._lastCognitiveState = cognitiveState;
     return msgs;
   }
+
+  /** Expose the most recent cognitive state for surprise-computation linkage (PI-K12-C). */
+  private _lastCognitiveState?: Record<string, unknown>;
 
   async buildMarketingPromptAddendum(
     workspaceId: string | undefined,
@@ -338,53 +303,13 @@ export class KloelReplyEngineService {
       wsContextService: this.wsContextService,
       contextFormatter: this.contextFormatter,
     });
-    const kloelRuntimeContext = await this.buildInternalKloelRuntimeContext(params);
+    const kloelRuntimeContext = await buildInternalKloelRuntimeContext({
+      workspaceId: params.workspaceId,
+      expertiseLevel: params.expertiseLevel,
+      mindService: this.mindService,
+      logger: this.logger,
+    });
     return kloelRuntimeContext ? `${baseContext}\n\n${kloelRuntimeContext}` : baseContext;
-  }
-
-  private async buildInternalKloelRuntimeContext(params: {
-    workspaceId?: string;
-    expertiseLevel: ExpertiseLevel;
-  }): Promise<string | null> {
-    if (!params.workspaceId || !this.mindService) {
-      return null;
-    }
-
-    try {
-      const channel = 'kloel_chat';
-      const segment = params.expertiseLevel.toLowerCase();
-      const [tone, aggressiveness, format, objection] = await Promise.all([
-        this.mindService.resolveTone(params.workspaceId, channel, 0.5, 0.5, segment),
-        this.mindService.resolveAggressiveness(
-          params.workspaceId,
-          'official_kloel_chat',
-          0.5,
-          0.5,
-          1,
-        ),
-        this.mindService.resolveMessageFormat(params.workspaceId, channel, segment, ['text']),
-        this.mindService.resolveObjectionResponse(params.workspaceId, channel, segment, 'unknown'),
-      ]);
-
-      return [
-        'Contexto operacional interno do Kloel:',
-        `- Tom recomendado: ${tone.tone}.`,
-        `- Intensidade comercial recomendada: ${aggressiveness.aggressiveness}.`,
-        `- Formato recomendado nesta superfície: ${format.format === 'text' ? 'texto claro' : format.format}.`,
-        `- Estratégia comercial recomendada: ${objection.strategy}.`,
-        '- Use essas diretrizes apenas como ajuste interno da resposta oficial do Kloel.',
-        '- Nunca apresente outro agente, outro chat, outro motor ou outra voz ao usuário.',
-      ].join('\n');
-    } catch (error: unknown) {
-      const msg =
-        error instanceof Error
-          ? error.message
-          : typeof error === 'string'
-            ? error
-            : 'unknown error';
-      this.logger.warn(`Falha ao montar contexto operacional interno do Kloel: ${msg}`);
-      return null;
-    }
   }
 
   async buildAssistantReply(params: {
@@ -401,27 +326,164 @@ export class KloelReplyEngineService {
     abiStateJson?: string;
     prebuiltCognitiveState?: Record<string, unknown>;
   }): Promise<string> {
-    if (!this.openai) {
-      return this.unavailableMessage;
+    // PI-k8: record decision outcome at start of every chat reply
+    const outcomeKey = buildChatOutcomeKey(params.workspaceId);
+    if (outcomeKey && params.workspaceId) {
+      recordChatReplyDecision(this.decisionOutcomeService, this.logger, {
+        workspaceId: params.workspaceId,
+        outcomeKey,
+        surface: 'dashboard',
+        messageLength: params.message.length,
+      });
     }
-    return buildAssistantReplyImpl(params, {
-      openai: this.openai,
-      prisma: this.prisma,
-      planLimits: this.planLimits,
-      threadService: this.threadService,
-      wsContextService: this.wsContextService,
-      contextFormatter: this.contextFormatter,
-      toolRouter: this.toolRouter,
-      unavailableMessage: this.unavailableMessage,
-      hasOpenAiKey: () => this.hasOpenAiKey(),
-      buildDashboardPrompt: (p) => this.buildDashboardPrompt(p),
-      detectExpertiseLevel: (m, h) => this.detectExpertiseLevel(m, h),
-      shouldUseLongFormBudget: (m) => this.shouldUseLongFormBudget(m),
-      buildMarketingPromptAddendum: (wid, mode, msg) =>
-        this.buildMarketingPromptAddendum(wid, mode, msg),
-      buildChatModelMessages: async (p) => this.buildChatModelMessages(p),
-      buildDynamicRuntimeContext: (p) => this.buildDynamicRuntimeContext(p),
-      ...(params.abiStateJson !== undefined ? { abiStateJson: params.abiStateJson } : {}),
-    });
+
+    // PI-K16-B: tick lease coordination – prevent concurrent reply storms
+    let tickLeaseOwner: string | undefined;
+    if (params.workspaceId && this.mindWorkspaceStateService) {
+      tickLeaseOwner = `chat-reply-${randomUUID()}`;
+      const acquired = await this.mindWorkspaceStateService.tryAcquireTickLease(
+        params.workspaceId,
+        tickLeaseOwner,
+        5000,
+      );
+      if (!acquired) {
+        tickLeaseOwner = undefined;
+        this.logger.warn('kloel_chat_tick_lease_unavailable', {
+          workspaceId: params.workspaceId,
+        });
+      }
+    }
+
+    try {
+      if (!this.openai) {
+        this.logger.error('kloel_motor_unavailable', {
+          reason: 'no_llm_client',
+          resolvedProvider: resolveTextLlmProvider() ?? null,
+          hasOpenAiKey: hasTextLlmApiKey(),
+          hasAnthropicFallback: !!process.env.ANTHROPIC_API_KEY,
+        });
+        applyReplyEngineDegradedPath(
+          {
+            decisionOutcomeService: this.decisionOutcomeService,
+            mindBeliefService: this.mindBeliefService,
+            mindSurpriseService: this.mindSurpriseService,
+            mindEventProcessorService: this.mindEventProcessorService,
+            mindPredictorService: this.mindPredictor,
+            mindGlobalPriorService: this.mindGlobalPriorService,
+            valenceTagger: this.valenceTagger,
+            logger: this.logger,
+            _lastCognitiveState: this._lastCognitiveState,
+          },
+          params.workspaceId,
+          outcomeKey,
+          'chat.degraded.no_llm_client',
+        );
+        return this.unavailableMessage;
+      }
+      // Y-8 #4: situational emotional-intelligence tone directive (additive,
+      // fail-open). Computed once and injected into the dynamic runtime
+      // context so it reaches the generation prompt. Includes a guardrail that
+      // blocks an aggressive tone for a negative-history contact.
+      const toneDirective = await buildToneDirective(this.emotionalIntelligenceService, {
+        workspaceId: params.workspaceId,
+        conversationId: params.workspaceId,
+        message: params.message,
+        recentMessages: params.conversationState?.recentMessages,
+        logger: this.logger,
+      });
+      if (toneDirective) {
+        this.logger.log('kloel_emotional_tone_applied', {
+          workspaceId: params.workspaceId,
+          state: toneDirective.state,
+          tone: toneDirective.tone,
+          guardrailApplied: toneDirective.guardrailApplied,
+        });
+      }
+      // Wave5 L6 #2: durable long-term-memory recall (additive, fail-open).
+      // Recalls the strongest reinforced outcome facts for this workspace and
+      // injects them into the dynamic runtime context so the model answers with
+      // what tends to work here instead of from a blank slate.
+      const recallDirective = await buildRecallDirective(this.longTermMemoryService, {
+        workspaceId: params.workspaceId,
+        logger: this.logger,
+      });
+      if (recallDirective) {
+        this.logger.log('kloel_ltm_recall_applied', {
+          workspaceId: params.workspaceId,
+          factCount: recallDirective.factCount,
+        });
+      }
+      let assistantMessage: string;
+      try {
+        assistantMessage = await buildAssistantReplyImpl(params, {
+          openai: this.openai,
+          prisma: this.prisma,
+          planLimits: this.planLimits,
+          threadService: this.threadService,
+          wsContextService: this.wsContextService,
+          contextFormatter: this.contextFormatter,
+          toolRouter: this.toolRouter,
+          unavailableMessage: this.unavailableMessage,
+          hasOpenAiKey: () => this.hasOpenAiKey(),
+          buildDashboardPrompt: (p) => this.buildDashboardPrompt(p),
+          detectExpertiseLevel: (m, h) => this.detectExpertiseLevel(m, h),
+          shouldUseLongFormBudget: (m) => this.shouldUseLongFormBudget(m),
+          buildMarketingPromptAddendum: (wid, mode, msg) =>
+            this.buildMarketingPromptAddendum(wid, mode, msg),
+          buildChatModelMessages: async (p) => this.buildChatModelMessages(p),
+          buildDynamicRuntimeContext: async (p) => {
+            const base = await this.buildDynamicRuntimeContext(p);
+            const withTone = toneDirective ? `${base}\n\n${toneDirective.directive}` : base;
+            return recallDirective ? `${withTone}\n\n${recallDirective.directive}` : withTone;
+          },
+          ...(this.spine !== undefined ? { spine: this.spine } : {}),
+          ...(this.mindPredictor !== undefined ? { mindPredictorService: this.mindPredictor } : {}),
+          ...(params.abiStateJson !== undefined ? { abiStateJson: params.abiStateJson } : {}),
+        });
+        closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
+          outcomeKey,
+          outcomeName: 'chat.replied',
+          wonVsBaseline: true,
+        });
+      } catch (error: unknown) {
+        closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
+          outcomeKey,
+          outcomeName: 'chat.error',
+          wonVsBaseline: false,
+        });
+        throw error;
+      }
+      if (params.workspaceId) {
+        const replyOutcome: 0 | 1 = assistantMessage.length > 0 ? 1 : 0;
+        applyReplyEnginePostReply(
+          {
+            decisionOutcomeService: this.decisionOutcomeService,
+            mindBeliefService: this.mindBeliefService,
+            mindSurpriseService: this.mindSurpriseService,
+            mindEventProcessorService: this.mindEventProcessorService,
+            mindPredictorService: this.mindPredictor,
+            mindGlobalPriorService: this.mindGlobalPriorService,
+            valenceTagger: this.valenceTagger,
+            logger: this.logger,
+            _lastCognitiveState: this._lastCognitiveState,
+          },
+          params.workspaceId,
+          replyOutcome,
+        );
+        // Y-8 #4: feed the post-reply sentiment signal back so the next turn's
+        // tone read incorporates this exchange. Fail-open, non-blocking.
+        await logPostReplySentiment(this.emotionalIntelligenceService, {
+          workspaceId: params.workspaceId,
+          conversationId: params.workspaceId,
+          assistantMessage,
+          logger: this.logger,
+        });
+      }
+      return assistantMessage;
+    } finally {
+      if (tickLeaseOwner && params.workspaceId && this.mindWorkspaceStateService) {
+        await this.mindWorkspaceStateService.releaseTickLease(params.workspaceId, tickLeaseOwner);
+      }
+    }
   }
 }

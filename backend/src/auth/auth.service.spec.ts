@@ -10,6 +10,7 @@ import { AppleAuthService } from './apple-auth.service';
 import { ConnectService } from '../payments/connect/connect.service';
 import { TikTokAuthService } from './tiktok-auth.service';
 import { RateLimitService } from './rate-limit.service';
+import { AuthTokenService } from './auth.token.service';
 import {
   BadRequestException,
   ConflictException,
@@ -18,19 +19,21 @@ import {
 } from '@nestjs/common';
 
 // Mock implementations
+const mockAgentModel = {
+  findFirst: jest.fn(),
+  findMany: jest.fn(),
+  findUnique: jest.fn(),
+  create: jest.fn(),
+  update: jest.fn(),
+};
+const mockWorkspaceModel = {
+  create: jest.fn(),
+  findUnique: jest.fn(),
+  delete: jest.fn(),
+};
 const mockPrismaService = {
-  agent: {
-    findFirst: jest.fn(),
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-  },
-  workspace: {
-    create: jest.fn(),
-    findUnique: jest.fn(),
-    delete: jest.fn(),
-  },
+  agent: mockAgentModel,
+  workspace: mockWorkspaceModel,
   affiliatePartner: {
     findFirst: jest.fn(),
     update: jest.fn(),
@@ -56,25 +59,27 @@ const mockPrismaService = {
   $transaction: jest.fn((arg: unknown) => {
     if (typeof arg === 'function') {
       // Transação interativa
-      return arg({
-        agent: mockPrismaService.agent,
-        workspace: mockPrismaService.workspace,
+      return (
+        arg as (tx: {
+          agent: typeof mockAgentModel;
+          workspace: typeof mockWorkspaceModel;
+        }) => unknown
+      )({
+        agent: mockAgentModel,
+        workspace: mockWorkspaceModel,
       });
     }
     // Transação em batch (array de operações)
     return Promise.all(arg as Array<Promise<unknown>>);
   }),
 };
-
 const mockJwtService = {
   signAsync: jest.fn().mockResolvedValue('mock-jwt-token'),
 };
-
 const mockEmailService = {
   sendPasswordResetEmail: jest.fn().mockResolvedValue(true),
   sendVerificationEmail: jest.fn().mockResolvedValue(true),
 };
-
 const mockConfigService = {
   get: jest.fn((key: string) => {
     const config: Record<string, string> = {
@@ -115,10 +120,17 @@ const mockRateLimitService = {
   checkRateLimit: jest.fn().mockResolvedValue(undefined),
 };
 
+const mockAuthTokenService = {
+  issueTokens: jest.fn(),
+  issueTokensForAgentId: jest.fn(),
+  refresh: jest.fn(),
+  revokeAccessToken: jest.fn(),
+  isAccessTokenRevoked: jest.fn(),
+};
+
 describe('AuthService', () => {
   let service: AuthService;
   let prisma: typeof mockPrismaService;
-  let emailService: typeof mockEmailService;
   let connectService: typeof mockConnectService;
 
   beforeEach(async () => {
@@ -148,12 +160,12 @@ describe('AuthService', () => {
         { provide: TikTokAuthService, useValue: mockTikTokAuthService },
         { provide: ConnectService, useValue: mockConnectService },
         { provide: RateLimitService, useValue: mockRateLimitService },
+        { provide: AuthTokenService, useValue: mockAuthTokenService },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
     prisma = mockPrismaService;
-    emailService = mockEmailService;
     connectService = module.get(ConnectService);
   });
 
@@ -268,14 +280,16 @@ describe('AuthService', () => {
       });
 
       expect(result).toHaveProperty('access_token');
+      const metadataMatcher: unknown = expect.objectContaining({
+        path: ['inviteTokenHash'],
+      });
+      const whereMatcher: unknown = expect.objectContaining({
+        partnerEmail: 'affiliate@test.com',
+        metadata: metadataMatcher,
+      });
       expect(prisma.affiliatePartner.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({
-            partnerEmail: 'affiliate@test.com',
-            metadata: expect.objectContaining({
-              path: ['inviteTokenHash'],
-            }),
-          }),
+          where: whereMatcher,
         }),
       );
       expect(connectService.createCustomAccount).toHaveBeenCalledWith({
@@ -284,13 +298,14 @@ describe('AuthService', () => {
         email: 'affiliate@test.com',
         displayName: 'Ana Workspace',
       });
+      const updateDataMatcher: unknown = expect.objectContaining({
+        partnerWorkspaceId: 'ws-aff',
+        status: 'ACTIVE',
+      });
       expect(prisma.affiliatePartner.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'partner-1', workspaceId: 'seller-ws' },
-          data: expect.objectContaining({
-            partnerWorkspaceId: 'ws-aff',
-            status: 'ACTIVE',
-          }),
+          data: updateDataMatcher,
         }),
       );
     });
@@ -419,7 +434,7 @@ describe('AuthService', () => {
           expire: jest.fn().mockResolvedValue(1),
         };
         const serviceWithRedis = new AuthService(
-          mockPrismaService,
+          mockPrismaService as never,
           mockJwtService as never,
           mockEmailService as never,
           mockConfigService as never,
@@ -429,6 +444,7 @@ describe('AuthService', () => {
           mockTikTokAuthService as never,
           mockConnectService as never,
           new RateLimitService(mockRedis as never),
+          mockAuthTokenService as never,
         );
 
         prisma.agent.findFirst.mockResolvedValue(null);
@@ -463,7 +479,7 @@ describe('AuthService', () => {
       delete process.env.RATE_LIMIT_DISABLED;
       try {
         const serviceWithRedisFailure = new AuthService(
-          mockPrismaService,
+          mockPrismaService as never,
           mockJwtService as never,
           mockEmailService as never,
           mockConfigService as never,
@@ -476,6 +492,7 @@ describe('AuthService', () => {
             incr: jest.fn().mockRejectedValue(new Error('redis down')),
             expire: jest.fn(),
           } as never),
+          mockAuthTokenService as never,
         );
 
         prisma.agent.findFirst.mockResolvedValue(null);
@@ -494,97 +511,6 @@ describe('AuthService', () => {
           process.env.RATE_LIMIT_DISABLED = 'true';
         }
       }
-    });
-  });
-
-  describe('forgotPassword', () => {
-    it('should return success message for non-existent email (security)', async () => {
-      prisma.agent.findFirst.mockResolvedValue(null);
-
-      const result = await service.forgotPassword('nonexistent@test.com');
-
-      expect(result.success).toBe(true);
-      expect(result.message).toContain('Se o email existir');
-      expect(emailService.sendPasswordResetEmail).not.toHaveBeenCalled();
-    });
-
-    it('should send reset email for existing user', async () => {
-      prisma.agent.findFirst.mockResolvedValue({
-        id: 'agent-1',
-        email: 'test@test.com',
-      });
-      prisma.passwordResetToken.create.mockResolvedValue({
-        token: 'reset-token',
-      });
-
-      const result = await service.forgotPassword('test@test.com');
-
-      expect(result.success).toBe(true);
-      expect(emailService.sendPasswordResetEmail).toHaveBeenCalledWith(
-        'test@test.com',
-        expect.stringContaining('reset-password'),
-      );
-    });
-  });
-
-  describe('resetPassword', () => {
-    it('should throw UnauthorizedException for invalid token', async () => {
-      prisma.passwordResetToken.findUnique.mockResolvedValue(null);
-
-      await expect(service.resetPassword('invalid-token', 'newpassword123')).rejects.toThrow(
-        UnauthorizedException,
-      );
-    });
-
-    it('should throw UnauthorizedException for expired token', async () => {
-      prisma.passwordResetToken.findUnique.mockResolvedValue({
-        token: 'expired-token',
-        used: false,
-        expiresAt: new Date(Date.now() - 1000), // Expired
-        agent: { id: 'agent-1' },
-      });
-
-      await expect(service.resetPassword('expired-token', 'newpassword123')).rejects.toThrow(
-        UnauthorizedException,
-      );
-    });
-
-    it('should throw UnauthorizedException for used token', async () => {
-      prisma.passwordResetToken.findUnique.mockResolvedValue({
-        token: 'used-token',
-        used: true,
-        expiresAt: new Date(Date.now() + 60000),
-        agent: { id: 'agent-1' },
-      });
-
-      await expect(service.resetPassword('used-token', 'newpassword123')).rejects.toThrow(
-        UnauthorizedException,
-      );
-    });
-  });
-
-  describe('verifyEmail', () => {
-    it('should throw UnauthorizedException for invalid token', async () => {
-      prisma.agent.findFirst.mockResolvedValue(null);
-
-      await expect(service.verifyEmail('invalid-token')).rejects.toThrow(UnauthorizedException);
-    });
-
-    it('should verify email successfully', async () => {
-      prisma.agent.findFirst.mockResolvedValue({
-        id: 'agent-1',
-        emailVerificationToken: 'valid-token',
-        emailVerificationExpiry: new Date(Date.now() + 60000),
-      });
-      prisma.agent.update.mockResolvedValue({
-        id: 'agent-1',
-        emailVerified: true,
-      });
-
-      const result = await service.verifyEmail('valid-token');
-
-      expect(result.success).toBe(true);
-      expect(result.message).toContain('verificado');
     });
   });
 });

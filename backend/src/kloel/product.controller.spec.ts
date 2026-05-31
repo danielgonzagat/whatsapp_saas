@@ -188,6 +188,89 @@ describe('ProductController', () => {
     });
   });
 
+  describe('canonical ProductService delegation (commerce events + brain/spine)', () => {
+    type ProductServiceMock = {
+      create: jest.Mock;
+      update: jest.Mock;
+      delete: jest.Mock;
+    };
+
+    let productService: ProductServiceMock;
+    let delegatingController: ProductController;
+
+    beforeEach(() => {
+      productService = {
+        create: jest.fn(() =>
+          Promise.resolve({
+            success: true,
+            product: { id: 'p-new', name: 'X', workspaceId: 'ws-1' },
+          }),
+        ),
+        update: jest.fn(() =>
+          Promise.resolve({
+            success: true,
+            product: { id: 'p-1', name: 'New', workspaceId: 'ws-1' },
+          }),
+        ),
+        delete: jest.fn(() => Promise.resolve({ success: true, message: 'Product deleted' })),
+      };
+      delegatingController = new ProductController(
+        prisma as PrismaService,
+        undefined,
+        undefined,
+        productService as unknown as ConstructorParameters<typeof ProductController>[3],
+      );
+    });
+
+    it('createProduct delegates persistence to ProductService.create (fires events)', async () => {
+      const result = await delegatingController.createProduct(mockReq(), {
+        name: 'X',
+        price: 99.9,
+      });
+      expect(productService.create).toHaveBeenCalledTimes(1);
+      const [ws, data, actor] = productService.create.mock.calls[0] as [
+        string,
+        Record<string, unknown>,
+        { id: string },
+      ];
+      expect(ws).toBe('ws-1');
+      expect(data).toMatchObject({ name: 'X' });
+      expect(actor).toMatchObject({ id: 'u-1' });
+      expect(prisma.product.create).not.toHaveBeenCalled();
+      expect(result).toHaveProperty('success', true);
+    });
+
+    it('updateProduct delegates persistence to ProductService.update (fires events)', async () => {
+      prisma.product.findFirst.mockResolvedValue({
+        id: 'p-1',
+        name: 'Old',
+        workspaceId: 'ws-1',
+        price: 50,
+      });
+      const result = await delegatingController.updateProduct(mockReq(), 'p-1', {
+        name: 'New',
+        price: 99,
+      });
+      expect(productService.update).toHaveBeenCalledTimes(1);
+      const [ws, id] = productService.update.mock.calls[0] as [string, string];
+      expect(ws).toBe('ws-1');
+      expect(id).toBe('p-1');
+      expect(prisma.product.updateMany).not.toHaveBeenCalled();
+      expect(result).toHaveProperty('success', true);
+    });
+
+    it('deleteProduct delegates to ProductService.delete then hard-deletes', async () => {
+      prisma.product.findFirst.mockResolvedValue({ id: 'p-1', workspaceId: 'ws-1' });
+      prisma.product.deleteMany.mockResolvedValue({ count: 1 });
+      const result = await delegatingController.deleteProduct(mockReq(), 'p-1');
+      expect(productService.delete).toHaveBeenCalledWith('ws-1', 'p-1', { id: 'u-1' });
+      expect(prisma.product.deleteMany).toHaveBeenCalledWith({
+        where: { id: 'p-1', workspaceId: 'ws-1' },
+      });
+      expect(result).toEqual({ success: true, deleted: 'p-1' });
+    });
+  });
+
   describe('getCategories', () => {
     it('returns distinct non-null categories', async () => {
       prisma.product.findMany.mockResolvedValue([

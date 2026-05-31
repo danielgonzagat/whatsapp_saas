@@ -1,23 +1,8 @@
-/**
- * UTP-TRUST-001..008 — Trust Capital Protection Spec
- *
- * Contract tests for Camada IX trust layer: fatigue detection,
- * desperation detection, timing appropriateness, brand protection,
- * silence-as-action, human handoff, trust recovery, and the composed
- * state tracker.
- */
-
-import { detectFatigue } from './fatigue-detector';
-import { detectDesperation } from './desperation-detector';
-import { evaluateTiming } from './timing-appropriateness';
-import { evaluateBrandRisk } from './brand-protection.guard';
-import { decideSilence } from './silence-as-action.policy';
 import { shouldHandoff } from './human-handoff.trigger';
 import { proposeRecoveryActions } from './trust-recovery.tactics';
 import { TrustStateTrackerService } from './trust-state-tracker.service';
 import { toTrustEvent } from './trust.types';
 
-import type { TrustEvent } from './trust.types';
 import type { SpineEventRef } from '../mind/mind.types';
 
 const baseSpineEvent = (over: Partial<SpineEventRef> = {}): SpineEventRef => ({
@@ -27,14 +12,6 @@ const baseSpineEvent = (over: Partial<SpineEventRef> = {}): SpineEventRef => ({
   occurredAt: over.occurredAt ?? new Date().toISOString(),
   truthMode: over.truthMode ?? 'observed',
   ...(over.entityRef !== undefined ? { entityRef: over.entityRef } : {}),
-  ...(over.valence !== undefined ? { valence: over.valence } : {}),
-  ...(over.payload !== undefined ? { payload: over.payload } : {}),
-});
-
-const baseTrustEvent = (over: Partial<TrustEvent> = {}): TrustEvent => ({
-  eventId: over.eventId ?? `evt_test_${Math.random().toString(36).slice(2, 8)}`,
-  eventName: over.eventName ?? 'commerce.lead.replied',
-  occurredAt: over.occurredAt ?? new Date().toISOString(),
   ...(over.valence !== undefined ? { valence: over.valence } : {}),
   ...(over.payload !== undefined ? { payload: over.payload } : {}),
 });

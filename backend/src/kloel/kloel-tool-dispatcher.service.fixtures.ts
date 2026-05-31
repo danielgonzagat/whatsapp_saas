@@ -45,6 +45,16 @@ type DispatcherChatToolsMock = Pick<
   | 'toolListAgentEvidence'
   | 'toolVerifyAgentEvidence'
   | 'toolCreatePaymentLink'
+  | 'toolConfigurePixel'
+  | 'toolConfigureShipping'
+  | 'toolConfigureSocialProof'
+  | 'toolConfigureOrderBump'
+  | 'toolConfigureWarranty'
+  | 'toolConfigureExitIntent'
+  | 'toolConfigureAfterPay'
+  | 'toolCreateBroadcast'
+  | 'toolConfigureAiPersona'
+  | 'hasAgentScheduler'
 >;
 
 type DispatcherAccountMock = Pick<AccountService, 'updatePersonalData'>;
@@ -59,6 +69,7 @@ type DispatcherBizConfigMock = Pick<
   | 'toolUpdateBillingInfo'
   | 'toolGetBillingStatus'
   | 'toolChangePlan'
+  | 'toolUploadDocument'
 >;
 
 type DispatcherWhatsappMock = Pick<
@@ -171,7 +182,11 @@ export function createChatToolsMock(): DispatcherChatToolsMock {
     toolSetBrandVoice: jest.fn().mockResolvedValue({ success: true }),
     toolSetSalesPolicy: jest.fn().mockResolvedValue({ success: true }),
     toolRememberUserInfo: jest.fn().mockResolvedValue({ success: true }),
-    toolCreateFlow: jest.fn().mockResolvedValue({ success: true, flow: {} }),
+    toolCreateFlow: jest.fn().mockResolvedValue({
+      success: false,
+      error: 'flow_service_required',
+      message: 'create_flow exige FlowsService.create antes de declarar fluxo criado.',
+    }),
     toolListFlows: jest.fn().mockResolvedValue({ success: true, flows: [] }),
     toolGetDashboardSummary: jest.fn().mockResolvedValue({ success: true, stats: {} }),
     toolCreateAgentJob: jest.fn().mockResolvedValue({ success: true, key: 'agent_job:daily' }),
@@ -195,6 +210,40 @@ export function createChatToolsMock(): DispatcherChatToolsMock {
     toolCreatePaymentLink: jest
       .fn()
       .mockResolvedValue({ success: true, paymentUrl: 'https://pay.test' }),
+    toolConfigurePixel: jest
+      .fn()
+      .mockResolvedValue({ success: false, error: 'pixel_configuration_service_required' }),
+    toolConfigureShipping: jest
+      .fn()
+      .mockResolvedValue({ success: false, error: 'shipping_configuration_service_required' }),
+    toolConfigureSocialProof: jest
+      .fn()
+      .mockResolvedValue({ success: false, error: 'checkout_social_proof_service_required' }),
+    toolConfigureOrderBump: jest
+      .fn()
+      .mockResolvedValue({ success: false, error: 'checkout_order_bump_service_required' }),
+    toolConfigureWarranty: jest
+      .fn()
+      .mockResolvedValue({ success: true, product: { id: 'prod-1' } }),
+    toolConfigureExitIntent: jest
+      .fn()
+      .mockResolvedValue({ success: false, error: 'checkout_exit_intent_service_required' }),
+    toolConfigureAfterPay: jest
+      .fn()
+      .mockResolvedValue({ success: false, error: 'checkout_after_pay_service_required' }),
+    toolCreateBroadcast: jest.fn().mockResolvedValue({
+      success: false,
+      error: 'campaign_service_required',
+      message:
+        'create_broadcast exige CampaignService.createBroadcast antes de declarar campanha criada.',
+    }),
+    toolConfigureAiPersona: jest.fn().mockResolvedValue({
+      success: false,
+      error: 'ai_config_service_required',
+      message:
+        'configure_ai_persona exige AIConfigService.update antes de declarar persona configurada.',
+    }),
+    hasAgentScheduler: true,
   };
 }
 
@@ -208,6 +257,7 @@ export function createBizConfigToolsMock(): DispatcherBizConfigMock {
     toolUpdateBillingInfo: jest.fn().mockResolvedValue({ success: true }),
     toolGetBillingStatus: jest.fn().mockResolvedValue({ success: true }),
     toolChangePlan: jest.fn().mockResolvedValue({ success: true }),
+    toolUploadDocument: jest.fn().mockResolvedValue({ success: true, message: 'ok' }),
   };
 }
 
@@ -314,4 +364,8 @@ export function createAccountMock(): DispatcherAccountMock {
       .fn()
       .mockResolvedValue({ success: true, message: 'Personal data updated' }),
   };
+}
+
+export function createSmartPaymentMock() {
+  return { createSmartPayment: jest.fn().mockResolvedValue({ paymentUrl: 'https://pay.test' }) };
 }

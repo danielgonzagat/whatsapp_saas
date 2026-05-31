@@ -1,7 +1,8 @@
 // hud-audit categories A-E — split from hud-audit.mjs for line budget.
 
 import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
+import { execSync, spawnSync } from 'node:child_process';
 import {
   HUD_DIR,
   MIRROR_ROOT,
@@ -10,6 +11,7 @@ import {
   REPO_ROOT,
   SOURCE_DIR,
 } from './hud-audit.constants.mjs';
+import { findOrphans } from './hud-audit.orphans.mjs';
 import {
   checkFile,
   checkJsonFile,

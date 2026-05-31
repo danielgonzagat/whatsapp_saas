@@ -5,12 +5,9 @@ import type {
 } from './delegation.types';
 import { ALL_DELEGATION_AREAS } from './delegation.types';
 import { DelegationStateTracker } from './delegation-state.tracker';
-import { detectGraduation, type GraduationContext } from './graduation.detector';
 import { buildAutonomySuggestion } from './autonomy-suggestion.builder';
 import { AutonomyRollbackPolicy } from './autonomy-rollback.policy';
 import { AreaByAreaGraduationService } from './area-by-area-graduation.service';
-import { buildDelegationEvidence, type EvidenceInput } from './delegation-evidence.builder';
-
 const NOW = Date.parse('2026-05-14T00:00:00.000Z');
 const WKS = 'wks_deleg_test';
 
@@ -43,10 +40,6 @@ function snapshotInput(over?: Partial<DelegationSnapshotInput>): DelegationSnaps
     trustScore: over?.trustScore ?? 0.5,
     nowMs: over?.nowMs ?? NOW,
   };
-}
-
-function gradCtx(state: AreaDelegationState, cooldown = false): GraduationContext {
-  return { state, cooldownActive: cooldown, nowMs: NOW };
 }
 
 // =========================================================================

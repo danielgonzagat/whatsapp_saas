@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client';
 import { StructuredLogger } from '../../logging/structured-logger';
 import { OpsAlertService } from '../../observability/ops-alert.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { BrainEventSpineService } from '../brain-event-spine.service';
+import { MindEventSpine } from '../mind/coordination/mind-event-spine.service';
 import { KloelService } from '../kloel.service';
 import { AgentRuntimeSessionStore } from './agent-runtime.session-store';
 import { sanitizeAgentRuntimeText, toInputJsonValue } from './agent-runtime.sanitizer';
@@ -15,6 +15,7 @@ import {
   type AgentJobPayload,
   type ClaimedAgentJobEvent,
 } from './agent-runtime.job-runner.persistence';
+import { MindMemoryItemService } from '../mind/aliases/mind-memory-item.service';
 
 const MAX_RETRIES = 3;
 const BACKOFF_BASE_MS = 60_000;
@@ -26,7 +27,8 @@ export class AgentRuntimeJobRunnerService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly brainEvents: BrainEventSpineService,
+    private readonly mindMemory: MindMemoryItemService,
+    private readonly brainEvents: MindEventSpine,
     private readonly sessions: AgentRuntimeSessionStore,
     private readonly kloel: KloelService,
     @Optional() private readonly opsAlert?: OpsAlertService,
@@ -343,7 +345,7 @@ export class AgentRuntimeJobRunnerService {
     entry: AgentJobExecutionHistory,
   ): Promise<void> {
     return recordJobHistory(
-      this.prisma,
+      this.mindMemory,
       this.opsAlert,
       this.logWarn,
       workspaceId,
@@ -359,7 +361,7 @@ export class AgentRuntimeJobRunnerService {
     result: { status: 'succeeded' | 'failed'; eventId: string; message: string },
   ): Promise<void> {
     return recordJobExecutionSnapshot(
-      this.prisma,
+      this.mindMemory,
       this.opsAlert,
       this.logWarn,
       workspaceId,

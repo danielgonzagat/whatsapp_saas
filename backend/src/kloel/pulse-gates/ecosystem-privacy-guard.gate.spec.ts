@@ -40,7 +40,7 @@ describe('ecosystem-privacy-guard gate — 18 full-surface scenarios', () => {
     expect(v.status).toBe('FAIL');
     expect(v.evidence).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({
+        expect.objectContaining<Record<string, unknown>>({
           path: '$',
           detail: expect.stringContaining(FOREIGN_1),
         }),
@@ -53,7 +53,7 @@ describe('ecosystem-privacy-guard gate — 18 full-surface scenarios', () => {
     expect(v.status).toBe('FAIL');
     expect(v.evidence).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({
+        expect.objectContaining<Record<string, unknown>>({
           path: '$.workspaceId',
           detail: expect.stringContaining(FOREIGN_1),
         }),
@@ -66,7 +66,7 @@ describe('ecosystem-privacy-guard gate — 18 full-surface scenarios', () => {
     expect(v.status).toBe('FAIL');
     expect(v.evidence).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({
+        expect.objectContaining<Record<string, unknown>>({
           path: '$.workspace_id',
           detail: expect.stringContaining(FOREIGN_2),
         }),
@@ -83,7 +83,7 @@ describe('ecosystem-privacy-guard gate — 18 full-surface scenarios', () => {
     expect(v.status).toBe('FAIL');
     expect(v.evidence).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({
+        expect.objectContaining<Record<string, unknown>>({
           path: '$.meta.workspaceId',
           detail: expect.stringContaining(FOREIGN_1),
         }),
@@ -100,7 +100,7 @@ describe('ecosystem-privacy-guard gate — 18 full-surface scenarios', () => {
     expect(v.status).toBe('FAIL');
     expect(v.evidence).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({
+        expect.objectContaining<Record<string, unknown>>({
           path: expect.stringContaining('workspaceId'),
           detail: expect.stringContaining(FOREIGN_1),
         }),
@@ -121,7 +121,7 @@ describe('ecosystem-privacy-guard gate — 18 full-surface scenarios', () => {
     expect(v.status).toBe('FAIL');
     expect(v.evidence).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({
+        expect.objectContaining<Record<string, unknown>>({
           path: '$.recommendation.items[0].workspaceId',
           detail: expect.stringContaining(FOREIGN_1),
         }),
@@ -141,7 +141,7 @@ describe('ecosystem-privacy-guard gate — 18 full-surface scenarios', () => {
     expect(v.status).toBe('FAIL');
     expect(v.evidence).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({
+        expect.objectContaining<Record<string, unknown>>({
           path: '$.cohort.cohortSize',
           detail: expect.stringContaining('k-anonymity'),
         }),
@@ -209,7 +209,7 @@ describe('ecosystem-privacy-guard gate — 18 full-surface scenarios', () => {
     expect(v.status).toBe('FAIL');
     expect(v.evidence).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({
+        expect.objectContaining<Record<string, unknown>>({
           path: '$.cohort.workspaceIds',
           detail: expect.stringContaining('opt-out'),
         }),
@@ -252,7 +252,7 @@ describe('ecosystem-privacy-guard gate — 18 full-surface scenarios', () => {
     expect(v.status).toBe('FAIL');
     expect(v.evidence).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({
+        expect.objectContaining<Record<string, unknown>>({
           path: '$.cohort.diffPrivacyEpsilon',
           detail: expect.stringContaining('diff-privacy'),
         }),

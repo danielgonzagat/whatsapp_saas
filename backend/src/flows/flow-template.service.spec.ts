@@ -1,5 +1,6 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { FlowTemplateService } from './flow-template.service';
 
@@ -55,7 +56,9 @@ describe('FlowTemplateService', () => {
       edges: [],
     });
     expect(prisma.flowTemplate.create).toHaveBeenCalled();
-    const callArg = prisma.flowTemplate.create.mock.calls[0][0];
+    const callArg = prisma.flowTemplate.create.mock.calls[0][0] as {
+      data: { isPublic: boolean };
+    };
     expect(callArg.data.isPublic).toBe(false);
     expect(result).toMatchObject({ name: 'X' });
   });
@@ -90,6 +93,9 @@ describe('FlowTemplateService', () => {
     const result = await service.seedRecommended();
     expect(result.seeded).toBe(2);
     expect(prisma.flowTemplate.create).toHaveBeenCalledTimes(1);
-    expect(prisma.flowTemplate.create.mock.calls[0][0].data.name).toBe('tpl-b');
+    const seededCreateArg = prisma.flowTemplate.create.mock.calls[0][0] as {
+      data: { name: string };
+    };
+    expect(seededCreateArg.data.name).toBe('tpl-b');
   });
 });

@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import type { OpsAlertService } from '../../observability/ops-alert.service';
-import type { PrismaService } from '../../prisma/prisma.service';
 import { sanitizeAgentRuntimeText, toInputJsonValue } from './agent-runtime.sanitizer';
+import { MindMemoryItemService } from '../mind/aliases/mind-memory-item.service';
 
 export type AgentJobPayload = {
   jobKey: string;
@@ -36,7 +36,7 @@ export type AgentJobExecutionHistory = {
 const MAX_RETRIES = 3;
 
 export async function recordJobHistory(
-  prisma: PrismaService,
+  mindMemory: MindMemoryItemService,
   opsAlert: OpsAlertService | undefined,
   logWarn: (msg: string) => void,
   workspaceId: string,
@@ -47,7 +47,7 @@ export async function recordJobHistory(
   const historyKey = `agent_job_history:${event.subject}`;
 
   try {
-    const existing = await prisma.kloelMemory.findUnique({
+    const existing = await mindMemory.items.findUnique({
       where: { workspaceId_key: { workspaceId, key: historyKey } },
       select: { value: true },
     });
@@ -59,7 +59,7 @@ export async function recordJobHistory(
 
     history.push(entry);
 
-    await prisma.kloelMemory.upsert({
+    await mindMemory.items.upsert({
       where: { workspaceId_key: { workspaceId, key: historyKey } },
       update: {
         value: toInputJsonValue({
@@ -93,7 +93,7 @@ export async function recordJobHistory(
 }
 
 export async function recordJobExecutionSnapshot(
-  prisma: PrismaService,
+  mindMemory: MindMemoryItemService,
   opsAlert: OpsAlertService | undefined,
   logWarn: (msg: string) => void,
   workspaceId: string,
@@ -104,7 +104,7 @@ export async function recordJobExecutionSnapshot(
     ? payload.jobKey
     : `agent_job:${payload.jobKey}`;
   try {
-    const row = await prisma.kloelMemory.findUnique({
+    const row = await mindMemory.items.findUnique({
       where: { workspaceId_key: { workspaceId, key } },
       select: { value: true, metadata: true },
     });
@@ -117,7 +117,7 @@ export async function recordJobExecutionSnapshot(
       row?.metadata && typeof row.metadata === 'object' && !Array.isArray(row.metadata)
         ? (row.metadata as Record<string, unknown>)
         : {};
-    await prisma.kloelMemory.updateMany({
+    await mindMemory.items.updateMany({
       where: { workspaceId, key, category: 'agent_job', type: 'scheduled' },
       data: {
         value: toInputJsonValue({

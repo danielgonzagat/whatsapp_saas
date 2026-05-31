@@ -1,27 +1,5 @@
 import { AgentRuntimeJobRunnerService } from './agent-runtime.job-runner';
-
-function makePendingRows(rows: Array<{ id: string; payload: Record<string, unknown> }>) {
-  return jest.fn().mockResolvedValue(rows);
-}
-
-function makeClaimUpdate() {
-  return jest.fn().mockResolvedValue({ count: 1 });
-}
-
-function makeClaimedEvents(
-  events: Array<{
-    id: string;
-    eventType: string;
-    subject: string;
-    payload: Record<string, unknown>;
-    idempotencyKey: string;
-    occurredAt: Date;
-    attempts: number;
-    lastError: string | null;
-  }>,
-) {
-  return jest.fn().mockResolvedValueOnce({ count: 1 }).mockResolvedValueOnce(events);
-}
+import { mindMemoryStub } from '../../../test/helpers/mind-memory-stub';
 
 describe('AgentRuntimeJobRunnerService', () => {
   it('dead-letters a job after max retries are exhausted', async () => {
@@ -76,6 +54,7 @@ describe('AgentRuntimeJobRunnerService', () => {
     };
     const service = new AgentRuntimeJobRunnerService(
       prisma as never,
+      mindMemoryStub(prisma),
       brainEvents as never,
       sessions as never,
       kloel as never,
@@ -86,7 +65,7 @@ describe('AgentRuntimeJobRunnerService', () => {
     expect(result).toEqual({ claimed: 1, succeeded: 0, failed: 1 });
 
     expect(prisma.mindOutboxEvent.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({
+      expect.objectContaining<Record<string, unknown>>({
         where: { id: 'outbox_1', workspaceId: 'ws_1', status: 'processing' },
         data: expect.objectContaining({
           status: 'dead_lettered',
@@ -96,8 +75,8 @@ describe('AgentRuntimeJobRunnerService', () => {
     );
 
     expect(prisma.auditLog.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
+      expect.objectContaining<Record<string, unknown>>({
+        data: expect.objectContaining<Record<string, unknown>>({
           workspaceId: 'ws_1',
           action: 'KLOEL_AGENT_JOB_DEAD_LETTERED',
           resourceId: 'agent_job:daily',
@@ -114,9 +93,9 @@ describe('AgentRuntimeJobRunnerService', () => {
     expect(brainEvents.markDispatchSucceeded).not.toHaveBeenCalled();
 
     expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        create: expect.objectContaining({
-          value: expect.objectContaining({
+      expect.objectContaining<Record<string, unknown>>({
+        create: expect.objectContaining<Record<string, unknown>>({
+          value: expect.objectContaining<Record<string, unknown>>({
             history: expect.arrayContaining([
               expect.objectContaining({
                 status: 'dead_lettered',
@@ -203,6 +182,7 @@ describe('AgentRuntimeJobRunnerService', () => {
     };
     const service = new AgentRuntimeJobRunnerService(
       prisma as never,
+      mindMemoryStub(prisma),
       brainEvents as never,
       sessions as never,
       kloel as never,
@@ -255,6 +235,7 @@ describe('AgentRuntimeJobRunnerService', () => {
     const kloel = { thinkSync: jest.fn() };
     const service = new AgentRuntimeJobRunnerService(
       prisma as never,
+      mindMemoryStub(prisma),
       brainEvents as never,
       sessions as never,
       kloel as never,
@@ -324,6 +305,7 @@ describe('AgentRuntimeJobRunnerService', () => {
     };
     const service = new AgentRuntimeJobRunnerService(
       prisma as never,
+      mindMemoryStub(prisma),
       brainEvents as never,
       sessions as never,
       kloel as never,

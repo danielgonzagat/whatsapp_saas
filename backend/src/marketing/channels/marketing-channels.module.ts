@@ -23,13 +23,15 @@ import {
 import { MarketingModule } from '../marketing.module';
 import { MetaModule } from '../../meta/meta.module';
 import { PrismaModule } from '../../prisma/prisma.module';
-import { WhatsappModule } from '../../whatsapp/whatsapp.module';
+import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { EmailDispatchAdapter } from './email/email-dispatch.adapter';
 import { FacebookDispatchAdapter } from './facebook/facebook-dispatch.adapter';
 import { InstagramDispatchAdapter } from './instagram/instagram-dispatch.adapter';
 import { InternalPartnershipDispatchAdapter } from './internal-partnership/internal-partnership-dispatch.adapter';
 import { MessengerDispatchAdapter } from './messenger/messenger-dispatch.adapter';
 import { WhatsAppDispatchAdapter } from './whatsapp/whatsapp-dispatch.adapter';
+import { ChannelMessageDispatchService } from '../channel-message-dispatch.service';
+import { TikTokDispatchAdapter } from './tiktok/tiktok-dispatch.adapter';
 
 const ADAPTERS = [
   WhatsAppDispatchAdapter,
@@ -37,6 +39,7 @@ const ADAPTERS = [
   MessengerDispatchAdapter,
   FacebookDispatchAdapter,
   EmailDispatchAdapter,
+  TikTokDispatchAdapter,
   InternalPartnershipDispatchAdapter,
 ];
 
@@ -57,19 +60,22 @@ const ADAPTERS = [
         messenger: MessengerDispatchAdapter,
         facebook: FacebookDispatchAdapter,
         email: EmailDispatchAdapter,
+        tiktok: TikTokDispatchAdapter,
         partnership: InternalPartnershipDispatchAdapter,
-      ) => [whatsapp, instagram, messenger, facebook, email, partnership],
+      ) => [whatsapp, instagram, messenger, facebook, email, tiktok, partnership],
       inject: [
         WhatsAppDispatchAdapter,
         InstagramDispatchAdapter,
         MessengerDispatchAdapter,
         FacebookDispatchAdapter,
         EmailDispatchAdapter,
+        TikTokDispatchAdapter,
         InternalPartnershipDispatchAdapter,
       ],
     },
     ChannelDispatchRegistry,
+    ChannelMessageDispatchService,
   ],
-  exports: [...ADAPTERS, ChannelDispatchRegistry],
+  exports: [...ADAPTERS, ChannelDispatchRegistry, ChannelMessageDispatchService],
 })
 export class MarketingChannelsModule {}

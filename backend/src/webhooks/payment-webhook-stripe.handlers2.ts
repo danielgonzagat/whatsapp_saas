@@ -17,6 +17,8 @@ import {
 } from './payment-webhook-types';
 import type { StripeHandlerDeps } from './payment-webhook-stripe.handlers';
 import {
+  buildKloelSaleStripeWhere,
+  readSaleIdFromStripeMetadata,
   updatePaymentAndSaleForSessionHelper,
   sendCheckoutConfirmationHelper,
 } from './payment-webhook-stripe.handlers2.helpers';
@@ -33,7 +35,7 @@ export async function handlePaymentIntentEvent(
   const intent: StripePaymentIntentLike =
     rawIntent && typeof rawIntent === 'object' ? rawIntent : {};
   const workspaceId = intent.metadata?.workspace_id || intent.metadata?.workspaceId;
-  const orderId = intent.metadata?.kloel_order_id || intent.metadata?.orderId;
+  const orderId = readSaleIdFromStripeMetadata(intent.metadata);
 
   if (workspaceId) {
     const ws = await deps.prisma.workspace.findUnique({ where: { id: workspaceId } });
@@ -53,19 +55,7 @@ export async function handlePaymentIntentEvent(
     await deps.prisma.checkoutPayment
       .updateMany({
         where: { externalId: intent.id },
-        data: {
-          status: checkoutPaymentStatus,
-          ...(intent.next_action?.type === 'pix_display_qr_code'
-            ? {
-                pixQrCode: intent.next_action.pix_display_qr_code?.image_url_png || null,
-                pixCopyPaste: intent.next_action.pix_display_qr_code?.data || null,
-                pixExpiresAt:
-                  typeof intent.next_action.pix_display_qr_code?.expires_at === 'number'
-                    ? new Date(intent.next_action.pix_display_qr_code.expires_at * 1000)
-                    : null,
-              }
-            : {}),
-        },
+        data: { status: checkoutPaymentStatus },
       })
       .catch(() => undefined);
   }
@@ -74,10 +64,17 @@ export async function handlePaymentIntentEvent(
     if (checkoutPaymentStatus === 'APPROVED') {
       await deps.prisma
         .$transaction(async (tx) => {
-          await tx.kloelSale.updateMany({
-            where: { workspaceId, externalPaymentId: intent.id ?? null },
-            data: { status: 'paid', paidAt: new Date() },
-          });
+          const saleWhere = buildKloelSaleStripeWhere(workspaceId, intent.id, orderId);
+          if (saleWhere) {
+            await tx.kloelSale.updateMany({
+              where: { workspaceId, ...saleWhere },
+              data: {
+                status: 'paid',
+                paidAt: new Date(),
+                ...(intent.id ? { externalPaymentId: intent.id } : {}),
+              },
+            });
+          }
         }, FINANCIAL_TRANSACTION_OPTIONS)
         .catch(() => undefined);
     }
@@ -104,10 +101,17 @@ export async function handlePaymentIntentEvent(
               data: { status: 'APPROVED' },
             });
             if (workspaceId) {
-              await tx.kloelSale.updateMany({
-                where: { workspaceId, externalPaymentId: intent.id ?? null },
-                data: { status: 'paid', paidAt: new Date() },
-              });
+              const saleWhere = buildKloelSaleStripeWhere(workspaceId, intent.id, orderId);
+              if (saleWhere) {
+                await tx.kloelSale.updateMany({
+                  where: { workspaceId, ...saleWhere },
+                  data: {
+                    status: 'paid',
+                    paidAt: new Date(),
+                    ...(intent.id ? { externalPaymentId: intent.id } : {}),
+                  },
+                });
+              }
             }
           }, FINANCIAL_TRANSACTION_OPTIONS)
           .catch(() => undefined);

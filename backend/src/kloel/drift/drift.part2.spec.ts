@@ -1,7 +1,6 @@
 import { BehaviorSnapshotService } from './behavior-snapshot.service';
 import { DriftDetectorService } from './drift-detector.service';
 import type { SpineEventRef } from '../mind/mind.types';
-import type { WeeklyBehaviorSnapshot } from './drift.types';
 
 function makeEvent(
   override: Partial<SpineEventRef> & { eventName: string; occurredAt: string },
@@ -26,7 +25,7 @@ function iso(day: number, hour: number, minute?: number): string {
 function makeWeek(
   wsId: string,
   days: readonly number[],
-  valence?: 'positive' | 'negative' | 'neutral',
+  _valence?: 'positive' | 'negative' | 'neutral',
 ): SpineEventRef[] {
   const events: SpineEventRef[] = [];
   for (const day of days) {

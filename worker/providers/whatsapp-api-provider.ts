@@ -1,3 +1,7 @@
+/**
+ * @capability WhatsAppApiProvider
+ * @domain channel
+ */
 import { providerStatus } from './health-monitor';
 import { getWhatsAppProviderFromEnv } from './whatsapp-provider-resolver';
 

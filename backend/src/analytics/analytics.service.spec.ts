@@ -26,6 +26,7 @@ describe('AnalyticsService', () => {
     kloelSale: { findMany: jest.Mock };
     kloelLead: { count: jest.Mock };
     kloelWallet: { findFirst: jest.Mock };
+    adSpend: { aggregate: jest.Mock };
   };
 
   beforeEach(async () => {
@@ -50,6 +51,7 @@ describe('AnalyticsService', () => {
       kloelSale: { findMany: jest.fn().mockResolvedValue([]) },
       kloelLead: { count: jest.fn().mockResolvedValue(0) },
       kloelWallet: { findFirst: jest.fn().mockResolvedValue(null) },
+      adSpend: { aggregate: jest.fn().mockResolvedValue({ _sum: { amount: 0 } }) },
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -301,6 +303,66 @@ describe('AnalyticsService', () => {
       expect(result.kpi.totalSales).toBe(1);
       expect(result.paymentMethods).toHaveLength(1);
       expect(result.paymentMethods[0].method).toBe('PIX');
+    });
+
+    it('aggregates real ad spend and computes ROAS when AdSpend rows exist', async () => {
+      const now = new Date();
+      prisma.kloelSale.findMany
+        .mockResolvedValueOnce([
+          {
+            amount: 100,
+            status: 'paid',
+            paymentMethod: 'PIX',
+            productName: 'Prod A',
+            createdAt: now,
+          },
+        ])
+        .mockResolvedValueOnce([]);
+      prisma.kloelLead.count
+        .mockResolvedValueOnce(10)
+        .mockResolvedValueOnce(5)
+        .mockResolvedValueOnce(0)
+        .mockResolvedValueOnce(0);
+      prisma.contact.count.mockResolvedValue(100);
+      // Real ad spend rows present: 40 cents summed across the window.
+      prisma.adSpend.aggregate.mockResolvedValue({ _sum: { amount: 40 } });
+
+      const result = await service.getFullReport('ws-1', '7d');
+
+      expect(prisma.adSpend.aggregate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ workspaceId: 'ws-1' }) as unknown,
+          _sum: { amount: true },
+        }),
+      );
+      expect(result.kpi.adSpend).toBe(40);
+      // ROAS = totalRevenue / adSpend = 100 / 40 = 2.5 (no longer null).
+      expect(result.kpi.roas).toBe(2.5);
+    });
+
+    it('keeps ROAS null when there is no ad spend', async () => {
+      prisma.kloelSale.findMany
+        .mockResolvedValueOnce([
+          {
+            amount: 100,
+            status: 'paid',
+            paymentMethod: 'PIX',
+            productName: 'Prod A',
+            createdAt: new Date(),
+          },
+        ])
+        .mockResolvedValueOnce([]);
+      prisma.kloelLead.count
+        .mockResolvedValueOnce(0)
+        .mockResolvedValueOnce(0)
+        .mockResolvedValueOnce(0)
+        .mockResolvedValueOnce(0);
+      prisma.adSpend.aggregate.mockResolvedValue({ _sum: { amount: null } });
+
+      const result = await service.getFullReport('ws-1', '7d');
+
+      expect(result.kpi.adSpend).toBe(0);
+      expect(result.kpi.roas).toBeNull();
     });
   });
 });

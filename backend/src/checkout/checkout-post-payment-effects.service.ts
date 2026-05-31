@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 import { forEachSequential } from '../common/async-sequence';
 import { formatBrlAmount } from '../kloel/money-format.util';
+import { renderEmailTemplate } from '../common/utils/email-template-renderer.util';
 import { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-event-emitter.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
@@ -18,7 +19,7 @@ type CheckoutPixelConfig = {
   pixelId?: string | null;
 };
 
-type CheckoutOrderForEffects = {
+export type CheckoutOrderForEffects = {
   id?: string;
   workspaceId?: string | null;
   orderNumber?: string | null;
@@ -292,7 +293,6 @@ export class CheckoutPostPaymentEffectsService {
     chargedAmount: number,
   ): string {
     const amountSource = chargedAmount || Number(order.totalInCents || 0) / 100;
-    const { renderEmailTemplate } = require('../common/utils/email-template-renderer.util');
     return renderEmailTemplate('payment-confirmation', {
       customerName: order.customerName || '',
       productName: order.plan?.product?.name || '\u2014',

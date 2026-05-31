@@ -1,6 +1,5 @@
 'use client';
 
-import { kloelT } from '@/lib/i18n/t';
 import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
 import { ChipInput, CurrencyInput, ImageUpload, RadioGroup } from '@/components/kloel/FormExtras';
 import { apiFetch } from '@/lib/api';
@@ -11,35 +10,25 @@ import { mutate } from 'swr';
 
 import { useProductCategories } from '@/hooks/useProducts';
 
-const SHIPPING_TYPES = [
-  { value: 'VARIABLE', label: 'Variavel/Gratis' },
-  { value: 'FIXED', label: 'Fixo' },
-  { value: 'FREE', label: 'Sem frete' },
-];
-
-interface ProductData {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  category: string;
-  tags: string[];
-  format: string;
-  imageUrl: string;
-  active: boolean;
-  status: string;
-  salesPageUrl: string;
-  thankyouUrl: string;
-  thankyouBoletoUrl: string;
-  thankyouPixUrl: string;
-  reclameAquiUrl: string;
-  supportEmail: string;
-  warrantyDays: number | null;
-  isSample: boolean;
-  shippingType: string;
-  shippingValue: number | null;
-  originCep: string;
-}
+import {
+  applyProductPatch,
+  FORMAT_OPTIONS,
+  isApprovedStatus,
+  isProductsSwrKey,
+  needsShipping,
+  parseShippingValue,
+  parseWarrantyDays,
+  PRODUCT_GENERAL_COPY,
+  type ProductData,
+  productPreviewStorageKey,
+  resolveFormatLabel,
+  saveButtonLabel,
+  SHIPPING_TYPES,
+  shippingRequiresValue,
+  shortProductCode,
+  URL_FIELDS,
+  urlOrEmailPlaceholder,
+} from './ProductGeneralTab.helpers';
 
 /** Product general tab. */
 export function ProductGeneralTab({ productId }: { productId: string }) {
@@ -74,7 +63,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
     setSaving(true);
     try {
       await apiFetch(`/products/${productId}`, { method: 'PUT', body: data });
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
+      mutate(isProductsSwrKey);
       setSaved(true);
       if (savedTimer.current) {
         clearTimeout(savedTimer.current);
@@ -87,9 +76,9 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
     }
   };
 
-  const update = (field: keyof ProductData, value: ProductData[keyof ProductData]) => {
+  const update = <K extends keyof ProductData>(field: K, value: ProductData[K]) => {
     if (data) {
-      setData({ ...data, [field]: value });
+      setData(applyProductPatch(data, field, value));
     }
   };
 
@@ -103,7 +92,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
   if (!data) {
     return (
       <p className="py-8 text-center text-sm" style={{ color: colors.text.muted }}>
-        {kloelT(`Produto nao encontrado.`)}
+        {PRODUCT_GENERAL_COPY.notFound}
       </p>
     );
   }
@@ -129,28 +118,23 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
         }}
       >
         <span style={{ color: colors.text.muted }}>
-          {kloelT(`Codigo:`)}{' '}
-          <strong style={{ color: colors.text.silver }}>{data.id.slice(0, 8)}</strong>
+          {PRODUCT_GENERAL_COPY.codeLabel}{' '}
+          <strong style={{ color: colors.text.silver }}>{shortProductCode(data.id)}</strong>
         </span>
         <span style={{ color: colors.border.space }}>|</span>
         <span
           className="rounded-full px-2 py-0.5 text-xs font-semibold"
           style={{
-            backgroundColor:
-              data.status === 'APPROVED' ? 'rgba(224,221,216,0.12)' : colors.background.elevated,
-            color: data.status === 'APPROVED' ? colors.text.silver : colors.text.muted,
+            backgroundColor: isApprovedStatus(data.status)
+              ? 'rgba(224,221,216,0.12)'
+              : colors.background.elevated,
+            color: isApprovedStatus(data.status) ? colors.text.silver : colors.text.muted,
           }}
         >
           {data.status}
         </span>
         <span style={{ color: colors.border.space }}>|</span>
-        <span style={{ color: colors.text.muted }}>
-          {data.format === 'PHYSICAL'
-            ? 'Fisico'
-            : data.format === 'DIGITAL'
-              ? 'Digital'
-              : 'Hibrido'}
-        </span>
+        <span style={{ color: colors.text.muted }}>{resolveFormatLabel(data.format)}</span>
       </div>
 
       {/* 2-column layout */}
@@ -160,10 +144,10 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
           <ImageUpload
             value={data.imageUrl}
             onChange={(url) => update('imageUrl', url)}
-            label={kloelT(`Foto do produto`)}
-            hint={kloelT(`JPG, PNG ou WebP - 500x400px ideal - Max 10MB`)}
+            label={PRODUCT_GENERAL_COPY.imageLabel}
+            hint={PRODUCT_GENERAL_COPY.imageHint}
             folder="products"
-            previewStorageKey={`kloel_product_general_preview_${productId}`}
+            previewStorageKey={productPreviewStorageKey(productId)}
           />
         </div>
 
@@ -182,13 +166,13 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
               />
             </button>
             <span className="text-sm font-medium" style={{ color: colors.text.muted }}>
-              {kloelT(`Disponivel para venda`)}
+              {PRODUCT_GENERAL_COPY.available}
             </span>
           </div>
 
           <div>
             <label className={labelClass} style={labelStyle} htmlFor={`${fid}-nome`}>
-              {kloelT(`Nome *`)}
+              {PRODUCT_GENERAL_COPY.nameLabel}
             </label>
             <input
               aria-label="Nome do produto"
@@ -203,7 +187,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
 
           <div>
             <label className={labelClass} style={labelStyle} htmlFor={`${fid}-desc`}>
-              {kloelT(`Descricao`)}
+              {PRODUCT_GENERAL_COPY.descriptionLabel}
             </label>
             <textarea
               value={data.description || ''}
@@ -218,7 +202,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
 
           <div>
             <label className={labelClass} style={labelStyle} htmlFor={`${fid}-cat`}>
-              {kloelT(`Categoria`)}
+              {PRODUCT_GENERAL_COPY.categoryLabel}
             </label>
             <select
               value={data.category || ''}
@@ -228,14 +212,18 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
               id={`${fid}-cat`}
               disabled={catLoading}
             >
-              <option value="">{catLoading ? kloelT(`Carregando...`) : kloelT(`Selecione`)}</option>
+              <option value="">
+                {catLoading
+                  ? PRODUCT_GENERAL_COPY.loadingPlaceholder
+                  : PRODUCT_GENERAL_COPY.selectPlaceholder}
+              </option>
               {catError ? (
                 <option value="" disabled>
-                  {kloelT(`Erro ao carregar categorias`)}
+                  {PRODUCT_GENERAL_COPY.loadCategoriesError}
                 </option>
               ) : categories.length === 0 && !catLoading ? (
                 <option value="" disabled>
-                  {kloelT(`Nenhuma categoria — crie um produto primeiro`)}
+                  {PRODUCT_GENERAL_COPY.emptyCategoriesHint}
                 </option>
               ) : (
                 categories.map((c) => (
@@ -251,25 +239,21 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
             value={data.tags || []}
             onChange={(v) => update('tags', v)}
             max={5}
-            label={kloelT(`Tags (max. 5)`)}
+            label={PRODUCT_GENERAL_COPY.tagsLabel}
           />
 
           <RadioGroup
             value={data.format}
             onChange={(v) => update('format', v)}
-            label={kloelT(`Formato`)}
+            label={PRODUCT_GENERAL_COPY.formatLabel}
             direction="horizontal"
-            options={[
-              { value: 'PHYSICAL', label: 'Fisico' },
-              { value: 'DIGITAL', label: 'Digital' },
-              { value: 'HYBRID', label: 'Hibrido' },
-            ]}
+            options={FORMAT_OPTIONS.map((option) => ({ ...option }))}
           />
 
-          {(data.format === 'PHYSICAL' || data.format === 'HYBRID') && (
+          {needsShipping(data.format) && (
             <div>
               <label className={labelClass} style={labelStyle} htmlFor={`${fid}-cep`}>
-                {kloelT(`CEP de origem`)}
+                {PRODUCT_GENERAL_COPY.originCepLabel}
               </label>
               <input
                 value={data.originCep || ''}
@@ -291,27 +275,21 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
           className="mb-4 text-sm font-semibold uppercase tracking-wider"
           style={{ color: colors.text.muted }}
         >
-          {kloelT(`URLs`)}
+          {PRODUCT_GENERAL_COPY.urlsHeading}
         </h3>
         <div className="grid gap-4 md:grid-cols-2">
-          {[
-            { key: 'salesPageUrl', label: 'Pagina de vendas' },
-            { key: 'thankyouUrl', label: 'Pagina de obrigado' },
-            { key: 'thankyouPixUrl', label: 'Obrigado (PIX)' },
-            { key: 'reclameAquiUrl', label: 'Reclame Aqui' },
-            { key: 'supportEmail', label: 'E-mail de suporte' },
-          ].map(({ key, label }) => (
+          {URL_FIELDS.map(({ key, label }) => (
             <div key={key}>
               <label className={labelClass} style={labelStyle} htmlFor={`${fid}-input`}>
                 {label}
               </label>
               <input
                 aria-label={label}
-                value={(data[key as keyof ProductData] as string) || ''}
-                onChange={(e) => update(key as keyof ProductData, e.target.value)}
+                value={(data[key] as string) || ''}
+                onChange={(e) => update(key, e.target.value)}
                 className={inputClass}
                 style={inputStyle}
-                placeholder={key.includes('Email') ? 'suporte@...' : 'https://...'}
+                placeholder={urlOrEmailPlaceholder(key)}
                 id={`${fid}-input`}
               />
             </div>
@@ -320,26 +298,24 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
       </div>
 
       {/* Shipping */}
-      {(data.format === 'PHYSICAL' || data.format === 'HYBRID') && (
+      {needsShipping(data.format) && (
         <div>
           <h3
             className="mb-4 text-sm font-semibold uppercase tracking-wider"
             style={{ color: colors.text.muted }}
           >
-            {kloelT(`Configuracao de envio`)}
+            {PRODUCT_GENERAL_COPY.shippingHeading}
           </h3>
           <div className="grid gap-4 md:grid-cols-3">
             <div>
               <label className={labelClass} style={labelStyle} htmlFor={`${fid}-garantia`}>
-                {kloelT(`Tempo de garantia (dias)`)}
+                {PRODUCT_GENERAL_COPY.warrantyLabel}
               </label>
               <input
                 type="number"
-                aria-label={kloelT(`Tempo de garantia (dias)`)}
+                aria-label={PRODUCT_GENERAL_COPY.warrantyLabel}
                 value={data.warrantyDays || ''}
-                onChange={(e) =>
-                  update('warrantyDays', Number.parseInt(e.target.value, 10) || null)
-                }
+                onChange={(e) => update('warrantyDays', parseWarrantyDays(e.target.value))}
                 className={inputClass}
                 style={inputStyle}
                 id={`${fid}-garantia`}
@@ -347,7 +323,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
             </div>
             <div>
               <label className={labelClass} style={labelStyle} htmlFor={`${fid}-frete`}>
-                {kloelT(`Tipo de frete`)}
+                {PRODUCT_GENERAL_COPY.shippingTypeLabel}
               </label>
               <select
                 value={data.shippingType || ''}
@@ -356,7 +332,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
                 style={inputStyle}
                 id={`${fid}-frete`}
               >
-                <option value="">{kloelT(`Selecione`)}</option>
+                <option value="">{PRODUCT_GENERAL_COPY.selectPlaceholder}</option>
                 {SHIPPING_TYPES.map((t) => (
                   <option key={t.value} value={t.value}>
                     {t.label}
@@ -364,11 +340,11 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
                 ))}
               </select>
             </div>
-            {data.shippingType === 'FIXED' && (
+            {shippingRequiresValue(data.shippingType) && (
               <CurrencyInput
                 value={String(data.shippingValue || '')}
-                onChange={(v) => update('shippingValue', Number.parseFloat(v) || null)}
-                label={kloelT(`Valor do frete`)}
+                onChange={(v) => update('shippingValue', parseShippingValue(v))}
+                label={PRODUCT_GENERAL_COPY.shippingValueLabel}
               />
             )}
           </div>
@@ -386,7 +362,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
               />
             </button>
             <span className="text-sm" style={{ color: colors.text.muted }}>
-              {kloelT(`E amostra gratis?`)}
+              {PRODUCT_GENERAL_COPY.isSampleLabel}
             </span>
           </div>
         </div>
@@ -410,7 +386,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
           ) : (
             <Save className="h-4 w-4" aria-hidden="true" />
           )}
-          {saved ? 'Salvo!' : saving ? 'Salvando...' : 'Salvar'}
+          {saveButtonLabel({ saving, saved })}
         </button>
       </div>
     </div>

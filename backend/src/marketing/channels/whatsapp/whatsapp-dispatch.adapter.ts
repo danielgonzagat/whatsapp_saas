@@ -18,7 +18,7 @@ import {
   type ChannelSendResult,
   type WhatsAppSendInput,
 } from '../../../common/channel-dispatch/channel-dispatch.port';
-import { WhatsappService } from '../../../whatsapp/whatsapp.service';
+import { WhatsappService } from './whatsapp.service';
 
 type WhatsappSendOpts = NonNullable<Parameters<WhatsappService['sendMessage']>[3]>;
 
@@ -40,6 +40,11 @@ export class WhatsAppDispatchAdapter implements ChannelDispatchPort {
       opts,
     );
     return this.mapResult(result, input);
+  }
+
+  /** Canonical alias of {@link send} (Wave 21 unification — task d). */
+  sendMessage(input: ChannelSendInput): Promise<ChannelSendResult> {
+    return this.send(input);
   }
 
   isConfigured(): boolean {

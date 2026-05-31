@@ -2,11 +2,11 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { AdminPermissionsModule } from '../permissions/admin-permissions.module';
 import { MindSpineAudit } from '../../kloel/mind/observability';
-import { BrainAuditController } from './brain-audit.controller';
+import { MindAuditController } from './mind-audit.controller';
 
 @Module({
   imports: [PrismaModule, AdminPermissionsModule],
-  controllers: [BrainAuditController],
+  controllers: [MindAuditController],
   providers: [MindSpineAudit],
   exports: [MindSpineAudit],
 })

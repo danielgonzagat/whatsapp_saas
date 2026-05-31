@@ -42,35 +42,44 @@ export function ProductCatalogSection({
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [newProduct, setNewProduct] = useState({ name: '', description: '', price: '', benefits: '', persona: '' });
 
-  const hydrateCatalog = useCallback(async () => {
-    if (!workspaceId) { setProducts([]); return; }
-    setCatalogLoading(true);
-    setCatalogError('');
-    try {
-      const productResponse = await productApi.list();
-      const nextProducts: Product[] = (productResponse.data?.products || []).map((product) => {
-        const extended = product as typeof product & { activePlansCount?: number; memberAreasCount?: number; totalSales?: number; totalRevenue?: number };
-        return {
-          id: extended.id,
-          name: extended.name,
-          type: extended.category || 'Produto',
-          price: formatCurrency(extended.price),
-          description: extended.description || '',
-          active: extended.active !== false,
-          files: 0,
-          activePlansCount: Number(extended.activePlansCount || 0),
-          memberAreasCount: Number(extended.memberAreasCount || 0),
-          totalSales: Number(extended.totalSales || 0),
-          totalRevenue: Number(extended.totalRevenue || 0),
-        };
-      });
-      setProducts(nextProducts);
-      onProductsLoaded?.(nextProducts);
-    } catch (error: unknown) {
-      setCatalogError(error instanceof Error ? error.message : 'Nao foi possivel carregar o catalogo.');
-    } finally {
-      setCatalogLoading(false);
+  // Promise-chain (non-async) so no setState runs synchronously in the effect
+  // tick (react-hooks/set-state-in-effect).
+  const hydrateCatalog = useCallback(() => {
+    if (!workspaceId) {
+      return Promise.resolve().then(() => setProducts([]));
     }
+    return Promise.resolve()
+      .then(() => {
+        setCatalogLoading(true);
+        setCatalogError('');
+        return productApi.list();
+      })
+      .then((productResponse) => {
+        const nextProducts: Product[] = (productResponse.data?.products || []).map((product) => {
+          const extended = product as typeof product & { activePlansCount?: number; memberAreasCount?: number; totalSales?: number; totalRevenue?: number };
+          return {
+            id: extended.id,
+            name: extended.name,
+            type: extended.category || 'Produto',
+            price: formatCurrency(extended.price),
+            description: extended.description || '',
+            active: extended.active !== false,
+            files: 0,
+            activePlansCount: Number(extended.activePlansCount || 0),
+            memberAreasCount: Number(extended.memberAreasCount || 0),
+            totalSales: Number(extended.totalSales || 0),
+            totalRevenue: Number(extended.totalRevenue || 0),
+          };
+        });
+        setProducts(nextProducts);
+        onProductsLoaded?.(nextProducts);
+      })
+      .catch((error: unknown) => {
+        setCatalogError(error instanceof Error ? error.message : 'Nao foi possivel carregar o catalogo.');
+      })
+      .finally(() => {
+        setCatalogLoading(false);
+      });
   }, [workspaceId, onProductsLoaded]);
 
   useEffect(() => { void hydrateCatalog(); }, [hydrateCatalog]);

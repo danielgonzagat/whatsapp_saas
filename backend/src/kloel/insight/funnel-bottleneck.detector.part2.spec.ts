@@ -19,32 +19,6 @@ function ev(over?: Partial<SpineEventRef>): SpineEventRef {
   };
 }
 
-function assertResult(
-  result: FunnelBottleneckResult,
-  expected: Partial<FunnelBottleneckResult>,
-): void {
-  if (expected.workspaceId !== undefined) {
-    expect(result.workspaceId).toBe(expected.workspaceId);
-  }
-  if (expected.bottleneckStep !== undefined) {
-    expect(result.bottleneckStep).toBe(expected.bottleneckStep);
-  }
-  if (expected.dropRate !== undefined) {
-    expect(result.dropRate).toBeCloseTo(expected.dropRate, 3);
-  }
-  if (expected.eventCount !== undefined) {
-    expect(result.eventCount).toBe(expected.eventCount);
-  }
-  if (expected.confidence !== undefined) {
-    expect(result.confidence).toBeCloseTo(expected.confidence, 1);
-  }
-  if (expected.financialImpactEstimateCents !== undefined) {
-    expect(result.financialImpactEstimateCents).toBeGreaterThanOrEqual(
-      expected.financialImpactEstimateCents,
-    );
-  }
-}
-
 function repeat(eventName: string, count: number, baseMs?: number): SpineEventRef[] {
   const results: SpineEventRef[] = [];
   for (let i = 0; i < count; i++) {

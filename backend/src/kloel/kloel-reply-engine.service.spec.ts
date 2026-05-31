@@ -6,6 +6,7 @@ import { KloelThreadService } from './kloel-thread.service';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import { MarketingSkillService } from './marketing-skills/marketing-skill.service';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 jest.mock('openai', () => ({
   default: jest.fn().mockImplementation(() => ({
@@ -231,17 +232,17 @@ describe('KloelReplyEngineService', () => {
       expect(messages).toHaveLength(2);
       expect(messages[0]).toEqual(expect.objectContaining({ role: 'user' }));
       expect(messages[1]).toEqual(expect.objectContaining({ role: 'user' }));
-      const runtimeContext = JSON.parse(String(messages[0].content)) as Record<string, unknown>;
-      const userPayload = JSON.parse(String(messages[1].content)) as Record<string, unknown>;
+      const runtimeContext = JSON.parse(messages[0].content as string) as Record<string, unknown>;
+      const userPayload = JSON.parse(messages[1].content as string) as Record<string, unknown>;
       expect(runtimeContext).toEqual(
         expect.objectContaining({
-          runtimeContext: expect.objectContaining({ dynamicContext: 'Dynamic context' }),
+          runtimeContext: partialMatch({ dynamicContext: 'Dynamic context' }),
         }),
       );
       expect(userPayload).toEqual(
         expect.objectContaining({
-          cognitiveState: expect.objectContaining({ abiStatus: 'builder_not_injected' }),
-          currentInput: expect.objectContaining({ raw: 'Hello', channel: 'web' }),
+          cognitiveState: partialMatch({ abiStatus: 'builder_not_injected' }),
+          currentInput: partialMatch({ raw: 'Hello', channel: 'web' }),
         }),
       );
     });
@@ -255,7 +256,7 @@ describe('KloelReplyEngineService', () => {
         userMessage: 'Hello',
       });
       expect(messages).toHaveLength(2);
-      const runtimeContext = JSON.parse(String(messages[0].content)) as {
+      const runtimeContext = JSON.parse(messages[0].content as string) as {
         runtimeContext: { marketingContext?: string };
       };
       expect(runtimeContext.runtimeContext.marketingContext).toBe('Marketing');
@@ -273,7 +274,7 @@ describe('KloelReplyEngineService', () => {
         expect.not.arrayContaining([expect.objectContaining({ role: 'system' })]),
       );
       expect(messages).toHaveLength(3);
-      const summaryPayload = JSON.parse(String(messages[1].content)) as Record<string, unknown>;
+      const summaryPayload = JSON.parse(messages[1].content as string) as Record<string, unknown>;
       expect(summaryPayload).toEqual(expect.objectContaining({ conversationSummary: 'Summary' }));
     });
 

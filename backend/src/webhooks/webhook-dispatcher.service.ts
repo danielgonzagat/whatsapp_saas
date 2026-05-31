@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { forEachSequential } from '../common/async-sequence';
 import { getCorrelationId } from '../common/observability/correlation-store';
@@ -37,8 +37,21 @@ export class WebhookDispatcherService {
     const correlationId = getCorrelationId();
 
     await forEachSequential(subscriptions, async (sub) => {
-      // Deduplicate via jobId: same subscription + event + payload hash
-      const jobId = `webhook-dispatch:${sub.id}:${event}:${randomUUID()}`;
+      // Deduplicate via deterministic jobId: same subscription + event +
+      // payload hash. A stable key lets BullMQ collapse retries/replays of an
+      // identical delivery into a single job instead of enqueuing duplicates
+      // (a random UUID here would defeat dedup entirely).
+      const payloadHash = createHash('sha256')
+        .update(
+          // BigInt-safe serialization: money fields are bigint in this codebase
+          // and JSON.stringify throws on BigInt by default.
+          JSON.stringify({ event, payload }, (_key: string, value: unknown) =>
+            typeof value === 'bigint' ? `${value}n` : value,
+          ),
+        )
+        .digest('hex')
+        .slice(0, 32);
+      const jobId = `webhook-dispatch:${sub.id}:${event}:${payloadHash}`;
       await webhookQueue.add(
         'send-webhook',
         {

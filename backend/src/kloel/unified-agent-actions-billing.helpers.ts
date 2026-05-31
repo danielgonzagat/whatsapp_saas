@@ -9,7 +9,12 @@ export async function createFunnelFlows(
   productPrice: number,
   includeFollowUps: unknown,
 ) {
-  const normalizedStages = stages.map((stage) => String(stage || '').trim()).filter(Boolean);
+  const normalizedStages = stages
+    .map((stage) =>
+      typeof stage === 'string' ? stage : typeof stage === 'number' ? String(stage) : '',
+    )
+    .map((stage) => stage.trim())
+    .filter(Boolean);
   const stagesToCreate = normalizedStages.length
     ? normalizedStages
     : ['awareness', 'interest', 'purchase'];

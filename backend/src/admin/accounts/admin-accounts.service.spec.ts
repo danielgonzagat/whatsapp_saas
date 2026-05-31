@@ -21,9 +21,12 @@ jest.mock('./queries/kyc-queue.query', () => ({
   listKycQueue: (...args: unknown[]) => mockListKycQueue(...args),
 }));
 const mockAsProviderSettings = jest.fn<Record<string, unknown>, unknown[]>();
-jest.mock('../../whatsapp/provider-settings.types', () => ({
+jest.mock('../../marketing/channels/whatsapp/provider-settings.types', () => ({
   asProviderSettings: (...args: unknown[]) => mockAsProviderSettings(...args),
 }));
+// Typed wrappers around jest matchers so nested matcher values are typed
+const oc = (o: Record<string, unknown>): unknown => expect.objectContaining(o);
+const sm = (s: string | RegExp): unknown => expect.stringMatching(s);
 describe('AdminAccountsService', () => {
   let service: AdminAccountsService;
   const actorId = 'admin_1';
@@ -200,7 +203,7 @@ describe('AdminAccountsService', () => {
       expect(mockTxWorkspaceUpdate).toHaveBeenCalled();
       expect(mockTxAuditLogCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: oc({
             action: 'admin.accounts.suspend',
             entityType: 'Workspace',
             entityId: 'ws_1',
@@ -214,7 +217,7 @@ describe('AdminAccountsService', () => {
 
       expect(mockTxAuditLogCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ action: 'admin.accounts.block' }),
+          data: oc({ action: 'admin.accounts.block' }),
         }),
       );
     });
@@ -226,7 +229,7 @@ describe('AdminAccountsService', () => {
 
       expect(mockTxAuditLogCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ action: 'admin.accounts.unblock' }),
+          data: oc({ action: 'admin.accounts.unblock' }),
         }),
       );
     });
@@ -239,7 +242,7 @@ describe('AdminAccountsService', () => {
       expect(mockTxWorkspaceUpdate).toHaveBeenCalled();
       expect(mockTxAuditLogCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ action: 'admin.accounts.freeze' }),
+          data: oc({ action: 'admin.accounts.freeze' }),
         }),
       );
     });
@@ -251,7 +254,7 @@ describe('AdminAccountsService', () => {
 
       expect(mockTxAuditLogCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ action: 'admin.accounts.unfreeze' }),
+          data: oc({ action: 'admin.accounts.unfreeze' }),
         }),
       );
     });
@@ -277,10 +280,10 @@ describe('AdminAccountsService', () => {
 
       expect(mockTxAuditLogCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: oc({
             adminUserId: actorId,
             action: 'admin.accounts.block',
-            details: expect.objectContaining({ reason: 'fraud' }),
+            details: oc({ reason: 'fraud' }),
           }),
         }),
       );
@@ -319,7 +322,7 @@ describe('AdminAccountsService', () => {
       expect(mockTxAgentUpdateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'agent_1', workspaceId: 'ws_1' },
-          data: expect.objectContaining({ password: expect.stringMatching(/.+/) }),
+          data: oc({ password: sm(/.+/) }),
         }),
       );
     });
@@ -356,7 +359,7 @@ describe('AdminAccountsService', () => {
 
       expect(mockTxAuditLogCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: oc({
             action: 'admin.accounts.owner_password_reset',
           }),
         }),

@@ -32,8 +32,9 @@ describe('ProductAIConfigController', () => {
   } as never;
 
   let controller: ProductAIConfigController;
+  const reqUser = { sub: 'u-1', workspaceId: 'ws-1' };
   const req = {
-    user: { sub: 'u-1', workspaceId: 'ws-1' },
+    user: reqUser,
     headers: {},
   } as never;
 
@@ -78,7 +79,7 @@ describe('ProductAIConfigController', () => {
       await controller.get('prod-1', req);
 
       expect(getWorkspaceIdMock).toHaveBeenCalledWith(req);
-      expect(req.user.sub).toBe('u-1');
+      expect(reqUser.sub).toBe('u-1');
     });
   });
 

@@ -67,6 +67,7 @@ import type {
   DispatcherCodeAnalysisMock,
   DispatcherAccountMock,
 } from './kloel-tool-dispatcher.service.fixtures';
+import { partialMatch, stringContains } from '../../test/helpers/match-instance';
 
 function objectContaining<T extends object>(sample: T): T {
   const matcher: unknown = expect.objectContaining(sample);
@@ -146,7 +147,7 @@ describe('KloelToolDispatcherService approval execution', () => {
         entityId: 'create_campaign',
         state: 'OPEN',
         title: 'Aprovar criacao de campanha pela CIA',
-        prompt: expect.stringContaining('"Campanha Teste"'),
+        prompt: stringContains('"Campanha Teste"'),
         payload: {
           toolName: 'create_campaign',
           args: { name: 'Campanha Teste', targetAudience: 'todos' },
@@ -184,7 +185,7 @@ describe('KloelToolDispatcherService approval execution', () => {
         entityId: 'change_plan',
         state: 'OPEN',
         title: 'Aprovar alteracao de plano pela CIA',
-        prompt: expect.stringContaining('"enterprise"'),
+        prompt: stringContains('"enterprise"'),
         payload: {
           toolName: 'change_plan',
           args: { newPlan: 'enterprise', immediate: true },
@@ -249,8 +250,8 @@ describe('KloelToolDispatcherService approval execution', () => {
     });
 
     expect(prisma.approvalRequest.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ workspaceId: 'ws-isolated' }),
-      select: expect.objectContaining({ id: true }),
+      data: partialMatch({ workspaceId: 'ws-isolated' }),
+      select: partialMatch({ id: true }),
     });
   });
 
@@ -375,7 +376,7 @@ describe('KloelToolDispatcherService approval execution', () => {
 
     expect(prisma.approvalRequest.updateMany).toHaveBeenCalledWith({
       where: { id: 'ap-1', workspaceId: DEFAULT_WS_ID, state: 'APPROVED' },
-      data: expect.objectContaining({ state: 'FAILED' }),
+      data: partialMatch({ state: 'FAILED' }),
     });
   });
 });

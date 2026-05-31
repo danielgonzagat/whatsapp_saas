@@ -10,14 +10,17 @@ import { AppleAuthService } from './apple-auth.service';
 import { TikTokAuthService } from './tiktok-auth.service';
 import { RateLimitService } from './rate-limit.service';
 
+const mockSocialAccount = {
+  findUnique: jest.fn(),
+  upsert: jest.fn(),
+};
+
 const mockPrismaService = {
-  socialAccount: {
-    findUnique: jest.fn(),
-    upsert: jest.fn(),
-  },
+  socialAccount: mockSocialAccount,
   $transaction: jest.fn((arg: unknown) => {
     if (typeof arg === 'function') {
-      return arg({ socialAccount: mockPrismaService.socialAccount });
+      const runInTx = arg as (tx: { socialAccount: typeof mockSocialAccount }) => unknown;
+      return runInTx({ socialAccount: mockSocialAccount });
     }
     return Promise.all(arg as Array<Promise<unknown>>);
   }),
@@ -338,7 +341,7 @@ describe('AuthOAuthService', () => {
         expect.objectContaining({
           create: expect.objectContaining({
             accessToken: 'encrypted-old-token',
-          }),
+          }) as unknown,
         }),
       );
     });

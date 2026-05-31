@@ -1,5 +1,4 @@
 import { CookieConsentController } from './cookie-consent.controller';
-import { CookieConsentService } from './cookie-consent.service';
 import type { JwtService } from '@nestjs/jwt';
 import type { Request, Response } from 'express';
 

@@ -39,7 +39,7 @@ export function ProductReviewsTab({ productId }: { productId: string }) {
     }
   }, [productId]);
   useEffect(() => {
-    void fetch_();
+    queueMicrotask(fetch_);
   }, [fetch_]);
   const handleDelete = async () => {
     if (!reviewPendingDelete) {

@@ -2,12 +2,21 @@ import { KycService } from './kyc.service';
 
 type Scenario = 'PF' | 'PJ';
 
+export interface ConnectOnboardingStatusOverride {
+  chargesEnabled?: boolean;
+  payoutsEnabled?: boolean;
+  requirementsCurrentlyDue?: string[];
+}
+
 export function buildService(options?: {
   scenario?: Scenario;
   existingStripeAccountId?: string | null;
+  /** Overrides the Stripe Connect onboarding status reported by the test ConnectService double. */
+  connectStatus?: ConnectOnboardingStatusOverride;
 }) {
   const scenario = options?.scenario ?? 'PF';
   const existingStripeAccountId = options?.existingStripeAccountId ?? null;
+  const connectStatus = options?.connectStatus ?? {};
   const agentRecord: {
     id: string;
     email: string;
@@ -141,6 +150,7 @@ export function buildService(options?: {
         existingStripeAccountId
           ? {
               id: 'cab_existing',
+              accountType: 'SELLER',
               stripeAccountId: existingStripeAccountId,
             }
           : null,
@@ -156,25 +166,27 @@ export function buildService(options?: {
   const auditService = {
     log: jest.fn(),
   };
+  const onboardingStatus = {
+    stripeAccountId: existingStripeAccountId ?? 'acct_seller_1',
+    chargesEnabled: connectStatus.chargesEnabled ?? false,
+    payoutsEnabled: connectStatus.payoutsEnabled ?? false,
+    detailsSubmitted: true,
+    requirementsCurrentlyDue: connectStatus.requirementsCurrentlyDue ?? [],
+    requirementsPastDue: [],
+    requirementsDisabledReason: null,
+    capabilities: {
+      card_payments: 'pending',
+      transfers: 'pending',
+    },
+  };
   const connectService = {
     createCustomAccount: jest.fn().mockResolvedValue({
       accountBalanceId: 'cab_new',
       stripeAccountId: 'acct_seller_1',
       requestedCapabilities: ['card_payments', 'transfers'],
     }),
-    submitOnboardingProfile: jest.fn().mockResolvedValue({
-      stripeAccountId: existingStripeAccountId ?? 'acct_seller_1',
-      chargesEnabled: false,
-      payoutsEnabled: false,
-      detailsSubmitted: true,
-      requirementsCurrentlyDue: [],
-      requirementsPastDue: [],
-      requirementsDisabledReason: null,
-      capabilities: {
-        card_payments: 'pending',
-        transfers: 'pending',
-      },
-    }),
+    submitOnboardingProfile: jest.fn().mockResolvedValue(onboardingStatus),
+    getOnboardingStatus: jest.fn().mockResolvedValue(onboardingStatus),
   };
 
   const kycEventEmitter = {

@@ -28,31 +28,18 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 import {
   buildDiagnosticsPayload,
+  buildMetaChannelsStatus,
+  extractPrimaryAdAccountId,
+  extractPrimaryPageInfo,
   humanizeMetaError,
+  mergeMetaConnections,
+  parseOAuthState,
   sanitizeReturnTo as sanitizeReturnToHelper,
 } from './oauth/meta-auth-helpers';
 import { readRecord, readStrictText } from './read-model/meta-read-helpers';
 
 function readFirstEnv(keys: string[]): string {
   return keys.map((key) => String(process.env[key] || '').trim()).find(Boolean) || '';
-}
-
-interface MetaAuthPage {
-  id?: string;
-  name?: string;
-  access_token?: string;
-  instagram_business_account?: {
-    id?: string;
-    username?: string;
-    [key: string]: unknown;
-  };
-  [key: string]: unknown;
-}
-
-interface MetaAuthAdAccount {
-  id?: string;
-  name?: string;
-  [key: string]: unknown;
 }
 
 /**
@@ -83,45 +70,6 @@ export class MetaAuthController {
     private readonly prisma: PrismaService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
-
-  private parseState(rawState: string): {
-    workspaceId: string;
-    channel?: string | null;
-    returnTo?: string | null;
-  } {
-    const raw = String(rawState || '').trim();
-    if (!raw) {
-      return { workspaceId: '' };
-    }
-
-    const candidates = [raw];
-    try {
-      const decoded = decodeURIComponent(raw);
-      if (decoded && decoded !== raw) {
-        candidates.unshift(decoded);
-      }
-    } catch {
-      void 0;
-    }
-
-    for (const candidate of candidates) {
-      if (!candidate.startsWith('{')) {
-        continue;
-      }
-      try {
-        const parsed = readRecord(JSON.parse(candidate) as unknown);
-        return {
-          workspaceId: readStrictText(parsed.workspaceId)?.trim() || '',
-          channel: readStrictText(parsed.channel)?.trim() || null,
-          returnTo: readStrictText(parsed.returnTo)?.trim() || null,
-        };
-      } catch {
-        continue;
-      }
-    }
-
-    return { workspaceId: raw };
-  }
 
   private sanitizeReturnTo(requestedReturnTo?: string | null, channel?: string | null): string {
     return sanitizeReturnToHelper(requestedReturnTo, channel, this.frontendUrl);
@@ -193,7 +141,7 @@ export class MetaAuthController {
     @Res() res: Response,
   ) {
     const startedAt = Date.now();
-    const parsedState = this.parseState(state);
+    const parsedState = parseOAuthState(state);
     const workspaceId = parsedState.workspaceId;
     const returnTo = this.sanitizeReturnTo(parsedState.returnTo, parsedState.channel);
 
@@ -279,34 +227,8 @@ export class MetaAuthController {
         accessToken,
       );
 
-      let pageId: string | null = null;
-      let pageName: string | null = null;
-      let pageAccessToken: string | null = null;
-      let instagramAccountId: string | null = null;
-      let instagramUsername: string | null = null;
-
-      const pages = Array.isArray(pagesRes.data) ? pagesRes.data : [];
-      if (pages.length > 0) {
-        const page = pages[0] as MetaAuthPage; // Use first page
-        pageId = typeof page.id === 'string' ? page.id : null;
-        pageName = typeof page.name === 'string' ? page.name : null;
-        pageAccessToken = typeof page.access_token === 'string' ? page.access_token : null;
-
-        const instagramBusinessAccount =
-          page.instagram_business_account &&
-          typeof page.instagram_business_account === 'object' &&
-          !Array.isArray(page.instagram_business_account)
-            ? (page.instagram_business_account as MetaAuthPage['instagram_business_account'])
-            : null;
-        if (instagramBusinessAccount) {
-          instagramAccountId =
-            typeof instagramBusinessAccount.id === 'string' ? instagramBusinessAccount.id : null;
-          instagramUsername =
-            typeof instagramBusinessAccount.username === 'string'
-              ? instagramBusinessAccount.username
-              : null;
-        }
-      }
+      const { pageId, pageName, pageAccessToken, instagramAccountId, instagramUsername } =
+        extractPrimaryPageInfo(pagesRes.data);
 
       // 4. Fetch ad accounts
       const adAccountsRes = await this.metaSdk.graphApiGet(
@@ -315,12 +237,7 @@ export class MetaAuthController {
         accessToken,
       );
 
-      let adAccountId: string | null = null;
-      const adAccounts = Array.isArray(adAccountsRes.data) ? adAccountsRes.data : [];
-      if (adAccounts.length > 0) {
-        const firstAdAccount = adAccounts[0] as MetaAuthAdAccount;
-        adAccountId = typeof firstAdAccount.id === 'string' ? firstAdAccount.id : null;
-      }
+      const adAccountId = extractPrimaryAdAccountId(adAccountsRes.data);
 
       // 4b. Discover WhatsApp Business assets for Embedded Signup / Cloud API
       const whatsappAssets = await this.metaWhatsApp.discoverWhatsAppAssets(accessToken);
@@ -471,42 +388,7 @@ export class MetaAuthController {
       return { connected: false };
     }
 
-    const merged = connections.reduce(
-      (acc, c) => {
-        if (c.pageId) {
-          acc.pageId = c.pageId;
-        }
-        if (c.pageName) {
-          acc.pageName = c.pageName;
-        }
-        if (c.instagramAccountId) {
-          acc.instagramAccountId = c.instagramAccountId;
-        }
-        if (c.instagramUsername) {
-          acc.instagramUsername = c.instagramUsername;
-        }
-        if (c.whatsappPhoneNumberId) {
-          acc.whatsappPhoneNumberId = c.whatsappPhoneNumberId;
-        }
-        if (c.whatsappBusinessId) {
-          acc.whatsappBusinessId = c.whatsappBusinessId;
-        }
-        if (c.adAccountId) {
-          acc.adAccountId = c.adAccountId;
-        }
-        if (c.pixelId) {
-          acc.pixelId = c.pixelId;
-        }
-        if (c.catalogId) {
-          acc.catalogId = c.catalogId;
-        }
-        if (c.tokenExpiresAt) {
-          acc.tokenExpiresAt = c.tokenExpiresAt;
-        }
-        return acc;
-      },
-      {} as Record<string, unknown>,
-    );
+    const merged = mergeMetaConnections(connections);
 
     const tokenExpired =
       merged.tokenExpiresAt && new Date(merged.tokenExpiresAt as Date) < new Date();
@@ -514,36 +396,7 @@ export class MetaAuthController {
     return {
       connected: true,
       tokenExpired: !!tokenExpired,
-      channels: {
-        whatsapp: {
-          connected: Boolean(merged.whatsappPhoneNumberId),
-          provider: 'meta-cloud',
-          phoneNumberId: merged.whatsappPhoneNumberId,
-          whatsappBusinessId: merged.whatsappBusinessId,
-          status: merged.whatsappPhoneNumberId ? 'connected' : 'connection_incomplete',
-        },
-        instagram: {
-          connected: Boolean(merged.instagramAccountId),
-          instagramAccountId: merged.instagramAccountId,
-          username: merged.instagramUsername,
-          status: merged.instagramAccountId ? 'connected' : 'disconnected',
-        },
-        messenger: {
-          connected: Boolean(merged.pageId),
-          pageId: merged.pageId,
-          status: merged.pageId ? 'connected' : 'disconnected',
-        },
-        facebook: {
-          connected: Boolean(merged.pageId),
-          pageId: merged.pageId,
-          status: merged.pageId ? 'connected' : 'disconnected',
-        },
-        ads: {
-          connected: Boolean(merged.adAccountId),
-          adAccountId: merged.adAccountId,
-          status: merged.adAccountId ? 'connected' : 'disconnected',
-        },
-      },
+      channels: buildMetaChannelsStatus(merged),
       ...merged,
     };
   }

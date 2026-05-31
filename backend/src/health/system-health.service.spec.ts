@@ -10,7 +10,9 @@ jest.mock('@sentry/node', () => ({
   setContext: jest.fn(),
   setTag: jest.fn(),
   setExtra: jest.fn(),
-  withScope: jest.fn((callback) => callback({ setTag: jest.fn(), setExtra: jest.fn() })),
+  withScope: jest.fn((callback: (scope: { setTag: jest.Mock; setExtra: jest.Mock }) => void) =>
+    callback({ setTag: jest.fn(), setExtra: jest.fn() }),
+  ),
 }));
 
 jest.mock('ioredis', () => {
@@ -227,8 +229,8 @@ describe('SystemHealthService', () => {
         method: 'GET',
         headers: expect.objectContaining({
           Authorization: 'Bearer worker-token',
-          'X-Request-ID': expect.stringMatching(/.+/),
-        }),
+          'X-Request-ID': expect.stringMatching(/.+/) as unknown,
+        }) as unknown,
       }),
     );
   });
@@ -251,7 +253,11 @@ describe('SystemHealthService', () => {
     expect(result.details.config).toEqual(
       expect.objectContaining({
         status: 'DOWN',
-        missing: expect.arrayContaining(['META_APP_ID', 'META_APP_SECRET', 'META_VERIFY_TOKEN']),
+        missing: expect.arrayContaining([
+          'META_APP_ID',
+          'META_APP_SECRET',
+          'META_VERIFY_TOKEN',
+        ]) as unknown,
       }),
     );
   });

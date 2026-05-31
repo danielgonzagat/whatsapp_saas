@@ -457,7 +457,7 @@ describe('PulseService', () => {
     const incidents = await redis.lrange('pulse:organism:incidents', 0, 10);
     expect(incidents).toHaveLength(1);
 
-    const parsed = JSON.parse(incidents[0]);
+    const parsed = JSON.parse(incidents[0]) as Record<string, unknown>;
     expect(parsed).toMatchObject({
       nodeId: staleRecord.nodeId,
       role: 'backend',
@@ -547,7 +547,7 @@ describe('PulseService', () => {
         if (typeof callback !== 'function') {
           throw buildExpectedIntervalHandlerError();
         }
-        scheduled.push({ callback: () => callback(), delay: Number(delay) });
+        scheduled.push({ callback: () => (callback as () => void)(), delay: Number(delay) });
         const timer = fakeTimers[timerIndex];
         timerIndex += 1;
         return timer as ReturnType<typeof setInterval>;

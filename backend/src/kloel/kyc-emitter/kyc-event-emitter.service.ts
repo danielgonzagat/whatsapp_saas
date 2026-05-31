@@ -47,7 +47,7 @@ export class KycEventEmitterService {
         payload: { agentId: params.agentId },
         ...(params.correlationId !== undefined ? { correlationId: params.correlationId } : {}),
       };
-      this.spine.emit(input);
+      void this.spine.emit(input);
       this.logger.debug(
         `emitted commerce.kyc.document_submitted for agent=${params.agentId} workspace=${params.workspaceId}`,
       );
@@ -78,7 +78,7 @@ export class KycEventEmitterService {
         },
         ...(params.correlationId !== undefined ? { correlationId: params.correlationId } : {}),
       };
-      this.spine.emit(input);
+      void this.spine.emit(input);
       this.logger.debug(
         `emitted commerce.kyc.approved for agent=${params.agentId} workspace=${params.workspaceId}`,
       );
@@ -109,7 +109,7 @@ export class KycEventEmitterService {
         },
         ...(params.correlationId !== undefined ? { correlationId: params.correlationId } : {}),
       };
-      this.spine.emit(input);
+      void this.spine.emit(input);
       this.logger.debug(
         `emitted commerce.kyc.rejected for agent=${params.agentId} workspace=${params.workspaceId}`,
       );

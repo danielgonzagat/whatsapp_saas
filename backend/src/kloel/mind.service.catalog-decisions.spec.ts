@@ -1,4 +1,9 @@
 import { MindService } from './mind.service';
+import { partialMatch } from '../../test/helpers/match-instance';
+
+// Typed wrappers so nested jest matcher values stay typed (eslint no-unsafe-assignment).
+const arrayContains = (items: unknown[]): jest.AsymmetricMatcher =>
+  expect.arrayContaining(items) as jest.AsymmetricMatcher;
 
 function buildService(policy: unknown): MindService {
   return new MindService(
@@ -41,19 +46,19 @@ describe('MindService catalog decision delegation', () => {
     );
 
     expect(policy.choose).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         workspaceId: 'ws-1',
         decisionType: 'human_transfer',
         baseline: 'continue_ai',
-        context: expect.objectContaining({
+        context: partialMatch({
           escalationInProgress: true,
           humanAvailable: true,
         }),
-        options: expect.arrayContaining([
-          expect.objectContaining({ action: 'continue_ai' }),
-          expect.objectContaining({ action: 'transfer_now' }),
-          expect.objectContaining({ action: 'transfer_after_next_reply' }),
-          expect.objectContaining({ action: 'pause_wait' }),
+        options: arrayContains([
+          partialMatch({ action: 'continue_ai' }),
+          partialMatch({ action: 'transfer_now' }),
+          partialMatch({ action: 'transfer_after_next_reply' }),
+          partialMatch({ action: 'pause_wait' }),
         ]),
       }),
     );
@@ -72,14 +77,14 @@ describe('MindService catalog decision delegation', () => {
     );
 
     expect(policy.choose).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         workspaceId: 'ws-1',
         decisionType: 'channel_choice',
         baseline: 'whatsapp',
-        context: expect.objectContaining({ segment: 'premium', hour: 14, concept: 'sale' }),
-        options: expect.arrayContaining([
-          expect.objectContaining({ action: 'whatsapp' }),
-          expect.objectContaining({ action: 'email' }),
+        context: partialMatch({ segment: 'premium', hour: 14, concept: 'sale' }),
+        options: arrayContains([
+          partialMatch({ action: 'whatsapp' }),
+          partialMatch({ action: 'email' }),
         ]),
       }),
     );
@@ -98,17 +103,17 @@ describe('MindService catalog decision delegation', () => {
     );
 
     expect(policy.choose).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         workspaceId: 'ws-1',
         decisionType: 'product_offer',
         baseline: 'entry_product',
-        context: expect.objectContaining({ lastPurchase: 'A1B2C3' }),
-        options: expect.arrayContaining([
-          expect.objectContaining({ action: 'top_seller' }),
-          expect.objectContaining({ action: 'highest_margin' }),
-          expect.objectContaining({ action: 'entry_product' }),
-          expect.objectContaining({ action: 'premium_product' }),
-          expect.objectContaining({ action: 'upsell' }),
+        context: partialMatch({ lastPurchase: 'A1B2C3' }),
+        options: arrayContains([
+          partialMatch({ action: 'top_seller' }),
+          partialMatch({ action: 'highest_margin' }),
+          partialMatch({ action: 'entry_product' }),
+          partialMatch({ action: 'premium_product' }),
+          partialMatch({ action: 'upsell' }),
         ]),
       }),
     );
@@ -127,11 +132,11 @@ describe('MindService catalog decision delegation', () => {
     );
 
     expect(policy.choose).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         workspaceId: 'ws-1',
         decisionType: 'broadcast_window',
         baseline: 'pause',
-        options: expect.arrayContaining([expect.objectContaining({ action: 'pause' })]),
+        options: arrayContains([partialMatch({ action: 'pause' })]),
       }),
     );
     expect(result).toEqual({ window: 'pause', confidence: 0.9, fallback: false });
@@ -149,17 +154,17 @@ describe('MindService catalog decision delegation', () => {
     );
 
     expect(policy.choose).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         workspaceId: 'ws-1',
         decisionType: 'ad_alert_action',
         baseline: 'alert_only',
-        context: expect.objectContaining({ campaign: 'camp-summer' }),
-        options: expect.arrayContaining([
-          expect.objectContaining({ action: 'alert_only' }),
-          expect.objectContaining({ action: 'suggest_pause' }),
-          expect.objectContaining({ action: 'suggest_budget_down' }),
-          expect.objectContaining({ action: 'suggest_creative' }),
-          expect.objectContaining({ action: 'ignore' }),
+        context: partialMatch({ campaign: 'camp-summer' }),
+        options: arrayContains([
+          partialMatch({ action: 'alert_only' }),
+          partialMatch({ action: 'suggest_pause' }),
+          partialMatch({ action: 'suggest_budget_down' }),
+          partialMatch({ action: 'suggest_creative' }),
+          partialMatch({ action: 'ignore' }),
         ]),
       }),
     );

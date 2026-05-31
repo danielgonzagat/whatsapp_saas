@@ -1,17 +1,7 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  Optional,
-  type OnModuleInit,
-} from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Injectable, Logger, Optional, type OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { MetaSdkService } from './meta-sdk.service';
-import { decryptMetaToken } from './meta-token-crypto';
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
-import { readRecord, readStrictText } from './read-model/meta-read-helpers';
 import {
   resolveOAuthRedirect,
   resolvePublicBackendBaseUrl,
@@ -22,84 +12,20 @@ import {
   getRequestedScopesForChannel,
   type MetaMarketingChannel,
 } from './oauth/meta-scopes.helpers';
+import { parseMessageIdFromResponse } from './meta-whatsapp.message.helpers';
+import { buildEmbeddedSignupUrl } from './oauth/meta-embedded-signup.helpers';
+import { buildWebhookHeartbeatPayload } from './meta-webhook-heartbeat.helpers';
 import {
-  buildTextMessageContent,
-  buildMediaMessageContent,
-  parseMessageIdFromResponse,
-  normalizeWhatsAppPhone,
-} from './meta-whatsapp.message.helpers';
-type ResolvedMetaConnection = {
-  workspaceId: string;
-  accessToken: string;
-  phoneNumberId: string;
-  whatsappBusinessId: string | null;
-  pageId: string | null;
-  pageName: string | null;
-  pageAccessToken: string | null;
-  instagramAccountId: string | null;
-  instagramUsername: string | null;
-  adAccountId: string | null;
-  tokenExpired: boolean;
-  persistedConnection: boolean;
-};
-type MetaChannel = 'whatsapp' | 'instagram' | 'facebook';
-const COMMON_META_SCOPES = [
-  'pages_show_list',
-  'pages_read_engagement',
-  'pages_manage_metadata',
-  'business_management',
-];
-const CHANNEL_META_SCOPES: Record<MetaChannel, string[]> = {
-  whatsapp: [...COMMON_META_SCOPES, 'whatsapp_business_management', 'whatsapp_business_messaging'],
-  instagram: [
-    ...COMMON_META_SCOPES,
-    'instagram_basic',
-    'instagram_manage_messages',
-    'instagram_manage_comments',
-  ],
-  facebook: [...COMMON_META_SCOPES, 'pages_messaging'],
-};
-function readFirstEnv(keys: string[]): string {
-  return keys.map((key) => String(process.env[key] || '').trim()).find(Boolean) || '';
-}
-function normalizeMetaChannel(channel?: string | null): MetaChannel {
-  const normalized = String(channel || '')
-    .trim()
-    .toLowerCase();
-  if (normalized === 'instagram' || normalized === 'facebook' || normalized === 'whatsapp') {
-    return normalized;
-  }
-  return 'whatsapp';
-}
-function readChannelConfigId(channel: MetaChannel): string {
-  const lookup = (primary: string, legacy: string): string =>
-    readFirstEnv([primary, legacy, 'META_CONFIG_ID', 'META_EMBEDDED_SIGNUP_CONFIG_ID']);
-  if (channel === 'whatsapp') {
-    const result = lookup('META_WHATSAPP_CONFIG_ID', 'META_CONFIG_ID_WHATSAPP');
-    if (!result) {
-      throw new BadRequestException('meta-config-id-missing-for-channel');
-    }
-    return result;
-  }
-  if (channel === 'instagram') {
-    const result = lookup('META_INSTAGRAM_CONFIG_ID', 'META_CONFIG_ID_INSTAGRAM');
-    if (!result) {
-      throw new BadRequestException('meta-config-id-missing-for-channel');
-    }
-    return result;
-  }
-  const result = readFirstEnv([
-    'META_FACEBOOK_CONFIG_ID',
-    'META_CONFIG_ID_MESSENGER',
-    'META_CONFIG_ID_FACEBOOK',
-    'META_CONFIG_ID',
-    'META_EMBEDDED_SIGNUP_CONFIG_ID',
-  ]);
-  if (!result) {
-    throw new BadRequestException('meta-config-id-missing-for-channel');
-  }
-  return result;
-}
+  buildDiscoveryFallback,
+  buildMarkAsReadPayload,
+  buildPhoneNumberDetailsFromGraphResponse,
+  buildResolvedMetaConnection,
+  buildSendMediaMessagePayload,
+  buildSendTextMessagePayload,
+  extractDiscoveredWhatsAppAssets,
+  isMatchingEnvPhoneNumberId,
+  type ResolvedMetaConnection,
+} from './meta-whatsapp.service.helpers';
 @Injectable()
 export class MetaWhatsAppService implements OnModuleInit {
   private readonly logger = new Logger(MetaWhatsAppService.name);
@@ -119,33 +45,12 @@ export class MetaWhatsAppService implements OnModuleInit {
     workspaceId: string,
     options?: { channel?: string | null; returnTo?: string | null },
   ): string {
-    const appId = readFirstEnv(['META_APP_ID', 'FACEBOOK_APP_ID', 'META_CLIENT_ID']);
-    const channel = normalizeMetaChannel(options?.channel);
-    const configId = readChannelConfigId(channel);
-    const version = String(process.env.META_GRAPH_API_VERSION || 'v21.0').trim();
-    if (!appId) {
-      return '';
-    }
-    const scopes = CHANNEL_META_SCOPES[channel].join(',');
-    const params = new URLSearchParams({
-      client_id: appId,
-      redirect_uri: this.getOAuthRedirectUri(),
-      scope: scopes,
-      response_type: 'code',
-      override_default_response_type: String(true),
-      state: JSON.stringify({
-        workspaceId,
-        channel,
-        returnTo: options?.returnTo || null,
-      }),
+    return buildEmbeddedSignupUrl({
+      env: process.env,
+      workspaceId,
+      redirectUri: this.getOAuthRedirectUri(),
+      ...(options !== undefined ? { options } : {}),
     });
-    if (configId) {
-      params.set('config_id', configId);
-    }
-    if (channel === 'whatsapp') {
-      params.set('extras', JSON.stringify({ sessionInfoVersion: '3', version: 'v3' }));
-    }
-    return `https://www.facebook.com/${version}/dialog/oauth?${params.toString()}`;
   }
   safeBuildEmbeddedSignupUrl(
     workspaceId: string,
@@ -167,7 +72,7 @@ export class MetaWhatsAppService implements OnModuleInit {
     workspaceId: string,
     channel: string = 'whatsapp',
   ): Promise<ResolvedMetaConnection> {
-    const connection = await this.prisma.metaConnection.findFirst({
+    const channelSession = await this.prisma.metaConnection.findFirst({
       where: { workspaceId, channel },
       select: {
         accessToken: true,
@@ -182,32 +87,11 @@ export class MetaWhatsAppService implements OnModuleInit {
         adAccountId: true,
       },
     });
-    const accessToken = String(
-      decryptMetaToken(connection?.accessToken) || process.env.META_ACCESS_TOKEN || '',
-    ).trim();
-    const phoneNumberId = String(
-      connection?.whatsappPhoneNumberId || process.env.META_PHONE_NUMBER_ID || '',
-    ).trim();
-    const whatsappBusinessId = String(
-      connection?.whatsappBusinessId || process.env.META_WABA_ID || '',
-    ).trim();
-    const tokenExpired = Boolean(
-      connection?.tokenExpiresAt && new Date(connection.tokenExpiresAt).getTime() < Date.now(),
-    );
-    return {
+    return buildResolvedMetaConnection({
       workspaceId,
-      accessToken,
-      phoneNumberId,
-      whatsappBusinessId: whatsappBusinessId || null,
-      pageId: connection?.pageId || null,
-      pageName: connection?.pageName || null,
-      pageAccessToken: decryptMetaToken(connection?.pageAccessToken),
-      instagramAccountId: connection?.instagramAccountId || null,
-      instagramUsername: connection?.instagramUsername || null,
-      adAccountId: connection?.adAccountId || null,
-      tokenExpired,
-      persistedConnection: Boolean(connection),
-    };
+      channelSession,
+      env: process.env,
+    });
   }
   async discoverWhatsAppAssets(accessToken: string): Promise<{
     whatsappBusinessId?: string | null;
@@ -215,14 +99,7 @@ export class MetaWhatsAppService implements OnModuleInit {
     displayPhoneNumber?: string | null;
     verifiedName?: string | null;
   }> {
-    const envWabaId = String(process.env.META_WABA_ID || '').trim();
-    const envPhoneNumberId = String(process.env.META_PHONE_NUMBER_ID || '').trim();
-    const discovered = {
-      whatsappBusinessId: envWabaId || null,
-      whatsappPhoneNumberId: envPhoneNumberId || null,
-      displayPhoneNumber: null as string | null,
-      verifiedName: null as string | null,
-    };
+    const discovered = buildDiscoveryFallback(process.env);
     if (!accessToken) {
       return discovered;
     }
@@ -235,20 +112,7 @@ export class MetaWhatsAppService implements OnModuleInit {
         },
         accessToken,
       );
-      const businessRows = Array.isArray(businesses.data) ? businesses.data : [];
-      const firstBusiness = readRecord(businessRows[0]);
-      const ownedWhatsappAccounts = firstBusiness.owned_whatsapp_business_accounts;
-      const wabaRows = Array.isArray(ownedWhatsappAccounts) ? ownedWhatsappAccounts : [];
-      const firstWaba = readRecord(wabaRows[0]);
-      const phoneRows = Array.isArray(firstWaba.phone_numbers) ? firstWaba.phone_numbers : [];
-      const firstPhone = readRecord(phoneRows[0]);
-      return {
-        whatsappBusinessId: readStrictText(firstWaba.id) || discovered.whatsappBusinessId || null,
-        whatsappPhoneNumberId:
-          readStrictText(firstPhone.id) || discovered.whatsappPhoneNumberId || null,
-        displayPhoneNumber: readStrictText(firstPhone.display_phone_number) || null,
-        verifiedName: readStrictText(firstPhone.verified_name) || null,
-      };
+      return extractDiscoveredWhatsAppAssets(businesses, discovered);
     } catch (error: unknown) {
       void this.opsAlert?.alertOnDegradation(
         error instanceof Error ? error.message : 'unknown_error',
@@ -329,18 +193,16 @@ export class MetaWhatsAppService implements OnModuleInit {
       if (phoneInfo?.error) {
         throw new Error(phoneInfo.error.message);
       }
-      const displayPhoneNumber = readStrictText(phoneInfo?.display_phone_number) ?? null;
-      const verifiedName = readStrictText(phoneInfo?.verified_name) || resolved.pageName || null;
-      const phoneDigits = this.normalizePhone(displayPhoneNumber || '');
+      const parsed = buildPhoneNumberDetailsFromGraphResponse(phoneInfo, resolved.pageName);
       return {
         connected: true,
         status: 'CONNECTED',
         authUrl,
         phoneNumberId: resolved.phoneNumberId,
         whatsappBusinessId: resolved.whatsappBusinessId,
-        phoneNumber: displayPhoneNumber,
-        pushName: verifiedName,
-        selfIds: phoneDigits ? [`${phoneDigits}@c.us`, `${phoneDigits}@s.whatsapp.net`] : [],
+        phoneNumber: parsed.displayPhoneNumber,
+        pushName: parsed.verifiedName,
+        selfIds: parsed.selfIds,
         tokenExpired: resolved.tokenExpired,
         metaConnected: true,
         pageId: resolved.pageId,
@@ -386,18 +248,11 @@ export class MetaWhatsAppService implements OnModuleInit {
         error: 'meta_connection_required',
       };
     }
-    const payload: Record<string, unknown> = {
-      messaging_product: 'whatsapp',
-      recipient_type: 'individual',
-      to: this.normalizePhone(to),
-      type: 'text',
-      text: buildTextMessageContent(message),
-    };
-    if (options?.quotedMessageId) {
-      payload.context = {
-        message_id: String(options.quotedMessageId).trim(),
-      };
-    }
+    const payload = buildSendTextMessagePayload({
+      to,
+      message,
+      quotedMessageId: options?.quotedMessageId,
+    });
     const response = await this.metaSdk.graphApiPost(
       `${phoneNumberId}/messages`,
       payload,
@@ -433,19 +288,13 @@ export class MetaWhatsAppService implements OnModuleInit {
         error: 'meta_connection_required',
       };
     }
-    const mediaPayload = buildMediaMessageContent(mediaUrl, type, caption);
-    const payload: Record<string, unknown> = {
-      messaging_product: 'whatsapp',
-      recipient_type: 'individual',
-      to: this.normalizePhone(to),
+    const payload = buildSendMediaMessagePayload({
+      to,
       type,
-      [type]: mediaPayload,
-    };
-    if (options?.quotedMessageId) {
-      payload.context = {
-        message_id: String(options.quotedMessageId).trim(),
-      };
-    }
+      mediaUrl,
+      ...(caption !== undefined ? { caption } : {}),
+      quotedMessageId: options?.quotedMessageId,
+    });
     const response = await this.metaSdk.graphApiPost(
       `${phoneNumberId}/messages`,
       payload,
@@ -473,11 +322,7 @@ export class MetaWhatsAppService implements OnModuleInit {
     }
     const response = await this.metaSdk.graphApiPost(
       `${phoneNumberId}/messages`,
-      {
-        messaging_product: 'whatsapp',
-        status: 'read',
-        message_id: messageId,
-      },
+      buildMarkAsReadPayload(messageId),
       accessToken,
     );
     return !response?.error;
@@ -494,8 +339,7 @@ export class MetaWhatsAppService implements OnModuleInit {
     if (byConnection?.workspaceId) {
       return byConnection.workspaceId;
     }
-    const envPhoneNumberId = String(process.env.META_PHONE_NUMBER_ID || '').trim();
-    if (envPhoneNumberId && envPhoneNumberId === normalized) {
+    if (isMatchingEnvPhoneNumberId(normalized, process.env.META_PHONE_NUMBER_ID)) {
       const candidates = await this.prisma.workspace.findMany({
         take: 2,
         where: {
@@ -520,27 +364,7 @@ export class MetaWhatsAppService implements OnModuleInit {
     if (!workspace) {
       return;
     }
-    const settings = asProviderSettings(workspace.providerSettings);
-    const currentSession = readRecord(settings.whatsappApiSession);
-    const patchRecord = readRecord(patch);
-    const persistedStatus = readStrictText(currentSession.status);
-    const heartbeatStatus = readStrictText(patchRecord.status);
-    const { status: _ignoredStatus, ...patchWithoutStatus } = patchRecord;
-    const nextStatus = heartbeatStatus || persistedStatus || 'connected';
-    const providerSettingsPayload = JSON.parse(
-      JSON.stringify({
-        ...settings,
-        whatsappProvider: 'meta-cloud',
-        connectionStatus: nextStatus,
-        whatsappApiSession: {
-          ...currentSession,
-          ...patchWithoutStatus,
-          status: nextStatus,
-          provider: 'meta-cloud',
-          lastWebhookAt: new Date().toISOString(),
-        },
-      }),
-    ) as Prisma.InputJsonObject;
+    const providerSettingsPayload = buildWebhookHeartbeatPayload(workspace.providerSettings, patch);
     await this.prisma.workspace.update({
       where: { id: workspaceId },
       data: { providerSettings: providerSettingsPayload },
@@ -551,8 +375,5 @@ export class MetaWhatsAppService implements OnModuleInit {
   }
   getRequestedScopesForChannel(channel: MetaMarketingChannel): string[] {
     return getRequestedScopesForChannel(channel);
-  }
-  private normalizePhone(value: string): string {
-    return normalizeWhatsAppPhone(value);
   }
 }

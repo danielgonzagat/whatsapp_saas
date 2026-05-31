@@ -85,7 +85,12 @@ describe('MetaWebhookController', () => {
       const result = await controller.handleWebhook(body, signature, { rawBody });
 
       expect(result).toBe('ok');
-      const logArgs = mockWebhooksService.logWebhookEvent.mock.calls[0];
+      const logArgs = mockWebhooksService.logWebhookEvent.mock.calls[0] as [
+        string,
+        string,
+        string,
+        unknown,
+      ];
       expect(logArgs[0]).toBe('meta-marketing');
       expect(logArgs[1]).toBe('ad_account');
       expect(typeof logArgs[2]).toBe('string');
@@ -112,7 +117,12 @@ describe('MetaWebhookController', () => {
       const result = await controller.handleWebhook(body, signature, { rawBody });
 
       expect(result).toBe('ok');
-      const logArgs = mockWebhooksService.logWebhookEvent.mock.calls[0];
+      const logArgs = mockWebhooksService.logWebhookEvent.mock.calls[0] as [
+        string,
+        string,
+        string,
+        unknown,
+      ];
       expect(logArgs[0]).toBe('meta-marketing');
       expect(logArgs[1]).toBe('unknown_type');
       expect(typeof logArgs[2]).toBe('string');
@@ -141,7 +151,7 @@ describe('MetaWebhookController', () => {
       ).rejects.toThrow('Missing Meta webhook signature');
     });
 
-    it('skips signature check when no app secret set outside CI', async () => {
+    it('fails closed (rejects) when no app secret set outside CI', async () => {
       const previousCi = process.env.CI;
       delete process.env.META_APP_SECRET;
       process.env.CI = 'false';
@@ -149,11 +159,12 @@ describe('MetaWebhookController', () => {
       try {
         const body = { object: 'ad_account', entry: [] };
 
-        const result = await controller.handleWebhook(body, 'sha256=anything', {
-          rawBody: undefined,
-        });
-
-        expect(result).toBe('ok');
+        await expect(
+          controller.handleWebhook(body, 'sha256=anything', {
+            rawBody: undefined,
+          }),
+        ).rejects.toThrow('Meta webhook secret not configured');
+        expect(mockWebhooksService.logWebhookEvent).not.toHaveBeenCalled();
       } finally {
         if (previousCi === undefined) {
           delete process.env.CI;

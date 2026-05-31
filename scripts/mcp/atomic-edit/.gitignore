@@ -1,0 +1,5 @@
+
+# vendored native addon (heavy, auto-restored by launcher)
+vendor/pi-natives/*.node
+# vendored type defs (45KB generated copy of @oh-my-pi/pi-natives types; re-vendor per SOURCE.txt). Nothing imports it (native-worker requires the .node at runtime); committing the 1367-line generated file tripped the architecture size + eslint-disable guardrails.
+vendor/pi-natives/*.d.ts

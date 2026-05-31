@@ -1,85 +1,34 @@
 import { Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { MindEventSpine } from '../kloel/mind/coordination';
+import {
+  buildAffiliateConfigPatch,
+  buildPlanObservedPayload,
+  buildPlanUpdatedPayload,
+  buildPlanUpdatePatch,
+  checkoutImagesWith,
+  orderBumpConfigJson,
+  paymentMethodsJson,
+  shippingConfigJson,
+  type AffiliateConfig,
+  type CreatePlanDto,
+  type OrderBumpConfig,
+  type PaymentMethodsConfig,
+  type ShippingConfig,
+  type UpdatePlanDto,
+} from './plan.service.helpers';
+import { emitCommerceAlias } from '../kloel/event-taxonomy.canonical-aliases';
 
-export interface CreatePlanDto {
-  productId: string;
-  name: string;
-  price: number;
-  itemsPerPlan?: number;
-  maxInstallments?: number;
-  billingType?: string;
-  visibleToAffiliates?: boolean;
-  acceptCoupons?: boolean;
-  imageUrl?: string;
-}
-
-export interface UpdatePlanDto {
-  name?: string;
-  price?: number;
-  active?: boolean;
-  maxInstallments?: number;
-  itemsPerPlan?: number;
-  billingType?: string;
-  visibleToAffiliates?: boolean;
-  acceptCoupons?: boolean;
-  imageUrl?: string;
-}
-
-export interface PaymentMethodsConfig {
-  card?: boolean;
-  pix?: boolean;
-  boleto?: boolean;
-}
-
-export interface ShippingConfig {
-  type?: 'FIXED' | 'VARIABLE' | 'FREE' | 'NONE';
-  fixedValue?: number;
-  originCep?: string;
-}
-
-export interface AffiliateConfig {
-  visibleToAffiliates?: boolean;
-  customCommission?: number;
-}
-
-function checkoutImagesObject(value: unknown): Prisma.InputJsonObject {
-  if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-    return value;
-  }
-
-  return {};
-}
-
-function checkoutImagesWith(
-  current: unknown,
-  patch: Prisma.InputJsonObject,
-): Prisma.InputJsonObject {
-  return { ...checkoutImagesObject(current), ...patch };
-}
-
-function paymentMethodsJson(
-  methods: PaymentMethodsConfig,
-): Prisma.InputJsonObject & Record<string, unknown> {
-  return {
-    ...(methods.card !== undefined ? { card: methods.card } : {}),
-    ...(methods.pix !== undefined ? { pix: methods.pix } : {}),
-    ...(methods.boleto !== undefined ? { boleto: methods.boleto } : {}),
-  };
-}
-
-function shippingConfigJson(
-  config: ShippingConfig,
-): Prisma.InputJsonObject & Record<string, unknown> {
-  return {
-    ...(config.type !== undefined ? { type: config.type } : {}),
-    ...(config.fixedValue !== undefined ? { fixedValue: config.fixedValue } : {}),
-    ...(config.originCep !== undefined ? { originCep: config.originCep } : {}),
-  };
-}
+export type {
+  AffiliateConfig,
+  CreatePlanDto,
+  OrderBumpConfig,
+  PaymentMethodsConfig,
+  ShippingConfig,
+  UpdatePlanDto,
+} from './plan.service.helpers';
 
 @Injectable()
 export class PlanService {
@@ -117,7 +66,7 @@ export class PlanService {
       },
     });
 
-    this.eventEmitter.emit('plan.created', {
+    this.eventEmitter.emit('mind.plan.observed', {
       planId: plan.id,
       productId: dto.productId,
       workspaceId,
@@ -141,14 +90,9 @@ export class PlanService {
     await this.brainSpine?.recordCommercial({
       workspaceId,
       subject: `plan:${plan.id}`,
-      eventType: 'plan.created',
+      eventType: 'mind.plan.observed',
       occurredAt: new Date(),
-      payload: {
-        planId: plan.id,
-        name: plan.name,
-        priceInCents: plan.price !== null ? Math.round(Number(plan.price) * 100) : null,
-        productId: dto.productId,
-      },
+      payload: buildPlanObservedPayload(plan, dto.productId),
     });
 
     this.logger.log(`Plan created: ${plan.id} "${plan.name}"`);
@@ -188,38 +132,8 @@ export class PlanService {
       throw new NotFoundException('Plan not found');
     }
 
-    const updates: Record<string, unknown> = {};
-    const checkoutImageUpdates: Prisma.InputJsonObject = {
-      ...(dto.acceptCoupons !== undefined ? { acceptCoupons: Boolean(dto.acceptCoupons) } : {}),
-      ...(dto.imageUrl !== undefined ? { imageUrl: dto.imageUrl } : {}),
-    };
-
-    if (dto.name !== undefined) {
-      updates.name = dto.name;
-    }
-    if (dto.price !== undefined) {
-      updates.price = Number(dto.price);
-    }
-    if (dto.active !== undefined) {
-      updates.active = Boolean(dto.active);
-    }
-    if (dto.maxInstallments !== undefined) {
-      updates.maxInstallments = Number(dto.maxInstallments);
-    }
-    if (dto.itemsPerPlan !== undefined) {
-      updates.itemsPerPlan = Number(dto.itemsPerPlan);
-    }
-    if (dto.billingType !== undefined) {
-      updates.billingType = dto.billingType;
-    }
-    if (dto.visibleToAffiliates !== undefined) {
-      updates.visibleToAffiliates = Boolean(dto.visibleToAffiliates);
-    }
-    if (Object.keys(checkoutImageUpdates).length > 0) {
-      updates.checkoutImages = checkoutImagesWith(existing.checkoutImages, checkoutImageUpdates);
-    }
-
-    if (Object.keys(updates).length === 0) {
+    const patch = buildPlanUpdatePatch(dto, existing.checkoutImages);
+    if (patch === null) {
       return {
         success: true,
         plan: existing,
@@ -227,13 +141,14 @@ export class PlanService {
       };
     }
 
+    const { updates, changes } = patch;
     const plan = await this.prisma.productPlan.update({ where: { id: planId }, data: updates });
 
-    this.eventEmitter.emit('plan.updated', {
+    emitCommerceAlias((name, payload) => this.eventEmitter.emit(name, payload), 'plan.updated', {
       planId: plan.id,
       workspaceId,
       actorId: actor?.id,
-      changes: Object.keys(updates),
+      changes,
     });
 
     if (actor) {
@@ -243,7 +158,7 @@ export class PlanService {
         action: 'plan.update',
         resource: 'ProductPlan',
         resourceId: plan.id,
-        details: { changes: Object.keys(updates) },
+        details: { changes },
       });
     }
 
@@ -253,19 +168,30 @@ export class PlanService {
       subject: `plan:${plan.id}`,
       eventType: 'plan.updated',
       occurredAt: new Date(),
-      payload: {
-        planId: plan.id,
-        name: plan.name,
-        priceInCents: plan.price !== null ? Math.round(Number(plan.price) * 100) : null,
-        productId: existing.productId,
-        changes: Object.keys(updates),
-      },
+      payload: buildPlanUpdatedPayload(plan, existing.productId, changes),
     });
 
     return {
       success: true,
       plan,
     };
+  }
+
+  /**
+   * Canonical-name alias of {@link update} for the Kloel capability resolver
+   * (`PlanService.configure`). Accepts the (workspaceId, args) signature
+   * used by `KloelDomainServiceResolver`. `args.planId` is required and is
+   * split out so the rest of `args` is forwarded as the {@link UpdatePlanDto}
+   * patch — order-bump fields, payment methods, shipping config, etc. all
+   * pass through unchanged. Delegate-only — no new mutation logic.
+   */
+  async configure(workspaceId: string, args?: { planId?: string } & Partial<UpdatePlanDto>) {
+    const planId = typeof args?.planId === 'string' ? args.planId : '';
+    if (!planId) {
+      throw new NotFoundException('PlanService.configure: args.planId is required');
+    }
+    const { planId: _omit, ...dto } = args ?? {};
+    return this.update(workspaceId, planId, dto);
   }
 
   async delete(workspaceId: string, planId: string, actor?: { id: string }) {
@@ -278,7 +204,7 @@ export class PlanService {
 
     await this.prisma.productPlan.delete({ where: { id: planId } });
 
-    this.eventEmitter.emit('plan.deleted', {
+    emitCommerceAlias((name, payload) => this.eventEmitter.emit(name, payload), 'plan.deleted', {
       planId,
       workspaceId,
       actorId: actor?.id,
@@ -463,18 +389,7 @@ export class PlanService {
       throw new NotFoundException('Plan not found');
     }
 
-    const updates: Record<string, unknown> = {};
-    const details: Record<string, unknown> = {};
-    if (config.visibleToAffiliates !== undefined) {
-      updates.visibleToAffiliates = config.visibleToAffiliates;
-      details.visibleToAffiliates = config.visibleToAffiliates;
-    }
-    if (config.customCommission !== undefined) {
-      updates.checkoutImages = checkoutImagesWith(plan.checkoutImages, {
-        customCommission: config.customCommission,
-      });
-      details.customCommission = config.customCommission;
-    }
+    const { updates, details } = buildAffiliateConfigPatch(config, plan.checkoutImages);
 
     const updated = await this.prisma.productPlan.update({
       where: { id: planId },
@@ -495,5 +410,168 @@ export class PlanService {
       success: true,
       plan: updated,
     };
+  }
+
+  async setOrderBump(
+    workspaceId: string,
+    planId: string,
+    config: OrderBumpConfig,
+    actor?: { id: string },
+  ) {
+    const plan = await this.prisma.productPlan.findFirst({
+      where: { id: planId, product: { workspaceId } },
+    });
+    if (!plan) {
+      throw new NotFoundException('Plan not found');
+    }
+
+    const orderBump = orderBumpConfigJson(config);
+    const updated = await this.prisma.productPlan.update({
+      where: { id: planId },
+      data: {
+        checkoutImages: checkoutImagesWith(plan.checkoutImages, { orderBump }),
+      },
+    });
+
+    if (actor) {
+      await this.audit.log({
+        workspaceId,
+        agentId: actor.id,
+        action: 'plan.setOrderBump',
+        resource: 'ProductPlan',
+        resourceId: planId,
+        details: orderBump,
+      });
+    }
+    return {
+      success: true,
+      plan: updated,
+    };
+  }
+
+  async setImage(workspaceId: string, planId: string, imageUrl: string, actor?: { id: string }) {
+    const plan = await this.prisma.productPlan.findFirst({
+      where: { id: planId, product: { workspaceId } },
+    });
+    if (!plan) {
+      throw new NotFoundException('Plan not found');
+    }
+
+    const updated = await this.prisma.productPlan.update({
+      where: { id: planId },
+      data: {
+        checkoutImages: checkoutImagesWith(plan.checkoutImages, { imageUrl }),
+      },
+    });
+
+    if (actor) {
+      await this.audit.log({
+        workspaceId,
+        agentId: actor.id,
+        action: 'plan.setImage',
+        resource: 'ProductPlan',
+        resourceId: planId,
+        details: { imageUrl },
+      });
+    }
+    return {
+      success: true,
+      plan: updated,
+    };
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Kloel capability resolver adapters.
+  //
+  // `KloelDomainServiceResolver.tryExecute` calls every domainService method
+  // with exactly `(workspaceId, args)`. The fine-grained setters above use
+  // positional `(workspaceId, planId, config, actor)` signatures, so each
+  // capability points at one of the thin `*FromArgs` adapters below which
+  // unpack the resolver `args` object and delegate. Delegate-only — no new
+  // mutation logic, no Prisma access.
+  // ──────────────────────────────────────────────────────────────────────────
+
+  private requirePlanId(args?: { planId?: string }, op = 'PlanService'): string {
+    const planId = typeof args?.planId === 'string' ? args.planId : '';
+    if (!planId) {
+      throw new NotFoundException(`${op}: args.planId is required`);
+    }
+    return planId;
+  }
+
+  async setPaymentMethodsFromArgs(
+    workspaceId: string,
+    args?: { planId?: string } & PaymentMethodsConfig,
+  ) {
+    const planId = this.requirePlanId(args, 'PlanService.setPaymentMethodsFromArgs');
+    const { planId: _omit, ...methods } = args ?? {};
+    return this.setPaymentMethods(workspaceId, planId, methods);
+  }
+
+  async setInstallmentsFromArgs(
+    workspaceId: string,
+    args?: { planId?: string; maxInstallments?: number },
+  ) {
+    const planId = this.requirePlanId(args, 'PlanService.setInstallmentsFromArgs');
+    const maxInstallments = Number(args?.maxInstallments);
+    if (!Number.isFinite(maxInstallments) || maxInstallments < 1) {
+      throw new NotFoundException(
+        'PlanService.setInstallmentsFromArgs: args.maxInstallments must be >= 1',
+      );
+    }
+    return this.setInstallments(workspaceId, planId, maxInstallments);
+  }
+
+  async setCouponsFromArgs(
+    workspaceId: string,
+    args?: { planId?: string; acceptCoupons?: boolean },
+  ) {
+    const planId = this.requirePlanId(args, 'PlanService.setCouponsFromArgs');
+    return this.setCoupons(workspaceId, planId, Boolean(args?.acceptCoupons));
+  }
+
+  async setShippingFromArgs(workspaceId: string, args?: { planId?: string } & ShippingConfig) {
+    const planId = this.requirePlanId(args, 'PlanService.setShippingFromArgs');
+    const { planId: _omit, ...config } = args ?? {};
+    return this.setShipping(workspaceId, planId, config);
+  }
+
+  async setVisibilityForAffiliatesFromArgs(
+    workspaceId: string,
+    args?: { planId?: string; visibleToAffiliates?: boolean },
+  ) {
+    const planId = this.requirePlanId(args, 'PlanService.setVisibilityForAffiliatesFromArgs');
+    return this.setAffiliateConfig(workspaceId, planId, {
+      visibleToAffiliates: Boolean(args?.visibleToAffiliates),
+    });
+  }
+
+  async setCustomCommissionFromArgs(
+    workspaceId: string,
+    args?: { planId?: string; customCommission?: number },
+  ) {
+    const planId = this.requirePlanId(args, 'PlanService.setCustomCommissionFromArgs');
+    const customCommission = Number(args?.customCommission);
+    if (!Number.isFinite(customCommission) || customCommission < 0) {
+      throw new NotFoundException(
+        'PlanService.setCustomCommissionFromArgs: args.customCommission must be >= 0',
+      );
+    }
+    return this.setAffiliateConfig(workspaceId, planId, { customCommission });
+  }
+
+  async setOrderBumpFromArgs(workspaceId: string, args?: { planId?: string } & OrderBumpConfig) {
+    const planId = this.requirePlanId(args, 'PlanService.setOrderBumpFromArgs');
+    const { planId: _omit, ...config } = args ?? {};
+    return this.setOrderBump(workspaceId, planId, config);
+  }
+
+  async setImageFromArgs(workspaceId: string, args?: { planId?: string; imageUrl?: string }) {
+    const planId = this.requirePlanId(args, 'PlanService.setImageFromArgs');
+    const imageUrl = typeof args?.imageUrl === 'string' ? args.imageUrl : '';
+    if (!imageUrl) {
+      throw new NotFoundException('PlanService.setImageFromArgs: args.imageUrl is required');
+    }
+    return this.setImage(workspaceId, planId, imageUrl);
   }
 }

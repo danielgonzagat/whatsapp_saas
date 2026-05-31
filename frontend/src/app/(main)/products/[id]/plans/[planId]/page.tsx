@@ -3,9 +3,9 @@ import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
+import CheckoutEditorPage from '@/app/(main)/checkout/[planId]/page';
 import { PlanAIConfigTab } from '@/components/plans/PlanAIConfigTab';
 import { PlanAffiliateTab } from '@/components/plans/PlanAffiliateTab';
-import { PlanOrderBumpTab } from '@/components/plans/PlanOrderBumpTab';
 import { PlanPaymentTab } from '@/components/plans/PlanPaymentTab';
 import { PlanShippingTab } from '@/components/plans/PlanShippingTab';
 import { PlanStoreTab } from '@/components/plans/PlanStoreTab';
@@ -127,8 +127,8 @@ export default function PlanDetailPage() {
             <PlanShippingTab planId={planId} productId={productId} />
           ) : activeTab === 'packaging' ? (
             <PlanShippingTab planId={planId} productId={productId} />
-          ) : activeTab === 'orderbump' ? (
-            <PlanOrderBumpTab planId={planId} />
+          ) : activeTab === 'checkout' ? (
+            <CheckoutEditorPage />
           ) : activeTab === 'affiliate' ? (
             <PlanAffiliateTab planId={planId} productId={productId} priceInCents={0} />
           ) : activeTab === 'terms' ? (

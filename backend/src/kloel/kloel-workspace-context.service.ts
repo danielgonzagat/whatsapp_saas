@@ -3,7 +3,7 @@ import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { filterLegacyProducts, isLegacyProductName } from '../common/products/legacy-products.util';
 import { PrismaService } from '../prisma/prisma.service';
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../marketing/channels/whatsapp/provider-settings.types';
 import { KloelContextFormatter } from './kloel-context-formatter';
 import type { KloelContextFormatterLimits } from './kloel-context-formatter.types';
 import { KloelWorkspaceContextDataService } from './kloel-workspace-context-data.service';

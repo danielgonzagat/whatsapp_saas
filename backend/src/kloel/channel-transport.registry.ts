@@ -15,9 +15,25 @@ import type {
   ChannelTransportProvider,
 } from './channel-transport.types';
 import { MindGuardsService } from './mind/policy/mind-guards.service';
-import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
-import type { MindActionContext } from './mind-code-native.types';
+import { MindGuardContextBuilderService } from './mind/policy/mind-guard-context-builder.service';
+import type { MindActionContext } from './mind/policy/mind-code-native.types';
 
+/**
+ * ChannelTransportRegistry — the MindGuard-wrapped outbound send registry for
+ * the Kloel agent/inbox/webhook layer. It resolves a {@link
+ * ChannelTransportProvider} by {@link ChannelName} and runs the
+ * `send_message` policy guard ({@link MindGuardsService}) + structured audit
+ * logging before delegating to the provider (which owns rate-limit /
+ * idempotency / dedup at the WhatsApp/Email/Meta provider boundary).
+ *
+ * Channel-vocabulary canonicalization (OmniCore W3): {@link ChannelName} is no
+ * longer an independent string union — it is the message-dispatchable subset of
+ * the single canonical {@link CanonicalChannelName}/`ChannelKind`
+ * (`common/channel-dispatch/channel-dispatch.port`). The pure-port
+ * {@link ChannelDispatchRegistry} (marketing layer, no guard) and this guarded
+ * transport registry therefore now speak ONE channel vocabulary; the two are
+ * NOT duplicate enums — they are two layers over the same `ChannelKind`.
+ */
 @Injectable()
 export class ChannelTransportRegistry {
   private readonly logger = StructuredLogger.from(ChannelTransportRegistry.name);

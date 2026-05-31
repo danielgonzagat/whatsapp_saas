@@ -1,13 +1,7 @@
 import { ColdStartIngestionService } from './cold-start-ingestion.service';
 import { PatternDetectorService } from './pattern-detector.service';
-import { rankWOWInsights } from './insight-ranker';
-import { buildEvidence, buildEvidenceBundles } from './evidence-builder';
-import { wowConfidenceFloor, filterAboveWOWFloor } from './confidence-floor';
 import { FirstHourOrchestratorService } from './first-hour.orchestrator.service';
 import type { SpineEventRef } from '../mind/mind.types';
-import type { Insight } from '../insight/insight.types';
-import type { RankedWOWInsight } from './wow.types';
-
 const WKS = 'wks_wow_test';
 const NOW = Date.parse('2026-05-13T22:00:00.000Z');
 
@@ -29,33 +23,6 @@ function ev(over?: Partial<SpineEventRef>): SpineEventRef {
     defaults['payload'] = over.payload;
   }
   return defaults as SpineEventRef;
-}
-
-function makeInsight(over?: Partial<Insight>): Insight {
-  return {
-    insightId: over?.insightId ?? 'i_test',
-    kind: over?.kind ?? 'funnel_bottleneck',
-    description: over?.description ?? 'test description',
-    evidence: over?.evidence ?? ['e1', 'e2'],
-    estimatedFinancialImpactCents: over?.estimatedFinancialImpactCents ?? 100_00,
-    confidence: over?.confidence ?? 0.7,
-    recommendedChannel: over?.recommendedChannel ?? 'dashboard',
-    recommendedTiming: over?.recommendedTiming ?? 'weekly',
-    workspaceId: over?.workspaceId ?? WKS,
-    truthMode: over?.truthMode ?? 'inferred',
-    generatedAt: over?.generatedAt ?? new Date(NOW).toISOString(),
-  };
-}
-
-function makeRanked(over?: Partial<Insight>): RankedWOWInsight {
-  const i = makeInsight(over);
-  const product = i.estimatedFinancialImpactCents * i.confidence;
-  return {
-    ...i,
-    impactConfidenceProduct: product,
-    wowUrgency: 'first_session',
-    wowDeliveryPriority: 2000 + product,
-  };
 }
 
 // =========================================================================

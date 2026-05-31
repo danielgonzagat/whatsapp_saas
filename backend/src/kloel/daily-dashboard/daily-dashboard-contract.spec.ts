@@ -6,6 +6,37 @@ import { ValenceAggregatorService } from '../mind/valence-aggregator.service';
 import { AttentionService } from '../mind/attention.service';
 import type { SpineEventRef } from '../mind/mind.types';
 
+interface AsymmetricMatcher {
+  asymmetricMatch(value: unknown): boolean;
+  toString(): string;
+}
+
+function isAsymmetricMatcher(value: unknown): value is AsymmetricMatcher {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { asymmetricMatch?: unknown }).asymmetricMatch === 'function'
+  );
+}
+
+function matches(expected: unknown, actual: unknown): boolean {
+  return isAsymmetricMatcher(expected) ? expected.asymmetricMatch(actual) : expected === actual;
+}
+
+function expectArrayContaining(expected: readonly unknown[]): AsymmetricMatcher {
+  return {
+    asymmetricMatch(value: unknown): boolean {
+      if (!Array.isArray(value)) {
+        return false;
+      }
+      return expected.every((exp) => value.some((item: unknown) => matches(exp, item)));
+    },
+    toString(): string {
+      return 'ArrayContaining';
+    },
+  };
+}
+
 const WKS = 'wks_demo';
 
 function ev(over: Partial<SpineEventRef> = {}): SpineEventRef {
@@ -44,7 +75,7 @@ async function buildSvc(
         schemaVersion: '1.0.0',
       },
       valence: e.valence,
-      payload: e.payload as Record<string, unknown> | undefined,
+      payload: e.payload,
       correlationId: e.correlationId,
       occurredAt: e.occurredAt,
     });
@@ -120,7 +151,7 @@ describe('DailyDashboardService contract (UTP-R6)', () => {
       headline: '1 customer reached first value',
       reason:
         'informational post-sale health signal only; do not create outreach, referral, testimonial, or expansion work from this alone',
-      evidenceEventIds: expect.arrayContaining([expectValueOf(String)]),
+      evidenceEventIds: expectArrayContaining([expectValueOf(String)]),
       riskClass: 'R1',
       delegationMode: 'allowed_alone',
     });
@@ -338,3 +369,4 @@ describe('DailyDashboardService contract (UTP-R6)', () => {
     expect(action?.riskClass).toBe('R2');
     expect(action?.delegationMode).toBe('requires_approval');
   });
+});

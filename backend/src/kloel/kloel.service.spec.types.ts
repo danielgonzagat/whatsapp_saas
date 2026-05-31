@@ -60,5 +60,8 @@ export type KloelPrismaMock = {
   auditLog: {
     create: jest.Mock;
   };
+  autopilotEvent: {
+    create: jest.Mock;
+  };
   $transaction: jest.Mock;
 };

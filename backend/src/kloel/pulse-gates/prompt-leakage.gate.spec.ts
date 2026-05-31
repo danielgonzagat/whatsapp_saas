@@ -84,22 +84,6 @@ function tamperCurrentInput(
   return out;
 }
 
-function tamperDeep(
-  payload: Record<string, unknown>,
-  path: string[],
-  value: string,
-): Record<string, unknown> {
-  const out = { ...payload };
-  let cursor: Record<string, unknown> = out;
-  for (let i = 0; i < path.length - 1; i++) {
-    const key = path[i]!;
-    cursor[key] = { ...(cursor[key] as Record<string, unknown>) };
-    cursor = cursor[key] as Record<string, unknown>;
-  }
-  cursor[path[path.length - 1]!] = value;
-  return out;
-}
-
 // ─── Positive (PASS) scenarios ────────────────────────────────────────
 
 describe('prompt-leakage gate — PASS scenarios', () => {

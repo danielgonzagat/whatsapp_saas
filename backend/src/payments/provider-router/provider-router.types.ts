@@ -1,9 +1,9 @@
 /**
  * Types for the PaymentProviderRouter.
  *
- * Per ADR-0009: the router picks `mercadopago` for PIX BR and `stripe`
- * for everything else (cartão + Connect marketplace). The decision is
- * deterministic — no fallback, no per-customer logic at the router level.
+ * Per ADR-0009: the router picks `mercadopago` for PIX and boleto BR, while
+ * `stripe` is the canonical card + Connect marketplace provider. The decision
+ * is deterministic — no fallback, no per-customer logic at the router level.
  */
 
 /** Payment method requested by the user/checkout. */

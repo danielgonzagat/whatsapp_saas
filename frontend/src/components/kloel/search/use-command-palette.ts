@@ -49,14 +49,26 @@ export function useCommandPalette({ open, initialSearch }: UseCommandPaletteArgs
       .slice(0, 8);
   }, [query, recentResults]);
 
+  // Reset the palette whenever it (re)opens or the seed query changes. The
+  // resets run in a microtask (not synchronously in the effect body) to satisfy
+  // react-hooks/set-state-in-effect.
   useEffect(() => {
     if (!open) {
       return;
     }
-    setQuery(initialSearch || '');
-    setSelectedIndex(0);
-    setRemoteResults([]);
-    setIsSearching(false);
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) {
+        return;
+      }
+      setQuery(initialSearch || '');
+      setSelectedIndex(0);
+      setRemoteResults([]);
+      setIsSearching(false);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [initialSearch, open]);
 
   useEffect(() => {
@@ -72,21 +84,27 @@ export function useCommandPalette({ open, initialSearch }: UseCommandPaletteArgs
     };
   }, [open]);
 
+  // A remote search only runs for queries of 2+ chars; for shorter queries the
+  // stale remote state is ignored during render rather than reset in an effect
+  // (react-hooks/set-state-in-effect).
+  const isQueryActionable = open === true && query.trim().length >= 2;
+
   useEffect(() => {
-    if (!open) {
+    if (!isQueryActionable) {
       return;
     }
 
     const normalizedQuery = query.trim();
-    if (normalizedQuery.length < 2) {
-      setRemoteResults([]);
-      setIsSearching(false);
-      return;
-    }
-
     let cancelled = false;
-    setIsSearching(true);
-    setRemoteResults([]);
+
+    // State updates run inside async callbacks (never synchronously in the
+    // effect body) to satisfy react-hooks/set-state-in-effect.
+    const startTimer = window.setTimeout(() => {
+      if (!cancelled) {
+        setIsSearching(true);
+        setRemoteResults([]);
+      }
+    }, 0);
 
     const timer = window.setTimeout(async () => {
       try {
@@ -109,43 +127,48 @@ export function useCommandPalette({ open, initialSearch }: UseCommandPaletteArgs
 
     return () => {
       cancelled = true;
+      window.clearTimeout(startTimer);
       window.clearTimeout(timer);
     };
-  }, [open, query]);
+  }, [isQueryActionable, query]);
+
+  // Ignore stale remote state when the query is not actionable.
+  const effectiveRemoteResults = useMemo(
+    () => (isQueryActionable ? remoteResults : []),
+    [isQueryActionable, remoteResults],
+  );
+  const effectiveIsSearching = isQueryActionable && isSearching;
 
   const results = useMemo(() => {
     const normalizedQuery = query.trim();
     if (!normalizedQuery) {
       return recentResults;
     }
-    const primary = remoteResults.length > 0 ? remoteResults : localMatches;
+    const primary = effectiveRemoteResults.length > 0 ? effectiveRemoteResults : localMatches;
     const seen = new Set(primary.map((item) => item.id));
     const extras = localMatches.filter((item) => !seen.has(item.id));
     return [...primary, ...extras].slice(0, 20);
-  }, [localMatches, query, recentResults, remoteResults]);
+  }, [localMatches, query, recentResults, effectiveRemoteResults]);
+
+  // Clamp during render instead of syncing into state via an effect
+  // (react-hooks/set-state-in-effect). `selectedIndex` is still the raw stored
+  // cursor; `clampedSelectedIndex` is what consumers read/scroll to.
+  const clampedSelectedIndex =
+    results.length === 0 ? 0 : Math.min(selectedIndex, results.length - 1);
 
   useEffect(() => {
-    setSelectedIndex((current) => {
-      if (results.length === 0) {
-        return 0;
-      }
-      return Math.min(current, results.length - 1);
-    });
-  }, [results]);
-
-  useEffect(() => {
-    const selectedNode = itemRefsRef.current[selectedIndex];
+    const selectedNode = itemRefsRef.current[clampedSelectedIndex];
     selectedNode?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  }, [selectedIndex]);
+  }, [clampedSelectedIndex]);
 
   const groupedResults = useMemo(() => groupConversationSearchResults(results), [results]);
 
   return {
     query,
     setQuery,
-    selectedIndex,
+    selectedIndex: clampedSelectedIndex,
     setSelectedIndex,
-    isSearching,
+    isSearching: effectiveIsSearching,
     results,
     groupedResults,
     inputRef,

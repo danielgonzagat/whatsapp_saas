@@ -26,6 +26,8 @@ import { AbiBuilderService } from './abi/abi-builder.service';
 import { validateAbiPayload } from './abi/abi-validator';
 
 import type { FollowupListItem } from './kloel.service.lists.helpers';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
+
 export type { FollowupListItem };
 
 /** Handles WhatsApp message processing, lead lifecycle, and follow-ups. */
@@ -41,8 +43,14 @@ export class KloelLeadProcessorService {
     private readonly planLimits: PlanLimitsService,
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {
     this.openai = createTextLlmClient() ?? new OpenAI({ apiKey: '' });
+  }
+
+  /** Canonical Brain → Mind memory delegate (raw-Prisma fallback). */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
   }
 
   async processWhatsAppMessage(
@@ -306,7 +314,7 @@ export class KloelLeadProcessorService {
       if (contactId) {
         whereClause.metadata = { path: ['contactId'], equals: contactId };
       }
-      const followups = await this.prisma.kloelMemory.findMany({
+      const followups = await this.mindMemoryItems.findMany({
         where: { ...whereClause, workspaceId },
         orderBy: { createdAt: 'desc' },
         take: 100,

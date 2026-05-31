@@ -139,12 +139,14 @@ export async function runGetAgentArtifact(
   prisma: PrismaService,
   workspaceId: string,
   args: ToolGetAgentArtifactArgs,
+  /** Canonical Brain → Mind memory delegate; falls back to prisma.kloelMemory when absent. */
+  mindMemory?: PrismaService['kloelMemory'],
 ): Promise<ToolResult> {
   const artifactId = safeStr(args.artifactId).trim().slice(0, 220);
   if (!artifactId || !artifactId.startsWith('tool_artifact:')) {
     return { success: false, error: 'invalid_agent_artifact_id' };
   }
-  const row = await prisma.kloelMemory.findUnique({
+  const row = await (mindMemory ?? prisma.kloelMemory).findUnique({
     where: { workspaceId_key: { workspaceId, key: artifactId } },
   });
   if (!row || row.category !== 'tool_artifact') {

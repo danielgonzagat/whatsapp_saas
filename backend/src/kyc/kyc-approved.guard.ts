@@ -22,10 +22,16 @@ export class KycApprovedGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<{ user?: { sub?: string } }>();
     const user = request.user;
+    // Fail CLOSED: a KYC-gated route with no authenticated identity must be denied,
+    // never silently allowed. An absent user is treated as not-approved.
     if (!user?.sub) {
-      return true;
+      throw new ForbiddenException({
+        error: 'kyc_not_approved',
+        message: 'Complete seu cadastro para usar esta funcionalidade',
+        kycStatus: 'unknown',
+      });
     }
 
     const agent = await this.prisma.agent.findUnique({

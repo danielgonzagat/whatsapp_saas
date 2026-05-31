@@ -1,4 +1,6 @@
 import { AgentRuntimeSessionStore } from './agent-runtime.session-store';
+import { mindMemoryStub } from '../../../test/helpers/mind-memory-stub';
+
 function makeStore(prismaOverrides: Record<string, unknown> = {}) {
   const prisma = {
     kloelMemory: {
@@ -7,7 +9,7 @@ function makeStore(prismaOverrides: Record<string, unknown> = {}) {
       ...prismaOverrides,
     },
   };
-  const store = new AgentRuntimeSessionStore(prisma as never);
+  const store = new AgentRuntimeSessionStore(prisma as never, mindMemoryStub(prisma));
   return { store, prisma };
 }
 function makeMemoryRow(
@@ -34,7 +36,6 @@ function makeMemoryRow(
     updatedAt: overrides.updatedAt ?? new Date(now.getTime() - 60 * 60 * 1000),
   };
 }
-const MILLIS_PER_DAY = 24 * 60 * 60 * 1000;
 describe('AgentRuntimeSessionStore', () => {
   describe('searchSessions', () => {
     it('groups matching memories by thread metadata and builds a focused transcript window', async () => {
@@ -72,7 +73,7 @@ describe('AgentRuntimeSessionStore', () => {
       expect(result.sessions[0].transcriptWindow).toContain('checkout failed');
       expect(result.sessions[0].summary).toContain('source=thread');
       expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
+        expect.objectContaining<Record<string, unknown>>({
           select: expect.objectContaining({ metadata: true }),
         }),
       );

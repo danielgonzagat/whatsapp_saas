@@ -68,7 +68,7 @@ export class HealthService {
     if (statusData) {
       let parsed: Record<string, unknown> = {};
       try {
-        parsed = JSON.parse(statusData);
+        parsed = JSON.parse(statusData) as Record<string, unknown>;
       } catch {
         /* invalid JSON in Redis */
       }
@@ -111,6 +111,14 @@ export class HealthService {
       db: dbOk ? 'up' : 'down',
       ...queueSnapshot,
     };
+  }
+
+  /**
+   * Canonical-name alias of {@link getHealth} for the Kloel capability
+   * resolver (`HealthService.snapshot`). Args ignored — workspace-only.
+   */
+  async snapshot(workspaceId: string) {
+    return this.getHealth(workspaceId);
   }
 
   /** Run readiness checks for critical deps. Each returns up/down with latency. */

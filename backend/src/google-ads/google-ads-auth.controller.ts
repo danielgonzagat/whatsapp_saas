@@ -49,7 +49,7 @@ export class GoogleAdsAuthController {
     return { data: result };
   }
 
-  @WebhookEndpoint('Google Ads connection status check')
+  @WebhookEndpoint('Google Ads channel session status check')
   @Get('status')
   async getStatus(@Req() req: Request) {
     const wsId = this.workspaceId(req);

@@ -1,25 +1,14 @@
-import { assessPrivacyCompliance } from './privacy-compliance.engine';
-import { manageConsent } from './consent.ledger';
-import { enforceWhatsappPolicy } from './whatsapp-policy.enforcer';
-import { enforceEmailPolicy } from './email-policy.enforcer';
-import { enforceAdsPolicy } from './ads-policy.enforcer';
-import { enforceAffiliateTerms } from './affiliate-terms.enforcer';
 import { guardCommercialPromise } from './commercial-promise.guard';
 import { detectRegulatedContent } from './regulated-content.detector';
 import { checkImageRights } from './image-rights.checker';
 import { watchPolicyUpdate } from './policy-update.watcher';
 import { elevateRiskFlag } from './risk-flag.elevator';
 import { applyBlockWithJustification } from './block-with-justification.service';
-import { triggerLegalConsult } from './legal-consult.trigger';
 import type {
   BlockInput,
   CommercialPromiseInput,
-  ConsentInput,
   ImageRightsInput,
-  LegalConsultInput,
-  PolicyEnforcementInput,
   PolicyUpdateInput,
-  PrivacyComplianceInput,
   RegulatedContentInput,
   RiskFlagInput,
 } from './types';

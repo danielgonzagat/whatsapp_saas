@@ -1,3 +1,5 @@
+import { stringContains } from '../../../test/helpers/match-instance';
+
 import {
   baseContext,
   buildEngine,
@@ -34,7 +36,7 @@ describe('FraudEngine.evaluate — velocity', () => {
 
     expect(decision.action).toBe('review');
     expect(decision.reasons).toContainEqual(
-      expect.objectContaining({ signal: 'velocity', detail: expect.stringContaining('ip') }),
+      expect.objectContaining({ signal: 'velocity', detail: stringContains('ip') }),
     );
     expect(redis.expire).toHaveBeenCalledWith('fraud:velocity:v1:velocity_ip:198.51.100.20', 600);
   });
@@ -52,7 +54,7 @@ describe('FraudEngine.evaluate — velocity', () => {
 
     expect(decision.action).toBe('review');
     expect(decision.reasons).toContainEqual(
-      expect.objectContaining({ signal: 'velocity', detail: expect.stringContaining('device') }),
+      expect.objectContaining({ signal: 'velocity', detail: stringContains('device') }),
     );
   });
 
@@ -69,7 +71,7 @@ describe('FraudEngine.evaluate — velocity', () => {
 
     expect(decision.action).toBe('review');
     expect(decision.reasons).toContainEqual(
-      expect.objectContaining({ signal: 'velocity', detail: expect.stringContaining('email') }),
+      expect.objectContaining({ signal: 'velocity', detail: stringContains('email') }),
     );
   });
 
@@ -86,7 +88,7 @@ describe('FraudEngine.evaluate — velocity', () => {
 
     expect(decision.action).toBe('review');
     expect(decision.reasons).toContainEqual(
-      expect.objectContaining({ signal: 'velocity', detail: expect.stringContaining('document') }),
+      expect.objectContaining({ signal: 'velocity', detail: stringContains('document') }),
     );
   });
 
@@ -106,7 +108,7 @@ describe('FraudEngine.evaluate — velocity', () => {
 
     expect(decision.action).toBe('review');
     expect(decision.reasons).toContainEqual(
-      expect.objectContaining({ signal: 'velocity', detail: expect.stringContaining('document') }),
+      expect.objectContaining({ signal: 'velocity', detail: stringContains('document') }),
     );
   });
 
@@ -133,6 +135,21 @@ describe('FraudEngine.evaluate — velocity', () => {
     const prisma = makePrismaStub();
     const redis = makeRedisStub();
     redis.incr.mockRejectedValueOnce(new Error('redis down'));
+    const engine = await buildEngine(prisma, redis);
+
+    const decision = await engine.evaluate(baseContext());
+
+    expect(decision.action).toBe('review');
+    expect(decision.reasons).toContainEqual(
+      expect.objectContaining({ signal: 'velocity_unavailable' }),
+    );
+  });
+
+  it('routes to review when the velocity backend rejects with a non-Error value', async () => {
+    const prisma = makePrismaStub();
+    const redis = makeRedisStub();
+    // Reject with a bare string to exercise the String(error) fallback branch.
+    redis.incr.mockRejectedValueOnce('redis exploded');
     const engine = await buildEngine(prisma, redis);
 
     const decision = await engine.evaluate(baseContext());

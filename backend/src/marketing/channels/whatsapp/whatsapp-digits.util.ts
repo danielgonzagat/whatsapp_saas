@@ -1,10 +1,17 @@
 /**
  * Low-level digit / whitespace helpers used by WhatsApp normalization.
  *
- * Extracted from whatsapp-normalization.util.ts so each helper is measured
- * on its own by complexity scanners (Codacy / lizard bundles neighbouring TS
- * functions into a single inflated-CCN entry when they live together).
+ * `extractAsciiDigits` here is a `unknown`-tolerant thin wrapper over the
+ * canonical {@link import('../../../common/phone/phone-normalization.util').extractAsciiDigits}.
+ * It preserves the historical contract used by WhatsApp inbound paths
+ * (accepts numbers / booleans / nulls / objects, never throws) while
+ * routing the actual digit-strip through the canonical implementation.
+ *
+ * @see backend/src/common/phone/phone-normalization.util.ts
+ * @see docs/architecture/DEPRECATION_MAP.md (phone normalization row)
  */
+import { extractAsciiDigits as canonicalExtractAsciiDigits } from '../../../common/phone/phone-normalization.util';
+
 const WHITESPACE_RE = /\s+/g;
 
 /** Is digit. */
@@ -35,14 +42,14 @@ export function collapseWhitespace(value: unknown): string {
   return coerceToString(value).replace(WHITESPACE_RE, ' ').trim();
 }
 
-/** Extract ascii digits. */
-export function extractAsciiDigits(value: unknown): string {
-  const input = coerceToString(value);
-  let result = '';
-  for (const char of input) {
-    if (isDigit(char)) {
-      result += char;
-    }
-  }
-  return result;
+/**
+ * Extract ASCII digits from an arbitrary value.
+ *
+ * Thin `unknown`-tolerant adapter over the canonical
+ * {@link canonicalExtractAsciiDigits}: coerces non-string scalars first
+ * (preserving the legacy "number/boolean → its string form" semantic) and
+ * collapses objects/null/undefined to `''`.
+ */
+export function extractDigitsLoose(value: unknown): string {
+  return canonicalExtractAsciiDigits(coerceToString(value));
 }

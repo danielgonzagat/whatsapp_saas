@@ -271,16 +271,130 @@ export class FacebookMessengerService {
     pageId: string | null;
     pageName: string | null;
   }> {
-    const connection = await this.prisma.metaConnection.findFirst({
+    const channelSession = await this.prisma.metaConnection.findFirst({
       where: { workspaceId, channel: 'facebook' },
       select: { pageId: true, pageName: true },
     });
 
     return {
-      connected: Boolean(connection?.pageId),
-      pageId: connection?.pageId || null,
-      pageName: connection?.pageName || null,
+      connected: Boolean(channelSession?.pageId),
+      pageId: channelSession?.pageId || null,
+      pageName: channelSession?.pageName || null,
     };
+  }
+
+  /**
+   * Aggregate Messenger projection for the Marketing Command Center.
+   *
+   * Mirrors the WhatsApp summary shape (`configured`, connection metadata,
+   * counters). Counts are sourced from the persisted `FbMessage` ledger so the
+   * numbers reflect the workspace's real Messenger traffic, not the live Graph
+   * API (which is rate-limited and would lose history older than the page
+   * window).
+   *
+   * Returns `configured: false` with zeroed counters when the page is not
+   * connected — the frontend should render an honest setup-required state.
+   */
+  async getSummary(workspaceId: string): Promise<{
+    configured: boolean;
+    pageId: string | null;
+    pageName: string | null;
+    totals: {
+      inbound: number;
+      outbound: number;
+      delivered: number;
+      read: number;
+      failed: number;
+    };
+    lastInboundAt: string | null;
+    lastOutboundAt: string | null;
+  }> {
+    const status = await this.getStatus(workspaceId);
+
+    const [inbound, outbound, delivered, read, failed, lastInbound, lastOutbound] =
+      await Promise.all([
+        this.prisma.fbMessage.count({
+          where: { workspaceId, direction: 'INBOUND' },
+        }),
+        this.prisma.fbMessage.count({
+          where: { workspaceId, direction: 'OUTBOUND' },
+        }),
+        this.prisma.fbMessage.count({
+          where: { workspaceId, direction: 'OUTBOUND', deliveryStatus: 'DELIVERED' },
+        }),
+        this.prisma.fbMessage.count({
+          where: { workspaceId, direction: 'OUTBOUND', deliveryStatus: 'READ' },
+        }),
+        this.prisma.fbMessage.count({
+          where: { workspaceId, direction: 'OUTBOUND', deliveryStatus: 'FAILED' },
+        }),
+        this.prisma.fbMessage.findFirst({
+          where: { workspaceId, direction: 'INBOUND' },
+          orderBy: { createdAt: 'desc' },
+          select: { createdAt: true },
+        }),
+        this.prisma.fbMessage.findFirst({
+          where: { workspaceId, direction: 'OUTBOUND' },
+          orderBy: { createdAt: 'desc' },
+          select: { createdAt: true },
+        }),
+      ]);
+
+    return {
+      configured: status.connected,
+      pageId: status.pageId,
+      pageName: status.pageName,
+      totals: { inbound, outbound, delivered, read, failed },
+      lastInboundAt: lastInbound?.createdAt ? lastInbound.createdAt.toISOString() : null,
+      lastOutboundAt: lastOutbound?.createdAt ? lastOutbound.createdAt.toISOString() : null,
+    };
+  }
+
+  /**
+   * Distinct Messenger contacts (sender PSIDs) the workspace has spoken with,
+   * with per-contact message counts and the most recent inbound timestamp.
+   *
+   * Why this exists: Messenger has no concept of a global contact list — the
+   * Page only knows users who have previously messaged it (Page-Scoped IDs).
+   * This endpoint surfaces those PSIDs from the persisted ledger so the
+   * frontend can render an inbox/contacts view backed by real conversation
+   * history, not a placeholder list.
+   *
+   * Returns at most `limit` contacts ordered by most recent inbound activity.
+   */
+  async getContacts(
+    workspaceId: string,
+    options: { pageId?: string; limit: number },
+  ): Promise<
+    Array<{
+      psid: string;
+      messageCount: number;
+      lastInboundAt: string | null;
+    }>
+  > {
+    const where = {
+      workspaceId,
+      direction: 'INBOUND',
+      senderPsid: { not: null },
+      ...(options.pageId ? { pageId: options.pageId } : {}),
+    };
+
+    const grouped = await this.prisma.fbMessage.groupBy({
+      by: ['senderPsid'],
+      where,
+      _count: { id: true },
+      _max: { createdAt: true },
+      orderBy: { _max: { createdAt: 'desc' } },
+      take: options.limit,
+    });
+
+    return grouped
+      .filter((row): row is typeof row & { senderPsid: string } => Boolean(row.senderPsid))
+      .map((row) => ({
+        psid: row.senderPsid,
+        messageCount: Number(row._count.id) || 0,
+        lastInboundAt: row._max.createdAt ? row._max.createdAt.toISOString() : null,
+      }));
   }
 
   async reconcileDelivery(workspaceId: string, mid: string): Promise<void> {

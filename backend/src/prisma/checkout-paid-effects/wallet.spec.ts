@@ -89,7 +89,7 @@ describe('creditWalletFromPaidCheckoutUpdate', () => {
           amountInCents: 9201n,
           reference: 'checkout:order-1',
           status: 'pending',
-        }),
+        }) as unknown,
       }),
     );
     expect(walletLedgerCreate).toHaveBeenCalledWith(
@@ -102,7 +102,7 @@ describe('creditWalletFromPaidCheckoutUpdate', () => {
           bucket: 'pending',
           amountInCents: 9201n,
           reason: 'sale_credit',
-        }),
+        }) as unknown,
       }),
     );
   });

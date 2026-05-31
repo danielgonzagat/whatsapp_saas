@@ -6,6 +6,7 @@ import {
   Get,
   HttpException,
   HttpStatus,
+  BadRequestException,
   NotFoundException,
   Param,
   Post,
@@ -22,13 +23,6 @@ import { AuthenticatedRequest } from '../common/interfaces';
 import { getTraceHeaders } from '../common/trace-headers';
 import { resolveKloelCapabilityModel } from '../lib/ai-models';
 import { PrismaService } from '../prisma/prisma.service';
-import { BRAND_COLORS } from '../common/kloel-colors';
-import {
-  estimateAnthropicMessageQuoteCostCents,
-  estimateOpenAiChatQuoteCostCents,
-  quoteAnthropicMessageActualCostCents,
-  quoteOpenAiChatActualCostCents,
-} from '../wallet/provider-llm-billing';
 import { UnknownProviderPricingModelError } from '../wallet/provider-pricing';
 import { WalletService } from '../wallet/wallet.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -38,13 +32,21 @@ import {
   WalletNotFoundError,
 } from '../wallet/wallet.types';
 
-import { SLUG_EDGE_HYPHEN_RE } from '../common/regex';
 import { RouteClass } from '../common/throttler/route-class.decorator';
-import { DIACRITICS_RE } from '../common/regex';
-const A_Z0_9_RE = /[^a-z0-9]+/g;
-const SITE_GENERATION_MAX_OUTPUT_TOKENS = 4096;
-
-type SiteProvider = 'openai' | 'anthropic';
+import {
+  buildAnthropicSiteRequestBody,
+  buildOpenAiSiteRequestBody,
+  buildSiteSlug,
+  buildSiteSystemPrompt,
+  estimateSiteGenerationQuote,
+  extractAnthropicSiteHtml,
+  extractOpenAiSiteHtml,
+  INSUFFICIENT_WALLET_MESSAGE,
+  quoteSiteActualCostCents,
+  resolveSiteProviderPreference,
+  resolveSiteRequestId,
+  type SiteProvider,
+} from './site.controller.helpers';
 
 /** Site controller. */
 @UseGuards(JwtAuthGuard)
@@ -60,10 +62,6 @@ export class SiteController {
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
-  private insufficientWalletMessage() {
-    return 'Saldo insuficiente na wallet prepaid para gerar o site. Recarregue via PIX ou aguarde a auto-recarga antes de tentar novamente.';
-  }
-
   private estimateSiteGenerationQuote(input: {
     providerPreference: SiteProvider;
     model: string;
@@ -71,23 +69,7 @@ export class SiteController {
     prompt: string;
   }): bigint | undefined {
     try {
-      if (input.providerPreference === 'openai') {
-        return estimateOpenAiChatQuoteCostCents({
-          model: input.model,
-          messages: [
-            { role: 'system', content: input.systemPrompt },
-            { role: 'user', content: input.prompt },
-          ],
-          maxOutputTokens: SITE_GENERATION_MAX_OUTPUT_TOKENS,
-        });
-      }
-
-      return estimateAnthropicMessageQuoteCostCents({
-        model: input.model,
-        system: input.systemPrompt,
-        messages: [{ role: 'user', content: input.prompt }],
-        maxOutputTokens: SITE_GENERATION_MAX_OUTPUT_TOKENS,
-      });
+      return estimateSiteGenerationQuote(input);
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(
         error,
@@ -137,7 +119,7 @@ export class SiteController {
         return false;
       }
       if (error instanceof InsufficientWalletBalanceError || error instanceof WalletNotFoundError) {
-        throw new HttpException(this.insufficientWalletMessage(), HttpStatus.PAYMENT_REQUIRED);
+        throw new HttpException(INSUFFICIENT_WALLET_MESSAGE, HttpStatus.PAYMENT_REQUIRED);
       }
       throw error;
     }
@@ -155,25 +137,11 @@ export class SiteController {
     }
 
     try {
-      const actualCostCents =
-        input.providerPreference === 'openai'
-          ? quoteOpenAiChatActualCostCents({
-              model: input.model,
-              usage: input.usage as {
-                prompt_tokens?: number | null;
-                completion_tokens?: number | null;
-                prompt_tokens_details?: { cached_tokens?: number | null } | null;
-              },
-            })
-          : quoteAnthropicMessageActualCostCents({
-              model: input.model,
-              usage: input.usage as {
-                input_tokens?: number | null;
-                output_tokens?: number | null;
-                cache_read_input_tokens?: number | null;
-                cache_creation_input_tokens?: number | null;
-              },
-            });
+      const actualCostCents = quoteSiteActualCostCents({
+        providerPreference: input.providerPreference,
+        model: input.model,
+        usage: input.usage,
+      });
 
       await this.prepaidWalletService.settleUsageCharge({
         workspaceId: input.workspaceId,
@@ -249,28 +217,19 @@ export class SiteController {
     const openaiKey = process.env.OPENAI_API_KEY;
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
     const workspaceId = req.user?.workspaceId;
-    const requestId =
-      typeof dto.idempotencyKey === 'string' && dto.idempotencyKey.trim().length > 0
-        ? dto.idempotencyKey.trim()
-        : randomUUID();
+    const requestId = resolveSiteRequestId({
+      idempotencyKey: dto.idempotencyKey,
+      fallback: randomUUID(),
+    });
 
-    if (!openaiKey && !anthropicKey) {
+    const providerPreference = resolveSiteProviderPreference({ openaiKey, anthropicKey });
+    if (!providerPreference) {
       throw new ServiceUnavailableException(
         'AI site generation is not available. Configure OPENAI_API_KEY or ANTHROPIC_API_KEY.',
       );
     }
 
-    const systemPrompt = [
-      'You are a landing page generator. Return ONLY valid HTML (no markdown, no code fences).',
-      'The HTML must be a complete, self-contained page with inline CSS.',
-      `Use modern design: dark background (${BRAND_COLORS.VOID}), light text (${BRAND_COLORS.SILVER}), accent (${BRAND_COLORS.EMBER}).`,
-      dto.currentHtml
-        ? `The user wants to edit an existing page. Here is the current HTML:\n${dto.currentHtml}`
-        : '',
-    ]
-      .filter(Boolean)
-      .join('\n');
-    const providerPreference: SiteProvider = openaiKey ? 'openai' : 'anthropic';
+    const systemPrompt = buildSiteSystemPrompt({ currentHtml: dto.currentHtml });
     const model = resolveKloelCapabilityModel(
       providerPreference === 'openai' ? 'generate_site_openai' : 'generate_site_anthropic',
     );
@@ -291,17 +250,7 @@ export class SiteController {
 
     try {
       // tokenBudget: site generation is a one-shot action; budget enforced at plan level
-      if (openaiKey) {
-        const openAiRequestBody = {
-          model,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: dto.prompt },
-          ],
-          max_tokens: SITE_GENERATION_MAX_OUTPUT_TOKENS,
-          temperature: 0.7,
-        };
-
+      if (providerPreference === 'openai') {
         // Not SSRF: hardcoded OpenAI API endpoint
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -310,7 +259,9 @@ export class SiteController {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${openaiKey}`,
           },
-          body: JSON.stringify(openAiRequestBody),
+          body: JSON.stringify(
+            buildOpenAiSiteRequestBody({ model, systemPrompt, prompt: dto.prompt }),
+          ),
           signal: AbortSignal.timeout(60000),
         });
 
@@ -336,24 +287,15 @@ export class SiteController {
             usage: result.usage,
           });
         }
-        const html = result.choices?.[0]?.message?.content?.trim() || null;
-        return { success: true, html, message: 'Generated via OpenAI' };
+        return {
+          success: true,
+          html: extractOpenAiSiteHtml(result),
+          message: 'Generated via OpenAI',
+        };
       }
 
       // tokenBudget: site generation is a one-shot action; budget enforced at plan level
-      // Fallback to Anthropic
-      if (!anthropicKey) {
-        throw new ServiceUnavailableException(
-          'ANTHROPIC_API_KEY is required for fallback site generation.',
-        );
-      }
-      const anthropicRequestBody = {
-        model,
-        max_tokens: SITE_GENERATION_MAX_OUTPUT_TOKENS,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: dto.prompt }],
-      };
-
+      // Anthropic branch (provider preference resolved upstream)
       // Not SSRF: hardcoded Anthropic API endpoint
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -363,7 +305,9 @@ export class SiteController {
           'x-api-key': anthropicKey ?? '',
           'anthropic-version': '2023-06-01',
         },
-        body: JSON.stringify(anthropicRequestBody),
+        body: JSON.stringify(
+          buildAnthropicSiteRequestBody({ model, systemPrompt, prompt: dto.prompt }),
+        ),
         signal: AbortSignal.timeout(60000),
       });
 
@@ -390,8 +334,11 @@ export class SiteController {
           usage: result.usage,
         });
       }
-      const html = result.content?.[0]?.text?.trim() || null;
-      return { success: true, html, message: 'Generated via Anthropic' };
+      return {
+        success: true,
+        html: extractAnthropicSiteHtml(result),
+        message: 'Generated via Anthropic',
+      };
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'SiteController.generateSite');
       if (usageCharged) {
@@ -417,6 +364,9 @@ export class SiteController {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) {
       throw new NotFoundException('Workspace not found');
+    }
+    if (typeof dto?.htmlContent !== 'string' || dto.htmlContent.trim() === '') {
+      throw new BadRequestException('htmlContent is required');
     }
     const site = await this.prisma.kloelSite.create({
       data: {
@@ -459,13 +409,7 @@ export class SiteController {
       throw new NotFoundException('Site not found');
     }
 
-    const baseSlug = (existing.name || 'site')
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(DIACRITICS_RE, '')
-      .replace(A_Z0_9_RE, '-')
-      .replace(SLUG_EDGE_HYPHEN_RE, '');
-    const slug = `${baseSlug}-${id.slice(0, 6)}`;
+    const slug = buildSiteSlug({ name: existing.name, id });
 
     await this.prisma.kloelSite.updateMany({
       where: { id, workspaceId },

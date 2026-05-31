@@ -74,7 +74,7 @@ describe('CheckoutSocialRecoveryService', () => {
       },
       $transaction: jest.fn().mockImplementation(async (fn: unknown) => {
         if (typeof fn === 'function') {
-          return fn(prisma);
+          return (fn as (tx: unknown) => unknown)(prisma);
         }
         return await Promise.resolve((fn as Array<Promise<unknown>>)[0]);
       }),
@@ -106,7 +106,7 @@ describe('CheckoutSocialRecoveryService', () => {
       expect.objectContaining({
         data: expect.objectContaining({
           status: CheckoutSocialLeadStatus.ABANDONED,
-        }),
+        }) as unknown,
       }),
     );
   });
@@ -164,7 +164,7 @@ describe('CheckoutSocialRecoveryService', () => {
         headers: expect.objectContaining({
           'List-Unsubscribe': expectValueOf(String),
           'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-        }),
+        }) as unknown,
       }),
     );
   });

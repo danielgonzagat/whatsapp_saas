@@ -1,4 +1,13 @@
-import { buildDiagnosticsPayload, humanizeMetaError, sanitizeReturnTo } from './meta-auth-helpers';
+import {
+  buildDiagnosticsPayload,
+  buildMetaChannelsStatus,
+  extractPrimaryAdAccountId,
+  extractPrimaryPageInfo,
+  humanizeMetaError,
+  mergeMetaConnections,
+  parseOAuthState,
+  sanitizeReturnTo,
+} from './meta-auth-helpers';
 import type { ResolvedOAuthRedirect } from './meta-oauth-url.helpers';
 
 const FRONTEND = 'https://app.kloel.com';
@@ -192,5 +201,196 @@ describe('buildDiagnosticsPayload', () => {
     expect(payload.appId).toBeNull();
     expect(payload.appIdSet).toBe(false);
     expect(payload.checklist.appCredentialsPresent).toBe(false);
+  });
+});
+
+describe('parseOAuthState', () => {
+  it('returns empty workspaceId for blank input', () => {
+    expect(parseOAuthState('')).toEqual({ workspaceId: '' });
+    expect(parseOAuthState(null)).toEqual({ workspaceId: '' });
+    expect(parseOAuthState(undefined)).toEqual({ workspaceId: '' });
+  });
+
+  it('parses a raw JSON state payload', () => {
+    const out = parseOAuthState('{"workspaceId":"ws-1","channel":"whatsapp","returnTo":"/inbox"}');
+    expect(out).toEqual({ workspaceId: 'ws-1', channel: 'whatsapp', returnTo: '/inbox' });
+  });
+
+  it('parses a URL-encoded JSON state payload', () => {
+    const encoded = encodeURIComponent('{"workspaceId":"ws-9","channel":"instagram"}');
+    expect(parseOAuthState(encoded)).toEqual({
+      workspaceId: 'ws-9',
+      channel: 'instagram',
+      returnTo: null,
+    });
+  });
+
+  it('treats legacy plain workspaceId strings as workspaceId', () => {
+    expect(parseOAuthState('ws-legacy-77')).toEqual({ workspaceId: 'ws-legacy-77' });
+  });
+
+  it('returns empty workspaceId when JSON omits workspaceId field', () => {
+    expect(parseOAuthState('{"channel":"facebook"}')).toEqual({
+      workspaceId: '',
+      channel: 'facebook',
+      returnTo: null,
+    });
+  });
+
+  it('falls back to raw string when JSON is malformed', () => {
+    expect(parseOAuthState('{not-json')).toEqual({ workspaceId: '{not-json' });
+  });
+});
+
+describe('extractPrimaryPageInfo', () => {
+  it('returns all-null when input is not an array', () => {
+    expect(extractPrimaryPageInfo(null)).toEqual({
+      pageId: null,
+      pageName: null,
+      pageAccessToken: null,
+      instagramAccountId: null,
+      instagramUsername: null,
+    });
+    expect(extractPrimaryPageInfo({})).toEqual({
+      pageId: null,
+      pageName: null,
+      pageAccessToken: null,
+      instagramAccountId: null,
+      instagramUsername: null,
+    });
+  });
+
+  it('returns all-null when array is empty', () => {
+    expect(extractPrimaryPageInfo([]).pageId).toBeNull();
+  });
+
+  it('reads the first page including IG business account', () => {
+    const out = extractPrimaryPageInfo([
+      {
+        id: 'page-1',
+        name: 'Test Page',
+        access_token: 'pat-xxx',
+        instagram_business_account: { id: 'ig-1', username: 'klounel' },
+      },
+      { id: 'page-2', name: 'Ignored' },
+    ]);
+    expect(out).toEqual({
+      pageId: 'page-1',
+      pageName: 'Test Page',
+      pageAccessToken: 'pat-xxx',
+      instagramAccountId: 'ig-1',
+      instagramUsername: 'klounel',
+    });
+  });
+
+  it('handles page without instagram business account', () => {
+    const out = extractPrimaryPageInfo([{ id: 'p', name: 'P', access_token: 't' }]);
+    expect(out.instagramAccountId).toBeNull();
+    expect(out.instagramUsername).toBeNull();
+  });
+
+  it('ignores non-string field values defensively', () => {
+    const out = extractPrimaryPageInfo([
+      { id: 123, name: null, access_token: false, instagram_business_account: 'not-object' },
+    ]);
+    expect(out).toEqual({
+      pageId: null,
+      pageName: null,
+      pageAccessToken: null,
+      instagramAccountId: null,
+      instagramUsername: null,
+    });
+  });
+});
+
+describe('extractPrimaryAdAccountId', () => {
+  it('returns null for empty / non-array input', () => {
+    expect(extractPrimaryAdAccountId([])).toBeNull();
+    expect(extractPrimaryAdAccountId(null)).toBeNull();
+    expect(extractPrimaryAdAccountId('not-array')).toBeNull();
+  });
+
+  it('returns first ad account id when present', () => {
+    expect(extractPrimaryAdAccountId([{ id: 'act_1' }, { id: 'act_2' }])).toBe('act_1');
+  });
+
+  it('returns null when first element lacks string id', () => {
+    expect(extractPrimaryAdAccountId([{ id: 42 }])).toBeNull();
+    expect(extractPrimaryAdAccountId([null])).toBeNull();
+  });
+});
+
+describe('mergeMetaConnections', () => {
+  it('returns empty object for empty input', () => {
+    expect(mergeMetaConnections([])).toEqual({});
+  });
+
+  it('keeps the first non-empty value per field', () => {
+    const merged = mergeMetaConnections([
+      { pageId: 'p-1', whatsappPhoneNumberId: null, instagramAccountId: null },
+      { pageId: 'p-2', whatsappPhoneNumberId: 'wa-1', instagramAccountId: 'ig-1' },
+    ]);
+    expect(merged.pageId).toBe('p-2'); // last non-empty wins via reduce sequence
+    expect(merged.whatsappPhoneNumberId).toBe('wa-1');
+    expect(merged.instagramAccountId).toBe('ig-1');
+  });
+
+  it('preserves tokenExpiresAt when set', () => {
+    const expires = new Date('2030-01-01T00:00:00Z');
+    const merged = mergeMetaConnections([{ pageId: 'p', tokenExpiresAt: expires }]);
+    expect(merged.tokenExpiresAt).toBe(expires);
+  });
+
+  it('skips falsy / undefined fields', () => {
+    const merged = mergeMetaConnections([
+      { pageId: '', pageName: undefined, adAccountId: null, catalogId: 'cat-1' },
+    ]);
+    expect(merged).toEqual({ catalogId: 'cat-1' });
+  });
+});
+
+describe('buildMetaChannelsStatus', () => {
+  it('marks every channel disconnected when merged is empty', () => {
+    const channels = buildMetaChannelsStatus({});
+    expect(channels.whatsapp.connected).toBe(false);
+    expect(channels.whatsapp.status).toBe('connection_incomplete');
+    expect(channels.instagram.connected).toBe(false);
+    expect(channels.messenger.connected).toBe(false);
+    expect(channels.facebook.connected).toBe(false);
+    expect(channels.ads.connected).toBe(false);
+  });
+
+  it('marks whatsapp connected when phoneNumberId present', () => {
+    const channels = buildMetaChannelsStatus({
+      whatsappPhoneNumberId: 'wa-123',
+      whatsappBusinessId: 'wba-9',
+    });
+    expect(channels.whatsapp.connected).toBe(true);
+    expect(channels.whatsapp.phoneNumberId).toBe('wa-123');
+    expect(channels.whatsapp.whatsappBusinessId).toBe('wba-9');
+    expect(channels.whatsapp.status).toBe('connected');
+    expect(channels.whatsapp.provider).toBe('meta-cloud');
+  });
+
+  it('marks messenger AND facebook connected when pageId is set', () => {
+    const channels = buildMetaChannelsStatus({ pageId: 'p-1' });
+    expect(channels.messenger.connected).toBe(true);
+    expect(channels.facebook.connected).toBe(true);
+    expect(channels.messenger.pageId).toBe('p-1');
+    expect(channels.facebook.pageId).toBe('p-1');
+  });
+
+  it('marks instagram + ads when their IDs are present', () => {
+    const channels = buildMetaChannelsStatus({
+      instagramAccountId: 'ig-1',
+      instagramUsername: 'name',
+      adAccountId: 'act_42',
+    });
+    expect(channels.instagram.connected).toBe(true);
+    expect(channels.instagram.username).toBe('name');
+    expect(channels.instagram.status).toBe('connected');
+    expect(channels.ads.connected).toBe(true);
+    expect(channels.ads.adAccountId).toBe('act_42');
+    expect(channels.ads.status).toBe('connected');
   });
 });

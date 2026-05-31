@@ -64,10 +64,12 @@ export function useAIConfig(productId: string) {
   const [autoLink, setAutoLink] = useState(true);
   const [offerDisc, setOfferDisc] = useState(true);
   const [useUrg, setUseUrg] = useState(true);
-  useEffect(() => {
-    if (!aiCfg) {
-      return;
-    }
+  // Hydrate the editable form fields whenever a freshly-loaded `aiCfg`
+  // arrives. Adjusting state during render (with a tracked previous value)
+  // keeps this off the effect path, avoiding cascading renders.
+  const [lastAiCfg, setLastAiCfg] = useState(aiCfg);
+  if (aiCfg && aiCfg !== lastAiCfg) {
+    setLastAiCfg(aiCfg);
     const cp = aiCfg.customerProfile || {};
     setWhobuys(cp.whobuys || cp.idealCustomer || '');
     setPains(cp.pains || cp.painPoints || '');
@@ -75,7 +77,7 @@ export function useAIConfig(productId: string) {
     if (Array.isArray(aiCfg.objections) && aiCfg.objections.length) {
       setObjs(
         aiCfg.objections.map((obj, idx) => ({
-          id: `obj-loaded-${idx}-${Date.now()}`,
+          id: `obj-loaded-${idx}`,
           label: obj.label || obj.q || '',
           response: obj.response || obj.a || '',
         })),
@@ -90,7 +92,7 @@ export function useAIConfig(productId: string) {
     setAutoLink((sa.autoCheckoutLink ?? fc.autoCheckoutLink) !== false);
     setOfferDisc((sa.offerDiscount ?? fc.offerDiscount) !== false);
     setUseUrg((sa.useUrgency ?? fc.useUrgency) !== false);
-  }, [aiCfg]);
+  }
   const handleSaveAI = async () => {
     setAiSaving(true);
     try {

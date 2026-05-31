@@ -5,7 +5,7 @@ import { AdminGuardsModule } from '../admin/auth/admin-guards.module';
 import { BillingModule } from '../billing/billing.module';
 import { MetricsModule } from '../metrics/metrics.module';
 import { PrismaModule } from '../prisma/prisma.module';
-import { WhatsappModule } from '../whatsapp/whatsapp.module';
+import { WhatsappModule } from '../marketing/channels/whatsapp/whatsapp.module';
 import { HealthController } from './health.controller';
 import { HealthService } from './health.service';
 import { AnthropicHealthIndicator } from './indicators/anthropic.health-indicator';

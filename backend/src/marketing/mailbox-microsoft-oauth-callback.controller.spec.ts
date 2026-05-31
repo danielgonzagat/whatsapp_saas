@@ -4,7 +4,7 @@ describe('MailboxMicrosoftOAuthCallbackController', () => {
   const completeOAuthCallback = jest.fn();
   const configGet = jest.fn();
 
-  const redirect = jest.fn();
+  const redirect = jest.fn<void, [string]>();
 
   let controller: MailboxMicrosoftOAuthCallbackController;
 
@@ -30,7 +30,7 @@ describe('MailboxMicrosoftOAuthCallbackController', () => {
 
       expect(completeOAuthCallback).toHaveBeenCalledWith('auth-code-123', 'signed-state-abc');
       expect(redirect).toHaveBeenCalledTimes(1);
-      const redirectUrl = redirect.mock.calls[0][0] as string;
+      const redirectUrl = redirect.mock.calls[0][0];
       expect(redirectUrl).toContain('email=connected');
       expect(redirectUrl).toContain('provider=microsoft');
       expect(redirectUrl).toContain('/marketing/email');
@@ -43,7 +43,7 @@ describe('MailboxMicrosoftOAuthCallbackController', () => {
 
       expect(completeOAuthCallback).not.toHaveBeenCalled();
       expect(redirect).toHaveBeenCalledTimes(1);
-      const redirectUrl = redirect.mock.calls[0][0] as string;
+      const redirectUrl = redirect.mock.calls[0][0];
       expect(redirectUrl).toContain('email=error');
       expect(redirectUrl).toContain('provider=microsoft');
       expect(redirectUrl).toContain('reason=access_denied');
@@ -54,7 +54,7 @@ describe('MailboxMicrosoftOAuthCallbackController', () => {
 
       expect(completeOAuthCallback).not.toHaveBeenCalled();
       expect(redirect).toHaveBeenCalledTimes(1);
-      const redirectUrl = redirect.mock.calls[0][0] as string;
+      const redirectUrl = redirect.mock.calls[0][0];
       expect(redirectUrl).toContain('email=error');
       expect(redirectUrl).toContain('provider=microsoft');
       expect(redirectUrl).toContain('reason=missing_code_or_state');
@@ -69,7 +69,7 @@ describe('MailboxMicrosoftOAuthCallbackController', () => {
 
       expect(completeOAuthCallback).toHaveBeenCalledWith('auth-code-456', 'signed-state-def');
       expect(redirect).toHaveBeenCalledTimes(1);
-      const redirectUrl = redirect.mock.calls[0][0] as string;
+      const redirectUrl = redirect.mock.calls[0][0];
       expect(redirectUrl).toContain('email=error');
       expect(redirectUrl).toContain('provider=microsoft');
       expect(redirectUrl).toContain('reason=oauth_callback_failed');

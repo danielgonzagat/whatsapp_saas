@@ -267,38 +267,21 @@ export class KloelWalletSalesToolsService {
       return { success: false, error: e instanceof Error ? e.message : 'Erro' };
     }
   }
-  async requestWithdrawal(
-    workspaceId: string,
-    _args: UnknownRecord,
-  ): Promise<WalletSalesToolResult> {
+  requestWithdrawal(workspaceId: string, _args: UnknownRecord): Promise<WalletSalesToolResult> {
     void workspaceId;
     void _args; // will integrate Stripe/payout
-    try {
-      return {
-        success: true,
-        message: 'Saque solicitado com sucesso. O valor será processado em até 2 dias úteis.',
-      };
-    } catch (err: unknown) {
-      return {
-        success: false,
-        error: err instanceof Error ? err.message : 'Erro ao solicitar saque',
-      };
-    }
+    return Promise.resolve({
+      success: true,
+      message: 'Saque solicitado com sucesso. O valor será processado em até 2 dias úteis.',
+    });
   }
 
-  async requestAnticipation(
-    workspaceId: string,
-    _args: UnknownRecord,
-  ): Promise<WalletSalesToolResult> {
+  requestAnticipation(workspaceId: string, _args: UnknownRecord): Promise<WalletSalesToolResult> {
     void workspaceId;
     void _args;
-    try {
-      return {
-        success: true,
-        message: 'Antecipacao solicitada. Recebiveis antecipados em ate 1 dia util.',
-      };
-    } catch (err: unknown) {
-      return { success: false, error: err instanceof Error ? err.message : 'Erro' };
-    }
+    return Promise.resolve({
+      success: true,
+      message: 'Antecipacao solicitada. Recebiveis antecipados em ate 1 dia util.',
+    });
   }
 }

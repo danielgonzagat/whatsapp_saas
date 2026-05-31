@@ -7,13 +7,22 @@ import { Brain, CheckCircle, Save } from 'lucide-react';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { mutate } from 'swr';
 
-import { OBJECTIONS, TIERS, TONES } from './PlanAIConfig.data';
+import { OBJECTIONS } from './PlanAIConfig.data';
 import {
   assignBoolean,
   assignNumber,
   assignRecordString,
   assignString,
   assignStringArray,
+  buildAIConfigPayload,
+  buildAIConfigSummary,
+  buildAIConfigSummaryItems,
+  computeAIConfigCompleteness,
+  isProductsSwrKey,
+  parseSiblingPlansResponse,
+  toggleListValue,
+  type SiblingPlanResponseRow,
+  type SiblingPlanRow,
 } from './PlanAIConfig.helpers';
 import { AISummaryBox } from './PlanAIConfig.summary';
 import { BehaviorSection } from './PlanAIConfig.behavior';
@@ -81,7 +90,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
   const [downsellTargetPlan, setDownsellTargetPlan] = useState('');
   const [downsellWhen, setDownsellWhen] = useState<string[]>([]);
   const [downsellArgument, setDownsellArgument] = useState('');
-  const [siblingPlans, setSiblingPlans] = useState<{ id: string; name: string }[]>([]);
+  const [siblingPlans, setSiblingPlans] = useState<SiblingPlanRow[]>([]);
 
   // Section 6 — AI Behavior
   const [tone, setTone] = useState('CONSULTIVE');
@@ -98,7 +107,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
   const [expectedResults, setExpectedResults] = useState('');
 
   const toggleList = (list: string[], item: string, setter: (v: string[]) => void) => {
-    setter(list.includes(item) ? list.filter((x) => x !== item) : [...list, item]);
+    setter(toggleListValue(list, item));
   };
 
   // Load config
@@ -160,16 +169,8 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
   useEffect(() => {
     const loadPlans = async () => {
       try {
-        const data = await apiFetch<{ id: string; name?: string; title?: string }[]>(
-          `/products/${productId}/plans`,
-        );
-        if (Array.isArray(data.data)) {
-          setSiblingPlans(
-            data.data
-              .filter((p) => p.id !== planId)
-              .map((p) => ({ id: p.id, name: p.name || p.title || `Plano ${p.id}` })),
-          );
-        }
+        const data = await apiFetch<SiblingPlanResponseRow[]>(`/products/${productId}/plans`);
+        setSiblingPlans(parseSiblingPlansResponse(data.data, planId));
       } catch {}
     };
     loadPlans();
@@ -181,7 +182,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
     try {
       await apiFetch(`/products/${productId}/ai-config`, {
         method: 'PUT',
-        body: {
+        body: buildAIConfigPayload({
           planId,
           genders,
           ages,
@@ -220,9 +221,9 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
           duration,
           contraindications,
           expectedResults,
-        },
+        }),
       });
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
+      mutate(isProductsSwrKey);
       setShowSaved(true);
       if (savedTimer.current) {clearTimeout(savedTimer.current);}
       savedTimer.current = setTimeout(() => setShowSaved(false), 3000);
@@ -284,31 +285,44 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
     </h3>
   );
 
-  // Completeness indicators
-  const s1Complete = genders.length > 0 && ages.length > 0 && problem !== '';
-  const s1Partial = genders.length > 0 || ages.length > 0;
-  const s2Complete = tier !== '' && whenOffer.length > 0 && differentiators.length > 0;
-  const s2Partial = tier !== '' || whenOffer.length > 0;
-  const s3Complete = Object.values(objectionStates).filter((o) => o.enabled).length >= 5;
-  const s3Partial = Object.values(objectionStates).filter((o) => o.enabled).length > 0;
-  const s4Complete = socialProof.length > 0 && guarantee.length > 0 && benefits.length > 0;
-  const s4Partial = socialProof.length > 0 || guarantee.length > 0 || benefits.length > 0;
-  const s5Complete =
-    (upsellEnabled && upsellTargetPlan !== '') ||
-    (downsellEnabled && downsellTargetPlan !== '') ||
-    (!upsellEnabled && !downsellEnabled);
-  const s5Partial = upsellEnabled || downsellEnabled;
-  const s6Complete = tone !== '' && persistence > 0;
-  const s7Complete = hasTechInfo && usageMode !== '' && contraindications.length > 0;
-  const s7Partial = hasTechInfo;
+  // Completeness indicators — derived purely from form state
+  const completeness = computeAIConfigCompleteness({
+    genders,
+    ages,
+    problem,
+    tier,
+    whenOffer,
+    differentiators,
+    objectionStates,
+    socialProof,
+    guarantee,
+    benefits,
+    urgencyArgs,
+    upsellEnabled,
+    upsellTargetPlan,
+    downsellEnabled,
+    downsellTargetPlan,
+    tone,
+    persistence,
+    hasTechInfo,
+    usageMode,
+    contraindications,
+  });
+  const { activeObjections, totalArgs } = completeness;
+  const summaryItems = useMemo(() => buildAIConfigSummaryItems(completeness), [completeness]);
 
-  const activeObjections = Object.values(objectionStates).filter((o) => o.enabled).length;
-  const totalArgs = socialProof.length + guarantee.length + benefits.length + urgencyArgs.length;
   const summary = useMemo(
     () =>
-      `Tom: ${TONES.find((t) => t.v === tone)?.l}. Insistência: ${persistence}/5. Limite: ${messageLimit || '∞'} msgs. ` +
-      `Objeções ativas: ${activeObjections}/10. Argumentos: ${totalArgs}. ` +
-      `Público: ${genders.join('/')} ${ages.join(', ')}. ${tier ? `Plano ${TIERS.find((t) => t.v === tier)?.l}.` : ''}`,
+      buildAIConfigSummary({
+        tone,
+        persistence,
+        messageLimit,
+        activeObjections,
+        totalArgs,
+        genders,
+        ages,
+        tier,
+      }),
     [tone, persistence, messageLimit, activeObjections, totalArgs, genders, ages, tier],
   );
 
@@ -480,18 +494,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
       />
 
       {/* AI Summary Box */}
-      <AISummaryBox
-        summary={summary}
-        items={[
-          { label: 'Perfil', complete: s1Complete, partial: s1Partial },
-          { label: 'Posição', complete: s2Complete, partial: s2Partial },
-          { label: 'Objeções', complete: s3Complete, partial: s3Partial },
-          { label: 'Argumentos', complete: s4Complete, partial: s4Partial },
-          { label: 'Up/Down', complete: s5Complete, partial: s5Partial },
-          { label: 'Comportamento', complete: s6Complete, partial: true },
-          { label: 'Técnico', complete: s7Complete, partial: s7Partial },
-        ]}
-      />
+      <AISummaryBox summary={summary} items={summaryItems} />
 
       {/* Save Button */}
       <div className="flex justify-end">

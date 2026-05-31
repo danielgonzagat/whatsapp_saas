@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { MindGlobalPriorService } from '../memory/mind-global-prior.service';
 import type { MindBelief, MindJson } from '../../mind.types';
+import { SpineEmitterService } from '../../spine/spine-emitter.service';
 
 function betaVariance(alpha: number, beta: number): number {
   const sum = alpha + beta;
@@ -26,6 +27,7 @@ export class MindBeliefService {
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly globalPrior?: MindGlobalPriorService,
+    @Optional() private readonly spine?: SpineEmitterService,
   ) {}
 
   async getOrInit(
@@ -47,10 +49,10 @@ export class MindBeliefService {
       const rows = await this.prisma
         .$queryRaw/* raw justified: atomic insert-or-read for JSONB composite key */ <MindBelief[]>`
         INSERT INTO "RAC_MindBelief"
-          ("id","workspaceId","subject","predicate","context","mean","variance","samples","alpha","beta")
+          ("id","workspaceId","subject","predicate","context","mean","variance","samples","alpha","beta","updatedAt")
         VALUES
           (${randomUUID()}, ${workspaceId}, ${subject}, ${predicate}, ${contextJson}::jsonb,
-           ${alpha / (alpha + beta)}, ${betaVariance(alpha, beta)}, 0, ${alpha}, ${beta})
+           ${alpha / (alpha + beta)}, ${betaVariance(alpha, beta)}, 0, ${alpha}, ${beta}, NOW())
         ON CONFLICT ("workspaceId", "subject", "predicate", "context") DO NOTHING
         RETURNING *
       `;
@@ -133,6 +135,30 @@ export class MindBeliefService {
         });
       });
       this.logSuccess('mind.belief.observe_binary', startedAt, workspaceId, subject, predicate);
+      const belief = updated as MindBelief;
+      // Wave3: emit canonical cognition.belief_updated at the real belief
+      // state-change site (fire-and-forget; metadata only, no message content).
+      void this.spine
+        ?.emit({
+          eventName: 'cognition.belief_updated',
+          workspaceId,
+          truthMode: 'observed',
+          provenance: {
+            source: 'production',
+            processor: 'mind-belief',
+            processorVersion: '1.0.0',
+            schemaVersion: '1.0.0',
+          },
+          payload: {
+            subject,
+            predicate,
+            mean: belief.mean,
+            variance: belief.variance,
+            samples: belief.samples,
+            outcome,
+          },
+        })
+        .catch(() => {});
       return updated as MindBelief;
     } catch (error: unknown) {
       this.logFailure(
@@ -163,6 +189,29 @@ export class MindBeliefService {
       return rows as MindBelief[];
     } catch (error: unknown) {
       this.logFailure('mind.belief.list', startedAt, workspaceId, subject, predicate, error);
+      throw error;
+    }
+  }
+
+  async getActiveBeliefs(workspaceId: string): Promise<MindBelief[]> {
+    const startedAt = Date.now();
+    try {
+      const rows = await this.prisma.mindBelief.findMany({
+        where: { workspaceId },
+        orderBy: { updatedAt: 'desc' },
+        take: 10,
+      });
+      this.logSuccess('mind.belief.get_active_beliefs', startedAt, workspaceId);
+      return rows as MindBelief[];
+    } catch (error: unknown) {
+      this.logFailure(
+        'mind.belief.get_active_beliefs',
+        startedAt,
+        workspaceId,
+        undefined,
+        undefined,
+        error,
+      );
       throw error;
     }
   }

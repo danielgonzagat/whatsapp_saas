@@ -1,3 +1,7 @@
+/**
+ * @capability ProcessorHealthMonitor
+ * @domain health
+ */
 import { WorkerLogger } from './logger';
 import { autopilotQueue } from './queue';
 import { getErrorMessage } from './utils/error-message';

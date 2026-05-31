@@ -110,22 +110,34 @@ export class CheckoutPublicPayloadBuilder {
 }
 
 function buildPaymentProvider(stripeAccountId: string | null | undefined) {
-  const publishableKey = String(process.env.STRIPE_PUBLISHABLE_KEY || '').trim() || null;
+  const stripePublishableKey = String(process.env.STRIPE_PUBLISHABLE_KEY || '').trim() || null;
+  const stripeEnabled = Boolean(stripePublishableKey);
+  const mercadoPagoEnabled = Boolean(String(process.env.MERCADOPAGO_ACCESS_TOKEN || '').trim());
+  const availablePaymentMethodIds = [
+    stripeEnabled ? 'card' : null,
+    mercadoPagoEnabled ? 'pix' : null,
+    mercadoPagoEnabled ? 'boleto' : null,
+  ].filter((method): method is string => Boolean(method));
+
   return {
-    provider: 'stripe',
-    connected: Boolean(stripeAccountId),
-    checkoutEnabled: Boolean(publishableKey),
-    publicKey: publishableKey,
-    unavailableReason: publishableKey
-      ? null
-      : 'Stripe não está configurado no ambiente atual do checkout.',
+    provider: 'kloel_multi_provider',
+    cardProvider: 'stripe',
+    pixProvider: 'mercadopago',
+    boletoProvider: 'mercadopago',
+    connected: Boolean(stripeAccountId || mercadoPagoEnabled),
+    checkoutEnabled: availablePaymentMethodIds.length > 0,
+    publicKey: stripePublishableKey,
+    unavailableReason:
+      availablePaymentMethodIds.length > 0
+        ? null
+        : 'Stripe/Mercado Pago não estão configurados no ambiente atual do checkout.',
     marketplaceFeePercent: DEFAULT_PLATFORM_FEE_PERCENT,
     installmentInterestMonthlyPercent: DEFAULT_INSTALLMENT_INTEREST_MONTHLY_PERCENT,
-    availablePaymentMethodIds: ['card', 'pix'],
-    availablePaymentMethodTypes: ['card', 'pix'],
-    supportsCreditCard: true,
-    supportsPix: true,
-    supportsBoleto: false,
+    availablePaymentMethodIds,
+    availablePaymentMethodTypes: availablePaymentMethodIds,
+    supportsCreditCard: stripeEnabled,
+    supportsPix: mercadoPagoEnabled,
+    supportsBoleto: mercadoPagoEnabled,
   };
 }
 

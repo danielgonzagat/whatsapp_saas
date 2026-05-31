@@ -17,6 +17,7 @@ export const VIEW_ROUTES: Record<string, string> = {
   parcerias: '/parcerias',
   ferramentas: '/ferramentas',
   anuncios: '/anuncios',
+  admin: '/admin/kloel-motor',
 };
 
 export const SUB_ROUTES: Record<string, string> = {
@@ -88,6 +89,7 @@ export const MOBILE_VIEW_LABELS: Record<string, string> = {
   parcerias: 'Parcerias',
   ferramentas: 'Ferramentas',
   anuncios: 'Anúncios',
+  admin: 'Kloel Motor',
 };
 
 export function resolveRoute(view: string, subView?: string): string {
@@ -172,6 +174,9 @@ export function resolveActiveView(pathname: string): string {
     pathname.startsWith('/scrapers')
   ) {
     return 'ferramentas';
+  }
+  if (pathname.startsWith('/admin')) {
+    return 'admin';
   }
   return '';
 }

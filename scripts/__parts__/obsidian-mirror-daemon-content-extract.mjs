@@ -76,6 +76,24 @@ import {
   gitStateForSource,
 } from './obsidian-mirror-daemon-utils.mjs';
 
+import { extractImportSpecifiers } from './obsidian-mirror-daemon-content-relations.mjs';
+import {
+  isCodeLikeSource,
+  addVisualFact,
+  addContentShapeFacts,
+  addStructuredContentFacts,
+} from './obsidian-mirror-daemon-content-facts.mjs';
+import {
+  addComputationalEffectFacts,
+  extractApiConsumers,
+  extractAuthFacts,
+  extractDbOperations,
+  extractDecoratorRoutes,
+  extractExportedSymbols,
+  extractPrismaModels,
+} from './obsidian-mirror-daemon-content-domain.mjs';
+import { isTestSource } from './obsidian-mirror-daemon-content-index.mjs';
+
 export function extractExternalPackages(content) {
   const packages = new Set();
   for (const specifier of extractImportSpecifiers(content || '')) {

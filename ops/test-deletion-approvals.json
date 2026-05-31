@@ -1,0 +1,51 @@
+[
+  {
+    "file": "backend/src/cia/cia-backlog-run.service.spec.ts",
+    "rule": "testDeletion",
+    "reason": "CIA (cognitive-intelligence-audit) module dissolved into Kloel Mind during architectural canonicalization; source cia-backlog-run.service.ts was removed, so this spec covered non-existent code.",
+    "issue": "PR#462 CANONICAL_MOVES.md",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/cia/cia-bootstrap.service.spec.ts",
+    "rule": "testDeletion",
+    "reason": "CIA module dissolved into Kloel Mind during canonicalization; source cia-bootstrap.service.ts removed — spec covered non-existent code.",
+    "issue": "PR#462 CANONICAL_MOVES.md",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/cia/cia-chat-filter.service.spec.ts",
+    "rule": "testDeletion",
+    "reason": "CIA module dissolved into Kloel Mind during canonicalization; source cia-chat-filter.service.ts removed — spec covered non-existent code.",
+    "issue": "PR#462 CANONICAL_MOVES.md",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/cia/cia-inline-fallback.service.spec.ts",
+    "rule": "testDeletion",
+    "reason": "CIA module dissolved into Kloel Mind during canonicalization; source cia-inline-fallback.service.ts removed — spec covered non-existent code.",
+    "issue": "PR#462 CANONICAL_MOVES.md",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/cia/cia-remote-backlog.service.spec.ts",
+    "rule": "testDeletion",
+    "reason": "CIA module dissolved into Kloel Mind during canonicalization; source cia-remote-backlog.service.ts removed — spec covered non-existent code.",
+    "issue": "PR#462 CANONICAL_MOVES.md",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/healthymoney/revenue-quality.scorer.service.spec.ts",
+    "rule": "testDeletion",
+    "reason": "Revenue-quality scorer superseded and removed during canonicalization; source revenue-quality.scorer.service.ts deleted — spec covered non-existent code.",
+    "issue": "PR#462 CANONICAL_MOVES.md",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/whatsapp/providers/waha.provider.spec.ts",
+    "rule": "testDeletion",
+    "reason": "Legacy WAHA provider purged during WhatsApp/OmniCore canonicalization; source waha.provider.ts deleted — spec covered non-existent code.",
+    "issue": "PR#462 CANONICAL_MOVES.md",
+    "expires": "2026-12-31"
+  }
+]

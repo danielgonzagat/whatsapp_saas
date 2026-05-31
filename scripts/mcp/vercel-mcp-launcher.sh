@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Vercel MCP launcher — maps VERCEL_TOKEN from .env.pulse.local to vercel-mcp.
-# Replaces the raw https://mcp.vercel.com HTTP endpoint with a stdio transport
-# that has proper auth from our local secrets file.
+# Vercel MCP launcher — connects to the OFFICIAL Vercel MCP server
+# (https://mcp.vercel.com) using a personal access token (VERCEL_TOKEN) via an
+# Authorization bearer header, instead of the interactive OAuth browser flow.
+# This lets the server auto-connect headless and persist across sessions.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -20,6 +21,4 @@ if [[ -z "${VERCEL_TOKEN:-}" ]]; then
   exit 1
 fi
 
-# vercel-mcp expects the API key as a KEY=VALUE argument instead of reading
-# VERCEL_TOKEN directly from the environment.
-exec npx --yes vercel-mcp@latest "VERCEL_API_KEY=${VERCEL_TOKEN}"
+exec npx -y mcp-remote@latest https://mcp.vercel.com --header "Authorization:Bearer ${VERCEL_TOKEN}"

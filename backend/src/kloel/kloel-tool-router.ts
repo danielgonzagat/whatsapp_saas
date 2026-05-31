@@ -10,6 +10,7 @@ import {
 
 import type { UnknownRecord } from '../common/types';
 import { WHITESPACE_G_RE } from '../common/regex';
+import { isMutationSensitiveTool } from './operation-receipt.helpers';
 
 const PATTERN_RE = /[_-]+/g;
 const MAX_TOOL_MESSAGE_CONTENT_CHARS = 6000;
@@ -51,6 +52,19 @@ interface ExecuteAssistantToolCallsInput {
   workspaceId: string;
   userId?: string;
   allowedTools?: string[];
+  /**
+   * MUTATION_SENSITIVE gate. The LLM's `tool_call` is the only action trigger on
+   * the authenticated path, so a mutation-sensitive tool must NOT execute until
+   * the user has explicitly confirmed. Default (undefined/false) = block-and-ask.
+   * The caller re-invokes with `confirmMutations: true` after the user confirms.
+   */
+  confirmMutations?: boolean;
+  /**
+   * Optional registry-derived set of tool names that are mutation-sensitive
+   * (canonical `MUTATION_SENSITIVE` capability category). When provided it is
+   * authoritative; otherwise the router falls back to `isMutationSensitiveTool`.
+   */
+  mutationSensitiveTools?: ReadonlySet<string>;
   safeWrite?: (event: KloelStreamEvent) => void;
   executeLocalTool: (
     workspaceId: string,
@@ -174,7 +188,33 @@ export class KloelToolRouter {
         };
       }
 
-      if (isAllowed) {
+      // MUTATION_SENSITIVE gate — the LLM tool_call must not execute a
+      // mutation-sensitive tool until the user has explicitly confirmed. We
+      // BLOCK execution (default-deny) and return a confirmation request, which
+      // the model verbalizes; the caller re-runs with confirmMutations:true.
+      const isMutationSensitive =
+        input.mutationSensitiveTools !== undefined
+          ? input.mutationSensitiveTools.has(toolName)
+          : isMutationSensitiveTool(toolName);
+      const confirmationBlocked =
+        isAllowed && isMutationSensitive && input.confirmMutations !== true;
+      if (confirmationBlocked) {
+        result = {
+          success: false,
+          error: 'confirmation_required',
+          requiresConfirmation: true,
+          toolName,
+          message: `A ação ${formatToolLabel(toolName)} altera dados sensíveis e precisa de confirmação explícita antes de executar. Confirme com o usuário e refaça o pedido confirmando.`,
+        };
+        input.safeWrite?.(
+          createKloelStatusEvent(
+            'tool_result',
+            `Aguardando confirmação para ${formatToolLabel(toolName)}.`,
+          ),
+        );
+      }
+
+      if (isAllowed && !confirmationBlocked) {
         try {
           result = toResultRecord(
             await this.unifiedAgentService.executeTool(toolName, toolArgs, {

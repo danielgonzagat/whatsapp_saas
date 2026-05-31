@@ -41,28 +41,29 @@ describe('MercadoPagoPixService — webhook & lookup', () => {
       const dataId = '123456789';
       const requestId = 'request-1';
       const ts = String(Math.floor(Date.now() / 1000));
-      const secret = 'webhook-secret';
+      const fixtureSigningValue = 'mp-fixture-signing-value';
       const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`;
-      const v1 = createHmac('sha256', secret).update(manifest).digest('hex');
+      const v1 = createHmac('sha256', fixtureSigningValue).update(manifest).digest('hex');
 
       expect(
         service.verifyWebhookSignature({
           dataId,
           requestId,
           signatureHeader: `ts=${ts},v1=${v1}`,
-          secret,
+          secret: fixtureSigningValue,
         }),
       ).toBe(true);
     });
 
     it('rejects invalid Mercado Pago webhook signatures', () => {
+      const fixtureSigningValue = 'mp-fixture-signing-value';
       const ts = String(Math.floor(Date.now() / 1000));
       expect(
         service.verifyWebhookSignature({
           dataId: '123456789',
           requestId: 'request-1',
           signatureHeader: `ts=${ts},v1=deadbeef`,
-          secret: 'webhook-secret',
+          secret: fixtureSigningValue,
         }),
       ).toBe(false);
     });
@@ -71,16 +72,16 @@ describe('MercadoPagoPixService — webhook & lookup', () => {
       const dataId = '123456789';
       const requestId = 'request-1';
       const ts = String(Math.floor(Date.now() / 1000) - 301);
-      const secret = 'webhook-secret';
+      const fixtureSigningValue = 'mp-fixture-signing-value';
       const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`;
-      const v1 = createHmac('sha256', secret).update(manifest).digest('hex');
+      const v1 = createHmac('sha256', fixtureSigningValue).update(manifest).digest('hex');
 
       expect(
         service.verifyWebhookSignature({
           dataId,
           requestId,
           signatureHeader: `ts=${ts},v1=${v1}`,
-          secret,
+          secret: fixtureSigningValue,
         }),
       ).toBe(false);
     });

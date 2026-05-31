@@ -97,13 +97,16 @@ describe('CheckoutService public resolution', () => {
         slug: plan.slug,
         checkoutCode: plan.referenceCode,
         paymentProvider: {
-          provider: 'stripe',
+          provider: 'kloel_multi_provider',
+          cardProvider: 'stripe',
+          pixProvider: 'mercadopago',
+          boletoProvider: 'mercadopago',
           connected: true,
           checkoutEnabled: true,
           publicKey: 'mock_pub_key',
           supportsCreditCard: true,
           supportsPix: true,
-          supportsBoleto: false,
+          supportsBoleto: true,
         },
       }));
   });
@@ -155,15 +158,20 @@ describe('CheckoutService public resolution', () => {
     );
     expect(bySlug.paymentProvider).toEqual(
       expect.objectContaining({
-        provider: 'stripe',
+        provider: 'kloel_multi_provider',
+        cardProvider: 'stripe',
+        pixProvider: 'mercadopago',
+        boletoProvider: 'mercadopago',
         checkoutEnabled: true,
         supportsCreditCard: true,
         supportsPix: true,
-        supportsBoleto: false,
+        supportsBoleto: true,
       }),
     );
 
-    const loggedEvents = loggerSpy.mock.calls.map(([message]) => JSON.parse(String(message)));
+    const loggedEvents = loggerSpy.mock.calls.map(
+      ([message]) => JSON.parse(String(message)) as Record<string, unknown>,
+    );
     expect(loggedEvents).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

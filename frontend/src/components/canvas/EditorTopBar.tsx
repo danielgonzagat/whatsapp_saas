@@ -5,56 +5,31 @@ import { colors } from '@/lib/design-tokens';
 import { useEffect, useState } from 'react';
 import { IC } from './CanvasIcons';
 import {
-  parseCustomDimensions,
+  APPLY_BUTTON_STYLE,
+  applyCustomDimensions,
+  AVATAR_LABEL_STYLE,
+  AVATAR_STYLE,
+  buildDropdownTriggerStyle,
+  CENTER_CONTAINER_STYLE,
+  CUSTOM_DIMENSION_INPUT_STYLE,
+  CUSTOM_DIMENSION_ROW_STYLE,
+  CUSTOM_DIMENSION_SEPARATOR_STYLE,
+  DESIGN_NAME_INPUT_STYLE,
+  DROPDOWN_ITEM_STYLE,
+  DROPDOWN_MENU_STYLE,
+  DROPDOWN_SEPARATOR_STYLE,
+  DROPDOWN_SHORTCUT_STYLE,
+  RESIZE_DROPDOWN_MENU_STYLE,
   RESIZE_PRESETS,
+  SAVING_DOT_STYLE,
+  SAVING_LABEL_STYLE,
+  SEPARATOR_COLOR,
   setRowBackground,
+  SHARE_BUTTON_STYLE,
+  TOOLBAR_CONTAINER_STYLE,
+  TOOLBAR_ICON_BUTTON_STYLE,
   type DropdownId,
 } from './EditorTopBar.helpers';
-
-const S = "var(--font-sora), 'Sora', sans-serif";
-const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
-
-/* ═══ Dropdown item styles ═══ */
-const ddMenu: React.CSSProperties = {
-  position: 'absolute',
-  top: '100%',
-  left: 0,
-  marginTop: 4,
-  background: colors.background.surface,
-  border: `1px solid ${colors.canvas.border}`,
-  borderRadius: 6,
-  boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-  padding: '4px 0',
-  minWidth: 220,
-  zIndex: 100,
-};
-const ddItem: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  width: '100%',
-  padding: '7px 12px',
-  background: 'none',
-  border: 'none',
-  fontSize: 11,
-  fontFamily: S,
-  color: colors.text.silver,
-  cursor: 'pointer',
-  textAlign: 'left',
-  transition: 'background 100ms',
-};
-const ddShortcut: React.CSSProperties = {
-  fontSize: 9,
-  fontFamily: M,
-  color: colors.text.dim,
-  marginLeft: 16,
-};
-const ddSep: React.CSSProperties = {
-  height: 1,
-  background:
-    colors.canvas.border,
-  margin: '4px 0',
-};
 
 interface EditorTopBarProps {
   designName: string;
@@ -121,61 +96,27 @@ export function EditorTopBar({
   };
 
   return (
-    <div
-      style={{
-        height: 42,
-        background: colors.background.surface,
-        borderBottom: `1px solid ${colors.canvas.border}`,
-        display: 'flex',
-        alignItems: 'center',
-        padding: '0 12px',
-        gap: 6,
-        flexShrink: 0,
-      }}
-    >
+    <div style={TOOLBAR_CONTAINER_STYLE}>
       {/* Home */}
-      <button
-        type="button"
-        onClick={onBack}
-        style={{
-          background: 'none',
-          border: 'none',
-          color: colors.text.muted,
-          cursor: 'pointer',
-          display: 'flex',
-          padding: 4,
-        }}
-      >
+      <button type="button" onClick={onBack} style={TOOLBAR_ICON_BUTTON_STYLE}>
         {IC.home(16)}
       </button>
-      <span style={{ color: colors.canvas.hover }}>|</span>
+      <span style={{ color: SEPARATOR_COLOR }}>|</span>
 
       {/* ── Arquivo dropdown ── */}
       <div style={{ position: 'relative' }} data-dropdown>
         <button
           type="button"
           onClick={() => toggleDropdown('file')}
-          style={{
-            background:
-              dropdown === 'file'
-                ? colors.canvas.border
-                : 'none',
-            border: 'none',
-            color: colors.text.silver,
-            fontSize: 12,
-            fontFamily: S,
-            cursor: 'pointer',
-            padding: '4px 8px',
-            borderRadius: 4,
-          }}
+          style={buildDropdownTriggerStyle(dropdown === 'file')}
         >
           {kloelT(`Arquivo`)}
         </button>
         {dropdown === 'file' && (
-          <div style={ddMenu}>
+          <div style={DROPDOWN_MENU_STYLE}>
             <button
               type="button"
-              style={ddItem}
+              style={DROPDOWN_ITEM_STYLE}
               onMouseEnter={handleItemHover}
               onMouseLeave={handleItemLeave}
               onClick={() =>
@@ -188,18 +129,18 @@ export function EditorTopBar({
             </button>
             <button
               type="button"
-              style={ddItem}
+              style={DROPDOWN_ITEM_STYLE}
               onMouseEnter={handleItemHover}
               onMouseLeave={handleItemLeave}
               onClick={() => closeAndRun(onSave)}
             >
               <span>{kloelT(`Salvar agora`)}</span>
-              <span style={ddShortcut}>{kloelT(`⌘S`)}</span>
+              <span style={DROPDOWN_SHORTCUT_STYLE}>{kloelT(`⌘S`)}</span>
             </button>
-            <div style={ddSep} />
+            <div style={DROPDOWN_SEPARATOR_STYLE} />
             <button
               type="button"
-              style={ddItem}
+              style={DROPDOWN_ITEM_STYLE}
               onMouseEnter={handleItemHover}
               onMouseLeave={handleItemLeave}
               onClick={() => closeAndRun(() => onExport?.('png'))}
@@ -208,7 +149,7 @@ export function EditorTopBar({
             </button>
             <button
               type="button"
-              style={ddItem}
+              style={DROPDOWN_ITEM_STYLE}
               onMouseEnter={handleItemHover}
               onMouseLeave={handleItemLeave}
               onClick={() => closeAndRun(() => onExport?.('jpg'))}
@@ -217,7 +158,7 @@ export function EditorTopBar({
             </button>
             <button
               type="button"
-              style={ddItem}
+              style={DROPDOWN_ITEM_STYLE}
               onMouseEnter={handleItemHover}
               onMouseLeave={handleItemLeave}
               onClick={() => closeAndRun(() => onExport?.('svg'))}
@@ -226,7 +167,7 @@ export function EditorTopBar({
             </button>
             <button
               type="button"
-              style={ddItem}
+              style={DROPDOWN_ITEM_STYLE}
               onMouseEnter={handleItemHover}
               onMouseLeave={handleItemLeave}
               onClick={() => closeAndRun(() => onExport?.('pdf'))}
@@ -242,102 +183,56 @@ export function EditorTopBar({
         <button
           type="button"
           onClick={() => toggleDropdown('resize')}
-          style={{
-            background:
-              dropdown === 'resize'
-                ? colors.canvas.border
-                : 'none',
-            border: 'none',
-            color: colors.text.silver,
-            fontSize: 12,
-            fontFamily: S,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-            padding: '4px 8px',
-            borderRadius: 4,
-          }}
+          style={buildDropdownTriggerStyle(dropdown === 'resize', true)}
         >
           {IC.resize(12)} {kloelT(`Redimensionar`)}
         </button>
         {dropdown === 'resize' && (
-          <div style={{ ...ddMenu, minWidth: 260 }}>
+          <div style={RESIZE_DROPDOWN_MENU_STYLE}>
             {RESIZE_PRESETS.map((p) => (
               <button
                 type="button"
                 key={p.l}
-                style={ddItem}
+                style={DROPDOWN_ITEM_STYLE}
                 onMouseEnter={handleItemHover}
                 onMouseLeave={handleItemLeave}
                 onClick={() => closeAndRun(() => onResize?.(p.w, p.h))}
               >
                 <span>{p.l}</span>
-                <span style={ddShortcut}>
+                <span style={DROPDOWN_SHORTCUT_STYLE}>
                   {p.w}x{p.h}
                 </span>
               </button>
             ))}
-            <div style={ddSep} />
-            <div style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={DROPDOWN_SEPARATOR_STYLE} />
+            <div style={CUSTOM_DIMENSION_ROW_STYLE}>
               <input
                 aria-label={kloelT(`Largura personalizada`)}
                 type="number"
                 placeholder={kloelT(`L`)}
                 value={customW}
                 onChange={(e) => setCustomW(e.target.value)}
-                style={{
-                  width: 60,
-                  background: colors.background.void,
-                  border: `1px solid ${colors.canvas.border}`,
-                  borderRadius: 4,
-                  color: colors.text.silver,
-                  fontSize: 11,
-                  fontFamily: M,
-                  padding: '4px 6px',
-                  outline: 'none',
-                }}
+                style={CUSTOM_DIMENSION_INPUT_STYLE}
                 onClick={(e) => e.stopPropagation()}
               />
-              <span style={{ color: colors.text.dim, fontSize: 11 }}>x</span>
+              <span style={CUSTOM_DIMENSION_SEPARATOR_STYLE}>x</span>
               <input
                 aria-label={kloelT(`Altura personalizada`)}
                 type="number"
                 placeholder={kloelT(`A`)}
                 value={customH}
                 onChange={(e) => setCustomH(e.target.value)}
-                style={{
-                  width: 60,
-                  background: colors.background.void,
-                  border: `1px solid ${colors.canvas.border}`,
-                  borderRadius: 4,
-                  color: colors.text.silver,
-                  fontSize: 11,
-                  fontFamily: M,
-                  padding: '4px 6px',
-                  outline: 'none',
-                }}
+                style={CUSTOM_DIMENSION_INPUT_STYLE}
                 onClick={(e) => e.stopPropagation()}
               />
               <button
                 type="button"
                 onClick={() => {
-                  const dimensions = parseCustomDimensions(customW, customH);
-                  if (dimensions) {
-                    closeAndRun(() => onResize?.(dimensions.width, dimensions.height));
+                  if (applyCustomDimensions(customW, customH, onResize)) {
+                    setDropdown(null);
                   }
                 }}
-                style={{
-                  background: colors.ember.primary,
-                  border: 'none',
-                  borderRadius: 4,
-                  color: colors.background.void,
-                  fontSize: 10,
-                  fontWeight: 700,
-                  fontFamily: S,
-                  padding: '4px 10px',
-                  cursor: 'pointer',
-                }}
+                style={APPLY_BUTTON_STYLE}
               >
                 {kloelT(`Aplicar`)}
               </button>
@@ -351,150 +246,99 @@ export function EditorTopBar({
         <button
           type="button"
           onClick={() => toggleDropdown('edit')}
-          style={{
-            background:
-              dropdown === 'edit'
-                ? colors.canvas.border
-                : 'none',
-            border: 'none',
-            color: colors.text.silver,
-            fontSize: 12,
-            fontFamily: S,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-            padding: '4px 8px',
-            borderRadius: 4,
-          }}
+          style={buildDropdownTriggerStyle(dropdown === 'edit', true)}
         >
           {IC.edit(12)} {kloelT(`Edicao`)} {IC.down(8)}
         </button>
         {dropdown === 'edit' && (
-          <div style={ddMenu}>
+          <div style={DROPDOWN_MENU_STYLE}>
             <button
               type="button"
-              style={ddItem}
+              style={DROPDOWN_ITEM_STYLE}
               onMouseEnter={handleItemHover}
               onMouseLeave={handleItemLeave}
               onClick={() => closeAndRun(onUndo)}
             >
               <span>{kloelT(`Desfazer`)}</span>
-              <span style={ddShortcut}>{kloelT(`⌘Z`)}</span>
+              <span style={DROPDOWN_SHORTCUT_STYLE}>{kloelT(`⌘Z`)}</span>
             </button>
             <button
               type="button"
-              style={ddItem}
+              style={DROPDOWN_ITEM_STYLE}
               onMouseEnter={handleItemHover}
               onMouseLeave={handleItemLeave}
               onClick={() => closeAndRun(onRedo)}
             >
               <span>{kloelT(`Refazer`)}</span>
-              <span style={ddShortcut}>{kloelT(`⇧⌘Z`)}</span>
+              <span style={DROPDOWN_SHORTCUT_STYLE}>{kloelT(`⇧⌘Z`)}</span>
             </button>
-            <div style={ddSep} />
+            <div style={DROPDOWN_SEPARATOR_STYLE} />
             <button
               type="button"
-              style={ddItem}
+              style={DROPDOWN_ITEM_STYLE}
               onMouseEnter={handleItemHover}
               onMouseLeave={handleItemLeave}
               onClick={() => closeAndRun(onCopy)}
             >
               <span>{kloelT(`Copiar`)}</span>
-              <span style={ddShortcut}>{kloelT(`⌘C`)}</span>
+              <span style={DROPDOWN_SHORTCUT_STYLE}>{kloelT(`⌘C`)}</span>
             </button>
             <button
               type="button"
-              style={ddItem}
+              style={DROPDOWN_ITEM_STYLE}
               onMouseEnter={handleItemHover}
               onMouseLeave={handleItemLeave}
               onClick={() => closeAndRun(onPaste)}
             >
               <span>{kloelT(`Colar`)}</span>
-              <span style={ddShortcut}>{kloelT(`⌘V`)}</span>
+              <span style={DROPDOWN_SHORTCUT_STYLE}>{kloelT(`⌘V`)}</span>
             </button>
             <button
               type="button"
-              style={ddItem}
+              style={DROPDOWN_ITEM_STYLE}
               onMouseEnter={handleItemHover}
               onMouseLeave={handleItemLeave}
               onClick={() => closeAndRun(onDuplicate)}
             >
               <span>{kloelT(`Duplicar`)}</span>
-              <span style={ddShortcut}>{kloelT(`⌘D`)}</span>
+              <span style={DROPDOWN_SHORTCUT_STYLE}>{kloelT(`⌘D`)}</span>
             </button>
             <button
               type="button"
-              style={ddItem}
+              style={DROPDOWN_ITEM_STYLE}
               onMouseEnter={handleItemHover}
               onMouseLeave={handleItemLeave}
               onClick={() => closeAndRun(onDelete)}
             >
               <span>{kloelT(`Excluir`)}</span>
-              <span style={ddShortcut}>⌫</span>
+              <span style={DROPDOWN_SHORTCUT_STYLE}>⌫</span>
             </button>
-            <div style={ddSep} />
+            <div style={DROPDOWN_SEPARATOR_STYLE} />
             <button
               type="button"
-              style={ddItem}
+              style={DROPDOWN_ITEM_STYLE}
               onMouseEnter={handleItemHover}
               onMouseLeave={handleItemLeave}
               onClick={() => closeAndRun(onSelectAll)}
             >
               <span>{kloelT(`Selecionar tudo`)}</span>
-              <span style={ddShortcut}>{kloelT(`⌘A`)}</span>
+              <span style={DROPDOWN_SHORTCUT_STYLE}>{kloelT(`⌘A`)}</span>
             </button>
           </div>
         )}
       </div>
 
       {/* ── Center: design name + save status ── */}
-      <div
-        style={{
-          flex: 1,
-          textAlign: 'center',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 8,
-        }}
-      >
+      <div style={CENTER_CONTAINER_STYLE}>
         <input
           aria-label={kloelT(`Nome do design`)}
           value={designName}
           onChange={(e) => onNameChange(e.target.value)}
-          style={{
-            fontSize: 12,
-            color: colors.text.muted,
-            fontFamily: S,
-            background: 'none',
-            border: 'none',
-            outline: 'none',
-            textAlign: 'center',
-            maxWidth: 280,
-          }}
+          style={DESIGN_NAME_INPUT_STYLE}
         />
         {saving && (
-          <span
-            style={{
-              fontSize: 9,
-              color: colors.ember.primary,
-              fontFamily: M,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-            }}
-          >
-            <span
-              style={{
-                width: 5,
-                height: 5,
-                borderRadius: '16%',
-                background: colors.ember.primary,
-                animation: 'pE 1.5s ease-in-out infinite',
-                display: 'inline-block',
-              }}
-            />
+          <span style={SAVING_LABEL_STYLE}>
+            <span style={SAVING_DOT_STYLE} />
 
             {kloelT(`Salvando...`)}
           </span>
@@ -502,75 +346,20 @@ export function EditorTopBar({
       </div>
 
       {/* ── Undo / Redo ── */}
-      <button
-        type="button"
-        onClick={onUndo}
-        style={{
-          background: 'none',
-          border: 'none',
-          color: colors.text.muted,
-          cursor: 'pointer',
-          display: 'flex',
-          padding: 4,
-        }}
-      >
+      <button type="button" onClick={onUndo} style={TOOLBAR_ICON_BUTTON_STYLE}>
         {IC.undo(14)}
       </button>
-      <button
-        type="button"
-        onClick={onRedo}
-        style={{
-          background: 'none',
-          border: 'none',
-          color: colors.text.muted,
-          cursor: 'pointer',
-          display: 'flex',
-          padding: 4,
-        }}
-      >
+      <button type="button" onClick={onRedo} style={TOOLBAR_ICON_BUTTON_STYLE}>
         {IC.redo(14)}
       </button>
 
       {/* ── Avatar ── */}
-      <div
-        style={{
-          width: 28,
-          height: 28,
-          borderRadius: 6,
-          background: colors.ember.primary,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginLeft: 4,
-        }}
-      >
-        <span
-          style={{ color: colors.background.void, fontFamily: M, fontSize: 11, fontWeight: 700 }}
-        >
-          DG
-        </span>
+      <div style={AVATAR_STYLE}>
+        <span style={AVATAR_LABEL_STYLE}>DG</span>
       </div>
 
       {/* ── Share/Export ── */}
-      <button
-        type="button"
-        onClick={() => onExport?.('png')}
-        style={{
-          background: colors.ember.primary,
-          border: 'none',
-          borderRadius: 4,
-          padding: '6px 14px',
-          color: colors.background.void,
-          fontSize: 11,
-          fontWeight: 700,
-          fontFamily: S,
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 4,
-          marginLeft: 4,
-        }}
-      >
+      <button type="button" onClick={() => onExport?.('png')} style={SHARE_BUTTON_STYLE}>
         {IC.share(12)} {kloelT(`Compartilhar`)}
       </button>
     </div>

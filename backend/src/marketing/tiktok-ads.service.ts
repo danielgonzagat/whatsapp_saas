@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { decryptMetaToken } from '../meta/meta-token-crypto';
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { asProviderSettings } from './channels/whatsapp/provider-settings.types';
 
 const TIKTOK_BUSINESS_API = 'https://business-api.tiktok.com/open_api/v1.3';
 

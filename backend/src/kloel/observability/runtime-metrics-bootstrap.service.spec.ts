@@ -23,23 +23,26 @@ function makeEnvelope(overrides: Partial<SpineEventEnvelope> = {}): SpineEventEn
 
 function makeSpine(): {
   spine: SpineEmitterService;
+  subscribeMock: jest.Mock<() => void, [(e: SpineEventEnvelope) => void]>;
   emitAll: (events: SpineEventEnvelope[]) => void;
 } {
   const subscribers: Array<(e: SpineEventEnvelope) => void> = [];
+  const subscribeMock = jest.fn((handler: (e: SpineEventEnvelope) => void) => {
+    subscribers.push(handler);
+    const unsub = () => {
+      const idx = subscribers.indexOf(handler);
+      if (idx >= 0) {
+        subscribers.splice(idx, 1);
+      }
+    };
+    return unsub;
+  });
   const spine = {
-    subscribe: jest.fn((handler: (e: SpineEventEnvelope) => void) => {
-      subscribers.push(handler);
-      const unsub = () => {
-        const idx = subscribers.indexOf(handler);
-        if (idx >= 0) {
-          subscribers.splice(idx, 1);
-        }
-      };
-      return unsub;
-    }),
-  } as SpineEmitterService;
+    subscribe: subscribeMock,
+  } as unknown as SpineEmitterService;
   return {
     spine,
+    subscribeMock,
     emitAll: (events: SpineEventEnvelope[]) => {
       for (const handler of subscribers) {
         for (const event of events) {
@@ -54,12 +57,12 @@ describe('RuntimeMetricsBootstrapService', () => {
   describe('onModuleInit with spine present', () => {
     it('calls wireToSpine subscribing to the spine emitter', () => {
       const metrics = new RuntimeMetricsService();
-      const { spine } = makeSpine();
+      const { spine, subscribeMock } = makeSpine();
       const bootstrap = new RuntimeMetricsBootstrapService(metrics, spine);
 
       bootstrap.onModuleInit();
 
-      expect(spine.subscribe).toHaveBeenCalledTimes(1);
+      expect(subscribeMock).toHaveBeenCalledTimes(1);
     });
 
     it('increments spineEventsTotal when spine emits events after bootstrap', () => {

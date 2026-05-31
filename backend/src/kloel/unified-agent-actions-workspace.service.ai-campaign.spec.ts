@@ -10,9 +10,13 @@ import { actionGetWorkspaceStatus } from './unified-agent-actions-workspace.help
 jest.mock('./openai-wrapper', () => ({
   chatCompletionWithFallback: jest.fn(),
 }));
-jest.mock('./unified-agent-actions-workspace.helpers', () => ({
-  actionGetWorkspaceStatus: jest.fn(),
-}));
+jest.mock(
+  './unified-agent-actions-workspace.helpers',
+  (): Record<string, unknown> => ({
+    ...jest.requireActual('./unified-agent-actions-workspace.helpers'),
+    actionGetWorkspaceStatus: jest.fn(),
+  }),
+);
 type WorkspacePrismaMock = {
   product: { findFirst: jest.Mock; create: jest.Mock; findMany: jest.Mock; updateMany: jest.Mock };
   kloelMemory: {

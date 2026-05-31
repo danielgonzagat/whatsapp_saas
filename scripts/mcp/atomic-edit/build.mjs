@@ -34,6 +34,19 @@ const ENTRY = [
   'textunit.ts',
   'founder.ts',
   'smoke.ts',
+  'gates/registry.ts',
+  'gates/reexport-symbol-gate.ts',
+  'gates/prisma-reference-gate.ts',
+  'gates/config-key-gate.ts',
+  'gates/structural-lint-gate.ts',
+  'gates/lint-fix-gate.ts',
+  'gates/lens.ts',
+  'gates/repair.ts',
+  'gates/algebra.ts',
+  'gates/merge.ts',
+  'gates/converge-operator.ts',
+  'gates/corpus.ts',
+  'gates/closure-universal.ts',
 ].map((f) => path.join(dir, f));
 const OUT = path.join(dir, 'dist');
 
@@ -51,6 +64,11 @@ const options = {
   declaration: false,
   sourceMap: false,
 };
+
+// Clean the output dir first so every build is deterministic — a stale or
+// anomalous dist entry (e.g. a leftover directory where a .js should be) can
+// otherwise leave a new module unregistered. Full recompile is cheap here.
+fs.rmSync(OUT, { recursive: true, force: true });
 
 const program = ts.createProgram(ENTRY, options);
 const emit = program.emit();

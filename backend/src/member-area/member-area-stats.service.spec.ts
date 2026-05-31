@@ -68,6 +68,9 @@ describe('MemberAreaStatsService', () => {
       _avg: { progress: null },
     });
     await service.recalculate('area-empty', 'ws-1');
-    expect(prisma.memberArea.updateMany.mock.calls[0][0].data.avgCompletion).toBe(0);
+    const updateArg = (prisma.memberArea.updateMany.mock.calls as unknown[][])[0][0] as {
+      data: { avgCompletion: number };
+    };
+    expect(updateArg.data.avgCompletion).toBe(0);
   });
 });

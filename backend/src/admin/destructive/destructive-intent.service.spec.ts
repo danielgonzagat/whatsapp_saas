@@ -31,6 +31,9 @@ jest.mock('./destructive-intent.types', () => ({
   })),
 }));
 
+// Typed wrapper around expect.objectContaining so nested matcher values are typed
+const oc = (o: Record<string, unknown>): unknown => expect.objectContaining(o);
+
 const makeIntent = (overrides: Partial<Record<string, unknown>> = {}) => ({
   id: 'int_1',
   kind: 'PURGE_CACHE',
@@ -131,7 +134,7 @@ describe('DestructiveIntentService', () => {
       expect(result.id).toBe('int_1');
       expect(mockCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: oc({
             status: DestructiveIntentStatus.PENDING,
             kind: 'PURGE_CACHE',
           }),
@@ -187,7 +190,7 @@ describe('DestructiveIntentService', () => {
       expect(mockUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'int_1' },
-          data: expect.objectContaining({ status: DestructiveIntentStatus.CONFIRMED }),
+          data: oc({ status: DestructiveIntentStatus.CONFIRMED }),
         }),
       );
     });

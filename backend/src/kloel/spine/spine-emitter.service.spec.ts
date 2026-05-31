@@ -169,7 +169,11 @@ describe('SpineEmitterService', () => {
       expect(maxlenVal).toBe(5000);
       expect(idArg).toBe('*');
       expect(field).toBe('event');
-      const parsed = JSON.parse(value);
+      const parsed = JSON.parse(value) as {
+        eventName: string;
+        workspaceId: string;
+        eventId: string;
+      };
       expect(parsed.eventName).toBe('commerce.lead.replied');
       expect(parsed.workspaceId).toBe('wks_demo');
       expect(parsed.eventId).toMatch(/^evt_/);

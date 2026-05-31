@@ -403,4 +403,45 @@ describe('AutopilotService', () => {
     });
     expect(mockPrisma.campaign.create).not.toHaveBeenCalled();
   });
+
+  it('toggle() habilita via DTO e delega para toggleAutopilot', async () => {
+    mockPrisma.workspace.findUnique.mockResolvedValue({
+      providerSettings: {
+        billingSuspended: false,
+        whatsappProvider: 'whatsapp-api',
+        whatsappApiSession: { status: 'connected' },
+      },
+    });
+    mockPrisma.subscription.findUnique.mockResolvedValue(null);
+    mockPrisma.workspace.update.mockResolvedValue({ id: 'ws-1' });
+
+    const result = await service.toggle('ws-1', { enabled: true });
+
+    expect(result).toEqual({ workspaceId: 'ws-1', enabled: true });
+    expect(mockPrisma.workspace.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'ws-1' },
+        data: expect.objectContaining({ providerSettings: expectValueOf(Object) }),
+      }),
+    );
+  });
+
+  it('getStatus() retorna workspaceId correto com autopilot desabilitado', async () => {
+    mockPrisma.workspace.findUnique.mockResolvedValue({
+      providerSettings: {
+        autopilot: { enabled: false },
+        autonomy: { mode: 'OFF' },
+        billingSuspended: true,
+      },
+    });
+
+    const result = await service.getStatus('ws-99');
+
+    expect(result).toEqual({
+      workspaceId: 'ws-99',
+      enabled: false,
+      billingSuspended: true,
+      autonomy: { mode: 'OFF' },
+    });
+  });
 });

@@ -1,3 +1,7 @@
+/**
+ * @capability ProviderWatchdog
+ * @domain health
+ */
 import { redis } from '../redis-client';
 
 const ERROR_THRESHOLD = 5; // 5 errors in window = unhealthy

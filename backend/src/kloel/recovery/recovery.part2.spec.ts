@@ -1,40 +1,11 @@
-import type { SpineEventRef } from '../mind/mind.types';
-import { detectErrors } from './self-error-detector';
 import { buildAcknowledgment } from './error-acknowledgment.builder';
-import { buildExplanation } from './error-explanation.builder';
-import { ErrorNonRepeatGuard } from './error-non-repeat.guard';
-import { proposeRecoveryTactic } from './error-damage-recovery.tactics';
-import { buildErrorNarrative } from './error-narrative.builder';
 import { TrustAfterErrorTracker } from './trust-after-error.tracker';
 import { buildRecoveryProofPackage } from './recovery-proof-package.builder';
-import type { DetectedError, ErrorDetectorInput, RecoveryTactic } from './recovery.types';
+import type { DetectedError } from './recovery.types';
 import type { GuardStatus } from './recovery-proof-package.builder';
 
 const NOW = Date.parse('2026-05-13T22:00:00.000Z');
 const WKS = 'wks_recovery_test';
-
-function ev(over?: Partial<SpineEventRef>): SpineEventRef {
-  const id = over?.eventId ?? `e_${Math.random().toString(36).slice(2, 10)}`;
-  return {
-    eventId: id,
-    eventName: over?.eventName ?? 'commerce.lead.replied',
-    workspaceId: over?.workspaceId ?? WKS,
-    occurredAt: over?.occurredAt ?? '2026-05-13T20:00:00.000Z',
-    truthMode: over?.truthMode ?? ('observed' as const),
-    ...(over?.entityRef !== undefined ? { entityRef: over.entityRef } : {}),
-    ...(over?.valence !== undefined ? { valence: over.valence } : {}),
-    ...(over?.payload !== undefined ? { payload: over.payload } : {}),
-  };
-}
-
-function input(over?: Partial<ErrorDetectorInput>): ErrorDetectorInput {
-  return {
-    events: over?.events ?? ([] as readonly SpineEventRef[]),
-    workspaceId: over?.workspaceId ?? WKS,
-    nowMs: over?.nowMs ?? NOW,
-    windowDays: over?.windowDays ?? 30,
-  };
-}
 
 // =========================================================================
 // UTP-RECOVERY-001 — Self Error Detector

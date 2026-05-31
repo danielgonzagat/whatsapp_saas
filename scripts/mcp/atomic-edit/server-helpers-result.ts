@@ -1,11 +1,8 @@
 import * as fs from 'node:fs';
-import * as path from 'node:path';
-import { z } from 'zod';
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { applyEdits, validate, computeZones, type ValidationResult, type TextEditSpec, type ApplyResult } from './engine.js';
+import { computeZones, type ValidationResult, type ApplyResult } from './engine.js';
 import { resolveAllowedRootForAbsolutePath, REPO_ROOT } from './guard.js';
 import { buildTrace, levelFor, shapePayload, writeTrace } from './trace.js';
-import { atomicWrite, sha256, readUtf8, normalizeRepoRelPath, relPathAllowed, normalizeAllowedPath, log, targetDetails } from './server-helpers-io.js';
+import { atomicWrite, sha256, log, targetDetails } from './server-helpers-io.js';
 import { characterDiff, previewDiff } from './advanced.js';
 import { runPostEditVerify } from './server-helpers-verify.js';
 import { lockDir, autoLockCleanup, autoLockFile } from './server-helpers-product-locks.js';
@@ -76,6 +73,9 @@ export function commit(
       ...targetDetails(absPath, relPath),
     });
   }
+  // NOTE: the connection gate is NOT applied here — it lives at the byte floor
+  // (atomicWrite in server-helpers-io), so EVERY write path is covered, not just
+  // commit(). This keeps a single immutable chokepoint instead of a per-tool guard.
   const level = levelFor(preview);
   const operator = String(
     (extra as Record<string, unknown>).op ??
@@ -217,9 +217,49 @@ export function commit(
   }
 }
 
-const server = new McpServer({ name: 'kloel-atomic-edit', version: '4.0.0' });
-
-const pos = z.object({
-  line: z.number().int().min(1).describe('1-based line'),
-  column: z.number().int().min(1).describe('1-based column (UTF-16 units within the line)'),
-});
+/**
+ * Single-file whole-content write THROUGH the trace ledger: atomicWrite +
+ * buildTrace + writeTrace. For tools that compute `after` themselves and return
+ * a CUSTOM payload (so they cannot use commit() without reshaping their result
+ * and breaking callers). This upholds the "every mutation persists an
+ * AtomicEditTrace" invariant for those tools without changing their return
+ * shape. Trace failure never aborts a successful write — the trace is the
+ * receipt, not the mutation.
+ */
+export function writeWithTrace(
+  relPath: string,
+  absPath: string,
+  before: string,
+  after: string,
+  operator: string,
+  validation: ValidationResult,
+): void {
+  atomicWrite(absPath, after);
+  try {
+    const repoRoot = resolveAllowedRootForAbsolutePath(absPath) ?? REPO_ROOT;
+    const zones = computeZones(before, after);
+    const trace = buildTrace({
+      file: relPath,
+      repoRoot,
+      operator,
+      before,
+      newText: after,
+      inlinePreview: characterDiff(before, after, relPath),
+      validation: { language: validation.language, before: validation.before, after: validation.after },
+      metrics: {
+        changedChars: 0,
+        lineRewriteSurfaceChars: 0,
+        expansionFactorAvoided: 1,
+        bytesNet: after.length - before.length,
+      },
+      preservedZones: zones.preservedZones,
+      modifiedZones: zones.modifiedZones,
+      movementZones: zones.movementZones,
+      preview: false,
+      changed: true,
+    });
+    writeTrace(trace);
+  } catch {
+    /* trace is the durable receipt, not the mutation — never fail a good write on it */
+  }
+}

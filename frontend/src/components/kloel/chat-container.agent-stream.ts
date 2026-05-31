@@ -80,6 +80,13 @@ export function connectAgentStream(callbacks: AgentStreamCallbacks): () => void 
       };
 
       await readStream();
+
+      // Stream ended cleanly (server closed the connection, done=true).
+      // Notify consumers and schedule a reconnect so the live feed resumes.
+      if (!isCancelled) {
+        onDisconnected();
+        retryTimer = setTimeout(connect, 2500);
+      }
     } catch (error) {
       if (isCancelled || controller?.signal.aborted) {
         return;

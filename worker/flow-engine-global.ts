@@ -1,4 +1,8 @@
 /**
+ * @capability FlowEngineRuntime
+ * @domain flows-automation
+ */
+/**
  * ARCHITECTURAL COHESION: This file is a single organism — the Flow Engine
  * global singleton. It orchestrates the full lifecycle of a WhatsApp flow
  * execution: initialization (startFlow), user interaction (onUserResponse),
@@ -37,15 +41,18 @@ import type {
   RawFlowEdge,
   RawFlowNode,
 } from './flow-engine.types';
-import { buildQueueJobId } from './job-id';
+import {
+  flowContextKey,
+  flowTimeoutMember,
+  normalizeUser as normalizeUserKey,
+} from './flow-engine.user-key.helpers';
+import { buildQueueJobId, hashQueuePayload } from './job-id';
 import { WorkerLogger } from './logger';
 import { CRM } from './providers/crm';
 import { Queue } from './queue';
 // Segurança
 import { forEachSequential } from './utils/async-sequence';
 import { safeEvaluateBoolean } from './utils/safe-eval';
-
-const D_RE = /\D/g;
 
 /** Maximum number of node transitions before the flow is forcefully aborted. */
 const MAX_ITERATIONS = 1000;
@@ -231,7 +238,15 @@ export class FlowEngineGlobal {
               messageContent: message,
             },
             {
-              jobId: buildQueueJobId('scan-contact', triggerWorkspaceId, contact.id, Date.now()),
+              // Dedup on the triggering inbound message content so a retried /
+              // re-fired user-response handler reuses the same scan job instead
+              // of enqueuing a duplicate scan (which would re-drive an outbound send).
+              jobId: buildQueueJobId(
+                'scan-contact',
+                triggerWorkspaceId,
+                contact.id,
+                hashQueuePayload(message),
+              ),
               removeOnComplete: true,
             },
           );
@@ -530,17 +545,15 @@ export class FlowEngineGlobal {
   }
 
   private key(user: string, workspaceId?: string) {
-    const normalized = this.normalizeUser(user);
-    return workspaceId ? `flow:${workspaceId}:${normalized}` : `flow:${normalized}`; // fallback compat
+    return flowContextKey(user, workspaceId);
   }
 
   private normalizeUser(user: string) {
-    return (user || '').replace(D_RE, '');
+    return normalizeUserKey(user);
   }
 
   private timeoutMember(user: string, workspaceId?: string) {
-    const normalized = this.normalizeUser(user);
-    return workspaceId ? `${workspaceId}:${normalized}` : normalized;
+    return flowTimeoutMember(user, workspaceId);
   }
 
   private sleep(ms: number): Promise<void> {

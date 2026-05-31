@@ -11,12 +11,12 @@ import {
   DeliveryPanel,
   IdentityPanel,
   type LeadFieldChange,
-  type LeadFormState,
+  type ContactFormState,
 } from './CheckoutLeadSections.parts';
 import { Ed } from './checkout-theme-shared';
 import type { CheckoutVisualTheme } from './checkout-theme-tokens';
 
-type FormState = LeadFormState;
+type FormState = ContactFormState;
 
 type SharedProps = {
   theme: CheckoutVisualTheme;
@@ -45,8 +45,8 @@ type IdentityColumnProps = SharedProps & {
   fmtBrl: (value: number) => string;
 };
 
-/** Checkout lead sections. */
-export function CheckoutLeadSections(props: IdentityColumnProps) {
+/** Checkout contact sections (identity + delivery). */
+export function CheckoutContactSections(props: IdentityColumnProps) {
   const {
     theme,
     config,
@@ -229,6 +229,12 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
     </div>
   );
 }
+
+/**
+ * @deprecated Use `CheckoutContactSections`. Kept for backward compatibility
+ * with external callers (e.g. CheckoutThemePage) that import the legacy name.
+ */
+export const CheckoutLeadSections = CheckoutContactSections;
 
 function ActiveHeader({
   theme,

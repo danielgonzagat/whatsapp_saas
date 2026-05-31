@@ -30,6 +30,17 @@ export type CapabilityMaturity =
   | 'blocked'
   | 'deprecated';
 
+export type CapabilityPaymentMethod = 'PIX' | 'BOLETO' | 'CREDIT_CARD';
+
+export interface CapabilityExecutionRail {
+  provider: 'mercadopago' | 'stripe' | 'internal';
+  paymentMethod?: CapabilityPaymentMethod;
+  providerMethod?: string;
+  providerService?: string;
+  webhookPath?: string;
+  proofFields: string[];
+}
+
 /**
  * Input schema definition for a capability.
  */
@@ -58,6 +69,7 @@ export interface CapabilityDefinition {
   domainService: string; // Reference to domain service method
   emits: string[]; // Domain events emitted
   evidenceUrlBuilder?: string; // Template for URL
+  executionRail?: CapabilityExecutionRail; // Real provider/payment proof contract
   surface: string[]; // Where this is available
   maturity?: CapabilityMaturity;
   dependsOn?: string[]; // Capability IDs this depends on
@@ -77,6 +89,7 @@ export interface ExecutionReceipt {
   domainEvents: string[];
   auditLogId: string;
   evidenceUrl?: string;
+  executionRail?: CapabilityExecutionRail;
   timestamp: string;
   durationMs: number;
   idempotencyKey: string;

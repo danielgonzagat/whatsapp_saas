@@ -1,3 +1,7 @@
+/**
+ * @capability CommercialIntelligenceFacade
+ * @domain commercial-intelligence
+ */
 export type {
   BusinessStateSnapshot,
   CommercialDecisionEnvelope,

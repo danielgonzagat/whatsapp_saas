@@ -2,39 +2,31 @@ import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { buildTimestampedRuntimeId } from './kloel-id.util';
 import { type KloelStreamEvent } from './kloel-stream-events';
 import { KloelThreadSummaryService } from './kloel-thread-summary.service';
 import OpenAI from 'openai';
-import { WHITESPACE_G_RE } from '../common/regex';
-
-const TRAILING_DOTS_RE = /[.]+$/;
-const SEPARATOR_G_RE = /[_-]+/g;
+import {
+  appendStoredProcessingTraceEntry,
+  buildProcessingTraceSummary,
+  buildStoredProcessingTraceEntry,
+  buildStoredResponseVersions,
+  buildThreadMessageMetadata,
+  buildThreadSummarySystemMessage,
+  formatTraceToolLabel,
+  normalizeThreadMessageMetadataRecord,
+  resolveClientRequestId,
+  type StoredProcessingTraceEntry,
+  type StoredResponseVersion,
+} from './kloel-thread.helpers';
 
 import type { ChatMessage } from './kloel-thinker.types';
 export type { ChatMessage };
+export type { StoredProcessingTraceEntry, StoredResponseVersion };
 
 export interface ThreadConversationState {
   summary?: string;
   recentMessages: ChatMessage[];
   totalMessages: number;
-}
-
-export interface StoredProcessingTraceEntry {
-  id: string;
-  kind: 'status' | 'tool_call' | 'tool_result';
-  phase: 'thinking' | 'tool_calling' | 'tool_result' | 'streaming';
-  label: string;
-  createdAt: string;
-  tool?: string;
-  success?: boolean;
-}
-
-export interface StoredResponseVersion {
-  id: string;
-  content: string;
-  createdAt: string;
-  source: 'initial' | 'regenerated';
 }
 
 /** Manages chat thread persistence, conversation state. Summary/title logic delegated to KloelThreadSummaryService. */
@@ -144,22 +136,14 @@ export class KloelThreadService {
   normalizeThreadMessageMetadataRecord(
     metadata?: Prisma.InputJsonValue | Prisma.JsonValue | null,
   ): Record<string, unknown> {
-    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
-      return {};
-    }
-    return { ...(metadata as Record<string, unknown>) };
+    return normalizeThreadMessageMetadataRecord(metadata);
   }
 
   buildThreadMessageMetadata(
     baseMetadata?: Prisma.InputJsonValue,
     extraFields?: Record<string, unknown>,
   ): Prisma.InputJsonValue | undefined {
-    const normalizedBase = this.normalizeThreadMessageMetadataRecord(baseMetadata);
-    const normalizedExtra = Object.fromEntries(
-      Object.entries(extraFields || {}).filter(([, v]) => v !== undefined),
-    );
-    const merged = { ...normalizedBase, ...normalizedExtra };
-    return Object.keys(merged).length > 0 ? (merged as Prisma.InputJsonValue) : undefined;
+    return buildThreadMessageMetadata(baseMetadata, extraFields);
   }
 
   touchThread(threadId: string, workspaceId: string) {
@@ -220,194 +204,33 @@ export class KloelThreadService {
     fallbackContent?: string,
     fallbackVersionId?: string,
   ): StoredResponseVersion[] {
-    const normalized = this.normalizeThreadMessageMetadataRecord(metadata);
-    const versions = Array.isArray(normalized.responseVersions)
-      ? normalized.responseVersions
-          .map((entry) => {
-            if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
-              return null;
-            }
-            const candidate = entry as Record<string, unknown>;
-            const content = typeof candidate.content === 'string' ? candidate.content : '';
-            if (!content.trim()) {
-              return null;
-            }
-            const createdAt =
-              typeof candidate.createdAt === 'string' && candidate.createdAt.trim()
-                ? candidate.createdAt
-                : new Date().toISOString();
-            const source = candidate.source === 'regenerated' ? 'regenerated' : 'initial';
-            const id =
-              typeof candidate.id === 'string' && candidate.id.trim()
-                ? candidate.id
-                : `resp_${createdAt}`;
-            return { id, content, createdAt, source } satisfies StoredResponseVersion;
-          })
-          .filter((e): e is StoredResponseVersion => !!e)
-      : [];
-
-    if (versions.length > 0) {
-      return versions;
-    }
-    const normalizedFallback = String(fallbackContent || '');
-    if (!normalizedFallback.trim()) {
-      return [];
-    }
-    return [
-      {
-        id: fallbackVersionId || `resp_${Date.now()}`,
-        content: normalizedFallback,
-        createdAt: new Date().toISOString(),
-        source: 'initial',
-      },
-    ];
+    return buildStoredResponseVersions(metadata, fallbackContent, fallbackVersionId);
   }
 
   buildStoredProcessingTraceEntry(event: KloelStreamEvent): StoredProcessingTraceEntry | null {
-    if (event.type === 'status') {
-      const phase = event.phase === 'streaming_token' ? 'streaming' : event.phase;
-      const label = String(event.message || '').trim();
-      if (!label) {
-        return null;
-      }
-      return {
-        id: buildTimestampedRuntimeId(`trace_${phase}`),
-        kind: 'status',
-        phase,
-        label,
-        createdAt: new Date().toISOString(),
-      };
-    }
-    if (event.type === 'tool_call') {
-      return {
-        id: event.callId || buildTimestampedRuntimeId('trace_tool_call'),
-        kind: 'tool_call',
-        phase: 'tool_calling',
-        label: `Executando ${this.formatTraceToolLabel(event.tool)}.`,
-        createdAt: new Date().toISOString(),
-        tool: event.tool,
-      };
-    }
-    if (event.type === 'tool_result') {
-      return {
-        id: event.callId || buildTimestampedRuntimeId('trace_tool_result'),
-        kind: 'tool_result',
-        phase: 'tool_result',
-        label: event.success
-          ? `Concluiu ${this.formatTraceToolLabel(event.tool)}.`
-          : `Falhou ao executar ${this.formatTraceToolLabel(event.tool)}.`,
-        createdAt: new Date().toISOString(),
-        tool: event.tool,
-        success: event.success,
-      };
-    }
-    return null;
+    return buildStoredProcessingTraceEntry(event);
   }
 
   appendStoredProcessingTraceEntry(entries: StoredProcessingTraceEntry[], event: KloelStreamEvent) {
-    const nextEntry = this.buildStoredProcessingTraceEntry(event);
-    if (!nextEntry) {
-      return;
-    }
-    const prev = entries[entries.length - 1];
-    if (
-      prev &&
-      prev.phase === nextEntry.phase &&
-      prev.label === nextEntry.label &&
-      prev.kind === nextEntry.kind
-    ) {
-      return;
-    }
-    entries.push(nextEntry);
-    if (entries.length > 16) {
-      entries.splice(0, entries.length - 16);
-    }
+    appendStoredProcessingTraceEntry(entries, event);
   }
 
   buildProcessingTraceSummary(entries: StoredProcessingTraceEntry[]): string | undefined {
-    const labels = Array.from(
-      new Set(
-        entries
-          .map((e) =>
-            String(e.label || '')
-              .replace(WHITESPACE_G_RE, ' ')
-              .trim()
-              .replace(TRAILING_DOTS_RE, ''),
-          )
-          .filter(Boolean),
-      ),
-    );
-    if (labels.length === 0) {
-      return undefined;
-    }
-    const first = labels[0];
-    if (!first) {
-      return undefined;
-    }
-    if (labels.length === 1) {
-      return `${first}.`;
-    }
-    const second = labels[1];
-    if (!second) {
-      return undefined;
-    }
-    if (labels.length === 2) {
-      return `${first} e ${this.lowercaseLeadingCharacter(second)}.`;
-    }
-    const last = labels[labels.length - 1];
-    if (!last) {
-      return `${first}, ${this.lowercaseLeadingCharacter(second)}.`;
-    }
-    return `${first}, ${this.lowercaseLeadingCharacter(second)} e ${this.lowercaseLeadingCharacter(last)}.`;
-  }
-
-  private lowercaseLeadingCharacter(value: string): string {
-    if (!value) {
-      return value;
-    }
-    return value.charAt(0).toLowerCase() + value.slice(1);
+    return buildProcessingTraceSummary(entries);
   }
 
   formatTraceToolLabel(toolName?: string | null): string {
-    const raw = String(toolName || 'ferramenta')
-      .trim()
-      .replace(SEPARATOR_G_RE, ' ')
-      .replace(WHITESPACE_G_RE, ' ');
-    if (!raw) {
-      return 'a ferramenta';
-    }
-    return raw
-      .split(' ')
-      .map((s) => s.toLowerCase())
-      .join(' ');
+    return formatTraceToolLabel(toolName);
   }
 
   buildThreadSummarySystemMessage(
     summary?: string,
   ): import('openai/resources/chat').ChatCompletionMessageParam | null {
-    const normalized = String(summary || '').trim();
-    if (!normalized) {
-      return null;
-    }
-    return {
-      role: 'system',
-      content: [
-        '<conversation_memory>',
-        'Resumo persistido da conversa até aqui:',
-        normalized,
-        'Use isso para manter continuidade sem repetir perguntas já respondidas.',
-        '</conversation_memory>',
-      ].join('\n'),
-    };
+    return buildThreadSummarySystemMessage(summary);
   }
 
   resolveClientRequestId(metadata?: Prisma.InputJsonValue): string | undefined {
-    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
-      return undefined;
-    }
-    const raw = (metadata as Record<string, unknown>).clientRequestId;
-    const id = typeof raw === 'string' ? raw.trim() : '';
-    return id || undefined;
+    return resolveClientRequestId(metadata);
   }
 
   // ── Delegation to KloelThreadSummaryService ──

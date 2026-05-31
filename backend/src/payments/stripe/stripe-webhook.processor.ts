@@ -11,6 +11,33 @@ import type { SplitRole } from '../split/split.types';
 
 const stripeWebhookLogger = StructuredLogger.from('StripeWebhookProcessor');
 
+/**
+ * Upper bound on how many split lines a single sale's `split_lines` metadata may
+ * contain before parsing is refused. The SplitEngine emits at most five roles
+ * (supplier, affiliate, coproducer, manager, seller), so a legitimate payload
+ * never approaches this cap. The bound exists purely to stop a corrupted or
+ * adversarial PaymentIntent.metadata payload from triggering unbounded parsing
+ * work — and, downstream, an unbounded fan-out of Stripe transfers + ledger
+ * credits — instead of failing fast with a clear domain error.
+ */
+const MAX_SPLIT_LINES = 64;
+
+/**
+ * Thrown when `split_lines` metadata declares more entries than
+ * {@link MAX_SPLIT_LINES}. A dedicated type lets the parser distinguish a
+ * bounded-input violation (which must propagate so the webhook returns non-2xx
+ * and no partial fan-out is dispatched) from benign malformed JSON (swallowed
+ * as an empty list, which short-circuits to `no_lines`).
+ */
+export class SplitLinesLimitError extends RangeError {
+  constructor(count: number) {
+    super(
+      `StripeWebhookProcessor: split_lines declares ${count} entries, exceeding the maximum of ${MAX_SPLIT_LINES}`,
+    );
+    this.name = 'SplitLinesLimitError';
+  }
+}
+
 interface PersistedSplitLine {
   role: SplitRole;
   accountId: string;
@@ -56,6 +83,13 @@ function parseLines(json: string): PersistedSplitLine[] {
     if (!Array.isArray(parsed)) {
       return [];
     }
+    // Bounded-input guard: refuse oversized payloads BEFORE per-line work runs.
+    // A legitimate split never exceeds five roles; anything past MAX_SPLIT_LINES
+    // indicates a corrupted or adversarial metadata payload, so fail fast with a
+    // clear domain error rather than parse + fan out unbounded transfers.
+    if (parsed.length > MAX_SPLIT_LINES) {
+      throw new SplitLinesLimitError(parsed.length);
+    }
     return parsed
       .filter(
         (line): line is PersistedSplitLine =>
@@ -71,6 +105,16 @@ function parseLines(json: string): PersistedSplitLine[] {
         amountCents: line.amountCents,
       }));
   } catch (error: unknown) {
+    // A bounded-input violation must propagate so the webhook returns non-2xx
+    // and no partial fan-out is dispatched; only benign parse failures degrade
+    // to an empty list (which short-circuits to `no_lines`).
+    if (error instanceof SplitLinesLimitError) {
+      stripeWebhookLogger.error('split_lines metadata exceeds maximum allowed entries', {
+        message: error.message,
+        maxSplitLines: MAX_SPLIT_LINES,
+      });
+      throw error;
+    }
     const err = error instanceof Error ? error : new Error('Unknown error');
     stripeWebhookLogger.error('Failed to parse transfer reversals', err.message);
     try {

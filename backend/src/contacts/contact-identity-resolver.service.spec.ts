@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ContactIdentityResolverService } from './contact-identity-resolver.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { createPartialPrismaMock, FlexMock } from '../../test/helpers/prisma.mock';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 function makeContactStub(overrides: Record<string, unknown> = {}) {
   return {

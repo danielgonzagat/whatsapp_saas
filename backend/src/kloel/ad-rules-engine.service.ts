@@ -6,45 +6,23 @@ import tracer from 'dd-trace';
 import { Counter, Histogram, register } from 'prom-client';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
-import { MindBanditService } from './mind-bandit.service';
+import { MindBanditService } from './mind/policy/mind-bandit.service';
 import { MindService } from './mind.service';
-import type {
-  CampaignMetrics,
-  AdAlertContext,
-} from './product-sub-resources/helpers/campaign.helpers';
+import type { CampaignMetrics } from './product-sub-resources/helpers/campaign.helpers';
+import {
+  AD_ALERT_ARMS,
+  AdRuleEvaluation,
+  AdRuleSnapshot,
+  EMPTY_EVALUATION,
+  buildAdAlertContext,
+  buildCampaignMetricsFromSales,
+  computeWindowStart,
+  formatAlertLogLine,
+  isWithinCooldown,
+  normalizeCondition,
+  parseConditionFlags,
+} from './ad-rules-engine.helpers';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
-
-const AD_ALERT_ARMS = [
-  'alert_only',
-  'suggest_pause',
-  'suggest_budget_down',
-  'suggest_creative',
-  'ignore',
-] as const;
-
-const ONE_DECIMAL_PERCENT = new Intl.NumberFormat('en-US', {
-  maximumFractionDigits: 1,
-  minimumFractionDigits: 1,
-  useGrouping: false,
-});
-
-interface AdRuleSnapshot {
-  id: string;
-  workspaceId: string;
-  name: string;
-  condition: string | null;
-  action: string;
-  alertMethod: string | null;
-  alertTarget: string | null;
-  lastFiredAt: Date | null;
-}
-
-interface AdRuleEvaluation {
-  shouldFire: boolean;
-  metrics: CampaignMetrics | null;
-  context: AdAlertContext | null;
-  banditAction: string | null;
-}
 
 /** Ad rules engine service. */
 @Injectable()
@@ -141,56 +119,21 @@ export class AdRulesEngineService {
   }
 
   private async evaluateRule(rule: AdRuleSnapshot): Promise<AdRuleEvaluation> {
-    const empty: AdRuleEvaluation = {
-      shouldFire: false,
-      metrics: null,
-      context: null,
-      banditAction: null,
-    };
-
-    const lastFired = rule.lastFiredAt ? new Date(rule.lastFiredAt) : null;
-    const cooldownMs = 60 * 60 * 1000;
-    if (lastFired && Date.now() - lastFired.getTime() < cooldownMs) {
-      return empty;
+    if (isWithinCooldown(rule.lastFiredAt)) {
+      return EMPTY_EVALUATION;
     }
 
-    const condition = (rule.condition || '').toLowerCase();
-    const metrics = await this.collectMetrics(rule, condition);
+    const condition = normalizeCondition(rule.condition);
+    const flags = parseConditionFlags(condition);
+    const metrics = await this.collectMetrics(rule, flags);
 
-    if (this.bandit && this.pendingBanditOutcomes.has(rule.id)) {
-      const pending = this.pendingBanditOutcomes.get(rule.id)!;
-      try {
-        if (metrics) {
-          const improved = metrics.convertedCount >= pending.previousConvertedCount;
-          await this.bandit.recordOutcome({
-            arm: pending.arm,
-            decisionType: 'ad_alert_action',
-            outcome: improved ? 1 : 0,
-            workspaceId: pending.workspaceId,
-          });
-          this.counter.inc({ event: 'bandit_outcome', result: 'recorded' });
-        }
-      } catch (err: unknown) {
-        this.logger.warn(`Failed to record bandit outcome for rule ${rule.id}: ${String(err)}`);
-      } finally {
-        this.pendingBanditOutcomes.delete(rule.id);
-      }
-    }
+    await this.flushPendingBanditOutcome(rule, metrics);
 
     if (!metrics) {
-      return { ...empty, shouldFire: true };
+      return { ...EMPTY_EVALUATION, shouldFire: true };
     }
 
-    const context: AdAlertContext = {
-      workspaceId: rule.workspaceId,
-      ruleId: rule.id,
-      ruleName: rule.name,
-      campaignBudgetExhausted: condition.includes('budget') || condition.includes('orçamento'),
-      metric: metrics,
-      threshold: condition.includes('baixo') || condition.includes('caiu') ? 'low' : 'normal',
-      windowHours: 24,
-      campaign: rule.name,
-    };
+    const context = buildAdAlertContext(rule, flags, metrics);
 
     if (this.mind) {
       try {
@@ -203,7 +146,7 @@ export class AdRulesEngineService {
         );
         if (decision.action === 'ignore') {
           this.counter.inc({ event: 'rule', result: 'mind_ignore' });
-          return { ...empty, metrics, context, banditAction: decision.action };
+          return { ...EMPTY_EVALUATION, metrics, context, banditAction: decision.action };
         }
         return { shouldFire: true, metrics, context, banditAction: decision.action };
       } catch (err: unknown) {
@@ -225,35 +168,53 @@ export class AdRulesEngineService {
     if (chosen.arm === 'ignore') {
       this.logger.debug(`MIND bandit chose ignore for rule ${rule.id} (${rule.name})`);
       this.counter.inc({ event: 'rule', result: 'bandit_ignore' });
-      return { ...empty, metrics, context, banditAction: chosen.arm };
+      return { ...EMPTY_EVALUATION, metrics, context, banditAction: chosen.arm };
     }
 
-    if (this.bandit && metrics) {
-      this.pendingBanditOutcomes.set(rule.id, {
-        arm: chosen.arm,
-        workspaceId: rule.workspaceId,
-        previousConvertedCount: metrics.convertedCount,
-      });
-    }
+    this.pendingBanditOutcomes.set(rule.id, {
+      arm: chosen.arm,
+      workspaceId: rule.workspaceId,
+      previousConvertedCount: metrics.convertedCount,
+    });
 
     return { shouldFire: true, metrics, context, banditAction: chosen.arm };
   }
 
+  private async flushPendingBanditOutcome(
+    rule: AdRuleSnapshot,
+    metrics: CampaignMetrics | null,
+  ): Promise<void> {
+    if (!this.bandit || !this.pendingBanditOutcomes.has(rule.id)) {
+      return;
+    }
+    const pending = this.pendingBanditOutcomes.get(rule.id)!;
+    try {
+      if (metrics) {
+        const improved = metrics.convertedCount >= pending.previousConvertedCount;
+        await this.bandit.recordOutcome({
+          arm: pending.arm,
+          decisionType: 'ad_alert_action',
+          outcome: improved ? 1 : 0,
+          workspaceId: pending.workspaceId,
+        });
+        this.counter.inc({ event: 'bandit_outcome', result: 'recorded' });
+      }
+    } catch (err: unknown) {
+      this.logger.warn(`Failed to record bandit outcome for rule ${rule.id}: ${String(err)}`);
+    } finally {
+      this.pendingBanditOutcomes.delete(rule.id);
+    }
+  }
+
   private async collectMetrics(
     rule: AdRuleSnapshot,
-    condition: string,
+    flags: ReturnType<typeof parseConditionFlags>,
   ): Promise<CampaignMetrics | null> {
-    const isRoas = condition.includes('roas') || condition.includes('conversao');
-    if (
-      !isRoas &&
-      !condition.includes('gasto') &&
-      !condition.includes('spend') &&
-      !condition.includes('budget')
-    ) {
+    if (!flags.requiresMetrics) {
       return null;
     }
 
-    const windowStart = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const windowStart = computeWindowStart();
 
     const salesCount = await this.prisma.kloelSale.count({
       where: {
@@ -271,20 +232,7 @@ export class AdRulesEngineService {
       },
     });
 
-    const total = salesCount + failedCount;
-
-    return {
-      sentCount: 0,
-      deliveredCount: 0,
-      readCount: 0,
-      failedCount: 0,
-      repliedCount: 0,
-      convertedCount: salesCount,
-      conversionRate: total > 0 ? salesCount / total : 0,
-      totalSpentCents: 0,
-      revenueCents: 0,
-      roas: 0,
-    };
+    return buildCampaignMetricsFromSales(salesCount, failedCount);
   }
 
   private async ensureBanditArms(workspaceId: string): Promise<void> {
@@ -329,15 +277,7 @@ export class AdRulesEngineService {
     chosenAction: string,
     metrics: CampaignMetrics | null,
   ): Promise<void> {
-    const metricsSummary = metrics
-      ? `converted=${metrics.convertedCount} rate=${ONE_DECIMAL_PERCENT.format(metrics.conversionRate * 100)}%`
-      : 'no metrics';
-
-    this.logger.log(
-      `Alert [${rule.alertMethod}] → ${rule.alertTarget}: ` +
-        `Rule "${rule.name}" fired — action=${chosenAction} (${metricsSummary})`,
-    );
-
+    this.logger.log(formatAlertLogLine(rule, chosenAction, metrics));
     return Promise.resolve();
   }
 }

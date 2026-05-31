@@ -14,6 +14,10 @@ import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface';
 import { CreateInstagramPostDto } from './dto/create-instagram-post.dto';
 import { InstagramInsightsQueryDto, VALID_METRICS } from './dto/instagram-insights-query.dto';
+import {
+  ListInstagramMessagesQueryDto,
+  SendInstagramMessageDto,
+} from './dto/send-instagram-message.dto';
 import { InstagramMarketingService } from './instagram-marketing.service';
 import { RouteClass } from '../../common/throttler/route-class.decorator';
 import { PaginationLimitPipe } from '../../common/pagination-clamp.pipe';
@@ -78,5 +82,50 @@ export class InstagramMarketingController {
   ) {
     const workspaceId = resolveWorkspaceId(req);
     return this.instagramMarketingService.listInsights(workspaceId, igAccountId, since, until);
+  }
+
+  /**
+   * Send a direct message via Instagram Messaging API.
+   *
+   * Mirrors `/marketing/facebook-messenger/send` shape so the frontend client
+   * can share a single send-handler abstraction across channels.
+   */
+  // messageLimit: enforced via PlanLimitsService.trackMessageSend
+  @Post('send')
+  async sendDirectMessage(@Req() req: AuthenticatedRequest, @Body() body: SendInstagramMessageDto) {
+    const workspaceId = resolveWorkspaceId(req);
+    return this.instagramMarketingService.sendDirectMessage(
+      workspaceId,
+      body.recipientId,
+      body.text,
+    );
+  }
+
+  /**
+   * List Instagram DM conversations from the Meta Graph API.
+   *
+   * Returns the upstream Graph payload plus the resolved IG account id so the
+   * frontend can correlate threads to the connected business account.
+   */
+  @Get('conversations')
+  async listConversations(@Req() req: AuthenticatedRequest) {
+    const workspaceId = resolveWorkspaceId(req);
+    return this.instagramMarketingService.listConversations(workspaceId);
+  }
+
+  /**
+   * List persisted Instagram DM messages.
+   *
+   * Honest empty state today — the route exists for paridade with
+   * `/marketing/facebook-messenger/messages` and will be backed by a real
+   * `IgMessage` model + webhook ingest in a follow-up migration.
+   */
+  @Get('messages')
+  async listMessages(
+    @Req() req: AuthenticatedRequest,
+    @Query() query: ListInstagramMessagesQueryDto,
+  ) {
+    const workspaceId = resolveWorkspaceId(req);
+    return this.instagramMarketingService.listMessages(workspaceId, query.conversationId);
   }
 }

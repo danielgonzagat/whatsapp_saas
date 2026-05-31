@@ -96,7 +96,7 @@ export class BillingWebhookService {
       this.logger.error('Webhook sem rawBody ou signature');
       throw new Error('Missing rawBody or signature for webhook verification');
     }
-    const endpointSecret = this.configService.get('STRIPE_WEBHOOK_SECRET');
+    const endpointSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
     if (!endpointSecret) {
       this.logger.error('STRIPE_WEBHOOK_SECRET não configurado');
       throw new Error('STRIPE_WEBHOOK_SECRET not configured');

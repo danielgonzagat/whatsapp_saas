@@ -7,6 +7,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ComplianceController } from './compliance.controller';
 import { ComplianceService } from './compliance.service';
 import { JwtSetValidator } from './utils/jwt-set.validator';
+import { type Server } from 'node:http';
+import { stringContains } from '../../test/helpers/match-instance';
 
 function encodeBase64Url(input: Buffer | string) {
   return Buffer.from(input)
@@ -25,13 +27,7 @@ function buildSignedRequest(payload: Record<string, unknown>, secret: string) {
 describe('ComplianceController', () => {
   let app: INestApplication;
 
-  const prismaMock = {
-    $transaction: jest.fn((arg: unknown, _opts?: unknown) => {
-      if (typeof arg === 'function') {
-        return (arg as (tx: typeof prismaMock) => unknown)(prismaMock);
-      }
-      return Promise.all(arg as Promise<unknown>[]);
-    }),
+  const prismaModels = {
     dataDeletionRequest: {
       create: jest.fn(),
       update: jest.fn(),
@@ -50,6 +46,16 @@ describe('ComplianceController', () => {
     magicLinkToken: {
       updateMany: jest.fn(),
     },
+  };
+
+  const prismaMock = {
+    ...prismaModels,
+    $transaction: jest.fn((arg: unknown, _opts?: unknown) => {
+      if (typeof arg === 'function') {
+        return (arg as (tx: typeof prismaModels) => unknown)(prismaModels);
+      }
+      return Promise.all(arg as Promise<unknown>[]);
+    }),
   };
 
   beforeAll(async () => {
@@ -114,7 +120,7 @@ describe('ComplianceController', () => {
       process.env.META_APP_SECRET ?? '',
     );
 
-    const response = await request(app.getHttpServer())
+    const response = await request(app.getHttpServer() as Server)
       .post('/auth/facebook/data-deletion')
       .type('form')
       .send({ signed_request: signedRequest })
@@ -124,13 +130,13 @@ describe('ComplianceController', () => {
     expect(response.body).toEqual(
       expect.objectContaining({
         confirmation_code: expectValueOf(String),
-        url: expect.stringContaining('/data-deletion/status/'),
+        url: stringContains('/data-deletion/status/'),
       }),
     );
   });
 
   it('returns 400 when facebook data deletion is called without signed_request', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(app.getHttpServer() as Server)
       .post('/auth/facebook/data-deletion')
       .type('form')
       .send({})
@@ -144,7 +150,7 @@ describe('ComplianceController', () => {
   });
 
   it('returns 400 when facebook deauthorize is called without signed_request', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await request(app.getHttpServer() as Server)
       .post('/auth/facebook/deauthorize')
       .type('form')
       .send({})
@@ -167,7 +173,7 @@ describe('ComplianceController', () => {
       process.env.META_APP_SECRET ?? '',
     );
 
-    await request(app.getHttpServer())
+    await request(app.getHttpServer() as Server)
       .post('/auth/facebook/deauthorize')
       .type('form')
       .send({ signed_request: signedRequest })

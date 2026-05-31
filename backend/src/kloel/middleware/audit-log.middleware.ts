@@ -154,7 +154,14 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
   }
 
   private resolveWorkspaceId(req: Request): string | undefined {
-    return req.params.workspaceId || req.body?.workspaceId || (req.query.workspaceId as string);
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const bodyWorkspaceId = typeof body.workspaceId === 'string' ? body.workspaceId : undefined;
+    const paramWorkspaceId = Array.isArray(req.params.workspaceId)
+      ? req.params.workspaceId[0]
+      : req.params.workspaceId;
+    const queryWorkspaceId =
+      typeof req.query.workspaceId === 'string' ? req.query.workspaceId : undefined;
+    return paramWorkspaceId || bodyWorkspaceId || queryWorkspaceId;
   }
 
   private buildAuditLogEntry(params: {
@@ -300,7 +307,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
           headers: { ...getTraceHeaders(), 'Content-Type': 'application/json' },
           body: JSON.stringify({ logs: logsToFlush }),
           signal: AbortSignal.timeout(30000),
-        }).catch((err) => this.logger.warn('Failed to send audit webhook', err.message));
+        }).catch((err: Error) => this.logger.warn('Failed to send audit webhook', err.message));
       }
     } catch (err: unknown) {
       void this.opsAlert?.alertOnCriticalError(err, 'AuditLogMiddleware.timeout');

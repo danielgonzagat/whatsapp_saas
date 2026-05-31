@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import {
   collectChangedFiles,
@@ -15,6 +15,11 @@ import {
   countGeneratedOverlayNotes,
   hasFunctionalProofSignal,
   isProductionSourceFile,
+  isTestFile,
+  isTextFile as isTextFileForRepo,
+  loadCanonicalMoveApprovals as loadCanonicalMoveApprovalsForRepo,
+  mergeAddedTextByFile,
+  parseAddedTextByFile,
 } from './ai-constitution-helpers.mjs';
 
 const constitution = readJsonFile('ops/kloel-ai-constitution.json', null);
@@ -418,43 +423,12 @@ function addedTextMapFromDiff(args) {
   }
 }
 
-function mergeAddedTextByFile(target, source) {
-  for (const [file, added] of source) {
-    target.set(file, [target.get(file), added].filter(Boolean).join('\n'));
-  }
-}
-
 function execGit(args) {
   return execFileSync('git', args, {
     cwd: repoRoot,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'ignore'],
   });
-}
-
-function parseAddedTextByFile(diff) {
-  const byFile = new Map();
-  let currentFile = null;
-
-  for (const line of diff.split('\n')) {
-    if (line.startsWith('+++ b/')) {
-      currentFile = line.slice('+++ b/'.length);
-      if (!byFile.has(currentFile)) {
-        byFile.set(currentFile, '');
-      }
-      continue;
-    }
-    if (line.startsWith('+++ /dev/null')) {
-      currentFile = null;
-      continue;
-    }
-    if (!currentFile || !line.startsWith('+') || line.startsWith('+++')) {
-      continue;
-    }
-    byFile.set(currentFile, [byFile.get(currentFile), line.slice(1)].filter(Boolean).join('\n'));
-  }
-
-  return byFile;
 }
 
 function isTracked(file) {
@@ -470,25 +444,30 @@ function isTracked(file) {
 }
 
 function isTextFile(file) {
-  if (statSync(path.join(repoRoot, file)).size > 2 * 1024 * 1024) {
-    return false;
-  }
-  return /\.(?:js|mjs|cjs|ts|tsx|jsx|json|md|yml|yaml|sh|css|scss|html|txt|prisma|sql|toml|conf|template)$/.test(
-    file,
-  );
-}
-
-function isTestFile(file) {
-  return (
-    /(?:^|\/)(?:__tests__|test|tests|specs)\//.test(file) ||
-    /\.(?:spec|test)\.[cm]?[jt]sx?$/.test(file)
-  );
+  return isTextFileForRepo(repoRoot, file);
 }
 
 function checkForbiddenDeletions() {
-  const deleted = collectConstitutionNameStatus()
+  const nameStatus = collectConstitutionNameStatus();
+  const deleted = nameStatus
     .filter((entry) => entry.status.startsWith('D'))
     .flatMap((entry) => entry.paths);
+
+  // Canonical-move recognition: a "D oldPath" plus an "R<NN> srcPath newPath"
+  // whose newPath shares the basename of oldPath is treated as a move, not a
+  // deletion. Git's similarity-based rename detection (-M) already pairs files
+  // by content, but in chained moves (whatsapp/X -> cia/X -> mind/cia/X) it
+  // collapses the chain into a single rename from the oldest ancestor and
+  // leaves the intermediate path as "D". We restore the move semantics by
+  // matching basenames across the rename target set, so legitimate canonical
+  // migrations don't trip the "deletion requires human proof" gate.
+  const renameTargetBasenames = new Set(
+    nameStatus
+      .filter((entry) => entry.status.startsWith('R'))
+      .map((entry) => entry.paths[entry.paths.length - 1])
+      .filter(Boolean)
+      .map((p) => path.basename(p)),
+  );
 
   const dangerousDeleted = deleted.filter(
     (file) =>
@@ -499,8 +478,16 @@ function checkForbiddenDeletions() {
       file.startsWith('.github/workflows/'),
   );
 
+  const canonicalMoveApprovals = loadCanonicalMoveApprovalsForRepo(repoRoot);
+
   for (const file of dangerousDeleted) {
     if (hasGovernanceDeletionApproval(file)) {
+      continue;
+    }
+    if (renameTargetBasenames.has(path.basename(file))) {
+      continue;
+    }
+    if (canonicalMoveApprovals.has(file)) {
       continue;
     }
     fail(

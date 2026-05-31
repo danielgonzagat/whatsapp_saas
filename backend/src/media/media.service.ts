@@ -10,6 +10,37 @@ import { safeStorageFetch } from '../common/utils/url-safety';
 import { collectAllowedHosts, validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 
+/**
+ * Decode a base64 image payload — accepts a bare base64 string or a full
+ * `data:<mime>;base64,<...>` URL. Returns the decoded bytes plus the resolved
+ * MIME type (explicit `mimeTypeHint` wins, then the data-URL prefix, then a
+ * sensible image default). Invalid payloads yield an empty buffer so callers
+ * can short-circuit with an honest error.
+ */
+function decodeBase64Image(
+  input: string,
+  mimeTypeHint?: string,
+): { buffer: Buffer; mimeType: string } {
+  let raw = input.trim();
+  let dataUrlMime: string | undefined;
+  const dataUrlMatch = /^data:([^;,]+)?(?:;base64)?,(.*)$/s.exec(raw);
+  if (dataUrlMatch) {
+    dataUrlMime = dataUrlMatch[1] || undefined;
+    raw = dataUrlMatch[2] ?? '';
+  }
+  const buffer = (() => {
+    try {
+      return Buffer.from(raw, 'base64');
+    } catch {
+      return Buffer.alloc(0);
+    }
+  })();
+  return {
+    buffer,
+    mimeType: mimeTypeHint || dataUrlMime || 'image/jpeg',
+  };
+}
+
 /** Media service. */
 @Injectable()
 export class MediaService {
@@ -65,6 +96,74 @@ export class MediaService {
       throw new NotFoundException('Job não encontrado');
     }
     return job;
+  }
+
+  /**
+   * Attach an image sent in chat (or referenced by URL) to durable storage and
+   * return the canonical stored URL.
+   *
+   * domainService alias: `MediaService.attach` — the first half of the compound
+   * capabilities `products.upload_image` / `upload_product_image` /
+   * `upload_plan_image` (`MediaService.attach + {Product,Plan}Service.setImage`).
+   * It stores the bytes once, workspace-scoped, and hands the resulting URL to
+   * the entity `setImage` step. Resolver call convention `(workspaceId, args)`,
+   * returns the `{ success, data }` receipt envelope.
+   *
+   * Supported inputs (in priority order):
+   *   - `imageBase64` / `imageData`: a base64 payload (optionally a `data:` URL)
+   *     uploaded through the chat — decoded and stored via StorageService.
+   *   - `imageUrl`: an external URL — fetched (SSRF-guarded) and re-hosted.
+   */
+  async attach(
+    workspaceId: string,
+    args: { imageBase64?: unknown; imageData?: unknown; imageUrl?: unknown; mimeType?: unknown },
+  ): Promise<{
+    success: boolean;
+    data: { url: string; path: string; size: number } | null;
+    error?: string;
+  }> {
+    const base64Input =
+      typeof args.imageBase64 === 'string'
+        ? args.imageBase64
+        : typeof args.imageData === 'string'
+          ? args.imageData
+          : '';
+    const imageUrl = typeof args.imageUrl === 'string' ? args.imageUrl.trim() : '';
+    const mimeTypeArg = typeof args.mimeType === 'string' ? args.mimeType : undefined;
+
+    if (base64Input) {
+      const { buffer, mimeType } = decodeBase64Image(base64Input, mimeTypeArg);
+      if (!buffer.length) {
+        return { success: false, data: null, error: 'invalid_image_payload' };
+      }
+      const stored = await this.storage.upload(buffer, {
+        folder: `media/${workspaceId}`,
+        mimeType,
+        workspaceId,
+      });
+      this.logger.log('Attached image from upload', {
+        context: 'MediaService.attach',
+        workspaceId,
+        size: stored.size,
+      });
+      return { success: true, data: stored };
+    }
+
+    if (imageUrl) {
+      const stored = await this.storage.uploadFromUrl(imageUrl, {
+        folder: `media/${workspaceId}`,
+        workspaceId,
+        ...(mimeTypeArg !== undefined ? { mimeType: mimeTypeArg } : {}),
+      });
+      this.logger.log('Attached image from URL', {
+        context: 'MediaService.attach',
+        workspaceId,
+        size: stored.size,
+      });
+      return { success: true, data: stored };
+    }
+
+    return { success: false, data: null, error: 'image_input_required' };
   }
 
   // ============ DOCUMENTOS / CATÁLOGOS ============

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { GuestChatService } from './guest-chat.service';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 jest.mock('openai', () => {
   const mockCompletions = { create: jest.fn() };
@@ -125,8 +126,8 @@ describe('GuestChatService', () => {
       );
       expect(payload).toEqual(
         expect.objectContaining({
-          cognitiveState: expect.objectContaining({ audience: 'public' }),
-          currentInput: expect.objectContaining({ raw: 'Qual o preço do PDRN?' }),
+          cognitiveState: partialMatch({ audience: 'public' }),
+          currentInput: partialMatch({ raw: 'Qual o preço do PDRN?' }),
         }),
       );
     });

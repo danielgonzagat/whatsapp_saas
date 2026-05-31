@@ -16,6 +16,12 @@ import {
 import { Sparkles } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
+const EMPTY_AUTOPILOT_CONFIG = {
+  conversionFlowId: '',
+  currencyDefault: '',
+  recoveryTemplateName: '',
+};
+
 export function AutopilotSection() {
   const workspaceId = tokenStorage.getWorkspaceId();
   const [autopilotEnabled, setAutopilotEnabled] = useState(false);
@@ -28,35 +34,31 @@ export function AutopilotSection() {
     recoveryTemplateName: '',
   });
 
-  const hydrateAutopilot = useCallback(async () => {
+  // Promise-chain (non-async) so no setState runs synchronously in the effect
+  // tick (react-hooks/set-state-in-effect). All state updates land in .then.
+  const hydrateAutopilot = useCallback(() => {
     if (!workspaceId) {
-      setAutopilotEnabled(false);
-      setAutopilotConfig({
-        conversionFlowId: '',
-        currencyDefault: '',
-        recoveryTemplateName: '',
+      return Promise.resolve().then(() => {
+        setAutopilotEnabled(false);
+        setAutopilotConfig(EMPTY_AUTOPILOT_CONFIG);
       });
-      return;
     }
 
-    try {
-      const [status, config] = await Promise.all([
-        getAutopilotStatus(workspaceId),
-        getAutopilotConfig(workspaceId),
-      ]);
-
-      setAutopilotEnabled(Boolean(status?.enabled));
-      const autopilotCfg = (config?.autopilot ?? config) as Record<string, unknown> | undefined;
-      setAutopilotConfig({
-        conversionFlowId: String(autopilotCfg?.conversionFlowId || ''),
-        currencyDefault: String(autopilotCfg?.currencyDefault || ''),
-        recoveryTemplateName: String(autopilotCfg?.recoveryTemplateName || ''),
+    return Promise.all([getAutopilotStatus(workspaceId), getAutopilotConfig(workspaceId)])
+      .then(([status, config]) => {
+        setAutopilotEnabled(Boolean(status?.enabled));
+        const autopilotCfg = (config?.autopilot ?? config) as Record<string, unknown> | undefined;
+        setAutopilotConfig({
+          conversionFlowId: String(autopilotCfg?.conversionFlowId || ''),
+          currencyDefault: String(autopilotCfg?.currencyDefault || ''),
+          recoveryTemplateName: String(autopilotCfg?.recoveryTemplateName || ''),
+        });
+      })
+      .catch((error: unknown) => {
+        setAutopilotError(
+          error instanceof Error ? error.message : 'Nao foi possivel carregar a autonomia.',
+        );
       });
-    } catch (error: unknown) {
-      setAutopilotError(
-        error instanceof Error ? error.message : 'Nao foi possivel carregar a autonomia.',
-      );
-    }
   }, [workspaceId]);
 
   useEffect(() => {

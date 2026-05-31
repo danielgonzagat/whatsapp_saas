@@ -177,7 +177,10 @@ function needsStripeConfirmation(
   payMethod: FinalizeCheckoutOrderArgs['payMethod'],
   paymentProvider: FinalizeCheckoutOrderArgs['paymentProvider'],
 ): boolean {
-  return payMethod === 'card' && paymentProvider?.provider === 'stripe';
+  return (
+    payMethod === 'card' &&
+    (paymentProvider?.cardProvider === 'stripe' || paymentProvider?.provider === 'stripe')
+  );
 }
 
 function resolveFinalizeOrderContext(

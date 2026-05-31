@@ -1,20 +1,49 @@
 import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { MIND_DECISION_CATALOG } from '../../mind-decision-catalog';
+import { MIND_DECISION_CATALOG } from '../policy/mind-decision-catalog';
 import { MindBanditService } from '../policy/mind-bandit.service';
 import { MindBeliefService } from '../inference/mind-belief.service';
 import { MindPolicyService } from '../policy/mind-policy.service';
 import { MindReportService } from './mind-report.service';
-import { MindVerbalizerService } from '../../mind-verbalizer.service';
+import { MindVerbalizerService } from '../synthetic/mind-verbalizer.service';
+import { expandEventNameAliases } from '../coordination/mind-event-taxonomy';
 
 function isUnknownRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/** Metrics payload emitted on every chat reply. */
+export interface ReplyObservation {
+  /** Which chat surface produced the reply (guest, admin, whatsapp). */
+  surface: 'guest' | 'admin' | 'whatsapp';
+  /** Wall-clock milliseconds spent generating the reply. */
+  durationMs: number;
+  /** Whether the reply was successfully delivered to the user. */
+  success: boolean;
+  /** Optional surprise magnitude (0–1) for this reply. */
+  surpriseValue?: number;
+  /** Optional prediction text that was evaluated. */
+  prediction?: string;
+}
+
+interface WorkspaceReplyMetrics {
+  totalReplies: number;
+  successReplies: number;
+  failureReplies: number;
+  totalDurationMs: number;
+  surpriseSum: number;
+  surpriseCount: number;
+  lastReplyAt: number;
+  bySurface: Record<string, { count: number; successCount: number }>;
+}
+
 @Injectable()
 export class MindObservabilityService {
   private readonly logger = StructuredLogger.from(MindObservabilityService.name);
+
+  /** In-memory reply metrics keyed by workspaceId. */
+  private readonly replyMetrics = new Map<string, WorkspaceReplyMetrics>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -110,7 +139,7 @@ export class MindObservabilityService {
         this.prisma.autopilotEvent.findMany({
           where: {
             workspaceId,
-            action: 'case_memory.consulted',
+            action: { in: expandEventNameAliases('case_memory.consulted') },
             createdAt: { gte: since },
           },
           orderBy: { createdAt: 'desc' },
@@ -159,7 +188,11 @@ export class MindObservabilityService {
         where: { workspaceId, action: 'message.received', createdAt: { gte: since } },
       }),
       this.prisma.autopilotEvent.count({
-        where: { workspaceId, action: 'predecided_actions.built', createdAt: { gte: since } },
+        where: {
+          workspaceId,
+          action: { in: expandEventNameAliases('predecided_actions.built') },
+          createdAt: { gte: since },
+        },
       }),
     ]);
     const percentDeterministic =
@@ -288,5 +321,86 @@ export class MindObservabilityService {
 
   bandit(workspaceId: string, decisionType: string) {
     return this.bandits.status(workspaceId, decisionType);
+  }
+
+  /** Observe a chat reply and increment in-memory metrics for the workspace. */
+  observeReply(workspaceId: string, observation: ReplyObservation): void {
+    let metrics = this.replyMetrics.get(workspaceId);
+    if (!metrics) {
+      metrics = {
+        totalReplies: 0,
+        successReplies: 0,
+        failureReplies: 0,
+        totalDurationMs: 0,
+        surpriseSum: 0,
+        surpriseCount: 0,
+        lastReplyAt: 0,
+        bySurface: {},
+      };
+      this.replyMetrics.set(workspaceId, metrics);
+    }
+
+    metrics.totalReplies++;
+    if (observation.success) {
+      metrics.successReplies++;
+    } else {
+      metrics.failureReplies++;
+    }
+    metrics.totalDurationMs += observation.durationMs;
+
+    if (observation.surpriseValue !== undefined) {
+      metrics.surpriseSum += observation.surpriseValue;
+      metrics.surpriseCount++;
+    }
+
+    metrics.lastReplyAt = Date.now();
+
+    const surface = metrics.bySurface[observation.surface] ?? {
+      count: 0,
+      successCount: 0,
+    };
+    surface.count++;
+    if (observation.success) {
+      surface.successCount++;
+    }
+    metrics.bySurface[observation.surface] = surface;
+  }
+
+  /** Return an aggregated snapshot of reply metrics for a workspace. */
+  getSnapshot(workspaceId: string): {
+    workspaceId: string;
+    totalReplies: number;
+    successReplies: number;
+    failureReplies: number;
+    avgDurationMs: number;
+    avgSurprise: number | null;
+    lastReplyAt: string | null;
+    bySurface: Record<string, { count: number; successCount: number }>;
+  } {
+    const metrics = this.replyMetrics.get(workspaceId);
+    if (!metrics) {
+      return {
+        workspaceId,
+        totalReplies: 0,
+        successReplies: 0,
+        failureReplies: 0,
+        avgDurationMs: 0,
+        avgSurprise: null,
+        lastReplyAt: null,
+        bySurface: {},
+      };
+    }
+
+    return {
+      workspaceId,
+      totalReplies: metrics.totalReplies,
+      successReplies: metrics.successReplies,
+      failureReplies: metrics.failureReplies,
+      avgDurationMs:
+        metrics.totalReplies > 0 ? Math.round(metrics.totalDurationMs / metrics.totalReplies) : 0,
+      avgSurprise: metrics.surpriseCount > 0 ? metrics.surpriseSum / metrics.surpriseCount : null,
+      lastReplyAt: metrics.lastReplyAt > 0 ? new Date(metrics.lastReplyAt).toISOString() : null,
+      bySurface: { ...metrics.bySurface },
+    };
   }
 }

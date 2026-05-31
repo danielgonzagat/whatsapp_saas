@@ -1,6 +1,6 @@
 import type { PrismaService } from '../prisma/prisma.service';
 import { detectActionIntent } from './guest-chat.action-intent.helpers';
-import { formatToolResult } from './guest-chat.format-tool-result.helpers';
+import { appendToolResultProof, formatToolResult } from './guest-chat.format-tool-result.helpers';
 import { extractProductArgs, extractProductName } from './guest-chat.product-args.helpers';
 import { runGetProductReviews } from './kloel-chat-tools.product.helpers';
 import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
@@ -40,6 +40,188 @@ describe('guest chat action intent helpers', () => {
     expect(detectActionIntent('quero antecipacao do saldo')?.tool).toBe('request_anticipation');
   });
 
+  it('routes product creation through the canonical products.create capability', () => {
+    const action = detectActionIntent('criar produto nome: Serum Pro, preco R$ 147');
+
+    expect(action?.tool).toBe('products.create');
+    expect(action?.args).toEqual(
+      expect.objectContaining({
+        productName: 'serum pro',
+        name: 'serum pro',
+        price: 147,
+      }),
+    );
+  });
+
+  it('routes real payment intents through canonical sales capabilities', () => {
+    const pix = detectActionIntent('gera um pix de R$197 para Joao comprar PDRN');
+    const boleto = detectActionIntent('emite boleto de R$197 para Joao comprar PDRN');
+    const boletoPayment = detectActionIntent('gera pagamento boleto de R$197 para Joao');
+    const cardPayment = detectActionIntent('gera pagamento no cartao de R$197 para Joao');
+
+    expect(pix?.tool).toBe('sales.create_pix');
+    expect(pix?.args).toEqual(expect.objectContaining({ amount: 197, customerName: 'joao' }));
+    expect(boleto?.tool).toBe('sales.create_boleto');
+    expect(boleto?.args).toEqual(expect.objectContaining({ amount: 197, customerName: 'joao' }));
+    expect(boletoPayment?.tool).toBe('sales.create_boleto');
+    expect(cardPayment?.tool).toBe('sales.create_card_link');
+    expect(cardPayment?.args).toEqual(
+      expect.objectContaining({ amount: 197, customerName: 'joao' }),
+    );
+  });
+
+  it('routes mutable product sub-resource intents through canonical capability IDs', () => {
+    expect(detectActionIntent('atualiza o produto Serum, preco R$ 197')?.tool).toBe(
+      'products.update',
+    );
+    expect(detectActionIntent('cria plano Mensal para o produto Serum')?.tool).toBe('plans.create');
+    expect(detectActionIntent('muda o plano Mensal para 12 parcelas')?.tool).toBe('plans.update');
+    expect(detectActionIntent('cria checkout para Serum')?.tool).toBe('checkouts.create');
+    expect(detectActionIntent('vincula plano Mensal ao checkout Principal')?.tool).toBe(
+      'checkouts.update',
+    );
+    expect(detectActionIntent('cria cupom SAVE10 para Serum')?.tool).toBe('coupons.create');
+    expect(detectActionIntent('remove o cupom SAVE10')?.tool).toBe('coupons.delete');
+  });
+
+  it('formats canonical mutation aliases with domain-specific wording', () => {
+    expect(
+      formatToolResult('products.update', {
+        success: true,
+        product: { name: 'Serum', price: 197 },
+      }),
+    ).toBe('Produto Serum atualizado. Preco: R$ 197');
+    expect(
+      formatToolResult('plans.create', { success: true, plan: { name: 'Mensal', price: 99 } }),
+    ).toBe('Plano Mensal criado! R$ 99');
+    expect(
+      formatToolResult('plans.update', { success: true, plan: { name: 'Mensal', price: 147 } }),
+    ).toBe('Plano Mensal atualizado. Preco: R$ 147');
+    expect(formatToolResult('checkouts.create', { success: true, name: 'Principal' })).toBe(
+      'Checkout Principal!',
+    );
+    expect(formatToolResult('checkouts.update', { success: true, name: 'Principal' })).toBe(
+      'Checkout Principal atualizado.',
+    );
+    expect(formatToolResult('coupons.create', { success: true, coupon: { code: 'SAVE10' } })).toBe(
+      'Cupom SAVE10 criado!',
+    );
+    expect(formatToolResult('coupons.delete', { success: true })).toBe('Cupom removido.');
+  });
+
+  it('formats canonical payment receipts only when material proof exists', () => {
+    expect(
+      formatToolResult('sales.create_pix', {
+        success: true,
+        saleId: 'sale-1',
+        pixCopiaECola: '000201pix',
+        pixQrCode: 'qr-base64',
+      }),
+    ).toContain('PIX copia e cola: 000201pix');
+    expect(
+      formatToolResult('sales.create_card_link', {
+        success: true,
+        saleId: 'sale-card-1',
+        checkoutUrl: 'https://checkout.stripe.com/c/pay/cs_card_1',
+      }),
+    ).toContain('Link de cartão gerado para venda sale-card-1');
+    expect(
+      formatToolResult('sales.create_boleto', {
+        success: true,
+        saleId: 'sale-2',
+      }),
+    ).toBe('Erro: boleto_receipt_missing');
+    expect(formatToolResult('generate_boleto', { success: true })).toBe(
+      'Erro: boleto_receipt_missing',
+    );
+  });
+
+  it('adds provider rail proof to canonical payment replies', () => {
+    const pixResult = {
+      success: true,
+      capabilityId: 'sales.create_pix',
+      saleId: 'sale-pix-1',
+      pixCopiaECola: '000201pix',
+      pixQrCode: 'qr-base64',
+      evidenceUrl: '/vendas/sale-pix-1',
+      auditLogId: 'audit-pix-1',
+      domainEvents: ['sale.created', 'payment.pending'],
+      receipt: {
+        capabilityId: 'sales.create_pix',
+        evidenceUrl: '/vendas/sale-pix-1',
+        auditLogId: 'audit-pix-1',
+        domainEvents: ['sale.created', 'payment.pending'],
+        executionRail: {
+          provider: 'mercadopago',
+          paymentMethod: 'PIX',
+          providerMethod: 'pix',
+          proofFields: ['saleId', 'externalPaymentId', 'pixCopiaECola', 'pixQrCode'],
+        },
+      },
+    };
+    const boletoResult = {
+      success: true,
+      capabilityId: 'sales.create_boleto',
+      saleId: 'sale-boleto-1',
+      boletoUrl: 'https://mercadopago.com/boleto.pdf',
+      boletoCode: '23790.00000 00000.000000 00000.000000 1 00000000019700',
+      evidenceUrl: '/vendas/sale-boleto-1',
+      auditLogId: 'audit-boleto-1',
+      receipt: {
+        capabilityId: 'sales.create_boleto',
+        evidenceUrl: '/vendas/sale-boleto-1',
+        auditLogId: 'audit-boleto-1',
+        executionRail: {
+          provider: 'mercadopago',
+          paymentMethod: 'BOLETO',
+          providerMethod: 'bolbradesco',
+          proofFields: ['saleId', 'externalPaymentId', 'boletoUrl', 'boletoCode'],
+        },
+      },
+    };
+    const cardResult = {
+      success: true,
+      capabilityId: 'sales.create_card_link',
+      saleId: 'sale-card-1',
+      checkoutUrl: 'https://checkout.stripe.com/c/pay/cs_card_1',
+      receipt: {
+        capabilityId: 'sales.create_card_link',
+        executionRail: {
+          provider: 'stripe',
+          paymentMethod: 'CARD',
+          providerMethod: 'checkout_session',
+          proofFields: ['saleId', 'stripeCheckoutSessionId', 'checkoutUrl'],
+        },
+      },
+    };
+
+    const pixReply = appendToolResultProof(
+      formatToolResult('sales.create_pix', pixResult),
+      pixResult,
+    );
+    const boletoReply = appendToolResultProof(
+      formatToolResult('sales.create_boleto', boletoResult),
+      boletoResult,
+    );
+    const cardReply = appendToolResultProof(
+      formatToolResult('sales.create_card_link', cardResult),
+      cardResult,
+    );
+
+    expect(pixReply).toContain('Provedor: mercadopago');
+    expect(pixReply).toContain('Método: PIX');
+    expect(pixReply).toContain('Método do provedor: pix');
+    expect(pixReply).toContain(
+      'Contrato de prova: saleId, externalPaymentId, pixCopiaECola, pixQrCode',
+    );
+    expect(boletoReply).toContain('Provedor: mercadopago');
+    expect(boletoReply).toContain('Método: BOLETO');
+    expect(boletoReply).toContain('Método do provedor: bolbradesco');
+    expect(cardReply).toContain('Provedor: stripe');
+    expect(cardReply).toContain('Método: CARD');
+    expect(cardReply).not.toContain('Provedor: mercadopago');
+  });
+
   it('extracts product names from no-produto contexts and explicit names', () => {
     expect(extractProductName('listar urls no produto Serum?')).toBe('Serum');
     expect(extractProductArgs('criar produto nome: Serum Pro, preco R$ 147')).toEqual(
@@ -53,12 +235,12 @@ describe('guest chat action intent helpers', () => {
 
   it('routes retained plan checkout warranty and broadcast intent deltas', () => {
     const disabledPlan = detectActionIntent('desativa o plano Mensal');
-    expect(disabledPlan?.tool).toBe('update_plan');
+    expect(disabledPlan?.tool).toBe('plans.update');
     expect(disabledPlan?.args.planName).toBe('mensal');
     expect(disabledPlan?.args.active).toBe(false);
 
     const enabledPlan = detectActionIntent('ativa o plano Mensal');
-    expect(enabledPlan?.tool).toBe('update_plan');
+    expect(enabledPlan?.tool).toBe('plans.update');
     expect(enabledPlan?.args.active).toBe(true);
 
     const checkouts = detectActionIntent('lista os checkouts');

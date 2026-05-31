@@ -5,6 +5,7 @@ import { kloelT } from '@/lib/i18n/t';
 export const dynamic = 'force-dynamic';
 
 import { Card } from '@/components/kloel/Card';
+import { ContactDetailDrawer } from '@/components/kloel/crm/ContactDetailDrawer';
 import { PageTitle } from '@/components/kloel/PageTitle';
 import { useToast } from '@/components/kloel/ToastProvider';
 import { useCRMMutations, useContacts } from '@/hooks/useCRM';
@@ -30,6 +31,7 @@ export default function GestaoVendasPage() {
   const { addTag, removeTag } = useCRMMutations();
   const [tagInput, setTagInput] = useState('');
   const [activeContact, setActiveContact] = useState<string | null>(null);
+  const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
 
   const handleAddTag = async (phone: string) => {
     if (!tagInput.trim()) {
@@ -220,15 +222,24 @@ export default function GestaoVendasPage() {
                             >
                               {(c.name || c.phone || '?')[0].toUpperCase()}
                             </div>
-                            <span
+                            <button
+                              type="button"
+                              onClick={() => phone && setSelectedPhone(phone)}
+                              disabled={!phone}
+                              aria-label={`Ver detalhes de ${c.name || c.phone || 'contato'}`}
                               style={{
+                                background: 'none',
+                                border: 'none',
+                                padding: 0,
                                 fontFamily: typography.fontFamily.sans,
                                 fontSize: 13,
                                 color: colors.text.starlight,
+                                cursor: phone ? 'pointer' : 'default',
+                                textAlign: 'left',
                               }}
                             >
                               {c.name || 'Sem nome'}
-                            </span>
+                            </button>
                           </div>
                         </td>
                         <td
@@ -436,6 +447,8 @@ export default function GestaoVendasPage() {
           </>
         )}
       </div>
+
+      <ContactDetailDrawer phone={selectedPhone} onClose={() => setSelectedPhone(null)} />
     </div>
   );
 }

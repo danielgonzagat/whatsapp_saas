@@ -119,7 +119,7 @@ describe('CheckoutOrderQueryService', () => {
       await service.listOrders('ws_1', { status: 'PAID' });
       expect(prisma.checkoutOrder.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: 'ws_1', status: 'PAID' }),
+          where: expect.objectContaining({ workspaceId: 'ws_1', status: 'PAID' }) as unknown,
         }),
       );
     });
@@ -127,7 +127,9 @@ describe('CheckoutOrderQueryService', () => {
       prisma.$transaction.mockResolvedValue([[], 0]);
       await service.listOrders('ws_1');
       expect(prisma.checkoutOrder.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ workspaceId: 'ws_1' }) }),
+        expect.objectContaining({
+          where: expect.objectContaining({ workspaceId: 'ws_1' }) as unknown,
+        }),
       );
     });
     it('handles page and limit parameters', async () => {
@@ -350,7 +352,7 @@ describe('CheckoutOrderQueryService', () => {
             orderId: 'order_1',
             upsellId: 'upsell_1',
             priceInCents: 1500,
-          }),
+          }) as unknown,
         }),
       );
     });

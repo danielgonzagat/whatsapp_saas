@@ -1,4 +1,11 @@
 import { AgentRuntimeSessionStore } from './agent-runtime.session-store';
+import { mindMemoryStub } from '../../../test/helpers/mind-memory-stub';
+
+function firstMockArg<T>(mock: jest.Mock, callIndex = 0): T {
+  const call = mock.mock.calls[callIndex] as readonly unknown[] | undefined;
+  return call?.[0] as T;
+}
+
 function makeStore(prismaOverrides: Record<string, unknown> = {}) {
   const prisma = {
     kloelMemory: {
@@ -7,7 +14,7 @@ function makeStore(prismaOverrides: Record<string, unknown> = {}) {
       ...prismaOverrides,
     },
   };
-  const store = new AgentRuntimeSessionStore(prisma as never);
+  const store = new AgentRuntimeSessionStore(prisma as never, mindMemoryStub(prisma));
   return { store, prisma };
 }
 function makeMemoryRow(
@@ -50,14 +57,14 @@ describe('AgentRuntimeSessionStore', () => {
       });
       expect(key).toMatch(/^agent_turn:whatsapp:/);
       expect(prisma.kloelMemory.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        expect.objectContaining<Record<string, unknown>>({
+          data: expect.objectContaining<Record<string, unknown>>({
             workspaceId: 'ws_1',
             category: 'agent_event',
             type: 'turn',
             key: expect.stringMatching(/^agent_turn:whatsapp:/),
             content: expect.stringContaining('Quanto custa'),
-            value: expect.objectContaining({
+            value: expect.objectContaining<Record<string, unknown>>({
               userMessage: expect.stringContaining('Quanto custa'),
               assistantMessage: expect.stringContaining('R$'),
             }),
@@ -90,8 +97,8 @@ describe('AgentRuntimeSessionStore', () => {
       });
       expect(key).toMatch(/^agent_runtime:delegation:parent_1:/);
       expect(prisma.kloelMemory.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        expect.objectContaining<Record<string, unknown>>({
+          data: expect.objectContaining<Record<string, unknown>>({
             workspaceId: 'ws_1',
             category: 'agent_event',
             type: 'delegation',
@@ -140,8 +147,8 @@ describe('AgentRuntimeSessionStore', () => {
       expect(result.tokens).toContain('pricing');
       expect(result.tokens).toContain('enterprise');
       expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
+        expect.objectContaining<Record<string, unknown>>({
+          where: expect.objectContaining<Record<string, unknown>>({
             workspaceId: 'ws_1',
             category: {
               in: ['agent_event', 'agent_skill', 'agent_curated', 'product', 'objection'],
@@ -346,8 +353,8 @@ describe('AgentRuntimeSessionStore', () => {
       });
       await store.search('ws_1', 'pricing, enterprise! discount?');
       expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
+        expect.objectContaining<Record<string, unknown>>({
+          where: expect.objectContaining<Record<string, unknown>>({
             OR: expect.arrayContaining([
               { content: { contains: 'pricing', mode: 'insensitive' } },
               { content: { contains: 'enterprise', mode: 'insensitive' } },
@@ -362,7 +369,9 @@ describe('AgentRuntimeSessionStore', () => {
         findMany: jest.fn().mockResolvedValue([]),
       });
       await store.search('ws_1', 'a pricing b');
-      const callArgs = prisma.kloelMemory.findMany.mock.calls[0][0];
+      const callArgs = firstMockArg<{
+        where: { OR: Array<{ content?: { contains: string } }> };
+      }>(prisma.kloelMemory.findMany);
       const tokens = callArgs.where.OR.map(
         (c: { content?: { contains: string } }) => c.content?.contains,
       ).filter(Boolean);

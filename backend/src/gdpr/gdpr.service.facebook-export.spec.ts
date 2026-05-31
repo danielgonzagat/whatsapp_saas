@@ -1,4 +1,4 @@
-import { BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { GdprStatus, GdprType } from '@prisma/client';
@@ -9,8 +9,8 @@ import { GdprService } from './gdpr.service';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 jest.mock('node:fs', () => {
-  const { Writable } = jest.requireActual('node:stream');
-  const actual = jest.requireActual('node:fs');
+  const { Writable } = jest.requireActual<typeof import('node:stream')>('node:stream');
+  const actual = jest.requireActual<typeof import('node:fs')>('node:fs');
   const stream = new Writable({ write: (_ch: unknown, _enc: unknown, cb: () => void) => cb() });
   stream.on = jest.fn().mockImplementation(function (
     this: Record<string, unknown>,
@@ -34,17 +34,21 @@ jest.mock('node:fs', () => {
 });
 
 jest.mock('node:os', () => ({
-  ...jest.requireActual('node:os'),
+  ...jest.requireActual<typeof import('node:os')>('node:os'),
   tmpdir: jest.fn(() => '/tmp'),
 }));
 
 jest.mock('../common/redis/redis.util', () => ({
   createBullMqConnectionOptions: jest.fn(() => {
-    const { RedisConfigurationError } = jest.requireActual('../common/redis/resolve-redis-url');
+    const { RedisConfigurationError } = jest.requireActual<
+      typeof import('../common/redis/resolve-redis-url')
+    >('../common/redis/resolve-redis-url');
     throw new RedisConfigurationError('Redis not available in test');
   }),
   createRedisClient: jest.fn(() => {
-    const { RedisConfigurationError } = jest.requireActual('../common/redis/resolve-redis-url');
+    const { RedisConfigurationError } = jest.requireActual<
+      typeof import('../common/redis/resolve-redis-url')
+    >('../common/redis/resolve-redis-url');
     throw new RedisConfigurationError('Redis not available in test');
   }),
 }));
@@ -97,7 +101,7 @@ describe('GdprService', () => {
     message: ['findMany', 'updateMany'],
     chatMessage: ['findMany', 'updateMany'],
   });
-  (prismaMock as any).$transaction = jest.fn((arg: unknown, _opts?: unknown) => {
+  prismaMock.$transaction = jest.fn((arg: unknown, _opts?: unknown) => {
     if (typeof arg === 'function') {
       return (arg as (tx: unknown) => unknown)(prismaMock);
     }
@@ -180,7 +184,7 @@ describe('GdprService', () => {
 
       expect(result).toEqual(
         expect.objectContaining({
-          url: expect.stringContaining('/data-deletion/status/'),
+          url: expect.stringContaining('/data-deletion/status/') as unknown,
         }),
       );
       expect(typeof result.confirmation_code).toBe('string');
@@ -189,7 +193,7 @@ describe('GdprService', () => {
           data: expect.objectContaining({
             type: GdprType.DELETE,
             status: GdprStatus.VERIFYING,
-          }),
+          }) as unknown,
         }),
       );
     });
@@ -241,7 +245,7 @@ describe('GdprService', () => {
   });
 
   describe('processExport', () => {
-    const fs = jest.requireMock('node:fs');
+    const fs = jest.requireMock<typeof import('node:fs')>('node:fs');
 
     beforeEach(() => {
       jest.clearAllMocks();
@@ -253,7 +257,7 @@ describe('GdprService', () => {
       expect(prismaMock.gdprRequest.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'gdpr_1', workspaceId: 'ws_1' },
-          data: expect.objectContaining({ status: GdprStatus.PROCESSING }),
+          data: expect.objectContaining({ status: GdprStatus.PROCESSING }) as unknown,
         }),
       );
       expect(fs.writeFileSync).toHaveBeenCalled();
@@ -266,7 +270,7 @@ describe('GdprService', () => {
       expect(prismaMock.gdprRequest.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'gdpr_1', workspaceId: 'ws_1' },
-          data: expect.objectContaining({ status: GdprStatus.COMPLETE }),
+          data: expect.objectContaining({ status: GdprStatus.COMPLETE }) as unknown,
         }),
       );
     });
@@ -308,7 +312,7 @@ describe('GdprService', () => {
           where: expect.objectContaining({
             agentId: 'agent_1',
             workspaceId: 'ws_1',
-          }),
+          }) as unknown,
         }),
       );
       expect(prismaMock.chatMessage.findMany).toHaveBeenCalledWith(
@@ -316,7 +320,7 @@ describe('GdprService', () => {
           where: expect.objectContaining({
             userId: 'agent_1',
             workspaceId: 'ws_1',
-          }),
+          }) as unknown,
         }),
       );
       expect(fs.writeFileSync).toHaveBeenCalledTimes(5); // agent, conversations, messages, chat_messages, manifest

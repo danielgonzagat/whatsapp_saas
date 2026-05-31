@@ -75,7 +75,6 @@ export const EXPECTED_TOOL_ALPHABET = [
   'list_whatsapp_contacts',
   'list_whatsapp_chats',
   'get_whatsapp_messages',
-  'create_whatsapp_contact',
   'set_whatsapp_presence',
   'send_whatsapp_message',
 ];

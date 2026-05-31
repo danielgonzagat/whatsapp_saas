@@ -30,7 +30,7 @@ import { ToolPlannerService } from '../toolplanner/toolplanner.service';
       ['*'],
     );
     expect(result.isChat).toBe(false);
-    expect(result.classification?.capabilityId).toBe('create_product'); // Step 2: Resolve capability
+    expect(result.classification?.capabilityId).toBe('products.create'); // Step 2: Resolve capability
     const cap = registry.get(result.classification!.capabilityId!);
     expect(cap).toBeDefined(); // Step 3: ToolPlanner validates inputs
     const validation = planner.validateInputs(cap!, result.classification!.entities);
@@ -46,7 +46,7 @@ import { ToolPlannerService } from '../toolplanner/toolplanner.service';
       ['*'],
     );
     expect(result.isChat).toBe(false);
-    expect(result.classification?.capabilityId).toBe('generate_pix');
+    expect(result.classification?.capabilityId).toBe('sales.create_pix');
     expect(result.classification?.requiresConfirmation).toBe(true);
     const cap = registry.get(result.classification!.capabilityId!);
     expect(cap?.category).toBe('MUTATION_SENSITIVE');
@@ -61,8 +61,8 @@ import { ToolPlannerService } from '../toolplanner/toolplanner.service';
   it('classifies all capabilities from definitions', () => {
     const testMessages: Record<string, string[]> = {
       'products.create': ['cria um produto', 'criar novo produto agora'],
-      'generate_pix': ['emite um pix', 'gera um pix de R$100'],
-      'generate_boleto': ['gera um boleto', 'emitir boleto agora'],
+      generate_pix: ['emite um pix', 'gera um pix de R$100'],
+      generate_boleto: ['gera um boleto', 'emitir boleto agora'],
       'plans.create': ['cria um plano', 'criar novo plano mensal'],
       'checkouts.create': ['cria um checkout', 'criar novo checkout'],
       'coupons.create': ['cria cupom DESCONTO10', 'criar novo cupom'],
@@ -120,6 +120,41 @@ import { ToolPlannerService } from '../toolplanner/toolplanner.service';
     expect(receipt.actorId).toBe('user-test');
     expect(receipt.idempotencyKey).toBe('key-123');
   });
+  it('ToolPlanner keeps payment execution rail on success and failure receipts', () => {
+    const cap = registry.get('sales.create_pix')!;
+    const ctx = {
+      workspaceId: 'ws-test',
+      actorId: 'user-test',
+      source: 'dashboard-chat',
+      idempotencyKey: 'key-pix-rail',
+      requestId: 'req-pix-rail',
+    };
+
+    const successReceipt = planner.buildReceipt(
+      cap,
+      ctx,
+      { amount: 197 },
+      { orderId: 'order-1', pixCopiaECola: '000201pix', pixQrCode: 'qr-base64' },
+      Date.now() - 150,
+    );
+    const failureReceipt = planner.buildErrorReceipt(
+      cap,
+      ctx,
+      { amount: 197 },
+      'sales_create_pix_inputs_required',
+      Date.now() - 150,
+    );
+
+    expect(successReceipt.executionRail).toEqual({
+      provider: 'mercadopago',
+      paymentMethod: 'PIX',
+      providerMethod: 'pix',
+      providerService: 'MercadoPagoPixChargeService.create',
+      webhookPath: '/webhooks/mercadopago',
+      proofFields: ['saleId', 'externalPaymentId', 'pixCopiaECola', 'pixQrCode'],
+    });
+    expect(failureReceipt.executionRail).toEqual(successReceipt.executionRail);
+  });
   it('ToolPlanner verbalizes receipt in PT-BR', () => {
     const cap = registry.get('products.create')!;
     const ctx = {
@@ -141,5 +176,33 @@ import { ToolPlannerService } from '../toolplanner/toolplanner.service';
     expect(verbalized).toContain('Criar produto');
     expect(verbalized).toContain('prod-abc');
     expect(verbalized).toContain('Duração:');
+  });
+
+  it('ToolPlanner verbalizes canonical PIX proof fields', () => {
+    const cap = registry.get('sales.create_pix')!;
+    const ctx = {
+      workspaceId: 'ws-test',
+      actorId: 'user-test',
+      source: 'chat',
+      idempotencyKey: 'key-pix',
+      requestId: 'req-pix',
+    };
+    const receipt = planner.buildReceipt(
+      cap,
+      ctx,
+      { amount: 197 },
+      {
+        orderId: 'order-1',
+        pixCopiaECola: '000201pix',
+        pixQrCode: 'qr-base64',
+      },
+      Date.now() - 100,
+    );
+
+    const verbalized = planner.verbalizeReceipt(receipt);
+
+    expect(verbalized).toContain('Venda: order-1');
+    expect(verbalized).toContain('PIX copia e cola: 000201pix');
+    expect(verbalized).toContain('QR Code PIX: qr-base64');
   });
 });

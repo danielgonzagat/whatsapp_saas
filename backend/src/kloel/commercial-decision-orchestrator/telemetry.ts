@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
-import { BrainEventSpineService } from '../brain-event-spine.service';
+import { MindEventSpine } from '../mind/coordination/mind-event-spine.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RuntimeConversationTracerService } from '../runtime-conversation-tracer.service';
 import type { InboundOrchestrationInput } from './types';
@@ -223,7 +223,7 @@ export function traceFullOutcomePipeline(
 }
 
 export async function recordIdentityResolved(
-  events: BrainEventSpineService,
+  events: MindEventSpine,
   workspaceId: string,
   effectiveSubject: string,
   inboundKey: string,
@@ -233,7 +233,7 @@ export async function recordIdentityResolved(
   await events.recordCommercial({
     workspaceId,
     subject: effectiveSubject,
-    eventType: 'identity.contact.resolved',
+    eventType: 'cognition.identity.contact_resolved',
     occurredAt: new Date(),
     idempotencyKey: `identity-resolved:${inboundKey}`,
     payload: {
@@ -245,7 +245,7 @@ export async function recordIdentityResolved(
 }
 
 export async function recordCaseMemoryConsulted(
-  events: BrainEventSpineService,
+  events: MindEventSpine,
   workspaceId: string,
   subject: string,
   inboundKey: string,
@@ -256,6 +256,10 @@ export async function recordCaseMemoryConsulted(
   await events.recordCommercial({
     workspaceId,
     subject,
+    // NOTE: canonical 'cognition.case_memory.consulted' is registered in
+    // mind-event-taxonomy + accepted by mind-observability (dual-read), but the
+    // emit stays legacy until the coordinated event-taxonomy wave flips this +
+    // the 9 consumer specs atomically. Deferred to avoid breaking non-owned specs.
     eventType: 'case_memory.consulted',
     occurredAt: new Date(),
     idempotencyKey: `case-memory:${inboundKey}`,
@@ -264,7 +268,7 @@ export async function recordCaseMemoryConsulted(
 }
 
 export async function recordPredecidedActionsBuilt(
-  events: BrainEventSpineService,
+  events: MindEventSpine,
   workspaceId: string,
   subject: string,
   inboundKey: string,
@@ -281,6 +285,8 @@ export async function recordPredecidedActionsBuilt(
   await events.recordCommercial({
     workspaceId,
     subject,
+    // NOTE: canonical 'cognition.predecided.actions_built' registered in taxonomy;
+    // emit stays legacy until the coordinated event-taxonomy wave (see above).
     eventType: 'predecided_actions.built',
     occurredAt: new Date(),
     idempotencyKey: `predecided:${inboundKey}`,
@@ -302,7 +308,7 @@ export async function recordPredecidedActionsBuilt(
 
 export async function recordShadow(
   prisma: PrismaService,
-  events: BrainEventSpineService,
+  events: MindEventSpine,
   workspaceId: string,
   channel: string,
   inboundKey: string,
@@ -331,7 +337,7 @@ export async function recordShadow(
     await events.recordCommercial({
       workspaceId,
       subject: `channel:${channel}`,
-      eventType: 'pipeline.shadow_recorded',
+      eventType: 'cognition.pipeline.shadow_recorded',
       occurredAt: new Date(),
       idempotencyKey: `pipeline-shadow:${workspaceId}:${inboundKey}`,
       payload: {
@@ -347,7 +353,7 @@ export async function recordShadow(
 
 export async function handleOrchestrationFallback(
   prisma: PrismaService,
-  events: BrainEventSpineService,
+  events: MindEventSpine,
   workspaceId: string,
   channel: string,
   pipelineMode: string,
@@ -381,7 +387,7 @@ export async function handleOrchestrationFallback(
       await events.recordCommercial({
         workspaceId,
         subject: `workspace:${workspaceId}`,
-        eventType: 'pipeline.auto_fallback',
+        eventType: 'cognition.pipeline.auto_fallback',
         occurredAt: new Date(),
         idempotencyKey: `pipeline-auto-fallback:${workspaceId}:${Date.now()}`,
         payload: {

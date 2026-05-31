@@ -1,10 +1,10 @@
 import * as crypto from 'node:crypto';
-jest.mock('../whatsapp/inbound-processor.service', () => ({
+jest.mock('../marketing/channels/whatsapp/inbound-processor.service', () => ({
   InboundProcessorService: jest.fn().mockImplementation(() => ({
     process: jest.fn().mockResolvedValue(undefined),
   })),
 }));
-jest.mock('../whatsapp/whatsapp.service', () => ({
+jest.mock('../marketing/channels/whatsapp/whatsapp.service', () => ({
   WhatsappService: jest.fn().mockImplementation(() => ({
     sendMessage: jest.fn().mockResolvedValue(undefined),
   })),
@@ -336,29 +336,37 @@ describe('MetaWebhookController — replay safety', () => {
   });
 
   it('returns "ok" on Redis dedup (replay safety)', async () => {
+    // A valid signature is required now that the controller fails closed; this
+    // test exercises the Redis dedup path, not signature rejection.
+    process.env.META_APP_SECRET = 'meta-secret';
     redis.set.mockResolvedValueOnce(null);
 
     const body = { object: 'whatsapp_business_account', entry: [] };
-    const result = await controller.handleWebhook(body, '', undefined, {
+    const signature = `sha256=${createTestSignature(body, 'meta-secret')}`;
+    const result = await controller.handleWebhook(body, signature, undefined, {
       rawBody: Buffer.from(JSON.stringify(body)),
     } as never);
 
     expect(result).toBe('ok');
     expect(inboundProcessor.process).not.toHaveBeenCalled();
+    delete process.env.META_APP_SECRET;
   });
 
   it('returns "ok" on WebhookEvent P2002 duplicate', async () => {
+    process.env.META_APP_SECRET = 'meta-secret';
     redis.set.mockResolvedValueOnce('OK');
     const p2002Err = Object.assign(new Error('Unique constraint'), { code: 'P2002' });
     webhooksService.logWebhookEvent.mockRejectedValueOnce(p2002Err);
 
     const body = { object: 'whatsapp_business_account', entry: [] };
-    const result = await controller.handleWebhook(body, '', undefined, {
+    const signature = `sha256=${createTestSignature(body, 'meta-secret')}`;
+    const result = await controller.handleWebhook(body, signature, undefined, {
       rawBody: Buffer.from(JSON.stringify(body)),
     } as never);
 
     expect(result).toBe('ok');
     expect(inboundProcessor.process).not.toHaveBeenCalled();
+    delete process.env.META_APP_SECRET;
   });
 
   it('throws ForbiddenException on invalid signature', async () => {

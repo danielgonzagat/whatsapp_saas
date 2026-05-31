@@ -71,34 +71,42 @@ export function BrainSettingsSection() {
     setKnowledgeSourceCount(count);
   }, []);
 
-  const hydrateProfile = useCallback(async () => {
+  // Promise-chain (non-async) so no setState runs synchronously in the effect
+  // tick (react-hooks/set-state-in-effect).
+  const hydrateProfile = useCallback(() => {
     if (!workspaceId) {
-      setCompany(normalizeCompanyProfile(null));
-      setPersonas([]);
-      setVoiceTone(normalizeVoiceToneProfile(null));
-      setRules([]);
-      setFaqs([]);
-      return;
+      return Promise.resolve().then(() => {
+        setCompany(normalizeCompanyProfile(null));
+        setPersonas([]);
+        setVoiceTone(normalizeVoiceToneProfile(null));
+        setRules([]);
+        setFaqs([]);
+      });
     }
-    setProfileLoading(true);
-    setProfileError('');
-    try {
-      const response = await workspaceApi.getMe();
-      const ws = response.data as Record<string, unknown> | undefined;
-      const provSettings = ws?.providerSettings as Record<string, unknown> | undefined;
-      const profile = (provSettings?.kloelProfile || {}) as Record<string, unknown>;
-      setCompany(normalizeCompanyProfile(profile.company));
-      setPersonas(Array.isArray(profile.personas) ? profile.personas.filter((v: unknown) => typeof v === 'string') : []);
-      setVoiceTone(normalizeVoiceToneProfile(profile.voiceTone));
-      setRules(Array.isArray(profile.rules) ? profile.rules.filter((v: unknown) => typeof v === 'string') : []);
-      setFaqs(normalizeFaqs(profile.faqs));
-      setOpeningMessage(normalizeOpeningMessage(profile.openingMessage));
-      setEmergencyMode(normalizeEmergencyMode(profile.emergencyMode));
-    } catch (error: unknown) {
-      setProfileError(error instanceof Error ? error.message : 'Nao foi possivel carregar o perfil.');
-    } finally {
-      setProfileLoading(false);
-    }
+    return Promise.resolve()
+      .then(() => {
+        setProfileLoading(true);
+        setProfileError('');
+        return workspaceApi.getMe();
+      })
+      .then((response) => {
+        const ws = response.data as Record<string, unknown> | undefined;
+        const provSettings = ws?.providerSettings as Record<string, unknown> | undefined;
+        const profile = (provSettings?.kloelProfile || {}) as Record<string, unknown>;
+        setCompany(normalizeCompanyProfile(profile.company));
+        setPersonas(Array.isArray(profile.personas) ? profile.personas.filter((v: unknown) => typeof v === 'string') : []);
+        setVoiceTone(normalizeVoiceToneProfile(profile.voiceTone));
+        setRules(Array.isArray(profile.rules) ? profile.rules.filter((v: unknown) => typeof v === 'string') : []);
+        setFaqs(normalizeFaqs(profile.faqs));
+        setOpeningMessage(normalizeOpeningMessage(profile.openingMessage));
+        setEmergencyMode(normalizeEmergencyMode(profile.emergencyMode));
+      })
+      .catch((error: unknown) => {
+        setProfileError(error instanceof Error ? error.message : 'Nao foi possivel carregar o perfil.');
+      })
+      .finally(() => {
+        setProfileLoading(false);
+      });
   }, [workspaceId]);
 
   const saveKloelProfile = useCallback(

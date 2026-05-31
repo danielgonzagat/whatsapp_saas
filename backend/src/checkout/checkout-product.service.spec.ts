@@ -8,7 +8,7 @@ import { CheckoutProductService } from './checkout-product.service';
 
 jest.mock('./checkout-plan-link.manager', () => ({
   CheckoutPlanLinkManager: jest.fn().mockImplementation(() => ({
-    ensurePlansReferenceCodes: jest.fn().mockImplementation((nodes) => nodes),
+    ensurePlansReferenceCodes: jest.fn().mockImplementation((nodes: unknown) => nodes),
     generatePublicCheckoutCode: jest.fn().mockResolvedValue('REF-1'),
   })),
 }));
@@ -71,13 +71,13 @@ describe('CheckoutProductService', () => {
     it('writes with workspaceId and default price=0', async () => {
       const result = await service.createProduct('ws-1', { name: 'X' });
       expect((result as { workspaceId: string }).workspaceId).toBe('ws-1');
-      const data = prisma.product.create.mock.calls[0][0].data;
+      const data = (prisma.product.create.mock.calls[0] as [Prisma.ProductCreateArgs])[0].data;
       expect(data.price).toBe(0);
     });
 
     it('respects explicit price', async () => {
       await service.createProduct('ws-1', { name: 'X', price: 1234 });
-      const data = prisma.product.create.mock.calls[0][0].data;
+      const data = (prisma.product.create.mock.calls[0] as [Prisma.ProductCreateArgs])[0].data;
       expect(data.price).toBe(1234);
     });
   });
@@ -112,7 +112,9 @@ describe('CheckoutProductService', () => {
   describe('listProducts', () => {
     it('filters by workspace and orders by createdAt desc, take=200', async () => {
       await service.listProducts('ws-tenant-A');
-      const arg = prisma.product.findMany.mock.calls[0][0];
+      const arg = (
+        prisma.product.findMany.mock.calls[0] as unknown[]
+      )[0] as Prisma.ProductFindManyArgs;
       expect(arg.where).toEqual({ workspaceId: 'ws-tenant-A' });
       expect(arg.orderBy).toEqual({ createdAt: 'desc' });
       expect(arg.take).toBe(200);

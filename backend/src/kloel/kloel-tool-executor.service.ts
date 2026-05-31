@@ -1,20 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { PlanLimitsService } from '../billing/plan-limits.service';
-import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
-import { SmartPaymentService } from './smart-payment.service';
+import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { KloelToolExecutorBillingService } from './kloel-tool-executor-billing.service';
 import { KloelToolExecutorCrmService } from './kloel-tool-executor-crm.service';
 import { KloelToolExecutorWhatsAppService } from './kloel-tool-executor-whatsapp.service';
-import {
-  toolSaveProduct,
-  toolListProducts,
-  toolDeleteProduct,
-  toolSetBrandVoice,
-  toolRememberUserInfo,
-  toolCreateFlow,
-} from './kloel-tool-executor.helpers';
+import { toolListProducts } from './kloel-tool-executor.helpers';
 export type * from './kloel-tool-executor.types';
 import type {
   ToolResult,
@@ -27,14 +19,11 @@ import type {
   ToolCreateFlowArgs,
   ToolDashboardSummaryArgs,
   ToolSendWhatsAppMessageArgs,
-  ToolCreateWhatsAppContactArgs,
   ToolCreateCampaignArgs,
   ToolSendAudioArgs,
   ToolSendDocumentArgs,
   ToolChangePlanArgs,
 } from './kloel-tool-executor.types';
-
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
 
 import type { UnknownRecord } from '../common/types';
 
@@ -45,11 +34,11 @@ export class KloelToolExecutorService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly smartPaymentService: SmartPaymentService,
     private readonly planLimits: PlanLimitsService,
     private readonly whatsappTools: KloelToolExecutorWhatsAppService,
     private readonly billingTools: KloelToolExecutorBillingService,
     private readonly crmTools: KloelToolExecutorCrmService,
+    @Optional() private readonly toolDispatcher?: KloelToolDispatcherService,
   ) {}
 
   async executeTool(
@@ -65,15 +54,19 @@ export class KloelToolExecutorService {
     try {
       switch (toolName) {
         case 'save_product':
-          return await this.toolSaveProduct(workspaceId, args as ToolSaveProductArgs);
+          return await this.toolSaveProduct(workspaceId, args as ToolSaveProductArgs, userId);
         case 'list_products':
           return await this.toolListProducts(workspaceId);
         case 'delete_product':
-          return await this.toolDeleteProduct(workspaceId, args);
+          return await this.toolDeleteProduct(workspaceId, args, userId);
         case 'toggle_autopilot':
-          return await this.toolToggleAutopilot(workspaceId, args as ToolToggleAutopilotArgs);
+          return await this.toolToggleAutopilot(
+            workspaceId,
+            args as ToolToggleAutopilotArgs,
+            userId,
+          );
         case 'set_brand_voice':
-          return await this.toolSetBrandVoice(workspaceId, args as ToolSetBrandVoiceArgs);
+          return await this.toolSetBrandVoice(workspaceId, args as ToolSetBrandVoiceArgs, userId);
         case 'remember_user_info':
           return await this.toolRememberUserInfo(
             workspaceId,
@@ -83,7 +76,7 @@ export class KloelToolExecutorService {
         case 'search_web':
           return await this.toolSearchWeb(workspaceId, args as ToolSearchWebArgs, searchWebFn);
         case 'create_flow':
-          return await this.toolCreateFlow(workspaceId, args as ToolCreateFlowArgs);
+          return await this.toolCreateFlow(workspaceId, args as ToolCreateFlowArgs, userId);
         case 'list_flows':
           return await this.crmTools.toolListFlows(workspaceId);
         case 'get_dashboard_summary':
@@ -100,20 +93,23 @@ export class KloelToolExecutorService {
             workspaceId,
             args as ToolCreateCampaignArgs,
           );
-        case 'list_leads':
-          return await this.crmTools.toolListLeads(workspaceId, args);
         case 'get_lead_details':
           return await this.crmTools.toolGetLeadDetails(workspaceId, args);
-        case 'create_payment_link': {
-          const paymentResult = await this.smartPaymentService.createSmartPayment({
+        case 'create_payment_link':
+          if (!this.toolDispatcher) {
+            return {
+              success: false,
+              error: 'payment_link_dispatcher_unavailable',
+              message:
+                'create_payment_link exige o dispatcher canonico para gerar receipt e prova.',
+            };
+          }
+          return await this.toolDispatcher.executeTool(
             workspaceId,
-            amount: Number(args.amount) || 0,
-            productName: typeof args.description === 'string' ? args.description : '',
-            customerName: typeof args.customerName === 'string' ? args.customerName : 'Cliente',
-            phone: '',
-          });
-          return { success: true, ...paymentResult };
-        }
+            'create_payment_link',
+            args,
+            userId,
+          );
         case 'connect_whatsapp':
           return await this.whatsappTools.toolConnectWhatsapp(workspaceId);
         case 'get_whatsapp_status':
@@ -125,11 +121,6 @@ export class KloelToolExecutorService {
           );
         case 'list_whatsapp_contacts':
           return await this.whatsappTools.toolListWhatsAppContacts(workspaceId, args);
-        case 'create_whatsapp_contact':
-          return await this.whatsappTools.toolCreateWhatsAppContact(
-            workspaceId,
-            args as ToolCreateWhatsAppContactArgs,
-          );
         case 'list_whatsapp_chats':
           return await this.whatsappTools.toolListWhatsAppChats(workspaceId, args);
         case 'get_whatsapp_messages':
@@ -176,8 +167,17 @@ export class KloelToolExecutorService {
   private async toolSaveProduct(
     workspaceId: string,
     args: ToolSaveProductArgs,
+    userId?: string,
   ): Promise<ToolResult> {
-    return toolSaveProduct(this.prisma, workspaceId, args);
+    if (!this.toolDispatcher) {
+      return {
+        success: false,
+        error: 'canonical_dispatcher_required',
+        message: 'save_product exige o dispatcher canonico para gerar receipt e prova.',
+      };
+    }
+
+    return this.toolDispatcher.executeTool(workspaceId, 'products.create', args, userId);
   }
 
   private async toolListProducts(workspaceId: string): Promise<ToolResult> {
@@ -187,58 +187,49 @@ export class KloelToolExecutorService {
   private async toolDeleteProduct(
     workspaceId: string,
     args: ToolDeleteProductArgs,
+    userId?: string,
   ): Promise<ToolResult> {
-    return toolDeleteProduct(this.prisma, workspaceId, args);
+    if (!this.toolDispatcher) {
+      return {
+        success: false,
+        error: 'canonical_dispatcher_required',
+        message: 'delete_product exige o dispatcher canonico para gerar receipt e prova.',
+      };
+    }
+
+    return this.toolDispatcher.executeTool(workspaceId, 'delete_product', args, userId);
   }
 
   private async toolToggleAutopilot(
     workspaceId: string,
     args: ToolToggleAutopilotArgs,
+    userId?: string,
   ): Promise<ToolResult> {
-    const settingsSnapshot = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
-    });
-    const currentSettings = asProviderSettings(settingsSnapshot?.providerSettings);
-    if (args.enabled && currentSettings.billingSuspended === true) {
+    if (!this.toolDispatcher) {
       return {
         success: false,
-        enabled: false,
-        error: 'Autopilot suspenso: regularize cobrança para ativar.',
+        error: 'canonical_dispatcher_required',
+        message: 'toggle_autopilot exige o dispatcher canonico para gerar receipt e prova.',
       };
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      const workspace = await tx.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { providerSettings: true },
-      });
-      const settings = asProviderSettings(workspace?.providerSettings);
-      const newSettings = {
-        ...settings,
-        autopilot: {
-          ...(settings.autopilot || {}),
-          enabled: args.enabled,
-        },
-        autopilotEnabled: args.enabled,
-      };
-      await tx.workspace.update({
-        where: { id: workspaceId },
-        data: { providerSettings: toPrismaJsonValue(newSettings) },
-      });
-      return {
-        success: true,
-        enabled: args.enabled,
-        message: args.enabled ? 'Autopilot ativado.' : 'Autopilot desativado.',
-      };
-    });
+    return this.toolDispatcher.executeTool(workspaceId, 'toggle_autopilot', args, userId);
   }
 
   private async toolSetBrandVoice(
     workspaceId: string,
     args: ToolSetBrandVoiceArgs,
+    userId?: string,
   ): Promise<ToolResult> {
-    return toolSetBrandVoice(this.prisma, workspaceId, args);
+    if (!this.toolDispatcher) {
+      return {
+        success: false,
+        error: 'canonical_dispatcher_required',
+        message: 'set_brand_voice exige o dispatcher canonico para gerar receipt e prova.',
+      };
+    }
+
+    return this.toolDispatcher.executeTool(workspaceId, 'set_brand_voice', args, userId);
   }
 
   private async toolRememberUserInfo(
@@ -246,7 +237,15 @@ export class KloelToolExecutorService {
     args: ToolRememberUserInfoArgs,
     userId?: string,
   ): Promise<ToolResult> {
-    return toolRememberUserInfo(this.prisma, workspaceId, args, userId);
+    if (!this.toolDispatcher) {
+      return {
+        success: false,
+        error: 'canonical_dispatcher_required',
+        message: 'remember_user_info exige o dispatcher canonico para gerar receipt e prova.',
+      };
+    }
+
+    return this.toolDispatcher.executeTool(workspaceId, 'remember_user_info', args, userId);
   }
 
   private async toolSearchWeb(
@@ -277,7 +276,19 @@ export class KloelToolExecutorService {
     }
   }
 
-  private async toolCreateFlow(workspaceId: string, args: ToolCreateFlowArgs): Promise<ToolResult> {
-    return toolCreateFlow(this.prisma, workspaceId, args);
+  private async toolCreateFlow(
+    workspaceId: string,
+    args: ToolCreateFlowArgs,
+    userId?: string,
+  ): Promise<ToolResult> {
+    if (!this.toolDispatcher) {
+      return {
+        success: false,
+        error: 'canonical_dispatcher_required',
+        message: 'create_flow exige o dispatcher canonico para gerar receipt e prova.',
+      };
+    }
+
+    return this.toolDispatcher.executeTool(workspaceId, 'create_flow', args, userId);
   }
 }

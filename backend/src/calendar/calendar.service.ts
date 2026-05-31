@@ -1,10 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   asProviderSettings,
   type ProviderCalendarSettings,
-} from '../whatsapp/provider-settings.types';
+} from '../marketing/channels/whatsapp/provider-settings.types';
 import { CalendarGoogleHelper } from './calendar.google.helpers';
 
 interface AppointmentRecord {
@@ -146,17 +146,25 @@ export class CalendarService {
       try {
         const externalEvent = await this.createGoogleCalendarEvent(config, event);
         if (externalEvent) {
-          // Salvar referência localmente
-          await this.saveInternalEvent(workspaceId, {
-            summary: event.summary,
-            ...(event.description !== undefined ? { description: event.description } : {}),
-            startTime: event.startTime,
-            endTime: event.endTime,
-            ...(event.attendees !== undefined ? { attendees: event.attendees } : {}),
-            ...(event.location !== undefined ? { location: event.location } : {}),
-            ...(event.meetingLink !== undefined ? { meetingLink: event.meetingLink } : {}),
-            ...(externalEvent.id !== undefined ? { id: externalEvent.id } : {}),
-          });
+          // O evento externo já foi criado de verdade no Google. A referência
+          // local é melhor-esforço: se a persistência interna estiver
+          // indisponível, ainda devolvemos o evento externo real (sem fabricar).
+          try {
+            await this.saveInternalEvent(workspaceId, {
+              summary: event.summary,
+              ...(event.description !== undefined ? { description: event.description } : {}),
+              startTime: event.startTime,
+              endTime: event.endTime,
+              ...(event.attendees !== undefined ? { attendees: event.attendees } : {}),
+              ...(event.location !== undefined ? { location: event.location } : {}),
+              ...(event.meetingLink !== undefined ? { meetingLink: event.meetingLink } : {}),
+              ...(externalEvent.id !== undefined ? { id: externalEvent.id } : {}),
+            });
+          } catch (refError: unknown) {
+            this.logger.warn(
+              `[Calendar] Evento Google criado, mas referência local não persistida: ${refError instanceof Error ? refError.message : 'unknown_error'}`,
+            );
+          }
           return externalEvent;
         }
       } catch (error: unknown) {
@@ -177,13 +185,18 @@ export class CalendarService {
     workspaceId: string,
     event: CalendarEvent,
   ): Promise<CalendarEvent> {
-    // Usar tabela Appointment se existir, ou criar entrada genérica
-    try {
-      const appointmentModel = this.getAppointmentModel();
-      if (!appointmentModel?.create) {
-        throw new Error('appointment_model_unavailable');
-      }
+    // Persistir na tabela Appointment quando o modelo estiver disponível.
+    const appointmentModel = this.getAppointmentModel();
+    if (!appointmentModel?.create) {
+      // Sem modelo de persistência: estado honesto de setup-required.
+      // Nunca devolver um id local fabricado como se fosse um evento salvo.
+      this.logger.warn(
+        '[Calendar] Persistência interna indisponível: modelo Appointment ausente no schema',
+      );
+      throw new ServiceUnavailableException('internal_calendar_persistence_unavailable');
+    }
 
+    try {
       const appointment = await appointmentModel.create({
         data: {
           workspaceId,
@@ -224,11 +237,9 @@ export class CalendarService {
         `[Calendar] Erro ao salvar evento interno: ${error instanceof Error ? error.message : 'unknown_error'}`,
       );
 
-      // Se tabela não existe, retornar evento simulado
-      return {
-        id: `local_${Date.now()}`,
-        ...event,
-      };
+      // Falha real de persistência: nunca devolver um evento com id fabricado.
+      // Propagar estado honesto para o chamador saber que nada foi salvo.
+      throw new ServiceUnavailableException('internal_calendar_persistence_failed');
     }
   }
 

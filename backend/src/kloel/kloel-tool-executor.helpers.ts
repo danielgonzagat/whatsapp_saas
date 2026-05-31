@@ -99,11 +99,13 @@ export async function toolSetBrandVoice(
   prisma: PrismaService,
   workspaceId: string,
   args: ToolSetBrandVoiceArgs,
+  /** Canonical Brain → Mind memory delegate; falls back to prisma.kloelMemory when absent. */
+  mindMemory?: PrismaService['kloelMemory'],
 ): Promise<ToolResult> {
   const value = { style: args.tone, personality: args.personality || '' };
   const content = `Tom: ${args.tone}. ${args.personality || ''}`.trim();
   const metadata = { tone: args.tone, personality: args.personality || '' };
-  await prisma.kloelMemory.upsert({
+  await (mindMemory ?? prisma.kloelMemory).upsert({
     where: { workspaceId_key: { workspaceId, key: 'brandVoice' } },
     update: { value, category: 'preferences', type: 'persona', content, metadata },
     create: {
@@ -125,6 +127,8 @@ export async function toolRememberUserInfo(
   workspaceId: string,
   args: { key?: unknown; value?: unknown },
   userId?: string,
+  /** Canonical Brain → Mind memory delegate; falls back to prisma.kloelMemory when absent. */
+  mindMemory?: PrismaService['kloelMemory'],
 ): Promise<ToolResult> {
   const normalizedKey = safeStr(args?.key)
     .trim()
@@ -136,7 +140,7 @@ export async function toolRememberUserInfo(
     return { success: false, error: 'missing_user_memory_payload' };
   }
   const profileKey = `user_profile:${userId || 'workspace_owner'}`;
-  const existing = await prisma.kloelMemory.findUnique({
+  const existing = await (mindMemory ?? prisma.kloelMemory).findUnique({
     where: { workspaceId_key: { workspaceId, key: profileKey } },
   });
   const currentValue =
@@ -153,7 +157,7 @@ export async function toolRememberUserInfo(
     .filter(([k]) => !['updatedAt', 'userId'].includes(k))
     .map(([k, v]) => k + ': ' + safeStr(v))
     .join('\n');
-  await prisma.kloelMemory.upsert({
+  await (mindMemory ?? prisma.kloelMemory).upsert({
     where: { workspaceId_key: { workspaceId, key: profileKey } },
     update: {
       value: nextValue,

@@ -4,7 +4,14 @@ import { Request, Response } from 'express';
 import * as Sentry from '@sentry/node';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { AuthService } from './auth.service';
-import { getJwtCookieMaxAgeMs } from './jwt-config';
+import {
+  hasReferralCode,
+  ipSpread,
+  isConflictStatus,
+  maskEmailForSentry,
+  requireAgentId,
+  setAuthCookie,
+} from './auth.controller.helpers';
 import { AppleOAuthDto } from './dto/apple-oauth.dto';
 import { CheckEmailDto } from './dto/check-email.dto';
 import { FacebookOAuthDto } from './dto/facebook-oauth.dto';
@@ -67,29 +74,21 @@ export class AuthController {
     try {
       const result = await this.auth.register({
         ...body,
-        ...(req.ip !== undefined ? { ip: req.ip } : {}),
+        ...ipSpread(req.ip),
       });
       // Set httpOnly cookie for enhanced security (dual mode: cookie + body)
-      if (result?.access_token) {
-        res.cookie('kloel_token', result.access_token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: getJwtCookieMaxAgeMs(),
-          path: '/',
-        });
-      }
+      setAuthCookie(res, result?.access_token);
       return result;
     } catch (err: unknown) {
       Sentry.captureException(err, {
         tags: { type: 'auth_alert', operation: 'register' },
         extra: {
-          email: (body.email ?? '').substring(0, 3) + '***',
-          hasReferral: Boolean((body as never as Record<string, unknown>).referralCode),
+          email: maskEmailForSentry(body.email),
+          hasReferral: hasReferralCode(body),
         },
         level: 'error',
       });
-      if ((err as { status?: number } | null)?.status === 409) {
+      if (isConflictStatus(err)) {
         throw new HttpException({ error: 'Email já em uso' }, 409);
       }
       throw err;
@@ -110,7 +109,7 @@ export class AuthController {
   ) {
     const result = await this.auth.login({
       ...body,
-      ...(req.ip !== undefined ? { ip: req.ip } : {}),
+      ...ipSpread(req.ip),
     });
     if (result?.access_token) {
       Sentry.addBreadcrumb({
@@ -118,13 +117,7 @@ export class AuthController {
         category: 'auth',
         level: 'info',
       });
-      res.cookie('kloel_token', result.access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: getJwtCookieMaxAgeMs(),
-        path: '/',
-      });
+      setAuthCookie(res, result.access_token);
     }
     return result;
   }
@@ -155,7 +148,7 @@ export class AuthController {
   async oauthLogin(@Req() req: Request, @Body() body: Record<string, unknown>) {
     return this.auth.oauthLogin({
       ...body,
-      ...(req.ip !== undefined ? { ip: req.ip } : {}),
+      ...ipSpread(req.ip),
     });
   }
 
@@ -172,7 +165,7 @@ export class AuthController {
   async googleOAuthLogin(@Req() req: Request, @Body() body: GoogleOAuthDto) {
     return this.auth.loginWithGoogleCredential({
       credential: body.credential,
-      ...(req.ip !== undefined ? { ip: req.ip } : {}),
+      ...ipSpread(req.ip),
     });
   }
 
@@ -187,7 +180,7 @@ export class AuthController {
     return this.auth.loginWithFacebookAccessToken({
       accessToken: body.accessToken,
       ...(body.userId !== undefined ? { userId: body.userId } : {}),
-      ...(req.ip !== undefined ? { ip: req.ip } : {}),
+      ...ipSpread(req.ip),
     });
   }
 
@@ -212,7 +205,7 @@ export class AuthController {
         : {}),
       ...(body.redirectUri !== undefined ? { redirectUri: body.redirectUri } : {}),
       ...(body.user !== undefined ? { user: body.user } : {}),
-      ...(req.ip !== undefined ? { ip: req.ip } : {}),
+      ...ipSpread(req.ip),
     });
   }
 
@@ -230,14 +223,14 @@ export class AuthController {
         ...(body.openId !== undefined ? { openId: body.openId } : {}),
         ...(body.refreshToken !== undefined ? { refreshToken: body.refreshToken } : {}),
         ...(body.expiresInSeconds !== undefined ? { expiresInSeconds: body.expiresInSeconds } : {}),
-        ...(req.ip !== undefined ? { ip: req.ip } : {}),
+        ...ipSpread(req.ip),
       });
     }
 
     return this.auth.loginWithTikTokAuthorizationCode({
       code: body.code || '',
       ...(body.redirectUri !== undefined ? { redirectUri: body.redirectUri } : {}),
-      ...(req.ip !== undefined ? { ip: req.ip } : {}),
+      ...ipSpread(req.ip),
     });
   }
 
@@ -251,7 +244,7 @@ export class AuthController {
     return this.auth.requestMagicLink({
       email: body.email,
       ...(body.redirectTo !== undefined ? { redirectTo: body.redirectTo } : {}),
-      ...(req.ip !== undefined ? { ip: req.ip } : {}),
+      ...ipSpread(req.ip),
     });
   }
 
@@ -370,10 +363,7 @@ export class AuthController {
   @InternalEndpoint('auth verification email trigger')
   @Post('send-verification')
   async sendVerificationEmail(@Req() req: AuthenticatedRequest) {
-    const agentId = req.user?.sub;
-    if (!agentId) {
-      throw new Error('Usuário não autenticado');
-    }
+    const agentId = requireAgentId(req);
     return this.auth.sendVerificationEmail(agentId);
   }
 
@@ -382,10 +372,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Logged out' })
   @Post('logout')
   async logout(@Req() req: AuthenticatedRequest) {
-    const agentId = req.user?.sub;
-    if (!agentId) {
-      throw new Error('Usuário não autenticado');
-    }
+    const agentId = requireAgentId(req);
     return this.auth.logout(agentId, req.user?.jti, req.user?.exp);
   }
 
@@ -394,10 +381,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'User profile' })
   @Get('me')
   getMe(@Req() req: AuthenticatedRequest) {
-    const agentId = req.user?.sub;
-    if (!agentId) {
-      throw new Error('Usuário não autenticado');
-    }
+    const agentId = requireAgentId(req);
     return this.auth.getMe(agentId);
   }
 
@@ -406,10 +390,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Onboarding marked complete' })
   @Put('me/onboarding-complete')
   async completeOnboarding(@Req() req: AuthenticatedRequest) {
-    const agentId = req.user?.sub;
-    if (!agentId) {
-      throw new Error('Usuário não autenticado');
-    }
+    const agentId = requireAgentId(req);
     return this.auth.completeOnboarding(agentId);
   }
 }

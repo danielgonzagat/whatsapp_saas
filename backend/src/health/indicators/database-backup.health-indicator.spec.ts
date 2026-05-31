@@ -76,7 +76,7 @@ describe('DatabaseBackupHealthIndicator', () => {
 
     await expect(indicator.isHealthy('backup')).rejects.toThrow(HealthCheckError);
     await expect(indicator.isHealthy('backup')).rejects.toMatchObject({
-      message: expect.stringMatching(/exceeds RPO window/),
+      message: expect.stringMatching(/exceeds RPO window/) as unknown,
     });
   });
 
@@ -107,7 +107,7 @@ describe('DatabaseBackupHealthIndicator', () => {
 
     await expect(indicator.isHealthy('backup')).rejects.toThrow(HealthCheckError);
     await expect(indicator.isHealthy('backup')).rejects.toMatchObject({
-      message: expect.stringMatching(/exceeds RPO window 300min/),
+      message: expect.stringMatching(/exceeds RPO window 300min/) as unknown,
     });
   });
 

@@ -132,16 +132,16 @@ export class MetaConversionsApiService {
     pixelId: string,
     event: CapiEventData,
   ): Promise<{ success: boolean; eventId?: string; error?: string }> {
-    const connection = await this.prisma.metaConnection.findFirst({
+    const channelSession = await this.prisma.metaConnection.findFirst({
       where: { workspaceId },
       select: { accessToken: true },
     });
 
-    if (!connection?.accessToken) {
+    if (!channelSession?.accessToken) {
       return { success: false, error: 'no_meta_connection' };
     }
 
-    const accessToken = decryptMetaToken(connection.accessToken) || connection.accessToken;
+    const accessToken = decryptMetaToken(channelSession.accessToken) || channelSession.accessToken;
 
     const eventId = event.eventId || crypto.randomUUID();
     const eventTime = event.eventTime || Math.floor(Date.now() / 1000);

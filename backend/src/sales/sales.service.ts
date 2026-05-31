@@ -1,56 +1,64 @@
-import { Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  Optional,
+  ServiceUnavailableException,
+} from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { AuditService } from '../audit/audit.service';
+import { StripeService } from '../billing/stripe.service';
 import { SpineEmitterService } from '../kloel/spine/spine-emitter.service';
+import { MercadoPagoBoletoChargeService } from '../payments/mercadopago/mercadopago-boleto-charge.service';
 import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
-const PROCESSOR = 'sales-service';
-const PROCESSOR_VERSION = '1.0.0';
-const SCHEMA_VERSION = '1.0.0';
+import { SmartPaymentService } from '../kloel/smart-payment.service';
+import { computePixExpiresAt } from './sales.helpers';
+import {
+  buildFillBuyerDataPatch,
+  buildPixOrderV2SaleData,
+  buildRefundId,
+  buildRefundUpdateMetadata,
+  computePixOrderV2AmountCents,
+  pickPixOrderV2Result,
+  resolveRefundAmountCents,
+  type CreatePixOrderV2Dto,
+  type CreatePixOrderV2Result,
+} from './sales.service.pix-refund.helpers';
+import type {
+  BoletoBuyerData,
+  BuyerData,
+  CreateBoletoOrderResult,
+  CreatePixOrderResult,
+  CreateStripeCardLinkResult,
+} from './sales.service.types';
+import {
+  createBoletoOrder as createBoletoOrderV1,
+  createPixOrderLegacy as createPixOrderLegacyV1,
+  createStripeCardLink as createStripeCardLinkV1,
+  type SalesV1Deps,
+} from './sales.service.v1-orders';
 
-const MP_WEBHOOK_PATH = '/webhooks/mercadopago';
+export type {
+  BoletoBuyerData,
+  BuyerData,
+  CreateBoletoOrderResult,
+  CreatePixOrderResult,
+  CreateStripeCardLinkResult,
+} from './sales.service.types';
 
-/** 30 minutes — standard MP PIX expiration window. */
-const PIX_EXPIRATION_MINUTES = 30; // ------- Types -------
-
-export interface BuyerData {
-  name: string;
-  email: string;
-  cpf: string;
-  phone?: string;
-}
-
-export interface CreatePixOrderResult {
-  saleId: string;
-  pixQrCode: string;
-  pixQrCodeBase64: string;
-  pixCopyPaste: string;
-  pixExpiresAt: Date;
-  externalPaymentId: string;
-  ticketUrl: string;
-} // ------- Helpers -------
-
-function resolveBackendOrigin(): string {
-  const raw =
-    process.env.BACKEND_PUBLIC_URL ||
-    process.env.PUBLIC_BACKEND_URL ||
-    process.env.BACKEND_URL ||
-    process.env.API_PUBLIC_URL ||
-    process.env.APP_URL ||
-    'http://localhost:3001';
-  const trimmed = raw.replace(/\/+$/, '');
-  if (!/^https?:\/\//i.test(trimmed)) {
-    return `https://${trimmed}`;
-  }
-  return trimmed;
-} /**
+/**
  * Sales service — creates sales (PIX, card, boleto) directly from chat flows.
  *
  * Unlike the checkout pipeline, this service targets in-chat conversion:
  * WhatsApp → KLOEL brain → createPixOrder → real PIX QR code returned
  * to the buyer in the chat thread.
  *
- * All mutations are workspace-scoped and audit-logged.
+ * All mutations are workspace-scoped and audit-logged. V1 create-order flows
+ * are orchestrated by per-provider standalone functions in
+ * {@link ./sales.service.v1-orders}; the service composes them with the
+ * shared dep bundle.
  */
 @Injectable()
 export class SalesService {
@@ -58,229 +66,523 @@ export class SalesService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly mpBoleto: MercadoPagoBoletoChargeService,
     private readonly mpPix: MercadoPagoPixChargeService,
+    private readonly stripeService: StripeService,
     private readonly audit: AuditService,
     private readonly spine: SpineEmitterService,
-  ) {} /**
-   * Create a PIX payment order directly from chat.
-   *
-   * Flow:
-   * 1. Resolve product + plan, workspace-scoped.
-   * 2. Create a pending KloelSale.
-   * 3. Generate a real PIX charge via Mercado Pago.
-   * 4. Update the sale with the external payment id.
-   * 5. Audit-log everything.
-   * 6. Emit sale.created + payment.pending spine events.
-   * 7. Return copia-e-cola + QR code for the chat surface.
+    @Optional() private readonly smartPayment?: SmartPaymentService,
+  ) {}
+
+  // ---- createPixOrder overloads ----
+
+  /**
+   * Legacy signature (Mercado Pago direct PIX).
+   * @deprecated Prefer the tier-5 DTO-based overload that routes through
+   * SmartPaymentService.
    */
   async createPixOrder(
     workspaceId: string,
     productId: string,
     planId: string,
     buyerData: BuyerData,
-  ): Promise<CreatePixOrderResult> {
+  ): Promise<CreatePixOrderResult>;
+
+  /**
+   * Tier-5 capability signature (PI-K37) — routes through SmartPaymentService
+   * and falls back to a deterministic fallback when the service is unavailable.
+   */
+  async createPixOrder(
+    workspaceId: string,
+    dto: CreatePixOrderV2Dto,
+  ): Promise<CreatePixOrderV2Result>;
+
+  /** Implementation — discriminates on typeof the second argument. */
+  async createPixOrder(
+    workspaceId: string,
+    arg2: string | CreatePixOrderV2Dto,
+    arg3?: string,
+    arg4?: BuyerData,
+  ): Promise<CreatePixOrderResult | CreatePixOrderV2Result> {
+    if (typeof arg2 === 'string') {
+      return createPixOrderLegacyV1(this.v1Deps(), workspaceId, arg2, arg3!, arg4!);
+    }
+    return this.createPixOrderV2(workspaceId, arg2);
+  }
+
+  /** Create a boleto payment order directly from chat using Mercado Pago. */
+  async createBoletoOrder(
+    workspaceId: string,
+    productId: string,
+    planId: string,
+    buyerData: BoletoBuyerData,
+  ): Promise<CreateBoletoOrderResult> {
+    return createBoletoOrderV1(this.v1Deps(), workspaceId, productId, planId, buyerData);
+  }
+
+  /** Create a card checkout link directly from chat using Stripe Checkout. */
+  async createStripeCardLink(
+    workspaceId: string,
+    productId: string,
+    planId: string,
+    buyerData: BuyerData,
+  ): Promise<CreateStripeCardLinkResult> {
+    return createStripeCardLinkV1(this.v1Deps(), workspaceId, productId, planId, buyerData);
+  }
+
+  /**
+   * Build the dep bundle every V1 orchestrator needs. Centralizing the bind
+   * keeps the three call sites above one-liners and the orchestrators
+   * stateless / DI-free.
+   */
+  private v1Deps(): SalesV1Deps {
+    return {
+      prisma: this.prisma,
+      mpPix: this.mpPix,
+      mpBoleto: this.mpBoleto,
+      stripeService: this.stripeService,
+      audit: this.audit,
+      spine: this.spine,
+      logger: this.logger,
+      loadActivePlanOrThrow: (workspaceId, productId, planId) =>
+        this.loadActivePlanOrThrow(workspaceId, productId, planId),
+    };
+  }
+
+  /**
+   * Workspace-scoped plan lookup with eager-loaded product name. Throws a
+   * Nest `NotFoundException` with a PT-BR message when the plan is missing,
+   * inactive, or belongs to another workspace — matching the contract every
+   * `createXxxOrder` flow expects.
+   */
+  private async loadActivePlanOrThrow(workspaceId: string, productId: string, planId: string) {
     const plan = await this.prisma.productPlan.findFirst({
-      where: {
-        id: planId,
-        productId,
-        product: { workspaceId },
-        active: true,
-      },
+      where: { id: planId, productId, product: { workspaceId }, active: true },
       include: { product: { select: { name: true } } },
     });
-
     if (!plan) {
       throw new NotFoundException(
         `Plano ${planId} não encontrado para produto ${productId} neste workspace.`,
       );
     }
+    return plan;
+  }
 
-    const amountCents = BigInt(Math.round(plan.price * 100));
-    if (amountCents <= 0n) {
-      throw new ServiceUnavailableException('O plano possui preço inválido.');
-    }
-
-    const productName = plan.product.name;
-    const description = productName || `Plano ${plan.name}`;
-
-    const idempotencyKey = `sale_${randomUUID()}`;
-    const notificationUrl = `${resolveBackendOrigin()}${MP_WEBHOOK_PATH}`;
-    const expiresAt = new Date(Date.now() + PIX_EXPIRATION_MINUTES * 60_000);
-
-    const payerDocDigits = buyerData.cpf.replace(/\D/g, '');
-
-    return this.prisma
-      .$transaction(
-        async (tx) => {
-          // 1. Create the pending sale record
-          const sale = await tx.kloelSale.create({
-            data: {
-              workspaceId,
-              productName,
-              amount: plan.price,
-              status: 'pending',
-              paymentMethod: 'PIX',
-              leadPhone: buyerData.phone ?? null,
-              metadata: {
-                productId,
-                planId,
-                buyerName: buyerData.name,
-                buyerEmail: buyerData.email,
-              },
-            },
-          });
-
-          // 2. Audit: sale created
-          await this.audit.logWithTx(tx, {
-            workspaceId,
-            action: 'SALE_CREATED',
-            resource: 'KloelSale',
-            resourceId: sale.id,
-            details: {
-              productId,
-              planId,
-              amount: plan.price,
-              paymentMethod: 'PIX',
-            },
-          });
-
-          // 3. Generate real PIX charge via Mercado Pago
-          const pixResult = await this.mpPix.create({
-            idempotencyKey,
-            amountCents,
-            payerEmail: buyerData.email,
-            payerName: buyerData.name,
-            ...(payerDocDigits ? { payerDocument: payerDocDigits } : {}),
-            description,
-            externalReference: sale.id,
-            expiresAt,
-            notificationUrl,
-          });
-
-          // 4. Update sale with external payment id
-          await tx.kloelSale.update({
-            where: { id: sale.id, workspaceId },
-            data: {
-              externalPaymentId: pixResult.externalId,
-              paymentLink: pixResult.ticketUrl || null,
-              metadata: {
-                productId,
-                planId,
-                buyerName: buyerData.name,
-                buyerEmail: buyerData.email,
-                pixExternalId: pixResult.externalId,
-                pixStatus: pixResult.status,
-              },
-            },
-          });
-
-          // 5. Audit: payment pending
-          await this.audit.logWithTx(tx, {
-            workspaceId,
-            action: 'PAYMENT_PENDING',
-            resource: 'KloelSale',
-            resourceId: sale.id,
-            details: {
-              externalPaymentId: pixResult.externalId,
-              gateway: 'mercadopago',
-              method: 'PIX',
-              amount: plan.price,
-              status: pixResult.status,
-            },
-          });
-
-          return { sale, pixResult };
-        },
-        { isolationLevel: 'ReadCommitted' },
-      )
-      .then(({ sale, pixResult }) => {
-        // 6. Emit spine events (after transaction commits; fire-and-forget)
-        void this.spine
-          .emit({
-            eventName: 'sale.created',
-            workspaceId,
-            entityRef: { entityType: 'sale', entityId: sale.id },
-            truthMode: 'observed',
-            provenance: {
-              source: 'production',
-              processor: PROCESSOR,
-              processorVersion: PROCESSOR_VERSION,
-              schemaVersion: SCHEMA_VERSION,
-            },
-            payload: {
-              saleId: sale.id,
-              productId,
-              planId,
-              amount: plan.price,
-              paymentMethod: 'PIX',
-              externalPaymentId: pixResult.externalId,
-            },
-          })
-          .catch((err: unknown) => {
-            this.logger.warn(
-              `sale.created emission failed: ${err instanceof Error ? err.message : String(err)}`,
-            );
-          });
-
-        void this.spine
-          .emit({
-            eventName: 'payment.pending',
-            workspaceId,
-            entityRef: { entityType: 'sale', entityId: sale.id },
-            truthMode: 'observed',
-            provenance: {
-              source: 'production',
-              processor: PROCESSOR,
-              processorVersion: PROCESSOR_VERSION,
-              schemaVersion: SCHEMA_VERSION,
-            },
-            payload: {
-              saleId: sale.id,
-              externalPaymentId: pixResult.externalId,
-              gateway: 'mercadopago',
-              method: 'PIX',
-              amount: plan.price,
-              status: 'pending',
-            },
-          })
-          .catch((err: unknown) => {
-            this.logger.warn(
-              `payment.pending emission failed: ${err instanceof Error ? err.message : String(err)}`,
-            );
-          });
-
-        this.logger.log(
-          `PIX sale created: saleId=${sale.id} externalPaymentId=${pixResult.externalId} workspace=${workspaceId}`,
-        );
-
-        // 7. Return PIX display data
-        return {
-          saleId: sale.id,
-          pixQrCode: pixResult.qrCode || pixResult.qrCodeBase64,
-          pixQrCodeBase64: pixResult.qrCodeBase64,
-          pixCopyPaste: pixResult.qrCode,
-          pixExpiresAt: expiresAt,
-          externalPaymentId: pixResult.externalId,
-          ticketUrl: pixResult.ticketUrl,
-        };
-      });
-  } /**
-   * Look up a sale by id, scoped to workspace.
-   */
+  /** Look up a sale by id, scoped to workspace. */
   async findById(workspaceId: string, saleId: string) {
     return this.prisma.kloelSale.findFirst({
       where: { id: saleId, workspaceId },
     });
   }
 
-  /**
-   * List recent sales for a workspace.
-   */
+  /** List recent sales for a workspace. */
   async listByWorkspace(workspaceId: string, limit = 50) {
     return this.prisma.kloelSale.findMany({
       where: { workspaceId },
       orderBy: { createdAt: 'desc' },
       take: limit,
+    });
+  }
+
+  /**
+   * Read-only sales summary for a workspace over a recent window
+   * (resolver-compatible `(workspaceId, args)` shape). Aggregates the
+   * `kloelSale` ledger for the last `args.days` days (default 7): total
+   * orders, paid/pending counts, gross revenue and average ticket — all
+   * workspace-scoped. No mutation.
+   */
+  async summary(
+    workspaceId: string,
+    args?: { days?: number },
+  ): Promise<{
+    success: true;
+    summary: {
+      period: string;
+      totalSales: number;
+      paidCount: number;
+      pendingCount: number;
+      totalRevenue: number;
+      averageTicket: number;
+    };
+  }> {
+    const days = typeof args?.days === 'number' && args.days > 0 ? args.days : 7;
+    const cutoff = new Date(Date.now() - days * 86_400_000);
+    const sales = await this.prisma.kloelSale.findMany({
+      where: { workspaceId, createdAt: { gte: cutoff } },
+      select: { amount: true, status: true },
+    });
+    const paid = sales.filter((s) => s.status === 'paid');
+    const totalRevenue = paid.reduce((sum, s) => sum + (s.amount ?? 0), 0);
+    return {
+      success: true,
+      summary: {
+        period: `${days} dias`,
+        totalSales: sales.length,
+        paidCount: paid.length,
+        pendingCount: sales.filter((s) => s.status === 'pending').length,
+        totalRevenue,
+        averageTicket: paid.length > 0 ? Math.round(totalRevenue / paid.length) : 0,
+      },
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Tier-5 capability methods (PI-K37) — overload set for createPixOrder,
+  // plus fillBuyerData and refund.
+  // ---------------------------------------------------------------------------
+
+  /** Tier-5 PIX order via SmartPaymentService (or fallback when unavailable). */
+  private async createPixOrderV2(
+    workspaceId: string,
+    dto: CreatePixOrderV2Dto,
+  ): Promise<CreatePixOrderV2Result> {
+    const product = await this.prisma.product.findFirst({
+      where: { id: dto.productId, workspaceId, active: true },
+    });
+    if (!product) {
+      throw new NotFoundException(`Produto ${dto.productId} não encontrado neste workspace.`);
+    }
+
+    const plan = await this.loadV2Plan(workspaceId, dto.productId, dto.planId);
+    const amountCents = computePixOrderV2AmountCents(plan.price);
+    if (amountCents <= 0n) {
+      throw new ServiceUnavailableException('O plano possui preço inválido.');
+    }
+
+    const orderId = randomUUID();
+    const expiresAt = computePixExpiresAt();
+
+    await this.prisma.kloelSale.create({
+      data: buildPixOrderV2SaleData({
+        orderId,
+        workspaceId,
+        productId: dto.productId,
+        planId: plan.id,
+        productName: product.name,
+        amount: plan.price,
+        buyer: dto.buyer,
+      }),
+    });
+
+    const smartResult = await this.tryCreateSmartPayment(
+      workspaceId,
+      dto,
+      plan.price,
+      product.name,
+    );
+    const picked = pickPixOrderV2Result(smartResult);
+
+    // Honest failure: when the payment provider produced no real PIX
+    // instrument, surface a 503 instead of fabricating a copy-paste/QR that
+    // can never be paid. The sale row stays `pending` (created above) so a
+    // later webhook/retry can still settle it; we never report an unverified success.
+    if (!picked) {
+      this.logger.warn(
+        `createPixOrderV2: no real PIX instrument from gateway for order ${orderId} (workspace ${workspaceId}); refusing to fabricate one.`,
+      );
+      throw new ServiceUnavailableException(
+        'Não foi possível gerar o PIX agora: o provedor de pagamento está indisponível. Tente novamente em instantes.',
+      );
+    }
+
+    return {
+      orderId,
+      pixCopyPaste: picked.pixCopyPaste,
+      pixQrCode: picked.pixQrCode,
+      amountCents,
+      expiresAt,
+    };
+  }
+
+  /**
+   * Workspace-scoped plan lookup for the V2 PIX flow. When `planId` is
+   * omitted, picks the cheapest active plan for the product. Throws
+   * `NotFoundException` with PT-BR messaging when nothing matches.
+   */
+  private async loadV2Plan(
+    workspaceId: string,
+    productId: string,
+    planId: string | undefined,
+  ): Promise<{ id: string; name: string; price: number }> {
+    const where = planId
+      ? { id: planId, productId, product: { workspaceId }, active: true }
+      : { productId, product: { workspaceId }, active: true };
+    const plan = await this.prisma.productPlan.findFirst({
+      where,
+      ...(planId ? {} : { orderBy: { price: 'asc' as const } }),
+      select: { id: true, name: true, price: true },
+    });
+    if (!plan) {
+      throw new NotFoundException(
+        planId
+          ? `Plano ${planId} não encontrado para produto ${productId}.`
+          : `Nenhum plano ativo encontrado para o produto ${productId}.`,
+      );
+    }
+    return plan;
+  }
+
+  /**
+   * Best-effort call to {@link SmartPaymentService}. Returns `null` when the
+   * service is unavailable or fails — the caller then falls back to the
+   * deterministic fallback.
+   */
+  private async tryCreateSmartPayment(
+    workspaceId: string,
+    dto: CreatePixOrderV2Dto,
+    amount: number,
+    productName: string,
+  ): Promise<{ pixCopyPaste?: string | null; pixQrCode?: string | null } | null> {
+    if (!this.smartPayment) {
+      return null;
+    }
+    try {
+      return await this.smartPayment.createSmartPayment({
+        workspaceId,
+        phone: dto.buyer.phone ?? '',
+        contactId: undefined,
+        customerName: dto.buyer.name,
+        customerEmail: dto.buyer.email,
+        amount,
+        productName,
+      });
+    } catch (err: unknown) {
+      this.logger.warn(
+        `SmartPaymentService failed, falling back to fallback: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Fill or update buyer data on an existing order (tier-5 capability).
+   *
+   * Workspace-scoped: the order must belong to the given workspace.
+   */
+  async fillBuyerData(
+    workspaceId: string,
+    orderId: string,
+    dto: { name?: string; email?: string; phone?: string; cpf?: string },
+  ): Promise<{ updated: true }> {
+    const sale = await this.prisma.kloelSale.findFirst({
+      where: { id: orderId, workspaceId },
+      select: { id: true, metadata: true },
+    });
+
+    if (!sale) {
+      throw new NotFoundException(`Pedido ${orderId} não encontrado neste workspace.`);
+    }
+
+    const existingMeta = (sale.metadata as Record<string, unknown> | null) ?? {};
+    const patch = buildFillBuyerDataPatch(dto);
+
+    if (Object.keys(patch).length === 0) {
+      return { updated: true };
+    }
+
+    await this.prisma.kloelSale.updateMany({
+      where: { id: orderId, workspaceId },
+      data: {
+        ...(dto.phone !== undefined ? { leadPhone: dto.phone } : {}),
+        metadata: { ...existingMeta, ...patch } as Prisma.InputJsonValue,
+      },
+    });
+
+    return { updated: true };
+  }
+
+  /**
+   * Refund an order within the same workspace (tier-5 capability).
+   *
+   * Idempotent: the idempotency key is derived from `orderId` so retries
+   * produce the same `refundId`.
+   */
+  async refund(
+    workspaceId: string,
+    orderId: string,
+    dto: { amountCents?: bigint; reason: string },
+  ): Promise<{ refundId: string; status: 'pending' | 'processed' | 'rejected' }> {
+    const sale = await this.prisma.kloelSale.findFirst({
+      where: { id: orderId, workspaceId },
+      select: { id: true, status: true, amount: true, externalPaymentId: true },
+    });
+
+    if (!sale) {
+      throw new NotFoundException(`Pedido ${orderId} não encontrado neste workspace.`);
+    }
+
+    if (sale.status === 'refunded') {
+      const existingMeta = await this.prisma.kloelSale.findFirst({
+        where: { id: orderId, workspaceId },
+        select: { metadata: true },
+      });
+      const meta = (existingMeta?.metadata as Record<string, unknown> | null) ?? {};
+      const previousRefundId = meta.refundId as string | undefined;
+      return {
+        refundId: previousRefundId ?? buildRefundId(orderId),
+        status: 'processed',
+      };
+    }
+
+    const refundId = buildRefundId(orderId);
+    const refundAmountCents = resolveRefundAmountCents(sale.amount, dto.amountCents);
+
+    // Money first, DB second. Execute the real gateway refund BEFORE flipping
+    // the sale to `refunded` — never report a refund the provider has not
+    // actually processed. `refundId` doubles as the Stripe idempotency key so
+    // retries (same orderId) do not issue duplicate refunds.
+    await this.runGatewayRefund(orderId, sale.externalPaymentId, refundId, refundAmountCents);
+
+    await this.prisma.kloelSale.updateMany({
+      where: { id: orderId, workspaceId },
+      data: {
+        status: 'refunded',
+        metadata: buildRefundUpdateMetadata({
+          refundId,
+          reason: dto.reason,
+          amountCents: refundAmountCents,
+          originalStatus: sale.status,
+        }) as Prisma.InputJsonValue,
+      },
+    });
+
+    return { refundId, status: 'pending' };
+  }
+
+  /**
+   * Execute the real provider-side refund for a sale. In the Stripe-only
+   * runtime (ADR 0003) only Stripe PaymentIntents (`pi_*`) are refundable; the
+   * sale's `externalPaymentId` is the PaymentIntent id. Mirrors the proven
+   * `AdminTransactionsService.runGatewayRefund` path.
+   *
+   * Throws — never reports unverified success:
+   * - `ServiceUnavailableException` when the sale has no linked payment id or
+   *   the gateway is not a supported/wired provider (so the caller does NOT
+   *   flip the DB to `refunded`);
+   * - the Stripe SDK error (surfaced as 5xx) when the provider rejects the
+   *   refund call.
+   *
+   * `amountCents` (bigint) is forwarded as a partial-refund amount when it is
+   * below the original charge; an undefined/full amount issues a full refund.
+   */
+  private async runGatewayRefund(
+    orderId: string,
+    externalPaymentId: string | null | undefined,
+    idempotencyKey: string,
+    amountCents: bigint,
+  ): Promise<void> {
+    const paymentIntentId = String(externalPaymentId ?? '').trim();
+    if (!paymentIntentId.startsWith('pi_')) {
+      this.logger.warn(
+        `refund: order ${orderId} has no Stripe PaymentIntent (externalPaymentId=${paymentIntentId || 'none'}); refusing to report an unverified refund.`,
+      );
+      throw new ServiceUnavailableException(
+        'Estorno indisponível: o pedido não possui um pagamento Stripe vinculado e nenhum outro provedor de estorno está habilitado no runtime atual.',
+      );
+    }
+
+    await this.stripeService.stripe.refunds.create(
+      {
+        payment_intent: paymentIntentId,
+        ...(amountCents > 0n ? { amount: Number(amountCents) } : {}),
+      },
+      { idempotencyKey },
+    );
+  }
+
+  /**
+   * Canonical-name management method for the Kloel capability resolver
+   * (`SalesService.cancelSubscription`). Accepts the (workspaceId, args)
+   * signature used by `KloelDomainServiceResolver`.
+   *
+   * Cancels a workspace-scoped CustomerSubscription. Idempotent — cancelling
+   * an already-cancelled subscription is a no-op that returns success. The
+   * mutation is wrapped in a transaction together with the audit entry so the
+   * cancellation and its trail commit atomically.
+   */
+  async cancelSubscription(
+    workspaceId: string,
+    args?: { subscriptionId?: string },
+  ): Promise<{ success: true; status: string; subscriptionId: string }> {
+    const subscriptionId =
+      typeof args?.subscriptionId === 'string' ? args.subscriptionId.trim() : '';
+    if (!subscriptionId) {
+      throw new NotFoundException('SalesService.cancelSubscription: subscriptionId é obrigatório.');
+    }
+
+    const sub = await this.prisma.customerSubscription.findFirst({
+      where: { id: subscriptionId, workspaceId },
+      select: { id: true, status: true, amount: true },
+    });
+    if (!sub) {
+      throw new NotFoundException(`Assinatura ${subscriptionId} não encontrada neste workspace.`);
+    }
+
+    if (sub.status === 'CANCELLED') {
+      return { success: true, status: 'CANCELLED', subscriptionId };
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.customerSubscription.updateMany({
+        where: { id: subscriptionId, workspaceId },
+        data: { status: 'CANCELLED', cancelledAt: new Date() },
+      });
+    });
+
+    await this.audit
+      .log({
+        workspaceId,
+        action: 'subscription_cancel',
+        resource: 'subscription',
+        resourceId: subscriptionId,
+        details: { amount: sub.amount, previousStatus: sub.status },
+      })
+      .catch(() => undefined);
+
+    return { success: true, status: 'CANCELLED', subscriptionId };
+  }
+
+  /**
+   * Canonical-name management method for the Kloel capability resolver
+   * (`SalesService.refundSubscription`). Accepts the (workspaceId, args)
+   * signature used by `KloelDomainServiceResolver`.
+   *
+   * Refunds the order backing a subscription's most recent paid sale. The
+   * subscription's `externalId` is treated as the order/sale reference, or
+   * `args.orderId` may be supplied directly. Delegates the money mutation to
+   * {@link refund} (idempotent, bigint cents) — no new ledger logic here.
+   */
+  async refundSubscription(
+    workspaceId: string,
+    args?: { subscriptionId?: string; orderId?: string; reason?: string; amountCents?: bigint },
+  ): Promise<{ refundId: string; status: 'pending' | 'processed' | 'rejected' }> {
+    const reason =
+      typeof args?.reason === 'string' && args.reason ? args.reason : 'subscription refund';
+    let orderId = typeof args?.orderId === 'string' ? args.orderId.trim() : '';
+
+    if (!orderId) {
+      const subscriptionId =
+        typeof args?.subscriptionId === 'string' ? args.subscriptionId.trim() : '';
+      if (!subscriptionId) {
+        throw new NotFoundException(
+          'SalesService.refundSubscription: informe orderId ou subscriptionId.',
+        );
+      }
+      const sub = await this.prisma.customerSubscription.findFirst({
+        where: { id: subscriptionId, workspaceId },
+        select: { externalId: true },
+      });
+      if (!sub?.externalId) {
+        throw new NotFoundException(
+          `Assinatura ${subscriptionId} não possui pedido (externalId) para estorno.`,
+        );
+      }
+      orderId = sub.externalId;
+    }
+
+    return this.refund(workspaceId, orderId, {
+      reason,
+      ...(typeof args?.amountCents === 'bigint' ? { amountCents: args.amountCents } : {}),
     });
   }
 }

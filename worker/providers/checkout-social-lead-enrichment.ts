@@ -5,6 +5,7 @@ import {
 } from '@prisma/client';
 import { prisma } from '../db';
 import { WorkerLogger } from '../logger';
+import { normalizePhone as canonicalNormalizePhone } from '../utils/phone-normalization.util';
 
 const D_RE = /\D/g;
 
@@ -197,9 +198,19 @@ function readStringField(value: unknown, keys: string[]) {
   return null;
 }
 
+/**
+ * Adapter over the canonical {@link canonicalNormalizePhone} (worker mirror).
+ *
+ * The DB column `checkoutSocialLead.phone` and `contact.phone` (with the
+ * `workspaceId_phone` unique key) expects a digits-only string or null,
+ * not the structured {@link NormalizedPhone}. Returning `.digits` keeps
+ * the upstream insert/upsert shape untouched while routing every input
+ * through the canonical validator (length floor + BR-promote + double-zero
+ * strip), so this caller now matches the contract in
+ * `backend/src/common/phone/phone-normalization.util.ts`.
+ */
 function normalizePhone(value: string | null) {
-  const digits = String(value || '').replace(D_RE, '');
-  return digits || null;
+  return canonicalNormalizePhone(value)?.digits ?? null;
 }
 
 function normalizeCpf(value: string | null) {

@@ -88,7 +88,7 @@ describe('WalletService.reconcilePendingPayments', () => {
     });
 
     expect(walletLedger.appendWithinTx).toHaveBeenCalledTimes(2);
-    expect(walletLedger.appendWithinTx.mock.calls[0][1]).toMatchObject({
+    expect((walletLedger.appendWithinTx.mock.calls as unknown[][])[0][1]).toMatchObject({
       workspaceId: 'ws-1',
       walletId: 'wallet-1',
       transactionId: 'tx-old',
@@ -97,7 +97,7 @@ describe('WalletService.reconcilePendingPayments', () => {
       amountInCents: BigInt(4250),
       reason: 'reconcile_settle_debit',
     });
-    expect(walletLedger.appendWithinTx.mock.calls[1][1]).toMatchObject({
+    expect((walletLedger.appendWithinTx.mock.calls as unknown[][])[1][1]).toMatchObject({
       workspaceId: 'ws-1',
       walletId: 'wallet-1',
       transactionId: 'tx-old',

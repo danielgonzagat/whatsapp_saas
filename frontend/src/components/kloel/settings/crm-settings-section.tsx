@@ -85,62 +85,68 @@ export function CrmSettingsSection() {
     return map;
   }, [selectedPipeline, stageDeals]);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const [contactsResponse, pipelinesResponse, dealsResponse, presetsResponse, statsResponse] =
-        await Promise.all([
+  // Promise-chain (non-async) so no setState runs synchronously in the effect
+  // tick (react-hooks/set-state-in-effect).
+  const loadData = useCallback(() => {
+    return Promise.resolve()
+      .then(() => {
+        setLoading(true);
+        setError(null);
+        return Promise.all([
           crmApi.listContacts({ page: 1, limit: 20 }),
           crmApi.listPipelines(),
           crmApi.listDeals(),
           segmentationApi.getPresets(),
           segmentationApi.getStats(),
         ]);
+      })
+      .then(
+        ([contactsResponse, pipelinesResponse, dealsResponse, presetsResponse, statsResponse]) => {
+          const nextContacts = contactsResponse.data?.data || [];
+          const nextPipelines = pipelinesResponse.data || [];
+          const nextDeals = dealsResponse.data || [];
+          const nextPresets = presetsResponse.data?.presets || [];
+          const nextStats = statsResponse.data || null;
 
-      const nextContacts = contactsResponse.data?.data || [];
-      const nextPipelines = pipelinesResponse.data || [];
-      const nextDeals = dealsResponse.data || [];
-      const nextPresets = presetsResponse.data?.presets || [];
-      const nextStats = statsResponse.data || null;
+          setContacts(nextContacts);
+          setPipelines(nextPipelines);
+          setDeals(nextDeals);
+          setPresets(nextPresets);
+          setSegmentStats(nextStats);
 
-      setContacts(nextContacts);
-      setPipelines(nextPipelines);
-      setDeals(nextDeals);
-      setPresets(nextPresets);
-      setSegmentStats(nextStats);
-
-      const firstPipeline = nextPipelines[0];
-      if (firstPipeline && !selectedPipelineId) {
-        setSelectedPipelineId(firstPipeline.id);
-      }
-      const firstPreset = nextPresets[0];
-      if (firstPreset && !selectedPreset) {
-        setSelectedPreset(firstPreset.name);
-      }
-    } catch (loadError) {
-      setError(errorMessage(loadError, 'Nao foi possivel carregar CRM e pipeline.'));
-    } finally {
-      setLoading(false);
-    }
+          const firstPipeline = nextPipelines[0];
+          if (firstPipeline && !selectedPipelineId) {
+            setSelectedPipelineId(firstPipeline.id);
+          }
+          const firstPreset = nextPresets[0];
+          if (firstPreset && !selectedPreset) {
+            setSelectedPreset(firstPreset.name);
+          }
+        },
+      )
+      .catch((loadError: unknown) => {
+        setError(errorMessage(loadError, 'Nao foi possivel carregar CRM e pipeline.'));
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [selectedPipelineId, selectedPreset]);
 
   useEffect(() => {
     void loadData();
   }, [loadData]);
 
-  useEffect(() => {
-    if (selectedPipeline?.stages?.length && !dealForm.stageId) {
-      setDealForm((current) => ({ ...current, stageId: selectedPipeline.stages[0]?.id || '' }));
-    }
-  }, [dealForm.stageId, selectedPipeline]);
-
-  useEffect(() => {
-    if (!dealForm.contactId && contacts[0]?.id) {
-      setDealForm((current) => ({ ...current, contactId: contacts[0]?.id || '' }));
-    }
-  }, [contacts, dealForm.contactId]);
+  // Derived-during-render defaults: when the user has not yet picked a stage or
+  // contact, fall back to the first available option instead of syncing that
+  // default into state via an effect (react-hooks/set-state-in-effect).
+  const effectiveDealForm = useMemo(
+    () => ({
+      ...dealForm,
+      stageId: dealForm.stageId || (selectedPipeline?.stages?.[0]?.id ?? ''),
+      contactId: dealForm.contactId || (contacts[0]?.id ?? ''),
+    }),
+    [contacts, dealForm, selectedPipeline],
+  );
 
   useEffect(() => {
     if (!selectedPreset) {
@@ -148,10 +154,16 @@ export function CrmSettingsSection() {
     }
 
     let active = true;
-    setError(null);
 
-    void segmentationApi
-      .getPresetSegment(selectedPreset, 20)
+    // setError(null) lives inside the chain so no setState runs synchronously
+    // in the effect tick (react-hooks/set-state-in-effect).
+    void Promise.resolve()
+      .then(() => {
+        if (active) {
+          setError(null);
+        }
+        return segmentationApi.getPresetSegment(selectedPreset, 20);
+      })
       .then((response) => {
         if (!active) {
           return;
@@ -231,7 +243,7 @@ export function CrmSettingsSection() {
   };
 
   const handleCreateDeal = async () => {
-    if (!dealForm.contactId || !dealForm.stageId || !dealForm.title.trim()) {
+    if (!effectiveDealForm.contactId || !effectiveDealForm.stageId || !dealForm.title.trim()) {
       setError('Preencha contato, etapa inicial e titulo do deal.');
       return;
     }
@@ -242,8 +254,8 @@ export function CrmSettingsSection() {
 
     try {
       await crmApi.createDeal({
-        contactId: dealForm.contactId,
-        stageId: dealForm.stageId,
+        contactId: effectiveDealForm.contactId,
+        stageId: effectiveDealForm.stageId,
         title: dealForm.title.trim(),
         value: Number(dealForm.value || 0),
       });
@@ -406,7 +418,7 @@ export function CrmSettingsSection() {
         selectedPipeline={selectedPipeline}
         pipelineName={pipelineName}
         contacts={contacts}
-        dealForm={dealForm}
+        dealForm={effectiveDealForm}
         saving={saving}
         stageDealMap={stageDealMap}
         onPipelineNameChange={setPipelineName}

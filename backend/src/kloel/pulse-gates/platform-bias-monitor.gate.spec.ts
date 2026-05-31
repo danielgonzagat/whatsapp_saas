@@ -295,9 +295,7 @@ describe('platform-bias-monitor gate', () => {
     ];
     const v = makePlatformBiasMonitorGate().check(input(recs));
     expect(v.status).toBe('FAIL');
-    const boostedDetails = v.evidence!.filter((e) =>
-      e.detail?.includes('systematically boosted'),
-    );
+    const boostedDetails = v.evidence!.filter((e) => e.detail?.includes('systematically boosted'));
     expect(boostedDetails.length).toBe(1);
     expect(boostedDetails[0]!.detail!).toMatch(/2 platform product/);
   });
@@ -335,3 +333,4 @@ describe('platform-bias-monitor gate', () => {
     expect(v.evidence![0]!.detail).toMatch(/commercial link.*not disclosed/);
     expect(v.evidence![0]!.detail).toMatch(/recommendationId=r1/);
   });
+});

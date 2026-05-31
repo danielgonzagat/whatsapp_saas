@@ -36,6 +36,42 @@ export class AuthTokenService {
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
+  /**
+   * Run a Serializable transaction with a single retry on Prisma P2034
+   * (write conflict / deadlock under Serializable isolation). Concurrent
+   * cross-tab refreshes by the same agent collide on the same rows; the
+   * first attempt is the optimistic happy path and one retry resolves the
+   * legitimate serialization conflict before downgrading to a 503. Used by
+   * both the refresh-token atomic claim and rotateRefreshToken so a transient
+   * conflict during rotation does not boot a legitimate user to /login.
+   */
+  private async runSerializableWithRetry<T>(
+    fn: (tx: Prisma.TransactionClient) => Promise<T>,
+    context: string,
+  ): Promise<T> {
+    try {
+      return await this.prisma.$transaction(fn, {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      });
+    } catch (firstAttemptError: unknown) {
+      if (
+        firstAttemptError instanceof Prisma.PrismaClientKnownRequestError &&
+        firstAttemptError.code === 'P2034'
+      ) {
+        this.logger.warn(
+          buildAuthLogMessage('refresh_token_serialization_retry', {
+            context,
+            attempt: 1,
+          }),
+        );
+        return this.prisma.$transaction(fn, {
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        });
+      }
+      throw firstAttemptError;
+    }
+  }
+
   private async signToken(
     agentId: string,
     email: string,
@@ -104,14 +140,18 @@ export class AuthTokenService {
   }
 
   private async rotateRefreshToken(agentId: string): Promise<string> {
-    const refreshToken = randomUUID() + randomUUID();
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    {
+      const refreshToken = randomUUID() + randomUUID();
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
-    // Atomic: revoke any active refresh tokens AND insert the new one in
-    // a single Serializable transaction so concurrent issueTokens calls
-    // cannot leave multiple active rows for the same agent.
-    await this.prisma.$transaction(
-      async (tx) => {
+      // Atomic: revoke any active refresh tokens AND insert the new one in
+      // a single Serializable transaction so concurrent issueTokens calls
+      // cannot leave multiple active rows for the same agent. The wide
+      // updateMany WHERE agentId collides with a sibling concurrent refresh
+      // for the same agent under Serializable isolation, so wrap it in the
+      // same one-shot P2034 retry used by the atomic claim — without it a
+      // legitimate cross-tab refresh winner gets a spurious 503.
+      await this.runSerializableWithRetry(async (tx) => {
         await tx.refreshToken.updateMany({
           where: { agentId, revoked: false },
           data: { revoked: true },
@@ -119,11 +159,10 @@ export class AuthTokenService {
         await tx.refreshToken.create({
           data: { token: refreshToken, agentId, expiresAt },
         });
-      },
-      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
-    );
+      }, 'rotateRefreshToken');
 
-    return refreshToken;
+      return refreshToken;
+    }
   }
 
   /** Issue access + refresh tokens, rotating any prior active refresh tokens. */
@@ -195,10 +234,21 @@ export class AuthTokenService {
 
     let stored: Prisma.RefreshTokenGetPayload<{ include: { agent: true } }> | null;
     let revokedFirst = false;
-    try {
-      // Atomic claim: only one concurrent refresh wins the right to revoke
-      // an active token; the loser sees count=0 and is rejected below.
-      stored = await this.prisma.$transaction(
+    // Race-loser flag: distinguishes a concurrent claim loss (winner exists,
+    // do NOT burn sibling sessions) from a true replay attack (sweep siblings).
+    let raceLost = false;
+    // Serializable transactions can fail with P2034 ("Transaction failed due
+    // to a write conflict or a deadlock") under contention. The first attempt
+    // is the optimistic happy path; a single retry handles the legitimate
+    // serialization conflict before downgrading to a 503. Two simultaneous
+    // refreshes by the same token should converge on one winner + one
+    // race-loser, not both 503ing.
+    const claimToken = async (): Promise<Prisma.RefreshTokenGetPayload<{
+      include: { agent: true };
+    }> | null> => {
+      revokedFirst = false;
+      raceLost = false;
+      return this.prisma.$transaction(
         async (tx) => {
           const found = await tx.refreshToken.findUnique({
             where: { token: refreshToken },
@@ -222,6 +272,7 @@ export class AuthTokenService {
 
           if (claim.count === 0) {
             // Lost the race; another concurrent call already revoked it.
+            raceLost = true;
             return { ...found, revoked: true };
           }
 
@@ -230,6 +281,28 @@ export class AuthTokenService {
         },
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
       );
+    };
+    try {
+      // Atomic claim: only one concurrent refresh wins the right to revoke
+      // an active token; the loser sees count=0 and is rejected below.
+      try {
+        stored = await claimToken();
+      } catch (firstAttemptError: unknown) {
+        if (
+          firstAttemptError instanceof Prisma.PrismaClientKnownRequestError &&
+          firstAttemptError.code === 'P2034'
+        ) {
+          this.logger.warn(
+            buildAuthLogMessage('refresh_token_serialization_retry', {
+              tokenHash,
+              attempt: 1,
+            }),
+          );
+          stored = await claimToken();
+        } else {
+          throw firstAttemptError;
+        }
+      }
     } catch (error: unknown) {
       this.logger.error(
         buildAuthLogMessage('refresh_token_db_transaction_failed', {
@@ -266,21 +339,59 @@ export class AuthTokenService {
     }
 
     if (!revokedFirst && stored.revoked) {
-      // Token was revoked before or during our transaction (replay or race loss).
-      // Defensively revoke remaining active tokens for the agent.
-      this.prisma.refreshToken
-        .updateMany({
-          where: { agentId: stored.agent.id, revoked: false },
-          data: { revoked: true },
-        })
-        .catch(() => {});
-      this.logger.warn(
-        buildAuthLogMessage('refresh_token_replay_or_race', {
-          tokenHash,
-          agentId: stored.agent.id,
-          workspaceId: stored.agent.workspaceId,
-        }),
-      );
+      // Token was revoked before or during our transaction. Two distinct
+      // shapes share this branch:
+      //
+      //   (a) Concurrent claim loser — a sibling call already won the
+      //       atomic claim within this same instant. The winner just
+      //       minted a fresh pair; sweeping its tokens would log the
+      //       legitimate user out across every tab.
+      //
+      //   (b) Stale-replay window — the same token surfaces again within
+      //       a small grace window (e.g. two tabs reading the same
+      //       cookie before the new pair propagated). Treat identically:
+      //       reject this call but preserve the winner's session.
+      //
+      //   (c) True replay — the token was revoked long enough ago that
+      //       any honest client should have rotated. Sweep all sibling
+      //       refresh tokens to invalidate the suspected attacker.
+      const GRACE_WINDOW_MS = 15_000;
+      const revokedRecently = Date.now() - stored.updatedAt.getTime() <= GRACE_WINDOW_MS;
+      const shouldSweep = !raceLost && !revokedRecently;
+
+      if (shouldSweep) {
+        this.prisma.refreshToken
+          .updateMany({
+            where: { agentId: stored.agent.id, revoked: false },
+            data: { revoked: true },
+          })
+          .catch((sweepError: unknown) => {
+            this.logger.warn(
+              buildAuthLogMessage('refresh_token_sibling_sweep_failed', {
+                tokenHash,
+                agentId: stored?.agent.id,
+                error: sweepError instanceof Error ? sweepError.message : String(sweepError),
+              }),
+            );
+          });
+        this.logger.warn(
+          buildAuthLogMessage('refresh_token_replay_detected', {
+            tokenHash,
+            agentId: stored.agent.id,
+            workspaceId: stored.agent.workspaceId,
+          }),
+        );
+      } else {
+        this.logger.warn(
+          buildAuthLogMessage('refresh_token_race_or_grace_skip_sweep', {
+            tokenHash,
+            agentId: stored.agent.id,
+            workspaceId: stored.agent.workspaceId,
+            raceLost,
+            revokedRecently,
+          }),
+        );
+      }
       throw new UnauthorizedException('Refresh token inválido ou expirado');
     }
 

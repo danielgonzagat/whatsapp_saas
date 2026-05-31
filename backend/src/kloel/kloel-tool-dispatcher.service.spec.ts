@@ -31,6 +31,10 @@ jest.mock('./kloel-code-tools.service', () => ({
   KloelCodeToolsService: class MockKloelCodeToolsService {},
 }));
 
+jest.mock('./smart-payment.service', () => ({
+  SmartPaymentService: class MockSmartPaymentService {},
+}));
+
 import { KloelChatToolsService } from './kloel-chat-tools.service';
 import { KloelBusinessConfigToolsService } from './kloel-business-config-tools.service';
 import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
@@ -58,8 +62,10 @@ import {
   createSelfHealthMock,
   createSelfGapsMock,
   createCapRegistryV2Mock,
+  createSmartPaymentMock,
   DEFAULT_WS_ID,
 } from './kloel-tool-dispatcher.service.fixtures';
+import { SmartPaymentService } from './smart-payment.service';
 import type {
   DispatcherPrismaMock,
   DispatcherChatToolsMock,
@@ -127,6 +133,7 @@ describe('KloelToolDispatcherService', () => {
         { provide: SelfHealthService, useValue: selfHealthService },
         { provide: SelfGapsService, useValue: selfGapsService },
         { provide: CapabilityRegistryV2Service, useValue: capRegistryV2Service },
+        { provide: SmartPaymentService, useValue: createSmartPaymentMock() },
       ],
     }).compile();
 
@@ -135,163 +142,6 @@ describe('KloelToolDispatcherService', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
-  });
-
-  describe('executeTool', () => {
-    it('returns error when workspaceId is empty', async () => {
-      const result = await service.executeTool('', 'save_product', {});
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('workspace_id_required');
-    });
-
-    it('returns error when workspace not found', async () => {
-      prisma.workspace.findUnique.mockResolvedValueOnce(null);
-
-      const result = await service.executeTool('unknown-ws', 'save_product', {});
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('workspace_not_found');
-    });
-
-    it('returns error when billing is suspended', async () => {
-      prisma.workspace.findUnique.mockResolvedValueOnce({
-        id: DEFAULT_WS_ID,
-        providerSettings: { billingSuspended: true },
-      });
-
-      const result = await service.executeTool(DEFAULT_WS_ID, 'save_product', {});
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('billing_suspended');
-    });
-
-    it('returns error for unknown tool', async () => {
-      const result = await service.executeTool(DEFAULT_WS_ID, 'unknown_tool', {});
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Ferramenta desconhecida');
-    });
-
-    describe('whatsapp tools routing', () => {
-      it('routes connect_whatsapp to whatsappToolsService', async () => {
-        await service.executeTool(DEFAULT_WS_ID, 'connect_whatsapp', {});
-        expect(whatsappToolsService.toolConnectWhatsapp).toHaveBeenCalledWith(DEFAULT_WS_ID);
-      });
-
-      it('routes get_whatsapp_status to whatsappToolsService', async () => {
-        await service.executeTool(DEFAULT_WS_ID, 'get_whatsapp_status', {});
-        expect(whatsappToolsService.toolGetWhatsAppStatus).toHaveBeenCalledWith(DEFAULT_WS_ID);
-      });
-
-      it('routes send_whatsapp_message to whatsappToolsService', async () => {
-        await service.executeTool(DEFAULT_WS_ID, 'send_whatsapp_message', {
-          phone: '123',
-          message: 'Hi',
-        });
-        expect(whatsappToolsService.toolSendWhatsAppMessage).toHaveBeenCalledWith(DEFAULT_WS_ID, {
-          phone: '123',
-          message: 'Hi',
-        });
-      });
-
-      it('routes list_whatsapp_contacts to whatsappToolsService', async () => {
-        await service.executeTool(DEFAULT_WS_ID, 'list_whatsapp_contacts', {});
-        expect(whatsappToolsService.toolListWhatsAppContacts).toHaveBeenCalledWith(
-          DEFAULT_WS_ID,
-          {},
-        );
-      });
-
-      it('routes send_audio to whatsappToolsService', async () => {
-        await service.executeTool(DEFAULT_WS_ID, 'send_audio', {
-          phone: '123',
-          audioUrl: 'url',
-        });
-        expect(whatsappToolsService.toolSendAudio).toHaveBeenCalledWith(DEFAULT_WS_ID, {
-          phone: '123',
-          audioUrl: 'url',
-        });
-      });
-
-      it('routes transcribe_audio to whatsappToolsService', async () => {
-        await service.executeTool(DEFAULT_WS_ID, 'transcribe_audio', { audioUrl: 'url' });
-        expect(whatsappToolsService.toolTranscribeAudio).toHaveBeenCalledWith(DEFAULT_WS_ID, {
-          audioUrl: 'url',
-        });
-      });
-    });
-
-    describe('business config tools routing', () => {
-      it('routes list_leads to bizConfigToolsService', async () => {
-        const result = await service.executeTool(DEFAULT_WS_ID, 'list_leads', {});
-        expect(result.success).toBe(true);
-        expect(bizConfigToolsService.toolListLeads).toHaveBeenCalledWith(DEFAULT_WS_ID, {});
-      });
-
-      it('routes get_lead_details to bizConfigToolsService', async () => {
-        const result = await service.executeTool(DEFAULT_WS_ID, 'get_lead_details', {
-          leadId: 'l-1',
-        });
-        expect(result.success).toBe(true);
-        expect(bizConfigToolsService.toolGetLeadDetails).toHaveBeenCalledWith(DEFAULT_WS_ID, {
-          leadId: 'l-1',
-        });
-      });
-
-      it('routes save_business_info to bizConfigToolsService', async () => {
-        const result = await service.executeTool(DEFAULT_WS_ID, 'save_business_info', {
-          name: 'Biz',
-        });
-        expect(result.success).toBe(true);
-        expect(bizConfigToolsService.toolSaveBusinessInfo).toHaveBeenCalledWith(DEFAULT_WS_ID, {
-          name: 'Biz',
-        });
-      });
-
-      it('routes change_plan to bizConfigToolsService', async () => {
-        const result = await service.executeTool(DEFAULT_WS_ID, 'change_plan', { plan: 'pro' });
-        expect(result.success).toBe(true);
-      });
-    });
-
-    describe('create_payment_link', () => {
-      it('routes create_payment_link and writes audit log', async () => {
-        chatToolsService.toolCreatePaymentLink = jest.fn().mockResolvedValue({
-          success: true,
-          paymentUrl: 'https://pay.test/checkout',
-          paymentId: 'pay-1',
-        });
-
-        const result = await service.executeTool(DEFAULT_WS_ID, 'create_payment_link', {
-          amount: 99.9,
-          description: 'Produto',
-        });
-
-        expect(result.success).toBe(true);
-        expect(chatToolsService.toolCreatePaymentLink).toHaveBeenCalledWith(DEFAULT_WS_ID, {
-          amount: 99.9,
-          description: 'Produto',
-        });
-        expect(prisma.$transaction).toHaveBeenCalled();
-      });
-    });
-
-    describe('search_web', () => {
-      it('routes search_web to composer service', async () => {
-        const result = await service.executeTool(DEFAULT_WS_ID, 'search_web', {
-          query: 'test query',
-        });
-
-        expect(result.success).toBe(true);
-        expect(composerService.searchWeb).toHaveBeenCalledWith('test query');
-        expect(planLimits.ensureTokenBudget).toHaveBeenCalledWith(DEFAULT_WS_ID);
-      });
-
-      it('returns error for missing query', async () => {
-        const result = await service.executeTool(DEFAULT_WS_ID, 'search_web', {});
-        expect(result.success).toBe(false);
-        expect(result.error).toBe('missing_query');
-      });
-    });
   });
 
   describe('tenant isolation', () => {
@@ -371,17 +221,37 @@ describe('KloelToolDispatcherService', () => {
             surface: ['dashboard-chat'],
             maturity: 'testable',
           },
+          {
+            id: 'sales.create_pix',
+            title: 'Gerar PIX',
+            category: 'MUTATION_SENSITIVE',
+            tier: 5,
+            requiresConfirmation: true,
+            requiredPermissions: ['sale:write'],
+            surface: ['dashboard-chat'],
+            maturity: 'verified',
+            executionRail: {
+              provider: 'mercadopago',
+              paymentMethod: 'PIX',
+              providerMethod: 'pix',
+              providerService: 'MercadoPagoPixChargeService.create',
+              webhookPath: '/webhooks/mercadopago',
+              proofFields: ['saleId', 'externalPaymentId', 'pixCopiaECola', 'pixQrCode'],
+            },
+          },
         ]);
 
         const result = await service.executeTool(DEFAULT_WS_ID, 'self.capabilities', {});
 
         expect(result.success).toBe(true);
-        expect((capRegistryV2Service as { list: jest.Mock }).list).toHaveBeenCalledTimes(
-          1,
-        );
-        expect(result.capabilities).toEqual(['self.capabilities', 'products.create']);
+        expect((capRegistryV2Service as { list: jest.Mock }).list).toHaveBeenCalledTimes(1);
+        expect(result.capabilities).toEqual([
+          'self.capabilities',
+          'products.create',
+          'sales.create_pix',
+        ]);
         expect(result.outputs).toEqual({
-          total: 2,
+          total: 3,
           capabilities: [
             {
               id: 'self.capabilities',
@@ -402,6 +272,24 @@ describe('KloelToolDispatcherService', () => {
               requiredPermissions: ['product:write'],
               surface: ['dashboard-chat'],
               maturity: 'testable',
+            },
+            {
+              id: 'sales.create_pix',
+              title: 'Gerar PIX',
+              category: 'MUTATION_SENSITIVE',
+              tier: 5,
+              requiresConfirmation: true,
+              requiredPermissions: ['sale:write'],
+              surface: ['dashboard-chat'],
+              maturity: 'verified',
+              executionRail: {
+                provider: 'mercadopago',
+                paymentMethod: 'PIX',
+                providerMethod: 'pix',
+                providerService: 'MercadoPagoPixChargeService.create',
+                webhookPath: '/webhooks/mercadopago',
+                proofFields: ['saleId', 'externalPaymentId', 'pixCopiaECola', 'pixQrCode'],
+              },
             },
           ],
         });

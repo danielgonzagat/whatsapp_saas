@@ -1,8 +1,8 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
-import { InstagramService } from '../meta/instagram/instagram.service';
+import { InstagramService } from '../marketing/channels/instagram/instagram.service';
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
-import { MessengerService } from '../meta/messenger/messenger.service';
+import { MessengerService } from '../marketing/channels/messenger/messenger.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailCampaignService } from './email-campaign.service';
 import type { EmailDeliveryOverride } from './email-smtp-delivery';
@@ -61,8 +61,12 @@ export class InstagramChannelTransport implements ChannelTransportProvider {
         ['META_APP_SECRET', 'META_APP_ID'],
       );
     }
-    const connection = await this.metaConnection?.resolveConnection(workspaceId);
-    if (!connection?.instagramAccountId || !connection.accessToken || connection.tokenExpired) {
+    const channelSession = await this.metaConnection?.resolveConnection(workspaceId);
+    if (
+      !channelSession?.instagramAccountId ||
+      !channelSession.accessToken ||
+      channelSession.tokenExpired
+    ) {
       return blockedCapability(
         'instagram',
         'Instagram outbound bloqueado ate existir uma conta profissional conectada com token valido.',
@@ -78,25 +82,29 @@ export class InstagramChannelTransport implements ChannelTransportProvider {
     }
 
     try {
-      const connection = await this.metaConnection?.resolveConnection(workspaceId);
-      if (!connection?.instagramAccountId || !connection.accessToken || connection.tokenExpired) {
+      const channelSession = await this.metaConnection?.resolveConnection(workspaceId);
+      if (
+        !channelSession?.instagramAccountId ||
+        !channelSession.accessToken ||
+        channelSession.tokenExpired
+      ) {
         return blockedResult(
           'Instagram outbound bloqueado ate existir uma conta profissional conectada com token valido.',
         );
       }
 
       const response = await this.instagram.sendMessage(
-        connection.instagramAccountId,
+        channelSession.instagramAccountId,
         request.recipientId,
         request.content,
-        connection.accessToken,
+        channelSession.accessToken,
       );
 
       this.logger.log(
         `Instagram send dispatched workspace=${workspaceId} recipient=${request.recipientId}`,
       );
 
-      const rawResponse = response as Record<string, unknown> | undefined;
+      const rawResponse = response;
       const messageId =
         typeof rawResponse?.message_id === 'string' ? rawResponse.message_id : undefined;
 
@@ -135,8 +143,8 @@ export class MessengerChannelTransport implements ChannelTransportProvider {
         ['META_APP_SECRET', 'META_APP_ID'],
       );
     }
-    const connection = await this.metaConnection?.resolveConnection(workspaceId);
-    if (!connection?.pageId || !connection.pageAccessToken || connection.tokenExpired) {
+    const channelSession = await this.metaConnection?.resolveConnection(workspaceId);
+    if (!channelSession?.pageId || !channelSession.pageAccessToken || channelSession.tokenExpired) {
       return blockedCapability(
         'messenger',
         'Messenger outbound bloqueado ate existir pagina conectada com page token valido.',
@@ -152,25 +160,29 @@ export class MessengerChannelTransport implements ChannelTransportProvider {
     }
 
     try {
-      const connection = await this.metaConnection?.resolveConnection(workspaceId);
-      if (!connection?.pageId || !connection.pageAccessToken || connection.tokenExpired) {
+      const channelSession = await this.metaConnection?.resolveConnection(workspaceId);
+      if (
+        !channelSession?.pageId ||
+        !channelSession.pageAccessToken ||
+        channelSession.tokenExpired
+      ) {
         return blockedResult(
           'Messenger outbound bloqueado ate existir pagina conectada com page token valido.',
         );
       }
 
       const response = await this.messenger.sendTextMessage(
-        connection.pageId,
+        channelSession.pageId,
         request.recipientId,
         request.content,
-        connection.pageAccessToken,
+        channelSession.pageAccessToken,
       );
 
       this.logger.log(
         `Messenger send dispatched workspace=${workspaceId} recipient=${request.recipientId}`,
       );
 
-      const rawResponse = response as Record<string, unknown> | undefined;
+      const rawResponse = response;
       const messageId =
         typeof rawResponse?.message_id === 'string' ? rawResponse.message_id : undefined;
 

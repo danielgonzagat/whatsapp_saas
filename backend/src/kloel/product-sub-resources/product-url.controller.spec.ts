@@ -9,9 +9,9 @@ jest.mock('./helpers/common.helpers', () => ({
 
 describe('ProductUrlController', () => {
   const productUrlFindMany = jest.fn();
-  const productUrlCreate = jest.fn();
+  const productUrlCreate = jest.fn<unknown, [{ data: Record<string, unknown> }]>();
   const productUrlFindFirst = jest.fn();
-  const productUrlUpdate = jest.fn();
+  const productUrlUpdate = jest.fn<unknown, [{ data: Record<string, unknown> }]>();
   const productUrlDelete = jest.fn();
   const auditLog = jest.fn();
 
@@ -165,9 +165,11 @@ describe('ProductUrlController', () => {
 
   describe('identity propagation', () => {
     it('passes workspaceId from req.user into getWorkspaceId and ensureWorkspaceProductAccess', async () => {
-      const { ensureWorkspaceProductAccess, getWorkspaceId } = jest.requireMock(
-        './helpers/common.helpers',
-      );
+      const commonHelpersMock: {
+        ensureWorkspaceProductAccess: jest.Mock;
+        getWorkspaceId: jest.Mock;
+      } = jest.requireMock('./helpers/common.helpers');
+      const { ensureWorkspaceProductAccess, getWorkspaceId } = commonHelpersMock;
       productUrlFindMany.mockResolvedValue([]);
 
       const customReq = {

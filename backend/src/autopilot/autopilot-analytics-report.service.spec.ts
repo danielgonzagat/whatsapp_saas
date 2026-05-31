@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AutopilotAnalyticsReportService } from './autopilot-analytics-report.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { type FlexMock } from '../../test/helpers/prisma.mock';
+import { type FlexMock, mockFlex } from '../../test/helpers/prisma.mock';
 
 jest.mock('../common/async-sequence', () => ({
   forEachSequential: jest.fn(async <T>(arr: T[], fn: (item: T) => Promise<void>) => {
@@ -21,11 +21,11 @@ describe('AutopilotAnalyticsReportService', () => {
     contact: { findMany: FlexMock };
   };
   const mockPrisma: MockedPrisma = {
-    campaign: { findMany: jest.fn() as FlexMock },
-    deal: { findMany: jest.fn() as FlexMock, aggregate: jest.fn() as FlexMock },
-    invoice: { findMany: jest.fn() as FlexMock },
-    autopilotEvent: { count: jest.fn() as FlexMock, findMany: jest.fn() as FlexMock },
-    contact: { findMany: jest.fn() as FlexMock },
+    campaign: { findMany: mockFlex() },
+    deal: { findMany: mockFlex(), aggregate: mockFlex() },
+    invoice: { findMany: mockFlex() },
+    autopilotEvent: { count: mockFlex(), findMany: mockFlex() },
+    contact: { findMany: mockFlex() },
   };
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -126,7 +126,10 @@ describe('AutopilotAnalyticsReportService', () => {
       mockPrisma.invoice.findMany.mockResolvedValue([]);
       mockPrisma.autopilotEvent.count.mockResolvedValue(0);
       await service.getMoneyReport(ws);
-      const campaignArgs = mockPrisma.campaign.findMany.mock.calls[0][0];
+      const campaignFindManyCalls = mockPrisma.campaign.findMany.mock.calls as Array<
+        [{ where: { workspaceId: string; createdAt?: unknown } }]
+      >;
+      const campaignArgs = campaignFindManyCalls[0][0];
       expect(campaignArgs.where).toEqual({
         workspaceId: ws,
         createdAt: campaignArgs.where.createdAt,

@@ -1,3 +1,5 @@
+import { readFileSync, writeFileSync, renameSync, existsSync } from 'node:fs';
+
 // Helpers extracted from hubs-generator for size budget
 export function formatISO() {
   return new Date().toISOString();

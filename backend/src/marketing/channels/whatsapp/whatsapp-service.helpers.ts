@@ -1,8 +1,19 @@
-import { NON_DIGIT_RE } from '../../../common/phone';
+import { extractAsciiDigits } from '../../../common/phone/phone-normalization.util';
 import { readText } from '../../../common/utils';
 
+/**
+ * Strip non-digit characters from a WhatsApp number string.
+ *
+ * Thin wrapper over the canonical {@link extractAsciiDigits}; kept under
+ * the WhatsApp-channel-namespaced name to preserve the legacy DI surface
+ * that `WhatsappService` / `WhatsappSessionService` / `WhatsappMediaService`
+ * pass into their chat backlog/reconciler helpers.
+ *
+ * @see backend/src/common/phone/phone-normalization.util.ts
+ * @see docs/architecture/DEPRECATION_MAP.md (phone normalization row)
+ */
 export function normalizeNumber(num: string): string {
-  return num.replace(NON_DIGIT_RE, '');
+  return extractAsciiDigits(num);
 }
 
 export function normalizeJsonObjExt(value: unknown): Record<string, unknown> {

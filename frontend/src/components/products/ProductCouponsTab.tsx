@@ -1,70 +1,24 @@
 'use client';
-import { kloelFormatNumber, kloelT } from '@/lib/i18n/t';
+import { kloelT } from '@/lib/i18n/t';
 import { DataTable } from '@/components/kloel/FormExtras';
 import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
 import { Loader2, Plus, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { mutate } from 'swr';
-
-interface Coupon {
-  id: string;
-  code: string;
-  discountType: string;
-  discountValue: number;
-  maxUses: number | null;
-  usedCount: number;
-  expiresAt: string | null;
-  active: boolean;
-}
-
-const PRODUCT_COUPONS_COPY = {
-  loadError: kloelT(`Falha ao carregar cupons`),
-  createError: kloelT(`Falha ao criar cupom`),
-  deleteError: kloelT(`Falha ao excluir cupom`),
-  deleteTitle: kloelT(`Excluir cupom`),
-  deleteDescription: kloelT(`Tem certeza que deseja excluir este cupom?`),
-  closeModalAria: kloelT(`Fechar modal`),
-  closeErrorAria: kloelT(`Fechar erro`),
-  deleteCouponAria: kloelT(`Excluir cupom`),
-  codePlaceholder: kloelT(`DESCONTO10`),
-  createCoupon: kloelT(`Criar cupom`),
-  creating: kloelT(`Criando...`),
-  deleting: kloelT(`Excluindo...`),
-  close: kloelT(`Fechar`),
-  cancel: kloelT(`Cancelar`),
-  confirmDelete: kloelT(`Excluir`),
-  unlimited: kloelT(`Ilimitado`),
-  noExpiration: kloelT(`Sem expiracao`),
-  active: kloelT(`ATIVO`),
-  inactive: kloelT(`INATIVO`),
-  currencyPrefix: kloelT(`R$`),
-  percentSuffix: kloelT(`%`),
-} as const;
-
-function toCouponErrorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error && error.message ? error.message : fallback;
-}
-
-function formatCouponDiscountValue(coupon: Coupon): string {
-  if (coupon.discountType === 'PERCENT') {
-    return `${coupon.discountValue}${PRODUCT_COUPONS_COPY.percentSuffix}`;
-  }
-
-  return [
-    PRODUCT_COUPONS_COPY.currencyPrefix,
-    kloelFormatNumber(coupon.discountValue, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }),
-  ].join(' ');
-}
-
-function formatCouponExpiry(expiresAt: string | null): string {
-  return expiresAt
-    ? new Date(expiresAt).toLocaleDateString('pt-BR')
-    : PRODUCT_COUPONS_COPY.noExpiration;
-}
+import {
+  buildCouponCreatePayload,
+  coerceCouponDiscountValue,
+  type Coupon,
+  EMPTY_COUPON_FORM,
+  formatCouponDiscountValue,
+  formatCouponExpiry,
+  formatCouponMaxUses,
+  isProductsSwrKey,
+  normalizeCouponList,
+  PRODUCT_COUPONS_COPY,
+  toCouponErrorMessage,
+} from './ProductCouponsTab.helpers';
 
 /** Product coupons tab. */
 export function ProductCouponsTab({ productId }: { productId: string }) {
@@ -73,13 +27,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState({
-    code: '',
-    discountType: 'PERCENT',
-    discountValue: '',
-    maxUses: '',
-    expiresAt: '',
-  });
+  const [form, setForm] = useState({ ...EMPTY_COUPON_FORM });
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [couponPendingDelete, setCouponPendingDelete] = useState<Coupon | null>(null);
@@ -88,7 +36,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
     setLoading(true);
     try {
       const response = await apiFetch<Coupon[]>(`/products/${productId}/coupons`);
-      setItems(Array.isArray(response) ? response : []);
+      setItems(normalizeCouponList(response));
       setError(null);
     } catch (caughtError: unknown) {
       setItems([]);
@@ -98,7 +46,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
     }
   }, [productId]);
   useEffect(() => {
-    fetch_();
+    queueMicrotask(fetch_);
   }, [fetch_]);
   const handleCreate = async () => {
     setCreating(true);
@@ -106,16 +54,10 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
     try {
       await apiFetch(`/products/${productId}/coupons`, {
         method: 'POST',
-        body: {
-          code: form.code.toUpperCase(),
-          discountType: form.discountType,
-          discountValue: Number.parseFloat(form.discountValue) || 0,
-          maxUses: Number.parseInt(form.maxUses, 10) || null,
-          expiresAt: form.expiresAt || null,
-        },
+        body: buildCouponCreatePayload(form),
       });
       setShowModal(false);
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
+      mutate(isProductsSwrKey);
       await fetch_();
     } catch (caughtError: unknown) {
       setError(toCouponErrorMessage(caughtError, PRODUCT_COUPONS_COPY.createError));
@@ -237,7 +179,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
               <span className="text-sm font-bold" style={{ color: colors.text.silver }}>
                 {formatCouponDiscountValue({
                   ...row,
-                  discountValue: typeof v === 'number' ? v : Number(v ?? 0),
+                  discountValue: coerceCouponDiscountValue(v),
                 })}
               </span>
             ),
@@ -246,7 +188,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
             key: 'maxUses',
             label: 'Max Usos',
             width: '10%',
-            render: (v) => (v ? String(v) : PRODUCT_COUPONS_COPY.unlimited),
+            render: (v) => formatCouponMaxUses(v),
           },
           { key: 'usedCount', label: 'Usados', width: '10%' },
           {

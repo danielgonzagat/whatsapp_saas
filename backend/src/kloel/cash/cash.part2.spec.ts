@@ -1,19 +1,5 @@
-import type {
-  CashEntry,
-  CashPosition,
-  PayablesProjection,
-  ReceivablesProjection,
-  RiskDetection,
-  RiskInput,
-  RunwayCalculation,
-  VolatilityTracking,
-} from './types';
+import type { CashEntry, CashPosition, RiskDetection, RunwayCalculation } from './types';
 
-import { CashPositionTracker } from './cash-position.tracker';
-import { ReceivablesProjector } from './receivables.projector';
-import { PayablesProjector } from './payables.projector';
-import { RunwayCalculator } from './runway.calculator';
-import { RiskDetector } from './risk.detector';
 import { VolatilityTracker } from './volatility.tracker';
 import { ProtectiveActionSuggester } from './protective-action.suggester';
 import { UnsafeOperationBlocker } from './unsafe-operation.blocker';
@@ -58,30 +44,6 @@ function makePosition(over?: Partial<CashPosition>): CashPosition {
   };
 }
 
-function makeReceivables(over?: Partial<ReceivablesProjection>): ReceivablesProjection {
-  return {
-    workspaceId: over?.workspaceId ?? WKS,
-    totalExpectedCents: over?.totalExpectedCents ?? 0n,
-    dueNext7d: over?.dueNext7d ?? 0n,
-    dueNext14d: over?.dueNext14d ?? 0n,
-    dueNext30d: over?.dueNext30d ?? 0n,
-    confidence: over?.confidence ?? 1.0,
-    projectedAt: over?.projectedAt ?? iso(0),
-  };
-}
-
-function makePayables(over?: Partial<PayablesProjection>): PayablesProjection {
-  return {
-    workspaceId: over?.workspaceId ?? WKS,
-    totalExpectedCents: over?.totalExpectedCents ?? 0n,
-    dueNext7d: over?.dueNext7d ?? 0n,
-    dueNext14d: over?.dueNext14d ?? 0n,
-    dueNext30d: over?.dueNext30d ?? 0n,
-    confidence: over?.confidence ?? 1.0,
-    projectedAt: over?.projectedAt ?? iso(0),
-  };
-}
-
 function makeRunway(over?: Partial<RunwayCalculation>): RunwayCalculation {
   return {
     workspaceId: over?.workspaceId ?? WKS,
@@ -90,17 +52,6 @@ function makeRunway(over?: Partial<RunwayCalculation>): RunwayCalculation {
     marginOfSafety: over?.marginOfSafety ?? 3.0,
     runwayDate: over?.runwayDate ?? iso(90),
     calculatedAt: over?.calculatedAt ?? iso(0),
-  };
-}
-
-function makeVolatility(over?: Partial<VolatilityTracking>): VolatilityTracking {
-  return {
-    workspaceId: over?.workspaceId ?? WKS,
-    dailyVolatility: over?.dailyVolatility ?? 0.1,
-    weeklyVolatility: over?.weeklyVolatility ?? 0.08,
-    monthlyVolatility: over?.monthlyVolatility ?? 0.05,
-    trend: over?.trend ?? ('stable' as const),
-    trackedAt: over?.trackedAt ?? iso(0),
   };
 }
 

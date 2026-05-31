@@ -86,8 +86,9 @@ describe('PrepaidWalletController — transactions, auto-recharge & spend', () =
 
       const _result = await deps.controller.getTransactions('ws_a');
 
-      const findCall = (deps.factory.stub.prepaidWalletTransaction.findMany as jest.Mock).mock
-        .calls[0]?.[0];
+      const findCall = (
+        (deps.factory.stub.prepaidWalletTransaction.findMany as jest.Mock).mock.calls as unknown[][]
+      )[0]?.[0] as { where: { walletId: string } };
       expect(findCall.where.walletId).toBe('pwl_a');
     });
   });

@@ -124,7 +124,9 @@ export function resolveCheckoutUnavailableReason(
   if (paymentProvider?.checkoutEnabled !== false) {
     return '';
   }
-  return paymentProvider.unavailableReason || 'Conecte sua conta Stripe para começar a vender.';
+  return (
+    paymentProvider.unavailableReason || 'Configure Stripe ou Mercado Pago para começar a vender.'
+  );
 }
 
 export function applyFieldFormatter(field: string, raw: string, fmt: Formatters): string {

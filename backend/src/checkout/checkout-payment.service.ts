@@ -7,33 +7,45 @@ import {
 } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
-import * as Sentry from '@sentry/node';
 
 import { AuditService } from '../audit/audit.service';
 import { CheckoutPaymentE2EGuard, CHECKOUT_PAYMENT_E2E_GUARD } from './checkout-payment-e2e-guard';
 import { FinancialAlertService } from '../common/financial-alert.service';
-import { validateOrderTransition } from '../common/checkout-order-state-machine';
 import { ConnectService } from '../payments/connect/connect.service';
 import { FraudEngine } from '../payments/fraud/fraud.engine';
+import { MercadoPagoBoletoChargeService } from '../payments/mercadopago/mercadopago-boleto-charge.service';
+import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
+import { PaymentProviderRouterService } from '../payments/provider-router/provider-router.service';
 import { StripeChargeService } from '../payments/stripe/stripe-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
 import { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-event-emitter.service';
 import {
-  mapStripePaymentStatus,
-  extractPixDisplayData,
-  toJsonValue,
+  assertCanonicalProvider,
+  buildCheckoutPaymentCreatedAuditPayload,
+  buildMercadoPagoBoletoPaymentData,
+  buildMercadoPagoPixPaymentData,
+  buildStripePaymentData,
+  enforceCheckoutFraudGate,
+  extractOrderMetadataView,
+  logCheckoutFraudDecision,
+  resolveExistingCheckoutPaymentForIdempotency,
+  toProviderPaymentMethod,
+  transitionCheckoutOrderToApproved,
+  type CheckoutPaymentMethod,
   type CheckoutPaymentStatus,
   type PixDisplayData,
 } from './checkout-payment.helpers';
+import {
+  runCheckoutBoletoArm,
+  runCheckoutPixArm,
+  runCheckoutStripeArm,
+  type CheckoutPaymentArmDeps,
+} from './checkout-payment.arms';
 
-type CheckoutPaymentMethod = 'CREDIT_CARD' | 'PIX' | 'BOLETO';
-type SaleChargeInput = Parameters<StripeChargeService['createSaleCharge']>[0];
-type CardPaymentOptions = Extract<
-  NonNullable<NonNullable<SaleChargeInput['paymentMethodOptions']>['card']>,
-  object
->;
+type MercadoPagoBoletoCharge = Awaited<ReturnType<MercadoPagoBoletoChargeService['create']>>;
+type MercadoPagoPixCharge = Awaited<ReturnType<MercadoPagoPixChargeService['create']>>;
 
 /** Checkout payment service. */
 @Injectable()
@@ -43,6 +55,9 @@ export class CheckoutPaymentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly stripeCharge: StripeChargeService,
+    private readonly mercadoPagoBoleto: MercadoPagoBoletoChargeService,
+    private readonly mercadoPagoPix: MercadoPagoPixChargeService,
+    private readonly providerRouter: PaymentProviderRouterService,
     private readonly connectService: ConnectService,
     private readonly fraudEngine: FraudEngine,
     private readonly financialAlert: FinancialAlertService,
@@ -53,126 +68,81 @@ export class CheckoutPaymentService {
     private readonly eventEmitter?: CheckoutEventEmitterService,
   ) {}
 
-  private async logFraudDecision(params: {
-    workspaceId: string;
-    orderId: string;
-    paymentMethod: CheckoutPaymentMethod;
-    chargedTotalInCents: number;
-    decision: {
-      action: 'allow' | 'review' | 'require_3ds' | 'block';
-      score: number;
-      reasons: Array<{ signal: string; detail: string }>;
-    };
-  }) {
-    if (params.decision.action === 'allow') {
-      return;
-    }
-
-    const actionMap = {
-      block: 'CHECKOUT_PAYMENT_BLOCKED_BY_FRAUD',
-      review: 'CHECKOUT_PAYMENT_REVIEW_REQUIRED',
-      require_3ds: 'CHECKOUT_PAYMENT_3DS_REQUIRED',
-    } as const;
-
-    await this.auditService.log({
-      workspaceId: params.workspaceId,
-      action: actionMap[params.decision.action],
-      resource: 'CheckoutOrder',
-      resourceId: params.orderId,
-      details: {
-        orderId: params.orderId,
-        paymentMethod: params.paymentMethod,
-        chargedTotalInCents: params.chargedTotalInCents,
-        fraudDecision: {
-          action: params.decision.action,
-          score: params.decision.score,
-          reasonSignals: params.decision.reasons.map((reason) => reason.signal),
-          reasons: params.decision.reasons,
-        },
-      },
-    });
-  }
-
-  private buildChargeInput(
+  /**
+   * Shared persistence kernel for the three payment-method arms (Stripe card,
+   * Mercado Pago PIX, Mercado Pago boleto). Runs inside an isolated `ReadCommitted`
+   * transaction and performs four steps:
+   *   1. Idempotency check — return the existing payment when externalId matches.
+   *   2. Create the `checkoutPayment` row from the caller-supplied `data` block.
+   *   3. When approved, transition the order to PAID.
+   *   4. Emit the `CHECKOUT_PAYMENT_CREATED` audit log.
+   *
+   * The caller owns the per-arm `data` payload (gateway, externalId, pix/boleto
+   * fields, webhookData) — this kernel never touches money fields and never mutates
+   * provider-specific values. Money path preserved.
+   */
+  private async runPersistPaymentTx(input: {
     params: {
       orderId: string;
-      idempotencyKey?: string;
       workspaceId: string;
-      customerName: string;
-      customerEmail: string;
-      customerPhone?: string;
       paymentMethod: CheckoutPaymentMethod;
-    },
-    opts: {
-      sellerStripeAccountId: string;
-      currency: string;
-      baseTotalInCents: number;
-      chargedTotalInCents: number;
-      marketplaceFeeInCents: number;
-      interestInCents: number;
-      forceThreeDS?: boolean;
-    },
-  ) {
-    const isPix = params.paymentMethod === 'PIX';
-    const paymentMethodData = isPix
-      ? {
-          type: 'pix' as const,
-          billing_details: {
-            name: params.customerName,
-            email: params.customerEmail,
-            ...(params.customerPhone !== undefined ? { phone: params.customerPhone } : {}),
-          },
-        }
-      : undefined;
-
-    const threeDsRequest = ['an', 'y'].join('') as NonNullable<
-      CardPaymentOptions['request_three_d_secure']
-    >;
-    const paymentMethodOptions: SaleChargeInput['paymentMethodOptions'] | undefined = isPix
-      ? {
-          pix: {
-            expires_after_seconds: 30 * 60,
-          },
-        }
-      : opts.forceThreeDS
-        ? {
-            card: {
-              request_three_d_secure: threeDsRequest,
-            },
-          }
-        : undefined;
-
-    const confirm = isPix ? true : undefined;
-
-    const base: Parameters<StripeChargeService['createSaleCharge']>[0] = {
-      workspaceId: params.workspaceId,
-      sellerStripeAccountId: opts.sellerStripeAccountId,
-      buyerPaidCents: BigInt(opts.chargedTotalInCents),
-      saleValueCents: BigInt(opts.baseTotalInCents),
-      interestCents: BigInt(opts.interestInCents),
-      marketplaceFeeCents: BigInt(opts.marketplaceFeeInCents),
-      currency: opts.currency,
-      idempotencyKey: params.idempotencyKey || params.orderId,
-      buyerEmail: params.customerEmail,
-      paymentMethodTypes: isPix ? ['pix'] : ['card'],
-      metadata: {
-        kloel_order_id: params.orderId,
-        workspace_id: params.workspaceId,
-      },
+      installments?: number;
     };
-    if (paymentMethodData !== undefined) {
-      base.paymentMethodData = paymentMethodData;
-    }
-    if (paymentMethodOptions !== undefined) {
-      base.paymentMethodOptions = paymentMethodOptions;
-    }
-    if (confirm !== undefined) {
-      base.confirm = confirm;
-    }
-    return base;
+    externalId: string;
+    chargeLabel: string;
+    provider: 'stripe' | 'mercadopago';
+    providerPaymentStatus: string;
+    paymentStatus: CheckoutPaymentStatus;
+    amount: number;
+    data: Prisma.CheckoutPaymentUncheckedCreateInput;
+  }) {
+    const approved = input.paymentStatus === 'APPROVED';
+    return this.prisma.$transaction(
+      async (tx) => {
+        const idempotent = await resolveExistingCheckoutPaymentForIdempotency(
+          tx,
+          this.logger,
+          input.params.orderId,
+          input.externalId,
+          input.chargeLabel,
+        );
+        if (idempotent) {
+          return idempotent;
+        }
+
+        const createdPayment = await tx.checkoutPayment.create({ data: input.data });
+
+        if (approved) {
+          await transitionCheckoutOrderToApproved(
+            tx,
+            input.params.orderId,
+            input.params.workspaceId,
+          );
+        }
+
+        await this.auditService.logWithTx(
+          tx,
+          buildCheckoutPaymentCreatedAuditPayload({
+            workspaceId: input.params.workspaceId,
+            paymentId: createdPayment.id,
+            paymentMethod: input.params.paymentMethod,
+            amount: input.amount,
+            orderId: input.params.orderId,
+            gateway: input.provider,
+            externalId: input.externalId,
+            approved,
+            installments: input.params.installments,
+            providerPaymentStatus: input.providerPaymentStatus,
+          }),
+        );
+
+        return createdPayment;
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
   }
 
-  private async persistPayment(
+  private persistPayment(
     params: {
       orderId: string;
       workspaceId: string;
@@ -185,76 +155,78 @@ export class CheckoutPaymentService {
     pixData: PixDisplayData,
     amount: number,
   ) {
-    const approved = paymentStatus === 'APPROVED';
-    return this.prisma.$transaction(
-      async (tx) => {
-        const existingPayment = await tx.checkoutPayment.findFirst({
-          where: { orderId: params.orderId },
-        });
-        if (existingPayment) {
-          if (existingPayment.externalId === charge.paymentIntentId) {
-            this.logger.log(
-              `Idempotency: payment already exists for order ${params.orderId} with same PaymentIntent ${charge.paymentIntentId}`,
-            );
-            return existingPayment;
-          }
-          this.logger.warn(
-            `Idempotency: payment exists for order ${params.orderId} but with different externalId (existing=${existingPayment.externalId}, new=${charge.paymentIntentId})`,
-          );
-        }
+    return this.runPersistPaymentTx({
+      params,
+      externalId: charge.paymentIntentId,
+      chargeLabel: 'PaymentIntent',
+      provider: 'stripe',
+      providerPaymentStatus: charge.stripePaymentIntent.status,
+      paymentStatus,
+      amount,
+      data: buildStripePaymentData({
+        orderId: params.orderId,
+        cardLast4: params.cardLast4 || null,
+        status: paymentStatus,
+        pixData,
+        charge,
+      }),
+    });
+  }
 
-        const createdPayment = await tx.checkoutPayment.create({
-          data: {
-            orderId: params.orderId,
-            gateway: 'stripe',
-            externalId: charge.paymentIntentId,
-            pixQrCode: pixData.pixQrCode,
-            pixCopyPaste: pixData.pixCopyPaste,
-            pixExpiresAt: pixData.pixExpiresAt ? new Date(pixData.pixExpiresAt) : null,
-            boletoUrl: null,
-            boletoBarcode: null,
-            boletoExpiresAt: null,
-            cardLast4: params.cardLast4 || null,
-            cardBrand: null,
-            status: paymentStatus,
-            webhookData: toJsonValue({
-              provider: 'stripe',
-              paymentIntent: charge.stripePaymentIntent,
-              split: charge.split,
-              splitInput: charge.splitInput,
-            }),
-          },
-        });
+  private persistMercadoPagoPixPayment(
+    params: {
+      orderId: string;
+      workspaceId: string;
+      paymentMethod: CheckoutPaymentMethod;
+      installments?: number;
+    },
+    charge: MercadoPagoPixCharge,
+    paymentStatus: CheckoutPaymentStatus,
+    pixData: PixDisplayData,
+    amount: number,
+  ) {
+    return this.runPersistPaymentTx({
+      params,
+      externalId: charge.externalId,
+      chargeLabel: 'Mercado Pago payment',
+      provider: 'mercadopago',
+      providerPaymentStatus: charge.status,
+      paymentStatus,
+      amount,
+      data: buildMercadoPagoPixPaymentData({
+        orderId: params.orderId,
+        status: paymentStatus,
+        pixData,
+        charge,
+      }),
+    });
+  }
 
-        if (approved) {
-          await this.transitionOrderToApproved(tx, params.orderId, params.workspaceId, {
-            paymentId: createdPayment.id,
-            provider: 'stripe',
-            externalId: charge.paymentIntentId,
-          });
-        }
-
-        await this.auditService.logWithTx(tx, {
-          workspaceId: params.workspaceId,
-          action: 'CHECKOUT_PAYMENT_CREATED',
-          resource: 'CheckoutPayment',
-          resourceId: createdPayment.id,
-          details: {
-            method: params.paymentMethod,
-            amount,
-            orderId: params.orderId,
-            gateway: 'stripe',
-            externalId: charge.paymentIntentId,
-            approved,
-            installments: params.installments,
-            paymentStatus: charge.stripePaymentIntent.status,
-          },
-        });
-
-        return createdPayment;
-      },
-      { isolationLevel: 'ReadCommitted' },
-    );
+  private persistMercadoPagoBoletoPayment(
+    params: {
+      orderId: string;
+      workspaceId: string;
+      paymentMethod: CheckoutPaymentMethod;
+      installments?: number;
+    },
+    charge: MercadoPagoBoletoCharge,
+    paymentStatus: CheckoutPaymentStatus,
+    amount: number,
+  ) {
+    return this.runPersistPaymentTx({
+      params,
+      externalId: charge.externalId,
+      chargeLabel: 'Mercado Pago boleto',
+      provider: 'mercadopago',
+      providerPaymentStatus: charge.status,
+      paymentStatus,
+      amount,
+      data: buildMercadoPagoBoletoPaymentData({
+        orderId: params.orderId,
+        status: paymentStatus,
+        charge,
+      }),
+    });
   }
 
   /** Process payment. */
@@ -272,19 +244,13 @@ export class CheckoutPaymentService {
     cardHolderName?: string;
     cardLast4?: string;
   }) {
-    if (params.paymentMethod === 'BOLETO') {
-      throw new BadRequestException(
-        'Boleto ainda não está habilitado no checkout Stripe-only. Use cartão ou Pix.',
-      );
-    }
-
     const order = await this.findOrder(params.orderId, params.workspaceId);
     if (!order) {
-      throw new NotFoundException('Pedido não encontrado para processar no Stripe.');
+      throw new NotFoundException('Pedido não encontrado para processar pagamento.');
     }
 
-    // E2E test harness: short-circuit before every real Stripe call when the
-    // workflow has no STRIPE_SECRET_KEY configured. Production never reaches
+    // E2E test harness: short-circuit before real provider calls when the
+    // workflow has no payment-provider env configured. Production never reaches
     // this branch — gated by NODE_ENV !== 'production' inside the helper.
     if (this.e2EGuard.isEnabled()) {
       this.logger.log(
@@ -296,34 +262,27 @@ export class CheckoutPaymentService {
       });
     }
 
-    const orderMetadata =
-      order.metadata && typeof order.metadata === 'object' && !Array.isArray(order.metadata)
-        ? (order.metadata as Record<string, unknown>)
-        : {};
-    const baseTotalInCents = Number(orderMetadata.baseTotalInCents || order.totalInCents || 0);
-    const chargedTotalInCents = Number(
-      orderMetadata.chargedTotalInCents || baseTotalInCents || params.totalInCents || 0,
+    const metadataView = extractOrderMetadataView(
+      order.metadata,
+      order.totalInCents,
+      params.totalInCents,
     );
-    const marketplaceFeeInCents = Number(orderMetadata.marketplaceFeeInCents || 0);
-    const interestInCents = Number(orderMetadata.installmentInterestInCents || 0);
+    const { baseTotalInCents, chargedTotalInCents, marketplaceFeeInCents, interestInCents } =
+      metadataView;
     const fraudDecision = await this.fraudEngine.evaluate({
       workspaceId: params.workspaceId,
       buyerEmail: params.customerEmail,
       buyerCpf: params.customerCPF || null,
       buyerCnpj: null,
       buyerIp: order.ipAddress || null,
-      deviceFingerprint:
-        typeof orderMetadata.deviceFingerprint === 'string'
-          ? orderMetadata.deviceFingerprint
-          : null,
-      cardBin: typeof orderMetadata.cardBin === 'string' ? orderMetadata.cardBin : null,
-      cardCountry: typeof orderMetadata.cardCountry === 'string' ? orderMetadata.cardCountry : null,
-      orderCountry:
-        typeof orderMetadata.orderCountry === 'string' ? orderMetadata.orderCountry : 'BR',
+      deviceFingerprint: metadataView.deviceFingerprint,
+      cardBin: metadataView.cardBin,
+      cardCountry: metadataView.cardCountry,
+      orderCountry: metadataView.orderCountry,
       amountCents: BigInt(chargedTotalInCents),
     });
 
-    await this.logFraudDecision({
+    await logCheckoutFraudDecision(this.auditService, {
       workspaceId: params.workspaceId,
       orderId: params.orderId,
       paymentMethod: params.paymentMethod,
@@ -331,131 +290,77 @@ export class CheckoutPaymentService {
       decision: fraudDecision,
     });
 
-    if (fraudDecision.action === 'block') {
-      this.logger.warn(
-        `Checkout antifraud blocked order=${params.orderId} workspace=${params.workspaceId} reasons=${fraudDecision.reasons.map((reason) => reason.signal).join(',')}`,
-      );
-      throw new BadRequestException('Pagamento bloqueado pela política antifraude.');
+    enforceCheckoutFraudGate({
+      logger: this.logger,
+      decision: fraudDecision,
+      orderId: params.orderId,
+      workspaceId: params.workspaceId,
+      throwBadRequest: (message) => {
+        throw new BadRequestException(message);
+      },
+    });
+
+    const amount = chargedTotalInCents / 100;
+    const providerDecision = this.providerRouter.resolve({
+      method: toProviderPaymentMethod(params.paymentMethod),
+    });
+
+    const armDeps: CheckoutPaymentArmDeps = {
+      logger: this.logger,
+      eventEmitter: this.eventEmitter,
+      postPaymentEffects: this.postPaymentEffects,
+      financialAlert: this.financialAlert,
+      mercadoPagoPix: this.mercadoPagoPix,
+      mercadoPagoBoleto: this.mercadoPagoBoleto,
+      stripeCharge: this.stripeCharge,
+    };
+
+    if (params.paymentMethod === 'PIX') {
+      assertCanonicalProvider(providerDecision, 'mercadopago', params.paymentMethod);
+      return runCheckoutPixArm({
+        deps: armDeps,
+        params,
+        order,
+        amount,
+        chargedTotalInCents,
+        persist: (charge, paymentStatus, pixData, persistAmount) =>
+          this.persistMercadoPagoPixPayment(params, charge, paymentStatus, pixData, persistAmount),
+      });
     }
 
-    if (fraudDecision.action === 'review') {
-      this.logger.warn(
-        `Checkout antifraud routed order=${params.orderId} workspace=${params.workspaceId} to manual review reasons=${fraudDecision.reasons.map((reason) => reason.signal).join(',')}`,
-      );
-      throw new BadRequestException('Pagamento retido para revisão manual.');
+    if (params.paymentMethod === 'BOLETO') {
+      assertCanonicalProvider(providerDecision, 'mercadopago', params.paymentMethod);
+      return runCheckoutBoletoArm({
+        deps: armDeps,
+        params,
+        order,
+        amount,
+        chargedTotalInCents,
+        persist: (charge, paymentStatus, persistAmount) =>
+          this.persistMercadoPagoBoletoPayment(params, charge, paymentStatus, persistAmount),
+      });
     }
 
+    assertCanonicalProvider(providerDecision, 'stripe', params.paymentMethod);
     const forceThreeDS =
       params.paymentMethod === 'CREDIT_CARD' && fraudDecision.action === 'require_3ds';
     const sellerStripeAccountId = await this.ensureSellerStripeAccountId(params.workspaceId);
-    const amount = chargedTotalInCents / 100;
-
-    try {
-      Sentry.addBreadcrumb({
-        message: `checkout payment processing via Stripe`,
-        category: 'payment',
-        level: 'info',
-        data: {
-          orderId: params.orderId,
-          workspaceId: params.workspaceId,
-          amount,
-          paymentMethod: params.paymentMethod,
-        },
-      });
-      const charge = await this.stripeCharge.createSaleCharge(
-        this.buildChargeInput(params, {
-          sellerStripeAccountId,
-          currency: String(order.plan?.currency || 'BRL'),
-          baseTotalInCents,
-          chargedTotalInCents,
-          marketplaceFeeInCents,
-          interestInCents,
-          forceThreeDS,
-        }),
-      );
-
-      const paymentStatus = mapStripePaymentStatus(charge.stripePaymentIntent.status);
-      const approved = paymentStatus === 'APPROVED';
-      const pixData =
-        params.paymentMethod === 'PIX'
-          ? extractPixDisplayData(charge.stripePaymentIntent)
-          : { pixQrCode: null, pixCopyPaste: null, pixExpiresAt: null };
-
-      const payment = await this.persistPayment(params, charge, paymentStatus, pixData, amount);
-
-      void this.eventEmitter?.paymentInitiated({
-        workspaceId: params.workspaceId,
-        orderId: params.orderId,
-        paymentIntentId: charge.paymentIntentId,
-        paymentMethod: params.paymentMethod,
-        amountInCents: chargedTotalInCents,
-        correlationId: params.idempotencyKey,
-      });
-
-      if (approved) {
-        void this.eventEmitter?.paymentApproved({
-          workspaceId: params.workspaceId,
-          orderId: params.orderId,
-          paymentIntentId: charge.paymentIntentId,
-          amountInCents: chargedTotalInCents,
-          correlationId: params.idempotencyKey,
-        });
-        await this.postPaymentEffects
-          .markLeadConverted(order, params.workspaceId)
-          .catch((error) => {
-            this.logger.warn(
-              `Checkout post-payment lead conversion failed for order ${params.orderId}: ${error instanceof Error ? error.message : String(error)}`,
-            );
-          });
-        await this.postPaymentEffects.sendPurchaseSignals(order, amount).catch((error) => {
-          this.logger.warn(
-            `Checkout post-payment purchase signals failed for order ${params.orderId}: ${error instanceof Error ? error.message : String(error)}`,
-          );
-        });
-      }
-
-      return {
-        payment,
-        type: params.paymentMethod,
-        approved,
-        clientSecret: charge.clientSecret,
-        paymentIntentId: charge.paymentIntentId,
-        pixQrCode: pixData.pixQrCode,
-        pixCopyPaste: pixData.pixCopyPaste,
-        pixExpiresAt: pixData.pixExpiresAt,
-        boletoUrl: null,
-        boletoBarcode: null,
-        boletoExpiresAt: null,
-      };
-    } catch (error: unknown) {
-      void this.eventEmitter?.paymentDeclined({
-        workspaceId: params.workspaceId,
-        orderId: params.orderId,
-        paymentIntentId: undefined,
-        correlationId: params.idempotencyKey,
-        reason: error instanceof Error ? error.message : String(error),
-      });
-      this.logger.error(
-        `Stripe payment processing failed for order ${params.orderId}: ${error instanceof Error ? error.message : String(error)}`,
-      );
-      Sentry.captureException(error, {
-        tags: { type: 'financial_alert', operation: 'checkout_stripe_payment' },
-        extra: {
-          workspaceId: params.workspaceId,
-          orderId: params.orderId,
-          amount,
-          gateway: 'stripe',
-        },
-        level: 'fatal',
-      });
-      this.financialAlert.paymentFailed(error as Error, {
-        workspaceId: params.workspaceId,
-        orderId: params.orderId,
-        amount,
-        gateway: 'stripe',
-      });
-      throw error;
-    }
+    return runCheckoutStripeArm({
+      deps: armDeps,
+      params,
+      order,
+      amount,
+      money: {
+        sellerStripeAccountId,
+        baseTotalInCents,
+        chargedTotalInCents,
+        marketplaceFeeInCents,
+        interestInCents,
+        forceThreeDS,
+      },
+      persist: (charge, paymentStatus, pixData, persistAmount) =>
+        this.persistPayment(params, charge, paymentStatus, pixData, persistAmount),
+    });
   }
 
   private findOrder(orderId: string, workspaceId: string) {
@@ -507,51 +412,5 @@ export class CheckoutPaymentService {
       displayName: workspace.name,
     });
     return created.stripeAccountId;
-  }
-
-  private async transitionOrderToApproved(
-    tx: Prisma.TransactionClient,
-    orderId: string,
-    workspaceId: string,
-    _transitionContext: {
-      paymentId: string;
-      provider: 'stripe';
-      externalId: string;
-    },
-  ) {
-    const currentOrder = await tx.checkoutOrder.findFirst({
-      where: { id: orderId, workspaceId },
-      select: { status: true },
-    });
-    let currentStatus = currentOrder?.status || 'PENDING';
-
-    if (currentStatus !== 'PROCESSING') {
-      const canEnterProcessing = validateOrderTransition(currentStatus, 'PROCESSING', {
-        orderId,
-        workspaceId,
-      });
-      if (!canEnterProcessing) {
-        return;
-      }
-
-      await tx.checkoutOrder.updateMany({
-        where: { id: orderId, workspaceId },
-        data: { status: 'PROCESSING' },
-      });
-      currentStatus = 'PROCESSING';
-    }
-
-    const canBecomePaid = validateOrderTransition(currentStatus, 'PAID', {
-      orderId,
-      workspaceId,
-    });
-    if (!canBecomePaid) {
-      return;
-    }
-
-    await tx.checkoutOrder.updateMany({
-      where: { id: orderId, workspaceId },
-      data: { status: 'PAID', paidAt: new Date() },
-    });
   }
 }

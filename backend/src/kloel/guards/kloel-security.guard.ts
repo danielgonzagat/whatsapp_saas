@@ -12,7 +12,7 @@ import { Reflector } from '@nestjs/core';
 import { StructuredLogger } from '../../logging/structured-logger';
 import { IS_PUBLIC_METADATA } from '../../auth/public.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
-import { asProviderSettings } from '../../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../../marketing/channels/whatsapp/provider-settings.types';
 import { readStringProperty } from '../../common/parse';
 
 /**

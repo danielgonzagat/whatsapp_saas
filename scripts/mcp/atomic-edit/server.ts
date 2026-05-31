@@ -34,6 +34,13 @@ import { registerToolsE2 } from './server-tools-e2.js';
 import { registerToolsF } from './server-tools-f.js';
 import { registerToolsG } from './server-tools-g.js';
 import { registerToolsH } from './server-tools-h.js';
+import { registerToolsNative } from './server-tools-native.js';
+import { registerToolsNativeIo } from './server-tools-native-io.js';
+import { registerToolsLocate } from './server-tools-locate.js';
+import { registerToolsExec } from './server-tools-exec.js';
+import { registerToolsConverge } from './server-tools-converge.js';
+import { registerToolsLens } from './server-tools-lens.js';
+import { registerToolsSession } from './server-tools-session.js';
 
 const server = new McpServer({ name: 'kloel-atomic-edit', version: '4.0.0' });
 
@@ -46,6 +53,13 @@ registerToolsE2(server);
 registerToolsF(server);
 registerToolsG(server);
 registerToolsH(server);
+registerToolsNative(server);
+registerToolsNativeIo(server);
+registerToolsLocate(server);
+registerToolsExec(server);
+registerToolsConverge(server);
+registerToolsLens(server);
+registerToolsSession(server);
 
 async function main(): Promise<void> {
   const transport = new StdioServerTransport();

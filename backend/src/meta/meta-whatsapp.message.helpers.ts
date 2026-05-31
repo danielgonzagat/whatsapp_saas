@@ -1,4 +1,4 @@
-import { NON_DIGIT_RE } from '../common/phone';
+import { extractAsciiDigits } from '../common/phone/phone-normalization.util';
 
 /**
  * Build the `text` field content for a WhatsApp text message.
@@ -49,9 +49,13 @@ export function parseMessageIdFromResponse(response: Record<string, unknown>): s
 }
 
 /**
- * Strip non-digit characters from a phone number.
- * Canonical alias for the private normalizePhone in MetaWhatsAppService.
+ * Strip non-digit characters from a phone number for Meta Cloud API consumption.
+ *
+ * Thin wrapper over the canonical {@link extractAsciiDigits} from
+ * `backend/src/common/phone/phone-normalization.util.ts`. Kept as a
+ * named adapter so the call sites in {@link MetaWhatsAppService} read
+ * domain-meaningful (Meta requires bare digits, no `+`, no separators).
  */
 export function normalizeWhatsAppPhone(value: string): string {
-  return String(value || '').replace(NON_DIGIT_RE, '');
+  return extractAsciiDigits(value);
 }

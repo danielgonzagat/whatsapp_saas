@@ -1,23 +1,15 @@
 /**
- * @deprecated DUPLICATE of {@link ../email/email-inbound.controller.ts EmailInboundController}.
+ * Canonical email inbound webhook controller per ADR-0012 (OmniCore —
+ * email is a marketing channel). Consolidated 2026-05-27 (resolves
+ * P0 dup #36) by absorbing the legacy `backend/src/email/email-inbound.controller.ts`.
  *
- * Status: this file is the **forward-canonical target per ADR-0012**
- * (OmniCore — email is a channel under marketing/). But today it is NOT
- * registered in any NestJS module — the wired controller is in
- * `backend/src/email/email.module.ts`. Until the OmniCore move executes
- * (Wave W3 of ADR-0012), the **live canonical is `email/`**, not this file.
- *
- * Migration path (inverted): in Wave W3 of ADR-0012, the `email/` controller
- * is MOVED here, NestJS module wiring is transferred to a new
- * `marketing/email/email.module.ts`, and this @deprecated banner is REMOVED.
- * Until then, this file remains as a draft of the post-migration shape and
- * MUST NOT be wired into any module.
+ * Wired in `MarketingModule`. Service implementation continues to live at
+ * `backend/src/email/email-inbound.service.ts` until Wave W3 of ADR-0012
+ * physically moves it into `backend/src/marketing/channels/email/`.
  *
  * @cluster Marketing/Email
- * @canonical backend/src/email/email-inbound.controller.ts (today)
- * @future-canonical THIS file (after ADR-0012 Wave W3)
  * @see docs/adr/0012-kloel-omnicore-channel-unification.md
- * @see docs/architecture/DEPRECATION_MAP.md#cross-cutting-duplications row 36
+ * @see docs/architecture/DEPRECATION_MAP.md
  */
 import {
   Body,
@@ -112,8 +104,9 @@ function safeMetadataSummary(body: Record<string, unknown>): Record<string, unkn
 }
 
 function bodyString(req: Request, ...keys: string[]): string {
+  const body = (req.body ?? {}) as Record<string, unknown>;
   for (const key of keys) {
-    const value = req.body?.[key];
+    const value = body[key];
     if (typeof value === 'string' && value.trim()) {
       return value.trim();
     }

@@ -28,10 +28,6 @@ export type { EditZones } from './engine-zones.js';
 import type { EditZones } from './engine-zones.js';
 export { EMPTY_ZONES, computeZones } from './engine-zones.js';
 import { EMPTY_ZONES, computeZones } from './engine-zones.js';
-import * as crypto from 'crypto';
-import type { PreservationZone, ModifiedZone, MovementZone } from './trace.js';
-
-const sha256 = (s: string): string => crypto.createHash('sha256').update(s).digest('hex');
 
 export interface Position {
   /** 1-based line. */
@@ -162,7 +158,6 @@ export function validate(file: string, before: string, after: string): Validatio
   if (langResult.realParser || langResult.language !== 'generic') {
     if (langResult.realParser) {
       // Parser was available and ran — use its result
-      const extLang = extOf(file).replace('.', '');
       // We need the BEFORE state too — parse the original
       const beforeResult = validateLanguage(file, before);
       const b = beforeResult.realParser ? beforeResult.errorCount : 0;

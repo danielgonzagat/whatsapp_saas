@@ -46,8 +46,8 @@ export class MemoryService {
   /**
    * 📚 Busca contexto relevante para vendas
    */
-  async getSalesContext(workspaceId: string, customerMessage: string): Promise<string> {
-    return this.memorySearch.getSalesContext(workspaceId, customerMessage);
+  async getSalesContext(workspaceId: string, contactMessage: string): Promise<string> {
+    return this.memorySearch.getSalesContext(workspaceId, contactMessage);
   }
 
   /**
@@ -102,5 +102,39 @@ export class MemoryService {
    */
   async deleteMemory(workspaceId: string, key: string): Promise<boolean> {
     return this.memoryCrud.deleteMemory(workspaceId, key);
+  }
+
+  /**
+   * Canonical-name alias of {@link searchMemory} for the Kloel capability
+   * resolver (`MemoryService.search`). Accepts the (workspaceId, args)
+   * signature used by `KloelDomainServiceResolver`.
+   */
+  async search(
+    workspaceId: string,
+    args?: { query?: string; limit?: number; category?: string },
+  ): Promise<SearchResult> {
+    const query = typeof args?.query === 'string' ? args.query : '';
+    const limit = typeof args?.limit === 'number' ? args.limit : 5;
+    const category = typeof args?.category === 'string' ? args.category : undefined;
+    return this.searchMemory(workspaceId, query, limit, category);
+  }
+
+  /**
+   * Canonical-name alias of {@link saveMemory} for the Kloel capability
+   * resolver (`MemoryService.set`). Accepts the (workspaceId, args)
+   * signature used by `KloelDomainServiceResolver`.
+   */
+  async set(
+    workspaceId: string,
+    args?: { key?: string; value?: unknown; category?: string; content?: string },
+  ): Promise<MemoryItem> {
+    const key = typeof args?.key === 'string' ? args.key : '';
+    if (!key) {
+      throw new Error('MemoryService.set: args.key is required');
+    }
+    const value = args?.value ?? null;
+    const category = typeof args?.category === 'string' ? args.category : 'general';
+    const content = typeof args?.content === 'string' ? args.content : undefined;
+    return this.saveMemory(workspaceId, key, value, category, content);
   }
 }

@@ -8,7 +8,7 @@ import type * as React from 'react';
 import { useId } from 'react';
 import { useCheckoutExperience } from '../hooks/useCheckoutExperience';
 import PixelTracker from './PixelTracker';
-import { CheckoutThemeStepTokens, PAYMENT_BADGES, StepBubble as SharedStepBubble, StepLine as SharedStepLine, buildFooterPrimaryLine, fmt, formatCnpj } from './checkout-theme-shared';
+import { PAYMENT_BADGES, StepBubble as SharedStepBubble, StepLine as SharedStepLine, buildFooterPrimaryLine, fmt, formatCnpj } from './checkout-theme-shared';
 import { NoirAddressStep } from './CheckoutNoir.address-step';
 import {
   DEFAULT_C,
@@ -16,13 +16,20 @@ import {
   DEFAULT_TESTIMONIALS,
   normalizeTestimonials,
 } from './CheckoutNoir.defaults';
+import {
+  buildInputTheme,
+  buildNoirColors,
+  buildStepCardStyles,
+  buildStepTheme,
+  coerceInstallmentOptionsToString,
+  paymentBadgeIsVisible,
+  resolveStepBubbleState,
+} from './CheckoutNoir.helpers';
 import { NoirIdentityStep } from './CheckoutNoir.identity-step';
 import { NoirCouponPopup, NoirSuccessModal } from './CheckoutNoir.modals';
 import {
   NoirDesktopSidebar,
   NoirMobileSummary,
-  type NoirColors,
-  type NoirInputTheme,
 } from './CheckoutNoir.order-summary';
 import { NoirPaymentStep } from './CheckoutNoir.payment-step';
 
@@ -105,95 +112,17 @@ export default function CheckoutNoir({
     helpers: { fmt, normalizeTestimonials, buildFooterPrimaryLine, formatCnpj },
   });
 
-  const C: NoirColors = {
-    ...DEFAULT_C,
-    void: config?.backgroundColor || DEFAULT_C.void,
-    surface: config?.cardColor || DEFAULT_C.surface,
-    text: config?.textColor || DEFAULT_C.text,
-    text2: config?.mutedTextColor || DEFAULT_C.text2,
-    accent: config?.accentColor || DEFAULT_C.accent,
-    accent2: config?.accentColor2 || config?.accentColor || DEFAULT_C.accent2,
-  };
-
-  const stepTheme: CheckoutThemeStepTokens = {
-    activeBubbleBg: C.accent,
-    lockedBubbleBg: C.surface2,
-    activeLabelColor: C.text,
-    lockedLabelColor: C.text3,
-    activeShadow: `0 2px 12px ${C.accent}4d`,
-    lineActive: C.green,
-    lineInactive: C.border2,
-  };
-
-  const inputTheme: NoirInputTheme = {
-    background: C.surface2,
-    border: C.border2,
-    text: C.text,
-    radius: 6,
-    focusBorder: C.accent,
-    focusShadow: `0 0 0 2px ${C.accent}26`,
-    tagStroke: C.text3,
-    editStroke: C.text3,
-  };
-
-  const doneCard: React.CSSProperties = {
-    background: 'rgba(16,185,129,0.04)',
-    border: `1px solid ${C.border}`,
-    borderRadius: 6,
-    padding: 20,
-  };
-
-  const activeCard: React.CSSProperties = {
-    background: C.surface,
-    border: `1px solid ${C.border2}`,
-    boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
-    borderRadius: 6,
-    padding: '24px 20px',
-    animation: 'fadeIn 0.3s',
-  };
-
-  const lockedCard: React.CSSProperties = {
-    background: C.surface,
-    border: `1px solid ${C.border}`,
-    borderRadius: 6,
-    padding: '24px 20px',
-    opacity: 0.35,
-  };
-
-  const numDone: React.CSSProperties = {
-    width: 26,
-    height: 26,
-    borderRadius: '16%',
-    background: C.green,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  };
-  const numActive: React.CSSProperties = {
-    width: 26,
-    height: 26,
-    borderRadius: '16%',
-    background: C.accent,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  };
-  const numLock: React.CSSProperties = {
-    width: 26,
-    height: 26,
-    borderRadius: '16%',
-    background: C.surface2,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  };
+  const C = buildNoirColors(config, DEFAULT_C);
+  const stepTheme = buildStepTheme(C);
+  const inputTheme = buildInputTheme(C);
+  const { doneCard, activeCard, lockedCard, numDone, numActive, numLock } = buildStepCardStyles(C);
 
   // Type adapters — the sub-files use looser string-based signatures for portability.
   const updateFieldStr = updateField as (
     field: string,
   ) => React.ChangeEventHandler<HTMLSelectElement | HTMLInputElement>;
   const setPayMethodStr = setPayMethod as (m: string) => void;
-  const installmentOptionsStr = installmentOptions.map((o) => ({ ...o, value: String(o.value) }));
+  const installmentOptionsStr = coerceInstallmentOptionsToString(installmentOptions);
   const applyCouponVoid = async (code?: string): Promise<void> => {
     await (applyCoupon as (code?: string) => Promise<unknown>)(code);
   };
@@ -341,7 +270,7 @@ export default function CheckoutNoir({
       >
         <SharedStepBubble
           n={1}
-          state={step === 1 ? 'active' : step > 1 ? 'done' : 'locked'}
+          state={resolveStepBubbleState(step, 1)}
           onClick={() => {
             if (mobileCanOpenStep1) {goStep(1);}
           }}
@@ -351,7 +280,7 @@ export default function CheckoutNoir({
         <SharedStepLine active={step > 1} theme={stepTheme} />
         <SharedStepBubble
           n={2}
-          state={step === 2 ? 'active' : step > 2 ? 'done' : 'locked'}
+          state={resolveStepBubbleState(step, 2)}
           onClick={() => {
             if (mobileCanOpenStep2) {goStep(2);}
           }}
@@ -361,7 +290,7 @@ export default function CheckoutNoir({
         <SharedStepLine active={step > 2} theme={stepTheme} />
         <SharedStepBubble
           n={3}
-          state={step >= 3 ? 'active' : 'locked'}
+          state={resolveStepBubbleState(step, 3)}
           {...(step >= 3 ? { onClick: () => goStep(3) } : {})}
           label={kloelT(`Pagamento`)}
           theme={stepTheme}
@@ -476,11 +405,9 @@ export default function CheckoutNoir({
                   marginBottom: 24,
                 }}
               >
-                {PAYMENT_BADGES.filter((item) => {
-                  if (item === 'Pix') {return supportsPix;}
-                  if (item === 'Boleto') {return supportsBoleto;}
-                  return supportsCard;
-                }).map((code) => (
+                {PAYMENT_BADGES.filter((item) =>
+                  paymentBadgeIsVisible(item, { supportsCard, supportsPix, supportsBoleto }),
+                ).map((code) => (
                   <span
                     key={code}
                     style={{

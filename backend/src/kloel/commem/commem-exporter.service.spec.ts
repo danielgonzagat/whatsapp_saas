@@ -2,9 +2,8 @@ import { CommemLedgerService } from './ledger.service';
 import { MemoryProjector } from './memory.projector';
 import { ExporterService } from './exporter.service';
 import { AttributionGuard } from './attribution.guard';
-import { CommemExporterService } from './commem-exporter.service';
+import { CommemExporterService, type ComMemExport } from './commem-exporter.service';
 import type { SpineEventRef } from '../mind/mind.types';
-import type { MemoryProjection } from './commem.types';
 import { makeEventFactoryMs } from '../../../test/helpers/spine-event-factory';
 
 const makeEvent = makeEventFactoryMs();
@@ -79,8 +78,10 @@ describe('CommemExporterService', () => {
     const result = svc.exportAggregated('ws_alpha', events);
     const json = svc.toJson(result);
 
-    expect(() => JSON.parse(json)).not.toThrow();
-    const parsed = JSON.parse(json);
+    expect(() => {
+      JSON.parse(json);
+    }).not.toThrow();
+    const parsed = JSON.parse(json) as ComMemExport;
     expect(typeof parsed).toBe('object');
     expect(parsed).not.toBeNull();
   });
@@ -90,7 +91,7 @@ describe('CommemExporterService', () => {
 
     const result = svc.exportAggregated('ws_delta', events);
     const json = svc.toJson(result);
-    const parsed = JSON.parse(json);
+    const parsed = JSON.parse(json) as ComMemExport;
 
     expect(parsed.workspaceId).toBe('ws_delta');
     expect(parsed.formatVersion).toBe(1);
@@ -224,7 +225,7 @@ describe('CommemExporterService', () => {
 
     const result = svc.exportAggregated('ws_solo', events);
     const json = svc.toJson(result);
-    const parsed = JSON.parse(json);
+    const parsed = JSON.parse(json) as ComMemExport;
 
     expect(parsed.workspaceId).toBe('ws_solo');
 

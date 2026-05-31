@@ -158,30 +158,46 @@ export function isIdContext(lines: string[], idx: number): boolean {
 }
 
 export function isGuardedEmptyReturnContext(context: string): boolean {
+  // Token matching must run against the COMPACTED (whitespace-stripped) context.
+  // Real source uses normal spacing (`if (a.length === 0)`), so checking the raw
+  // string for spaceless tokens like `length===0`/`<=0` never matched and produced
+  // facade false-negatives on genuinely guarded early returns.
   let compact = compactCode(context);
-  let lowerContext = lower(context);
   let lastIfIndex = compact.lastIndexOf('if(');
-  return (
-    lastIfIndex !== deriveZeroValue() - deriveUnitValue() &&
-    includesAny(lowerContext, [
-      'length===0',
-      '<=0',
-      'null',
-      'undefined',
-      'array.isarray',
-      'object.keys',
-      'empty',
-      'invalid',
-      'missing',
-      'notfound',
-      'not_found',
-      'noresult',
-      'no_result',
-      'fail',
-      'error',
-      'exception',
-    ])
-  );
+  let hasEnclosingIf = lastIfIndex !== deriveZeroValue() - deriveUnitValue();
+  if (!hasEnclosingIf) {
+    return Boolean(deriveZeroValue());
+  }
+  // A conditional guard whose opening `if (...)` block is the nearest preceding
+  // statement (i.e. nothing but the guard sits between it and the empty return)
+  // is structurally an early-return guard regardless of the comparison operator
+  // used (`< MIN`, `> N`, `!== x`, `=== 0`, ...). Recognize that shape directly
+  // so guards like `if (sets.length < MIN_WORKSPACES) { return []; }` are honored.
+  let afterLastIf = compact.slice(lastIfIndex);
+  let guardOpensReturnBlock = /^if\([^;]*\)\{$/.test(afterLastIf);
+  if (guardOpensReturnBlock) {
+    return Boolean(deriveUnitValue());
+  }
+  return includesAny(compact, [
+    'length===0',
+    '<=0',
+    '<0',
+    '>length',
+    'null',
+    'undefined',
+    'array.isarray',
+    'object.keys',
+    'empty',
+    'invalid',
+    'missing',
+    'notfound',
+    'not_found',
+    'noresult',
+    'no_result',
+    'fail',
+    'error',
+    'exception',
+  ]);
 }
 
 export function appendFacade(facades: FacadeEntry[], input: FacadeDiagnosticInput): void {

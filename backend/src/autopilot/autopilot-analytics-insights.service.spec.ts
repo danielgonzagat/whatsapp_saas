@@ -4,9 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { AutopilotAnalyticsInsightsService } from './autopilot-analytics-insights.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
-import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
-import { type FlexMock } from '../../test/helpers/prisma.mock';
+import { type FlexMock, mockFlex } from '../../test/helpers/prisma.mock';
 
 jest.mock('../kloel/openai-wrapper', () => ({
   chatCompletionWithRetry: jest.fn(),
@@ -50,21 +48,19 @@ describe('AutopilotAnalyticsInsightsService', () => {
 
   const mockPrisma: MockedPrisma = {
     autopilotEvent: {
-      findMany: jest.fn() as FlexMock,
-      create: jest.fn() as FlexMock,
-      count: jest.fn() as FlexMock,
-      groupBy: jest.fn() as FlexMock,
+      findMany: mockFlex(),
+      create: mockFlex(),
+      count: mockFlex(),
+      groupBy: mockFlex(),
     },
-    contact: { findMany: jest.fn() as FlexMock },
-    message: { findMany: jest.fn() as FlexMock },
-    deal: { aggregate: jest.fn() as FlexMock },
-    accountProofSnapshot: { findFirst: jest.fn().mockResolvedValue(null) as FlexMock },
-    agentWorkItem: { count: jest.fn().mockResolvedValue(0) as FlexMock },
+    contact: { findMany: mockFlex() },
+    message: { findMany: mockFlex() },
+    deal: { aggregate: mockFlex() },
+    accountProofSnapshot: { findFirst: mockFlex().mockResolvedValue(null) },
+    agentWorkItem: { count: mockFlex().mockResolvedValue(0) },
     mindPolicy: {
-      aggregate: jest
-        .fn()
-        .mockResolvedValue({ _avg: { epsilon: null }, _count: { id: 0 } }) as FlexMock,
-      count: jest.fn().mockResolvedValue(0) as FlexMock,
+      aggregate: mockFlex().mockResolvedValue({ _avg: { epsilon: null }, _count: { id: 0 } }),
+      count: mockFlex().mockResolvedValue(0),
     },
   };
 

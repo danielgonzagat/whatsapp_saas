@@ -294,7 +294,9 @@ export class AuthOAuthService {
               response: safeResponse,
             }),
           );
-        } catch {}
+        } catch (logError) {
+          void logError;
+        }
         throw error;
       }
 

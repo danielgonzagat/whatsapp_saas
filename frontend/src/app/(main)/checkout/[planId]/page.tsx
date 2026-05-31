@@ -6,6 +6,7 @@ import { kloelT } from '@/lib/i18n/t';
 export const dynamic = 'force-dynamic';
 
 import { type CheckoutConfig, useCheckoutEditor } from '@/hooks/useCheckoutEditor';
+import { useClientMounted } from '@/hooks/useClientMounted';
 import { buildPayUrl, isValidCheckoutCode } from '@/lib/subdomains';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -52,17 +53,14 @@ export default function CheckoutEditorPage() {
   const checkoutPublicUrl = isValidCheckoutCode(normalizedReferenceCode)
     ? buildPayUrl(`/${normalizedReferenceCode}`, currentHost)
     : buildPayUrl(`/${config.slug || planId}`, currentHost);
-  const [previewUrl, setPreviewUrl] = useState('');
+  const mounted = useClientMounted();
+  const previewUrl = mounted ? `${window.location.origin}/checkout/preview/${planId}?preview=true` : '';
   const appearanceRef = useRef<HTMLDivElement>(null);
   const couponRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<HTMLDivElement>(null);
   const stockRef = useRef<HTMLDivElement>(null);
   const orderBumpsRef = useRef<HTMLDivElement>(null);
   const paymentWidgetRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setPreviewUrl(`${window.location.origin}/checkout/preview/${planId}?preview=true`);
-  }, [planId]);
 
   useEffect(
     () => () => {
@@ -180,7 +178,7 @@ export default function CheckoutEditorPage() {
     ? (() => {
         switch (requestedFocus) {
           case 'order-bump':
-            return `/products/${productId}?tab=planos&planSub=bump&focus=order-bump`;
+            return `/products/${productId}?tab=checkouts&focus=order-bump`;
           case 'coupon':
             return `/products/${productId}?tab=cupons&modal=newCoupon&focus=coupon`;
           case 'urgency':

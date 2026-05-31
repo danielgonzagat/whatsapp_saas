@@ -1,4 +1,8 @@
 /**
+ * @capability PrepaidWalletErrors
+ * @domain payment
+ */
+/**
  * Worker-side error types for prepaid wallet settlement.
  *
  * Extracted to a sibling module so the settlement processor only declares a

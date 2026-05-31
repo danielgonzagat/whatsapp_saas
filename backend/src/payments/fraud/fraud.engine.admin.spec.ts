@@ -1,3 +1,5 @@
+import { partialMatch } from '../../../test/helpers/match-instance';
+
 import { buildEngine, makePrismaStub, ORIGINAL_ENV, seedRow } from './fraud.engine.spec-helpers';
 
 /**
@@ -101,9 +103,45 @@ describe('FraudEngine.listBlacklist', () => {
 
     await engine.listBlacklist({ type: 'CPF' });
 
-    expect(prisma.prisma.fraudBlacklist.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({ type: 'CPF' }),
+    expect(prisma.findManyMock).toHaveBeenCalledWith(
+      partialMatch({
+        where: partialMatch({ type: 'CPF' }),
+      }),
+    );
+  });
+
+  it('provides a normalized contains filter when value is supplied', async () => {
+    const prisma = makePrismaStub([
+      seedRow({ type: 'CPF', value: '11122233344', reason: 'a' }),
+      seedRow({ type: 'CPF', value: '99988877766', reason: 'b' }),
+    ]);
+    const engine = await buildEngine(prisma);
+
+    const result = await engine.listBlacklist({ type: 'CPF', value: '111.222.333-44' });
+
+    expect(prisma.findManyMock).toHaveBeenCalledWith(
+      partialMatch({
+        where: partialMatch({
+          type: 'CPF',
+          value: partialMatch({ contains: '11122233344', mode: 'insensitive' }),
+        }),
+      }),
+    );
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]?.value).toBe('11122233344');
+  });
+
+  it('filters by value without a type (defaults to EMAIL normalization)', async () => {
+    const prisma = makePrismaStub([seedRow({ type: 'EMAIL', value: 'found@x.com', reason: 'a' })]);
+    const engine = await buildEngine(prisma);
+
+    await engine.listBlacklist({ value: 'Found@X.com' });
+
+    expect(prisma.findManyMock).toHaveBeenCalledWith(
+      partialMatch({
+        where: partialMatch({
+          value: partialMatch({ contains: 'found@x.com', mode: 'insensitive' }),
+        }),
       }),
     );
   });

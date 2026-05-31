@@ -15,7 +15,6 @@ const NORMAL_TOOLS = new Set([
   'set_sales_policy',
   'create_flow',
   'sync_whatsapp_history',
-  'create_whatsapp_contact',
 ]);
 
 @Injectable()

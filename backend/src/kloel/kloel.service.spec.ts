@@ -1,3 +1,4 @@
+import { matchInstance } from '../../test/helpers/match-instance';
 import { KloelService } from './kloel.service';
 import type { KloelPrismaMock } from './kloel.service.spec.types';
 
@@ -85,6 +86,7 @@ describe('KloelService', () => {
       contact: { findFirst: jest.fn().mockResolvedValue(null), create: jest.fn() },
       message: { create: jest.fn(), update: jest.fn() },
       auditLog: { create: jest.fn().mockResolvedValue({}) },
+      autopilotEvent: { create: jest.fn().mockResolvedValue({}) },
       $transaction: jest.fn().mockResolvedValue(undefined),
     };
 
@@ -144,6 +146,62 @@ describe('KloelService', () => {
     jest.clearAllMocks();
   });
 
+  describe('thinkSync deterministic actions', () => {
+    it('returns canonical material payment rail proof in sync chat replies', async () => {
+      mocks.toolDispatcher.executeTool.mockResolvedValueOnce({
+        success: true,
+        saleId: 'sale-pix-1',
+        externalPaymentId: 'mp-payment-1',
+        pixCopiaECola: '000201pix',
+        pixQrCode: 'qr-base64',
+        capabilityId: 'sales.create_pix',
+        auditLogId: 'audit-pix-1',
+        evidenceUrl: '/vendas/sale-pix-1',
+        domainEvents: ['sale.created', 'payment.pending'],
+        receipt: {
+          capabilityId: 'sales.create_pix',
+          auditLogId: 'audit-pix-1',
+          evidenceUrl: '/vendas/sale-pix-1',
+          domainEvents: ['sale.created', 'payment.pending'],
+          idempotencyKey: 'sales.create_pix:ws-1:user-42',
+          success: true,
+          executionRail: {
+            provider: 'mercadopago',
+            paymentMethod: 'PIX',
+            providerMethod: 'pix',
+            proofFields: ['saleId', 'externalPaymentId', 'pixCopiaECola', 'pixQrCode'],
+          },
+        },
+      });
+
+      const result = await service.thinkSync({
+        message: 'gera um pix de R$197 para Joao comprar PDRN',
+        workspaceId: 'ws-1',
+        userId: 'user-42',
+      });
+
+      expect(mocks.toolDispatcher.executeTool).toHaveBeenCalledWith(
+        'ws-1',
+        'sales.create_pix',
+        expect.objectContaining({ amount: 197 }),
+        'user-42',
+      );
+      expect(result.response).toContain('PIX gerado');
+      expect(result.response).toContain('PIX copia e cola: 000201pix');
+      expect(result.response).toContain('Prova material:');
+      expect(result.response).toContain('Capacidade: sales.create_pix');
+      expect(result.response).toContain('Evidência: /vendas/sale-pix-1');
+      expect(result.response).toContain('AuditLog: audit-pix-1');
+      expect(result.response).toContain('Provedor: mercadopago');
+      expect(result.response).toContain('Método: PIX');
+      expect(result.response).toContain('Método do provedor: pix');
+      expect(result.response).toContain(
+        'Contrato de prova: saleId, externalPaymentId, pixCopiaECola, pixQrCode',
+      );
+      expect(result.response).toContain('Idempotência: sales.create_pix:ws-1:user-42');
+    });
+  });
+
   // ── getHistory ──
 
   describe('getHistory', () => {
@@ -176,6 +234,9 @@ describe('KloelService', () => {
       const result = await service.getHistory('ws-1');
       expect(result).toEqual([]);
     });
+
+    // Brain→Mind delegation test moved to kloel.service.mind-delegation.spec.ts
+    // to keep this file under the architecture max_touched_file_lines cap.
   });
 
   // ── saveMemory ──
@@ -401,9 +462,12 @@ describe('KloelService', () => {
     it('passes workspaceId to leadBrainService', async () => {
       await service.processWhatsAppMessage('ws-1', '5511', 'hello');
 
-      const args = mocks.leadBrainService.processWhatsAppMessage.mock.calls[0];
-      expect(args.slice(0, 3)).toEqual(['ws-1', '5511', 'hello']);
-      expect(typeof args[3]).toBe('function');
+      expect(mocks.leadBrainService.processWhatsAppMessage).toHaveBeenCalledWith(
+        'ws-1',
+        '5511',
+        'hello',
+        matchInstance(Function),
+      );
     });
   });
 
@@ -411,9 +475,12 @@ describe('KloelService', () => {
     it('passes workspaceId to leadBrainService', async () => {
       await service.processWhatsAppMessageWithPayment('ws-1', '5511', 'hello');
 
-      const args = mocks.leadBrainService.processWhatsAppMessageWithPayment.mock.calls[0];
-      expect(args.slice(0, 3)).toEqual(['ws-1', '5511', 'hello']);
-      expect(typeof args[3]).toBe('function');
+      expect(mocks.leadBrainService.processWhatsAppMessageWithPayment).toHaveBeenCalledWith(
+        'ws-1',
+        '5511',
+        'hello',
+        matchInstance(Function),
+      );
     });
   });
 

@@ -94,7 +94,7 @@ export function buildActions(params: {
   humanTransferDecision?: Record<string, unknown>;
   decisionTraceId: string;
   inboundKey: string;
-  customerMessage: string;
+  contactMessage: string;
   internalReplyPlan: InternalReplyPlan;
   priceBand: string;
   segment: string;
@@ -128,7 +128,7 @@ export function buildActions(params: {
       args: {
         decisionTraceId: params.decisionTraceId,
         inboundCorrelationId: params.inboundKey,
-        message: params.customerMessage,
+        message: params.contactMessage,
         internalReplyPlan: params.internalReplyPlan,
         ...(params.decisions ? { hierarchyTrace: params.decisions } : {}),
       },

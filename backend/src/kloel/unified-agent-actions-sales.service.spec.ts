@@ -1,8 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
-jest.mock('./unified-agent-actions-sales.helpers', () => ({
-  actionHandleObjection: jest.fn(),
-}));
+jest.mock('./unified-agent-actions-sales.service.helpers', () => {
+  const actual: Record<string, unknown> = jest.requireActual(
+    './unified-agent-actions-sales.service.helpers',
+  );
+  return {
+    ...actual,
+    actionHandleObjection: jest.fn(),
+  };
+});
 
 jest.mock('./unified-agent-actions-messaging.service', () => ({
   UnifiedAgentActionsMessagingService: jest.fn().mockImplementation(() => ({
@@ -14,6 +20,8 @@ import { UnifiedAgentActionsSalesService } from './unified-agent-actions-sales.s
 import { PrismaService } from '../prisma/prisma.service';
 import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { actionHandleObjection } from './unified-agent-actions-sales.service.helpers';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 type SalesPrismaMock = {
   kloelMemory: { findFirst: jest.Mock; findMany: jest.Mock };
@@ -106,8 +114,8 @@ describe('UnifiedAgentActionsSalesService', () => {
       expect(result.originalPrice).toBe(200);
       expect(result.finalPrice).toBe(160);
       expect(prisma.kloelMemory.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: wsId, category: 'products' }),
+        partialMatch({
+          where: partialMatch({ workspaceId: wsId, category: 'products' }),
         }),
       );
     });
@@ -116,8 +124,8 @@ describe('UnifiedAgentActionsSalesService', () => {
       await service.actionApplyDiscount(wsId, contactId, phone, { reason: 'Promo' });
 
       expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        partialMatch({
+          data: partialMatch({
             workspaceId: wsId,
             contactId,
             intent: 'NEGOTIATION',
@@ -139,8 +147,9 @@ describe('UnifiedAgentActionsSalesService', () => {
 
   describe('actionHandleObjection', () => {
     it('delegates to actionHandleObjection helper', async () => {
-      const { actionHandleObjection } = require('./unified-agent-actions-sales.helpers');
-      actionHandleObjection.mockResolvedValue({ success: true, technique: 'value_focus' });
+      jest
+        .mocked(actionHandleObjection)
+        .mockResolvedValue({ success: true, technique: 'value_focus' });
 
       const result = await service.actionHandleObjection(wsId, contactId, phone, {
         objectionType: 'price',
@@ -148,7 +157,7 @@ describe('UnifiedAgentActionsSalesService', () => {
 
       expect(result.success).toBe(true);
       expect(actionHandleObjection).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           workspaceId: wsId,
           contactId,
           phone,
@@ -166,7 +175,7 @@ describe('UnifiedAgentActionsSalesService', () => {
       expect(result.messageSent).toBe(true);
       expect(messaging.actionSendMessage).toHaveBeenCalled();
       expect(prisma.contact.update).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: contactId } }),
+        partialMatch({ where: { id: contactId } }),
       );
     });
 
@@ -180,8 +189,8 @@ describe('UnifiedAgentActionsSalesService', () => {
       await service.actionQualifyLead(wsId, contactId, phone, {});
 
       expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        partialMatch({
+          data: partialMatch({
             intent: 'QUALIFICATION',
             action: 'QUALIFY_STARTED',
           }),
@@ -228,8 +237,8 @@ describe('UnifiedAgentActionsSalesService', () => {
       await service.actionScheduleMeeting(wsId, contactId, phone, {});
 
       expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        partialMatch({
+          data: partialMatch({
             intent: 'SCHEDULING',
             action: 'MEETING_PROPOSED',
           }),
@@ -263,8 +272,8 @@ describe('UnifiedAgentActionsSalesService', () => {
       await service.actionAntiChurn(wsId, contactId, phone, { strategy: 'pause' });
 
       expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        partialMatch({
+          data: partialMatch({
             intent: 'RETENTION',
             action: 'ANTI_CHURN_TRIGGERED',
           }),
@@ -314,8 +323,8 @@ describe('UnifiedAgentActionsSalesService', () => {
       await service.actionReactivateGhost(wsId, contactId, phone, {});
 
       expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        partialMatch({
+          data: partialMatch({
             intent: 'REACTIVATION',
             action: 'GHOST_CONTACTED',
           }),
@@ -327,7 +336,7 @@ describe('UnifiedAgentActionsSalesService', () => {
       await service.actionReactivateGhost(wsId, contactId, phone, {});
 
       expect(prisma.contact.update).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: contactId } }),
+        partialMatch({ where: { id: contactId } }),
       );
     });
 
@@ -344,8 +353,8 @@ describe('UnifiedAgentActionsSalesService', () => {
     it('actionApplyDiscount scopes kloelMemory to workspaceId', async () => {
       await service.actionApplyDiscount('ws-tenant', contactId, phone, {});
       expect(prisma.kloelMemory.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: 'ws-tenant' }),
+        partialMatch({
+          where: partialMatch({ workspaceId: 'ws-tenant' }),
         }),
       );
     });
@@ -353,7 +362,7 @@ describe('UnifiedAgentActionsSalesService', () => {
     it('actionQualifyLead scopes contact update to correct contactId', async () => {
       await service.actionQualifyLead('ws-tenant', 'contact-X', phone, {});
       expect(prisma.contact.update).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: 'contact-X' } }),
+        partialMatch({ where: { id: 'contact-X' } }),
       );
     });
   });

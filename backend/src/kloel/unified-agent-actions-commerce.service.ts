@@ -1,6 +1,4 @@
-import { randomUUID } from 'node:crypto';
 import { Injectable, Optional } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -9,11 +7,13 @@ import { formatBrlAmount } from './money-format.util';
 import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
 import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
-import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
+import { MindGuardContextBuilderService } from './mind/policy/mind-guard-context-builder.service';
 import { MindGuardsService } from './mind/policy/mind-guards.service';
-import type { MindActionContext } from './mind-code-native.types';
+import type { MindActionContext } from './mind/policy/mind-code-native.types';
 
 import type { UnknownRecord } from '../common/types';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
+
 type ProductMemoryValue = {
   name?: string;
   price?: number;
@@ -32,14 +32,19 @@ export class UnifiedAgentActionsCommerceService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly config: ConfigService,
     private readonly paymentService: PaymentService,
     private readonly auditService: AuditService,
     private readonly messaging: UnifiedAgentActionsMessagingService,
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly guardContextBuilder?: MindGuardContextBuilderService,
     @Optional() private readonly guards?: MindGuardsService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {}
+
+  /** Canonical Brain → Mind memory delegate (raw-Prisma fallback). */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
+  }
 
   // ───────── helpers ─────────
 
@@ -96,7 +101,7 @@ export class UnifiedAgentActionsCommerceService {
     const includePrice = args.includePrice !== false;
     const includeLink = !!args.includeLink;
 
-    const product = await this.prisma.kloelMemory.findFirst({
+    const product = await this.mindMemoryItems.findFirst({
       where: {
         workspaceId,
         category: 'products',
@@ -224,7 +229,7 @@ export class UnifiedAgentActionsCommerceService {
               action: 'PAYMENT_LINK_CREATED',
               resource: 'UnifiedAgent',
               resourceId: payment.id,
-              details: { amount, phone, method: 'PIX', provider: 'stripe' },
+              details: { amount, phone, method: 'PIX', provider: 'mercadopago' },
             });
           },
           { isolationLevel: 'ReadCommitted' },
@@ -254,49 +259,13 @@ export class UnifiedAgentActionsCommerceService {
       void this.opsAlert?.alertOnCriticalError(error, 'UnifiedAgentActionsCommerceService.async');
       const msg =
         error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
-      this.logger.error(`Erro ao criar link de pagamento: ${msg}`);
-      const paymentId = `pay_${randomUUID()}`;
-      const paymentLink = `${this.config.get('FRONTEND_URL') || 'https://kloel.com'}/pay/${paymentId}`;
-      const idempotencyKey = `kloel-fallback:${workspaceId}:${phone}:${this.num(args.amount)}:${this.str(args.productName)}`;
-      try {
-        const existingSale = await this.prisma.kloelSale.findFirst({
-          where: {
-            workspaceId,
-            leadPhone: phone,
-            productName: this.str(args.productName),
-            amount: this.num(args.amount),
-            paymentMethod: 'INTERNAL',
-          },
-          orderBy: { createdAt: 'desc' },
-        });
-        if (!existingSale) {
-          await this.prisma.kloelSale.create({
-            data: {
-              workspaceId,
-              externalPaymentId: paymentId,
-              leadPhone: phone,
-              productName: this.str(args.productName),
-              amount: this.num(args.amount),
-              status: 'pending',
-              paymentMethod: 'INTERNAL',
-              metadata: { idempotencyKey },
-            },
-          });
-        }
-      } catch {
-        this.logger.warn('kloelSale table not available');
-      }
-      const message = `Link de pagamento: ${paymentLink}\n\nValor: ${formatBrlAmount(this.num(args.amount))}`;
-      await this.messaging
-        .actionSendMessage(workspaceId, phone, { message }, context)
-        .catch(() => {});
+      this.logger.error(`Erro ao criar pagamento PIX real: ${msg}`);
       return {
-        success: true,
-        paymentId,
-        paymentLink,
+        success: false,
+        error: 'payment_failed',
+        provider: 'mercadopago',
+        reason: msg,
         amount: this.num(args.amount),
-        method: 'internal',
-        fallback: true,
       };
     }
   }

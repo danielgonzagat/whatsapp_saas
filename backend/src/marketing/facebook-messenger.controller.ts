@@ -17,6 +17,7 @@ import { normalizeMetaGraphSegment } from '../meta/meta-input.util';
 import { FacebookMessengerService } from './facebook-messenger.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
+import { PaginationLimitPipe } from '../common/pagination-clamp.pipe';
 
 @Controller('marketing/facebook-messenger')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -125,5 +126,56 @@ export class FacebookMessengerController {
   async getStatus(@Req() req: AuthenticatedRequest) {
     const workspaceId = resolveWorkspaceId(req);
     return this.fbMessenger.getStatus(workspaceId);
+  }
+
+  /**
+   * Aggregate Messenger projection for the Marketing Command Center.
+   *
+   * Parity with `GET /marketing/whatsapp/summary` — exposes connection state +
+   * traffic counters drawn from the persisted FbMessage ledger so the
+   * frontend can render a real status panel instead of a placeholder.
+   */
+  @InternalEndpoint('facebook messenger summary')
+  @Get('summary')
+  async getSummary(@Req() req: AuthenticatedRequest) {
+    const workspaceId = resolveWorkspaceId(req);
+    return this.fbMessenger.getSummary(workspaceId);
+  }
+
+  /**
+   * Messenger contacts (distinct sender PSIDs known to this Page).
+   *
+   * The Page only knows users who previously messaged it (Page-Scoped IDs);
+   * this endpoint surfaces those PSIDs ordered by recency. The optional
+   * `pageId` query narrows results when the workspace is connected to
+   * multiple Pages — otherwise it falls back to the resolved connection's
+   * default Page so the response stays scoped to the same surface that
+   * `/conversations` and `/messages` operate on.
+   */
+  @InternalEndpoint('facebook messenger contacts')
+  @Get('contacts')
+  async getContacts(
+    @Req() req: AuthenticatedRequest,
+    @Query('pageId') pageIdQuery: string,
+    @Query('limit', new PaginationLimitPipe({ default: 50, max: 200 })) limit: number,
+  ) {
+    const workspaceId = resolveWorkspaceId(req);
+    const resolved = await this.metaWhatsApp.resolveConnection(workspaceId, 'facebook');
+
+    if (!resolved.accessToken) {
+      throw new BadRequestException('meta_connection_required');
+    }
+
+    const rawPageId = pageIdQuery || resolved.pageId || '';
+    const pageId = rawPageId
+      ? normalizeMetaGraphSegment(rawPageId, 'Messenger page id')
+      : undefined;
+
+    const options: { pageId?: string; limit: number } = { limit };
+    if (pageId) {
+      options.pageId = pageId;
+    }
+
+    return this.fbMessenger.getContacts(workspaceId, options);
   }
 }

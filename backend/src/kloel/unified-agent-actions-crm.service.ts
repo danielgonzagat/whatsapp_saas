@@ -1,16 +1,39 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
-import { actionImportContacts as actionImportContactsCompanion } from './unified-agent-actions-crm.helpers';
+import {
+  actionImportContacts as actionImportContactsCompanion,
+  buildFollowUpJobId,
+  coerceArgNumber,
+  coerceArgString,
+  computeFollowUpDedupeFloor,
+  computeFollowUpScheduledFor,
+  computeTicketRiskFromPriority,
+  decideChannelFromSettings,
+  describeThrown,
+  fallbackChannelFromPhone,
+  hasAutonomyExecutionClient,
+  isDeterministicPipeline,
+} from './unified-agent-actions-crm.helpers';
+import {
+  buildConnectingProviderSettings,
+  classifyLogEventError,
+  isWhatsAppAlreadyConnected,
+  WHATSAPP_ALREADY_CONNECTED_MESSAGE,
+  WHATSAPP_DEFAULT_PROVIDER,
+  WHATSAPP_MANUAL_CONNECT_HINT,
+  WHATSAPP_META_OAUTH_START_MESSAGE,
+  WHATSAPP_NEXT_STEP_AUTHORIZE,
+} from './unified-agent-actions-crm.connect-whatsapp.helpers';
 import { flowQueue } from '../queue/queue';
-import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
+import { WhatsAppProviderRegistry } from '../marketing/channels/whatsapp/providers/provider-registry';
 import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { TAG_DEFAULT_COLORS } from '../common/kloel-colors';
-import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
+import { MindGuardContextBuilderService } from './mind/policy/mind-guard-context-builder.service';
 import { MindGuardsService } from './mind/policy/mind-guards.service';
-import type { MindActionContext } from './mind-code-native.types';
-import { MindPolicyService } from './mind-policy.service';
+import type { MindActionContext } from './mind/policy/mind-code-native.types';
+import { MindPolicyService } from './mind/policy/mind-policy.service';
 import { MindService } from './mind.service';
 import {
   chooseFollowUpTiming,
@@ -19,10 +42,7 @@ import {
 } from './unified-agent-actions-crm-predecided.helpers';
 
 import type { UnknownRecord } from '../common/types';
-
-function isDeterministicPipeline(context?: UnknownRecord): boolean {
-  return context?.deterministicPipeline === true;
-}
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 
 /**
  * Handles CRM tool actions: lead status updates, tags, follow-ups, human transfer,
@@ -40,36 +60,24 @@ export class UnifiedAgentActionsCrmService {
     @Optional() private readonly mind?: MindService,
     @Optional() private readonly guardContextBuilder?: MindGuardContextBuilderService,
     @Optional() private readonly guards?: MindGuardsService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {}
 
-  // ───────── helpers ─────────
-
-  private isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null;
+  /** Canonical Brain → Mind memory delegate (raw-Prisma fallback). */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
   }
 
+  // ───────── helpers (kept as instance methods for public/legacy contract) ─────────
+
+  /** @deprecated use {@link coerceArgString} from the helpers module. */
   str(v: unknown, fb = ''): string {
-    return typeof v === 'string'
-      ? v
-      : typeof v === 'number' || typeof v === 'boolean'
-        ? String(v)
-        : fb;
+    return coerceArgString(v, fb);
   }
 
+  /** @deprecated use {@link coerceArgNumber} from the helpers module. */
   num(v: unknown, fb = 0): number {
-    const n = Number(v);
-    return Number.isFinite(n) ? n : fb;
-  }
-
-  private hasAutonomyExecutionClient(
-    value: unknown,
-  ): value is { autonomyExecution: PrismaService['autonomyExecution'] } {
-    return (
-      this.isRecord(value) &&
-      'autonomyExecution' in value &&
-      value.autonomyExecution !== null &&
-      value.autonomyExecution !== undefined
-    );
+    return coerceArgNumber(v, fb);
   }
 
   // ───────── CRM actions ─────────
@@ -148,7 +156,7 @@ export class UnifiedAgentActionsCrmService {
             requestedDelayHours,
           });
       const delayHours = mindDecision.delayHours;
-      const scheduledFor = new Date(Date.now() + delayHours * 60 * 60 * 1000);
+      const scheduledFor = computeFollowUpScheduledFor(Date.now(), delayHours);
       const followMessage = this.str(args.message);
       const followReason = this.str(args.reason, 'scheduled_by_unified_agent');
       const followFlowId = this.str(args.flowId) || null;
@@ -159,7 +167,7 @@ export class UnifiedAgentActionsCrmService {
           contactId,
           reason: followReason,
           status: 'pending',
-          scheduledFor: { gte: new Date(Date.now() - 5 * 60 * 1000) },
+          scheduledFor: { gte: computeFollowUpDedupeFloor() },
         },
         select: { id: true, scheduledFor: true },
       });
@@ -168,7 +176,7 @@ export class UnifiedAgentActionsCrmService {
           success: true,
           scheduledFor: existing.scheduledFor.toISOString(),
           message: followMessage,
-          jobId: `followup_${workspaceId}_${contactId}_${existing.scheduledFor.getTime()}`,
+          jobId: buildFollowUpJobId(workspaceId, contactId, existing.scheduledFor.getTime()),
           deduplicated: true,
         };
       }
@@ -214,13 +222,12 @@ export class UnifiedAgentActionsCrmService {
         success: true,
         scheduledFor: scheduledFor.toISOString(),
         message: followMessage,
-        jobId: `followup_${workspaceId}_${contactId}_${scheduledFor.getTime()}`,
+        jobId: buildFollowUpJobId(workspaceId, contactId, scheduledFor.getTime()),
         mind: mindDecision.meta,
       };
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'UnifiedAgentActionsCrmService.getTime');
-      const msg =
-        error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
+      const msg = describeThrown(error);
       this.logger.error(`Erro ao agendar follow-up: ${msg}`);
       return { success: false, error: msg };
     }
@@ -239,23 +246,13 @@ export class UnifiedAgentActionsCrmService {
           },
         },
       });
-      const settings = (workspace?.providerSettings ?? {}) as UnknownRecord;
-      const whatsappProvider = settings.whatsappProvider;
-      const connectionStatus = settings.connectionStatus;
-
-      if (typeof whatsappProvider === 'string' && connectionStatus === 'connected') {
-        return 'whatsapp';
-      }
-
-      const hasWhatsappChannel = (workspace?.channelIdentifiers?.length ?? 0) > 0;
-
-      if (phone && phone.startsWith('+') && hasWhatsappChannel) {
-        return 'whatsapp';
-      }
-
-      return 'email';
+      return decideChannelFromSettings({
+        providerSettings: (workspace?.providerSettings ?? null) as UnknownRecord | null,
+        whatsappChannelIdentifierCount: workspace?.channelIdentifiers?.length ?? 0,
+        phone,
+      });
     } catch {
-      return phone && phone.startsWith('+') ? 'whatsapp' : 'email';
+      return fallbackChannelFromPhone(phone);
     }
   }
 
@@ -338,7 +335,7 @@ export class UnifiedAgentActionsCrmService {
             },
           });
           const txUnknown: unknown = tx;
-          if (this.hasAutonomyExecutionClient(txUnknown)) {
+          if (hasAutonomyExecutionClient(txUnknown)) {
             await txUnknown.autonomyExecution
               .create({
                 data: {
@@ -385,7 +382,7 @@ export class UnifiedAgentActionsCrmService {
       return { action: 'transfer_now' };
     }
     try {
-      const ticketRisk = priority === 'urgent' || priority === 'high' ? 0.8 : 0.35;
+      const ticketRisk = computeTicketRiskFromPriority(priority);
       return await this.mind.resolveHumanTransfer(workspaceId, 'agent', reason, ticketRisk);
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : this.str(error, 'unknown');
@@ -396,7 +393,7 @@ export class UnifiedAgentActionsCrmService {
 
   async actionSearchKnowledgeBase(workspaceId: string, args: ToolArgs) {
     const query = this.str(args.query);
-    const results = await this.prisma.kloelMemory.findMany({
+    const results = await this.mindMemoryItems.findMany({
       where: {
         workspaceId,
         OR: [
@@ -443,8 +440,7 @@ export class UnifiedAgentActionsCrmService {
         error,
         'UnifiedAgentActionsCrmService.actionTriggerFlow',
       );
-      const msg =
-        error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
+      const msg = describeThrown(error);
       this.logger.error(`Erro ao disparar fluxo: ${msg}`);
       return { success: false, error: msg };
     }
@@ -466,15 +462,12 @@ export class UnifiedAgentActionsCrmService {
       });
     } catch (err: unknown) {
       void this.opsAlert?.alertOnCriticalError(err, 'UnifiedAgentActionsCrmService.create');
-      const msg = err instanceof Error ? err.message : typeof err === 'string' ? err : 'unknown';
-      const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
-      if (!isTestEnv) {
-        const code = (err as { code?: string } | null)?.code;
-        if (code === 'P2003') {
-          this.logger.debug(`Skipping autopilot event log due to FK (contactId=${contactId})`);
-        } else {
-          this.logger.warn(`Failed to log event: ${msg}`);
-        }
+      const msg = describeThrown(err);
+      const severity = classifyLogEventError(err);
+      if (severity === 'debug') {
+        this.logger.debug(`Skipping autopilot event log due to FK (contactId=${contactId})`);
+      } else if (severity === 'warn') {
+        this.logger.warn(`Failed to log event: ${msg}`);
       }
     }
     return { success: true, event: eventName };
@@ -482,16 +475,16 @@ export class UnifiedAgentActionsCrmService {
 
   async actionConnectWhatsApp(workspaceId: string, _args: ToolArgs) {
     try {
-      const provider = 'meta-cloud';
+      const provider = WHATSAPP_DEFAULT_PROVIDER;
       const existing = await this.prisma.workspace.findUnique({
         where: { id: workspaceId },
         select: { providerSettings: true },
       });
       const current = (existing?.providerSettings ?? {}) as UnknownRecord;
-      if (current.whatsappProvider === provider && current.connectionStatus === 'connected') {
+      if (isWhatsAppAlreadyConnected(current, provider)) {
         return {
           success: true,
-          message: 'WhatsApp já está conectado.',
+          message: WHATSAPP_ALREADY_CONNECTED_MESSAGE,
           sessionId: workspaceId,
           provider,
           deduplicated: true,
@@ -508,12 +501,7 @@ export class UnifiedAgentActionsCrmService {
           await tx.workspace.update({
             where: { id: workspaceId },
             data: {
-              providerSettings: {
-                ...latest,
-                whatsappProvider: provider,
-                connectionStatus: 'connecting',
-                connectionInitiatedAt: new Date().toISOString(),
-              },
+              providerSettings: buildConnectingProviderSettings(latest, provider),
             },
           });
         },
@@ -523,21 +511,20 @@ export class UnifiedAgentActionsCrmService {
       this.logger.log(`[AGENT] Sessão WhatsApp criada para ${workspaceId}`);
       return {
         success: session.success,
-        message: session.message || 'Conexão oficial com a Meta iniciada.',
+        message: session.message || WHATSAPP_META_OAUTH_START_MESSAGE,
         sessionId: workspaceId,
         provider,
         authUrl: session.authUrl,
-        nextStep: 'Conclua a autorização oficial da Meta para ativar o canal.',
+        nextStep: WHATSAPP_NEXT_STEP_AUTHORIZE,
       };
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'UnifiedAgentActionsCrmService.async');
-      const msg =
-        error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
+      const msg = describeThrown(error);
       this.logger.error(`Erro ao conectar WhatsApp: ${msg}`);
       return {
         success: false,
         error: msg,
-        nextStep: 'Tente novamente ou acesse /whatsapp para conectar manualmente',
+        nextStep: WHATSAPP_MANUAL_CONNECT_HINT,
       };
     }
   }

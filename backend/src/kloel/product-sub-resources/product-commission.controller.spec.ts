@@ -115,13 +115,12 @@ describe('ProductCommissionController', () => {
       );
       expect(buildCommissionPayloadMock).toHaveBeenCalledWith(body);
       expect(ensureNoDuplicateCommissionMock).toHaveBeenCalled();
-      expect(create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          productId: 'prod-1',
-          role: 'AFFILIATE',
-          percentage: 30,
-        }),
+      const expectedCommissionData: unknown = expect.objectContaining({
+        productId: 'prod-1',
+        role: 'AFFILIATE',
+        percentage: 30,
       });
+      expect(create).toHaveBeenCalledWith({ data: expectedCommissionData });
       expect(result).toMatchObject({ id: 'c-1', role: 'AFFILIATE' });
       expect(partnershipsCreate).not.toHaveBeenCalled();
     });

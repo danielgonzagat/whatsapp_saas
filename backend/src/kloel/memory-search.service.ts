@@ -3,6 +3,7 @@ import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import type { SearchResult } from './memory.types';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 
 /** Memory search service. */
 @Injectable()
@@ -12,6 +13,7 @@ export class MemorySearchService {
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {}
 
   /**
@@ -37,7 +39,7 @@ export class MemorySearchService {
         { key: { contains: query, mode: 'insensitive' } },
       ];
 
-      const memories = await this.prisma.kloelMemory.findMany({
+      const memories = await (this.mindMemory?.items ?? this.prisma.kloelMemory).findMany({
         where,
         take: limit,
         orderBy: { updatedAt: 'desc' },
@@ -81,11 +83,11 @@ export class MemorySearchService {
   /**
    * 📚 Busca contexto relevante para vendas
    */
-  async getSalesContext(workspaceId: string, customerMessage: string): Promise<string> {
+  async getSalesContext(workspaceId: string, contactMessage: string): Promise<string> {
     try {
-      const productSearch = await this.searchMemory(workspaceId, customerMessage, 3, 'product');
-      const scriptSearch = await this.searchMemory(workspaceId, customerMessage, 2, 'script');
-      const objectionSearch = await this.searchMemory(workspaceId, customerMessage, 2, 'objection');
+      const productSearch = await this.searchMemory(workspaceId, contactMessage, 3, 'product');
+      const scriptSearch = await this.searchMemory(workspaceId, contactMessage, 2, 'script');
+      const objectionSearch = await this.searchMemory(workspaceId, contactMessage, 2, 'objection');
 
       const contextParts: string[] = [];
 

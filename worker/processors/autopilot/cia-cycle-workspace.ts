@@ -370,12 +370,15 @@ export async function runCiaCycleWorkspace(workspaceId: string, presetSettings?:
         conversationTacticUniverse: action.conversationTacticUniverse,
       },
       {
+        // Stable per (cycle, action target, index): cycleProofId is derived
+        // from the cycle's deterministic generatedAt, so re-dispatching the same
+        // CIA cycle dedups instead of re-driving duplicate outbound sends.
         jobId: buildQueueJobId(
           'cia-action',
           workspaceId,
           action.type,
           action.contactId || action.phone || action.conversationId,
-          Date.now(),
+          cycleProofId,
           index,
         ),
         removeOnComplete: true,

@@ -193,11 +193,6 @@ export class CheckoutOrderService {
       0,
       marketplacePricing.sellerReceivableInCents - affiliateCommissionInCents,
     );
-    if (paymentMethod === 'BOLETO') {
-      throw new BadRequestException(
-        'Boleto ainda não está habilitado no checkout Stripe-only. Use cartão ou Pix.',
-      );
-    }
     const orderNumber = generateCheckoutOrderNumber();
 
     // $transaction to prevent duplicate orders from concurrent createOrder
@@ -439,5 +434,85 @@ export class CheckoutOrderService {
   /** Decline upsell. */
   async declineUpsell(orderId: string, upsellId: string) {
     return this.queryService.declineUpsell(orderId, upsellId);
+  }
+
+  /**
+   * Canonical-name alias of {@link listOrders} for the Kloel capability
+   * resolver (`OrderService.list`). Accepts the (workspaceId, args)
+   * signature used by `KloelDomainServiceResolver`; `status`, `page`,
+   * `limit` are forwarded when present. Read-only — no order writes.
+   */
+  async list(workspaceId: string, args?: { status?: string; page?: number; limit?: number }) {
+    const filters: { status?: string; page?: number; limit?: number } = {};
+    if (typeof args?.status === 'string') {
+      filters.status = args.status;
+    }
+    if (typeof args?.page === 'number') {
+      filters.page = args.page;
+    }
+    if (typeof args?.limit === 'number') {
+      filters.limit = args.limit;
+    }
+    return this.listOrders(workspaceId, filters);
+  }
+
+  /**
+   * Canonical-name alias of {@link getOrder} for the Kloel capability
+   * resolver (`OrderService.get`). Accepts the (workspaceId, args)
+   * signature used by `KloelDomainServiceResolver`; `args.orderId` is
+   * required. Read-only — no order writes.
+   */
+  async get(workspaceId: string, args?: { orderId?: string }) {
+    const orderId = typeof args?.orderId === 'string' ? args.orderId : '';
+    if (!orderId) {
+      throw new Error('CheckoutOrderService.get: args.orderId is required');
+    }
+    return this.getOrder(orderId, workspaceId);
+  }
+
+  /**
+   * Canonical-name management method for the Kloel capability resolver
+   * (`OrderService.updateTracking`). Accepts the (workspaceId, args)
+   * signature used by `KloelDomainServiceResolver`.
+   *
+   * Persists shipping tracking data (`trackingCode`, optional `trackingUrl`)
+   * on a workspace-scoped physical order. Workspace ownership is verified
+   * before the write — cross-tenant updates are impossible. No money fields
+   * are touched.
+   */
+  async updateTracking(
+    workspaceId: string,
+    args?: { orderId?: string; trackingCode?: string; trackingUrl?: string },
+  ): Promise<{ success: true; orderId: string; trackingCode: string }> {
+    const orderId = typeof args?.orderId === 'string' ? args.orderId.trim() : '';
+    const trackingCode = typeof args?.trackingCode === 'string' ? args.trackingCode.trim() : '';
+    if (!orderId) {
+      throw new BadRequestException('CheckoutOrderService.updateTracking: orderId é obrigatório.');
+    }
+    if (!trackingCode) {
+      throw new BadRequestException(
+        'CheckoutOrderService.updateTracking: trackingCode é obrigatório.',
+      );
+    }
+
+    const order = await this.prisma.checkoutOrder.findFirst({
+      where: { id: orderId, workspaceId },
+      select: { id: true },
+    });
+    if (!order) {
+      throw new BadRequestException(`Pedido ${orderId} não encontrado neste workspace.`);
+    }
+
+    const trackingUrl = typeof args?.trackingUrl === 'string' ? args.trackingUrl.trim() : undefined;
+    await this.prisma.checkoutOrder.updateMany({
+      where: { id: orderId, workspaceId },
+      data: {
+        trackingCode,
+        ...(trackingUrl ? { trackingUrl } : {}),
+      },
+    });
+
+    this.logOrderEvent('order.tracking_updated', { orderId, workspaceId });
+    return { success: true, orderId, trackingCode };
   }
 }

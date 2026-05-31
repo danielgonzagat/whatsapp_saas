@@ -1,3 +1,7 @@
+/**
+ * @capability ProcessorLifecycleHelpers
+ * @domain queue
+ */
 import { randomUUID } from 'node:crypto';
 import { WorkerLogger } from './logger';
 import { redis } from './redis-client';

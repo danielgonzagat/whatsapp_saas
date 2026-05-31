@@ -14,6 +14,7 @@ import {
   Users,
   Wallet,
   Wrench,
+  Cpu,
 } from 'lucide-react';
 import type { ComponentType, SVGProps } from 'react';
 import { HomeIcon } from './HomeIcon';
@@ -78,6 +79,7 @@ export const NAV: NavItem[] = [
     key: 'relatorio',
     sub: ['Operações', 'Abandonos', 'Assinaturas', 'Estornos'],
   },
+  { icon: 'Cpu', label: 'Kloel Motor', key: 'admin', sub: [] },
 ];
 
 // ============================================
@@ -104,6 +106,7 @@ export const ICON_MAP: Record<string, IconComponent> = {
   PanelLeftClose,
   PanelLeftOpen,
   Target,
+  Cpu,
 };
 
 /** Resolve icon name string to lucide component */

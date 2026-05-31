@@ -32,7 +32,7 @@ export class VoiceController {
   /** Create profile. */
   @Post('profiles')
   @ApiOperation({ summary: 'Create a voice profile' })
-  @UsePipes(new ValidationPipe({ whitelist: true }))
+  @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   @Roles('ADMIN')
   async createProfile(@Req() req: AuthenticatedRequest, @Body() body: CreateVoiceProfileDto) {
     const effectiveWorkspaceId = resolveWorkspaceId(req);
@@ -51,10 +51,13 @@ export class VoiceController {
   /** Generate. */
   @Post('generate')
   @ApiOperation({ summary: 'Generate audio from text' })
-  @UsePipes(new ValidationPipe({ whitelist: true }))
+  @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   @Roles('ADMIN', 'AGENT')
   async generate(@Req() req: AuthenticatedRequest, @Body() body: GenerateAudioDto) {
     const effectiveWorkspaceId = resolveWorkspaceId(req);
-    return this.voiceService.generateAudio(effectiveWorkspaceId, body);
+    return this.voiceService.generateAudio(effectiveWorkspaceId, {
+      profileId: body.profileId,
+      text: body.text,
+    });
   }
 }

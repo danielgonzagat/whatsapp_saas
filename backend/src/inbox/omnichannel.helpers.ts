@@ -1,3 +1,5 @@
+import { type ChannelKind } from '../common/channel-dispatch/channel-dispatch.port';
+
 /**
  * Helpers extracted from OmnichannelService to keep complexity and file size
  * within Codacy thresholds. Pure functions only — no I/O, no DI dependencies.
@@ -20,8 +22,22 @@ export interface ProcessedAttachment {
   size?: number;
 }
 
-/** Channel discriminator for normalized messages. */
-type OmniChannel = 'WHATSAPP' | 'INSTAGRAM' | 'MESSENGER' | 'TIKTOK' | 'EMAIL';
+/**
+ * Channel discriminator for normalized inbound messages.
+ *
+ * Derived from the canonical {@link ChannelKind} (channel-dispatch.port) — the
+ * inbox persists/compares channels in UPPERCASE, so this is the uppercase form
+ * of the inbound-capable subset. Keeping it derived (not a hand-written
+ * literal union) means new canonical channels flow through automatically and
+ * there is ONE source of truth for the channel vocabulary (Wave 21 task c).
+ */
+export type OmniChannel = Uppercase<
+  | ChannelKind.WHATSAPP
+  | ChannelKind.INSTAGRAM
+  | ChannelKind.MESSENGER
+  | ChannelKind.TIKTOK
+  | ChannelKind.EMAIL
+>;
 
 /** A normalized inbound message — the canonical input across adapters. */
 export interface NormalizedMessage {

@@ -1,17 +1,11 @@
 import { GoalFieldService } from './goal-field.service';
-import {
-  GoalFieldShadowAccumulatorService,
-  WorkspaceShadowState,
-} from './goal-field.shadow-accumulator.service';
+import { GoalFieldShadowAccumulatorService } from './goal-field.shadow-accumulator.service';
 import type { SpineEventRef } from '../mind/mind.types';
 import {
   hotLeadWithoutResponseDetector,
-  abandonedCartDetector,
   repeatedObjectionDetector,
 } from './detectors/commercial.detectors';
 import { runtimeCriticalWithoutObservabilityDetector } from './detectors/cognitive.detectors';
-import { backendWithoutSurfaceDetector } from './detectors/structural.detectors';
-import { discountWithoutJustificationDetector } from './detectors/financial.detectors';
 const NOW = Date.parse('2026-05-13T22:00:00.000Z');
 
 function ev(over: Partial<SpineEventRef>): SpineEventRef {

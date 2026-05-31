@@ -1,6 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { KloelToolExecutorCrmService } from './kloel-tool-executor-crm.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { CampaignsService } from '../campaigns/campaigns.service';
+import { partialMatch } from '../../test/helpers/match-instance';
+import { castMock } from '../../test/helpers/cast-mock';
+
+type CampaignsServiceMock = { create: jest.Mock };
 type CrmPrismaMock = {
   contact: { findMany: jest.Mock; findFirst: jest.Mock; count: jest.Mock };
   workspace: { findUnique: jest.Mock; update: jest.Mock };
@@ -14,6 +19,7 @@ type CrmPrismaMock = {
 describe('KloelToolExecutorCrmService', () => {
   let service: KloelToolExecutorCrmService;
   let prisma: CrmPrismaMock;
+  let campaigns: CampaignsServiceMock;
   const wsId = 'ws-crm-1';
   beforeEach(async () => {
     prisma = {
@@ -38,13 +44,20 @@ describe('KloelToolExecutorCrmService', () => {
       message: { count: jest.fn().mockResolvedValue(0) },
       $transaction: jest.fn().mockImplementation((arg: unknown) => {
         if (typeof arg === 'function') {
-          return arg(prisma);
+          return (arg as (p: typeof prisma) => unknown)(prisma);
         }
         return Promise.resolve(undefined);
       }),
     };
+    campaigns = {
+      create: jest.fn().mockResolvedValue({ id: 'cm-default', name: 'Campanha' }),
+    };
     const module: TestingModule = await Test.createTestingModule({
-      providers: [KloelToolExecutorCrmService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        KloelToolExecutorCrmService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: CampaignsService, useValue: campaigns },
+      ],
     }).compile();
     service = module.get<KloelToolExecutorCrmService>(KloelToolExecutorCrmService);
   });
@@ -77,7 +90,7 @@ describe('KloelToolExecutorCrmService', () => {
       prisma.contact.findMany.mockResolvedValue(contacts);
       const result = await service.toolListLeads(wsId, { status: 'qualified' });
       expect(result.count).toBe(1);
-      expect(result.leads[0].score).toBe(85);
+      expect(castMock<{ leads: { score: number }[] }>(result).leads[0].score).toBe(85);
       expect(prisma.contact.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { workspaceId: wsId, leadScore: { gte: 70 } },
@@ -204,7 +217,7 @@ describe('KloelToolExecutorCrmService', () => {
   describe('toolCreateCampaign', () => {
     it('creates campaign for hot leads target', async () => {
       prisma.contact.count.mockResolvedValue(12);
-      prisma.campaign.create.mockResolvedValue({ id: 'cm-1', name: 'Campanha VIP' });
+      campaigns.create.mockResolvedValue({ id: 'cm-1', name: 'Campanha VIP' });
 
       const result = await service.toolCreateCampaign(wsId, {
         name: 'Campanha VIP',
@@ -221,12 +234,15 @@ describe('KloelToolExecutorCrmService', () => {
           where: { workspaceId: wsId, leadScore: { gte: 70 } },
         }),
       );
-      expect(prisma.campaign.create).toHaveBeenCalledWith(
+      expect(campaigns.create).toHaveBeenCalledWith(
+        wsId,
         expect.objectContaining({
-          data: expect.objectContaining({
-            workspaceId: wsId,
-            name: 'Campanha VIP',
-            status: 'DRAFT',
+          name: 'Campanha VIP',
+          messageTemplate: 'Oferta especial',
+          filters: partialMatch({
+            targetAudience: 'leads_quentes',
+            createdByKloel: true,
+            estimatedRecipients: 12,
           }),
         }),
       );
@@ -234,7 +250,7 @@ describe('KloelToolExecutorCrmService', () => {
 
     it('creates campaign for new contacts target', async () => {
       prisma.contact.count.mockResolvedValue(5);
-      prisma.campaign.create.mockResolvedValue({ id: 'cm-2', name: 'Boas Vindas' });
+      campaigns.create.mockResolvedValue({ id: 'cm-2', name: 'Boas Vindas' });
 
       await service.toolCreateCampaign(wsId, {
         name: 'Boas Vindas',
@@ -242,9 +258,11 @@ describe('KloelToolExecutorCrmService', () => {
         targetAudience: 'novos',
       });
 
-      const countArgs = prisma.contact.count.mock.calls[0][0];
+      const countArgs = castMock<[{ where: { createdAt: { gte: Date } } }][]>(
+        prisma.contact.count.mock.calls,
+      )[0]?.[0];
       expect(countArgs.where).toEqual(
-        expect.objectContaining({
+        partialMatch({
           workspaceId: wsId,
           createdAt: { gte: countArgs.where.createdAt.gte },
         }),
@@ -299,7 +317,9 @@ describe('KloelToolExecutorCrmService', () => {
 
       await service.toolGetDashboardSummary(wsId, 'week');
 
-      const countArgs = prisma.contact.count.mock.calls[0][0];
+      const countArgs = castMock<[{ where: { createdAt: { gte: Date } } }][]>(
+        prisma.contact.count.mock.calls,
+      )[0]?.[0];
       expect(countArgs.where).toEqual({
         workspaceId: wsId,
         createdAt: { gte: countArgs.where.createdAt.gte },
@@ -317,7 +337,7 @@ describe('KloelToolExecutorCrmService', () => {
 
       expect(prisma.checkoutOrder.aggregate).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: wsId, status: 'PAID' }),
+          where: partialMatch({ workspaceId: wsId, status: 'PAID' }),
         }),
       );
     });
@@ -370,13 +390,9 @@ describe('KloelToolExecutorCrmService', () => {
     });
 
     it('toolCreateCampaign scopes to workspaceId', async () => {
-      prisma.campaign.create.mockResolvedValue({ id: 'c-1', name: 'Test' });
+      campaigns.create.mockResolvedValue({ id: 'c-1', name: 'Test' });
       await service.toolCreateCampaign('ws-isolated', { name: 'Camp', message: 'msg' });
-      expect(prisma.campaign.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ workspaceId: 'ws-isolated' }),
-        }),
-      );
+      expect(campaigns.create).toHaveBeenCalledWith('ws-isolated', expect.objectContaining({}));
     });
   });
 

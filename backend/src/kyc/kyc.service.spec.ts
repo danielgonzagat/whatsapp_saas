@@ -60,7 +60,7 @@ describe('KycService.submitKyc', () => {
         acceptedAt: expectValueOf(String),
         ipAddress: '203.0.113.10',
         userAgent: 'Mozilla/5.0',
-      }),
+      }) as unknown,
       metadata: {
         kycWorkspaceId: 'ws_1',
         kycAgentId: 'agent_1',
@@ -71,6 +71,26 @@ describe('KycService.submitKyc', () => {
       where: { id: 'agent_1', workspaceId: 'ws_1' },
       data: { kycStatus: 'submitted', kycSubmittedAt: expectValueOf(Date) },
     });
+    // Connect account is NOT charges/payouts-enabled (default mock) → NO auto-approval.
+    // 100% form completion must never rubber-stamp KYC to 'approved'.
+    expect(prisma.agent.update).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({
+      success: true,
+      status: 'submitted',
+    });
+  });
+
+  it('approves on submit ONLY when the Stripe Connect account is fully enabled', async () => {
+    const { service, prisma } = buildService({
+      connectStatus: {
+        chargesEnabled: true,
+        payoutsEnabled: true,
+        requirementsCurrentlyDue: [],
+      },
+    });
+
+    const result = await service.submitKyc('agent_1', 'ws_1');
+
     expect(prisma.agent.update).toHaveBeenNthCalledWith(2, {
       where: { id: 'agent_1', workspaceId: 'ws_1' },
       data: { kycStatus: 'approved', kycApprovedAt: expectValueOf(Date) },
@@ -79,7 +99,25 @@ describe('KycService.submitKyc', () => {
       success: true,
       status: 'approved',
       autoApproved: true,
-      percentage: 100,
+    });
+  });
+
+  it('does NOT approve on submit when the Connect account still has requirements due', async () => {
+    const { service, prisma } = buildService({
+      connectStatus: {
+        chargesEnabled: true,
+        payoutsEnabled: true,
+        requirementsCurrentlyDue: ['individual.id_number'],
+      },
+    });
+
+    const result = await service.submitKyc('agent_1', 'ws_1');
+
+    // charges/payouts enabled but verification still pending → stay 'submitted'.
+    expect(prisma.agent.update).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({
+      success: true,
+      status: 'submitted',
     });
   });
 
@@ -151,7 +189,7 @@ describe('KycService.submitKyc', () => {
         acceptedAt: expectValueOf(String),
         ipAddress: '203.0.113.11',
         userAgent: 'Mozilla/5.0 (PJ)',
-      }),
+      }) as unknown,
       metadata: {
         kycWorkspaceId: 'ws_1',
         kycAgentId: 'agent_1',
@@ -219,7 +257,7 @@ describe('KycService.submitKyc', () => {
         name: 'Updated Name',
         kycStatus: 'pending',
         kycRejectedReason: null,
-      }),
+      }) as unknown,
     });
   });
 
@@ -236,10 +274,12 @@ describe('KycService.submitKyc', () => {
       where: { id: 'agent_1' },
       data: expect.objectContaining({
         kycStatus: 'approved',
-        kycApprovedAt: expect.anything(),
-      }),
+        kycApprovedAt: expect.anything() as unknown,
+      }) as unknown,
     });
-    const adminUpdateCall = prisma.agent.update.mock.calls.at(-1)?.[0];
+    const adminUpdateCall = (prisma.agent.update.mock.calls as unknown[][]).at(-1)?.[0] as
+      | { data: { kycApprovedAt: unknown } }
+      | undefined;
     expect(adminUpdateCall?.data.kycApprovedAt).toBeInstanceOf(Date);
     expect(result).toEqual({
       success: true,
@@ -327,7 +367,7 @@ describe('KycService.submitKyc', () => {
         details: expect.objectContaining({
           deletedBy: 'user',
           type: 'DOCUMENT_FRONT',
-        }),
+        }) as unknown,
       }),
     );
   });
@@ -360,22 +400,65 @@ describe('KycService.submitKyc', () => {
     await expect(service.deleteDocument('agent_1', 'doc_1')).rejects.toThrow('Not your document');
   });
 
-  it('autoApproveIfComplete approves when completion >= 75%', async () => {
-    const { service, prisma } = buildService();
+  it('autoApproveIfComplete approves only when the Connect account is fully enabled', async () => {
+    const { service, prisma, connectService } = buildService({
+      connectStatus: {
+        chargesEnabled: true,
+        payoutsEnabled: true,
+        requirementsCurrentlyDue: [],
+      },
+    });
+    // A SELLER Connect account exists for this workspace.
+    prisma.connectAccountBalance.findFirst.mockResolvedValue({
+      id: 'cab_seller',
+      accountType: 'SELLER',
+      stripeAccountId: 'acct_seller_1',
+    });
 
     const result = await service.autoApproveIfComplete('agent_1', 'ws_1');
 
+    expect(connectService.getOnboardingStatus).toHaveBeenCalledWith('acct_seller_1');
     expect(result.approved).toBe(true);
-    expect(result.percentage).toBe(100);
+    expect(result.connectEnabled).toBe(true);
     expect(prisma.agent.update).toHaveBeenCalledWith({
       where: { id: 'agent_1', workspaceId: 'ws_1' },
       data: expect.objectContaining({
         kycStatus: 'approved',
-        kycApprovedAt: expect.anything(),
-      }),
+        kycApprovedAt: expect.anything() as unknown,
+      }) as unknown,
     });
-    const autoApproveCall = prisma.agent.update.mock.calls.at(-1)?.[0];
+    const autoApproveCall = (prisma.agent.update.mock.calls as unknown[][]).at(-1)?.[0] as
+      | { data: { kycApprovedAt: unknown } }
+      | undefined;
     expect(autoApproveCall?.data.kycApprovedAt).toBeInstanceOf(Date);
+  });
+
+  it('autoApproveIfComplete does NOT approve a 100%-complete form when Connect is not enabled', async () => {
+    // Default mock: form is 100% complete but the Connect account is NOT
+    // charges/payouts-enabled. The pre-fix rubber-stamp would have approved here.
+    const { service, prisma } = buildService();
+    prisma.connectAccountBalance.findFirst.mockResolvedValue({
+      id: 'cab_seller',
+      accountType: 'SELLER',
+      stripeAccountId: 'acct_seller_1',
+    });
+
+    const result = await service.autoApproveIfComplete('agent_1', 'ws_1');
+
+    expect(result.approved).toBe(false);
+    expect(result.connectEnabled).toBe(false);
+    expect(prisma.agent.update).not.toHaveBeenCalled();
+  });
+
+  it('autoApproveIfComplete does NOT approve when no Connect account exists yet', async () => {
+    const { service, prisma, connectService } = buildService();
+    prisma.connectAccountBalance.findFirst.mockResolvedValue(null);
+
+    const result = await service.autoApproveIfComplete('agent_1', 'ws_1');
+
+    expect(connectService.getOnboardingStatus).not.toHaveBeenCalled();
+    expect(result.approved).toBe(false);
+    expect(prisma.agent.update).not.toHaveBeenCalled();
   });
 
   it('changePassword validates current password', async () => {

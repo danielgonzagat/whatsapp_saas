@@ -1,4 +1,4 @@
-// Custom hook for WhatsApp connection state, extracted from chat-container.tsx.
+// Custom hook for WhatsApp channel session state, extracted from chat-container.tsx.
 'use client';
 
 import {

@@ -2,16 +2,10 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { applyEdits, replaceText, renameSymbol, replaceLiteral, validate, wrapRange, type WrapKind, type TextEditSpec, type ApplyResult, type ValidationResult, computeZones } from './engine.js';
-import { resolveAllowedRootForAbsolutePath, resolveSafeTarget, REPO_ROOT } from './guard.js';
-import { buildTrace, levelFor, shapePayload, writeTrace } from './trace.js';
-import { browse, outline, readSymbol } from './nav.js';
-import { editSymbol, renameSymbolCrossFile, previewDiff, characterDiff, addNamedImport, removeNamedImport, replacePropertyValue, type SymbolOp, type SemanticEditResult, renamePropertyKey, addAwaitToCall } from './advanced.js';
-import { sha256, guardSha, log, atomicWrite, readUtf8, normalizeRepoRelPath, normalizeAllowedPath, relPathAllowed, changedSpanMetrics, hasArg, normalizeEslintDryRunArgs, requireEslintDryRunArgs, parseEslintJson, targetDetails, shellPath, nearestPackageRelPath, type EslintDryRunResult } from './server-helpers-io.js';
-import { runPostEditVerify, packageVerificationPlan, unusedSymbolFromLintMessage } from './server-helpers-verify.js';
-import { buildLintResidueActionCandidates, applyKnownLintResidueFixes } from './server-helpers-lint-fix.js';
-import { ok, fail, commit, type ToolOk } from './server-helpers-result.js';
-import { commitSemantic } from './server-helpers-commit-semantic.js';
+import { applyEdits } from './engine.js';
+import { resolveSafeTarget } from './guard.js';
+import { guardSha, readUtf8 } from './server-helpers-io.js';
+import { ok, fail, commit, writeWithTrace } from './server-helpers-result.js';
 import { replaceCalleeKeepArgs, replaceCallArg, insertCallArg, removeCallArg } from './engine-ops.js';
 import { universalReplaceLiteral, universalReplacePropertyValue, universalRenamePropertyKey } from './engine-universal.js';
 
@@ -88,7 +82,7 @@ server.registerTool(
       // re-emits the entire file as a tool argument — the dominant token
       // sink). atomic_create_file is for NEW files only. Modifying an
       // existing non-empty file MUST go through a surgical operator.
-      if (exists && existingBefore.trim() !== '') {
+      if (exists && existingBefore.trim() !== '' && !a.overwrite) {
         return fail(
           `refused: ${relPath} already exists and is non-empty. atomic_create_file ` +
             `is for NEW files only. To CHANGE part of an existing file use a ` +
@@ -156,7 +150,7 @@ server.registerTool(
       if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
       if (r.newText === before) return ok({ ok: true, changed: false, note: 'callee already matches', file: relPath });
       if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath, oldCallee: r.oldCallee, newCallee: r.newCallee });
-      atomicWrite(absPath, r.newText);
+      writeWithTrace(relPath, absPath, before, r.newText, 'atomic_replace_callee', r.validation);
       return ok({ ok: true, changed: true, file: relPath, oldCallee: r.oldCallee, newCallee: r.newCallee });
     } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
   },
@@ -183,7 +177,7 @@ server.registerTool(
       if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
       if (r.newText === before) return ok({ ok: true, changed: false, note: 'no change', file: relPath });
       if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath });
-      atomicWrite(absPath, r.newText);
+      writeWithTrace(relPath, absPath, before, r.newText, 'atomic_replace_arg', r.validation);
       return ok({ ok: true, changed: true, file: relPath });
     } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
   },
@@ -209,7 +203,7 @@ server.registerTool(
       const r = insertCallArg(relPath, before, a.line, a.column, a.argIndex, a.newText);
       if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
       if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath });
-      atomicWrite(absPath, r.newText);
+      writeWithTrace(relPath, absPath, before, r.newText, 'atomic_insert_arg', r.validation);
       return ok({ ok: true, changed: true, file: relPath });
     } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
   },
@@ -235,7 +229,7 @@ server.registerTool(
       if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
       if (r.newText === before) return ok({ ok: true, changed: false, note: 'no change', file: relPath });
       if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath });
-      atomicWrite(absPath, r.newText);
+      writeWithTrace(relPath, absPath, before, r.newText, 'atomic_remove_arg', r.validation);
       return ok({ ok: true, changed: true, file: relPath });
     } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
   },
@@ -262,7 +256,7 @@ server.registerTool(
       if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
       if (r.newText === before) return ok({ ok: true, changed: false, note: 'no change', file: relPath });
       if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath, oldText: r.oldText, newLiteral: r.newLiteral });
-      atomicWrite(absPath, r.newText);
+      writeWithTrace(relPath, absPath, before, r.newText, 'atomic_replace_literal_universal', r.validation);
       return ok({ ok: true, changed: true, file: relPath, oldText: r.oldText, newLiteral: r.newLiteral });
     } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
   },
@@ -283,7 +277,7 @@ server.registerTool(
       if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
       if (r.newText === before) return ok({ ok: true, changed: false, note: 'no change', file: relPath });
       if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath, key: r.key, oldValue: r.oldValue, newValue: r.newValue });
-      atomicWrite(absPath, r.newText);
+      writeWithTrace(relPath, absPath, before, r.newText, 'atomic_replace_property_value_universal', r.validation);
       return ok({ ok: true, changed: true, file: relPath, key: r.key, oldValue: r.oldValue, newValue: r.newValue });
     } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
   },
@@ -303,7 +297,7 @@ server.registerTool(
       const r = universalRenamePropertyKey(relPath, before, a.property, a.newKey);
       if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
       if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath, key: r.key, newKey: r.newKey });
-      atomicWrite(absPath, r.newText);
+      writeWithTrace(relPath, absPath, before, r.newText, 'atomic_rename_property_key_universal', r.validation);
       return ok({ ok: true, changed: true, file: relPath, key: r.key, newKey: r.newKey });
     } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
   },

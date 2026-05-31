@@ -1,5 +1,3 @@
-import { createHash, randomBytes } from 'node:crypto';
-import { OrderStatus } from '@prisma/client';
 import {
   ConflictException,
   Injectable,
@@ -14,16 +12,24 @@ import { generateUniquePublicCheckoutCode } from '../checkout/checkout-code.util
 import { buildPayCheckoutUrl } from '../checkout/checkout-public-url.util';
 import { isPublicCodeTaken } from './partnerships.helpers';
 import { getChatContacts, getMessages, sendMessage, markAsRead } from './partnerships.chat.helpers';
+import { generateOpaqueToken, hashOpaqueToken } from './partnerships.crypto.helpers';
+import {
+  INVITABLE_PARTNER_TYPES,
+  buildPartnerInviteUrl,
+  getPartnerRoleLabel,
+} from './partnerships.invite.helpers';
+import {
+  ATTRIBUTED_ORDER_STATUSES,
+  DEFAULT_PARTNER_COMMISSION_RATE,
+  aggregateMonthlyPerformance,
+  buildAttributedOrderFilters,
+  buildListAffiliatesWhere,
+  computeAffiliateStats,
+  extractLastSaleAt,
+  getCurrentYearStartUtc,
+  normalizeCreatePartnerInput,
+} from './partnerships.service.helpers';
 import { PrismaService } from '../prisma/prisma.service';
-
-const INVITABLE_PARTNER_TYPES = new Set(['AFFILIATE', 'SUPPLIER', 'COPRODUCER', 'MANAGER']);
-const PARTNER_ROLE_LABELS: Record<string, string> = {
-  AFFILIATE: 'afiliado',
-  SUPPLIER: 'fornecedor',
-  COPRODUCER: 'coprodutor',
-  MANAGER: 'gerente',
-  PRODUCER: 'produtor',
-};
 
 // cache.invalidate — partnerships data fetched live from Prisma; no Redis cache to invalidate
 @Injectable()
@@ -36,33 +42,6 @@ export class PartnershipsService {
     private readonly configService: ConfigService,
     private readonly emailService: EmailService,
   ) {}
-
-  private generateOpaqueToken(size = 32) {
-    return randomBytes(size).toString('base64url');
-  }
-
-  private hashOpaqueToken(token: string) {
-    return createHash('sha256').update(token).digest('hex');
-  }
-
-  private buildPartnerInviteUrl(params: {
-    inviteToken: string;
-    partnerEmail: string;
-    partnerName: string;
-    workspaceName: string;
-  }) {
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
-    const url = new URL('/register', frontendUrl);
-    url.searchParams.set('affiliateInviteToken', params.inviteToken);
-    url.searchParams.set('email', params.partnerEmail);
-    url.searchParams.set('partnerName', params.partnerName);
-    url.searchParams.set('inviterWorkspaceName', params.workspaceName);
-    return url.toString();
-  }
-
-  private getPartnerRoleLabel(type: string) {
-    return PARTNER_ROLE_LABELS[type] || 'parceiro';
-  }
 
   private async isPublicCodeTaken(code: string) {
     return isPublicCodeTaken(this.prisma, code);
@@ -193,16 +172,7 @@ export class PartnershipsService {
     workspaceId: string,
     params?: { type?: string; status?: string; search?: string },
   ) {
-    const where: Record<string, unknown> = { workspaceId };
-    if (params?.type && params.type !== 'todos') {
-      where.type = params.type.trim().toUpperCase();
-    }
-    if (params?.status) {
-      where.status = params.status.trim().toUpperCase();
-    }
-    if (params?.search) {
-      where.partnerName = { contains: params.search, mode: 'insensitive' };
-    }
+    const where = buildListAffiliatesWhere(workspaceId, params);
 
     const affiliates = await this.prisma.affiliatePartner.findMany({
       where,
@@ -241,22 +211,7 @@ export class PartnershipsService {
       },
       take: 1000,
     });
-    const activeAffiliates = partners.filter(
-      (p) => p.type === 'AFFILIATE' && p.status === 'ACTIVE',
-    ).length;
-    const producers = partners.filter((p) => p.type === 'PRODUCER').length;
-    const totalRevenue = partners
-      .filter((p) => p.type === 'AFFILIATE')
-      .reduce((s, p) => s + p.totalRevenue, 0);
-    const totalCommissions = partners.reduce((s, p) => s + p.totalCommission, 0);
-    const top = [...partners].sort((a, b) => b.totalRevenue - a.totalRevenue)[0];
-    return {
-      activeAffiliates,
-      producers,
-      totalRevenue,
-      totalCommissions,
-      topPartner: top ? { name: top.partnerName, revenue: top.totalRevenue } : null,
-    };
+    return computeAffiliateStats(partners);
   }
 
   /** Get affiliate detail. */
@@ -283,13 +238,7 @@ export class PartnershipsService {
     },
   ) {
     const code = await this.generateAffiliateCode();
-    const partnerName = String(data.partnerName || '').trim();
-    const partnerEmail = String(data.partnerEmail || '')
-      .trim()
-      .toLowerCase();
-    const partnerType = String(data.type || '')
-      .trim()
-      .toUpperCase();
+    const { partnerName, partnerEmail, partnerType } = normalizeCreatePartnerInput(data);
     const existingPartner = await this.prisma.affiliatePartner.findFirst({
       where: { workspaceId, partnerEmail },
     });
@@ -304,8 +253,8 @@ export class PartnershipsService {
     }
 
     const requiresInvite = INVITABLE_PARTNER_TYPES.has(partnerType);
-    const inviteToken = requiresInvite ? this.generateOpaqueToken() : null;
-    const inviteTokenHash = inviteToken ? this.hashOpaqueToken(inviteToken) : null;
+    const inviteToken = requiresInvite ? generateOpaqueToken() : null;
+    const inviteTokenHash = inviteToken ? hashOpaqueToken(inviteToken) : null;
     const workspace = requiresInvite
       ? await this.prisma.workspace.findUnique({
           where: { id: workspaceId },
@@ -320,7 +269,7 @@ export class PartnershipsService {
         partnerEmail,
         ...(data.partnerPhone !== undefined ? { partnerPhone: data.partnerPhone } : {}),
         type: partnerType,
-        commissionRate: data.commissionRate || 30,
+        commissionRate: data.commissionRate || DEFAULT_PARTNER_COMMISSION_RATE,
         status: requiresInvite ? 'PENDING' : 'ACTIVE',
         affiliateCode: code,
         affiliateLink: buildPayCheckoutUrl(undefined, code),
@@ -341,18 +290,19 @@ export class PartnershipsService {
       return partner;
     }
 
-    const inviteUrl = this.buildPartnerInviteUrl({
+    const inviteUrl = buildPartnerInviteUrl({
       inviteToken,
       partnerEmail: partner.partnerEmail,
       partnerName: partner.partnerName,
       workspaceName: workspace?.name || 'Kloel',
+      frontendUrl: this.configService.get<string>('FRONTEND_URL') || undefined,
     });
     const delivered = await this.emailService.sendPartnerInviteEmail(
       partner.partnerEmail,
       partner.partnerName,
       workspace?.name || 'Kloel',
       inviteUrl,
-      this.getPartnerRoleLabel(partnerType),
+      getPartnerRoleLabel(partnerType),
     );
 
     if (!delivered) {
@@ -411,26 +361,14 @@ export class PartnershipsService {
       throw new NotFoundException('Parceiro não encontrado');
     }
 
-    const attributedOrderFilters: Record<string, unknown>[] = [];
-    if (partner.affiliateCode) {
-      attributedOrderFilters.push({
-        metadata: { path: ['affiliateCode'], equals: partner.affiliateCode },
-      });
-    }
-    if (partner.partnerWorkspaceId) {
-      attributedOrderFilters.push({ affiliateId: partner.partnerWorkspaceId });
-      attributedOrderFilters.push({
-        metadata: { path: ['affiliateWorkspaceId'], equals: partner.partnerWorkspaceId },
-      });
-    }
+    const attributedOrderFilters = buildAttributedOrderFilters(partner);
 
-    const monthlyPerformance = new Array<number>(12).fill(0);
+    let monthlyPerformance = new Array<number>(12).fill(0);
     let lastSaleAt: string | undefined;
 
     if (attributedOrderFilters.length > 0) {
-      const currentYear = new Date().getUTCFullYear();
-      const currentYearStart = new Date(Date.UTC(currentYear, 0, 1));
-      const validStatuses = [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED];
+      const currentYearStart = getCurrentYearStartUtc();
+      const validStatuses = [...ATTRIBUTED_ORDER_STATUSES];
       const [orders, latestOrder] = await Promise.all([
         this.prisma.checkoutOrder.findMany({
           where: {
@@ -459,20 +397,8 @@ export class PartnershipsService {
         }),
       ]);
 
-      for (const order of orders) {
-        const saleDate = order.paidAt ?? order.createdAt;
-        if (saleDate instanceof Date) {
-          const idx = saleDate.getUTCMonth();
-          monthlyPerformance[idx] = (monthlyPerformance[idx] ?? 0) + 1;
-        }
-      }
-
-      if (latestOrder) {
-        const ts = latestOrder.paidAt ?? latestOrder.createdAt;
-        if (ts) {
-          lastSaleAt = ts.toISOString();
-        }
-      }
+      monthlyPerformance = aggregateMonthlyPerformance(orders);
+      lastSaleAt = extractLastSaleAt(latestOrder);
     }
 
     return {

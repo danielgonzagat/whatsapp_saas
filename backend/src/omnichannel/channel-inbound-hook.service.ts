@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
 import { MindEventSpine } from '../kloel/mind/coordination';
-import { MindEventProcessorService } from '../kloel/mind-event-processor.service';
+import { MindEventProcessorService } from '../kloel/mind/runtime/mind-event-processor.service';
 import { ensureError, type NormalizedMessage } from '../inbox/omnichannel.helpers';
 import type { MindPerceptEvent } from '../kloel/mind.types';
 

@@ -21,6 +21,8 @@ describe('FacebookMessengerController', () => {
   let fbGetMessages: jest.Mock;
   let fbGetConversations: jest.Mock;
   let fbGetStatus: jest.Mock;
+  let fbGetSummary: jest.Mock;
+  let fbGetContacts: jest.Mock;
   let metaResolveConnection: jest.Mock;
 
   const makeReq = (overrides?: { sub?: string; workspaceId?: string }) =>
@@ -43,6 +45,8 @@ describe('FacebookMessengerController', () => {
     fbGetMessages = jest.fn();
     fbGetConversations = jest.fn();
     fbGetStatus = jest.fn();
+    fbGetSummary = jest.fn();
+    fbGetContacts = jest.fn();
     metaResolveConnection = jest.fn().mockResolvedValue({
       accessToken: 'at-1',
       pageId: 'page-1',
@@ -55,6 +59,8 @@ describe('FacebookMessengerController', () => {
         getMessages: fbGetMessages,
         getConversations: fbGetConversations,
         getStatus: fbGetStatus,
+        getSummary: fbGetSummary,
+        getContacts: fbGetContacts,
       } as never,
       { resolveConnection: metaResolveConnection } as never,
     );
@@ -173,6 +179,77 @@ describe('FacebookMessengerController', () => {
       expect(mockResolveWorkspaceId).toHaveBeenCalledWith(req);
       expect(fbGetStatus).toHaveBeenCalledWith('ws-1');
       expect(result).toEqual(status);
+    });
+  });
+
+  describe('getSummary', () => {
+    it('returns the service summary projection for the resolved workspace', async () => {
+      const summary = {
+        configured: true,
+        pageId: 'page-1',
+        pageName: 'My Page',
+        totals: { inbound: 4, outbound: 2, delivered: 2, read: 1, failed: 0 },
+        lastInboundAt: '2026-05-29T10:00:00.000Z',
+        lastOutboundAt: '2026-05-29T11:00:00.000Z',
+      };
+      fbGetSummary.mockResolvedValueOnce(summary);
+      const req = makeReq();
+
+      const result = await controller.getSummary(req);
+
+      expect(mockResolveWorkspaceId).toHaveBeenCalledWith(req);
+      expect(fbGetSummary).toHaveBeenCalledWith('ws-1');
+      expect(result).toEqual(summary);
+    });
+  });
+
+  describe('getContacts', () => {
+    it('forwards pageId and limit to the service after meta connection resolves', async () => {
+      const contacts = [
+        { psid: 'psid-A', messageCount: 3, lastInboundAt: '2026-05-29T10:00:00.000Z' },
+      ];
+      fbGetContacts.mockResolvedValueOnce(contacts);
+      const req = makeReq();
+
+      const result = await controller.getContacts(req, 'p-1', 25);
+
+      expect(mockResolveWorkspaceId).toHaveBeenCalledWith(req);
+      expect(metaResolveConnection).toHaveBeenCalledWith('ws-1', 'facebook');
+      expect(mockNormalizeMetaGraphSegment).toHaveBeenCalledWith('p-1', 'Messenger page id');
+      expect(fbGetContacts).toHaveBeenCalledWith('ws-1', { pageId: 'p-1', limit: 25 });
+      expect(result).toEqual(contacts);
+    });
+
+    it('falls back to the resolved connection page id when caller omits pageId', async () => {
+      fbGetContacts.mockResolvedValueOnce([]);
+      const req = makeReq();
+
+      await controller.getContacts(req, '', 10);
+
+      expect(mockNormalizeMetaGraphSegment).toHaveBeenCalledWith('page-1', 'Messenger page id');
+      expect(fbGetContacts).toHaveBeenCalledWith('ws-1', { pageId: 'page-1', limit: 10 });
+    });
+
+    it('omits pageId when neither caller nor resolved connection provides one', async () => {
+      metaResolveConnection.mockResolvedValueOnce({
+        accessToken: 'at-1',
+        pageId: null,
+        pageAccessToken: 'pat-1',
+      });
+      fbGetContacts.mockResolvedValueOnce([]);
+      const req = makeReq();
+
+      await controller.getContacts(req, '', 15);
+
+      expect(fbGetContacts).toHaveBeenCalledWith('ws-1', { limit: 15 });
+    });
+
+    it('throws BadRequestException when meta connection has no access token', async () => {
+      metaResolveConnection.mockResolvedValueOnce({ accessToken: null, pageId: null });
+      const req = makeReq();
+
+      await expect(controller.getContacts(req, '', 20)).rejects.toThrow(BadRequestException);
+      expect(fbGetContacts).not.toHaveBeenCalled();
     });
   });
 });

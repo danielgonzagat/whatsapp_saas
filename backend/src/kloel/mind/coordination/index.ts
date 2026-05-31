@@ -17,6 +17,7 @@
 export {
   MindAutonomyCoordinator,
   type BrainAutonomyProposal,
+  type Proposal,
 } from './mind-autonomy-coordinator.service';
 export { MindCapabilityExecutor, type CapabilityResult } from './mind-capability-executor.service';
 export { MindCapabilityRegistry } from './mind-capability-registry.service';
@@ -25,3 +26,4 @@ export { MindEventSpine } from './mind-event-spine.service';
 export { MindRuntime } from './mind-runtime.service';
 export { WhatsAppMindCoordinator } from './whatsapp-mind-coordinator.service';
 export { LeadMindCoordinator } from './lead-mind-coordinator.service';
+export { MindEventIngestor } from './mind-event-ingestor.service';

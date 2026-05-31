@@ -1,4 +1,3 @@
-import { randomBytes } from 'node:crypto';
 import {
   BadRequestException,
   Injectable,
@@ -12,8 +11,14 @@ import { verifyUnsubscribeToken } from '../common/utils/unsubscribe-token.util';
 import { JwtSetValidator, SecurityEventTokenPayload } from './utils/jwt-set.validator';
 import { validateSignedRequest } from './utils/signed-request.validator';
 import { OpsAlertService } from '../observability/ops-alert.service';
-
-const BLOCKED_NESTED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+import {
+  buildDeletionStatusUrl,
+  buildRedactedAgentFields,
+  classifyRiscEvent,
+  extractSubjectIdentifier,
+  generateConfirmationCode,
+  normalizeUnsubscribeEmail,
+} from './compliance.helpers';
 
 /** Compliance service. */
 @Injectable()
@@ -60,7 +65,7 @@ export class ComplianceService {
       throw new BadRequestException('signed_request sem user_id.');
     }
 
-    const confirmationCode = this.generateConfirmationCode();
+    const confirmationCode = generateConfirmationCode();
     const request = await this.prisma.dataDeletionRequest.create({
       data: {
         provider: 'facebook',
@@ -73,10 +78,8 @@ export class ComplianceService {
 
     await this.softDeleteByProviderSubject('facebook', providerUserId, request.id);
 
-    const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL || process.env.FRONTEND_URL || 'https://kloel.com';
     return {
-      url: `${siteUrl.replace(/\/$/, '')}/data-deletion/status/${confirmationCode}`,
+      url: buildDeletionStatusUrl(confirmationCode),
       confirmation_code: confirmationCode,
     };
   }
@@ -160,12 +163,14 @@ export class ComplianceService {
   }
 
   private async routeRiscEvent(eventType: string, subject: string) {
-    if (eventType.endsWith('/sessions-revoked')) {
+    const action = classifyRiscEvent(eventType);
+
+    if (action === 'sessions-revoked') {
       await this.revokeAgentSessionsByProviderSubject('google', subject);
       return;
     }
 
-    if (eventType.endsWith('/tokens-revoked')) {
+    if (action === 'tokens-revoked') {
       await this.prisma.socialAccount.updateMany({
         where: {
           provider: 'google',
@@ -182,7 +187,7 @@ export class ComplianceService {
       return;
     }
 
-    if (eventType.endsWith('/account-disabled')) {
+    if (action === 'account-disabled') {
       const agent = await this.findAgentByProviderSubject('google', subject);
       if (!agent) {
         return;
@@ -199,7 +204,7 @@ export class ComplianceService {
       return;
     }
 
-    if (eventType.endsWith('/account-purged')) {
+    if (action === 'account-purged') {
       await this.softDeleteByProviderSubject('google', subject);
     }
   }
@@ -208,32 +213,11 @@ export class ComplianceService {
     payload: SecurityEventTokenPayload,
     eventPayload: Record<string, unknown>,
   ) {
-    const subject =
-      this.readNestedString(eventPayload, ['subject', 'sub']) ||
-      this.readNestedString(eventPayload, ['subject', 'subject']) ||
-      this.readNestedString(eventPayload, ['sub']) ||
-      String(payload.sub || '').trim();
-
+    const subject = extractSubjectIdentifier(payload, eventPayload);
     if (!subject) {
       throw new BadRequestException('Evento RISC sem subject/sub.');
     }
-
     return subject;
-  }
-
-  private readNestedString(value: Record<string, unknown>, path: string[]) {
-    let cursor: unknown = value;
-    for (const key of path) {
-      if (!cursor || typeof cursor !== 'object' || Array.isArray(cursor)) {
-        return '';
-      }
-      if (BLOCKED_NESTED_KEYS.has(key) || !Object.prototype.hasOwnProperty.call(cursor, key)) {
-        return '';
-      }
-      cursor = Reflect.get(cursor, key);
-    }
-
-    return typeof cursor === 'string' ? cursor.trim() : '';
   }
 
   /**
@@ -326,23 +310,12 @@ export class ComplianceService {
    * validated through upstream compliance checks.
    */
   private async softDeleteAgent(agentId: string, requestId?: string) {
-    const deletedEmail = `deleted-${agentId}@removed.local`;
-    const deletedName = 'Deleted User';
+    const redacted = buildRedactedAgentFields(agentId);
     const deletedAgent = await this.prisma.$transaction(
       async (tx) => {
         const agent = await tx.agent.update({
           where: { id: agentId },
-          data: {
-            name: deletedName,
-            email: deletedEmail,
-            phone: null,
-            avatarUrl: null,
-            provider: null,
-            providerId: null,
-            emailVerified: false,
-            disabledAt: new Date(),
-            deletedAt: new Date(),
-          },
+          data: redacted,
           select: {
             id: true,
             email: true,
@@ -404,7 +377,7 @@ export class ComplianceService {
       throw new BadRequestException('Token de cancelamento sem workspace; recurso indisponivel.');
     }
 
-    const email = payload.email.toLowerCase().trim();
+    const email = normalizeUnsubscribeEmail(payload.email);
 
     const result = await this.prisma.contact.updateMany({
       where: {
@@ -421,9 +394,5 @@ export class ComplianceService {
     this.logger.log(`Unsubscribe: ${email} opted out in ${result.count} contacts`);
 
     return { unsubscribed: true, email, contactCount: result.count };
-  }
-
-  private generateConfirmationCode() {
-    return randomBytes(12).toString('hex').slice(0, 16);
   }
 }

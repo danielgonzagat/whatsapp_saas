@@ -43,7 +43,7 @@ import { ScrapersModule } from './scrapers/scrapers.module';
 import { TeamModule } from './team/team.module';
 import { VoiceModule } from './voice/voice.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
-import { WhatsappModule } from './whatsapp/whatsapp.module';
+import { WhatsappModule } from './marketing/channels/whatsapp/whatsapp.module';
 import { WorkspaceModule } from './workspaces/workspace.module';
 
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -52,7 +52,7 @@ import { RouteClassGuard } from './common/throttler/route-class.guard';
 
 import { AdminModule } from './admin/admin.module';
 import { AffiliateModule } from './affiliate/affiliate.module';
-import { AiBrainModule } from './ai-brain/ai-brain.module';
+import { MindKnowledgeModule } from './kloel/mind/knowledge/knowledge.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AnunciosModule } from './anuncios/anuncios.module';
 import { AudioModule } from './audio/audio.module';
@@ -62,7 +62,7 @@ import { AutopilotModule } from './autopilot/autopilot.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { ChatModule } from './chat/chat.module';
 import { CheckoutModule } from './checkout/checkout.module';
-import { CiaModule } from './cia/cia.module';
+import { CiaModule } from './kloel/mind/cia/cia.module';
 import { PromptSanitizerMiddleware } from './common/middleware/prompt-sanitizer.middleware';
 import { getRedisUrl, isRedisConfigured } from './common/redis/redis.util';
 import { StorageModule } from './common/storage/storage.module';
@@ -115,7 +115,6 @@ import { TrustModule } from './kloel/trust/trust.module';
 import { WisdomModule } from './kloel/wisdom/wisdom.module';
 import { AgencyModule } from './kloel/agency/agency.module';
 import { HealthyMoneyModule } from './kloel/healthy-money/healthy-money.module';
-import { CapabilityRegistryModule } from './kloel/capability-registry/capability-registry.module';
 import { ClarityModule } from './kloel/clarity/clarity.module';
 import { CommemModule } from './kloel/commem/commem.module';
 import { CreatorModule } from './kloel/creator/creator.module';
@@ -269,7 +268,7 @@ function setRedisClientListenerBudget(client: Redis): void {
     AuditModule,
     AutopilotModule,
 
-    AiBrainModule,
+    MindKnowledgeModule,
     GrowthModule,
     CalendarModule, // 📅 Integração com calendários
     ChatModule, // 💬 Chat conversation persistence
@@ -298,7 +297,6 @@ function setRedisClientListenerBudget(client: Redis): void {
     ComplianceModule, // OAuth/Meta/LGPD compliance callbacks and user rights endpoints
     FinancialAlertModule, // Financial alerting (global)
     OpsAlertModule, // OPS critical error alerting (global)
-    CapabilityRegistryModule, // 📋 Capability Registry — real runtime evidence for no-overclaim gate (PCI.4 §3.4)
     AbiAbModule, // 🔬 UTP-ABI-005 — A/B telemetry for ABI substitution decisions
     LineageModule, // 🧬 Camada I — Genesis + Lineage Ledger + Identity Projector (cognitive organism)
     MindModule, // 🧠 MIND substrate — valence/attention/hebbian/consolidation/multi-timescale/BG (UTP-MIND-*)

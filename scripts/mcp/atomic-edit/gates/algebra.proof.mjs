@@ -1,0 +1,196 @@
+#!/usr/bin/env node
+/**
+ * algebra.proof.mjs — standalone node proof for the VERIFIED-EDIT ALGEBRA.
+ *
+ * Run:  node scripts/mcp/atomic-edit/build.mjs \
+ *    && node scripts/mcp/atomic-edit/gates/algebra.proof.mjs
+ *
+ * Proves, in order:
+ *   UNIT       — commute() on the four cases (diff-file independent, diff-file
+ *                closure-coupled, same-file disjoint, same-file overlapping).
+ *   VALUE      — a real cross-file coupling (b imports foo from a) that byte-span
+ *                disjointness calls "independent" but the closure correctly calls
+ *                COUPLED — the thing no git/Darcs/CRDT patch theory can express.
+ *   CONFLUENCE — commuting (disjoint) splices yield byte-identical results in
+ *                either order; overlapping splices are correctly refused.
+ *   EMPIRICAL  — runs over the real .atomic/traces corpus and asserts the commute
+ *                rate is DISCRIMINATING (not 100% trivial, not ~0 collapsed),
+ *                locking the falsifier's headline as a regression.
+ */
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const dir = path.dirname(fileURLToPath(import.meta.url));
+const A = await import(path.join(dir, '..', 'dist', 'gates', 'algebra.js'));
+const { commute, buildEditFact, concurrentBatches, perSymbolClosureOf, closureOf } = A;
+
+let pass = 0;
+let fail = 0;
+const check = (name, cond) => {
+  if (cond) { pass += 1; console.log('  PASS ', name); }
+  else { fail += 1; console.log('  FAIL ', name); }
+};
+const fact = (file, spans, closure) => ({ file, spans, closure: new Set(closure), closureCapped: false });
+
+// ── UNIT ─────────────────────────────────────────────────────────────────────
+check('UNIT diff-file independent → commute',
+  commute(fact('x.ts', [[0, 5]], ['x.ts']), fact('y.ts', [[0, 5]], ['y.ts'])).commute === true);
+check('UNIT diff-file closure-coupled → no commute',
+  commute(fact('x.ts', [[0, 5]], ['x.ts']), fact('y.ts', [[0, 5]], ['y.ts', 'x.ts'])).commute === false);
+check('UNIT same-file disjoint spans → commute',
+  commute(fact('x.ts', [[0, 5]], ['x.ts']), fact('x.ts', [[10, 15]], ['x.ts'])).commute === true);
+check('UNIT same-file overlapping spans → no commute',
+  commute(fact('x.ts', [[0, 10]], ['x.ts']), fact('x.ts', [[5, 15]], ['x.ts'])).commute === false);
+
+// ── VALUE: closure catches a coupling byte-disjointness misses ────────────────
+{
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'atomic-algebra-'));
+  fs.writeFileSync(path.join(tmp, 'a.ts'), 'export const foo = 1;\n');
+  fs.writeFileSync(path.join(tmp, 'b.ts'), "import { foo } from './a';\nexport const bar = foo + 1;\n");
+  fs.writeFileSync(path.join(tmp, 'c.ts'), 'export const baz = 2;\n');
+  const fA = buildEditFact(tmp, { file: 'a.ts', modifiedZones: [{ byteStart: 13, byteEnd: 16 }] }); // edit `foo`
+  // b's body edit lands on its USE of the imported `foo` (byte 46-49), so the edit
+  // genuinely reads a.ts — a real cross-file coupling that byte-span disjointness
+  // alone cannot see. (Under per-symbol precision an edit elsewhere in b that did
+  // NOT touch `foo` would correctly be independent; here we exercise the coupling.)
+  const fB = buildEditFact(tmp, { file: 'b.ts', modifiedZones: [{ byteStart: 46, byteEnd: 49 }] }); // edit b's use of `foo`
+  const fC = buildEditFact(tmp, { file: 'c.ts', modifiedZones: [{ byteStart: 13, byteEnd: 16 }] });
+  const vAB = commute(fA, fB);
+  const vAC = commute(fA, fC);
+  // byte-span-only would call A,B independent (different files); the algebra must not.
+  check('VALUE a↔b coupled via import closure (byte-disjoint but NOT commuting)', vAB.commute === false && vAB.sharedLocus === 'a.ts');
+  check('VALUE a↔c genuinely independent → commuting', vAC.commute === true);
+  console.log(`        (a↔b reason: ${vAB.reason})`);
+  fs.rmSync(tmp, { recursive: true, force: true });
+}
+
+// ── CONFLUENCE: commuting splices are order-independent; overlapping refused ───
+{
+  const applyDisjoint = (s, splices) => {
+    const sorted = [...splices].sort((x, y) => y.start - x.start);
+    let out = s;
+    for (const sp of sorted) out = out.slice(0, sp.start) + sp.text + out.slice(sp.end);
+    return out;
+  };
+  const base = 'const a = 1;\nconst b = 2;\nconst c = 3;\n';
+  const p1 = { start: 6, end: 7, text: 'A' };   // rename a → A (disjoint)
+  const p2 = { start: 19, end: 20, text: 'B' };  // rename b → B (disjoint)
+  const o12 = applyDisjoint(applyDisjoint(base, [p1]), [{ ...p2 }]);
+  const o21 = applyDisjoint(applyDisjoint(base, [p2]), [{ ...p1 }]);
+  // commute says these (same file, disjoint spans) commute…
+  const v = commute(fact('f.ts', [[6, 7]], ['f.ts']), fact('f.ts', [[19, 20]], ['f.ts']));
+  // …and applied in both orders (offset-correct) they are byte-identical.
+  const correct12 = base.slice(0, 6) + 'A' + base.slice(7, 19) + 'B' + base.slice(20);
+  check('CONFLUENCE commuting splices → byte-identical both orders', v.commute === true && o12 === o21 && o12 === correct12);
+  const vOver = commute(fact('f.ts', [[6, 12]], ['f.ts']), fact('f.ts', [[9, 15]], ['f.ts']));
+  check('CONFLUENCE overlapping splices correctly refused', vOver.commute === false);
+}
+
+// ── EMPIRICAL: real corpus, discriminating-not-degenerate ─────────────────────
+{
+  // repoRoot = four levels up from gates/ (scripts/mcp/atomic-edit/gates → repo), not cwd.
+  const repoRoot = process.env.ATOMIC_EDIT_REPO_ROOT ?? path.resolve(dir, '..', '..', '..', '..');
+  const tdir = path.join(repoRoot, '.atomic', 'traces');
+  const SCRATCH = /(^|\/)\.|\.smoke|\/\.atomic\//;
+  const cache = new Map();
+  const facts = [];
+  if (fs.existsSync(tdir)) {
+    for (const f of fs.readdirSync(tdir).filter((x) => x.endsWith('.json'))) {
+      try {
+        const d = JSON.parse(fs.readFileSync(path.join(tdir, f), 'utf8'));
+        const rel = String(d.file ?? '').replaceAll('\\', '/');
+        if (!rel || SCRATCH.test(rel) || rel === 'a.ts' || rel === 'b.ts') continue;
+        facts.push(buildEditFact(repoRoot, d, cache));
+      } catch { /* skip */ }
+    }
+  }
+  let pairs = 0;
+  let comm = 0;
+  for (let i = 0; i < facts.length; i++)
+    for (let j = i + 1; j < facts.length; j++) { pairs += 1; if (commute(facts[i], facts[j]).commute) comm += 1; }
+  const rate = pairs ? comm / pairs : 0;
+  const batches = concurrentBatches(facts);
+  console.log(`        (empirical: ${facts.length} real edits, ${pairs} pairs, commute ${(rate * 100).toFixed(1)}%, ${batches.length} concurrent batches)`);
+  check('EMPIRICAL commute rate is DISCRIMINATING (0.50 < r < 0.99, not degenerate)', pairs > 0 && rate > 0.5 && rate < 0.99);
+}
+
+// ── PER-SYMBOL: precision tightening that removes a FALSE per-file coupling ────
+// A hub file imports `foo` from a.ts and `bar` from b.ts. An edit to the hub that
+// only touches the `foo` usage is, at PER-FILE granularity, coupled to BOTH a.ts and
+// b.ts (the file's whole import closure). At PER-SYMBOL granularity it is coupled to
+// a.ts only — so a concurrent edit to b.ts that per-file calls COUPLED, per-symbol
+// correctly calls INDEPENDENT. This is the headline of the tightening: same soundness,
+// fewer false couplings, a truer commute rate.
+{
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'atomic-persym-'));
+  fs.writeFileSync(path.join(tmp, 'a.ts'), 'export const foo = 1;\n');
+  fs.writeFileSync(path.join(tmp, 'b.ts'), 'export const bar = 2;\n');
+  // hub references foo (from a) on one line and bar (from b) on another, in distinct,
+  // byte-disjoint spans so each edit can be aimed at exactly one symbol's usage.
+  const hub =
+    "import { foo } from './a';\n" +
+    "import { bar } from './b';\n" +
+    'export const usesFoo = foo + 10;\n' +
+    'export const usesBar = bar + 20;\n';
+  fs.writeFileSync(path.join(tmp, 'hub.ts'), hub);
+
+  // Aim spans at the actual identifier-usage bytes (computed, not hand-guessed).
+  const fooUse = hub.indexOf('foo + 10');
+  const barUse = hub.indexOf('bar + 20');
+  const fEditHubFoo = buildEditFact(tmp, { file: 'hub.ts', modifiedZones: [{ byteStart: fooUse, byteEnd: fooUse + 3 }] });
+  const fEditHubBar = buildEditFact(tmp, { file: 'hub.ts', modifiedZones: [{ byteStart: barUse, byteEnd: barUse + 3 }] });
+  const fEditB = buildEditFact(tmp, { file: 'b.ts', modifiedZones: [{ byteStart: 13, byteEnd: 16 }] }); // edit `bar`
+
+  // (1) The per-FILE closure of hub.ts genuinely contains b.ts — so a byte-disjoint
+  //     edit to b.ts WOULD be reported coupled at file granularity. Lock that premise.
+  const perFileHub = closureOf(tmp, 'hub.ts');
+  check('PER-SYMBOL premise: per-file hub closure DOES contain b.ts (the false coupling exists)', perFileHub.set.has('b.ts'));
+
+  // (2) The per-SYMBOL closure of the foo-only edit drops b.ts (foo comes from a, not b),
+  //     yet keeps a.ts (the symbol it actually reads). Precision, not blindness.
+  check('PER-SYMBOL foo-edit closure drops b.ts (false coupling removed)', !fEditHubFoo.closure.has('b.ts'));
+  check('PER-SYMBOL foo-edit closure keeps a.ts (true dependency retained)', fEditHubFoo.closure.has('a.ts'));
+
+  // (3) THE HEADLINE — same edit pair, opposite verdicts under the two granularities:
+  //     per-FILE would couple hub↔b (b.ts ∈ hub file closure); per-SYMBOL is independent.
+  const perFileVerdict = commute(
+    { file: 'hub.ts', spans: [[fooUse, fooUse + 3]], closure: perFileHub.set, closureCapped: false },
+    fEditB,
+  );
+  const perSymVerdict = commute(fEditHubFoo, fEditB);
+  check('PER-SYMBOL headline: per-file says COUPLED', perFileVerdict.commute === false);
+  check('PER-SYMBOL headline: per-symbol says INDEPENDENT (false coupling gone)', perSymVerdict.commute === true);
+
+  // (4) SOUNDNESS, not blindness: the bar-touching edit STILL couples with the b.ts edit,
+  //     because bar genuinely comes from b. Precision removes only FALSE couplings.
+  check('PER-SYMBOL keeps the REAL coupling: bar-edit ↔ b.ts still COUPLED', commute(fEditHubBar, fEditB).commute === false);
+
+  // (5) SUBSET INVARIANT (the soundness contract): per-symbol ⊆ per-file, always.
+  const subset = [...fEditHubFoo.closure].every((x) => perFileHub.set.has(x));
+  check('PER-SYMBOL ⊆ PER-FILE (sound by construction: never adds an edge)', subset && fEditHubFoo.closure.size <= perFileHub.set.size);
+
+  // (6) FALLBACK is honest: empty spans ⇒ no scoping signal ⇒ per-symbol returns the
+  //     exact per-file closure (never under-approximates when it cannot tell).
+  const fb = perSymbolClosureOf(tmp, 'hub.ts', []);
+  check('PER-SYMBOL fallback: no spans ⇒ identical to per-file closure (no under-approximation)',
+    fb.set.size === perFileHub.set.size && [...perFileHub.set].every((x) => fb.set.has(x)));
+
+  // (7) FALLBACK on uncertainty: a dynamic import() sitting inside the edited span flips
+  //     to the conservative per-file closure rather than guessing a tighter set.
+  fs.writeFileSync(path.join(tmp, 'dyn.ts'),
+    "import { bar } from './b';\nexport async function load() { return import('./a'); }\n");
+  const dynSrc = fs.readFileSync(path.join(tmp, 'dyn.ts'), 'utf8');
+  const dynSpan = dynSrc.indexOf("import('./a')");
+  const dynClosure = perSymbolClosureOf(tmp, 'dyn.ts', [[dynSpan, dynSpan + 13]]);
+  const dynFile = closureOf(tmp, 'dyn.ts');
+  check('PER-SYMBOL fallback: dynamic import() in span ⇒ conservative per-file closure',
+    dynClosure.set.size === dynFile.set.size && [...dynFile.set].every((x) => dynClosure.set.has(x)));
+
+  console.log(`        (per-symbol: foo-edit closure {${[...fEditHubFoo.closure].sort().join(', ')}} vs per-file {${[...perFileHub.set].sort().join(', ')}})`);
+  fs.rmSync(tmp, { recursive: true, force: true });
+}
+
+console.log(`\n${pass} passed, ${fail} failed`);
+process.exit(fail === 0 ? 0 : 1);

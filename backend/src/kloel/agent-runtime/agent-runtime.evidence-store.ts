@@ -3,6 +3,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { sanitizeAgentRuntimeText, toInputJsonValue } from './agent-runtime.sanitizer';
 import { clampLimit } from '../../common/pagination-clamp.pipe';
+import { MindMemoryItemService } from '../mind/aliases/mind-memory-item.service';
 
 export type AgentEvidenceType =
   | 'tool_result'
@@ -81,7 +82,10 @@ interface EvidenceRow {
 
 @Injectable()
 export class AgentRuntimeEvidenceStoreService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    _prisma: PrismaService,
+    private readonly mindMemory: MindMemoryItemService,
+  ) {}
 
   async add(input: AgentEvidenceInput): Promise<AgentEvidenceRecord> {
     const id = `ev_${randomUUID()}`;
@@ -107,7 +111,7 @@ export class AgentRuntimeEvidenceStoreService {
       parentId,
     };
 
-    const row = await this.prisma.kloelMemory.create({
+    const row = await this.mindMemory.items.create({
       data: {
         workspaceId: input.workspaceId,
         key: this.evidenceKey(id),
@@ -135,7 +139,7 @@ export class AgentRuntimeEvidenceStoreService {
     actor?: string;
     limit?: number;
   }): Promise<AgentEvidenceRecord[]> {
-    const rows = await this.prisma.kloelMemory.findMany({
+    const rows = await this.mindMemory.items.findMany({
       where: {
         workspaceId: params.workspaceId,
         category: 'agent_evidence',
@@ -159,7 +163,7 @@ export class AgentRuntimeEvidenceStoreService {
     if (!keyword) {
       return [];
     }
-    const rows = await this.prisma.kloelMemory.findMany({
+    const rows = await this.mindMemory.items.findMany({
       where: { workspaceId: params.workspaceId, category: 'agent_evidence' },
       orderBy: { createdAt: 'desc' },
       take: Math.max(1, Math.min((params.limit ?? 50) * 4, 400)),
@@ -177,7 +181,7 @@ export class AgentRuntimeEvidenceStoreService {
   }
 
   async verify(workspaceId: string): Promise<AgentEvidenceIntegrityIssue[]> {
-    const rows = await this.prisma.kloelMemory.findMany({
+    const rows = await this.mindMemory.items.findMany({
       where: { workspaceId, category: 'agent_evidence' },
       orderBy: { createdAt: 'desc' },
       take: 500,
@@ -287,7 +291,7 @@ export class AgentRuntimeEvidenceStoreService {
     workspaceId: string,
     evidenceId: string,
   ): Promise<AgentEvidenceRecord | null> {
-    const rows = await this.prisma.kloelMemory.findMany({
+    const rows = await this.mindMemory.items.findMany({
       where: {
         workspaceId,
         category: 'agent_evidence',

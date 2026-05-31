@@ -152,7 +152,7 @@ export default function WhatsAppPage() {
   }, []);
 
   useEffect(() => {
-    void load();
+    queueMicrotask(load);
   }, [load]);
 
   const handleConnect = useCallback(async () => {

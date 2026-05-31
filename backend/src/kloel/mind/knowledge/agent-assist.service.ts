@@ -1,0 +1,512 @@
+/**
+ * MindKnowledgeAssist — cognitive-knowledge assist service implementation
+ * (ADR-0013 Wave M2 row #22). Moved here from `backend/src/ai-brain/` so the
+ * canonical path now lives alongside the rest of `kloel/mind/knowledge/`.
+ *
+ * The legacy `ai-brain/agent-assist.service` re-export stub was retired in
+ * Wave 51 cleanup (had zero consumers); only `ai-brain/ai-brain.module.ts`
+ * remains in `ai-brain/` as the Nest module wiring (imports the canonical
+ * services from this folder).
+ *
+ * @cluster Mind/Knowledge
+ * @canonical backend/src/kloel/mind/knowledge/agent-assist.service.ts
+ * @see docs/adr/0013-kloel-mind-unification.md
+ */
+import { randomUUID } from 'node:crypto';
+import { Injectable, Optional } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../../../logging/structured-logger';
+import OpenAI from 'openai';
+import { PlanLimitsService } from '../../../billing/plan-limits.service';
+import { chatCompletionWithRetry } from '../../openai-wrapper';
+import { resolveBackendOpenAIModel } from '../../../lib/openai-models';
+import { OpsAlertService } from '../../../observability/ops-alert.service';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { WalletService } from '../../../wallet/wallet.service';
+import {
+  AGENT_ASSIST_MAX_TOKENS,
+  AgentAssistWalletAccessError,
+  type AssistantAction,
+  buildPitchMessages,
+  buildSentimentMessages,
+  buildSuggestReplyMessages,
+  buildSummaryMessages,
+  chargeAiUsageIfNeeded,
+  classifySentimentLabel,
+  estimateOpenAiQuote,
+  readWorkspaceId,
+  refundAiUsageIfNeeded,
+  settleAiUsageIfNeeded,
+} from './agent-assist.helpers';
+
+/**
+ * @cluster whatsapp_saas/backend/ai-brain
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
+interface ExecuteAiOperationArgs<T> {
+  estimatedCostCents?: bigint;
+  handler: (completion: OpenAI.Chat.ChatCompletion) => T;
+  messages: OpenAI.Chat.ChatCompletionMessageParam[];
+  model: string;
+  operation: AssistantAction;
+  requestId: string;
+  workspaceId: string | undefined;
+}
+
+/** Agent assist service — sentiment, summary, reply suggestions and pitch generation. */
+@Injectable()
+export class AgentAssistService {
+  private readonly logger = StructuredLogger.from(AgentAssistService.name);
+  private openai: OpenAI | null;
+
+  constructor(
+    private config: ConfigService,
+    private prisma: PrismaService,
+    private readonly planLimits: PlanLimitsService,
+    private readonly prepaidWalletService: WalletService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
+  ) {
+    const apiKey = this.config.get<string>('OPENAI_API_KEY');
+    this.openai = apiKey ? new OpenAI({ apiKey }) : null;
+  }
+
+  private async ensureBudget(workspaceId?: string | null): Promise<void> {
+    if (!workspaceId) {
+      return;
+    }
+    await this.planLimits.ensureTokenBudget(workspaceId);
+  }
+
+  private async trackUsage(workspaceId: string | undefined | null, tokens?: number): Promise<void> {
+    if (!workspaceId) {
+      return;
+    }
+    await this.planLimits.trackAiUsage(workspaceId, tokens ?? 500).catch(() => {});
+  }
+
+  private async executeAiOperation<T>(args: ExecuteAiOperationArgs<T>): Promise<T> {
+    const { estimatedCostCents, handler, messages, model, operation, requestId, workspaceId } =
+      args;
+    const usageCharged = await chargeAiUsageIfNeeded({
+      walletService: this.prepaidWalletService,
+      workspaceId,
+      requestId,
+      assistantAction: operation,
+      metadata: { model },
+      ...(estimatedCostCents !== undefined ? { estimatedCostCents } : {}),
+    });
+    try {
+      await this.ensureBudget(workspaceId);
+      this.logger.log('Calling OpenAI', {
+        context: 'AgentAssistService.executeAiOperation',
+        model,
+        operation,
+      });
+      if (!this.openai) {
+        throw new Error('OpenAI client not configured');
+      }
+      const completion = await chatCompletionWithRetry(this.openai, {
+        model,
+        messages,
+        max_tokens: AGENT_ASSIST_MAX_TOKENS[operation],
+      });
+      if (estimatedCostCents !== undefined && usageCharged) {
+        await settleAiUsageIfNeeded({
+          walletService: this.prepaidWalletService,
+          workspaceId,
+          requestId,
+          assistantAction: operation,
+          model,
+          usage: completion?.usage,
+        });
+      }
+      await this.trackUsage(workspaceId, completion?.usage?.total_tokens);
+      return handler(completion);
+    } catch (error: unknown) {
+      this.logger.error(
+        'AI operation failed',
+        error instanceof Error ? error.message : String(error),
+        { context: 'AgentAssistService.executeAiOperation', model, operation },
+      );
+      void this.opsAlert?.alertOnCriticalError(error, 'AgentAssistService.handler');
+      if (!(error instanceof AgentAssistWalletAccessError)) {
+        await refundAiUsageIfNeeded({
+          walletService: this.prepaidWalletService,
+          workspaceId,
+          requestId,
+          assistantAction: operation,
+          reason: 'ai_assistant_provider_exception',
+        });
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Classify the sentiment of free-form text.
+   *
+   * @param text - Text to classify.
+   * @param workspaceId - Optional workspace id for billing/limits.
+   * @param requestId - Idempotency key for the wallet hold (defaults to a fresh UUID).
+   * @returns Sentiment label plus the raw model output.
+   */
+  async analyzeSentiment(text: string, workspaceId?: string, requestId: string = randomUUID()) {
+    const startedAt = Date.now();
+    const trimmedText = text.trim();
+
+    if (!this.openai) {
+      if (workspaceId) {
+        await this.prisma.autopilotEvent
+          .create({
+            data: {
+              workspaceId,
+              intent: 'AI_ASSIST',
+              action: 'ANALYZE_SENTIMENT',
+              status: 'skipped',
+              reason: 'openai_unavailable',
+              meta: {
+                textPreview: trimmedText.slice(0, 180),
+                latencyMs: Date.now() - startedAt,
+                sentiment: 'neutral',
+              },
+            },
+          })
+          .catch(() => {});
+      }
+      return { sentiment: 'neutral', score: 0 };
+    }
+
+    const model = resolveBackendOpenAIModel('brain');
+    const messages = buildSentimentMessages(text);
+    const estimatedCostCents = estimateOpenAiQuote(model, messages);
+    try {
+      const result = await this.executeAiOperation({
+        workspaceId,
+        requestId,
+        operation: 'analyze_sentiment',
+        model,
+        messages,
+        handler: (completion) => {
+          const content = completion.choices[0]?.message?.content?.toLowerCase() || '';
+          return { sentiment: classifySentimentLabel(content), raw: content };
+        },
+        ...(estimatedCostCents !== undefined ? { estimatedCostCents } : {}),
+      });
+      if (workspaceId) {
+        await this.prisma.autopilotEvent
+          .create({
+            data: {
+              workspaceId,
+              intent: 'AI_ASSIST',
+              action: 'ANALYZE_SENTIMENT',
+              status: 'executed',
+              reason: 'analyze_sentiment_succeeded',
+              meta: {
+                textPreview: trimmedText.slice(0, 180),
+                latencyMs: Date.now() - startedAt,
+                sentiment: result.sentiment,
+              },
+            },
+          })
+          .catch(() => {});
+      }
+      return result;
+    } catch (error: unknown) {
+      this.logger.error(
+        'Sentiment analysis failed',
+        error instanceof Error ? error.message : String(error),
+        { context: 'AgentAssistService.analyzeSentiment', workspaceId },
+      );
+      void this.opsAlert?.alertOnCriticalError(error, 'AgentAssistService.now');
+      if (workspaceId) {
+        await this.prisma.autopilotEvent
+          .create({
+            data: {
+              workspaceId,
+              intent: 'AI_ASSIST',
+              action: 'ANALYZE_SENTIMENT',
+              status: 'error',
+              reason: 'analyze_sentiment_failed',
+              meta: {
+                textPreview: trimmedText.slice(0, 180),
+                latencyMs: Date.now() - startedAt,
+                errorName: error instanceof Error ? error.name : 'Error',
+              },
+            },
+          })
+          .catch(() => {});
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Summarize a conversation in three lines.
+   *
+   * @param conversationId - Conversation to summarize.
+   * @param workspaceId - Optional workspace id; falls back to the conversation's workspace.
+   * @param requestId - Idempotency key for the wallet hold (defaults to a fresh UUID).
+   */
+  async summarizeConversation(
+    conversationId: string,
+    workspaceId: string,
+    requestId: string = randomUUID(),
+  ) {
+    const convo = await this.prisma.conversation.findFirst({
+      where: { id: conversationId, workspaceId },
+      include: {
+        messages: { orderBy: { createdAt: 'asc' }, take: 30 },
+      },
+    });
+    if (!convo) {
+      return { summary: '' };
+    }
+    const effectiveWorkspaceId = readWorkspaceId(workspaceId) || readWorkspaceId(convo.workspaceId);
+    const history = convo.messages.map((m) => `[${m.direction}] ${m.content}`).join('\n');
+    if (!this.openai) {
+      return { summary: history.slice(0, 200) };
+    }
+
+    const model = resolveBackendOpenAIModel('brain');
+    const messages = buildSummaryMessages(history);
+    const estimatedCostCents = estimateOpenAiQuote(model, messages);
+    return this.executeAiOperation({
+      workspaceId: effectiveWorkspaceId,
+      requestId,
+      operation: 'summarize_conversation',
+      model,
+      messages,
+      handler: (completion) => {
+        const raw = completion.choices[0]?.message?.content || '';
+        if (raw.trim().length < 10) {
+          this.logger.warn('summarize_conversation produced short/empty output, using fallback', {
+            workspaceId: effectiveWorkspaceId,
+          });
+          return { summary: history.slice(0, 200) };
+        }
+        return { summary: raw };
+      },
+      ...(estimatedCostCents !== undefined ? { estimatedCostCents } : {}),
+    });
+  }
+
+  /**
+   * Suggest a reply to the latest message in a conversation.
+   *
+   * @param workspaceId - Owning workspace id (required for billing).
+   * @param conversationId - Conversation context.
+   * @param prompt - Optional user prompt prepended to the latest message.
+   * @param requestId - Idempotency key for the wallet hold.
+   */
+  async suggestReply(
+    workspaceId: string,
+    conversationId: string,
+    prompt?: string,
+    requestId: string = randomUUID(),
+  ) {
+    const convo = await this.prisma.conversation.findFirst({
+      where: { id: conversationId, workspaceId },
+      include: {
+        messages: { orderBy: { createdAt: 'desc' }, take: 10 },
+      },
+    });
+    const latest = convo?.messages?.[0]?.content || '';
+    if (!this.openai) {
+      return { suggestion: prompt ? `${prompt} ${latest}` : latest };
+    }
+    const model = resolveBackendOpenAIModel('writer');
+    const messages = buildSuggestReplyMessages(prompt, latest);
+    const estimatedCostCents = estimateOpenAiQuote(model, messages);
+    return this.executeAiOperation({
+      workspaceId,
+      requestId,
+      operation: 'suggest_reply',
+      model,
+      messages,
+      handler: (completion) => {
+        const raw = completion.choices[0]?.message?.content || '';
+        if (raw.trim().length < 2) {
+          this.logger.warn(
+            'suggest_reply produced short/empty output, falling back to latest message',
+            { workspaceId },
+          );
+          return { suggestion: latest };
+        }
+        return { suggestion: raw };
+      },
+      ...(estimatedCostCents !== undefined ? { estimatedCostCents } : {}),
+    });
+  }
+
+  /**
+   * Suggest high-probability assistant actions from the user message.
+   *
+   * Lightweight rule-based heuristic — no OpenAI call, no direct Prisma.
+   * Delegates to existing knowledge tier when caller passes a pre-resolved
+   * context (e.g. prior cases, concepts).
+   *
+   * PI-K18-A: wired into buildMindSignals so the LLM receives agent-assist
+   * suggestions alongside other cognitive signals.
+   *
+   * @param workspaceId - Owning workspace (not used in heuristic; kept for API parity).
+   * @param message - The user's incoming message.
+   * @param context - Optional pre-resolved context (concepts, priorCases, etc.).
+   * @returns Array of {action, reason, confidence} tuples, ordered by confidence descending.
+   */
+  suggestActions(
+    _workspaceId: string,
+    message: string,
+    context?: Record<string, unknown>,
+  ): Promise<Array<{ action: string; reason: string; confidence: number }>> {
+    const normalized = (message ?? '').toLowerCase();
+    const actions: Array<{ action: string; reason: string; confidence: number }> = [];
+
+    // ── Payment / financial signals ──
+    if (
+      /\b(pagamento|pagar|pix|cobrança|boleto|cartão|preço|valor|desconto|cupon|reembolso|orcamento|comprovante)\b/.test(
+        normalized,
+      )
+    ) {
+      actions.push({
+        action: 'send_payment_link',
+        reason: 'payment_intent_detected',
+        confidence: 0.82,
+      });
+      if (/\b(cupom|desconto|codigo)\b/.test(normalized)) {
+        actions.push({
+          action: 'apply_discount_coupon',
+          reason: 'coupon_mention',
+          confidence: 0.76,
+        });
+      }
+    }
+
+    // ── Document / media requests ──
+    if (
+      /\b(envia|manda|pdf|arquivo|documento|foto|imagem|contrato|proposta|catalogo)\b/.test(
+        normalized,
+      )
+    ) {
+      actions.push({ action: 'send_document', reason: 'document_request', confidence: 0.78 });
+    }
+
+    // ── Scheduling / meeting ──
+    if (
+      /\b(agenda|agendar|horario|disponivel|semana|reuniao|visita|demonstracao|demo|conversar|call)\b/.test(
+        normalized,
+      )
+    ) {
+      actions.push({ action: 'schedule_meeting', reason: 'scheduling_intent', confidence: 0.74 });
+    }
+
+    // ── Support / complaint escalation ──
+    if (
+      /\b(reclamar|reclamacao|problema|suporte|ajuda|nao funciona|erro|bug|defeito|trocar|devolver|cancelar|reembolso)\b/.test(
+        normalized,
+      )
+    ) {
+      actions.push({
+        action: 'escalate_to_human',
+        reason: 'support_escalation_signal',
+        confidence: 0.7,
+      });
+    }
+
+    // ── Purchase intent ──
+    if (
+      /\b(quero|comprar|contratar|pedir|fechar|assinar)\b/.test(normalized) &&
+      /\b(produto|produtos|plano|servico|curso|oferta|promocao)\b/.test(normalized)
+    ) {
+      actions.push({
+        action: 'present_product_catalog',
+        reason: 'purchase_intent',
+        confidence: 0.8,
+      });
+    }
+
+    // ── Greeting / opener ──
+    if (/^\s*(oi|ola|bom dia|boa tarde|boa noite|hey|hi|hello)[\s!.]*$/.test(normalized)) {
+      actions.push({ action: 'send_welcome_message', reason: 'greeting_opener', confidence: 0.9 });
+    }
+
+    // ── Context-driven signals ──
+    const concepts = context?.concepts as
+      | Array<{ concept: string; confidence: number }>
+      | undefined;
+    if (concepts?.some((c) => /(price_objection|too_expensive)/i.test(c.concept))) {
+      actions.push({
+        action: 'offer_discount_or_parcelamento',
+        reason: 'price_objection_concept',
+        confidence: 0.72,
+      });
+    }
+    if (concepts?.some((c) => /(hot_lead|ready_to_buy)/i.test(c.concept))) {
+      actions.push({
+        action: 'send_purchase_cta',
+        reason: 'purchase_readiness_concept',
+        confidence: 0.85,
+      });
+    }
+
+    // ── Deduplicate by action name (keep highest confidence) ──
+    const seen = new Map<string, { action: string; reason: string; confidence: number }>();
+    for (const a of actions) {
+      const existing = seen.get(a.action);
+      if (!existing || a.confidence > existing.confidence) {
+        seen.set(a.action, a);
+      }
+    }
+
+    return Promise.resolve([...seen.values()].sort((a, b) => b.confidence - a.confidence));
+  }
+
+  /**
+   * Generate a short, persuasive sales pitch from the recent conversation context.
+   *
+   * @param conversationId - Conversation context.
+   * @param workspaceId - Owning workspace id (required for billing).
+   * @param requestId - Idempotency key for the wallet hold.
+   */
+  async generatePitch(
+    conversationId: string,
+    workspaceId: string,
+    requestId: string = randomUUID(),
+  ) {
+    const convo = await this.prisma.conversation.findFirst({
+      where: { id: conversationId, workspaceId },
+      include: {
+        messages: { orderBy: { createdAt: 'desc' }, take: 5 },
+      },
+    });
+    const context = convo?.messages?.map((m) => m.content).join('\n') || '';
+    const base = context || 'oferta rápida';
+    if (!this.openai) {
+      return {
+        pitch: `Tenho uma condição especial hoje. Quer aproveitar? (${base.slice(0, 80)})`,
+      };
+    }
+    const model = resolveBackendOpenAIModel('brain');
+    const messages = buildPitchMessages(base);
+    const estimatedCostCents = estimateOpenAiQuote(model, messages);
+    return this.executeAiOperation({
+      workspaceId,
+      requestId,
+      operation: 'generate_pitch',
+      model,
+      messages,
+      handler: (completion) => {
+        const raw = completion.choices[0]?.message?.content || '';
+        if (raw.trim().length < 20) {
+          this.logger.warn('generate_pitch produced short/empty output, using fallback', {
+            workspaceId,
+          });
+          return {
+            pitch: `Tenho uma condi\xe7\xe3o especial hoje. Quer aproveitar? (${base.slice(0, 80)})`,
+          };
+        }
+        return { pitch: raw };
+      },
+      ...(estimatedCostCents !== undefined ? { estimatedCostCents } : {}),
+    });
+  }
+}

@@ -11,6 +11,10 @@ jest.mock('../auth/admin-auth.service', () => ({
 }));
 
 import { AdminAuthService } from '../auth/admin-auth.service';
+
+// Typed wrapper around expect.objectContaining so nested matcher values are typed
+const oc = (o: Record<string, unknown>): unknown => expect.objectContaining(o);
+
 describe('AdminSeedService', () => {
   let service: AdminSeedService;
 
@@ -85,7 +89,7 @@ describe('AdminSeedService', () => {
       });
       expect(mockCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: oc({
             email: 'danielgonzagatj@gmail.com',
             role: AdminRole.OWNER,
             passwordHash: 'hashed',
@@ -160,7 +164,7 @@ describe('AdminSeedService', () => {
 
       expect(mockCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: oc({
             passwordChangeRequired: true,
             mfaPendingSetup: true,
           }),

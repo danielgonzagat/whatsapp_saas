@@ -2,6 +2,7 @@ import type { AuthenticatedRequest } from '../common/interfaces/authenticated-re
 import { buildMarketplaceWhere, enrichAffiliateProducts } from './affiliate-helpers';
 import { AffiliateMarketplaceController } from './affiliate-marketplace.controller';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 jest.mock('./affiliate-helpers', () => ({
   buildMarketplaceWhere: jest.fn(),
@@ -18,7 +19,6 @@ describe('AffiliateMarketplaceController', () => {
   });
   const affiliateProductFindMany = prismaMock.affiliateProduct.findMany;
   const affiliateProductCount = prismaMock.affiliateProduct.count;
-  const productFindMany = prismaMock.product.findMany;
 
   let controller: AffiliateMarketplaceController;
 
@@ -57,7 +57,7 @@ describe('AffiliateMarketplaceController', () => {
       );
       expect(affiliateProductFindMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ listed: true }),
+          where: partialMatch({ listed: true }),
           orderBy: { createdAt: 'desc' },
           take: 10,
           skip: 10,

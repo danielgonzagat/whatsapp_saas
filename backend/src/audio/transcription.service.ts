@@ -114,7 +114,7 @@ export class TranscriptionService {
             throw new Error(`OpenAI fallback API error ${fallbackResponse.status}: ${errorText}`);
           }
 
-          const fallbackData = await fallbackResponse.json();
+          const fallbackData = (await fallbackResponse.json()) as { text?: string };
           return fallbackData.text || '';
         }
 
@@ -123,7 +123,7 @@ export class TranscriptionService {
           throw new Error(`OpenAI API error ${response.status}: ${errorText}`);
         }
 
-        const data = await response.json();
+        const data = (await response.json()) as { text?: string };
         return data.text || '';
       } catch (err: unknown) {
         void this.opsAlert?.alertOnCriticalError(err, 'TranscriptionService.json');

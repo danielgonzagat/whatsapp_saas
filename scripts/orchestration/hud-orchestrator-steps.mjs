@@ -1,3 +1,8 @@
+import { existsSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+
+const STEP_TIMEOUT_MS = 180_000;
+
 // Step runner extracted from hud-orchestrator
 export function runStep(step, dry) {
   const startedAt = Date.now();

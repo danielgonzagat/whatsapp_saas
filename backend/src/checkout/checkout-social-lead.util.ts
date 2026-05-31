@@ -18,8 +18,6 @@ export function normalizeEmail(value?: string | null) {
   return normalized || null;
 }
 
-export { digitsOrNull as normalizePhone } from '../common/phone';
-
 /** Extract address from enrichment. */
 export function extractAddressFromEnrichment(value: Prisma.JsonValue | null) {
   const root = readJsonObject(value);

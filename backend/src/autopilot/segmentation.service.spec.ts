@@ -1,3 +1,4 @@
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { SegmentationService, PRESET_SEGMENTS } from './segmentation.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -5,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 describe('SegmentationService', () => {
   let service: SegmentationService;
   let prisma: jest.Mocked<PrismaService>;
+  let contactFindManyMock: jest.Mock;
 
   beforeEach(async () => {
     const mockPrisma = {
@@ -34,6 +36,7 @@ describe('SegmentationService', () => {
 
     service = module.get<SegmentationService>(SegmentationService);
     prisma = module.get(PrismaService);
+    contactFindManyMock = mockPrisma.contact.findMany;
   });
 
   describe('getAvailablePresets', () => {
@@ -115,7 +118,7 @@ describe('SegmentationService', () => {
         tags: ['vip', 'premium'],
       });
 
-      expect(prisma.contact.findMany).toHaveBeenCalledWith(
+      expect(contactFindManyMock).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             tags: { some: { name: { in: ['vip', 'premium'] } } },
@@ -131,7 +134,7 @@ describe('SegmentationService', () => {
         excludeTags: ['unsubscribed'],
       });
 
-      expect(prisma.contact.findMany).toHaveBeenCalledWith(
+      expect(contactFindManyMock).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             NOT: { tags: { some: { name: { in: ['unsubscribed'] } } } },
@@ -210,7 +213,7 @@ describe('SegmentationService', () => {
 
       await service.getPresetSegment('workspace-1', 'HOT_LEADS', { limit: 50 });
 
-      expect(prisma.contact.findMany).toHaveBeenCalledWith(
+      expect(contactFindManyMock).toHaveBeenCalledWith(
         expect.objectContaining({
           take: 50,
         }),

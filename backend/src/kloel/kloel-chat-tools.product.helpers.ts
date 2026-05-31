@@ -1,5 +1,6 @@
 import type { PrismaService } from '../prisma/prisma.service';
 import type { ToolResult } from './kloel-chat-tools.agent-runtime.helpers';
+import { type MemoryService } from './memory.service';
 
 // === PRODUCT MANAGEMENT TOOLS ===
 
@@ -183,14 +184,11 @@ export async function runGetProductReviews(
   if (!pid) {
     return { success: false, error: 'productId_required' };
   }
-
-  const product =
-    productFromName ??
-    (await prisma.product.findFirst({
-      where: { id: pid, workspaceId },
-      select: { id: true, name: true },
-    }));
-  if (!product) {
+  const product = await prisma.product.findFirst({
+    where: { id: pid, workspaceId },
+    select: { id: true, name: true },
+  });
+  if (!product && !args.productName) {
     return { success: false, error: 'product_not_found' };
   }
 
@@ -202,7 +200,7 @@ export async function runGetProductReviews(
   });
   return {
     success: true,
-    product: { id: product.id, name: product.name },
+    product: { id: pid, name: product?.name ?? args.productName ?? pid },
     reviews,
   };
 }
@@ -311,89 +309,60 @@ export async function runGetAnalytics(
   };
 }
 
-export async function runCreateBroadcast(
-  prisma: PrismaService,
+export function runCreateBroadcast(
   workspaceId: string,
-  args: { name: string; message: string; targetTags?: string[]; scheduleAt?: string },
+  args: Record<string, unknown>,
 ): Promise<ToolResult> {
-  if (!args.name || !args.message) {
-    return { success: false, error: 'name_and_message_required' };
+  void workspaceId;
+  const name = typeof args.name === 'string' ? args.name.trim() : '';
+  const message = typeof args.message === 'string' ? args.message.trim() : '';
+  if (!name || !message) {
+    return Promise.resolve({ success: false, error: 'name_and_message_required' });
   }
-  const campaign = await prisma.campaign.create({
-    data: {
-      workspaceId,
-      name: args.name,
-      messageTemplate: args.message,
-      ...(args.targetTags?.length ? { filters: { tags: args.targetTags } } : {}),
-      ...(args.scheduleAt ? { scheduledAt: new Date(args.scheduleAt) } : {}),
-      status: 'DRAFT',
-    },
+  return Promise.resolve({
+    success: false,
+    error: 'campaign_service_required',
+    message:
+      'create_broadcast exige CampaignService.createBroadcast ou CampaignsService.create via domain service antes de declarar campanha criada.',
   });
-  return {
-    success: true,
-    campaign: { id: campaign.id, name: campaign.name, status: campaign.status },
-    message: `Campanha "${args.name}" criada.`,
-  };
 }
 
-export async function runConfigureAiPersona(
-  prisma: PrismaService,
+export function runConfigureAiPersona(
   workspaceId: string,
-  args: {
-    name?: string;
-    personality?: string;
-    tone?: string;
-    language?: string;
-    useEmojis?: boolean;
-  },
+  args: Record<string, unknown>,
 ): Promise<ToolResult> {
-  const persona = {
-    name: args.name || 'KLOEL',
-    personality: args.personality || '',
-    tone: args.tone || 'professional',
-    language: args.language || 'pt-BR',
-    useEmojis: args.useEmojis ?? true,
-    updatedAt: new Date().toISOString(),
-  };
-  await prisma.kloelMemory.upsert({
-    where: { workspaceId_key: { workspaceId, key: 'aiPersona' } },
-    update: {
-      value: persona,
-      category: 'preferences',
-      type: 'persona',
-      content: `Persona: ${persona.name}, Tom: ${persona.tone}`,
-      metadata: persona,
-    },
-    create: {
-      workspaceId,
-      key: 'aiPersona',
-      value: persona,
-      category: 'preferences',
-      type: 'persona',
-      content: `Persona: ${persona.name}, Tom: ${persona.tone}`,
-      metadata: persona,
-    },
+  void workspaceId;
+  void args;
+  return Promise.resolve({
+    success: false,
+    error: 'ai_config_service_required',
+    message:
+      'configure_ai_persona exige AIConfigService.update ou service equivalente antes de declarar persona configurada.',
   });
-  return { success: true, persona, message: `Persona IA "${persona.name}" configurada.` };
 }
 
 export async function runToggleTheme(
-  prisma: PrismaService,
+  memoryService: Pick<MemoryService, 'saveMemory'> | undefined,
   workspaceId: string,
   args: Record<string, unknown>,
 ): Promise<ToolResult> {
   const theme = args.theme === 'dark' || args.theme === 'light' ? String(args.theme) : 'light';
+  if (!memoryService) {
+    return {
+      success: false,
+      error: 'memory_service_required',
+      message: 'toggle_theme exige MemoryService.saveMemory antes de declarar tema salvo.',
+    };
+  }
+
   try {
-    await prisma.kloelMemory.upsert({
-      where: { workspaceId_key: { workspaceId, key: 'uiTheme' } },
-      update: { value: { theme }, category: 'preferences' },
-      create: {
-        workspaceId,
-        key: 'uiTheme',
-        value: { theme },
-        category: 'preferences',
-      },
-    });
+    await memoryService.saveMemory(
+      workspaceId,
+      'uiTheme',
+      { theme },
+      'preferences',
+      `Tema: ${theme}`,
+    );
     return { success: true, theme, message: `Tema alterado para ${theme}.` };
   } catch (err: unknown) {
     return {

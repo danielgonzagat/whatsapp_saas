@@ -4,6 +4,7 @@ import { MassSendController } from './mass-send.controller';
 import { MassSendService } from './mass-send.service';
 import { PrismaService } from '../prisma/prisma.service';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 describe('MassSendController', () => {
   let controller: MassSendController;
@@ -83,12 +84,12 @@ describe('MassSendController', () => {
     expect(enqueueCampaign).not.toHaveBeenCalled();
     expect(approvalCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
+        data: partialMatch({
           workspaceId: 'ws_1',
           kind: 'whatsapp_campaign:start',
           entityType: 'WhatsAppMassSendCampaign',
           state: 'OPEN',
-          payload: expect.objectContaining({
+          payload: partialMatch({
             numbers: ['+5511999999999', '+5511888888888'],
             message: 'Oferta aprovada?',
             risk: 'high',
@@ -131,7 +132,7 @@ describe('MassSendController', () => {
     expect(approvalUpdateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'apr_1', workspaceId: 'ws_1', state: 'APPROVED' },
-        data: expect.objectContaining({ state: 'COMPLETED' }),
+        data: partialMatch({ state: 'COMPLETED' }),
       }),
     );
     expect(result).toEqual({ approvalExecuted: true, jobId: 'job_1' });

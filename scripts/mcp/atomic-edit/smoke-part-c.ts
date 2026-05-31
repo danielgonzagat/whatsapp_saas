@@ -1,10 +1,8 @@
-import * as childProcess from 'node:child_process';
 import * as fs from 'node:fs';
-import * as os from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { outline, readSymbol } from './nav.js';
-import { editSymbol, renameSymbolCrossFile, previewDiff, characterDiff } from './advanced.js';
+import { editSymbol, renameSymbolCrossFile, previewDiff } from './advanced.js';
 import { check } from './smoke-state.js';
 
 const __filename = fileURLToPath(import.meta.url);

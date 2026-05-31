@@ -1,24 +1,6 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { RiskClassService } from './risk-class.service';
 import { RiskGateService } from './risk-gate.service';
-import type { GateVerdict } from './risk-gate.types';
-
-function expectVerdict(
-  result: { verdict: GateVerdict; reason: string },
-  expectedVerdict: GateVerdict,
-) {
-  expect(result.verdict).toBe(expectedVerdict);
-  expect(typeof result.reason).toBe('string');
-  expect(result.reason.length).toBeGreaterThan(0);
-  expect(result.classification).toBeDefined();
-  expect(result.classification.class).toMatch(/^R[1234]$/);
-  expect(result.classification.autonomyMode).toMatch(
-    /^(allowed_alone|requires_approval|must_escalate|forbidden)$/,
-  );
-  expect(Array.isArray(result.classification.rollback)).toBe(true);
-  expect(result.classification.rollback.length).toBeGreaterThan(0);
-}
-
 // =========================================================================
 // OC-ORPHAN-14: R1 — WhatsApp send, discounts, billing (allowed_alone)
 // =========================================================================

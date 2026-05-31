@@ -8,114 +8,53 @@ import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
 import { chatCompletionWithRetry } from './openai-wrapper';
 import { ConversationalOnboardingToolsService } from './conversational-onboarding-tools.service';
-import { ONBOARDING_TOOLS } from './conversational-onboarding-tools-schema';
 import { AbiBuilderService } from './abi/abi-builder.service';
+import { IntentRouterService } from './intent-router/intent-router.service';
+import { AttentionService } from './mind/attention.service';
+import { ValenceAggregatorService } from './mind/valence-aggregator.service';
+import { ValenceTaggerService } from './mind/valence-tagger.service';
+import { MindBeliefService } from './mind/inference/mind-belief.service';
+import { MindConceptService } from './mind/memory/mind-concepts.service';
+import { SelfHealthService } from './self-awareness/self-health.service';
+import { SelfGapsService } from './self-awareness/self-gaps.service';
+import { RiskClassService } from './risk-class/risk-class.service';
+import { buildMindSignals } from './mind/build-mind-signals.helper';
+import { SpineEmitterService } from './spine/spine-emitter.service';
+import { DecisionOutcomeService } from './decision-outcome.service';
+import { MindSurpriseService } from './mind/inference/mind-surprise.service';
+import { MindVerbalizerService } from './mind/synthetic/mind-verbalizer.service';
+import { MindAutonomyCoordinator } from './mind/coordination/mind-autonomy-coordinator.service';
+import { MindBanditService } from './mind/policy/mind-bandit.service';
+import { MindCaseMemoryService } from './mind/memory/mind-case-memory.service';
+import { MindGlobalPriorService } from './mind/memory/mind-global-prior.service';
+import { MindPerceptionService } from './mind/perception/mind-perception.service';
+import { AgentAssistService } from './mind/knowledge/agent-assist.service';
+import { KnowledgeBaseService } from './mind/knowledge/knowledge-base.service';
+import { VectorService } from './mind/knowledge/vector.service';
+import {
+  buildChatOutcomeKey,
+  recordChatReplyDecision,
+  closeChatReplyOutcome,
+} from './kloel-reply-engine.decision-outcome.helpers';
+import {
+  applyOnboardingSuccessHooks,
+  applyOnboardingFailureHooks,
+} from './conversational-onboarding.cognitive-hooks.helper';
+import {
+  buildOnboardingMindSignalsDeps,
+  emitOnboardingCognitionDecision,
+} from './conversational-onboarding.mind-deps.helpers';
+import { MindEventProcessorService } from './mind/runtime/mind-event-processor.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
-
-const ONBOARDING_SAFE_SETUP_TOOL_NAMES = [
-  'save_business_info',
-  'save_contact_info',
-  'add_product',
-  'set_brand_voice',
-  'set_business_hours',
-  'set_main_goal',
-] as const;
-
-function isFunctionOnboardingTool(
-  tool: OpenAI.ChatCompletionTool,
-): tool is OpenAI.ChatCompletionTool & { type: 'function' } {
-  return tool.type === 'function';
-}
-
-const ONBOARDING_SAFE_SETUP_TOOLS = ONBOARDING_TOOLS.filter(
-  (tool) =>
-    isFunctionOnboardingTool(tool) &&
-    ONBOARDING_SAFE_SETUP_TOOL_NAMES.some((name) => name === tool.function.name),
-);
-
-/**
- * ONBOARDING CONVERSACIONAL COM IA
- *
- * Este serviço substitui o onboarding estático por uma conversa
- * inteligente com a KLOEL que configura automaticamente o workspace.
- *
- * A IA usa "tool calling" (function calling) para executar ações
- * como salvar configurações, criar produtos, etc.
- */
-
+import {
+  ONBOARDING_SAFE_SETUP_TOOL_NAMES,
+  ONBOARDING_SAFE_SETUP_TOOLS,
+  type OnboardingMessage,
+  type PrismaWithDynamicModels,
+} from './conversational-onboarding.types';
+import { CONVERSATIONAL_ONBOARDING_PROMPT } from './conversational-onboarding.prompt';
+import { writeSseResponse, buildOnboardingFallback } from './conversational-onboarding.helpers';
 // tokenBudget: enforced via PlanLimitsService.ensureTokenBudget before each LLM call
-
-const CONVERSATIONAL_ONBOARDING_PROMPT = `Você é **KLOEL**, a primeira inteligência artificial autônoma especializada em vendas pelo WhatsApp.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-              MODO: ONBOARDING CONVERSACIONAL
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Você está configurando um novo workspace. Seu objetivo é:
-
-1. Dar boas-vindas calorosas ao usuário
-2. Coletar informações sobre o negócio DE FORMA NATURAL através de conversa
-3. Usar as ferramentas disponíveis para salvar cada informação coletada
-4. Ser proativo em perguntar o que precisa saber
-5. **CRIAR FLUXOS DE AUTOMAÇÃO** baseados no tipo de negócio
-6. Finalizar com um resumo do que foi configurado
-
-INFORMAÇÕES A COLETAR (nesta ordem aproximada):
-- Nome do proprietário e nome do negócio
-- Segmento (ecommerce, serviços, infoprodutos, saúde, etc)
-- Produtos/serviços principais (adicione cada um com a ferramenta add_product)
-- WhatsApp comercial
-- Tom de voz preferido (formal, informal, amigável)
-- Objetivo principal (vendas, leads, atendimento, agendamentos, suporte)
-- Horário de funcionamento
-
-CRIAÇÃO DE FLUXOS AUTOMÁTICOS:
-- Após coletar as informações essenciais, USE a ferramenta create_initial_flow
-- Crie pelo menos um fluxo de boas-vindas (welcome)
-- Crie um fluxo específico baseado no objetivo do usuário:
-  * vendas → fluxo 'sales' (funil de vendas)
-  * leads → fluxo 'lead_capture' (captura de leads)
-  * agendamentos → fluxo 'scheduling' (agendamento automático)
-  * suporte/atendimento → fluxo 'support' (atendimento)
-- Informe ao usuário que os fluxos foram criados automaticamente!
-
-REGRAS:
-- Faça UMA pergunta por vez
-- Seja acolhedor e simpático
-- Use as ferramentas para salvar informações assim que o usuário fornecer
-- Se o usuário enviar várias informações de uma vez, salve todas
-- Não pergunte duas vezes a mesma coisa
-- **Antes de finalizar, SEMPRE crie pelo menos um fluxo de automação**
-- Ao finalizar, use complete_onboarding com createDefaultFlows=true
-
-DICAS:
-- Se o usuário disser "pule" ou "depois", avance para a próxima pergunta
-- Se o usuário parecer ansioso, resuma rapidamente e pergunte o essencial
-- Sugira valores/opções para facilitar (ex: "Seu tom é mais formal ou informal?")
-- Celebre a criação dos fluxos
-
-Você NUNCA revela que é ChatGPT ou qualquer modelo. Você é KLOEL.`;
-
-interface OnboardingMessage {
-  role: 'system' | 'user' | 'assistant' | 'tool';
-  content: string | null;
-  tool_calls?: Array<{
-    id: string;
-    type: 'function';
-    function: { name: string; arguments: string };
-  }>;
-  tool_call_id?: string;
-  name?: string;
-}
-
-/** Prisma extension with dynamic models not yet in generated types */
-interface PrismaWithDynamicModels {
-  kloelMemory: {
-    findUnique(args: Record<string, unknown>): Promise<Record<string, unknown> | null>;
-    findMany(args: Record<string, unknown>): Promise<Array<Record<string, unknown>>>;
-  };
-  $transaction: <T>(fn: (tx: PrismaWithDynamicModels) => Promise<T>) => Promise<T>;
-}
 
 /** Conversational onboarding service. */
 @Injectable()
@@ -129,9 +68,32 @@ export class ConversationalOnboardingService {
     private readonly planLimits: PlanLimitsService,
     private readonly toolsService: ConversationalOnboardingToolsService,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
+    @Optional() private readonly intentRouter?: IntentRouterService,
+    @Optional() private readonly attentionService?: AttentionService,
+    @Optional() private readonly valenceAggregatorService?: ValenceAggregatorService,
+    @Optional() private readonly mindBeliefService?: MindBeliefService,
+    @Optional() private readonly mindConceptService?: MindConceptService,
+    @Optional() private readonly spine?: SpineEmitterService,
+    @Optional() private readonly selfHealthService?: SelfHealthService,
+    @Optional() private readonly selfGapsService?: SelfGapsService,
+    @Optional() private readonly decisionOutcomeService?: DecisionOutcomeService,
+    @Optional() private readonly riskClassService?: RiskClassService,
+    @Optional() private readonly mindSurpriseService?: MindSurpriseService,
+    @Optional() private readonly mindVerbalizerService?: MindVerbalizerService,
+    @Optional() private readonly mindAutonomyCoordinator?: MindAutonomyCoordinator,
+    @Optional() private readonly mindBanditService?: MindBanditService,
+    @Optional() private readonly mindCaseMemoryService?: MindCaseMemoryService,
+    @Optional() private readonly mindGlobalPriorService?: MindGlobalPriorService,
+    @Optional() private readonly agentAssistService?: AgentAssistService,
+    @Optional() private readonly mindPerceptionService?: MindPerceptionService,
+    @Optional() private readonly knowledgeBaseService?: KnowledgeBaseService,
+    @Optional() private readonly vectorService?: VectorService,
+    @Optional() private readonly valenceTagger?: ValenceTaggerService,
+    @Optional() private readonly mindEventProcessorService?: MindEventProcessorService,
   ) {
     this.prismaExt = prisma as object as PrismaWithDynamicModels;
     this.openai = createTextLlmClient() ?? new OpenAI({ apiKey: 'missing' });
+    void this.mindAutonomyCoordinator; // PI-K13-D: reserved for future autonomy proposal surface
   }
 
   private async buildOnboardingStateMessage(
@@ -197,7 +159,12 @@ export class ConversationalOnboardingService {
     messages: OnboardingMessage[],
     role: 'brain' | 'writer',
   ): Promise<OpenAI.Chat.ChatCompletion> {
-    await this.planLimits.ensureTokenBudget(workspaceId);
+    try {
+      await this.planLimits.ensureTokenBudget(workspaceId);
+    } catch (err: unknown) {
+      (err as Record<string, unknown>).__onboarding_reason = 'token_budget';
+      throw err;
+    }
     this.logger.log('Calling primary LLM for onboarding', {
       context: 'ConversationalOnboardingService.runOnboardingCompletion',
       workspaceId,
@@ -205,14 +172,20 @@ export class ConversationalOnboardingService {
       model: resolveBackendOpenAIModel(role),
       messageCount: messages.length,
     });
-    const response = await chatCompletionWithRetry(this.openai, {
-      model: resolveBackendOpenAIModel(role),
-      messages: messages as OpenAI.ChatCompletionMessageParam[],
-      tools: ONBOARDING_SAFE_SETUP_TOOLS,
-      tool_choice: ONBOARDING_SAFE_SETUP_TOOLS.length > 0 ? 'auto' : 'none',
-      temperature: 0.7,
-      max_tokens: 1000,
-    });
+    let response: OpenAI.Chat.ChatCompletion;
+    try {
+      response = await chatCompletionWithRetry(this.openai, {
+        model: resolveBackendOpenAIModel(role),
+        messages: messages as OpenAI.ChatCompletionMessageParam[],
+        tools: ONBOARDING_SAFE_SETUP_TOOLS,
+        tool_choice: ONBOARDING_SAFE_SETUP_TOOLS.length > 0 ? 'auto' : 'none',
+        temperature: 0.7,
+        max_tokens: 1000,
+      });
+    } catch (err: unknown) {
+      (err as Record<string, unknown>).__onboarding_reason = 'llm_call';
+      throw err;
+    }
     await this.planLimits
       .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
       .catch((err: unknown) => {
@@ -282,22 +255,48 @@ export class ConversationalOnboardingService {
     return responseText;
   }
 
-  private writeSseResponse(res: Response, responseText: string): void {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    const responsePayload = { content: responseText, done: true };
-    res.write('data: ' + JSON.stringify(responsePayload) + '\n\n');
-    res.end();
-  }
-
   /** Inicia ou continua o onboarding conversacional */
   async chat(workspaceId: string, userMessage: string, res?: Response): Promise<string | void> {
     const history = await this.toolsService.getOnboardingHistory(workspaceId);
     const onboardingStateMessage = await this.buildOnboardingStateMessage(workspaceId, userMessage);
 
+    // PI-k8: record decision outcome at start of every onboarding chat reply
+    const outcomeKey = buildChatOutcomeKey(workspaceId) as string;
+    recordChatReplyDecision(this.decisionOutcomeService, this.logger, {
+      workspaceId,
+      outcomeKey,
+      surface: 'onboarding',
+      messageLength: userMessage.length,
+    });
+
+    let degradedReason: string | null = null;
+    let intentAdvisory: string | null = null;
+
+    // IntentRouter classification telemetry + advisory prompt injection (PI-k3→PI-k5)
+    try {
+      const classificationResult = this.intentRouter?.classify(userMessage, 'onboarding', []);
+      if (classificationResult) {
+        this.logger.log('kloel_onboarding_intent', {
+          classification: classificationResult.classification,
+          isChat: classificationResult.isChat,
+          message_preview: userMessage.slice(0, 80),
+        });
+        // PI-k5: inject classification as advisory context into LLM system messages
+        if (classificationResult.classification) {
+          intentAdvisory = `Sinal interno: o classificador detectou intenção '${classificationResult.classification.intent}' (isChat=${classificationResult.isChat}). Use isso só como contexto, não branching.`;
+        } else {
+          intentAdvisory = `Sinal interno: o classificador não detectou intenção específica (isChat=${classificationResult.isChat}). Use isso só como contexto, não branching.`;
+        }
+      }
+    } catch (err) {
+      this.logger.log('kloel_onboarding_intent_skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
     const messages: OnboardingMessage[] = [
       onboardingStateMessage,
+      ...(intentAdvisory ? [{ role: 'system' as const, content: intentAdvisory }] : []),
       ...history.map((h) => ({
         role: h.role as OnboardingMessage['role'],
         content: h.content,
@@ -305,10 +304,76 @@ export class ConversationalOnboardingService {
       { role: 'user', content: userMessage },
     ];
 
+    // Mind signals — inject attention, beliefs, concepts into onboarding prompt (PI-k5-A).
+    try {
+      const mindDeps = buildOnboardingMindSignalsDeps(this.prismaExt, this.logger, {
+        ...(this.attentionService !== undefined ? { attentionService: this.attentionService } : {}),
+        ...(this.valenceAggregatorService !== undefined
+          ? { valenceAggregatorService: this.valenceAggregatorService }
+          : {}),
+        ...(this.mindBeliefService !== undefined
+          ? { mindBeliefService: this.mindBeliefService }
+          : {}),
+        ...(this.mindConceptService !== undefined
+          ? { mindConceptService: this.mindConceptService }
+          : {}),
+        ...(this.selfHealthService !== undefined
+          ? { selfHealthService: this.selfHealthService }
+          : {}),
+        ...(this.selfGapsService !== undefined ? { selfGapsService: this.selfGapsService } : {}),
+        ...(this.riskClassService !== undefined ? { riskClassService: this.riskClassService } : {}),
+        ...(this.mindVerbalizerService !== undefined
+          ? { mindVerbalizerService: this.mindVerbalizerService }
+          : {}),
+        ...(this.mindBanditService !== undefined
+          ? { mindBanditService: this.mindBanditService }
+          : {}),
+        ...(this.mindCaseMemoryService !== undefined
+          ? { mindCaseMemoryService: this.mindCaseMemoryService }
+          : {}),
+        ...(this.mindGlobalPriorService !== undefined
+          ? { mindGlobalPriorService: this.mindGlobalPriorService }
+          : {}),
+        ...(this.mindPerceptionService !== undefined
+          ? { mindPerceptionService: this.mindPerceptionService }
+          : {}),
+        ...(this.agentAssistService !== undefined
+          ? { agentAssistService: this.agentAssistService }
+          : {}),
+        ...(this.knowledgeBaseService !== undefined
+          ? { knowledgeBaseService: this.knowledgeBaseService }
+          : {}),
+        ...(this.vectorService !== undefined ? { vectorService: this.vectorService } : {}),
+      });
+      const mindSignals = await buildMindSignals(mindDeps, workspaceId, userMessage);
+      messages.push({
+        role: 'user',
+        content: JSON.stringify({ onboardingMindSignals: mindSignals }),
+      });
+    } catch (error: unknown) {
+      this.logger.warn('kloel_onboarding_mind_signal_skipped', {
+        reason: error instanceof Error ? error.message : 'unknown error',
+      });
+    }
+
+    const completionStartMs = Date.now();
     try {
       const response = await this.runOnboardingCompletion(workspaceId, messages, 'brain');
       const assistantChoice = response.choices[0];
+
+      // PI-k6: emit cognition.decision_made after the primary brain completion
+      emitOnboardingCognitionDecision(this.spine, this.logger, {
+        workspaceId,
+        toolCallsCount: assistantChoice?.message?.tool_calls?.length ?? 0,
+        completionStartMs,
+        modelUsed: response.model,
+      });
       if (!assistantChoice) {
+        closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
+          outcomeKey,
+          outcomeName: 'chat.degraded.empty_choice',
+          wonVsBaseline: false,
+        });
         return '';
       }
       const assistantMessage = assistantChoice.message;
@@ -316,37 +381,93 @@ export class ConversationalOnboardingService {
 
       const initialToolCalls = assistantMessage.tool_calls;
       if (initialToolCalls && initialToolCalls.length > 0) {
-        responseText = await this.handleInitialToolCalls(workspaceId, messages, initialToolCalls);
+        try {
+          responseText = await this.handleInitialToolCalls(workspaceId, messages, initialToolCalls);
+        } catch (e: unknown) {
+          degradedReason =
+            ((e as Record<string, unknown>)?.__onboarding_reason as string) ?? 'tool_execution';
+          throw e;
+        }
       }
 
-      await this.toolsService.saveOnboardingMessage(workspaceId, 'user', userMessage);
-      await this.toolsService.saveOnboardingMessage(workspaceId, 'assistant', responseText);
+      try {
+        await this.toolsService.saveOnboardingMessage(workspaceId, 'user', userMessage);
+        await this.toolsService.saveOnboardingMessage(workspaceId, 'assistant', responseText);
+      } catch (e: unknown) {
+        degradedReason = 'persist';
+        throw e;
+      }
 
+      const successOutcomeName = degradedReason
+        ? `chat.degraded.${String(degradedReason)}`
+        : 'chat.replied';
+      const onSuccess = (): void => {
+        applyOnboardingSuccessHooks(this.onboardingDeps(), {
+          workspaceId,
+          outcomeKey,
+          successOutcomeName,
+          degradedReason,
+        });
+      };
       if (res) {
-        this.writeSseResponse(res, responseText);
+        try {
+          writeSseResponse(res, responseText);
+        } catch (e: unknown) {
+          degradedReason = 'sse_write';
+          throw e;
+        }
+        onSuccess();
         return;
       }
-
+      onSuccess();
       return responseText;
     } catch (error: unknown) {
+      closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
+        outcomeKey,
+        outcomeName: 'chat.error',
+        wonVsBaseline: false,
+      });
       this.logger.error(
         'Erro no onboarding conversacional',
         error instanceof Error ? error.message : String(error),
         { context: 'ConversationalOnboardingService.chat', workspaceId },
       );
-      // Per WAVE3_LLM_PROMPT_AUDIT critical gap #9: previously rethrew the
-      // raw error, leaving the onboarding UI with no honest reply. Now we
-      // return a Portuguese-Brazil fallback so the user sees a graceful
-      // 'try again' instead of an unhandled exception. The error is still
-      // logged above for observability.
-      const FALLBACK_REPLY =
-        'Tive uma instabilidade momentânea pra processar agora. Pode repetir a mensagem em alguns segundos? Estou aqui pra continuar o onboarding.';
+      const reason =
+        degradedReason ??
+        ((error as Record<string, unknown>)?.__onboarding_reason as string) ??
+        'unknown';
+      const fallback = buildOnboardingFallback(
+        reason,
+        {
+          error,
+          workspaceId,
+          hasResponseHeaders: !!res,
+          willingWrite: !!res,
+        },
+        this.logger,
+      );
+      const onFailure = (): void => {
+        applyOnboardingFailureHooks(this.onboardingDeps(), { workspaceId, outcomeKey });
+      };
       if (res) {
-        this.writeSseResponse(res, FALLBACK_REPLY);
+        writeSseResponse(res, fallback);
+        onFailure();
         return;
       }
-      return FALLBACK_REPLY;
+      onFailure();
+      return fallback;
     }
+  }
+
+  private onboardingDeps() {
+    return {
+      decisionOutcomeService: this.decisionOutcomeService,
+      mindBeliefService: this.mindBeliefService,
+      mindSurpriseService: this.mindSurpriseService,
+      mindEventProcessorService: this.mindEventProcessorService,
+      valenceTagger: this.valenceTagger,
+      logger: this.logger,
+    };
   }
 
   /** Inicia o onboarding com uma mensagem de boas-vindas */

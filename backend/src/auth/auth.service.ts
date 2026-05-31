@@ -17,7 +17,8 @@ import { RateLimitService } from './rate-limit.service';
 
 import type { AuthPartsDeps } from './auth-service.register-login';
 import { checkEmail, createAnonymous, register, login } from './auth-service.register-login';
-import { issueTokensForAgentId, refreshToken } from './auth-service.tokens';
+import { issueTokensForAgentId } from './auth-service.tokens';
+import { AuthTokenService } from './auth.token.service';
 import {
   oauthLogin,
   loginWithGoogleCredential,
@@ -56,6 +57,7 @@ export class AuthService {
     private readonly tikTokAuthService: TikTokAuthService,
     private readonly connectService: ConnectService,
     private readonly rateLimitService: RateLimitService,
+    private readonly tokenService: AuthTokenService,
     @Optional() @InjectRedis() private readonly redis?: Redis,
     @Optional() private readonly auditService?: AuditService,
     @Optional()
@@ -116,7 +118,11 @@ export class AuthService {
   }
 
   async refresh(token: string) {
-    return refreshToken(this.prisma, this.jwt, this.logger, token);
+    // Canonical path: AuthTokenService.refresh owns atomic claim, grace
+    // window for cross-tab races, jti issuance, and OpsAlert integration.
+    // The legacy refreshToken() function in auth-service.tokens.ts is kept
+    // as a deprecated internal fallback (see @deprecated JSDoc there).
+    return this.tokenService.refresh(token);
   }
 
   async oauthLogin(data: {

@@ -4,16 +4,8 @@ import { projectRefundRisk } from './refund-risk.projector';
 import { projectSupportCost } from './support-cost.projector';
 import { detectBrandWear } from './brand-wear.detector';
 import { evaluateSaleBlock } from './unhealthy-sale.blocker';
-import { BlockerPolicyService } from './blocker-policy.service';
-import { buildDashboard } from './healthy-vs-unhealthy.dashboard';
-import { tierFromScore, clampScore } from './healthy-money.types';
 import type { SpineEventRef } from '../mind/mind.types';
-import type {
-  RevenueQualityScore,
-  BlockerPolicy,
-  MarginProjection,
-  UnhealthySaleBlock,
-} from './healthy-money.types';
+import type { RevenueQualityScore, BlockerPolicy, MarginProjection } from './healthy-money.types';
 
 const NOW = Date.parse('2026-05-13T22:00:00.000Z');
 const WINDOW_START = NOW - 30 * 24 * 60 * 60 * 1000;

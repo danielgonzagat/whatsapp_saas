@@ -13,145 +13,14 @@ import type {
   FraudDecision,
   FraudReason,
 } from './fraud.types';
-
-interface FraudThresholdConfig {
-  BLOCK: number;
-  REVIEW: number;
-  REQUIRE_3DS: number;
-}
-
-interface FraudScoreConfig {
-  missingIdentifier: number;
-  highAmount: number;
-  foreignBin: number;
-}
-
-interface FraudVelocityConfig {
-  windowSeconds: number;
-  maxAttemptsPerIp: number;
-  maxAttemptsPerDevice: number;
-  maxAttemptsPerEmail: number;
-  maxAttemptsPerDocument: number;
-}
-
-interface FraudEngineConfig {
-  thresholds: FraudThresholdConfig;
-  scores: FraudScoreConfig;
-  highAmount3dsCents: bigint;
-  velocity: FraudVelocityConfig;
-}
-
-const DEFAULT_THRESHOLDS: FraudThresholdConfig = {
-  BLOCK: 0.8,
-  REVIEW: 0.5,
-  REQUIRE_3DS: 0.3,
-};
-
-const DEFAULT_SCORES: FraudScoreConfig = {
-  missingIdentifier: 0.4,
-  highAmount: 0.3,
-  foreignBin: 0.35,
-};
-
-const DEFAULT_VELOCITY: FraudVelocityConfig = {
-  windowSeconds: 10 * 60,
-  maxAttemptsPerIp: 5,
-  maxAttemptsPerDevice: 5,
-  maxAttemptsPerEmail: 4,
-  maxAttemptsPerDocument: 3,
-};
-
-function clampScore(value: number): number {
-  return Math.max(0, Math.min(1, Number(value.toFixed(3))));
-}
-
-function readNumberEnv(name: string, fallback: number, minimum = 0): number {
-  const raw = process.env[name];
-  if (!raw) {
-    return fallback;
-  }
-
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed) || parsed < minimum) {
-    return fallback;
-  }
-  return parsed;
-}
-
-function readIntegerEnv(name: string, fallback: number, minimum = 1): number {
-  const parsed = Math.trunc(readNumberEnv(name, fallback, minimum));
-  return parsed >= minimum ? parsed : fallback;
-}
-
-function readBigIntEnv(name: string, fallback: bigint): bigint {
-  const raw = process.env[name];
-  if (!raw) {
-    return fallback;
-  }
-
-  try {
-    const parsed = BigInt(raw);
-    return parsed >= 0n ? parsed : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function buildConfig(): FraudEngineConfig {
-  return {
-    thresholds: {
-      BLOCK: readNumberEnv('FRAUD_BLOCK_THRESHOLD', DEFAULT_THRESHOLDS.BLOCK),
-      REVIEW: readNumberEnv('FRAUD_REVIEW_THRESHOLD', DEFAULT_THRESHOLDS.REVIEW),
-      REQUIRE_3DS: readNumberEnv('FRAUD_REQUIRE_3DS_THRESHOLD', DEFAULT_THRESHOLDS.REQUIRE_3DS),
-    },
-    scores: {
-      missingIdentifier: readNumberEnv(
-        'FRAUD_MISSING_IDENTIFIER_SCORE',
-        DEFAULT_SCORES.missingIdentifier,
-      ),
-      highAmount: readNumberEnv('FRAUD_HIGH_AMOUNT_SCORE', DEFAULT_SCORES.highAmount),
-      foreignBin: readNumberEnv('FRAUD_FOREIGN_BIN_SCORE', DEFAULT_SCORES.foreignBin),
-    },
-    highAmount3dsCents: readBigIntEnv(
-      'FRAUD_HIGH_AMOUNT_3DS_CENTS',
-      FraudEngine.HIGH_AMOUNT_3DS_CENTS,
-    ),
-    velocity: {
-      windowSeconds:
-        readIntegerEnv('FRAUD_VELOCITY_WINDOW_MINUTES', DEFAULT_VELOCITY.windowSeconds / 60) * 60,
-      maxAttemptsPerIp: readIntegerEnv(
-        'FRAUD_VELOCITY_MAX_ATTEMPTS_PER_IP',
-        DEFAULT_VELOCITY.maxAttemptsPerIp,
-      ),
-      maxAttemptsPerDevice: readIntegerEnv(
-        'FRAUD_VELOCITY_MAX_ATTEMPTS_PER_DEVICE',
-        DEFAULT_VELOCITY.maxAttemptsPerDevice,
-      ),
-      maxAttemptsPerEmail: readIntegerEnv(
-        'FRAUD_VELOCITY_MAX_ATTEMPTS_PER_EMAIL',
-        DEFAULT_VELOCITY.maxAttemptsPerEmail,
-      ),
-      maxAttemptsPerDocument: readIntegerEnv(
-        'FRAUD_VELOCITY_MAX_ATTEMPTS_PER_DOCUMENT',
-        DEFAULT_VELOCITY.maxAttemptsPerDocument,
-      ),
-    },
-  };
-}
-
-function normalizeFraudValue(type: FraudBlacklistType, value: string): string {
-  const trimmed = value.trim();
-  switch (type) {
-    case 'CPF':
-    case 'CNPJ':
-    case 'CARD_BIN':
-      return trimmed.replace(/\D/g, '');
-    case 'EMAIL':
-      return trimmed.toLowerCase();
-    default:
-      return trimmed;
-  }
-}
+import {
+  buildFraudConfig,
+  clampScore,
+  DEFAULT_FRAUD_THRESHOLDS,
+  DEFAULT_HIGH_AMOUNT_3DS_CENTS,
+  type FraudThresholdConfig,
+  normalizeFraudValue,
+} from './fraud.engine.helpers';
 
 /**
  * Centralized antifraude engine. Evaluated BEFORE every PaymentIntent so
@@ -174,16 +43,16 @@ function normalizeFraudValue(type: FraudBlacklistType, value: string): string {
 @Injectable()
 export class FraudEngine {
   private readonly logger = StructuredLogger.from(FraudEngine.name);
-  private readonly config = buildConfig();
+  private readonly config = buildFraudConfig(DEFAULT_HIGH_AMOUNT_3DS_CENTS);
 
   /**
    * Score thresholds used to map the cumulative score to an action.
    * Tunable but immutable at runtime — changes require a code review.
    */
-  static readonly THRESHOLDS: Readonly<FraudThresholdConfig> = DEFAULT_THRESHOLDS;
+  static readonly THRESHOLDS: Readonly<FraudThresholdConfig> = DEFAULT_FRAUD_THRESHOLDS;
 
   /** Hard ceiling above which we always require 3DS regardless of score. */
-  static readonly HIGH_AMOUNT_3DS_CENTS = 100_000n; // R$ 1.000,00
+  static readonly HIGH_AMOUNT_3DS_CENTS = DEFAULT_HIGH_AMOUNT_3DS_CENTS;
 
   constructor(
     private readonly prisma: PrismaService,

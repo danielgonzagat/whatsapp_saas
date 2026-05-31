@@ -1,3 +1,7 @@
+/**
+ * @capability StripeRuntimeLoader
+ * @domain payment
+ */
 import { createRequire } from 'node:module';
 
 const stripeRequire = createRequire(__filename);

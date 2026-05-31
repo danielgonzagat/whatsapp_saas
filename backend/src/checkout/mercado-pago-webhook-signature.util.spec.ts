@@ -22,14 +22,18 @@ describe('checkout migration guard — webhook signature verification', () => {
     expect(webhookSource.toLowerCase()).not.toContain(retiredProvider);
   });
 
-  it('allows Mercado Pago Pix webhook processing when present', () => {
-    // Mercado Pago Pix webhook is intentionally allowed — the guard
-    // only blocks retired provider on payment webhook surfaces.
+  it('enforces Mercado Pago Pix webhook signature on the canonical controller', () => {
+    // Canonical MP webhook receiver lives at
+    // backend/src/payments/mercadopago/mercadopago-webhook.controller.ts.
+    // The legacy checkout-scoped duplicate at
+    // backend/src/checkout/mercado-pago-webhook.controller.ts was removed
+    // per DEPRECATION_MAP row #35 (2026-05-27).
     const webhookSource = readFileSync(
-      resolve(__dirname, './mercado-pago-webhook.controller.ts'),
+      resolve(__dirname, '../payments/mercadopago/mercadopago-webhook.controller.ts'),
       'utf8',
     );
-    expect(webhookSource).toContain('MERCADOPAGO_WEBHOOK_SECRET');
-    expect(webhookSource).toContain('mercado_pago');
+    expect(webhookSource).toContain("@Controller('webhooks/mercadopago')");
+    expect(webhookSource).toContain('MercadoPagoWebhookSignatureVerifier');
+    expect(webhookSource).toContain("provider: 'mercadopago'");
   });
 });

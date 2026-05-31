@@ -6,8 +6,7 @@ export const dynamic = 'force-dynamic';
 
 import { CenterStage, Section, StageHeadline } from '@/components/kloel';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
-import { useWorkspaceId } from '@/hooks/useWorkspaceId';
-import { createCheckoutSession, tokenStorage } from '@/lib/api';
+import { billingApi } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
 import { buildDashboardHref } from '@/lib/kloel-dashboard-context';
 import { usePricingPlans, type Plan } from '@/hooks/usePricingPlans';
@@ -32,7 +31,6 @@ function navigateCurrentWindow(url: string) {
 export default function PricingPage() {
   const router = useRouter();
   const { userEmail } = useAuth();
-  const workspaceId = useWorkspaceId();
   const { plans: PLANS, benefits: BENEFITS, isLoading: plansLoading, error: plansError } = usePricingPlans();
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
@@ -57,13 +55,10 @@ export default function PricingPage() {
     setError(null);
 
     try {
-      const email = userEmail;
-      if (!email) {
+      if (!userEmail) {
         router.push('/login?callbackUrl=/');
         return;
       }
-
-      const token = tokenStorage.getToken() || undefined;
 
       // Map plan.id to backend plan format
       const planMap: Record<string, string> = {
@@ -75,11 +70,12 @@ export default function PricingPage() {
       const backendPlan = planMap[plan.id] || plan.id.toUpperCase();
 
       // Create checkout session
-      const result = await createCheckoutSession(workspaceId, backendPlan, email, token);
+      const result = await billingApi.createCheckoutSession(backendPlan);
+      const url = (result.data as { url?: string } | undefined)?.url;
 
-      if (result.url) {
+      if (url) {
         // Validate the redirect URL is same-origin or a known Kloel domain
-        const target = new URL(result.url, window.location.origin);
+        const target = new URL(url, window.location.origin);
         const isKloelDomain =
           target.origin === window.location.origin ||
           target.hostname.endsWith('.kloel.com') ||

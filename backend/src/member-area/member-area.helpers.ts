@@ -88,14 +88,16 @@ export function serializeArea(
     return area;
   }
 
-  const modules = Array.isArray(area.modules) ? area.modules : [];
-  const lessonsCount =
-    area.totalLessons ??
-    modules.reduce(
-      (sum: number, module: { lessons?: unknown[] }) =>
-        sum + (Array.isArray(module.lessons) ? module.lessons.length : 0),
-      0,
-    );
+  const modules: Array<{ lessons?: unknown[] }> = Array.isArray(area.modules)
+    ? (area.modules as Array<{ lessons?: unknown[] }>)
+    : [];
+  const lessonsCount: number =
+    typeof area.totalLessons === 'number'
+      ? area.totalLessons
+      : modules.reduce(
+          (sum, module) => sum + (Array.isArray(module.lessons) ? module.lessons.length : 0),
+          0,
+        );
 
   return {
     ...area,

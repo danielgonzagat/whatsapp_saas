@@ -23,6 +23,10 @@ import { digitsOnly } from '../common/phone';
  * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
  */
 
+interface MetaSendMessageResponse {
+  error?: { message?: string };
+}
+
 /**
  * Handles WhatsApp OTP send/verify and password-recovery (forgot + reset),
  * extracted from AuthVerificationService for line-count compliance.
@@ -82,7 +86,7 @@ export class AuthWhatsappPasswordService {
           signal: AbortSignal.timeout(30000),
         });
 
-        const result = await response.json();
+        const result = (await response.json()) as MetaSendMessageResponse;
 
         if (result.error) {
           this.logger.error(`WhatsApp API: erro ao enviar código: ${result.error.message}`);

@@ -6,6 +6,8 @@ jest.mock('../common/utils/unsubscribe-token.util', () => ({
 
 import { verifyUnsubscribeToken } from '../common/utils/unsubscribe-token.util';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
+import { castMock } from '../../test/helpers/cast-mock';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 describe('UnsubscribeService', () => {
   let prismaMock: ReturnType<typeof createPartialPrismaMock>;
@@ -41,7 +43,7 @@ describe('UnsubscribeService', () => {
     });
     expect(prismaMock.contact.update).toHaveBeenCalledWith({
       where: { id: 'c-1', workspaceId: 'ws-1' },
-      data: expect.objectContaining({ optIn: false }),
+      data: partialMatch({ optIn: false }),
     });
   });
 
@@ -95,7 +97,9 @@ describe('UnsubscribeService', () => {
 
     await service.processUnsubscribeToken('tok');
 
-    const callArgs = prismaMock.contact.findMany.mock.calls[0][0];
+    const callArgs = castMock<[{ where: { workspaceId: string } }]>(
+      prismaMock.contact.findMany.mock.calls[0],
+    )[0];
     expect(callArgs.where.workspaceId).toBe('ws-isolated');
   });
 });
