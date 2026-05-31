@@ -6322,12 +6322,18 @@ function KloelInner() {
   useEffect(() => {
     setProducts(Array.isArray(realProducts) ? realProducts.map(adaptRealProduct) : []);
   }, [realProducts]);
-  const [affiliate, setAffiliate] = useState({ marketplace: MARKETPLACE_SEED, myAffiliates: MY_AFFILIATES_SEED, partnerChats: PARTNER_CHATS_SEED, collaborators: COLLABORATORS_SEED });
+  // Afiliar honest-empty (sem marketplace/afiliados/chats fake). Dados reais entram
+  // via useAffiliates/usePartnerships quando o backend estiver disponível.
+  const [affiliate, setAffiliate] = useState({ marketplace: [], myAffiliates: [], partnerChats: [], collaborators: [] });
   // Carteira honest-empty (sem saldo/saque/antecipação fake). Saldos zerados reais;
   // dados reais entram via useWallet quando o backend estiver disponível.
   const [wallet, setWallet] = useState({ balance: { available: 0, pending: 0, blocked: 0, total: 0 }, withdrawals: [], anticipations: [], transactions: [] });
-  const [educar, setEducar] = useState({ areas: MEMBER_AREAS_SEED });
-  const [conversar, setConversar] = useState({ crm: CRM_SEED, contacts: CONTACTS_SEED, conversations: CONVERSATIONS_SEED, orders: ORDERS_SEED, adCampaigns: AD_CAMPAIGNS_SEED, adRules: AD_RULES_SEED, autopilotEvents: AUTOPILOT_EVENTS_SEED, followups: FOLLOWUPS_SEED, crmModules: { inbox: false, contatos: false, vendas: false, anuncios: false, autopilot: false } });
+  // Educar honest-empty (sem áreas de membros fake). Dados reais via useMemberAreas.
+  const [educar, setEducar] = useState({ areas: [] });
+  // Conversar honest-empty (sem CRM/contatos/conversas/pedidos/anúncios fake). crm
+  // mantém só o scaffold do pipeline (sem deals). Dados reais via useCRM/conversations/
+  // useAnuncios quando o backend estiver disponível.
+  const [conversar, setConversar] = useState({ crm: { pipeline: { id: "pp1", name: "Pipeline de Vendas", isDefault: true }, stages: [], deals: [] }, contacts: [], conversations: [], orders: [], adCampaigns: [], adRules: [], autopilotEvents: [], followups: [], crmModules: { inbox: false, contatos: false, vendas: false, anuncios: false, autopilot: false } });
   const [desempenho, setDesempenho] = useState({ period: "30d", customFrom: "", customTo: "" });
   const [kloel, setKloel] = useState({ conversations: [], images: [] });
   const [kloelCtx, setKloelCtx] = useState(null);
