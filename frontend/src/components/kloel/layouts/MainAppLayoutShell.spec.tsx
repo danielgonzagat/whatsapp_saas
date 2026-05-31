@@ -27,10 +27,24 @@ import { MainAppLayoutShell } from './MainAppLayoutShell';
 afterEach(() => {
   cleanup();
   delete process.env.NEXT_PUBLIC_KLOEL_GRAPH_ENABLED;
+  delete process.env.KLOEL_GRAPH_ENABLED;
 });
 
 describe('MainAppLayoutShell graph rollout', () => {
-  it('keeps the legacy AppShell when the graph flag is disabled', () => {
+  it('mounts the KloelGraph shell by default so the app is graph-first', () => {
+    render(
+      <MainAppLayoutShell>
+        <div>Graph route</div>
+      </MainAppLayoutShell>,
+    );
+
+    expect(screen.getByTestId('kloel-graph-app-shell')).toHaveTextContent('Graph route');
+    expect(screen.queryByTestId('legacy-app-shell')).toBeNull();
+  });
+
+  it('keeps the legacy AppShell only for an explicit rollback flag', () => {
+    process.env.NEXT_PUBLIC_KLOEL_GRAPH_ENABLED = 'false';
+
     render(
       <MainAppLayoutShell>
         <div>Legacy route</div>
@@ -41,7 +55,7 @@ describe('MainAppLayoutShell graph rollout', () => {
     expect(screen.queryByTestId('kloel-graph-app-shell')).toBeNull();
   });
 
-  it('mounts the KloelGraph shell when the graph flag is enabled', () => {
+  it('keeps mounting the KloelGraph shell when the graph flag is explicitly enabled', () => {
     process.env.NEXT_PUBLIC_KLOEL_GRAPH_ENABLED = 'true';
 
     render(

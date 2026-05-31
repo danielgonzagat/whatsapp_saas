@@ -166,11 +166,11 @@ describe('KloelGraphShell', () => {
     expect(openPalette).toHaveBeenCalledWith({ initialQuery: '' });
   });
 
-  it('closes the overlay back to graph-only mode', () => {
+  it('closes the overlay back to graph-only mode on the current node route', () => {
     renderShell();
 
     fireEvent.click(screen.getByRole('button', { name: 'Fechar overlay do grafo' }));
 
-    expect(push).toHaveBeenCalledWith('/dashboard?graph=1');
+    expect(push).toHaveBeenCalledWith('/products?graph=1');
   });
 });

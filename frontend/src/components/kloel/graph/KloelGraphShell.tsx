@@ -50,7 +50,7 @@ export function KloelGraphShell({ children }: { readonly children: ReactNode }) 
   );
   const { paletteProps, executeCommand, open: openPalette } = useCommandPalette();
   const [paletteMode, setPaletteMode] = useState<'full' | 'conversations'>('full');
-  const [focusedArea, setFocusedArea] = useState<KloelGraphArea>('perfil');
+  const [focusedArea, setFocusedArea] = useState<KloelGraphArea>('criar');
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
   const [manualPan, setManualPan] = useState<GraphPoint>({ x: 0, y: 0 });
   const [nodeOffsets, setNodeOffsets] = useState<Record<string, GraphPoint>>({});
@@ -86,8 +86,12 @@ export function KloelGraphShell({ children }: { readonly children: ReactNode }) 
   }, [router]);
 
   const closeOverlay = useCallback(() => {
-    router.push('/dashboard?graph=1');
-  }, [router]);
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.set('graph', '1');
+    nextParams.delete('graphAction');
+    const query = nextParams.toString();
+    router.push(`${pathname}${query ? `?${query}` : ''}`);
+  }, [pathname, router, searchParams]);
 
   useEffect(() => {
     if (graphOnly || paletteProps.open) {
@@ -311,7 +315,7 @@ export function KloelGraphShell({ children }: { readonly children: ReactNode }) 
       </div>
 
       <KloelGraphFloatingNav
-        focusedArea={focusedArea}
+        focusedArea={displayArea}
         onFocusGalaxy={focusGalaxy}
         onSearch={openSearch}
       />

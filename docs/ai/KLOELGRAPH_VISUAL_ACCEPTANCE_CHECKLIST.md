@@ -1,6 +1,6 @@
 # KloelGraph visual acceptance checklist
 
-Data: 2026-05-30.
+Data: 2026-05-31.
 
 Legenda:
 
@@ -11,8 +11,8 @@ Legenda:
 
 | Fluxo | Status | Evidencia atual | Pendencia |
 | --- | --- | --- | --- |
-| Sidebar deixa de ser navegacao principal com flag ligada | OK por teste | `MainAppLayoutShell.spec.tsx` cobre escolha `KloelGraphShell` vs `AppShell` | Smoke visual com flag ligada |
-| Graph como superficie principal | OK por teste | `KloelGraphShell.spec.tsx` verifica shell e graph-only | Screenshot desktop/mobile |
+| Sidebar deixa de ser navegacao principal por padrao | OK por teste | `MainAppLayoutShell.spec.tsx` cobre Graph default e sidebar apenas por rollback explicito | Smoke visual em producao |
+| Graph como superficie principal | OK por teste | `KloelGraphShell.spec.tsx` verifica shell e graph-only; `middleware.test.ts` cobre `app.kloel.com/` -> `/products?graph=1` | Screenshot desktop/mobile |
 | Floating nav Perfil/Kloel/Criar/Afiliar/Educar/Conversar/Consultar | OK por teste | `KloelGraph.routes.spec.ts` verifica massas canonicas | Screenshot |
 | Overlay 80% com tela real | OK por teste | `KloelGraphShell.spec.tsx` verifica dialog com children reais | Comparacao visual lado a lado |
 | Drag nao abre tela | OK por teste | `KloelGraphShell.spec.tsx` cobre drag acima de 6px | Teste manual no browser |
@@ -51,8 +51,8 @@ Legenda:
 
 ## Checklist manual obrigatorio
 
-- Entrar com a flag do grafo ligada.
-- Confirmar que a sidebar nao aparece como navegacao principal.
+- Entrar em `app.kloel.com/` sem flag de rollback.
+- Confirmar que o Graph aparece primeiro, sem overlay inicial e sem sidebar como navegacao principal.
 - Abrir cada no principal e subno listado acima.
 - Tirar screenshot da rota original e do overlay.
 - Aceitar apenas diferenca de graph no fundo e botao discreto de fechar.
