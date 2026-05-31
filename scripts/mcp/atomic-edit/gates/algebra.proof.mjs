@@ -24,7 +24,7 @@ import { fileURLToPath } from 'node:url';
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
 const A = await import(path.join(dir, '..', 'dist', 'gates', 'algebra.js'));
-const { commute, buildEditFact, concurrentBatches } = A;
+const { commute, buildEditFact, concurrentBatches, perSymbolClosureOf, closureOf } = A;
 
 let pass = 0;
 let fail = 0;
@@ -51,7 +51,11 @@ check('UNIT same-file overlapping spans → no commute',
   fs.writeFileSync(path.join(tmp, 'b.ts'), "import { foo } from './a';\nexport const bar = foo + 1;\n");
   fs.writeFileSync(path.join(tmp, 'c.ts'), 'export const baz = 2;\n');
   const fA = buildEditFact(tmp, { file: 'a.ts', modifiedZones: [{ byteStart: 13, byteEnd: 16 }] }); // edit `foo`
-  const fB = buildEditFact(tmp, { file: 'b.ts', modifiedZones: [{ byteStart: 40, byteEnd: 43 }] }); // edit in b's body
+  // b's body edit lands on its USE of the imported `foo` (byte 46-49), so the edit
+  // genuinely reads a.ts — a real cross-file coupling that byte-span disjointness
+  // alone cannot see. (Under per-symbol precision an edit elsewhere in b that did
+  // NOT touch `foo` would correctly be independent; here we exercise the coupling.)
+  const fB = buildEditFact(tmp, { file: 'b.ts', modifiedZones: [{ byteStart: 46, byteEnd: 49 }] }); // edit b's use of `foo`
   const fC = buildEditFact(tmp, { file: 'c.ts', modifiedZones: [{ byteStart: 13, byteEnd: 16 }] });
   const vAB = commute(fA, fB);
   const vAC = commute(fA, fC);
@@ -110,6 +114,82 @@ check('UNIT same-file overlapping spans → no commute',
   const batches = concurrentBatches(facts);
   console.log(`        (empirical: ${facts.length} real edits, ${pairs} pairs, commute ${(rate * 100).toFixed(1)}%, ${batches.length} concurrent batches)`);
   check('EMPIRICAL commute rate is DISCRIMINATING (0.50 < r < 0.99, not degenerate)', pairs > 0 && rate > 0.5 && rate < 0.99);
+}
+
+// ── PER-SYMBOL: precision tightening that removes a FALSE per-file coupling ────
+// A hub file imports `foo` from a.ts and `bar` from b.ts. An edit to the hub that
+// only touches the `foo` usage is, at PER-FILE granularity, coupled to BOTH a.ts and
+// b.ts (the file's whole import closure). At PER-SYMBOL granularity it is coupled to
+// a.ts only — so a concurrent edit to b.ts that per-file calls COUPLED, per-symbol
+// correctly calls INDEPENDENT. This is the headline of the tightening: same soundness,
+// fewer false couplings, a truer commute rate.
+{
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'atomic-persym-'));
+  fs.writeFileSync(path.join(tmp, 'a.ts'), 'export const foo = 1;\n');
+  fs.writeFileSync(path.join(tmp, 'b.ts'), 'export const bar = 2;\n');
+  // hub references foo (from a) on one line and bar (from b) on another, in distinct,
+  // byte-disjoint spans so each edit can be aimed at exactly one symbol's usage.
+  const hub =
+    "import { foo } from './a';\n" +
+    "import { bar } from './b';\n" +
+    'export const usesFoo = foo + 10;\n' +
+    'export const usesBar = bar + 20;\n';
+  fs.writeFileSync(path.join(tmp, 'hub.ts'), hub);
+
+  // Aim spans at the actual identifier-usage bytes (computed, not hand-guessed).
+  const fooUse = hub.indexOf('foo + 10');
+  const barUse = hub.indexOf('bar + 20');
+  const fEditHubFoo = buildEditFact(tmp, { file: 'hub.ts', modifiedZones: [{ byteStart: fooUse, byteEnd: fooUse + 3 }] });
+  const fEditHubBar = buildEditFact(tmp, { file: 'hub.ts', modifiedZones: [{ byteStart: barUse, byteEnd: barUse + 3 }] });
+  const fEditB = buildEditFact(tmp, { file: 'b.ts', modifiedZones: [{ byteStart: 13, byteEnd: 16 }] }); // edit `bar`
+
+  // (1) The per-FILE closure of hub.ts genuinely contains b.ts — so a byte-disjoint
+  //     edit to b.ts WOULD be reported coupled at file granularity. Lock that premise.
+  const perFileHub = closureOf(tmp, 'hub.ts');
+  check('PER-SYMBOL premise: per-file hub closure DOES contain b.ts (the false coupling exists)', perFileHub.set.has('b.ts'));
+
+  // (2) The per-SYMBOL closure of the foo-only edit drops b.ts (foo comes from a, not b),
+  //     yet keeps a.ts (the symbol it actually reads). Precision, not blindness.
+  check('PER-SYMBOL foo-edit closure drops b.ts (false coupling removed)', !fEditHubFoo.closure.has('b.ts'));
+  check('PER-SYMBOL foo-edit closure keeps a.ts (true dependency retained)', fEditHubFoo.closure.has('a.ts'));
+
+  // (3) THE HEADLINE — same edit pair, opposite verdicts under the two granularities:
+  //     per-FILE would couple hub↔b (b.ts ∈ hub file closure); per-SYMBOL is independent.
+  const perFileVerdict = commute(
+    { file: 'hub.ts', spans: [[fooUse, fooUse + 3]], closure: perFileHub.set, closureCapped: false },
+    fEditB,
+  );
+  const perSymVerdict = commute(fEditHubFoo, fEditB);
+  check('PER-SYMBOL headline: per-file says COUPLED', perFileVerdict.commute === false);
+  check('PER-SYMBOL headline: per-symbol says INDEPENDENT (false coupling gone)', perSymVerdict.commute === true);
+
+  // (4) SOUNDNESS, not blindness: the bar-touching edit STILL couples with the b.ts edit,
+  //     because bar genuinely comes from b. Precision removes only FALSE couplings.
+  check('PER-SYMBOL keeps the REAL coupling: bar-edit ↔ b.ts still COUPLED', commute(fEditHubBar, fEditB).commute === false);
+
+  // (5) SUBSET INVARIANT (the soundness contract): per-symbol ⊆ per-file, always.
+  const subset = [...fEditHubFoo.closure].every((x) => perFileHub.set.has(x));
+  check('PER-SYMBOL ⊆ PER-FILE (sound by construction: never adds an edge)', subset && fEditHubFoo.closure.size <= perFileHub.set.size);
+
+  // (6) FALLBACK is honest: empty spans ⇒ no scoping signal ⇒ per-symbol returns the
+  //     exact per-file closure (never under-approximates when it cannot tell).
+  const fb = perSymbolClosureOf(tmp, 'hub.ts', []);
+  check('PER-SYMBOL fallback: no spans ⇒ identical to per-file closure (no under-approximation)',
+    fb.set.size === perFileHub.set.size && [...perFileHub.set].every((x) => fb.set.has(x)));
+
+  // (7) FALLBACK on uncertainty: a dynamic import() sitting inside the edited span flips
+  //     to the conservative per-file closure rather than guessing a tighter set.
+  fs.writeFileSync(path.join(tmp, 'dyn.ts'),
+    "import { bar } from './b';\nexport async function load() { return import('./a'); }\n");
+  const dynSrc = fs.readFileSync(path.join(tmp, 'dyn.ts'), 'utf8');
+  const dynSpan = dynSrc.indexOf("import('./a')");
+  const dynClosure = perSymbolClosureOf(tmp, 'dyn.ts', [[dynSpan, dynSpan + 13]]);
+  const dynFile = closureOf(tmp, 'dyn.ts');
+  check('PER-SYMBOL fallback: dynamic import() in span ⇒ conservative per-file closure',
+    dynClosure.set.size === dynFile.set.size && [...dynFile.set].every((x) => dynClosure.set.has(x)));
+
+  console.log(`        (per-symbol: foo-edit closure {${[...fEditHubFoo.closure].sort().join(', ')}} vs per-file {${[...perFileHub.set].sort().join(', ')}})`);
+  fs.rmSync(tmp, { recursive: true, force: true });
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

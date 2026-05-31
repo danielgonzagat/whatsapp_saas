@@ -70,6 +70,19 @@ export interface GateModule {
   appliesTo(rel: string): boolean;
   /** the fact, evaluated over the context */
   run(ctx: GateContext): GateResult | Promise<GateResult>;
+  /**
+   * OPTIONAL — the gate's own repair proposals for the reds it just reported.
+   * Purely additive: a gate that does not implement this contributes no fixes and
+   * the convergence operator simply skips it (no behaviour change for the 14
+   * existing gates). A proposal is a BYTE-SPAN splice into a specific file
+   * (`[byteStart, byteEnd) → replacement`) plus a human-readable `rationale`.
+   * Honesty doctrine: a gate proposes a fix ONLY when the bytes determine it
+   * unambiguously; when the discharge needs an intention decision the gate
+   * proposes NOTHING (the convergence operator then reports needsIntent), never a
+   * guessed edit. The operator validates and re-runs gates after applying, so a
+   * proposal that does not actually drive the red to green is rejected, not trusted.
+   */
+  proposeFixes?(ctx: GateContext): { file: string; byteStart: number; byteEnd: number; replacement: string; rationale: string }[];
 }
 
 /**

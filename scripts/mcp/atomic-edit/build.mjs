@@ -38,6 +38,10 @@ const ENTRY = [
   'gates/lens.ts',
   'gates/repair.ts',
   'gates/algebra.ts',
+  'gates/merge.ts',
+  'gates/converge-operator.ts',
+  'gates/corpus.ts',
+  'gates/closure-universal.ts',
 ].map((f) => path.join(dir, f));
 const OUT = path.join(dir, 'dist');
 
