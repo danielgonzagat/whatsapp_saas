@@ -101,7 +101,16 @@ function protectedWriteTarget(cmd: string): string | null {
   for (const m of cmd.matchAll(/>>?\s*["']?([^\s"'|;&<>]+)/g)) candidates.push(m[1]);
   for (const m of cmd.matchAll(/\btee\b\s+(?:-\S+\s+)*["']?([^\s"'|;&]+)/g)) candidates.push(m[1]);
   for (const m of cmd.matchAll(/\bof=["']?([^\s"';|&]+)/g)) candidates.push(m[1]);
-  for (const verb of ['sed', 'cp', 'mv', 'install', 'truncate', 'ex', 'ed']) {
+
+  const sed = cmd.match(/\bsed\b([^|;&]*)/);
+  if (sed && /(?:^|\s)(?:-[^\s]*i[^\s]*|--in-place(?:=|\s|$))/.test(sed[1])) {
+    const args = sed[1]
+      .split(/\s+/)
+      .filter((a) => a && !a.startsWith('-') && !a.includes('=') && a !== "''" && a !== '""');
+    if (args.length) candidates.push(args[args.length - 1]); // sed -i target = last positional
+  }
+
+  for (const verb of ['cp', 'mv', 'install', 'truncate', 'ex', 'ed']) {
     const m = cmd.match(new RegExp(`\\b${verb}\\b([^|;&]*)`));
     if (!m) continue;
     const args = m[1].split(/\s+/).filter((a) => a && !a.startsWith('-') && !a.includes('='));
@@ -112,7 +121,7 @@ function protectedWriteTarget(cmd: string): string | null {
     const rel = path.relative(REPO_ROOT, abs).split(path.sep).join('/');
     if (rel.startsWith('..')) continue; // outside the repo — not a repo-protected file
     const hit = isProtectedRelative(rel);
-    if (hit) return `${rel} (matches "${hit}")`;
+    if (hit) return `${rel} (matches \"${hit}\")`;
   }
   return null;
 }
@@ -196,6 +205,9 @@ function atomicSandboxProfile(writeRoot: string | null): string {
     '(deny default)',
     '(allow file-read*)',
     ...(writeRule ? [writeRule] : []),
+    '(allow file-write* (literal "/dev/null"))',
+    '(allow file-write* (literal "/dev/stdout"))',
+    '(allow file-write* (literal "/dev/stderr"))',
     '(allow process*)',
     '(allow mach-lookup)',
     '(allow sysctl-read)',

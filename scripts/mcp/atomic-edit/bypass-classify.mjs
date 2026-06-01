@@ -5,9 +5,24 @@
  * would have done. Mirrors the regex vocabulary of atomic-only-hook.mjs so
  * classification never drifts from enforcement. Default-to-undetectable for
  * anything ambiguous, so the headline bypass-rate only counts AVOIDABLE bypasses.
+ *
+ * Strict directive (Daniel, 2026-06-01): ALL execution should route through
+ * atomic_exec. So general shell that atomic_exec handles (git/npm/node/ls/cat/
+ * sed/…) is a DETECTABLE bypass of atomic_exec, even though the atomic-only deny
+ * hook does not BLOCK it (it only blocks code-mutating shell). Interactive /
+ * login / external-runtime verbs (claude/codex/ssh/sudo/gcloud/op/…) are NOT
+ * atomic-doable and stay undetectable.
  */
 const CODE_EXT =
   /\.(ts|tsx|js|jsx|mjs|cjs|json|prisma|go|rs|rb|py|java|c|cc|cpp|h|hpp|cs|php|swift|kt|scala|sh|bash|sql|ya?ml|toml)$/i;
+
+/** Verbs atomic_exec can run inside its envelope (general, non-interactive shell). */
+const ATOMIC_EXEC_HANDLES =
+  /^(git|npm|npx|pnpm|yarn|bun|node|deno|ts-node|tsx|ls|cat|echo|printf|mkdir|rmdir|rm|cp|mv|ln|test|true|false|grep|rg|ag|ack|find|fd|wc|head|tail|sed|awk|cut|sort|uniq|tr|jq|yq|diff|patch|tar|gzip|gunzip|zip|unzip|chmod|chown|touch|stat|date|pwd|basename|dirname|realpath|make|cmake|tsc|jest|vitest|mocha|eslint|prettier|biome|ruff|black|mypy|pytest|go|cargo|rustc|javac|gradle|mvn|ruby|gem|bundle|php|composer|dotnet|swift|kotlinc|xargs|tee|env|which|type|history|wait|kill|pkill|sleep)$/;
+
+/** Verbs atomic_exec genuinely cannot/should-not run (interactive/login/external). */
+const NON_ATOMIC_VERB =
+  /^(claude|codex|opencode|hermes|vim|vi|nano|emacs|less|more|top|htop|ssh|scp|sftp|telnet|sudo|su|doas|gcloud|aws|az|kubectl|helm|docker|podman|op|kaisser|railway|vercel|stripe|gh|psql|mysql|mongosh|redis-cli|open|code|subl)$/;
 
 /** verb + first path-like token only, capped — never the raw command (secret-leak hardening). */
 function shortTarget(s) {
@@ -102,7 +117,14 @@ export function classifyToolCall({ tool, toolInput }) {
     if (/^cat$/.test(verb) && CODE_EXT.test(cmd)) {
       return { category: 'bash-read', atomicEquivalent: 'atomic_outline / Read', detectable: true, blockedByDenyHook: false, target: verb };
     }
-    // git / npm / node / build / mkdir / echo / etc. — no atomic equivalent
+    // Strict directive: general shell that atomic_exec handles is a DETECTABLE
+    // bypass of atomic_exec (the deny-hook does not block it, so blockedByDenyHook
+    // stays false — the ledger surfaces this as the honest no-bypass gap). An
+    // interactive/login/external verb is NOT atomic-doable → undetectable.
+    if (ATOMIC_EXEC_HANDLES.test(verb) && !NON_ATOMIC_VERB.test(verb)) {
+      return { category: 'bash-exec', atomicEquivalent: 'atomic_exec', detectable: true, blockedByDenyHook: false, target: verb };
+    }
+    // claude / ssh / sudo / gcloud / vim / … — atomic_exec cannot/should-not run these.
     return { category: 'bash-other', atomicEquivalent: null, detectable: false, blockedByDenyHook: false, target: verb };
   }
 
