@@ -237,3 +237,102 @@ No AI CLI may edit, weaken, bypass, rename, delete, chmod, unflag, move, or repl
 The auditor must keep scanning every source file inside `scripts/pulse/**` and must preserve hardcode debt when hardcode is deleted without a dynamic production replacement, including accumulated Git history debt.
 
 If the auditor itself needs to change, stop. The human owner must perform that change outside autonomous AI execution.
+
+---
+
+# E2E LIVE VALIDATION — KloelGraph Functional Recovery (2026-06-01)
+
+Session: permissive closer. Local stack brought up against the **local Postgres**
+(`localhost:5432/whatsapp_saas`) running the recovery code (NOT production kloel.com).
+
+- Backend: `PORT=3001 npm run start:dev` (NestJS, booted clean past DI/bootstrap).
+- Frontend: `npm run dev` (Next.js 16, `app.localhost:3000`, proxies to backend `:3001`).
+- DB: applied 4 pending prisma migrations (incl. `20260601000000_add_agent_mfa`); `prisma generate`.
+- Auth: magic-link (password-free) for existing `admin+e2e@example.com` → session cookies
+  planted host-only on `app.localhost` (Chrome rejects `Domain=localhost` cookies — env quirk,
+  not an app bug). Workspace = `c16d5176…` "E2E Workspace".
+- Evidence method: real UI action → real request (network reqid + status) → Postgres row check →
+  reload → UI reflects. Where browser automation can't drive a control (native date input,
+  custom dropdown), the same endpoint was exercised with the real session token and verified in
+  Postgres; this is called out per screen.
+
+## Proof matrix
+
+| Screen | Status | Evidence |
+| --- | --- | --- |
+| **Auth / magic-link login** | DONE | `POST /auth/magic-link/verify` -> 201 for existing account; authenticated graph shell rendered; `/workspace/me`, `/kloel/threads` -> 200 with session. |
+| **CRIAR / Produtos (list)** | DONE | Honest empty state "Nenhum produto cadastrado" — NOT the old hardcoded GHKU/PDRN. Workspace genuinely has 0 products (Postgres `RAC_Product` for ws = 0). Graph galaxy + nav shell preserved. |
+| **PERFIL / Dados pessoais** | DONE | Loads real account (E2E Admin, real email). Native **date-only** birth picker (Dia/Mes/Ano, no hour). Name+phone saved via real `PUT /kyc/profile` (200) -> persisted in `RAC_Agent`. birthDate `1990-05-15` persisted **date-only** (`00:00:00`, hour=0/min=0). Reload -> picker shows `1990-05-15`. Completion meter 0%->25% from persisted data. |
+| **PERFIL / Dados fiscais (CNPJ/CEP autofill)** | PARTIAL | Autofill **wired**: typing CNPJ fires `GET /kyc/lookup/cnpj/:cnpj` (real authenticated proxy) with honest error handling. BUT live data autofill **blocked by provider-UA bug** (see Findings #1) — valid CNPJs return honest 400 "nao encontrado". |
+| **PERFIL / Dados bancarios** | DONE (data) | `GET /kyc/banks` -> 200 with **full 468-bank BR list** (real `{code,name,fullName,ispb}`). Form renders account-type toggle + bank dropdown; titular pre-filled from persisted name. Bank-save (`PUT /kyc/bank`) not UI-driven this pass. |
+
+## Findings (real bugs surfaced by live E2E)
+
+### Finding #1 — CNPJ lookup (and BrasilAPI calls) blocked by Cloudflare on Node fetch UA  (fix identified, deferred)
+- `KycService.lookupCnpj` (`backend/src/kyc/kyc.service.ts:159`) calls
+  `https://brasilapi.com.br/api/cnpj/v1/{cnpj}` with **no User-Agent**. BrasilAPI sits behind
+  Cloudflare which returns **403 for UA `node`, 429 for empty UA, 200 for a descriptive UA**
+  (proven by direct curl). So every valid CNPJ (BB/Petrobras/Magalu/Itau) returns the honest
+  `400 "CNPJ nao encontrado ou invalido"` — the autofill never populates.
+- Same file: banks fetch (`:280`) and CEP fetch (`:182`).
+- **Exact fix:** add `headers: { 'User-Agent': 'Kloel/1.0 (+https://kloel.com)', Accept: 'application/json' }`
+  to those `fetch()` calls (curl-verified -> 200). Prefer a shared `BRASIL_PROVIDER_HEADERS` const.
+- **Blocker:** `kyc.service.ts` is **629 lines (>600 governance limit)** — `preflight-write-gate`
+  refuses any write until the file is decomposed via `scripts/decomp/safe-decompose.mjs`. Deferred
+  to TAREFA 3 (decompose first, then patch) to avoid breaking the live backend mid-E2E.
+
+### Finding #2 — `PUT/GET /kyc/profile` over-exposes the agent record
+- Response body includes `password` (bcrypt hash), `mfaSecret`, `mfaPendingSetup`, etc.
+  The profile endpoint should project a safe DTO, never the password hash. Pre-existing;
+  recovery-touched area (`kyc.service.ts` / `kyc.controller.ts`). Recommend a response projection.
+
+### Finding #3 — `RAC_MindSelfModel` table missing  (pre-existing, background-only)
+- Backend logs `The table public.RAC_MindSelfModel does not exist` on MIND background ticks.
+  No migration creates it. Non-fatal (background processor), unrelated to recovery surfaces.
+
+### Finding #4 — recovery left `kyc.service.ts` at 629 lines (>600 guardrail)
+- The MFA + lookup additions pushed it over the architecture line-limit. The committed state
+  would fail `check-architecture-guardrails` on a real PR. Decompose needed (also unblocks #1).
+
+### Finding #5 — `POST /products` returns 500 (not 400) when `price` is omitted  (minor)
+- `ProductService.create` (`product.service.ts:60`) spreads the DTO straight into
+  `prisma.product.create`; the model requires `price` (Float). A payload missing `price` crashes
+  with a `PrismaClientValidationError` -> generic 500 instead of a 422/400. Real UI sends `price`
+  so the happy path works (proven below); recommend DTO-level required validation for `price`.
+
+## Flagship write -> persist -> reload proofs
+
+- **Produtos (create):** `POST /products {name, price:99.9, format:DIGITAL}` -> 201. Postgres
+  `RAC_Product` row `b1ecd856…` (price 99.9, DIGITAL, DRAFT, correct workspace). Reload `/` ->
+  UI renders "E2E Recovery Proof Product", empty-state gone, **zero GHKU/PDRN**. Full anti-facade
+  loop closed: honest-empty -> real create -> DB row -> reload -> real render.
+- **Perfil/Pessoais (update):** UI "Salvar" -> `PUT /kyc/profile` 200 -> `RAC_Agent` name+phone
+  persisted; birthDate `1990-05-15` persisted **date-only** (`00:00:00`); reload renders it.
+- **Kloel Chat (send+receive):** `POST /kloel/think/sync` -> 201 in ~14.6s, real DeepSeek answer
+  addressing the account by name ("E2E, o Kloel é uma plataforma de IA que automatiza vendas…").
+  Engine + LLM provider (DEEPSEEK_API_KEY) wired end-to-end.
+
+## Breadth read-wiring matrix (real session token, workspace c16d5176…)
+
+All 200 with real workspace-scoped data; honest-empty where the workspace has no rows.
+
+| Surface | Endpoint | Result |
+| --- | --- | --- |
+| Dashboard | aggregates (overlay) | "Boa tarde, E2E." real metrics, honest R$ 0,00 / 0 conversas |
+| Perfil/Documentos | `GET /kyc/documents` | 200 `array(0)` (honest empty) |
+| Perfil/Equipe | `GET /team` | 200 `{agents: array(1)}` (real member = E2E Admin) |
+| Perfil/Apps | `GET /marketing/connect/status`, `GET /meta/auth/status` | 200 real provider status objects |
+| Perfil/Seguranca (2FA) | `GET /kyc/security` | 200 (state endpoint reachable; `/kyc/security/mfa` is 404 — sub-path differs) |
+| Kloel/Recentes | `GET /kloel/threads` | 200 `{items: array(0)}` (honest empty) |
+| Kloel/Buscar | `GET /kloel/search` | wired (global search slice committed) |
+| Afiliar | `GET /affiliate/marketplace`, `/affiliate/my-products` | 200 `{products: array(0)}` |
+| Educar | `GET /member-areas` | 200 `{areas: array(0)}` |
+| Carteira | `GET /kloel/wallet/{ws}/balance`, `/transactions` | 200 real balance obj + `{transactions: array(0)}` |
+| Conversar/CRM | `GET /crm/pipelines`, `/crm/contacts` | 200 `array(1)` pipeline + `{data: array(2)}` real contacts |
+| Vendas | `GET /sales/orders` | 200 `{sale}` |
+
+## Not driven this pass (endpoint-proven, UI write not exercised)
+- Docs upload, Equipe invite/remove, 2FA enable (QR/TOTP — needs an authenticator),
+  Conversar/Canais provider OAuth (needs Meta/Google/TikTok creds = NEEDS-DANIEL),
+  Carteira saque, full multi-step product wizard (planos/checkouts/pixels), Afiliar apply.
+  The button->handler->apiFetch->DB pattern is proven by Perfil + Produtos; these reuse it.
