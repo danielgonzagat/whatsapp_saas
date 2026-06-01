@@ -28,7 +28,8 @@ process.stdin.on('end', () => {
     const input = JSON.parse(raw || '{}');
     const tool = input.tool_name ?? input.toolName ?? '';
     const ti = input.tool_input ?? input.toolInput ?? {};
-    const c = classifyToolCall({ tool, toolInput: ti });
+    const strictAtomicOnly = process.env.ATOMIC_HOST_ATOMIC_ONLY === '1' || Boolean(process.env.CODEX_PROJECT_DIR);
+    const c = classifyToolCall({ tool, toolInput: ti, strictAtomicOnly });
     const repoRoot = process.env.CODEX_PROJECT_DIR || process.env.CLAUDE_PROJECT_DIR || process.cwd();
     const dir = path.join(repoRoot, '.atomic');
     fs.mkdirSync(dir, { recursive: true });
@@ -40,6 +41,7 @@ process.stdin.on('end', () => {
       detectable: c.detectable,
       atomicEquivalent: c.atomicEquivalent,
       blockedByDenyHook: c.blockedByDenyHook,
+      strictAtomicOnly,
       target: c.target,
     });
     if (c.detectable && c.atomicEquivalent) {
@@ -49,6 +51,7 @@ process.stdin.on('end', () => {
         category: c.category,
         atomicEquivalent: c.atomicEquivalent,
         blockedByDenyHook: c.blockedByDenyHook,
+        strictAtomicOnly,
         target: c.target,
       };
       appendJsonl(path.join(dir, 'bypass-ledger.jsonl'), rec);

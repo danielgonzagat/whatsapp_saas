@@ -8,10 +8,9 @@
  *
  * Strict directive (Daniel, 2026-06-01): ALL execution should route through
  * atomic_exec. So general shell that atomic_exec handles (git/npm/node/ls/cat/
- * sed/…) is a DETECTABLE bypass of atomic_exec, even though the atomic-only deny
- * hook does not BLOCK it (it only blocks code-mutating shell). Interactive /
- * login / external-runtime verbs (claude/codex/ssh/sudo/gcloud/op/…) are NOT
- * atomic-doable and stay undetectable.
+ * sed/...) is a DETECTABLE bypass of atomic_exec. In legacy Claude-style mode it
+ * may be detectable-but-not-denied; in strict Codex atomic-only mode every
+ * detectable non-atomic tool call is denied by codex-atomic-only-hook.
  */
 const CODE_EXT =
   /\.(ts|tsx|js|jsx|mjs|cjs|json|prisma|go|rs|rb|py|java|c|cc|cpp|h|hpp|cs|php|swift|kt|scala|sh|bash|sql|ya?ml|toml)$/i;
@@ -31,54 +30,74 @@ function shortTarget(s) {
   return (firstPath || str.split(/\s+/)[0] || '').slice(0, 80);
 }
 
+function withStrictDeny(record, strictAtomicOnly) {
+  if (strictAtomicOnly && record.detectable && record.atomicEquivalent) {
+    return { ...record, blockedByDenyHook: true };
+  }
+  return record;
+}
+
 /**
  * @returns {{category:string, atomicEquivalent:string|null, detectable:boolean, blockedByDenyHook:boolean, target:string}}
  */
-export function classifyToolCall({ tool, toolInput }) {
+export function classifyToolCall({ tool, toolInput, strictAtomicOnly = false }) {
   const ti = toolInput || {};
+  const strict = Boolean(strictAtomicOnly);
 
   if (/^(Edit|Write|MultiEdit|NotebookEdit)$/.test(tool)) {
     const f = ti.file_path || ti.filePath || ti.notebook_path || '';
     const isCode = CODE_EXT.test(String(f));
-    return {
-      category: 'native-edit',
-      atomicEquivalent: isCode ? 'atomic_replace_at / atomic_edit_symbol' : null,
-      detectable: isCode, // non-code edits are allowed + have no atomic equivalent
-      blockedByDenyHook: isCode, // atomic-only-hook denies native edits to code
-      target: shortTarget(f),
-    };
+    return withStrictDeny(
+      {
+        category: 'native-edit',
+        atomicEquivalent: isCode ? 'atomic_replace_at / atomic_edit_symbol' : null,
+        detectable: isCode, // non-code edits are allowed + have no atomic equivalent
+        blockedByDenyHook: isCode, // atomic-only-hook denies native edits to code
+        target: shortTarget(f),
+      },
+      strict,
+    );
   }
 
   if (tool === 'Read') {
     const f = ti.file_path || ti.filePath || '';
     const isCode = CODE_EXT.test(String(f));
-    return {
-      category: 'native-read',
-      atomicEquivalent: isCode ? 'atomic_outline / code_read_symbol' : null,
-      detectable: isCode,
-      blockedByDenyHook: false,
-      target: shortTarget(f),
-    };
+    return withStrictDeny(
+      {
+        category: 'native-read',
+        atomicEquivalent: isCode ? 'atomic_outline / code_read_symbol' : null,
+        detectable: isCode,
+        blockedByDenyHook: false,
+        target: shortTarget(f),
+      },
+      strict,
+    );
   }
 
   if (tool === 'Grep') {
-    return {
-      category: 'native-grep',
-      atomicEquivalent: 'atomic_grep',
-      detectable: true,
-      blockedByDenyHook: false,
-      target: shortTarget(ti.pattern),
-    };
+    return withStrictDeny(
+      {
+        category: 'native-grep',
+        atomicEquivalent: 'atomic_grep',
+        detectable: true,
+        blockedByDenyHook: false,
+        target: shortTarget(ti.pattern),
+      },
+      strict,
+    );
   }
 
   if (tool === 'Glob') {
-    return {
-      category: 'native-glob',
-      atomicEquivalent: 'atomic_glob',
-      detectable: true,
-      blockedByDenyHook: false,
-      target: shortTarget(ti.pattern),
-    };
+    return withStrictDeny(
+      {
+        category: 'native-glob',
+        atomicEquivalent: 'atomic_glob',
+        detectable: true,
+        blockedByDenyHook: false,
+        target: shortTarget(ti.pattern),
+      },
+      strict,
+    );
   }
 
   if (tool === 'Bash') {
@@ -100,31 +119,46 @@ export function classifyToolCall({ tool, toolInput }) {
       (/\b(?:g?awk)\b[^|]*>/.test(cmd) && CODE_EXT.test(cmd)) ||
       inlineEvalWrite;
     if (mutatesCode) {
-      return {
-        category: 'bash-edit',
-        atomicEquivalent: 'atomic edit tools',
-        detectable: true,
-        blockedByDenyHook: true, // the atomic-only hook denies code-mutating shell
-        target: verb,
-      };
+      return withStrictDeny(
+        {
+          category: 'bash-edit',
+          atomicEquivalent: 'atomic edit tools',
+          detectable: true,
+          blockedByDenyHook: true, // the atomic-only hook denies code-mutating shell
+          target: verb,
+        },
+        strict,
+      );
     }
     if (/^(grep|rg|ag|ack)$/.test(verb)) {
-      return { category: 'bash-grep', atomicEquivalent: 'atomic_grep', detectable: true, blockedByDenyHook: false, target: verb };
+      return withStrictDeny(
+        { category: 'bash-grep', atomicEquivalent: 'atomic_grep', detectable: true, blockedByDenyHook: false, target: verb },
+        strict,
+      );
     }
     if (/^(find|fd)$/.test(verb)) {
-      return { category: 'bash-glob', atomicEquivalent: 'atomic_glob', detectable: true, blockedByDenyHook: false, target: verb };
+      return withStrictDeny(
+        { category: 'bash-glob', atomicEquivalent: 'atomic_glob', detectable: true, blockedByDenyHook: false, target: verb },
+        strict,
+      );
     }
     if (/^cat$/.test(verb) && CODE_EXT.test(cmd)) {
-      return { category: 'bash-read', atomicEquivalent: 'atomic_outline / Read', detectable: true, blockedByDenyHook: false, target: verb };
+      return withStrictDeny(
+        { category: 'bash-read', atomicEquivalent: 'atomic_outline / Read', detectable: true, blockedByDenyHook: false, target: verb },
+        strict,
+      );
     }
     // Strict directive: general shell that atomic_exec handles is a DETECTABLE
-    // bypass of atomic_exec (the deny-hook does not block it, so blockedByDenyHook
-    // stays false — the ledger surfaces this as the honest no-bypass gap). An
-    // interactive/login/external verb is NOT atomic-doable → undetectable.
+    // bypass of atomic_exec. Whether it was blocked depends on the active hook
+    // posture: legacy atomic-only-hook allows some shell, strict Codex denies all
+    // non-atomic tools through codex-atomic-only-hook.
     if (ATOMIC_EXEC_HANDLES.test(verb) && !NON_ATOMIC_VERB.test(verb)) {
-      return { category: 'bash-exec', atomicEquivalent: 'atomic_exec', detectable: true, blockedByDenyHook: false, target: verb };
+      return withStrictDeny(
+        { category: 'bash-exec', atomicEquivalent: 'atomic_exec', detectable: true, blockedByDenyHook: false, target: verb },
+        strict,
+      );
     }
-    // claude / ssh / sudo / gcloud / vim / … — atomic_exec cannot/should-not run these.
+    // claude / ssh / sudo / gcloud / vim / ... — atomic_exec cannot/should-not run these.
     return { category: 'bash-other', atomicEquivalent: null, detectable: false, blockedByDenyHook: false, target: verb };
   }
 

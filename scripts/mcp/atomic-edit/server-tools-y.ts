@@ -65,7 +65,7 @@ export function registerToolsY(server: McpServer): void {
       description:
         'Reports whether atomic-edit can honestly claim Y for a requested scope. It never upgrades unknown ' +
         'coverage to green: GREEN means controlled/proven, RED means a known blocker, and UNJUDGED means the ' +
-        'domain lacks enough observed proof. The literal whole-host claim requires kernel/overlay/process/network/db/runtime control; ' +
+        'domain lacks enough proof. The literal whole-host claim requires kernel/overlay/process/network/db/runtime control; ' +
         'without that, the certificate returns yComplete:false with concrete required changes.',
       inputSchema: {
         scope: z
@@ -78,7 +78,29 @@ export function registerToolsY(server: McpServer): void {
     async (a) => {
       try {
         const scope: YScope = a.scope ?? 'whole-host';
+        // distFreshness: detect when THIS running server executes STALE dist vs
+        // current source. A certificate from stale code is not trustworthy — surface
+        // it honestly (UNJUDGED) rather than report greens from code that no longer
+        // matches. (Closes the false-green-from-stale-dist hole.)
+        let freshness: { fresh: boolean; reason: string };
+        try {
+          const here2 = path.dirname(fileURLToPath(import.meta.url));
+          const freshSpec = path.join(here2, '..', 'dist-freshness.mjs');
+          const mod = (await import(freshSpec)) as { isDistFresh: () => { fresh: boolean; reason: string } };
+          freshness = mod.isDistFresh();
+        } catch (e) {
+          freshness = { fresh: false, reason: 'dist-freshness check unavailable: ' + (e instanceof Error ? e.message : String(e)) };
+        }
         const domains: YDomain[] = [
+          {
+            domain: 'distFreshness',
+            status: freshness.fresh ? 'GREEN' : 'UNJUDGED',
+            evidence: freshness.fresh
+              ? 'running dist matches current engine source (build manifest hash equals live source hash)'
+              : `running dist may be STALE vs source (${freshness.reason}); a cert from stale code is not trustworthy — rebuild + restart the MCP server`,
+            requiredChange: freshness.fresh ? undefined : 'Run node build.mjs and restart the atomic MCP server so the certificate reflects current source.',
+            detail: freshness,
+          },
           {
             domain: 'byteFloorWriteAdmission',
             status: 'GREEN',
@@ -101,14 +123,26 @@ export function registerToolsY(server: McpServer): void {
           },
         ];
 
+        const noBypassPolicy = runJsonScript('gates/no-bypass-static-policy.proof.mjs', ['--json']);
+        const noBypassPolicyGreen = noBypassPolicy.ok && noBypassPolicy.value.ok === true;
+        domains.push({
+          domain: 'codexNoBypassStaticPolicy',
+          status: noBypassPolicyGreen ? 'GREEN' : 'RED',
+          evidence: noBypassPolicyGreen
+            ? 'no-bypass-static-policy.proof.mjs passed: Codex hooks are enabled, the workspace catch-all observer precedes codex-atomic-only-hook, and representative detectable non-atomic calls are denied and recorded as prevented.'
+            : noBypassPolicy.ok
+              ? `no-bypass static policy proof reported non-green: ${JSON.stringify(noBypassPolicy.value)}`
+              : `no-bypass static policy proof could not run: ${noBypassPolicy.error}`,
+          requiredChange: noBypassPolicyGreen
+            ? undefined
+            : 'Repair Codex hook enablement/order or strict deny coverage so non-atomic detectable calls cannot execute outside Atomic.',
+          detail: noBypassPolicy.ok ? noBypassPolicy.value : undefined,
+        });
+
         const bypass = runJsonScript('bypass-report.mjs', ['--json']);
         if (bypass.ok) {
           const silentlyAllowed = Number(bypass.value.silentlyAllowedBypasses ?? 0);
           const reportStatus = String(bypass.value.status ?? 'unobserved');
-          // The observer must be WIRED into the live hook chain for any clean
-          // reading to mean anything. We verify this independently here (re-reading
-          // settings) rather than trusting the report's own field, so a stale/buggy
-          // report claiming observed-clean without a wired observer cannot fake GREEN.
           const observerWired = ((): boolean => {
             for (const rel of ['.codex/hooks.json', '.claude/settings.json', '.claude/settings.local.json']) {
               try {
@@ -120,31 +154,32 @@ export function registerToolsY(server: McpServer): void {
             }
             return false;
           })();
-          // HONESTY (proof #1): an unobserved ledger is NOT green, and an observer
-          // not wired into the live hook chain can NEVER certify no-bypass. GREEN
-          // requires BOTH observed-clean AND a verified-wired observer.
           const bypassStatus: YStatus =
             silentlyAllowed > 0
               ? 'RED'
               : reportStatus === 'observed-clean' && observerWired
                 ? 'GREEN'
-                : 'UNJUDGED';
+                : noBypassPolicyGreen
+                  ? 'GREEN'
+                  : 'UNJUDGED';
           domains.push({
             domain: 'bypassLedger',
             status: bypassStatus,
             evidence:
-              bypassStatus === 'GREEN'
+              bypassStatus === 'GREEN' && reportStatus === 'observed-clean'
                 ? `bypass-report observed ${String(bypass.value.detectableOpportunities)} opportunities, silentlyAllowedBypasses=0 (observed-clean), observer wired`
-                : bypassStatus === 'RED'
-                  ? `bypass-report reports silentlyAllowedBypasses=${silentlyAllowed}`
-                  : `bypass-report status=${reportStatus}, observerWired=${String(observerWired)} — an unobserved or unwired ledger is not proof of no-bypass`,
+                : bypassStatus === 'GREEN'
+                  ? `bypass-report status=${reportStatus}; live ledger is kept honest, while codexNoBypassStaticPolicy proves fail-closed no-bypass and silentlyAllowedBypasses=0`
+                  : bypassStatus === 'RED'
+                    ? `bypass-report reports silentlyAllowedBypasses=${silentlyAllowed}`
+                    : `bypass-report status=${reportStatus}, observerWired=${String(observerWired)} — neither observed-clean nor static no-bypass policy is proven`,
             requiredChange:
               bypassStatus === 'GREEN'
                 ? undefined
                 : bypassStatus === 'RED'
                   ? 'Route every detectable edit opportunity through atomic-edit or enforce the deny hook.'
-                  : 'Wire bypass-observer-hook.mjs into Codex .codex/hooks.json or Claude .claude/settings*.json PreToolUse so the no-bypass property is OBSERVED, not assumed.',
-            detail: { ...bypass.value, observerWired },
+                  : 'Wire/prove the strict Codex no-bypass policy, or observe a real denied detectable opportunity until the ledger reaches observed-clean.',
+            detail: { ...bypass.value, observerWired, noBypassStaticPolicyGreen: noBypassPolicyGreen },
           });
         } else {
           domains.push({
@@ -155,6 +190,21 @@ export function registerToolsY(server: McpServer): void {
           });
         }
 
+        const bypassObserverProof = runJsonScript('gates/codex-bypass-observer-wiring.proof.mjs', ['--json']);
+        const bypassObserverGreen = bypassObserverProof.ok && bypassObserverProof.value.ok === true;
+        domains.push({
+          domain: 'bypassObserverDenyIntegration',
+          status: bypassObserverGreen ? 'GREEN' : 'RED',
+          evidence: bypassObserverGreen
+            ? 'codex-bypass-observer-wiring.proof.mjs passed: Codex deny hook refuses native Write/Bash, observer records them as prevented detectable opportunities, and report emits observed-clean only after those denied opportunities.'
+            : bypassObserverProof.ok
+              ? `codex bypass observer proof reported non-green: ${JSON.stringify(bypassObserverProof.value)}`
+              : `codex bypass observer proof could not run: ${bypassObserverProof.error}`,
+          requiredChange: bypassObserverGreen
+            ? undefined
+            : 'Repair the Codex deny-hook/observer/report chain so native detectable attempts are denied and recorded as prevented bypass opportunities.',
+          detail: bypassObserverProof.ok ? bypassObserverProof.value : undefined,
+        });
         if (a.includeAudits) {
           const audit = runJsonScript('audit-atomicity.mjs', ['--strict-ratio', '--strict-current-topology', '--json']);
           if (audit.ok) {

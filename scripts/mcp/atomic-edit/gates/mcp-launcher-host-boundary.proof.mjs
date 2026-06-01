@@ -16,6 +16,17 @@ function record(results, name, ok, detail) {
   results.push({ name, ok, detail });
 }
 
+function inheritedBrokerSocket() {
+  if (
+    process.env.ATOMIC_HOST_SANDBOX === 'macos-sandbox-exec' &&
+    process.env.ATOMIC_HOST_ATOMIC_ONLY === '1' &&
+    process.env.ATOMIC_EXEC_BROKER_SOCKET
+  ) {
+    return process.env.ATOMIC_EXEC_BROKER_SOCKET;
+  }
+  return null;
+}
+
 function startBroker() {
   const socketPath = path.join(sourceDir, `.proof-broker-${process.pid}-${Date.now()}.sock`);
   const proc = childProcess.spawn(process.execPath, [brokerScript, socketPath], {
@@ -121,13 +132,21 @@ async function main() {
   });
 
   let broker;
+  const inherited = inheritedBrokerSocket();
   try {
-    broker = await startBroker();
-    const hosted = await hostedLauncherStartsMcp(broker.socketPath);
-    record(results, 'broker-backed host-marked MCP launcher starts the Atomic server', hosted.ok === true, hosted);
+    const brokerSocket = inherited ?? (broker = await startBroker()).socketPath;
+    const hosted = await hostedLauncherStartsMcp(brokerSocket);
+    record(
+      results,
+      inherited
+        ? 'inherited-broker host-marked MCP launcher starts the Atomic server'
+        : 'broker-backed host-marked MCP launcher starts the Atomic server',
+      hosted.ok === true,
+      { ...hosted, inheritedBroker: Boolean(inherited) },
+    );
   } finally {
-    if (broker?.proc) broker.proc.kill('SIGTERM');
-    if (broker?.socketPath) fs.rmSync(broker.socketPath, { force: true });
+    if (!inherited && broker?.proc) broker.proc.kill('SIGTERM');
+    if (!inherited && broker?.socketPath) fs.rmSync(broker.socketPath, { force: true });
   }
 
   return { ok: results.every((entry) => entry.ok), results };

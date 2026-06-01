@@ -13,6 +13,7 @@ import { createRequire } from 'node:module';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { writeManifest } from './dist-freshness.mjs';
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -89,5 +90,14 @@ if (errors.length > 0) {
 fs.writeFileSync(path.join(OUT, 'package.json'), JSON.stringify({ type: 'module' }) + '\n');
 for (const asset of ['worker-scope-check.mjs']) {
   fs.copyFileSync(path.join(dir, asset), path.join(OUT, asset));
+}
+// Emit the build manifest (a sha256 over all engine .ts source) so the running
+// server / cert can detect when this dist is STALE vs current source — closing
+// the false-green-from-stale-dist hole. Best-effort: a manifest failure must not
+// fail an otherwise-successful build.
+try {
+  writeManifest(dir);
+} catch (e) {
+  process.stderr.write(`build: manifest write skipped: ${e instanceof Error ? e.message : String(e)}\n`);
 }
 process.stderr.write(`atomic-edit build OK -> ${OUT}\n`);

@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 /**
- * Proof (proof-allowlisted name) for bypass-classify.mjs after the strict
- * directive: general shell (git/npm/node/ls/cat/sed) via native Bash is a
- * detectable atomic_exec bypass; interactive/login/external verbs
- * (claude/ssh/sudo/gcloud) are not atomic-doable and stay undetectable. Also
- * re-asserts the original code-edit/read/grep/glob bypass classes.
+ * Proof (proof-allowlisted name) for bypass-classify.mjs. General shell
+ * (git/npm/node/ls/cat/sed) via native Bash is a detectable atomic_exec bypass;
+ * interactive/login/external verbs (claude/ssh/sudo/gcloud) are not atomic-doable
+ * and stay undetectable. The classifier supports two honest postures:
+ * legacy mode preserves whether the softer hook would block the call; strict
+ * Codex atomic-only mode marks every detectable atomic-equivalent call blocked.
  */
 import { classifyToolCall } from '../bypass-classify.mjs';
 
@@ -29,6 +30,17 @@ const cases = [
   ['Bash', { command: 'op read x' }, false, false, 'op undetectable (secrets login)'],
 ];
 
+const strictCases = [
+  ['Read', { file_path: 'x.ts' }, true, true, 'strict code read blocked'],
+  ['Grep', { pattern: 'foo' }, true, true, 'strict grep blocked'],
+  ['Glob', { pattern: '*.ts' }, true, true, 'strict glob blocked'],
+  ['Bash', { command: 'cat x.ts' }, true, true, 'strict cat code blocked'],
+  ['Bash', { command: 'git status --short' }, true, true, 'strict git status blocked'],
+  ['Bash', { command: 'npm run build' }, true, true, 'strict npm build blocked'],
+  ['Edit', { file_path: 'notes.md' }, false, false, 'strict doc edit still undetectable'],
+  ['Bash', { command: 'claude --version' }, false, false, 'strict non-atomic-doable command still undetectable'],
+];
+
 const jsonMode = process.argv.includes('--json');
 const results = [];
 for (const [tool, input, expDetect, expBlocked, label] of cases) {
@@ -36,10 +48,17 @@ for (const [tool, input, expDetect, expBlocked, label] of cases) {
   const ok = c.detectable === expDetect && c.blockedByDenyHook === expBlocked;
   results.push({ name: label, ok, detail: { got: { detectable: c.detectable, blocked: c.blockedByDenyHook, category: c.category }, want: { detectable: expDetect, blocked: expBlocked } } });
 }
-// extra invariant: atomic_exec-handled bypasses are detectable but NOT blocked
-// (the deny-hook does not block general shell — honest gap surfaced, not faked).
-const gitC = classifyToolCall({ tool: 'Bash', toolInput: { command: 'git status' } });
-results.push({ name: 'general-shell bypass is detectable but blockedByDenyHook=false', ok: gitC.detectable === true && gitC.blockedByDenyHook === false && gitC.atomicEquivalent === 'atomic_exec', detail: gitC });
+for (const [tool, input, expDetect, expBlocked, label] of strictCases) {
+  const c = classifyToolCall({ tool, toolInput: input, strictAtomicOnly: true });
+  const ok = c.detectable === expDetect && c.blockedByDenyHook === expBlocked;
+  results.push({ name: label, ok, detail: { got: { detectable: c.detectable, blocked: c.blockedByDenyHook, category: c.category }, want: { detectable: expDetect, blocked: expBlocked } } });
+}
+// legacy invariant: atomic_exec-handled bypasses are detectable but not marked
+// denied unless strictAtomicOnly is active.
+const gitLegacy = classifyToolCall({ tool: 'Bash', toolInput: { command: 'git status' } });
+results.push({ name: 'legacy general-shell bypass is detectable but blockedByDenyHook=false', ok: gitLegacy.detectable === true && gitLegacy.blockedByDenyHook === false && gitLegacy.atomicEquivalent === 'atomic_exec', detail: gitLegacy });
+const gitStrict = classifyToolCall({ tool: 'Bash', toolInput: { command: 'git status' }, strictAtomicOnly: true });
+results.push({ name: 'strict general-shell bypass is detectable and blockedByDenyHook=true', ok: gitStrict.detectable === true && gitStrict.blockedByDenyHook === true && gitStrict.atomicEquivalent === 'atomic_exec', detail: gitStrict });
 
 const ok = results.every((r) => r.ok);
 if (jsonMode) console.log(JSON.stringify({ ok, results }, null, 2));

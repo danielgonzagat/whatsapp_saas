@@ -83,19 +83,41 @@ async function main() {
       await client.connect(transport);
       const cert = parseToolJson(await client.callTool({ name: 'atomic_y_certificate', arguments: { scope: 'mcp-controlled', includeAudits: true } }));
       const bypass = domain(cert, 'bypassLedger');
+      const staticPolicy = domain(cert, 'codexNoBypassStaticPolicy');
       const bypassReportStatus = String(bypass?.detail?.status ?? 'missing');
+      const blockerDomains = Array.isArray(cert?.blockers)
+        ? cert.blockers.map((entry) => entry.domain).sort()
+        : [];
       const bypassIsHonestBlock =
         bypass?.status === 'UNJUDGED' &&
         bypassReportStatus !== 'observed-clean' &&
-        Array.isArray(cert?.blockers) &&
-        cert.blockers.some((entry) => entry.domain === 'bypassLedger');
+        blockerDomains.includes('bypassLedger');
+      const onlyBypassLedgerBlocks = blockerDomains.length === 1 && blockerDomains[0] === 'bypassLedger';
+      const completeState =
+        cert?.ok === true &&
+        cert?.yComplete === true &&
+        cert?.verdict === 'Y_COMPLETE' &&
+        blockerDomains.length === 0 &&
+        bypass?.status === 'GREEN' &&
+        staticPolicy?.status === 'GREEN';
+      const honestBlockedState =
+        cert?.ok === true &&
+        cert?.yComplete === false &&
+        cert?.verdict === 'Y_BLOCKED' &&
+        bypassIsHonestBlock &&
+        onlyBypassLedgerBlocks;
       return {
-        ok: cert?.ok === true && cert?.yComplete === false && cert?.verdict === 'Y_BLOCKED' && bypassIsHonestBlock,
+        ok: completeState || honestBlockedState,
         certificate: cert,
         assertion: {
           bypassStatus: bypass?.status,
           bypassReportStatus,
+          staticPolicyStatus: staticPolicy?.status,
           bypassIsHonestBlock,
+          blockerDomains,
+          onlyBypassLedgerBlocks,
+          completeState,
+          honestBlockedState,
         },
       };
     } finally {

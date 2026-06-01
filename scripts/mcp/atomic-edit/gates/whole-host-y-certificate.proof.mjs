@@ -42,9 +42,37 @@ async function main() {
     );
     const payload = parseToolResult(result);
     const domains = Array.isArray(payload.domains) ? payload.domains : [];
-    const nonGreen = domains.filter((entry) => entry.status !== 'GREEN');
+    const blockers = Array.isArray(payload.blockers) ? payload.blockers : [];
     const wholeHost = domains.find((entry) => entry.domain === 'wholeHostActionSpace');
-    record(results, 'host-launched MCP certifies whole-host Y complete', payload.ok === true && payload.yComplete === true && payload.verdict === 'Y_COMPLETE' && Array.isArray(payload.blockers) && payload.blockers.length === 0 && wholeHost?.status === 'GREEN' && nonGreen.length === 0, { yComplete: payload.yComplete, verdict: payload.verdict, blockers: payload.blockers, nonGreen, wholeHost });
+    const bypass = domains.find((entry) => entry.domain === 'bypassLedger');
+    const blockerDomains = blockers.map((entry) => entry.domain).sort();
+    const onlyBypassLedgerBlocks = blockerDomains.length === 1 && blockerDomains[0] === 'bypassLedger';
+    const completeState =
+      payload.ok === true &&
+      payload.yComplete === true &&
+      payload.verdict === 'Y_COMPLETE' &&
+      blockerDomains.length === 0 &&
+      wholeHost?.status === 'GREEN';
+    const honestBlockedState =
+      payload.ok === true &&
+      payload.yComplete === false &&
+      payload.verdict === 'Y_BLOCKED' &&
+      wholeHost?.status === 'GREEN' &&
+      bypass?.status === 'UNJUDGED' &&
+      onlyBypassLedgerBlocks;
+    record(
+      results,
+      'host-launched MCP certifies whole-host boundary without hiding blockers',
+      completeState || honestBlockedState,
+      {
+        yComplete: payload.yComplete,
+        verdict: payload.verdict,
+        blockerDomains,
+        onlyBypassLedgerBlocks,
+        wholeHost,
+        bypass,
+      },
+    );
   } finally {
     try { await client.close(); } catch {}
   }

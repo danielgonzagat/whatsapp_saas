@@ -17,6 +17,13 @@ const deniedNativeEditEvent = {
   },
 };
 
+const deniedBashExecEvent = {
+  tool_name: 'Bash',
+  tool_input: {
+    command: 'git status --short',
+  },
+};
+
 function record(results, name, ok, detail) {
   results.push({ name, ok, detail });
 }
@@ -97,51 +104,76 @@ function main() {
   try {
     resetFixture();
 
-    const denied = runHook('codex-atomic-only-hook.mjs', deniedNativeEditEvent, {
+    const hostEnv = {
       ATOMIC_HOST_SANDBOX: 'macos-sandbox-exec',
       ATOMIC_HOST_ATOMIC_ONLY: '1',
       ATOMIC_HOST_WRITE_ROOT: fixtureRoot,
-    });
-    const deniedBody = parseJson(denied.stdout);
+    };
+    const deniedWrite = runHook('codex-atomic-only-hook.mjs', deniedNativeEditEvent, hostEnv);
+    const deniedWriteBody = parseJson(deniedWrite.stdout);
     record(
       results,
       'Codex deny hook refuses native Write to code under host sandbox',
-      denied.status === 0 &&
-        deniedBody?.permissionDecision === 'deny' &&
-        /native\/non-atomic tool "Write" is forbidden/.test(String(deniedBody?.reason ?? '')),
-      { status: denied.status, stdout: denied.stdout, stderr: denied.stderr, parsed: deniedBody },
+      deniedWrite.status === 0 &&
+        deniedWriteBody?.permissionDecision === 'deny' &&
+        /native\/non-atomic tool "Write" is forbidden/.test(String(deniedWriteBody?.reason ?? '')),
+      { status: deniedWrite.status, stdout: deniedWrite.stdout, stderr: deniedWrite.stderr, parsed: deniedWriteBody },
     );
 
-    const observed = runHook('bypass-observer-hook.mjs', deniedNativeEditEvent);
+    const deniedBash = runHook('codex-atomic-only-hook.mjs', deniedBashExecEvent, hostEnv);
+    const deniedBashBody = parseJson(deniedBash.stdout);
+    record(
+      results,
+      'Codex deny hook refuses native Bash even when atomic_exec could run the command',
+      deniedBash.status === 0 &&
+        deniedBashBody?.permissionDecision === 'deny' &&
+        /native\/non-atomic tool "Bash" is forbidden/.test(String(deniedBashBody?.reason ?? '')),
+      { status: deniedBash.status, stdout: deniedBash.stdout, stderr: deniedBash.stderr, parsed: deniedBashBody },
+    );
+
+    const observedWrite = runHook('bypass-observer-hook.mjs', deniedNativeEditEvent, hostEnv);
+    const observedBash = runHook('bypass-observer-hook.mjs', deniedBashExecEvent, hostEnv);
     const heartbeatPath = path.join(fixtureRoot, '.atomic', 'bypass-observer-heartbeat.jsonl');
     const ledgerPath = path.join(fixtureRoot, '.atomic', 'bypass-ledger.jsonl');
     const ledgerLines = fs.existsSync(ledgerPath)
       ? fs.readFileSync(ledgerPath, 'utf8').split('\n').filter(Boolean)
       : [];
-    const ledgerRecord = ledgerLines.length === 1 ? parseJson(ledgerLines[0]) : null;
+    const ledgerRecords = ledgerLines.map(parseJson);
+    const writeRecord = ledgerRecords.find((entry) => entry.tool === 'Write');
+    const bashRecord = ledgerRecords.find((entry) => entry.tool === 'Bash');
     record(
       results,
-      'bypass observer records the denied native Write as a prevented detectable opportunity',
-      observed.status === 0 &&
+      'bypass observer records strict Codex denials as prevented detectable opportunities',
+      observedWrite.status === 0 &&
+        observedBash.status === 0 &&
         fs.existsSync(heartbeatPath) &&
-        ledgerLines.length === 1 &&
-        ledgerRecord?.tool === 'Write' &&
-        ledgerRecord?.category === 'native-edit' &&
-        ledgerRecord?.blockedByDenyHook === true &&
-        typeof ledgerRecord?.atomicEquivalent === 'string',
-      { status: observed.status, stdout: observed.stdout, stderr: observed.stderr, heartbeatExists: fs.existsSync(heartbeatPath), ledgerLines, ledgerRecord },
+        ledgerLines.length === 2 &&
+        writeRecord?.category === 'native-edit' &&
+        writeRecord?.blockedByDenyHook === true &&
+        writeRecord?.strictAtomicOnly === true &&
+        bashRecord?.category === 'bash-exec' &&
+        bashRecord?.atomicEquivalent === 'atomic_exec' &&
+        bashRecord?.blockedByDenyHook === true &&
+        bashRecord?.strictAtomicOnly === true,
+      {
+        writeStatus: observedWrite.status,
+        bashStatus: observedBash.status,
+        heartbeatExists: fs.existsSync(heartbeatPath),
+        ledgerLines,
+        ledgerRecords,
+      },
     );
 
     const report = runReportAgainstCodexProjectDir();
     record(
       results,
-      'bypass-report resolves CODEX_PROJECT_DIR and reports observed-clean only after a real denied opportunity',
+      'bypass-report resolves CODEX_PROJECT_DIR and reports observed-clean only after real denied opportunities',
       report.ok === true &&
         report.value?.observerInstalled === true &&
-        report.value?.observedHookEvents === 1 &&
+        report.value?.observedHookEvents === 2 &&
         report.value?.status === 'observed-clean' &&
-        report.value?.detectableOpportunities === 1 &&
-        report.value?.preventedByDenyHook === 1 &&
+        report.value?.detectableOpportunities === 2 &&
+        report.value?.preventedByDenyHook === 2 &&
         report.value?.silentlyAllowedBypasses === 0,
       report,
     );
@@ -156,8 +188,8 @@ function main() {
     const codexHooks = fs.readFileSync(path.join(repoRoot, '.codex', 'hooks.json'), 'utf8');
     record(
       results,
-      'workspace Codex hooks include bypass-observer-hook.mjs',
-      codexHooks.includes('bypass-observer-hook.mjs'),
+      'workspace Codex hooks include bypass-observer-hook.mjs and strict catch-all gate',
+      codexHooks.includes('bypass-observer-hook.mjs') && codexHooks.includes('codex-atomic-only-hook.mjs'),
     );
   } finally {
     fs.rmSync(fixtureRoot, { recursive: true, force: true });

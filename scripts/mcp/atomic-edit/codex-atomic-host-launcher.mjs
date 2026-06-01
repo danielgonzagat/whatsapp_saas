@@ -4,8 +4,9 @@
  *
  * This is not a global machine policy. It is the concrete launch boundary that
  * lets a future Codex process inherit a deny-by-default macOS sandbox marker:
- * writes are limited to the repo root, network is denied, and Codex PreToolUse
- * still has to enforce atomic-only tool calls above it.
+ * writes are limited to the repo root, network is denied except for the single
+ * inherited Unix socket to the atomic_exec broker, and Codex PreToolUse still has
+ * to enforce atomic-only tool calls above it.
  *
  * BROKER: macOS refuses sandbox_apply inside an existing sandbox, so a
  * host-launched atomic_exec cannot re-apply its own per-command sandbox. This
@@ -35,9 +36,10 @@ function sandboxPath(value) {
   return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
-function sandboxProfile(writeRoot) {
+function sandboxProfile(writeRoot, brokerSocket) {
   const realWriteRoot = fs.realpathSync(writeRoot);
   const escapedWriteRoot = sandboxPath(realWriteRoot);
+  const escapedBrokerSocket = brokerSocket ? sandboxPath(brokerSocket) : null;
   return [
     '(version 1)',
     '(deny default)',
@@ -49,7 +51,10 @@ function sandboxProfile(writeRoot) {
     '(allow process*)',
     '(allow mach-lookup)',
     '(allow sysctl-read)',
-    '(deny network*)',
+    // Default-deny still blocks every other network target. This one Unix
+    // socket is the inescapable bridge back to the out-of-sandbox broker that
+    // applies the stricter per-command sandbox for atomic_exec.
+    ...(escapedBrokerSocket ? ['(allow network-outbound (literal "' + escapedBrokerSocket + '"))'] : []),
   ].join(' ');
 }
 
@@ -123,7 +128,7 @@ if (!fs.existsSync(SANDBOX_EXEC)) {
 
 startBroker()
   .then(({ child: brokerChild, socket }) => {
-    const child = spawn(SANDBOX_EXEC, ['-p', sandboxProfile(repoRoot), ...command], {
+    const child = spawn(SANDBOX_EXEC, ['-p', sandboxProfile(repoRoot, socket), ...command], {
       cwd: repoRoot,
       stdio: 'inherit',
       env: childEnv(socket),

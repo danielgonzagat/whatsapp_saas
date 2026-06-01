@@ -25,7 +25,86 @@ function record(results, name, ok, detail) {
   results.push({ name, ok: Boolean(ok), detail });
 }
 
-function main() {
+function tryWrite(file, text = 'x') {
+  try {
+    fs.writeFileSync(file, text);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+function inheritedHostMode() {
+  return process.env.ATOMIC_HOST_SANDBOX === 'macos-sandbox-exec' && process.env.ATOMIC_HOST_ATOMIC_ONLY === '1';
+}
+
+function currentBoundaryProof() {
+  const results = [];
+  fs.rmSync(allowed, { force: true });
+  fs.rmSync(forbidden, { force: true });
+  fs.rmSync(tmpForbidden, { force: true });
+
+  record(
+    results,
+    'current process is marked as atomic host sandbox',
+    inheritedHostMode() && process.env.ATOMIC_HOST_WRITE_ROOT === repoRoot && process.env.TMPDIR === repoRoot && process.env.TMP === repoRoot && process.env.TEMP === repoRoot,
+    {
+      ATOMIC_HOST_SANDBOX: process.env.ATOMIC_HOST_SANDBOX,
+      ATOMIC_HOST_ATOMIC_ONLY: process.env.ATOMIC_HOST_ATOMIC_ONLY,
+      ATOMIC_HOST_WRITE_ROOT: process.env.ATOMIC_HOST_WRITE_ROOT,
+      TMPDIR: process.env.TMPDIR,
+      TMP: process.env.TMP,
+      TEMP: process.env.TEMP,
+    },
+  );
+  record(
+    results,
+    'current host boundary has inherited broker socket',
+    Boolean(process.env.ATOMIC_EXEC_BROKER_SOCKET),
+    { socket: process.env.ATOMIC_EXEC_BROKER_SOCKET ?? null },
+  );
+
+  const allowedWrite = tryWrite(allowed, 'ok');
+  record(results, 'current host boundary allows writes inside repo root', allowedWrite.ok && fs.existsSync(allowed), allowedWrite);
+
+  const outsideWrite = tryWrite(forbidden, 'x');
+  record(
+    results,
+    'current host boundary denies writes outside repo root',
+    outsideWrite.ok === false && !fs.existsSync(forbidden) && /EPERM|EACCES|Operation not permitted|not permitted/i.test(String(outsideWrite.error ?? '')),
+    outsideWrite,
+  );
+
+  const tmpWrite = tryWrite(tmpForbidden, 'x');
+  record(
+    results,
+    'current host boundary denies temp writes outside repo root',
+    tmpWrite.ok === false && !fs.existsSync(tmpForbidden) && /EPERM|EACCES|Operation not permitted|not permitted/i.test(String(tmpWrite.error ?? '')),
+    tmpWrite,
+  );
+
+  const network = childProcess.spawnSync(
+    process.execPath,
+    [
+      '-e',
+      'const net=require("node:net"); const s=net.connect(9,"127.0.0.1"); s.on("error", e => { console.error(e.code || e.message); process.exit((e.code==="EPERM" || e.code==="EACCES") ? 0 : 1); }); setTimeout(() => process.exit(2), 1000);',
+    ],
+    { cwd: repoRoot, encoding: 'utf8', env: process.env, stdio: ['ignore', 'pipe', 'pipe'] },
+  );
+  record(
+    results,
+    'current host boundary denies network from child process',
+    network.status === 0 && /EPERM|EACCES|Operation not permitted|not permitted/i.test(network.stderr),
+    { status: network.status, stdout: network.stdout, stderr: network.stderr },
+  );
+
+  fs.rmSync(allowed, { force: true });
+  fs.rmSync(forbidden, { force: true });
+  fs.rmSync(tmpForbidden, { force: true });
+  return { ok: results.every((entry) => entry.ok), mode: 'inherited-host', results };
+}
+
+function launcherProof() {
   const results = [];
   fs.rmSync(allowed, { force: true });
   fs.rmSync(forbidden, { force: true });
@@ -38,14 +117,14 @@ function main() {
     stderr: envCheck.stderr,
   });
 
-  const allowedWrite = run('node -e "require(\\"node:fs\\").writeFileSync(process.env.ALLOWED,\\"ok\\")"', { ALLOWED: allowed });
+  const allowedWrite = run('node -e "require(\\\"node:fs\\\").writeFileSync(process.env.ALLOWED,\\\"ok\\\")"', { ALLOWED: allowed });
   record(results, 'launcher allows writes inside repo root', allowedWrite.status === 0 && fs.existsSync(allowed), {
     status: allowedWrite.status,
     stdout: allowedWrite.stdout,
     stderr: allowedWrite.stderr,
   });
 
-  const deniedWrite = run('node -e "require(\\"node:fs\\").writeFileSync(process.env.FORBIDDEN,\\"x\\")"', { FORBIDDEN: forbidden });
+  const deniedWrite = run('node -e "require(\\\"node:fs\\\").writeFileSync(process.env.FORBIDDEN,\\\"x\\\")"', { FORBIDDEN: forbidden });
   record(results, 'launcher denies writes outside repo root', deniedWrite.status !== 0 && !fs.existsSync(forbidden) && /EPERM|EACCES|Operation not permitted|not permitted/i.test(deniedWrite.stderr), {
     status: deniedWrite.status,
     stdout: deniedWrite.stdout,
@@ -59,7 +138,7 @@ function main() {
     stderr: deniedTmp.stderr,
   });
 
-  const network = run('node -e "const net=require(\\"node:net\\"); const s=net.connect(9,\\"127.0.0.1\\"); s.on(\\"error\\", e => { console.error(e.code || e.message); process.exit((e.code===\\"EPERM\\" || e.code===\\"EACCES\\") ? 0 : 1); }); setTimeout(() => process.exit(2), 1000);"');
+  const network = run('node -e "const net=require(\\\"node:net\\\"); const s=net.connect(9,\\\"127.0.0.1\\\"); s.on(\\\"error\\\", e => { console.error(e.code || e.message); process.exit((e.code===\\\"EPERM\\\" || e.code===\\\"EACCES\\\") ? 0 : 1); }); setTimeout(() => process.exit(2), 1000);"');
   record(results, 'launcher denies network from child process', network.status === 0 && /EPERM|EACCES|Operation not permitted|not permitted/i.test(network.stderr), {
     status: network.status,
     stdout: network.stdout,
@@ -69,10 +148,10 @@ function main() {
   fs.rmSync(allowed, { force: true });
   fs.rmSync(forbidden, { force: true });
   fs.rmSync(tmpForbidden, { force: true });
-  return { ok: results.every((entry) => entry.ok), results };
+  return { ok: results.every((entry) => entry.ok), mode: 'launcher', results };
 }
 
-const payload = main();
+const payload = inheritedHostMode() ? currentBoundaryProof() : launcherProof();
 if (jsonMode) {
   process.stdout.write(JSON.stringify(payload, null, 2) + '\n');
 } else if (!payload.ok) {
