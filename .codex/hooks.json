@@ -3,6 +3,23 @@
   "hooks": {
     "PreToolUse": [
       {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CODEX_PROJECT_DIR:-$PWD}/scripts/mcp/atomic-edit/bypass-observer-hook.mjs",
+            "timeout": 30,
+            "statusMessage": "Atomic bypass observer"
+          },
+          {
+            "type": "command",
+            "command": "node ${CODEX_PROJECT_DIR:-$PWD}/scripts/mcp/atomic-edit/codex-atomic-only-hook.mjs",
+            "timeout": 30,
+            "statusMessage": "Codex atomic-only gate"
+          }
+        ]
+      },
+      {
         "matcher": "Write|Edit|MultiEdit",
         "hooks": [
           {
@@ -54,7 +71,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CODEX_PROJECT_DIR:-$PWD}/scripts/mcp/atomic-edit/trace-coverage-audit.mjs >/tmp/kloel-atomic-trace-coverage-audit.log 2>&1 || true",
+            "command": "node ${CODEX_PROJECT_DIR:-$PWD}/scripts/mcp/atomic-edit/trace-coverage-audit.mjs",
             "timeout": 30,
             "statusMessage": "Atomic trace coverage audit"
           }

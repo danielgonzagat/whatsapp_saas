@@ -114,3 +114,13 @@ state/FINDINGS_AGGREGATE.json
 .codegraph/
 .world/
 .task-graph/
+
+# Node 22+ compile cache (ephemeral; can land under cwd of sandboxed exec)
+node-compile-cache/
+# Agent scratch / research dumps (never source of truth)
+.r_*.txt
+.CONSOLIDATED*.txt
+.FACTS.txt
+.tabhooks.txt
+claude_statusline_*
+agent-audit-*/
