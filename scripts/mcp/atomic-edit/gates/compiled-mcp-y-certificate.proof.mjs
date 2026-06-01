@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import * as childProcess from 'node:child_process';
+import * as fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -8,6 +10,7 @@ const jsonMode = process.argv.includes('--json');
 const sourceDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = path.resolve(sourceDir, '..', '..', '..');
 const launcher = path.resolve(sourceDir, '..', 'atomic-edit-mcp-launcher.sh');
+const brokerScript = path.join(sourceDir, 'atomic-exec-broker.mjs');
 
 function parseToolJson(result) {
   const text = result.content?.at(-1)?.text ?? '{}';
@@ -18,49 +21,93 @@ function domain(cert, name) {
   return Array.isArray(cert?.domains) ? cert.domains.find((entry) => entry.domain === name) : undefined;
 }
 
-async function main() {
-  const transport = new StdioClientTransport({
-    command: launcher,
-    args: [],
+function startBroker() {
+  const socketPath = path.join('/tmp', `ay-${process.pid}-${Date.now()}.sock`);
+  const proc = childProcess.spawn(process.execPath, [brokerScript, socketPath], {
     cwd: repoRoot,
-    stderr: 'pipe',
-    env: {
-      ...process.env,
-      ATOMIC_HOST_SANDBOX: 'macos-sandbox-exec',
-      ATOMIC_HOST_ATOMIC_ONLY: '1',
-      ATOMIC_HOST_WRITE_ROOT: repoRoot,
-      CODEX_PROJECT_DIR: repoRoot,
-      TMPDIR: repoRoot,
-      TMP: repoRoot,
-      TEMP: repoRoot,
-    },
+    env: { ...process.env, ATOMIC_EXEC_BROKER_ROOT: repoRoot },
+    stdio: ['ignore', 'pipe', 'pipe'],
   });
-  const client = new Client({ name: 'compiled-mcp-y-certificate-proof', version: '1.0.0' });
+  let stdout = '';
+  let stderr = '';
+  proc.stdout.on('data', (chunk) => {
+    stdout += String(chunk);
+  });
+  proc.stderr.on('data', (chunk) => {
+    stderr += String(chunk);
+  });
+  return new Promise((resolve, reject) => {
+    const deadline = setTimeout(() => {
+      proc.kill('SIGTERM');
+      reject(new Error(`broker did not become ready: stdout=${stdout} stderr=${stderr}`));
+    }, 5000);
+    proc.on('exit', (code) => {
+      clearTimeout(deadline);
+      if (!stdout.includes('ATOMIC_BROKER_READY')) {
+        reject(new Error(`broker exited before ready: code=${code} stdout=${stdout} stderr=${stderr}`));
+      }
+    });
+    const poll = setInterval(() => {
+      if (stdout.includes('ATOMIC_BROKER_READY') && fs.existsSync(socketPath)) {
+        clearTimeout(deadline);
+        clearInterval(poll);
+        resolve({ proc, socketPath, stdout, stderr });
+      }
+    }, 25);
+  });
+}
+
+async function main() {
+  let broker;
   try {
-    await client.connect(transport);
-    const cert = parseToolJson(await client.callTool({ name: 'atomic_y_certificate', arguments: { scope: 'mcp-controlled', includeAudits: true } }));
-    const bypass = domain(cert, 'bypassLedger');
-    const bypassReportStatus = String(bypass?.detail?.status ?? 'missing');
-    const bypassIsHonestBlock =
-      bypass?.status === 'UNJUDGED' &&
-      bypassReportStatus !== 'observed-clean' &&
-      Array.isArray(cert?.blockers) &&
-      cert.blockers.some((entry) => entry.domain === 'bypassLedger');
-    return {
-      ok: cert?.ok === true && cert?.yComplete === false && cert?.verdict === 'Y_BLOCKED' && bypassIsHonestBlock,
-      certificate: cert,
-      assertion: {
-        bypassStatus: bypass?.status,
-        bypassReportStatus,
-        bypassIsHonestBlock,
+    broker = await startBroker();
+    const transport = new StdioClientTransport({
+      command: launcher,
+      args: [],
+      cwd: repoRoot,
+      stderr: 'pipe',
+      env: {
+        ...process.env,
+        ATOMIC_HOST_SANDBOX: 'macos-sandbox-exec',
+        ATOMIC_HOST_ATOMIC_ONLY: '1',
+        ATOMIC_HOST_WRITE_ROOT: repoRoot,
+        ATOMIC_EXEC_BROKER_SOCKET: broker.socketPath,
+        CODEX_PROJECT_DIR: repoRoot,
+        TMPDIR: repoRoot,
+        TMP: repoRoot,
+        TEMP: repoRoot,
       },
-    };
-  } finally {
+    });
+    const client = new Client({ name: 'compiled-mcp-y-certificate-proof', version: '1.0.0' });
     try {
-      await client.close();
-    } catch {
-      // best effort
+      await client.connect(transport);
+      const cert = parseToolJson(await client.callTool({ name: 'atomic_y_certificate', arguments: { scope: 'mcp-controlled', includeAudits: true } }));
+      const bypass = domain(cert, 'bypassLedger');
+      const bypassReportStatus = String(bypass?.detail?.status ?? 'missing');
+      const bypassIsHonestBlock =
+        bypass?.status === 'UNJUDGED' &&
+        bypassReportStatus !== 'observed-clean' &&
+        Array.isArray(cert?.blockers) &&
+        cert.blockers.some((entry) => entry.domain === 'bypassLedger');
+      return {
+        ok: cert?.ok === true && cert?.yComplete === false && cert?.verdict === 'Y_BLOCKED' && bypassIsHonestBlock,
+        certificate: cert,
+        assertion: {
+          bypassStatus: bypass?.status,
+          bypassReportStatus,
+          bypassIsHonestBlock,
+        },
+      };
+    } finally {
+      try {
+        await client.close();
+      } catch {
+        // best effort
+      }
     }
+  } finally {
+    if (broker?.proc) broker.proc.kill('SIGTERM');
+    if (broker?.socketPath) fs.rmSync(broker.socketPath, { force: true });
   }
 }
 

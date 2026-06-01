@@ -30,6 +30,7 @@ import structuralLintGate from './structural-lint-gate.js';
 import lintFixGate from './lint-fix-gate.js';
 import securityGate from './security-gate.js';
 import testExecutionGate from './test-execution-gate.js';
+import publicContractGate from './public-contract-gate.js';
 
 /**
  * Static gates safe in the WRITE direction — each asserts "this write did not
@@ -53,6 +54,11 @@ export const WRITE_GATES: GateModule[] = [
   // a dangling NAMED re-export when './m' resolves but does not EXPORT Foo. Static,
   // in-process ts-morph; NEW-only delta vs priorOf; star/unresolvable → unjudged.
   reexportSymbolGate,
+  // Public-contract / breaking-change (proof #3): a write may not REMOVE an exported
+  // name still imported by another file in the changed set — that orphans a live
+  // consumer (binds to undefined). Static in-process ts-morph; NEW-only (removed vs
+  // prior export surface); co-change exonerated; export*/unparseable → unjudged.
+  publicContractGate,
   // Red class #11's tsc-blind escape hatch (Prisma): a `prismaAny.<accessor>` whose
   // accessor is not a real model camelCase, or a $queryRaw `FROM "<table>"` whose
   // quoted name is not a real @@map, dangles. Static, schema.prisma dictionary;
