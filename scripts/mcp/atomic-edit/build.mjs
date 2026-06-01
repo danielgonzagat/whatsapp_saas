@@ -20,6 +20,9 @@ const ts = require('typescript');
 
 const ENTRY = [
   'server.ts',
+  'server-helpers-self-expansion.ts',
+  'server-helpers-negative-proof.ts',
+  'server-tools-self.ts',
   'engine.ts',
   'engine-rename.ts',
   'engine-ops.ts',

@@ -3,6 +3,11 @@ import { z } from 'zod';
 import { resolveSafeTarget } from './guard.js';
 import { addNamedImport, removeNamedImport, replacePropertyValue, renamePropertyKey, addAwaitToCall } from './advanced.js';
 import { guardSha, readUtf8 } from './server-helpers-io.js';
+import {
+  requireNegativeActionProof,
+  requireNegativeProofForRemovedBytes,
+  removedByteCountBetween,
+} from './server-helpers-negative-proof.js';
 import { fail } from './server-helpers-result.js';
 import { shaArg } from './server-helpers-schema.js';
 import { commitSemantic } from './server-helpers-commit-semantic.js';
@@ -53,7 +58,16 @@ server.registerTool(
     description:
       'Remove a named import by imported-or-local name; drops the whole declaration if it was the last ' +
       'specifier. Syntax-validated, atomic — no dangling commas or broken lines.',
-    inputSchema: { file: z.string(), module: z.string(), name: z.string(), ...shaArg },
+    inputSchema: {
+      file: z.string(),
+      module: z.string(),
+      name: z.string(),
+      proofOfIncorrectness: z
+        .string()
+        .optional()
+        .describe('required for non-preview import removal: proof that removed import bytes are non-correct/negative'),
+      ...shaArg,
+    },
   },
   async (a) => {
     try {
@@ -61,7 +75,16 @@ server.registerTool(
       const before = readUtf8(absPath);
       guardSha(before, a.expectedSha256);
       const r = await removeNamedImport(relPath, before, a.module, a.name);
-      return commitSemantic(relPath, absPath, before, r, a.preview ?? false);
+      const negativeActionProof = a.preview
+        ? undefined
+        : requireNegativeActionProof({
+            action: 'atomic_remove_import',
+            target: `${relPath}:${a.module}:${a.name}`,
+            targetUnit: 'import',
+            removedByteCount: removedByteCountBetween(before, r.newText),
+            proofOfIncorrectness: a.proofOfIncorrectness,
+          });
+      return commitSemantic(relPath, absPath, before, r, a.preview ?? false, undefined, { negativeActionProof });
     } catch (e) {
       return fail(e instanceof Error ? e.message : String(e));
     }
@@ -83,6 +106,10 @@ server.registerTool(
         .string()
         .describe("replacement initializer source (e.g. 'null', \"'x'\", '{ a: 1 }')"),
       selector: z.string().optional().describe("scope to this symbol (e.g. 'buildConfig')"),
+      proofOfIncorrectness: z
+        .string()
+        .optional()
+        .describe('required when replacement removes bytes: proof that removed bytes are non-correct/negative'),
       ...shaArg,
     },
   },
@@ -92,7 +119,24 @@ server.registerTool(
       const before = readUtf8(absPath);
       guardSha(before, a.expectedSha256);
       const r = await replacePropertyValue(relPath, before, a.property, a.value, a.selector);
-      return commitSemantic(relPath, absPath, before, r, a.preview ?? false);
+      const negativeActionProof = requireNegativeProofForRemovedBytes({
+        action: 'atomic_replace_property_value',
+        target: `${relPath}:${a.property}`,
+        targetUnit: 'property-value',
+        before,
+        after: r.newText,
+        proofOfIncorrectness: a.proofOfIncorrectness,
+        preview: a.preview ?? false,
+      });
+      return commitSemantic(
+        relPath,
+        absPath,
+        before,
+        r,
+        a.preview ?? false,
+        undefined,
+        negativeActionProof ? { negativeActionProof } : {},
+      );
     } catch (e) {
       return fail(e instanceof Error ? e.message : String(e));
     }
@@ -112,6 +156,10 @@ server.registerTool(
       property: z.string(),
       newKey: z.string(),
       selector: z.string().optional().describe("scope to this symbol (e.g. 'buildConfig')"),
+      proofOfIncorrectness: z
+        .string()
+        .optional()
+        .describe('required when property-key replacement removes bytes: proof that removed bytes are non-correct/negative'),
       ...shaArg,
     },
   },
@@ -121,7 +169,24 @@ server.registerTool(
       const before = readUtf8(absPath);
       guardSha(before, a.expectedSha256);
       const r = await renamePropertyKey(relPath, before, a.property, a.newKey, a.selector);
-      return commitSemantic(relPath, absPath, before, r, a.preview ?? false);
+      const negativeActionProof = requireNegativeProofForRemovedBytes({
+        action: 'atomic_rename_property_key',
+        target: `${relPath}:${a.property}->${a.newKey}`,
+        targetUnit: 'property-key',
+        before,
+        after: r.newText,
+        proofOfIncorrectness: a.proofOfIncorrectness,
+        preview: a.preview ?? false,
+      });
+      return commitSemantic(
+        relPath,
+        absPath,
+        before,
+        r,
+        a.preview ?? false,
+        undefined,
+        negativeActionProof ? { negativeActionProof } : {},
+      );
     } catch (e) {
       return fail(e instanceof Error ? e.message : String(e));
     }

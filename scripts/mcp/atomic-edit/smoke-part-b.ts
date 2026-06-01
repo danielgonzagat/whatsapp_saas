@@ -26,9 +26,12 @@ export async function partB(): Promise<void> {
   const fixtureAbs = path.join(repoRoot, fixtureRel);
   fs.writeFileSync(fixtureAbs, "export const TARGET = '5511999999999';\n");
 
+  const compiledServer = path.join(SOURCE_DIR, 'dist', 'server.js');
   const transport = new StdioClientTransport({
-    command: 'npx',
-    args: ['--yes', 'tsx', path.join(SOURCE_DIR, 'server.ts')],
+    command: fs.existsSync(compiledServer) ? process.execPath : 'npx',
+    args: fs.existsSync(compiledServer)
+      ? [compiledServer]
+      : ['--yes', 'tsx', path.join(SOURCE_DIR, 'server.ts')],
     cwd: repoRoot,
     stderr: 'inherit',
   });

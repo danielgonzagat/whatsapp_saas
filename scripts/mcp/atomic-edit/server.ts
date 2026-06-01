@@ -41,6 +41,8 @@ import { registerToolsExec } from './server-tools-exec.js';
 import { registerToolsConverge } from './server-tools-converge.js';
 import { registerToolsLens } from './server-tools-lens.js';
 import { registerToolsSession } from './server-tools-session.js';
+import { registerToolsY } from './server-tools-y.js';
+import { registerToolsSelf } from './server-tools-self.js';
 
 const server = new McpServer({ name: 'kloel-atomic-edit', version: '4.0.0' });
 
@@ -60,6 +62,8 @@ registerToolsExec(server);
 registerToolsConverge(server);
 registerToolsLens(server);
 registerToolsSession(server);
+registerToolsY(server);
+registerToolsSelf(server);
 
 async function main(): Promise<void> {
   const transport = new StdioServerTransport();

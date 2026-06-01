@@ -10,8 +10,8 @@
  *   GREEN — the same emission where `tracer` IS declared as a class field.
  *   GREEN — the dominant NestJS shape: `private readonly logger = new Logger(...)`
  *           declared, then `this.logger.warn(...)` emitted (handle resolves).
- *   UNJUDGED — a changed source file with ZERO telemetry emissions (no fact to
- *           assert — honest, not green-by-assumption).
+ *   NOT_APPLICABLE — a changed source file with ZERO telemetry emissions (no fact
+ *           to assert, explicitly not applicable).
  *   CEILING — printed: static proves "could emit", never "did emit" (TRUTH_INFERRED
  *           vs TRUTH_OBSERVED). Sentry node project = 0 observed events / 24h.
  *
@@ -29,6 +29,7 @@ async function run(files: Record<string, string>) {
   return (await gate.run(ctx)) as Awaited<ReturnType<typeof gate.run>> & {
     green: boolean;
     reds: { file: string; locus?: string; fact: string }[];
+    notApplicable?: boolean;
     unjudged?: boolean;
   };
 }
@@ -132,7 +133,7 @@ log(
   `green=${loggerRes.green} reds=${loggerRes.reds.length}`,
 );
 
-// ── UNJUDGED: a changed source file with ZERO telemetry emissions ───────────────
+// ── NOT_APPLICABLE: a changed source file with ZERO telemetry emissions ─────────
 const PLAIN_FILE = 'backend/src/_proof/plain.ts';
 const plainOverlay = {
   [PLAIN_FILE]: [
@@ -144,9 +145,9 @@ const plainOverlay = {
 };
 const plainRes = await run(plainOverlay);
 log(
-  plainRes.green && plainRes.unjudged === true && plainRes.reds.length === 0,
-  'UNJUDGED on a file with no telemetry emission (no fact to assert)',
-  `green=${plainRes.green} unjudged=${plainRes.unjudged ?? false}`,
+  plainRes.green && plainRes.notApplicable === true && plainRes.unjudged !== true && plainRes.reds.length === 0,
+  'NOT_APPLICABLE on a file with no telemetry emission (no fact to assert)',
+  `green=${plainRes.green} notApplicable=${plainRes.notApplicable ?? false} unjudged=${plainRes.unjudged ?? false}`,
 );
 
 // ── non-source file carries no telemetry fact → never red ───────────────────────

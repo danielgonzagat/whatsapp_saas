@@ -120,26 +120,36 @@ function resolveTargetRoot(file: string): { absPath: string; repoRoot: string } 
 
 /** Exact repo-relative paths that no AI CLI may modify. */
 const PROTECTED_FILES = new Set<string>([
-  "CLAUDE.md",
   "AGENTS.md",
-  "docs/design/KLOEL_VISUAL_DESIGN_CONTRACT.md",
-  "docs/design/KLOEL_ANTI_HARDCODE_CONTRACT.md",
-  "ops/kloel-design-tokens.json",
+  "CLAUDE.md",
+  "CODEX.md",
+  ".codacy.yml",
+  "ratchet.json",
+  "package.json",
+  ".husky/commit-msg",
   ".husky/pre-push",
-  ".github/workflows/ci-cd.yml",
   "backend/eslint.config.mjs",
   "frontend/eslint.config.mjs",
   "worker/eslint.config.mjs",
+  "backend/src/lib/openai-models.ts",
   "backend/src/lib/ai-models.ts",
   "scripts/pulse/no-hardcoded-reality-audit.ts",
 ]);
 
+const PROTECTED_PREFIXES = [
+  ".github/workflows/",
+  "docs/codacy/",
+  "docs/design/",
+  "ops/",
+  "scripts/ops/",
+];
+
 /** Repo-relative prefixes/globs that are protected directory-wide. */
 export function isProtectedRelative(rel: string): string | null {
   if (PROTECTED_FILES.has(rel)) return rel;
-  if (rel.startsWith("ops/") && rel.endsWith(".json")) return "ops/*.json";
-  if (/^scripts\/ops\/check-[^/]+\.mjs$/.test(rel)) return "scripts/ops/check-*.mjs";
-  if (/^scripts\/ops\/lib\/[^/]+\.mjs$/.test(rel)) return "scripts/ops/lib/*.mjs";
+  for (const prefix of PROTECTED_PREFIXES) {
+    if (rel.startsWith(prefix)) return prefix;
+  }
   return null;
 }
 

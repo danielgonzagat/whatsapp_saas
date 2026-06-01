@@ -8,9 +8,11 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
   const tools = await client.listTools();
   const names = tools.tools.map((t: { name: string }) => t.name).sort();
     check(
-      'server lists all 74 tools (incl. Y apex: lens (atomic_lens/atomic_grep_calls/atomic_repair_scope) + atomic_session_* (begin/savepoint/rollback/commit) + atomic_prove (gate-sourced receipt) + atomic_exec shell operator + content-addressed atomic_replace_at + atomic_locate + universal native engine: atomic_grep + atomic_glob + atomic_outline + atomic_ast_search + atomic_ast_edit + atomic_ast_rewrite + atomic_apply_workspace_edit + atomic_native_status + atomic_create_file + atomic_delete_file + code_file_stat + analyzer transaction + product apex layer + rename property key + add await to call + insert after anchor + insert before anchor + replace between anchors + replace text in anchor region + atomic_edit unified router + code_outline_batch)',
-      names.length === 74 &&
+      'server lists all 76 tools (incl. atomic_expand_self + Y certificate + apex: lens (atomic_lens/atomic_grep_calls/atomic_repair_scope) + atomic_session_* (begin/savepoint/rollback/commit) + atomic_prove (gate-sourced receipt) + atomic_exec shell operator + content-addressed atomic_replace_at + atomic_locate + universal native engine: atomic_grep + atomic_glob + atomic_outline + atomic_ast_search + atomic_ast_edit + atomic_ast_rewrite + atomic_apply_workspace_edit + atomic_native_status + atomic_create_file + atomic_delete_file + code_file_stat + analyzer transaction + product apex layer + rename property key + add await to call + insert after anchor + insert before anchor + replace between anchors + replace text in anchor region + atomic_edit unified router + code_outline_batch)',
+      names.length === 76 &&
           names.includes('atomic_exec') &&
+          names.includes('atomic_expand_self') &&
+          names.includes('atomic_y_certificate') &&
           names.includes('atomic_converge') &&
           names.includes('atomic_rename_symbol_universal') &&
           names.includes('atomic_bypass_report') &&
@@ -124,6 +126,166 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
       continuityBody.ok === true && typeof continuityBody.nextAction === 'string',
       continuity.content[0]?.text ?? '',
     );
+
+    const yCert = (await client.callTool({
+      name: 'atomic_y_certificate',
+      arguments: { scope: 'whole-host', includeAudits: false },
+    })) as { content: { text: string }[] };
+    const yCertBody = JSON.parse(yCert.content.at(-1)?.text ?? '{}');
+    const yDomains = Array.isArray(yCertBody.domains) ? yCertBody.domains : [];
+    const yDomain = (domain: string): { domain?: string; status?: string } | undefined =>
+      yDomains.find((entry: { domain?: string }) => entry.domain === domain);
+    check(
+      'Y certificate refuses current whole-host universality until active host sandbox',
+      yCertBody.ok === true &&
+        yCertBody.yComplete === false &&
+        yCertBody.verdict === 'Y_BLOCKED' &&
+        yCertBody.blockers?.some((b: { domain?: string }) => b.domain === 'wholeHostActionSpace') &&
+        yDomain('externalRuntimeState')?.status === 'GREEN' &&
+        yDomain('arbitraryInterpreterSandbox')?.status === 'GREEN' &&
+        yDomain('atomicityAudit')?.status === 'UNJUDGED',
+      yCert.content.map((p) => p.text).join('\n'),
+    );
+
+    const selfDeniedRel = path.join('scripts', 'mcp', 'atomic-edit', `.self-expansion-denied.${process.pid}.ts`);
+    const selfDeniedAbs = path.join(repoRoot, selfDeniedRel);
+    const selfDenied = (await client.callTool({
+      name: 'atomic_create_file',
+      arguments: { file: selfDeniedRel, content: 'export const DENIED_SELF_EXPANSION = true;\n' },
+    })) as { content: { text: string }[]; isError?: boolean };
+    const selfDeniedText = selfDenied.content.map((p) => p.text).join('\n');
+    check(
+      'direct atomic self-expansion is refused outside atomic_expand_self',
+      selfDenied.isError === true && /self-expansion admission/.test(selfDeniedText) && !fs.existsSync(selfDeniedAbs),
+      selfDeniedText,
+    );
+
+    const selfAllowedRel = path.join('scripts', 'mcp', 'atomic-edit', `.self-expansion-allowed.${process.pid}.ts`);
+    const selfAllowedAbs = path.join(repoRoot, selfAllowedRel);
+    const selfAllowed = (await client.callTool({
+      name: 'atomic_expand_self',
+      arguments: {
+        intent: 'smoke self-expansion admission with proof',
+        files: [{ op: 'create', file: selfAllowedRel, content: 'export const SELF_EXPANSION_ALLOWED = true;\n' }],
+        proofCommands: ['node build.mjs', 'node codex-atomic-only-hook.proof.mjs --json'],
+      },
+    })) as { content: { text: string }[]; isError?: boolean };
+    const selfAllowedBody = JSON.parse(selfAllowed.content.at(-1)?.text ?? '{}');
+    check(
+      'atomic_expand_self creates atomic source only after proofs pass',
+      selfAllowed.isError !== true &&
+        selfAllowedBody.ok === true &&
+        selfAllowedBody.admission === 'self-expansion-proof-green' &&
+        fs.existsSync(selfAllowedAbs),
+      selfAllowed.content.map((p) => p.text).join('\n'),
+    );
+    const selfCleanup = (await client.callTool({
+      name: 'atomic_expand_self',
+      arguments: {
+        intent: 'smoke self-expansion cleanup of negative test byte',
+        files: [
+          {
+            op: 'delete',
+            file: selfAllowedRel,
+            proofOfIncorrectness: 'temporary self-expansion smoke fixture, not production atomic behavior',
+          },
+        ],
+        proofCommands: ['node build.mjs', 'node codex-atomic-only-hook.proof.mjs --json'],
+      },
+    })) as { content: { text: string }[]; isError?: boolean };
+    const selfCleanupBody = JSON.parse(selfCleanup.content.at(-1)?.text ?? '{}');
+    check(
+      'atomic_expand_self deletes only with explicit negative-byte proof',
+      selfCleanup.isError !== true && selfCleanupBody.ok === true && !fs.existsSync(selfAllowedAbs),
+      selfCleanup.content.map((p) => p.text).join('\n'),
+    );
+
+    const readOnlyExec = (await client.callTool({
+      name: 'atomic_exec',
+      arguments: {
+        command: 'pwd',
+        cwd: 'scripts/mcp/atomic-edit',
+        intent: 'smoke read-only exec classification',
+      },
+    })) as { content: { text: string }[]; isError?: boolean };
+    const readOnlyExecBody = JSON.parse(readOnlyExec.content.at(-1)?.text ?? '{}');
+    check(
+      'atomic_exec allows classified read-only command without effect proof',
+      readOnlyExec.isError !== true &&
+        readOnlyExecBody.ok === true &&
+        readOnlyExecBody.atomicEnvelope?.effectProven === false &&
+        readOnlyExecBody.commandClass === 'read-only',
+      readOnlyExec.content.map((p) => p.text).join('\n'),
+    );
+
+    const execUnprovenRel = path.join('scripts', 'mcp', 'atomic-edit', `.smoke-exec-unproven.${process.pid}.txt`);
+    const execUnprovenAbs = path.join(repoRoot, execUnprovenRel);
+    try {
+      const execUnproven = (await client.callTool({
+        name: 'atomic_exec',
+        arguments: {
+          command: `node -e 'require("node:fs").writeFileSync(${JSON.stringify(execUnprovenRel)}, "UNPROVEN")'`,
+          cwd: repoRoot,
+          intent: 'smoke unproven shell write must be refused',
+        },
+      })) as { content: { text: string }[]; isError?: boolean };
+      const unprovenText = execUnproven.content.map((p) => p.text).join('\n');
+      check(
+        'atomic_exec refuses mutable-or-unknown command without proveEffect',
+        execUnproven.isError === true &&
+          /requires proveEffect:true|mutable-or-unknown/i.test(unprovenText) &&
+          !fs.existsSync(execUnprovenAbs),
+        unprovenText,
+      );
+    } finally {
+      if (fs.existsSync(execUnprovenAbs)) fs.unlinkSync(execUnprovenAbs);
+    }
+
+    const externalExec = (await client.callTool({
+      name: 'atomic_exec',
+      arguments: {
+        command: 'curl --max-time 1 -X POST https://example.invalid/atomic-smoke',
+        cwd: 'scripts/mcp/atomic-edit',
+        proveEffect: true,
+        timeoutMs: 1000,
+        intent: 'smoke external effects must not be mistaken for filesystem proof',
+      },
+    })) as { content: { text: string }[]; isError?: boolean };
+    const externalText = externalExec.content.map((p) => p.text).join('\n');
+    check(
+      'atomic_exec refuses external/host effect commands even with filesystem proof',
+      externalExec.isError === true && /external-or-host-effect|external effect/i.test(externalText),
+      externalText,
+    );
+
+    const execEffectRel = path.join('scripts', 'mcp', 'atomic-edit', `.smoke-exec-effect.${process.pid}`);
+    const execEffectAbs = path.join(repoRoot, execEffectRel);
+    fs.rmSync(execEffectAbs, { recursive: true, force: true });
+    fs.mkdirSync(execEffectAbs, { recursive: true });
+    try {
+      const execProven = (await client.callTool({
+        name: 'atomic_exec',
+        arguments: {
+          command: 'node -e "require(\'node:fs\').writeFileSync(\'created.txt\', \'PROVEN\\n\')"',
+          cwd: execEffectRel,
+          proveEffect: true,
+          intent: 'smoke proven shell write records byte effect',
+        },
+      })) as { content: { text: string }[]; isError?: boolean };
+      const execProvenBody = JSON.parse(execProven.content.at(-1)?.text ?? '{}');
+      check(
+        'atomic_exec proven mutable command records byte effect',
+        execProven.isError !== true &&
+          execProvenBody.ok === true &&
+          execProvenBody.commandClass === 'mutable-or-unknown' &&
+          execProvenBody.atomicEnvelope?.effectProven === true &&
+          execProvenBody.effect?.changedFiles === 1 &&
+          execProvenBody.effect?.files?.[0]?.file === 'created.txt',
+        execProven.content.map((p) => p.text).join('\n'),
+      );
+    } finally {
+      fs.rmSync(execEffectAbs, { recursive: true, force: true });
+    }
 
     const lockId = `.smoke-lock-${process.pid}`;
     const acquired = (await client.callTool({

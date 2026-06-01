@@ -1,0 +1,36 @@
+#!/usr/bin/env node
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const jsonMode = process.argv.includes('--json');
+const sourceDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const source = fs.readFileSync(path.join(sourceDir, 'codex-atomic-host-launcher.mjs'), 'utf8');
+
+const checks = [
+  {
+    name: 'Codex host launcher declares atomic-exec broker path',
+    ok: /atomic-exec-broker\.mjs/.test(source) && /const BROKER\b/.test(source),
+  },
+  {
+    name: 'Codex host launcher starts broker before sandboxed child',
+    ok: /function startBroker\(/.test(source) && /ATOMIC_BROKER_READY/.test(source),
+  },
+  {
+    name: 'Codex host launcher exports ATOMIC_EXEC_BROKER_SOCKET to child env',
+    ok: /ATOMIC_EXEC_BROKER_SOCKET/.test(source) && /childEnv\(socket\)/.test(source),
+  },
+  {
+    name: 'Codex host launcher keeps host network denied',
+    ok: /\(deny network\*\)/.test(source),
+  },
+  {
+    name: 'Codex host launcher cleans broker socket on child exit',
+    ok: /brokerChild\.kill\('SIGTERM'\)/.test(source) && /rmSync\(socket, \{ force: true \}\)/.test(source),
+  },
+];
+
+const result = { ok: checks.every((entry) => entry.ok), results: checks };
+if (jsonMode) process.stdout.write(JSON.stringify(result) + '\n');
+else for (const entry of checks) process.stdout.write(`${entry.ok ? 'PASS' : 'FAIL'} ${entry.name}\n`);
+process.exit(result.ok ? 0 : 1);

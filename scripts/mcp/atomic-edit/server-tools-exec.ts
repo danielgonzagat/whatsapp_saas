@@ -12,13 +12,23 @@
  * to .atomic/exec-ledger.jsonl, secret redaction on every returned/traced
  * surface, and a hard timeout.
  *
- * Envelope (OPT-IN): a non-destructive `git stash create` snapshot before the
- * run with rollback-on-nonzero, for risky mutations.
+ * Envelope (STRICT): every command is classified. A small allowlist of read-only
+ * commands may run with trace-only receipts; every mutable-or-unknown command
+ * requires proveEffect:true or rollbackOnNonZero:true before it is spawned. Known
+ * network/database/provider/remote-host/package/runtime-control commands are
+ * external-or-host-effect and refused before spawn, because a filesystem snapshot
+ * cannot prove those effects. The byte-effect snapshot must be complete, or the
+ * action is UNJUDGED and refused.
  *
- * Honest scope: a shell can do anything, so full rollback is NOT promised — the
- * promise is guard + trace + timeout + redaction ALWAYS, plus a git
- * snapshot/rollback handle on request. Run mutations inside an isolated git
- * worktree to get true reversibility from git itself.
+ * Honest scope: on hosts with sandbox-exec, spawned commands run under a deny-by-default
+ * OS sandbox. Trace-only commands get no file-write capability; byte-effect-proven
+ * commands get write access only to cwd, with TMPDIR/TMP/TEMP forced to cwd so temp
+ * bytes stay inside the captured effect root. When the whole Claude/Codex host is already
+ * inside the atomic host sandbox, nested sandbox-exec is impossible on macOS, so every
+ * command is delegated to the out-of-sandbox broker (atomic-exec-broker.mjs), which
+ * re-applies a fresh per-command sandbox-exec (network denied, writes confined to cwd) —
+ * host mode is therefore byte-for-byte as contained as non-host mode, and fails closed
+ * if the broker socket is absent. On hosts without any sandbox, commands fail closed.
  */
 import * as childProcess from 'node:child_process';
 import * as fs from 'node:fs';
@@ -27,7 +37,14 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { REPO_ROOT, resolveAllowedRootForAbsolutePath, isProtectedRelative } from './guard.js';
 import { ok, fail } from './server-helpers-result.js';
-import { captureEffectSnapshot, diffEffect, rollbackEffect, type EffectSnapshot, type FileEffect } from './server-helpers-effect.js';
+import {
+  assertCompleteEffectSnapshot,
+  captureEffectSnapshot,
+  diffEffect,
+  rollbackEffect,
+  type EffectSnapshot,
+  type FileEffect,
+} from './server-helpers-effect.js';
 
 interface GuardVerdict {
   allowed: boolean;
@@ -119,6 +136,195 @@ function guardCommand(cmd: string): GuardVerdict {
   return { allowed: true };
 }
 
+type CommandClass = 'read-only' | 'mutable-or-unknown' | 'external-or-host-effect';
+
+const EXTERNAL_OR_HOST_EFFECT_COMMANDS: { re: RegExp; reason: string }[] = [
+  { re: /^git\s+(?:push|pull|fetch|clone|submodule|lfs)\b/, reason: 'git remote/submodule operation can change or depend on external host state' },
+  { re: /^(?:curl|wget|http)\b/, reason: 'network client effect is outside the filesystem byte snapshot' },
+  { re: /\b(?:ssh|scp|rsync)\b/, reason: 'remote shell/file transfer can mutate another host' },
+  { re: /^(?:psql|mysql|sqlite3|redis-cli|mongosh|mongo)\b/, reason: 'database client effect is outside the filesystem byte snapshot' },
+  { re: /^(?:kubectl|helm|docker|docker-compose|podman)\b/, reason: 'orchestrator/container/host effect is outside the repo byte snapshot' },
+  { re: /^(?:railway|vercel|gh|stripe|aws|gcloud|az|flyctl|supabase|firebase)\b/, reason: 'provider CLI can mutate external runtime or cloud state' },
+  {
+    re: /^(?:npm|pnpm|yarn|bun|pip|pipx|poetry|cargo|go|mvn|gradle|gem|bundle)\s+(?:install|add|update|get|publish|deploy|push)\b/,
+    reason: 'package manager install/publish/deploy can mutate network, caches, hooks, or registries',
+  },
+  { re: /\b(?:fetch\s*\(|XMLHttpRequest|https?:\/\/|node:https|node:http)\b/, reason: 'inline runtime network access is not a filesystem byte effect' },
+];
+
+const READ_ONLY_COMMANDS: RegExp[] = [
+  /^(?:pwd|true|false|date|whoami|hostname)\b(?:\s|$)/,
+  /^git\s+(?:status|diff|show|log|rev-parse|branch|ls-files|remote\s+-v)\b/,
+  /^rg\b/,
+  /^grep\b/,
+  /^sed\s+-n\b/,
+  /^cat\b/,
+  /^ls\b/,
+  /^find\b(?![\s\S]*\s-delete\b)(?![\s\S]*\s-exec\b)/,
+  /^wc\b/,
+  /^node\s+scripts\/mcp\/atomic-edit\/audit-atomicity\.mjs\b/,
+];
+
+function externalEffectReason(cmd: string): string | null {
+  const c = cmd.trim();
+  const hit = EXTERNAL_OR_HOST_EFFECT_COMMANDS.find((entry) => entry.re.test(c));
+  return hit?.reason ?? null;
+}
+
+function classifyCommand(cmd: string): CommandClass {
+  const c = cmd.trim();
+  if (READ_ONLY_COMMANDS.some((re) => re.test(c))) return 'read-only';
+  return externalEffectReason(c) ? 'external-or-host-effect' : 'mutable-or-unknown';
+}
+
+const SANDBOX_EXEC = '/usr/bin/sandbox-exec';
+
+function sandboxExecAvailable(): boolean {
+  return fs.existsSync(SANDBOX_EXEC);
+}
+
+function sandboxPath(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+function atomicSandboxProfile(writeRoot: string | null): string {
+  const writeRule = writeRoot
+    ? '(allow file-write* (subpath "' + sandboxPath(fs.realpathSync(writeRoot)) + '"))'
+    : null;
+  return [
+    '(version 1)',
+    '(deny default)',
+    '(allow file-read*)',
+    ...(writeRule ? [writeRule] : []),
+    '(allow process*)',
+    '(allow mach-lookup)',
+    '(allow sysctl-read)',
+    '(deny network*)',
+  ].join(' ');
+}
+
+function sandboxReceipt(active: boolean, writeRoot: string | null): Record<string, unknown> {
+  return {
+    active,
+    engine: active ? 'macos-sandbox-exec' : 'none',
+    writeRoot,
+    fileWrites: active ? (writeRoot ? 'cwd-only' : 'denied') : 'unguarded',
+    tempRoot: active && writeRoot ? writeRoot : null,
+    network: active ? 'denied' : 'unguarded',
+  };
+}
+
+function hostSandboxActive(): boolean {
+  return process.env.ATOMIC_HOST_SANDBOX === 'macos-sandbox-exec' && process.env.ATOMIC_HOST_ATOMIC_ONLY === '1';
+}
+
+function hostSandboxWriteRoot(): string | null {
+  const value = process.env.ATOMIC_HOST_WRITE_ROOT;
+  if (!value) return null;
+  try {
+    return fs.realpathSync(value);
+  } catch {
+    return path.resolve(value);
+  }
+}
+
+/** Path to a running out-of-sandbox broker socket, or null if none is configured. */
+function brokerSocketPath(): string | null {
+  return process.env.ATOMIC_EXEC_BROKER_SOCKET || null;
+}
+
+/**
+ * Host-mode sandbox receipt: identical containment guarantees to non-host mode
+ * (cwd-only writes, network denied), but the OS sandbox is applied by the
+ * out-of-sandbox broker per command rather than by a nested sandbox-exec.
+ */
+function brokerSandboxReceipt(writeRoot: string): Record<string, unknown> {
+  return {
+    active: true,
+    engine: 'macos-broker-sandbox',
+    writeRoot,
+    fileWrites: 'cwd-only',
+    tempRoot: writeRoot,
+    network: 'denied',
+    nestedSandbox: false,
+    broker: true,
+  };
+}
+
+interface SpawnLikeResult {
+  error: (Error & { code?: string }) | null;
+  status: number | null;
+  signal: NodeJS.Signals | null;
+  stdout: string;
+  stderr: string;
+}
+
+/**
+ * Delegate a command to the out-of-sandbox broker via the synchronous client
+ * bridge. The broker re-applies a fresh per-command sandbox-exec (network denied,
+ * writes confined to effectRoot). Returns a spawnSync-shaped result so the
+ * caller's downstream handling is identical. Fails closed (error set) when the
+ * broker socket is unset or the broker is unreachable.
+ */
+function runViaBroker(
+  command: string,
+  cwd: string,
+  effectRoot: string,
+  timeoutMs: number,
+  env: Record<string, string> | undefined,
+  stdin: string | undefined,
+): SpawnLikeResult {
+  const sockPath = brokerSocketPath();
+  if (!sockPath) {
+    return {
+      error: new Error(
+        'host-sandboxed atomic_exec requires a running broker (ATOMIC_EXEC_BROKER_SOCKET is unset). ' +
+          'Relaunch Claude through scripts/mcp/atomic-edit/claude-atomic-host-launcher.mjs, which starts the broker.',
+      ),
+      status: null,
+      signal: null,
+      stdout: '',
+      stderr: '',
+    };
+  }
+  const clientPath = path.join(REPO_ROOT, 'scripts/mcp/atomic-edit/atomic-exec-broker-client.mjs');
+  const reqObj: Record<string, unknown> = { command, cwd, effectRoot, timeoutMs };
+  if (env) reqObj.env = env;
+  if (stdin !== undefined) reqObj.stdin = stdin;
+  const res = childProcess.spawnSync(process.execPath, [clientPath, sockPath], {
+    cwd,
+    encoding: 'utf8',
+    maxBuffer: 32 * 1024 * 1024,
+    timeout: timeoutMs + 5000,
+    input: JSON.stringify(reqObj),
+  });
+  if (res.error) {
+    return { error: res.error as Error & { code?: string }, status: null, signal: null, stdout: '', stderr: '' };
+  }
+  let reply: Record<string, unknown>;
+  try {
+    reply = JSON.parse(res.stdout || '{}') as Record<string, unknown>;
+  } catch {
+    return {
+      error: new Error('broker reply unparseable: ' + String(res.stdout ?? '').slice(0, 300)),
+      status: null,
+      signal: null,
+      stdout: String(res.stdout ?? ''),
+      stderr: String(res.stderr ?? ''),
+    };
+  }
+  if (reply.brokerUnreachable) {
+    return { error: new Error(String(reply.error ?? 'broker unreachable')), status: null, signal: null, stdout: '', stderr: '' };
+  }
+  return {
+    error: null,
+    status: typeof reply.exitCode === 'number' ? reply.exitCode : null,
+    signal: (reply.signal as NodeJS.Signals) ?? null,
+    stdout: String(reply.stdout ?? ''),
+    stderr: String(reply.stderr ?? ''),
+  };
+}
+
 /** Never let a credential leave the process via stdout/stderr/trace. */
 function redactSecrets(s: string): string {
   return s
@@ -197,18 +403,23 @@ export function registerToolsExec(server: McpServer): void {
       description:
         'The universal computational-action operator: runs an arbitrary command line via /bin/bash -c, ' +
         'wrapped in the atomic envelope — a starting-directory guard (cwd must resolve inside the repo ' +
-        'root / a registered git worktree; the command body itself is NOT sandboxed), plus a best-effort ' +
-        'denylist (DEFENSE-IN-DEPTH, not an OS sandbox — refuses git restore, --no-verify, skip-ci/codacy ' +
+        'root / a registered git worktree), a host sandbox where available (macOS sandbox-exec: no writes ' +
+        'for trace-only commands; cwd-only writes for byte-effect-proven commands; network denied; ' +
+        'host-launched mode delegates each command to the out-of-sandbox broker, which re-applies a fresh ' +
+        'per-command sandbox-exec and fails closed if the broker socket is absent), plus a ' +
+        'best-effort denylist (DEFENSE-IN-DEPTH — refuses git ' +
         'tags, prisma db push, force-push, pipe-to-shell, disk/auditor destroyers, and shell writes to ' +
         'governance-protected files; env-var/eval/alias indirection can still evade it), a trace receipt ' +
         'to .atomic/exec-ledger.jsonl, secret ' +
         'redaction on every returned/traced surface, and a hard timeout. Returns the REAL exit code (never ' +
-        'fakes success): a non-zero exit comes back as {ok:false, exitCode, stdout, stderr}. Optional opt-in ' +
-        'snapshot:true takes a non-destructive `git stash create` restore point; rollbackOnNonZero:true ' +
-        'restores TRACKED-file content if the command fails (untracked/new files are NOT removed — the ' +
-        'snapshot is tracked-content-only; the receipt reports rollbackScope). Use this instead of the ' +
-        'banned built-in Bash for git/gh/npm/test ' +
-        'orchestration; run mutations inside an isolated worktree for true git-backed reversibility.',
+        'fakes success): a non-zero exit comes back as {ok:false, exitCode, stdout, stderr}. Commands are ' +
+        'classified conservatively: read-only allowlisted commands may run trace-only, mutable-or-unknown ' +
+        'commands require proveEffect:true or rollbackOnNonZero:true before spawn, and external-or-host-effect ' +
+        'commands (network/database/provider/remote-host/package/runtime-control) are refused because filesystem ' +
+        'proof cannot approve external state. snapshot:true remains a ' +
+        'tracked-content restore point only; byte-effect proof is the strict admission layer. Use this instead ' +
+        'of the banned built-in Bash for git/gh/npm/test orchestration; run mutations inside an isolated ' +
+        'worktree/root to keep captured effects complete and reversible.',
       inputSchema: {
         command: z.string().min(1).describe('shell command line, executed via /bin/bash -c'),
         cwd: z
@@ -250,22 +461,83 @@ export function registerToolsExec(server: McpServer): void {
           appendTrace({ ts: startedAt, kind: 'refused', reason: verdict.reason, command: redactSecrets(a.command), cwd });
           return fail(`atomic_exec refused (invariant law): ${verdict.reason}`);
         }
+        const commandClass = classifyCommand(a.command);
+        const externalReason = commandClass === 'external-or-host-effect' ? externalEffectReason(a.command) : null;
+        if (externalReason) {
+          const reason =
+            `external-or-host-effect command refused under Y admission: ${externalReason}. ` +
+            `Filesystem proveEffect cannot approve network, database, provider, remote-host, package-registry, or runtime-control effects. ` +
+            `Use a domain-specific MCP/gate with observed external-state proof, or run this outside atomic admission with owner approval.`;
+          appendTrace({
+            ts: startedAt,
+            kind: 'refused',
+            reason,
+            commandClass,
+            command: redactSecrets(a.command),
+            cwd,
+          });
+          return fail(`atomic_exec refused (external effect unproved): ${reason}`);
+        }
+        const hostSandbox = hostSandboxActive();
+        const hostWriteRoot = hostSandboxWriteRoot();
+        if (hostSandbox && !hostWriteRoot) {
+          const reason = 'atomic host sandbox is active but ATOMIC_HOST_WRITE_ROOT is missing or invalid.';
+          appendTrace({ ts: startedAt, kind: 'refused', reason, commandClass, command: redactSecrets(a.command), cwd });
+          return fail(`atomic_exec refused (host sandbox invalid): ${reason}`);
+        }
+        const needsEffectProof = commandClass === 'mutable-or-unknown' || hostSandbox;
+        if (needsEffectProof && !a.proveEffect && !a.rollbackOnNonZero) {
+          const reason = hostSandbox
+            ? 'host-sandboxed atomic_exec requires proveEffect:true (or rollbackOnNonZero:true) for every command because nested no-write sandboxing is not available.'
+            : 'mutable-or-unknown command requires proveEffect:true (or rollbackOnNonZero:true) under Y admission; unproven shell effects are not byte-correct-by-construction.';
+          appendTrace({ ts: startedAt, kind: 'refused', reason, commandClass, command: redactSecrets(a.command), cwd });
+          return fail(`atomic_exec refused (effect proof required): ${reason}`);
+        }
 
         const snap = a.snapshot ? gitSnapshot(cwd) : null;
-        // rollbackOnNonZero IMPLIES effect capture: a byte-snapshot is the only
-        // honest rollback (the git-stash path is tracked-only and can't undo
-        // created/deleted/untracked files). So any requested rollback is byte-complete.
-        const effectSnap: EffectSnapshot | null =
-          a.proveEffect || a.rollbackOnNonZero ? captureEffectSnapshot(cwd) : null;
+        // With the broker, host-mode commands are confined to cwd just like
+        // non-host mode (the broker re-applies a fresh per-command sandbox-exec
+        // around each command). So the effect substrate is the cwd in BOTH modes.
+        const effectRoot = cwd;
+        const effectSnap: EffectSnapshot | null = a.proveEffect || a.rollbackOnNonZero
+          ? captureEffectSnapshot(effectRoot, {})
+          : null;
+        if (effectSnap) assertCompleteEffectSnapshot(effectSnap, 'run atomic_exec with byte-effect proof');
         const timeout = a.timeoutMs ?? 120000;
-        const res = childProcess.spawnSync('/bin/bash', ['-c', a.command], {
-          cwd,
-          timeout,
-          encoding: 'utf8',
-          maxBuffer: 32 * 1024 * 1024,
-          env: { ...process.env, ...(a.env ?? {}) },
-          ...(a.stdin !== undefined ? { input: a.stdin } : {}),
-        });
+        // Host mode: per-command sandboxing is delegated to the out-of-sandbox
+        // broker (macOS forbids nested sandbox-exec). It MUST be present, or we
+        // fail closed — a host-launched command must never run unsandboxed.
+        const brokerSock = brokerSocketPath();
+        if (hostSandbox && !brokerSock) {
+          const reason =
+            'host-sandboxed atomic_exec requires a running broker (ATOMIC_EXEC_BROKER_SOCKET is unset). ' +
+            'Relaunch Claude through scripts/mcp/atomic-edit/claude-atomic-host-launcher.mjs, which starts the broker.';
+          appendTrace({ ts: startedAt, kind: 'refused', reason, commandClass, command: redactSecrets(a.command), cwd });
+          return fail(`atomic_exec refused (broker required): ${reason}`);
+        }
+        const sandboxActive = hostSandbox ? Boolean(brokerSock) : sandboxExecAvailable();
+        if (!sandboxActive) {
+          const reason = 'atomic_exec requires a real process sandbox under Y admission; ' + `${SANDBOX_EXEC} is not available on this host.`;
+          appendTrace({ ts: startedAt, kind: 'refused', reason, commandClass, command: redactSecrets(a.command), cwd });
+          return fail(`atomic_exec refused (sandbox unavailable): ${reason}`);
+        }
+        const sandboxWriteRoot = effectSnap ? cwd : null;
+        const sandbox = hostSandbox ? brokerSandboxReceipt(cwd) : sandboxReceipt(true, sandboxWriteRoot);
+        const sandboxEnv: Record<string, string> = effectSnap ? { TMPDIR: effectRoot, TMP: effectRoot, TEMP: effectRoot } : {};
+        const res: SpawnLikeResult = hostSandbox
+          ? runViaBroker(a.command, cwd, effectRoot, timeout, { ...(a.env ?? {}), ...sandboxEnv }, a.stdin)
+          : (childProcess.spawnSync(
+              SANDBOX_EXEC,
+              ['-p', atomicSandboxProfile(sandboxWriteRoot), '/bin/bash', '-c', a.command],
+              {
+                cwd,
+                timeout,
+                encoding: 'utf8',
+                maxBuffer: 32 * 1024 * 1024,
+                env: { ...process.env, ...(a.env ?? {}), ...sandboxEnv },
+                ...(a.stdin !== undefined ? { input: a.stdin } : {}),
+              },
+            ) as unknown as SpawnLikeResult);
         const durationMs = Date.now() - startedAt;
 
         if (res.error) {
@@ -325,6 +597,8 @@ export function registerToolsExec(server: McpServer): void {
           kind: 'exec',
           intent: a.intent ?? null,
           command: redactSecrets(a.command),
+          commandClass,
+          sandbox,
           cwd,
           exitCode,
           signal: res.signal ?? null,
@@ -341,6 +615,8 @@ export function registerToolsExec(server: McpServer): void {
           cwd,
           intent: a.intent ?? null,
           command: redactSecrets(a.command),
+          commandClass,
+          sandbox,
           stdout: stdout.text,
           stdoutTruncated: stdout.truncated,
           stderr: stderr.text,
@@ -365,6 +641,8 @@ export function registerToolsExec(server: McpServer): void {
           atomicEnvelope: {
             guarded: true,
             effectProven: Boolean(effectSnap),
+            effectProofRequired: needsEffectProof,
+            sandbox,
             traced: true,
             redacted: true,
             snapshot: Boolean(snap),

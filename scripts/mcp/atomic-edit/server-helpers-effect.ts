@@ -25,6 +25,7 @@ export interface EffectSnapshot {
   /** repo-relative path -> UTF-8 content of every existing in-scope file at snapshot time */
   files: Map<string, string>;
   limitReached: boolean;
+  limits: { maxFiles: number; maxBytes: number; maxFileBytes: number };
 }
 
 export interface FileEffect {
@@ -36,6 +37,13 @@ export interface FileEffect {
   bytesAfter: number;
 }
 
+export function assertCompleteEffectSnapshot(snap: EffectSnapshot, action: string): void {
+  if (!snap.limitReached) return;
+  throw new Error(
+    `effect snapshot incomplete; refusing to ${action} because byte coverage is UNJUDGED (snapshot cap/limit reached)`,
+  );
+}
+
 /** Capture the byte-content of every in-scope file under `rootAbs` (bounded). */
 export function captureEffectSnapshot(
   rootAbs: string,
@@ -44,6 +52,7 @@ export function captureEffectSnapshot(
   const maxFiles = opts.maxFiles ?? 4000;
   const maxBytes = opts.maxBytes ?? 64 * 1024 * 1024;
   const maxFileBytes = opts.maxFileBytes ?? 2 * 1024 * 1024;
+  const limits = { maxFiles, maxBytes, maxFileBytes };
   const files = new Map<string, string>();
   let total = 0;
   let limitReached = false;
@@ -87,12 +96,14 @@ export function captureEffectSnapshot(
     }
   };
   walk(rootAbs);
-  return { rootAbs, files, limitReached };
+  return { rootAbs, files, limitReached, limits };
 }
 
 /** Re-walk and compute the exact per-file byte-effect since the snapshot. */
 export function diffEffect(snap: EffectSnapshot): FileEffect[] {
-  const after = captureEffectSnapshot(snap.rootAbs);
+  assertCompleteEffectSnapshot(snap, 'diff filesystem effect');
+  const after = captureEffectSnapshot(snap.rootAbs, snap.limits);
+  assertCompleteEffectSnapshot(after, 'diff filesystem effect after command');
   const effects: FileEffect[] = [];
   for (const [rel, content] of after.files) {
     const before = snap.files.get(rel);
@@ -118,6 +129,7 @@ export function diffEffect(snap: EffectSnapshot): FileEffect[] {
 
 /** Reverse the byte-effect (restore modified/deleted to snapshot bytes; remove created). Best-effort; returns files restored. */
 export function rollbackEffect(snap: EffectSnapshot, effects: FileEffect[]): number {
+  assertCompleteEffectSnapshot(snap, 'rollback filesystem effect');
   let restored = 0;
   for (const eff of effects) {
     const abs = path.join(snap.rootAbs, eff.file);

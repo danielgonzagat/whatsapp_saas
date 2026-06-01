@@ -33,6 +33,8 @@ export interface GateResult {
   reds: GateRed[];
   /** one-line statement of the invariant this gate enforces */
   note?: string;
+  /** true = no relevant fact/property exists in this change; explicit green by non-applicability */
+  notApplicable?: boolean;
   /** true = could not decide from the available bytes (honest); neither red nor green-by-assumption */
   unjudged?: boolean;
 }

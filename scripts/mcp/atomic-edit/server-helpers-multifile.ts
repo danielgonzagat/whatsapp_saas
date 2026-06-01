@@ -22,6 +22,7 @@ import { readUtf8, atomicWrite, log } from './server-helpers-io.js';
 import { buildTrace, writeTrace } from './trace.js';
 import { characterDiff } from './advanced.js';
 import { ok, fail, type ToolOk } from './server-helpers-result.js';
+import { requireNegativeActionProof, removedByteCountBetween } from './server-helpers-negative-proof.js';
 import { registerPendingWrites, clearPendingWrites } from './connection-gate.js';
 import * as path from 'node:path';
 
@@ -49,6 +50,7 @@ export function applyMultiFilePlan(
   plan: MultiFileEntry[],
   operator: string,
   preview: boolean,
+  proofOfIncorrectness?: string,
 ): ToolOk {
   if (plan.length === 0) return fail('empty plan: no files to edit');
 
@@ -69,6 +71,21 @@ export function applyMultiFilePlan(
     staged.push({ relPath, absPath, repoRoot, before, result });
   }
   if (staged.length === 0) return ok({ ok: true, changed: false, note: 'plan produced no edits' });
+
+  const changedStaged = staged.filter((s) => s.result.newText !== s.before);
+  const removedByteCount = changedStaged.reduce(
+    (total, s) => total + removedByteCountBetween(s.before, s.result.newText),
+    0,
+  );
+  const negativeActionProof = preview || removedByteCount <= 0
+    ? undefined
+    : requireNegativeActionProof({
+        action: operator,
+        target: changedStaged.map((s) => s.relPath).join(', '),
+        targetUnit: 'multi-file-plan',
+        removedByteCount,
+        proofOfIncorrectness,
+      });
 
   const traces = staged.map((s) => ({
     file: s.relPath,
@@ -93,6 +110,9 @@ export function applyMultiFilePlan(
       preservedZones: computeZones(s.before, s.result.newText).preservedZones,
       modifiedZones: computeZones(s.before, s.result.newText).modifiedZones,
       movementZones: [],
+      preview,
+      changed: !preview && s.result.newText !== s.before,
+      negativeActionProof,
     }),
   }));
 
@@ -180,6 +200,7 @@ export function applyMultiFilePlan(
     changed: true,
     filesWritten: written.length,
     files,
+    ...(negativeActionProof ? { negativeActionProof } : {}),
   });
 }
 

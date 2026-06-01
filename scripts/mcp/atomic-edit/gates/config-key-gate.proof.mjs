@@ -16,6 +16,7 @@
  *   GREEN     — CLOSED schema: `config.get('DATABASE_URL')` whose key IS declared → resolves.
  *   DELTA     — CLOSED schema: a PRE-EXISTING unbacked read on disk is NOT this write's
  *               claim (NEW-key-only) → not reddened.
+ *   NOT_APPLICABLE — no literal config read is introduced → no config-key fact exists.
  *   UNJUDGED1 — OPEN schema (`.unknown(true)`): even a key outside the declared set is
  *               tolerated by Joi → membership is not a dangle fact → unjudged, never red.
  *   UNJUDGED2 — NON-LITERAL key (`config.get(envVar)`): undecidable from bytes → the
@@ -154,7 +155,17 @@ function rm(root) {
   rm(root);
 }
 
-// 4) UNJUDGED1 — OPEN schema (`.unknown(true)`): even an undeclared key is tolerated.
+// 4) NOT_APPLICABLE — CLOSED schema, but this write introduces no literal config read.
+{
+  const root = mkRepo(CLOSED_SCHEMA);
+  const rel = 'backend/src/no-config-read.ts';
+  const body = 'export const clean = 1;\n';
+  const res = judge(root, { [rel]: body }, [rel]);
+  check('NOT_APPLICABLE: no literal config read introduced → no config-key fact', res.notApplicable === true && res.green === true && !res.unjudged && res.reds.length === 0);
+  rm(root);
+}
+
+// 5) UNJUDGED1 — OPEN schema (`.unknown(true)`): even an undeclared key is tolerated.
 {
   const root = mkRepo(OPEN_SCHEMA);
   const rel = 'backend/src/svc.ts';

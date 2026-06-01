@@ -6,6 +6,10 @@ import { atomicWrite, sha256, log, targetDetails } from './server-helpers-io.js'
 import { characterDiff, previewDiff } from './advanced.js';
 import { runPostEditVerify } from './server-helpers-verify.js';
 import { lockDir, autoLockCleanup, autoLockFile } from './server-helpers-product-locks.js';
+import {
+  requireNegativeProofForRemovedBytes,
+  type NegativeActionProof,
+} from './server-helpers-negative-proof.js';
 
 export interface ToolOk {
   content: { type: 'text'; text: string }[];
@@ -85,6 +89,21 @@ export function commit(
   const inlinePreview = characterDiff(before, result.newText, relPath);
   const repoRoot = resolveAllowedRootForAbsolutePath(absPath) ?? REPO_ROOT;
   const editZones = computeZones(before, result.newText);
+  let negativeActionProof = (extra as { negativeActionProof?: NegativeActionProof }).negativeActionProof;
+  if (!negativeActionProof) {
+    try {
+      negativeActionProof = requireNegativeProofForRemovedBytes({
+        action: operator,
+        target: relPath,
+        targetUnit: 'file',
+        before,
+        after: result.newText,
+        preview,
+      });
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : String(e));
+    }
+  }
   const trace = buildTrace({
     file: relPath,
     repoRoot,
@@ -103,6 +122,7 @@ export function commit(
     movementZones: editZones.movementZones,
     preview,
     changed: !preview,
+    negativeActionProof,
   });
   if (preview) {
     return ok(
@@ -233,7 +253,18 @@ export function writeWithTrace(
   after: string,
   operator: string,
   validation: ValidationResult,
+  negativeActionProof?: NegativeActionProof,
 ): void {
+  let provenNegativeAction = negativeActionProof;
+  if (!provenNegativeAction) {
+    provenNegativeAction = requireNegativeProofForRemovedBytes({
+      action: operator,
+      target: relPath,
+      targetUnit: 'file',
+      before,
+      after,
+    });
+  }
   atomicWrite(absPath, after);
   try {
     const repoRoot = resolveAllowedRootForAbsolutePath(absPath) ?? REPO_ROOT;
@@ -257,6 +288,7 @@ export function writeWithTrace(
       movementZones: zones.movementZones,
       preview: false,
       changed: true,
+      negativeActionProof: provenNegativeAction,
     });
     writeTrace(trace);
   } catch {

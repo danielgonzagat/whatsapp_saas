@@ -9,11 +9,14 @@ import { checkConnectionByteFloor, checkSupplyChainByteFloor, pendingWriteCount 
 // leaf module engine-free AND keep atomicWrite synchronous (its sync contract is
 // load-bearing across every write helper), the floor runs the SYNC WRITE_GATES
 // in-process: type-soundness (a NEW tsc error — incl. an unresolved reference
-// TS2304/TS2305/TS2552, the dead-wire fact) and iac-reference (a dangling infra
-// reference). Each is pure in-process (typescript / fs+path) — no engine, no spawn.
+// TS2304/TS2305/TS2552, the dead-wire fact), iac-reference (a dangling infra
+// reference), and security (a NEW hardcoded secret). Each is pure in-process
+// (typescript / fs+path / regex+entropy) — no engine, no spawn.
 import typeSoundnessGate from './gates/type-soundness-gate.js';
 import iacReferenceGate from './gates/iac-reference-gate.js';
+import securityGate from './gates/security-gate.js';
 import { makeContext, type GateModule } from './gates/contract.js';
+import { assertSelfExpansionAdmission } from './server-helpers-self-expansion.js';
 
 export const sha256 = (s: string): string => crypto.createHash('sha256').update(s).digest('hex');
 
@@ -34,36 +37,48 @@ export const log = (...a: unknown[]): void => {
 };
 
 /** The SYNC subset of WRITE_GATES safe to run at the byte floor (no engine, no spawn). */
-const SYNC_WRITE_GATES: GateModule[] = [typeSoundnessGate, iacReferenceGate];
+const SYNC_WRITE_GATES: GateModule[] = [typeSoundnessGate, iacReferenceGate, securityGate];
 
 /**
  * Run the sync WRITE_GATES over a single-file overlay at the byte floor and return
  * each gate's RED loci (gate+locus+fact), never throwing on its behalf. Honesty
  * doctrine, mirrored from runGates: a gate whose `run` returns a thenable (an async
- * gate) is NOT awaited here — it is honestly skipped (it already ran in
- * convergeStatic). A gate that throws or returns `unjudged` is non-blocking. ONLY a
- * concrete sync RED is reported — never red-by-guess, never green-by-assumption.
+ * gate) is NOT awaited here — it is carried as UNJUDGED unless the caller is in a
+ * multi-file write set that will be judged by convergeStatic. A concrete sync RED
+ * blocks, and UNJUDGED also blocks at this strict byte floor because it is not
+ * green approval.
  */
-function runSyncWriteGatesAt(relPath: string, content: string): { gate: string; locus: string; fact: string }[] {
+function runSyncWriteGatesAt(relPath: string, content: string): {
+  reds: { gate: string; locus: string; fact: string }[];
+  unjudged: { gate: string; fact: string }[];
+} {
   const overlay = new Map<string, string>([[relPath, content]]);
   const ctx = makeContext(REPO_ROOT, overlay, [relPath]);
   const reds: { gate: string; locus: string; fact: string }[] = [];
+  const unjudged: { gate: string; fact: string }[] = [];
   for (const g of SYNC_WRITE_GATES) {
     if (!g.appliesTo(relPath)) continue;
     let res: ReturnType<typeof g.run>;
     try {
       res = g.run(ctx);
-    } catch {
-      continue; // threw → honest-unjudged → non-blocking
+    } catch (e) {
+      unjudged.push({ gate: g.name, fact: `threw: ${e instanceof Error ? e.message : String(e)}` });
+      continue;
     }
-    // An async gate returns a Promise: it cannot be judged synchronously here, so it
-    // is deferred to convergeStatic (where it is awaited). Never block on a half-
-    // resolved promise — that would either hang the sync write or red-by-guess.
-    if (res instanceof Promise || typeof (res as { then?: unknown }).then === 'function') continue;
-    if (res.unjudged) continue; // could not decide from the bytes → non-blocking
+    // An async gate returns a Promise: it cannot be judged synchronously here.
+    // In strict byte-floor admission that is not approval, so it blocks unless
+    // the caller has registered a multi-file set that will be judged as a whole.
+    if (res instanceof Promise || typeof (res as { then?: unknown }).then === 'function') {
+      unjudged.push({ gate: g.name, fact: 'async gate cannot be judged at the sync byte floor' });
+      continue;
+    }
+    if (res.unjudged) {
+      unjudged.push({ gate: res.gate, fact: res.note ?? 'gate could not decide from the available bytes' });
+      continue;
+    }
     for (const r of res.reds) reds.push({ gate: res.gate, locus: r.locus ?? r.file, fact: r.fact });
   }
-  return reds;
+  return { reds, unjudged };
 }
 
 /** Atomic durable write: temp file in same dir, fsync, rename. */
@@ -71,9 +86,10 @@ export function atomicWrite(absPath: string, content: string): void {
   // ── Inescapable convergence, at the byte floor — immutable by architecture ──
   // EVERY write, through EVERY tool, funnels through here. A source file that
   // would INTRODUCE a dangling relative import, a dangling dependency, a NEW tsc
-  // error / unresolved reference, or a dangling infra reference never reaches disk.
-  // There is no env, no flag, no toggle, and no code path that writes around this —
-  // that is the point: the agent can only persist a connected, type-sound tree.
+  // error / unresolved reference, a dangling infra reference, or a NEW hardcoded
+  // secret never reaches disk. There is no env, no flag, no toggle, and no code
+  // path that writes around this — that is the point: the agent can only persist a
+  // connected, type-sound, secret-free tree.
   // (The async edge/render/binding/telemetry/findings gates run ahead of every
   // write in convergeStatic; the sync rungs of that same WRITE_GATES set run HERE.)
   const conn = checkConnectionByteFloor(absPath, content);
@@ -97,9 +113,10 @@ export function atomicWrite(absPath: string, content: string): void {
   }
   // ── full-gate byte floor: the SYNC WRITE_GATES, in-process, before the byte lands ──
   // Connection + supply-chain (above) prove every wire RESOLVES. These prove the write
-  // is TYPE-SOUND and its infra references RESOLVE — so atomic_edit / atomic_rename_symbol
-  // (which reach disk through here, NOT through convergeStatic) can no longer land a NEW
-  // tsc error / unresolved reference / dangling IaC ref. The async edge/render/binding
+  // is TYPE-SOUND, its infra references RESOLVE, and it introduces NO hardcoded secret —
+  // so atomic_edit / atomic_rename_symbol / atomic_replace_text (which reach disk through
+  // here, NOT through convergeStatic) can no longer land a NEW tsc error / unresolved
+  // reference / dangling IaC ref / committed credential. The async edge/render/binding
   // gates are enforced in convergeStatic ahead of every write; here we add the sync rungs
   // that close the per-edit gap without the engine and without breaking the sync contract.
   //
@@ -108,13 +125,22 @@ export function atomicWrite(absPath: string, content: string): void {
   // flight (pendingWriteCount > 1) type-soundness is honestly deferred to convergeStatic,
   // which type-checks the full overlay. Single-file writes (count ≤ 1) run all sync gates.
   const relPath = path.relative(REPO_ROOT, absPath);
+  assertSelfExpansionAdmission(REPO_ROOT, absPath, content);
   const multiFileInFlight = pendingWriteCount() > 1;
-  for (const r of runSyncWriteGatesAt(relPath, content)) {
+  const syncVerdict = runSyncWriteGatesAt(relPath, content);
+  for (const r of syncVerdict.reds) {
     if (multiFileInFlight && r.gate === 'type-soundness') continue; // sibling-blind → defer to converge
     throw new Error(
       `refused (convergence): this write would introduce a ${r.gate} red — ` +
         `${relPath}${r.locus ? `:${r.locus}` : ''} — ${r.fact}. ` +
         `A write that does not converge green is not a change. NOT written.`,
+    );
+  }
+  for (const r of syncVerdict.unjudged) {
+    if (multiFileInFlight && r.gate === 'type-soundness') continue; // sibling-blind → defer to converge
+    throw new Error(
+      `refused (convergence): ${r.gate} was UNJUDGED for ${relPath} — ${r.fact}. ` +
+        `Unjudged is not green approval under Y admission. NOT written.`,
     );
   }
 
@@ -302,4 +328,3 @@ export function nearestPackageRelPath(repoRoot: string, relPath: string): string
   }
   return null;
 }
-

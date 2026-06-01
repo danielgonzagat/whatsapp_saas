@@ -146,7 +146,12 @@ export async function partBOutlineStat(ctx: PartBCtx): Promise<void> {
 
     const res = (await client.callTool({
       name: 'atomic_replace_literal',
-      arguments: { file: fixtureRel, currentText: "'5511999999999'", newText: 'null' },
+      arguments: {
+        file: fixtureRel,
+        currentText: "'5511999999999'",
+        newText: 'null',
+        proofOfIncorrectness: 'smoke fixture literal is stale negative data and may be replaced',
+      },
     })) as { content: { text: string }[]; isError?: boolean };
     const body = JSON.parse(res.content.at(-1)?.text ?? '{}');
     check(
@@ -171,6 +176,22 @@ export async function partBOutlineStat(ctx: PartBCtx): Promise<void> {
       'protected file refused',
       guarded.isError === true && /governance-protected/.test(guarded.content[0].text),
       guarded.content[0].text,
+    );
+
+    const guardedWorkflow = (await client.callTool({
+      name: 'atomic_insert_at',
+      arguments: {
+        file: '.github/workflows/codeql.yml',
+        line: 1,
+        column: 1,
+        text: 'x',
+        preview: true,
+      },
+    })) as { content: { text: string }[]; isError?: boolean };
+    check(
+      'protected workflow prefix refused before preview/write',
+      guardedWorkflow.isError === true && /governance-protected/.test(guardedWorkflow.content[0].text),
+      guardedWorkflow.content[0].text,
     );
 
 }

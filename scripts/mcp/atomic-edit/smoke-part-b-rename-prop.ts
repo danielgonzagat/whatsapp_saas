@@ -14,7 +14,12 @@ export async function partBRenameProp(ctx: PartBCtx): Promise<void> {
     try {
       const rpkRes = (await client.callTool({
         name: 'atomic_rename_property_key',
-        arguments: { file: rpkRel, property: 'phone', newKey: 'whatsappPhoneId' },
+        arguments: {
+          file: rpkRel,
+          property: 'phone',
+          newKey: 'whatsappPhoneId',
+          proofOfIncorrectness: 'smoke fixture old phone key is intentionally obsolete negative bytes',
+        },
       })) as { content: { text: string }[]; isError?: boolean };
       const rpkBody = JSON.parse(rpkRes.content.at(-1)?.text ?? '{}');
       check(

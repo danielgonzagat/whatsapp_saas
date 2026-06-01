@@ -216,7 +216,7 @@ export function registerToolsConverge(server: McpServer): void {
         // ── proof-chained ledger: converge held the admitting verdict in conv.gates
         // and used to throw it away. Persist it now — one trace per committed file,
         // each binding the verdict that admitted it into the append-only chain.
-        const verdict = { green: true, reds: [], unjudged: [], ran: conv.gates.map((g) => g.gate) };
+        const verdict = { green: true, reds: [], notApplicable: [], unjudged: [], ran: conv.gates.map((g) => g.gate) };
         for (const t of targets) {
           const prior = effectSnap?.files.get(t.relPath) ?? '';
           writeTrace(

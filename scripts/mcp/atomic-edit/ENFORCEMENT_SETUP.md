@@ -9,6 +9,23 @@ a build.
 |---|---|---|
 | **atomic-only** (enforce) | `scripts/mcp/atomic-edit/atomic-only-hook.mjs` | Denies native `Edit`/`Write`/`MultiEdit`/`NotebookEdit`/`apply_patch` on **code** files, and `Bash` commands that mutate code in place (`sed -i`, `> file.ts`, `cat > file.ts`, `cp/mv onto code`, inline `node -e writeFileSync`, …). Pure prose (`.md`/`.txt`) passes. **Fail-closed**: unparseable/empty stdin → deny. |
 | **bypass-observer** (measure) | `scripts/mcp/atomic-edit/bypass-observer-hook.mjs` | Read-only ledger of every tool call to `.atomic/bypass-ledger.jsonl`, classified by `bypass-classify.mjs`. Powers `node bypass-report.mjs` → the bypass-rate metric. **Fail-open** (never blocks). |
+| **codex-atomic-only** (strict Codex) | `scripts/mcp/atomic-edit/codex-atomic-only-hook.mjs` | Denies every non-atomic Codex tool call fail-closed. Legal paths are only: execute through an atomic-edit MCP tool, or use atomic-edit to implement the missing computation inside atomic-edit first. This is stricter than the Claude TUI hook: no prose/read/search/native-shell exception. |
+
+## Codex closed-loop protocol
+
+For Codex, the target posture is not merely "prefer atomic". It is a closed loop:
+
+1. If an existing `mcp__atomic_edit.*` tool can execute the computation, use it.
+2. If no atomic tool can execute the computation, first use atomic-edit edit tools to add that capability to atomic-edit.
+3. Native/TUI computation (`exec_command`, `apply_patch`, native read/search/edit wrappers, or generic tool wrappers) is denied before execution.
+
+Proof:
+
+```sh
+node scripts/mcp/atomic-edit/codex-atomic-only-hook.proof.mjs
+```
+
+Host wiring still has to happen at the Codex boundary. Until that hook is wired into Codex PreToolUse or an equivalent host policy, `atomic_y_certificate` must keep `codexHostWiring` as `UNJUDGED` instead of pretending whole-host Y is green.
 
 ## Convergence is built in — no wiring, no flag, no toggle
 

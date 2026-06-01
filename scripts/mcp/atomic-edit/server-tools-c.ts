@@ -8,6 +8,7 @@ import { buildTrace, levelFor, shapePayload } from './trace.js';
 import { outline } from './nav.js';
 import { editSymbol, previewDiff, characterDiff, type SymbolOp } from './advanced.js';
 import { guardSha, log, atomicWrite, readUtf8, normalizeRepoRelPath, targetDetails } from './server-helpers-io.js';
+import { requireNegativeActionProof, removedByteCountBetween } from './server-helpers-negative-proof.js';
 import { runPostEditVerify } from './server-helpers-verify.js';
 import { ok, fail } from './server-helpers-result.js';
 import { globFindFiles } from './server-helpers-glob.js';
@@ -188,6 +189,10 @@ server.registerTool(
       selector: z.string(),
       op: z.enum(['replace', 'insert_after', 'remove']),
       code: z.string().optional().describe('required for replace / insert_after; omit for remove'),
+      proofOfIncorrectness: z
+        .string()
+        .optional()
+        .describe('required for non-preview remove: proof that the removed symbol bytes are non-correct/negative'),
       expectedSha256: z
         .string()
         .optional()
@@ -210,6 +215,15 @@ server.registerTool(
       }
       if (r.newText === before)
         return ok({ ok: true, changed: false, note: 'no change', file: relPath });
+      const negativeActionProof = a.op === 'remove' && !(a.preview ?? false)
+        ? requireNegativeActionProof({
+            action: 'atomic_edit_symbol:remove',
+            target: `${relPath}:${r.selector}`,
+            targetUnit: 'symbol',
+            removedByteCount: removedByteCountBetween(before, r.newText),
+            proofOfIncorrectness: a.proofOfIncorrectness,
+          })
+        : undefined;
       const symLevel = levelFor(a.preview ?? false);
       const symInline = characterDiff(before, r.newText, relPath);
       const symZones = computeZones(before, r.newText);
@@ -230,6 +244,7 @@ server.registerTool(
         movementZones: symZones.movementZones,
         preview: a.preview ?? false,
         changed: !(a.preview ?? false),
+        negativeActionProof,
       });
       if (a.preview ?? false) {
         return ok(
@@ -262,7 +277,15 @@ server.registerTool(
         return ok(
           shapePayload(
             symLevel,
-            { ok: true, changed: true, file: relPath, selector: r.selector, op: r.op, ...(verifyResult ? { verify: verifyResult } : {}) },
+            {
+              ok: true,
+              changed: true,
+              file: relPath,
+              selector: r.selector,
+              op: r.op,
+              ...(verifyResult ? { verify: verifyResult } : {}),
+              ...(negativeActionProof ? { negativeActionProof } : {}),
+            },
             {
               inlinePreview: symInline,
               legacyDiff: previewDiff(before, r.newText, relPath),

@@ -142,6 +142,17 @@ export function computeZones(
     }
   }
 
+  if (preservedZones.length === 0) {
+    preservedZones.push({
+      kind: 'whole_target_scope_boundary',
+      description:
+        'No in-file bytes were preserved because the operation changed the whole target; this zero-length zone makes the preservation boundary explicit.',
+      byteStart: 0,
+      byteEnd: 0,
+      byteLength: 0,
+    });
+  }
+
   return { preservedZones, modifiedZones, movementZones: [] };
 }
 }

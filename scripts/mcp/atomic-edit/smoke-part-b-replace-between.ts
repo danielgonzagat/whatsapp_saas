@@ -22,6 +22,7 @@ export async function partBReplaceBetween(ctx: PartBCtx): Promise<void> {
           startAnchorText: 'alpha ',
           endAnchorText: ' omega',
           replacementText: 'REPLACED',
+          proofOfIncorrectness: 'smoke anchor fixture middle text is stale negative data and may be replaced',
         },
       })) as { content: { text: string }[]; isError?: boolean };
       const replaceBody = JSON.parse(replaceRes.content.at(-1)?.text ?? '{}');
@@ -158,6 +159,7 @@ export async function partBReplaceBetween(ctx: PartBCtx): Promise<void> {
             endAnchorText: ' omega',
             replacementText: 'SECOND',
             occurrence: 2,
+            proofOfIncorrectness: 'smoke anchor occurrence text is stale negative data and may be replaced',
           },
         })) as { content: { text: string }[]; isError?: boolean };
         const replaceOccurrenceBody = JSON.parse(replaceOccurrence.content.at(-1)?.text ?? '{}');

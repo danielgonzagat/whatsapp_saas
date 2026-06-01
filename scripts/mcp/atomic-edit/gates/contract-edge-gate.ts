@@ -52,7 +52,7 @@
  *    reddened. The gate states ONE fact it can prove; everything else it declines.
  *  - If a changed file's language has no grammar (perception returns null) its
  *    consumer edges are undecidable → skipped, never red-by-guess.
- *  - If nothing decidable was judged this run → unjudged:true (never green-by-default).
+ *  - If no contract-edge fact exists in this run → notApplicable:true (explicit non-applicability).
  *
  * Ceiling (NOT provable from bytes — deferred to the dynamic/effect gate):
  *  - HTTP verb correctness (path exists but method differs), request/response
@@ -398,7 +398,7 @@ async function run(ctx: GateContext): Promise<GateResult> {
   const note =
     'every HTTP call path resolves to a controller route, and every @OnEvent listener has an emitter';
   if (!judgedAny) {
-    return { gate: 'contract-edge', green: true, reds: [], note, unjudged: true };
+    return { gate: 'contract-edge', green: true, reds: [], note, notApplicable: true };
   }
   return { gate: 'contract-edge', green: reds.length === 0, reds, note };
 }

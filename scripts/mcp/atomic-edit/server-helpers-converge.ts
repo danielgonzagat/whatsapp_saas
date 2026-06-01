@@ -97,9 +97,9 @@ export async function convergeStatic(repoRoot: string, mutations: Mutation[]): P
   const gates: GateResult[] = [await gateSyntax(overlay), gateConnection(repoRoot, overlay)];
   // The dissolved-protocol gates (registry) run in the WRITE direction: each refuses a
   // mutation that INTRODUCES a dangling wire — a dependency, contract call/event, name
-  // binding, UI handler/route, telemetry handle, IaC reference, or lint finding. A gate
-  // that throws or cannot decide is recorded unjudged (non-blocking), never a false red.
-  const registry = await runGates(WRITE_GATES, repoRoot, overlay, [...overlay.keys()]);
+  // binding, UI handler/route, telemetry handle, IaC reference, or lint finding. Under
+  // Y admission, an applicable gate must prove GREEN; unjudged is honest but not approval.
+  const registry = await runGates(WRITE_GATES, repoRoot, overlay, [...overlay.keys()], false, 'strict');
   for (const name of [...new Set(registry.reds.map((r) => r.gate))]) {
     gates.push({
       gate: name,
@@ -107,6 +107,14 @@ export async function convergeStatic(repoRoot: string, mutations: Mutation[]): P
       reds: registry.reds
         .filter((r) => r.gate === name)
         .map((r) => `${r.file}${r.locus ? `:${r.locus}` : ''} — ${r.fact}`),
+    });
+  }
+  for (const name of registry.unjudged) {
+    gates.push({
+      gate: name,
+      green: false,
+      reds: [`UNJUDGED: ${name} could not prove GREEN; strict admission blocks this mutation.`],
+      note: 'unjudged is not approval under Y admission',
     });
   }
   const firstRed = gates.find((g) => !g.green) ?? null;
