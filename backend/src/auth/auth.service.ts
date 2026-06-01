@@ -14,10 +14,12 @@ import { FacebookAuthService } from './facebook-auth.service';
 import { GoogleAuthService } from './google-auth.service';
 import { TikTokAuthService } from './tiktok-auth.service';
 import { RateLimitService } from './rate-limit.service';
+import { AccountMfaService } from './account-mfa.service';
 
 import type { AuthPartsDeps } from './auth-service.register-login';
 import { checkEmail, createAnonymous, register, login } from './auth-service.register-login';
 import { issueTokensForAgentId } from './auth-service.tokens';
+import { verifyAccountMfaLogin } from './auth-service.mfa-login';
 import { AuthTokenService } from './auth.token.service';
 import {
   oauthLogin,
@@ -58,6 +60,7 @@ export class AuthService {
     private readonly connectService: ConnectService,
     private readonly rateLimitService: RateLimitService,
     private readonly tokenService: AuthTokenService,
+    private readonly accountMfaService: AccountMfaService,
     @Optional() @InjectRedis() private readonly redis?: Redis,
     @Optional() private readonly auditService?: AuditService,
     @Optional()
@@ -77,6 +80,7 @@ export class AuthService {
       tikTokAuthService: this.tikTokAuthService,
       connectService: this.connectService,
       rateLimitService: this.rateLimitService,
+      accountMfaService: this.accountMfaService,
       redis: this.redis,
       auditService: this.auditService,
       logger: this.logger,
@@ -111,6 +115,10 @@ export class AuthService {
 
   async login(data: { email: string; password: string; ip?: string }) {
     return login(this.buildDeps(), data);
+  }
+
+  async verifyMfaLogin(data: { mfaToken: string; code: string; ip?: string }) {
+    return verifyAccountMfaLogin(this.buildDeps(), data);
   }
 
   async issueTokensForAgentId(agentId: string) {

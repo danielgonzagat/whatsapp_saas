@@ -89,6 +89,8 @@ interface KloelDoneEvent {
   type: 'done';
   /** Done property. */
   done: true;
+  /** Metadata property. */
+  metadata?: Record<string, unknown>;
 }
 
 /** Kloel stream event type. */
@@ -189,9 +191,10 @@ export function createKloelErrorEvent(input: {
 }
 
 /** Create kloel done event. */
-export function createKloelDoneEvent(): KloelDoneEvent {
+export function createKloelDoneEvent(metadata?: Record<string, unknown>): KloelDoneEvent {
   return {
     type: 'done',
     done: true,
+    ...(metadata && Object.keys(metadata).length > 0 ? { metadata } : {}),
   };
 }

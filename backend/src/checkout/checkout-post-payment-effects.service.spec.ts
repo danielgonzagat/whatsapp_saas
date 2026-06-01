@@ -68,10 +68,7 @@ describe('CheckoutPostPaymentEffectsService', () => {
     checkoutEventEmitter = { leadConverted: jest.fn().mockResolvedValue(undefined) };
     spineEmitter = { emit: jest.fn().mockResolvedValue(undefined) };
 
-    const prismaAny = prisma as unknown as PrismaService & {
-      memberAreaUpdate: { updateMany: jest.Mock };
-    };
-    prismaAny.memberAreaUpdate = { updateMany: memberAreaUpdateMock };
+    const prismaAny = prisma as unknown as PrismaService;
 
     service = new CheckoutPostPaymentEffectsService(
       prismaAny,

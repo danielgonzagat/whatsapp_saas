@@ -1,3 +1,4 @@
+import { AccountMfaService } from './account-mfa.service';
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -170,6 +171,7 @@ describe('AuthService OAuth login', () => {
             isAccessTokenRevoked: jest.fn(),
           },
         },
+        { provide: AccountMfaService, useValue: { verifyCode: () => undefined } },
       ],
     }).compile();
 

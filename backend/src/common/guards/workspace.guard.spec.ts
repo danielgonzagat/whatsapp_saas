@@ -1,4 +1,4 @@
-import { ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { ExecutionContext, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { beforeEach, describe, expect, it } from '@jest/globals';
 import { WorkspaceGuard } from './workspace.guard';
 
@@ -28,7 +28,7 @@ describe('WorkspaceGuard', () => {
     return partial as never as ExecutionContext;
   }
 
-  it('permite quando não há workspaceId no token', () => {
+  it('bloqueia request autenticado quando o token não traz workspaceId', () => {
     const req: WorkspaceRequest = {
       user: { id: 'u1' },
       headers: {},
@@ -36,8 +36,9 @@ describe('WorkspaceGuard', () => {
       query: {},
       body: {},
     };
-    const result = guard.canActivate(createContext(req));
-    expect(result).toBe(true);
+
+    expect(() => guard.canActivate(createContext(req))).toThrow(UnauthorizedException);
+    expect(() => guard.canActivate(createContext(req))).toThrow('workspace_required');
     expect(req.workspaceId).toBeUndefined();
   });
 

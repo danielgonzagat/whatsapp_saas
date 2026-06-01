@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { jest } from '@jest/globals';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
@@ -11,6 +12,7 @@ import { ConnectService } from '../payments/connect/connect.service';
 import { TikTokAuthService } from './tiktok-auth.service';
 import { RateLimitService } from './rate-limit.service';
 import { AuthTokenService } from './auth.token.service';
+import { AccountMfaService } from './account-mfa.service';
 import { ConflictException } from '@nestjs/common';
 
 const mockAgentModel = {
@@ -132,6 +134,14 @@ describe('AuthFlows', () => {
             refresh: jest.fn(),
             revokeAccessToken: jest.fn(),
             isAccessTokenRevoked: jest.fn(),
+          },
+        },
+        {
+          provide: AccountMfaService,
+          useValue: {
+            verifyCode: jest.fn(),
+            createSetup: jest.fn(),
+            resumeSetup: jest.fn(),
           },
         },
       ],

@@ -140,7 +140,7 @@ export class ChannelSetupService {
           data: { workspaceId, channel: normalizedChannel, productId },
         }),
       ),
-      this.upsertSetupQuery(workspaceId, normalizedChannel, 1),
+      this.upsertSetupQuery(workspaceId, normalizedChannel, 2),
     ]);
     return this.getState(workspaceId, normalizedChannel);
   }

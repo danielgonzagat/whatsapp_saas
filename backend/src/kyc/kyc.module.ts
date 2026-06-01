@@ -1,4 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { AccountMfaService } from '../auth/account-mfa.service';
 import { PaymentsModule } from '../payments/payments.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { SpineModule } from '../kloel/spine/spine.module';
@@ -9,9 +11,9 @@ import { KycService } from './kyc.service';
 
 /** Kyc module. */
 @Module({
-  imports: [PrismaModule, SpineModule, forwardRef(() => PaymentsModule)],
+  imports: [PrismaModule, ConfigModule, SpineModule, forwardRef(() => PaymentsModule)],
   controllers: [KycController],
-  providers: [KycService, KycApprovedGuard, KycEventEmitterService],
+  providers: [KycService, KycApprovedGuard, KycEventEmitterService, AccountMfaService],
   exports: [KycService, KycApprovedGuard, KycEventEmitterService],
 })
 export class KycModule {}

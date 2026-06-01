@@ -24,6 +24,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { KycChangePasswordDto } from './dto/change-password.dto';
 import { KycDocumentTypeDto } from './dto/kyc-document-type.dto';
+import { KycMfaCodeDto } from './dto/mfa.dto';
 import { UpdateBankDto } from './dto/update-bank.dto';
 import { UpdateFiscalDto } from './dto/update-fiscal.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -118,6 +119,22 @@ export class KycController {
     return this.kycService.updateFiscal(req.user.workspaceId, dto);
   }
 
+  @ApiOperation({ summary: 'Lookup public CNPJ data for fiscal auto-fill' })
+  @ApiResponse({ status: 200, description: 'CNPJ public data' })
+  @ApiResponse({ status: 400, description: 'Invalid CNPJ' })
+  @Get('lookup/cnpj/:cnpj')
+  async lookupCnpj(@Param('cnpj') cnpj: string) {
+    return this.kycService.lookupCnpj(cnpj);
+  }
+
+  @ApiOperation({ summary: 'Lookup public CEP address data for fiscal auto-fill' })
+  @ApiResponse({ status: 200, description: 'CEP public data' })
+  @ApiResponse({ status: 400, description: 'Invalid CEP' })
+  @Get('lookup/cep/:cep')
+  async lookupCep(@Param('cep') cep: string) {
+    return this.kycService.lookupCep(cep);
+  }
+
   // ═══ DOCUMENTS ═══
 
   @ApiOperation({ summary: 'List KYC documents for the user and workspace' })
@@ -172,6 +189,13 @@ export class KycController {
 
   // ═══ BANK ═══
 
+  @ApiOperation({ summary: 'List Brazilian banks for bank-account selection' })
+  @ApiResponse({ status: 200, description: 'Brazilian bank list' })
+  @Get('banks')
+  async listBrazilianBanks() {
+    return this.kycService.listBrazilianBanks();
+  }
+
   @ApiOperation({ summary: 'Get bank account information for the workspace' })
   @ApiResponse({ status: 200, description: 'Bank account data' })
   @Get('bank')
@@ -200,6 +224,35 @@ export class KycController {
     return this.kycService.changePassword(req.user.sub, dto);
   }
 
+  @ApiOperation({ summary: 'Get account security settings' })
+  @ApiResponse({ status: 200, description: 'Security settings' })
+  @Get('security')
+  async getSecurity(@Req() req: AuthenticatedRequest) {
+    return this.kycService.getSecurity(req.user.sub);
+  }
+
+  @ApiOperation({ summary: 'Start MFA setup for the authenticated user' })
+  @ApiResponse({ status: 201, description: 'MFA setup QR generated' })
+  @Post('security/mfa/setup')
+  async startMfaSetup(@Req() req: AuthenticatedRequest) {
+    return this.kycService.startMfaSetup(req.user.sub);
+  }
+
+  @ApiOperation({ summary: 'Verify and enable MFA for the authenticated user' })
+  @ApiResponse({ status: 200, description: 'MFA enabled' })
+  @ApiBody({ type: KycMfaCodeDto })
+  @Post('security/mfa/verify')
+  async verifyMfaSetup(@Req() req: AuthenticatedRequest, @Body() dto: KycMfaCodeDto) {
+    return this.kycService.verifyMfaSetup(req.user.sub, dto);
+  }
+
+  @ApiOperation({ summary: 'Disable MFA for the authenticated user' })
+  @ApiResponse({ status: 200, description: 'MFA disabled' })
+  @ApiBody({ type: KycMfaCodeDto })
+  @Post('security/mfa/disable')
+  async disableMfa(@Req() req: AuthenticatedRequest, @Body() dto: KycMfaCodeDto) {
+    return this.kycService.disableMfa(req.user.sub, dto);
+  }
   // ═══ KYC STATUS ═══
 
   @ApiOperation({ summary: 'Get KYC verification status' })

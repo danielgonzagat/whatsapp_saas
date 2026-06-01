@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import { KycService } from './kyc.service';
 
 type Scenario = 'PF' | 'PJ';
@@ -29,6 +30,9 @@ export function buildService(options?: {
     kycStatus: string;
     password: string | null;
     provider: string | null;
+    mfaSecret: string | null;
+    mfaEnabled: boolean;
+    mfaPendingSetup: boolean;
   } = {
     id: 'agent_1',
     email: 'seller@example.com',
@@ -41,6 +45,9 @@ export function buildService(options?: {
     kycStatus: 'pending',
     password: null,
     provider: null,
+    mfaSecret: null,
+    mfaEnabled: false,
+    mfaPendingSetup: false,
   };
   const workspaceRecord = {
     id: 'ws_1',
@@ -103,10 +110,7 @@ export function buildService(options?: {
       ? [{ type: 'DOCUMENT_FRONT' }, { type: 'COMPANY_DOCUMENT' }]
       : [{ type: 'DOCUMENT_FRONT' }, { type: 'PROOF_OF_ADDRESS' }];
 
-  const agentFindUnique: jest.Mock<
-    Promise<unknown>,
-    [({ select?: Record<string, boolean> } | undefined)?]
-  > = jest.fn(({ select }: { select?: Record<string, boolean> } = {}) => {
+  const agentFindUnique = jest.fn(({ select }: { select?: Record<string, boolean> } = {}) => {
     if (select && 'kycStatus' in select && Object.keys(select).length === 1) {
       return Promise.resolve({ kycStatus: agentRecord.kycStatus });
     }
@@ -125,28 +129,29 @@ export function buildService(options?: {
 
     return Promise.resolve(agentRecord);
   });
+  const resolved = <T>(value: T) => jest.fn<() => Promise<T>>().mockResolvedValue(value);
   const prisma = {
     agent: {
       findUnique: agentFindUnique,
       findFirst: agentFindUnique,
-      update: jest.fn().mockResolvedValue(undefined),
+      update: resolved(undefined),
     },
     workspace: {
-      findUnique: jest.fn().mockResolvedValue(workspaceRecord),
+      findUnique: resolved(workspaceRecord),
     },
     fiscalData: {
-      findUnique: jest.fn().mockResolvedValue(fiscalRecord),
+      findUnique: resolved(fiscalRecord),
     },
     kycDocument: {
-      findMany: jest.fn().mockResolvedValue(kycDocuments),
-      findUnique: jest.fn().mockResolvedValue(null),
-      delete: jest.fn().mockResolvedValue(undefined),
+      findMany: resolved(kycDocuments),
+      findUnique: resolved(null),
+      delete: resolved(undefined),
     },
     bankAccount: {
-      findFirst: jest.fn().mockResolvedValue(bankAccountRecord),
+      findFirst: resolved(bankAccountRecord),
     },
     connectAccountBalance: {
-      findFirst: jest.fn().mockResolvedValue(
+      findFirst: resolved(
         existingStripeAccountId
           ? {
               id: 'cab_existing',
@@ -180,19 +185,32 @@ export function buildService(options?: {
     },
   };
   const connectService = {
-    createCustomAccount: jest.fn().mockResolvedValue({
+    createCustomAccount: resolved({
       accountBalanceId: 'cab_new',
       stripeAccountId: 'acct_seller_1',
       requestedCapabilities: ['card_payments', 'transfers'],
     }),
-    submitOnboardingProfile: jest.fn().mockResolvedValue(onboardingStatus),
-    getOnboardingStatus: jest.fn().mockResolvedValue(onboardingStatus),
+    submitOnboardingProfile: resolved(onboardingStatus),
+    getOnboardingStatus: resolved(onboardingStatus),
   };
 
   const kycEventEmitter = {
     emitDocumentSubmitted: jest.fn(),
     emitApproved: jest.fn(),
     emitRejected: jest.fn(),
+  };
+  const accountMfaService = {
+    createSetup: resolved({
+      encryptedSecret: 'encrypted-secret',
+      qrDataUrl: 'data:image/png;base64,qr',
+      otpauthUrl: 'otpauth://totp/Kloel:seller@example.com?secret=ABC',
+    }),
+    resumeSetup: resolved({
+      encryptedSecret: 'encrypted-secret',
+      qrDataUrl: 'data:image/png;base64,qr',
+      otpauthUrl: 'otpauth://totp/Kloel:seller@example.com?secret=ABC',
+    }),
+    verifyCode: jest.fn(),
   };
 
   return {
@@ -201,12 +219,14 @@ export function buildService(options?: {
     auditService,
     connectService,
     kycEventEmitter,
+    accountMfaService,
     service: new KycService(
       prisma as never,
       storage as never,
       auditService as never,
       connectService as never,
       kycEventEmitter as never,
+      accountMfaService as never,
     ),
   };
 }

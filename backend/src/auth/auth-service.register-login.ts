@@ -18,6 +18,7 @@ import type { FacebookAuthService } from './facebook-auth.service';
 import type { GoogleAuthService } from './google-auth.service';
 import type { TikTokAuthService } from './tiktok-auth.service';
 import type { RateLimitService } from './rate-limit.service';
+import type { AccountMfaService } from './account-mfa.service';
 import { DbInitErrorService } from './db-init-error.service';
 import { UserNameDerivationService } from './user-name-derivation.service';
 import { normalizeEmail, assertAgentCanAuthenticate } from './auth-service.helpers';
@@ -26,6 +27,7 @@ import {
   finalizePartnerInviteRegistration,
 } from './auth-service.partner-invite';
 import { issueTokens, type TokenIssuanceResult } from './auth-service.tokens';
+import { maybeRequireAccountMfa, type AccountMfaRequiredResult } from './auth-service.mfa-login';
 import { UUID_DASH_RE } from '../common/regex';
 
 export interface AuthPartsDeps {
@@ -39,6 +41,7 @@ export interface AuthPartsDeps {
   tikTokAuthService: TikTokAuthService;
   connectService: ConnectService;
   rateLimitService: RateLimitService;
+  accountMfaService: AccountMfaService;
   redis?: Redis | undefined;
   auditService?: AuditService | undefined;
   logger: Logger;
@@ -189,7 +192,7 @@ export async function register(
 export async function login(
   deps: AuthPartsDeps,
   data: { email: string; password: string; ip?: string },
-): Promise<TokenIssuanceResult> {
+): Promise<TokenIssuanceResult | AccountMfaRequiredResult> {
   const { email, password, ip } = data;
   await deps.rateLimitService.checkRateLimit(`login:${ip || 'ip-unknown'}`);
   await deps.rateLimitService.checkRateLimit(`login:${ip || 'ip-unknown'}:${email}`);
@@ -222,6 +225,11 @@ export async function login(
   const valid = await bcryptCompare(password, agent.password);
   if (!valid) {
     throw new UnauthorizedException('Credenciais inválidas');
+  }
+
+  const mfaRequired = await maybeRequireAccountMfa(deps, agent);
+  if (mfaRequired) {
+    return mfaRequired;
   }
 
   return issueTokens(deps.prisma, deps.jwt, deps.logger, agent);

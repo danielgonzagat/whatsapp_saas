@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import { Logger, ConflictException, UnauthorizedException } from '@nestjs/common';
 import type { JwtService } from '@nestjs/jwt';
 import { Prisma } from '@prisma/client';
@@ -26,10 +27,13 @@ jest.mock('./auth-service.partner-invite', () => ({
   finalizePartnerInviteRegistration: jest.fn().mockResolvedValue(undefined),
 }));
 
+type AsyncMock = ReturnType<typeof jest.fn<() => Promise<unknown>>>;
+type SignAsyncMock = ReturnType<typeof jest.fn<() => Promise<string>>>;
+
 interface PrismaShape {
-  agent: { findFirst: jest.Mock; findUnique: jest.Mock; create: jest.Mock };
-  workspace: { create: jest.Mock; findUnique: jest.Mock };
-  refreshToken: { create: jest.Mock; updateMany: jest.Mock };
+  agent: { findFirst: AsyncMock; findUnique: AsyncMock; create: AsyncMock };
+  workspace: { create: AsyncMock; findUnique: AsyncMock };
+  refreshToken: { create: AsyncMock; updateMany: AsyncMock };
 }
 
 function buildPrisma(): PrismaShape {
@@ -40,19 +44,24 @@ function buildPrisma(): PrismaShape {
   };
 }
 
-function buildDeps(prisma: PrismaShape): { deps: AuthPartsDeps; jwt: { signAsync: jest.Mock } } {
-  const jwt = { signAsync: jest.fn().mockResolvedValue('signed-access-jwt') };
+function buildDeps(prisma: PrismaShape): {
+  deps: AuthPartsDeps;
+  jwt: { signAsync: SignAsyncMock };
+} {
+  const resolved = <T>(value: T) => jest.fn<() => Promise<T>>().mockResolvedValue(value);
+  const jwt = { signAsync: resolved('signed-access-jwt') };
   const deps = castMock<AuthPartsDeps>({
     prisma: castMock<PrismaService>(prisma),
     jwt: castMock<JwtService>(jwt),
-    rateLimitService: { checkRateLimit: jest.fn().mockResolvedValue(undefined) },
+    rateLimitService: { checkRateLimit: resolved(undefined) },
+    accountMfaService: { verifyCode: jest.fn() },
     logger: new Logger('register-login-test'),
     connectService: { createCustomAccount: jest.fn() },
   });
   return { deps, jwt };
 }
 
-function firstArg<T>(mock: jest.Mock): T {
+function firstArg<T>(mock: { mock: { calls: Array<[T]> } }): T {
   const calls = castMock<Array<[T]>>(mock.mock.calls);
   return calls[0][0];
 }
@@ -62,7 +71,7 @@ const WORKSPACE = { id: 'ws-1', name: 'Test Workspace' };
 describe('auth-service.register-login', () => {
   let prisma: PrismaShape;
   let deps: AuthPartsDeps;
-  let jwt: { signAsync: jest.Mock };
+  let jwt: { signAsync: SignAsyncMock };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -219,6 +228,40 @@ describe('auth-service.register-login', () => {
 
       await expect(login(deps, creds)).rejects.toThrow(/excluída/);
       expect(jwt.signAsync).not.toHaveBeenCalled();
+    });
+
+    it('returns an MFA challenge without issuing session tokens when account MFA is enabled', async () => {
+      const hash = (await import('bcrypt')).hashSync('Correct#Pass1', 12);
+      prisma.agent.findFirst.mockResolvedValue({
+        id: 'a-1',
+        email: 'user@test.com',
+        name: 'User',
+        password: hash,
+        workspaceId: 'ws-1',
+        role: 'ADMIN',
+        disabledAt: null,
+        deletedAt: null,
+        mfaSecret: 'encrypted-secret',
+        mfaEnabled: true,
+      });
+
+      const result = await login(deps, creds);
+
+      expect(result).toEqual({
+        state: 'mfa_required',
+        mfaToken: 'signed-access-jwt',
+        user: { email: 'user@test.com', name: 'User' },
+      });
+      expect(jwt.signAsync).toHaveBeenCalledWith(
+        partialMatch({
+          sub: 'a-1',
+          email: 'user@test.com',
+          scope: 'account_mfa_verify',
+        }),
+        partialMatch({ expiresIn: '5m' }),
+      );
+      expect(prisma.refreshToken.updateMany).not.toHaveBeenCalled();
+      expect(prisma.refreshToken.create).not.toHaveBeenCalled();
     });
 
     it('issues tokens with the correct identity when the password matches', async () => {

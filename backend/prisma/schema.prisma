@@ -327,6 +327,11 @@ model Agent {
   // Onboarding
   onboardingCompletedAt DateTime?
 
+  // Security
+  mfaSecret       String? @map("mfa_secret")
+  mfaEnabled      Boolean @default(false) @map("mfa_enabled")
+  mfaPendingSetup Boolean @default(false) @map("mfa_pending_setup")
+
   // KYC Profile
   birthDate         DateTime?
   documentType      String? // CPF, CNPJ

@@ -38,6 +38,7 @@ import { KloelLeadProcessorService } from './kloel-lead-processor.service';
 import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import { KloelService } from './kloel.service';
 import { KloelThreadSearchService } from './kloel-thread-search.service';
+import { KloelGlobalSearchService } from './kloel-global-search.service';
 import { KloelThreadService } from './kloel-thread.service';
 import { KloelThreadSummaryService } from './kloel-thread-summary.service';
 import { KloelThinkerService } from './kloel-thinker.service';
@@ -330,6 +331,7 @@ import { CrmModule } from '../crm/crm.module';
     StateBuilderService,
     KloelReplyEngineService,
     KloelThreadSearchService,
+    KloelGlobalSearchService,
     KloelThreadService,
     KloelThreadSummaryService,
     KloelChatToolsService,
