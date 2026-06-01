@@ -145,10 +145,51 @@ function bashEditsCode(cmd) {
   return runtimeWritePatterns.some((re) => re.test(source));
 }
 
+// Camada 4 (Bash exec leg): the strict directive routes ALL execution through
+// atomic_exec. So general shell that atomic_exec handles (npm test / node / ls /
+// cat / jq / tsc / build / read-only git …) is DENIED here and steered to
+// atomic_exec. ESCAPE — atomic_exec genuinely cannot/should-not run these, so
+// they pass natively:
+//   (a) network/remote (git push|pull|fetch|clone, curl, wget, ssh, scp, rsync)
+//   (b) local git that mutates the index/worktree (commit|add|stash|checkout|
+//       reset|merge|rebase|tag|cherry-pick) — atomic_exec's effect-proof cannot
+//       snapshot the whole repo (cap), so these stay native to keep git usable
+//   (c) interactive/login/privileged/provider (claude, ssh, sudo, gcloud, op, gh…)
+//   (d) package install/publish (npm/pip/cargo install|publish — external registry)
+//   (e) shell control-flow / cd / source / subshell openers
+// Gated by ATOMIC_EXEC_MANDATORY (default on); set ATOMIC_EXEC_MANDATORY=0 to disable.
+function shouldRouteThroughAtomicExec(cmd) {
+  if (process.env.ATOMIC_EXEC_MANDATORY === '0') return false;
+  const c = String(cmd || '').trim();
+  if (!c) return false;
+  const verb = (c.split(/\s+/)[0] || '').split('/').pop();
+  // (a) network/remote
+  if (/\b(?:git\s+(?:push|pull|fetch|clone|remote|submodule|lfs)|curl|wget|ssh|scp|sftp|rsync)\b/.test(c)) return false;
+  // (b) local git that mutates index/worktree (effect-proof cannot snapshot whole repo)
+  if (/^git\s+(?:commit|add|stash|checkout|switch|reset|restore|merge|rebase|tag|cherry-pick|revert|rm|mv|clean|apply|am)\b/.test(c)) return false;
+  // (c) interactive/login/privileged/provider/external-runtime verbs
+  if (/^(claude|codex|opencode|hermes|vim|vi|nano|emacs|less|more|top|htop|ssh|scp|sudo|su|doas|gcloud|aws|az|kubectl|helm|docker|podman|op|kaisser|railway|vercel|stripe|gh|psql|mysql|mongosh|redis-cli|open|code|subl)$/.test(verb)) return false;
+  // (d) package install/publish
+  if (/^(?:npm|pnpm|yarn|bun|pip|pipx|poetry|cargo|go|gem|bundle|composer)\s+(?:install|add|update|publish|deploy|i|ci)\b/.test(c)) return false;
+  // (e) shell control-flow / cd / source / subshell
+  if (/^(for|if|while|case|function|export|cd|source|\.|\{|\()/.test(verb)) return false;
+  const handled = /^(git|npm|npx|pnpm|yarn|bun|node|deno|ts-node|tsx|ls|cat|echo|printf|mkdir|rmdir|rm|cp|mv|ln|test|grep|rg|ag|ack|find|fd|wc|head|tail|sed|awk|cut|sort|uniq|tr|jq|yq|diff|patch|tar|chmod|touch|stat|date|pwd|basename|dirname|realpath|make|tsc|jest|vitest|eslint|prettier|biome|ruff|pytest|rustc|javac|xargs|tee|env|which|kill|pkill)$/;
+  return handled.test(verb);
+}
+
 if (tool === 'Bash') {
   const cmd = ti.command ?? ti.cmd ?? '';
   if (bashEditsCode(String(cmd)))
     deny(`TUI-abolished rule: shell in-place edit of a code file is banned. ${STEER}`);
+  if (shouldRouteThroughAtomicExec(String(cmd)))
+    deny(
+      `atomic_exec-mandatory rule: route this shell command through the atomic envelope. ` +
+        `Call mcp__atomic-edit__atomic_exec { command, cwd, intent, proveEffect } instead of ` +
+        `native Bash — it wraps the command in sandbox + trace + rollback. Network/remote, ` +
+        `local git mutations (commit/add/stash/checkout/…), interactive/login, package-install, ` +
+        `and shell control-flow still pass natively because atomic_exec cannot run them. ` +
+        `Set ATOMIC_EXEC_MANDATORY=0 to disable.`,
+    );
   allow();
 }
 

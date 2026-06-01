@@ -29,9 +29,9 @@ const strict = args.includes('--strict');
 const sinceArg = args.find((a) => a.startsWith('--since='));
 const since = sinceArg ? Number(sinceArg.split('=')[1]) : 0;
 
-const repoRoot = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+const repoRoot = process.env.CODEX_PROJECT_DIR || process.env.CLAUDE_PROJECT_DIR || process.cwd();
 const ledger = path.join(repoRoot, '.atomic', 'bypass-ledger.jsonl');
-const heartbeatLedger = path.join(repoRoot, '.atomic', 'bypass-heartbeat.jsonl');
+const heartbeatLedger = path.join(repoRoot, '.atomic', 'bypass-observer-heartbeat.jsonl');
 
 function readJsonl(file) {
   const out = [];

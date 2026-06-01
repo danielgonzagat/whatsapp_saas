@@ -73,12 +73,14 @@ function main() {
     const after = runReport();
     record(
       results,
-      'heartbeat makes zero-opportunity traffic observed-clean',
+      'heartbeat-only zero-opportunity traffic is watching, not observed-clean',
       after.ok === true &&
+        after.value?.observerInstalled === true &&
         after.value?.observedHookEvents === 1 &&
         after.value?.detectableOpportunities === 0 &&
         after.value?.silentlyAllowedBypasses === 0 &&
-        after.value?.status === 'observed-clean',
+        after.value?.observed === false &&
+        after.value?.status === 'watching',
       after,
     );
   } finally {

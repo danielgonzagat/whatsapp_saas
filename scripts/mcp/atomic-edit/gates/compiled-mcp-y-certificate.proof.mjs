@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import * as path from 'node:path';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
@@ -10,9 +10,12 @@ const repoRoot = path.resolve(sourceDir, '..', '..', '..');
 const launcher = path.resolve(sourceDir, '..', 'atomic-edit-mcp-launcher.sh');
 
 function parseToolJson(result) {
-  const text = result?.content?.find?.((item) => item?.type === 'text')?.text;
-  if (typeof text !== 'string') throw new Error('tool result did not include JSON text content');
+  const text = result.content?.at(-1)?.text ?? '{}';
   return JSON.parse(text);
+}
+
+function domain(cert, name) {
+  return Array.isArray(cert?.domains) ? cert.domains.find((entry) => entry.domain === name) : undefined;
 }
 
 async function main() {
@@ -36,9 +39,21 @@ async function main() {
   try {
     await client.connect(transport);
     const cert = parseToolJson(await client.callTool({ name: 'atomic_y_certificate', arguments: { scope: 'mcp-controlled', includeAudits: true } }));
+    const bypass = domain(cert, 'bypassLedger');
+    const bypassReportStatus = String(bypass?.detail?.status ?? 'missing');
+    const bypassIsHonestBlock =
+      bypass?.status === 'UNJUDGED' &&
+      bypassReportStatus !== 'observed-clean' &&
+      Array.isArray(cert?.blockers) &&
+      cert.blockers.some((entry) => entry.domain === 'bypassLedger');
     return {
-      ok: cert?.yComplete === true && cert?.verdict === 'Y_COMPLETE' && Array.isArray(cert?.blockers) && cert.blockers.length === 0,
+      ok: cert?.ok === true && cert?.yComplete === false && cert?.verdict === 'Y_BLOCKED' && bypassIsHonestBlock,
       certificate: cert,
+      assertion: {
+        bypassStatus: bypass?.status,
+        bypassReportStatus,
+        bypassIsHonestBlock,
+      },
     };
   } finally {
     try {
@@ -49,11 +64,15 @@ async function main() {
   }
 }
 
-main().then((result) => {
-  if (jsonMode) process.stdout.write(JSON.stringify(result) + '\n');
-  else process.stdout.write(`${result.ok ? 'PASS' : 'FAIL'} compiled MCP mcp-controlled Y certificate\n`);
-  process.exit(result.ok ? 0 : 1);
-}).catch((error) => {
-  process.stderr.write((error instanceof Error ? error.stack ?? error.message : String(error)) + '\n');
-  process.exit(1);
-});
+main()
+  .then((payload) => {
+    if (jsonMode) console.log(JSON.stringify(payload, null, 2));
+    else if (!payload.ok) console.error(JSON.stringify(payload, null, 2));
+    process.exit(payload.ok ? 0 : 1);
+  })
+  .catch((error) => {
+    const payload = { ok: false, error: error instanceof Error ? error.message : String(error) };
+    if (jsonMode) console.log(JSON.stringify(payload, null, 2));
+    else console.error(payload.error);
+    process.exit(1);
+  });
