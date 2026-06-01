@@ -1,8 +1,8 @@
 'use client';
 import { useState, useId } from 'react';
-import { mutate } from 'swr';
 import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
+import { memberAreaApi, memberAreaStudentsApi } from '@/lib/api/member-area';
 import { useMemberAreaMutations } from '@/hooks/useMemberAreas';
 import { SORA, PURPLE, LiveFeed, timeAgo } from './ProdutosView.shared';
 import { SUBINTERFACE_PILL_ROW_STYLE, getSubinterfacePillStyle } from '@/components/kloel/ui/subinterface-pill';
@@ -66,15 +66,30 @@ export default function AreaMembros({
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
   const [editStudentData, setEditStudentData] = useState({ name: '', email: '', phone: '', status: 'active', progress: '0' });
   const [studentLoading, setStudentLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const setOperationError = (error: unknown, fallback: string) => {
+    setActionError(error instanceof Error ? error.message : fallback);
+    console.error(error);
+  };
+
   const fetchStudents = async (areaId: string, q?: string) => {
     setStudentLoading(true);
+    setActionError(null);
     try {
       const url = q ? `/member-areas/${areaId}/students?q=${encodeURIComponent(q)}` : `/member-areas/${areaId}/students`;
-      const res = await apiFetch(url);
-      const resData = res.data && typeof res.data === 'object' ? (res.data as Record<string, unknown>) : null;
-      setStudents(Array.isArray(resData) ? resData : Array.isArray(resData?.students) ? resData.students as MemberAreaStudent[] : []);
-    } catch { setStudents([]); }
-    setStudentLoading(false);
+      const res = await apiFetch<{ students?: MemberAreaStudent[] } | MemberAreaStudent[]>(url);
+      if (res.error) {
+        throw new Error(res.error);
+      }
+      const resData = res.data;
+      setStudents(Array.isArray(resData) ? resData : Array.isArray(resData?.students) ? resData.students : []);
+    } catch (error) {
+      setStudents([]);
+      setOperationError(error, 'Erro ao carregar alunos.');
+    } finally {
+      setStudentLoading(false);
+    }
   };
   const openStudentDrawer = (areaId: string, areaName: string) => {
     setStudentAreaId(areaId); setStudentAreaName(areaName);
@@ -85,17 +100,18 @@ export default function AreaMembros({
   const handleAddStudent = async () => {
     if (!newStudent.name || !newStudent.email || !studentAreaId) {return;}
     setSaving(true);
+    setActionError(null);
     try {
-      await apiFetch(`/member-areas/${studentAreaId}/students`, { method: 'POST', body: { studentName: newStudent.name, studentEmail: newStudent.email, studentPhone: newStudent.phone } });
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/member-areas'));
-      setNewStudent({ name: '', email: '', phone: '' }); setShowAddStudent(false); fetchStudents(studentAreaId); mutateAreas();
-    } catch { /* error */ }
+      await memberAreaStudentsApi.enroll(studentAreaId, { studentName: newStudent.name, studentEmail: newStudent.email, studentPhone: newStudent.phone });
+      setNewStudent({ name: '', email: '', phone: '' }); setShowAddStudent(false); await fetchStudents(studentAreaId); mutateAreas();
+    } catch (error) { setOperationError(error, 'Erro ao matricular aluno.'); }
     setSaving(false);
   };
   const handleRemoveStudent = async (studentId: string) => {
     if (!studentAreaId) {return;}
     setSaving(true);
-    try { await apiFetch(`/member-areas/${studentAreaId}/students/${studentId}`, { method: 'DELETE' }); fetchStudents(studentAreaId); mutateAreas(); } catch {}
+    setActionError(null);
+    try { await memberAreaStudentsApi.remove(studentAreaId, studentId); await fetchStudents(studentAreaId); mutateAreas(); } catch (error) { setOperationError(error, 'Erro ao remover aluno.'); }
     setSaving(false);
   };
   const handleStartEditStudent = (student: MemberAreaStudent) => {
@@ -105,22 +121,25 @@ export default function AreaMembros({
   const handleUpdateStudent = async () => {
     if (!studentAreaId || !editingStudentId || !editStudentData.name || !editStudentData.email) {return;}
     setSaving(true);
+    setActionError(null);
     try {
-      await apiFetch(`/member-areas/${studentAreaId}/students/${editingStudentId}`, { method: 'PUT', body: { studentName: editStudentData.name, studentEmail: editStudentData.email, studentPhone: editStudentData.phone || null, status: editStudentData.status, progress: Math.max(0, Math.min(100, Number(editStudentData.progress) || 0)) } });
-      setEditingStudentId(null); fetchStudents(studentAreaId, studentSearch || undefined); mutateAreas();
-    } catch {}
+      await memberAreaStudentsApi.update(studentAreaId, editingStudentId, { studentName: editStudentData.name, studentEmail: editStudentData.email, studentPhone: editStudentData.phone || null, status: editStudentData.status, progress: Math.max(0, Math.min(100, Number(editStudentData.progress) || 0)) });
+      setEditingStudentId(null); await fetchStudents(studentAreaId, studentSearch || undefined); mutateAreas();
+    } catch (error) { setOperationError(error, 'Erro ao atualizar aluno.'); }
     setSaving(false);
   };
   const handleToggleStudentStatus = async (student: MemberAreaStudent) => {
     if (!studentAreaId) {return;}
     setSaving(true);
-    try { await apiFetch(`/member-areas/${studentAreaId}/students/${student.id}`, { method: 'PUT', body: { status: student.status === 'active' ? 'suspended' : 'active' } }); fetchStudents(studentAreaId, studentSearch || undefined); mutateAreas(); } catch {}
+    setActionError(null);
+    try { await memberAreaStudentsApi.update(studentAreaId, student.id, { status: student.status === 'active' ? 'suspended' : 'active' }); await fetchStudents(studentAreaId, studentSearch || undefined); mutateAreas(); } catch (error) { setOperationError(error, 'Erro ao atualizar status do aluno.'); }
     setSaving(false);
   };
   const toggleArea = (id: string) => setExpandedAreas((prev) => ({ ...prev, [id]: !prev[id] }));
   const handleCreateArea = async () => {
     if (!(newArea.name as string)?.trim()) {return;}
     setSaving(true);
+    setActionError(null);
     try {
       const d = newArea;
       await createArea({
@@ -132,12 +151,13 @@ export default function AreaMembros({
         downloads: !!d.downloads, comments: !!d.comments, active: !!d.active,
       });
       mutateAreas(); setNewArea(emptyAreaForm); setShowCreateArea(false);
-    } catch (e) { console.error(e); }
+    } catch (error) { setOperationError(error, 'Erro ao criar area de membros.'); }
     setSaving(false);
   };
   const handleUpdateArea = async (id: string) => {
     if (!(editAreaData.name as string)?.trim()) {return;}
     setSaving(true);
+    setActionError(null);
     try {
       const d = editAreaData;
       await updateArea(id, {
@@ -149,54 +169,62 @@ export default function AreaMembros({
         downloads: !!d.downloads, comments: !!d.comments, active: !!d.active,
       });
       mutateAreas(); setEditingArea(null);
-    } catch (e) { console.error(e); }
+    } catch (error) { setOperationError(error, 'Erro ao atualizar area de membros.'); }
     setSaving(false);
   };
   const handleDeleteArea = async (id: string) => {
     if (!confirm('Excluir esta area?')) {return;}
     setSaving(true);
-    try { await deleteArea(id); mutateAreas(); setEditingArea(null); } catch (e) { console.error(e); }
+    setActionError(null);
+    try { await deleteArea(id); mutateAreas(); setEditingArea(null); } catch (error) { setOperationError(error, 'Erro ao excluir area de membros.'); }
     setSaving(false);
   };
   const handleCreateModule = async (areaId: string) => {
     if (!newModule.name.trim()) {return;}
     setSaving(true);
-    try { await createModule(areaId, { name: newModule.name.trim() }); mutateAreas(); setNewModule({ name: '' }); setCreatingModule(null); } catch (e) { console.error(e); }
+    setActionError(null);
+    try { await createModule(areaId, { name: newModule.name.trim() }); mutateAreas(); setNewModule({ name: '' }); setCreatingModule(null); } catch (error) { setOperationError(error, 'Erro ao criar modulo.'); }
     setSaving(false);
   };
   const handleUpdateModule = async (areaId: string, moduleId: string) => {
     if (!editModuleData.name.trim()) {return;}
     setSaving(true);
-    try { await updateModule(areaId, moduleId, { name: editModuleData.name.trim() }); mutateAreas(); setEditingModule(null); } catch (e) { console.error(e); }
+    setActionError(null);
+    try { await updateModule(areaId, moduleId, { name: editModuleData.name.trim() }); mutateAreas(); setEditingModule(null); } catch (error) { setOperationError(error, 'Erro ao atualizar modulo.'); }
     setSaving(false);
   };
   const handleDeleteModule = async (areaId: string, moduleId: string) => {
     if (!confirm('Excluir este modulo?')) {return;}
     setSaving(true);
-    try { await deleteModule(areaId, moduleId); mutateAreas(); } catch (e) { console.error(e); }
+    setActionError(null);
+    try { await deleteModule(areaId, moduleId); mutateAreas(); } catch (error) { setOperationError(error, 'Erro ao excluir modulo.'); }
     setSaving(false);
   };
   const handleCreateLesson = async (areaId: string, moduleId: string) => {
     if (!newLesson.name.trim()) {return;}
     setSaving(true);
-    try { await createLesson(areaId, moduleId, { name: newLesson.name.trim(), description: newLesson.description.trim(), videoUrl: newLesson.videoUrl.trim() }); mutateAreas(); setNewLesson({ name: '', description: '', videoUrl: '' }); setCreatingLesson(null); } catch (e) { console.error(e); }
+    setActionError(null);
+    try { await createLesson(areaId, moduleId, { name: newLesson.name.trim(), description: newLesson.description.trim(), videoUrl: newLesson.videoUrl.trim() }); mutateAreas(); setNewLesson({ name: '', description: '', videoUrl: '' }); setCreatingLesson(null); } catch (error) { setOperationError(error, 'Erro ao criar aula.'); }
     setSaving(false);
   };
   const handleUpdateLesson = async (areaId: string, lessonId: string) => {
     if (!editLessonData.name.trim()) {return;}
     setSaving(true);
-    try { await updateLesson(areaId, lessonId, { name: editLessonData.name.trim(), description: editLessonData.description.trim(), videoUrl: editLessonData.videoUrl.trim() }); mutateAreas(); setEditingLesson(null); } catch (e) { console.error(e); }
+    setActionError(null);
+    try { await updateLesson(areaId, lessonId, { name: editLessonData.name.trim(), description: editLessonData.description.trim(), videoUrl: editLessonData.videoUrl.trim() }); mutateAreas(); setEditingLesson(null); } catch (error) { setOperationError(error, 'Erro ao atualizar aula.'); }
     setSaving(false);
   };
   const handleDeleteLesson = async (areaId: string, lessonId: string) => {
     if (!confirm('Excluir esta aula?')) {return;}
     setSaving(true);
-    try { await deleteLesson(areaId, lessonId); mutateAreas(); } catch (e) { console.error(e); }
+    setActionError(null);
+    try { await deleteLesson(areaId, lessonId); mutateAreas(); } catch (error) { setOperationError(error, 'Erro ao excluir aula.'); }
     setSaving(false);
   };
   const handleGenerateStructure = async (areaId: string) => {
     setGeneratingAreaId(areaId);
-    try { await apiFetch(`/member-areas/${areaId}/generate-structure`, { method: 'POST' }); mutateAreas(); setExpandedAreas((prev) => ({ ...prev, [areaId]: true })); } catch (e) { console.error(e); }
+    setActionError(null);
+    try { await memberAreaApi.generateStructure(areaId); mutateAreas(); setExpandedAreas((prev) => ({ ...prev, [areaId]: true })); } catch (error) { setOperationError(error, 'Erro ao gerar estrutura.'); }
     finally { setGeneratingAreaId(null); }
   };
   const handleEditArea = (area: DisplayArea) => {
@@ -219,6 +247,12 @@ export default function AreaMembros({
           </button>
         ))}
       </div>
+
+      {actionError ? (
+        <div role="alert" style={{ marginBottom: 16, padding: 12, border: '1px solid rgba(248,113,113,0.35)', borderRadius: 8, background: 'rgba(127,29,29,0.18)', color: '#fecaca', fontFamily: SORA, fontSize: 12 }}>
+          {actionError}
+        </div>
+      ) : null}
 
       {activeSubTab === 'overview' && (
         <AreaMembrosOverviewPanel totalStudents={totalStudents} displayAreas={displayAreas} avgCompletion={avgCompletion} />

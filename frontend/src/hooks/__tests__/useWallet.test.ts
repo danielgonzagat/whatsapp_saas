@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 
-const mockUseWorkspaceId = vi.hoisted(() => vi.fn<() => string | undefined>(() => 'test-workspace-id'));
+const { mockApiFetch, mockUseWorkspaceId } = vi.hoisted(() => ({
+  mockApiFetch: vi.fn(),
+  mockUseWorkspaceId: vi.fn<() => string | undefined>(() => 'test-workspace-id'),
+}));
 
 // Mock SWR before importing hooks
 vi.mock('swr', () => ({
@@ -12,6 +15,10 @@ vi.mock('swr', () => ({
 vi.mock('@/lib/fetcher', () => ({
   swrFetcher: vi.fn(),
 }));
+vi.mock('@/lib/api', () => ({
+  apiFetch: mockApiFetch,
+}));
+
 
 // Mock useWorkspaceId
 vi.mock('@/hooks/useWorkspaceId', () => ({
@@ -23,6 +30,7 @@ import useSWR from 'swr';
 
 beforeEach(() => {
   mockUseWorkspaceId.mockReturnValue('test-workspace-id');
+  mockApiFetch.mockReset();
 });
 
 describe('useWalletBalance', () => {
@@ -97,6 +105,22 @@ describe('useWalletTransactions', () => {
 
     const { result } = renderHook(() => useWalletTransactions());
     expect(result.current.transactions).toEqual([{ id: '2', amount: 100 }]);
+  });
+
+  it('surfaces malformed transactions payload instead of a fake empty list', () => {
+    vi.mocked(useSWR).mockReturnValue({
+      data: {},
+      error: undefined,
+      isLoading: false,
+      mutate: vi.fn(),
+      isValidating: false,
+    });
+
+    const { result } = renderHook(() => useWalletTransactions());
+
+    expect(result.current.transactions).toEqual([]);
+    expect(result.current.total).toBe(0);
+    expect((result.current.error as Error).message).toBe('Invalid wallet transactions payload');
   });
 });
 
@@ -180,6 +204,22 @@ describe('useWalletWithdrawals', () => {
     const { result } = renderHook(() => useWalletWithdrawals());
     expect(result.current.withdrawals).toEqual(withdrawals);
   });
+
+  it('surfaces malformed withdrawals payload instead of a fake empty list', () => {
+    vi.mocked(useSWR).mockReturnValue({
+      data: {},
+      error: undefined,
+      isLoading: false,
+      mutate: vi.fn(),
+      isValidating: false,
+    });
+
+    const { result } = renderHook(() => useWalletWithdrawals());
+    const current = result.current as typeof result.current & { error?: Error };
+
+    expect(result.current.withdrawals).toEqual([]);
+    expect(current.error?.message).toBe('Invalid wallet withdrawals payload');
+  });
 });
 
 describe('useBankAccounts', () => {
@@ -211,6 +251,22 @@ describe('useBankAccounts', () => {
     expect(result.current.accounts).toEqual(accounts);
   });
 
+  it('surfaces malformed bank-account payload instead of a fake empty list', () => {
+    vi.mocked(useSWR).mockReturnValue({
+      data: {},
+      error: undefined,
+      isLoading: false,
+      mutate: vi.fn(),
+      isValidating: false,
+    });
+
+    const { result } = renderHook(() => useBankAccounts());
+    const current = result.current as typeof result.current & { error?: Error };
+
+    expect(result.current.accounts).toEqual([]);
+    expect(current.error?.message).toBe('Invalid wallet bank accounts payload');
+  });
+
   it('returns null from addBankAccount when workspaceId is not available', async () => {
     mockUseWorkspaceId.mockReturnValue(undefined);
     const { result } = renderHook(() => useBankAccounts());
@@ -221,6 +277,42 @@ describe('useBankAccounts', () => {
     mockUseWorkspaceId.mockReturnValue(undefined);
     const { result } = renderHook(() => useBankAccounts());
     await expect(result.current.removeBankAccount('id')).resolves.toBeUndefined();
+  });
+
+  it('rejects addBankAccount backend error without mutating account cache', async () => {
+    const mutate = vi.fn();
+    mockApiFetch.mockResolvedValueOnce({ error: 'Conta invalida' });
+    vi.mocked(useSWR).mockReturnValue({
+      data: { accounts: [] },
+      error: undefined,
+      isLoading: false,
+      mutate,
+      isValidating: false,
+    });
+
+    const { result } = renderHook(() => useBankAccounts());
+
+    await expect(result.current.addBankAccount({ bankName: 'Banco' })).rejects.toThrow(
+      'Conta invalida',
+    );
+    expect(mutate).not.toHaveBeenCalled();
+  });
+
+  it('rejects removeBankAccount backend error without mutating account cache', async () => {
+    const mutate = vi.fn();
+    mockApiFetch.mockResolvedValueOnce({ error: 'Conta em uso' });
+    vi.mocked(useSWR).mockReturnValue({
+      data: { accounts: [{ id: 'ba1' }] },
+      error: undefined,
+      isLoading: false,
+      mutate,
+      isValidating: false,
+    });
+
+    const { result } = renderHook(() => useBankAccounts());
+
+    await expect(result.current.removeBankAccount('ba1')).rejects.toThrow('Conta em uso');
+    expect(mutate).not.toHaveBeenCalled();
   });
 });
 
@@ -256,6 +348,23 @@ describe('useWalletAnticipations', () => {
     const { result } = renderHook(() => useWalletAnticipations());
     expect(result.current.anticipations).toEqual(data.anticipations);
     expect(result.current.totals).toEqual(data.totals);
+  });
+
+  it('surfaces malformed anticipations payload instead of a fake empty list', () => {
+    vi.mocked(useSWR).mockReturnValue({
+      data: {},
+      error: undefined,
+      isLoading: false,
+      mutate: vi.fn(),
+      isValidating: false,
+    });
+
+    const { result } = renderHook(() => useWalletAnticipations());
+    const current = result.current as typeof result.current & { error?: Error };
+
+    expect(result.current.anticipations).toEqual([]);
+    expect(result.current.totals).toEqual({ totalAnticipated: 0, totalFees: 0, count: 0 });
+    expect(current.error?.message).toBe('Invalid wallet anticipations payload');
   });
 });
 

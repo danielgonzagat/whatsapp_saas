@@ -144,7 +144,8 @@ export function KloelChatComposer({
     };
   }, [isPopoverOpen]);
 
-  const canSend = input.trim().length > 0 && !disabled;
+  const hasReadyAttachments = attachments.some((attachment) => attachment.status === 'ready');
+  const canSend = (input.trim().length > 0 || hasReadyAttachments) && !disabled;
   const hasPendingUploads = attachments.some((attachment) => attachment.status === 'uploading');
   const hasTopRail = attachments.length > 0 || Boolean(linkedProduct);
 

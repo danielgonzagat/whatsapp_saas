@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { mutate } from 'swr';
 import {
   listCampaigns,
   createCampaign,
@@ -40,10 +41,18 @@ describe('listCampaigns', () => {
     expect(result).toEqual([{ id: 'c1', name: 'Wrapped' }]);
   });
 
-  it('returns empty array when campaigns is missing in wrapped response', async () => {
+  it('rejects missing campaign payloads instead of returning a fake empty list', async () => {
     apiFetch.mockResolvedValueOnce({ data: {}, status: 200 });
-    const result = await listCampaigns('ws1');
-    expect(result).toEqual([]);
+
+    await expect(listCampaigns('ws1')).rejects.toThrow(
+      'Campaign list did not return a confirmed payload',
+    );
+  });
+
+  it('rejects failed list status without an error envelope', async () => {
+    apiFetch.mockResolvedValueOnce({ data: { campaigns: [] }, status: 503 });
+
+    await expect(listCampaigns('ws1')).rejects.toThrow('Failed to list campaigns');
   });
 
   it('throws on error', async () => {
@@ -68,6 +77,15 @@ describe('createCampaign', () => {
   it('throws on error', async () => {
     apiFetch.mockResolvedValueOnce({ error: 'Validation Error', status: 422 });
     await expect(createCampaign('ws1', {})).rejects.toThrow('Validation Error');
+  });
+
+  it('rejects missing creation confirmation without invalidating cache', async () => {
+    apiFetch.mockResolvedValueOnce({ data: undefined, status: 201 });
+
+    await expect(createCampaign('ws1', { name: 'New' })).rejects.toThrow(
+      'Campaign creation did not return a confirmed payload',
+    );
+    expect(mutate).not.toHaveBeenCalled();
   });
 });
 
@@ -96,6 +114,15 @@ describe('launchCampaign', () => {
   it('throws on error', async () => {
     apiFetch.mockResolvedValueOnce({ error: 'Conflict', status: 409 });
     await expect(launchCampaign('ws1', 'c1')).rejects.toThrow('Conflict');
+  });
+
+  it('rejects missing launch confirmation without invalidating cache', async () => {
+    apiFetch.mockResolvedValueOnce({ data: undefined, status: 200 });
+
+    await expect(launchCampaign('ws1', 'c1')).rejects.toThrow(
+      'Campaign launch did not return a confirmed payload',
+    );
+    expect(mutate).not.toHaveBeenCalled();
   });
 });
 
@@ -134,6 +161,15 @@ describe('createCampaignVariants', () => {
   it('throws on error', async () => {
     apiFetch.mockResolvedValueOnce({ error: 'Error', status: 500 });
     await expect(createCampaignVariants('ws1', 'c1')).rejects.toThrow('Error');
+  });
+
+  it('rejects missing variant confirmation without invalidating cache', async () => {
+    apiFetch.mockResolvedValueOnce({ data: undefined, status: 200 });
+
+    await expect(createCampaignVariants('ws1', 'c1')).rejects.toThrow(
+      'Campaign variant creation did not return a confirmed payload',
+    );
+    expect(mutate).not.toHaveBeenCalled();
   });
 });
 

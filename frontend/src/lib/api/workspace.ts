@@ -28,6 +28,41 @@ export interface WorkspaceSettings {
   [key: string]: unknown;
 }
 
+type WorkspaceApiEnvelope<T> = {
+  data?: T;
+  error?: string;
+  status?: number;
+};
+
+function confirmWorkspacePayload<T>(
+  response: WorkspaceApiEnvelope<T>,
+  fallbackMessage: string,
+  missingPayloadMessage: string,
+): T {
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  if (typeof response.status === 'number' && response.status >= 400) {
+    throw new Error(fallbackMessage);
+  }
+  if (response.data === undefined || response.data === null) {
+    throw new Error(missingPayloadMessage);
+  }
+  return response.data;
+}
+
+function confirmWorkspaceListPayload<T>(
+  response: WorkspaceApiEnvelope<T[]>,
+  fallbackMessage: string,
+  missingPayloadMessage: string,
+): T[] {
+  const data = confirmWorkspacePayload(response, fallbackMessage, missingPayloadMessage);
+  if (!Array.isArray(data)) {
+    throw new Error(missingPayloadMessage);
+  }
+  return data;
+}
+
 /** Save workspace settings. */
 export async function saveWorkspaceSettings(
   workspaceId: string,
@@ -38,11 +73,13 @@ export async function saveWorkspaceSettings(
     method: 'POST',
     body: settings,
   });
-  if (res.error) {
-    throw new Error(res.error || 'Failed to save settings');
-  }
+  const data = confirmWorkspacePayload(
+    res,
+    'Failed to save settings',
+    'Workspace settings save did not return a confirmed payload',
+  );
   invalidateWorkspace();
-  return res.data as Record<string, unknown>;
+  return data;
 }
 
 /** Api key shape. */
@@ -62,10 +99,11 @@ export interface ApiKey {
 /** List api keys. */
 export async function listApiKeys(_token?: string): Promise<ApiKey[]> {
   const res = await apiFetch<ApiKey[]>(`/settings/api-keys`);
-  if (res.error) {
-    throw new Error(res.error || 'Failed to list API keys');
-  }
-  return res.data ?? [];
+  return confirmWorkspaceListPayload(
+    res,
+    'Failed to list API keys',
+    'API key list did not return a confirmed payload',
+  );
 }
 
 /** Create api key. */
@@ -74,20 +112,31 @@ export async function createApiKey(name: string, _token?: string): Promise<ApiKe
     method: 'POST',
     body: { name },
   });
-  if (res.error) {
-    throw new Error(res.error || 'Failed to create API key');
-  }
+  const data = confirmWorkspacePayload(
+    res,
+    'Failed to create API key',
+    'API key creation did not return a confirmed payload',
+  );
   invalidateSettings();
-  return res.data as ApiKey;
+  return data;
 }
 
 /** Delete api key. */
 export async function deleteApiKey(keyId: string, _token?: string): Promise<void> {
-  const res = await apiFetch<{ ok: boolean }>(`/settings/api-keys/${keyId}`, {
+  const res = await apiFetch<{ ok?: boolean; count?: number }>(`/settings/api-keys/${keyId}`, {
     method: 'DELETE',
   });
-  if (res.error) {
-    throw new Error(res.error || 'Failed to delete API key');
+  // Backend delete() returns the Prisma deleteMany payload (`{ count }`), which
+  // has no `ok` field, so a non-error envelope with status < 400 and a present
+  // payload is the real success signal. Only when an envelope explicitly
+  // reports `ok: false` (e.g. a proxy wrapping the result) is it a failure.
+  const data = confirmWorkspacePayload(
+    res,
+    'Failed to delete API key',
+    'API key deletion did not return confirmed success',
+  );
+  if (data.ok === false) {
+    throw new Error('API key deletion did not return confirmed success');
   }
   invalidateSettings();
 }
@@ -122,10 +171,11 @@ export interface WorkspaceInfo {
 /** Get workspace. */
 export async function getWorkspace(workspaceId: string, _token?: string): Promise<WorkspaceInfo> {
   const res = await apiFetch<WorkspaceInfo>(`/workspace/${workspaceId}`);
-  if (res.error) {
-    throw new Error(res.error || 'Erro ao buscar workspace');
-  }
-  return res.data as WorkspaceInfo;
+  return confirmWorkspacePayload(
+    res,
+    'Erro ao buscar workspace',
+    'Workspace did not return a confirmed payload',
+  );
 }
 
 /** Regenerate api key. */
@@ -139,6 +189,21 @@ export async function regenerateApiKey(_token?: string): Promise<ApiKey> {
 
 // workspaceApi object
 
+type WorkspaceMutationEnvelope = { error?: string | undefined; status: number };
+
+function confirmWorkspaceMutation<T extends WorkspaceMutationEnvelope>(
+  response: T,
+  fallbackMessage: string,
+): T {
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  if (response.status >= 400) {
+    throw new Error(fallbackMessage);
+  }
+  return response;
+}
+
 export const workspaceApi = {
   getSettings: () => {
     const workspaceId = tokenStorage.getWorkspaceId();
@@ -151,8 +216,9 @@ export const workspaceApi = {
       method: 'POST',
       body: settings,
     });
+    const confirmed = confirmWorkspaceMutation(res, 'Falha ao atualizar configuracoes do workspace.');
     invalidateWorkspace();
-    return res;
+    return confirmed;
   },
 
   getMe: () => {
@@ -174,8 +240,9 @@ export const workspaceApi = {
       method: 'POST',
       body: payload,
     });
+    const confirmed = confirmWorkspaceMutation(res, 'Falha ao atualizar conta do workspace.');
     invalidateWorkspace();
-    return res;
+    return confirmed;
   },
 
   getChannels: () => {
@@ -189,8 +256,9 @@ export const workspaceApi = {
       method: 'POST',
       body: payload,
     });
+    const confirmed = confirmWorkspaceMutation(res, 'Falha ao atualizar canais do workspace.');
     invalidateWorkspace();
-    return res;
+    return confirmed;
   },
 
   setProvider: async (provider: string) => {
@@ -199,8 +267,9 @@ export const workspaceApi = {
       method: 'POST',
       body: { provider },
     });
+    const confirmed = confirmWorkspaceMutation(res, 'Falha ao atualizar provedor do workspace.');
     invalidateWorkspace();
-    return res;
+    return confirmed;
   },
 
   setJitter: async (min: number, max: number) => {
@@ -209,7 +278,8 @@ export const workspaceApi = {
       method: 'POST',
       body: { min, max },
     });
+    const confirmed = confirmWorkspaceMutation(res, 'Falha ao atualizar jitter do workspace.');
     invalidateWorkspace();
-    return res;
+    return confirmed;
   },
 };

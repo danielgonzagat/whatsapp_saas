@@ -26,18 +26,27 @@ export interface AnunciosPlatformStatus {
   clientConfigured: boolean;
 }
 
-type ApiListEnvelope<T> = T[] | { data?: T[] } | null;
+type ApiListEnvelope<T> = T[] | { data?: unknown } | null;
 
-function unwrapList<T>(value: ApiListEnvelope<T> | undefined): T[] {
+type ListResult<T> = { items: T[]; payloadError?: Error };
+
+function unwrapList<T>(value: ApiListEnvelope<T> | undefined, message: string): ListResult<T> {
+  if (value === undefined || value === null) {
+    return { items: [] };
+  }
+
   if (Array.isArray(value)) {
-    return value;
+    return { items: value };
   }
 
-  if (Array.isArray(value?.data)) {
-    return value.data;
+  if (typeof value === 'object' && Object.prototype.hasOwnProperty.call(value, 'data')) {
+    if (Array.isArray(value.data)) {
+      return { items: value.data as T[] };
+    }
+    return { items: [], payloadError: new Error(message) };
   }
 
-  return [];
+  return { items: [], payloadError: new Error(message) };
 }
 
 export function useAnunciosStatus() {
@@ -46,10 +55,14 @@ export function useAnunciosStatus() {
     swrFetcher,
     { refreshInterval: 60000 },
   );
+  const { items: statuses, payloadError } = unwrapList<AnunciosPlatformStatus>(
+    data,
+    'Invalid anuncios status payload',
+  );
   return {
-    statuses: unwrapList(data),
+    statuses,
     isLoading,
-    error,
+    error: error ?? payloadError,
     refresh: mutate,
   };
 }
@@ -61,10 +74,14 @@ export function useAnunciosCampaigns(platform?: string) {
     swrFetcher,
     { refreshInterval: 120000 },
   );
+  const { items: campaigns, payloadError } = unwrapList<AnunciosCampaign>(
+    data,
+    'Invalid anuncios campaigns payload',
+  );
   return {
-    campaigns: unwrapList(data),
+    campaigns,
     isLoading,
-    error,
+    error: error ?? payloadError,
     refresh: mutate,
   };
 }

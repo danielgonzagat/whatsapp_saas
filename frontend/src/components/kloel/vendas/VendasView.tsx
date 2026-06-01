@@ -85,6 +85,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [detailType, setDetailType] = useState<'sale' | 'sub' | 'order'>('sale');
   const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [shipTrackingCode, setShipTrackingCode] = useState('');
   const [showShipModal, setShowShipModal] = useState<string | null>(null);
   const [showSmartPayment, setShowSmartPayment] = useState(false);
@@ -133,56 +134,101 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
   const invalidateSales = () =>
     mutate((key: string) => typeof key === 'string' && key.startsWith('/sales'));
 
-  const handleRefund = async (id: string) => {
+  function requireActionSuccess<T extends { error?: string | undefined; success?: boolean | undefined }>(
+    response: T,
+    fallback: string,
+  ): T {
+    if (response.error) {
+      throw new Error(response.error);
+    }
+    if (response.success === false) {
+      throw new Error(fallback);
+    }
+    return response;
+  }
+
+  const resolveActionError = (error: unknown, fallback: string) =>
+    error instanceof Error && error.message ? error.message : fallback;
+
+  const runSalesAction = async (operation: () => Promise<void>, fallback: string) => {
     setActionLoading(true);
-    await apiFetch(`/sales/${id}/refund`, { method: 'POST' });
-    await mutateSales();
-    invalidateSales();
-    setActionLoading(false);
-    setDetailId(null);
+    setActionError(null);
+    try {
+      await operation();
+    } catch (error) {
+      setActionError(resolveActionError(error, fallback));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRefund = async (id: string) => {
+    const message = 'Não foi possível reembolsar a venda.';
+    await runSalesAction(async () => {
+      requireActionSuccess(await apiFetch(`/sales/${id}/refund`, { method: 'POST' }), message);
+      await mutateSales();
+      invalidateSales();
+      setDetailId(null);
+    }, message);
   };
 
   const handlePauseSub = async (id: string) => {
-    setActionLoading(true);
-    await apiFetch(`/sales/subscriptions/${id}/pause`, { method: 'POST' });
-    await mutateSubs();
-    invalidateSales();
-    setActionLoading(false);
-    setDetailId(null);
+    const message = 'Não foi possível pausar a assinatura.';
+    await runSalesAction(async () => {
+      requireActionSuccess(
+        await apiFetch(`/sales/subscriptions/${id}/pause`, { method: 'POST' }),
+        message,
+      );
+      await mutateSubs();
+      invalidateSales();
+      setDetailId(null);
+    }, message);
   };
 
   const handleResumeSub = async (id: string) => {
-    setActionLoading(true);
-    await apiFetch(`/sales/subscriptions/${id}/resume`, { method: 'POST' });
-    await mutateSubs();
-    invalidateSales();
-    setActionLoading(false);
-    setDetailId(null);
+    const message = 'Não foi possível retomar a assinatura.';
+    await runSalesAction(async () => {
+      requireActionSuccess(
+        await apiFetch(`/sales/subscriptions/${id}/resume`, { method: 'POST' }),
+        message,
+      );
+      await mutateSubs();
+      invalidateSales();
+      setDetailId(null);
+    }, message);
   };
 
   const handleCancelSub = async (id: string) => {
-    setActionLoading(true);
-    await apiFetch(`/sales/subscriptions/${id}/cancel`, { method: 'POST' });
-    await mutateSubs();
-    invalidateSales();
-    setActionLoading(false);
-    setDetailId(null);
+    const message = 'Não foi possível cancelar a assinatura.';
+    await runSalesAction(async () => {
+      requireActionSuccess(
+        await apiFetch(`/sales/subscriptions/${id}/cancel`, { method: 'POST' }),
+        message,
+      );
+      await mutateSubs();
+      invalidateSales();
+      setDetailId(null);
+    }, message);
   };
 
   const handleShipOrder = async (id: string) => {
     if (!shipTrackingCode.trim()) {
       return;
     }
-    setActionLoading(true);
-    await apiFetch(`/sales/orders/${id}/ship`, {
-      method: 'PUT',
-      body: { trackingCode: shipTrackingCode },
-    });
-    await mutateOrders();
-    invalidateSales();
-    setActionLoading(false);
-    setShowShipModal(null);
-    setShipTrackingCode('');
+    const message = 'Não foi possível marcar o pedido como enviado.';
+    await runSalesAction(async () => {
+      requireActionSuccess(
+        await apiFetch(`/sales/orders/${id}/ship`, {
+          method: 'PUT',
+          body: { trackingCode: shipTrackingCode },
+        }),
+        message,
+      );
+      await mutateOrders();
+      invalidateSales();
+      setShowShipModal(null);
+      setShipTrackingCode('');
+    }, message);
   };
 
   const handleChangePlan = async (id: string) => {
@@ -194,23 +240,27 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
     if (!amount) {
       return;
     }
-    setActionLoading(true);
-    await apiFetch(`/sales/subscriptions/${id}/change-plan`, {
-      method: 'PUT',
-      body: { newPlanId: id, newPlanName: planName, newAmount: Number.parseFloat(amount) },
-    });
-    await mutateSubs();
-    setActionLoading(false);
-    setDetailId(null);
+    const message = 'Não foi possível mudar o plano da assinatura.';
+    await runSalesAction(async () => {
+      requireActionSuccess(
+        await apiFetch(`/sales/subscriptions/${id}/change-plan`, {
+          method: 'PUT',
+          body: { newPlanId: id, newPlanName: planName, newAmount: Number.parseFloat(amount) },
+        }),
+        message,
+      );
+      await mutateSubs();
+      setDetailId(null);
+    }, message);
   };
 
   const { returnOrder } = useReturnOrder();
   const handleReturnOrder = async (id: string) => {
-    setActionLoading(true);
-    await returnOrder(id);
-    await mutateOrders();
-    setActionLoading(false);
-    setDetailId(null);
+    await runSalesAction(async () => {
+      await returnOrder(id);
+      await mutateOrders();
+      setDetailId(null);
+    }, 'Não foi possível solicitar devolução do pedido.');
   };
 
   const {
@@ -219,6 +269,18 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
     generateAlerts,
     resolveAlert,
   } = useOrderAlerts();
+
+  const handleGenerateAlerts = async () => {
+    await runSalesAction(async () => {
+      await generateAlerts();
+    }, 'Não foi possível gerar alertas de pedidos.');
+  };
+
+  const handleResolveAlert = async (id: string) => {
+    await runSalesAction(async () => {
+      await resolveAlert(id);
+    }, 'Não foi possível resolver o alerta de pedido.');
+  };
 
   const estrategiasTabContent = (
     <EstrategiasTab
@@ -277,9 +339,27 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
       <OrderAlertsBanner
         alerts={orderAlerts}
         alertCounts={alertCounts}
-        onGenerate={() => generateAlerts()}
-        onResolve={resolveAlert}
+        onGenerate={handleGenerateAlerts}
+        onResolve={handleResolveAlert}
       />
+      {actionError && (
+        <div
+          role="alert"
+          aria-live="polite"
+          style={{
+            border: '1px solid rgba(239,68,68,0.34)',
+            background: 'rgba(239,68,68,0.08)',
+            color: 'var(--app-text-primary)',
+            borderRadius: 6,
+            padding: '10px 12px',
+            marginBottom: 16,
+            fontSize: 12,
+            fontFamily: SORA,
+          }}
+        >
+          {actionError}
+        </div>
+      )}
 
       <div style={SUBINTERFACE_PILL_ROW_STYLE}>
         {TABS.map((t) => (

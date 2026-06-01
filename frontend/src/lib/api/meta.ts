@@ -10,6 +10,18 @@ const invalidateMarketingInstagram = () =>
     typeof key === 'string' && key.startsWith('/marketing/instagram'),
   );
 
+type MutationEnvelope = { error?: string | undefined; status: number };
+
+function confirmMetaMutation<T extends MutationEnvelope>(response: T, fallbackMessage: string): T {
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  if (response.status >= 400) {
+    throw new Error(fallbackMessage);
+  }
+  return response;
+}
+
 // ============================================
 // Meta Ads
 // ============================================
@@ -103,8 +115,9 @@ export const metaAdsApi = {
         body: { status },
       },
     );
+    const confirmed = confirmMetaMutation(res, 'Falha ao atualizar status da campanha Meta.');
     invalidateMeta();
-    return res;
+    return confirmed;
   },
 
   /**
@@ -206,8 +219,9 @@ export const instagramApi = {
       method: 'POST',
       body: { igAccountId, imageUrl, caption, accessToken },
     });
+    const confirmed = confirmMetaMutation(res, 'Falha ao publicar foto no Instagram.');
     invalidateMeta();
-    return res;
+    return confirmed;
   },
 
   /**
@@ -230,8 +244,9 @@ export const instagramApi = {
         body: { text, accessToken },
       },
     );
+    const confirmed = confirmMetaMutation(res, 'Falha ao responder comentario no Instagram.');
     invalidateMeta();
-    return res;
+    return confirmed;
   },
 
   /**
@@ -247,8 +262,9 @@ export const instagramApi = {
       method: 'POST',
       body: { igAccountId, recipientId, text, accessToken },
     });
+    const confirmed = confirmMetaMutation(res, 'Falha ao enviar mensagem no Instagram.');
     invalidateMeta();
-    return res;
+    return confirmed;
   },
 };
 
@@ -312,8 +328,9 @@ export const instagramMarketingApi = {
       method: 'POST',
       body: { imageUrl, caption },
     });
+    const confirmed = confirmMetaMutation(res, 'Falha ao publicar post no Instagram.');
     invalidateMarketingInstagram();
-    return res;
+    return confirmed;
   },
 
   getInsights: (metrics?: string, period?: string) => {
@@ -371,8 +388,9 @@ export const messengerApi = {
       method: 'POST',
       body,
     });
+    const confirmed = confirmMetaMutation(res, 'Falha ao enviar mensagem no Messenger.');
     invalidateMeta();
-    return res;
+    return confirmed;
   },
 
   /**

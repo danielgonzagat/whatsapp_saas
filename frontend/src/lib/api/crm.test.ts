@@ -1,4 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+const mocks = vi.hoisted(() => ({
+  mutate: vi.fn(),
+}));
+
+vi.mock('swr', () => ({
+  mutate: mocks.mutate,
+}));
+
 import { crmApi } from './crm';
 
 beforeEach(() => {
@@ -13,6 +21,7 @@ beforeEach(() => {
       },
     }),
   } as Response);
+  mocks.mutate.mockReset();
 });
 
 afterEach(() => {
@@ -67,6 +76,7 @@ describe('crmApi', () => {
       await crmApi.createDeal({ contactId: 'c1', stageId: 's1', title: 'Big deal', value: 5000 });
       const { url, method } = lastFetch();
       expect(method).toBe('POST');
+      expect(mocks.mutate).toHaveBeenCalledTimes(1);
       expect(url).toContain('/crm/deals');
     });
   });
@@ -86,6 +96,19 @@ describe('crmApi', () => {
       } as Response);
       const res = await crmApi.listContacts();
       expect(res.error).toBeTruthy();
+    });
+
+    it('rejects createDeal error envelopes without invalidating crm cache', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ error: 'Deal invalido' }),
+      } as Response);
+
+      await expect(
+        crmApi.createDeal({ contactId: 'c1', stageId: 's1', title: 'Big deal', value: 5000 }),
+      ).rejects.toThrow('Deal invalido');
+      expect(mocks.mutate).not.toHaveBeenCalled();
     });
   });
 });

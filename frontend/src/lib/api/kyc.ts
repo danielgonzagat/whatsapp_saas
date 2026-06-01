@@ -1,10 +1,54 @@
 import { apiFetch } from './core';
 
+export interface KycCnpjLookupResponse {
+  razao_social?: string;
+  nome_fantasia?: string;
+  cep?: string;
+  logradouro?: string;
+  numero?: string;
+  complemento?: string;
+  bairro?: string;
+  municipio?: string;
+  uf?: string;
+  qsa?: Array<{ nome_socio?: string; cnpj_cpf_do_socio?: string }>;
+}
+
+export interface KycCepLookupResponse {
+  logradouro?: string;
+  complemento?: string;
+  bairro?: string;
+  localidade?: string;
+  uf?: string;
+  erro?: boolean;
+}
+
+export interface KycMfaState {
+  enabled: boolean;
+  pendingSetup: boolean;
+}
+
+export interface KycSecurityResponse {
+  mfa: KycMfaState;
+}
+
+export interface KycMfaSetupResponse extends KycSecurityResponse {
+  qrDataUrl: string;
+  otpauthUrl: string;
+}
+
 export async function kycChangePassword(current: string, newPw: string) {
   return apiFetch('/kyc/security/change-password', {
     method: 'POST',
     body: { currentPassword: current, newPassword: newPw },
   });
+}
+
+function requireDigits(value: string, label: string, length: number): string {
+  const clean = value.replace(/\D/g, '');
+  if (clean.length !== length) {
+    throw new Error(`${label} invalido`);
+  }
+  return clean;
 }
 
 async function kycMutation<T = unknown>(
@@ -30,6 +74,10 @@ export const kycApi = {
   getFiscalData: () => apiFetch('/kyc/fiscal'),
   updateFiscalData: (data: Record<string, unknown>) =>
     kycMutation('/kyc/fiscal', { method: 'PUT', body: data }),
+  lookupCnpj: async (cnpj: string) =>
+    kycMutation<KycCnpjLookupResponse>(`/kyc/lookup/cnpj/${requireDigits(cnpj, 'CNPJ', 14)}`),
+  lookupCep: async (cep: string) =>
+    kycMutation<KycCepLookupResponse>(`/kyc/lookup/cep/${requireDigits(cep, 'CEP', 8)}`),
   getDocuments: () => apiFetch('/kyc/documents'),
   uploadDocument: async (type: string, file: File) => {
     const fd = new FormData();
@@ -45,6 +93,19 @@ export const kycApi = {
     kycMutation('/kyc/security/change-password', {
       method: 'POST',
       body: { currentPassword, newPassword },
+    }),
+  getSecurity: () => apiFetch<KycSecurityResponse>('/kyc/security'),
+  startMfaSetup: () =>
+    kycMutation<KycMfaSetupResponse>('/kyc/security/mfa/setup', { method: 'POST' }),
+  verifyMfaSetup: (code: string) =>
+    kycMutation<KycSecurityResponse>('/kyc/security/mfa/verify', {
+      method: 'POST',
+      body: { code },
+    }),
+  disableMfa: (code: string) =>
+    kycMutation<KycSecurityResponse>('/kyc/security/mfa/disable', {
+      method: 'POST',
+      body: { code },
     }),
   getKycStatus: () => apiFetch('/kyc/status'),
   getKycCompletion: () => apiFetch('/kyc/completion'),

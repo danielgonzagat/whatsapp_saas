@@ -78,22 +78,59 @@ export interface AnalyticsAdvancedResponse {
   queues: { stats: Array<{ id: string; name: string; waitingCount: number }> };
 }
 
-/** Get analytics dashboard. */
-export async function getAnalyticsDashboard(): Promise<AnalyticsDashboardStats> {
-  const res = await apiFetch<AnalyticsDashboardStats>(`/analytics/dashboard`);
+type AnalyticsApiEnvelope<T> = {
+  data?: T;
+  error?: string;
+  status?: number;
+};
+
+function confirmAnalyticsPayload<T>(
+  res: AnalyticsApiEnvelope<T>,
+  fallbackError: string,
+  missingPayloadError: string,
+): T {
   if (res.error) {
     throw new Error(res.error);
   }
-  return res.data as AnalyticsDashboardStats;
+  if (typeof res.status === 'number' && res.status >= 400) {
+    throw new Error(fallbackError);
+  }
+  if (res.data === undefined || res.data === null) {
+    throw new Error(missingPayloadError);
+  }
+  return res.data;
+}
+
+function confirmAnalyticsListPayload<T>(
+  res: AnalyticsApiEnvelope<T[]>,
+  fallbackError: string,
+  missingPayloadError: string,
+): T[] {
+  const data = confirmAnalyticsPayload(res, fallbackError, missingPayloadError);
+  if (!Array.isArray(data)) {
+    throw new Error(missingPayloadError);
+  }
+  return data;
+}
+
+/** Get analytics dashboard. */
+export async function getAnalyticsDashboard(): Promise<AnalyticsDashboardStats> {
+  const res = await apiFetch<AnalyticsDashboardStats>(`/analytics/dashboard`);
+  return confirmAnalyticsPayload(
+    res,
+    'Erro ao carregar analytics dashboard',
+    'Analytics dashboard did not return a confirmed payload',
+  );
 }
 
 /** Get analytics daily activity. */
 export async function getAnalyticsDailyActivity(): Promise<AnalyticsDailyActivityItem[]> {
   const res = await apiFetch<AnalyticsDailyActivityItem[]>(`/analytics/activity`);
-  if (res.error) {
-    throw new Error(res.error);
-  }
-  return res.data ?? [];
+  return confirmAnalyticsListPayload(
+    res,
+    'Erro ao carregar analytics daily activity',
+    'Analytics daily activity did not return a confirmed payload',
+  );
 }
 
 /** Get analytics advanced. */
@@ -103,10 +140,11 @@ export async function getAnalyticsAdvanced(params?: {
 }): Promise<AnalyticsAdvancedResponse> {
   const query = buildQuery({ startDate: params?.startDate, endDate: params?.endDate });
   const res = await apiFetch<AnalyticsAdvancedResponse>(`/analytics/advanced${query}`);
-  if (res.error) {
-    throw new Error(res.error);
-  }
-  return res.data as AnalyticsAdvancedResponse;
+  return confirmAnalyticsPayload(
+    res,
+    'Erro ao carregar analytics advanced',
+    'Analytics advanced did not return a confirmed payload',
+  );
 }
 
 // ── Smart Time ──
@@ -127,20 +165,22 @@ export interface SmartTimeResponse {
 /** Get smart time. */
 export async function getSmartTime(): Promise<SmartTimeResponse> {
   const res = await apiFetch<SmartTimeResponse>(`/analytics/smart-time`);
-  if (res.error) {
-    throw new Error(res.error);
-  }
-  return res.data as SmartTimeResponse;
+  return confirmAnalyticsPayload(
+    res,
+    'Erro ao carregar smart time',
+    'Smart time did not return a confirmed payload',
+  );
 }
 
 // ── Stats (overall workspace stats) ──
 
 export async function getAnalyticsStats(): Promise<AnalyticsDashboardStats> {
   const res = await apiFetch<AnalyticsDashboardStats>(`/analytics/stats`);
-  if (res.error) {
-    throw new Error(res.error);
-  }
-  return res.data as AnalyticsDashboardStats;
+  return confirmAnalyticsPayload(
+    res,
+    'Erro ao carregar analytics stats',
+    'Analytics stats did not return a confirmed payload',
+  );
 }
 
 // ── Flow Analytics ──
@@ -167,10 +207,11 @@ export interface FlowAnalyticsResponse {
 /** Get flow analytics. */
 export async function getFlowAnalytics(flowId: string): Promise<FlowAnalyticsResponse> {
   const res = await apiFetch<FlowAnalyticsResponse>(`/analytics/flow/${flowId}`);
-  if (res.error) {
-    throw new Error(res.error);
-  }
-  return res.data as FlowAnalyticsResponse;
+  return confirmAnalyticsPayload(
+    res,
+    'Erro ao carregar flow analytics',
+    'Flow analytics did not return a confirmed payload',
+  );
 }
 
 // ── Full Report ──
@@ -201,8 +242,9 @@ export async function getAnalyticsFullReport(params?: {
     endDate: params?.endDate,
   });
   const res = await apiFetch<AnalyticsFullReport>(`/analytics/reports${query}`);
-  if (res.error) {
-    throw new Error(res.error);
-  }
-  return res.data as AnalyticsFullReport;
+  return confirmAnalyticsPayload(
+    res,
+    'Erro ao carregar analytics full report',
+    'Analytics full report did not return a confirmed payload',
+  );
 }

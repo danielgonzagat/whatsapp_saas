@@ -78,6 +78,21 @@ describe('useCiaAdvanced', () => {
     expect(result.current.pendingSessions).toEqual([{ id: 's2', status: 'PENDING' }]);
   });
 
+  it('surfaces malformed approvals payloads instead of treating them as an empty CIA queue', async () => {
+    mockCiaApi.getAccountApprovals.mockResolvedValue({
+      data: { id: 'a1', status: 'OPEN' },
+    });
+
+    const { result } = renderHook(() => useCiaAdvanced('ws-1'));
+
+    await waitFor(() => {
+      expect((result.current as { advancedError?: string | null }).advancedError).toBe(
+        'Invalid CIA approvals payload',
+      );
+    });
+    expect(result.current.approvals).toEqual([]);
+  });
+
   it('does not load when workspaceId is empty', async () => {
     const { result } = renderHook(() => useCiaAdvanced(''));
 

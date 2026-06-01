@@ -44,6 +44,10 @@ export interface AuthPayload {
   subscription?: Record<string, unknown> | null;
   /** Onboarding completed property. */
   onboardingCompleted?: boolean;
+  /** MFA challenge state returned after password verification. */
+  state?: 'mfa_required' | string;
+  /** Short-lived token used to verify the MFA login code. */
+  mfaToken?: string;
   [k: string]: unknown;
 }
 
@@ -95,6 +99,17 @@ export const authApi = {
     const res = await apiFetch<AuthPayload>('/auth/login', {
       method: 'POST',
       body: { email, password },
+    });
+
+    persistAuthPayload(res);
+    mutate((key) => typeof key === 'string' && key.startsWith('/workspace'));
+    return res;
+  },
+
+  verifyMfaLogin: async (mfaToken: string, code: string) => {
+    const res = await apiFetch<AuthPayload>('/auth/mfa/verify', {
+      method: 'POST',
+      body: { mfaToken, code },
     });
 
     persistAuthPayload(res);

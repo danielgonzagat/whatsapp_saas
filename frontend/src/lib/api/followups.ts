@@ -36,11 +36,17 @@ export async function scheduleFollowUp(
     method: 'POST',
     body: { workspaceId, ...config },
   });
-  if (res.error) {
+  if (res.error || res.status >= 400) {
     throw new Error(res.error || 'Erro ao agendar follow-up');
   }
+  if (!res.data) {
+    throw new Error('Follow-up scheduling did not return a confirmed payload');
+  }
+  if (!res.data.success) {
+    throw new Error(res.data.message || 'Follow-up scheduling was not confirmed');
+  }
   mutate((key: string) => typeof key === 'string' && key.startsWith('/followups'));
-  return res.data as { success: boolean; jobId?: string; message?: string };
+  return res.data;
 }
 
 export async function listScheduledFollowUps(
@@ -58,10 +64,13 @@ export async function listScheduledFollowUps(
       status: string;
     }>;
   }>(`/followups?workspaceId=${encodeURIComponent(workspaceId)}`);
-  if (res.error) {
-    return [];
+  if (res.error || res.status >= 400) {
+    throw new Error(res.error || 'Erro ao carregar follow-ups');
   }
-  return res.data?.followups || [];
+  if (!res.data || !Array.isArray(res.data.followups)) {
+    throw new Error('Follow-up list did not return a confirmed payload');
+  }
+  return res.data.followups;
 }
 
 export async function cancelFollowUp(
@@ -72,8 +81,14 @@ export async function cancelFollowUp(
   const res = await apiFetch<{ success: boolean }>(`/followups/${followUpId}`, {
     method: 'DELETE',
   });
+  if (res.error || res.status >= 400) {
+    throw new Error(res.error || 'Erro ao cancelar follow-up');
+  }
+  if (!res.data?.success) {
+    throw new Error('Follow-up cancellation did not return confirmed success');
+  }
   mutate((key: string) => typeof key === 'string' && key.startsWith('/followups'));
-  return { success: !res.error };
+  return res.data;
 }
 
 export async function getFollowupsApi(workspaceId?: string) {
@@ -110,8 +125,11 @@ export async function patchFollowup(
     method: 'PATCH',
     body: data,
   });
-  if (res.error) {
-    throw new Error(res.error);
+  if (res.error || res.status >= 400) {
+    throw new Error(res.error || 'Erro ao atualizar follow-up');
+  }
+  if (!res.data) {
+    throw new Error('Follow-up update did not return a confirmed payload');
   }
   mutate((k: string) => typeof k === 'string' && k.startsWith('/followups'));
   return res.data;
@@ -123,9 +141,18 @@ export async function getKloelFollowups(contactId?: string): Promise<KloelFollow
         `/kloel/followups/${encodeURIComponent(contactId)}`,
       )
     : await apiFetch<KloelFollowup[] | { followups: KloelFollowup[] }>('/kloel/followups');
-  if (res.error) {
-    return [];
+  if (res.error || res.status >= 400) {
+    throw new Error(res.error || 'Erro ao carregar follow-ups do Kloel');
   }
   const data = res.data;
-  return Array.isArray(data) ? data : ((data as { followups: KloelFollowup[] })?.followups ?? []);
+  if (!data) {
+    throw new Error('Kloel follow-ups did not return a confirmed payload');
+  }
+  if (Array.isArray(data)) {
+    return data;
+  }
+  if (Array.isArray(data.followups)) {
+    return data.followups;
+  }
+  throw new Error('Kloel follow-ups did not return a confirmed payload');
 }

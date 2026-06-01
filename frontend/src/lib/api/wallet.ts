@@ -41,29 +41,61 @@ export interface WalletTransaction {
   createdAt: string;
 }
 
+type WalletApiEnvelope<T> = {
+  data?: T;
+  error?: string;
+  status?: number;
+};
+
+interface WalletTransactionsResponse {
+  transactions?: WalletTransaction[];
+}
+
+function confirmWalletPayload<T>(
+  response: WalletApiEnvelope<T>,
+  fallbackMessage: string,
+  missingPayloadMessage: string,
+): T {
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  if (typeof response.status === 'number' && response.status >= 400) {
+    throw new Error(fallbackMessage);
+  }
+  if (response.data === undefined || response.data === null) {
+    throw new Error(missingPayloadMessage);
+  }
+  return response.data;
+}
+
 export async function getWalletBalance(workspaceId: string): Promise<WalletBalance> {
   const res = await apiFetch<WalletBalance>(
     `/kloel/wallet/${encodeURIComponent(workspaceId)}/balance`,
   );
-  if (res.error) {
-    throw new Error(res.error);
-  }
-  return res.data as WalletBalance;
+  return confirmWalletPayload(
+    res,
+    'Failed to load wallet balance',
+    'Wallet balance did not return a confirmed payload',
+  );
 }
 
 /** Get wallet transactions. */
 export async function getWalletTransactions(workspaceId: string): Promise<WalletTransaction[]> {
-  const res = await apiFetch<WalletTransaction[] | { transactions: WalletTransaction[] }>(
+  const res = await apiFetch<WalletTransaction[] | WalletTransactionsResponse>(
     `/kloel/wallet/${encodeURIComponent(workspaceId)}/transactions`,
   );
-  if (res.error) {
-    throw new Error(res.error);
-  }
-  const data = res.data;
+  const data = confirmWalletPayload(
+    res,
+    'Failed to load wallet transactions',
+    'Wallet transactions did not return a confirmed payload',
+  );
   if (Array.isArray(data)) {
     return data;
   }
-  return (data as { transactions: WalletTransaction[] })?.transactions || [];
+  if (Array.isArray(data.transactions)) {
+    return data.transactions;
+  }
+  throw new Error('Wallet transactions did not return a confirmed payload');
 }
 
 /** Process sale. */

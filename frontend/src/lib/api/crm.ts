@@ -4,6 +4,18 @@ import { apiFetch, tokenStorage } from './core';
 
 const invalidateCrm = () =>
   mutate((key: string) => typeof key === 'string' && key.startsWith('/crm'));
+const requireCrmMutationSuccess = <T extends { error?: string }>(
+  res: T,
+  fallback: string,
+): T => {
+  const error = res.error?.trim();
+  if (error !== undefined) {
+    throw new Error(error || fallback);
+  }
+
+  return res;
+};
+
 
 /** Crm contact tag shape. */
 export interface CrmContactTag {
@@ -138,8 +150,9 @@ export const crmApi = {
       method: 'POST',
       body: payload,
     });
+    const result = requireCrmMutationSuccess(res, 'Erro ao criar contato');
     invalidateCrm();
-    return res;
+    return result;
   },
 
   addTag: async (phone: string, tag: string) => {
@@ -147,8 +160,9 @@ export const crmApi = {
       method: 'POST',
       body: { tag },
     });
+    const result = requireCrmMutationSuccess(res, 'Erro ao adicionar tag');
     invalidateCrm();
-    return res;
+    return result;
   },
 
   removeTag: async (phone: string, tag: string) => {
@@ -158,8 +172,9 @@ export const crmApi = {
         method: 'DELETE',
       },
     );
+    const result = requireCrmMutationSuccess(res, 'Erro ao remover tag');
     invalidateCrm();
-    return res;
+    return result;
   },
 
   listPipelines: () => apiFetch<CrmPipeline[]>(`/crm/pipelines`),
@@ -169,8 +184,9 @@ export const crmApi = {
       method: 'POST',
       body: { name },
     });
+    const result = requireCrmMutationSuccess(res, 'Erro ao criar pipeline');
     invalidateCrm();
-    return res;
+    return result;
   },
 
   getContact: (phone: string) =>
@@ -195,8 +211,9 @@ export const crmApi = {
       method: 'POST',
       body: payload,
     });
+    const result = requireCrmMutationSuccess(res, 'Erro ao criar negocio');
     invalidateCrm();
-    return res;
+    return result;
   },
 
   moveDeal: async (dealId: string, stageId: string) => {
@@ -204,8 +221,9 @@ export const crmApi = {
       method: 'PUT',
       body: { stageId },
     });
+    const result = requireCrmMutationSuccess(res, 'Erro ao mover negocio');
     invalidateCrm();
-    return res;
+    return result;
   },
 
   updateDeal: async (
@@ -220,16 +238,18 @@ export const crmApi = {
       method: 'PUT',
       body: payload,
     });
+    const result = requireCrmMutationSuccess(res, 'Erro ao atualizar negocio');
     invalidateCrm();
-    return res;
+    return result;
   },
 
   deleteDeal: async (dealId: string) => {
     const res = await apiFetch<{ id: string }>(`/crm/deals/${encodeURIComponent(dealId)}`, {
       method: 'DELETE',
     });
+    const result = requireCrmMutationSuccess(res, 'Erro ao excluir negocio');
     invalidateCrm();
-    return res;
+    return result;
   },
 };
 

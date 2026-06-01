@@ -53,14 +53,16 @@ describe('getLeads', () => {
     expect(lastFetch().headers.authorization).toBe('Bearer test-token');
   });
 
-  it('falls back to empty array when data is not an array', async () => {
+  it('rejects malformed payloads instead of returning a fake empty lead list', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValue({
       ok: true,
       status: 200,
       json: async () => ({}),
     } as Response);
-    const leads = await getContacts('ws-1');
-    expect(leads).toEqual([]);
+
+    await expect(getContacts('ws-1')).rejects.toThrow(
+      'Contacts list did not return a confirmed payload',
+    );
   });
 
   it('unwraps { leads } envelope', async () => {

@@ -125,20 +125,130 @@ function normalizeTopPartner(value: unknown): string | null {
   return null;
 }
 
+type ResolvedPayload<T> = { value: T; payloadError?: Error };
+
+const EMPTY_COLLABORATOR_STATS: CollaboratorStats = { total: 0, online: 0, pendingInvites: 0 };
+const EMPTY_AFFILIATE_STATS: AffiliateStats = {
+  activeAffiliates: 0,
+  producers: 0,
+  totalRevenue: 0,
+  totalCommissions: 0,
+  topPartner: null,
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isRecordArray(value: unknown): value is Record<string, unknown>[] {
+  return Array.isArray(value) && value.every(isRecord);
+}
+
+function hasFiniteNumberKeys(payload: Record<string, unknown>, keys: string[]): boolean {
+  return keys.every((key) => Number.isFinite(payload[key]));
+}
+
+function invalidPayload<T>(fallback: T, invalidMessage: string): ResolvedPayload<T> {
+  return { value: fallback, payloadError: new Error(invalidMessage) };
+}
+
+function resolveArrayEnvelope<T>(
+  payload: unknown,
+  isLoading: boolean,
+  key: string,
+  invalidMessage: string,
+  fallback: T[],
+  validateItems: (items: unknown) => items is T[],
+): ResolvedPayload<T[]> {
+  if (payload === undefined) {
+    return isLoading ? { value: fallback } : invalidPayload(fallback, invalidMessage);
+  }
+
+  if (!isRecord(payload) || !validateItems(payload[key])) {
+    return invalidPayload(fallback, invalidMessage);
+  }
+
+  return { value: payload[key] };
+}
+
+function resolveRecordPayload<T>(
+  payload: unknown,
+  isLoading: boolean,
+  invalidMessage: string,
+  fallback: T,
+  validate: (payload: unknown) => payload is T,
+): ResolvedPayload<T> {
+  if (payload === undefined) {
+    return isLoading ? { value: fallback } : invalidPayload(fallback, invalidMessage);
+  }
+
+  if (!validate(payload)) {
+    return invalidPayload(fallback, invalidMessage);
+  }
+
+  return { value: payload };
+}
+
+function isCollaboratorStatsPayload(payload: unknown): payload is CollaboratorStats {
+  return isRecord(payload) && hasFiniteNumberKeys(payload, ['total', 'online', 'pendingInvites']);
+}
+
+function isAffiliateStatsPayload(payload: unknown): payload is AffiliateStats {
+  return (
+    isRecord(payload) &&
+    hasFiniteNumberKeys(payload, [
+      'activeAffiliates',
+      'producers',
+      'totalRevenue',
+      'totalCommissions',
+    ]) &&
+    Object.prototype.hasOwnProperty.call(payload, 'topPartner')
+  );
+}
+
+function isAffiliateDetailPayload(payload: unknown): payload is AffiliateDetailResponse {
+  return isRecord(payload) && isRecord(payload.affiliate);
+}
+
 /** Use collaborators. */
 export function useCollaborators() {
-  const { data, isLoading, mutate } = useSWR('/partnerships/collaborators', swrFetcher);
-  const d = data as CollaboratorsResponse | undefined;
-  return { agents: d?.agents || [], invites: d?.invites || [], isLoading, mutate };
+  const { data, error, isLoading, mutate } = useSWR<CollaboratorsResponse>(
+    '/partnerships/collaborators',
+    swrFetcher,
+  );
+  const { value: agents, payloadError: agentsError } = resolveArrayEnvelope(
+    data,
+    isLoading,
+    'agents',
+    'Invalid collaborators payload',
+    [],
+    Array.isArray,
+  );
+  const { value: invites, payloadError: invitesError } = resolveArrayEnvelope(
+    data,
+    isLoading,
+    'invites',
+    'Invalid collaborators payload',
+    [],
+    Array.isArray,
+  );
+  return { agents, invites, isLoading, error: error ?? agentsError ?? invitesError, mutate };
 }
 
 /** Use collaborator stats. */
 export function useCollaboratorStats() {
-  const { data, isLoading } = useSWR('/partnerships/collaborators/stats', swrFetcher);
-  return {
-    stats: (data || { total: 0, online: 0, pendingInvites: 0 }) as CollaboratorStats,
+  const { data, error, isLoading } = useSWR<CollaboratorStats>(
+    '/partnerships/collaborators/stats',
+    swrFetcher,
+  );
+  const { value: stats, payloadError } = resolveRecordPayload(
+    data,
     isLoading,
-  };
+    'Invalid collaborator stats payload',
+    EMPTY_COLLABORATOR_STATS,
+    isCollaboratorStatsPayload,
+  );
+  return { stats, isLoading, error: error ?? payloadError };
 }
 
 /** Use affiliates. */
@@ -151,73 +261,101 @@ export function useAffiliates(params?: { type?: string; search?: string }) {
     qs.set('search', params.search);
   }
   const q = qs.toString();
-  const { data, isLoading, mutate } = useSWR<AffiliatesResponse>(
+  const { data, error, isLoading, mutate } = useSWR<AffiliatesResponse>(
     `/partnerships/affiliates${q ? `?${q}` : ''}`,
     swrFetcher,
   );
-  const d = data as AffiliatesResponse | undefined;
-  return {
-    affiliates: (d?.affiliates || []).map(normalizeAffiliate),
+  const { value: affiliates, payloadError } = resolveArrayEnvelope(
+    data,
     isLoading,
+    'affiliates',
+    'Invalid affiliates payload',
+    [],
+    Array.isArray,
+  );
+  return {
+    affiliates: affiliates.map(normalizeAffiliate),
+    isLoading,
+    error: error ?? payloadError,
     mutate,
   };
 }
 
 /** Use affiliate stats. */
 export function useAffiliateStats() {
-  const { data, isLoading } = useSWR<AffiliateStats>('/partnerships/affiliates/stats', swrFetcher, {
+  const { data, error, isLoading } = useSWR<AffiliateStats>('/partnerships/affiliates/stats', swrFetcher, {
     refreshInterval: 60000,
   });
+  const { value: statsPayload, payloadError } = resolveRecordPayload(
+    data,
+    isLoading,
+    'Invalid affiliate stats payload',
+    EMPTY_AFFILIATE_STATS,
+    isAffiliateStatsPayload,
+  );
   return {
     stats: {
-      activeAffiliates:
-        Number((data as Record<string, unknown> | undefined)?.activeAffiliates || 0) || 0,
-      producers: Number((data as Record<string, unknown> | undefined)?.producers || 0) || 0,
-      totalRevenue: Number((data as Record<string, unknown> | undefined)?.totalRevenue || 0) || 0,
-      totalCommissions:
-        Number((data as Record<string, unknown> | undefined)?.totalCommissions || 0) || 0,
-      topPartner: normalizeTopPartner(
-        (data as Record<string, unknown> | undefined)?.topPartner || null,
-      ),
-    } as AffiliateStats,
+      activeAffiliates: statsPayload.activeAffiliates,
+      producers: statsPayload.producers,
+      totalRevenue: statsPayload.totalRevenue,
+      totalCommissions: statsPayload.totalCommissions,
+      topPartner: normalizeTopPartner(statsPayload.topPartner),
+    } satisfies AffiliateStats,
     isLoading,
+    error: error ?? payloadError,
   };
 }
 
 /** Use affiliate detail. */
 export function useAffiliateDetail(id: string | null) {
-  const { data, isLoading } = useSWR<AffiliateDetailResponse>(
+  const { data, error, isLoading } = useSWR<AffiliateDetailResponse>(
     id ? `/partnerships/affiliates/${id}` : null,
     swrFetcher,
   );
-  const d = data as AffiliateDetailResponse | undefined;
-  return { affiliate: d?.affiliate || null, isLoading };
+  const { value: detail, payloadError } = resolveRecordPayload(
+    data,
+    isLoading,
+    'Invalid affiliate detail payload',
+    { affiliate: null },
+    isAffiliateDetailPayload,
+  );
+  return { affiliate: detail.affiliate, isLoading, error: error ?? payloadError };
 }
 
 /** Use partner chat contacts. */
 export function usePartnerChatContacts() {
-  const { data, isLoading, mutate } = useSWR<PartnerChatContactsResponse>(
+  const { data, error, isLoading, mutate } = useSWR<PartnerChatContactsResponse>(
     '/partnerships/chat/contacts',
     swrFetcher,
     { refreshInterval: 15000 },
   );
-  const contacts = Array.isArray(data?.contacts)
-    ? data.contacts.map(normalizeContact)
-    : [];
-  return { contacts, isLoading, mutate };
+  const { value: contacts, payloadError } = resolveArrayEnvelope(
+    data,
+    isLoading,
+    'contacts',
+    'Invalid partner chat contacts payload',
+    [],
+    isRecordArray,
+  );
+  return { contacts: contacts.map(normalizeContact), isLoading, error: error ?? payloadError, mutate };
 }
 
 /** Use partner messages. */
 export function usePartnerMessages(partnerId: string | null) {
-  const { data, isLoading, mutate } = useSWR<PartnerMessagesResponse>(
+  const { data, error, isLoading, mutate } = useSWR<PartnerMessagesResponse>(
     partnerId ? `/partnerships/chat/${partnerId}/messages` : null,
     swrFetcher,
     { refreshInterval: 15000 },
   );
-  const messages = Array.isArray(data?.messages)
-    ? data.messages.map(normalizeMessage)
-    : [];
-  return { messages, isLoading, mutate };
+  const { value: messages, payloadError } = resolveArrayEnvelope(
+    data,
+    isLoading,
+    'messages',
+    'Invalid partner messages payload',
+    [],
+    isRecordArray,
+  );
+  return { messages: messages.map(normalizeMessage), isLoading, error: error ?? payloadError, mutate };
 }
 
 const invalidateCollaborators = () =>
@@ -227,71 +365,96 @@ const invalidateAffiliates = () =>
 const invalidateChat = () =>
   mutate((key: string) => typeof key === 'string' && key.startsWith('/partnerships/chat'));
 
+function requirePartnershipMutationSuccess<T extends { error?: string }>(response: T): T {
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  return response;
+}
+
 /** Invite collaborator. */
 export async function inviteCollaborator(data: { email: string; role: string }) {
-  const res = await apiFetch('/partnerships/collaborators/invite', { method: 'POST', body: data });
+  const res = requirePartnershipMutationSuccess(
+    await apiFetch('/partnerships/collaborators/invite', { method: 'POST', body: data }),
+  );
   await invalidateCollaborators();
   return res;
 }
 
 /** Revoke invite. */
 export async function revokeInvite(id: string) {
-  const res = await apiFetch(`/partnerships/collaborators/invite/${id}`, { method: 'DELETE' });
+  const res = requirePartnershipMutationSuccess(
+    await apiFetch(`/partnerships/collaborators/invite/${id}`, { method: 'DELETE' }),
+  );
   await invalidateCollaborators();
   return res;
 }
 
 /** Update collaborator role. */
 export async function updateCollaboratorRole(agentId: string, role: string) {
-  const res = await apiFetch(`/partnerships/collaborators/${agentId}/role`, {
-    method: 'PUT',
-    body: { role },
-  });
+  const res = requirePartnershipMutationSuccess(
+    await apiFetch(`/partnerships/collaborators/${agentId}/role`, {
+      method: 'PUT',
+      body: { role },
+    }),
+  );
   await invalidateCollaborators();
   return res;
 }
 
 /** Remove collaborator. */
 export async function removeCollaborator(agentId: string) {
-  const res = await apiFetch(`/partnerships/collaborators/${agentId}`, { method: 'DELETE' });
+  const res = requirePartnershipMutationSuccess(
+    await apiFetch(`/partnerships/collaborators/${agentId}`, { method: 'DELETE' }),
+  );
   await invalidateCollaborators();
   return res;
 }
 
 /** Create affiliate. */
 export async function createAffiliate(data: Record<string, unknown>) {
-  const res = await apiFetch('/partnerships/affiliates', { method: 'POST', body: data });
+  const res = requirePartnershipMutationSuccess(
+    await apiFetch('/partnerships/affiliates', { method: 'POST', body: data }),
+  );
   await invalidateAffiliates();
   return res;
 }
 
 /** Approve affiliate. */
 export async function approveAffiliate(id: string) {
-  const res = await apiFetch(`/partnerships/affiliates/${id}/approve`, { method: 'POST' });
+  const res = requirePartnershipMutationSuccess(
+    await apiFetch(`/partnerships/affiliates/${id}/approve`, { method: 'POST' }),
+  );
   await invalidateAffiliates();
   return res;
 }
 
 /** Revoke affiliate. */
 export async function revokeAffiliate(id: string) {
-  const res = await apiFetch(`/partnerships/affiliates/${id}/revoke`, { method: 'POST' });
+  const res = requirePartnershipMutationSuccess(
+    await apiFetch(`/partnerships/affiliates/${id}/revoke`, { method: 'POST' }),
+  );
   await invalidateAffiliates();
   return res;
 }
 
 /** Send partner message. */
 export async function sendPartnerMessage(partnerId: string, content: string) {
-  const res = await apiFetch(`/partnerships/chat/${partnerId}/messages`, {
-    method: 'POST',
-    body: { content },
-  });
+  const res = requirePartnershipMutationSuccess(
+    await apiFetch(`/partnerships/chat/${partnerId}/messages`, {
+      method: 'POST',
+      body: { content },
+    }),
+  );
   await invalidateChat();
   return res;
 }
 
 /** Mark partner as read. */
 export async function markPartnerAsRead(partnerId: string) {
-  const res = await apiFetch(`/partnerships/chat/${partnerId}/read`, { method: 'PUT' });
+  const res = requirePartnershipMutationSuccess(
+    await apiFetch(`/partnerships/chat/${partnerId}/read`, { method: 'PUT' }),
+  );
   await invalidateChat();
   return res;
 }

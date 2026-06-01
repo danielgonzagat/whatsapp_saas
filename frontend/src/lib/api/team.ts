@@ -3,7 +3,9 @@ import { mutate } from 'swr';
 import { apiFetch } from './core';
 
 const invalidateTeam = () =>
-  mutate((key: string) => typeof key === 'string' && key.startsWith('/team'));
+  mutate(
+    (key: unknown) => typeof key === 'string' && (key === '/team' || key.endsWith(':/team')),
+  );
 
 /** Team member shape (backend: agent). */
 export interface TeamMember {
@@ -43,13 +45,32 @@ export interface TeamListResponse {
   invitations: TeamInvite[];
 }
 
+type TeamApiEnvelope<T> = {
+  data?: T | undefined;
+  error?: string | undefined;
+  status: number;
+};
+
+function confirmTeamPayload<T>(
+  response: TeamApiEnvelope<T>,
+  fallbackMessage: string,
+  missingPayloadMessage: string,
+): T {
+  if (response.error || response.status >= 400) {
+    throw new Error(response.error ?? fallbackMessage);
+  }
+
+  if (response.data === undefined || response.data === null) {
+    throw new Error(missingPayloadMessage);
+  }
+
+  return response.data;
+}
+
 /** List team. */
 export async function listTeam(): Promise<TeamListResponse> {
   const res = await apiFetch<TeamListResponse>('/team');
-  if (res.error) {
-    throw new Error(res.error || 'Erro ao listar equipe');
-  }
-  return res.data ?? { agents: [], invitations: [] };
+  return confirmTeamPayload(res, 'Erro ao listar equipe', 'Team list did not return a confirmed payload');
 }
 
 /** Invite team member. */
@@ -58,28 +79,34 @@ export async function inviteTeamMember(email: string, role: string): Promise<Tea
     method: 'POST',
     body: { email, role },
   });
-  if (res.error) {
-    throw new Error(res.error || 'Erro ao enviar convite');
-  }
+  const invite = confirmTeamPayload(
+    res,
+    'Erro ao enviar convite',
+    'Team invite did not return a confirmed payload',
+  );
   invalidateTeam();
-  return res.data as TeamInvite;
+  return invite;
 }
 
 /** Revoke team invite. */
 export async function revokeTeamInvite(id: string): Promise<void> {
-  const res = await apiFetch<void>(`/team/invite/${id}`, { method: 'DELETE' });
-  if (res.error) {
-    throw new Error(res.error || 'Erro ao cancelar convite');
-  }
+  const res = await apiFetch<TeamInvite>(`/team/invite/${id}`, { method: 'DELETE' });
+  confirmTeamPayload(
+    res,
+    'Erro ao cancelar convite',
+    'Team invite revocation did not return a confirmed payload',
+  );
   invalidateTeam();
 }
 
 /** Remove team member. */
 export async function removeTeamMember(id: string): Promise<void> {
-  const res = await apiFetch<void>(`/team/member/${id}`, { method: 'DELETE' });
-  if (res.error) {
-    throw new Error(res.error || 'Erro ao remover membro');
-  }
+  const res = await apiFetch<TeamMember>(`/team/member/${id}`, { method: 'DELETE' });
+  confirmTeamPayload(
+    res,
+    'Erro ao remover membro',
+    'Team member removal did not return a confirmed payload',
+  );
   invalidateTeam();
 }
 
@@ -89,11 +116,13 @@ export async function updateMemberRole(id: string, role: string): Promise<TeamMe
     method: 'PATCH',
     body: { role },
   });
-  if (res.error) {
-    throw new Error(res.error || 'Erro ao atualizar cargo');
-  }
+  const member = confirmTeamPayload(
+    res,
+    'Erro ao atualizar cargo',
+    'Team role update did not return a confirmed payload',
+  );
   invalidateTeam();
-  return res.data as TeamMember;
+  return member;
 }
 
 /** Accept invite. */
@@ -106,8 +135,9 @@ export async function acceptTeamInvite(
     method: 'POST',
     body: { token, name, password },
   });
-  if (res.error) {
-    throw new Error(res.error || 'Erro ao aceitar convite');
-  }
-  return res.data as TeamMember;
+  return confirmTeamPayload(
+    res,
+    'Erro ao aceitar convite',
+    'Team invite acceptance did not return a confirmed payload',
+  );
 }

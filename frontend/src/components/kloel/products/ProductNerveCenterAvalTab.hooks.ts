@@ -17,12 +17,18 @@ export function useProductReviews(productId: string) {
       apiFetch(`/products/${productId}/reviews`)
         .then((res: unknown) => {
           const d = unwrapApiPayload<Record<string, unknown>[]>(res);
-          setReviews(Array.isArray(d) ? d : []);
+          if (!Array.isArray(d)) {
+            throw new Error('Invalid product reviews payload');
+          }
+          setReviews(d);
         })
-        .catch(() => setReviews([]))
+        .catch((e: unknown) => {
+          console.error(e);
+          showToast(e instanceof Error ? e.message : 'Erro ao carregar avaliações', 'error');
+        })
         .finally(() => setReviewsLoading(false));
     }
-  }, [productId]);
+  }, [productId, showToast]);
 
   const [newRevName, setNewRevName] = useState('');
   const [newRevRating, setNewRevRating] = useState(5);
@@ -60,7 +66,9 @@ export function useProductReviews(productId: string) {
 
   const handleDeleteReview = async (id: string) => {
     try {
-      await apiFetch(`/products/${productId}/reviews/${id}`, { method: 'DELETE' });
+      unwrapApiPayload(
+        await apiFetch(`/products/${productId}/reviews/${id}`, { method: 'DELETE' }),
+      );
       setReviews((prev) => prev.filter((r) => r.id !== id));
       showToast('Avaliação removida', 'success');
     } catch (e) {

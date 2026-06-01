@@ -1,13 +1,20 @@
 'use client';
 
 import { useConversationHistory } from '@/hooks/useConversationHistory';
+import { searchKloelGlobal } from '@/lib/api/kloel-search';
 import { searchKloelThreads } from '@/lib/kloel-conversations';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   type ConversationSearchResult,
   groupConversationSearchResults,
 } from './conversation-search-utils';
-import { mapRecentConversation, mapSearchPayload } from './command-palette-utils';
+import {
+  mapGlobalSearchPayload,
+  mapRecentConversation,
+  mapSearchPayload,
+} from './command-palette-utils';
+
+export type CommandPaletteMode = 'full' | 'conversations';
 
 /** Use command palette args shape. */
 export interface UseCommandPaletteArgs {
@@ -15,16 +22,19 @@ export interface UseCommandPaletteArgs {
   open?: boolean | undefined;
   /** Initial search property. */
   initialSearch?: string | undefined;
+  /** Search mode property. */
+  mode?: CommandPaletteMode | undefined;
 }
 
 /** Use command palette. */
-export function useCommandPalette({ open, initialSearch }: UseCommandPaletteArgs) {
-  const { conversations, setActiveConversation } = useConversationHistory();
+export function useCommandPalette({ open, initialSearch, mode = 'full' }: UseCommandPaletteArgs) {
+  const { conversations, loadAllConversations, setActiveConversation } = useConversationHistory();
 
   const [query, setQuery] = useState(initialSearch || '');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [remoteResults, setRemoteResults] = useState<ConversationSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const itemRefsRef = useRef<Array<HTMLButtonElement | null>>([]);
 
@@ -65,11 +75,30 @@ export function useCommandPalette({ open, initialSearch }: UseCommandPaletteArgs
       setSelectedIndex(0);
       setRemoteResults([]);
       setIsSearching(false);
+      setSearchError(null);
     });
     return () => {
       cancelled = true;
     };
   }, [initialSearch, open]);
+
+  useEffect(() => {
+    if (!(open && mode === 'conversations')) {
+      return;
+    }
+
+    let cancelled = false;
+    void loadAllConversations().catch((err: unknown) => {
+      if (cancelled) {
+        return;
+      }
+      setSearchError(err instanceof Error ? err.message : 'conversation_history_failed');
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loadAllConversations, mode, open]);
 
   useEffect(() => {
     if (!open) {
@@ -103,21 +132,31 @@ export function useCommandPalette({ open, initialSearch }: UseCommandPaletteArgs
       if (!cancelled) {
         setIsSearching(true);
         setRemoteResults([]);
+        setSearchError(null);
       }
     }, 0);
 
     const timer = window.setTimeout(async () => {
       try {
-        const results = await searchKloelThreads(normalizedQuery, 20);
+        const results =
+          mode === 'conversations'
+            ? (await searchKloelThreads(normalizedQuery, 20)).map((result) =>
+                mapSearchPayload(result),
+              )
+            : (await searchKloelGlobal(normalizedQuery, 20)).results.map((result) =>
+                mapGlobalSearchPayload(result),
+              );
         if (cancelled) {
           return;
         }
-        setRemoteResults(results.map((result) => mapSearchPayload(result)));
-      } catch {
+        setRemoteResults(results);
+        setSearchError(null);
+      } catch (err) {
         if (cancelled) {
           return;
         }
         setRemoteResults([]);
+        setSearchError(err instanceof Error ? err.message : 'search_failed');
       } finally {
         if (!cancelled) {
           setIsSearching(false);
@@ -130,7 +169,7 @@ export function useCommandPalette({ open, initialSearch }: UseCommandPaletteArgs
       window.clearTimeout(startTimer);
       window.clearTimeout(timer);
     };
-  }, [isQueryActionable, query]);
+  }, [isQueryActionable, mode, query]);
 
   // Ignore stale remote state when the query is not actionable.
   const effectiveRemoteResults = useMemo(
@@ -169,6 +208,7 @@ export function useCommandPalette({ open, initialSearch }: UseCommandPaletteArgs
     selectedIndex: clampedSelectedIndex,
     setSelectedIndex,
     isSearching: effectiveIsSearching,
+    searchError,
     results,
     groupedResults,
     inputRef,

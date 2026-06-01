@@ -100,14 +100,36 @@ export interface CheckoutProductDetailShape {
  * return — bare array, `{ products: [...] }` envelope, or `{ data: [...] }`
  * envelope — into a flat array. Returns an empty array on null/undefined.
  */
+function invalidCheckoutProductsPayload(): never {
+  throw new Error('Invalid checkout products payload');
+}
+
+function readCheckoutProductItemList(value: unknown): CheckoutProductItem[] | null {
+  return Array.isArray(value) ? value : null;
+}
+
 export function extractCheckoutProductList(
   raw: CheckoutProductItem[] | CheckoutProductListResponse | undefined,
 ): CheckoutProductItem[] {
-  if (Array.isArray(raw)) {
-    return raw;
+  if (!raw) {
+    return [];
   }
-  const envelope = raw;
-  return envelope?.products || envelope?.data || [];
+  const rawArray = readCheckoutProductItemList(raw);
+  if (rawArray) {
+    return rawArray;
+  }
+  if (!isRecord(raw)) {
+    return invalidCheckoutProductsPayload();
+  }
+  if ('products' in raw) {
+    const products = readCheckoutProductItemList(raw.products);
+    return products ?? invalidCheckoutProductsPayload();
+  }
+  if ('data' in raw) {
+    const data = readCheckoutProductItemList(raw.data);
+    return data ?? invalidCheckoutProductsPayload();
+  }
+  return [];
 }
 
 /**
@@ -152,11 +174,56 @@ export function unwrapArrayOrEnvelope<T>(data: unknown, key: string): T[] {
   if (Array.isArray(data)) {
     return data as T[];
   }
-  if (!data || typeof data !== 'object') {
+  if (!isRecord(data)) {
     return [];
   }
-  const value = (data as Record<string, unknown>)[key];
-  return Array.isArray(value) ? (value as T[]) : [];
+  if (!Object.prototype.hasOwnProperty.call(data, key)) {
+    return [];
+  }
+  const value = data[key];
+  if (Array.isArray(value)) {
+    return value as T[];
+  }
+  throw new Error(`Invalid checkout ${key} payload`);
+}
+
+/**
+ * Prevent checkout/product sub-resource flows from treating backend error
+ * envelopes as persisted writes. `apiFetch` resolves `{ error }` instead of
+ * throwing for non-2xx responses, and some backend handlers also return
+ * `{ success: false }` in a 2xx envelope.
+ */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function hasCheckoutMutationSuccessMarker(response: Record<string, unknown>): boolean {
+  return (
+    response.success === true ||
+    isRecord(response.data) ||
+    typeof response.deleted === 'string' ||
+    typeof response.id === 'string'
+  );
+}
+
+export function requireCheckoutMutationSuccess<T>(
+  response: T & { error?: string; success?: boolean },
+  fallback: string,
+): T & { error?: string; success?: boolean } {
+  if (!isRecord(response)) {
+    throw new Error('Invalid checkout mutation response');
+  }
+  const responseError = response.error;
+  if (typeof responseError === 'string' && responseError.trim()) {
+    throw new Error(responseError);
+  }
+  if (responseError || response.success === false) {
+    throw new Error(fallback);
+  }
+  if (!hasCheckoutMutationSuccessMarker(response)) {
+    throw new Error('Invalid checkout mutation response');
+  }
+  return response;
 }
 
 /**
@@ -232,10 +299,29 @@ export function buildCheckoutSeedProduct(
  * Centralizing the dual-key fallback here pins the precedence and keeps
  * the hook body readable.
  */
+function invalidCheckoutPlansPayload(): never {
+  throw new Error('Invalid checkout plans payload');
+}
+
+function readCheckoutPlanList(value: unknown): CheckoutPlanShape[] | null {
+  return Array.isArray(value) ? value : null;
+}
+
 export function extractPlansFromDetail(
   data: CheckoutProductDetailShape | null | undefined,
 ): CheckoutPlanShape[] {
-  return data?.checkoutPlans || data?.plans || [];
+  if (!data) {
+    return [];
+  }
+  if ('checkoutPlans' in data) {
+    const checkoutPlans = readCheckoutPlanList(data.checkoutPlans);
+    return checkoutPlans ?? invalidCheckoutPlansPayload();
+  }
+  if ('plans' in data) {
+    const plans = readCheckoutPlanList(data.plans);
+    return plans ?? invalidCheckoutPlansPayload();
+  }
+  return [];
 }
 
 /**
@@ -243,10 +329,31 @@ export function extractPlansFromDetail(
  * response, preferring `checkoutTemplates` over the legacy `checkouts`
  * envelope. Returns `[]` when neither is present.
  */
+function invalidCheckoutTemplatesPayload(): never {
+  throw new Error('Invalid checkout templates payload');
+}
+
+function readCheckoutTemplateList(
+  value: unknown,
+): Array<{ id: string; [key: string]: unknown }> | null {
+  return Array.isArray(value) ? value : null;
+}
+
 export function extractCheckoutsFromDetail(
   data: CheckoutProductDetailShape | null | undefined,
 ): Array<{ id: string; [key: string]: unknown }> {
-  return data?.checkoutTemplates || data?.checkouts || [];
+  if (!data) {
+    return [];
+  }
+  if ('checkoutTemplates' in data) {
+    const checkoutTemplates = readCheckoutTemplateList(data.checkoutTemplates);
+    return checkoutTemplates ?? invalidCheckoutTemplatesPayload();
+  }
+  if ('checkouts' in data) {
+    const checkouts = readCheckoutTemplateList(data.checkouts);
+    return checkouts ?? invalidCheckoutTemplatesPayload();
+  }
+  return [];
 }
 
 /**
@@ -254,10 +361,17 @@ export function extractCheckoutsFromDetail(
  * the field is missing or non-array. Equivalent in behavior to the
  * original inline guard but reusable from unit tests.
  */
+function invalidCheckoutPixelsPayload(): never {
+  throw new Error('Invalid checkout pixels payload');
+}
+
 export function extractPixels<TPixel extends { id: string }>(
   data: { pixels?: TPixel[] } | null | undefined,
 ): TPixel[] {
-  return Array.isArray(data?.pixels) ? data.pixels : [];
+  if (!data || !('pixels' in data)) {
+    return [];
+  }
+  return Array.isArray(data.pixels) ? data.pixels : invalidCheckoutPixelsPayload();
 }
 
 /**

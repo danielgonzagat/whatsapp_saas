@@ -5,6 +5,21 @@ import { apiFetch, buildQuery } from './core';
 const invalidateWhatsAppApi = () =>
   mutate((key: string) => typeof key === 'string' && key.startsWith('/whatsapp'));
 
+type WhatsAppMutationEnvelope = { error?: string | undefined; status: number };
+
+function confirmWhatsAppMutation<T extends WhatsAppMutationEnvelope>(
+  response: T,
+  fallbackMessage: string,
+): T {
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  if (response.status >= 400) {
+    throw new Error(fallbackMessage);
+  }
+  return response;
+}
+
 /** Whatsapp api. */
 export const whatsappApi = {
   startBacklog: async (mode: string, limit?: number) => {
@@ -18,8 +33,9 @@ export const whatsappApi = {
       method: 'POST',
       body: { mode, limit },
     });
+    const confirmed = confirmWhatsAppMutation(res, 'Falha ao iniciar backlog do WhatsApp.');
     invalidateWhatsAppApi();
-    return res;
+    return confirmed;
   },
 
   claimSession: async (sourceWorkspaceId: string) => {
@@ -33,8 +49,9 @@ export const whatsappApi = {
       method: 'POST',
       body: { sourceWorkspaceId },
     });
+    const confirmed = confirmWhatsAppMutation(res, 'Falha ao assumir sessao do WhatsApp.');
     invalidateWhatsAppApi();
-    return res;
+    return confirmed;
   },
 
   getChats: () => {

@@ -21,21 +21,62 @@ export interface Launcher {
 
 export type LauncherListPayload = Launcher[] | { launchers?: Launcher[]; data?: Launcher[] };
 
-export const launchApi = {
-  listLaunchers: () => apiFetch<LauncherListPayload>('/launch/launchers'),
+type LaunchApiEnvelope<T> = {
+  data?: T | undefined;
+  error?: string | undefined;
+  status: number;
+};
 
-  createLauncher: (data: { name: string; description?: string; [key: string]: unknown }) =>
-    apiFetch<Launcher>('/launch/launcher', {
+function confirmLaunchPayload<T>(
+  response: LaunchApiEnvelope<T>,
+  fallbackMessage: string,
+  missingPayloadMessage: string,
+): LaunchApiEnvelope<T> {
+  if (response.error || response.status >= 400) {
+    throw new Error(response.error ?? fallbackMessage);
+  }
+
+  if (response.data === undefined || response.data === null) {
+    throw new Error(missingPayloadMessage);
+  }
+
+  return response;
+}
+
+export const launchApi = {
+  async listLaunchers() {
+    const response = await apiFetch<LauncherListPayload>('/launch/launchers');
+    return confirmLaunchPayload(
+      response,
+      'Erro ao carregar launchers',
+      'Launchpad list did not return a confirmed payload',
+    );
+  },
+
+  async createLauncher(data: { name: string; description?: string; [key: string]: unknown }) {
+    const response = await apiFetch<Launcher>('/launch/launcher', {
       method: 'POST',
       body: data,
-    }),
+    });
+    return confirmLaunchPayload(
+      response,
+      'Erro ao criar launcher',
+      'Launcher creation did not return a confirmed payload',
+    );
+  },
 
-  addGroups: (launcherId: string, data: { groupLink: string; [key: string]: unknown }) =>
-    apiFetch<{ id: string; groupLink: string }>(
+  async addGroups(launcherId: string, data: { groupLink: string; [key: string]: unknown }) {
+    const response = await apiFetch<LauncherGroup>(
       `/launch/launcher/${encodeURIComponent(launcherId)}/groups`,
       {
         method: 'POST',
         body: data,
       },
-    ),
+    );
+    return confirmLaunchPayload(
+      response,
+      'Erro ao adicionar grupo',
+      'Launcher group addition did not return a confirmed payload',
+    );
+  },
 };

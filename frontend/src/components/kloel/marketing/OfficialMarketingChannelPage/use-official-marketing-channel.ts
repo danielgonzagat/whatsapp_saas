@@ -2,6 +2,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useProducts } from '@/hooks/useProducts';
 import { apiFetch } from '@/lib/api';
 import {
+  addChannelArsenal,
+  completeChannelSetup,
+  getChannelSetup,
+  saveChannelConfig,
+  saveChannelProducts,
+  type ChannelSetupArsenal,
+  type ChannelSetupState,
+} from '@/lib/api/channel-setup';
+import {
   type ChannelConnectionStatus,
   type ChannelKey,
   type ConnectStatus,
@@ -23,6 +32,104 @@ interface UseOfficialMarketingChannelOptions {
   channel: ChannelKey;
   initialStep?: number | undefined;
 }
+function readConnectChannelStatus(
+  currentStatus: ConnectStatus | null,
+  channel: ChannelKey,
+): ChannelConnectionStatus | null {
+  const channels = currentStatus?.channels as
+    | Partial<Record<ChannelKey, ChannelConnectionStatus>>
+    | undefined;
+  return channels?.[channel] || null;
+}
+function serializeChannelArsenal(asset: ChannelSetupArsenal): string {
+  const originalName =
+    typeof asset.metadata?.originalName === 'string' ? asset.metadata.originalName : '';
+  const description = asset.label?.trim() || originalName || asset.storageRef;
+  return JSON.stringify({
+    assetId: asset.assetId,
+    description,
+    productId: '',
+    storageRef: asset.storageRef,
+    type: asset.type,
+    uploadedAt: asset.uploadedAt || '',
+  });
+}
+
+function readSetupStringValue(value: unknown, keys: string[], fallback: string): string {
+  if (typeof value === 'string' && value.trim()) {
+    return value.trim();
+  }
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return fallback;
+  }
+  const record = value as Record<string, unknown>;
+  for (const key of keys) {
+    const candidate = record[key];
+    if (typeof candidate === 'string' && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+  return fallback;
+}
+
+function mergeRealChannelSetup(base: ChannelSetup, realSetup: ChannelSetupState | null): ChannelSetup {
+  if (!realSetup) {
+    return base;
+  }
+  const realStep = Number(realSetup.setup?.currentStep);
+  const realConfig = realSetup.config;
+  return {
+    ...base,
+    currentStep: Number.isInteger(realStep)
+      ? Math.max(base.currentStep, Math.min(3, Math.max(0, realStep)))
+      : base.currentStep,
+    selectedProductIds: realSetup.selectedProductIds,
+    arsenal: realSetup.arsenal.map(serializeChannelArsenal),
+    config: realConfig
+      ? {
+          ...base.config,
+          tone: realConfig.tone || base.config.tone,
+          aggressiveness: realConfig.aggressiveness || base.config.aggressiveness,
+          workingHours: readSetupStringValue(realConfig.businessHours, ['display', 'value', 'raw'], base.config.workingHours),
+          followUpEnabled: realConfig.followupEnabled,
+          proactiveDailyLimit: realConfig.dailyMessageLimit,
+          language: realConfig.language || base.config.language,
+          handoffCriteria: readSetupStringValue(realConfig.transferCriteria, ['display', 'criteria', 'value', 'raw'], base.config.handoffCriteria),
+        }
+      : base.config,
+  };
+}
+
+function toRealChannelConfig(config: ChannelSetup['config']): Record<string, unknown> {
+  return {
+    tone: config.tone,
+    aggressiveness: config.aggressiveness,
+    businessHours: { display: config.workingHours },
+    followupEnabled: config.followUpEnabled,
+    dailyMessageLimit: config.proactiveDailyLimit,
+    transferCriteria: { display: config.handoffCriteria },
+    language: config.language,
+  };
+}
+
+function inferArsenalType(file: File): string {
+  const mime = file.type.toLowerCase();
+  if (mime.startsWith('image/')) {
+    return 'image';
+  }
+  if (mime.startsWith('audio/')) {
+    return 'audio';
+  }
+  if (mime.startsWith('video/')) {
+    return 'video';
+  }
+  if (mime === 'text/plain' || mime === 'text/csv') {
+    return 'text';
+  }
+  return 'document';
+}
+
+
 export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficialMarketingChannelOptions) {
   const { products } = useProducts();
   const [status, setStatus] = useState<ConnectStatus | null>(null);
@@ -62,12 +169,9 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
         status: googleAdsStatus?.status,
       };
     }
-    const channelStatus = status?.channels as
-      | Partial<Record<ChannelKey, ChannelConnectionStatus>>
-      | undefined;
-    return channelStatus?.[channel] || null;
+    return readConnectChannelStatus(status, channel);
   }, [channel, googleAdsStatus, status, tiktokStatus]);
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (): Promise<ConnectStatus | null> => {
     setIsLoading(true);
     setSetupLoaded(false);
     setLoadError(null);
@@ -76,15 +180,17 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
       if (nextStatus.error) {
         throw new Error(nextStatus.error);
       }
-      setStatus(nextStatus.data || null);
+      const nextConnectStatus = nextStatus.data || null;
+      setStatus(nextConnectStatus);
       const setupResponse = await apiFetch<{ setup?: unknown; completedAt?: string | null }>(
         `/marketing/connect/channel-setup?channel=${encodeURIComponent(channel)}`,
       );
       if (setupResponse.error) {
         throw new Error(setupResponse.error);
       }
-      setSetup(normalizeSetup(setupResponse.data?.setup));
-      setCompleted(Boolean(setupResponse.data?.completedAt));
+      const realSetup = await getChannelSetup(channel);
+      setSetup(mergeRealChannelSetup(normalizeSetup(setupResponse.data?.setup), realSetup));
+      setCompleted(Boolean(setupResponse.data?.completedAt || realSetup.completed));
       setSetupLoaded(true);
       if (channel === 'tiktok') {
         const nextTikTok = await apiFetch<TikTokStatus>('/marketing/connect/tiktok/status');
@@ -106,8 +212,10 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
         }
         setGoogleAdsStatus(nextGoogleAds.data || null);
       }
+      return nextConnectStatus;
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : 'Falha ao carregar status.');
+      return null;
     } finally {
       setIsLoading(false);
     }
@@ -233,7 +341,7 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
     await refresh();
   }, [disconnectArmed, refresh]);
   const toggleEmail = useCallback(
-    async (enabled: boolean) => {
+    async (enabled: boolean): Promise<boolean> => {
       setBusy('email');
       setMessage(null);
       const response = await apiFetch('/marketing/connect/email', {
@@ -243,13 +351,69 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
       setBusy(null);
       if (response.error) {
         setMessage(response.error);
-        return;
+        return false;
       }
-      setMessage(enabled ? 'Email ativado.' : 'Email desativado.');
-      await refresh();
+      const nextStatus = await refresh();
+      const connected = Boolean(readConnectChannelStatus(nextStatus, 'email')?.connected);
+      setMessage(
+        enabled
+          ? connected
+            ? 'Email ativado.'
+            : 'Email solicitado, mas backend ainda nao confirmou conexao.'
+          : 'Email desativado.',
+      );
+      return connected;
     },
     [refresh],
   );
+  const uploadArsenalFiles = useCallback(
+    async (files: FileList): Promise<boolean> => {
+      const fileList = Array.from(files);
+      if (fileList.length === 0) {
+        return false;
+      }
+      setBusy('arsenal-upload');
+      setMessage(null);
+      try {
+        let latestState: ChannelSetupState | null = null;
+        for (const file of fileList) {
+          latestState = await addChannelArsenal(channel, {
+            file,
+            label: file.name,
+            type: inferArsenalType(file),
+          });
+        }
+        if (latestState) {
+          setSetup((current) => mergeRealChannelSetup(current, latestState));
+          setSetupLoaded(true);
+        }
+        setMessage('Arsenal do canal atualizado.');
+        return true;
+      } catch (error) {
+        setMessage(error instanceof Error ? error.message : 'Falha ao enviar arsenal.');
+        return false;
+      } finally {
+        setBusy(null);
+      }
+    },
+    [channel],
+  );
+  const saveSelectedProducts = useCallback(async (): Promise<boolean> => {
+    setBusy('products');
+    setMessage(null);
+    try {
+      const realSetup = await saveChannelProducts(channel, setup.selectedProductIds);
+      setSetup((current) => mergeRealChannelSetup({ ...current, currentStep: 2 }, realSetup));
+      setSetupLoaded(true);
+      setMessage('Produtos do canal salvos.');
+      return true;
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Falha ao salvar produtos do canal.');
+      return false;
+    } finally {
+      setBusy(null);
+    }
+  }, [channel, setup.selectedProductIds]);
   const sendEmailTest = useCallback(async () => {
     setBusy('email-test');
     setMessage(null);
@@ -297,24 +461,31 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
     }
   }, []);
 
-  const handleComplete = useCallback(async () => {
+  const handleComplete = useCallback(async (): Promise<boolean> => {
     setCompleteBusy(true);
     setCompleteMessage(null);
-    const response = await apiFetch<{ completedAt?: string }>(
-      '/marketing/connect/channel-setup/complete',
-      { method: 'POST', body: { channel } },
-    );
-    setCompleteBusy(false);
-    if (response.error) {
-      setCompleteMessage(response.error);
-      return;
+    setMessage(null);
+    try {
+      const configuredState = await saveChannelConfig(channel, toRealChannelConfig(setup.config));
+      setSetup((current) =>
+        mergeRealChannelSetup({ ...current, currentStep: 3 }, configuredState),
+      );
+      const completedState = await completeChannelSetup(channel);
+      setSetup((current) =>
+        mergeRealChannelSetup({ ...current, currentStep: 3 }, completedState),
+      );
+      setCompleted(Boolean(completedState.completed));
+      setSetupLoaded(true);
+      setCompleteMessage('Setup concluido. O canal esta liberado para operacao.');
+      await refresh();
+      return true;
+    } catch (error) {
+      setCompleteMessage(error instanceof Error ? error.message : 'Falha ao concluir setup.');
+      return false;
+    } finally {
+      setCompleteBusy(false);
     }
-    setCompleteMessage('Setup concluido. O canal esta liberado para operacao.');
-    setSetup({ ...setup, currentStep: 3 });
-    setCompleted(true);
-    setSetupLoaded(true);
-    await refresh();
-  }, [channel, setup, refresh]);
+  }, [channel, refresh, setup.config]);
   const details = channel === 'tiktok' ? tiktokStatus : channelSession;
   const setupUnavailable =
     channelSession?.status === 'server_not_configured' ||
@@ -353,12 +524,14 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
     badgeStatus,
     setCurrentStep,
     toggleProduct,
+    saveSelectedProducts,
     updateConfig,
     persistSetup,
     refresh,
     openMeta,
     disconnectMeta,
     toggleEmail,
+    uploadArsenalFiles,
     sendEmailTest,
     openTikTok,
     openGoogleAds,

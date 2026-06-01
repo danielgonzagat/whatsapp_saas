@@ -11,8 +11,10 @@ import {
   extractPlansFromDetail,
   matchesProduct,
   resolveOrdersTotal,
+  requireCheckoutMutationSuccess,
   unwrapArrayOrEnvelope,
   type CheckoutProductItem,
+  type CheckoutProductListResponse,
   type DashboardProduct,
 } from './useCheckoutPlans.helpers';
 
@@ -44,6 +46,14 @@ describe('extractCheckoutProductList', () => {
 
   it('returns empty array for an empty envelope', () => {
     expect(extractCheckoutProductList({})).toEqual([]);
+  });
+
+  it('throws malformed checkout product list envelopes instead of returning a false list', () => {
+    expect(() =>
+      extractCheckoutProductList({
+        products: { id: 'prod-real', name: 'Produto real' },
+      } as unknown as CheckoutProductListResponse),
+    ).toThrow('Invalid checkout products payload');
   });
 });
 
@@ -133,13 +143,13 @@ describe('unwrapArrayOrEnvelope', () => {
     expect(unwrapArrayOrEnvelope<number>({}, 'items')).toEqual([]);
   });
 
-  it('returns empty array when the key holds a non-array value', () => {
-    expect(
+  it('throws when the named key holds a non-array value instead of returning a false empty list', () => {
+    expect(() =>
       unwrapArrayOrEnvelope<number>(
         { items: 'not-array' } as unknown as { items: number[] },
         'items',
       ),
-    ).toEqual([]);
+    ).toThrow('Invalid checkout items payload');
   });
 });
 
@@ -184,7 +194,14 @@ describe('buildDuplicatePlanBody', () => {
       extra: 'ignored',
     } as never);
     expect(Object.keys(body).sort()).toEqual(
-      ['freeShipping', 'maxInstallments', 'name', 'priceInCents', 'quantity', 'shippingPrice'].sort(),
+      [
+        'freeShipping',
+        'maxInstallments',
+        'name',
+        'priceInCents',
+        'quantity',
+        'shippingPrice',
+      ].sort(),
     );
   });
 });
@@ -294,6 +311,14 @@ describe('extractPlansFromDetail', () => {
   it('returns empty array when neither key is present', () => {
     expect(extractPlansFromDetail({ id: 'pid' })).toEqual([]);
   });
+
+  it('throws malformed checkoutPlans values instead of returning a false plan list', () => {
+    expect(() =>
+      extractPlansFromDetail({
+        checkoutPlans: { id: 'plan-real', name: 'Plano real' },
+      } as unknown as Parameters<typeof extractPlansFromDetail>[0]),
+    ).toThrow('Invalid checkout plans payload');
+  });
 });
 
 describe('extractCheckoutsFromDetail', () => {
@@ -317,6 +342,14 @@ describe('extractCheckoutsFromDetail', () => {
   it('returns empty array when neither key is present', () => {
     expect(extractCheckoutsFromDetail({ id: 'pid' })).toEqual([]);
   });
+
+  it('throws malformed checkoutTemplates values instead of returning a false checkout list', () => {
+    expect(() =>
+      extractCheckoutsFromDetail({
+        checkoutTemplates: { id: 'checkout-real' },
+      } as unknown as Parameters<typeof extractCheckoutsFromDetail>[0]),
+    ).toThrow('Invalid checkout templates payload');
+  });
 });
 
 describe('extractPixels', () => {
@@ -332,8 +365,10 @@ describe('extractPixels', () => {
     expect(extractPixels({})).toEqual([]);
   });
 
-  it('returns empty array when pixels field is non-array', () => {
-    expect(extractPixels({ pixels: 'nope' } as unknown as { pixels: never[] })).toEqual([]);
+  it('throws when pixels field is non-array instead of returning a false empty list', () => {
+    expect(() => extractPixels({ pixels: 'nope' } as unknown as { pixels: never[] })).toThrow(
+      'Invalid checkout pixels payload',
+    );
   });
 
   it('returns the pixels array when present', () => {
@@ -366,5 +401,30 @@ describe('resolveOrdersTotal', () => {
   it('returns the envelope total even when it is 0', () => {
     // Use ?? so 0 is preserved (vs ||, which would coerce to orders.length).
     expect(resolveOrdersTotal({ total: 0 }, 99)).toBe(0);
+  });
+});
+
+describe('requireCheckoutMutationSuccess', () => {
+  it('returns the response when no backend error is present', () => {
+    const response = { status: 200, data: { id: 'ok' } };
+    expect(requireCheckoutMutationSuccess(response, 'fallback')).toBe(response);
+  });
+
+  it('throws malformed successful responses without a backend success marker', () => {
+    expect(() => requireCheckoutMutationSuccess({}, 'fallback')).toThrow(
+      'Invalid checkout mutation response',
+    );
+  });
+
+  it('throws the backend error envelope message', () => {
+    expect(() =>
+      requireCheckoutMutationSuccess({ status: 400, error: 'Plano invalido' }, 'fallback'),
+    ).toThrow('Plano invalido');
+  });
+
+  it('throws the fallback when backend returns success false without message', () => {
+    expect(() => requireCheckoutMutationSuccess({ success: false }, 'Falha real')).toThrow(
+      'Falha real',
+    );
   });
 });

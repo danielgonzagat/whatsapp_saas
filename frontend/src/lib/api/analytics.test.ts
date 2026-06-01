@@ -116,6 +116,20 @@ describe('getAnalyticsDashboard', () => {
 
     await expect(getAnalyticsDashboard()).rejects.toThrow('Not Found');
   });
+
+  it('throws when the backend does not confirm a dashboard payload', async () => {
+    apiFetch.mockResolvedValueOnce({ data: undefined, status: 200 });
+
+    await expect(getAnalyticsDashboard()).rejects.toThrow(
+      'Analytics dashboard did not return a confirmed payload',
+    );
+  });
+
+  it('throws on failed status without an error envelope', async () => {
+    apiFetch.mockResolvedValueOnce({ data: baseStats, status: 503 });
+
+    await expect(getAnalyticsDashboard()).rejects.toThrow('Erro ao carregar analytics dashboard');
+  });
 });
 
 describe('getAnalyticsDailyActivity', () => {
@@ -130,17 +144,24 @@ describe('getAnalyticsDailyActivity', () => {
     expect(result).toEqual(baseActivity);
   });
 
-  it('returns empty array when data is nullish', async () => {
+  it('throws when the backend does not confirm a daily activity payload', async () => {
     apiFetch.mockResolvedValueOnce({ data: undefined, status: 200 });
 
-    const result = await getAnalyticsDailyActivity();
-    expect(result).toEqual([]);
+    await expect(getAnalyticsDailyActivity()).rejects.toThrow(
+      'Analytics daily activity did not return a confirmed payload',
+    );
   });
 
   it('throws on error', async () => {
     apiFetch.mockResolvedValueOnce({ error: 'Server Error', status: 500 });
 
     await expect(getAnalyticsDailyActivity()).rejects.toThrow('Server Error');
+  });
+
+  it('throws on failed status without an error envelope', async () => {
+    apiFetch.mockResolvedValueOnce({ data: baseActivity, status: 503 });
+
+    await expect(getAnalyticsDailyActivity()).rejects.toThrow('Erro ao carregar analytics daily activity');
   });
 });
 
@@ -177,6 +198,14 @@ describe('getAnalyticsAdvanced', () => {
 
     await expect(getAnalyticsAdvanced()).rejects.toThrow('Unauthorized');
   });
+
+  it('throws when the backend does not confirm an advanced analytics payload', async () => {
+    apiFetch.mockResolvedValueOnce({ data: undefined, status: 200 });
+
+    await expect(getAnalyticsAdvanced()).rejects.toThrow(
+      'Analytics advanced did not return a confirmed payload',
+    );
+  });
 });
 
 describe('getSmartTime', () => {
@@ -196,6 +225,14 @@ describe('getSmartTime', () => {
     apiFetch.mockResolvedValueOnce({ error: 'Rate Limited', status: 429 });
 
     await expect(getSmartTime()).rejects.toThrow('Rate Limited');
+  });
+
+  it('throws when the backend does not confirm a smart time payload', async () => {
+    apiFetch.mockResolvedValueOnce({ data: undefined, status: 200 });
+
+    await expect(getSmartTime()).rejects.toThrow(
+      'Smart time did not return a confirmed payload',
+    );
   });
 });
 
@@ -217,6 +254,14 @@ describe('getAnalyticsStats', () => {
 
     await expect(getAnalyticsStats()).rejects.toThrow('Down');
   });
+
+  it('throws when the backend does not confirm an overall stats payload', async () => {
+    apiFetch.mockResolvedValueOnce({ data: undefined, status: 200 });
+
+    await expect(getAnalyticsStats()).rejects.toThrow(
+      'Analytics stats did not return a confirmed payload',
+    );
+  });
 });
 
 describe('getFlowAnalytics', () => {
@@ -236,6 +281,14 @@ describe('getFlowAnalytics', () => {
     apiFetch.mockResolvedValueOnce({ error: 'Flow not found', status: 404 });
 
     await expect(getFlowAnalytics('missing')).rejects.toThrow('Flow not found');
+  });
+
+  it('throws when the backend does not confirm a flow analytics payload', async () => {
+    apiFetch.mockResolvedValueOnce({ data: undefined, status: 200 });
+
+    await expect(getFlowAnalytics('f1')).rejects.toThrow(
+      'Flow analytics did not return a confirmed payload',
+    );
   });
 });
 
@@ -265,5 +318,13 @@ describe('getAnalyticsFullReport', () => {
     apiFetch.mockResolvedValueOnce({ error: 'Bad Request', status: 400 });
 
     await expect(getAnalyticsFullReport()).rejects.toThrow('Bad Request');
+  });
+
+  it('throws when the backend does not confirm a full report payload', async () => {
+    apiFetch.mockResolvedValueOnce({ data: undefined, status: 200 });
+
+    await expect(getAnalyticsFullReport()).rejects.toThrow(
+      'Analytics full report did not return a confirmed payload',
+    );
   });
 });

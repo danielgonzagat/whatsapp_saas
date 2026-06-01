@@ -34,16 +34,20 @@ function findNextTokenMatch(
 export interface ConversationSearchResult {
   /** Id property. */
   id: string;
+  /** Result type property. */
+  type?: string | undefined;
   /** Title property. */
   title: string;
+  /** Href property. */
+  href?: string | undefined;
   /** Updated at property. */
   updatedAt?: string | undefined;
   /** Matched content property. */
-  matchedContent?: string;
+  matchedContent?: string | undefined;
   /** Preview html property. */
-  previewHtml?: string;
+  previewHtml?: string | undefined;
   /** Tags property. */
-  tags?: string[];
+  tags?: string[] | undefined;
 }
 
 /** Conversation search group shape. */

@@ -83,4 +83,10 @@ describe('checkout-links', () => {
       { id: 'link_2', url: 'http://pay.localhost:3000/checkout-2' },
     ]);
   });
+
+  it('throws when checkout links payload is present but not an array', () => {
+    expect(() => normalizeCheckoutLinks({ id: 'link_1' })).toThrow(
+      'Invalid checkout links payload',
+    );
+  });
 });

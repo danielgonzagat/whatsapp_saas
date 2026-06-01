@@ -39,6 +39,16 @@ import {
   pickUserDisplayName,
   projectWorkspace,
 } from './auth-provider.helpers';
+
+type AuthActionResult = {
+  success: boolean;
+  error?: string;
+  mfaRequired?: boolean;
+  mfaToken?: string;
+  email?: string;
+  name?: string | null;
+};
+
 interface AuthContextType extends AuthState {
   userName: string | null;
   userEmail: string | null;
@@ -47,10 +57,11 @@ interface AuthContextType extends AuthState {
     name: string,
     password: string,
     options?: { workspaceName?: string; affiliateInviteToken?: string },
-  ) => Promise<{ success: boolean; error?: string }>;
-  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signInWithGoogle: (credential: string) => Promise<{ success: boolean; error?: string }>;
-  signInWithFacebook: (accessToken: string, userId?: string) => Promise<{ success: boolean; error?: string }>;
+  ) => Promise<AuthActionResult>;
+  signIn: (email: string, password: string) => Promise<AuthActionResult>;
+  verifyMfaLogin: (mfaToken: string, code: string) => Promise<AuthActionResult>;
+  signInWithGoogle: (credential: string) => Promise<AuthActionResult>;
+  signInWithFacebook: (accessToken: string, userId?: string) => Promise<AuthActionResult>;
   requestMagicLink: (
     email: string,
     redirectTo?: string,
@@ -334,12 +345,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const mapped = mapAuthErrorStatusToMessage(res.status, 'signin', res.error);
       return { success: false, error: mapped ?? res.error };
     }
+    if (res.data?.state === 'mfa_required' && res.data.mfaToken) {
+      return {
+        success: true,
+        mfaRequired: true,
+        mfaToken: res.data.mfaToken,
+        email: res.data.user?.email || email,
+        name: res.data.user?.name ?? null,
+      };
+    }
     if (res.data?.user) {
       return hydrateFromAuthResponse(res.data, {
         fallbackEmail: email,
       });
     }
     return { success: false, error: 'Login failed' };
+  };
+  const verifyMfaLogin = async (mfaToken: string, code: string) => {
+    const res = await authApi.verifyMfaLogin(mfaToken, code);
+    if (res.error) {
+      const mapped = mapAuthErrorStatusToMessage(res.status, 'signin', res.error);
+      return { success: false, error: mapped ?? res.error };
+    }
+    if (res.data?.user) {
+      return hydrateFromAuthResponse(res.data, {
+        fallbackEmail: res.data.user.email,
+        ...(res.data.user.name ? { fallbackName: res.data.user.name } : {}),
+      });
+    }
+    return { success: false, error: 'Codigo 2FA invalido.' };
   };
   const signInWithGoogle = async (credential: string) => {
     rememberWorkspaceClaimCandidateForAuthUpgrade();
@@ -428,6 +462,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         userEmail: authState.user?.email || null,
         signUp,
         signIn,
+        verifyMfaLogin,
         signInWithGoogle,
         signInWithFacebook,
         requestMagicLink,

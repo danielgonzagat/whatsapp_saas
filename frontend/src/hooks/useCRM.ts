@@ -93,18 +93,28 @@ export function useCRMMutations() {
   const invalidateDeals = () =>
     globalMutate((key: string) => typeof key === 'string' && key.startsWith('/crm/deals'));
 
+  const requireCrmMutationSuccess = <T extends { error?: string }>(res: T, fallback: string): T => {
+    if (res.error) {
+      throw new Error(res.error || fallback);
+    }
+    return res;
+  };
+
   const createContact = async (body: Record<string, unknown>) => {
     const res = await apiFetch('/crm/contacts', { method: 'POST', body });
+    requireCrmMutationSuccess(res, 'Erro ao criar contato');
     await invalidateContacts();
     return res;
   };
   const upsertContact = async (body: Record<string, unknown>) => {
     const res = await apiFetch('/crm/contacts/upsert', { method: 'POST', body });
+    requireCrmMutationSuccess(res, 'Erro ao salvar contato');
     await invalidateContacts();
     return res;
   };
   const addTag = async (phone: string, tag: string) => {
     const res = await apiFetch(`/crm/contacts/${phone}/tags`, { method: 'POST', body: { tag } });
+    requireCrmMutationSuccess(res, 'Erro ao adicionar tag');
     await invalidateContacts();
     return res;
   };
@@ -112,32 +122,38 @@ export function useCRMMutations() {
     const res = await apiFetch(`/crm/contacts/${phone}/tags/${encodeURIComponent(tag)}`, {
       method: 'DELETE',
     });
+    requireCrmMutationSuccess(res, 'Erro ao remover tag');
     await invalidateContacts();
     return res;
   };
 
   const createPipeline = async (body: Record<string, unknown>) => {
     const res = await apiFetch('/crm/pipelines', { method: 'POST', body });
+    requireCrmMutationSuccess(res, 'Erro ao criar pipeline');
     await invalidatePipelines();
     return res;
   };
   const createDeal = async (body: Record<string, unknown>) => {
     const res = await apiFetch('/crm/deals', { method: 'POST', body });
+    requireCrmMutationSuccess(res, 'Erro ao criar negócio');
     await invalidateDeals();
     return res;
   };
   const moveDeal = async (id: string, stageId: string) => {
     const res = await apiFetch(`/crm/deals/${id}/move`, { method: 'PUT', body: { stageId } });
+    requireCrmMutationSuccess(res, 'Erro ao mover negócio');
     await invalidateDeals();
     return res;
   };
   const updateDeal = async (id: string, body: Record<string, unknown>) => {
     const res = await apiFetch(`/crm/deals/${id}`, { method: 'PUT', body });
+    requireCrmMutationSuccess(res, 'Erro ao atualizar negócio');
     await invalidateDeals();
     return res;
   };
   const deleteDeal = async (id: string) => {
     const res = await apiFetch(`/crm/deals/${id}`, { method: 'DELETE' });
+    requireCrmMutationSuccess(res, 'Erro ao remover negócio');
     await invalidateDeals();
     return res;
   };

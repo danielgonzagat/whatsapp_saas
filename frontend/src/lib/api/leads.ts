@@ -26,6 +26,24 @@ export interface Contact {
   updatedAt?: string;
 }
 
+type ContactsPayload = Contact[] | { leads: Contact[] };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function extractContactsPayload(data: ContactsPayload | undefined): Contact[] {
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  if (isRecord(data) && Array.isArray(data.leads)) {
+    return data.leads as Contact[];
+  }
+
+  throw new Error('Contacts list did not return a confirmed payload');
+}
+
 export async function getContacts(
   workspaceId: string,
   params?: { status?: string; search?: string; limit?: number },
@@ -45,22 +63,10 @@ export async function getContacts(
     query.toString() ? `?${query.toString()}` : ''
   }`;
 
-  const res = await apiFetch<Contact[] | { leads: Contact[] }>(endpoint);
-  if (res.error) {
-    throw new Error(res.error);
+  const res = await apiFetch<ContactsPayload>(endpoint);
+  if (res.error || res.status >= 400) {
+    throw new Error(res.error ?? 'Erro ao listar contatos');
   }
 
-  const data = res.data;
-  if (Array.isArray(data)) {
-    return data;
-  }
-  if (
-    data &&
-    typeof data === 'object' &&
-    'leads' in data &&
-    Array.isArray((data as { leads: Contact[] }).leads)
-  ) {
-    return (data as { leads: Contact[] }).leads;
-  }
-  return [];
+  return extractContactsPayload(res.data);
 }

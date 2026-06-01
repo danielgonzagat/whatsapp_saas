@@ -17,10 +17,24 @@ export interface DashboardStatsResponse {
   billingSuspended: boolean;
 }
 
-export async function getDashboardStats(): Promise<DashboardStatsResponse> {
-  const res = await apiFetch<DashboardStatsResponse>('/dashboard/stats');
+function confirmDashboardStatsPayload(res: {
+  data?: DashboardStatsResponse;
+  error?: string;
+  status?: number;
+}): DashboardStatsResponse {
   if (res.error) {
     throw new Error(res.error);
   }
-  return res.data as DashboardStatsResponse;
+  if (typeof res.status === 'number' && res.status >= 400) {
+    throw new Error('Erro ao carregar dashboard');
+  }
+  if (!res.data) {
+    throw new Error('Dashboard stats did not return a confirmed payload');
+  }
+  return res.data;
+}
+
+export async function getDashboardStats(): Promise<DashboardStatsResponse> {
+  const res = await apiFetch<DashboardStatsResponse>('/dashboard/stats');
+  return confirmDashboardStatsPayload(res);
 }

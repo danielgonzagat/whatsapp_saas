@@ -13,39 +13,75 @@ export function MetaConnectSection() {
   const [status, setStatus] = useState<MetaAuthStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
     apiFetch<MetaAuthStatus>('/meta/auth/status')
       .then((res) => {
+        if (res.error) {
+          setMessage(res.error);
+          return;
+        }
         setStatus(res.data ?? null);
       })
-      .catch(() => {})
+      .catch((error: unknown) => {
+        setMessage(error instanceof Error ? error.message : 'Falha ao carregar status Meta.');
+      })
       .finally(() => setLoading(false));
   }, []);
 
   const handleConnect = async () => {
+    setMessage(null);
     try {
       const res = await apiFetch<MetaAuthUrlResponse>('/meta/auth/url');
-      const url = res.data?.url || res.data?.data?.url;
-      if (url) {
-        window.open(url, 'meta-auth', 'width=600,height=700');
+      if (res.error) {
+        throw new Error(res.error);
       }
-    } catch {
-      // silent
+      const url = res.data?.url || res.data?.data?.url;
+      if (!url) {
+        throw new Error('Nao foi possivel iniciar a conexao Meta.');
+      }
+      window.open(url, 'meta-auth', 'width=600,height=700');
+    } catch (error: unknown) {
+      setMessage(error instanceof Error ? error.message : 'Falha ao abrir conexao Meta.');
     }
   };
 
   const handleDisconnect = async () => {
     setDisconnecting(true);
+    setMessage(null);
     try {
-      await apiFetch('/meta/auth/disconnect', { method: 'POST' });
+      const response = await apiFetch('/meta/auth/disconnect', { method: 'POST' });
+      if (response.error) {
+        throw new Error(response.error);
+      }
       setStatus({ connected: false });
       globalMutate((key: unknown) => typeof key === 'string' && key.startsWith('/meta'));
-    } catch {
-      // silent
+    } catch (error: unknown) {
+      setMessage(error instanceof Error ? error.message : 'Falha ao desconectar Meta.');
+    } finally {
+      setDisconnecting(false);
     }
-    setDisconnecting(false);
   };
+
+  const messageBanner = message ? (
+    <div
+      role="alert"
+      aria-live="polite"
+      style={{
+        border: '1px solid rgba(239,68,68,.25)',
+        borderRadius: 6,
+        padding: '10px 12px',
+        marginBottom: 16,
+        color: colors.semantic.error,
+        background: 'rgba(239,68,68,.05)',
+        fontSize: 12,
+        fontFamily: SORA,
+      }}
+    >
+      {message}
+    </div>
+  ) : null;
 
   if (loading) {
     return (
@@ -133,6 +169,7 @@ export function MetaConnectSection() {
             </button>
           </div>
         )}
+        {messageBanner}
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <button
             type="button"
@@ -164,6 +201,7 @@ export function MetaConnectSection() {
       title={kloelT(`Meta Platform`)}
       subtitle={kloelT(`Conecte Instagram, Messenger e Meta Ads`)}
     >
+      {messageBanner}
       <div
         style={{
           display: 'flex',

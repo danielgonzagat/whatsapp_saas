@@ -12,6 +12,20 @@ import {
 } from '@/lib/api';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+function readCiaArrayPayload<T>(value: unknown, label: string): T[] | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  if (Array.isArray(value)) {
+    return value as T[];
+  }
+  throw new Error(`Invalid CIA ${label} payload`);
+}
+
+function getAdvancedErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Falha ao carregar dados avançados da CIA';
+}
+
 interface UseCiaAdvancedReturn {
   accountRuntime: CiaAccountRuntime | null;
   approvals: CiaAccountApproval[];
@@ -24,6 +38,7 @@ interface UseCiaAdvancedReturn {
   openApprovals: CiaAccountApproval[];
   pendingSessions: CiaInputSession[];
   activeWorkItems: CiaWorkItem[];
+  advancedError: string | null;
   loadAdvancedData: () => Promise<void>;
 }
 
@@ -37,55 +52,71 @@ export function useCiaAdvanced(workspaceId: string): UseCiaAdvancedReturn {
   const [capabilityRegistry, setCapabilityRegistry] = useState<CiaCapabilityRegistry | null>(null);
   const [conversationActionRegistry, setConversationActionRegistry] =
     useState<CiaConversationActionRegistry | null>(null);
+  const [advancedError, setAdvancedError] = useState<string | null>(null);
 
   const loadAdvancedData = useCallback(async () => {
     if (!workspaceId) {
       return;
     }
 
-    const [
-      runtimeRes,
-      approvalsRes,
-      inputSessionsRes,
-      workItemsRes,
-      accountProofRes,
-      cycleProofRes,
-      capabilityRes,
-      actionRes,
-    ] = await Promise.all([
-      ciaApi.getAccountRuntime(workspaceId),
-      ciaApi.getAccountApprovals(workspaceId),
-      ciaApi.getAccountInputSessions(workspaceId),
-      ciaApi.getAccountWorkItems(workspaceId),
-      ciaApi.getAccountProof(workspaceId),
-      ciaApi.getCycleProof(workspaceId),
-      ciaApi.getCapabilityRegistry(),
-      ciaApi.getConversationActionRegistry(),
-    ]);
+    try {
+      const [
+        runtimeRes,
+        approvalsRes,
+        inputSessionsRes,
+        workItemsRes,
+        accountProofRes,
+        cycleProofRes,
+        capabilityRes,
+        actionRes,
+      ] = await Promise.all([
+        ciaApi.getAccountRuntime(workspaceId),
+        ciaApi.getAccountApprovals(workspaceId),
+        ciaApi.getAccountInputSessions(workspaceId),
+        ciaApi.getAccountWorkItems(workspaceId),
+        ciaApi.getAccountProof(workspaceId),
+        ciaApi.getCycleProof(workspaceId),
+        ciaApi.getCapabilityRegistry(),
+        ciaApi.getConversationActionRegistry(),
+      ]);
 
-    if (runtimeRes.data) {
-      setAccountRuntime(runtimeRes.data);
-    }
-    if (approvalsRes.data) {
-      setApprovals(Array.isArray(approvalsRes.data) ? approvalsRes.data : []);
-    }
-    if (inputSessionsRes.data) {
-      setInputSessions(Array.isArray(inputSessionsRes.data) ? inputSessionsRes.data : []);
-    }
-    if (workItemsRes.data) {
-      setWorkItems(Array.isArray(workItemsRes.data) ? workItemsRes.data : []);
-    }
-    if (accountProofRes.data) {
-      setAccountProof(accountProofRes.data);
-    }
-    if (cycleProofRes.data) {
-      setCycleProof(cycleProofRes.data);
-    }
-    if (capabilityRes.data) {
-      setCapabilityRegistry(capabilityRes.data);
-    }
-    if (actionRes.data) {
-      setConversationActionRegistry(actionRes.data);
+      const nextApprovals = readCiaArrayPayload<CiaAccountApproval>(
+        approvalsRes.data,
+        'approvals',
+      );
+      const nextInputSessions = readCiaArrayPayload<CiaInputSession>(
+        inputSessionsRes.data,
+        'input sessions',
+      );
+      const nextWorkItems = readCiaArrayPayload<CiaWorkItem>(workItemsRes.data, 'work items');
+
+      setAdvancedError(null);
+      if (runtimeRes.data) {
+        setAccountRuntime(runtimeRes.data);
+      }
+      if (nextApprovals !== null) {
+        setApprovals(nextApprovals);
+      }
+      if (nextInputSessions !== null) {
+        setInputSessions(nextInputSessions);
+      }
+      if (nextWorkItems !== null) {
+        setWorkItems(nextWorkItems);
+      }
+      if (accountProofRes.data) {
+        setAccountProof(accountProofRes.data);
+      }
+      if (cycleProofRes.data) {
+        setCycleProof(cycleProofRes.data);
+      }
+      if (capabilityRes.data) {
+        setCapabilityRegistry(capabilityRes.data);
+      }
+      if (actionRes.data) {
+        setConversationActionRegistry(actionRes.data);
+      }
+    } catch (error) {
+      setAdvancedError(getAdvancedErrorMessage(error));
     }
   }, [workspaceId]);
 
@@ -124,6 +155,7 @@ export function useCiaAdvanced(workspaceId: string): UseCiaAdvancedReturn {
     openApprovals,
     pendingSessions,
     activeWorkItems,
+    advancedError,
     loadAdvancedData,
   };
 }

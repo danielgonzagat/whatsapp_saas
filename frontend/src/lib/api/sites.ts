@@ -92,6 +92,26 @@ function invalidateSites() {
   mutate((key: unknown) => typeof key === 'string' && key.startsWith('sites:'));
 }
 
+type SiteMutationResponse<T> = {
+  data?: T | undefined;
+  error?: string | undefined;
+  status: number;
+};
+
+function confirmSiteMutation<T>(
+  response: SiteMutationResponse<T>,
+  fallbackMessage: string,
+): SiteMutationResponse<T> {
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  if (response.status >= 400) {
+    throw new Error(fallbackMessage);
+  }
+  invalidateSites();
+  return response;
+}
+
 /* ── API client ── */
 
 /** Sites API client — all 12 backend endpoints. */
@@ -103,8 +123,7 @@ export const sitesApi = {
   /** POST /sites — create a new site. */
   createSite: async (_workspaceId: string, body: CreateSiteBody) => {
     const res = await apiFetch<Site>('/sites', { method: 'POST', body });
-    invalidateSites();
-    return res;
+    return confirmSiteMutation(res, 'Não foi possível criar o site.');
   },
 
   /** GET /sites/:id — get site detail. */
@@ -117,8 +136,7 @@ export const sitesApi = {
       method: 'PUT',
       body,
     });
-    invalidateSites();
-    return res;
+    return confirmSiteMutation(res, 'Não foi possível atualizar o site.');
   },
 
   /** DELETE /sites/:id — archive a site. */
@@ -126,8 +144,7 @@ export const sitesApi = {
     const res = await apiFetch<Site>('/sites/' + encodeURIComponent(id), {
       method: 'DELETE',
     });
-    invalidateSites();
-    return res;
+    return confirmSiteMutation(res, 'Não foi possível remover o site.');
   },
 
   /** POST /sites/:id/publish — publish (DRAFT → PUBLISHED). */
@@ -135,8 +152,7 @@ export const sitesApi = {
     const res = await apiFetch<Site>('/sites/' + encodeURIComponent(id) + '/publish', {
       method: 'POST',
     });
-    invalidateSites();
-    return res;
+    return confirmSiteMutation(res, 'Não foi possível publicar o site.');
   },
 
   /** POST /sites/:id/unpublish — unpublish (PUBLISHED → DRAFT). */
@@ -144,8 +160,7 @@ export const sitesApi = {
     const res = await apiFetch<Site>('/sites/' + encodeURIComponent(id) + '/unpublish', {
       method: 'POST',
     });
-    invalidateSites();
-    return res;
+    return confirmSiteMutation(res, 'Não foi possível despublicar o site.');
   },
 
   /** GET /sites/:id/domains — list domains for a site. */
@@ -158,8 +173,7 @@ export const sitesApi = {
       '/sites/' + encodeURIComponent(siteId) + '/domains',
       { method: 'POST', body },
     );
-    invalidateSites();
-    return res;
+    return confirmSiteMutation(res, 'Não foi possível adicionar o domínio.');
   },
 
   /** DELETE /sites/:id/domains/:domainId — remove a domain. */
@@ -168,8 +182,7 @@ export const sitesApi = {
       '/sites/' + encodeURIComponent(siteId) + '/domains/' + encodeURIComponent(domainId),
       { method: 'DELETE' },
     );
-    invalidateSites();
-    return res;
+    return confirmSiteMutation(res, 'Não foi possível remover o domínio.');
   },
 
   /** GET /sites/:id/apps — list app integrations for a site. */
@@ -187,7 +200,6 @@ export const sitesApi = {
       '/sites/' + encodeURIComponent(siteId) + '/apps/' + encodeURIComponent(appKey),
       { method: 'PUT', body },
     );
-    invalidateSites();
-    return res;
+    return confirmSiteMutation(res, 'Não foi possível salvar o aplicativo do site.');
   },
 };

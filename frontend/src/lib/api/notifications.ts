@@ -9,7 +9,13 @@ export async function registerNotificationDevice(
     body: { token, platform },
   });
   if (res.error) {
+    throw new Error(res.error);
+  }
+  if (res.status >= 400) {
     throw new Error('Failed to register device');
   }
-  return res.data as { deviceId: string };
+  if (!res.data?.deviceId) {
+    throw new Error('Notification device was not registered.');
+  }
+  return res.data;
 }

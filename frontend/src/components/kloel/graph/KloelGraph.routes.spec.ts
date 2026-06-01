@@ -1,7 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { swrFetcher } from '@/lib/fetcher';
 
 import {
   KLOEL_GRAPH_NODES,
@@ -14,8 +16,19 @@ import {
   resolveKloelGraphNodeForPathFromNodes,
   resolveKloelGraphRoute,
 } from './KloelGraph.routes';
+import { loadCheckoutGraphProducts } from './KloelGraphShell.helpers';
+
+vi.mock('@/lib/fetcher', () => ({
+  swrFetcher: vi.fn(),
+}));
+
+const swrFetcherMock = vi.mocked(swrFetcher);
 
 describe('KloelGraph route contract', () => {
+  beforeEach(() => {
+    swrFetcherMock.mockReset();
+  });
+
   it('keeps the seven canonical primary galaxies from the prototype', () => {
     expect(KLOEL_GRAPH_PRIMARY_NODES.map((node) => node.label)).toEqual([
       'Perfil',
@@ -159,5 +172,29 @@ describe('KloelGraph route contract', () => {
         allNodes,
       )?.id,
     ).toBe('criar-product-prod_123-plan-plan_1-checkout-order-bump');
+  });
+
+  it('keeps real checkout products visible when detail payload fetch fails', async () => {
+    swrFetcherMock
+      .mockResolvedValueOnce([
+        { id: 'checkout_prod_real', name: 'Produto real', slug: 'produto-real' },
+      ])
+      .mockRejectedValueOnce(new Error('checkout detail unavailable'));
+
+    await expect(loadCheckoutGraphProducts()).resolves.toEqual([
+      {
+        id: 'checkout_prod_real',
+        name: 'Produto real',
+        label: 'Produto real',
+        slug: 'produto-real',
+        plans: [],
+        checkouts: [],
+      },
+    ]);
+    expect(swrFetcherMock).toHaveBeenNthCalledWith(1, '/checkout/products');
+    expect(swrFetcherMock).toHaveBeenNthCalledWith(
+      2,
+      '/checkout/products/checkout_prod_real',
+    );
   });
 });

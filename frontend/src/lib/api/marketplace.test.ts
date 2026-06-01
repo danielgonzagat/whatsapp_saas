@@ -47,14 +47,37 @@ describe('marketplace', () => {
       expect(lastFetch().headers.authorization).toBe('Bearer test-token');
     });
 
-    it('returns empty array on error', async () => {
+    it('surfaces backend errors instead of returning a fake empty marketplace', async () => {
       vi.mocked(globalThis.fetch).mockResolvedValue({
         ok: false,
         status: 500,
         json: async () => ({ error: 'fail' }),
       } as Response);
-      const res = await listMarketplaceTemplates();
-      expect(res).toEqual([]);
+      await expect(listMarketplaceTemplates()).rejects.toThrow('fail');
+    });
+
+    it('rejects missing marketplace template payloads instead of returning a fake empty list', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ data: undefined }),
+      } as Response);
+
+      await expect(listMarketplaceTemplates()).rejects.toThrow(
+        'Templates do marketplace nao retornaram um payload confirmado.',
+      );
+    });
+
+    it('rejects malformed marketplace template envelopes', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ data: { templates: null } }),
+      } as Response);
+
+      await expect(listMarketplaceTemplates()).rejects.toThrow(
+        'Templates do marketplace nao retornaram um payload confirmado.',
+      );
     });
   });
 
@@ -80,8 +103,7 @@ describe('marketplace', () => {
   describe('error handling', () => {
     it('propagates network errors on install', async () => {
       vi.mocked(globalThis.fetch).mockRejectedValue(new Error('Offline'));
-      const res = await installMarketplaceTemplate('t1');
-      expect(res.error).toBe('Offline');
+      await expect(installMarketplaceTemplate('t1')).rejects.toThrow('Offline');
     });
   });
 });

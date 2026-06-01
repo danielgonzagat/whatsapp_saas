@@ -45,7 +45,8 @@ export interface SendMessageContext {
 
 export function createSendMessageHandler(ctx: SendMessageContext) {
   return async (rawText: string, requestMetadata?: KloelChatRequestMetadata) => {
-    const text = rawText.trim();
+    const readyAttachments = ctx.attachments.filter((attachment) => attachment.status === 'ready');
+    const text = rawText.trim() || (readyAttachments.length > 0 ? 'Analise os anexos enviados.' : '');
     if (!text || ctx.isReplyInFlight) {
       return;
     }
@@ -53,9 +54,7 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
     const buildMetadata = (cid: string): KloelChatRequestMetadata => ({
       clientRequestId: cid,
       source: 'kloel_dashboard',
-      attachments: ctx.attachments
-        .filter((a) => a.status === 'ready')
-        .map((a) => ({
+      attachments: readyAttachments.map((a) => ({
           id: a.id,
           name: a.name,
           size: a.size,

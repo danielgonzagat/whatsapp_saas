@@ -20,8 +20,15 @@ export async function sendReportEmail(data: {
   period?: string;
   filters?: Record<string, string>;
 }) {
-  return apiFetch<{ success: boolean; message?: string }>('/reports/send-email', {
+  const res = await apiFetch<{ success: boolean; message?: string }>('/reports/send-email', {
     method: 'POST',
     body: data,
   });
+  if (res.error) {
+    throw new Error(res.error);
+  }
+  if (res.status >= 400 || res.data?.success === false) {
+    throw new Error(res.data?.message || 'Falha ao enviar relatorio.');
+  }
+  return res;
 }

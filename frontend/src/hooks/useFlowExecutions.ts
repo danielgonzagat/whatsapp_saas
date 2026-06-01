@@ -33,7 +33,10 @@ export function useFlowExecutions(workspaceId: string | undefined) {
     setError(null);
     try {
       const data = await listFlowExecutions(workspaceId, 50);
-      setExecutions(Array.isArray(data) ? data : []);
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid flow executions payload');
+      }
+      setExecutions(data);
     } catch (err: unknown) {
       setError(errorMessage(err, 'Falha ao carregar execucoes'));
     } finally {

@@ -75,4 +75,26 @@ describe('product-nerve-center.view-models', () => {
       }),
     ]);
   });
+
+  it('throws when a plan exposes malformed checkout links instead of emptying them', () => {
+    expect(() =>
+      mapProductEditorPlans([
+        {
+          id: 'plan_1',
+          planLinks: { id: 'link_1' },
+        },
+      ]),
+    ).toThrow('Invalid product plan links payload');
+  });
+
+  it('throws when a checkout exposes malformed linked plans instead of emptying them', () => {
+    expect(() =>
+      mapProductEditorCheckouts([
+        {
+          id: 'checkout_1',
+          checkoutLinks: { id: 'plan_link_1' },
+        },
+      ]),
+    ).toThrow('Invalid product checkout links payload');
+  });
 });

@@ -46,7 +46,7 @@ export function AuthModal({
   initialEmail,
 }: AuthModalProps) {
   const fid = useId();
-  const { signUp, signIn, signInWithGoogle } = useAuth();
+  const { signUp, signIn, verifyMfaLogin, signInWithGoogle } = useAuth();
 
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [step, setStep] = useState<AuthStep>('email');
@@ -62,6 +62,8 @@ export function AuthModal({
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [forgotSent, setForgotSent] = useState(false);
+  const [mfaToken, setMfaToken] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
 
   // Reset form when modal opens/closes or mode changes from props
   useEffect(() => {
@@ -79,6 +81,8 @@ export function AuthModal({
       setErrors({});
       setIsLoading(false);
       setForgotSent(false);
+      setMfaToken('');
+      setMfaCode('');
     });
   }, [isOpen, initialMode, initialEmail]);
 
@@ -132,10 +136,35 @@ export function AuthModal({
       return;
     }
 
+    if (result.mfaRequired && result.mfaToken) {
+      setMfaToken(result.mfaToken);
+      setMfaCode('');
+      setPassword('');
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(false);
     onClose();
   };
 
+
+  const handleMfaVerify = async () => {
+    setErrors({});
+    if (!/^\d{6}$/.test(mfaCode)) {
+      setErrors({ password: 'Informe o codigo 2FA de 6 digitos.' });
+      return;
+    }
+    setIsLoading(true);
+    const result = await verifyMfaLogin(mfaToken, mfaCode);
+    if (!result.success) {
+      setErrors(mapAuthError(result, 'password', 'Codigo 2FA invalido.'));
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(false);
+    onClose();
+  };
   const handleGoogleSignIn = useCallback(
     async (credential: string) => {
       setErrors({});
@@ -171,6 +200,8 @@ export function AuthModal({
 
   const handleBack = () => {
     setStep('email');
+    setMfaToken('');
+    setMfaCode('');
     applyFormReset();
   };
 
@@ -200,6 +231,8 @@ export function AuthModal({
     setStep('email');
     applyFormReset();
     setForgotSent(false);
+    setMfaToken('');
+    setMfaCode('');
   };
 
   const passwordStrength = getPasswordStrength(password);
@@ -480,66 +513,110 @@ export function AuthModal({
               ) : (
                 /* Login Details */
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-sm text-gray-700">{kloelT(`Senha`)}</Label>
-                    <div className="relative">
-                      <Input
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder={kloelT(`Digite sua senha`)}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSignIn()}
-                        className={`rounded-md border-gray-200 py-5 pr-12 ${errors.password ? 'border-red-500' : ''}`}
-                      />
+                  {mfaToken ? (
+                    <>
+                      <div className="space-y-2">
+                        <Label className="text-sm text-gray-700">{kloelT(`Codigo 2FA`)}</Label>
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete="one-time-code"
+                          placeholder="000000"
+                          value={mfaCode}
+                          onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          onKeyDown={(e) => e.key === 'Enter' && handleMfaVerify()}
+                          className={`rounded-md border-gray-200 py-5 ${errors.password ? 'border-red-500' : ''}`}
+                        />
+                        {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
+                      </div>
+
+                      <Button
+                        type="submit"
+                        onClick={handleMfaVerify}
+                        disabled={isLoading}
+                        className="w-full rounded-md bg-gray-900 py-5 text-white hover:bg-gray-800"
+                      >
+                        {isLoading ? 'Verificando...' : 'Confirmar 2FA'}
+                      </Button>
+
                       <button
                         type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        onClick={() => {
+                          setMfaToken('');
+                          setMfaCode('');
+                          setPassword('');
+                          setErrors({});
+                        }}
+                        disabled={isLoading}
+                        className="w-full text-sm text-gray-500 hover:text-gray-700 hover:underline"
                       >
-                        {showPassword ? (
-                          <EyeOff className="h-5 w-5" aria-hidden="true" />
-                        ) : (
-                          <Eye className="h-5 w-5" aria-hidden="true" />
-                        )}
+                        {kloelT(`Voltar ao login`)}
                       </button>
-                    </div>
-                    {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
-                  </div>
-
-                  {forgotSent ? (
-                    <p className="text-sm text-gray-500">
-                      {kloelT(`E-mail de recuperacao enviado. Verifique sua caixa de entrada.`)}
-                    </p>
+                    </>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={handleForgotPassword}
-                      disabled={isLoading}
-                      className="text-sm text-gray-500 hover:text-gray-700 hover:underline"
-                    >
-                      {kloelT(`Esqueci minha senha`)}
-                    </button>
+                    <>
+                      <div className="space-y-2">
+                        <Label className="text-sm text-gray-700">{kloelT(`Senha`)}</Label>
+                        <div className="relative">
+                          <Input
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder={kloelT(`Digite sua senha`)}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSignIn()}
+                            className={`rounded-md border-gray-200 py-5 pr-12 ${errors.password ? 'border-red-500' : ''}`}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-5 w-5" aria-hidden="true" />
+                            ) : (
+                              <Eye className="h-5 w-5" aria-hidden="true" />
+                            )}
+                          </button>
+                        </div>
+                        {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
+                      </div>
+
+                      {forgotSent ? (
+                        <p className="text-sm text-gray-500">
+                          {kloelT(`E-mail de recuperacao enviado. Verifique sua caixa de entrada.`)}
+                        </p>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleForgotPassword}
+                          disabled={isLoading}
+                          className="text-sm text-gray-500 hover:text-gray-700 hover:underline"
+                        >
+                          {kloelT(`Esqueci minha senha`)}
+                        </button>
+                      )}
+
+                      <Button
+                        type="submit"
+                        onClick={handleSignIn}
+                        disabled={isLoading}
+                        className="w-full rounded-md bg-gray-900 py-5 text-white hover:bg-gray-800"
+                      >
+                        {isLoading ? 'Entrando...' : 'Entrar'}
+                      </Button>
+
+                      <p className="text-center text-sm text-gray-500">
+                        {kloelT(`Criar nova conta?`)}{' '}
+                        <button
+                          type="button"
+                          onClick={() => switchMode('signup')}
+                          className="font-medium text-gray-900 hover:underline"
+                        >
+                          {kloelT(`Cadastrar`)}
+                        </button>
+                      </p>
+                    </>
                   )}
-
-                  <Button
-                    type="submit"
-                    onClick={handleSignIn}
-                    disabled={isLoading}
-                    className="w-full rounded-md bg-gray-900 py-5 text-white hover:bg-gray-800"
-                  >
-                    {isLoading ? 'Entrando...' : 'Entrar'}
-                  </Button>
-
-                  <p className="text-center text-sm text-gray-500">
-                    {kloelT(`Criar nova conta?`)}{' '}
-                    <button
-                      type="button"
-                      onClick={() => switchMode('signup')}
-                      className="font-medium text-gray-900 hover:underline"
-                    >
-                      {kloelT(`Cadastrar`)}
-                    </button>
-                  </p>
                 </div>
               )}
             </>

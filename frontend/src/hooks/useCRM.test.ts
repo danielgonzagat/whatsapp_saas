@@ -1,8 +1,16 @@
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+const apiFetchMock = vi.fn();
+const globalMutateMock = vi.fn();
+
 vi.mock('swr', () => ({
   default: vi.fn(() => ({ data: undefined, error: undefined, isLoading: true, mutate: vi.fn() })),
+  useSWRConfig: () => ({ mutate: globalMutateMock }),
+}));
+
+vi.mock('@/lib/api', () => ({
+  apiFetch: (...args: unknown[]) => apiFetchMock(...args),
 }));
 
 vi.mock('@/lib/fetcher', () => ({
@@ -11,7 +19,12 @@ vi.mock('@/lib/fetcher', () => ({
 
 import useSWR from 'swr';
 
-import { useContacts, useContact, usePipelines, useDeals } from './useCRM';
+import { useContacts, useContact, usePipelines, useDeals, useCRMMutations } from './useCRM';
+
+beforeEach(() => {
+  apiFetchMock.mockReset();
+  globalMutateMock.mockReset();
+});
 
 describe('useContacts', () => {
   beforeEach(() => {
@@ -143,5 +156,27 @@ describe('useDeals', () => {
     const { result } = renderHook(() => useDeals());
     expect(result.current.deals).toEqual(deals);
     expect(result.current.total).toBe(1);
+  });
+});
+
+describe('useCRMMutations', () => {
+  it('does not invalidate contacts when create contact returns an API error envelope', async () => {
+    apiFetchMock.mockResolvedValueOnce({ error: 'Invalid contact', status: 400 });
+
+    const { result } = renderHook(() => useCRMMutations());
+
+    await expect(result.current.createContact({ name: 'Ana' })).rejects.toThrow('Invalid contact');
+    expect(globalMutateMock).not.toHaveBeenCalled();
+  });
+
+  it('invalidates deals after a successful deal update', async () => {
+    apiFetchMock.mockResolvedValueOnce({ data: { id: 'deal-1' }, status: 200 });
+
+    const { result } = renderHook(() => useCRMMutations());
+
+    const response = await result.current.updateDeal('deal-1', { title: 'Novo' });
+
+    expect(response).toEqual({ data: { id: 'deal-1' }, status: 200 });
+    expect(globalMutateMock).toHaveBeenCalledWith(expect.any(Function));
   });
 });

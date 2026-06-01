@@ -20,11 +20,17 @@ export function useCampanhasTab(productId: string) {
     return apiFetch(`/products/${productId}/campaigns`)
       .then((r: unknown) => {
         const d = unwrapApiPayload<Array<JsonRecord>>(r);
-        setCamps(Array.isArray(d) ? d : []);
+        if (!Array.isArray(d)) {
+          throw new Error('Invalid product campaigns payload');
+        }
+        setCamps(d);
       })
-      .catch(() => setCamps([]))
+      .catch((e: unknown) => {
+        console.error(e);
+        showToast(e instanceof Error ? e.message : 'Erro ao carregar campanhas', 'error');
+      })
       .finally(() => setCampsLoading(false));
-  }, [productId]);
+  }, [productId, showToast]);
 
   useEffect(() => {
     queueMicrotask(loadCampaigns);

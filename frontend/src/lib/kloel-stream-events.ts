@@ -65,6 +65,8 @@ export interface KloelStreamToolResultEvent {
 export interface KloelStreamDoneEvent {
   /** Type property. */
   type: 'done';
+  /** Metadata property. */
+  metadata?: Record<string, unknown>;
 }
 
 /** Kloel stream error event shape. */
@@ -213,7 +215,8 @@ export function parseKloelStreamPayload(payload: unknown): KloelStreamEvent[] {
   tryAppendError(event, events);
 
   if (shouldAppendDone(event, events)) {
-    events.push({ type: 'done' });
+    const metadata = isRecord(event.metadata) ? event.metadata : undefined;
+    events.push({ type: 'done', ...(metadata !== undefined ? { metadata } : {}) });
   }
 
   return events;

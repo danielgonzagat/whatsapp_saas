@@ -87,8 +87,15 @@ export async function createSalesDeal(payload: CreateDealPayload): Promise<Pipel
   if (res.error) {
     throw new Error(res.error || 'Erro ao criar deal');
   }
+  if (res.status >= 400) {
+    throw new Error('Erro ao criar deal');
+  }
+  const deal = res.data;
+  if (!deal) {
+    throw new Error('Pipeline nao retornou deal confirmado.');
+  }
   invalidatePipeline();
-  return res.data as PipelineDeal;
+  return deal;
 }
 
 /** Move sales deal. */
@@ -100,6 +107,13 @@ export async function moveSalesDeal(dealId: string, stageId: string): Promise<Pi
   if (res.error) {
     throw new Error(res.error || 'Erro ao mover deal');
   }
+  if (res.status >= 400) {
+    throw new Error('Erro ao mover deal');
+  }
+  const deal = res.data;
+  if (!deal) {
+    throw new Error('Pipeline nao retornou deal confirmado.');
+  }
   invalidatePipeline();
-  return res.data as PipelineDeal;
+  return deal;
 }

@@ -46,11 +46,17 @@ export async function listCampaigns(workspaceId: string): Promise<Campaign[]> {
   if (res.error) {
     throw new Error(res.error);
   }
+  if (res.status >= 400) {
+    throw new Error('Failed to list campaigns');
+  }
   const data = res.data;
   if (Array.isArray(data)) {
     return data;
   }
-  return (data as { campaigns: Campaign[] } | undefined)?.campaigns || [];
+  if (data && Array.isArray(data.campaigns)) {
+    return data.campaigns;
+  }
+  throw new Error('Campaign list did not return a confirmed payload');
 }
 
 /** Create campaign. */
@@ -62,11 +68,14 @@ export async function createCampaign(
     method: 'POST',
     body: { workspaceId, ...payload },
   });
-  if (res.error) {
-    throw new Error(res.error);
+  if (res.error || res.status >= 400) {
+    throw new Error(res.error || 'Failed to create campaign');
+  }
+  if (!res.data) {
+    throw new Error('Campaign creation did not return a confirmed payload');
   }
   invalidateCampaigns();
-  return res.data as Campaign;
+  return res.data;
 }
 
 /** Launch campaign. */
@@ -82,8 +91,11 @@ export async function launchCampaign(
       body: { workspaceId, smartTime: Boolean(opts?.smartTime) },
     },
   );
-  if (res.error) {
-    throw new Error(res.error);
+  if (res.error || res.status >= 400) {
+    throw new Error(res.error || 'Failed to launch campaign');
+  }
+  if (!res.data) {
+    throw new Error('Campaign launch did not return a confirmed payload');
   }
   invalidateCampaigns();
   return res.data;
@@ -98,8 +110,11 @@ export async function pauseCampaign(workspaceId: string, campaignId: string): Pr
       body: { workspaceId },
     },
   );
-  if (res.error) {
-    throw new Error(res.error);
+  if (res.error || res.status >= 400) {
+    throw new Error(res.error || 'Failed to pause campaign');
+  }
+  if (!res.data) {
+    throw new Error('Campaign pause did not return a confirmed payload');
   }
   invalidateCampaigns();
   return res.data;
@@ -118,11 +133,14 @@ export async function createCampaignVariants(
       body: { workspaceId, variants },
     },
   );
-  if (res.error) {
-    throw new Error(res.error);
+  if (res.error || res.status >= 400) {
+    throw new Error(res.error || 'Failed to create campaign variants');
+  }
+  if (!res.data) {
+    throw new Error('Campaign variant creation did not return a confirmed payload');
   }
   invalidateCampaigns();
-  return res.data as { created: number; variantIds: string[] };
+  return res.data;
 }
 
 /** Evaluate campaign darwin. */
@@ -137,8 +155,11 @@ export async function evaluateCampaignDarwin(
       body: { workspaceId },
     },
   );
-  if (res.error) {
-    throw new Error(res.error);
+  if (res.error || res.status >= 400) {
+    throw new Error(res.error || 'Failed to evaluate campaign Darwin');
+  }
+  if (!res.data) {
+    throw new Error('Campaign Darwin evaluation did not return a confirmed payload');
   }
   invalidateCampaigns();
   return res.data;

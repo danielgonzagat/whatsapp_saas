@@ -23,10 +23,18 @@ function appsKey(ws: string, siteId: string) {
 /* ── Response unwrappers ── */
 
 function unwrapList(data: unknown): Site[] {
+  if (data === undefined || data === null) {return [];}
   if (Array.isArray(data)) {return data;}
-  const d = data as Record<string, unknown> | undefined;
-  if (Array.isArray(d?.data)) {return d!.data as Site[];}
-  if (Array.isArray(d?.sites)) {return d!.sites as Site[];}
+  if (typeof data !== 'object') {throw new Error('Invalid sites list payload');}
+  const d = data as Record<string, unknown>;
+  if (Object.prototype.hasOwnProperty.call(d, 'data')) {
+    if (Array.isArray(d.data)) {return d.data as Site[];}
+    throw new Error('Invalid sites list payload');
+  }
+  if (Object.prototype.hasOwnProperty.call(d, 'sites')) {
+    if (Array.isArray(d.sites)) {return d.sites as Site[];}
+    throw new Error('Invalid sites list payload');
+  }
   return [];
 }
 
@@ -37,6 +45,18 @@ function unwrapItem(data: unknown): Site | null {
   if (d?.data && typeof d.data === 'object' && 'id' in (d.data as object)) {return d.data as Site;}
   if (d?.site) {return d.site as Site;}
   return null;
+}
+
+function unwrapRelatedList<T>(data: unknown, message: string): T[] {
+  if (data === undefined || data === null) {return [];}
+  if (Array.isArray(data)) {return data as T[];}
+  if (typeof data !== 'object') {throw new Error(message);}
+  const d = data as Record<string, unknown>;
+  if (Object.prototype.hasOwnProperty.call(d, 'data')) {
+    if (Array.isArray(d.data)) {return d.data as T[];}
+    throw new Error(message);
+  }
+  return [];
 }
 
 /* ── Hooks ── */
@@ -96,11 +116,7 @@ export function useSiteDomains(workspaceId: string, siteId: string | null) {
   const fetcher = async () => {
     const res = await sitesApi.listDomains(workspaceId, siteId!);
     if (res.error) {throw new Error(res.error);}
-    const d = res.data as unknown;
-    if (Array.isArray(d)) {return d as SiteDomain[];}
-    const obj = d as Record<string, unknown> | undefined;
-    if (Array.isArray(obj?.data)) {return obj!.data as SiteDomain[];}
-    return [];
+    return unwrapRelatedList<SiteDomain>(res.data, 'Invalid site domains payload');
   };
 
   const { data, error, isLoading, mutate } = useSWR(key, fetcher, {
@@ -122,11 +138,7 @@ export function useSiteApps(workspaceId: string, siteId: string | null) {
   const fetcher = async () => {
     const res = await sitesApi.listApps(workspaceId, siteId!);
     if (res.error) {throw new Error(res.error);}
-    const d = res.data as unknown;
-    if (Array.isArray(d)) {return d as SiteAppIntegration[];}
-    const obj = d as Record<string, unknown> | undefined;
-    if (Array.isArray(obj?.data)) {return obj!.data as SiteAppIntegration[];}
-    return [];
+    return unwrapRelatedList<SiteAppIntegration>(res.data, 'Invalid site apps payload');
   };
 
   const { data, error, isLoading, mutate } = useSWR(key, fetcher, {

@@ -14,6 +14,7 @@ import {
   describeStreamAbortReason,
   extractSseDataPayload,
   extractWrappedPayload,
+  isRecord,
   normalizeThreadSearchQuery,
   toErrorMessage,
 } from './kloel-conversations.helpers';
@@ -91,6 +92,62 @@ export interface ThreadSearchPayload {
   /** Rank property. */
   rank?: number;
 }
+function isOptionalString(value: unknown): value is string | undefined {
+  return value === undefined || typeof value === 'string';
+}
+
+function isOptionalFiniteNumber(value: unknown): value is number | undefined {
+  return value === undefined || (typeof value === 'number' && Number.isFinite(value));
+}
+
+function isOptionalStringArray(value: unknown): value is string[] | undefined {
+  return value === undefined || (Array.isArray(value) && value.every((item) => typeof item === 'string'));
+}
+
+function isThreadMessagePayload(value: unknown): value is ThreadMessagePayload {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.id === 'string' &&
+    (value.role === 'user' || value.role === 'assistant') &&
+    typeof value.content === 'string' &&
+    (value.metadata === undefined || value.metadata === null || isRecord(value.metadata)) &&
+    isOptionalString(value.createdAt)
+  );
+}
+
+function isThreadSearchPayload(value: unknown): value is ThreadSearchPayload {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.id === 'string' &&
+    typeof value.title === 'string' &&
+    isOptionalString(value.updatedAt) &&
+    isOptionalString(value.matchedContent) &&
+    isOptionalString(value.previewHtml) &&
+    isOptionalStringArray(value.tags) &&
+    isOptionalFiniteNumber(value.rank)
+  );
+}
+
+function readThreadMessagesPayload(payload: unknown): ThreadMessagePayload[] {
+  if (!Array.isArray(payload) || !payload.every(isThreadMessagePayload)) {
+    throw new Error('Invalid Kloel thread messages payload');
+  }
+  return payload;
+}
+
+function readThreadSearchPayload(payload: unknown): ThreadSearchPayload[] {
+  if (!Array.isArray(payload) || !payload.every(isThreadSearchPayload)) {
+    throw new Error('Invalid Kloel thread search payload');
+  }
+  return payload;
+}
+
 
 /** Kloel stream thread payload shape. */
 export interface KloelStreamThreadPayload {
@@ -357,10 +414,11 @@ export function streamAuthenticatedKloelMessage(
 export async function loadKloelThreadMessages(
   conversationId: string,
 ): Promise<ThreadMessagePayload[]> {
-  const res = await apiFetch<ThreadMessagePayload[]>(`/kloel/threads/${conversationId}/messages`);
-  const payload = extractWrappedPayload<ThreadMessagePayload[] | undefined>(res);
-  return Array.isArray(payload) ? payload : [];
+  const res = await apiFetch<unknown>(`/kloel/threads/${conversationId}/messages`);
+  const payload = extractWrappedPayload<unknown>(res);
+  return readThreadMessagesPayload(payload);
 }
+
 
 /** Update kloel thread message. */
 export async function updateKloelThreadMessage(
@@ -435,9 +493,9 @@ export async function searchKloelThreads(
     return [];
   }
 
-  const res = await apiFetch<ThreadSearchPayload[]>(
+  const res = await apiFetch<unknown>(
     `/kloel/conversations/search?q=${encodeURIComponent(normalizedQuery)}&limit=${clampThreadSearchLimit(limit)}`,
   );
-  const payload = extractWrappedPayload<ThreadSearchPayload[] | undefined>(res);
-  return Array.isArray(payload) ? payload : [];
+  const payload = extractWrappedPayload<unknown>(res);
+  return readThreadSearchPayload(payload);
 }

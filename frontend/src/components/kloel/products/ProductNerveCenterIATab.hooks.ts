@@ -96,27 +96,29 @@ export function useAIConfig(productId: string) {
   const handleSaveAI = async () => {
     setAiSaving(true);
     try {
-      await apiFetch(`/products/${productId}/ai-config`, {
-        method: 'PUT',
-        body: {
-          customerProfile: { whobuys, pains, promise },
-          objections: objs,
-          tone,
-          persistenceLevel: Number.parseInt(persist, 10) || 3,
-          messageLimit: Number.parseInt(msgLimit, 10) || 10,
-          followUpConfig: {
-            schedule: followUp,
-            autoCheckoutLink: autoLink,
-            offerDiscount: offerDisc,
-            useUrgency: useUrg,
+      unwrapApiPayload(
+        await apiFetch(`/products/${productId}/ai-config`, {
+          method: 'PUT',
+          body: {
+            customerProfile: { whobuys, pains, promise },
+            objections: objs,
+            tone,
+            persistenceLevel: Number.parseInt(persist, 10) || 3,
+            messageLimit: Number.parseInt(msgLimit, 10) || 10,
+            followUpConfig: {
+              schedule: followUp,
+              autoCheckoutLink: autoLink,
+              offerDiscount: offerDisc,
+              useUrgency: useUrg,
+            },
+            salesArguments: {
+              autoCheckoutLink: autoLink,
+              offerDiscount: offerDisc,
+              useUrgency: useUrg,
+            },
           },
-          salesArguments: {
-            autoCheckoutLink: autoLink,
-            offerDiscount: offerDisc,
-            useUrgency: useUrg,
-          },
-        },
-      });
+        }),
+      );
       setAiSaved(true);
       setTimeout(() => setAiSaved(false), 2000);
       showToast('Configuração de IA salva', 'success');

@@ -4,6 +4,7 @@ import { kloelT } from '@/lib/i18n/t';
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { useProfileMutations } from '@/hooks/useKyc';
+import { useProducts } from '@/hooks/useProducts';
 import { useToast } from '@/components/kloel/ToastProvider';
 import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
 import Icons from './ContaIcons';
@@ -20,6 +21,8 @@ export default function PerfilPublicoSection({
   mutate: () => void;
 }) {
   const { updateProfile } = useProfileMutations();
+  const { total: productCount, isLoading: productsLoading, error: productsError } = useProducts();
+  const productCountLabel = productsLoading || productsError ? '--' : String(productCount);
   const { showToast } = useToast();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saving, setSaving] = useState(false);
@@ -240,7 +243,7 @@ export default function PerfilPublicoSection({
             </div>
           </div>
           <div style={{ textAlign: 'right' as const }}>
-            <span style={{ fontFamily: MONO, fontSize: 18, fontWeight: 600, color: EMBER }}>0</span>
+            <span style={{ fontFamily: MONO, fontSize: 18, fontWeight: 600, color: EMBER }}>{productCountLabel}</span>
             <span
               style={{
                 fontSize: 9,

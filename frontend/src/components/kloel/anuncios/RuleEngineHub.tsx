@@ -33,6 +33,7 @@ export function RuleEngineHub() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editCondition, setEditCondition] = useState('');
   const [editAction, setEditAction] = useState('');
+  const [ruleError, setRuleError] = useState<string | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
   const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -48,25 +49,51 @@ export function RuleEngineHub() {
   const invalidateAdRules = () =>
     mutate((key: string) => typeof key === 'string' && key.startsWith('/ad-rules'));
 
+  const runRuleMutation = async (
+    operation: () => Promise<{ error?: string | undefined; success?: boolean | undefined }>,
+    fallbackMessage: string,
+  ): Promise<boolean> => {
+    setRuleError(null);
+    try {
+      const response = await operation();
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      if (response.success === false) {
+        throw new Error(fallbackMessage);
+      }
+      await mutateRules();
+      invalidateAdRules();
+      return true;
+    } catch (error) {
+      setRuleError(error instanceof Error ? error.message : fallbackMessage);
+      return false;
+    }
+  };
+
   const toggleRule = async (id: string) => {
-    await apiFetch(`/ad-rules/${id}/toggle`, { method: 'POST' });
-    mutateRules();
-    invalidateAdRules();
+    await runRuleMutation(
+      () => apiFetch(`/ad-rules/${id}/toggle`, { method: 'POST' }),
+      'Não foi possível alternar a regra.',
+    );
   };
 
   const deleteRule = async (id: string) => {
-    await apiFetch(`/ad-rules/${id}`, { method: 'DELETE' });
-    mutateRules();
-    invalidateAdRules();
+    await runRuleMutation(
+      () => apiFetch(`/ad-rules/${id}`, { method: 'DELETE' }),
+      'Não foi possível remover a regra.',
+    );
   };
 
   const startEdit = (r: AdRule) => {
+    setRuleError(null);
     setEditingId(r.id);
     setEditCondition(r.condition);
     setEditAction(r.action);
   };
 
   const cancelEdit = () => {
+    setRuleError(null);
     setEditingId(null);
     setEditCondition('');
     setEditAction('');
@@ -74,29 +101,35 @@ export function RuleEngineHub() {
 
   const saveEdit = async (id: string) => {
     if (!editCondition.trim() || !editAction.trim()) {return;}
-    await apiFetch(`/ad-rules/${id}`, {
-      method: 'PUT',
-      body: { condition: editCondition.trim(), action: editAction.trim() },
-    });
-    cancelEdit();
-    mutateRules();
-    invalidateAdRules();
+    const didSave = await runRuleMutation(
+      () => apiFetch(`/ad-rules/${id}`, {
+        method: 'PUT',
+        body: { condition: editCondition.trim(), action: editAction.trim() },
+      }),
+      'Não foi possível salvar a regra.',
+    );
+    if (didSave) {
+      cancelEdit();
+    }
   };
 
   const handleCreateRule = async () => {
     if (!newCondition.trim() || !newAction.trim()) {return;}
-    await apiFetch('/ad-rules', {
-      method: 'POST',
-      body: { name: `Regra ${Date.now()}`, condition: newCondition.trim(), action: newAction.trim() },
-    });
+    const didCreate = await runRuleMutation(
+      () => apiFetch('/ad-rules', {
+        method: 'POST',
+        body: { name: `Regra ${Date.now()}`, condition: newCondition.trim(), action: newAction.trim() },
+      }),
+      'Não foi possível criar a regra.',
+    );
+    if (!didCreate) {return;}
     setNewCondition('');
     setNewAction('');
     setShowForm(false);
-    mutateRules();
-    invalidateAdRules();
   };
 
   const openForm = () => {
+    setRuleError(null);
     setShowForm(true);
     if (scrollTimer.current) {clearTimeout(scrollTimer.current);}
     scrollTimer.current = setTimeout(
@@ -134,6 +167,12 @@ export function RuleEngineHub() {
           </div>
         ))}
       </div>
+
+      {ruleError ? (
+        <div role="alert" style={{ background: 'var(--app-bg-card)', border: `1px solid ${EMBER}66`, borderRadius: 6, padding: '10px 12px', color: EMBER, fontSize: 12, fontFamily: SORA }}>
+          {ruleError}
+        </div>
+      ) : null}
 
       <div style={{ background: 'var(--app-bg-card)', border: '1px solid var(--app-border-primary)', borderRadius: 6, padding: 16 }}>
         <div style={{ fontSize: 11, fontFamily: MONO, color: 'var(--app-text-secondary)', letterSpacing: 1, marginBottom: 12 }}>
@@ -193,7 +232,7 @@ export function RuleEngineHub() {
               />
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>
-              <button type="button" onClick={() => { setShowForm(false); setNewCondition(''); setNewAction(''); }} style={{ background: 'none', border: '1px solid colors.text.dim', borderRadius: 6, padding: '8px 16px', color: 'var(--app-text-secondary)', fontSize: 12, fontFamily: SORA, cursor: 'pointer' }}>
+              <button type="button" onClick={() => { setShowForm(false); setNewCondition(''); setNewAction(''); setRuleError(null); }} style={{ background: 'none', border: '1px solid colors.text.dim', borderRadius: 6, padding: '8px 16px', color: 'var(--app-text-secondary)', fontSize: 12, fontFamily: SORA, cursor: 'pointer' }}>
                 {kloelT(`Cancelar`)}
               </button>
               <button type="button" onClick={handleCreateRule} disabled={!newCondition.trim() || !newAction.trim()} style={{ background: EMBER, border: 'none', borderRadius: 6, padding: '8px 20px', color: colors.text.silver, fontSize: 12, fontFamily: SORA, fontWeight: 600, cursor: newCondition.trim() && newAction.trim() ? 'pointer' : 'not-allowed', opacity: newCondition.trim() && newAction.trim() ? 1 : 0.5, transition: 'opacity 150ms ease' }}>

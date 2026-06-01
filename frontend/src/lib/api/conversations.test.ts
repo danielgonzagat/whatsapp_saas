@@ -66,11 +66,12 @@ describe('listConversations', () => {
     expect(apiFetch).toHaveBeenCalledWith('/inbox/ws1/conversations');
   });
 
-  it('returns empty array when data is nullish', async () => {
+  it('rejects missing conversation payloads instead of returning a fake empty list', async () => {
     apiFetch.mockResolvedValueOnce({ data: undefined, status: 200 });
 
-    const result = await listConversations('ws1');
-    expect(result).toEqual([]);
+    await expect(listConversations('ws1')).rejects.toThrow(
+      'Conversation list did not return a confirmed payload',
+    );
   });
 
   it('encodes workspace id', async () => {
@@ -100,11 +101,12 @@ describe('listInboxAgents', () => {
     expect(apiFetch).toHaveBeenCalledWith('/inbox/ws1/agents');
   });
 
-  it('returns empty array when data is nullish', async () => {
+  it('rejects missing agent payloads instead of returning a fake empty list', async () => {
     apiFetch.mockResolvedValueOnce({ data: null, status: 200 });
 
-    const result = await listInboxAgents('ws1');
-    expect(result).toEqual([]);
+    await expect(listInboxAgents('ws1')).rejects.toThrow(
+      'Inbox agents did not return a confirmed payload',
+    );
   });
 
   it('throws on error', async () => {
@@ -127,11 +129,12 @@ describe('getConversationMessages', () => {
     expect(apiFetch).toHaveBeenCalledWith('/inbox/conversations/conv1/messages');
   });
 
-  it('returns empty array when data is nullish', async () => {
+  it('rejects missing message payloads instead of returning a fake empty list', async () => {
     apiFetch.mockResolvedValueOnce({ data: undefined, status: 200 });
 
-    const result = await getConversationMessages('conv1');
-    expect(result).toEqual([]);
+    await expect(getConversationMessages('conv1')).rejects.toThrow(
+      'Conversation messages did not return a confirmed payload',
+    );
   });
 
   it('throws on error', async () => {
@@ -162,6 +165,14 @@ describe('closeConversation', () => {
 
     await expect(closeConversation('conv1')).rejects.toThrow('Conflict');
   });
+
+  it('rejects missing close confirmations', async () => {
+    apiFetch.mockResolvedValueOnce({ data: undefined, status: 200 });
+
+    await expect(closeConversation('conv1')).rejects.toThrow(
+      'Conversation close did not return a confirmed payload',
+    );
+  });
 });
 
 describe('assignConversation', () => {
@@ -184,5 +195,21 @@ describe('assignConversation', () => {
     apiFetch.mockResolvedValueOnce({ error: 'Bad Request', status: 400 });
 
     await expect(assignConversation('conv1', 'invalid')).rejects.toThrow('Bad Request');
+  });
+
+  it('rejects failed status without an error envelope', async () => {
+    apiFetch.mockResolvedValueOnce({ data: { ok: false }, status: 503 });
+
+    await expect(assignConversation('conv1', 'ag1')).rejects.toThrow(
+      'Erro ao atribuir conversa',
+    );
+  });
+
+  it('rejects missing assignment confirmations', async () => {
+    apiFetch.mockResolvedValueOnce({ data: undefined, status: 200 });
+
+    await expect(assignConversation('conv1', 'ag1')).rejects.toThrow(
+      'Conversation assignment did not return a confirmed payload',
+    );
   });
 });

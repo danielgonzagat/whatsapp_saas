@@ -16,14 +16,15 @@ import { TeamMember, TeamInvite } from './ContaTypes';
 export function TeamSection() {
   const fid = useId();
   const wsId = useWorkspaceId();
-  const { data, isLoading, mutate } = useSWR<TeamListResponse>(
-    wsId ? `${wsId}:/team` : null,
-    () => listTeam(),
-    {
-      keepPreviousData: true,
-      revalidateOnFocus: false,
-    },
-  );
+  const {
+    data,
+    error: listError,
+    isLoading,
+    mutate,
+  } = useSWR<TeamListResponse>(wsId ? `${wsId}:/team` : null, () => listTeam(), {
+    keepPreviousData: true,
+    revalidateOnFocus: false,
+  });
   // Backend returns { agents, invitations }. Map agents->members (deriving an
   // honest status from isOnline) and treat every returned invitation as pending
   // (the backend does not send a status field).
@@ -42,10 +43,11 @@ export function TeamSection() {
   }));
 
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('member');
+  const [inviteRole, setInviteRole] = useState('MEMBER');
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState('');
   const [inviteSuccess, setInviteSuccess] = useState('');
+  const [teamActionError, setTeamActionError] = useState('');
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
 
@@ -56,6 +58,7 @@ export function TeamSection() {
     setInviting(true);
     setInviteError('');
     setInviteSuccess('');
+    setTeamActionError('');
     try {
       await inviteTeamMember(inviteEmail.trim(), inviteRole);
       setInviteEmail('');
@@ -70,11 +73,12 @@ export function TeamSection() {
 
   const handleRevoke = async (id: string) => {
     setRevokingId(id);
+    setTeamActionError('');
     try {
       await revokeTeamInvite(id);
       await mutate();
-    } catch {
-      /* silent */
+    } catch (e) {
+      setTeamActionError(getErrorMessage(e) || 'Erro ao cancelar convite');
     } finally {
       setRevokingId(null);
     }
@@ -85,11 +89,12 @@ export function TeamSection() {
       return;
     }
     setRemovingId(id);
+    setTeamActionError('');
     try {
       await removeTeamMember(id);
       await mutate();
-    } catch {
-      /* silent */
+    } catch (e) {
+      setTeamActionError(getErrorMessage(e) || 'Erro ao remover membro');
     } finally {
       setRemovingId(null);
     }
@@ -111,9 +116,9 @@ export function TeamSection() {
   const selectStyle: React.CSSProperties = { ...inputStyle, cursor: 'pointer' };
 
   const ROLES: Record<string, string> = {
-    admin: 'Administrador',
-    member: 'Membro',
-    viewer: 'Visualizador',
+    ADMIN: 'Administrador',
+    MEMBER: 'Membro',
+    VIEWER: 'Visualizador',
   };
 
   return (
@@ -129,6 +134,19 @@ export function TeamSection() {
       >
         {kloelT(`Equipe`)}
       </h2>
+
+      {(listError || teamActionError) && (
+        <p
+          style={{
+            fontSize: 11,
+            color: colors.semantic.error,
+            margin: '0 0 12px',
+            fontFamily: SORA,
+          }}
+        >
+          {teamActionError || getErrorMessage(listError) || 'Erro ao carregar equipe'}
+        </p>
+      )}
 
       <SectionCard
         title={kloelT(`Convidar membro`)}

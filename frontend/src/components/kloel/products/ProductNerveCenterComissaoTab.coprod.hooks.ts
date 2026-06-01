@@ -4,12 +4,7 @@ import { useToast } from '@/components/kloel/ToastProvider';
 import { apiFetch } from '@/lib/api';
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
-import {
-  S,
-  V,
-  unwrapApiPayload,
-  type JsonRecord,
-} from './product-nerve-center.shared';
+import { S, V, unwrapApiPayload, type JsonRecord } from './product-nerve-center.shared';
 
 export function useCoprodState(productId: string) {
   const { showToast } = useToast();
@@ -29,15 +24,19 @@ export function useCoprodState(productId: string) {
     apiFetch<JsonRecord>(`/products/${productId}/commissions`)
       .then((r) => {
         const d = unwrapApiPayload<JsonRecord[]>(r);
+        if (!Array.isArray(d)) {
+          throw new Error('Invalid product commissions payload');
+        }
         setItems(
-          (Array.isArray(d) ? d : []).filter((c: JsonRecord) =>
-            ['COPRODUCER', 'MANAGER'].includes(c.role as string),
-          ),
+          d.filter((c: JsonRecord) => ['COPRODUCER', 'MANAGER'].includes(c.role as string)),
         );
       })
-      .catch(() => setItems([]))
+      .catch((e: unknown) => {
+        console.error(e);
+        showToast(e instanceof Error ? e.message : 'Erro ao carregar comissões', 'error');
+      })
       .finally(() => setLoading(false));
-  }, [productId]);
+  }, [productId, showToast]);
 
   useEffect(() => {
     fetchCommissions();
@@ -48,10 +47,12 @@ export function useCoprodState(productId: string) {
   const handleCreate = async () => {
     setCreating(true);
     try {
-      await apiFetch(`/products/${productId}/commissions`, {
-        method: 'POST',
-        body: { ...form, percentage: Number.parseFloat(form.percentage) || 0 },
-      });
+      unwrapApiPayload(
+        await apiFetch(`/products/${productId}/commissions`, {
+          method: 'POST',
+          body: { ...form, percentage: Number.parseFloat(form.percentage) || 0 },
+        }),
+      );
       setShowForm(false);
       setForm({ role: 'COPRODUCER', percentage: '', agentName: '', agentEmail: '' });
       fetchCommissions();
@@ -69,7 +70,11 @@ export function useCoprodState(productId: string) {
       return;
     }
     try {
-      await apiFetch(`/products/${productId}/commissions/${deleteTarget.id}`, { method: 'DELETE' });
+      unwrapApiPayload(
+        await apiFetch(`/products/${productId}/commissions/${deleteTarget.id}`, {
+          method: 'DELETE',
+        }),
+      );
       fetchCommissions();
       showToast('Coprodutor removido', 'success');
     } catch (e) {

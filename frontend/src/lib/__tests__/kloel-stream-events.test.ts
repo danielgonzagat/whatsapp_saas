@@ -39,6 +39,25 @@ describe('parseKloelStreamPayload', () => {
         done: true,
       }),
     ).toEqual([{ type: 'done' }]);
+
+    expect(
+      parseKloelStreamPayload({
+        type: 'done',
+        done: true,
+        metadata: {
+          capability: 'create_image',
+          generatedImageUrl: 'https://cdn.example.test/generated.png',
+        },
+      }),
+    ).toEqual([
+      {
+        type: 'done',
+        metadata: {
+          capability: 'create_image',
+          generatedImageUrl: 'https://cdn.example.test/generated.png',
+        },
+      },
+    ]);
   });
 
   it('keeps legacy compatibility for mixed payloads with content and error', () => {

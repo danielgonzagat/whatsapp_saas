@@ -1,11 +1,39 @@
 import { apiFetch } from './core';
 
+type MediaEnvelope<T> = { data?: T; error?: string | undefined; status: number };
+
+function requireMediaResponse<T>(response: MediaEnvelope<T>, fallbackMessage: string) {
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  if (response.status >= 400) {
+    throw new Error(fallbackMessage);
+  }
+  return response;
+}
+
+function requireStringField(data: unknown, field: string, message: string) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    throw new Error(message);
+  }
+  const value = (data as Record<string, unknown>)[field];
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new Error(message);
+  }
+}
+
 export const videoApi = {
-  create: (inputUrl: string, prompt: string) =>
-    apiFetch<{ id: string; status: string }>('/video/create', {
-      method: 'POST',
-      body: { inputUrl, prompt },
-    }),
+  create: async (inputUrl: string, prompt: string) => {
+    const res = requireMediaResponse(
+      await apiFetch<{ id: string; status: string }>('/video/create', {
+        method: 'POST',
+        body: { inputUrl, prompt },
+      }),
+      'Falha ao criar video.',
+    );
+    requireStringField(res.data, 'id', 'Video job nao foi confirmado.');
+    return res;
+  },
 
   getJob: (id: string) =>
     apiFetch<{
@@ -27,45 +55,63 @@ export interface VoiceProfile {
 }
 
 export const voiceApi = {
-  createProfile: (data: {
+  createProfile: async (data: {
     name: string;
     provider?: string;
     voiceId?: string;
     settings?: Record<string, unknown>;
-  }) =>
-    apiFetch<VoiceProfile>('/voice/profiles', {
-      method: 'POST',
-      body: data,
-    }),
+  }) => {
+    const res = requireMediaResponse(
+      await apiFetch<VoiceProfile>('/voice/profiles', {
+        method: 'POST',
+        body: data,
+      }),
+      'Falha ao criar perfil de voz.',
+    );
+    requireStringField(res.data, 'id', 'Perfil de voz nao foi confirmado.');
+    return res;
+  },
 
   listProfiles: (workspaceId?: string) => {
     const qs = workspaceId ? `?workspaceId=${encodeURIComponent(workspaceId)}` : '';
     return apiFetch<VoiceProfile[] | { profiles: VoiceProfile[] }>(`/voice/profiles${qs}`);
   },
 
-  generate: (data: {
+  generate: async (data: {
     text: string;
     voiceProfileId?: string;
     voiceId?: string;
     provider?: string;
-  }) =>
-    apiFetch<{ audioUrl: string; duration?: number }>('/voice/generate', {
-      method: 'POST',
-      body: data,
-    }),
+  }) => {
+    const res = requireMediaResponse(
+      await apiFetch<{ audioUrl: string; duration?: number }>('/voice/generate', {
+        method: 'POST',
+        body: data,
+      }),
+      'Falha ao gerar audio.',
+    );
+    requireStringField(res.data, 'audioUrl', 'Audio gerado sem URL confirmado.');
+    return res;
+  },
 };
 
 export const mediaApi = {
-  processVideo: (data: {
+  processVideo: async (data: {
     inputUrl?: string;
     prompt?: string;
     type?: string;
     workspaceId?: string;
-  }) =>
-    apiFetch<{ id: string; status: string }>('/media/video', {
-      method: 'POST',
-      body: data,
-    }),
+  }) => {
+    const res = requireMediaResponse(
+      await apiFetch<{ id: string; status: string }>('/media/video', {
+        method: 'POST',
+        body: data,
+      }),
+      'Falha ao processar midia.',
+    );
+    requireStringField(res.data, 'id', 'Media job nao foi confirmado.');
+    return res;
+  },
 
   getJob: (id: string) =>
     apiFetch<{ id: string; status: string; outputUrl?: string; createdAt: string }>(

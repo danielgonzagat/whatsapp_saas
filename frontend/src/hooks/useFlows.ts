@@ -64,7 +64,10 @@ export function useFlows(workspaceId?: string) {
     setError(null);
     try {
       const response = await api.get<Flow[]>(`/flows/${workspaceId}`);
-      setFlows(Array.isArray(response.data) ? response.data : []);
+      if (!Array.isArray(response.data)) {
+        throw new Error('Invalid flows payload');
+      }
+      setFlows(response.data);
     } catch (err) {
       setError(errorMessage(err, 'Erro ao carregar fluxos'));
     } finally {
@@ -168,7 +171,10 @@ export function useFlows(workspaceId?: string) {
         const response = await api.get<FlowExecutionSummary[]>(
           `/flows/${workspaceId}/executions?limit=${limit}`,
         );
-        return Array.isArray(response.data) ? response.data : [];
+        if (!Array.isArray(response.data)) {
+          throw new Error('Invalid flow executions payload');
+        }
+        return response.data;
       } catch (err) {
         setError(errorMessage(err, 'Erro ao carregar execuções'));
         return [];
@@ -204,7 +210,10 @@ export function useFlows(workspaceId?: string) {
     setError(null);
     try {
       const response = await api.get<FlowTemplate[]>('/flows/templates');
-      return Array.isArray(response.data) ? response.data : [];
+      if (!Array.isArray(response.data)) {
+        throw new Error('Invalid flow templates payload');
+      }
+      return response.data;
     } catch (err) {
       setError(errorMessage(err, 'Erro ao carregar templates'));
       return [];

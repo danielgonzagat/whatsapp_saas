@@ -68,7 +68,13 @@ export interface CommandPaletteProps {
 }
 
 /** Command palette. */
-export function CommandPalette({ open, onClose, initialSearch, className }: CommandPaletteProps) {
+export function CommandPalette({
+  open,
+  onClose,
+  initialSearch,
+  className,
+  mode = 'full',
+}: CommandPaletteProps) {
   const router = useRouter();
   const {
     query,
@@ -76,6 +82,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
     selectedIndex,
     setSelectedIndex,
     isSearching,
+    searchError,
     results,
     groupedResults,
     inputRef,
@@ -84,12 +91,19 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
   } = useCommandPalette({
     ...(open !== undefined ? { open } : {}),
     ...(initialSearch !== undefined ? { initialSearch } : {}),
+    mode,
   });
 
-  const openConversation = useCallback(
-    (conversationId: string) => {
-      setActiveConversation(conversationId);
-      router.push(`${KLOEL_CHAT_ROUTE}?conversationId=${encodeURIComponent(conversationId)}`);
+  const openResult = useCallback(
+    (item: { id: string; href?: string | undefined; type?: string | undefined }) => {
+      if (item.type === 'conversation') {
+        setActiveConversation(item.id);
+      }
+      const fallbackHref =
+        item.type === 'conversation'
+          ? `${KLOEL_CHAT_ROUTE}?conversationId=${encodeURIComponent(item.id)}`
+          : KLOEL_CHAT_ROUTE;
+      router.push(item.href || fallbackHref);
       onClose();
     },
     [onClose, router, setActiveConversation],
@@ -99,7 +113,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
     results,
     selectedIndex,
     setSelectedIndex,
-    openConversation,
+    openResult,
     onClose,
   });
 
@@ -107,10 +121,31 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
     return null;
   }
 
+  const isConversationMode = mode === 'conversations';
   const hasQuery = query.trim().length > 0;
+  const hasActionableQuery = query.trim().length >= 2;
+  const resultNoun = isConversationMode ? 'conversa' : 'resultado';
   const footerLabel = hasQuery
-    ? kloelT(`${results.length} conversa${results.length === 1 ? '' : 's'}`)
+    ? kloelT(`${results.length} ${resultNoun}${results.length === 1 ? '' : 's'}`)
     : kloelT(`${results.length} recente${results.length === 1 ? '' : 's'}`);
+  const ariaLabel = isConversationMode
+    ? kloelT(`Buscar conversas`)
+    : kloelT(`Buscar na plataforma`);
+  const placeholder = isConversationMode
+    ? kloelT(`Buscar no conteúdo das conversas...`)
+    : kloelT(`Buscar produtos, clientes, vendas, cursos...`);
+  const emptyTitle = hasQuery
+    ? isConversationMode
+      ? kloelT(`Nenhuma conversa encontrada`)
+      : kloelT(`Nenhum resultado encontrado`)
+    : kloelT(`Nenhuma conversa recente`);
+  const emptyCopy = searchError && hasActionableQuery
+    ? kloelT(`Não foi possível consultar a busca real agora. Tente novamente.`)
+    : hasQuery
+      ? isConversationMode
+        ? kloelT(`Nada apareceu para \u201C${query.trim()}\u201D. Tenta outro termo ou uma palavra que esteja no conteúdo da conversa.`)
+        : kloelT(`Nada apareceu para \u201C${query.trim()}\u201D. Tenta outro termo.`)
+      : kloelT(`Assim que você conversar com a Kloel, os históricos aparecem aqui para busca imediata.`);
 
   // itemRefsRef.current slots are set by per-item ref callbacks below;
   // stale indices are harmless because navigation only reads current[selectedIndex].
@@ -127,7 +162,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
           onKeyDown={handleKeyDown}
           role="dialog"
           aria-modal="true"
-          aria-label={kloelT(`Buscar conversas`)}
+          aria-label={ariaLabel}
         >
           <div className="kloel-search-header">
             <Search size={18} color="var(--app-text-secondary)" aria-hidden="true" />
@@ -139,7 +174,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
                 setQuery(event.target.value);
                 setSelectedIndex(0);
               }}
-              placeholder={kloelT(`Buscar no conteúdo das conversas...`)}
+              placeholder={placeholder}
               autoComplete="off"
               spellCheck={false}
             />
@@ -164,19 +199,18 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
           {isSearching && <div className="kloel-search-progress" aria-hidden="true" />}
 
           <div className="kloel-search-body">
+            {searchError && hasActionableQuery && results.length > 0 && (
+              <div className="kloel-search-group" role="status">
+                {kloelT(`Busca real indisponível. Mostrando histórico local.`)}
+              </div>
+            )}
             {results.length === 0 ? (
               <div className="kloel-search-empty">
                 <div className="kloel-search-result-icon" aria-hidden="true">
                   <Search size={18} aria-hidden="true" />
                 </div>
-                <div className="kloel-search-empty-title">
-                  {hasQuery ? kloelT(`Nenhuma conversa encontrada`) : kloelT(`Nenhuma conversa recente`)}
-                </div>
-                <div className="kloel-search-empty-copy">
-                  {hasQuery
-                    ? kloelT(`Nada apareceu para \u201C${query.trim()}\u201D. Tenta outro termo ou uma palavra que esteja no conteúdo da conversa.`)
-                    : kloelT(`Assim que você conversar com a Kloel, os históricos aparecem aqui para busca imediata.`)}
-                </div>
+                <div className="kloel-search-empty-title">{emptyTitle}</div>
+                <div className="kloel-search-empty-copy">{emptyCopy}</div>
               </div>
             ) : (
               groupedResults.map((group) => (
@@ -197,7 +231,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
                         query={query}
                         groupLabel={group.label}
                         onHover={() => setSelectedIndex(itemIndex)}
-                        onSelect={() => openConversation(item.id)}
+                        onSelect={() => openResult(item)}
                       />
                     );
                   })}
