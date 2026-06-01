@@ -7,17 +7,18 @@
  * detectable opportunities only (undetectable calls never reach the ledger), so
  * the headline rate stays honest.
  *
- * HONESTY (proof #1): an EMPTY ledger is UNOBSERVED, not proven-clean, unless the
- * observer heartbeat proves hook traffic flowed with zero detectable opportunities.
- * The report therefore exposes:
- *   - observed: true iff >=1 bypass opportunity OR >=1 observer heartbeat exists
- *   - observerInstalled: true iff bypass-observer-hook.mjs is wired into
- *     Codex .codex/hooks.json or Claude .claude/settings*.json PreToolUse (so
- *     absence of records can be interpreted against a real observer boundary)
- *   - status: 'unobserved' | 'observed-clean' | 'bypasses-present'
- * so the Y certificate can mark the domain UNJUDGED when unobserved instead of
- * green-by-absence. Flags: --json, --strict (exit 1 if any silent bypass),
- * --since=<ms-epoch>.
+ * HONESTY (proof #1) — three states, never green-by-absence:
+ *   - 'unobserved'      : no opportunity AND no heartbeat. The observer may not be
+ *                         wired or no traffic has flowed. Certifies NOTHING.
+ *   - 'watching'        : heartbeats present (the hook FIRED on some tool calls)
+ *                         but ZERO real bypass opportunities yet. The observer is
+ *                         alive but has not yet observed a routable decision, so it
+ *                         still proves nothing about no-bypass.
+ *   - 'observed-clean'  : >=1 real detectable opportunity, all clean. THIS is the
+ *                         only state that certifies no-bypass.
+ *   - 'bypasses-present': >=1 silently-allowed bypass. RED.
+ * A heartbeat alone NEVER yields observed-clean — that was the laundering bug.
+ * Flags: --json, --strict (exit 1 if any silent bypass), --since=<ms-epoch>.
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -28,10 +29,9 @@ const strict = args.includes('--strict');
 const sinceArg = args.find((a) => a.startsWith('--since='));
 const since = sinceArg ? Number(sinceArg.split('=')[1]) : 0;
 
-const repoRoot = process.env.CODEX_PROJECT_DIR || process.env.CLAUDE_PROJECT_DIR || process.cwd();
-const atomicDir = path.join(repoRoot, '.atomic');
-const ledger = path.join(atomicDir, 'bypass-ledger.jsonl');
-const heartbeatLedger = path.join(atomicDir, 'bypass-observer-heartbeat.jsonl');
+const repoRoot = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+const ledger = path.join(repoRoot, '.atomic', 'bypass-ledger.jsonl');
+const heartbeatLedger = path.join(repoRoot, '.atomic', 'bypass-heartbeat.jsonl');
 
 function readJsonl(file) {
   const out = [];
@@ -76,9 +76,19 @@ for (const r of recs) perCategory[r.category] = (perCategory[r.category] || 0) +
 
 const observedHookEvents = heartbeats.length;
 const lastObservedAt = Math.max(0, ...recs.map((r) => Number(r.ts) || 0), ...heartbeats.map((r) => Number(r.ts) || 0));
-const observed = detectable > 0 || observedHookEvents > 0;
+// observed = a real bypass OPPORTUNITY was recorded. A heartbeat alone is NOT an
+// observation of no-bypass — the hook fired on some tool, but proved nothing.
+const observed = detectable > 0;
 const observerInstalled = detectObserverInstalled();
-const status = silentlyAllowed > 0 ? 'bypasses-present' : observed ? 'observed-clean' : 'unobserved';
+// Three honest states (+ RED). observed-clean REQUIRES detectable>0.
+const status =
+  silentlyAllowed > 0
+    ? 'bypasses-present'
+    : detectable > 0
+      ? 'observed-clean'
+      : observedHookEvents > 0
+        ? 'watching'
+        : 'unobserved';
 
 const out = {
   detectableOpportunities: detectable,
@@ -102,7 +112,9 @@ if (asJson) {
       `observedHookEvents=${observedHookEvents}.`,
   );
   for (const [k, v] of Object.entries(perCategory)) console.log(`  ${k}: ${v}`);
-  if (!observed) {
+  if (status === 'watching') {
+    console.log('  (observer ALIVE — heartbeats recorded — but ZERO bypass opportunities yet; proves nothing about no-bypass until a real opportunity flows)');
+  } else if (status === 'unobserved') {
     console.log(
       observerInstalled
         ? '  (observer wired but no heartbeat/opportunity recorded yet — UNOBSERVED until hook traffic flows)'

@@ -1,0 +1,7 @@
+{
+  "writeGates": 13,
+  "forbiddenExecLaws": 15,
+  "nativeEditBans": 4,
+  "syncByteFloorGates": 3,
+  "byteFloorGuards": 4
+}
