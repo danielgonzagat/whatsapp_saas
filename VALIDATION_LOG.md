@@ -336,3 +336,128 @@ All 200 with real workspace-scoped data; honest-empty where the workspace has no
   Conversar/Canais provider OAuth (needs Meta/Google/TikTok creds = NEEDS-DANIEL),
   Carteira saque, full multi-step product wizard (planos/checkouts/pixels), Afiliar apply.
   The button->handler->apiFetch->DB pattern is proven by Perfil + Produtos; these reuse it.
+
+---
+
+# TAREFA 3 — Code fixes applied (2026-06-01, atomic host-sandbox session)
+
+Continuation of the KloelGraph Functional Recovery. The previous closer session
+identified these fixes but was blocked (atomic-edit MCP not loaded; native writes
+refused by the 600-line preflight gate). This session loaded the atomic-edit MCP
+and applied patches 1–4 through the atomic transaction path (every write
+syntax-validated, type-soundness-gated, char-traced). All backend changes verified
+with `tsc` (exit 0), targeted Jest (exit 0), and ESLint (clean on every touched
+file). An adversarial multi-lens review (security / correctness / test-adequacy)
+found no blockers. Patch 5 and Finding #6 are documented as deferred.
+
+## Patch 1 + 4 — BR data-provider User-Agent + decompose KycService (Findings #1, #4)
+
+- **New `backend/src/kyc/kyc.lookup.helpers.ts`**: `lookupCnpj`, `lookupCep`,
+  `listBrazilianBanks` extracted from `KycService`; each `fetch()` now sends a
+  shared `BRASIL_PROVIDER_HEADERS = { 'User-Agent': 'Kloel/1.0 (+https://kloel.com)',
+  Accept: 'application/json' }`. **Root cause of the broken CNPJ auto-fill**:
+  BrasilAPI sits behind Cloudflare, which returns 403 for the bare Node fetch UA
+  and 429 for an empty UA; a descriptive UA returns 200 (curl-verified by the
+  prior session).
+- `KycService.lookupCnpj/lookupCep/listBrazilianBanks` are now one-line
+  delegations — **public service API + controller routes unchanged**.
+- **Resolves Finding #4**: `kyc.service.ts` dropped **622 → 544 lines**, back
+  under the 600-line architecture guardrail.
+- Tests: new `kyc.lookup.helpers.spec.ts` (header sent + 400/503 mapping);
+  `kyc.lookup.spec.ts` updated (3 fetch assertions now assert the headers object).
+- Notes: `lookupCep` targets ViaCEP (not BrasilAPI); the UA was added there too
+  for consistency. Log context for these warnings moved `KycService` → `KycLookup`.
+
+## Patch 2 — `PUT/GET /kyc/profile` no longer leaks `password` hash + `mfaSecret` (Finding #2)
+
+- **Root cause**: `KycService.updateProfile` returned `tx.agent.update({...})`
+  with **no `select`**, so `PUT /kyc/profile` responded with the full `RAC_Agent`
+  row including `password` (bcrypt hash) and `mfaSecret`. `getProfile` was already
+  safe.
+- **Fix**: added module-level `PROFILE_SELECT = Prisma.validator<Prisma.AgentSelect>()({...})`
+  (the 16 profile-safe fields `getProfile` already used); both `getProfile` and
+  `updateProfile` now project via `select: PROFILE_SELECT`. The shared const also
+  removes the projection duplication.
+- Security review confirmed `PROFILE_SELECT` excludes every sensitive Agent column
+  (password, mfaSecret, mfaEnabled/mfaPendingSetup, provider/providerId,
+  emailVerificationToken, permissions, role) and that **no other KYC service/controller
+  path returns a raw agent record** (all other reads use narrow scoped selects).
+- Test: `kyc.service.spec.ts` gains a regression test pinning the update `select`
+  shape (excludes `password`/`mfaSecret`).
+
+## Patch 3 — `POST /products` returns 400 (not 500) on missing/invalid price (Finding #5)
+
+- **Root cause**: the `/products` create path binds `@Body()` to a plain TS
+  interface (no class-validator), so `ProductService.create` spread an unvalidated
+  payload into `prisma.product.create`; `Product.price` is a required `Float` with
+  no default → a missing price threw `PrismaClientValidationError` surfaced as a
+  generic 500.
+- **Fix**: a service-level guard in `ProductService.create` throws
+  `BadRequestException('price is required and must be a non-negative number')`
+  **before any DB I/O**. Service-level (vs DTO-level) chosen because it protects
+  all three create entry points uniformly (checkout DTO, kloel interface,
+  product.types interface) and needs no controller rewiring. `price: 0` and valid
+  positives are correctly allowed.
+- Test: new `product.service.create-validation.spec.ts` (missing / negative / NaN
+  price → 400, no DB call).
+
+## Patch 5 — channel-setup legacy endpoint (Finding #5-channels) — DEFERRED
+
+- **Root cause (precisely mapped)**: two channel-setup backends with **different
+  storage**:
+  - Legacy `marketing/marketing-connect.controller.ts` (`GET/POST
+    /marketing/connect/channel-setup`) → `providerSettings.marketingChannelSetup`.
+  - Canonical `kloel/channel-setup.controller.ts` (`@Controller('channel-setup')`,
+    `/channel-setup/*`) → `prisma.channelSetup` table.
+  The **autopilot / commercial-decision-orchestrator reads the canonical kloel
+  store** (`commercial-decision-orchestrator.service.ts:224 → this.setup.getState`).
+  The wizard (`frontend/.../use-official-marketing-channel.ts:persistSetup`) writes
+  to **legacy** while `refresh()` reads both and merges — so wizard product/arsenal/
+  config selections may not reach the store the autopilot reads.
+- **Why deferred (no code change this session)**: rewiring a working wizard +
+  autopilot data flow; the canonical API client has granular endpoints
+  (products/arsenal/config/complete) but **no `currentStep` persistence endpoint**;
+  the kloel module has active concurrent-agent locks; and the change **cannot be
+  E2E-verified in this sandbox**. Per REGRA DE NÃO-INVENÇÃO / REGRA MESTRA, a risky
+  unverifiable rewiring of a working flow is out of safe autonomous scope.
+- **Recommended (dedicated session)**: pick the authoritative store (canonical
+  `prisma.channelSetup`), migrate `persistSetup` to the `/channel-setup/*` endpoints
+  (derive or add a step-persistence endpoint), then verify the autopilot sees the
+  selections end-to-end.
+
+## Finding #6 — `RAC_MindSelfModel` table missing — OUT OF SCOPE (pre-existing)
+
+- `MindSelfModelService` (`kloel/mind/self-model/`) queries `RAC_MindSelfModel`
+  but no Prisma model/migration creates it (background-only warning). Adding it
+  needs a schema migration in the locked kloel/mind domain; explicitly not in the
+  requested patch set (1–5) and out of safe autonomous scope this pass.
+
+## Verification evidence (this session)
+
+- `tsc` backend: **exit 0** (re-run after each patch and final).
+- Jest `backend/src/kyc`: **exit 0** (kyc.lookup.helpers, kyc.lookup, kyc.service,
+  kyc.controller, update-profile.dto, kyc-approved.guard).
+- Jest `backend/src/products`: **exit 0** (incl. new create-validation spec).
+- ESLint: **all 7 touched files clean**. The ~282 remaining backend ESLint errors
+  are ALL pre-existing in unrelated files (test/e2e `any` usage; other modules'
+  prettier nits) — none introduced by these patches.
+
+## Recommended follow-ups (non-blocking, from the adversarial review)
+
+- Add explicit timeouts (AbortController/`AbortSignal.timeout`) to the BR provider
+  `fetch()` calls per CLAUDE.md REGRA DE INTEGRAÇÕES EXTERNAS (carried over from the
+  original inline code; not a regression — deferred to avoid spec churn this pass).
+- Patch 5 rewiring + E2E verification (above).
+
+## Commit / environment note
+
+- This is an **atomic host-sandbox** session: shell commands are confined to a
+  per-command sandbox whose write-root is the command `cwd`. The Claude Bash tool
+  (scratch dir under `/private/tmp`) is refused, and `atomic_exec` cannot create
+  `.git/index.lock` (outside its `cwd` write-root) while `cwd=<repo root>` overflows
+  the byte-snapshot cap on this 844k-LOC tree. **Git/husky therefore cannot run
+  in-session.** All code changes were applied + verified via the atomic-edit and
+  test-runner MCPs; the per-patch commits must be run by the repo owner (commands
+  in the session report). No `--no-verify`, no rule relaxation, no AI commit
+  signature (matching the branch's recovery-commit convention).
+

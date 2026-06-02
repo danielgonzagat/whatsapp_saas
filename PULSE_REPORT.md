@@ -1,4 +1,4 @@
-# PULSE REPORT — 2026-05-30T03:52:39.718Z
+# PULSE REPORT — 2026-05-31T18:11:18.962Z
 
 ## PULSE VERDICT
 
@@ -19,8 +19,8 @@
 - Can declare Kloel product certified: NAO
 - bounded_run: PASS - Bounded next autonomous cycle exposes 8 ai_safe unit(s).
 - artifact_consistency: PASS - Cross-artifact consistency passed.
-- execution_matrix: PASS - Execution matrix classified 23421 path(s) with zero unknown and zero non-terminal paths.
-- critical_path_terminal: FAIL - 5552 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abandonment, matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:abi-snapshot, matrix:capability:capability:account, matrix:capability:capability:account-agent, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-change. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.
+- execution_matrix: PASS - Execution matrix classified 18570 path(s) with zero unknown and zero non-terminal paths.
+- critical_path_terminal: FAIL - 5673 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abandonment, matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:abi-snapshot, matrix:capability:capability:account, matrix:capability:capability:account-agent, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-change. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.
 - breakpoint_precision: PASS - Every observed failure in the execution matrix has a breakpoint.
 - external_reality: FAIL - 0 missing, 2 stale, and 0 invalid external adapter(s) remain.
 - self_trust: PASS - All parsers loaded and no phantom capability/flow remains. 24 aspirational structure(s) remain explicitly marked as aspirational.
@@ -32,12 +32,12 @@
 - Human replacement: NOT_READY
 - Score: 55/100
 - Blocking tier: 0
-- Scope parity: PASS (high)
-- Structural chains: 773/2749 complete
+- Scope parity: PASS (medium)
+- Structural chains: 777/2787 complete
 - Capabilities: real=0, partial=482, latent=24, phantom=0
 - Capability maturity: foundational=2, connected=504, operational=0, productionReady=0
-- Flows: real=0, partial=85, latent=0, phantom=0
-- Execution matrix: paths=23421, observedPass=0, observedFail=249, criticalUnobserved=0, unknown=0
+- Flows: real=0, partial=84, latent=0, phantom=0
+- Execution matrix: paths=18570, observedPass=0, observedFail=247, criticalUnobserved=0, unknown=0
 - Structural parity gaps: total=42, critical=0, high=41
 - Finding events: totalSignals=36, uniqueEvents=36, observed=0, confirmedStatic=36, weakSignals=0
 - Codacy HIGH issues: 2438
@@ -59,19 +59,19 @@
 ## Coverage Truth
 
 - Inventory Coverage: 100%
-- Classification Coverage: 68%
-- Structural Graph Coverage: 28% (1665/5950 connected)
-  Reason: 1665/5950 structural files connected.
+- Classification Coverage: 88%
+- Structural Graph Coverage: 28% (1683/6073 connected)
+  Reason: 1683/6073 structural files connected.
 - Test Coverage: 22%
-  Reason: 936/4335 source modules have spec files.
+  Reason: 952/4411 source modules have spec files.
 - Scenario Coverage: 100% (declared=100%, executed=100%, passed=0%)
 - Runtime Evidence Coverage: 0% (fresh=0%, stale=0%)
   Reason: No runtime probes executed.
 - Production Proof Coverage: 0%
   Reason: 0/506 capabilities real.
-- Unknown Files: 7095
+- Unknown Files: 2009
 - Orphan Files: 200
-- Excluded Directories: 26
+- Excluded Directories: 27
 - Manifest role: semantic overlay, NOT scope boundary
 - Scope source: repo_filesystem
 
@@ -84,20 +84,20 @@
 - No-overclaim: FAIL
 
 ### Inferred (structural analysis)
-- 2749 structural chains
+- 2787 structural chains
 - 0 real capabilities
 - 0 real flows
 
 ### Aspirational (product vision projection)
-- 40 projected surfaces
-- Target: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 442/442 capability(ies) and 85/85 flow(s) at least partially real, with readiness yellow.
+- 39 projected surfaces
+- Target: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 444/444 capability(ies) and 84/84 flow(s) at least partially real, with readiness yellow.
 
 ## External Reality
 
 - codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=4, mappedFlows=5, summary=3 HIGH Codacy issue(s) remain in scripts/pulse/safety-sandbox/classification.ts.
-- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=158, mappedFlows=84, summary=5 HIGH Codacy issue(s) remain in scripts/pulse/source-root-detector/helpers.ts.
-- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=14, mappedFlows=83, summary=1 HIGH Codacy issue(s) remain in scripts/pulse/parser-registry/discovery-helpers.ts.
-- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=14, mappedFlows=83, summary=1 HIGH Codacy issue(s) remain in scripts/pulse/parser-registry/types.ts.
+- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=157, mappedFlows=83, summary=5 HIGH Codacy issue(s) remain in scripts/pulse/source-root-detector/helpers.ts.
+- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=14, mappedFlows=82, summary=1 HIGH Codacy issue(s) remain in scripts/pulse/parser-registry/discovery-helpers.ts.
+- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=14, mappedFlows=82, summary=1 HIGH Codacy issue(s) remain in scripts/pulse/parser-registry/types.ts.
 - codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=2, mappedFlows=0, summary=2 HIGH Codacy issue(s) remain in scripts/pulse/scenario-engine/playwright/spec-gen.ts.
 - github/pull_request_change: impact=68%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=fix(kloel): route text llm by configured provider
 - github/pull_request_change: impact=68%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=chore(backlog): publish accumulated codebase work
@@ -105,25 +105,25 @@
 
 ## Product Identity
 
-- Current checkpoint: The current product-facing system materializes 442 partial capability(ies), 0 latent capability(ies). System-wide phantom capability count is 0.
-- Inferred product: If the currently connected structures converge, the product resolves toward a unified operational platform centered on Analytics, Autopilot, Billing, Campaigns, Checkout, CIA/Agent, CRM, Dashboard, Inbox/Chat, Onboarding, Partnerships, Products, Sales/Vendas, Scrapers, Settings, Account, Admin, Canvas, Carteira, Cookies, Ferramentas, Launch, Media, Parcerias.
-- Projected checkpoint: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 442/442 capability(ies) and 85/85 flow(s) at least partially real, with readiness yellow.
+- Current checkpoint: The current product-facing system materializes 444 partial capability(ies), 0 latent capability(ies). System-wide phantom capability count is 0.
+- Inferred product: If the currently connected structures converge, the product resolves toward a unified operational platform centered on Analytics, Autopilot, Billing, Campaigns, Checkout, CIA/Agent, Dashboard, Inbox/Chat, Onboarding, Partnerships, Sales/Vendas, Scrapers, Settings, CRM, Account, Admin, Canvas, Carteira, Cookies, Ferramentas, Launch, Media, Parcerias, Sites.
+- Projected checkpoint: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 444/444 capability(ies) and 84/84 flow(s) at least partially real, with readiness yellow.
 - Distance: Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 42 structural parity gap(s), and 2438 HIGH Codacy issue(s).
 
 ## Product Surfaces
 
-- Analytics: status=partial, completion=100%, capabilities=169, flows=84
-- Autopilot: status=partial, completion=100%, capabilities=211, flows=84
-- Billing: status=partial, completion=100%, capabilities=10, flows=83
-- Campaigns: status=partial, completion=100%, capabilities=180, flows=84
-- Checkout: status=partial, completion=100%, capabilities=189, flows=84
-- CIA/Agent: status=partial, completion=100%, capabilities=191, flows=84
-- CRM: status=partial, completion=100%, capabilities=160, flows=84
-- Dashboard: status=partial, completion=100%, capabilities=7, flows=83
-- Inbox/Chat: status=partial, completion=100%, capabilities=7, flows=83
-- Onboarding: status=partial, completion=100%, capabilities=165, flows=84
-- Partnerships: status=partial, completion=100%, capabilities=160, flows=84
-- Products: status=partial, completion=100%, capabilities=169, flows=84
+- Analytics: status=partial, completion=100%, capabilities=168, flows=83
+- Autopilot: status=partial, completion=100%, capabilities=211, flows=83
+- Billing: status=partial, completion=100%, capabilities=10, flows=82
+- Campaigns: status=partial, completion=100%, capabilities=180, flows=83
+- Checkout: status=partial, completion=100%, capabilities=185, flows=83
+- CIA/Agent: status=partial, completion=100%, capabilities=191, flows=83
+- Dashboard: status=partial, completion=100%, capabilities=7, flows=82
+- Inbox/Chat: status=partial, completion=100%, capabilities=7, flows=82
+- Onboarding: status=partial, completion=100%, capabilities=164, flows=83
+- Partnerships: status=partial, completion=100%, capabilities=159, flows=83
+- Sales/Vendas: status=partial, completion=100%, capabilities=156, flows=83
+- Scrapers: status=partial, completion=100%, capabilities=1, flows=0
 
 ## Experience Projection
 
@@ -138,15 +138,15 @@
 
 ## Promise To Production Delta
 
-- Declared surfaces: 40
-- Real surfaces: 27
+- Declared surfaces: 39
+- Real surfaces: 26
 - Partial surfaces: 13
 - Latent surfaces: 13
 - Phantom surfaces: 13
 - Critical gaps:
   - Anuncios/Ads: Missing structural roles: interface, orchestration, side_effect.
   - Auth: Missing structural roles: interface, persistence.
-  - Followups: Missing structural roles: interface, persistence.
+  - Products: Missing structural roles: interface, persistence.
   - Marketing: Missing structural roles: interface, persistence, side_effect.
   - Area: Missing structural roles: interface, persistence.
   - Pay: latent surface with incomplete materialization.
@@ -246,7 +246,7 @@
 - github/pull_request: chore: canonicalization mission + helper extraction waves (Claude/PI w95-w122)
 - Anuncios/Ads: Missing structural roles: interface, orchestration, side_effect.
 - Auth: Missing structural roles: interface, persistence.
-- Followups: Missing structural roles: interface, persistence.
+- Products: Missing structural roles: interface, persistence.
 - Marketing: Missing structural roles: interface, persistence, side_effect.
 - Area: Missing structural roles: interface, persistence.
 - Pay: latent surface with incomplete materialization.

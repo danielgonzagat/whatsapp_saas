@@ -1,6 +1,6 @@
 {
   "score": 99,
-  "totalNodes": 1836,
+  "totalNodes": 1838,
   "breaks": [
     {
       "type": "graph-route-caller-unobserved",
@@ -356,7 +356,7 @@
       "type": "graph-state-model-access-unobserved",
       "severity": "medium",
       "file": "backend/prisma/schema.prisma",
-      "line": 3871,
+      "line": 3872,
       "description": "Model KloelGlobalPrior has no service or controller accessing it",
       "detail": "Fields: id, channel, decisionType, action, observations...",
       "source": "graph:confirmed_static:state_model_access_unobserved",
@@ -364,11 +364,11 @@
     }
   ],
   "stats": {
-    "uiElements": 2001,
+    "uiElements": 2038,
     "uiDeadHandlers": 0,
-    "apiCalls": 752,
+    "apiCalls": 753,
     "apiNoRoute": 0,
-    "backendRoutes": 905,
+    "backendRoutes": 906,
     "backendEmpty": 0,
     "prismaModels": 179,
     "modelOrphans": 1,
@@ -386,7 +386,7 @@
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-05-30T03:51:28.902Z",
-  "runId": "7841b7ae-6811-4245-97aa-e937af168ea8",
-  "generatedAt": "2026-05-30T03:53:57.162Z"
+  "timestamp": "2026-05-31T18:08:33.226Z",
+  "runId": "62277876-94ae-424c-a58e-b20c873f3fe2",
+  "generatedAt": "2026-05-31T18:15:14.306Z"
 }
