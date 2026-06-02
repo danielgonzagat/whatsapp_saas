@@ -25,6 +25,67 @@ DIST="${SRC_DIR}/dist/server.js"
 
 cd "${REPO_ROOT}"
 
+recover_atomic_host_from_state() {
+  local state="${REPO_ROOT}/.atomic/codex-broker-current.json"
+  [[ -f "${state}" ]] || return 1
+
+  local recovered
+  recovered="$(
+    node -e '
+const fs = require("node:fs");
+const path = require("node:path");
+const { fileURLToPath } = require("node:url");
+
+const statePath = process.argv[1];
+const repoRoot = process.argv[2];
+function fail() {
+  process.exit(1);
+}
+function quote(value) {
+  return JSON.stringify(String(value));
+}
+
+let payload;
+try {
+  payload = JSON.parse(fs.readFileSync(statePath, "utf8"));
+} catch {
+  fail();
+}
+
+if (payload?.agent !== "codex" || payload?.repoRoot !== repoRoot || typeof payload?.socket !== "string") fail();
+
+const endpoint = payload.socket;
+if (endpoint.startsWith("file://")) {
+  const dir = fileURLToPath(endpoint);
+  if (!dir.startsWith(repoRoot + path.sep)) fail();
+  if (!fs.existsSync(path.join(dir, "requests")) || !fs.existsSync(path.join(dir, "responses"))) fail();
+} else {
+  const socketPath = path.resolve(endpoint);
+  if (!socketPath.startsWith(repoRoot + path.sep)) fail();
+  let stat;
+  try {
+    stat = fs.statSync(socketPath);
+  } catch {
+    fail();
+  }
+  if (!stat.isSocket()) fail();
+}
+
+console.log("export ATOMIC_HOST_SANDBOX=" + quote("macos-sandbox-exec"));
+console.log("export ATOMIC_HOST_ATOMIC_ONLY=" + quote("1"));
+console.log("export ATOMIC_HOST_WRITE_ROOT=" + quote(repoRoot));
+console.log("export ATOMIC_HOST_AGENT=" + quote("codex"));
+console.log("export ATOMIC_EXEC_BROKER_SOCKET=" + quote(endpoint));
+' "${state}" "${REPO_ROOT}"
+  )" || return 1
+
+  eval "${recovered}"
+}
+
+if [[ "${ATOMIC_HOST_SANDBOX:-}" != "macos-sandbox-exec" || "${ATOMIC_HOST_ATOMIC_ONLY:-}" != "1" || "${ATOMIC_HOST_WRITE_ROOT:-}" != "${REPO_ROOT}" || -z "${ATOMIC_EXEC_BROKER_SOCKET:-}" ]]; then
+  recover_atomic_host_from_state || true
+fi
+
 if [[ "${ATOMIC_HOST_SANDBOX:-}" != "macos-sandbox-exec" || "${ATOMIC_HOST_ATOMIC_ONLY:-}" != "1" || "${ATOMIC_HOST_WRITE_ROOT:-}" != "${REPO_ROOT}" ]]; then
   echo "[atomic-edit-launcher] REFUSED: atomic-edit MCP requires the atomic host sandbox boundary." >&2
   echo "[atomic-edit-launcher] Relaunch the agent through: node scripts/mcp/atomic-edit/codex-atomic-host-launcher.mjs -- <agent-command>" >&2

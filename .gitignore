@@ -137,6 +137,8 @@ scripts/mcp/.red-*/
 .atomic/*.stderr
 # Root-level jest cache (haste-map / transform-cache / perf-cache — regenerable)
 jest_dx/
+# node v8 compile cache (uid-suffixed, regenerable)
+v8-compile-cache-*/
 # Agent scratch / research dumps (never source of truth)
 .r_*.txt
 .CONSOLIDATED*.txt
