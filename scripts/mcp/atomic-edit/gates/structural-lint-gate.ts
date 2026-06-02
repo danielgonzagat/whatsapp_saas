@@ -216,16 +216,46 @@ async function analyzeStructural(content: string, rel: string): Promise<Finding[
       'arrow_function', 'method_definition', 'generator_function', 'generator_function_declaration',
       'comment',
       // no-useless-escape
-      'string', 'template_string', 'escape_sequence',
+      'string', 'template_string', 'escape_sequence', 'regex', 'regex_pattern',
     ]),
   );
   if (nodes === null) return null; // no grammar → undecidable, caller → unjudged
 
   const findings: Finding[] = [];
+  // Pre-filter escapes that are NOT plain-string escapes: regex literals (backslash
+  // is regex syntax) and TAGGED templates (String.raw / sql / gql, whose raw-vs-cooked
+  // semantics are decided by the tag at RUNTIME, undecidable statically). Their escapes
+  // are meaningful and non-removable, so no-useless-escape must never flag them. Sound
+  // under-approximation: an escape whose container cannot be decided is also dropped.
+  const escapeContainers = nodes.filter(
+    (node) => node.type === 'regex' || node.type === 'regex_pattern' ||
+      node.type === 'string' || node.type === 'template_string',
+  );
+  const contentBytes = Buffer.from(content, 'utf8');
+  const isTaggedTemplateAt = (openByte: number): boolean => {
+    let i = openByte - 1;
+    while (i >= 0) {
+      const b = contentBytes[i];
+      if (b === 0x20 || b === 0x09 || b === 0x0a || b === 0x0d) { i--; continue; }
+      break;
+    }
+    if (i < 0) return false;
+    const b = contentBytes[i];
+    return (b >= 0x41 && b <= 0x5a) || (b >= 0x61 && b <= 0x7a) ||
+      (b >= 0x30 && b <= 0x39) || b === 0x5f || b === 0x24 || b === 0x29 || b === 0x5d;
+  };
+  const nodesForUselessEscape = nodes.filter((n) => {
+    if (n.type !== 'escape_sequence') return true;
+    const c = innermostContaining(escapeContainers, n.byteStart, n.byteEnd);
+    if (c === null) return false;
+    if (c.type === 'regex' || c.type === 'regex_pattern') return false;
+    if (c.type === 'template_string' && isTaggedTemplateAt(c.byteStart)) return false;
+    return true;
+  });
   emitUnusedImports(nodes, findings);
   emitPreferConst(nodes, findings);
   emitNoEmpty(nodes, findings);
-  emitNoUselessEscape(nodes, findings);
+  emitNoUselessEscape(nodesForUselessEscape, findings);
   // Stable, deterministic order: by source position, so the proof and the lens
   // see the same locus ordering every run.
   findings.sort((a, b) => (a.line - b.line) || (a.col - b.col) || a.ruleId.localeCompare(b.ruleId));

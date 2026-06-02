@@ -8,7 +8,10 @@ import { fileURLToPath } from 'node:url';
 const jsonMode = process.argv.includes('--json');
 const sourceDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = path.resolve(sourceDir, '..', '..', '..');
-const fixtureRoot = path.join(sourceDir, '.proof-no-bypass-static-policy');
+const fixtureRoot = path.join(
+  os.tmpdir(),
+  `atomic-proof-no-bypass-static-policy-${process.pid}-${process.hrtime.bigint().toString(36)}`,
+);
 
 const detectableEvents = [
   { tool_name: 'Write', tool_input: { file_path: path.join(fixtureRoot, 'src', 'example.ts'), content: 'export const x = 1;\n' }, wantCategory: 'native-edit' },
