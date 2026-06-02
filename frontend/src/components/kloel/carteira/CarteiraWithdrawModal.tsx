@@ -71,7 +71,11 @@ export function CarteiraWithdrawModal({
     setWithdrawError('');
     try {
       const selected = bankAccounts[selectedBank];
-      const body: Record<string, unknown> = { amount: Math.round(amount * 100) };
+      // The /kloel/wallet/:id/withdraw endpoint expects the amount in REAIS
+      // (it calls formatBrlAmount(amount) and toSafeCents(amount) server-side).
+      // Sending cents here made every withdrawal fail "saldo insuficiente" or,
+      // on large balances, debit 100x the requested value.
+      const body: Record<string, unknown> = { amount };
       if (selected) {
         if (selected.pixKey) {
           body.pixKey = selected.pixKey;
@@ -92,6 +96,15 @@ export function CarteiraWithdrawModal({
       });
       if (res.error) {
         setWithdrawError(res.error);
+        return;
+      }
+      // The endpoint returns HTTP 200 with { success:false, message } on real
+      // failures (insufficient balance, invalid amount, approval not found), so
+      // a missing res.error is NOT enough — branch on the body to avoid a fake
+      // "success" when nothing was actually requested.
+      const data = res.data as { success?: boolean; message?: string } | undefined;
+      if (data && data.success === false) {
+        setWithdrawError(data.message || 'Nao foi possivel solicitar o saque.');
         return;
       }
       mutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/wallet'));
