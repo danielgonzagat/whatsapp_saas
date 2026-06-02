@@ -1,3 +1,4 @@
+import { describe, expect, it } from '@jest/globals';
 import { expectValueOf } from '../../test/expect-value-of';
 import { buildService } from './kyc.service.spec.helpers';
 
@@ -258,7 +259,23 @@ describe('KycService.submitKyc', () => {
         kycStatus: 'pending',
         kycRejectedReason: null,
       }) as unknown,
+      select: expect.objectContaining({ id: true, name: true }) as unknown,
     });
+  });
+
+  it('updateProfile projects a safe shape that never exposes password or mfaSecret', async () => {
+    const { service, prisma } = buildService();
+    prisma.agent.findUnique.mockResolvedValue({ kycStatus: 'pending' });
+
+    await service.updateProfile('agent_1', { name: 'Safe Projection' });
+
+    const updateCall = (prisma.agent.update.mock.calls as unknown[][]).at(-1)?.[0] as
+      | { select?: Record<string, unknown> }
+      | undefined;
+    expect(updateCall?.select).toBeDefined();
+    expect(updateCall?.select).not.toHaveProperty('password');
+    expect(updateCall?.select).not.toHaveProperty('mfaSecret');
+    expect(updateCall?.select).toHaveProperty('id', true);
   });
 
   it('adminApprove transitions status to approved', async () => {
@@ -274,7 +291,7 @@ describe('KycService.submitKyc', () => {
       where: { id: 'agent_1' },
       data: expect.objectContaining({
         kycStatus: 'approved',
-        kycApprovedAt: expect.anything() as unknown,
+        kycApprovedAt: expect.anything(),
       }) as unknown,
     });
     const adminUpdateCall = (prisma.agent.update.mock.calls as unknown[][]).at(-1)?.[0] as
@@ -367,7 +384,7 @@ describe('KycService.submitKyc', () => {
         details: expect.objectContaining({
           deletedBy: 'user',
           type: 'DOCUMENT_FRONT',
-        }) as unknown,
+        }),
       }),
     );
   });
@@ -424,7 +441,7 @@ describe('KycService.submitKyc', () => {
       where: { id: 'agent_1', workspaceId: 'ws_1' },
       data: expect.objectContaining({
         kycStatus: 'approved',
-        kycApprovedAt: expect.anything() as unknown,
+        kycApprovedAt: expect.anything(),
       }) as unknown,
     });
     const autoApproveCall = (prisma.agent.update.mock.calls as unknown[][]).at(-1)?.[0] as

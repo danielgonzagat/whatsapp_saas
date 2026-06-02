@@ -3,7 +3,6 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { compare as bcryptCompare, hash as bcryptHash } from 'bcrypt';
@@ -46,6 +45,30 @@ import {
   deriveDisplayAccount,
   computeKycCompletion,
 } from './kyc.service.helpers';
+import {
+  lookupCnpj as lookupCnpjProvider,
+  lookupCep as lookupCepProvider,
+  listBrazilianBanks as listBrazilianBanksProvider,
+} from './kyc.lookup.helpers';
+
+const PROFILE_SELECT = Prisma.validator<Prisma.AgentSelect>()({
+  id: true,
+  name: true,
+  email: true,
+  phone: true,
+  avatarUrl: true,
+  birthDate: true,
+  documentType: true,
+  documentNumber: true,
+  kycStatus: true,
+  kycSubmittedAt: true,
+  kycApprovedAt: true,
+  kycRejectedReason: true,
+  publicName: true,
+  bio: true,
+  website: true,
+  instagram: true,
+});
 
 /** Kyc service. */
 @Injectable()
@@ -74,24 +97,7 @@ export class KycService {
   async getProfile(agentId: string) {
     return this.prisma.agent.findUnique({
       where: { id: agentId, workspaceId: { not: '' } },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        avatarUrl: true,
-        birthDate: true,
-        documentType: true,
-        documentNumber: true,
-        kycStatus: true,
-        kycSubmittedAt: true,
-        kycApprovedAt: true,
-        kycRejectedReason: true,
-        publicName: true,
-        bio: true,
-        website: true,
-        instagram: true,
-      },
+      select: PROFILE_SELECT,
     });
   }
 
@@ -115,7 +121,11 @@ export class KycService {
           data.kycStatus = 'pending';
           data.kycRejectedReason = null;
         }
-        return tx.agent.update({ where: { id: agentId, workspaceId: agent.workspaceId }, data });
+        return tx.agent.update({
+          where: { id: agentId, workspaceId: agent.workspaceId },
+          data,
+          select: PROFILE_SELECT,
+        });
       },
       { isolationLevel: 'ReadCommitted' },
     );
@@ -150,53 +160,11 @@ export class KycService {
   }
 
   async lookupCnpj(cnpj: string): Promise<unknown> {
-    const clean = digitsOnly(cnpj) ?? '';
-    if (clean.length !== 14) {
-      throw new BadRequestException('CNPJ invalido');
-    }
-
-    try {
-      const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${clean}`);
-      if (!response.ok) {
-        throw new BadRequestException('CNPJ nao encontrado ou invalido');
-      }
-      return response.json();
-    } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      this.logger.warn(
-        `CNPJ lookup failed: ${error instanceof Error ? error.message : 'unknown error'}`,
-      );
-      throw new ServiceUnavailableException('Consulta de CNPJ indisponivel');
-    }
+    return lookupCnpjProvider(cnpj);
   }
 
   async lookupCep(cep: string): Promise<unknown> {
-    const clean = digitsOnly(cep) ?? '';
-    if (clean.length !== 8) {
-      throw new BadRequestException('CEP invalido');
-    }
-
-    try {
-      const response = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
-      if (!response.ok) {
-        throw new BadRequestException('CEP nao encontrado ou invalido');
-      }
-      const data: unknown = await response.json();
-      if (typeof data === 'object' && data !== null && 'erro' in data && data.erro === true) {
-        throw new BadRequestException('CEP nao encontrado ou invalido');
-      }
-      return data;
-    } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      this.logger.warn(
-        `CEP lookup failed: ${error instanceof Error ? error.message : 'unknown error'}`,
-      );
-      throw new ServiceUnavailableException('Consulta de CEP indisponivel');
-    }
+    return lookupCepProvider(cep);
   }
 
   // ═══ DOCUMENTS ═══
@@ -276,47 +244,7 @@ export class KycService {
   async listBrazilianBanks(): Promise<
     Array<{ code: number; name: string; fullName: string; ispb: string }>
   > {
-    try {
-      const response = await fetch('https://brasilapi.com.br/api/banks/v1');
-      if (!response.ok) {
-        throw new ServiceUnavailableException('Lista de bancos indisponivel');
-      }
-      const data: unknown = await response.json();
-      if (!Array.isArray(data)) {
-        throw new ServiceUnavailableException('Lista de bancos indisponivel');
-      }
-
-      return data
-        .flatMap((item): Array<{ code: number; name: string; fullName: string; ispb: string }> => {
-          if (typeof item !== 'object' || item === null) {
-            return [];
-          }
-          const record = item as Record<string, unknown>;
-          const rawCode = record.code;
-          const code =
-            typeof rawCode === 'number'
-              ? rawCode
-              : typeof rawCode === 'string'
-                ? Number(rawCode)
-                : Number.NaN;
-          const name = typeof record.name === 'string' ? record.name.trim() : '';
-          const fullName = typeof record.fullName === 'string' ? record.fullName.trim() : name;
-          const ispb = typeof record.ispb === 'string' ? record.ispb : '';
-          if (!Number.isFinite(code) || code <= 0 || !name || !fullName) {
-            return [];
-          }
-          return [{ code, name, fullName, ispb }];
-        })
-        .sort((a, b) => a.code - b.code);
-    } catch (error) {
-      if (error instanceof ServiceUnavailableException) {
-        throw error;
-      }
-      this.logger.warn(
-        `Brazilian bank list lookup failed: ${error instanceof Error ? error.message : 'unknown error'}`,
-      );
-      throw new ServiceUnavailableException('Lista de bancos indisponivel');
-    }
+    return listBrazilianBanksProvider();
   }
 
   // ═══ BANK ═══

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { BadRequestException, ServiceUnavailableException } from '@nestjs/common';
+import { BRASIL_PROVIDER_HEADERS } from './kyc.lookup.helpers';
 import { buildService } from './kyc.service.spec.helpers';
 
 function buildLookupService() {
@@ -19,7 +20,9 @@ describe('KycService public lookups', () => {
     } as Response);
 
     await expect(buildLookupService().lookupCnpj('12.345.678/0001-90')).resolves.toEqual(payload);
-    expect(fetchMock).toHaveBeenCalledWith('https://brasilapi.com.br/api/cnpj/v1/12345678000190');
+    expect(fetchMock).toHaveBeenCalledWith('https://brasilapi.com.br/api/cnpj/v1/12345678000190', {
+      headers: BRASIL_PROVIDER_HEADERS,
+    });
   });
 
   it('normalizes CEP and proxies the ViaCEP payload', async () => {
@@ -30,7 +33,9 @@ describe('KycService public lookups', () => {
     } as Response);
 
     await expect(buildLookupService().lookupCep('01001-000')).resolves.toEqual(payload);
-    expect(fetchMock).toHaveBeenCalledWith('https://viacep.com.br/ws/01001000/json/');
+    expect(fetchMock).toHaveBeenCalledWith('https://viacep.com.br/ws/01001000/json/', {
+      headers: BRASIL_PROVIDER_HEADERS,
+    });
   });
 
   it('normalizes and sorts Brazilian banks from BrasilAPI', async () => {
@@ -53,7 +58,9 @@ describe('KycService public lookups', () => {
       { code: 1, name: 'BCO DO BRASIL S.A.', fullName: 'Banco do Brasil S.A.', ispb: '00000000' },
       { code: 33, name: 'SANTANDER', fullName: 'Banco Santander (Brasil) S.A.', ispb: '90400888' },
     ]);
-    expect(fetchMock).toHaveBeenCalledWith('https://brasilapi.com.br/api/banks/v1');
+    expect(fetchMock).toHaveBeenCalledWith('https://brasilapi.com.br/api/banks/v1', {
+      headers: BRASIL_PROVIDER_HEADERS,
+    });
   });
 
   it('getDocuments returns file metadata and rejection review fields', async () => {
