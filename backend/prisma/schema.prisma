@@ -3874,6 +3874,10 @@ model MindMemory {
   @@map("RAC_MindMemory")
 }
 
+/// @deprecated Superseded by the richer canonical `MindGlobalPrior` model.
+/// Retained for data safety (table `RAC_KloelGlobalPrior`) — do NOT drop without
+/// an owner-approved migration. New code should read/write `MindGlobalPrior` via
+/// `MindGlobalPriorService`. See `docs/architecture/MIND_SERVICE_CONSOLIDATION.md` §1.
 model KloelGlobalPrior {
   id           String   @id @default(cuid())
   channel      String
