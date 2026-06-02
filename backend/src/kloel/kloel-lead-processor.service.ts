@@ -8,8 +8,8 @@ import { SmartPaymentService } from './smart-payment.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import { createTextLlmClient } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { normalizePhone } from '../common/phone/phone-normalization.util';
 import {
-  NON_DIGIT_RE,
   safeStr,
   asUnknownRecord,
   detectBuyIntent,
@@ -61,7 +61,7 @@ export class KloelLeadProcessorService {
   ): Promise<string> {
     this.logger.log(`KLOEL processando mensagem de ${senderPhone}`);
     try {
-      const normalizedPhone = String(senderPhone || '').replace(NON_DIGIT_RE, '');
+      const normalizedPhone = normalizePhone(senderPhone)?.digits ?? '';
       const workspace = await this.prisma.workspace.findUnique({
         where: { id: workspaceId },
         select: { providerSettings: true, name: true },

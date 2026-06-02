@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { DealStatus, Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { normalizePhone } from '../common/phone/phone-normalization.util';
 import { CrmEventEmitterService } from '../kloel/crm-emitter/crm-event-emitter.service';
 import {
   createPipeline as createPipelineHelper,
@@ -40,16 +41,20 @@ export class CrmService {
     phone: string,
     data: Partial<Prisma.ContactCreateWithoutWorkspaceInput>,
   ) {
+    // Canonicalize phone identity so every contact write converges on the same
+    // workspaceId_phone key (E.164 digits, BR-promoted). Idempotent. Falls back
+    // to the original phone when the input cannot be canonicalized.
+    const canonicalPhone = normalizePhone(phone)?.digits ?? phone;
     return this.prisma.contact.upsert({
       where: {
         workspaceId_phone: {
           workspaceId,
-          phone,
+          phone: canonicalPhone,
         },
       },
       update: data,
       create: {
-        phone,
+        phone: canonicalPhone,
         ...data,
         workspace: {
           connect: { id: workspaceId },

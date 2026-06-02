@@ -28,6 +28,7 @@ import { OpsAlertService } from '../../../observability/ops-alert.service';
 import { AbiBuilderService } from '../../abi/abi-builder.service';
 import { validateAbiPayload } from '../../abi/abi-validator';
 
+import { normalizePhone } from '../../../common/phone/phone-normalization.util';
 import {
   NON_DIGIT_RE,
   safeStr,
@@ -116,7 +117,7 @@ export class LeadMindCoordinator {
    * lead processing.
    */
   private async syncCanonicalContact(workspaceId: string, phone: string): Promise<void> {
-    const normalizedPhone = String(phone || '').replace(NON_DIGIT_RE, '');
+    const normalizedPhone = normalizePhone(phone)?.digits ?? '';
     if (!normalizedPhone) {
       return;
     }
@@ -272,7 +273,7 @@ export class LeadMindCoordinator {
   ): Promise<string> {
     this.logger.log(`KLOEL processando mensagem de ${senderPhone}`);
     try {
-      const normalizedPhone = String(senderPhone || '').replace(NON_DIGIT_RE, '');
+      const normalizedPhone = normalizePhone(senderPhone)?.digits ?? '';
       const workspace = await this.prisma.workspace.findUnique({
         where: { id: workspaceId },
         select: { providerSettings: true, name: true },
