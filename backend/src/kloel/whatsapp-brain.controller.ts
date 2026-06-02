@@ -52,7 +52,7 @@ export class WhatsAppBrainController {
     const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
     if (!VERIFY_TOKEN) {
       this.logger.error('WHATSAPP_VERIFY_TOKEN env var is not set');
-      return sendPlainTextResponse(res, 'Server misconfigured', 500);
+      return sendPlainTextResponse(res, 'Webhook verification not configured', 503);
     }
     if (mode === 'subscribe' && safeCompareStrings(token, VERIFY_TOKEN)) {
       this.logger.log('Webhook verificado');

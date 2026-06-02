@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { createHmac, timingSafeEqual } from 'crypto';
 import {
@@ -38,7 +38,7 @@ function readOptionalEnv(keys: string[]): string {
 function readRequiredEnv(keys: string[], label: string): string {
   const value = readOptionalEnv(keys);
   if (!value) {
-    throw new Error(`${label}_not_configured`);
+    throw new ServiceUnavailableException(`${label}_not_configured`);
   }
   return value;
 }
@@ -355,7 +355,7 @@ export class GoogleAdsMarketingService {
       return legacyToken;
     }
 
-    throw new Error('google_ads_not_connected');
+    throw new BadRequestException('google_ads_not_connected');
   }
 
   private async readCanonicalCredential(workspaceId: string) {

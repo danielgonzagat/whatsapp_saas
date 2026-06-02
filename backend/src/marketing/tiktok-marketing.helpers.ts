@@ -1,3 +1,4 @@
+import { ServiceUnavailableException } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
 
 export const CREATOR_AUTH_URL = 'https://www.tiktok.com/v2/auth/authorize/';
@@ -106,7 +107,7 @@ export function resolveKind(raw: unknown): TikTokKind {
 export function readRequiredEnv(keys: string[], label: string): string {
   const value = keys.map((key) => String(process.env[key] || '').trim()).find(Boolean);
   if (!value) {
-    throw new Error(`${label}_not_configured`);
+    throw new ServiceUnavailableException(`${label}_not_configured`);
   }
   return value;
 }
