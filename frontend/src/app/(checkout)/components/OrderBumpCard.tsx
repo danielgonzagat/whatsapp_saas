@@ -16,15 +16,15 @@ export interface OrderBumpData {
   /** Product name property. */
   productName: string;
   /** Image property. */
-  image?: string;
+  image?: string | undefined;
   /** Price in cents property. */
   priceInCents: number;
   /** Compare at price property. */
-  compareAtPrice?: number;
+  compareAtPrice?: number | undefined;
   /** Highlight color property. */
-  highlightColor?: string;
+  highlightColor?: string | undefined;
   /** Checkbox label property. */
-  checkboxLabel?: string;
+  checkboxLabel?: string | undefined;
 }
 
 interface OrderBumpCardProps {

@@ -56,6 +56,8 @@ interface FinalizeCheckoutOrderArgs {
   subtotal: number;
   total: number;
   workspaceId: string;
+  acceptedBumps?: string[] | undefined;
+  bumpTotalInCents?: number | undefined;
 }
 
 interface RedirectFinalizeResult {
@@ -118,6 +120,8 @@ function buildOrderPayload(args: FinalizeCheckoutOrderArgs): CreateOrderData {
     subtotal,
     total,
     workspaceId,
+    acceptedBumps,
+    bumpTotalInCents,
   } = args;
 
   return {
@@ -149,6 +153,8 @@ function buildOrderPayload(args: FinalizeCheckoutOrderArgs): CreateOrderData {
     paymentMethod: resolvePaymentMethodCode(payMethod),
     installments: payMethod === 'card' ? installments : 1,
     affiliateId: affiliateContext?.affiliateWorkspaceId,
+    acceptedBumps: acceptedBumps && acceptedBumps.length > 0 ? acceptedBumps : undefined,
+    bumpTotalInCents: bumpTotalInCents ? bumpTotalInCents : undefined,
   };
 }
 

@@ -75,6 +75,7 @@ export function useCheckoutExperienceSocial({
     'InitiateCheckout' | 'AddPaymentInfo' | 'Purchase' | null
   >(null);
   const [form, setForm] = useState<CheckoutExperienceForm>(EMPTY_CHECKOUT_EXPERIENCE_FORM);
+  const [selectedBumpIds, setSelectedBumpIds] = useState<string[]>([]);
   const redirectTimer = useRef<number | null>(null);
 
   const { fmt } = helpers;
@@ -119,6 +120,20 @@ export function useCheckoutExperienceSocial({
     window.localStorage.setItem(checkoutFormDraftKey, JSON.stringify(payload));
   }, [checkoutFormDraftKey, couponCode, form, payMethod, qty]);
 
+  const orderBumps = useMemo(() => plan?.orderBumps ?? [], [plan?.orderBumps]);
+  const bumpTotalInCents = useMemo(
+    () =>
+      orderBumps
+        .filter((bump) => selectedBumpIds.includes(bump.id))
+        .reduce((sum, bump) => sum + Math.max(0, Math.round(Number(bump.priceInCents || 0))), 0),
+    [orderBumps, selectedBumpIds],
+  );
+  const toggleBump = useCallback((bumpId: string) => {
+    setSelectedBumpIds((prev) =>
+      prev.includes(bumpId) ? prev.filter((id) => id !== bumpId) : [...prev, bumpId],
+    );
+  }, []);
+
   const derivedState = useMemo(
     () =>
       deriveCheckoutExperienceState({
@@ -135,8 +150,10 @@ export function useCheckoutExperienceSocial({
         payMethod,
         dynamicShippingInCents,
         step,
+        bumpTotalInCents,
       }),
     [
+      bumpTotalInCents,
       config,
       defaults,
       discount,
@@ -417,9 +434,13 @@ export function useCheckoutExperienceSocial({
         subtotal,
         total,
         workspaceId: workspaceId as string,
+        acceptedBumps: selectedBumpIds,
+        bumpTotalInCents,
       }),
     [
       affiliateContext,
+      bumpTotalInCents,
+      selectedBumpIds,
       checkoutCode,
       discount,
       form,
@@ -526,6 +547,10 @@ export function useCheckoutExperienceSocial({
     goStep,
     applyCoupon,
     finalizeOrder,
+    orderBumps,
+    selectedBumpIds,
+    toggleBump,
+    bumpTotalInCents,
     handleStripePaymentSuccess,
     handleStripePaymentError,
     socialIdentity: social.socialIdentity,

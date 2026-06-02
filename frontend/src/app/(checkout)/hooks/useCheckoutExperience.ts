@@ -81,6 +81,7 @@ export function useCheckoutExperience({
   >(null);
   const redirectTimer = useRef<number | null>(null);
   const [form, setForm] = useState(EMPTY_CHECKOUT_EXPERIENCE_FORM);
+  const [selectedBumpIds, setSelectedBumpIds] = useState<string[]>([]);
 
   const { fmt, normalizeTestimonials, buildFooterPrimaryLine, formatCnpj } = helpers;
   const checkoutFormDraftKey = useMemo(
@@ -134,8 +135,21 @@ export function useCheckoutExperience({
     ],
   );
   const pixels = config?.pixels || [];
+  const orderBumps = useMemo(() => plan?.orderBumps ?? [], [plan?.orderBumps]);
+  const bumpTotalInCents = useMemo(
+    () =>
+      orderBumps
+        .filter((bump) => selectedBumpIds.includes(bump.id))
+        .reduce((sum, bump) => sum + Math.max(0, Math.round(Number(bump.priceInCents || 0))), 0),
+    [orderBumps, selectedBumpIds],
+  );
+  const toggleBump = useCallback((bumpId: string) => {
+    setSelectedBumpIds((prev) =>
+      prev.includes(bumpId) ? prev.filter((id) => id !== bumpId) : [...prev, bumpId],
+    );
+  }, []);
   const subtotal = computeSubtotal(unitPriceInCents, qty);
-  const total = computeTotal(subtotal, shippingInCents, discount);
+  const total = computeTotal(subtotal, shippingInCents, discount) + bumpTotalInCents;
   const installments = parseInstallments(form.installments);
   const popupCouponCode = normalizePopupCouponCode(config?.autoCouponCode);
   const couponPopupEligible = isCouponPopupEligible(config, popupCouponCode);
@@ -353,10 +367,14 @@ export function useCheckoutExperience({
         couponCode,
         installments,
         affiliateWorkspaceId: affiliateContext?.affiliateWorkspaceId,
+        acceptedBumps: selectedBumpIds,
+        bumpTotalInCents,
       });
     },
     [
       affiliateContext?.affiliateWorkspaceId,
+      bumpTotalInCents,
+      selectedBumpIds,
       checkoutCode,
       couponApplied,
       couponCode,
@@ -511,6 +529,10 @@ export function useCheckoutExperience({
     pixels,
     subtotal,
     total,
+    orderBumps,
+    selectedBumpIds,
+    toggleBump,
+    bumpTotalInCents,
     pricing,
     totalWithInterest,
     installmentOptions,

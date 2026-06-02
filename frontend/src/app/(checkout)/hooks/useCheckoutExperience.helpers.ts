@@ -40,6 +40,8 @@ export interface BuildOrderPayloadParams {
   couponCode: string;
   installments: number;
   affiliateWorkspaceId?: string | undefined;
+  acceptedBumps?: string[] | undefined;
+  bumpTotalInCents?: number | undefined;
 }
 
 /** Build the CreateOrderData payload that finalizeOrder sends to the backend. */
@@ -77,6 +79,9 @@ export function buildOrderPayload(
     paymentMethod: resolvePaymentMethodCode(params.payMethod),
     installments: params.payMethod === 'card' ? params.installments : 1,
     affiliateId: params.affiliateWorkspaceId,
+    acceptedBumps:
+      params.acceptedBumps && params.acceptedBumps.length > 0 ? params.acceptedBumps : undefined,
+    bumpTotalInCents: params.bumpTotalInCents ? params.bumpTotalInCents : undefined,
   };
 
   if (params.payMethod === 'card') {
