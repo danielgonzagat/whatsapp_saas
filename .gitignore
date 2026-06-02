@@ -117,6 +117,23 @@ state/FINDINGS_AGGREGATE.json
 
 # Node 22+ compile cache (ephemeral; can land under cwd of sandboxed exec)
 node-compile-cache/
+
+# Jest cacheDirectory accidentally rooted under backend/scripts (haste-map + transform-cache)
+backend/scripts/jest_dx/
+# Editor/LSP caches + sandbox repro dirs that can land under cwd
+typescript-language-server*/
+xcrun_db
+repro-tmpdir-write
+# Throwaway codemods / transient atomic proof fixtures (PID-suffixed)
+scripts/tmp-*
+scripts/mcp/.red-*/
+# atomic-edit runtime: ledgers, heartbeats, broker sockets, probes, KG snapshots, HEAD
+.atomic/*.json
+.atomic/*.jsonl
+.atomic/*.jpeg
+.atomic/*.sock
+.atomic/HEAD
+.atomic/broker-proof-last.json
 # Agent scratch / research dumps (never source of truth)
 .r_*.txt
 .CONSOLIDATED*.txt
