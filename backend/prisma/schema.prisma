@@ -419,6 +419,16 @@ model Contact {
   nextBestAction      String? // "Send Offer", "Wait 2 days"
   aiSummary           String? // Auto-generated summary
 
+  // --- LEAD FUNNEL SNAPSHOT (additive, nullable — PERSON+SITE migration PHASE 0) ---
+  // Denormalized funnel state mirrored from KloelLead so a promoted/unified
+  // Contact carries its lead funnel context. All nullable except the counter,
+  // which defaults to 0. No data move in this phase — pure column add.
+  leadStatus    String? // mirror of KloelLead.status (new/hot/warm/cold/converted/lost)
+  leadStage     String? // mirror of KloelLead.stage (new/interested/negotiation/objection/closed)
+  lastMessage   String? // last inbound message snapshot
+  lastIntent    String? // last detected intent snapshot
+  totalMessages Int     @default(0) // running message count
+
   insights           ContactInsight[]
   channelIdentifiers ChannelIdentifier[]
 
@@ -4734,6 +4744,11 @@ model Site {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   publishedAt DateTime?
+
+  // --- LEGACY BACKFILL KEY (additive, nullable unique — PERSON+SITE migration PHASE 0) ---
+  // Idempotency key for a future KloelSite → Site backfill. Nullable so existing
+  // Sites are unaffected; unique so a legacy source maps to at most one Site.
+  legacyKloelSiteId String? @unique
 
   domains SiteDomain[]
   apps    SiteAppIntegration[]
