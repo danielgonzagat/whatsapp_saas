@@ -24,7 +24,7 @@ const NATIVE_EDIT = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
 // Code/structured files the atomic-edit engine validates. Pure prose
 // (.md/.txt/none) is NOT blocked — Daniel's rule is about *code*.
 const CODE_EXT =
-  /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|ipynb|json|py|go|rs|java|kt|c|h|cc|cpp|hpp|cs|rb|php|swift|scala|sh|bash|zsh|css|scss|less|sql|ya?ml|toml|prisma)$/i;
+  /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|ipynb|json|py|go|rs|java|kt|c|h|cc|cpp|hpp|cs|rb|php|swift|scala|sh|bash|zsh|css|scss|less|sql|ya?ml|toml|prisma|vue|svelte|astro|erb)$/i;
 
 function readStdinRaw() {
   try {
@@ -106,7 +106,7 @@ const STEER =
 function bashEditsCode(cmd) {
   if (!cmd) return false;
   const source = String(cmd);
-  const codeTarget = String.raw`(?!(?:/tmp/|/private/tmp/|tmp/))[^\s'"|;&>]*\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|ipynb|json|py|go|rs|java|kt|c|h|cc|cpp|hpp|cs|rb|php|swift|scala|sh|bash|zsh|css|scss|less|sql|ya?ml|toml|prisma)\b`;
+  const codeTarget = String.raw`(?!(?:/tmp/|/private/tmp/|tmp/))[^\s'"|;&>]*\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|ipynb|json|py|go|rs|java|kt|c|h|cc|cpp|hpp|cs|rb|php|swift|scala|sh|bash|zsh|css|scss|less|sql|ya?ml|toml|prisma|vue|svelte|astro|erb)\b`;
   const directMutationPatterns = [
     new RegExp(String.raw`\bsed\b[^|]*\s-i`), // sed -i
     new RegExp(String.raw`\bperl\b[^|]*\s-i`), // perl -i
@@ -115,6 +115,7 @@ function bashEditsCode(cmd) {
     new RegExp(String.raw`(?:^|[\s;&|])>{1,2}(?!>)\s*\\?["']?\s*${codeTarget}`), // > / >> [quoted] code
     new RegExp(String.raw`\b(?:cp|mv|install)\b[^|]*\s${codeTarget}(?:\s|$)`), // cp/mv/install onto code
     new RegExp(String.raw`\b(?:rm|unlink|truncate|touch)\b[^|;&]*${codeTarget}`), // delete/truncate/create code
+    new RegExp(String.raw`\b(?:ed|ex)\b[^|;&]*${codeTarget}`), // ed/ex line editor in-place on code
   ];
   if (directMutationPatterns.some((re) => re.test(source))) return true;
 
