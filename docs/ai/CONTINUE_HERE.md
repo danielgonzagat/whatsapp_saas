@@ -54,6 +54,16 @@ do the real action → see it in Postgres → reload → UI reflects the persist
 
 ## DO THIS, in order
 
+### 0) DELETE PULSE — owner-approved 2026-06-02 (scanner-only; atomic is the substitute)
+Follow `docs/ai/PULSE_DELETION_MANIFEST.md`. SCOPE = the certification scanner + dev tooling
+ONLY: `scripts/pulse/**` (except the locked `no-hardcoded-reality-audit.ts`), the `pulse` MCP,
+`npm pulse:*` scripts, CI pulse gates, root `PULSE_*.json`. **KEEP** `backend/src/pulse/` (live
+collector), `backend/src/kloel/pulse-gates/**` (AI-safety), and all `Pulse*` UI animations. Do it
+as ONE transaction (Class-B reference edits in package.json/.mcp.json/mcp-suite-server.mjs/ops +
+Class-A `git rm` together) so build/CI/MCP stay green; certify with **atomic** (the substitute),
+not pulse. Hand the Class-C protected files to Daniel (CLAUDE.md, AGENTS.md, ci-cd.yml,
+scripts/ops/check-*.mjs, and the locked auditor). **Needs the atomic-edit MCP loaded.**
+
 ### 1) FIX the one time-bomb test, then SHIP (push + PR) — does NOT need the stack, quickest win
 ```bash
 # Product TAREFA 4 + TAREFA 5 docs already committed this session (c05a6cbde) — do NOT recommit them.
