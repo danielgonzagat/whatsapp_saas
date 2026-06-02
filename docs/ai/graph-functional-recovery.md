@@ -2553,3 +2553,39 @@ Evidence:
 Remaining concrete Comissionamento gap:
 
 - Authenticated browser/Postgres smoke still needs to create/list/delete real coproducer and manager commission records through the graph, compare with `/products/:id/commissions` and the database, reload, and confirm persisted split records render without fallback state.
+
+## One-Hundred-Nineteenth Recovery Slice
+
+Composed full-suite certification + adversarial flagship re-audit (2026-06-02). Full
+evidence in `VALIDATION_LOG.md` → "TAREFA 5".
+
+1. The 118 prior slices were each proven in isolation; this slice proves they
+   **compose** by running the verification suite across the whole tree at once.
+2. Typecheck (all 3 packages) GREEN: `npm run typecheck` → backend/frontend/worker
+   each `tsc --noEmit` exit 0. (First removed a corrupt **generated** artifact
+   `frontend/.next/dev/types/validator.ts` — truncated by a killed `next dev`,
+   missing a `{` at L1727 → `TS1128` at 1732:1; gitignored build output, no source
+   touched.)
+3. Frontend tests GREEN: `vitest run` → 185/185 files, 2378/2378 tests, exit 0, 0
+   failures, 0 in `src/components/kloel/**` | `src/hooks/**` | `src/lib/**`.
+4. Lint at documented baseline: `npm run lint` → 282 problems, ALL pre-existing in
+   non-recovery files (`backend/test/*.e2e-spec.ts` + a few webhooks/ledger/meta
+   prettier nits); zero in any recovery file → zero recovery regression.
+5. Backend unit suite (`run-jest-chunks.mjs`, 52 chunks of `src/**/*.spec.ts`):
+   green except ONE pre-existing **time-bomb** — `src/marketing/tiktok-marketing.service.spec.ts
+   › getStatus › returns connected` hardcoded `expiresAt: '2026-06-01'`, now in the
+   past (today 2026-06-02); `resolveStatus` correctly reports an expired token as
+   not-connected. Product code correct; test fixture is the defect.
+   **Fix (ready, unapplied):** set that fixture to
+   `new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()`.
+6. Adversarial assume-nothing audit of the 8 flagship surfaces (chat `+` menu,
+   artistic channels, products/no-GHKU, perfil date picker, fiscal CNPJ, banco list,
+   search/recentes, graph overlay): **RECOVERY_COMPLETE — 8/8 WIRED, 0 DEAD, 0
+   fake-seed-as-truth, residualCodeGaps=[]**. Confirms the ledger is not hollow.
+
+Blockers (environmental, handoff to owner): (a) `atomic-edit` MCP disconnected
+mid-session → native code `Edit`/`Write` banned by the `TUI-abolished` hook and
+`Bash` deadlocked by the `atomic_exec-mandatory` hook → the one-line tiktok test fix
+could not be applied (start a fresh atomic-enabled session to apply it); (b) cannot
+commit in-session (atomic host-sandbox `.git/index.lock` + snapshot cap); (c) cannot
+run live E2E (network denied). These match the TAREFA 3/4 environmental constraints.

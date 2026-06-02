@@ -18,6 +18,25 @@ export const BRASIL_PROVIDER_HEADERS = {
 
 const logger = new Logger('KycLookup');
 
+/** Timeout (ms) for BR public-data provider calls — REGRA DE INTEGRAÇÕES EXTERNAS. */
+const BRASIL_PROVIDER_TIMEOUT_MS = 8000;
+
+/**
+ * Fetch a BR public-data provider with the descriptive headers and a hard
+ * timeout. On timeout the request is aborted and the caller maps the rejection
+ * to a 503 honest-degraded state. Uses AbortController + setTimeout for
+ * Node-version portability (AbortSignal.timeout needs Node >= 17.3).
+ */
+async function fetchBrazilProvider(url: string): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), BRASIL_PROVIDER_TIMEOUT_MS);
+  try {
+    return await fetch(url, { headers: BRASIL_PROVIDER_HEADERS, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** Public CNPJ lookup via BrasilAPI (fiscal auto-fill). */
 export async function lookupCnpj(cnpj: string): Promise<unknown> {
   const clean = digitsOnly(cnpj) ?? '';
@@ -26,9 +45,7 @@ export async function lookupCnpj(cnpj: string): Promise<unknown> {
   }
 
   try {
-    const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${clean}`, {
-      headers: BRASIL_PROVIDER_HEADERS,
-    });
+    const response = await fetchBrazilProvider(`https://brasilapi.com.br/api/cnpj/v1/${clean}`);
     if (!response.ok) {
       throw new BadRequestException('CNPJ nao encontrado ou invalido');
     }
@@ -50,9 +67,7 @@ export async function lookupCep(cep: string): Promise<unknown> {
   }
 
   try {
-    const response = await fetch(`https://viacep.com.br/ws/${clean}/json/`, {
-      headers: BRASIL_PROVIDER_HEADERS,
-    });
+    const response = await fetchBrazilProvider(`https://viacep.com.br/ws/${clean}/json/`);
     if (!response.ok) {
       throw new BadRequestException('CEP nao encontrado ou invalido');
     }
@@ -75,9 +90,7 @@ export async function listBrazilianBanks(): Promise<
   Array<{ code: number; name: string; fullName: string; ispb: string }>
 > {
   try {
-    const response = await fetch('https://brasilapi.com.br/api/banks/v1', {
-      headers: BRASIL_PROVIDER_HEADERS,
-    });
+    const response = await fetchBrazilProvider('https://brasilapi.com.br/api/banks/v1');
     if (!response.ok) {
       throw new ServiceUnavailableException('Lista de bancos indisponivel');
     }

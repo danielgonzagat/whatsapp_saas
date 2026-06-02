@@ -51,8 +51,10 @@ describe('kyc.lookup.helpers', () => {
       expect(result).toEqual(payload);
       expect(fetchMock).toHaveBeenCalledWith(
         'https://brasilapi.com.br/api/cnpj/v1/00000000000191',
-        { headers: BRASIL_PROVIDER_HEADERS },
+        expect.objectContaining({ headers: BRASIL_PROVIDER_HEADERS }),
       );
+      const init = fetchMock.mock.calls[0]?.[1];
+      expect(init?.signal).toBeInstanceOf(AbortSignal);
     });
 
     it('maps a provider non-200 to a 400 BadRequest', async () => {
@@ -74,9 +76,10 @@ describe('kyc.lookup.helpers', () => {
       const fetchMock = mockFetch(() => Promise.resolve(fetchResult(200, payload)));
       const result = await lookupCep('01001000');
       expect(result).toEqual(payload);
-      expect(fetchMock).toHaveBeenCalledWith('https://viacep.com.br/ws/01001000/json/', {
-        headers: BRASIL_PROVIDER_HEADERS,
-      });
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://viacep.com.br/ws/01001000/json/',
+        expect.objectContaining({ headers: BRASIL_PROVIDER_HEADERS }),
+      );
     });
 
     it('treats { erro: true } as not found', async () => {
@@ -101,9 +104,10 @@ describe('kyc.lookup.helpers', () => {
         ),
       );
       const banks = await listBrazilianBanks();
-      expect(fetchMock).toHaveBeenCalledWith('https://brasilapi.com.br/api/banks/v1', {
-        headers: BRASIL_PROVIDER_HEADERS,
-      });
+      expect(fetchMock).toHaveBeenCalledWith(
+        'https://brasilapi.com.br/api/banks/v1',
+        expect.objectContaining({ headers: BRASIL_PROVIDER_HEADERS }),
+      );
       expect(banks).toHaveLength(1);
       expect(banks[0]).toMatchObject({ code: 1, name: 'BCO DO BRASIL S.A.' });
     });
