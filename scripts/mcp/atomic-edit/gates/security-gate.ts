@@ -101,6 +101,22 @@ const SHAPE_DETECTORS: { re: RegExp; kind: string }[] = [
 const SECRET_ASSIGN_RE =
   /\b([A-Za-z_][A-Za-z0-9_]*(?:secret|passwd|password|api[_-]?key|apikey|token|private[_-]?key|access[_-]?key|client[_-]?secret)[A-Za-z0-9_]*)\b\s*[:=]\s*["'`]([^"'`\n]{20,})["'`]/gi;
 
+function isBarePublicUrl(v: string): boolean {
+  // A public endpoint URL is not a credential. Require an http(s) scheme and NO
+  // userinfo (@), query (?), fragment (#) or whitespace - a secret hides in
+  // @user:pass, a ?token= param, or a high-entropy path segment. Exonerate only when
+  // none of those is present, so a secret-bearing URL (webhook path token,
+  // credentialed DB URL) is NEVER exonerated.
+  if (!v.startsWith('http://') && !v.startsWith('https://')) return false;
+  if (/[\s?#@]/.test(v)) return false;
+  const afterScheme = v.slice(v.indexOf('://') + 3);
+  const segments = afterScheme.split('/').slice(1);
+  for (const seg of segments) {
+    if (seg.length >= 16 && entropy(seg) >= 3.5) return false; // secret-shaped path segment
+  }
+  return true;
+}
+
 function findSecrets(body: string): SecretHit[] {
   const scan = blankComments(body);
   const hits: SecretHit[] = [];
@@ -123,6 +139,7 @@ function findSecrets(body: string): SecretHit[] {
     const name = am[1];
     const val = am[2];
     if (isPlaceholder(val)) continue;
+    if (isBarePublicUrl(val)) continue; // a public endpoint URL is not a credential
     if (entropy(val) < 3.5) continue; // not high-entropy → likely not a real secret
     const key = 'assign:' + name + ':' + val;
     if (seen.has(key)) continue;
