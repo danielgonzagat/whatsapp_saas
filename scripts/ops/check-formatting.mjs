@@ -34,7 +34,6 @@ const targets = [
   'worker/package.json',
   'backend/.prettierrc',
   'scripts/ops/guard-prisma-db-push.mjs',
-  'scripts/ops/run-pulse-ci.mjs',
   'scripts/ops/check-codacy-skip-tags.mjs',
   'scripts/ops/validate-production-readiness.mjs',
   'scripts/ops/check-formatting.mjs',

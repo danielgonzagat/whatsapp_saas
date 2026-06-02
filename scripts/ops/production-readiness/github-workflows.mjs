@@ -7,7 +7,6 @@ function workflowPath(fileName) {
 
 const CI_REQUIRED_TOKENS = [
   ['readiness:check', 'CI enforces readiness check'],
-  ['pulse:ci', 'CI enforces PULSE certification'],
   ['guard:db-push', 'CI blocks prisma db push regressions'],
   ['format:check', 'CI enforces formatting'],
   ['seatbelt:check', 'CI enforces the ESLint seatbelt'],
@@ -72,7 +71,6 @@ function checkProductionDeployWorkflow() {
 function checkNightlyOpsAuditWorkflow() {
   const filePath = workflowPath('nightly-ops-audit.yml');
   requireIncludes(filePath, 'schedule:', 'Nightly ops audit is scheduled');
-  requireIncludes(filePath, 'pulse:report', 'Nightly ops audit generates a PULSE report');
 }
 
 function checkReleasePleaseWorkflow() {

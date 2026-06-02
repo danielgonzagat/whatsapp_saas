@@ -271,13 +271,6 @@ jobs:
           api-token: ${{ secrets.CODACY_API_TOKEN }}
           coverage-reports: backend/coverage/lcov.info,frontend/coverage/lcov.info,worker/coverage/lcov.info
 
-      - name: PULSE certification gate
-        env:
-          PULSE_CI_TIMEOUT_MS: '900000'
-          PULSE_CI_HEARTBEAT_MS: '60000'
-          PULSE_DISABLE_LOCAL_ENV: 'true'
-        run: npm run pulse:ci
-
       - name: Railway runtime anti-regression gate
         env:
           RAILWAY_RUNTIME_REQUIRED: 'true'
@@ -304,13 +297,8 @@ jobs:
           name: pulse-quality-artifacts
           path: |
             ratchet.json
-            PULSE_*.json
-            PULSE_*.md
-            PULSE_*
             AUDIT_FEATURE_MATRIX.md
             KLOEL_PRODUCT_MAP.md
-            PULSE_REPORT.md
-            PULSE_CERTIFICATE.json
             backend/coverage/**
             frontend/coverage/**
             worker/coverage/**

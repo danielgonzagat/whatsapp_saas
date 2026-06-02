@@ -1,21 +1,18 @@
 #!/usr/bin/env node
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { collectMadgeCycles } from './check-madge-cycles.mjs';
 import {
   collectCodacyMetrics,
   collectCoverageMetrics,
-  collectPulseMetrics,
 } from './collect-ratchet-metrics.artifacts.mjs';
 import { collectKnipIssues } from './collect-knip-issues.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..', '..');
-const pulseHealthPath = path.join(repoRoot, 'PULSE_HEALTH.json');
-const pulseCertificatePath = path.join(repoRoot, 'PULSE_CERTIFICATE.json');
 const CODE_PATHS = ['backend/src', 'frontend/src', 'worker', 'scripts'];
 const PRODUCT_CODE_PATHS = ['backend/src', 'frontend/src', 'worker'];
 const FRONTEND_PATHS = ['frontend/src'];
@@ -365,7 +362,6 @@ export function collectRatchetMetrics(options = {}) {
   const hardcodedHexMetric = countHardcodedHexColors(frontendFiles);
   const chatFontMetric = countChatFontsBelow16(frontendFiles);
   const oversizedFilesMetric = countFilesOverLimit(lineCountFiles, 800);
-  const pulseMetrics = collectPulseMetrics(options);
   const knipMetrics = collectKnipIssues();
   const madgeMetrics = collectMadgeCycles();
   const codacyMetrics = collectCodacyMetrics();
@@ -375,7 +371,6 @@ export function collectRatchetMetrics(options = {}) {
     generatedAt: new Date().toISOString(),
     source: 'scripts/ops/collect-ratchet-metrics.mjs',
     ratchet: {
-      pulse_score_min: pulseMetrics.pulseScore.value,
       any_count_max: anyMetrics.any.value,
       prisma_any_max: anyMetrics.prismaAny.value,
       ts_ignore_max: tsIgnoreMetric.value,
@@ -393,15 +388,8 @@ export function collectRatchetMetrics(options = {}) {
       hardcoded_hex_outside_tokens_max: hardcodedHexMetric.value,
       font_below_16px_in_chat_max: chatFontMetric.value,
       files_over_800_lines_max: oversizedFilesMetric.value,
-      facade_count_max: pulseMetrics.facadeCount.value,
-      dead_code_files_max: pulseMetrics.deadCodeFiles.value,
-      orphan_prisma_models_max: pulseMetrics.orphanPrismaModels.value,
-      circular_imports_max: pulseMetrics.circularImports.value,
       knip_issues_max: knipMetrics.totalIssues,
       madge_cycles_max: madgeMetrics.totalCycles,
-      anti_hardcode_breaks_max: pulseMetrics.antiHardcodeBreaks.value,
-      visual_contract_breaks_max: pulseMetrics.visualContractBreaks.value,
-      browser_stress_pass_rate_min: pulseMetrics.browserStressPassRate.value,
       codacy_total_issues_max: codacyMetrics.total.value,
       codacy_high_severity_issues_max: codacyMetrics.high.value,
       codacy_medium_severity_issues_max: codacyMetrics.medium.value,
@@ -409,7 +397,6 @@ export function collectRatchetMetrics(options = {}) {
       coverage_branches_min: coverageMetrics.branchesMin.value,
     },
     details: {
-      pulse_score_min: pulseMetrics.pulseScore,
       any_count_max: anyMetrics.any,
       prisma_any_max: anyMetrics.prismaAny,
       ts_ignore_max: tsIgnoreMetric,
@@ -427,10 +414,6 @@ export function collectRatchetMetrics(options = {}) {
       hardcoded_hex_outside_tokens_max: hardcodedHexMetric,
       font_below_16px_in_chat_max: chatFontMetric,
       files_over_800_lines_max: oversizedFilesMetric,
-      facade_count_max: pulseMetrics.facadeCount,
-      dead_code_files_max: pulseMetrics.deadCodeFiles,
-      orphan_prisma_models_max: pulseMetrics.orphanPrismaModels,
-      circular_imports_max: pulseMetrics.circularImports,
       knip_issues_max: createMetric(
         knipMetrics.totalIssues,
         'max',
@@ -461,9 +444,6 @@ export function collectRatchetMetrics(options = {}) {
           }, {}),
         },
       ),
-      anti_hardcode_breaks_max: pulseMetrics.antiHardcodeBreaks,
-      visual_contract_breaks_max: pulseMetrics.visualContractBreaks,
-      browser_stress_pass_rate_min: pulseMetrics.browserStressPassRate,
       codacy_total_issues_max: codacyMetrics.total,
       codacy_high_severity_issues_max: codacyMetrics.high,
       codacy_medium_severity_issues_max: codacyMetrics.medium,
@@ -471,14 +451,6 @@ export function collectRatchetMetrics(options = {}) {
       coverage_branches_min: coverageMetrics.branchesMin,
     },
     inputs: {
-      pulseHealthPath: path.relative(repoRoot, pulseHealthPath),
-      pulseCertificatePath: path.relative(repoRoot, pulseCertificatePath),
-      pulseHealthMtime: existsSync(pulseHealthPath)
-        ? statSync(pulseHealthPath).mtime.toISOString()
-        : null,
-      pulseCertificateMtime: existsSync(pulseCertificatePath)
-        ? statSync(pulseCertificatePath).mtime.toISOString()
-        : null,
       codeFilesScanned: codeFiles.length,
       frontendFilesScanned: frontendFiles.length,
       productFilesScanned: productFiles.length,

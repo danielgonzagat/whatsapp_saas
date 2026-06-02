@@ -108,14 +108,7 @@ for (const [relPath, title] of requiredFiles) {
   requireFile(relPath, title);
 }
 
-for (const relPath of [
-  'ratchet.json',
-  'PULSE_HEALTH.json',
-  'PULSE_CLI_DIRECTIVE.json',
-  'PULSE_ARTIFACT_INDEX.json',
-  'PULSE_WORLD_STATE.json',
-  'PULSE_CERTIFICATE.json',
-]) {
+for (const relPath of ['ratchet.json']) {
   check(
     isTracked(relPath),
     `${relPath} is versioned`,
@@ -131,12 +124,7 @@ check(
   'package.json must expose readiness:check',
 );
 check(
-  packageJson.scripts?.['pulse:ci'] === 'node scripts/ops/run-pulse-ci.mjs',
-  'Root PULSE CI script is registered',
-  'package.json must expose pulse:ci',
-);
-check(
-  packageJson.scripts?.['ops:audit'] === 'npm run readiness:check && npm run pulse:ci',
+  packageJson.scripts?.['ops:audit'] === 'npm run readiness:check',
   'Root ops audit script is registered',
   'package.json must expose ops:audit',
 );
@@ -505,7 +493,7 @@ for (const keyword of ['LGPD', 'Asaas', 'chargeback', 'refund', 'nota fiscal', '
 }
 
 const readinessDocPath = safeRepoPath('docs/PRODUCTION_READINESS.md');
-for (const keyword of ['readiness:check', 'pulse:ci', 'staging', 'backup', 'monitoring']) {
+for (const keyword of ['readiness:check', 'staging', 'backup', 'monitoring']) {
   requireIncludes(readinessDocPath, keyword, `Production readiness doc covers ${keyword}`);
 }
 

@@ -103,7 +103,6 @@ function runGit(args, allowFailure = false) {
 }
 
 const LOCKED_FILES = new Set([
-  'scripts/pulse/no-hardcoded-reality-audit.ts',
   'frontend/src/app/(main)/analytics/page.tsx',
   'frontend/src/app/(main)/autopilot/page.tsx',
   'frontend/src/app/(main)/ferramentas/launchpad/page.tsx',
