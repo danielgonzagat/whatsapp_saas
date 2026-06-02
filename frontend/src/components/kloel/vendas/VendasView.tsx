@@ -28,6 +28,7 @@ import { SORA } from './utils';
 import { SmartPaymentModal } from './SmartPaymentModal';
 import { DetailModal } from './DetailModal';
 import { ShipModal } from './ShipModal';
+import { ChangePlanModal, type ChangePlanOption } from './ChangePlanModal';
 import { GestaoVendas } from './GestaoVendas';
 import { GestaoAssinaturas } from './GestaoAssinaturas';
 import { GestaoFisicos } from './GestaoFisicos';
@@ -99,6 +100,13 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
   const { stats: salesStats } = useSalesStats();
   const { chart } = useSalesChart();
   const { subscriptions, mutate: mutateSubs } = useSubscriptions();
+  const [changePlanModal, setChangePlanModal] = useState<{
+    subId: string;
+    currentPlanId?: string | undefined;
+    plans: ChangePlanOption[];
+  } | null>(null);
+  const [changePlanLoading, setChangePlanLoading] = useState(false);
+  const [changePlanError, setChangePlanError] = useState<string | null>(null);
   const { stats: subStats } = useSubscriptionStats();
   const { orders, mutate: mutateOrders } = useOrders();
   const { stats: orderStats } = useOrderStats();
@@ -232,26 +240,62 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
   };
 
   const handleChangePlan = async (id: string) => {
-    const planName = prompt('Nome do novo plano:');
-    if (!planName) {
+    setChangePlanError(null);
+    const sub = (subscriptions as SubscriptionItem[]).find((s) => s.id === id);
+    const productId = sub?.productId;
+    if (!productId) {
+      setActionError(
+        'Esta assinatura nao esta vinculada a um produto com planos, entao nao ha para onde trocar.',
+      );
       return;
     }
-    const amount = prompt('Valor do novo plano (ex: 97.00):');
-    if (!amount) {
+    setChangePlanLoading(true);
+    try {
+      const res = await apiFetch<unknown>(`/products/${productId}/plans`);
+      if (res.error) {
+        setActionError(res.error);
+        return;
+      }
+      const rows = Array.isArray(res.data) ? (res.data as Record<string, unknown>[]) : [];
+      const plans: ChangePlanOption[] = rows.map((p) => ({
+        id: String(p.id ?? ''),
+        name: String(p.name ?? 'Plano'),
+        price: Number(p.price ?? 0),
+      }));
+      setChangePlanModal({ subId: id, currentPlanId: sub?.planId, plans });
+    } catch (error) {
+      setActionError(
+        error instanceof Error ? error.message : 'Nao foi possivel carregar os planos do produto.',
+      );
+    } finally {
+      setChangePlanLoading(false);
+    }
+  };
+
+  const submitChangePlan = async (newPlanId: string) => {
+    if (!changePlanModal) {
       return;
     }
-    const message = 'Não foi possível mudar o plano da assinatura.';
-    await runSalesAction(async () => {
+    const subId = changePlanModal.subId;
+    const message = 'Nao foi possivel mudar o plano da assinatura.';
+    setChangePlanError(null);
+    setChangePlanLoading(true);
+    try {
       requireActionSuccess(
-        await apiFetch(`/sales/subscriptions/${id}/change-plan`, {
+        await apiFetch(`/sales/subscriptions/${subId}/change-plan`, {
           method: 'PUT',
-          body: { newPlanId: id, newPlanName: planName, newAmount: Number.parseFloat(amount) },
+          body: { newPlanId },
         }),
         message,
       );
       await mutateSubs();
+      setChangePlanModal(null);
       setDetailId(null);
-    }, message);
+    } catch (error) {
+      setChangePlanError(resolveActionError(error, message));
+    } finally {
+      setChangePlanLoading(false);
+    }
   };
 
   const { returnOrder } = useReturnOrder();
@@ -331,6 +375,18 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
         onTrackingCodeChange={setShipTrackingCode}
         onShipOrder={handleShipOrder}
         actionLoading={actionLoading}
+      />
+      <ChangePlanModal
+        open={changePlanModal !== null}
+        plans={changePlanModal?.plans ?? []}
+        currentPlanId={changePlanModal?.currentPlanId}
+        loading={changePlanLoading}
+        error={changePlanError}
+        onSelect={submitChangePlan}
+        onClose={() => {
+          setChangePlanModal(null);
+          setChangePlanError(null);
+        }}
       />
       {showSmartPayment && (
         <SmartPaymentModal workspaceId={workspaceId} onClose={() => setShowSmartPayment(false)} />
