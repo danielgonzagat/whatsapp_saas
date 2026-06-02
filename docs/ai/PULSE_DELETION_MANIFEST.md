@@ -60,6 +60,34 @@ line numbers given), then an atomic session does the non-protected bulk + verifi
 `scripts/ops/` protection, then an atomic session does everything. Either way the
 production-readiness gate (#1) is the load-bearing pin — do it first.
 
+### Deeper finding (2026-06-02): PULSE is the BACKBONE of the quality fabric — this is a REFACTOR
+
+`scripts/ops/collect-ratchet-metrics.mjs` (+ `.artifacts.mjs`) derive the ENTIRE quality
+ratchet from PULSE artifacts: `pulseScore`, `facadeCount`, `deadCodeFiles`,
+`orphanPrismaModels`, `circularImports`, `antiHardcodeBreaks`, `visualContractBreaks`,
+`browserStressPassRate` — all read from `PULSE_HEALTH.json` / `PULSE_CERTIFICATE.json`,
+refreshed via `scripts/pulse/run.js --report`. `ratchet.json` (baseline) + `check-ratchet.mjs`
+(PROTECTED `check-*`) gate CI on those metrics. `validate-production-readiness.mjs` + `ci-cd.yml`
++ `deploy-production.yml` + `nightly-ops-audit.yml` all assert/run PULSE.
+
+**Conclusion: removing PULSE forces a CONSCIOUS REDESIGN of what the quality ratchet + readiness
+gate measure** (drop the pulse dimensions, or replace with atomic equivalents) — touching MORE
+protected files (`check-ratchet.mjs`). A blind sed/python script across 12+ files (untestable on
+CI) CANNOT do this without breaking the quality gate = violates "não quebra o Kloel". So the
+deletion MUST be a validated refactor in an atomic session AFTER protection is lifted — NOT a
+blind script.
+
+### Recommended SAFE execution (honors both "delete all pulse" AND "don't break Kloel")
+
+1. **Owner (one human-only step):** edit `CLAUDE.md` to (a) remove the PULSE sections and (b)
+   remove the pulse-wired files from the ARQUIVOS PROTEGIDOS list / lift `scripts/ops/` +
+   `ci-cd.yml` protection. This is the keystone — no AI can edit CLAUDE.md.
+2. **Fresh atomic session (validated):** redesign the ratchet/readiness to drop the pulse
+   dimensions; edit every CI/ops reference; `git rm` the pulse tree; run full
+   `typecheck` + `lint` + `format:check` + backend `test` + `build` and confirm ALL GREEN;
+   only then commit. Atomic validates every edit; nothing ships red. Optionally verify on a
+   branch in CI before merging.
+
 1. **PULSE certification SCANNER + dev tooling** — what atomic substitutes. **Default in-scope.**
 2. **UI animations** (`PulseLoader`, `LivePulse`, `NeuroPulse`, `@keyframes pulse`,
    `animate-pulse`, ~70 frontend files) — **NOT pulse-system, KEEP.**
