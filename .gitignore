@@ -156,3 +156,11 @@ scripts/backup/
 docs/atomic/
 docs/ai/
 .codex/
+
+# more agent-cli untracked (Kloel cleanup batch 3)
+.opencode/
+opencode.json
+intents/
+
+.claude/
+.agents/
