@@ -154,7 +154,7 @@ describe('unified-agent-actions-messaging.service.helpers', () => {
   describe('escapeHtml', () => {
     it('escapes the HTML special chars', () => {
       expect(escapeHtml(`<a href="x">'foo' & "bar"</a>`)).toBe(
-        '&lt;a href=&quot;x&quot;&gt;&#39;foo&#39; &amp; &quot;bar&quot;&lt;/a&gt;',
+        '&lt;a href=&quot;x&quot;&gt;&#x27;foo&#x27; &amp; &quot;bar&quot;&lt;/a&gt;',
       );
     });
     it('returns input unchanged when no special chars', () => {
