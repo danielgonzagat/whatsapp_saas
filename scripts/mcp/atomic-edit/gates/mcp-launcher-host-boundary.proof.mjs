@@ -85,6 +85,9 @@ async function hostedLauncherStartsMcp(brokerSocket) {
     stderr: 'pipe',
     env: {
       ...process.env,
+      ATOMIC_SINGLE_TOOL_CALL: '',
+      ATOMIC_SINGLE_TOOL_NAME: '',
+      ATOMIC_SINGLE_TOOL_ARGS_JSON: '',
       ATOMIC_HOST_SANDBOX: 'macos-sandbox-exec',
       ATOMIC_HOST_ATOMIC_ONLY: '1',
       ATOMIC_HOST_WRITE_ROOT: repoRoot,
@@ -134,6 +137,9 @@ async function stateFileLauncherStartsMcp(brokerSocket) {
     stderr: 'pipe',
     env: {
       ...process.env,
+      ATOMIC_SINGLE_TOOL_CALL: '',
+      ATOMIC_SINGLE_TOOL_NAME: '',
+      ATOMIC_SINGLE_TOOL_ARGS_JSON: '',
       ATOMIC_HOST_SANDBOX: '',
       ATOMIC_HOST_ATOMIC_ONLY: '',
       ATOMIC_HOST_WRITE_ROOT: '',
@@ -187,6 +193,9 @@ async function main() {
       timeout: 5000,
       env: {
         ...process.env,
+        ATOMIC_SINGLE_TOOL_CALL: "",
+        ATOMIC_SINGLE_TOOL_NAME: "",
+        ATOMIC_SINGLE_TOOL_ARGS_JSON: "",
         ATOMIC_HOST_SANDBOX: "",
         ATOMIC_HOST_ATOMIC_ONLY: "",
         ATOMIC_HOST_WRITE_ROOT: "",
@@ -206,6 +215,9 @@ async function main() {
       timeout: 5000,
       env: {
         ...process.env,
+        ATOMIC_SINGLE_TOOL_CALL: "",
+        ATOMIC_SINGLE_TOOL_NAME: "",
+        ATOMIC_SINGLE_TOOL_ARGS_JSON: "",
         ATOMIC_HOST_SANDBOX: "macos-sandbox-exec",
         ATOMIC_HOST_ATOMIC_ONLY: "1",
         ATOMIC_HOST_WRITE_ROOT: repoRoot,

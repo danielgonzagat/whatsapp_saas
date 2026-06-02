@@ -119,6 +119,10 @@ async function defaultCallFreshTool(atomicRoot: string, env: NodeJS.ProcessEnv, 
   return parsed.result;
 }
 
+export async function callFreshAtomicTool(atomicRoot: string, env: NodeJS.ProcessEnv, toolName: string, args: unknown): Promise<unknown> {
+  return defaultCallFreshTool(atomicRoot, env, toolName, args);
+}
+
 export function shouldDelegateToFreshRuntimeState(
   bootDistHash: string | null,
   current: FreshnessResult,

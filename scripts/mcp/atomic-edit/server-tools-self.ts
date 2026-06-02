@@ -9,6 +9,7 @@ import { withSelfExpansionAdmission, isAtomicSelfExpansionPath } from './server-
 import { ok, fail } from './server-helpers-result.js';
 import { captureEffectSnapshot, diffEffect, rollbackEffect } from './server-helpers-effect.js';
 import { requireNegativeActionProof, requireNegativeProofForRemovedBytes, type NegativeActionProof } from './server-helpers-negative-proof.js';
+import { registerToolsDispatch } from './server-tools-dispatch.js';
 
 interface SelfFileOp {
   op: 'create' | 'replace' | 'delete' | 'replace_text';
@@ -337,4 +338,6 @@ export function registerToolsSelf(server: McpServer): void {
       }
     },
   );
+
+  registerToolsDispatch(server);
 }

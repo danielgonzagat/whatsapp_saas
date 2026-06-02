@@ -126,6 +126,62 @@ function check(name, cond, detail = '') {
   check('SINGLE-CALL result is scoped to requested file', machine?.scope === 'scripts/mcp/atomic-edit/server-tools-converge.ts');
 }
 
+{
+  const child = spawnSync(process.execPath, [path.join(dir, 'dist', 'server.js')], {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      ATOMIC_SINGLE_TOOL_CALL: '1',
+      ATOMIC_SINGLE_TOOL_NAME: 'atomic_dispatch_tool',
+      ATOMIC_SINGLE_TOOL_ARGS_JSON: JSON.stringify({
+        toolName: 'atomic_lens',
+        args: { scope: 'scripts/mcp/atomic-edit/server-tools-converge.ts' },
+      }),
+      ATOMIC_DISABLE_HOT_RELOAD: '1',
+      CODEX_PROJECT_DIR: repoRoot,
+      TMPDIR: repoRoot,
+      TMP: repoRoot,
+      TEMP: repoRoot,
+    },
+    encoding: 'utf8',
+    maxBuffer: 50 * 1024 * 1024,
+  });
+  const payload = JSON.parse(child.stdout.trim() || '{}');
+  const content = Array.isArray(payload.result?.content) ? payload.result.content : [];
+  const machine = content.length > 0 ? JSON.parse(content[content.length - 1].text) : null;
+  const freshContent = Array.isArray(machine?.freshResult?.content) ? machine.freshResult.content : [];
+  const freshMachine = freshContent.length > 0 ? JSON.parse(freshContent[freshContent.length - 1].text) : null;
+  check('DISPATCH exits successfully', child.status === 0, child.stderr.trim());
+  check('DISPATCH returns ok payload', payload.ok === true);
+  check('DISPATCH reports target tool name', machine?.dispatchedTool === 'atomic_lens');
+  check('DISPATCH invokes fresh target tool', freshMachine?.ok === true);
+  check('DISPATCH preserves target args', freshMachine?.scope === 'scripts/mcp/atomic-edit/server-tools-converge.ts');
+}
+
+{
+  const child = spawnSync(process.execPath, [path.join(dir, 'dist', 'server.js')], {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      ATOMIC_SINGLE_TOOL_CALL: '1',
+      ATOMIC_SINGLE_TOOL_NAME: 'atomic_dispatch_tool',
+      ATOMIC_SINGLE_TOOL_ARGS_JSON: JSON.stringify({ toolName: 'atomic_dispatch_tool' }),
+      ATOMIC_DISABLE_HOT_RELOAD: '1',
+      CODEX_PROJECT_DIR: repoRoot,
+      TMPDIR: repoRoot,
+      TMP: repoRoot,
+      TEMP: repoRoot,
+    },
+    encoding: 'utf8',
+    maxBuffer: 50 * 1024 * 1024,
+  });
+  const payload = JSON.parse(child.stdout.trim() || '{}');
+  const content = Array.isArray(payload.result?.content) ? payload.result.content : [];
+  const machine = content.length > 0 ? JSON.parse(content[content.length - 1].text) : null;
+  check('DISPATCH self-recursion exits successfully', child.status === 0, child.stderr.trim());
+  check('DISPATCH refuses self-dispatch without recursion', payload.ok === true && payload.result?.isError === true && String(machine?.error ?? '').includes('refuses self-dispatch'));
+}
+
 const passedCount = results.filter((result) => result.passed).length;
 const failedCount = results.length - passedCount;
 console.log(`\n${passedCount} passed, ${failedCount} failed`);
