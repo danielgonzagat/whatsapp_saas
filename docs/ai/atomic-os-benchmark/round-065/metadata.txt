@@ -1,8 +1,0 @@
-round=065
-timestamp=20260517104607
-task=scaled_two_symbol_extraction
-normal_worktree=/private/tmp/kloel-ab065-normal-20260517104607
-atomic_worktree=/private/tmp/kloel-ab065-atomic-20260517104607
-normal_branch=bench/ab065-normal-20260517104607
-atomic_branch=bench/ab065-atomic-20260517104607
-objective=complexity escalation after round 064; extract two helpers preserving behavior

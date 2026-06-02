@@ -1,9 +1,0 @@
-round=104
-created_at=2026-05-18T01:56:19.864Z
-complexity_step=round103-repeat-compact-dependency-getter
-normal_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab104-normal-20260517225550
-atomic_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab104-atomic-20260517225550
-normal_branch=ab/round104-normal-20260517225550
-atomic_branch=ab/round104-atomic-20260517225550
-decision=repeat_same_difficulty_not_scale
-atomic_policy_delta=compact routerDeps getter instead of constructor property

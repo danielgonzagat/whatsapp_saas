@@ -1,4 +1,0 @@
-round=067
-normal_worktree=/private/tmp/kloel-ab067-normal-20260517111035
-atomic_worktree=/private/tmp/kloel-ab067-atomic-20260517111035
-task=two-symbol unified-agent helper extraction after idempotent retry repair

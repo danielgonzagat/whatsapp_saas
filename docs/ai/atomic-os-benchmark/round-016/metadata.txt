@@ -1,9 +1,0 @@
-stamp=20260516173600
-round_dir=docs/ai/atomic-os-benchmark/round-016
-normal_dir=/private/tmp/kloel-ab016-normal-20260516173600
-atomic_dir=/private/tmp/kloel-ab016-atomic-20260516173600
-normal_branch=codex/ab016-normal-20260516173600
-atomic_branch=codex/ab016-atomic-20260516173600
-base_head=565b0f84daa9f20b33a174374191a9f1f519a26e
-atomic_os_update=machine_json_omits_summary_and_operator_discourages_preview_when_scope_clear
-previous_verdict=round-015_no_scale_atomic_lost_duration_events_commands_raw_diff

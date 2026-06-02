@@ -1,6 +1,0 @@
-round=097
-normal_worktree=/private/tmp/kloel-ab097-normal-20260517204003
-atomic_worktree=/private/tmp/kloel-ab097-atomic-20260517204003
-task=repeat_round095_router_cluster_optional_deps_normalized
-repeat_reason=round096_atomic_passed_normal_idle_no_shape_baseline_repeat_same_complexity
-official_loop=opencode_workers_only

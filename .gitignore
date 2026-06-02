@@ -144,3 +144,15 @@ agent-audit-*/
 .omx/
 .pr198-agents/
 .world/
+
+# agent-cli scripts/docs — untracked from GitHub, kept on disk (Kloel cleanup)
+scripts/codemods/
+scripts/decomp/
+scripts/findings-engines/
+scripts/canon-gates/
+scripts/__parts__/
+scripts/auth/
+scripts/backup/
+docs/atomic/
+docs/ai/
+.codex/

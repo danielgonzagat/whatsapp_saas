@@ -1,5 +1,0 @@
-round=093
-normal_worktree=/private/tmp/kloel-ab093-normal-20260517185611
-atomic_worktree=/private/tmp/kloel-ab093-atomic-20260517185611
-task=extract_execute_tool_router_cluster_plus_actionSucceeded
-repeat_reason=round092_preexisting_json_parse_lint_residue

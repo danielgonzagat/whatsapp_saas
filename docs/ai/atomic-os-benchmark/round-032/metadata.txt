@@ -1,9 +1,0 @@
-stamp=20260516204200
-round_dir=docs/ai/atomic-os-benchmark/round-032
-normal_dir=/private/tmp/kloel-ab032-normal-20260516204200
-atomic_dir=/private/tmp/kloel-ab032-atomic-20260516204200
-normal_branch=codex/ab032-normal-20260516204200
-atomic_branch=codex/ab032-atomic-20260516204200
-base_head=565b0f84daa9f20b33a174374191a9f1f519a26e
-atomic_os_update=compact_process_env_snapshot_restore
-previous_verdict=round-031_no_scale_atomic_lost_mcp_payload_diff_by_one_and_wall_time_tie
