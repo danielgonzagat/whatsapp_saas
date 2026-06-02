@@ -61,6 +61,7 @@ import { MemorySearchService } from './memory-search.service';
 import { MemoryService } from './memory.service';
 import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 import { MindMessageService } from './mind/aliases/mind-message.service';
+import { MindCanonicalService } from './mind/mind-canonical.service';
 // ── services-v2 (Wave 1) — boot-safe capability domain services ──
 import { ThemeService } from './services-v2/theme.service';
 import { AIConfigService } from './services-v2/ai-config.service';
@@ -477,6 +478,7 @@ import { CrmModule } from '../crm/crm.module';
     AgentRuntimeSkillRegistry,
     MindMessageService,
     MindMemoryItemService,
+    MindCanonicalService,
     // ── services-v2 (Wave 1) capability domain services ──
     ThemeService,
     AIConfigService,
@@ -577,6 +579,7 @@ import { CrmModule } from '../crm/crm.module';
     AgentRuntimeSkillRegistry,
     MindMessageService,
     MindMemoryItemService,
+    MindCanonicalService,
   ],
 })
 export class KloelModule {}

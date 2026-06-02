@@ -4,6 +4,7 @@ import { buildTimestampedRuntimeKey } from './kloel-id.util';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { MindMessageService } from './mind/aliases/mind-message.service';
 import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
+import { MindCanonicalService } from './mind/mind-canonical.service';
 
 const A_Z0_9_RE = /[^a-z0-9_:-]+/g;
 
@@ -27,6 +28,7 @@ export class KloelConversationStore {
     private readonly opsAlert?: OpsAlertService,
     private readonly mindMessage?: MindMessageService,
     private readonly mindMemory?: MindMemoryItemService,
+    private readonly mindCanonical?: MindCanonicalService,
   ) {}
 
   /** Canonical Brain → Mind memory delegate (raw-Prisma fallback). */
@@ -39,6 +41,21 @@ export class KloelConversationStore {
   async getConversationHistory(workspaceId?: string): Promise<ChatMessage[]> {
     if (!workspaceId) {
       return [];
+    }
+
+    // Canonical Mind facade is the preferred read; `getConversationHistory`
+    // delegates to the SAME `RAC_KloelMessage` rows (oldest→newest, take 20)
+    // the alias/raw paths below return identically — only role/content used.
+    if (this.mindCanonical) {
+      try {
+        const rows = await this.mindCanonical.getConversationHistory(workspaceId, 20);
+        return rows.map((row) => ({
+          role: row.role as 'user' | 'assistant',
+          content: row.content,
+        }));
+      } catch {
+        return [];
+      }
     }
 
     if (this.mindMessage) {
