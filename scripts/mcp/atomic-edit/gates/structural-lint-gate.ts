@@ -210,7 +210,7 @@ async function analyzeStructural(content: string, rel: string): Promise<Finding[
       'import_statement', 'import_specifier', 'namespace_import',
       'identifier', 'type_identifier', 'shorthand_property_identifier',
       // prefer-const
-      'lexical_declaration', 'variable_declarator', 'assignment_expression', 'update_expression',
+      'lexical_declaration', 'variable_declarator', 'assignment_expression', 'augmented_assignment_expression', 'update_expression',
       // no-empty
       'statement_block', 'catch_clause', 'function_declaration', 'function_expression',
       'arrow_function', 'method_definition', 'generator_function', 'generator_function_declaration',
@@ -291,8 +291,8 @@ function emitPreferConst(nodes: AstNode[], out: Finding[]): void {
   // LHS targets of assignment / update expressions (the reassigned names).
   const reassigned = new Set<string>();
   for (const n of nodes) {
-    if (n.type === 'assignment_expression') {
-      const m = /^([A-Za-z_$][\w$]*)\s*=/.exec(n.text.trim());
+    if (n.type === 'assignment_expression' || n.type === 'augmented_assignment_expression') {
+      const m = /^([A-Za-z_$][\w$]*)\s*(?:>>>=|>>=|<<=|\+=|-=|\*=|\/=|%=|&&=|\|\|=|\?\?=|&=|\|=|\^=|=)/.exec(n.text.trim());
       if (m) reassigned.add(m[1]);
     } else if (n.type === 'update_expression') {
       const m = /([A-Za-z_$][\w$]*)/.exec(n.text.replace(/^[+-]{2}/, '').trim());

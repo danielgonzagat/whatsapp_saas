@@ -1,4 +1,3 @@
-import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   applyEdits, replaceText, renameSymbol, replaceLiteral, posToOffset, wrapRange,

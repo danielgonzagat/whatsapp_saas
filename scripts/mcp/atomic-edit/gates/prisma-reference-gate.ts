@@ -58,13 +58,10 @@
  *    data source — NOT necessarily a Prisma-managed table — so it is out of scope, not
  *    red-by-guess. Only DOUBLE-QUOTED identifiers (Prisma's own quoting style for its
  *    mapped tables) are the closed, decidable case.
- *  - COMMENTS: a reference written inside a line or block comment is whitespace after
- *    the byte-floor `blankComments` runs first — so a commented-out reference is never
- *    extracted (the comment-embedded false-positive class the lens would otherwise
- *    expose). RESIDUAL CEILING: a `"table"` token inside a NON-SQL string literal that
- *    merely happens to follow the word FROM is preserved (strings are deliberately
- *    kept), so only a real SQL grammar distinguishing a table-ref node from a string
- *    node removes that last FP — same shape as iac's string-literal residual.
+ *  - COMMENTS + JS/TS LITERAL TEXT: a `prismaAny.x` reference written inside a comment,
+ *    string literal, or template literal text is whitespace after the byte-floor masking
+ *    runs first. Executable `${...}` template interpolations remain code and are still
+ *    judged. This removes non-code false positives without hiding real runtime access.
  */
 import { blankComments } from '../connection-gate.js';
 import {
@@ -146,14 +143,123 @@ interface RawTableRef {
   line: number;
 }
 
+function blankAt(out: string[], source: string, idx: number): void {
+  if (source[idx] !== '\n' && source[idx] !== '\r') out[idx] = ' ';
+}
+
+/**
+ * Blank JS/TS string-literal text without changing line numbers. Template literal
+ * text is blanked, but executable `${...}` interpolation bodies are scanned as code.
+ */
+function blankJsLiteralText(source: string): string {
+  const out = source.split('');
+
+  function blankQuoted(idx: number, quote: string): number {
+    blankAt(out, source, idx);
+    let i = idx + 1;
+    while (i < source.length) {
+      const ch = source[i];
+      blankAt(out, source, i);
+      i += 1;
+      if (ch === '\\') {
+        if (i < source.length) {
+          blankAt(out, source, i);
+          i += 1;
+        }
+        continue;
+      }
+      if (ch === quote) break;
+    }
+    return i;
+  }
+
+  function blankTemplate(idx: number): number {
+    blankAt(out, source, idx);
+    let i = idx + 1;
+    while (i < source.length) {
+      const ch = source[i];
+      if (ch === '\\') {
+        blankAt(out, source, i);
+        i += 1;
+        if (i < source.length) {
+          blankAt(out, source, i);
+          i += 1;
+        }
+        continue;
+      }
+      if (ch === '`') {
+        blankAt(out, source, i);
+        return i + 1;
+      }
+      if (ch === '$' && source[i + 1] === '{') {
+        blankAt(out, source, i);
+        blankAt(out, source, i + 1);
+        i = scanTemplateExpression(i + 2);
+        if (i < source.length && source[i] === '}') {
+          blankAt(out, source, i);
+          i += 1;
+        }
+        continue;
+      }
+      blankAt(out, source, i);
+      i += 1;
+    }
+    return i;
+  }
+
+  function scanTemplateExpression(idx: number): number {
+    let depth = 1;
+    let i = idx;
+    while (i < source.length && depth > 0) {
+      const ch = source[i];
+      if (ch === "'" || ch === '"') {
+        i = blankQuoted(i, ch);
+        continue;
+      }
+      if (ch === '`') {
+        i = blankTemplate(i);
+        continue;
+      }
+      if (ch === '{') {
+        depth += 1;
+        i += 1;
+        continue;
+      }
+      if (ch === '}') {
+        depth -= 1;
+        if (depth === 0) return i;
+      }
+      i += 1;
+    }
+    return i;
+  }
+
+  let i = 0;
+  while (i < source.length) {
+    const ch = source[i];
+    if (ch === "'" || ch === '"') {
+      i = blankQuoted(i, ch);
+      continue;
+    }
+    if (ch === '`') {
+      i = blankTemplate(i);
+      continue;
+    }
+    i += 1;
+  }
+
+  return out.join('');
+}
+
 /**
  * Every LITERAL `prismaAny.<accessor>` reference (optionally `this.prismaAny.…`) in a
- * source body, with its 1-based line. Comments are blanked first so a commented
- * `prismaAny.x` is whitespace. A computed member (`prismaAny[…]`) is deliberately NOT
- * matched — that is the dynamic Rice-line case (out of scope, never red).
+ * source body, with its 1-based line. Comments and JS/TS literal text are blanked first
+ * so non-code `prismaAny.x` bytes are whitespace. Executable template interpolations
+ * remain code. A computed member (`prismaAny[…]`) is deliberately NOT matched — that is
+ * the dynamic Rice-line case (out of scope, never red).
  */
 function collectPrismaAnyRefs(rawBody: string): PrismaAnyRef[] {
-  const body = blankComments(rawBody);
+  const body = blankJsLiteralText(blankComments(rawBody));
   const out: PrismaAnyRef[] = [];
   // (?:this\.)? prismaAny . <identifier>  — the literal-accessor hatch only.
   const re = /\bprismaAny\.([A-Za-z_$][A-Za-z0-9_$]*)/g;

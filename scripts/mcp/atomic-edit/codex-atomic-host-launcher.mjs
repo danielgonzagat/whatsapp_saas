@@ -29,6 +29,7 @@ const REAL_CODEX = '/opt/homebrew/bin/codex';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..', '..', '..');
 const BROKER = path.join(here, 'atomic-exec-broker.mjs');
+const BROKER_STATE = path.join(repoRoot, ".atomic", "codex-broker-current.json");
 
 function die(message, code = 1) {
   process.stderr.write(message + '\n');
@@ -117,6 +118,28 @@ function normalizeAgentCommand(command) {
   return command;
 }
 
+function writeBrokerState(socket, codexHome) {
+  const payload = {
+    agent: "codex",
+    repoRoot,
+    socket,
+    codexHome,
+    pid: process.pid,
+    createdAt: new Date().toISOString(),
+  };
+  fs.mkdirSync(path.dirname(BROKER_STATE), { recursive: true });
+  fs.writeFileSync(BROKER_STATE, JSON.stringify(payload, null, 2) + "\n", { mode: 0o600 });
+}
+
+function clearBrokerState(socket) {
+  try {
+    const payload = JSON.parse(fs.readFileSync(BROKER_STATE, "utf8"));
+    if (payload?.socket === socket) fs.rmSync(BROKER_STATE, { force: true });
+  } catch {
+    /* best-effort */
+  }
+}
+
 function startBroker() {
   const atomicDir = path.join(repoRoot, '.atomic');
   try {
@@ -173,12 +196,14 @@ if (!fs.existsSync(SANDBOX_EXEC)) {
 startBroker()
   .then(({ child: brokerChild, socket }) => {
     const codexHome = codexHomePath();
+    writeBrokerState(socket, codexHome);
     const child = spawn(SANDBOX_EXEC, ['-p', sandboxProfile(repoRoot, socket, codexHome), ...normalizeAgentCommand(command)], {
       cwd: repoRoot,
       stdio: 'inherit',
       env: childEnv(socket, codexHome),
     });
     const cleanup = () => {
+      clearBrokerState(socket);
       try {
         brokerChild.kill('SIGTERM');
       } catch {

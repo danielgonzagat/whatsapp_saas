@@ -11,9 +11,12 @@ import { captureEffectSnapshot, diffEffect, rollbackEffect } from './server-help
 import { requireNegativeActionProof, requireNegativeProofForRemovedBytes, type NegativeActionProof } from './server-helpers-negative-proof.js';
 
 interface SelfFileOp {
-  op: 'create' | 'replace' | 'delete';
+  op: 'create' | 'replace' | 'delete' | 'replace_text';
   file: string;
   content?: string;
+  oldText?: string;
+  newText?: string;
+  occurrence?: number;
   expectedSha256?: string;
   proofOfIncorrectness?: string;
 }
@@ -56,9 +59,12 @@ function parseFileOps(raw: unknown[]): SelfFileOp[] {
   return raw.map((entry) => {
     const e = entry as Record<string, unknown>;
     return {
-      op: e.op === 'replace' || e.op === 'delete' ? e.op : 'create',
+      op: e.op === 'replace' || e.op === 'delete' || e.op === 'replace_text' ? e.op : 'create',
       file: String(e.file ?? ''),
       content: typeof e.content === 'string' ? e.content : undefined,
+      oldText: typeof e.oldText === 'string' ? e.oldText : undefined,
+      newText: typeof e.newText === 'string' ? e.newText : undefined,
+      occurrence: typeof e.occurrence === 'number' && Number.isInteger(e.occurrence) && e.occurrence > 0 ? e.occurrence : undefined,
       expectedSha256: typeof e.expectedSha256 === 'string' ? e.expectedSha256 : undefined,
       proofOfIncorrectness: typeof e.proofOfIncorrectness === 'string' ? e.proofOfIncorrectness : undefined,
     };
@@ -175,6 +181,45 @@ function applySelfFileOp(entry: SelfFileOp): { file: string; op: SelfFileOp['op'
       ...(negativeActionProof ? { negativeActionProof } : {}),
     };
   }
+  if (entry.op === 'replace_text') {
+    if (before === null) throw new Error(`refused: ${relPath} does not exist; replace_text requires an existing self file.`);
+    if (entry.oldText === undefined || entry.oldText.length === 0) {
+      throw new Error(`refused: ${relPath} replace_text requires non-empty oldText.`);
+    }
+    if (entry.newText === undefined) throw new Error(`refused: ${relPath} replace_text requires newText.`);
+    const matches: number[] = [];
+    let index = before.indexOf(entry.oldText);
+    while (index !== -1) {
+      matches.push(index);
+      index = before.indexOf(entry.oldText, index + entry.oldText.length);
+    }
+    if (matches.length === 0) throw new Error(`refused: ${relPath} replace_text oldText matched 0 ranges.`);
+    if (entry.occurrence === undefined && matches.length !== 1) {
+      throw new Error(`refused: ${relPath} replace_text matched ${matches.length} ranges; pass occurrence.`);
+    }
+    const matchIndex = entry.occurrence === undefined ? 0 : entry.occurrence - 1;
+    if (matchIndex < 0 || matchIndex >= matches.length) {
+      throw new Error(`refused: ${relPath} replace_text occurrence ${entry.occurrence} outside ${matches.length} match(es).`);
+    }
+    const start = matches[matchIndex];
+    const after = before.slice(0, start) + entry.newText + before.slice(start + entry.oldText.length);
+    const negativeActionProof = requireNegativeProofForRemovedBytes({
+      action: 'atomic_expand_self:replace_text',
+      target: relPath,
+      targetUnit: 'self-text-range',
+      before,
+      after,
+      proofOfIncorrectness: entry.proofOfIncorrectness,
+    });
+    atomicWrite(absPath, after);
+    return {
+      file: relPath,
+      op: entry.op,
+      beforeSha256: sha256(before),
+      afterSha256: sha256(after),
+      ...(negativeActionProof ? { negativeActionProof } : {}),
+    };
+  }
   if (before === null) return { file: relPath, op: entry.op, beforeSha256: null, afterSha256: null };
   const negativeActionProof = requireNegativeActionProof({
     action: 'atomic_expand_self:delete',
@@ -204,9 +249,12 @@ export function registerToolsSelf(server: McpServer): void {
         files: z
           .array(
             z.object({
-              op: z.enum(['create', 'replace', 'delete']),
+              op: z.enum(['create', 'replace', 'delete', 'replace_text']),
               file: z.string(),
               content: z.string().optional(),
+              oldText: z.string().optional(),
+              newText: z.string().optional(),
+              occurrence: z.number().int().positive().optional(),
               expectedSha256: z.string().optional(),
               proofOfIncorrectness: z.string().optional(),
             }),

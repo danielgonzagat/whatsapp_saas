@@ -11,6 +11,7 @@ const sourceDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 const repoRoot = path.resolve(sourceDir, '..', '..', '..');
 const launcher = path.resolve(sourceDir, '..', 'atomic-edit-mcp-launcher.sh');
 const brokerScript = path.join(sourceDir, 'atomic-exec-broker.mjs');
+const brokerState = path.join(repoRoot, '.atomic', 'codex-broker-current.json');
 
 function record(results, name, ok, detail) {
   results.push({ name, ok, detail });
@@ -108,46 +109,111 @@ async function hostedLauncherStartsMcp(brokerSocket) {
   }
 }
 
-async function main() {
-  const results = [];
-  const sourceAssertions = launcherSourceAssertions();
-  record(
-    results,
-    'launcher source enforces fresh dist startup without sandbox-unsafe redirects',
-    Object.values(sourceAssertions).every((value) => value === true),
-    sourceAssertions,
+async function stateFileLauncherStartsMcp(brokerSocket) {
+  const previous = fs.existsSync(brokerState) ? fs.readFileSync(brokerState, 'utf8') : null;
+  fs.writeFileSync(
+    brokerState,
+    JSON.stringify(
+      {
+        agent: 'codex',
+        repoRoot,
+        socket: brokerSocket,
+        codexHome: process.env.CODEX_HOME ?? path.join(process.env.HOME ?? '', '.codex'),
+        pid: process.pid,
+        createdAt: new Date().toISOString(),
+      },
+      null,
+      2,
+    ) + '\n',
+    { mode: 0o600 },
   );
-
-  const denied = childProcess.spawnSync(launcher, [], {
+  const transport = new StdioClientTransport({
+    command: launcher,
+    args: [],
     cwd: repoRoot,
-    encoding: 'utf8',
-    timeout: 5000,
+    stderr: 'pipe',
     env: {
       ...process.env,
       ATOMIC_HOST_SANDBOX: '',
       ATOMIC_HOST_ATOMIC_ONLY: '',
       ATOMIC_HOST_WRITE_ROOT: '',
       ATOMIC_EXEC_BROKER_SOCKET: '',
+      CODEX_PROJECT_DIR: '',
+      TMPDIR: '',
+      TMP: '',
+      TEMP: '',
     },
   });
-  record(results, 'unhosted MCP launcher is refused before server start', denied.status === 79 && /requires the atomic host sandbox boundary/.test(denied.stderr ?? ''), {
+  const client = new Client({ name: 'mcp-launcher-state-recovery-proof', version: '1.0.0' });
+  try {
+    await client.connect(transport);
+    const listed = await client.listTools();
+    return { ok: listed.tools?.some((tool) => tool.name === 'atomic_y_certificate') === true, tools: listed.tools?.length ?? 0 };
+  } finally {
+    try {
+      await client.close();
+    } catch {
+      // best effort
+    }
+    if (previous === null) fs.rmSync(brokerState, { force: true });
+    else fs.writeFileSync(brokerState, previous);
+  }
+}
+function withBrokerStateSuppressed(run) {
+  const previous = fs.existsSync(brokerState) ? fs.readFileSync(brokerState, "utf8") : null;
+  try {
+    fs.rmSync(brokerState, { force: true });
+    return run();
+  } finally {
+    if (previous === null) fs.rmSync(brokerState, { force: true });
+    else fs.writeFileSync(brokerState, previous);
+  }
+}
+
+async function main() {
+  const results = [];
+  const sourceAssertions = launcherSourceAssertions();
+  record(
+    results,
+    "launcher source enforces fresh dist startup without sandbox-unsafe redirects",
+    Object.values(sourceAssertions).every((value) => value === true),
+    sourceAssertions,
+  );
+
+  const denied = withBrokerStateSuppressed(() =>
+    childProcess.spawnSync(launcher, [], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      timeout: 5000,
+      env: {
+        ...process.env,
+        ATOMIC_HOST_SANDBOX: "",
+        ATOMIC_HOST_ATOMIC_ONLY: "",
+        ATOMIC_HOST_WRITE_ROOT: "",
+        ATOMIC_EXEC_BROKER_SOCKET: "",
+      },
+    }),
+  );
+  record(results, "unhosted MCP launcher is refused before server start", denied.status === 79 && /requires the atomic host sandbox boundary/.test(denied.stderr ?? ""), {
     status: denied.status,
     stderr: denied.stderr,
   });
 
-  const noBroker = childProcess.spawnSync(launcher, [], {
-    cwd: repoRoot,
-    encoding: 'utf8',
-    timeout: 5000,
-    env: {
-      ...process.env,
-      ATOMIC_HOST_SANDBOX: 'macos-sandbox-exec',
-      ATOMIC_HOST_ATOMIC_ONLY: '1',
-      ATOMIC_HOST_WRITE_ROOT: repoRoot,
-      ATOMIC_EXEC_BROKER_SOCKET: '',
-    },
-  });
-  record(results, 'host-marked MCP launcher is refused without broker socket', noBroker.status === 80 && /ATOMIC_EXEC_BROKER_SOCKET/.test(noBroker.stderr ?? ''), {
+  const noBroker = withBrokerStateSuppressed(() =>
+    childProcess.spawnSync(launcher, [], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      timeout: 5000,
+      env: {
+        ...process.env,
+        ATOMIC_HOST_SANDBOX: "macos-sandbox-exec",
+        ATOMIC_HOST_ATOMIC_ONLY: "1",
+        ATOMIC_HOST_WRITE_ROOT: repoRoot,
+        ATOMIC_EXEC_BROKER_SOCKET: "",
+      },
+    }),
+  );
+  record(results, "host-marked MCP launcher is refused without broker socket", noBroker.status === 80 && /ATOMIC_EXEC_BROKER_SOCKET/.test(noBroker.stderr ?? ""), {
     status: noBroker.status,
     stderr: noBroker.stderr,
   });
@@ -164,6 +230,13 @@ async function main() {
         : 'broker-backed host-marked MCP launcher starts the Atomic server',
       hosted.ok === true,
       { ...hosted, inheritedBroker: Boolean(inherited) },
+    );
+    const recovered = await stateFileLauncherStartsMcp(brokerSocket);
+    record(
+      results,
+      'broker state file lets MCP launcher recover when Codex does not pass ATOMIC env',
+      recovered.ok === true,
+      { ...recovered, inheritedBroker: Boolean(inherited) },
     );
   } finally {
     if (!inherited && broker?.proc) broker.proc.kill('SIGTERM');

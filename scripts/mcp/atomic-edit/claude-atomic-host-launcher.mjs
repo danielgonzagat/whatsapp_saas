@@ -84,6 +84,15 @@ function buildProfile() {
     lines.push(`(allow file-write* (subpath ${schemeString(sp)}))`);
   }
   lines.push(`(allow file-write* (regex ${schemeRegexPrefix(path.join(HOME, '.claude.json'))}))`);
+  // Claude Code's Bash tool writes its per-session scratch under
+  // /private/tmp/claude-<uid>/<project>/<uuid> — a hardcoded base that does NOT
+  // honor $TMPDIR, so the TMPDIR carve-out above does not cover it. Without this
+  // rule the Bash tool's mkdir of that scratch dir fails with EPERM and NO shell
+  // command (git included) can run inside the sandbox. Scoped tight by prefix to
+  // Claude's own temp namespace — it never opens /tmp root, so home/system/source
+  // containment is unchanged.
+  lines.push(`(allow file-write* (regex ${schemeRegexPrefix('/private/tmp/claude-')}))`);
+  lines.push(`(allow file-write* (regex ${schemeRegexPrefix('/tmp/claude-')}))`);
   lines.push('(allow file-write* (literal "/dev/null"))');
   lines.push('(allow file-write* (literal "/dev/stdout"))');
   lines.push('(allow file-write* (literal "/dev/stderr"))');

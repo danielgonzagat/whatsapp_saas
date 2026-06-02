@@ -1,5 +1,4 @@
 import { fileURLToPath } from 'node:url';
-import * as path from 'node:path';
 import { applyEdits } from './engine.js';
 import { graphemes, measure, graphemeLength } from './textunit.js';
 import { characterDiff } from './advanced.js';

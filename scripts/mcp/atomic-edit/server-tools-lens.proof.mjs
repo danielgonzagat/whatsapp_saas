@@ -18,24 +18,33 @@
  *                       `unjudged`, never silently counted as zero matches.
  *   LENS-SHAPE        — atomic_lens (runLens) over a tiny tmp repo returns the exact
  *                       red-set contract { scanned, reds:[{gate,file,locus,fact}], unjudged, ran }.
+ *   BYTE-EVIDENCE     — every red is accompanied by explicit byte evidence:
+ *                       byte offsets, precision, line hash, snippet, reason, and
+ *                       a classification that separates actionable negatives from
+ *                       contained adversarial proof fixtures, generated code, and
+ *                       regexp sources.
  */
+import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(dir, '..', '..', '..');
 const perception = await import(path.join(dir, 'dist', 'gates', 'perception.js'));
 const lens = await import(path.join(dir, 'dist', 'gates', 'lens.js'));
 const { calls } = perception;
 const { runLens } = lens;
 
-let pass = 0;
-let fail = 0;
+const results = [];
 const check = (name, cond) => {
-  if (cond) { pass += 1; console.log('  PASS ', name); }
-  else { fail += 1; console.log('  FAIL ', name); }
+  const passed = Boolean(cond);
+  results.push({ name, passed });
+  console.log(passed ? '  PASS ' : '  FAIL ', name);
 };
+
+const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
 
 // The token-correct grep the tool performs over one file's CallFact[]: it matches
 // only on callee identity and treats a null accessor as honestly unjudged. This is
@@ -89,7 +98,7 @@ async function grepCallsInFile(content, rel, name) {
   }
 }
 
-// ── LENS-SHAPE: runLens returns the red-set contract over a tiny tmp repo ──────
+// ── LENS-SHAPE + BYTE-EVIDENCE: runLens returns the byte-level red contract ───
 {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'atomic-lens-'));
   // A clean, self-contained source file (no dangling imports) so the sweep runs
@@ -101,6 +110,11 @@ async function grepCallsInFile(content, rel, name) {
   check('LENS-SHAPE has numeric scanned', typeof report.scanned === 'number');
   check('LENS-SHAPE scanned counts the source file (>=1)', report.scanned >= 1);
   check('LENS-SHAPE reds is an array', Array.isArray(report.reds));
+  check('LENS-SHAPE negativeByteEvidence is an array', Array.isArray(report.negativeByteEvidence));
+  check('LENS-SHAPE actionableNegativeByteEvidence is an array', Array.isArray(report.actionableNegativeByteEvidence));
+  check('LENS-SHAPE containedNegativeFixtureEvidence is an array', Array.isArray(report.containedNegativeFixtureEvidence));
+  check('LENS-SHAPE containedGeneratedCodeEvidence is an array', Array.isArray(report.containedGeneratedCodeEvidence));
+  check('LENS-SHAPE containedRegExpSourceEvidence is an array', Array.isArray(report.containedRegExpSourceEvidence));
   check('LENS-SHAPE unjudged is an array', Array.isArray(report.unjudged));
   check('LENS-SHAPE ran (gates that ran) is an array', Array.isArray(report.ran));
   // Every red — if any — must carry the unified red-set fields the eye promises.
@@ -110,17 +124,94 @@ async function grepCallsInFile(content, rel, name) {
   check('LENS-SHAPE every red has { gate, file, fact } (+locus)', redShapeOk);
   console.log(`        (lens: scanned ${report.scanned}, ${report.reds.length} red(s), ${report.unjudged.length} unjudged, gates [${report.ran.join(', ')}])`);
 
-  // A second sweep over a file with a DANGLING import should surface at least one
-  // connection red carrying a locus — proving the eye SEES, not just returns empty.
-  fs.writeFileSync(path.join(tmp, 'broken.ts'), "import { nope } from './does-not-exist.js';\nexport const v = nope;\n");
-  const report2 = await runLens(tmp, 'broken.ts');
+  // A second sweep over a file with a deterministic structural-lint red should
+  // expose line-level negative bytes: the first line is provably non-correct until
+  // `let` becomes `const`, and the reader must return its byte interval + hash.
+  const lintLine = 'let x = 1;';
+  fs.writeFileSync(path.join(tmp, 'lint.ts'), `${lintLine}\nexport { x };\n`);
+  const report2 = await runLens(tmp, 'lint.ts');
   const hasLocusedRed = report2.reds.some((r) => typeof r.locus === 'string' || typeof r.locus === 'number' || r.locus == null);
   check('LENS-SHAPE second sweep returns a well-formed report over a single file', typeof report2.scanned === 'number' && Array.isArray(report2.reds));
   check('LENS-SHAPE red entries (if any) expose a locus field', report2.reds.length === 0 || hasLocusedRed);
-  console.log(`        (lens broken.ts: ${report2.reds.length} red(s) — ${report2.reds.map((r) => r.gate).join(', ') || 'none'})`);
+  check('BYTE-EVIDENCE second sweep exposes negativeByteEvidence array', Array.isArray(report2.negativeByteEvidence));
+  check('BYTE-EVIDENCE every red has one evidence record', report2.reds.length === report2.negativeByteEvidence.length);
+  const lintLineEvidence = report2.negativeByteEvidence.find((entry) => entry.file === 'lint.ts' && entry.line === 1 && entry.gate === 'structural-lint');
+  check('BYTE-EVIDENCE structural-lint red maps to line 1', Boolean(lintLineEvidence));
+  check('BYTE-EVIDENCE actionable lint red is classified negative', lintLineEvidence?.classification === 'negative');
+  check('BYTE-EVIDENCE actionable lint red recommends repair', lintLineEvidence?.recommendedAction === 'repair-negative-byte');
+  check('BYTE-EVIDENCE line precision is explicit', lintLineEvidence?.precision === 'line');
+  check('BYTE-EVIDENCE byteStart is zero for first line', lintLineEvidence?.byteStart === 0);
+  check('BYTE-EVIDENCE byteEnd equals lint line byte length', lintLineEvidence?.byteEnd === Buffer.byteLength(lintLine, 'utf8'));
+  check('BYTE-EVIDENCE line sha256 proves exact bytes', lintLineEvidence?.lineSha256 === sha256(lintLine));
+  check('BYTE-EVIDENCE snippet carries the negative bytes', lintLineEvidence?.snippet === lintLine);
+  check('BYTE-EVIDENCE reason mirrors the red fact', typeof lintLineEvidence?.reason === 'string' && lintLineEvidence.reason.length > 0);
+  console.log(`        (lens lint.ts: ${report2.reds.length} red(s) — ${report2.reds.map((r) => r.gate).join(', ') || 'none'})`);
+
+  // A third sweep proves the reader does not lie about adversarial proof fixtures:
+  // a bad-looking byte sequence in a proof file is not actionable repository debt;
+  // it is positive proof material so long as the fact is a known adversarial gate input.
+  const fakeSecret = ['sk', 'live', '4eC9xZpM1nQ8rT2vW6yU'].join('_');
+  fs.writeFileSync(path.join(tmp, 'security-gate.proof.mjs'), `const fakeSecret = '${fakeSecret}';\n`);
+  const report3 = await runLens(tmp, 'security-gate.proof.mjs');
+  const fixtureEvidence = report3.negativeByteEvidence.find(
+    (entry) => entry.file === 'security-gate.proof.mjs' && entry.reason.includes('hardcoded Stripe live secret key'),
+  );
+  check('BYTE-EVIDENCE adversarial proof fixture is detected', Boolean(fixtureEvidence));
+  check('BYTE-EVIDENCE adversarial proof fixture is contained, not actionable', fixtureEvidence?.classification === 'contained-negative-fixture');
+  check('BYTE-EVIDENCE contained fixture recommends preservation', fixtureEvidence?.recommendedAction === 'preserve-proof-fixture');
+  check('BYTE-EVIDENCE contained fixture has containment proof', typeof fixtureEvidence?.containmentProof === 'string' && fixtureEvidence.containmentProof.length > 0);
+  check(
+    'BYTE-EVIDENCE contained fixture is excluded from actionable negatives',
+    !report3.actionableNegativeByteEvidence.some((entry) => entry.redIndex === fixtureEvidence?.redIndex),
+  );
+  check(
+    'BYTE-EVIDENCE contained fixture is listed in contained fixture evidence',
+    report3.containedNegativeFixtureEvidence.some((entry) => entry.redIndex === fixtureEvidence?.redIndex),
+  );
+  console.log(`        (lens proof fixture: ${report3.actionableNegativeByteEvidence.length} actionable, ${report3.containedNegativeFixtureEvidence.length} contained)`);
+
+  // A fourth sweep proves generated-code templates are not mistaken for debt.
+  const report4 = await runLens(repoRoot, 'scripts/mcp/atomic-edit/gates/property-gate.ts');
+  const generatedEvidence = report4.negativeByteEvidence.find(
+    (entry) => entry.line === 250 && entry.reason.startsWith('no-useless-escape'),
+  );
+  check('BYTE-EVIDENCE property-gate generated regex escape is detected', Boolean(generatedEvidence));
+  check('BYTE-EVIDENCE property-gate generated regex escape is contained generated code', generatedEvidence?.classification === 'contained-generated-code');
+  check('BYTE-EVIDENCE generated code recommends preservation', generatedEvidence?.recommendedAction === 'preserve-generated-code-template');
+  check('BYTE-EVIDENCE generated code has containment proof', typeof generatedEvidence?.containmentProof === 'string' && generatedEvidence.containmentProof.length > 0);
+  check(
+    'BYTE-EVIDENCE generated code is excluded from actionable negatives',
+    !report4.actionableNegativeByteEvidence.some((entry) => entry.redIndex === generatedEvidence?.redIndex),
+  );
+  check(
+    'BYTE-EVIDENCE generated code is listed in contained generated code evidence',
+    report4.containedGeneratedCodeEvidence.some((entry) => entry.redIndex === generatedEvidence?.redIndex),
+  );
+  console.log(`        (lens generated code: ${report4.actionableNegativeByteEvidence.length} actionable, ${report4.containedGeneratedCodeEvidence.length} generated-contained)`);
+
+  // A fifth sweep proves String.raw regexp sources are not mistaken for repair debt.
+  const report5 = await runLens(repoRoot, 'scripts/mcp/atomic-edit/atomic-only-hook.mjs');
+  const regexpEvidence = report5.negativeByteEvidence.find(
+    (entry) => entry.line === 109 && entry.reason.startsWith('no-useless-escape'),
+  );
+  check('BYTE-EVIDENCE String.raw regexp source escape is detected', Boolean(regexpEvidence));
+  check('BYTE-EVIDENCE String.raw regexp source escape is contained regexp source', regexpEvidence?.classification === 'contained-regexp-source');
+  check('BYTE-EVIDENCE regexp source recommends preservation', regexpEvidence?.recommendedAction === 'preserve-regexp-source');
+  check('BYTE-EVIDENCE regexp source has containment proof', typeof regexpEvidence?.containmentProof === 'string' && regexpEvidence.containmentProof.length > 0);
+  check(
+    'BYTE-EVIDENCE regexp source is excluded from actionable negatives',
+    !report5.actionableNegativeByteEvidence.some((entry) => entry.redIndex === regexpEvidence?.redIndex),
+  );
+  check(
+    'BYTE-EVIDENCE regexp source is listed in contained regexp-source evidence',
+    report5.containedRegExpSourceEvidence.some((entry) => entry.redIndex === regexpEvidence?.redIndex),
+  );
+  console.log(`        (lens regexp source: ${report5.actionableNegativeByteEvidence.length} actionable, ${report5.containedRegExpSourceEvidence.length} regexp-contained)`);
 
   fs.rmSync(tmp, { recursive: true, force: true });
 }
 
-console.log(`\n${pass} passed, ${fail} failed`);
-process.exit(fail === 0 ? 0 : 1);
+const passedCount = results.filter((result) => result.passed).length;
+const failedCount = results.length - passedCount;
+console.log(`\n${passedCount} passed, ${failedCount} failed`);
+process.exit(failedCount === 0 ? 0 : 1);

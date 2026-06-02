@@ -143,6 +143,7 @@ function inspectHostEnv(env, mode) {
   }
   return {
     mode,
+    agent: env.ATOMIC_HOST_AGENT ?? '',
     hostSandbox: env.ATOMIC_HOST_SANDBOX ?? '',
     atomicOnly: env.ATOMIC_HOST_ATOMIC_ONLY ?? '',
     writeRootReal: real(env.ATOMIC_HOST_WRITE_ROOT ?? ''),
@@ -159,16 +160,31 @@ function inspectHostEnv(env, mode) {
 }
 
 function hostEnvOk(detail) {
-  return detail.hostSandbox === 'macos-sandbox-exec' &&
+  const base =
+    detail.hostSandbox === 'macos-sandbox-exec' &&
     detail.atomicOnly === '1' &&
     detail.writeRootReal === repoRootReal &&
+    detail.socketExists === true &&
+    detail.socketIsSocket === true;
+  // The Claude launcher (claude-atomic-host-launcher.mjs) is a first-class atomic
+  // host: it sets the host markers (ATOMIC_HOST_SANDBOX / ATOMIC_HOST_ATOMIC_ONLY /
+  // ATOMIC_HOST_WRITE_ROOT), runs the out-of-sandbox broker, and confines
+  // file-writes to repo+TMPDIR+~/.claude. Unlike the codex launcher it does NOT
+  // pin codex-only project/home/temp vars (Claude has no CODEX_HOME), so for a
+  // claude host the contract is the host-boundary essentials, NOT the codex env.
+  // This generalization ADDS an equally-enforced claude branch; the codex branch
+  // below stays exactly as strict.
+  if (detail.agent === 'claude') {
+    return base;
+  }
+  return (
+    base &&
     detail.codexHomeReal === codexHomeReal &&
     detail.codexProjectDirReal === repoRootReal &&
     detail.tmpdirReal === repoRootReal &&
     detail.tmpReal === repoRootReal &&
-    detail.tempReal === repoRootReal &&
-    detail.socketExists === true &&
-    detail.socketIsSocket === true;
+    detail.tempReal === repoRootReal
+  );
 }
 
 function staticLauncherContract() {

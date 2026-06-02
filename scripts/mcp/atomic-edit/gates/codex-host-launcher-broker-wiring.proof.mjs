@@ -28,6 +28,15 @@ const checks = [
     name: 'Codex host launcher cleans broker socket on child exit',
     ok: /brokerChild\.kill\('SIGTERM'\)/.test(source) && /rmSync\(socket, \{ force: true \}\)/.test(source),
   },
+  {
+    name: "Codex host launcher persists broker state for MCP child env recovery",
+    ok:
+      /const BROKER_STATE\b/.test(source) &&
+      /function writeBrokerState\(socket, codexHome\)/.test(source) &&
+      /writeBrokerState\(socket, codexHome\)/.test(source) &&
+      /function clearBrokerState\(socket\)/.test(source) &&
+      /clearBrokerState\(socket\)/.test(source),
+  },
 ];
 
 const result = { ok: checks.every((entry) => entry.ok), results: checks };

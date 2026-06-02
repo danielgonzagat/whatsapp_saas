@@ -14,6 +14,8 @@
  *
  *   RED1     prismaAny.<accessor> whose model does not exist in the schema → reddened.
  *   RED2     $queryRaw FROM "<table>" whose physical table is not a model @@map → reddened.
+ *   RED3     prismaAny.<accessor> inside executable template interpolation remains code
+ *            and still reddens when unknown.
  *   GREEN1   prismaAny.<accessor> for a real model + $queryRaw FROM a real @@map → green.
  *   DELTA    a PRE-EXISTING dangling prismaAny ref (unchanged) is tolerated; a NEW one
  *            introduced alongside it still reddens (NEW-reference-only semantics).
@@ -24,7 +26,8 @@
  *   UNJUDGED-2  no schema.prisma readable at all → unjudged (no dictionary → never
  *               red-by-guess).
  *   OUT-OF-SCOPE a computed member prismaAny[var] (dynamic accessor), a commented-out
- *                ref, and an unquoted FROM identifier are never extracted → green.
+ *                ref, prismaAny text inside string/template literal text, and an
+ *                unquoted FROM identifier are never extracted → green.
  */
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -92,7 +95,14 @@ function judge(overlaySrc, changed) {
   check('RED2: red names the bad physical table', res.reds.some((r) => r.fact.includes('RAC_Mesage')));
 }
 
-// 3) GREEN1 — real model accessor + real @@map table both resolve.
+// 3) RED3 — template interpolation is executable code, not string text.
+{
+  const src = 'const rendered = `${this.prismaAny.ghostInInterpolation.findMany({})}`;';
+  const res = judge({ 'h.ts': src }, ['h.ts']);
+  check('RED3: prismaAny inside template interpolation remains judged code', res.green === false && res.reds.some((r) => r.fact.includes('ghostInInterpolation')));
+}
+
+// 4) GREEN1 — real model accessor + real @@map table both resolve.
 {
   const src =
     'this.prismaAny.workspace.findMany({});\n' +
@@ -101,7 +111,7 @@ function judge(overlaySrc, changed) {
   check('GREEN1: known accessor (workspace) + known tables resolve', res.green === true && res.reds.length === 0 && !res.unjudged);
 }
 
-// 4) DELTA — pre-existing dangling ref tolerated; a NEW one alongside it still reddens.
+// 5) DELTA — pre-existing dangling ref tolerated; a NEW one alongside it still reddens.
 {
   // Write a prior on disk so ctx.priorOf reads it (DELTA semantics need real prior bytes).
   const fs = await import('node:fs');
@@ -120,14 +130,14 @@ function judge(overlaySrc, changed) {
   fs.rmSync(tmp, { recursive: true, force: true });
 }
 
-// 5) UNJUDGED-1 — a literal table inside a runtime-built ($-interpolated) SQL region.
+// 6) UNJUDGED-1 — a literal table inside a runtime-built ($-interpolated) SQL region.
 {
   const res = judge({ 'e.ts': 'const q = this.prisma.$queryRaw`SELECT * FROM "RAC_DoesNotExist" WHERE id = ${id}`;' }, ['e.ts']);
   check('UNJUDGED-1: literal table in an interpolated region is NOT reddened (Rice line)', !res.reds.some((r) => r.fact.includes('RAC_DoesNotExist')));
   check('UNJUDGED-1: gate is unjudged when only a dynamic SQL region was seen', res.unjudged === true && res.green === true && res.reds.length === 0);
 }
 
-// 6) UNJUDGED-2 — no schema readable → no dictionary → unjudged.
+// 7) UNJUDGED-2 — no schema readable → no dictionary → unjudged.
 {
   // overlay WITHOUT the schema key, and a repoRoot with no schema on disk.
   const fs = await import('node:fs');
@@ -139,17 +149,21 @@ function judge(overlaySrc, changed) {
   fs.rmSync(tmp, { recursive: true, force: true });
 }
 
-// 7) OUT-OF-SCOPE — computed member, comment, and unquoted FROM are never extracted.
+// 8) OUT-OF-SCOPE — computed member, comment, string/template text, and unquoted FROM are never extracted.
 {
   const src =
     'const m = "ghost";\n' +
+    'const note = "this.prismaAny.ghostInString.findMany({})";\n' +
+    'const template = `this.prismaAny.ghostInTemplate.create({})`;\n' +
     'this.prismaAny[m].findMany({});           // computed member — dynamic accessor\n' +
     '// this.prismaAny.ghostInComment.find();  -- commented-out, must not extract\n' +
     'const q = this.prisma.$queryRaw`WITH inbound AS (SELECT 1) SELECT * FROM inbound`;\n' +
     'this.prismaAny.message.count({});         // a REAL accessor → keeps it honest';
   const res = judge({ 'g.ts': src }, ['g.ts']);
-  check('OUT-OF-SCOPE: computed prismaAny[m] is not extracted', !res.reds.some((r) => r.fact.includes('ghost') && !r.fact.includes('ghostInComment')));
+  check('OUT-OF-SCOPE: computed prismaAny[m] is not extracted', !res.reds.some((r) => r.fact.includes('ghost') && !r.fact.includes('ghostInComment') && !r.fact.includes('ghostInString') && !r.fact.includes('ghostInTemplate')));
   check('OUT-OF-SCOPE: commented ghostInComment is not extracted', !res.reds.some((r) => r.fact.includes('ghostInComment')));
+  check('OUT-OF-SCOPE: string-literal ghostInString is not extracted', !res.reds.some((r) => r.fact.includes('ghostInString')));
+  check('OUT-OF-SCOPE: template text ghostInTemplate is not extracted', !res.reds.some((r) => r.fact.includes('ghostInTemplate')));
   check('OUT-OF-SCOPE: unquoted CTE "inbound" is out of scope (not red-by-guess)', !res.reds.some((r) => r.fact.includes('inbound')));
   check('OUT-OF-SCOPE: gate is GREEN (only the real prismaAny.message remains)', res.green === true && res.reds.length === 0);
 }

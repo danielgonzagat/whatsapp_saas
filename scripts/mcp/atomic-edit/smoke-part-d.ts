@@ -1,4 +1,3 @@
-import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   addNamedImport, removeNamedImport, replacePropertyValue,

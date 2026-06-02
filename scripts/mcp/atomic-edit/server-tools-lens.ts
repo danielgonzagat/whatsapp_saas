@@ -76,9 +76,10 @@ export function registerToolsLens(server: McpServer): void {
       title: 'The absolute eye — whole-scope red-set of every applicable gate',
       description:
         'Sweep a scope (comma-separated files/dirs, default the whole repo) and return the exact red-set the ' +
-        'gates SEE: { gate, file, locus, fact } per violation, plus the files left unjudged (accessor returned ' +
-        'null = honestly cannot judge, not green). This is runLens VERBATIM — the same eye the convergence ' +
-        'crivo uses, now reachable by any agent. Read-only: no mutation, no disk write.',
+        'gates SEE: { gate, file, locus, fact } per violation, byte-level evidence per red split into actionable ' +
+        'negative bytes, contained adversarial proof fixtures, generated-code templates, and regexp sources, plus ' +
+        'gate domains left unjudged (honestly cannot judge, not green). This is runLens VERBATIM — the same eye ' +
+        'the convergence crivo uses, now reachable by any agent. Read-only: no mutation, no disk write.',
       inputSchema: {
         scope: z
           .string()
@@ -96,11 +97,26 @@ export function registerToolsLens(server: McpServer): void {
           scanned: report.scanned,
           ran: report.ran,
           unjudgedCount: report.unjudged.length,
-          unjudged: report.unjudged.slice(0, 50),
+          unjudgedDomains: report.unjudged.slice(0, 50),
           reds: report.reds,
+          byteEvidenceCount: report.negativeByteEvidence.length,
+          byteEvidence: report.negativeByteEvidence,
+          negativeByteEvidenceCount: report.actionableNegativeByteEvidence.length,
+          negativeByteEvidence: report.actionableNegativeByteEvidence,
+          containedNegativeFixtureEvidenceCount: report.containedNegativeFixtureEvidence.length,
+          containedNegativeFixtureEvidence: report.containedNegativeFixtureEvidence,
+          containedGeneratedCodeEvidenceCount: report.containedGeneratedCodeEvidence.length,
+          containedGeneratedCodeEvidence: report.containedGeneratedCodeEvidence,
+          containedRegExpSourceEvidenceCount: report.containedRegExpSourceEvidence.length,
+          containedRegExpSourceEvidence: report.containedRegExpSourceEvidence,
           summaryForHuman:
             `👁️  lens over "${scope}": scanned ${report.scanned} file(s) with ${report.ran.length} gate(s) ` +
-            `[${report.ran.join(', ')}] → ${report.reds.length} red(s), ${report.unjudged.length} unjudged.`,
+            `[${report.ran.join(', ')}] → ${report.reds.length} red-like finding(s), ` +
+            `${report.actionableNegativeByteEvidence.length} actionable negative byte evidence record(s), ` +
+            `${report.containedNegativeFixtureEvidence.length} contained fixture record(s), ` +
+            `${report.containedGeneratedCodeEvidence.length} contained generated-code record(s), ` +
+            `${report.containedRegExpSourceEvidence.length} contained regexp-source record(s), ` +
+            `${report.unjudged.length} unjudged domain(s).`,
         });
       } catch (e) {
         return fail(e instanceof Error ? e.message : String(e));
@@ -130,8 +146,8 @@ export function registerToolsLens(server: McpServer): void {
         const scope = a.scope && a.scope.trim().length > 0 ? a.scope : '.';
         const files = enumerateScope(REPO_ROOT, scope);
         const matches: { file: string; line: number; column: number; callee: string; arg0: string | null }[] = [];
+        const judgedFiles: string[] = [];
         const unjudged: string[] = [];
-        let judged = 0;
         for (const rel of files) {
           let content: string;
           try {
@@ -146,7 +162,7 @@ export function registerToolsLens(server: McpServer): void {
             unjudged.push(rel);
             continue;
           }
-          judged += 1;
+          judgedFiles.push(rel);
           for (const c of found) {
             if (c.callee === a.name) {
               matches.push({ file: rel, line: c.line, column: c.column, callee: c.callee, arg0: c.arg0 });
@@ -158,13 +174,13 @@ export function registerToolsLens(server: McpServer): void {
           name: a.name,
           scope,
           scanned: files.length,
-          judged,
+          judged: judgedFiles.length,
           unjudgedCount: unjudged.length,
           unjudged: unjudged.slice(0, 50),
           matchCount: matches.length,
           matches,
           summaryForHuman:
-            `🔎 "${a.name}" called ${matches.length} time(s) across ${judged} judged file(s) ` +
+            `🔎 "${a.name}" called ${matches.length} time(s) across ${judgedFiles.length} judged file(s) ` +
             `(${unjudged.length} unjudged). Token-correct: string/comment occurrences excluded.`,
         });
       } catch (e) {
