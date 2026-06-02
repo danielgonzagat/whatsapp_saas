@@ -1,11 +1,11 @@
 import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { IS_PUBLIC_METADATA } from '../auth/public.decorator';
 import { ROUTE_CLASS_METADATA_KEY } from '../common/throttler/route-class.decorator';
-import { WhatsAppBrainController } from './whatsapp-brain.controller';
+import { WhatsAppMindController } from './whatsapp-brain.controller';
 import { castMock } from '../../test/helpers/cast-mock';
 
-function isPublicHandler(method: keyof WhatsAppBrainController): boolean | undefined {
-  const handler = Object.getOwnPropertyDescriptor(WhatsAppBrainController.prototype, method)
+function isPublicHandler(method: keyof WhatsAppMindController): boolean | undefined {
+  const handler = Object.getOwnPropertyDescriptor(WhatsAppMindController.prototype, method)
     ?.value as object;
   return Reflect.getMetadata(IS_PUBLIC_METADATA, handler) as boolean | undefined;
 }
@@ -32,7 +32,7 @@ function makeResponse(): ResponseStub {
   return res as ResponseStub;
 }
 
-describe('WhatsAppBrainController', () => {
+describe('WhatsAppMindController', () => {
   const processWebhook = jest.fn();
   const handleIncomingMessage = jest.fn();
   const logWebhookEvent = jest.fn();
@@ -40,7 +40,7 @@ describe('WhatsAppBrainController', () => {
   const markWebhookFailed = jest.fn();
   const redisSet = jest.fn();
 
-  let controller: WhatsAppBrainController;
+  let controller: WhatsAppMindController;
   const originalEnv = { ...process.env };
 
   beforeEach(() => {
@@ -55,7 +55,7 @@ describe('WhatsAppBrainController', () => {
     markWebhookFailed.mockResolvedValue(undefined);
     processWebhook.mockResolvedValue(undefined);
 
-    controller = new WhatsAppBrainController(
+    controller = new WhatsAppMindController(
       castMock({ processWebhook, handleIncomingMessage }),
       castMock({ logWebhookEvent, markWebhookProcessed, markWebhookFailed }),
       castMock({ set: redisSet }),
@@ -68,8 +68,8 @@ describe('WhatsAppBrainController', () => {
 
   describe('route + governance wiring', () => {
     it('mounts under kloel/whatsapp and is tagged as an ai route class', () => {
-      expect(Reflect.getMetadata('path', WhatsAppBrainController)).toBe('kloel/whatsapp');
-      expect(Reflect.getMetadata(ROUTE_CLASS_METADATA_KEY, WhatsAppBrainController)).toBe('ai');
+      expect(Reflect.getMetadata('path', WhatsAppMindController)).toBe('kloel/whatsapp');
+      expect(Reflect.getMetadata(ROUTE_CLASS_METADATA_KEY, WhatsAppMindController)).toBe('ai');
     });
 
     it('marks the public webhook + verify + status routes as @Public()', () => {
@@ -114,7 +114,7 @@ describe('WhatsAppBrainController', () => {
   });
 
   describe('receiveWebhook', () => {
-    const req = castMock<Parameters<WhatsAppBrainController['receiveWebhook']>[0]>({
+    const req = castMock<Parameters<WhatsAppMindController['receiveWebhook']>[0]>({
       headers: {},
     });
 
@@ -147,7 +147,7 @@ describe('WhatsAppBrainController', () => {
 
     it('rejects when the production signature header is missing', async () => {
       process.env.NODE_ENV = 'production';
-      const unsignedReq = castMock<Parameters<WhatsAppBrainController['receiveWebhook']>[0]>({
+      const unsignedReq = castMock<Parameters<WhatsAppMindController['receiveWebhook']>[0]>({
         headers: {},
       });
 
@@ -158,7 +158,7 @@ describe('WhatsAppBrainController', () => {
 
     it('rejects with Forbidden when the HMAC signature does not match the secret', async () => {
       process.env.WHATSAPP_API_WEBHOOK_SECRET = 'topsecret';
-      const signedReq = castMock<Parameters<WhatsAppBrainController['receiveWebhook']>[0]>({
+      const signedReq = castMock<Parameters<WhatsAppMindController['receiveWebhook']>[0]>({
         headers: { 'x-hub-signature-256': 'sha256=deadbeef' },
       });
 

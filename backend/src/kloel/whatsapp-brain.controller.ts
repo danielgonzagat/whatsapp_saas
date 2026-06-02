@@ -28,11 +28,11 @@ import { WebhooksService } from '../webhooks/webhooks.service';
 import { WhatsAppMindCoordinator } from './mind/coordination';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 
-/** Whats app brain controller. */
+/** Whats app mind controller. */
 @Controller('kloel/whatsapp')
 @RouteClass('ai')
-export class WhatsAppBrainController {
-  private readonly logger = StructuredLogger.from(WhatsAppBrainController.name);
+export class WhatsAppMindController {
+  private readonly logger = StructuredLogger.from(WhatsAppMindController.name);
 
   constructor(
     private readonly whatsappBrain: WhatsAppMindCoordinator,

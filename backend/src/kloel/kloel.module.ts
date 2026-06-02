@@ -51,7 +51,7 @@ import { OnboardingProfileController } from './onboarding-profile.controller';
 import { OnboardingService } from './onboarding.service';
 import { PaymentController } from './payment.controller';
 import { PaymentService } from './payment.service';
-import { WhatsAppBrainController } from './whatsapp-brain.controller';
+import { WhatsAppMindController } from './whatsapp-brain.controller';
 
 import { LLMBudgetService } from './llm-budget.service';
 import { MemoryManagementService } from './memory-management.service';
@@ -288,7 +288,7 @@ import { CrmModule } from '../crm/crm.module';
     KloelController,
     KloelDataController,
     GuestChatController,
-    WhatsAppBrainController,
+    WhatsAppMindController,
     PaymentController,
     OnboardingProfileController,
     MemoryController,
