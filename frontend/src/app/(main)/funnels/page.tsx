@@ -69,7 +69,7 @@ export default function FunnelsPage() {
       setConversations(Array.isArray(convs) ? convs : []);
       setExecutions(Array.isArray(execs) ? execs : []);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Falha ao carregar funis');
+      setError(e instanceof Error ? e.message : 'Falha ao carregar execuções de Flow e conversas');
     } finally {
       setLoading(false);
     }
@@ -110,7 +110,9 @@ export default function FunnelsPage() {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
         <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
-          <h1 className="text-xl font-semibold text-foreground">{kloelT(`Funis`)}</h1>
+          <h1 className="text-xl font-semibold text-foreground">
+            {kloelT(`Execuções de Flow & Conversas`)}
+          </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {kloelT(`Faça login para operar Inbox + Flows.`)}
           </p>
@@ -138,7 +140,9 @@ export default function FunnelsPage() {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
         <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
-          <h1 className="text-xl font-semibold text-foreground">{kloelT(`Funis`)}</h1>
+          <h1 className="text-xl font-semibold text-foreground">
+            {kloelT(`Execuções de Flow & Conversas`)}
+          </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {kloelT(`Workspace não configurado para esta sessão.`)}
           </p>
@@ -161,10 +165,12 @@ export default function FunnelsPage() {
         <div>
           <div className="flex items-center gap-2">
             <GitBranch className="h-5 w-5 text-muted" aria-hidden="true" />
-            <h1 className="text-2xl font-semibold text-foreground">{kloelT(`Funis`)}</h1>
+            <h1 className="text-2xl font-semibold text-foreground">
+              {kloelT(`Execuções de Flow & Conversas`)}
+            </h1>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            {kloelT(`Inbox com filtros + execuções de Flow no mesmo lugar.`)}
+            {kloelT(`Analytics de execuções de Flow + Inbox com filtros no mesmo lugar.`)}
           </p>
         </div>
         <div className="flex items-center gap-3">
