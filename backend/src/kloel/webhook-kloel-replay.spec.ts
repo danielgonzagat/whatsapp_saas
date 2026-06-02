@@ -3,9 +3,7 @@ import { ForbiddenException } from '@nestjs/common';
 jest.mock('./kloel.service', () => ({}));
 
 describe('WhatsAppMindController — replay safety', () => {
-  let controller: InstanceType<
-    typeof import('./whatsapp-brain.controller').WhatsAppMindController
-  >;
+  let controller: InstanceType<typeof import('./whatsapp-brain.controller').WhatsAppMindController>;
   let redis: { set: jest.Mock };
   let webhooksService: {
     logWebhookEvent: jest.Mock;
