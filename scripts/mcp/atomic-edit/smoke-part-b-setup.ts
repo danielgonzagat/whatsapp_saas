@@ -74,7 +74,14 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
     const zct = (await client.callTool({
       name: 'zero_code_trust_score',
       arguments: {
-        evidence: [{ kind: 'browser', status: 'passed', summary: 'user flow passed' }],
+        evidence: [
+          {
+            kind: 'browser',
+            status: 'passed',
+            summary: 'user flow passed',
+            artifactPaths: ['scripts/mcp/atomic-edit/README.md'],
+          },
+        ],
         founderCanValidateByProduct: true,
       },
     })) as { content: { text: string }[] };
@@ -89,7 +96,14 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
       name: 'behavior_receipt',
       arguments: {
         productBehavior: 'Admin chat reloads persisted messages',
-        validation: [{ kind: 'api', status: 'passed', summary: 'messages returned' }],
+        validation: [
+          {
+            kind: 'api',
+            status: 'passed',
+            summary: 'messages returned',
+            artifactPaths: ['scripts/mcp/atomic-edit/README.md'],
+          },
+        ],
         clickPath: ['Admin', 'Chat', 'Reload session'],
       },
     })) as { content: { text: string }[] };
@@ -104,7 +118,12 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
       name: 'truth_receipt',
       arguments: {
         claims: [
-          { claim: 'API persisted message', evidenceKind: 'db', status: 'passed' },
+          {
+            claim: 'API persisted message',
+            evidenceKind: 'db',
+            status: 'passed',
+            artifactPaths: ['scripts/mcp/atomic-edit/README.md'],
+          },
           { claim: 'UI button is live', evidenceKind: 'stub', status: 'passed' },
         ],
       },

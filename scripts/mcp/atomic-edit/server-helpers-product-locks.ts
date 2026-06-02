@@ -209,18 +209,88 @@ export function evidenceWeight(
   return 0;
 }
 
-export function classifyTruth(kind: string, status: string, hasExternalBlocker: boolean): string {
+// The kinds that can ever be sold as REAL product behavior — exactly the kinds the
+// MCP cannot re-run for free (a browser flow, an external charge, a human product
+// check). That is why a REAL verdict over them demands VERIFIABLE evidence (a
+// gate-minted probe id, or an artifact that exists on disk), never a self-reported
+// status. unproven ≡ negative.
+export const REAL_KINDS = [
+  'api',
+  'db',
+  'browser',
+  'runtime_probe',
+  'external_provider',
+  'manual_product_check',
+] as const;
+
+export function isRealKind(kind: string): boolean {
+  return (REAL_KINDS as readonly string[]).includes(kind);
+}
+
+// Verifiable-artifact floor: a REAL claim must point at an artifact that actually
+// exists on disk (repo-contained) and carries bytes. A missing path or an empty
+// touch is not evidence. This is the strongest check the MCP can run WITHOUT
+// re-executing the external system; runtime_probe additionally requires a
+// gate-minted id (enforced by the truth_receipt caller, which holds the registry).
+export function artifactExists(artifactPaths?: string[]): boolean {
+  if (!Array.isArray(artifactPaths) || artifactPaths.length === 0) return false;
+  return artifactPaths.some((p) => {
+    try {
+      const abs = path.isAbsolute(p) ? p : path.join(REPO_ROOT, p);
+      const st = fs.statSync(abs);
+      return st.isFile() && st.size > 0;
+    } catch {
+      return false;
+    }
+  });
+}
+
+// A product-behavior evidence entry is VERIFIED only when it is a real kind, it
+// passed, and it carries an existing artifact. (runtime_probe gate-id verification
+// is layered on top by the truth_receipt caller.)
+export function productEvidenceVerified(
+  kind: string,
+  status: string,
+  artifactPaths?: string[],
+): boolean {
+  return isRealKind(kind) && status === 'passed' && artifactExists(artifactPaths);
+}
+
+export function hasVerifiedProductProof(
+  evidence: Array<{ kind: string; status: string; artifactPaths?: string[] }>,
+): boolean {
+  return evidence.some((e) => productEvidenceVerified(e.kind, e.status, e.artifactPaths));
+}
+
+// evidenceWeight capped to the doctrine: a real-kind claim that passed but is NOT
+// verified (no artifact) cannot count as product-validatable — cap it at 50
+// (code-review-still-needed), so a self-reported "browser passed" never scores 100.
+export function verifiedEvidenceWeight(
+  kind: z.infer<typeof EvidenceKindSchema>,
+  status: z.infer<typeof EvidenceStatusSchema>,
+  artifactPaths?: string[],
+): number {
+  const raw = evidenceWeight(kind, status);
+  if (isRealKind(kind) && status === 'passed' && !artifactExists(artifactPaths)) {
+    return Math.min(raw, 50);
+  }
+  return raw;
+}
+
+export function classifyTruth(
+  kind: string,
+  status: string,
+  hasExternalBlocker: boolean,
+  verified: boolean,
+): string {
   if (hasExternalBlocker || status === 'blocked') return 'EXTERNAL_BLOCKED';
   if (kind === 'stub') return 'STUB';
   if (kind === 'mock') return status === 'passed' ? 'MOCK_ONLY' : 'UNPROVEN';
   if (status === 'failed') return 'BROKEN';
   if (status !== 'passed') return 'UNPROVEN';
-  if (
-    ['api', 'db', 'browser', 'runtime_probe', 'external_provider', 'manual_product_check'].includes(
-      kind,
-    )
-  ) {
-    return 'REAL';
+  if (isRealKind(kind)) {
+    // unproven ≡ negative: REAL requires verifiable evidence, not a self-report.
+    return verified ? 'REAL' : 'UNPROVEN';
   }
   if (['unit_test', 'typecheck', 'build'].includes(kind)) return 'PARTIAL';
   return 'UNPROVEN';
