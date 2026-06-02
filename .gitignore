@@ -134,6 +134,9 @@ scripts/mcp/.red-*/
 .atomic/*.sock
 .atomic/HEAD
 .atomic/broker-proof-last.json
+.atomic/*.stderr
+# Root-level jest cache (haste-map / transform-cache / perf-cache — regenerable)
+jest_dx/
 # Agent scratch / research dumps (never source of truth)
 .r_*.txt
 .CONSOLIDATED*.txt
