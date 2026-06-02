@@ -4,7 +4,7 @@ import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerE
 
 import type { KloelGraphNode } from './KloelGraph.routes';
 import type { LayoutNode } from './KloelGraphShell.helpers';
-import { GRAPH_FONT, useGraphTheme } from './KloelGraphTheme';
+import { GRAPH_FONT, GRAPH_RADIUS, useGraphTheme } from './KloelGraphTheme';
 
 /**
  * A single graph node — faithful port of the prototype: a circular body in ember
@@ -69,7 +69,7 @@ export function KloelGraphNodeButton({
         style={{
           position: 'absolute',
           inset: 0,
-          borderRadius: '50%',
+          borderRadius: GRAPH_RADIUS.circle,
           background: dotColor,
           border: active ? `2px solid ${C.paper}` : 'none',
           boxShadow: active ? `0 0 0 1.5px ${C.ember}, 0 0 22px ${C.emberGlow}` : 'none',

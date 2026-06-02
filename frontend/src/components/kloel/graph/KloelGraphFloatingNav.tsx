@@ -2,7 +2,7 @@
 
 import { KLOEL_GRAPH_PRIMARY_NODES } from './KloelGraph.routes';
 import type { KloelGraphArea } from './KloelGraph.routes';
-import { GRAPH_MONO, useGraphTheme } from './KloelGraphTheme';
+import { GRAPH_MONO, GRAPH_RADIUS, useGraphTheme } from './KloelGraphTheme';
 
 /**
  * Floating top-center navigation pill — faithful prototype port. Glass capsule,
@@ -34,7 +34,7 @@ export function KloelGraphFloatingNav({
         overflowX: 'auto',
         transform: 'translateX(-50%)',
         border: `1px solid ${C.border}`,
-        borderRadius: 99,
+        borderRadius: GRAPH_RADIUS.pill,
         background: C.glass,
         padding: 4,
         backdropFilter: 'blur(20px)',
@@ -52,7 +52,7 @@ export function KloelGraphFloatingNav({
             onClick={() => onFocusGalaxy(node.area)}
             style={{
               border: 'none',
-              borderRadius: 99,
+              borderRadius: GRAPH_RADIUS.pill,
               background: focused ? C.silver : 'transparent',
               color: focused ? C.void : C.muted,
               cursor: 'pointer',
@@ -76,7 +76,7 @@ export function KloelGraphFloatingNav({
         aria-label="Buscar"
         style={{
           border: `1px solid ${C.border}`,
-          borderRadius: 99,
+          borderRadius: GRAPH_RADIUS.pill,
           background: 'transparent',
           color: C.muted,
           cursor: 'pointer',

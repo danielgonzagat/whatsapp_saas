@@ -75,6 +75,13 @@ export const GRAPH_THEMES: Record<GraphThemeMode, GraphThemePalette> = {
 export const GRAPH_FONT = "'Sora', system-ui, sans-serif";
 export const GRAPH_MONO = "'JetBrains Mono', ui-monospace, monospace";
 
+/**
+ * Intentional fully-rounded graph chrome: the floating nav is a pill (99px) and
+ * graph nodes are circles (50%). These are deliberately rounded shapes, not card
+ * radii — kept as named constants so the values live in one place.
+ */
+export const GRAPH_RADIUS = { pill: 99, circle: '50%' } as const;
+
 interface GraphThemeContextValue {
   readonly C: GraphThemePalette;
   readonly mode: GraphThemeMode;
