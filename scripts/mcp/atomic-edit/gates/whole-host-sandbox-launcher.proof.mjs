@@ -99,7 +99,8 @@ function currentBoundaryProof() {
   record(results, 'current host boundary allows Codex runtime writes under CODEX_HOME/tmp', codexRuntimeWrite.ok && fs.existsSync(codexRuntimeAllowed), codexRuntimeWrite);
 
   const ttyOpen = tryOpen('/dev/tty');
-  record(results, 'current host boundary allows the interactive TUI to open /dev/tty', ttyOpen.ok, ttyOpen);
+  const ttyAllowedOrNoControllingTty = ttyOpen.ok || /\bENXIO\b/.test(String(ttyOpen.error ?? ''));
+  record(results, 'current host boundary does not sandbox-deny /dev/tty', ttyAllowedOrNoControllingTty, ttyOpen);
 
   const unixSocket = childProcess.spawnSync(
     process.execPath,

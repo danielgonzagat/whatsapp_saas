@@ -604,6 +604,7 @@ export function registerToolsY(server: McpServer): void {
         return ok({
           ok: true,
           scope,
+          runtimePid: process.pid,
           yComplete,
           verdict: yComplete ? 'Y_COMPLETE' : 'Y_BLOCKED',
           domains,
