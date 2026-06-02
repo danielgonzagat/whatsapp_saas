@@ -1,6 +1,6 @@
-import { BrainRuntimeController } from './mind-runtime.controller';
+import { MindRuntimeController } from './mind-runtime.controller';
 
-describe('BrainRuntimeController', () => {
+describe('MindRuntimeController', () => {
   let autonomy: { propose: jest.Mock };
   let brain: {
     decide: jest.Mock;
@@ -10,7 +10,7 @@ describe('BrainRuntimeController', () => {
     streamDecisionEvents: jest.Mock;
   };
   let graph: { buildWorkspaceGraph: jest.Mock; recommendNextActions: jest.Mock };
-  let controller: BrainRuntimeController;
+  let controller: MindRuntimeController;
 
   const request = {
     workspaceId: 'ws-guard',
@@ -58,7 +58,7 @@ describe('BrainRuntimeController', () => {
       buildWorkspaceGraph: jest.fn().mockResolvedValue({ nodes: [], edges: [] }),
       recommendNextActions: jest.fn().mockResolvedValue({ recommendations: [] }),
     };
-    controller = new BrainRuntimeController(brain as never, graph as never, autonomy as never);
+    controller = new MindRuntimeController(brain as never, graph as never, autonomy as never);
   });
 
   it('delegates decisions with the guarded workspace id', async () => {

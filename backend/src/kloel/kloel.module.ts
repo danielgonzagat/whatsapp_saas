@@ -156,7 +156,7 @@ import { UNIFIED_AGENT_TOKEN } from './tokens';
 import { UploadController } from './upload.controller';
 import { WebinarController } from './webinar.controller';
 import { LacunasController } from './lacunas.controller';
-import { BrainRuntimeController } from './mind/coordination/mind-runtime.controller';
+import { MindRuntimeController } from './mind/coordination/mind-runtime.controller';
 import {
   EmailChannelTransport,
   InstagramChannelTransport,
@@ -318,7 +318,7 @@ import { CrmModule } from '../crm/crm.module';
     AdRulesController,
     WebinarController,
     ChannelSetupController,
-    BrainRuntimeController,
+    MindRuntimeController,
     LacunasController,
     MindController,
     InternalMindSelfEvolutionController,
