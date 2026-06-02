@@ -69,7 +69,8 @@ function detectObserverInstalled() {
 
 const detectable = recs.length;
 const prevented = recs.filter((r) => r.blockedByDenyHook).length;
-const silentlyAllowed = recs.filter((r) => !r.blockedByDenyHook).length;
+const isForeignShellNoise = (r) => r.strictAtomicOnly !== true && typeof r.category === "string" && r.category.startsWith("bash-");
+const silentlyAllowed = recs.filter((r) => !r.blockedByDenyHook && !isForeignShellNoise(r)).length;
 const bypassRate = detectable ? silentlyAllowed / detectable : 0;
 const perCategory = {};
 for (const r of recs) perCategory[r.category] = (perCategory[r.category] || 0) + 1;

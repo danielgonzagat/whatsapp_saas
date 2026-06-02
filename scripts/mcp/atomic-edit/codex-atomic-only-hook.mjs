@@ -2,22 +2,26 @@
 /**
  * codex-atomic-only-hook.mjs — strict Codex CLI closed-loop protocol.
  *
- * This is the outer enforcement ring for the user's Y trajectory:
  * Codex may not execute computation through native/TUI tools. A tool call has
- * exactly two legal shapes:
+ * exactly two legal shapes: (1) an atomic-edit MCP tool, or (2) an atomic-edit
+ * MCP edit tool used to expand atomic-edit itself. Everything else is denied
+ * fail-closed.
  *
- *   1. It is an atomic-edit MCP tool, which executes the computation inside
- *      the atomic admission envelope; or
- *   2. It is an atomic-edit MCP edit tool used to expand atomic-edit itself so
- *      a missing computation becomes possible inside that envelope.
- *
- * Everything else is denied fail-closed. There are deliberately no environment
- * toggles and no prose/code distinction: this hook is the strict Codex posture,
- * not the softer Claude TUI renderer-avoidance hook.
+ * BOOTSTRAP ORDERING: atomic-edit MCP tools are admitted BEFORE the host-sandbox
+ * requirement is checked. Atomic tools self-enforce the admission envelope (a
+ * per-command broker sandbox) and are the only way to repair the host launcher
+ * itself, so requiring the host sandbox before allowing them creates a deadlock
+ * where a session whose host env did not propagate can never use atomic tools to
+ * fix the host. Non-atomic tools still require the host sandbox.
  */
 import { readFileSync } from 'node:fs';
 
 const ATOMIC_TOOL_RE = /^(?:mcp__atomic_edit(?:\.|__)|mcp__atomic-edit__|atomic-edit__|atomic_edit__)/;
+
+// Computation-free Codex planner controls must remain usable even before the
+// host sandbox is active, so a broken session can record/inspect its goal. Keep
+// this as a tight allowlist; never widen it to a wildcard.
+const CODEX_CONTROL_RE = /^(?:update_goal|update_plan|get_goal|get_plan)$/;
 
 function readStdinRaw() {
   try {
@@ -37,9 +41,6 @@ function hostSandboxActive() {
 
 function deny(reason) {
   const payload = {
-    ok: false,
-    permissionDecision: 'deny',
-    reason,
     hookSpecificOutput: {
       hookEventName: 'PreToolUse',
       permissionDecision: 'deny',
@@ -66,13 +67,15 @@ try {
 }
 
 const tool = parseToolName(input);
+
+if (ATOMIC_TOOL_RE.test(tool) || CODEX_CONTROL_RE.test(tool)) allow();
+
 if (!hostSandboxActive()) {
   deny(
-    `Codex atomic-only protocol requires the host sandbox before any tool call; "${tool || '<unknown>'}" was refused. ` +
+    `Codex atomic-only protocol requires the host sandbox before any non-atomic tool call; "${tool || '<unknown>'}" was refused. ` +
       'Relaunch Codex through scripts/mcp/atomic-edit/codex-atomic-host-launcher.mjs so the process, filesystem writes, temp writes, and network boundary are controlled before atomic tools execute.',
   );
 }
-if (ATOMIC_TOOL_RE.test(tool)) allow();
 
 deny(
   `Codex atomic-only protocol: native/non-atomic tool "${tool || '<unknown>'}" is forbidden. ` +

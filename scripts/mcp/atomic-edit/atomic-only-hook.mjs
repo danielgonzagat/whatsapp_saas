@@ -158,21 +158,76 @@ function bashEditsCode(cmd) {
 //   (d) package install/publish (npm/pip/cargo install|publish — external registry)
 //   (e) shell control-flow / cd / source / subshell openers
 // Gated by ATOMIC_EXEC_MANDATORY (default on); set ATOMIC_EXEC_MANDATORY=0 to disable.
+//
+// CLOSED HOLE (Daniel, 2026-06-01): the first-token verb check let a WRAPPER
+// smuggle arbitrary execution past routing — `bash -c …`, `( … )`, a `for`/`if`
+// loop, an env-prefix (`FOO=bar node …`), or an exec-prefix (`time`/`nice`/
+// `nohup`/`timeout`/`env`). Two defences below: (1) effectiveCommand() peels
+// env-assignments + benign exec-prefix wrappers so the EFFECTIVE verb is what
+// actually runs; (2) escape tokens are matched at command-HEAD positions over
+// the whole string (start, after ; & | ( {, or after `-c "`), so a wrapped
+// `git push`/`curl`/`sudo` still escapes while a routable wrapper/loop/subshell
+// now correctly ROUTES into the atomic envelope.
+
+// Peel leading env-assignments + benign exec-prefix wrappers to the program that
+// actually runs. `FOO=bar time nice -n5 node x` -> `node x`.
+function effectiveCommand(c) {
+  let s = String(c || '').trim();
+  let prev = null;
+  let guard = 0;
+  while (s !== prev && guard++ < 12) {
+    prev = s;
+    s = s.replace(/^[A-Za-z_][A-Za-z0-9_]*=(?:"[^"]*"|'[^']*'|[^\s]*)\s+/, '');
+    const m = s.match(/^(?:time|nice|nohup|stdbuf|command|exec|timeout|ionice|setsid|env)\b\s*/);
+    if (m) {
+      let rest = s.slice(m[0].length);
+      rest = rest.replace(/^(?:-{1,2}[A-Za-z0-9._-]+(?:=\S+)?\s+)*/, ''); // -flags
+      rest = rest.replace(/^(?:\d+(?:\.\d+)?[smhd]?\s+)?/, ''); // numeric arg (timeout 30)
+      s = rest.trim();
+    }
+  }
+  return s.trim();
+}
+
+// Genuine escapes (atomic_exec cannot/should-not run) matched at command-HEAD
+// positions over the WHOLE command, so a wrapper can't smuggle them past the
+// first-token check, yet an escape verb appearing as a mere path argument
+// (e.g. `cat docker-compose.yml`) does NOT spuriously escape.
+function hasEscapeToken(c) {
+  const s = String(c || '');
+  const H = String.raw`(?:^|[\n;&|({]|-c\s+["']?)\s*`;
+  const net = new RegExp(
+    H + String.raw`(?:git\s+(?:push|pull|fetch|clone|remote|submodule|lfs)|curl|wget|ssh|scp|sftp|rsync)\b`,
+  );
+  const gitMut = new RegExp(
+    H + String.raw`git\s+(?:commit|add|stash|checkout|switch|reset|restore|merge|rebase|tag|cherry-pick|revert|rm|mv|clean|apply|am)\b`,
+  );
+  const interactive = new RegExp(
+    H +
+      String.raw`(?:claude|codex|opencode|hermes|vim|vi|nano|emacs|less|more|top|htop|ssh|scp|sudo|su|doas|gcloud|aws|az|kubectl|helm|docker|podman|op|kaisser|railway|vercel|stripe|gh|psql|mysql|mongosh|redis-cli|open|code|subl)\b`,
+  );
+  const pkg = new RegExp(
+    H + String.raw`(?:npm|pnpm|yarn|bun|pip|pipx|poetry|cargo|go|gem|bundle|composer)\s+(?:install|add|update|publish|deploy|i|ci)\b`,
+  );
+  return net.test(s) || gitMut.test(s) || interactive.test(s) || pkg.test(s);
+}
+
 function shouldRouteThroughAtomicExec(cmd) {
   if (process.env.ATOMIC_EXEC_MANDATORY === '0') return false;
-  const c = String(cmd || '').trim();
-  if (!c) return false;
-  const verb = (c.split(/\s+/)[0] || '').split('/').pop();
-  // (a) network/remote
-  if (/\b(?:git\s+(?:push|pull|fetch|clone|remote|submodule|lfs)|curl|wget|ssh|scp|sftp|rsync)\b/.test(c)) return false;
-  // (b) local git that mutates index/worktree (effect-proof cannot snapshot whole repo)
-  if (/^git\s+(?:commit|add|stash|checkout|switch|reset|restore|merge|rebase|tag|cherry-pick|revert|rm|mv|clean|apply|am)\b/.test(c)) return false;
-  // (c) interactive/login/privileged/provider/external-runtime verbs
-  if (/^(claude|codex|opencode|hermes|vim|vi|nano|emacs|less|more|top|htop|ssh|scp|sudo|su|doas|gcloud|aws|az|kubectl|helm|docker|podman|op|kaisser|railway|vercel|stripe|gh|psql|mysql|mongosh|redis-cli|open|code|subl)$/.test(verb)) return false;
-  // (d) package install/publish
-  if (/^(?:npm|pnpm|yarn|bun|pip|pipx|poetry|cargo|go|gem|bundle|composer)\s+(?:install|add|update|publish|deploy|i|ci)\b/.test(c)) return false;
-  // (e) shell control-flow / cd / source / subshell
-  if (/^(for|if|while|case|function|export|cd|source|\.|\{|\()/.test(verb)) return false;
+  const raw = String(cmd || '').trim();
+  if (!raw) return false;
+  // Genuine escape anywhere (even wrapped) -> leave native; atomic_exec can't run it.
+  if (hasEscapeToken(raw)) return false;
+
+  const eff = effectiveCommand(raw);
+  const verb = (eff.split(/\s+/)[0] || '').split('/').pop();
+
+  // Shell-wrapper / control-flow / subshell with no escape token: atomic_exec
+  // wraps the whole string in `/bin/bash -c`, so it CAN run it. Route it.
+  if (/^(?:bash|sh|zsh|dash|ksh)$/.test(verb) && /\s-c\b/.test(eff)) return true;
+  if (/^(?:for|if|while|until|case|select|function)$/.test(verb)) return true;
+  if (/^[({]/.test(eff)) return true;
+
   const handled = /^(git|npm|npx|pnpm|yarn|bun|node|deno|ts-node|tsx|ls|cat|echo|printf|mkdir|rmdir|rm|cp|mv|ln|test|grep|rg|ag|ack|find|fd|wc|head|tail|sed|awk|cut|sort|uniq|tr|jq|yq|diff|patch|tar|chmod|touch|stat|date|pwd|basename|dirname|realpath|make|tsc|jest|vitest|eslint|prettier|biome|ruff|pytest|rustc|javac|xargs|tee|env|which|kill|pkill)$/;
   return handled.test(verb);
 }

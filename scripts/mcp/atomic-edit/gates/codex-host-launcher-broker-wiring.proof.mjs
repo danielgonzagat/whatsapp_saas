@@ -18,11 +18,11 @@ const checks = [
   },
   {
     name: 'Codex host launcher exports ATOMIC_EXEC_BROKER_SOCKET to child env',
-    ok: /ATOMIC_EXEC_BROKER_SOCKET/.test(source) && /childEnv\(socket\)/.test(source),
+    ok: /ATOMIC_EXEC_BROKER_SOCKET/.test(source) && /childEnv\(socket, codexHome\)/.test(source),
   },
   {
-    name: 'Codex host launcher keeps host network denied',
-    ok: /\(deny network\*\)/.test(source),
+    name: 'Codex host launcher default-denies host effects while allowing Codex outbound network',
+    ok: source.includes("'(deny default)'") && /allow network-outbound/.test(source) && !source.includes('(allow network*)'),
   },
   {
     name: 'Codex host launcher cleans broker socket on child exit',

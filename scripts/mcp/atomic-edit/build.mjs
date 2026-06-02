@@ -51,6 +51,13 @@ const ENTRY = [
   'gates/converge-operator.ts',
   'gates/corpus.ts',
   'gates/closure-universal.ts',
+  'gates/reachability-gate.proof.ts',
+  'gates/binding-gate.proof.ts',
+  'gates/property-gate.proof.ts',
+  'gates/formal-gate.proof.ts',
+  'gates/contract-edge-gate.proof.ts',
+  'gates/findings-delta-gate.proof.ts',
+  'gates/probe-convergence-gate.proof.ts',
 ].map((f) => path.join(dir, f));
 const OUT = path.join(dir, 'dist');
 

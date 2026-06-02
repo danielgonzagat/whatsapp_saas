@@ -23,6 +23,30 @@ const ATOMIC_EXEC_HANDLES =
 const NON_ATOMIC_VERB =
   /^(claude|codex|opencode|hermes|vim|vi|nano|emacs|less|more|top|htop|ssh|scp|sftp|telnet|sudo|su|doas|gcloud|aws|az|kubectl|helm|docker|podman|op|kaisser|railway|vercel|stripe|gh|psql|mysql|mongosh|redis-cli|open|code|subl)$/;
 
+/**
+ * Peel leading env-assignments + benign exec-prefix wrappers to the program that
+ * actually runs (mirror of atomic-only-hook effectiveCommand). Without this, an
+ * env-prefix (`FOO=bar node …`) or exec-prefix (`time`/`nice`/`nohup`/`timeout`/
+ * `env`) hid a real atomic_exec bypass behind a non-handled first token.
+ */
+function peelEffective(c) {
+  let s = String(c || '').trim();
+  let prev = null;
+  let guard = 0;
+  while (s !== prev && guard++ < 12) {
+    prev = s;
+    s = s.replace(/^[A-Za-z_][A-Za-z0-9_]*=(?:"[^"]*"|'[^']*'|[^\s]*)\s+/, '');
+    const m = s.match(/^(?:time|nice|nohup|stdbuf|command|exec|timeout|ionice|setsid|env)\b\s*/);
+    if (m) {
+      let rest = s.slice(m[0].length);
+      rest = rest.replace(/^(?:-{1,2}[A-Za-z0-9._-]+(?:=\S+)?\s+)*/, '');
+      rest = rest.replace(/^(?:\d+(?:\.\d+)?[smhd]?\s+)?/, '');
+      s = rest.trim();
+    }
+  }
+  return s.trim();
+}
+
 /** verb + first path-like token only, capped — never the raw command (secret-leak hardening). */
 function shortTarget(s) {
   const str = String(s || '').trim();
@@ -152,9 +176,20 @@ export function classifyToolCall({ tool, toolInput, strictAtomicOnly = false }) 
     // bypass of atomic_exec. Whether it was blocked depends on the active hook
     // posture: legacy atomic-only-hook allows some shell, strict Codex denies all
     // non-atomic tools through codex-atomic-only-hook.
-    if (ATOMIC_EXEC_HANDLES.test(verb) && !NON_ATOMIC_VERB.test(verb)) {
+    //
+    // Normalize through peelEffective so an env/exec-prefix (FOO=bar / time /
+    // nohup / timeout / env) is recognized, and recognize wrapper/control-flow
+    // forms (bash -c …, ( … ), for/if/while …) — atomic_exec runs `/bin/bash -c`,
+    // so all of these have an atomic_exec equivalent and are detectable bypasses.
+    const peeled = peelEffective(cmd);
+    const effVerb = (peeled.split(/\s+/)[0] || '').split('/').pop();
+    const isWrapper =
+      (/^(?:bash|sh|zsh|dash|ksh)$/.test(effVerb) && /\s-c\b/.test(peeled)) ||
+      /^(?:for|if|while|until|case|select|function)$/.test(effVerb) ||
+      /^[({]/.test(peeled);
+    if (isWrapper || (ATOMIC_EXEC_HANDLES.test(effVerb) && !NON_ATOMIC_VERB.test(effVerb))) {
       return withStrictDeny(
-        { category: 'bash-exec', atomicEquivalent: 'atomic_exec', detectable: true, blockedByDenyHook: false, target: verb },
+        { category: 'bash-exec', atomicEquivalent: 'atomic_exec', detectable: true, blockedByDenyHook: false, target: effVerb },
         strict,
       );
     }

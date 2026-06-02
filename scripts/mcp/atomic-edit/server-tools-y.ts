@@ -1,4 +1,5 @@
 import * as childProcess from 'node:child_process';
+import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,6 +18,128 @@ interface YDomain {
   evidence: string;
   requiredChange?: string;
   detail?: Record<string, unknown>;
+}
+
+const MANDATORY_MCP_CONTROLLED_DOMAINS: readonly string[] = [
+  'distFreshness',
+  'byteFloorWriteAdmission',
+  'strictGateAdmission',
+  'filesystemEffectProof',
+  'knownExternalShellEffects',
+  'codexNoBypassStaticPolicy',
+  'bypassObserverDenyIntegration',
+  'atomicityAudit',
+  'selfExpansionValidatorLattice',
+  'capabilityMonotonicity',
+  'atomicExecReadOnlyUsability',
+  'codexAtomicOnlyProtocol',
+  'codexEntrypointContract',
+  'codexHostWiring',
+  'mcpLauncherHostBoundary',
+  'universalStructuralEngine',
+  'arbitraryInterpreterSandbox',
+  'externalRuntimeState',
+];
+
+const RUNTIME_SOURCE_EXTENSIONS = new Set(['.ts', '.mjs', '.json', '.sh']);
+const RUNTIME_DIST_EXTENSIONS = new Set(['.js', '.mjs', '.json']);
+const RUNTIME_HASH_SKIP_DIRS = new Set(['dist', 'node_modules', '.atomic', '.git', 'node-compile-cache']);
+
+function skipRuntimeHashEntry(name: string): boolean {
+  return (
+    name.startsWith('.security-mono-proof-') ||
+    name.startsWith('.atomic-exec-sandbox') ||
+    name.startsWith('.property-proof-') ||
+    name.startsWith('.findings-') ||
+    name.startsWith('.findings-probe-') ||
+    name.startsWith('.external-runtime-denial-') ||
+    name === '.build-manifest.json'
+  );
+}
+
+function runtimeEngineRoot(): string {
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  return path.basename(here) === 'dist' ? path.resolve(here, '..') : here;
+}
+
+function runtimeHashFiles(root: string, start: string, includeFile: (name: string) => boolean): string[] {
+  const out: string[] = [];
+  const walk = (abs: string) => {
+    let entries: fs.Dirent[];
+    try {
+      entries = fs.readdirSync(abs, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      if (skipRuntimeHashEntry(entry.name)) continue;
+      const full = path.join(abs, entry.name);
+      if (entry.isDirectory()) {
+        if (!RUNTIME_HASH_SKIP_DIRS.has(entry.name)) walk(full);
+      } else if (entry.isFile() && includeFile(entry.name)) {
+        out.push(path.relative(root, full));
+      }
+    }
+  };
+  walk(start);
+  return out.sort();
+}
+
+function hashRuntimeFileSet(root: string, files: string[]): string {
+  const h = crypto.createHash('sha256');
+  for (const rel of files) {
+    h.update(rel);
+    h.update('\0');
+    try {
+      h.update(fs.readFileSync(path.join(root, rel)));
+    } catch {
+      h.update('<unreadable>');
+    }
+    h.update('\0');
+  }
+  return h.digest('hex');
+}
+
+function computeRuntimeFingerprint(): Record<string, unknown> & {
+  engineRoot: string;
+  sourceHash: string;
+  distHash: string;
+  sourceFileCount: number;
+  distFileCount: number;
+} {
+  const engineRoot = runtimeEngineRoot();
+  const sourceFiles = runtimeHashFiles(engineRoot, engineRoot, (name) => RUNTIME_SOURCE_EXTENSIONS.has(path.extname(name)));
+  const distFiles = runtimeHashFiles(engineRoot, path.join(engineRoot, 'dist'), (name) => RUNTIME_DIST_EXTENSIONS.has(path.extname(name)));
+  return {
+    engineRoot,
+    sourceHash: hashRuntimeFileSet(engineRoot, sourceFiles),
+    distHash: hashRuntimeFileSet(engineRoot, distFiles),
+    sourceFileCount: sourceFiles.length,
+    distFileCount: distFiles.length,
+  };
+}
+
+const RUNTIME_BOOT_FINGERPRINT = computeRuntimeFingerprint();
+
+function requiredDomainsForScope(scope: YScope): string[] {
+  const required = [...MANDATORY_MCP_CONTROLLED_DOMAINS];
+  if (scope === 'whole-host') required.push('wholeHostActionSpace');
+  return required;
+}
+
+function mandatoryDomainCoverage(domains: YDomain[], scope: YScope): Record<string, unknown> & {
+  ok: boolean;
+  missing: string[];
+  required: string[];
+  statuses: Record<string, YStatus | 'MISSING'>;
+} {
+  const required = requiredDomainsForScope(scope);
+  const byName = new Map(domains.map((domain) => [domain.domain, domain.status] as const));
+  const statuses = Object.fromEntries(
+    required.map((name) => [name, byName.get(name) ?? 'MISSING']),
+  ) as Record<string, YStatus | 'MISSING'>;
+  const missing = required.filter((name) => !byName.has(name));
+  return { ok: missing.length === 0, missing, required, statuses };
 }
 
 function scriptPath(name: string): string {
@@ -78,28 +201,46 @@ export function registerToolsY(server: McpServer): void {
     async (a) => {
       try {
         const scope: YScope = a.scope ?? 'whole-host';
-        // distFreshness: detect when THIS running server executes STALE dist vs
-        // current source. A certificate from stale code is not trustworthy — surface
-        // it honestly (UNJUDGED) rather than report greens from code that no longer
-        // matches. (Closes the false-green-from-stale-dist hole.)
-        let freshness: { fresh: boolean; reason: string };
+        // distFreshness has two layers:
+        // 1. disk freshness: current source+dist match the build manifest.
+        // 2. process freshness: this already-running MCP process still matches
+        //    the source+dist fingerprint captured when server-tools-y loaded.
+        // Without layer 2, a post-expansion rebuild can make disk look fresh while
+        // the live MCP keeps executing old JS and emits a false Y_COMPLETE.
+        let freshness: { fresh: boolean; reason: string; sourceHash?: string; manifestHash?: string | null; distHash?: string; manifestDistHash?: string | null };
         try {
           const here2 = path.dirname(fileURLToPath(import.meta.url));
           const freshSpec = path.join(here2, '..', 'dist-freshness.mjs');
-          const mod = (await import(freshSpec)) as { isDistFresh: () => { fresh: boolean; reason: string } };
+          const mod = (await import(freshSpec)) as { isDistFresh: () => { fresh: boolean; reason: string; sourceHash?: string; manifestHash?: string | null; distHash?: string; manifestDistHash?: string | null } };
           freshness = mod.isDistFresh();
         } catch (e) {
           freshness = { fresh: false, reason: 'dist-freshness check unavailable: ' + (e instanceof Error ? e.message : String(e)) };
         }
+        const currentRuntimeFingerprint = computeRuntimeFingerprint();
+        const runtimeProcessFresh =
+          RUNTIME_BOOT_FINGERPRINT.sourceHash === currentRuntimeFingerprint.sourceHash &&
+          RUNTIME_BOOT_FINGERPRINT.distHash === currentRuntimeFingerprint.distHash;
+        const distFreshnessGreen = freshness.fresh && runtimeProcessFresh;
         const domains: YDomain[] = [
           {
             domain: 'distFreshness',
-            status: freshness.fresh ? 'GREEN' : 'UNJUDGED',
-            evidence: freshness.fresh
-              ? 'running dist matches current engine source (build manifest hash equals live source hash)'
-              : `running dist may be STALE vs source (${freshness.reason}); a cert from stale code is not trustworthy — rebuild + restart the MCP server`,
-            requiredChange: freshness.fresh ? undefined : 'Run node build.mjs and restart the atomic MCP server so the certificate reflects current source.',
-            detail: freshness,
+            status: distFreshnessGreen ? 'GREEN' : 'UNJUDGED',
+            evidence: distFreshnessGreen
+              ? 'running MCP process fingerprint matches boot fingerprint, and current source+dist match the build manifest'
+              : freshness.fresh
+                ? 'source+dist are fresh on disk, but the running MCP process fingerprint changed after boot; this process must restart before any Y certificate is trustworthy'
+                : `running dist may be STALE vs source (${freshness.reason}); a cert from stale code is not trustworthy - rebuild + restart the MCP server`,
+            requiredChange: distFreshnessGreen
+              ? undefined
+              : freshness.fresh
+                ? 'Restart the atomic MCP server so the live process executes the rebuilt Atomic runtime.'
+                : 'Run node build.mjs and restart the atomic MCP server so the certificate reflects current source.',
+            detail: {
+              ...freshness,
+              runtimeProcessFresh,
+              runtimeBootFingerprint: RUNTIME_BOOT_FINGERPRINT,
+              runtimeCurrentFingerprint: currentRuntimeFingerprint,
+            },
           },
           {
             domain: 'byteFloorWriteAdmission',
@@ -172,7 +313,7 @@ export function registerToolsY(server: McpServer): void {
                   ? `bypass-report status=${reportStatus}; live ledger is kept honest, while codexNoBypassStaticPolicy proves fail-closed no-bypass and silentlyAllowedBypasses=0`
                   : bypassStatus === 'RED'
                     ? `bypass-report reports silentlyAllowedBypasses=${silentlyAllowed}`
-                    : `bypass-report status=${reportStatus}, observerWired=${String(observerWired)} — neither observed-clean nor static no-bypass policy is proven`,
+                    : `bypass-report status=${reportStatus}, observerWired=${String(observerWired)} - neither observed-clean nor static no-bypass policy is proven`,
             requiredChange:
               bypassStatus === 'GREEN'
                 ? undefined
@@ -240,6 +381,55 @@ export function registerToolsY(server: McpServer): void {
           });
         }
 
+        const selfExpansionValidatorLattice = runJsonScript('gates/self-expansion-validator-lattice.proof.mjs', ['--json']);
+        const selfExpansionValidatorLatticeGreen =
+          selfExpansionValidatorLattice.ok && selfExpansionValidatorLattice.value.ok === true;
+        domains.push({
+          domain: 'selfExpansionValidatorLattice',
+          status: selfExpansionValidatorLatticeGreen ? 'GREEN' : 'RED',
+          evidence: selfExpansionValidatorLatticeGreen
+            ? 'self-expansion-validator-lattice.proof.mjs passed: atomic_expand_self always runs a mandatory multi-domain validator lattice beyond typecheck, including runtime freshness and read-only atomic_exec usability, and caller proofs are additive only.'
+            : selfExpansionValidatorLattice.ok
+              ? `self-expansion validator lattice proof reported non-green: ${JSON.stringify(selfExpansionValidatorLattice.value)}`
+              : `self-expansion validator lattice proof could not run: ${selfExpansionValidatorLattice.error}`,
+          requiredChange: selfExpansionValidatorLatticeGreen
+            ? undefined
+            : 'Repair atomic_expand_self so every self-expansion runs the mandatory build/type/runtime-freshness/semantic/contract/behavior/security/test/ledger/certificate/runtime/usability/no-bypass validator lattice before acceptance.',
+          detail: selfExpansionValidatorLattice.ok ? selfExpansionValidatorLattice.value : undefined,
+        });
+
+        const capabilityMonotonicity = runJsonScript('gates/security-monotonicity.proof.mjs', ['--json'], 120000);
+        const capabilityMonotonicityGreen = capabilityMonotonicity.ok && capabilityMonotonicity.value.ok === true;
+        domains.push({
+          domain: 'capabilityMonotonicity',
+          status: capabilityMonotonicityGreen ? 'GREEN' : 'RED',
+          evidence: capabilityMonotonicityGreen
+            ? 'security-monotonicity.proof.mjs passed: self-expansion cannot reduce measured security invariants; weakening write gates, exec laws, native-edit bans, or byte-floor guards lowers the invariant and is refused.'
+            : capabilityMonotonicity.ok
+              ? `capability monotonicity proof reported non-green: ${JSON.stringify(capabilityMonotonicity.value)}`
+              : `capability monotonicity proof could not run: ${capabilityMonotonicity.error}`,
+          requiredChange: capabilityMonotonicityGreen
+            ? undefined
+            : 'Repair security-invariants monotonicity so self-expansion can add capabilities only when it preserves or strengthens the measured guardrail surface.',
+          detail: capabilityMonotonicity.ok ? capabilityMonotonicity.value : undefined,
+        });
+
+        const readOnlyUsability = runJsonScript('gates/atomic-exec-readonly-usability.proof.mjs', ['--json'], 120000);
+        const readOnlyUsabilityGreen = readOnlyUsability.ok && readOnlyUsability.value.ok === true;
+        domains.push({
+          domain: 'atomicExecReadOnlyUsability',
+          status: readOnlyUsabilityGreen ? 'GREEN' : 'RED',
+          evidence: readOnlyUsabilityGreen
+            ? 'atomic-exec-readonly-usability.proof.mjs passed: atomic_exec can perform legitimate read-only repo inspection under the Atomic sandbox, including protected-file reads and git status despite /dev/null usage, while protected writes remain refused.'
+            : readOnlyUsability.ok
+              ? `atomic_exec read-only usability proof reported non-green: ${JSON.stringify(readOnlyUsability.value)}`
+              : `atomic_exec read-only usability proof could not run: ${readOnlyUsability.error}`,
+          requiredChange: readOnlyUsabilityGreen
+            ? undefined
+            : 'Repair atomic_exec host/broker sandbox usability so legitimate read-only inspection works without reopening protected writes or external effects.',
+          detail: readOnlyUsability.ok ? readOnlyUsability.value : undefined,
+        });
+
         const codexProtocol = runJsonScript('codex-atomic-only-hook.proof.mjs', ['--json']);
         domains.push({
           domain: 'codexAtomicOnlyProtocol',
@@ -251,6 +441,23 @@ export function registerToolsY(server: McpServer): void {
             ? undefined
             : 'Repair the Codex atomic-only hook/proof so native tool calls are denied before the host can execute them.',
         });
+
+        const codexEntrypointProof = runJsonScript('gates/codex-entrypoint-contract.proof.mjs', ['--json'], 120000);
+        const codexEntrypointGreen = codexEntrypointProof.ok && codexEntrypointProof.value.ok === true;
+        domains.push({
+          domain: 'codexEntrypointContract',
+          status: codexEntrypointGreen ? 'GREEN' : 'RED',
+          evidence: codexEntrypointGreen
+            ? 'codex-entrypoint-contract.proof.mjs passed: Codex config routes atomic-edit to the guarded launcher, hooks enforce observer-before-deny plus Stop audit, representative native tools are denied, and the host launcher is live or statically fail-closed to atomic-only.'
+            : codexEntrypointProof.ok
+              ? `Codex entrypoint contract proof reported non-green: ${JSON.stringify(codexEntrypointProof.value)}`
+              : `Codex entrypoint contract proof could not run: ${codexEntrypointProof.error}`,
+          requiredChange: codexEntrypointGreen
+            ? undefined
+            : 'Repair Codex config, workspace hook chain, no-bypass proof, or host launcher contract before accepting any Y certificate as no-bypass capable.',
+          detail: codexEntrypointProof.ok ? codexEntrypointProof.value : undefined,
+        });
+
         const userConfigPath = path.join(process.env.HOME ?? '', '.codex/config.toml');
         const projectHooksPath = path.join(REPO_ROOT, '.codex/hooks.json');
         const hooksEnabled = fs.existsSync(userConfigPath)
@@ -378,6 +585,19 @@ export function registerToolsY(server: McpServer): void {
             },
           });
         }
+
+        const mandatoryCoverage = mandatoryDomainCoverage(domains, scope);
+        domains.push({
+          domain: 'certificateMandatoryDomainCoverage',
+          status: mandatoryCoverage.ok ? 'GREEN' : 'RED',
+          evidence: mandatoryCoverage.ok
+            ? `certificate contains every mandatory ${scope} domain before Y completion is computed`
+            : `certificate is missing mandatory ${scope} domains: ${mandatoryCoverage.missing.join(', ')}`,
+          requiredChange: mandatoryCoverage.ok
+            ? undefined
+            : 'Add and prove every mandatory certificate domain before allowing Y_COMPLETE.',
+          detail: mandatoryCoverage,
+        });
 
         const bad = blockers(domains);
         const yComplete = bad.length === 0;

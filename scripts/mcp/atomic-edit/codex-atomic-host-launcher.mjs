@@ -4,8 +4,9 @@
  *
  * This is not a global machine policy. It is the concrete launch boundary that
  * lets a future Codex process inherit a deny-by-default macOS sandbox marker:
- * writes are limited to the repo root, network is denied except for the single
- * inherited Unix socket to the atomic_exec broker, and Codex PreToolUse still has
+ * writes are limited to the repo root plus Codex-owned runtime state under
+ * CODEX_HOME, host runtime network is allowed for Codex/MCP remotes, and
+ * Codex PreToolUse still has
  * to enforce atomic-only tool calls above it.
  *
  * BROKER: macOS refuses sandbox_apply inside an existing sandbox, so a
@@ -19,10 +20,12 @@
  */
 import { spawn } from 'node:child_process';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const SANDBOX_EXEC = '/usr/bin/sandbox-exec';
+const REAL_CODEX = '/opt/homebrew/bin/codex';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..', '..', '..');
 const BROKER = path.join(here, 'atomic-exec-broker.mjs');
@@ -36,29 +39,62 @@ function sandboxPath(value) {
   return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
-function sandboxProfile(writeRoot, brokerSocket) {
+function realpathIfPresent(value) {
+  try {
+    return fs.realpathSync(value);
+  } catch {
+    return path.resolve(value);
+  }
+}
+
+function codexHomePath() {
+  return realpathIfPresent(process.env.CODEX_HOME ?? path.join(os.homedir(), '.codex'));
+}
+
+function subpathWriteRule(value) {
+  return '(allow file-write* (subpath "' + sandboxPath(value) + '"))';
+}
+
+function codexRuntimeWriteRules(codexHome) {
+  return [subpathWriteRule(codexHome)];
+}
+
+function codexRuntimeNetworkRules(codexHome) {
+  const escapedCodexHome = sandboxPath(codexHome);
+  return [
+    '(allow network-bind (subpath "' + escapedCodexHome + '"))',
+    '(allow network-outbound (subpath "' + escapedCodexHome + '"))',
+  ];
+}
+
+function sandboxProfile(writeRoot, brokerSocket, codexHome) {
   const realWriteRoot = fs.realpathSync(writeRoot);
-  const escapedWriteRoot = sandboxPath(realWriteRoot);
   const escapedBrokerSocket = brokerSocket ? sandboxPath(brokerSocket) : null;
   return [
     '(version 1)',
     '(deny default)',
     '(allow file-read*)',
-    '(allow file-write* (subpath "' + escapedWriteRoot + '"))',
+    subpathWriteRule(realWriteRoot),
+    ...codexRuntimeWriteRules(codexHome),
+    ...codexRuntimeNetworkRules(codexHome),
+    // Codex's reasoning stream, DNS, and several MCPs are HTTP/remote.
+    // atomic_exec remains network-denied by the out-of-sandbox broker.
+    '(allow network-outbound)',
+    '(allow network-inbound (local ip "localhost:*"))',
     '(allow file-write* (literal "/dev/null"))',
     '(allow file-write* (literal "/dev/stdout"))',
     '(allow file-write* (literal "/dev/stderr"))',
+    '(allow file* (regex #"^/dev/tty.*"))',
     '(allow process*)',
     '(allow mach-lookup)',
     '(allow sysctl-read)',
-    // Default-deny still blocks every other network target. This one Unix
-    // socket is the inescapable bridge back to the out-of-sandbox broker that
-    // applies the stricter per-command sandbox for atomic_exec.
+    // This broker socket is the explicit bridge back to the out-of-sandbox
+    // broker that applies the stricter per-command sandbox for atomic_exec.
     ...(escapedBrokerSocket ? ['(allow network-outbound (literal "' + escapedBrokerSocket + '"))'] : []),
   ].join(' ');
 }
 
-function childEnv(brokerSocket) {
+function childEnv(brokerSocket, codexHome) {
   return {
     ...process.env,
     ATOMIC_HOST_SANDBOX: 'macos-sandbox-exec',
@@ -66,11 +102,19 @@ function childEnv(brokerSocket) {
     ATOMIC_HOST_ATOMIC_ONLY: '1',
     ATOMIC_HOST_AGENT: process.env.ATOMIC_HOST_AGENT ?? 'codex',
     ATOMIC_EXEC_BROKER_SOCKET: brokerSocket,
+    CODEX_HOME: codexHome,
     CODEX_PROJECT_DIR: repoRoot,
     TMPDIR: repoRoot,
     TMP: repoRoot,
     TEMP: repoRoot,
   };
+}
+
+function normalizeAgentCommand(command) {
+  if (command[0] === 'codex' && fs.existsSync(REAL_CODEX)) {
+    return [REAL_CODEX, ...command.slice(1)];
+  }
+  return command;
 }
 
 function startBroker() {
@@ -128,10 +172,11 @@ if (!fs.existsSync(SANDBOX_EXEC)) {
 
 startBroker()
   .then(({ child: brokerChild, socket }) => {
-    const child = spawn(SANDBOX_EXEC, ['-p', sandboxProfile(repoRoot, socket), ...command], {
+    const codexHome = codexHomePath();
+    const child = spawn(SANDBOX_EXEC, ['-p', sandboxProfile(repoRoot, socket, codexHome), ...normalizeAgentCommand(command)], {
       cwd: repoRoot,
       stdio: 'inherit',
-      env: childEnv(socket),
+      env: childEnv(socket, codexHome),
     });
     const cleanup = () => {
       try {

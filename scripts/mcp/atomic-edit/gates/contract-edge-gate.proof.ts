@@ -26,13 +26,33 @@
  * the gate's NEW-edge-only semantics. run is now async (perception is async); the
  * proof awaits it.
  */
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { makeContext } from './contract.js';
 import gate from './contract-edge-gate.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(HERE, '..', '..', '..', '..'); // gates → atomic-edit → mcp → scripts → repo
+
+function findRepoRoot(start: string): string {
+  let dir = start;
+  for (;;) {
+    if (
+      fs.existsSync(path.join(dir, 'backend/src')) &&
+      fs.existsSync(path.join(dir, 'frontend/src')) &&
+      fs.existsSync(path.join(dir, 'scripts/mcp/atomic-edit'))
+    ) {
+      return dir;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) {
+      throw new Error(`could not find repo root from ${start}`);
+    }
+    dir = parent;
+  }
+}
+
+const repoRoot = findRepoRoot(HERE);
 
 let failures = 0;
 const check = (label: string, cond: boolean): void => {

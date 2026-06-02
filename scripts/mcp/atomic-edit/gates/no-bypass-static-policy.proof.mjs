@@ -31,6 +31,10 @@ function parseJson(stdout) {
   }
 }
 
+function permissionDecision(parsed) {
+  return parsed?.permissionDecision ?? parsed?.hookSpecificOutput?.permissionDecision;
+}
+
 function hookPolicy() {
   const configPath = path.join(os.homedir(), '.codex', 'config.toml');
   const hooksEnabled = fs.existsSync(configPath) && /^hooks\s*=\s*true\b/m.test(fs.readFileSync(configPath, 'utf8'));
@@ -144,7 +148,7 @@ function main() {
     record(
       results,
       'Codex strict hook denies every representative detectable non-atomic tool call',
-      denied.every((entry) => entry.status === 0 && entry.parsed?.permissionDecision === 'deny'),
+      denied.every((entry) => entry.status === 0 && permissionDecision(entry.parsed) === 'deny'),
       { denied },
     );
 

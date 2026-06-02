@@ -8,14 +8,22 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
  * atomic_exec read-only usability proof.
  *
  * The no-bypass shell operator must still be useful for mandatory read-side
- * repo inspection. Read-only commands are not negative byte actions: they must
- * not be blocked by protected-file write heuristics, and the sandbox must allow
- * non-persistent device writes that common read-only tooling performs when it
- * opens /dev/null.
+ * repo inspection. In direct sandbox mode, read-only commands should run with
+ * fileWrites=denied. In host/broker mode, Atomic intentionally requires
+ * proveEffect for every command because nested no-write sandboxing is not
+ * available; read-only usability is still valid only when the byte-effect proof
+ * records no non-ledger file change. Host-mode read-only commands use the small
+ * Atomic source directory as effect root so the proof measures usability rather
+ * than failing on a whole-monorepo snapshot cap. In both modes protected write
+ * attempts remain refused.
  */
 const jsonMode = process.argv.includes('--json');
 const sourceDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = path.resolve(sourceDir, '..', '..', '..');
+const hostMode = process.env.ATOMIC_HOST_SANDBOX === 'macos-sandbox-exec' && process.env.ATOMIC_HOST_ATOMIC_ONLY === '1';
+const readOnlyArgs = hostMode ? { proveEffect: true } : {};
+const readOnlyCwd = hostMode ? sourceDir : repoRoot;
+const protectedReadCommand = hostMode ? "sed -n '1,1p' ../../../CLAUDE.md" : "sed -n '1,1p' CLAUDE.md";
 
 function parseToolResult(result) {
   const text = result.content?.at(-1)?.text ?? '{}';
@@ -35,7 +43,7 @@ async function callAtomicExec(client, command, args = {}) {
     name: 'atomic_exec',
     arguments: {
       command,
-      cwd: repoRoot,
+      cwd: readOnlyCwd,
       timeoutMs: 30000,
       ...args,
     },
@@ -63,6 +71,23 @@ function serverTransport() {
   });
 }
 
+function hostReadOnlyEffectOk(result) {
+  const files = Array.isArray(result.effect?.files) ? result.effect.files : [];
+  return (
+    result.atomicEnvelope?.sandbox?.active === true &&
+    result.atomicEnvelope?.sandbox?.fileWrites === 'cwd-only' &&
+    result.atomicEnvelope?.effectProven === true &&
+    result.effect?.limitReached === false &&
+    result.effect?.changedFiles === files.length &&
+    files.every((entry) => entry.file === '.atomic/exec-ledger.jsonl')
+  );
+}
+
+function readOnlySandboxOk(result) {
+  if (hostMode) return hostReadOnlyEffectOk(result);
+  return result.atomicEnvelope?.sandbox?.fileWrites === 'denied';
+}
+
 async function main() {
   const results = [];
   const client = new Client({ name: 'atomic-exec-readonly-usability-proof', version: '1.0.0' });
@@ -71,30 +96,36 @@ async function main() {
   try {
     const protectedRead = await callAtomicExec(
       client,
-      "sed -n '1,1p' CLAUDE.md",
-      { intent: 'proof read protected governance file without shell write' },
+      protectedReadCommand,
+      { intent: 'proof read protected governance file without shell write', ...readOnlyArgs },
     );
     record(
       results,
-      'read-only sed may inspect protected governance file without being classified as shell write',
+      hostMode
+        ? 'host/broker read-only sed may inspect protected governance file with no non-ledger byte effect'
+        : 'read-only sed may inspect protected governance file without being classified as shell write',
       protectedRead.ok === true &&
         protectedRead.commandClass === 'read-only' &&
-        protectedRead.atomicEnvelope?.sandbox?.fileWrites === 'denied' &&
+        readOnlySandboxOk(protectedRead) &&
         String(protectedRead.stdout ?? '').length > 0,
       {
         ok: protectedRead.ok,
         commandClass: protectedRead.commandClass,
+        cwd: protectedRead.cwd,
         sandbox: protectedRead.atomicEnvelope?.sandbox,
+        effectProven: protectedRead.atomicEnvelope?.effectProven,
+        effect: protectedRead.effect,
         stdoutBytes: String(protectedRead.stdout ?? '').length,
         error: protectedRead.error,
         stderr: protectedRead.stderr,
+        hostMode,
       },
     );
 
     const protectedWrite = await callAtomicExec(
       client,
       "sed -i '' -e 's/__atomic_never__/__atomic_never__/g' CLAUDE.md",
-      { intent: 'proof protected governance sed write remains refused' },
+      { cwd: repoRoot, intent: 'proof protected governance sed write remains refused' },
     );
     record(
       results,
@@ -111,22 +142,28 @@ async function main() {
     const gitStatus = await callAtomicExec(
       client,
       'git status --short --branch',
-      { intent: 'proof git read-only inspection works inside atomic sandbox' },
+      { intent: 'proof git read-only inspection works inside atomic sandbox', ...readOnlyArgs },
     );
     const gitText = String((gitStatus.stdout ?? '') + '\n' + (gitStatus.stderr ?? ''));
     record(
       results,
-      'read-only git status works inside sandbox despite /dev/null usage',
+      hostMode
+        ? 'host/broker read-only git status works with no non-ledger byte effect despite /dev/null usage'
+        : 'read-only git status works inside sandbox despite /dev/null usage',
       gitStatus.ok === true &&
         gitStatus.commandClass === 'read-only' &&
-        gitStatus.atomicEnvelope?.sandbox?.fileWrites === 'denied' &&
+        readOnlySandboxOk(gitStatus) &&
         !/could not open '\/dev\/null'|Operation not permitted/i.test(gitText),
       {
         ok: gitStatus.ok,
         commandClass: gitStatus.commandClass,
+        cwd: gitStatus.cwd,
         sandbox: gitStatus.atomicEnvelope?.sandbox,
+        effectProven: gitStatus.atomicEnvelope?.effectProven,
+        effect: gitStatus.effect,
         stdoutBytes: String(gitStatus.stdout ?? '').length,
         stderr: gitStatus.stderr,
+        hostMode,
       },
     );
   } finally {

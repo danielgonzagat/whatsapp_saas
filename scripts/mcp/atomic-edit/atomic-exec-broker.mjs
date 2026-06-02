@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * atomic-exec-broker — out-of-sandbox per-command macOS sandbox broker.
+ * atomic-exec-broker - out-of-sandbox per-command macOS sandbox broker.
  *
  * WHY: macOS forbids nested sandbox-exec (sandbox_apply: Operation not
  * permitted). When the whole Claude CLI runs INSIDE the host sandbox
@@ -13,28 +13,31 @@
  * (never fakes success) and re-enforces the invariant denylist + allowed-root
  * containment as defense-in-depth.
  *
- * Protocol: length-prefixed JSON. 4-byte big-endian length + JSON request
- * { command, cwd?, effectRoot?, timeoutMs?, env?, stdin? }; reply same framing
- * wrapping { ok, exitCode, signal, stdout, stderr } or { ok:false, error }.
+ * Protocols:
+ * - plain path: length-prefixed JSON over Unix socket
+ * - file://dir: no-socket filesystem RPC using atomic request/response renames
  *
- * Lifecycle: `node atomic-exec-broker.mjs <socketPath>` (or
+ * Request shape: { command, cwd?, effectRoot?, timeoutMs?, env?, stdin? }.
+ * Reply shape: { ok, exitCode, signal, stdout, stderr } or { ok:false, error }.
+ *
+ * Lifecycle: `node atomic-exec-broker.mjs <endpoint>` (or
  * ATOMIC_EXEC_BROKER_SOCKET). ATOMIC_EXEC_BROKER_ROOT pins the allowed root
- * (default cwd). Prints 'ATOMIC_BROKER_READY <socket>' when listening; cleans the
- * socket on SIGTERM/SIGINT.
+ * (default cwd). Prints 'ATOMIC_BROKER_READY <endpoint>' when listening.
  */
 import net from 'node:net';
 import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const SANDBOX_EXEC = '/usr/bin/sandbox-exec';
-const socketPath = process.argv[2] || process.env.ATOMIC_EXEC_BROKER_SOCKET;
+const endpointValue = process.argv[2] || process.env.ATOMIC_EXEC_BROKER_SOCKET;
 const allowedRoot = process.env.ATOMIC_EXEC_BROKER_ROOT
   ? path.resolve(process.env.ATOMIC_EXEC_BROKER_ROOT)
   : process.cwd();
 
-if (!socketPath) {
-  process.stderr.write('[atomic-exec-broker] socket path required (argv[2] or ATOMIC_EXEC_BROKER_SOCKET)\n');
+if (!endpointValue) {
+  process.stderr.write('[atomic-exec-broker] endpoint required (argv[2] or ATOMIC_EXEC_BROKER_SOCKET)\n');
   process.exit(2);
 }
 if (!fs.existsSync(SANDBOX_EXEC)) {
@@ -127,53 +130,148 @@ function frame(obj) {
   return Buffer.concat([head, body]);
 }
 
-const server = net.createServer((sock) => {
-  let buf = Buffer.alloc(0);
-  let need = -1;
-  sock.on('data', (d) => {
-    buf = Buffer.concat([buf, d]);
-    if (need < 0 && buf.length >= 4) {
-      need = buf.readUInt32BE(0);
-      buf = buf.subarray(4);
-    }
-    if (need >= 0 && buf.length >= need) {
-      let req = null;
-      try {
-        req = JSON.parse(buf.subarray(0, need).toString('utf8'));
-      } catch {
-        req = null;
-      }
-      let resp;
-      try {
-        resp = req ? handle(req) : { ok: false, error: 'broker: bad request json' };
-      } catch (e) {
-        resp = { ok: false, error: 'broker handler threw: ' + (e instanceof Error ? e.message : String(e)) };
-      }
-      sock.write(frame(resp));
-      sock.end();
-    }
-  });
-  sock.on('error', () => {});
-});
-server.on('error', (e) => {
-  process.stderr.write('[atomic-exec-broker] server error: ' + e.message + '\n');
-  process.exit(1);
-});
-
-try {
-  fs.rmSync(socketPath, { force: true });
-} catch {
-  /* fresh socket */
+function writeJsonAtomic(file, obj) {
+  const tmp = file + '.' + process.pid + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(obj), { mode: 0o600 });
+  fs.renameSync(tmp, file);
 }
-server.listen(socketPath, () => {
-  process.stdout.write('ATOMIC_BROKER_READY ' + socketPath + '\n');
-});
-function shutdown() {
+
+function endpointFrom(value) {
+  if (value.startsWith('file://')) {
+    return { kind: 'file', dir: path.resolve(fileURLToPath(value)) };
+  }
+  return { kind: 'socket', socketPath: value };
+}
+
+let server = null;
+let filePoller = null;
+let cleanup = () => {};
+
+function startSocketBroker(socketPath) {
+  server = net.createServer((sock) => {
+    let buf = Buffer.alloc(0);
+    let need = -1;
+    sock.on('data', (d) => {
+      buf = Buffer.concat([buf, d]);
+      if (need < 0 && buf.length >= 4) {
+        need = buf.readUInt32BE(0);
+        buf = buf.subarray(4);
+      }
+      if (need >= 0 && buf.length >= need) {
+        let req = null;
+        try {
+          req = JSON.parse(buf.subarray(0, need).toString('utf8'));
+        } catch {
+          req = null;
+        }
+        let resp;
+        try {
+          resp = req ? handle(req) : { ok: false, error: 'broker: bad request json' };
+        } catch (e) {
+          resp = { ok: false, error: 'broker handler threw: ' + (e instanceof Error ? e.message : String(e)) };
+        }
+        sock.write(frame(resp));
+        sock.end();
+      }
+    });
+    sock.on('error', () => {});
+  });
+  server.on('error', (e) => {
+    process.stderr.write('[atomic-exec-broker] server error: ' + e.message + '\n');
+    process.exit(1);
+  });
   try {
     fs.rmSync(socketPath, { force: true });
   } catch {
+    /* fresh socket */
+  }
+  cleanup = () => {
+    try {
+      fs.rmSync(socketPath, { force: true });
+    } catch {
+      /* best-effort */
+    }
+  };
+  server.listen(socketPath, () => {
+    process.stdout.write('ATOMIC_BROKER_READY ' + socketPath + '\n');
+  });
+}
+
+function startFileBroker(root) {
+  if (!within(root, allowedRoot)) {
+    process.stderr.write('[atomic-exec-broker] file endpoint escapes allowed root\n');
+    process.exit(2);
+  }
+  const requests = path.join(root, 'requests');
+  const responses = path.join(root, 'responses');
+  fs.mkdirSync(requests, { recursive: true, mode: 0o700 });
+  fs.mkdirSync(responses, { recursive: true, mode: 0o700 });
+  const inFlight = new Set();
+  const processRequest = (name) => {
+    if (!name.endsWith('.json') || inFlight.has(name)) return;
+    inFlight.add(name);
+    const requestFile = path.join(requests, name);
+    const processingFile = requestFile + '.processing';
+    const responseFile = path.join(responses, name);
+    try {
+      fs.renameSync(requestFile, processingFile);
+    } catch {
+      inFlight.delete(name);
+      return;
+    }
+    let resp;
+    let shutdownRequested = false;
+    try {
+      const req = JSON.parse(fs.readFileSync(processingFile, 'utf8'));
+      if (req?.atomicBrokerShutdown === true) {
+        shutdownRequested = true;
+        resp = { ok: true, shutdown: true };
+      } else {
+        resp = handle(req);
+      }
+    } catch (e) {
+      resp = { ok: false, error: 'broker handler threw: ' + (e instanceof Error ? e.message : String(e)) };
+    } finally {
+      fs.rmSync(processingFile, { force: true });
+    }
+    try {
+      writeJsonAtomic(responseFile, resp);
+      if (shutdownRequested) setTimeout(shutdown, 0);
+    } finally {
+      inFlight.delete(name);
+    }
+  };
+  filePoller = setInterval(() => {
+    let names = [];
+    try {
+      names = fs.readdirSync(requests);
+    } catch {
+      names = [];
+    }
+    for (const name of names) processRequest(name);
+  }, 25);
+  cleanup = () => {
+    if (filePoller) clearInterval(filePoller);
+    try {
+      fs.rmSync(root, { recursive: true, force: true });
+    } catch {
+      /* best-effort */
+    }
+  };
+  process.stdout.write('ATOMIC_BROKER_READY file://' + root + '\n');
+}
+
+const endpoint = endpointFrom(endpointValue);
+if (endpoint.kind === 'file') startFileBroker(endpoint.dir);
+else startSocketBroker(endpoint.socketPath);
+
+function shutdown() {
+  try {
+    if (server) server.close();
+  } catch {
     /* best-effort */
   }
+  cleanup();
   process.exit(0);
 }
 process.on('SIGTERM', shutdown);

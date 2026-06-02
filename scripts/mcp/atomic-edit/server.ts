@@ -44,6 +44,23 @@ import { registerToolsSession } from './server-tools-session.js';
 import { registerToolsY } from './server-tools-y.js';
 import { registerToolsSelf } from './server-tools-self.js';
 
+type RegisteredToolWithExecution = {
+  execution?: unknown;
+};
+
+function isToolRegistry(value: unknown): value is Record<string, RegisteredToolWithExecution> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function removeExperimentalToolExecution(serverInstance: McpServer): void {
+  const registry = Object.getOwnPropertyDescriptor(serverInstance, '_registeredTools')?.value;
+  if (!isToolRegistry(registry)) return;
+
+  for (const tool of Object.values(registry)) {
+    delete tool.execution;
+  }
+}
+
 const server = new McpServer({ name: 'kloel-atomic-edit', version: '4.0.0' });
 
 registerToolsA(server);
@@ -64,6 +81,7 @@ registerToolsLens(server);
 registerToolsSession(server);
 registerToolsY(server);
 registerToolsSelf(server);
+removeExperimentalToolExecution(server);
 
 async function main(): Promise<void> {
   const transport = new StdioServerTransport();

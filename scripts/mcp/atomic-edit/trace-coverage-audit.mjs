@@ -1,21 +1,16 @@
 #!/usr/bin/env node
 /**
- * Camada 4 — trace-coverage auditor.
+ * Camada 4 — trace-coverage + active host-boundary auditor.
  *
- * "Falhar se houver mudança de código sem AtomicEditTrace." Cross-checks the
- * working-tree code changes (git diff) against the traces in
- * .atomic/traces/: every changed code file should have ≥1 trace whose
- * `file` matches it. A changed code file with NO trace means a native /
- * shell edit slipped past the ban — exactly what the TUI-abolished rule
- * forbids.
+ * Cross-checks working-tree code changes against .atomic/traces and also reports
+ * whether the current Codex/Claude process tree is actually inside the atomic
+ * host boundary (ATOMIC_HOST_SANDBOX + ATOMIC_HOST_ATOMIC_ONLY + write root +
+ * pinned temp roots + broker socket). Default mode is advisory and Stop-hook
+ * safe; strict modes are available for hard gates:
+ *   --strict                 hard-fail untraced code changes
+ *   --strict-host-boundary   hard-fail missing active host boundary
  *
- * Two modes (honest about the danger of a hard-blocking Stop hook):
- *   default  — ADVISORY: prints findings, exits 0. Safe as a Stop hook
- *              (a hard-failing Stop hook traps the session in a loop).
- *   --strict — exits 1 on any uncovered code change. For CI / manual gate,
- *              NOT for the Stop hook.
- *
- * Zero deps. `node trace-coverage-audit.mjs [--strict] [--json]`.
+ * Zero deps. `node trace-coverage-audit.mjs [--strict] [--strict-host-boundary] [--json]`.
  */
 import { execSync } from 'node:child_process';
 import * as fs from 'node:fs';
@@ -27,6 +22,7 @@ const REPO = path.resolve(HERE, '..', '..', '..');
 const TRACES = path.join(REPO, '.atomic', 'traces');
 const args = process.argv.slice(2);
 const strict = args.includes('--strict');
+const strictHostBoundary = args.includes('--strict-host-boundary');
 const asJson = args.includes('--json');
 
 const CODE =
@@ -41,6 +37,52 @@ function sh(cmd) {
   } catch {
     return '';
   }
+}
+
+function samePath(a, b) {
+  if (!a || !b) return false;
+  try {
+    return fs.realpathSync(a) === fs.realpathSync(b);
+  } catch {
+    return path.resolve(a) === path.resolve(b);
+  }
+}
+
+function socketStatus(socketPath) {
+  if (!socketPath) return { present: false, isSocket: false };
+  try {
+    const stat = fs.statSync(socketPath);
+    return { present: true, isSocket: stat.isSocket() };
+  } catch {
+    return { present: false, isSocket: false };
+  }
+}
+
+function hostBoundaryReport() {
+  const socket = process.env.ATOMIC_EXEC_BROKER_SOCKET || '';
+  const socketInfo = socketStatus(socket);
+  const tempPinned = samePath(process.env.TMPDIR, REPO) && samePath(process.env.TMP, REPO) && samePath(process.env.TEMP, REPO);
+  const report = {
+    active:
+      process.env.ATOMIC_HOST_SANDBOX === 'macos-sandbox-exec' &&
+      process.env.ATOMIC_HOST_ATOMIC_ONLY === '1',
+    sandbox: process.env.ATOMIC_HOST_SANDBOX || null,
+    atomicOnly: process.env.ATOMIC_HOST_ATOMIC_ONLY || null,
+    writeRoot: process.env.ATOMIC_HOST_WRITE_ROOT || null,
+    writeRootMatchesRepo: samePath(process.env.ATOMIC_HOST_WRITE_ROOT, REPO),
+    tempPinnedToRepo: tempPinned,
+    brokerSocketPresent: socketInfo.present,
+    brokerSocketIsSocket: socketInfo.isSocket,
+  };
+  return {
+    ...report,
+    pass:
+      report.active &&
+      report.writeRootMatchesRepo &&
+      report.tempPinnedToRepo &&
+      report.brokerSocketPresent &&
+      report.brokerSocketIsSocket,
+  };
 }
 
 const changed = sh('git diff --name-only HEAD')
@@ -63,30 +105,46 @@ if (fs.existsSync(TRACES)) {
 }
 
 const uncovered = uniqueChanged.filter((f) => !tracedFiles.has(f.replace(/^\.?\//, '')));
+const tracePass = uncovered.length === 0;
+const hostBoundary = hostBoundaryReport();
 const report = {
   changedCodeFiles: uniqueChanged.length,
   traced: uniqueChanged.length - uncovered.length,
   uncovered,
-  pass: uncovered.length === 0,
+  tracePass,
+  hostBoundary,
+  pass: tracePass,
 };
 
 if (asJson) {
   console.log(JSON.stringify(report, null, 2));
-} else if (uniqueChanged.length === 0) {
-  console.log('[trace-coverage] no code changes — clean');
-} else if (report.pass) {
-  console.log(`[trace-coverage] OK — ${report.traced}/${uniqueChanged.length} code files traced`);
 } else {
-  console.log(
-    `[trace-coverage] ${uncovered.length} code file(s) changed WITHOUT an AtomicEditTrace ` +
-      `(native/shell edit slipped the TUI-abolished ban):`,
-  );
-  for (const f of uncovered.slice(0, 20)) console.log(`  - ${f}`);
-  console.log(
-    strict
-      ? '[trace-coverage] STRICT FAIL'
-      : '[trace-coverage] advisory (Stop-hook safe; run with --strict for a hard gate)',
-  );
+  if (uniqueChanged.length === 0) {
+    console.log('[trace-coverage] no code changes — clean');
+  } else if (tracePass) {
+    console.log(`[trace-coverage] OK — ${report.traced}/${uniqueChanged.length} code files traced`);
+  } else {
+    console.log(
+      `[trace-coverage] ${uncovered.length} code file(s) changed WITHOUT an AtomicEditTrace ` +
+        `(native/shell edit slipped the TUI-abolished ban):`,
+    );
+    for (const f of uncovered.slice(0, 20)) console.log(`  - ${f}`);
+    console.log(
+      strict
+        ? '[trace-coverage] STRICT FAIL'
+        : '[trace-coverage] advisory (Stop-hook safe; run with --strict for a hard gate)',
+    );
+  }
+
+  if (hostBoundary.pass) {
+    console.log('[host-boundary] OK — active session has atomic host sandbox + repo write root + broker socket');
+  } else {
+    console.log(
+      '[host-boundary] advisory — active session is NOT fully inside the atomic host boundary; ' +
+        'relaunch through scripts/mcp/atomic-edit/codex-atomic-host-launcher.mjs -- <agent-command>',
+    );
+    if (strictHostBoundary) console.log('[host-boundary] STRICT FAIL');
+  }
 }
 
-process.exit(strict && !report.pass ? 1 : 0);
+process.exit((strict && !tracePass) || (strictHostBoundary && !hostBoundary.pass) ? 1 : 0);

@@ -16,6 +16,19 @@ function record(results, name, ok, detail) {
   results.push({ name, ok, detail });
 }
 
+function launcherSourceAssertions() {
+  const source = fs.readFileSync(launcher, 'utf8');
+  return {
+    definesManifestFresh: source.includes('\nmanifest_fresh() {\n'),
+    checksDistFreshnessManifest: source.includes('node "${SRC_DIR}/dist-freshness.mjs" --check'),
+    rebuildsWhenSourceOrManifestStale: source.includes('if needs_build || ! manifest_fresh; then'),
+    refusesStillStaleAfterRebuild: source.includes('REFUSED: dist/server.js is stale after rebuild') && source.includes('exit 81'),
+    capturesFindErrorsWithoutStdout: source.includes('-newer "${DIST}" -print -quit 2>&1'),
+    capturesFreshnessErrorsWithoutStdout: source.includes('freshness_output="$(node "${SRC_DIR}/dist-freshness.mjs" --check 2>&1)"'),
+    avoidsSandboxUnsafeDevNull: !source.includes('/dev/null'),
+  };
+}
+
 function inheritedBrokerSocket() {
   if (
     process.env.ATOMIC_HOST_SANDBOX === 'macos-sandbox-exec' &&
@@ -97,6 +110,14 @@ async function hostedLauncherStartsMcp(brokerSocket) {
 
 async function main() {
   const results = [];
+  const sourceAssertions = launcherSourceAssertions();
+  record(
+    results,
+    'launcher source enforces fresh dist startup without sandbox-unsafe redirects',
+    Object.values(sourceAssertions).every((value) => value === true),
+    sourceAssertions,
+  );
+
   const denied = childProcess.spawnSync(launcher, [], {
     cwd: repoRoot,
     encoding: 'utf8',

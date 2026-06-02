@@ -18,6 +18,40 @@ interface SelfFileOp {
   proofOfIncorrectness?: string;
 }
 
+interface SelfExpansionValidator {
+  phase: string;
+  command: string;
+}
+
+const MANDATORY_SELF_EXPANSION_VALIDATORS: readonly SelfExpansionValidator[] = [
+  { phase: 'build', command: 'node build.mjs' },
+  { phase: 'runtime-freshness', command: 'node gates/dist-freshness.proof.mjs --json' },
+  { phase: 'type', command: 'node gates/type-soundness-gate.proof.mjs --json' },
+  { phase: 'semantic', command: 'node gates/structural-lint-gate.proof.mjs --json' },
+  { phase: 'semantic-impact', command: 'node gates/algebra.proof.mjs' },
+  { phase: 'semantic-impact', command: 'node gates/closure-universal.proof.mjs' },
+  { phase: 'semantic-impact', command: 'node gates/merge.proof.mjs' },
+  { phase: 'reachability', command: 'node dist/gates/reachability-gate.proof.js' },
+  { phase: 'binding', command: 'node dist/gates/binding-gate.proof.js' },
+  { phase: 'convergence', command: 'node gates/converge-operator.proof.mjs' },
+  { phase: 'runtime-probe', command: 'node dist/gates/probe-convergence-gate.proof.js' },
+  { phase: 'formal', command: 'node dist/gates/formal-gate.proof.js' },
+  { phase: 'property', command: 'node dist/gates/property-gate.proof.js' },
+  { phase: 'findings-delta', command: 'node dist/gates/findings-delta-gate.proof.js' },
+  { phase: 'contract-edge', command: 'node dist/gates/contract-edge-gate.proof.js' },
+  { phase: 'public-contract', command: 'node gates/public-contract-gate.proof.mjs --json' },
+  { phase: 'behavior', command: 'node gates/behavior-contract-gate.proof.mjs --json' },
+  { phase: 'security', command: 'node gates/security-gate.proof.mjs --json' },
+  { phase: 'monotonicity', command: 'node gates/security-monotonicity.proof.mjs --json' },
+  { phase: 'test', command: 'node gates/test-execution-gate.proof.mjs --json' },
+  { phase: 'ledger', command: 'node proof-chain.proof.mjs --json' },
+  { phase: 'certificate', command: 'node gates/y-certificate-mandatory-domains.proof.mjs --json' },
+  { phase: 'runtime', command: 'node gates/codex-entrypoint-contract.proof.mjs --json' },
+  { phase: 'runtime', command: 'node gates/compiled-mcp-y-certificate.proof.mjs --json' },
+  { phase: 'usability', command: 'node gates/atomic-exec-readonly-usability.proof.mjs --json' },
+  { phase: 'no-bypass', command: 'node codex-atomic-only-hook.proof.mjs --json' },
+];
+
 function parseFileOps(raw: unknown[]): SelfFileOp[] {
   return raw.map((entry) => {
     const e = entry as Record<string, unknown>;
@@ -38,8 +72,25 @@ function allowedProofCommand(command: string): boolean {
     c === 'node dist/smoke.js' ||
     /^node [A-Za-z0-9_.-]+\.proof\.mjs(?: --json)?$/.test(c) ||
     /^node gates\/[A-Za-z0-9_.-]+\.proof\.mjs(?: --json)?$/.test(c) ||
+    /^node dist\/gates\/[A-Za-z0-9_.-]+\.proof\.js$/.test(c) ||
     /^npx tsx gates\/[A-Za-z0-9_.-]+\.proof\.ts$/.test(c)
   );
+}
+
+function normalizeSelfExpansionProofCommands(raw: readonly string[] | undefined): string[] {
+  const merged = new Map<string, string>();
+  for (const validator of MANDATORY_SELF_EXPANSION_VALIDATORS) merged.set(validator.command, validator.command);
+  for (const command of raw ?? []) {
+    const trimmed = command.trim();
+    if (trimmed.length > 0) merged.set(trimmed, trimmed);
+  }
+  return [...merged.values()];
+}
+
+function proofTimeoutMs(command: string): number {
+  if (command === 'node dist/smoke.js') return 240000;
+  if (command.includes('compiled-mcp-y-certificate') || command.includes('codex-entrypoint-contract')) return 120000;
+  return 60000;
 }
 
 function runProofCommands(commands: string[]): { command: string; ok: boolean; stdout: string; stderr: string }[] {
@@ -47,7 +98,7 @@ function runProofCommands(commands: string[]): { command: string; ok: boolean; s
     const res = childProcess.spawnSync('/bin/bash', ['-c', command], {
       cwd: path.join(REPO_ROOT, 'scripts/mcp/atomic-edit'),
       encoding: 'utf8',
-      timeout: command === 'node dist/smoke.js' ? 240000 : 60000,
+      timeout: proofTimeoutMs(command),
       maxBuffer: 32 * 1024 * 1024,
     });
     return {
@@ -60,14 +111,15 @@ function runProofCommands(commands: string[]): { command: string; ok: boolean; s
 }
 
 /**
- * Proof #5 — capability monotonicity, enforced. Runs security-invariants.mjs in
+ * Proof #5 - capability monotonicity, enforced. Runs security-invariants.mjs in
  * --enforce mode: it measures the engine's own security surface (write-gate count,
  * exec FORBIDDEN laws, native-edit bans, sync byte-floor gates, byte-floor guards)
  * and refuses (exit 1) if any fell below its ratcheting high-water baseline.
- * Mandatory and non-skippable — it is NOT part of the caller-chosen proofCommands.
- * A regression throws here and the expand_self catch rolls back byte-exact. With
- * { ratchet: true } it additionally persists the new max() baseline (used only
- * AFTER all proofs pass, so a validated strengthening locks immediately).
+ * Mandatory and non-skippable - it is both a pre-proof refusal and an explicit
+ * validator-lattice phase. A regression throws here and the expand_self catch
+ * rolls back byte-exact. With { ratchet: true } it additionally persists the new
+ * max() baseline (used only AFTER all proofs pass, so a validated strengthening
+ * locks immediately).
  */
 function enforceSecurityMonotonicity(options: { ratchet?: boolean } = {}): void {
   const args = options.ratchet ? ['security-invariants.mjs', '--enforce', '--ratchet'] : ['security-invariants.mjs', '--enforce'];
@@ -87,7 +139,7 @@ function ensureSelfTarget(absPath: string, relPath: string): void {
   if (!isAtomicSelfExpansionPath(REPO_ROOT, absPath)) {
     throw new Error(
       `atomic_expand_self only admits files inside scripts/mcp/atomic-edit/**; got ${relPath}. ` +
-        `Use normal atomic tools for non-atomic code.`,
+        `Use product-level atomic tools for product code, not self-expansion.`,
     );
   }
 }
@@ -142,10 +194,12 @@ export function registerToolsSelf(server: McpServer): void {
       title: 'Expand atomic-edit itself under self-expansion admission + proof',
       description:
         'The only legal way to modify scripts/mcp/atomic-edit/** after the self-expansion guard is active. ' +
-        'It applies atomic byte writes/deletes inside a scoped admission window, enforces capability monotonicity ' +
-        '(an expansion may never reduce the engine\'s own security surface), then runs allowed proof commands. ' +
-        'If application, the monotonicity check, or proof fails, the filesystem effect is rolled back byte-exact ' +
-        'from the pre-expansion snapshot. On success, the receipt includes the full byte-effect diff from that snapshot.',
+        'It applies atomic byte writes/deletes inside a scoped admission window, enforces capability monotonicity, ' +
+        'runs a mandatory multi-domain validator lattice (build, runtime-freshness, type, semantic, semantic-impact, reachability, ' +
+        'binding, convergence, runtime-probe, formal, property, findings-delta, contract-edge, public-contract, behavior, security, monotonicity, test, ledger, ' +
+        'certificate, runtime, usability, no-bypass), then runs any additional allowed caller proof commands. If ' +
+        'application, monotonicity, mandatory validation, or proof fails, the filesystem effect is rolled back ' +
+        'byte-exact from the pre-expansion snapshot. On success, the receipt includes the full byte-effect diff.',
       inputSchema: {
         files: z
           .array(
@@ -162,18 +216,18 @@ export function registerToolsSelf(server: McpServer): void {
           .array(z.string())
           .min(1)
           .optional()
-          .describe('allowed proof commands; default: node build.mjs + node codex-atomic-only-hook.proof.mjs --json'),
+          .describe('additional allowed proof commands; mandatory validator lattice always runs first'),
         intent: z.string().optional(),
       },
     },
     async (a) => {
-      const proofCommands = a.proofCommands ?? ['node build.mjs', 'node codex-atomic-only-hook.proof.mjs --json'];
+      const proofCommands = normalizeSelfExpansionProofCommands(a.proofCommands);
       try {
         const rejected = proofCommands.find((command) => !allowedProofCommand(command));
         if (rejected) {
           return fail(
             `refused: proof command is outside the self-expansion proof allowlist: ${rejected}. ` +
-              `Allowed examples: node build.mjs, node dist/smoke.js, node *.proof.mjs --json, npx tsx gates/*.proof.ts.`,
+              `Allowed examples: node build.mjs, node dist/smoke.js, node *.proof.mjs --json, node dist/gates/*.proof.js, npx tsx gates/*.proof.ts.`,
           );
         }
         const ops = parseFileOps(a.files as unknown[]);
@@ -181,7 +235,7 @@ export function registerToolsSelf(server: McpServer): void {
         const snap = captureEffectSnapshot(selfRoot);
         try {
           const applied = withSelfExpansionAdmission(() => ops.map(applySelfFileOp));
-          // Proof #5 — capability monotonicity: AFTER the bytes land, BEFORE proofs,
+          // Proof #5 - capability monotonicity: AFTER the bytes land, BEFORE proofs,
           // refuse (and roll back) any expansion that reduced the engine's own
           // security surface. Mandatory and non-skippable (not a caller proofCommand).
           enforceSecurityMonotonicity();
@@ -195,7 +249,7 @@ export function registerToolsSelf(server: McpServer): void {
                 failed.map((p) => p.command).join(', '),
             );
           }
-          // All proofs passed — the expansion is fully validated. RATCHET the
+          // All proofs passed - the expansion is fully validated. RATCHET the
           // security baseline so any strengthening of the engine's own surface
           // immediately becomes the locked minimum (closes the persistence window
           // where a raised surface was not yet the baseline). Best-effort: a ratchet
@@ -211,6 +265,10 @@ export function registerToolsSelf(server: McpServer): void {
             changed: true,
             intent: a.intent ?? null,
             files: applied,
+            validatorLattice: MANDATORY_SELF_EXPANSION_VALIDATORS.map((validator) => ({
+              phase: validator.phase,
+              command: validator.command,
+            })),
             proofs: proofs.map((p) => ({ command: p.command, ok: p.ok })),
             effect: {
               changedFiles: effects.length,
@@ -218,7 +276,7 @@ export function registerToolsSelf(server: McpServer): void {
               files: effects,
             },
             target: targetDetails(path.join(REPO_ROOT, 'scripts/mcp/atomic-edit'), 'scripts/mcp/atomic-edit'),
-            admission: 'self-expansion-proof-green',
+            admission: 'self-expansion-validator-lattice-green',
           });
         } catch (e) {
           const effects = diffEffect(snap);

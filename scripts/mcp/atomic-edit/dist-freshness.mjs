@@ -1,20 +1,24 @@
 #!/usr/bin/env node
 /**
- * dist-freshness.mjs — honest staleness detector for the compiled engine.
+ * dist-freshness.mjs - honest staleness detector for the compiled engine.
  *
- * THE TRUST HOLE THIS CLOSES: the MCP server loads dist/ at startup. After an
- * atomic_expand_self rebuild, the SOURCE + dist on disk are current, but the
- * already-running server process still executes the OLD dist — so a tool it
- * exposes (e.g. atomic_y_certificate) can report GREEN from STALE code. This
- * module lets any reader detect that: it hashes ALL engine .ts source and
- * compares to the hash recorded in dist/.build-manifest.json at build time.
+ * TRUST HOLES THIS CLOSES:
+ *   1. dist on disk can be stale relative to the authorial engine source.
+ *   2. dist on disk can change after an MCP process already loaded old JS.
  *
- *   - computeSourceHash(root): sha256 over every .ts under root (sorted, with
- *     path+bytes), excluding dist/ and node_modules/. Deterministic.
- *   - readManifest(root): the {sourceHash, builtAt, fileCount} dist recorded, or null.
- *   - isDistFresh(root): { fresh, reason, sourceHash, manifestHash } — fresh=true
- *     iff a manifest exists AND its sourceHash equals the live source hash.
- *   - writeManifest(root): compute + persist dist/.build-manifest.json (build step).
+ * The first hole is covered by the build manifest: build.mjs records a sha256
+ * over the Atomic authorial source surface and a sha256 over the compiled dist
+ * runtime surface. The second hole is consumed by server-tools-y.ts: the running
+ * process captures its boot fingerprint and refuses Y when the live disk
+ * fingerprint no longer matches that boot fingerprint.
+ *
+ *   - sourceFiles(root): all authorial engine files (.ts/.mjs/.json/.sh),
+ *     excluding generated/runtime dirs such as dist, node_modules, .atomic.
+ *   - distFiles(root): compiled runtime files under dist, excluding the manifest.
+ *   - computeSourceHash(root): deterministic source sha256.
+ *   - computeDistHash(root): deterministic compiled-runtime sha256.
+ *   - writeManifest(root): persist dist/.build-manifest.json after build.
+ *   - isDistFresh(root): fresh=true iff source hash and dist hash match manifest.
  *
  * CLI: `node dist-freshness.mjs --write`  -> emit the manifest (called by build.mjs)
  *      `node dist-freshness.mjs --check`  -> print {fresh,...} JSON, exit 0/1
@@ -25,10 +29,24 @@ import * as crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const SKIP_DIRS = new Set(['dist', 'node_modules', '.atomic', '.git']);
+const SOURCE_EXTENSIONS = new Set(['.ts', '.mjs', '.json', '.sh']);
+const DIST_EXTENSIONS = new Set(['.js', '.mjs', '.json']);
+const SKIP_DIRS = new Set(['dist', 'node_modules', '.atomic', '.git', 'node-compile-cache']);
 
-/** Every .ts file under root (recursive), repo-relative-to-root, sorted. */
-export function sourceFiles(root = HERE) {
+function skipGeneratedName(name) {
+  return (
+    name.startsWith('.proof-') ||
+    name.startsWith('.security-mono-proof-') ||
+    name.startsWith('.atomic-exec-sandbox') ||
+    name.startsWith('.property-proof-') ||
+    name.startsWith('.findings-') ||
+    name.startsWith('.findings-probe-') ||
+    name.startsWith('.external-runtime-denial-') ||
+    name === '.build-manifest.json'
+  );
+}
+
+function walkFiles(root, start, includeFile) {
   const out = [];
   const walk = (abs) => {
     let entries;
@@ -38,23 +56,32 @@ export function sourceFiles(root = HERE) {
       return;
     }
     for (const e of entries) {
-      if (e.name.startsWith('.security-mono-proof-') || e.name.startsWith('.atomic-exec-sandbox')) continue;
+      if (skipGeneratedName(e.name)) continue;
       const full = path.join(abs, e.name);
       if (e.isDirectory()) {
         if (!SKIP_DIRS.has(e.name)) walk(full);
-      } else if (e.isFile() && e.name.endsWith('.ts')) {
+      } else if (e.isFile() && includeFile(e.name)) {
         out.push(path.relative(root, full));
       }
     }
   };
-  walk(root);
+  walk(start);
   return out.sort();
 }
 
-/** Deterministic sha256 over all source .ts (path + bytes). */
-export function computeSourceHash(root = HERE) {
+/** Every authorial engine file under root, repo-relative-to-root, sorted. */
+export function sourceFiles(root = HERE) {
+  return walkFiles(root, root, (name) => SOURCE_EXTENSIONS.has(path.extname(name)));
+}
+
+/** Every compiled runtime file under root/dist, root-relative, sorted. */
+export function distFiles(root = HERE) {
+  return walkFiles(root, path.join(root, 'dist'), (name) => DIST_EXTENSIONS.has(path.extname(name)));
+}
+
+function computeHash(root, files) {
   const h = crypto.createHash('sha256');
-  for (const rel of sourceFiles(root)) {
+  for (const rel of files) {
     h.update(rel);
     h.update('\0');
     try {
@@ -65,6 +92,16 @@ export function computeSourceHash(root = HERE) {
     h.update('\0');
   }
   return h.digest('hex');
+}
+
+/** Deterministic sha256 over all authorial engine source files (path + bytes). */
+export function computeSourceHash(root = HERE) {
+  return computeHash(root, sourceFiles(root));
+}
+
+/** Deterministic sha256 over all compiled dist runtime files (path + bytes). */
+export function computeDistHash(root = HERE) {
+  return computeHash(root, distFiles(root));
 }
 
 const MANIFEST_REL = path.join('dist', '.build-manifest.json');
@@ -79,7 +116,14 @@ export function readManifest(root = HERE) {
 
 export function writeManifest(root = HERE) {
   const sourceHash = computeSourceHash(root);
-  const manifest = { sourceHash, fileCount: sourceFiles(root).length, version: 1 };
+  const distHash = computeDistHash(root);
+  const manifest = {
+    sourceHash,
+    distHash,
+    sourceFileCount: sourceFiles(root).length,
+    distFileCount: distFiles(root).length,
+    version: 2,
+  };
   fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
   fs.writeFileSync(path.join(root, MANIFEST_REL), JSON.stringify(manifest, null, 2) + '\n');
   return manifest;
@@ -88,10 +132,20 @@ export function writeManifest(root = HERE) {
 export function isDistFresh(root = HERE) {
   const manifest = readManifest(root);
   const sourceHash = computeSourceHash(root);
-  if (!manifest) return { fresh: false, reason: 'no build manifest (dist never built with manifest support)', sourceHash, manifestHash: null };
-  if (manifest.sourceHash !== sourceHash)
-    return { fresh: false, reason: 'source changed since last build (dist is STALE)', sourceHash, manifestHash: manifest.sourceHash };
-  return { fresh: true, reason: 'dist matches current source', sourceHash, manifestHash: manifest.sourceHash };
+  const distHash = computeDistHash(root);
+  if (!manifest) {
+    return { fresh: false, reason: 'no build manifest (dist never built with manifest support)', sourceHash, manifestHash: null, distHash, manifestDistHash: null };
+  }
+  if (manifest.sourceHash !== sourceHash) {
+    return { fresh: false, reason: 'source changed since last build (dist is STALE)', sourceHash, manifestHash: manifest.sourceHash, distHash, manifestDistHash: manifest.distHash ?? null };
+  }
+  if (typeof manifest.distHash !== 'string') {
+    return { fresh: false, reason: 'build manifest lacks distHash (runtime freshness is UNJUDGED)', sourceHash, manifestHash: manifest.sourceHash, distHash, manifestDistHash: null };
+  }
+  if (manifest.distHash !== distHash) {
+    return { fresh: false, reason: 'dist changed since last manifest write (runtime on disk is STALE)', sourceHash, manifestHash: manifest.sourceHash, distHash, manifestDistHash: manifest.distHash };
+  }
+  return { fresh: true, reason: 'dist and source match build manifest', sourceHash, manifestHash: manifest.sourceHash, distHash, manifestDistHash: manifest.distHash };
 }
 
 if (process.argv.includes('--write')) {

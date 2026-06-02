@@ -84,6 +84,19 @@ function parseJson(stdout) {
   }
 }
 
+function hookDecision(parsed) {
+  return parsed?.permissionDecision ?? parsed?.hookSpecificOutput?.permissionDecision;
+}
+
+function hookReason(parsed) {
+  return String(
+    parsed?.reason ??
+      parsed?.permissionDecisionReason ??
+      parsed?.hookSpecificOutput?.permissionDecisionReason ??
+      '',
+  );
+}
+
 function runReportAgainstCodexProjectDir() {
   const result = childProcess.spawnSync(process.execPath, [path.join(sourceDir, 'bypass-report.mjs'), '--json'], {
     cwd: sourceDir,
@@ -115,8 +128,8 @@ function main() {
       results,
       'Codex deny hook refuses native Write to code under host sandbox',
       deniedWrite.status === 0 &&
-        deniedWriteBody?.permissionDecision === 'deny' &&
-        /native\/non-atomic tool "Write" is forbidden/.test(String(deniedWriteBody?.reason ?? '')),
+        hookDecision(deniedWriteBody) === 'deny' &&
+        /native\/non-atomic tool "Write" is forbidden/.test(hookReason(deniedWriteBody)),
       { status: deniedWrite.status, stdout: deniedWrite.stdout, stderr: deniedWrite.stderr, parsed: deniedWriteBody },
     );
 
@@ -126,8 +139,8 @@ function main() {
       results,
       'Codex deny hook refuses native Bash even when atomic_exec could run the command',
       deniedBash.status === 0 &&
-        deniedBashBody?.permissionDecision === 'deny' &&
-        /native\/non-atomic tool "Bash" is forbidden/.test(String(deniedBashBody?.reason ?? '')),
+        hookDecision(deniedBashBody) === 'deny' &&
+        /native\/non-atomic tool "Bash" is forbidden/.test(hookReason(deniedBashBody)),
       { status: deniedBash.status, stdout: deniedBash.stdout, stderr: deniedBash.stderr, parsed: deniedBashBody },
     );
 
