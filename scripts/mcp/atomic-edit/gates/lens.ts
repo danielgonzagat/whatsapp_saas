@@ -90,7 +90,7 @@ export interface NegativeByteEvidence {
   recommendedAction: RecommendedAction;
   containmentProof: string | null;
   reason: string;
-  precision: 'line' | 'file' | 'unreadable-file';
+  precision: 'token' | 'line' | 'file' | 'unreadable-file';
   line: number | null;
   column: number | null;
   byteStart: number;
@@ -202,6 +202,37 @@ function evidenceAdmissionForRed(red: UnifiedRed, content?: string, lineRange?: 
   return { classification: 'negative', recommendedAction: 'repair-negative-byte', containmentProof: null };
 }
 
+function exactQuotedTokenForRed(red: UnifiedRed): string | null {
+  if (
+    !red.fact.startsWith("referenced name '") &&
+    !red.fact.startsWith("@typescript-eslint/no-unused-vars: '")
+  ) {
+    return null;
+  }
+  const match = red.fact.match(/'([^']+)'/);
+  return match?.[1] ?? null;
+}
+
+interface FocusedTokenSpan {
+  startChar: number;
+  endChar: number;
+  text: string;
+}
+
+function focusedTokenSpanForRed(red: UnifiedRed, parsed: ParsedLocus, lineRange: LineRange): FocusedTokenSpan | null {
+  const token = exactQuotedTokenForRed(red);
+  if (!token) return null;
+  const preferredStart = parsed.column === null ? 0 : Math.max(0, parsed.column - 1);
+  const afterColumn = lineRange.text.indexOf(token, preferredStart);
+  const fallback = afterColumn === -1 ? lineRange.text.indexOf(token) : afterColumn;
+  if (fallback === -1) return null;
+  return {
+    startChar: lineRange.startChar + fallback,
+    endChar: lineRange.startChar + fallback + token.length,
+    text: token,
+  };
+}
+
 function negativeByteEvidenceForRed(repoRoot: string, red: UnifiedRed, redIndex: number): NegativeByteEvidence {
   const abs = path.resolve(repoRoot, red.file);
   let content: string;
@@ -229,8 +260,11 @@ function negativeByteEvidenceForRed(repoRoot: string, red: UnifiedRed, redIndex:
   const parsed = parseLocus(red.locus);
   const lineRange = parsed ? lineRanges(content).find((range) => range.line === parsed.line) : undefined;
   if (parsed && lineRange) {
-    const byteStart = byteLength(content.slice(0, lineRange.startChar));
+    const lineByteStart = byteLength(content.slice(0, lineRange.startChar));
     const lineByteLength = byteLength(lineRange.text);
+    const focusedToken = focusedTokenSpanForRed(red, parsed, lineRange);
+    const byteStart = focusedToken ? byteLength(content.slice(0, focusedToken.startChar)) : lineByteStart;
+    const byteEnd = focusedToken ? byteLength(content.slice(0, focusedToken.endChar)) : lineByteStart + lineByteLength;
     return {
       redIndex,
       gate: red.gate,
@@ -238,14 +272,14 @@ function negativeByteEvidenceForRed(repoRoot: string, red: UnifiedRed, redIndex:
       locus: red.locus,
       ...evidenceAdmissionForRed(red, content, lineRange),
       reason: red.fact,
-      precision: 'line',
+      precision: focusedToken ? 'token' : 'line',
       line: parsed.line,
       column: parsed.column,
       byteStart,
-      byteEnd: byteStart + lineByteLength,
-      byteLength: lineByteLength,
+      byteEnd,
+      byteLength: byteEnd - byteStart,
       lineSha256: sha256(lineRange.text),
-      snippet: snippetFor(lineRange.text),
+      snippet: snippetFor(focusedToken ? focusedToken.text : lineRange.text),
     };
   }
 

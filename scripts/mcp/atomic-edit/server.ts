@@ -29,6 +29,7 @@ import { toJsonSchemaCompat } from '@modelcontextprotocol/sdk/server/zod-json-sc
 import type { AnySchema, ZodRawShapeCompat } from '@modelcontextprotocol/sdk/server/zod-compat.js';
 import type { ListToolsResult, Tool } from '@modelcontextprotocol/sdk/types.js';
 import * as os from 'node:os';
+import { installHotReloadingToolCallbacks, runSingleToolCallFromEnv } from './server-helpers-hot-reload.js';
 import { log } from './server-helpers-io.js';
 import { registerToolsA } from './server-tools-a.js';
 import { registerToolsB } from './server-tools-b.js';
@@ -150,6 +151,7 @@ function installCodexSafeToolList(serverInstance: McpServer): void {
 
 
 const server = new McpServer({ name: 'kloel-atomic-edit', version: '4.0.0' });
+const hotToolRegistry = installHotReloadingToolCallbacks(server, { log });
 
 registerToolsA(server);
 registerToolsB(server);
@@ -178,7 +180,12 @@ async function main(): Promise<void> {
   log(`tmpdir=${os.tmpdir()}`);
 }
 
-main().catch((e) => {
+async function boot(): Promise<void> {
+  if (await runSingleToolCallFromEnv(hotToolRegistry)) return;
+  await main();
+}
+
+boot().catch((e) => {
   log('FATAL', e instanceof Error ? (e.stack ?? e.message) : String(e));
   process.exit(1);
 });

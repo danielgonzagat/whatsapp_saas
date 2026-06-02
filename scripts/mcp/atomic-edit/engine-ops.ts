@@ -212,7 +212,7 @@ export function insertCallArg(
 
   // If inserting at position 0, insert right after opening paren
   if (argIndex === 0) {
-    let insertPos = paren + 1;
+    const insertPos = paren + 1;
     // Check if there are already args — insert before the first arg
     let after = insertPos;
     while (after < original.length && /\s/.test(original[after])) after++;

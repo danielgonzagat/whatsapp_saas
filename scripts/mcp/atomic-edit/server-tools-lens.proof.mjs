@@ -139,12 +139,28 @@ async function grepCallsInFile(content, rel, name) {
   check('BYTE-EVIDENCE structural-lint red maps to line 1', Boolean(lintLineEvidence));
   check('BYTE-EVIDENCE actionable lint red is classified negative', lintLineEvidence?.classification === 'negative');
   check('BYTE-EVIDENCE actionable lint red recommends repair', lintLineEvidence?.recommendedAction === 'repair-negative-byte');
-  check('BYTE-EVIDENCE line precision is explicit', lintLineEvidence?.precision === 'line');
+  check('BYTE-EVIDENCE line precision remains explicit for line-wide facts', lintLineEvidence?.precision === 'line');
   check('BYTE-EVIDENCE byteStart is zero for first line', lintLineEvidence?.byteStart === 0);
   check('BYTE-EVIDENCE byteEnd equals lint line byte length', lintLineEvidence?.byteEnd === Buffer.byteLength(lintLine, 'utf8'));
   check('BYTE-EVIDENCE line sha256 proves exact bytes', lintLineEvidence?.lineSha256 === sha256(lintLine));
   check('BYTE-EVIDENCE snippet carries the negative bytes', lintLineEvidence?.snippet === lintLine);
   check('BYTE-EVIDENCE reason mirrors the red fact', typeof lintLineEvidence?.reason === 'string' && lintLineEvidence.reason.length > 0);
+
+  const tokenLine = 'const value = missingName + 1;';
+  const token = 'missingName';
+  fs.writeFileSync(path.join(tmp, 'binding.ts'), `${tokenLine}\n`);
+  const tokenReport = await runLens(tmp, 'binding.ts');
+  const tokenEvidence = tokenReport.negativeByteEvidence.find((entry) => entry.file === 'binding.ts' && entry.reason.includes(`'${token}'`));
+  const tokenByteStart = Buffer.byteLength(tokenLine.slice(0, tokenLine.indexOf(token)), 'utf8');
+  const tokenByteLength = Buffer.byteLength(token, 'utf8');
+  check('BYTE-EVIDENCE binding red maps exact token', Boolean(tokenEvidence));
+  check('BYTE-EVIDENCE binding token remains actionable negative', tokenEvidence?.classification === 'negative');
+  check('BYTE-EVIDENCE binding token precision is explicit', tokenEvidence?.precision === 'token');
+  check('BYTE-EVIDENCE binding token byteStart is exact', tokenEvidence?.byteStart === tokenByteStart);
+  check('BYTE-EVIDENCE binding token byteEnd is exact', tokenEvidence?.byteEnd === tokenByteStart + tokenByteLength);
+  check('BYTE-EVIDENCE binding token byteLength is exact', tokenEvidence?.byteLength === tokenByteLength);
+  check('BYTE-EVIDENCE binding token snippet carries only the token', tokenEvidence?.snippet === token);
+  check('BYTE-EVIDENCE binding token keeps line hash context', tokenEvidence?.lineSha256 === sha256(tokenLine));
   console.log(`        (lens lint.ts: ${report2.reds.length} red(s) — ${report2.reds.map((r) => r.gate).join(', ') || 'none'})`);
 
   // A third sweep proves the reader does not lie about adversarial proof fixtures:

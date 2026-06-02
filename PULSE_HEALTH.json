@@ -1,6 +1,6 @@
 {
   "score": 99,
-  "totalNodes": 1838,
+  "totalNodes": 1839,
   "breaks": [
     {
       "type": "graph-route-caller-unobserved",
@@ -16,7 +16,17 @@
       "type": "graph-route-caller-unobserved",
       "severity": "low",
       "file": "backend/src/kloel/kloel.controller.ts",
-      "line": 342,
+      "line": 192,
+      "description": "POST /kloel/memory/save is not called by frontend code",
+      "detail": "Controller: saveMemory",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/kloel.controller.ts",
+      "line": 344,
       "description": "GET /kloel/onboarding/:workspaceId/status is not called by frontend code",
       "detail": "Controller: getOnboardingStatus",
       "source": "graph:confirmed_static:route_caller_unobserved",
@@ -29,6 +39,26 @@
       "line": 147,
       "description": "POST /kloel/whatsapp/simulate/:workspaceId is not called by frontend code",
       "detail": "Controller: simulateConversation",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kyc/kyc.controller.ts",
+      "line": 125,
+      "description": "GET /kyc/lookup/cnpj/:cnpj is not called by frontend code",
+      "detail": "Controller: lookupCnpj",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kyc/kyc.controller.ts",
+      "line": 133,
+      "description": "GET /kyc/lookup/cep/:cep is not called by frontend code",
+      "detail": "Controller: lookupCep",
       "source": "graph:confirmed_static:route_caller_unobserved",
       "surface": "route-connectivity"
     },
@@ -245,6 +275,16 @@
     {
       "type": "graph-route-caller-unobserved",
       "severity": "low",
+      "file": "backend/src/marketing/marketing-connect.controller.ts",
+      "line": 76,
+      "description": "POST /marketing/connect/channel-setup/complete is not called by frontend code",
+      "detail": "Controller: completeChannelSetup",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
       "file": "backend/src/marketing/marketing.controller.ts",
       "line": 63,
       "description": "GET /marketing/stats is not called by frontend code",
@@ -353,10 +393,70 @@
       "surface": "route-connectivity"
     },
     {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/reports/reports.controller.ts",
+      "line": 43,
+      "description": "GET /reports/vendas/daily is not called by frontend code",
+      "detail": "Controller: getVendasDaily",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/reports/reports.controller.ts",
+      "line": 49,
+      "description": "GET /reports/afterpay is not called by frontend code",
+      "detail": "Controller: getAfterPay",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/reports/reports.controller.ts",
+      "line": 61,
+      "description": "GET /reports/abandonos is not called by frontend code",
+      "detail": "Controller: getAbandonos",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/reports/reports.controller.ts",
+      "line": 95,
+      "description": "GET /reports/recusa is not called by frontend code",
+      "detail": "Controller: getRecusa",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/reports/reports.controller.ts",
+      "line": 130,
+      "description": "GET /reports/metricas is not called by frontend code",
+      "detail": "Controller: getMetricas",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/reports/reports.controller.ts",
+      "line": 136,
+      "description": "GET /reports/estornos is not called by frontend code",
+      "detail": "Controller: getEstornos",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
       "type": "graph-state-model-access-unobserved",
       "severity": "medium",
       "file": "backend/prisma/schema.prisma",
-      "line": 3872,
+      "line": 3877,
       "description": "Model KloelGlobalPrior has no service or controller accessing it",
       "detail": "Fields: id, channel, decisionType, action, observations...",
       "source": "graph:confirmed_static:state_model_access_unobserved",
@@ -364,11 +464,11 @@
     }
   ],
   "stats": {
-    "uiElements": 2038,
+    "uiElements": 2046,
     "uiDeadHandlers": 0,
-    "apiCalls": 753,
+    "apiCalls": 745,
     "apiNoRoute": 0,
-    "backendRoutes": 906,
+    "backendRoutes": 915,
     "backendEmpty": 0,
     "prismaModels": 179,
     "modelOrphans": 1,
@@ -378,15 +478,15 @@
       "medium": 0,
       "low": 0
     },
-    "proxyRoutes": 85,
+    "proxyRoutes": 86,
     "proxyNoUpstream": 0,
-    "securityIssues": 36,
+    "securityIssues": 46,
     "dataSafetyIssues": 0,
     "qualityIssues": 0,
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-05-31T18:08:33.226Z",
-  "runId": "62277876-94ae-424c-a58e-b20c873f3fe2",
-  "generatedAt": "2026-05-31T18:15:14.306Z"
+  "timestamp": "2026-06-02T15:29:46.130Z",
+  "runId": "152bf428-6024-4a12-b9a9-47706ef52284",
+  "generatedAt": "2026-06-02T15:35:00.589Z"
 }

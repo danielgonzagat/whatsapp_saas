@@ -178,7 +178,7 @@ function addressing(_file: string, _line: number): number {
 function symbolText(src: string, name: string): string {
   const m = new RegExp(`(?:export )?function ${name}\\b`).exec(src);
   if (!m) return "";
-  let i = src.indexOf("{", m.index);
+  const i = src.indexOf("{", m.index);
   let depth = 0;
   for (let k = i; k < src.length; k++) {
     if (src[k] === "{") depth++;
