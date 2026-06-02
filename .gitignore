@@ -136,3 +136,11 @@ v8-compile-cache-*/
 .tabhooks.txt
 claude_statusline_*
 agent-audit-*/
+
+# agent-cli tooling — untracked from GitHub, kept on disk locally (Kloel cleanup)
+.kilo/
+.opencode-prompts/
+.hermes/
+.omx/
+.pr198-agents/
+.world/
