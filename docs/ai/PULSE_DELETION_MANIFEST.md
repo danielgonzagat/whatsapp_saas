@@ -12,6 +12,54 @@
 > KEEP family 2 (UI animations) and family 3 (backend `src/pulse/` live collector +
 > `backend/src/kloel/pulse-gates/**` AI-safety runtime). Do NOT touch the backend runtime.
 
+## ⛔ HARD BLOCKER (discovered 2026-06-02): PULSE is PINNED by protected guards
+
+A clean, non-breaking deletion is **owner-gated**. PULSE wrapped itself in governance that
+asserts its own existence, and the atomic tools **hard-refuse** editing protected paths
+(confirmed: `atomic_replace_text` on `scripts/ops/check-formatting.mjs` →
+*"governance-protected (matches scripts/ops/). Only the repo owner may change it."*). The
+atomic guard protects the **entire `scripts/ops/` directory** — broader than CLAUDE.md's
+`check-*`/`lib` globs. Deleting any pulse therefore breaks a protected guard that an AI
+cannot fix, violating "não quebra o Kloel". **These protected edits must be done by the
+owner (or with protection lifted) BEFORE the bulk deletion:**
+
+1. `scripts/ops/validate-production-readiness.mjs` (the `readiness:check` CI gate) — the
+   hardest pin. Remove the PULSE asserts: required-artifacts list **L113-117**
+   (`PULSE_HEALTH/CLI_DIRECTIVE/ARTIFACT_INDEX/WORLD_STATE/CERTIFICATE.json`), the
+   `pulse:ci` + `ops:audit` script asserts **L134-141**, and `'pulse:ci'` in the keyword
+   list **L508**. Until this changes, removing `pulse:ci`/`ops:audit`/`PULSE_*.json` fails
+   readiness:check on push.
+2. `scripts/ops/check-formatting.mjs` (pre-commit) — remove `run-pulse-ci.mjs` target
+   **L37** (else the commit deleting that file fails pre-commit format:check).
+3. `scripts/ops/check-architecture-guardrails.mjs` — remove the locked-auditor path **L106**
+   (only if the auditor is deleted).
+4. `scripts/ops/production-readiness/github-workflows.mjs` — remove `pulse:ci` assert **L10**
+   + `pulse:report` assert **L75**.
+5. `scripts/ops/collect-ratchet-metrics.mjs` + `.artifacts.mjs` — remove the pulse score
+   reads + the `scripts/pulse/run.js --report` spawn.
+6. `scripts/ops/run-pulse-ci.mjs`, `run-pulse-deep-ci.mjs`, `run-pulse-deep-ci.assertions.mjs`
+   — delete (these are `scripts/ops/`, atomic-protected → owner `git rm`).
+7. `.github/workflows/ci-cd.yml` (PROTECTED) — remove the `pulse:ci` gate (L274-279), the
+   `pulse-deep` job (L323-425), and the PULSE artifact uploads (L300-313).
+8. `scripts/pulse/no-hardcoded-reality-audit.ts` — the locked immutable auditor; CLAUDE.md
+   says the human must delete it.
+9. `CLAUDE.md` + `AGENTS.md` (PROTECTED) — remove the PULSE sections (Auditor Immutability,
+   REGRA DE AUTO-CORRECAO, FERRAMENTAS/PULSE, glossary, state metrics).
+
+**What an AI CAN do once the above protections are lifted/done** (non-protected, atomic-OK):
+`git rm -r scripts/pulse` (minus auditor if kept), `scripts/mcp/pulse-mcp/`,
+`scripts/pulse-evidence/`, `artifacts/pulse-liquefaction/`, root `PULSE_*.json`, pulse docs;
+edit `package.json` (drop pulse:* scripts), `.mcp.json` (drop pulse server), `.gitignore`
+(drop pulse rules **only together with deleting `.pulse/`** — else 53k untracked files),
+`scripts/mcp/mcp-suite-server.mjs` (drop pulse section — shared file, edit carefully),
+`.github/workflows/deploy-production.yml` + `nightly-ops-audit.yml` (drop pulse steps).
+
+**Unlock options for the owner:** (A) personally apply the 9 protected edits above (exact
+line numbers given), then an atomic session does the non-protected bulk + verifies green; or
+(B) edit CLAUDE.md to lift protection on the pulse-wired files AND adjust the atomic guard's
+`scripts/ops/` protection, then an atomic session does everything. Either way the
+production-readiness gate (#1) is the load-bearing pin — do it first.
+
 1. **PULSE certification SCANNER + dev tooling** — what atomic substitutes. **Default in-scope.**
 2. **UI animations** (`PulseLoader`, `LivePulse`, `NeuroPulse`, `@keyframes pulse`,
    `animate-pulse`, ~70 frontend files) — **NOT pulse-system, KEEP.**
