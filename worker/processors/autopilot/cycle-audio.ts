@@ -1,6 +1,6 @@
-import OpenAI from 'openai';
 import { safeResolve } from '../../safe-path';
 import { prisma } from '../../db';
+import { createOpenAIClient } from '../../providers/openai-models';
 import { WhatsAppEngine } from '../../providers/whatsapp-engine';
 import { buildSignedLocalStorageUrl } from '../../utils/signed-storage-url';
 import { log, type UnknownRecord } from './shared';
@@ -38,7 +38,7 @@ export async function sendAudioResponse(
 
     const ttsSpeed = Number.parseFloat(process.env.OPENAI_TTS_SPEED || '1.0');
 
-    const openai = new OpenAI({ apiKey });
+    const openai = createOpenAIClient(apiKey);
     const response = await openai.audio.speech.create({
       model: 'tts-1',
       voice: voiceId as string,

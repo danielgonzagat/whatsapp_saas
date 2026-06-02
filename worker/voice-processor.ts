@@ -19,7 +19,7 @@ import { type Job, Worker } from 'bullmq';
 import OpenAI from 'openai';
 import { toFile } from 'openai/uploads';
 import { prisma } from './db';
-import { resolveWorkerOpenAIModel } from './providers/openai-models';
+import { createOpenAIClient, resolveWorkerOpenAIModel } from './providers/openai-models';
 import { buildQueueOptions } from './queue';
 import { isRetryableError, WorkerError } from './src/utils/error-handler';
 import { safeRequest, validateUrl } from './utils/ssrf-protection';
@@ -61,7 +61,7 @@ function getOpenAIClient(): OpenAI {
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY not configured (required for Whisper transcription)');
   }
-  openaiClient = new OpenAI({ apiKey });
+  openaiClient = createOpenAIClient(apiKey);
   return openaiClient;
 }
 

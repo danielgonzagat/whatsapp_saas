@@ -13,6 +13,7 @@ import OpenAI from 'openai';
 import { prisma } from '../db';
 import { WorkerLogger } from '../logger';
 import { LeadScorer } from '../providers/lead-scorer';
+import { createOpenAIClient } from '../providers/openai-models';
 import { buildQueueOptions } from '../queue';
 import { forEachSequential } from '../utils/async-sequence';
 import { processFactExtraction } from '../providers/fact-extractor';
@@ -165,7 +166,7 @@ const processIngestSource = async (job: Job, ctxLog: WorkerLogger): Promise<void
     throw new WorkerError('No OpenAI Key for embedding', 'MEMORY_NO_API_KEY', false);
   }
 
-  const openai = new OpenAI({ apiKey });
+  const openai = createOpenAIClient(apiKey);
   const chunks = splitText(content, DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP).slice(
     0,
     maxChunks || DEFAULT_MAX_CHUNKS,

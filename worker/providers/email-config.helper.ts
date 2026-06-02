@@ -2,6 +2,8 @@
  * @capability EmailConfigResolver
  * @domain notifications-copilot
  */
+import nodemailer from 'nodemailer';
+
 /**
  * SMTP/email config shape used by worker email transport. Optional credentials
  * (user/pass) mean unauthenticated SMTP is allowed when MAIL_USER/MAIL_PASS
@@ -41,4 +43,20 @@ export function resolveEmailConfig(): EmailConfig | null {
     from,
     secure: port === 465,
   };
+}
+
+/**
+ * Build a nodemailer SMTP transport from a resolved {@link EmailConfig}.
+ * Centralizes the transport construction shared by `email-provider`'s
+ * `sendText` and `sendMedia` paths. Credentials are only attached when both
+ * user and pass are present (unauthenticated SMTP otherwise), preserving the
+ * prior per-method behavior.
+ */
+export function createMailTransport(cfg: EmailConfig): nodemailer.Transporter {
+  return nodemailer.createTransport({
+    host: cfg.host,
+    port: cfg.port,
+    secure: cfg.secure,
+    auth: cfg.user && cfg.pass ? { user: cfg.user, pass: cfg.pass } : undefined,
+  });
 }

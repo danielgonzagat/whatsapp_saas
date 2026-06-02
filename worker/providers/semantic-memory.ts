@@ -2,19 +2,17 @@
  * @capability SemanticMemoryProvider
  * @domain commercial-intelligence
  */
-import { PrismaClient } from '@prisma/client';
 import OpenAI from 'openai';
-import { resolveWorkerOpenAIModel } from './openai-models';
+import { prisma } from '../db';
+import { createOpenAIClient, resolveWorkerOpenAIModel } from './openai-models';
 import { forEachSequential } from '../utils/async-sequence';
-
-const prisma = new PrismaClient();
 
 /** Semantic memory. */
 export class SemanticMemory {
   private openai: OpenAI;
 
   constructor(apiKey: string) {
-    this.openai = new OpenAI({ apiKey });
+    this.openai = createOpenAIClient(apiKey);
   }
 
   /**

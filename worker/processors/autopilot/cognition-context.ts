@@ -1,5 +1,5 @@
-import OpenAI from 'openai';
 import { AIProvider } from '../../providers/ai-provider';
+import { createOpenAIClient } from '../../providers/openai-models';
 import { prisma } from '../../db';
 import { log, type UnknownRecord, CONVERSATION_HISTORY_LIMIT, WHITESPACE_RE } from './shared';
 import { buildConversationLedger } from './identity';
@@ -85,7 +85,7 @@ export async function getKbContext(workspaceId?: string, text?: string, apiKey?:
     return '';
   }
   try {
-    const openai = new OpenAI({ apiKey });
+    const openai = createOpenAIClient(apiKey);
     const cleaned = text.slice(0, 2000);
     const embedding = await openai.embeddings.create({
       model: 'text-embedding-3-small',

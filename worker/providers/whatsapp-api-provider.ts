@@ -2,10 +2,9 @@
  * @capability WhatsAppApiProvider
  * @domain channel
  */
+import { resolveBackendUrl } from '../utils/backend-url.helpers';
 import { providerStatus } from './health-monitor';
 import { getWhatsAppProviderFromEnv } from './whatsapp-provider-resolver';
-
-const PATTERN_RE = /\/+$/;
 
 /** Workspace shape accepted by api-provider methods. */
 interface WorkspaceOrId {
@@ -72,9 +71,7 @@ interface ReadResult {
 }
 
 function getBackendUrl(): string {
-  const configured =
-    process.env.BACKEND_URL || process.env.API_URL || process.env.SERVICE_BASE_URL || '';
-  const normalized = configured.trim().replace(PATTERN_RE, '');
+  const normalized = resolveBackendUrl();
 
   if (!normalized) {
     throw new Error('BACKEND_URL/API_URL not configured');
