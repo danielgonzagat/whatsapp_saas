@@ -249,7 +249,7 @@ export default function AreaMembros({
       </div>
 
       {actionError ? (
-        <div role="alert" style={{ marginBottom: 16, padding: 12, border: '1px solid rgba(248,113,113,0.35)', borderRadius: 8, background: 'rgba(127,29,29,0.18)', color: '#fecaca', fontFamily: SORA, fontSize: 12 }}>
+        <div role="alert" style={{ marginBottom: 16, padding: 12, border: '1px solid rgba(248,113,113,0.35)', borderRadius: 8, background: 'rgba(127,29,29,0.18)', color: 'rgb(254,202,202)', fontFamily: SORA, fontSize: 12 }}>
           {actionError}
         </div>
       ) : null}

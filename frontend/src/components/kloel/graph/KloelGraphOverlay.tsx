@@ -12,7 +12,7 @@ import { GRAPH_MONO, useGraphTheme } from './KloelGraphTheme';
  * a centered ~80vw×80vh panel with the live graph dimmed behind it. The shell is
  * intentionally "almost invisible": no header, no re-theming of the inner screen —
  * the panel surface uses the host app void so the real (themed) screen blends in,
- * and only a discreet close button sits on top. Contract preserved from #473:
+ * and only a discreet close button sits on top. Contract preserved from the prototype:
  * role="dialog" named by the active node, plus the "Fechar overlay do grafo" button.
  */
 export function KloelGraphOverlay({
