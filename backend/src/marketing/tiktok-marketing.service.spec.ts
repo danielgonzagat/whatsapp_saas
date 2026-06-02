@@ -92,7 +92,8 @@ describe('TikTokMarketingService', () => {
             kind: 'advertiser',
             openId: 'open-123',
             advertiserIds: ['adv-1', 'adv-2'],
-            expiresAt: '2026-06-01T00:00:00.000Z',
+            // Future-relative so the token is never expired (a hardcoded date is a time bomb).
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
           },
         },
       });
