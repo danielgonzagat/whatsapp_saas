@@ -1,3 +1,4 @@
+import * as childProcess from "node:child_process";
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -82,6 +83,63 @@ function runSyncWriteGatesAt(relPath: string, content: string): {
 }
 
 /** Atomic durable write: temp file in same dir, fsync, rename. */
+function brokerSocketPath(): string | null {
+  return process.env.ATOMIC_EXEC_BROKER_SOCKET || null;
+}
+
+function canUseBrokerAtomicWrite(error: unknown): boolean {
+  const code = typeof error === "object" && error !== null && "code" in error ? String((error as { code?: unknown }).code ?? "") : "";
+  return Boolean(brokerSocketPath()) && (code === "EPERM" || code === "EACCES");
+}
+
+function writeAtomicBytesDirect(absPath: string, tmp: string, content: string, mode: number | undefined): void {
+  const fd = fs.openSync(tmp, "w");
+  try {
+    fs.writeSync(fd, content);
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+  if (mode !== undefined) fs.chmodSync(tmp, mode);
+  fs.renameSync(tmp, absPath);
+}
+
+function writeAtomicBytesViaBroker(absPath: string, tmp: string, content: string, mode: number | undefined): void {
+  const socket = brokerSocketPath();
+  if (!socket) throw new Error("atomicWrite broker fallback unavailable: ATOMIC_EXEC_BROKER_SOCKET is unset");
+  const helper = path.join(REPO_ROOT, "scripts/mcp/atomic-edit/atomic-write-broker.mjs");
+  const req = {
+    command: `${shellPath(process.execPath)} ${shellPath(helper)}`,
+    cwd: path.dirname(absPath),
+    effectRoot: path.dirname(absPath),
+    timeoutMs: 120000,
+    env: {
+      ATOMIC_WRITE_TARGET: absPath,
+      ATOMIC_WRITE_TMP: tmp,
+      ...(mode === undefined ? {} : { ATOMIC_WRITE_MODE: String(mode) }),
+    },
+    stdin: content,
+  };
+  const client = path.join(REPO_ROOT, "scripts/mcp/atomic-edit/atomic-exec-broker-client.mjs");
+  const res = childProcess.spawnSync(process.execPath, [client, socket], {
+    cwd: path.dirname(absPath),
+    encoding: "utf8",
+    input: JSON.stringify(req),
+    maxBuffer: 32 * 1024 * 1024,
+    timeout: 125000,
+  });
+  if (res.error) throw res.error;
+  let reply: Record<string, unknown>;
+  try {
+    reply = JSON.parse(res.stdout || "{}") as Record<string, unknown>;
+  } catch {
+    throw new Error(`atomicWrite broker fallback returned unparseable output: ${String(res.stdout).slice(0, 300)}`);
+  }
+  if (reply.ok !== true) {
+    throw new Error(`atomicWrite broker fallback failed: ${String(reply.error ?? reply.stderr ?? res.stderr ?? "unknown broker failure")}`);
+  }
+}
+
 export function atomicWrite(absPath: string, content: string): void {
   // ── Inescapable convergence, at the byte floor — immutable by architecture ──
   // EVERY write, through EVERY tool, funnels through here. A source file that
@@ -151,29 +209,25 @@ export function atomicWrite(absPath: string, content: string): void {
   // umask default (644) on the next atomic write. Capture it before writing.
   let mode: number | undefined;
   try {
-    mode = fs.statSync(absPath).mode;
+    mode = fs.statSync(absPath).mode & 0o777;
   } catch {
-    /* new file → leave the default mode */
+    /* new file (ENOENT) or unstatable: no prior mode to preserve — umask applies */
   }
   try {
-    const fd = fs.openSync(tmp, 'w');
-    try {
-      fs.writeSync(fd, content);
-      fs.fsyncSync(fd);
-    } finally {
-      fs.closeSync(fd);
-    }
-    if (mode !== undefined) fs.chmodSync(tmp, mode);
-    fs.renameSync(tmp, absPath);
+    writeAtomicBytesDirect(absPath, tmp, content, mode);
   } catch (e) {
-    // On ANY failure (ENOSPC on write, EPERM on chmod, EXDEV/ENOENT on rename)
-    // never leave the temp beside the source: a leaked .atomic-edit.*.tmp is an
-    // untracked file that pollutes git status (the clean-tree hazard CLAUDE.md
-    // warns about). The original file is already preserved (rename never ran).
+    // On ANY direct write failure (ENOSPC on write, EPERM on chmod, EXDEV/ENOENT on rename)
+    // never leave the temp beside the source. If the current host process is
+    // read-only but has an atomic_exec broker, retry the same byte write inside
+    // the per-command broker sandbox after all convergence gates have passed.
     try {
       fs.unlinkSync(tmp);
     } catch {
       /* best-effort cleanup */
+    }
+    if (canUseBrokerAtomicWrite(e)) {
+      writeAtomicBytesViaBroker(absPath, tmp, content, mode);
+      return;
     }
     throw e;
   }
