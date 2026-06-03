@@ -25,6 +25,14 @@ const NATIVE_EDIT = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
 // (.md/.txt/none) is NOT blocked — Daniel's rule is about *code*.
 const CODE_EXT =
   /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|ipynb|json|py|go|rs|java|kt|c|h|cc|cpp|hpp|cs|rb|php|swift|scala|sh|bash|zsh|css|scss|less|sql|ya?ml|toml|prisma|vue|svelte|astro|erb)$/i;
+// Prose/docs that genuinely carry no executable config or credential surface — the ONLY
+// extensions a native Write/Edit may target without the atomic security/byte gates. Rank-7
+// no-bypass fix: the old `!CODE_EXT` allow let native Write reach `.env`, `.html`, a `.csv`,
+// or an extensionless dotfile (`.npmrc`/`Dockerfile`) — so a `.env` with `sk_live_…` landed
+// with NO security scan. Allow-prose-only routes every secret/config-bearing file through
+// atomic (which security-scans), deny-by-default. Atomic_create_file handles any text the
+// Write tool can produce, so routing is always feasible.
+const PROSE_EXT = /\.(md|markdown|mdx|txt|text|rst|adoc|asciidoc)$/i;
 
 function readStdinRaw() {
   try {
@@ -217,7 +225,12 @@ function hasEscapeToken(c) {
 }
 
 function shouldRouteThroughAtomicExec(cmd) {
-  if (process.env.ATOMIC_EXEC_MANDATORY === '0') return false;
+  // The mandatory routing may be self-disabled (ATOMIC_EXEC_MANDATORY=0) ONLY outside an
+  // atomic-only host envelope. In a host-launched session (ATOMIC_HOST_ATOMIC_ONLY=1) the
+  // disable is IGNORED — a closed-loop session cannot neutralize routing by exporting the
+  // env var (rank-6 no-bypass hole). Owner config outside the envelope is still honored.
+  if (process.env.ATOMIC_EXEC_MANDATORY === '0' && process.env.ATOMIC_HOST_ATOMIC_ONLY !== '1')
+    return false;
   const raw = String(cmd || '').trim();
   if (!raw) return false;
   // Genuine escape anywhere (even wrapped) -> leave native; atomic_exec can't run it.
@@ -287,8 +300,7 @@ if (tool === 'Bash') {
         `Call mcp__atomic-edit__atomic_exec { command, cwd, intent, proveEffect } instead of ` +
         `native Bash — it wraps the command in sandbox + trace + rollback. Network/remote, ` +
         `local git mutations (commit/add/stash/checkout/…), interactive/login, package-install, ` +
-        `and shell control-flow still pass natively because atomic_exec cannot run them. ` +
-        `Set ATOMIC_EXEC_MANDATORY=0 to disable.`,
+        `and shell control-flow still pass natively because atomic_exec cannot run them.`,
     );
   allow();
 }
@@ -312,10 +324,14 @@ if (tool === 'apply_patch') {
 }
 
 if (!NATIVE_EDIT.has(tool)) allow();
-if (filePath && !CODE_EXT.test(String(filePath))) allow(); // prose/docs OK
+// Allow native Write/Edit ONLY for genuine prose (.md/.txt/…). Everything else — code AND
+// secret/config-bearing non-code (.env, .html, .csv, extensionless dotfiles) — routes
+// through atomic so it is security-scanned + byte-gated (rank-7 no-bypass fix).
+if (filePath && PROSE_EXT.test(String(filePath))) allow();
 
 deny(
-  `TUI-abolished rule: native ${tool} on code is banned so the harness never ` +
+  `TUI-abolished rule: native ${tool} on this file is banned (code, or a secret/config- ` +
+    `bearing non-prose file the security gate must scan) so the harness never ` +
     `renders its whole-line +/- diff. Use mcp__atomic-edit__* instead ` +
     `(atomic_replace_range / atomic_replace_text / atomic_edit_symbol / ` +
     `atomic_replace_literal / atomic_replace_property_value / atomic_wrap_range / ` +
