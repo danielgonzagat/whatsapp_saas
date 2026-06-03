@@ -2217,6 +2217,11 @@ model ProductPlan {
 
   name         String
   price        Float
+  // Additive money-in-cents column (PRODUCT-PLAN migration PHASE A). Nullable so
+  // existing rows stay null until a future gated backfill; canonical money rule is
+  // integer cents (mirrors CheckoutProductPlan.priceInCents). New writes set this
+  // alongside `price`; reads/checkout still consume `price` until a later phase.
+  priceInCents Int?
   currency     String @default("BRL")
   billingType  String @default("ONE_TIME") // ONE_TIME, RECURRING, FREE
   itemsPerPlan Int    @default(1)

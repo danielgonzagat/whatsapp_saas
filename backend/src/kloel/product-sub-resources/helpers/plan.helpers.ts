@@ -178,6 +178,11 @@ export function buildPlanData(body: LooseObject, current?: LooseObject) {
   return removeUndefined({
     name: body.name,
     price,
+    // Additive money-in-cents dual-write (PRODUCT-PLAN PHASE A). Derived from the
+    // same resolved `price`; stays undefined (dropped by removeUndefined) when
+    // price was not provided, preserving partial-update semantics. `price` Float
+    // remains the read source until a later gated phase.
+    priceInCents: price === undefined ? undefined : Math.round(price * 100),
     billingType: body.billingType,
     itemsPerPlan,
     maxInstallments: parseNumber(body.maxInstallments),
