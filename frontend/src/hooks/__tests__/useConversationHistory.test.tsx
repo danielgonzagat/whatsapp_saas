@@ -335,7 +335,8 @@ it('updates a thread title only after backend success', async () => {
   await waitFor(() => {
     expect(result.current.conversations[0]?.title).toBe('Renamed');
   });
-  expect(swrMutateMock).toHaveBeenCalledWith(expect.any(Function));
+  const [mutateArg] = swrMutateMock.mock.calls[0] ?? [];
+  expect(typeof mutateArg).toBe('function');
 });
 
 it('does not update a thread title when backend returns an API error envelope', async () => {

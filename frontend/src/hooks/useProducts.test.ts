@@ -254,8 +254,9 @@ describe('useProductMutations', () => {
       status: 201,
     });
 
-    expect(swrMocks.globalMutate).toHaveBeenCalledWith(expect.any(Function));
-    const predicate = swrMocks.globalMutate.mock.calls[0][0] as (key: unknown) => boolean;
+    const predicateCandidate = swrMocks.globalMutate.mock.calls[0]?.[0];
+    expect(typeof predicateCandidate).toBe('function');
+    const predicate = predicateCandidate as (key: unknown) => boolean;
     expect(predicate('/products')).toBe(true);
     expect(predicate('/products?active=true')).toBe(true);
     expect(predicate('/kyc/profile')).toBe(false);

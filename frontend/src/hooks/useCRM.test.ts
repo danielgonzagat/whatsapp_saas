@@ -177,6 +177,7 @@ describe('useCRMMutations', () => {
     const response = await result.current.updateDeal('deal-1', { title: 'Novo' });
 
     expect(response).toEqual({ data: { id: 'deal-1' }, status: 200 });
-    expect(globalMutateMock).toHaveBeenCalledWith(expect.any(Function));
+    const [mutateArg] = globalMutateMock.mock.calls[0] ?? [];
+    expect(typeof mutateArg).toBe('function');
   });
 });

@@ -38,7 +38,7 @@ describe('kyc.lookup.helpers', () => {
   });
 
   describe('lookupCnpj', () => {
-    it('rejects a malformed CNPJ before any network call', async () => {
+    it('rejects a malformed CNPJ before a network call', async () => {
       const fetchMock = mockFetch(() => Promise.reject(new Error('should not reach the network')));
       await expect(lookupCnpj('123')).rejects.toBeInstanceOf(BadRequestException);
       expect(fetchMock).not.toHaveBeenCalled();

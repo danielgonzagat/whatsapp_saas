@@ -9,6 +9,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useRef, useCallback, useMemo, useContext, createContext } from "react";
 import Image from "next/image";
+import { randomIdSegment } from "@/lib/secure-random";
 import { sendAuthenticatedKloelMessage } from "@/lib/kloel-conversations";
 import { useProducts } from "@/hooks/useProducts";
 import { useWalletBalance, useWalletWithdrawals, useWalletAnticipations } from "@/hooks/useWallet";
@@ -163,7 +164,7 @@ function defaultCheckoutConfig(over = {}) {
 
 function defaultPlan(over = {}) {
   return {
-    id: `pl-${Math.random().toString(36).slice(2, 8)}`, name: "", referenceCode: "",
+    id: `pl-${randomIdSegment(6)}`, name: "", referenceCode: "",
     priceInCents: 0, compareAtPrice: null, currency: "BRL",
     billingType: "ONE_TIME",            // ONE_TIME | RECURRING | FREE
     itemsPerPlan: 1, quantity: 1,
@@ -5986,7 +5987,7 @@ function KloelImagesScreen({ kloel, setKloel, linkTargets = [], onOpenNode }) {
     const files = Array.from(e.target.files || []);
     files.forEach(file => {
       const reader = new FileReader();
-      reader.onload = () => setKloel(k => ({ ...k, images: [{ id: `img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, name: file.name, url: String(reader.result), mimeType: file.type, createdAt: nowISO(), source: "upload", linkedNodeIds: [] }, ...(k.images || [])] }));
+      reader.onload = () => setKloel(k => ({ ...k, images: [{ id: `img-${Date.now()}-${randomIdSegment(4)}`, name: file.name, url: String(reader.result), mimeType: file.type, createdAt: nowISO(), source: "upload", linkedNodeIds: [] }, ...(k.images || [])] }));
       reader.readAsDataURL(file);
     });
     e.target.value = "";
@@ -6278,7 +6279,7 @@ function NewProductModal({ onClose, onCreate }) {
 // que o grafo do protótipo espera. Honest-empty: sem dado real → zero nós-produto
 // (nunca o seed PRODUCTS). Defensivo a campos ausentes do backend.
 function adaptRealProduct(p) {
-  const id = String((p && (p.id ?? p._id ?? p.slug)) ?? `prod-${Math.random().toString(36).slice(2, 8)}`);
+  const id = String((p && (p.id ?? p._id ?? p.slug)) ?? `prod-${randomIdSegment(6)}`);
   const name = (p && (p.name ?? p.title)) ? String(p.name ?? p.title) : "Produto";
   const category = (p && p.category) ? String(p.category) : "Outros";
   const status = (p && p.status) ? String(p.status) : "draft";
@@ -6299,7 +6300,7 @@ function adaptRealProduct(p) {
 function adaptRealArea(a) {
   return {
     ...a,
-    id: String((a && (a.id ?? a._id ?? a.slug)) ?? `ma-${Math.random().toString(36).slice(2, 8)}`),
+    id: String((a && (a.id ?? a._id ?? a.slug)) ?? `ma-${randomIdSegment(6)}`),
     name: (a && (a.name ?? a.title)) ? String(a.name ?? a.title) : "Área de membros",
     type: (a && a.type) ? String(a.type) : "course",
     active: a ? a.active !== false : true,
@@ -6310,7 +6311,7 @@ function adaptRealArea(a) {
 }
 function adaptRealAffiliate(a) {
   return {
-    id: String((a && (a.id ?? a._id)) ?? `aff-${Math.random().toString(36).slice(2, 8)}`),
+    id: String((a && (a.id ?? a._id)) ?? `aff-${randomIdSegment(6)}`),
     name: (a && (a.name ?? a.agentName ?? a.email)) ? String(a.name ?? a.agentName ?? a.email) : "Parceiro",
     email: (a && a.email) ? String(a.email) : "",
     type: (a && a.type) ? String(a.type) : "affiliate",
@@ -6347,7 +6348,7 @@ function mergeRealAccount(base, profile, fiscal, bank, docs) {
 }
 function adaptRealContact(ct) {
   return {
-    id: String((ct && (ct.id ?? ct._id ?? ct.phone)) ?? `ct-${Math.random().toString(36).slice(2, 8)}`),
+    id: String((ct && (ct.id ?? ct._id ?? ct.phone)) ?? `ct-${randomIdSegment(6)}`),
     name: (ct && (ct.name ?? ct.fullName ?? ct.displayName ?? ct.phone)) ? String(ct.name ?? ct.fullName ?? ct.displayName ?? ct.phone) : "Contato",
     phone: (ct && ct.phone) ? String(ct.phone) : "",
     email: (ct && ct.email) ? String(ct.email) : "",
@@ -6364,7 +6365,7 @@ function adaptRealContact(ct) {
 function adaptRealDeal(d) {
   const contact = (d && d.contact) || {};
   return {
-    id: String((d && (d.id ?? d._id)) ?? `dl-${Math.random().toString(36).slice(2, 8)}`),
+    id: String((d && (d.id ?? d._id)) ?? `dl-${randomIdSegment(6)}`),
     title: (d && (d.title ?? d.name)) ? String(d.title ?? d.name) : "Negócio",
     value: Number((d && (d.value ?? d.amount)) || 0),
     priority: (d && d.priority) ? String(d.priority) : "MEDIUM",
