@@ -40,7 +40,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "seed:products": "ts-node prisma/seed-products.ts",
     "seed:affiliates": "ts-node scripts/seed-affiliate-products.ts",
-    "cleanup:legacy-products": "ts-node scripts/remove-legacy-products.ts"
+    "cleanup:legacy-products": "ts-node scripts/remove-legacy-products.ts",
+    "backfill:person-lead-to-contact": "ts-node src/prisma/backfills/person-kloel-lead-to-contact.backfill.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1058.0",
