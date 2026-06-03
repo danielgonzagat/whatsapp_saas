@@ -564,6 +564,12 @@ import { CrmModule } from '../crm/crm.module';
     MindVerbalizerService,
     DecisionOutcomeService,
     AgentRuntimeContextService,
+    // One-Mind unification: export the two cognition services CopilotModule needs
+    // to inject @Optional() for its KLOEL_COPILOT_LOOP_ENABLED learning loop
+    // (DecisionOutcomeService / MindBeliefService / MindGlobalPriorService above
+    // are already exported). REUSE — these are the same providers think/reply use.
+    MindSurpriseService,
+    MindPredictorService,
     AgentRuntimeContextCompressorService,
     AgentRuntimeBuiltinMemoryProvider,
     AgentRuntimeEvidenceStoreService,

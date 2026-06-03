@@ -1,7 +1,20 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
+import { StructuredLogger } from '../logging/structured-logger';
+import {
+  openCopilotLoop,
+  closeCopilotLoopSuccess,
+  closeCopilotLoopError,
+  type CopilotLoopHandle,
+  type CopilotLoopServices,
+} from '../kloel/kloel-copilot-loop.helpers';
+import { DecisionOutcomeService } from '../kloel/decision-outcome.service';
+import { MindBeliefService } from '../kloel/mind/inference/mind-belief.service';
+import { MindSurpriseService } from '../kloel/mind/inference/mind-surprise.service';
+import { MindGlobalPriorService } from '../kloel/mind/memory/mind-global-prior.service';
+import { MindPredictorService } from '../kloel/mind/inference/mind-predictor.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -13,11 +26,38 @@ const DUVIDA_COMO_FUNCIONA_RE = /duvida|como|funciona/i;
 @Injectable()
 export class CopilotService {
   private readonly logger = new Logger(CopilotService.name);
+  // One-Mind unification: a StructuredLogger for the cognition loop only (the
+  // reused decision-outcome helpers require its `warn(msg, ctx)` /
+  // `log(payload)` shape). The existing plain `logger` above is untouched, so
+  // every current Copilot log line stays byte-identical.
+  private readonly loopLogger = StructuredLogger.from(CopilotService.name);
 
   constructor(
     private prisma: PrismaService,
     private readonly planLimits: PlanLimitsService,
+    // One-Mind unification: optional cognition services for the COPILOT learning
+    // loop — the SAME ones the reply engine / think loop use, REUSED not
+    // re-implemented. All @Optional() so flag-off (and DI contexts that don't
+    // provide them) resolve to undefined and the reused fire-and-forget helpers
+    // short-circuit. Placed AFTER the existing params so positional construction
+    // (`new CopilotService(prisma, planLimits)`) stays compatible.
+    @Optional() private readonly decisionOutcomeService?: DecisionOutcomeService,
+    @Optional() private readonly mindBeliefService?: MindBeliefService,
+    @Optional() private readonly mindSurpriseService?: MindSurpriseService,
+    @Optional() private readonly mindGlobalPriorService?: MindGlobalPriorService,
+    @Optional() private readonly mindPredictorService?: MindPredictorService,
   ) {}
+
+  /** Bundle the optional cognition services for the copilot-loop helpers. */
+  private get copilotLoopServices(): CopilotLoopServices {
+    return {
+      decisionOutcomeService: this.decisionOutcomeService,
+      mindBeliefService: this.mindBeliefService,
+      mindSurpriseService: this.mindSurpriseService,
+      mindGlobalPriorService: this.mindGlobalPriorService,
+      mindPredictorService: this.mindPredictorService,
+    };
+  }
 
   private buildPrompt(history: string, kbSnippet?: string) {
     let prompt = `Você é um copilot de vendas no WhatsApp. Gere uma resposta concisa, humana e útil. Foque em avançar a conversa com CTA claro. Nunca repita pergunta, assunto, oferta ou dado que já apareçam no histórico integral abaixo.`;
@@ -82,6 +122,16 @@ export class CopilotService {
 
     const client = new OpenAI({ apiKey });
 
+    // One-Mind unification: open the cognition learning loop BEFORE the LLM
+    // call — mirrors the sync/think paths (recordChatReplyDecision +
+    // predictChatReply ahead of the model). Returns null + does nothing when the
+    // flag is OFF, so the critical path below is byte-identical to legacy then.
+    const copilotLoop: CopilotLoopHandle | null = openCopilotLoop(
+      this.copilotLoopServices,
+      this.loopLogger,
+      { workspaceId, messageLength: history.length },
+    );
+
     try {
       const prompt = this.buildPrompt(history, kbSnippet);
       await this.planLimits.ensureTokenBudget(workspaceId);
@@ -106,13 +156,26 @@ export class CopilotService {
       );
       if (!suggestion || suggestion.trim().length < 2) {
         this.logger.warn(`copilot-suggest short output ws=${workspaceId} len=${suggestion.length}`);
+        // Short/empty model output → degraded outcome (0): we return canned
+        // fallback text instead of a real reply. Mirrors the sync path's
+        // `assistantMessage.length > 0 ? 1 : 0`. Fire-and-forget; null-safe.
+        closeCopilotLoopSuccess(this.copilotLoopServices, this.loopLogger, copilotLoop, 0);
         return {
           suggestion:
             'Vi sua mensagem! Posso te ajudar a decidir e já te enviar os próximos passos agora.',
         };
       }
+      // Real (non-empty) model reply → outcome 1. Close the loop AFTER the reply
+      // is produced — mirrors the sync path's success arm. Fire-and-forget;
+      // no-op when the handle is null (flag OFF).
+      closeCopilotLoopSuccess(this.copilotLoopServices, this.loopLogger, copilotLoop, 1);
       return { suggestion };
     } catch (error: unknown) {
+      // Reply FAILED before producing an answer → close as a failed outcome
+      // (mirrors the sync path's catch arm). Fire-and-forget; no-op when the
+      // handle is null (flag OFF). Wrapped so a loop failure can never mask the
+      // user-facing fallback below.
+      closeCopilotLoopError(this.copilotLoopServices, this.loopLogger, copilotLoop);
       this.logger.warn(
         `Copilot suggest error: ${error instanceof Error ? error.message : 'unknown error'}`,
       );
