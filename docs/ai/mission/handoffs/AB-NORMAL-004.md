@@ -1,0 +1,32 @@
+# AB-NORMAL-004
+
+- Status: accepted_as_input_only
+- Modo: OpenCode NORMAL, sem atomic-edit, worktree isolado.
+- Workspace: `/tmp/kloel-opencode-ab4-20260516-1746/normal`
+- Prompt recebido: adicionar auditoria de honestidade de preview trace em `scripts/mcp/atomic-edit/audit-atomicity.mjs`.
+- Arquivos lidos:
+  - `AGENTS.md`
+  - `scripts/decomp/opencode-subagent-delegation-rules.md`
+  - `scripts/mcp/atomic-edit/audit-atomicity.mjs`
+- Arquivos alterados:
+  - `scripts/mcp/atomic-edit/audit-atomicity.mjs` no worktree NORMAL.
+- Hipotese inicial: preview trace deve ser hard-fail quando `preview:true` tambem afirma escrita/rollback como se tivesse persistido.
+- Decisao tomada: usar como insumo parcial; nao copiar diretamente para o repo principal.
+- Testes/comandos observados:
+  - `node --check scripts/mcp/atomic-edit/audit-atomicity.mjs`: passou no worktree.
+  - `node scripts/mcp/atomic-edit/audit-atomicity.mjs --self-test --json`: passou no worktree.
+  - `git diff --check -- scripts/mcp/atomic-edit`: passou no worktree.
+- Evidencia antes/depois:
+  - Antes: auditor nao distinguia preview honesto de preview que parecia escrita real.
+  - Depois no worktree NORMAL: havia casos de self-test para preview honesto/desonesto e campo proprio `previewEnforcementPass`.
+  - Rejeicao parcial: nomenclatura e contrato divergiram do repo principal, e smoke do worktree foi contaminado por setup incompleto.
+- Benchmark:
+  - Diff alvo do auditor: word-diff 22.292 bytes.
+  - Sem trace atomico de mutacao.
+- Risco residual:
+  - Entrega pareceu funcional localmente, mas nao foi ambiente limpo nem contrato final canonico.
+  - Nao prova superioridade NORMAL; apenas venceu a rodada 4 contra um ATOMIC bloqueado por ferramenta.
+- Recomendacao para proximo worker:
+  - Reusar a ideia dos hard-cases de preview.
+  - Exigir nomes canonicos `previewHonestyPass`, `previewTraceCount`, `dishonestPreviewCount` e `dishonestPreviews`.
+  - Validar com smoke completo em worktree corretamente preparado.

@@ -1,0 +1,22 @@
+# AB-ATOMIC-006B
+
+- Status: accepted_as_input_with_scope_and_timeout_gap
+- Worker: OpenCode ATOMIC, `deepseek/deepseek-v4-pro`, worktree `/tmp/kloel-opencode-ab6b-20260516-1858-atomic`.
+- Prompt recebido: implementar `code_file_stat` no MCP usando somente MCP atomic-edit para qualquer mutacao de codigo, ou parar se MCP indisponivel.
+- Arquivos lidos: `AGENTS.md`, `scripts/decomp/opencode-subagent-delegation-rules.md`, `scripts/mcp/atomic-edit/guard.ts`, `scripts/mcp/atomic-edit/server.ts`, `scripts/mcp/atomic-edit/smoke.ts`.
+- Arquivos alterados no worktree: `scripts/mcp/atomic-edit/guard.ts`, `scripts/mcp/atomic-edit/server.ts`, `scripts/mcp/atomic-edit/smoke.ts`.
+- Operadores atomicos observados: `atomic_edit_symbol`, `atomic_add_import`, `atomic_replace_text`.
+- Hipotese inicial: ATOMIC deveria entregar a mesma ferramenta com rastreabilidade, preservacao e sem fallback/native code mutation.
+- Decisao tomada: aceitar como prova de runtime atomic-only e insumo; registrar derrota parcial por helper extra em `guard.ts`, timeout interno no smoke da TUI e teste de hash mais fraco.
+- Testes executados pelo orquestrador:
+  - `node --check scripts/mcp/atomic-edit/guard.ts`: passed.
+  - `node --check scripts/mcp/atomic-edit/server.ts`: passed.
+  - `node --check scripts/mcp/atomic-edit/smoke.ts`: passed.
+  - `node scripts/mcp/atomic-edit/build.mjs`: passed.
+  - `npx tsx scripts/mcp/atomic-edit/smoke.ts`: 118 passed, 0 failed em validacao independente.
+  - `node scripts/mcp/atomic-edit/audit-atomicity.mjs --since=2026-05-16T21:58:00.000Z --strict-current-topology --json`: `pass=true`, `previewHonestyPass=true`, `currentTopologyCoverage=1`.
+  - `git diff --check -- scripts/mcp/atomic-edit`: passed.
+- Evidencia antes/depois: antes nao havia `code_file_stat`; depois o worktree ATOMIC listou 29 ferramentas, gerou traces atomicos e cobriu file/missing/directory/protected.
+- Benchmark: venceu em rastreabilidade e uso real do MCP; perdeu em escopo minimo, self-termination e robustez de teste de hash.
+- Risco residual: hash no worker ainda vinha de `readUtf8`, nao de bytes brutos; teste verificava comprimento do hash, nao igualdade contra o conteudo bruto.
+- Recomendacao: proxima rodada ATOMIC deve provar a topologia antes da edicao e justificar qualquer arquivo extra; sem justificativa, escopo extra conta como derrota.

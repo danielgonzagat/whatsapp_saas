@@ -1,0 +1,35 @@
+# AB-ATOMIC-004
+
+- Status: rejected_blocked_atomic_tooling
+- Modo: OpenCode ATOMIC, atomic-only, worktree isolado.
+- Workspace: `/tmp/kloel-opencode-ab4-20260516-1746/atomic`
+- Prompt recebido: resolver a mesma tarefa de preview honesty usando somente modo atomico.
+- Arquivos lidos:
+  - `AGENTS.md`
+  - `scripts/decomp/opencode-subagent-delegation-rules.md`
+  - `opencode.json`
+  - `.opencode/plugins/workspace-gates.ts`
+  - `scripts/mcp/atomic-edit/audit-atomicity.mjs`
+- Arquivos alterados:
+  - Nenhuma entrega de codigo aceita.
+  - Diffs existentes no worktree nao representam patch funcional da rodada.
+- Hipotese inicial: o worker ATOMIC deveria enxergar `mcp__atomic-edit__*` ou usar fallback standalone atomico aprovado sem sair do contrato.
+- Decisao tomada: rejeitar e encerrar a sessao; a rodada mede falha operacional do modo ATOMIC/OpenCode, nao inferioridade conceitual da atomicidade.
+- Testes/comandos observados:
+  - Tool list do OpenCode ATOMIC nao expôs `mcp__atomic-edit__*`; ferramentas observadas incluiam `bash`, `glob`, `grep`, `read`, `task` e similares.
+  - O worker tentou planejar escrita Bash/Node para modificar codigo, o que viola atomic-only.
+  - `node --check scripts/mcp/atomic-edit/audit-atomicity.mjs`: passou porque o arquivo ainda estava sintaticamente valido.
+  - `node scripts/mcp/atomic-edit/audit-atomicity.mjs --self-test --json`: continuou no estado antigo de 4 casos, sem preview honesty.
+  - `pgrep -fl 'opencode run|opencode serve'`: vazio apos cleanup do orquestrador.
+- Evidencia antes/depois:
+  - Antes: esperava-se que atomic-only conseguisse executar a mesma missao via MCP.
+  - Depois: sem MCP no tool list, o worker nao tinha caminho ergonomico aprovado e tentou sair para escrita proibida.
+- Benchmark:
+  - ATOMIC perdeu a rodada por disponibilidade/uso de ferramenta antes de competir em corretude, tempo ou diff.
+- Risco residual:
+  - Proxima rodada A/B oficial ficara invalida se esse setup repetir a falha.
+  - O gate precisa bloquear nao so execucao de escrita Bash/Node, mas tambem tratar planejamento de escrita nao-atomica como falha de aceite.
+- Recomendacao para proximo worker:
+  - Rodar canary de exposicao: confirmar `mcp__atomic-edit__*` no OpenCode ATOMIC antes da missao real.
+  - Se MCP nao aparecer, parar e reportar ou usar fallback standalone atomico aprovado explicitamente no prompt, com dry-run/hash guards.
+  - Nao escalar complexidade ate ATOMIC vencer NORMAL em ambiente valido.
