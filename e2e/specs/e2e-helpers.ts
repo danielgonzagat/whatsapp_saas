@@ -30,7 +30,7 @@ type E2EAuthCacheFile = {
   createdAt?: string;
 };
 
-function decodeJwtPayload(token: string): Record<string, unknown> | null {
+export function decodeJwtPayload(token: string): Record<string, unknown> | null {
   const [, payload = ''] = token.split('.');
   if (!payload) {
     return null;
