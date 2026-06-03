@@ -14,18 +14,6 @@ export {
 export type { NormalizedConnectionStatus, WhatsAppProviderType };
 export type { BuildSnapshotParams };
 
-/** Pick waha qr code. */
-export function pickWahaQrCode(providerType: WhatsAppProviderType, qrCode: unknown): string | null {
-  if (providerType !== 'whatsapp-api') {
-    return null;
-  }
-  if (typeof qrCode !== 'string') {
-    return null;
-  }
-  const trimmed = qrCode.trim();
-  return trimmed ? qrCode : null;
-}
-
 /** Pick meta auth url. */
 export function pickMetaAuthUrl(
   providerType: WhatsAppProviderType,
@@ -113,7 +101,6 @@ export function buildProviderSessionSnapshot(params: BuildSnapshotParams): Provi
   } = params;
 
   return {
-    qrCode: pickWahaQrCode(providerType, session.qrCode),
     status: normalizedStatus,
     authUrl: pickMetaAuthUrl(providerType, session.authUrl),
     selfIds: resolveSelfIds(session.selfIds),

@@ -1,5 +1,4 @@
 import {
-  pickWahaQrCode,
   pickMetaAuthUrl,
   resolveRawStatusFallback,
   resolveSelfIds,
@@ -9,34 +8,9 @@ import {
   buildProviderSessionSnapshot,
 } from './provider-status.util';
 
-describe('pickWahaQrCode', () => {
-  it('returns qrCode string for whatsapp-api', () => {
-    expect(pickWahaQrCode('whatsapp-api', 'qr-data')).toBe('qr-data');
-  });
-
-  it('returns null for meta-cloud', () => {
-    expect(pickWahaQrCode('meta-cloud', 'qr-data')).toBeNull();
-  });
-
-  it('returns null for non-string values', () => {
-    expect(pickWahaQrCode('whatsapp-api', 123)).toBeNull();
-    expect(pickWahaQrCode('whatsapp-api', null)).toBeNull();
-    expect(pickWahaQrCode('whatsapp-api', {})).toBeNull();
-  });
-
-  it('returns null for empty/whitespace strings', () => {
-    expect(pickWahaQrCode('whatsapp-api', '')).toBeNull();
-    expect(pickWahaQrCode('whatsapp-api', '   ')).toBeNull();
-  });
-});
-
 describe('pickMetaAuthUrl', () => {
   it('returns authUrl string for meta-cloud', () => {
     expect(pickMetaAuthUrl('meta-cloud', 'https://auth.url')).toBe('https://auth.url');
-  });
-
-  it('returns null for whatsapp-api', () => {
-    expect(pickMetaAuthUrl('whatsapp-api', 'https://auth.url')).toBeNull();
   });
 
   it('returns null for non-string values', () => {
@@ -69,14 +43,6 @@ describe('resolveRawStatusFallback', () => {
 
   it('falls back to meta fallback for meta-cloud without phoneNumberId', () => {
     expect(resolveRawStatusFallback('', 'meta-cloud', 'disconnected', null)).toBe('DISCONNECTED');
-  });
-
-  it('falls back to waha fallback for whatsapp-api connecting', () => {
-    expect(resolveRawStatusFallback('', 'whatsapp-api', 'connecting', null)).toBe('SCAN_QR_CODE');
-  });
-
-  it('falls back to waha fallback for whatsapp-api disconnected', () => {
-    expect(resolveRawStatusFallback('', 'whatsapp-api', 'disconnected', null)).toBe('DISCONNECTED');
   });
 });
 
@@ -113,10 +79,6 @@ describe('resolveWhatsappBusinessId', () => {
     expect(resolveWhatsappBusinessId('meta-cloud', 'biz-123')).toBe('biz-123');
   });
 
-  it('returns null for whatsapp-api', () => {
-    expect(resolveWhatsappBusinessId('whatsapp-api', 'biz-123')).toBeNull();
-  });
-
   it('returns null when businessId is null', () => {
     expect(resolveWhatsappBusinessId('meta-cloud', null)).toBeNull();
   });
@@ -140,7 +102,6 @@ describe('buildProviderSessionSnapshot', () => {
   const baseParams = {
     providerType: 'meta-cloud' as const,
     session: {
-      qrCode: 'qr-data',
       status: 'DISCONNECTED',
       authUrl: 'https://auth.meta.com',
       selfIds: ['self1'],
@@ -172,20 +133,9 @@ describe('buildProviderSessionSnapshot', () => {
     expect(snapshot.phoneNumber).toBe('+123456789');
     expect(snapshot.sessionName).toBe('ws-123');
     expect(snapshot.disconnectReason).toBe('test_reason');
-    expect(snapshot.qrCode).toBeNull();
     expect(snapshot.authUrl).toBe('https://auth.meta.com');
     expect(snapshot.whatsappBusinessId).toBeNull();
     expect(snapshot.phoneNumberId).toBeNull();
-  });
-
-  it('includes qrCode for whatsapp-api provider', () => {
-    const params = {
-      ...baseParams,
-      providerType: 'whatsapp-api' as const,
-      session: { ...baseParams.session, qrCode: 'qr-code-string' },
-    };
-    const snapshot = buildProviderSessionSnapshot(params);
-    expect(snapshot.qrCode).toBe('qr-code-string');
   });
 
   it('resolves sessionName from workspaceId when sessionName is null', () => {
