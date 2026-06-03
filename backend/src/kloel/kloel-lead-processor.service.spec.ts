@@ -35,7 +35,7 @@ type LeadProcessorPrismaMock = {
   workspace: { findUnique: jest.Mock };
   kloelLead: { findFirst: jest.Mock; create: jest.Mock; findMany: jest.Mock };
   kloelConversation: { create: jest.Mock; findMany: jest.Mock };
-  contact: { upsert: jest.Mock };
+  contact: { upsert: jest.Mock; findUnique: jest.Mock };
   kloelMemory: { findMany: jest.Mock };
   product: { findMany: jest.Mock };
 };
@@ -75,6 +75,7 @@ describe('KloelLeadProcessorService', () => {
         findMany: jest.fn().mockResolvedValue([]),
       },
       contact: {
+        findUnique: jest.fn().mockResolvedValue(null),
         upsert: jest.fn().mockResolvedValue({ id: 'contact-1' }),
       },
       kloelMemory: {
@@ -256,6 +257,69 @@ describe('KloelLeadProcessorService', () => {
         ]
       >;
       expect(createArg).toMatchObject({ data: { workspaceId: wsId } });
+    });
+
+    it('dual-writes canonical Contact mirroring funnel + kloelLeadId (PERSON PHASE 1)', async () => {
+      // Existing Contact with no link yet → write-if-null stamps it in update.
+      prisma.contact.findUnique.mockResolvedValue({ kloelLeadId: null });
+      prisma.kloelLead.create.mockResolvedValue({
+        id: 'lead-1',
+        workspaceId: wsId,
+        phone: '5511999999999',
+        name: 'Lead 9999',
+        status: 'hot',
+        stage: 'negotiation',
+        lastMessage: 'Quero comprar',
+        lastIntent: 'purchase',
+        totalMessages: 3,
+        score: 0,
+      });
+      await service.processWhatsAppMessage(wsId, '5511999999999', 'Quero comprar', () =>
+        Promise.resolve('c'),
+      );
+      expect(prisma.contact.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { workspaceId_phone: { workspaceId: wsId, phone: '5511999999999' } },
+        }),
+      );
+      expect(prisma.contact.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { workspaceId_phone: { workspaceId: wsId, phone: '5511999999999' } },
+          create: expect.objectContaining({
+            workspaceId: wsId,
+            phone: '5511999999999',
+            leadStatus: 'hot',
+            leadStage: 'negotiation',
+            lastMessage: 'Quero comprar',
+            lastIntent: 'purchase',
+            totalMessages: 3,
+            kloelLeadId: 'lead-1',
+          }),
+          update: expect.objectContaining({
+            leadStatus: 'hot',
+            leadStage: 'negotiation',
+            kloelLeadId: 'lead-1',
+          }),
+        }),
+      );
+    });
+
+    it('does not overwrite an existing Contact.kloelLeadId (write-if-null)', async () => {
+      prisma.contact.findUnique.mockResolvedValue({ kloelLeadId: 'other-lead' });
+      await service.processWhatsAppMessage(wsId, '5511999999999', 'Oi', () => Promise.resolve('c'));
+      expect(prisma.contact.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          update: expect.not.objectContaining({ kloelLeadId: expect.anything() }),
+        }),
+      );
+    });
+
+    it('is fail-open when Contact dual-write throws', async () => {
+      prisma.contact.upsert.mockRejectedValueOnce(new Error('contact DB error'));
+      const result = await service.processWhatsAppMessage(wsId, '5511999999999', 'Oi', () =>
+        Promise.resolve('c'),
+      );
+      expect(result).toContain('Resposta');
     });
   });
 
