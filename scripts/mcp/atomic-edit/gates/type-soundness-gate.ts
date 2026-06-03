@@ -56,13 +56,40 @@ const isCheckable = (rel: string): boolean => TS_RE.test(rel) && !rel.endsWith('
 const MAX_CHANGED = 256;
 const MAX_DIAG_REPORT = 20;
 
-/** Walk from the changed file's directory up to repoRoot looking for a tsconfig.json. */
-function nearestTsconfig(repoRoot: string, fromRel: string): string | null {
+const TEST_FILE_RE = /\.(spec|test)\.[cm]?[jt]sx?$/;
+const TEST_CONFIG_NAMES = [
+  'tsconfig.spec.json',
+  'tsconfig.test.json',
+  'tsconfig.jest.json',
+  'tsconfig.vitest.json',
+];
+
+/**
+ * The tsconfig that GOVERNS a file's real compilation. Walking up from the file's
+ * directory: a TEST file (.spec/.test) prefers a sibling test config
+ * (tsconfig.spec.json/…) — a project's app tsconfig typically EXCLUDES specs
+ * (`**​/*spec.ts`) AND is stricter, so compiling a spec under it fabricates errors
+ * the real `jest`/`vitest` run never sees (missing jest globals, noUnusedLocals,
+ * noUncheckedIndexedAccess). A non-test file uses the nearest tsconfig.json.
+ *
+ * Name-based, NOT include-glob membership: a globbed file set goes stale for files
+ * created mid-session (a brand-new file the glob predates would look "excluded"),
+ * and a project's eslint tsconfig often globs specs too but with the wrong options —
+ * so the test-config NAME is the faithful selector for how the file really compiles.
+ */
+function selectConfig(repoRoot: string, fromRel: string): string | null {
   const rootAbs = path.resolve(repoRoot);
+  const isTest = TEST_FILE_RE.test(fromRel);
   let dir = path.dirname(path.resolve(repoRoot, fromRel));
   for (;;) {
-    const cand = path.join(dir, 'tsconfig.json');
-    if (fs.existsSync(cand)) return cand;
+    if (isTest) {
+      for (const name of TEST_CONFIG_NAMES) {
+        const cand = path.join(dir, name);
+        if (fs.existsSync(cand)) return cand;
+      }
+    }
+    const primary = path.join(dir, 'tsconfig.json');
+    if (fs.existsSync(primary)) return primary;
     if (dir === rootAbs) return null;
     const parent = path.dirname(dir);
     if (parent === dir) return null; // hit fs root without finding repoRoot — stop
@@ -230,6 +257,54 @@ function toRed(repoRoot: string, rel: string, d: ts.Diagnostic): GateRed {
   return { file: rel, locus, fact: `type error TS${d.code}: ${msg}` };
 }
 
+/**
+ * Judge ONE group of changed files that share a governing tsconfig: candidate
+ * compile, fast-path when every file is clean, else a prior compile to apply delta
+ * semantics (only NEW errors red; pre-existing debt and single-file-rooting
+ * structural false-errors cancel). Returns the reds, or an unjudged signal when the
+ * bytes cannot be read/computed — never red-by-guess.
+ */
+function judgeGroup(
+  ctx: GateContext,
+  tsconfigPath: string,
+  files: string[],
+): { reds: GateRed[] } | { unjudgedReason: string } {
+  const candOverrides = new Map<string, string>();
+  for (const rel of files) {
+    const content = ctx.readFile(rel);
+    if (content === null) return { unjudgedReason: `cannot read candidate bytes for '${rel}'` };
+    candOverrides.set(rel, content);
+  }
+  const cand = diagnoseChanged(ctx.repoRoot, tsconfigPath, files, candOverrides);
+  if ([...cand.counts.values()].some((c) => c < 0)) {
+    return {
+      unjudgedReason:
+        'candidate TypeScript diagnostics could not be computed for at least one changed file',
+    };
+  }
+  // Fast path: a candidate clean in every file cannot be a regression → green.
+  if ([...cand.counts.values()].every((c) => c === 0)) return { reds: [] };
+
+  const priorOverrides = new Map<string, string>();
+  for (const rel of files) priorOverrides.set(rel, ctx.priorOf(rel));
+  const prior = diagnoseChanged(ctx.repoRoot, tsconfigPath, files, priorOverrides);
+
+  const reds: GateRed[] = [];
+  for (const rel of files) {
+    const now = cand.counts.get(rel) ?? 0;
+    const was = prior.counts.get(rel);
+    // A prior file that failed to load (-1) cannot anchor a delta → skip honestly.
+    if (was === undefined || was < 0) continue;
+    if (now > was) {
+      for (const d of cand.diags.get(rel) ?? []) {
+        if (reds.length >= MAX_DIAG_REPORT) break;
+        reds.push(toRed(ctx.repoRoot, rel, d));
+      }
+    }
+  }
+  return { reds };
+}
+
 const gate: GateModule = {
   name: 'type-soundness',
   kind: 'dynamic',
@@ -250,10 +325,13 @@ const gate: GateModule = {
       };
     }
 
-    // All changed files must share one tsconfig — refuse to mix projects.
-    const configs = new Set<string>();
+    // Group each changed file under the tsconfig that GOVERNS its real compilation
+    // (a spec file under its test config, not the app config that excludes it), then
+    // judge each group under its own options. Mixed scopes no longer bail unjudged —
+    // each governing project is judged independently. No tsconfig at all → unjudged.
+    const groups = new Map<string, string[]>();
     for (const rel of changed) {
-      const tc = nearestTsconfig(ctx.repoRoot, rel);
+      const tc = selectConfig(ctx.repoRoot, rel);
       if (!tc) {
         return {
           gate: 'type-soundness',
@@ -264,73 +342,24 @@ const gate: GateModule = {
           unjudgedReason: `no tsconfig found for '${rel}'`,
         };
       }
-      configs.add(tc);
+      const arr = groups.get(tc);
+      if (arr) arr.push(rel);
+      else groups.set(tc, [rel]);
     }
-    if (configs.size !== 1) {
-      return {
-        gate: 'type-soundness',
-        green: true,
-        reds: [],
-        note,
-        unjudged: true,
-        unjudgedReason: `changed TypeScript files span ${configs.size} tsconfig roots`,
-      };
-    }
-    const tsconfigPath = [...configs][0];
-
-    // Candidate compile: changed files served from the overlay (overlay wins, else disk).
-    const candOverrides = new Map<string, string>();
-    for (const rel of changed) {
-      const content = ctx.readFile(rel);
-      if (content === null) {
+    const reds: GateRed[] = [];
+    for (const [tsconfigPath, files] of groups) {
+      const r = judgeGroup(ctx, tsconfigPath, files);
+      if ('unjudgedReason' in r) {
         return {
           gate: 'type-soundness',
           green: true,
           reds: [],
           note,
           unjudged: true,
-          unjudgedReason: `cannot read candidate bytes for '${rel}'`,
+          unjudgedReason: r.unjudgedReason,
         };
       }
-      candOverrides.set(rel, content);
-    }
-    const cand = diagnoseChanged(ctx.repoRoot, tsconfigPath, changed, candOverrides);
-    if ([...cand.counts.values()].some((c) => c < 0)) {
-      return {
-        gate: 'type-soundness',
-        green: true,
-        reds: [],
-        note,
-        unjudged: true,
-        unjudgedReason:
-          'candidate TypeScript diagnostics could not be computed for at least one changed file',
-      };
-    }
-    // Fast path: a candidate with zero errors in every changed file cannot be a
-    // regression regardless of prior — green without the second compile.
-    if ([...cand.counts.values()].every((c) => c === 0)) {
-      return { gate: 'type-soundness', green: true, reds: [], note };
-    }
-
-    // Prior compile (identical roots + host scoping) to apply delta semantics: the
-    // changed files served from their pre-write disk bytes (ctx.priorOf). Structural
-    // false-errors from single-file rooting appear in both passes and cancel here.
-    const priorOverrides = new Map<string, string>();
-    for (const rel of changed) priorOverrides.set(rel, ctx.priorOf(rel));
-    const prior = diagnoseChanged(ctx.repoRoot, tsconfigPath, changed, priorOverrides);
-
-    const reds: GateRed[] = [];
-    for (const rel of changed) {
-      const now = cand.counts.get(rel) ?? 0;
-      const was = prior.counts.get(rel);
-      // A prior file that failed to load (-1) cannot anchor a delta → skip honestly.
-      if (was === undefined || was < 0) continue;
-      if (now > was) {
-        for (const d of cand.diags.get(rel) ?? []) {
-          if (reds.length >= MAX_DIAG_REPORT) break;
-          reds.push(toRed(ctx.repoRoot, rel, d));
-        }
-      }
+      reds.push(...r.reds);
     }
     return { gate: 'type-soundness', green: reds.length === 0, reds, note };
   },

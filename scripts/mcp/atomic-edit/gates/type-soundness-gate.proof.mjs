@@ -47,6 +47,17 @@ function writeTsconfig(d, opts) {
     JSON.stringify({ compilerOptions: { strict: true, noEmit: true, ...(opts || {}) } }),
   );
 }
+// Write a NAMED sibling tsconfig (e.g. tsconfig.spec.json) with its own options +
+// include, to prove governing-config selection routes test files to it.
+function writeNamedConfig(d, name, opts, include) {
+  fs.writeFileSync(
+    path.join(d, name),
+    JSON.stringify({
+      compilerOptions: { strict: true, noEmit: true, ...(opts || {}) },
+      ...(include ? { include } : {}),
+    }),
+  );
+}
 async function judge(repoRoot, overlay, changed) {
   return gate.run(makeContext(repoRoot, new Map(Object.entries(overlay)), changed));
 }
@@ -213,7 +224,10 @@ function writeTypesPkg(d, name, body) {
 //    the gate having simply stopped reporting `process` — soundness, not blindness.
 {
   const d = mkTmp();
-  writeTsconfig(d); // NO writeNodeTypes — no node typings anywhere up-tree
+  // NO writeNodeTypes + typeRoots:[] → no node typings discoverable regardless of
+  // WHERE this tmp dir lives (e.g. the atomic_exec sandbox redirects TMPDIR under
+  // the repo, which has @types/node up-tree) — the isolation is config-guaranteed.
+  writeTsconfig(d, { typeRoots: [] });
   const res = await judge(d, { 'uses-process.ts': 'export const u = process.env.X;\n' }, [
     'uses-process.ts',
   ]);
@@ -274,6 +288,60 @@ function writeTypesPkg(d, name, body) {
   );
   fs.rmSync(d, { recursive: true, force: true });
   fs.rmSync(d2, { recursive: true, force: true });
+}
+
+// 11) GOVERNING CONFIG — a `.spec.ts` file is judged under its sibling
+//     tsconfig.spec.json (looser), NOT the app tsconfig.json that excludes specs and
+//     is stricter. This is the dominant backend class: the app config has
+//     noUnusedLocals:true (+ excludes specs), so a spec's unused local falsely reds
+//     TS6133 under it; the real `jest` run uses the spec config (noUnusedLocals:false).
+{
+  const d = mkTmp();
+  writeTsconfig(d, { noUnusedLocals: true }); // app config: strict, would flag unused
+  writeNamedConfig(d, 'tsconfig.spec.json', { noUnusedLocals: false }); // the real test config
+  const src = 'const unused = 1;\nexport const ok: number = 2;\n'; // unused local
+  const res = await judge(d, { 'svc.spec.ts': src }, ['svc.spec.ts']);
+  check(
+    'GOVERNING: spec judged under tsconfig.spec.json (no false TS6133 from app config)',
+    res.green === true && res.reds.length === 0 && !res.unjudged,
+  );
+  // Not vacuous: a genuine type error in the spec still reds under the spec config.
+  const bad = await judge(d, { 'svc.spec.ts': 'export const n: number = "bad";\n' }, [
+    'svc.spec.ts',
+  ]);
+  check(
+    'GOVERNING: genuine TS2322 in a spec still reds under its test config',
+    bad.green === false && bad.reds.some((r) => r.fact.includes('TS2322')),
+  );
+  fs.rmSync(d, { recursive: true, force: true });
+}
+
+// 12) MIXED SCOPE — an app file and a spec file in one change set are each judged
+//     under their OWN governing config (no longer bailing unjudged on "spans 2
+//     tsconfig roots"). The app file's genuine error reds; the spec stays clean.
+{
+  const d = mkTmp();
+  writeTsconfig(d, { noUnusedLocals: true });
+  writeNamedConfig(d, 'tsconfig.spec.json', { noUnusedLocals: false });
+  const res = await judge(
+    d,
+    {
+      'app.ts': 'export const n: number = "bad";\n', // genuine TS2322 under app config
+      'app.spec.ts': 'const unused = 1;\nexport const ok = 2;\n', // clean under spec config
+    },
+    ['app.ts', 'app.spec.ts'],
+  );
+  check(
+    'MIXED: judged (not unjudged) when a scope spans app + test configs',
+    res.unjudged !== true,
+  );
+  check(
+    'MIXED: app file error reds; spec file (its own config) contributes none',
+    res.green === false &&
+      res.reds.some((r) => r.file === 'app.ts') &&
+      !res.reds.some((r) => r.file === 'app.spec.ts'),
+  );
+  fs.rmSync(d, { recursive: true, force: true });
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);
