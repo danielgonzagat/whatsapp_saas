@@ -43,3 +43,30 @@ export function formatBRLOptional(value: number | null | undefined): string {
  * @deprecated use `formatBRL`.
  */
 export const formatCurrency = formatBRL;
+
+/**
+ * Format an integer **cents** amount as `R$ X,YZ` using the manual
+ * `(cents / 100).toFixed(2)` + `.`→`,` substitution.
+ *
+ * Consolidates four byte-identical local copies (`OrderBumpCard`,
+ * `upsell.helpers`, `PlanOrderBumpTab`, `PlanAffiliateTab`). Distinct from
+ * `formatBRL`/`formatMoney`, which take reais and use `Intl.NumberFormat`.
+ */
+export function formatBRLFromCents(cents: number): string {
+  return `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`;
+}
+
+/**
+ * Format a reais amount as `R$ X,YZ` via `Number.toLocaleString`. Returns
+ * `R$ 0,00` for null/undefined/NaN. Consolidates two byte-identical settings
+ * copies (`billing-settings-section.helpers`, `crm-settings-section.helpers`).
+ *
+ * Intentionally NOT folded into `formatBRL`: the NaN handling differs
+ * (`formatBRL(NaN)` yields `R$ NaN`, this yields `R$ 0,00`).
+ */
+export function formatMoney(value?: number | null): string {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return 'R$ 0,00';
+  }
+  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}

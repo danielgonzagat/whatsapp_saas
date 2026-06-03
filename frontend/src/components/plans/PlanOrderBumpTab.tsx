@@ -4,6 +4,7 @@ import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { useToast } from '@/components/kloel/ToastProvider';
 import { useOrderBumps } from '@/hooks/useCheckoutPlans';
+import { formatBRLFromCents as formatCents } from '@/lib/common/money';
 import { useState, useId } from 'react';
 
 import { GiftIcon, EditIcon, TrashIcon, PlusIcon } from './PlanOrderBumpTab.icons';
@@ -31,10 +32,6 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<BumpFormData>(defaultForm);
   const [saving, setSaving] = useState(false);
-
-  const formatCents = (cents: number): string => {
-    return `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`;
-  };
 
   const handleSave = async () => {
     setSaving(true);
