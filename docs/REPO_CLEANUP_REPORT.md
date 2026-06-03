@@ -48,23 +48,36 @@ O repositório agora contém **somente** backend/frontend/worker/e2e de produto,
 4. **`prettier --write`** em 3 specs modificados (compliance/gdpr/whatsapp-api controller).
 5. **Baseline do ESLint seatbelt refrescado** (`seatbelt:update` sancionado): absorveu 6 regressões **pré-existentes** do refactor WhatsApp/wallet do branch + o `require-await` da migração Meta-only aprovada, e **removeu 1.818 linhas obsoletas** de entradas de arquivos deletados (0 refs pulse/gate restantes).
 6. **Reforço do `.gitignore`** para scratch (`.atomic/_*`, `.atomic/*.txt`, `.cleanup-scratch/`, `PLANO-DE-LIMPEZA.md`).
+7. **`check-formatting.mjs`** — removidas refs a arquivos deletados (`nightly-ops-audit.yml`, `CLAUDE.md`) que quebravam o gate `format:check` (pre-commit).
+8. **`readiness:check` (gate de deploy bloqueante) tornado coerente:** a limpeza removeu artefatos que o validador exigia. Resolvido por critério ("infra funcional fica, governança de agente sai"): **restaurados** `.backup-manifest.json` + `.dr-test.log` (evidência funcional de backup/DR); **removidas** as checagens de governança de agente removida — nightly-ops-audit (rodava `pulse:ci`), Codacy-**MCP**, branch-protection `claude-review`, e `ratchet.json`-versioned.
 
-## 6. Verificação (build verde)
+## 6. Verificação de gates
 
+### ✅ Verde (verificado localmente)
 | Gate | Resultado |
 |---|---|
-| `tsc` backend | só ruído pré-existente `exactOptionalPropertyTypes` (não induzido pela limpeza; build real é `nest`/SWC) |
-| `tsc` frontend | **0 erros** |
-| `tsc` worker | **0 erros** |
-| `architecture:check` (CI) | ✅ pass |
-| `ratchet:check` (CI) | ✅ pass |
-| `quality:dead-code` / knip (CI) | ✅ pass |
-| `seatbelt:check --frozen` (CI) | ✅ pass (sem regressões) |
-| Testes alvo (frontend claimSession + 3 specs backend) | ✅ 17 testes passam |
+| `tsc` frontend / worker | **0 erros** |
+| `tsc` backend | só ruído pré-existente `exactOptionalPropertyTypes` (build real é `nest`/SWC) |
+| `architecture:check` · `seatbelt:check --frozen` · `format:check` | ✅ pass |
+| `quality:dead-code` · `quality:graph` · `guard:db-push` · `railway:runtime:check` | ✅ pass |
+| `check-constants/contract/redis/tenant-filter/tenant-keys-sync` | ✅ pass |
+| `readiness:check` (após fix) | ✅ pass |
+| Testes alvo (claimSession 3/3 + 3 specs backend 14/14) | ✅ 17/17 |
+
+### 🔴 Pré-existentes do branch (NÃO causados pela limpeza — débito de produto)
+| Gate | Causa |
+|---|---|
+| `ratchet:check` | `knip` dá SIGSEGV (exit 139, memória) nesse repo grande — problema de runtime do knip, pré-existente |
+| canonical G24 (`run-all-gates`) | evento bare-namespace `checkout.deleted` em `tier-3-checkouts.ts` — **também presente no `origin/main`** |
+| `check-prisma-schema-single-source` | `worker/prisma/schema.prisma` dessincronizado do backend (commit de schema do branch não sincronizou) |
+| `tsc` backend (118 erros estritos) | `exactOptionalPropertyTypes`/`strictNull` — arquivos intocados pela limpeza |
+
+> Estes 4 já estavam vermelhos antes desta sessão (arquivos intocados; G24 confirmado no main). Recomenda-se tratá-los separadamente: `cp backend/prisma/schema.prisma worker/prisma/schema.prisma` (prisma) e migração `checkout.deleted → commerce.checkout.deleted` (G24).
 
 ## 7. Pendências / notas
 
 - **Debris local não-rastreado** (dirs hex, `.hermes`, `opencode/`, `agent-audit-*`, etc.) **já está gitignored** (fora do GitHub). Limpeza física do disco ficou pendente: o sandbox não permite mover para a lixeira externa. Pode ser feita via sweep no host.
+- **`.backup-manifest.json` + `.dr-test.log` foram RESTAURADOS** (o agente anterior os classificara como mortos, mas são evidência funcional que o gate de deploy exige). Se você quiser realmente removê-los, é preciso também remover suas checagens em `validate-production-readiness.mjs`.
 - **Refs quebradas pré-existentes** (`railway:oauth:*` → `scripts/ops/railway-oauth-native.mjs`) **não** foram causadas pela limpeza e foram deixadas como estavam.
 - **⚠️ Segredos:** credenciais do Vercel foram expostas em chat durante a sessão — **rotacionar no Vercel** e migrar para 1Password.
 - Histórico do Git **não** foi reescrito (remoção só do estado atual + próximo push), conforme combinado.

@@ -68,11 +68,6 @@ function checkProductionDeployWorkflow() {
   requireIncludes(filePath, 'readiness:check', 'Production deploy reruns readiness checks');
 }
 
-function checkNightlyOpsAuditWorkflow() {
-  const filePath = workflowPath('nightly-ops-audit.yml');
-  requireIncludes(filePath, 'schedule:', 'Nightly ops audit is scheduled');
-}
-
 function checkReleasePleaseWorkflow() {
   const filePath = workflowPath('release-please.yml');
   requireIncludes(
@@ -149,7 +144,6 @@ export function auditGithubWorkflows() {
   checkCiWorkflow();
   checkStagingDeployWorkflow();
   checkProductionDeployWorkflow();
-  checkNightlyOpsAuditWorkflow();
   checkReleasePleaseWorkflow();
   checkCodeqlWorkflow();
   checkCodacyAnalysisWorkflow();

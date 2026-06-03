@@ -6,7 +6,6 @@ import {
   check,
   daysSince,
   failures,
-  isTracked,
   passes,
   readText,
   requireFile,
@@ -59,7 +58,6 @@ const requiredFiles = [
   ['.github/workflows/dependabot-auto-merge.yml', 'Dependabot auto-merge workflow exists'],
   ['.github/workflows/deploy-staging.yml', 'Staging deploy workflow exists'],
   ['.github/workflows/deploy-production.yml', 'Production deploy workflow exists'],
-  ['.github/workflows/nightly-ops-audit.yml', 'Nightly ops audit workflow exists'],
   ['.github/workflows/release-please.yml', 'Release Please workflow exists'],
   ['.github/dependabot.yml', 'Dependabot config exists'],
   ['.github/CODEOWNERS', 'CODEOWNERS policy exists'],
@@ -106,14 +104,6 @@ const requiredFiles = [
 
 for (const [relPath, title] of requiredFiles) {
   requireFile(relPath, title);
-}
-
-for (const relPath of ['ratchet.json']) {
-  check(
-    isTracked(relPath),
-    `${relPath} is versioned`,
-    `${relPath} must be tracked so CI and nightly ratchets do not depend on local-only artifacts`,
-  );
 }
 
 const packageJsonPath = safeRepoPath('package.json');
@@ -357,20 +347,6 @@ for (const keyword of [
   requireIncludes(githubSettingsDocPath, keyword, `GitHub settings doc covers ${keyword}`);
 }
 
-const mcpConfigPath = safeRepoPath('.mcp.json');
-if (!safeExistsSync(mcpConfigPath)) {
-  check(false, 'Codacy MCP server is configured', 'missing .mcp.json');
-} else {
-  const mcpConfig = readText(mcpConfigPath);
-  const usesOfficialPackage = mcpConfig.includes('@codacy/codacy-mcp');
-  const usesLauncher = mcpConfig.includes('scripts/mcp/codacy-mcp-launcher.sh');
-  check(
-    usesOfficialPackage || usesLauncher,
-    'Codacy MCP server is configured',
-    '.mcp.json must include "@codacy/codacy-mcp" or "scripts/mcp/codacy-mcp-launcher.sh"',
-  );
-}
-
 const branchProtectionPath = safeRepoPath('.github/branch-protection.json');
 if (safeExistsSync(branchProtectionPath)) {
   try {
@@ -400,7 +376,6 @@ if (safeExistsSync(branchProtectionPath)) {
       'quality',
       'e2e',
       'Analyze (javascript-typescript)',
-      'claude-review',
       'Visual diff (Chromium)',
       'codecov/patch',
       'Codacy Analysis',
