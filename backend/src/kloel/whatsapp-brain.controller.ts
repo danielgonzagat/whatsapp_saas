@@ -28,11 +28,11 @@ import { WebhooksService } from '../webhooks/webhooks.service';
 import { WhatsAppMindCoordinator } from './mind/coordination';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 
-/** Whats app brain controller. */
+/** Whats app mind controller. */
 @Controller('kloel/whatsapp')
 @RouteClass('ai')
-export class WhatsAppBrainController {
-  private readonly logger = StructuredLogger.from(WhatsAppBrainController.name);
+export class WhatsAppMindController {
+  private readonly logger = StructuredLogger.from(WhatsAppMindController.name);
 
   constructor(
     private readonly whatsappBrain: WhatsAppMindCoordinator,
@@ -52,7 +52,7 @@ export class WhatsAppBrainController {
     const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
     if (!VERIFY_TOKEN) {
       this.logger.error('WHATSAPP_VERIFY_TOKEN env var is not set');
-      return sendPlainTextResponse(res, 'Server misconfigured', 500);
+      return sendPlainTextResponse(res, 'Webhook verification not configured', 503);
     }
     if (mode === 'subscribe' && safeCompareStrings(token, VERIFY_TOKEN)) {
       this.logger.log('Webhook verificado');

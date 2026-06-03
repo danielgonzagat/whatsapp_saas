@@ -1,16 +1,14 @@
-import { type NextRequest, NextResponse } from 'next/server';
-import { proxyWhatsAppRequest } from '../../proxy';
+import { NextResponse } from 'next/server';
 
-/** Post. */
-export async function POST(request: NextRequest) {
-  try {
-    const result = await proxyWhatsAppRequest(request, 'POST', '/whatsapp-api/session/action');
-    return NextResponse.json(result.data, { status: result.status });
-  } catch (error) {
-    console.error('[WhatsApp Proxy] session action error:', error);
-    return NextResponse.json(
-      { message: 'Falha ao executar ação no viewer do WhatsApp.' },
-      { status: 502 },
-    );
-  }
+/** Legacy visual-session action route intentionally retired: WhatsApp uses official Meta Cloud API only. */
+export async function POST() {
+  return NextResponse.json(
+    {
+      success: false,
+      provider: 'meta-cloud',
+      notSupported: true,
+      message: 'Ações de sessão visual não existem no modo Meta Cloud oficial.',
+    },
+    { status: 410 },
+  );
 }

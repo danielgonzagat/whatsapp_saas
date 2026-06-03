@@ -18,6 +18,7 @@ export async function partBReplaceRegion(ctx: PartBCtx): Promise<void> {
           endAnchorText: ' omega',
           oldText: 'MIDDLE',
           newText: 'REPLACED',
+          proofOfIncorrectness: 'smoke anchor-region fixture middle text is stale negative data and may be replaced',
         },
       })) as { content: { text: string }[]; isError?: boolean };
       const rtaBody = JSON.parse(rtaRes.content.at(-1)?.text ?? '{}');
@@ -157,6 +158,7 @@ export async function partBReplaceRegion(ctx: PartBCtx): Promise<void> {
             endAnchorText: ' omega',
             oldText: 'OUTSIDE',
             newText: 'INNER',
+            proofOfIncorrectness: 'smoke anchor-region inner text is stale negative data and may be replaced',
           },
         })) as { content: { text: string }[]; isError?: boolean };
         const rtaOutsideBody = JSON.parse(rtaOutside.content.at(-1)?.text ?? '{}');
@@ -214,6 +216,7 @@ export async function partBReplaceRegion(ctx: PartBCtx): Promise<void> {
             oldText: 'A2',
             newText: 'SECOND',
             regionOccurrence: 2,
+            proofOfIncorrectness: 'smoke anchor-region occurrence text is stale negative data and may be replaced',
           },
         })) as { content: { text: string }[]; isError?: boolean };
         const rtaRegionOcBody = JSON.parse(rtaRegionOc.content.at(-1)?.text ?? '{}');
@@ -290,6 +293,7 @@ export async function partBReplaceRegion(ctx: PartBCtx): Promise<void> {
             oldText: 'DUP',
             newText: 'SELECTED',
             textOccurrence: 2,
+            proofOfIncorrectness: 'smoke anchor-region selected duplicate text is stale negative data and may be replaced',
           },
         })) as { content: { text: string }[]; isError?: boolean };
         const rtaTextOcBody = JSON.parse(rtaTextOc.content.at(-1)?.text ?? '{}');

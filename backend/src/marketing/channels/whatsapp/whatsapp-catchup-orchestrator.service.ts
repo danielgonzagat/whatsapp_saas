@@ -338,7 +338,6 @@ export class WhatsappCatchupOrchestratorService {
               disconnectReason: em,
               phoneNumber: null,
               pushName: null,
-              qrCode: null,
               connectedAt: null,
             }
           : {}),

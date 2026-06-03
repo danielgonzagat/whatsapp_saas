@@ -1,17 +1,11 @@
 'use client';
 import { kloelError } from '@/lib/i18n/t';
 import {
-  clearGuestWorkspaceClaimCandidate,
-  getGuestWorkspaceClaimCandidate,
-  rememberGuestWorkspaceClaimCandidate,
-} from '@/lib/anonymous-session';
-import {
   apiFetch,
   authApi,
   billingApi,
   resolveWorkspaceFromAuthPayload,
   tokenStorage,
-  whatsappApi,
 } from '@/lib/api';
 import {
   decodeKloelJwtPayload,
@@ -39,6 +33,16 @@ import {
   pickUserDisplayName,
   projectWorkspace,
 } from './auth-provider.helpers';
+
+type AuthActionResult = {
+  success: boolean;
+  error?: string;
+  mfaRequired?: boolean;
+  mfaToken?: string;
+  email?: string;
+  name?: string | null;
+};
+
 interface AuthContextType extends AuthState {
   userName: string | null;
   userEmail: string | null;
@@ -47,10 +51,11 @@ interface AuthContextType extends AuthState {
     name: string,
     password: string,
     options?: { workspaceName?: string; affiliateInviteToken?: string },
-  ) => Promise<{ success: boolean; error?: string }>;
-  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signInWithGoogle: (credential: string) => Promise<{ success: boolean; error?: string }>;
-  signInWithFacebook: (accessToken: string, userId?: string) => Promise<{ success: boolean; error?: string }>;
+  ) => Promise<AuthActionResult>;
+  signIn: (email: string, password: string) => Promise<AuthActionResult>;
+  verifyMfaLogin: (mfaToken: string, code: string) => Promise<AuthActionResult>;
+  signInWithGoogle: (credential: string) => Promise<AuthActionResult>;
+  signInWithFacebook: (accessToken: string, userId?: string) => Promise<AuthActionResult>;
   requestMagicLink: (
     email: string,
     redirectTo?: string,
@@ -114,24 +119,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'signup' | 'login'>('signup');
-  const claimGuestWhatsAppSession = useCallback(async (targetWorkspaceId?: string | null) => {
-    const normalizedTargetWorkspaceId = String(targetWorkspaceId || '').trim();
-    if (!normalizedTargetWorkspaceId) {
-      return;
-    }
-    const sourceWorkspaceId = getGuestWorkspaceClaimCandidate();
-    if (!sourceWorkspaceId || sourceWorkspaceId === normalizedTargetWorkspaceId) {
-      return;
-    }
-    try {
-      const result = await whatsappApi.claimSession(sourceWorkspaceId);
-      if (!result.error && result.data?.success !== false) {
-        clearGuestWorkspaceClaimCandidate();
-      }
-    } catch (error) {
-      console.error('Failed to claim guest WhatsApp session for authenticated workspace:', error);
-    }
-  }, []);
   const checkAuthStatus = useCallback(async () => {
     const token = tokenStorage.getToken();
     if (!token) {
@@ -166,7 +153,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const workspace = resolveWorkspaceFromAuthPayload(res.data);
       if (workspace?.id) {
         tokenStorage.setWorkspaceId(workspace.id);
-        await claimGuestWhatsAppSession(workspace.id);
       }
       // Load subscription
       let subscription: Subscription = buildEmptySubscription();
@@ -213,7 +199,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: true,
       }));
     }
-  }, [claimGuestWhatsAppSession]);
+  }, []);
   useEffect(() => {
     queueMicrotask(() => {
       void checkAuthStatus();
@@ -250,7 +236,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       );
       if (workspace?.id) {
         tokenStorage.setWorkspaceId(workspace.id);
-        await claimGuestWhatsAppSession(workspace.id);
       }
       tokenStorage.ensureAuthCookie();
       let subscription: Subscription = buildEmptySubscription();
@@ -294,25 +279,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       return { success: true as const };
     },
-    [claimGuestWhatsAppSession],
+    [],
   );
-  const rememberWorkspaceClaimCandidateForAuthUpgrade = useCallback(() => {
-    if (authState.isAuthenticated) {
-      return;
-    }
-    const existingWorkspaceId = tokenStorage.getWorkspaceId();
-    if (!existingWorkspaceId) {
-      return;
-    }
-    rememberGuestWorkspaceClaimCandidate(existingWorkspaceId);
-  }, [authState.isAuthenticated]);
   const signUp = async (
     email: string,
     name: string,
     password: string,
     options?: { workspaceName?: string; affiliateInviteToken?: string },
   ) => {
-    rememberWorkspaceClaimCandidateForAuthUpgrade();
     const res = await authApi.signUp(email, name, password, options);
     if (res.error) {
       const mapped = mapAuthErrorStatusToMessage(res.status, 'signup', res.error);
@@ -328,11 +302,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { success: false, error: 'Signup failed' };
   };
   const signIn = async (email: string, password: string) => {
-    rememberWorkspaceClaimCandidateForAuthUpgrade();
     const res = await authApi.signIn(email, password);
     if (res.error) {
       const mapped = mapAuthErrorStatusToMessage(res.status, 'signin', res.error);
       return { success: false, error: mapped ?? res.error };
+    }
+    if (res.data?.state === 'mfa_required' && res.data.mfaToken) {
+      return {
+        success: true,
+        mfaRequired: true,
+        mfaToken: res.data.mfaToken,
+        email: res.data.user?.email || email,
+        name: res.data.user?.name ?? null,
+      };
     }
     if (res.data?.user) {
       return hydrateFromAuthResponse(res.data, {
@@ -341,8 +323,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     return { success: false, error: 'Login failed' };
   };
+  const verifyMfaLogin = async (mfaToken: string, code: string) => {
+    const res = await authApi.verifyMfaLogin(mfaToken, code);
+    if (res.error) {
+      const mapped = mapAuthErrorStatusToMessage(res.status, 'signin', res.error);
+      return { success: false, error: mapped ?? res.error };
+    }
+    if (res.data?.user) {
+      return hydrateFromAuthResponse(res.data, {
+        fallbackEmail: res.data.user.email,
+        ...(res.data.user.name ? { fallbackName: res.data.user.name } : {}),
+      });
+    }
+    return { success: false, error: 'Codigo 2FA invalido.' };
+  };
   const signInWithGoogle = async (credential: string) => {
-    rememberWorkspaceClaimCandidateForAuthUpgrade();
     const res = await authApi.signInWithGoogle(credential);
     if (res.error) {
       const mapped = mapAuthErrorStatusToMessage(res.status, 'google', res.error);
@@ -357,7 +352,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { success: false, error: 'Falha ao autenticar com Google.' };
   };
   const signInWithFacebook = async (accessToken: string, userId?: string) => {
-    rememberWorkspaceClaimCandidateForAuthUpgrade();
     const res = await authApi.signInWithFacebook(accessToken, userId);
     if (res.error) {
       const mapped = mapAuthErrorStatusToMessage(res.status, 'facebook', res.error);
@@ -372,7 +366,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { success: false, error: 'Falha ao autenticar com Facebook.' };
   };
   const requestMagicLink = async (email: string, redirectTo?: string) => {
-    rememberWorkspaceClaimCandidateForAuthUpgrade();
     const res = await authApi.requestMagicLink(email, redirectTo);
     if (res.error) {
       const mapped = mapAuthErrorStatusToMessage(res.status, 'magic-link', res.error);
@@ -428,6 +421,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         userEmail: authState.user?.email || null,
         signUp,
         signIn,
+        verifyMfaLogin,
         signInWithGoogle,
         signInWithFacebook,
         requestMagicLink,

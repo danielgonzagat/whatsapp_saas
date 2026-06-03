@@ -68,7 +68,6 @@ const CLASSIFICATION = [
   { p: 'audit/audit.controller.ts', rc: 'read' },
   { p: 'metrics/metrics.controller.ts', rc: 'read' },
   { p: 'ops/ops.controller.ts', rc: 'read' },
-  { p: 'pulse/pulse.controller.ts', rc: 'read' },
   { p: 'cookie-consent/cookie-consent.controller.ts', rc: 'read' },
   { p: 'compliance/compliance.controller.ts', rc: 'read' },
   { p: 'admin/dashboard/admin-dashboard.controller.ts', rc: 'read' },

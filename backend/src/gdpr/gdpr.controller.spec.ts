@@ -1,8 +1,14 @@
-import { INestApplication } from '@nestjs/common';
+import {
+  Catch,
+  type ArgumentsHost,
+  type ExceptionFilter,
+  type INestApplication,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import { GdprStatus, GdprType } from '@prisma/client';
 import type { Server } from 'node:http';
+import { type Response } from 'express';
 import * as request from 'supertest';
 import { EmailService } from '../auth/email.service';
 import { StorageService } from '../common/storage/storage.service';
@@ -31,6 +37,54 @@ jest.mock('../common/redis/redis.util', () => {
     }),
   };
 });
+
+jest.mock('../auth/jwt-auth.guard', () => ({
+  JwtAuthGuard: class SpecJwtAuthGuard {
+    canActivate() {
+      return true;
+    }
+  },
+}));
+
+jest.mock('../common/guards/workspace.guard', () => ({
+  WorkspaceGuard: class SpecWorkspaceGuard {
+    canActivate() {
+      return true;
+    }
+  },
+}));
+
+type HttpLikeException = {
+  getResponse: () => unknown;
+  getStatus: () => number;
+};
+
+function isHttpLikeException(exception: unknown): exception is HttpLikeException {
+  return (
+    typeof exception === 'object' &&
+    exception !== null &&
+    'getResponse' in exception &&
+    'getStatus' in exception &&
+    typeof exception.getResponse === 'function' &&
+    typeof exception.getStatus === 'function'
+  );
+}
+
+@Catch()
+class SpecHttpExceptionFilter implements ExceptionFilter {
+  catch(exception: unknown, host: ArgumentsHost) {
+    const response = host.switchToHttp().getResponse<Response>();
+    if (!isHttpLikeException(exception)) {
+      response.status(500).json({ message: 'Internal server error', statusCode: 500 });
+      return;
+    }
+
+    const body = exception.getResponse();
+    response
+      .status(exception.getStatus())
+      .json(typeof body === 'string' ? { message: body } : body);
+  }
+}
 
 describe('GdprController', () => {
   let app: INestApplication;
@@ -99,6 +153,7 @@ describe('GdprController', () => {
     }).compile();
 
     app = moduleRef.createNestApplication();
+    app.useGlobalFilters(new SpecHttpExceptionFilter());
     await app.init();
   });
 

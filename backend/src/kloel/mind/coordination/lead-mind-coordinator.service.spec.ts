@@ -42,7 +42,7 @@ type LeadBrainPrismaMock = {
     updateMany: jest.Mock;
   };
   kloelConversation: { create: jest.Mock; findMany: jest.Mock };
-  contact: { upsert: jest.Mock };
+  contact: { upsert: jest.Mock; findUnique: jest.Mock };
   kloelMemory: { findMany: jest.Mock };
   product: { findMany: jest.Mock };
 };
@@ -83,6 +83,7 @@ describe('LeadMindCoordinator', () => {
         findMany: jest.fn().mockResolvedValue([]),
       },
       contact: {
+        findUnique: jest.fn().mockResolvedValue(null),
         upsert: jest.fn().mockResolvedValue({ id: 'contact-1' }),
       },
       kloelMemory: {
@@ -167,6 +168,60 @@ describe('LeadMindCoordinator', () => {
       expect(upsertArg).toMatchObject({
         where: { workspaceId_phone: { workspaceId: wsId, phone: '5511999999999' } },
       });
+    });
+
+    it('mirrors lead funnel + kloelLeadId onto Contact (PERSON PHASE 1)', async () => {
+      // Existing Contact with no link yet → write-if-null stamps it in update.
+      prisma.contact.findUnique.mockResolvedValue({ kloelLeadId: null });
+      prisma.kloelLead.create.mockResolvedValue({
+        id: 'lead-1',
+        workspaceId: wsId,
+        phone: '5511999999999',
+        name: 'Lead 9999',
+        status: 'hot',
+        stage: 'negotiation',
+        lastMessage: 'Quero comprar',
+        lastIntent: 'purchase',
+        totalMessages: 5,
+        score: 0,
+      });
+      await service.getOrCreateLead(wsId, '5511999999999');
+      expect(prisma.contact.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { workspaceId_phone: { workspaceId: wsId, phone: '5511999999999' } },
+        }),
+      );
+      expect(prisma.contact.upsert).toHaveBeenCalledWith(
+        partialMatch({
+          create: partialMatch({
+            leadStatus: 'hot',
+            leadStage: 'negotiation',
+            lastMessage: 'Quero comprar',
+            lastIntent: 'purchase',
+            totalMessages: 5,
+            kloelLeadId: 'lead-1',
+          }),
+          update: partialMatch({
+            leadStatus: 'hot',
+            leadStage: 'negotiation',
+            kloelLeadId: 'lead-1',
+          }),
+        }),
+      );
+    });
+
+    it('does not overwrite an existing Contact.kloelLeadId (write-if-null)', async () => {
+      prisma.contact.findUnique.mockResolvedValue({ kloelLeadId: 'other-lead' });
+      await service.getOrCreateLead(wsId, '5511999999999');
+      const upsertArg = castMock<[{ update: Record<string, unknown> }]>(
+        prisma.contact.upsert.mock.calls[0],
+      )[0];
+      expect(upsertArg.update).not.toHaveProperty('kloelLeadId');
+    });
+
+    it('skips Contact sync for an unnormalizable phone', async () => {
+      await service.getOrCreateLead(wsId, '123');
+      expect(prisma.contact.upsert).not.toHaveBeenCalled();
     });
 
     it('is fail-open when Contact sync throws', async () => {

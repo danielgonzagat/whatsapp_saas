@@ -14,6 +14,7 @@ export interface ChannelSetupArsenal {
   label?: string | null;
   storageRef: string;
   uploadedAt?: string;
+  metadata?: Record<string, unknown> | null;
 }
 
 export interface ChannelSetupConfig {
@@ -29,13 +30,17 @@ export interface ChannelSetupConfig {
 export interface ChannelSetupState {
   channel: string;
   completed: boolean;
+  setup?: { currentStep?: number | null; completedAt?: string | null } | null;
   products: ChannelSetupProduct[];
   selectedProductIds: string[];
   arsenal: ChannelSetupArsenal[];
   config: ChannelSetupConfig | null;
 }
 
-function payload<T>(response: { data?: T }): T {
+function payload<T>(response: { data?: T; error?: string }): T {
+  if (response.error) {
+    throw new Error(response.error);
+  }
   return (response.data ?? response) as T;
 }
 

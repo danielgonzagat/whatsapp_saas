@@ -34,8 +34,8 @@ function readOptionalStreamString(body: BrainDecideDto, key: string): string | u
 @Controller('brain')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @UseFilters(MindDecideDegradeFilter)
-export class BrainRuntimeController {
-  private readonly logger = StructuredLogger.from(BrainRuntimeController.name);
+export class MindRuntimeController {
+  private readonly logger = StructuredLogger.from(MindRuntimeController.name);
 
   constructor(
     private readonly brain: MindRuntime,

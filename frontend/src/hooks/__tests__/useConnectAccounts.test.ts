@@ -74,6 +74,21 @@ describe('useWorkspaceConnectAccounts', () => {
     expect(result.current.accounts[0]?.accountType).toBe('SELLER');
     expect(result.current.isLoading).toBe(false);
   });
+
+  it('surfaces malformed connect-account payload instead of a fake empty list', () => {
+    vi.mocked(useSWR).mockReturnValue({
+      data: {},
+      error: undefined,
+      isLoading: false,
+      mutate: vi.fn(),
+      isValidating: false,
+    });
+
+    const { result } = renderHook(() => useWorkspaceConnectAccounts());
+
+    expect(result.current.accounts).toEqual([]);
+    expect((result.current.error as Error).message).toBe('Invalid connect accounts payload');
+  });
 });
 
 describe('useSellerConnectAccount', () => {

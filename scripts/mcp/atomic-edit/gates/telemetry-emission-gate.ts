@@ -45,10 +45,10 @@
  *    exact callee already existed in the prior content never reddens an unrelated
  *    edit — but no write may INTRODUCE a dangling telemetry handle. Read direction
  *    (the lens, priorOf === '') judges every emission absolutely.
- *  - UNJUDGED: a changed file with zero telemetry emissions has no fact to assert;
- *    we do not green-by-assumption an empty claim. A file whose grammar is
- *    unavailable (perception returns null) is likewise carried unjudged — never
- *    red-by-guess, never green-by-assumption.
+ *  - NOT_APPLICABLE: a perceivable changed file with zero telemetry emissions has
+ *    no telemetry fact to assert. UNJUDGED is reserved for files whose grammar is
+ *    unavailable (perception returns null) — never red-by-guess, never green-by-
+ *    assumption.
  *
  * CEILING (carried as unjudged — TRUTH_INFERRED, never TRUTH_OBSERVED): this gate
  * proves the emitter EXISTS and (with the reachability gate's spirit) COULD emit.
@@ -168,6 +168,7 @@ const telemetryEmissionGate: GateModule = {
   async run(ctx: GateContext): Promise<GateResult> {
     const reds: GateRed[] = [];
     let sawAnyEmission = false;
+    let sawUnjudgedSource = false;
     const note =
       'every this.<handle>.<telemetry-verb>() emits through a handle declared in the same file (could-emit, not did-emit)';
 
@@ -177,7 +178,10 @@ const telemetryEmissionGate: GateModule = {
       if (content === null) continue;
 
       const emissions = await emissionsOf(content, rel);
-      if (emissions === null) continue; // no grammar → cannot decide this file (unjudged)
+      if (emissions === null) {
+        sawUnjudgedSource = true;
+        continue; // no grammar → cannot decide this file (unjudged)
+      }
       if (emissions.length === 0) continue;
 
       // Write-direction claim narrowing: only emission callees absent from the
@@ -207,10 +211,12 @@ const telemetryEmissionGate: GateModule = {
     }
 
     // No NEW telemetry emission anywhere in the judged set → no fact to assert.
-    // Honest: do not green-by-assumption an empty claim. A file whose grammar was
-    // unavailable contributes no emission and is likewise carried unjudged here.
+    // If every changed source was perceivable, that is explicit non-applicability.
+    // A file whose grammar was unavailable still makes the empty run unjudged.
     if (!sawAnyEmission && reds.length === 0) {
-      return { gate: this.name, green: true, reds: [], note, unjudged: true };
+      return sawUnjudgedSource
+        ? { gate: this.name, green: true, reds: [], note, unjudged: true }
+        : { gate: this.name, green: true, reds: [], note, notApplicable: true };
     }
     return { gate: this.name, green: reds.length === 0, reds, note };
   },

@@ -12,6 +12,7 @@ import {
 } from './flows.wait-for-reply';
 import { NON_DIGIT_RE } from '../common/phone';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { emitFlowNodeCompletedPercept } from './flows-percept-emit.helper';
 
 export type { WaitForReplyNodeData, WaitState, ResumeResult };
 
@@ -291,7 +292,7 @@ export class FlowsService {
       }
     }
 
-    return this.prisma.flowExecution.create({
+    const created = await this.prisma.flowExecution.create({
       data: {
         workspaceId,
         flowId,
@@ -302,6 +303,21 @@ export class FlowsService {
       },
       select: { id: true, createdAt: true },
     });
+
+    // ADDITIVE, flag-gated, best-effort: emit ONE canonical
+    // `cognition.flow.node_completed` percept into the Mind spine outbox so the
+    // cognition loop is no longer blind to completed flow runs. Behind
+    // `KLOEL_FLOWS_PERCEPT_ENABLED` (DEFAULT OFF). The helper swallows its own
+    // errors; this `await` cannot throw, so the legacy write above (the source
+    // of truth, already committed) and flow outputs are NEVER affected.
+    await emitFlowNodeCompletedPercept(this.prisma, this.logger, {
+      workspaceId,
+      flowId,
+      executionId: created.id,
+      nodeCount: trimmedLogs.length,
+    });
+
+    return created;
   }
 
   /** List execution logs. */

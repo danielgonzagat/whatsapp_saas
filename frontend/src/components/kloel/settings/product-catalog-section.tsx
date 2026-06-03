@@ -30,6 +30,62 @@ interface ProductCatalogSectionProps {
   onProductsLoaded?: (products: Product[]) => void;
 }
 
+interface ProductApiListItem {
+  id: string;
+  name: string;
+  category?: string | null;
+  price?: number | string | null;
+  description?: string | null;
+  active?: boolean | null;
+  activePlansCount?: number | null;
+  memberAreasCount?: number | null;
+  totalSales?: number | null;
+  totalRevenue?: number | null;
+}
+
+function isProductApiListItem(value: unknown): value is ProductApiListItem {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const candidate = value as { id?: unknown; name?: unknown };
+  return typeof candidate.id === 'string' && typeof candidate.name === 'string';
+}
+
+function normalizeCatalogProductsPayload(productResponse: unknown): ProductApiListItem[] {
+  const data =
+    productResponse && typeof productResponse === 'object' && 'data' in productResponse
+      ? (productResponse as { data?: unknown }).data
+      : undefined;
+
+  if (!data || typeof data !== 'object' || !('products' in data)) {
+    throw new Error('Payload de produtos invalido.');
+  }
+
+  const products = (data as { products?: unknown }).products;
+  if (!Array.isArray(products) || !products.every(isProductApiListItem)) {
+    throw new Error('Payload de produtos invalido.');
+  }
+
+  return products;
+}
+
+function mapCatalogProduct(product: ProductApiListItem): Product {
+  return {
+    id: product.id,
+    name: product.name,
+    type: product.category || 'Produto',
+    price: formatCurrency(Number(product.price || 0)),
+    description: product.description || '',
+    active: product.active !== false,
+    files: 0,
+    activePlansCount: Number(product.activePlansCount || 0),
+    memberAreasCount: Number(product.memberAreasCount || 0),
+    totalSales: Number(product.totalSales || 0),
+    totalRevenue: Number(product.totalRevenue || 0),
+  };
+}
+
 export function ProductCatalogSection({
   knowledgeSources: _knowledgeSources = [],
   onProductsLoaded,
@@ -38,6 +94,7 @@ export function ProductCatalogSection({
   const [products, setProducts] = useState<Product[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogError, setCatalogError] = useState('');
+  const [catalogLoadFailed, setCatalogLoadFailed] = useState(false);
   const [catalogSuccess, setCatalogSuccess] = useState('');
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [newProduct, setNewProduct] = useState({ name: '', description: '', price: '', benefits: '', persona: '' });
@@ -46,35 +103,26 @@ export function ProductCatalogSection({
   // tick (react-hooks/set-state-in-effect).
   const hydrateCatalog = useCallback(() => {
     if (!workspaceId) {
-      return Promise.resolve().then(() => setProducts([]));
+      return Promise.resolve().then(() => {
+        setCatalogLoadFailed(false);
+        setProducts([]);
+      });
     }
     return Promise.resolve()
       .then(() => {
         setCatalogLoading(true);
         setCatalogError('');
+        setCatalogLoadFailed(false);
         return productApi.list();
       })
       .then((productResponse) => {
-        const nextProducts: Product[] = (productResponse.data?.products || []).map((product) => {
-          const extended = product as typeof product & { activePlansCount?: number; memberAreasCount?: number; totalSales?: number; totalRevenue?: number };
-          return {
-            id: extended.id,
-            name: extended.name,
-            type: extended.category || 'Produto',
-            price: formatCurrency(extended.price),
-            description: extended.description || '',
-            active: extended.active !== false,
-            files: 0,
-            activePlansCount: Number(extended.activePlansCount || 0),
-            memberAreasCount: Number(extended.memberAreasCount || 0),
-            totalSales: Number(extended.totalSales || 0),
-            totalRevenue: Number(extended.totalRevenue || 0),
-          };
-        });
+        const nextProducts = normalizeCatalogProductsPayload(productResponse).map(mapCatalogProduct);
         setProducts(nextProducts);
+        setCatalogLoadFailed(false);
         onProductsLoaded?.(nextProducts);
       })
       .catch((error: unknown) => {
+        setCatalogLoadFailed(true);
         setCatalogError(error instanceof Error ? error.message : 'Nao foi possivel carregar o catalogo.');
       })
       .finally(() => {
@@ -140,7 +188,7 @@ export function ProductCatalogSection({
               <ProductCard key={product.id} product={product} onDelete={handleDeleteProduct} />
             ))}
           </div>
-        ) : (
+        ) : catalogError && catalogLoadFailed ? null : (
           <p className="text-sm text-gray-500">{kloelT(`Nenhum produto cadastrado ainda.`)}</p>
         )}
         {showAddProduct ? (

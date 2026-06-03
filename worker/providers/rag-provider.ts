@@ -2,8 +2,8 @@
  * @capability RagRetrievalProvider
  * @domain commercial-intelligence
  */
-import OpenAI from 'openai';
 import { prisma } from '../db';
+import { createOpenAIClient } from './openai-models';
 
 /**
  * RAG provider — busca contexto real via pgvector.
@@ -19,7 +19,7 @@ async function getContext(workspaceId: string, query: string, topK = 3): Promise
     return '';
   }
 
-  const client = new OpenAI({ apiKey });
+  const client = createOpenAIClient(apiKey);
 
   try {
     // 1) Embedding da query

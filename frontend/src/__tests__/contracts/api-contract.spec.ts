@@ -29,8 +29,7 @@ import {
   BillingCheckoutResponseSchema,
   WorkspaceMeResponseSchema,
   WhatsAppStatusResponseSchema,
-  WhatsAppStartSessionResponseSchema,
-  WhatsAppQrResponseSchema,
+  MetaAuthUrlResponseSchema,
   HealthLivenessResponseSchema,
   HealthReadinessResponseSchema,
   WebhookDuplicateResponseSchema,
@@ -200,7 +199,7 @@ describe('Frontend API contract schemas — frontend freeze (P1-2)', () => {
     });
   });
 
-  describe('WhatsApp session', () => {
+  describe('WhatsApp Meta auth', () => {
     it('WhatsAppStatusResponseSchema accepts the disconnected default', () => {
       expect(
         WhatsAppStatusResponseSchema.safeParse({
@@ -210,46 +209,41 @@ describe('Frontend API contract schemas — frontend freeze (P1-2)', () => {
       ).toBe(true);
     });
 
-    it('WhatsAppStatusResponseSchema accepts a fully populated Meta Cloud session', () => {
+    it('WhatsAppStatusResponseSchema accepts a fully populated Meta Cloud status', () => {
       const fixture = {
         connected: true,
-        status: 'CONNECTED',
-        phone: '+5511999990000',
-        pushName: 'Daniel',
-        provider: 'meta-cloud',
-        phoneNumberId: '1234567890',
+        tokenExpired: false,
+        channels: {
+          whatsapp: {
+            connected: true,
+            provider: 'meta-cloud',
+            phoneNumberId: '1234567890',
+            whatsappBusinessId: '9876543210',
+            status: 'connected',
+          },
+        },
+        whatsappPhoneNumberId: '1234567890',
         whatsappBusinessId: '9876543210',
-        workerAvailable: true,
-        workerHealthy: true,
-        workerError: null,
-        degraded: false,
-        proofCount: 12,
-        degradedReason: null,
-        viewport: { width: 1280, height: 720 },
+        pageName: 'Daniel',
       };
       expect(WhatsAppStatusResponseSchema.safeParse(fixture).success).toBe(true);
     });
 
-    it('WhatsAppStartSessionResponseSchema accepts a QR-code session start', () => {
+    it('MetaAuthUrlResponseSchema accepts an official Meta authorization URL', () => {
       expect(
-        WhatsAppStartSessionResponseSchema.safeParse({
-          success: true,
+        MetaAuthUrlResponseSchema.safeParse({
+          url: 'https://www.facebook.com/v18.0/dialog/oauth?client_id=123',
+        }).success,
+      ).toBe(true);
+    });
+
+    it('WhatsAppStatusResponseSchema rejects legacy non-Meta status payloads', () => {
+      expect(
+        WhatsAppStatusResponseSchema.safeParse({
+          connected: false,
           qrCode: 'data:image/png;base64,iVBORw0KGgo...',
         }).success,
-      ).toBe(true);
-    });
-
-    it('WhatsAppStartSessionResponseSchema accepts an OAuth session start', () => {
-      expect(
-        WhatsAppStartSessionResponseSchema.safeParse({
-          success: true,
-          authUrl: 'https://www.facebook.com/v18.0/dialog/oauth?...',
-        }).success,
-      ).toBe(true);
-    });
-
-    it('WhatsAppQrResponseSchema accepts available=false without qr', () => {
-      expect(WhatsAppQrResponseSchema.safeParse({ available: false }).success).toBe(true);
+      ).toBe(false);
     });
   });
 

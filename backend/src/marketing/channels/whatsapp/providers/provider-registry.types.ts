@@ -24,7 +24,6 @@ export interface SessionStatus {
   phoneNumber?: string;
   pushName?: string;
   selfIds?: string[];
-  qrCode?: string;
   authUrl?: string;
   phoneNumberId?: string;
   whatsappBusinessId?: string | null;

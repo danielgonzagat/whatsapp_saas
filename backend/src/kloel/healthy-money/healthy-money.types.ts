@@ -8,6 +8,7 @@
  * SupportCostProjection, BrandWearSignal, UnhealthySaleBlock, BlockerPolicy.
  */
 import type { SpineEventRef } from '../mind/mind.types';
+import { clampScore } from '../../common/math';
 
 export type RevenueQualityTier = 'excellent' | 'good' | 'neutral' | 'caution' | 'toxic';
 
@@ -138,9 +139,9 @@ export interface HealthyVsUnhealthyDashboard {
   readonly supportProjection: SupportCostProjection | undefined;
   readonly generatedAt: string;
 }
-export function clampScore(value: number): number {
-  return Math.max(0, Math.min(1, value));
-}
+// Canonical clampScore lives in `common/math`; re-exported so existing
+// importers of this module keep resolving (byte-identical: `clamp(value, 0, 1)`).
+export { clampScore };
 
 export function tierFromScore(score: number): RevenueQualityTier {
   if (score >= 0.85) {

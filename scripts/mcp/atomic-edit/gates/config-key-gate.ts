@@ -316,6 +316,23 @@ const configKeyGate: GateModule = {
     const note =
       'every literal configService.get(\'KEY\') read resolves to a key declared in the Joi validationSchema (closed-schema membership)';
 
+    const candidateReads: { rel: string; reads: ConfigRead[] }[] = [];
+    for (const rel of ctx.changedFiles) {
+      if (!this.appliesTo(rel)) continue;
+      const body = ctx.readFile(rel);
+      if (body === null) continue;
+      // NEW-key-only: the call texts present BEFORE this write are not its claim.
+      const before = new Set(collectReads(ctx.priorOf(rel)).map((r) => r.callText));
+      const reads = collectReads(body).filter(
+        (read) => !before.has(read.callText) && read.key !== '',
+      );
+      if (reads.length > 0) candidateReads.push({ rel, reads });
+    }
+
+    if (candidateReads.length === 0) {
+      return { gate: this.name, green: true, reds: [], note, notApplicable: true };
+    }
+
     // ── resolve the closed key set; the Rice line: open/missing schema → unjudged ──
     const schema = resolveSchema(ctx);
     if (schema === null) {
@@ -333,15 +350,8 @@ const configKeyGate: GateModule = {
 
     // ── CLOSED schema: a literal key outside the declared set crashes Joi at boot ──
     const reds: GateRed[] = [];
-    for (const rel of ctx.changedFiles) {
-      if (!this.appliesTo(rel)) continue;
-      const body = ctx.readFile(rel);
-      if (body === null) continue;
-      // NEW-key-only: the call texts present BEFORE this write are not its claim.
-      const before = new Set(collectReads(ctx.priorOf(rel)).map((r) => r.callText));
-      for (const read of collectReads(body)) {
-        if (before.has(read.callText)) continue; // pre-existing read — not this write's claim
-        if (read.key === '') continue; // empty-string key is a degenerate non-fact, skip
+    for (const { rel, reads } of candidateReads) {
+      for (const read of reads) {
         if (!schema.keys.has(read.key)) {
           reds.push({
             file: rel,

@@ -32,6 +32,7 @@ function UploadZone({
 }) {
   const [hover, setHover] = useState(false);
   const isUploading = uploading === type;
+  const canReplace = doc?.status === 'rejected';
 
   if (doc) {
     return (
@@ -63,8 +64,57 @@ function UploadZone({
             {kloelT(`Enviado em`)}{' '}
             {doc.createdAt ? new Date(doc.createdAt).toLocaleDateString('pt-BR') : '--'}
           </span>
+          {doc.status === 'rejected' && doc.rejectedReason && (
+            <span
+              style={{
+                color: colors.semantic.error,
+                display: 'block',
+                fontFamily: SORA,
+                fontSize: 10,
+                marginTop: 4,
+              }}
+            >
+              {doc.rejectedReason}
+            </span>
+          )}
         </div>
         <StatusBadge status={doc.status || 'pending'} />
+        {canReplace && (
+          <>
+            <input
+              aria-label={`${label} - substituir`}
+              ref={inputRef}
+              type="file"
+              accept="image/*,.pdf"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  onUpload(type, file);
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              disabled={isUploading}
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--app-border-primary)',
+                borderRadius: 6,
+                color: 'var(--app-text-primary)',
+                cursor: isUploading ? 'wait' : 'pointer',
+                fontFamily: SORA,
+                fontSize: 10,
+                fontWeight: 600,
+                minWidth: 78,
+                padding: '6px 8px',
+              }}
+            >
+              {isUploading ? <PulseLoader width={54} height={14} /> : kloelT(`Substituir`)}
+            </button>
+          </>
+        )}
         {(doc.status === 'pending' || !doc.status) && (
           <button
             type="button"
@@ -151,7 +201,7 @@ function UploadZone({
         aria-label={label}
         ref={inputRef}
         type="file"
-        accept={kloelT(`image/*,.pdf`)}
+        accept="image/*,.pdf"
         style={{ display: 'none' }}
         onChange={(e) => {
           const file = e.target.files?.[0];

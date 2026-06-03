@@ -32,6 +32,7 @@ import {
   NoirMobileSummary,
 } from './CheckoutNoir.order-summary';
 import { NoirPaymentStep } from './CheckoutNoir.payment-step';
+import { OrderBumpsList } from './OrderBumpsList';
 
 type CheckoutNoirProps = PublicCheckoutThemeProps;
 
@@ -99,6 +100,9 @@ export default function CheckoutNoir({
     goStep,
     applyCoupon,
     finalizeOrder,
+    orderBumps,
+    selectedBumpIds,
+    toggleBump,
   } = useCheckoutExperience({
     product,
     config,
@@ -351,6 +355,17 @@ export default function CheckoutNoir({
         </div>
 
         <div className="ck-col" style={{ flex: '0 0 34%', minWidth: 280 }}>
+          {step === 3 && (
+            <OrderBumpsList
+              bumps={orderBumps}
+              selectedIds={selectedBumpIds}
+              onToggle={toggleBump}
+              accentColor={C.accent}
+              cardBg={C.surface}
+              mutedColor={C.text3}
+              textColor={C.text}
+            />
+          )}
           <NoirPaymentStep
             fid={fid}
             step={step}

@@ -76,6 +76,14 @@ describe('useCollaborators', () => {
     expect(result.current.invites).toEqual([{ id: 'i1', email: 'invite@test.com' }]);
     expect(result.current.isLoading).toBe(false);
   });
+
+  it('surfaces malformed collaborators payload instead of fake empty arrays', () => {
+    mockSWR({ data: {}, isLoading: false });
+    const { result } = renderHook(() => useCollaborators());
+    expect(result.current.agents).toEqual([]);
+    expect(result.current.invites).toEqual([]);
+    expect((result.current as typeof result.current & { error?: Error }).error?.message).toBe('Invalid collaborators payload');
+  });
 });
 
 /* ─── useCollaboratorStats ─────────────────────────────────────────────── */
@@ -94,6 +102,13 @@ describe('useCollaboratorStats', () => {
     });
     const { result } = renderHook(() => useCollaboratorStats());
     expect(result.current.stats).toEqual({ total: 5, online: 3, pendingInvites: 2 });
+  });
+
+  it('surfaces malformed collaborator stats payload instead of fake zero stats', () => {
+    mockSWR({ data: { total: '5', online: 3, pendingInvites: 2 }, isLoading: false });
+    const { result } = renderHook(() => useCollaboratorStats());
+    expect(result.current.stats).toEqual({ total: 0, online: 0, pendingInvites: 0 });
+    expect((result.current as typeof result.current & { error?: Error }).error?.message).toBe('Invalid collaborator stats payload');
   });
 });
 
@@ -153,6 +168,13 @@ describe('useAffiliates', () => {
 
     const { result } = renderHook(() => useAffiliates());
     expect(result.current.affiliates).toEqual([]);
+  });
+
+  it('surfaces malformed affiliates payload instead of a fake empty list', () => {
+    mockSWR({ data: {}, isLoading: false });
+    const { result } = renderHook(() => useAffiliates());
+    expect(result.current.affiliates).toEqual([]);
+    expect((result.current as typeof result.current & { error?: Error }).error?.message).toBe('Invalid affiliates payload');
   });
 
   it('handles missing data', () => {
@@ -267,6 +289,13 @@ describe('useAffiliateStats', () => {
     const { result } = renderHook(() => useAffiliateStats());
     expect(result.current.stats.topPartner).toBeNull();
   });
+
+  it('surfaces malformed affiliate stats payload instead of fake zero stats', () => {
+    mockSWR({ data: { activeAffiliates: 1, producers: 1, totalRevenue: '1000', totalCommissions: 200, topPartner: 'Maria' }, isLoading: false });
+    const { result } = renderHook(() => useAffiliateStats());
+    expect(result.current.stats).toEqual({ activeAffiliates: 0, producers: 0, totalRevenue: 0, totalCommissions: 0, topPartner: null });
+    expect((result.current as typeof result.current & { error?: Error }).error?.message).toBe('Invalid affiliate stats payload');
+  });
 });
 
 /* ─── useAffiliateDetail ───────────────────────────────────────────────── */
@@ -287,6 +316,13 @@ describe('useAffiliateDetail', () => {
 
     const { result } = renderHook(() => useAffiliateDetail('aff-1'));
     expect(result.current.affiliate).toEqual({ id: 'aff-1', name: 'Ana' });
+  });
+
+  it('surfaces malformed affiliate detail payload instead of fake null detail', () => {
+    mockSWR({ data: {}, isLoading: false });
+    const { result } = renderHook(() => useAffiliateDetail('aff-1'));
+    expect(result.current.affiliate).toBeNull();
+    expect((result.current as typeof result.current & { error?: Error }).error?.message).toBe('Invalid affiliate detail payload');
   });
 
   it('does not fetch when id is null', () => {
@@ -338,6 +374,13 @@ describe('usePartnerChatContacts', () => {
 
     const { result } = renderHook(() => usePartnerChatContacts());
     expect(result.current.contacts[0].time).toBe('');
+  });
+
+  it('surfaces malformed partner chat contacts payload instead of fake empty contacts', () => {
+    mockSWR({ data: {}, isLoading: false });
+    const { result } = renderHook(() => usePartnerChatContacts());
+    expect(result.current.contacts).toEqual([]);
+    expect((result.current as typeof result.current & { error?: Error }).error?.message).toBe('Invalid partner chat contacts payload');
   });
 });
 
@@ -399,6 +442,13 @@ describe('usePartnerMessages', () => {
 
     const { result } = renderHook(() => usePartnerMessages('partner-1'));
     expect(result.current.messages[0].time).toBe('');
+  });
+
+  it('surfaces malformed partner messages payload instead of fake empty messages', () => {
+    mockSWR({ data: {}, isLoading: false });
+    const { result } = renderHook(() => usePartnerMessages('partner-1'));
+    expect(result.current.messages).toEqual([]);
+    expect((result.current as typeof result.current & { error?: Error }).error?.message).toBe('Invalid partner messages payload');
   });
 });
 
@@ -480,6 +530,17 @@ describe('createAffiliate', () => {
       body: { name: 'New Affiliate', email: 'new@test.com' },
     });
     expect(mutateMock).toHaveBeenCalled();
+  });
+
+  it('does not invalidate affiliates after a backend error envelope', async () => {
+    apiFetchMock.mockReset();
+    mutateMock.mockReset();
+    apiFetchMock.mockResolvedValue({ error: 'Partner already exists', status: 409 });
+
+    await expect(createAffiliate({ name: 'Ana', email: 'ana@test.com' })).rejects.toThrow(
+      'Partner already exists',
+    );
+    expect(mutateMock).not.toHaveBeenCalled();
   });
 });
 

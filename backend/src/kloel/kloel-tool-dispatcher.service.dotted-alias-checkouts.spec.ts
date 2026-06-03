@@ -77,7 +77,7 @@ describe('KloelToolDispatcherService — checkouts.* aliases', () => {
         actorId: 'user-42',
         inputs: { productId: 'prod-1', name: 'Checkout Principal' },
         outputs: objectContaining({ checkoutId: 'chk-1' }),
-        domainEvents: ['checkout.created'],
+        domainEvents: ['commerce.checkout.created'],
         auditLogId: stringMatching(/^audit_/),
         evidenceUrl: '/produtos/prod-1/checkouts/chk-1',
         idempotencyKey: stringContaining('checkouts.create'),

@@ -109,13 +109,11 @@ import { redisInProductionValidator } from './redis-env-validator';
         // ============================================
         WHATSAPP_WEBHOOK_SECRET: Joi.string().optional(),
         WHATSAPP_API_WEBHOOK_SECRET: Joi.string().optional(),
-        WAHA_HOOK_URL: Joi.string().optional(),
-        WAHA_HOOK_EVENTS: Joi.string().optional(),
+        // Legacy WAHA webhook fallback secret — still read at runtime in
+        // whatsapp-api-webhook.controller.ts as a fallback to
+        // WHATSAPP_API_WEBHOOK_SECRET. Kept intentionally; the rest of the
+        // dead WAHA_* store/hook knobs were removed (no live reader).
         WAHA_WEBHOOK_SECRET: Joi.string().optional(),
-        WAHA_STORE_ENABLED: Joi.string().valid('true', 'false').optional(),
-        WAHA_STORE_FULL_SYNC: Joi.string().valid('true', 'false').optional(),
-        WAHA_NOWEB_STORE_ENABLED: Joi.string().valid('true', 'false').optional(),
-        WAHA_NOWEB_STORE_FULL_SYNC: Joi.string().valid('true', 'false').optional(),
 
         // ============================================
         // PAGAMENTOS (webhooks externos)

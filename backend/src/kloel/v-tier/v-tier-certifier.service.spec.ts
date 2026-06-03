@@ -191,7 +191,7 @@ describe('VtierCertifierService', () => {
     });
   });
 
-  describe('V7 — PULSE certifies', () => {
+  describe('V7 — readiness certifies', () => {
     it('produces a verdict (context-dependent)', async () => {
       const repo = new InMemoryLineageLedgerRepository();
       await new LineageLedgerService(repo).bootstrapGenesis();

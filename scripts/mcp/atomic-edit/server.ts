@@ -23,7 +23,13 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { normalizeObjectSchema } from '@modelcontextprotocol/sdk/server/zod-compat.js';
+import { toJsonSchemaCompat } from '@modelcontextprotocol/sdk/server/zod-json-schema-compat.js';
+import type { AnySchema, ZodRawShapeCompat } from '@modelcontextprotocol/sdk/server/zod-compat.js';
+import type { ListToolsResult, Tool } from '@modelcontextprotocol/sdk/types.js';
 import * as os from 'node:os';
+import { installHotReloadingToolCallbacks, runSingleToolCallFromEnv } from './server-helpers-hot-reload.js';
 import { log } from './server-helpers-io.js';
 import { registerToolsA } from './server-tools-a.js';
 import { registerToolsB } from './server-tools-b.js';
@@ -41,8 +47,111 @@ import { registerToolsExec } from './server-tools-exec.js';
 import { registerToolsConverge } from './server-tools-converge.js';
 import { registerToolsLens } from './server-tools-lens.js';
 import { registerToolsSession } from './server-tools-session.js';
+import { registerToolsY } from './server-tools-y.js';
+import { registerToolsSelf } from './server-tools-self.js';
+
+type RegisteredToolForList = {
+  title?: string;
+  description?: string;
+  inputSchema?: AnySchema | ZodRawShapeCompat;
+  outputSchema?: AnySchema | ZodRawShapeCompat;
+  annotations?: Tool['annotations'];
+  _meta?: Tool['_meta'];
+  execution?: unknown;
+  enabled?: boolean;
+};
+
+const EMPTY_OBJECT_JSON_SCHEMA: Tool['inputSchema'] = { type: 'object', properties: {} };
+
+const CODEX_UNSUPPORTED_SCHEMA_KEYS = new Set([
+  '$schema',
+  '$defs',
+  'definitions',
+  'default',
+  'format',
+  'not',
+  'const',
+  'additionalProperties',
+  'patternProperties',
+  'propertyNames',
+  'unevaluatedProperties',
+  'dependentSchemas',
+  'if',
+  'then',
+  'else',
+]);
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isToolRegistry(value: unknown): value is Record<string, RegisteredToolForList> {
+  return isPlainObject(value);
+}
+
+function sanitizeJsonSchema(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sanitizeJsonSchema);
+  if (!isPlainObject(value)) return value;
+
+  const schema: Record<string, unknown> = {};
+  for (const [key, nested] of Object.entries(value)) {
+    if (CODEX_UNSUPPORTED_SCHEMA_KEYS.has(key)) continue;
+    schema[key] = sanitizeJsonSchema(nested);
+  }
+  return schema;
+}
+
+function toCodexObjectSchema(
+  schema: AnySchema | ZodRawShapeCompat | undefined,
+  pipeStrategy: 'input' | 'output',
+): Tool['inputSchema'] {
+  const objectSchema = normalizeObjectSchema(schema);
+  if (!objectSchema) return EMPTY_OBJECT_JSON_SCHEMA;
+
+  const jsonSchema = toJsonSchemaCompat(objectSchema, {
+    strictUnions: true,
+    pipeStrategy,
+  });
+  const sanitized = sanitizeJsonSchema(jsonSchema);
+  if (!isPlainObject(sanitized) || sanitized.type !== 'object') {
+    return EMPTY_OBJECT_JSON_SCHEMA;
+  }
+  return sanitized as Tool['inputSchema'];
+}
+
+function installCodexSafeToolList(serverInstance: McpServer): void {
+  const registry = Object.getOwnPropertyDescriptor(serverInstance, '_registeredTools')?.value;
+  if (!isToolRegistry(registry)) return;
+
+  for (const tool of Object.values(registry)) {
+    delete tool.execution;
+  }
+
+  serverInstance.server.setRequestHandler(ListToolsRequestSchema, (): ListToolsResult => ({
+    tools: Object.entries(registry)
+      .filter(([, tool]) => tool.enabled !== false)
+      .map(([name, tool]) => {
+        const toolDefinition: Tool = {
+          name,
+          title: tool.title,
+          description: tool.description,
+          inputSchema: toCodexObjectSchema(tool.inputSchema, 'input'),
+        };
+
+        if (tool.annotations) toolDefinition.annotations = tool.annotations;
+        if (tool._meta) toolDefinition._meta = tool._meta;
+        if (tool.outputSchema) {
+          toolDefinition.outputSchema = toCodexObjectSchema(tool.outputSchema, 'output');
+        }
+
+        return toolDefinition;
+      }),
+  }));
+}
+
 
 const server = new McpServer({ name: 'kloel-atomic-edit', version: '4.0.0' });
+const hotToolRegistry = installHotReloadingToolCallbacks(server, { log });
 
 registerToolsA(server);
 registerToolsB(server);
@@ -60,6 +169,9 @@ registerToolsExec(server);
 registerToolsConverge(server);
 registerToolsLens(server);
 registerToolsSession(server);
+registerToolsY(server);
+registerToolsSelf(server);
+installCodexSafeToolList(server);
 
 async function main(): Promise<void> {
   const transport = new StdioServerTransport();
@@ -68,7 +180,12 @@ async function main(): Promise<void> {
   log(`tmpdir=${os.tmpdir()}`);
 }
 
-main().catch((e) => {
+async function boot(): Promise<void> {
+  if (await runSingleToolCallFromEnv(hotToolRegistry)) return;
+  await main();
+}
+
+boot().catch((e) => {
   log('FATAL', e instanceof Error ? (e.stack ?? e.message) : String(e));
   process.exit(1);
 });

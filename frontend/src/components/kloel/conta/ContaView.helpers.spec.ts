@@ -35,6 +35,39 @@ describe('getCompletionPercentage', () => {
   });
 });
 
+describe('account closure support helpers', () => {
+  it('routes account closure requests to the real account help section', async () => {
+    const helpers = (await import('./ContaView.helpers')) as unknown as {
+      ACCOUNT_CLOSURE_SUPPORT_SECTION: string;
+      buildAccountClosureSupportUrl: (pathname: string, search: string) => string;
+    };
+
+    expect(helpers.ACCOUNT_CLOSURE_SUPPORT_SECTION).toBe('ajuda');
+    expect(helpers.buildAccountClosureSupportUrl('/conta', 'section=sair&ref=graph')).toBe(
+      '/conta?section=ajuda&ref=graph',
+    );
+  });
+
+  it('builds real support links instead of placeholder account-help hrefs', async () => {
+    const helpers = (await import('./ContaView.helpers')) as unknown as {
+      buildKloelSupportMailHref: (subject?: string) => string;
+      buildKloelSupportWhatsappHref: (raw?: string | null) => string | null;
+    };
+
+    expect(helpers.buildKloelSupportMailHref('Encerramento de conta')).toBe(
+      'mailto:ajuda@kloel.com?subject=Encerramento%20de%20conta',
+    );
+    expect(helpers.buildKloelSupportWhatsappHref('55 (11) 99999-9999')).toBe(
+      'https://wa.me/5511999999999',
+    );
+    expect(helpers.buildKloelSupportWhatsappHref('https://wa.me/5511988887777')).toBe(
+      'https://wa.me/5511988887777',
+    );
+    expect(helpers.buildKloelSupportWhatsappHref('5500000000000')).toBeNull();
+    expect(helpers.buildKloelSupportWhatsappHref()).toBeNull();
+  });
+});
+
 describe('getKycStatusValue', () => {
   it('defaults to pending when status is missing', () => {
     expect(getKycStatusValue(null)).toBe('pending');

@@ -202,6 +202,26 @@ describe('buildOrderPayload', () => {
     expect(out.shippingAddress.destinatario).toBe('Outra Pessoa');
   });
 
+  it('includes accepted bumps and bump total when bumps are selected', () => {
+    const out = buildOrderPayload(
+      'plan-1',
+      'ws-1',
+      params({ acceptedBumps: ['bump-a', 'bump-b'], bumpTotalInCents: 2500 }),
+    );
+    expect(out.acceptedBumps).toEqual(['bump-a', 'bump-b']);
+    expect(out.bumpTotalInCents).toBe(2500);
+  });
+
+  it('omits bump fields when no bump is selected', () => {
+    const out = buildOrderPayload(
+      'plan-1',
+      'ws-1',
+      params({ acceptedBumps: [], bumpTotalInCents: 0 }),
+    );
+    expect(out.acceptedBumps).toBeUndefined();
+    expect(out.bumpTotalInCents).toBeUndefined();
+  });
+
   it('includes coupon fields only when couponApplied is true', () => {
     const applied = buildOrderPayload('plan-1', 'ws-1', params());
     expect(applied.couponCode).toBe('PROMO');

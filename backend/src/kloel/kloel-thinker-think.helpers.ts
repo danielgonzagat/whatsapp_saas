@@ -260,7 +260,7 @@ export async function runComposerCapabilityBranch(
     await conversationStore.saveMessage(workspaceId, 'user', message);
     await conversationStore.saveMessage(workspaceId, 'assistant', capResult.content);
   }
-  safeWrite(createKloelDoneEvent());
+  safeWrite(createKloelDoneEvent(capResult.metadata));
   streamWriter.close();
 }
 

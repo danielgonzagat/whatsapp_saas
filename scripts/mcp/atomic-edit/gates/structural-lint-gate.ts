@@ -210,22 +210,52 @@ async function analyzeStructural(content: string, rel: string): Promise<Finding[
       'import_statement', 'import_specifier', 'namespace_import',
       'identifier', 'type_identifier', 'shorthand_property_identifier',
       // prefer-const
-      'lexical_declaration', 'variable_declarator', 'assignment_expression', 'update_expression',
+      'lexical_declaration', 'variable_declarator', 'assignment_expression', 'augmented_assignment_expression', 'update_expression',
       // no-empty
       'statement_block', 'catch_clause', 'function_declaration', 'function_expression',
       'arrow_function', 'method_definition', 'generator_function', 'generator_function_declaration',
       'comment',
       // no-useless-escape
-      'string', 'template_string', 'escape_sequence',
+      'string', 'template_string', 'escape_sequence', 'regex', 'regex_pattern',
     ]),
   );
   if (nodes === null) return null; // no grammar → undecidable, caller → unjudged
 
   const findings: Finding[] = [];
+  // Pre-filter escapes that are NOT plain-string escapes: regex literals (backslash
+  // is regex syntax) and TAGGED templates (String.raw / sql / gql, whose raw-vs-cooked
+  // semantics are decided by the tag at RUNTIME, undecidable statically). Their escapes
+  // are meaningful and non-removable, so no-useless-escape must never flag them. Sound
+  // under-approximation: an escape whose container cannot be decided is also dropped.
+  const escapeContainers = nodes.filter(
+    (node) => node.type === 'regex' || node.type === 'regex_pattern' ||
+      node.type === 'string' || node.type === 'template_string',
+  );
+  const contentBytes = Buffer.from(content, 'utf8');
+  const isTaggedTemplateAt = (openByte: number): boolean => {
+    let i = openByte - 1;
+    while (i >= 0) {
+      const b = contentBytes[i];
+      if (b === 0x20 || b === 0x09 || b === 0x0a || b === 0x0d) { i--; continue; }
+      break;
+    }
+    if (i < 0) return false;
+    const b = contentBytes[i];
+    return (b >= 0x41 && b <= 0x5a) || (b >= 0x61 && b <= 0x7a) ||
+      (b >= 0x30 && b <= 0x39) || b === 0x5f || b === 0x24 || b === 0x29 || b === 0x5d;
+  };
+  const nodesForUselessEscape = nodes.filter((n) => {
+    if (n.type !== 'escape_sequence') return true;
+    const c = innermostContaining(escapeContainers, n.byteStart, n.byteEnd);
+    if (c === null) return false;
+    if (c.type === 'regex' || c.type === 'regex_pattern') return false;
+    if (c.type === 'template_string' && isTaggedTemplateAt(c.byteStart)) return false;
+    return true;
+  });
   emitUnusedImports(nodes, findings);
   emitPreferConst(nodes, findings);
   emitNoEmpty(nodes, findings);
-  emitNoUselessEscape(nodes, findings);
+  emitNoUselessEscape(nodesForUselessEscape, findings);
   // Stable, deterministic order: by source position, so the proof and the lens
   // see the same locus ordering every run.
   findings.sort((a, b) => (a.line - b.line) || (a.col - b.col) || a.ruleId.localeCompare(b.ruleId));
@@ -291,8 +321,8 @@ function emitPreferConst(nodes: AstNode[], out: Finding[]): void {
   // LHS targets of assignment / update expressions (the reassigned names).
   const reassigned = new Set<string>();
   for (const n of nodes) {
-    if (n.type === 'assignment_expression') {
-      const m = /^([A-Za-z_$][\w$]*)\s*=/.exec(n.text.trim());
+    if (n.type === 'assignment_expression' || n.type === 'augmented_assignment_expression') {
+      const m = /^([A-Za-z_$][\w$]*)\s*(?:>>>=|>>=|<<=|\+=|-=|\*=|\/=|%=|&&=|\|\|=|\?\?=|&=|\|=|\^=|=)/.exec(n.text.trim());
       if (m) reassigned.add(m[1]);
     } else if (n.type === 'update_expression') {
       const m = /([A-Za-z_$][\w$]*)/.exec(n.text.replace(/^[+-]{2}/, '').trim());

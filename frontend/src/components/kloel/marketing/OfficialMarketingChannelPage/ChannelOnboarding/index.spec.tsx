@@ -55,6 +55,7 @@ interface ScenarioOverrides {
   completed?: boolean;
   connectionConnected?: boolean;
   loadError?: string | null;
+  toggleEmailResult?: boolean;
 }
 
 function makeData(overrides: ScenarioOverrides = {}) {
@@ -67,6 +68,7 @@ function makeData(overrides: ScenarioOverrides = {}) {
       setup.currentStep = next;
     }),
     toggleProduct: vi.fn(),
+    saveSelectedProducts: vi.fn(() => Promise.resolve(true)),
     updateConfig: vi.fn((patch: Partial<MutableState['config']>) => {
       setup.config = { ...setup.config, ...patch };
     }),
@@ -76,7 +78,8 @@ function makeData(overrides: ScenarioOverrides = {}) {
     }),
     openMeta: vi.fn(() => Promise.resolve()),
     openTikTok: vi.fn(() => Promise.resolve()),
-    toggleEmail: vi.fn(() => Promise.resolve()),
+    toggleEmail: vi.fn(() => Promise.resolve(overrides.toggleEmailResult ?? false)),
+    uploadArsenalFiles: vi.fn((_files: FileList) => Promise.resolve(true)),
     handleComplete: vi.fn(() => Promise.resolve()),
     channelSession: { connected: overrides.connectionConnected ?? false },
     completed: overrides.completed ?? false,
@@ -146,7 +149,7 @@ describe('handleConnect by channel', () => {
   });
 
   it('email: toggleEmail then setCurrentStep(1) only when backend confirms connected', async () => {
-    const data = makeData({ connectionConnected: true });
+    const data = makeData({ connectionConnected: false, toggleEmailResult: true });
     hookMock.mockReturnValue(data);
     render(<ChannelOnboarding channel="email" />);
     fireEvent.click(screen.getByRole('button', { name: /Verificar domínio/ }));
@@ -155,8 +158,8 @@ describe('handleConnect by channel', () => {
     expect(data.setCurrentStep).toHaveBeenCalledWith(1);
   });
 
-  it('email: does not advance when connection still null', async () => {
-    const data = makeData({ connectionConnected: false });
+  it('email: does not advance from stale connected state when backend toggle is not confirmed', async () => {
+    const data = makeData({ connectionConnected: true, toggleEmailResult: false });
     hookMock.mockReturnValue(data);
     render(<ChannelOnboarding channel="email" />);
     fireEvent.click(screen.getByRole('button', { name: /Verificar domínio/ }));
@@ -167,7 +170,7 @@ describe('handleConnect by channel', () => {
 });
 
 describe('per-step rendering + handlers', () => {
-  it('renders products step + saves selected products before moving on', () => {
+  it('renders products step + saves selected products through the real channel setup action', async () => {
     const data = makeData({
       setup: { currentStep: 1, selectedProductIds: ['p1'] },
       productOptions: [{ id: 'p1', name: 'Alpha', price: 197 }],
@@ -179,12 +182,12 @@ describe('per-step rendering + handlers', () => {
     fireEvent.click(screen.getByText('Alpha'));
     expect(data.toggleProduct).toHaveBeenCalledWith('p1');
     fireEvent.click(screen.getByRole('button', { name: /Salvar produtos/ }));
-    const [nextSetup, message] = data.persistSetup.mock.calls[0] || [];
-    expect(nextSetup?.currentStep).toBe(2);
-    expect(message).toBe('Produtos do canal salvos.');
+    await act(async () => undefined);
+    expect(data.saveSelectedProducts).toHaveBeenCalledTimes(1);
+    expect(data.persistSetup).not.toHaveBeenCalled();
   });
 
-  it('arsenal step persists each picked file as a JSON line', async () => {
+  it('arsenal step uploads picked files through the real channel setup action', async () => {
     const data = makeData({ setup: { currentStep: 2 } });
     hookMock.mockReturnValue(data);
     const { container } = render(<ChannelOnboarding channel="whatsapp" />);
@@ -193,12 +196,10 @@ describe('per-step rendering + handlers', () => {
     const f2 = new File(['y'], 'video.mp4', { type: 'video/mp4' });
     fireEvent.change(input, { target: { files: [f1, f2] } });
     await act(async () => undefined);
-    expect(data.persistSetup).toHaveBeenCalled();
-    const next = data.persistSetup.mock.calls[0][0] as MutableState;
-    expect(next.arsenal).toHaveLength(2);
-    const parsed = next.arsenal.map((line) => JSON.parse(line));
-    expect(parsed[0]).toMatchObject({ description: 'photo.png' });
-    expect(parsed[1]).toMatchObject({ description: 'video.mp4' });
+    expect(data.uploadArsenalFiles).toHaveBeenCalledTimes(1);
+    const files = data.uploadArsenalFiles.mock.calls.at(0)?.[0] as FileList;
+    expect(Array.from(files).map((file) => file.name)).toEqual(['photo.png', 'video.mp4']);
+    expect(data.persistSetup).not.toHaveBeenCalled();
   });
 
   it('arsenal back/continue wires setCurrentStep correctly', () => {
@@ -216,7 +217,7 @@ describe('per-step rendering + handlers', () => {
     expect(backData.setCurrentStep).toHaveBeenCalledWith(1);
   });
 
-  it('voice step updates config via updateConfig and Despertar runs persist+complete', async () => {
+  it('voice step updates config via updateConfig and Despertar completes through the real channel setup action', async () => {
     const data = makeData({ setup: { currentStep: 3 } });
     hookMock.mockReturnValue(data);
     render(<ChannelOnboarding channel="whatsapp" />);
@@ -238,8 +239,8 @@ describe('per-step rendering + handlers', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: /Despertar/ }));
     await act(async () => undefined);
-    expect(data.persistSetup).toHaveBeenCalled();
-    expect(data.handleComplete).toHaveBeenCalled();
+    expect(data.handleComplete).toHaveBeenCalledTimes(1);
+    expect(data.persistSetup).not.toHaveBeenCalled();
   });
 });
 

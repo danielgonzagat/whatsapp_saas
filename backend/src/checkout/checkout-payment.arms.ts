@@ -8,6 +8,7 @@ import type { MercadoPagoPixChargeService } from '../payments/mercadopago/mercad
 import type { StripeChargeService } from '../payments/stripe/stripe-charge.service';
 import type { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-event-emitter.service';
 import type { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
+import { sanitizeDocumentDigits } from '../sales/sales.helpers.shared';
 import {
   BOLETO_EXPIRATION_DAYS,
   EMPTY_BOLETO_DATA,
@@ -172,7 +173,10 @@ export async function runCheckoutPixArm(input: {
   try {
     addPaymentBreadcrumb(params, amount, 'Mercado Pago');
     const productName = extractProductName(order.plan as Parameters<typeof extractProductName>[0]);
-    const payerDocument = params.customerCPF?.replace(/\D/g, '') || undefined;
+    const payerDocument =
+      params.customerCPF != null
+        ? sanitizeDocumentDigits(params.customerCPF) || undefined
+        : undefined;
     const charge = await deps.mercadoPagoPix.create(
       buildMercadoPagoPixChargeInput({
         idempotencyKey: params.idempotencyKey || params.orderId,
@@ -240,7 +244,8 @@ export async function runCheckoutBoletoArm(input: {
   ) => Promise<unknown>;
 }): Promise<ReturnType<typeof buildCheckoutPaymentResult>> {
   const { deps, params, order, amount, chargedTotalInCents, persist } = input;
-  const payerDocument = params.customerCPF?.replace(/\D/g, '') || '';
+  const payerDocument =
+    params.customerCPF != null ? sanitizeDocumentDigits(params.customerCPF) : '';
   if (!payerDocument) {
     throw new BadRequestException(
       'CPF/CNPJ do comprador é obrigatório para emitir boleto pelo Mercado Pago.',

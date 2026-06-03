@@ -12,12 +12,13 @@
  *          NEW @OnEvent('…') listener whose event nobody emits → dangling listener.
  *   GREEN — a NEW apiFetch('/products/stats') that DOES resolve to a real controller
  *          route (proven present in the openapi extract) → no red.
- *   UNJUDGED — a changed file with no decidable consumer edge → unjudged, not green.
+ *   NOT_APPLICABLE — a changed file with no decidable consumer edge → explicitly
+ *          not applicable, not unjudged.
  *   FP-RESIDUAL — a file whose ONLY @OnEvent('…') / apiFetch('/products/…') tokens
  *          live inside a comment and a template literal. Because the rewrite reads
  *          through perception (real `decorator` / `call_expression` AST nodes), those
  *          tokens are `comment` / `template_string` nodes — NOT extracted — so the
- *          file is UNJUDGED with ZERO reds. The old whole-file-regex extractor would
+ *          file is NOT_APPLICABLE with ZERO reds. The old whole-file-regex extractor would
  *          have reddened the template @OnEvent as a dangling listener. This case is
  *          the concrete proof the string/comment/template false-positive is gone.
  *
@@ -25,13 +26,33 @@
  * the gate's NEW-edge-only semantics. run is now async (perception is async); the
  * proof awaits it.
  */
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { makeContext } from './contract.js';
 import gate from './contract-edge-gate.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(HERE, '..', '..', '..', '..'); // gates → atomic-edit → mcp → scripts → repo
+
+function findRepoRoot(start: string): string {
+  let dir = start;
+  for (;;) {
+    if (
+      fs.existsSync(path.join(dir, 'backend/src')) &&
+      fs.existsSync(path.join(dir, 'frontend/src')) &&
+      fs.existsSync(path.join(dir, 'scripts/mcp/atomic-edit'))
+    ) {
+      return dir;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) {
+      throw new Error(`could not find repo root from ${start}`);
+    }
+    dir = parent;
+  }
+}
+
+const repoRoot = findRepoRoot(HERE);
 
 let failures = 0;
 const check = (label: string, cond: boolean): void => {
@@ -91,24 +112,25 @@ export const y = {
   check('GREEN: resolving call produces no red', greenR.green === true);
   check('GREEN: it actually judged (not unjudged)', greenR.unjudged !== true);
 
-  /* ───────────────────────── UNJUDGED case ───────────────────────── */
-  // Changed file with no decidable consumer edge → honest unjudged, never green-by-default.
-  const unjRel = 'frontend/src/lib/__contract_edge_unjudged__.ts';
+  /* ───────────────────── NOT_APPLICABLE case ───────────────────── */
+  // Changed file with no consumer edge has no contract-edge fact to assert.
+  const unjRel = 'frontend/src/lib/__contract_edge_not_applicable__.ts';
   const unjText = `export const z = 1 + 2; // no apiFetch, no @OnEvent — nothing to assert\n`;
   const unjOverlay = new Map<string, string>([[unjRel, unjText]]);
   const unjCtx = makeContext(repoRoot, unjOverlay, [unjRel]);
   const unjR = await gate.run(unjCtx);
 
-  console.log(`\n[UNJUDGED] green=${unjR.green} reds=${unjR.reds.length} unjudged=${unjR.unjudged ?? false}`);
-  check('UNJUDGED: returns unjudged when nothing decidable', unjR.unjudged === true);
-  check('UNJUDGED: emits zero reds', unjR.reds.length === 0);
+  console.log(`\n[NOT_APPLICABLE] green=${unjR.green} reds=${unjR.reds.length} notApplicable=${unjR.notApplicable ?? false} unjudged=${unjR.unjudged ?? false}`);
+  check('NOT_APPLICABLE: returns notApplicable when no contract edge exists', unjR.notApplicable === true);
+  check('NOT_APPLICABLE: is not unjudged', unjR.unjudged !== true);
+  check('NOT_APPLICABLE: emits zero reds', unjR.reds.length === 0);
 
   /* ─────────────────── FP-RESIDUAL (the lens's exposure) ─────────────────── */
   // A file whose ONLY @OnEvent('…') and apiFetch('/products/…') tokens live inside a
   // COMMENT and a TEMPLATE LITERAL. Under the old whole-file regex these matched and
   // the template @OnEvent reddened as a dangling listener. Under perception they are
   // `comment` / `template_string` nodes — never `decorator` / `call_expression` — so
-  // NOTHING is extracted → the file is UNJUDGED with ZERO reds. This is the concrete
+  // NOTHING is extracted → the file is NOT_APPLICABLE with ZERO reds. This is the concrete
   // proof the string/comment/template false-positive is gone.
   const fpRel = 'frontend/src/lib/api/__contract_edge_fp__.ts';
   const fpText = [
@@ -127,10 +149,11 @@ export const y = {
   const fpCtx = makeContext(repoRoot, fpOverlay, [fpRel]);
   const fpR = await gate.run(fpCtx);
 
-  console.log(`\n[FP-RESIDUAL] green=${fpR.green} reds=${fpR.reds.length} unjudged=${fpR.unjudged ?? false}`);
+  console.log(`\n[FP-RESIDUAL] green=${fpR.green} reds=${fpR.reds.length} notApplicable=${fpR.notApplicable ?? false} unjudged=${fpR.unjudged ?? false}`);
   for (const r of fpR.reds) console.log(`   - LEAKED ${r.locus ?? ''}  ::  ${r.fact}`);
   check('FP-RESIDUAL: zero reds (no comment/template token extracted)', fpR.reds.length === 0);
-  check('FP-RESIDUAL: unjudged (nothing real to judge — the FP is gone)', fpR.unjudged === true);
+  check('FP-RESIDUAL: notApplicable (nothing real to judge — the FP is gone)', fpR.notApplicable === true);
+  check('FP-RESIDUAL: not unjudged', fpR.unjudged !== true);
   check(
     'FP-RESIDUAL: the template @OnEvent did NOT red as a dangling listener',
     !fpR.reds.some((r) => r.fact.includes('phantom.in.template')),

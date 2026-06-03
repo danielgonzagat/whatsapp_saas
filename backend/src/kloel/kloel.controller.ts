@@ -27,6 +27,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ConversationalOnboardingService } from './conversational-onboarding.service';
 import { KloelService } from './kloel.service';
 import { KloelThreadSearchService } from './kloel-thread-search.service';
+import { KloelGlobalSearchService } from './kloel-global-search.service';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { StorageService } from '../common/storage/storage.service';
@@ -80,6 +81,7 @@ export class KloelController {
     private readonly storageService: StorageService,
     private readonly prisma: PrismaService,
     private readonly threadSearchService: KloelThreadSearchService,
+    private readonly globalSearchService: KloelGlobalSearchService,
     private readonly toolDispatcher: KloelToolDispatcherService,
   ) {}
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -379,6 +381,15 @@ export class KloelController {
     @Body() dto: { title?: string; idempotencyKey?: string },
   ) {
     return createThread({ prisma: this.prisma }, resolveWorkspaceId(req), dto);
+  }
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @Get('search')
+  async searchAll(
+    @Request() req: AuthenticatedRequest,
+    @Query('q') q: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.globalSearchService.search(resolveWorkspaceId(req), q, limit);
   }
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @InternalEndpoint('thread search')

@@ -14,7 +14,7 @@ import * as childProcess from 'node:child_process';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { REPO_ROOT, resolveSafeTarget } from './guard.js';
-import { atomicWrite, readUtf8 } from './server-helpers-io.js';
+import { atomicWrite } from './server-helpers-io.js';
 import { ok, fail } from './server-helpers-result.js';
 import { convergeStatic, type Mutation } from './server-helpers-converge.js';
 import { captureEffectSnapshot, diffEffect, rollbackEffect } from './server-helpers-effect.js';
@@ -216,7 +216,7 @@ export function registerToolsConverge(server: McpServer): void {
         // ── proof-chained ledger: converge held the admitting verdict in conv.gates
         // and used to throw it away. Persist it now — one trace per committed file,
         // each binding the verdict that admitted it into the append-only chain.
-        const verdict = { green: true, reds: [], unjudged: [], ran: conv.gates.map((g) => g.gate) };
+        const verdict = { green: true, reds: [], notApplicable: [], unjudged: [], ran: conv.gates.map((g) => g.gate) };
         for (const t of targets) {
           const prior = effectSnap?.files.get(t.relPath) ?? '';
           writeTrace(

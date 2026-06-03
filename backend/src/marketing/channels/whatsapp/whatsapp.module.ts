@@ -23,9 +23,6 @@ import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { WhatsappCatchupOrchestratorService } from './whatsapp-catchup-orchestrator.service';
 import { WhatsappCatchupHistoryService } from './whatsapp-catchup-history.service';
-import { WhatsAppWatchdogService } from './whatsapp-watchdog.service';
-import { WhatsAppWatchdogRecoveryService } from './whatsapp-watchdog-recovery.service';
-import { WhatsAppWatchdogSessionService } from './whatsapp-watchdog-session.service';
 import { WhatsappController } from './controllers/whatsapp.controller';
 import { WhatsappSendRateGuardService } from './whatsapp-send-rate-guard.service';
 import { WhatsappService } from './whatsapp.service';
@@ -75,9 +72,6 @@ import {
     InboundProcessorService,
     WhatsAppApiProvider,
     WhatsAppProviderRegistry,
-    WhatsAppWatchdogService,
-    WhatsAppWatchdogRecoveryService,
-    WhatsAppWatchdogSessionService,
     WhatsAppCatchupService,
     WhatsappCatchupOrchestratorService,
     WhatsappCatchupHistoryService,
@@ -96,6 +90,7 @@ import {
   ],
   exports: [
     WhatsappService,
+    WhatsappMessageDispatcherService,
     WHATSAPP_MESSAGING,
     InboundProcessorService,
     INBOUND_PROCESSOR,

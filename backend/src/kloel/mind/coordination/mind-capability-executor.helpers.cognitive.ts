@@ -72,9 +72,9 @@ export function computeCognitiveGaps(abi: unknown): string[] {
   if (typeof lineageStatus === 'string' && lineageStatus !== 'intact') {
     gaps.push(`lineage_${lineageStatus}`);
   }
-  const pulseVerdict = walkPath(root, ['pulseTruth', 'certificationVerdict']);
-  if (typeof pulseVerdict === 'string' && pulseVerdict !== 'PASS') {
-    gaps.push(`pulse_${pulseVerdict.toLowerCase()}`);
+  const readinessVerdict = walkPath(root, ['readinessTruth', 'certificationVerdict']);
+  if (typeof readinessVerdict === 'string' && readinessVerdict !== 'PASS') {
+    gaps.push(`readiness_${readinessVerdict.toLowerCase()}`);
   }
   return gaps;
 }

@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
@@ -127,7 +136,7 @@ export class AutopilotController {
   ) {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);
     if (!body.contactId) {
-      throw new Error('contactId é obrigatório para retry');
+      throw new BadRequestException('contactId é obrigatório para retry');
     }
     return this.autopilotService.retryContact(workspaceId, body.contactId);
   }
@@ -319,7 +328,7 @@ export class AutopilotController {
   ) {
     const effective = resolveWorkspaceId(req, workspaceId);
     if (!contactId) {
-      throw new Error('contactId é obrigatório');
+      throw new BadRequestException('contactId é obrigatório');
     }
     return this.autopilotService.nextBestAction(effective, contactId);
   }

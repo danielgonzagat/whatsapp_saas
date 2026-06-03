@@ -39,10 +39,46 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 // worktree arm run the SAME OS binary while resolving relative paths against —
 // and being sandboxed to — its own tree, never the code's repo.
 const ROOT_OVERRIDE = process.env.ATOMIC_EDIT_REPO_ROOT?.trim();
-export const REPO_ROOT = ROOT_OVERRIDE ? canonicalPath(ROOT_OVERRIDE) : findRepoRoot(HERE);
+const HOST_WRITE_ROOT = process.env.ATOMIC_HOST_WRITE_ROOT?.trim();
+export const REPO_ROOT = canonicalPath(ROOT_OVERRIDE ? ROOT_OVERRIDE : findRepoRoot(HERE));
+
+function nearestExistingPath(target: string): { existing: string; suffix: string[] } | null {
+  let cursor = path.resolve(target);
+  const suffix: string[] = [];
+  for (;;) {
+    if (fs.existsSync(cursor)) return { existing: cursor, suffix };
+    const parent = path.dirname(cursor);
+    if (parent === cursor) return null;
+    suffix.unshift(path.basename(cursor));
+    cursor = parent;
+  }
+}
+
+function hostVisiblePath(target: string): string | null {
+  if (!HOST_WRITE_ROOT) return null;
+  const hostRoot = path.resolve(HOST_WRITE_ROOT);
+  let hostReal: string;
+  try {
+    hostReal = fs.realpathSync.native(hostRoot);
+  } catch {
+    return null;
+  }
+  const targetExisting = nearestExistingPath(target);
+  if (!targetExisting) return null;
+  let existingReal: string;
+  try {
+    existingReal = fs.realpathSync.native(targetExisting.existing);
+  } catch {
+    return null;
+  }
+  if (!containsPath(hostReal, existingReal)) return null;
+  return path.join(hostRoot, path.relative(hostReal, existingReal), ...targetExisting.suffix);
+}
 
 function canonicalPath(target: string): string {
   const resolved = path.resolve(target);
+  const hostVisible = hostVisiblePath(resolved);
+  if (hostVisible) return hostVisible;
   try {
     return fs.realpathSync.native(resolved);
   } catch {
@@ -120,26 +156,36 @@ function resolveTargetRoot(file: string): { absPath: string; repoRoot: string } 
 
 /** Exact repo-relative paths that no AI CLI may modify. */
 const PROTECTED_FILES = new Set<string>([
-  "CLAUDE.md",
   "AGENTS.md",
-  "docs/design/KLOEL_VISUAL_DESIGN_CONTRACT.md",
-  "docs/design/KLOEL_ANTI_HARDCODE_CONTRACT.md",
-  "ops/kloel-design-tokens.json",
+  "CLAUDE.md",
+  "CODEX.md",
+  ".codacy.yml",
+  "ratchet.json",
+  "package.json",
+  ".husky/commit-msg",
   ".husky/pre-push",
-  ".github/workflows/ci-cd.yml",
   "backend/eslint.config.mjs",
   "frontend/eslint.config.mjs",
   "worker/eslint.config.mjs",
+  "backend/src/lib/openai-models.ts",
   "backend/src/lib/ai-models.ts",
   "scripts/pulse/no-hardcoded-reality-audit.ts",
 ]);
 
+const PROTECTED_PREFIXES = [
+  ".github/workflows/",
+  "docs/codacy/",
+  "docs/design/",
+  "ops/",
+  "scripts/ops/",
+];
+
 /** Repo-relative prefixes/globs that are protected directory-wide. */
 export function isProtectedRelative(rel: string): string | null {
   if (PROTECTED_FILES.has(rel)) return rel;
-  if (rel.startsWith("ops/") && rel.endsWith(".json")) return "ops/*.json";
-  if (/^scripts\/ops\/check-[^/]+\.mjs$/.test(rel)) return "scripts/ops/check-*.mjs";
-  if (/^scripts\/ops\/lib\/[^/]+\.mjs$/.test(rel)) return "scripts/ops/lib/*.mjs";
+  for (const prefix of PROTECTED_PREFIXES) {
+    if (rel.startsWith(prefix)) return prefix;
+  }
   return null;
 }
 

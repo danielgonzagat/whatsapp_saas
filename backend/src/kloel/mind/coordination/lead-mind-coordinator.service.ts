@@ -27,7 +27,7 @@ import OpenAI from 'openai';
 import { OpsAlertService } from '../../../observability/ops-alert.service';
 import { AbiBuilderService } from '../../abi/abi-builder.service';
 import { validateAbiPayload } from '../../abi/abi-validator';
-
+import { normalizePhone } from '../../../common/phone/phone-normalization.util';
 import {
   NON_DIGIT_RE,
   safeStr,
@@ -102,10 +102,11 @@ export class LeadMindCoordinator {
       });
       this.logger.log(`Novo lead criado: ${lead.id}`);
     }
-    // Canonical bridge (Wave5 L7): keep Contact as the single source of truth
-    // for the person behind a KloelLead. Reuses the canonical workspaceId_phone
-    // upsert shape (same as CrmService.upsertContact). Idempotent + fail-open.
-    await this.syncCanonicalContact(workspaceId, phone);
+    // Canonical bridge (Wave5 L7 / PERSON migration PHASE 1): keep Contact as
+    // the single source of truth for the person behind a KloelLead. Reuses the
+    // canonical workspaceId_phone upsert shape (same as CrmService.upsertContact)
+    // and mirrors the lead funnel snapshot additively. Idempotent + fail-open.
+    await this.syncCanonicalContact(workspaceId, phone, lead);
     return lead;
   }
 
@@ -114,20 +115,45 @@ export class LeadMindCoordinator {
    * source of truth for the person. Idempotent (upsert on workspaceId_phone),
    * workspace-isolated, and fail-open — a Contact sync failure must never break
    * lead processing.
+   *
+   * PERSON migration PHASE 1 dual-write: mirrors the lead funnel snapshot
+   * (status/stage/lastMessage/lastIntent/totalMessages) onto the Contact and
+   * stamps `kloelLeadId` write-if-null so the first lead that produced a Contact
+   * keeps provenance without ever overwriting an existing link.
    */
-  private async syncCanonicalContact(workspaceId: string, phone: string): Promise<void> {
-    const normalizedPhone = String(phone || '').replace(NON_DIGIT_RE, '');
+  private async syncCanonicalContact(
+    workspaceId: string,
+    phone: string,
+    lead: KloelLead,
+  ): Promise<void> {
+    const normalizedPhone = normalizePhone(phone)?.digits;
     if (!normalizedPhone) {
       return;
     }
     try {
+      const existing = await this.prisma.contact.findUnique({
+        where: { workspaceId_phone: { workspaceId, phone: normalizedPhone } },
+        select: { kloelLeadId: true },
+      });
+      const funnel = {
+        leadStatus: lead.status,
+        leadStage: lead.stage,
+        lastMessage: lead.lastMessage,
+        lastIntent: lead.lastIntent,
+        totalMessages: lead.totalMessages,
+      };
       await this.prisma.contact.upsert({
         where: { workspaceId_phone: { workspaceId, phone: normalizedPhone } },
-        update: {},
+        update: {
+          ...funnel,
+          ...(existing && existing.kloelLeadId === null ? { kloelLeadId: lead.id } : {}),
+        },
         create: {
           workspaceId,
           phone: normalizedPhone,
           name: buildContactDisplayName(normalizedPhone),
+          ...funnel,
+          kloelLeadId: lead.id,
         },
         select: { id: true },
       });
@@ -272,7 +298,7 @@ export class LeadMindCoordinator {
   ): Promise<string> {
     this.logger.log(`KLOEL processando mensagem de ${senderPhone}`);
     try {
-      const normalizedPhone = String(senderPhone || '').replace(NON_DIGIT_RE, '');
+      const normalizedPhone = normalizePhone(senderPhone)?.digits ?? '';
       const workspace = await this.prisma.workspace.findUnique({
         where: { id: workspaceId },
         select: { providerSettings: true, name: true },

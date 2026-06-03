@@ -124,7 +124,6 @@ import { ChannelModule } from './kloel/channel/channel.module';
 import { ChannelPolicyModule } from './kloel/channel-policy/channel-policy.module';
 import { DefensModule } from './kloel/defens/defens.module';
 import { EvolModule } from './kloel/evol/evol.module';
-import { PulseGatesModule } from './kloel/pulse-gates/pulse-gates.module';
 import { IncentModule } from './kloel/incent/incent.module';
 import { PlansModule } from './plans/plans.module';
 import { PipelineModule } from './pipeline/pipeline.module';
@@ -132,7 +131,6 @@ import { ProductCategoriesModule } from './product-categories/product-categories
 import { ProductsModule } from './products/products.module';
 import { SitesModule } from './sites/sites.module';
 import { PublicApiModule } from './public-api/public-api.module';
-import { PulseModule } from './pulse/pulse.module';
 import { ReportsModule } from './reports/reports.module';
 import { SalesModule } from './sales/sales.module';
 import { TikTokAdsModule } from './tiktok-ads/tiktok-ads.module';
@@ -307,7 +305,6 @@ function setRedisClientListenerBudget(client: Redis): void {
     OfferModule, // 🎯 Camada XV — Offer Evolution Intelligence (bonus, promise, versioning, positioning, pricing)
     MaturityModule, // 📊 Camada VIII — Commercial Maturity Recognition (signals + classify + filter + guard)
     SpineModule, // 🧪 Spine — in-process event spine (B17 surface emitters publish here)
-    PulseGatesModule, // 🛡️ PULSE gates — bridge gate verdicts into spine events (UTP-PULSE-SPINE-001)
     RecoveryModule, // 🛡️ Camada XIV — Mature Failure Recovery (self-detection, acknowledgment, explanation, non-repeat, tactics, narrative, trust-after-error)
     DelegationModule, // ⚖️ Camada XIII — Delegation Confidence Tracking (state tracker, graduation, suggestions, rollback, evidence)
     TrustModule, // 🛡️ Camada IX — Trust Capital Protection (fatigue, desperation, brand, silence, handoff, recovery)
@@ -333,7 +330,6 @@ function setRedisClientListenerBudget(client: Redis): void {
     IncentModule, // 🤝 Camada XXXIV — Incentive Integrity (explain, detect conflict, silence, monitor bias, disclose, audit, feedback, attribution)
     EcosysModule, // 🤝 Camada XXVII — Ecosystem Intelligence (cross-role fits, privacy guard, conflict detector, suggestion delivery)
     LegitModule, // ⚖️ Camada LEGIT — Legal & Regulatory Compliance (LGPD/GDPR/CCPA, policies, consent, regulated content, image rights, risk flags, legal consult)
-    PulseModule, // PULSE live organism collector
     VtierModule, // V-tier certification — V1..V16 runtime verification (cognitive organism)
     AnunciosModule, // 📊 Anuncios — Meta/Google/TikTok ad accounts, campaigns, insights
     TikTokAdsModule, // 🎵 TikTok Ads — OAuth + Events API + sync

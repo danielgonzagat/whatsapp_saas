@@ -28,6 +28,7 @@ import * as path from 'node:path';
 import { REPO_ROOT } from './guard.js';
 import { buildFounderBlock, type FounderBlock } from './founder.js';
 import { type RegistryRun } from './gates/registry.js';
+import { removedByteCountBetween, type NegativeActionProof } from './server-helpers-negative-proof.js';
 
 export type Verbosity = 'L0' | 'L1' | 'L2' | 'L3';
 
@@ -104,6 +105,15 @@ export interface ModifiedZone {
   metadata?: Record<string, unknown>;
 }
 
+export interface ByteEffect {
+  beforeBytes: number;
+  proposedBytes: number;
+  currentAfterBytes: number;
+  removedBytes: number;
+  addedBytes: number;
+  netBytes: number;
+}
+
 export interface MovementZone {
   kind: string;
   description: string;
@@ -136,6 +146,8 @@ export interface AtomicEditTrace {
   intention: string;
   fallback: boolean;
   metrics: TraceMetrics;
+  /** Byte-level effect receipt over UTF-8 bytes, independent of JS string length. */
+  byteEffect: ByteEffect;
   validation: { language: string; syntaxErrorsBefore: number; syntaxErrorsAfter: number };
   /** True when the operator only validated a proposal and did not write the file. */
   preview: boolean;
@@ -151,6 +163,8 @@ export interface AtomicEditTrace {
   modifiedZones: ModifiedZone[];
   movementZones: MovementZone[];
   semanticImpact: string;
+  /** Admission proof required before any negative byte effect may touch disk. */
+  negativeActionProof?: NegativeActionProof;
   /** Auditability-without-code layer (thesis apex). */
   audit: FounderBlock;
   /**
@@ -233,6 +247,7 @@ export function buildTrace(args: {
   changed?: boolean;
   /** The convergence verdict that admitted this write (converge passes conv.gates); omitted by plain edits. */
   gateVerdict?: RegistryRun;
+  negativeActionProof?: NegativeActionProof;
 }): AtomicEditTrace {
   const changed = args.metrics?.changedChars ?? 0;
   const surface = args.metrics?.lineRewriteSurfaceChars ?? 0;
@@ -245,6 +260,17 @@ export function buildTrace(args: {
   const preview = args.preview ?? false;
   const changedFlag = args.changed ?? !preview;
   const afterText = changedFlag ? args.newText : args.before;
+  const beforeBytes = Buffer.byteLength(args.before, 'utf8');
+  const proposedBytes = Buffer.byteLength(args.newText, 'utf8');
+  const currentAfterBytes = Buffer.byteLength(afterText, 'utf8');
+  const byteEffect: ByteEffect = {
+    beforeBytes,
+    proposedBytes,
+    currentAfterBytes,
+    removedBytes: removedByteCountBetween(args.before, args.newText),
+    addedBytes: removedByteCountBetween(args.newText, args.before),
+    netBytes: proposedBytes - beforeBytes,
+  };
   return {
     traceVersion: '1.0',
     operationId: newOperationId(),
@@ -260,9 +286,10 @@ export function buildTrace(args: {
       changedChars: changed,
       lineRewriteSurfaceChars: surface,
       expansionFactorAvoided: expansion,
-      bytesNet: args.metrics?.bytesNet ?? args.newText.length - args.before.length,
+      bytesNet: args.metrics?.bytesNet ?? byteEffect.netBytes,
       lineRewriteAvoided: args.metrics?.lineRewriteAvoided ?? derivedLineRewriteAvoided,
     },
+    byteEffect,
     validation: {
       language: args.validation.language,
       syntaxErrorsBefore: args.validation.before,
@@ -304,6 +331,7 @@ export function buildTrace(args: {
     ],
     movementZones: args.movementZones ?? [],
     semanticImpact: args.semanticImpact ?? 'unclassified_code_edit',
+    negativeActionProof: args.negativeActionProof,
     audit: buildFounderBlock({
       file: args.file,
       operator: args.operator,

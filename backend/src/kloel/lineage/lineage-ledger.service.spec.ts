@@ -81,7 +81,7 @@ describe('LineageLedgerService', () => {
       const e3 = await service.append({
         ledgerEntryId: '01JD90000000000000000003',
         eventId: '01JD9X2000000000000000PUL',
-        eventName: 'lineage.ciclo_pulse_nao_regressivo',
+        eventName: 'lineage.ciclo_readiness_nao_regressivo',
         timestamp: '2026-05-13T22:30:00.000Z',
         payload: { cycleNumber: 1, score: 0.42, verdict: 'INSUFFICIENT_EVIDENCE' },
       });
@@ -241,7 +241,7 @@ describe('LineageLedgerService', () => {
       await service.append({
         ledgerEntryId: 'c',
         eventId: 'ec',
-        eventName: 'lineage.ciclo_pulse_nao_regressivo',
+        eventName: 'lineage.ciclo_readiness_nao_regressivo',
         timestamp: '2026-05-13T22:00:00.000Z',
         payload: { cycleNumber: 1, score: 0.5, verdict: 'INSUFFICIENT_EVIDENCE' },
       });

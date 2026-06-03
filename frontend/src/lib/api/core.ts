@@ -46,8 +46,6 @@ export interface WhatsAppConnectionStatus {
   phoneNumberId?: string | undefined;
   /** Whatsapp business id property. */
   whatsappBusinessId?: string | null | undefined;
-  /** Qr code property. */
-  qrCode?: string | undefined;
   /** Message property. */
   message?: string | undefined;
   /** Provider property. */
@@ -60,14 +58,6 @@ export interface WhatsAppConnectionStatus {
   workerError?: string | null | undefined;
   /** Degraded property. */
   degraded?: boolean | undefined;
-  /** Qr available property. */
-  qrAvailable?: boolean | undefined;
-  /** Browser session status property. */
-  browserSessionStatus?: string | undefined;
-  /** Screencast status property. */
-  screencastStatus?: string | undefined;
-  /** Viewer available property. */
-  viewerAvailable?: boolean | undefined;
   /** Takeover active property. */
   takeoverActive?: boolean | undefined;
   /** Agent paused property. */
@@ -84,11 +74,6 @@ export interface WhatsAppConnectionStatus {
   proofCount?: number | undefined;
   /** Degraded reason property. */
   degradedReason?: string | null | undefined;
-  /** Viewport property. */
-  viewport?: {
-    width: number;
-    height: number;
-  } | undefined;
 }
 
 /** Whats app proof entry shape. */
@@ -127,25 +112,10 @@ export interface WhatsAppConnectResponse {
   message?: string | undefined;
   /** Auth url property. */
   authUrl?: string | undefined;
-  /** Qr code property. */
-  qrCode?: string | undefined;
-  /** Qr code image property. */
-  qrCodeImage?: string | undefined;
   /** Error property. */
   error?: boolean | undefined;
 }
 
-/** Whats app screencast token response shape. */
-export interface WhatsAppScreencastTokenResponse {
-  /** Token property. */
-  token: string;
-  /** Expires at property. */
-  expiresAt: string;
-  /** Workspace id property. */
-  workspaceId: string;
-  /** Require token property. */
-  requireToken?: boolean | undefined;
-}
 
 export interface WhatsAppProofEntry {
   /** Id property. */

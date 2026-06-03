@@ -157,7 +157,7 @@ export interface AgentSkillDefinition {
   id: string;
   title: string;
   summary: string;
-  category: 'commercial' | 'operational' | 'pulse' | 'workspace';
+  category: 'commercial' | 'operational' | 'workspace';
   riskLevel: AgentRuntimeRiskLevel;
   allowedTools: string[];
   requiredEvidence: string[];
@@ -195,7 +195,7 @@ export interface AgentSkillSelection {
   reasons: string[];
 }
 
-export interface AgentPulseSelfModel {
+export interface AgentReadinessSelfModel {
   status: 'ready' | 'degraded' | 'empty';
   authorityMode: string;
   canWorkNow: boolean;
@@ -233,7 +233,7 @@ export interface AgentRuntimeContext {
   recall: AgentRuntimeRecallResult;
   sessionRecall: AgentRuntimeSessionRecallResult;
   selectedSkills: AgentSkillSelection[];
-  pulse: AgentPulseSelfModel;
+  readiness: AgentReadinessSelfModel;
   authorityMode: AgentRuntimeAuthorityMode;
 }
 

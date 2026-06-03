@@ -9,7 +9,7 @@ import type {
   AbiConsolidatedRef,
   AbiEpisodicRef,
   AbiPredictions,
-  AbiPulseTruth,
+  AbiReadinessTruth,
   AbiSalientEvent,
   AbiValence,
   AbiValenceSection,
@@ -28,7 +28,7 @@ export interface CognitiveSubstrate {
   dissolution: DissolutionGap[];
   beliefs: AbiBelief[];
   predictions: AbiPredictions;
-  pulseTruth: AbiPulseTruth;
+  readinessTruth: AbiReadinessTruth;
   valence: AbiValenceSection;
   attention: AbiAttention;
 }
@@ -222,7 +222,7 @@ export async function buildCognitiveSubstrate(
     cert.verdict === 'SIM' ? 'PASS' : cert.verdict === 'NAO' ? 'FAIL' : 'WARN';
   const overclaimRisk =
     cert.verdict === 'INSUFFICIENT_EVIDENCE' ? 1 : Number((1 - successRate).toFixed(4));
-  const pulseTruth: AbiPulseTruth = {
+  const readinessTruth: AbiReadinessTruth = {
     noOverclaimStatus: noOverclaim,
     capabilityHealthScore: Number(successRate.toFixed(4)),
     gates: [],
@@ -319,7 +319,7 @@ export async function buildCognitiveSubstrate(
     dissolution,
     beliefs: [...catalogBeliefs, ...beliefs].slice(0, 40),
     predictions,
-    pulseTruth,
+    readinessTruth,
     valence,
     attention,
   };

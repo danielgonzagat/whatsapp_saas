@@ -16,10 +16,33 @@ import { ProductCampaignCreateModal } from './ProductCampaignCreateModal';
 import { ProductCampaignLinkModal } from './ProductCampaignLinkModal';
 import { ProductCampaignDeleteModal } from './ProductCampaignDeleteModal';
 
+function normalizeCampaignList(response: unknown): Campaign[] {
+  if (Array.isArray(response)) {
+    return response;
+  }
+
+  if (!response || typeof response !== 'object') {
+    throw new Error('Payload de campanhas invalido.');
+  }
+
+  const maybeError = (response as { error?: unknown }).error;
+  if (typeof maybeError === 'string' && maybeError) {
+    throw new Error(maybeError);
+  }
+
+  const data = (response as { data?: unknown }).data;
+  if (!Array.isArray(data)) {
+    throw new Error('Payload de campanhas invalido.');
+  }
+
+  return data;
+}
+
 export function ProductCampaignsTab({ productId }: { productId: string }) {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [newName, setNewName] = useState('');
   const [newPixelId, setNewPixelId] = useState('');
@@ -41,17 +64,15 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
 
   const fetchCampaigns = useCallback(async () => {
     setError(null);
+    setLoadFailed(false);
     try {
-      const res = await apiFetch<Campaign[]>(`/products/${productId}/campaigns`);
-      if (res.error) {
-        setError(res.error);
-        setCampaigns([]);
-      } else {
-        setCampaigns(Array.isArray(res.data) ? res.data : []);
-      }
+      const res = await apiFetch<unknown>(`/products/${productId}/campaigns`);
+      setCampaigns(normalizeCampaignList(res));
+      setError(null);
+      setLoadFailed(false);
     } catch (error: unknown) {
+      setLoadFailed(true);
       setError(toCampaignErrorMessage(error, PRODUCT_CAMPAIGNS_COPY.loadError));
-      setCampaigns([]);
     } finally {
       setLoading(false);
     }
@@ -256,14 +277,16 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
         </div>
       )}
 
-      <ProductCampaignList
-        campaigns={campaigns}
-        onLaunch={handleLaunch}
-        onPause={handlePause}
-        onShowLinks={setLinkModal}
-        onDelete={setCampaignPendingDelete}
-        deleting={deleting}
-      />
+      {error && loadFailed && campaigns.length === 0 ? null : (
+        <ProductCampaignList
+          campaigns={campaigns}
+          onLaunch={handleLaunch}
+          onPause={handlePause}
+          onShowLinks={setLinkModal}
+          onDelete={setCampaignPendingDelete}
+          deleting={deleting}
+        />
+      )}
 
       <ProductCampaignLinkModal
         linkModal={linkModal}
@@ -292,3 +315,4 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
     </div>
   );
 }
+

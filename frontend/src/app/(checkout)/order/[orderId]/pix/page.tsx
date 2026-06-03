@@ -6,14 +6,7 @@ import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useOrderStatus } from '../../../hooks/useCheckout';
-
-/* ─── Helpers ──────────────────────────────────────────────────────────────── */
-
-function formatTime(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-}
+import { formatTime } from '@/lib/common/format';
 
 /* ─── Component ────────────────────────────────────────────────────────────── */
 

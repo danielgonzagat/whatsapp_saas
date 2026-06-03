@@ -8,6 +8,9 @@
  * they can be exercised by fast unit tests.
  */ import type { ChannelName } from './channel-transport.types';
 import type { UnknownRecord } from '../common/types';
+import { escapeHtml } from '../common/utils/html-escape.util';
+
+export { escapeHtml };
 export type ComplianceMode = 'reactive' | 'proactive';
 
 export type WhatsAppSendMediaType = 'document' | 'image' | 'audio' | 'video'; /**
@@ -112,12 +115,4 @@ export function buildWhatsAppSendOptions(
     complianceMode: resolveComplianceMode(context),
     forceDirect: context?.forceDirect === true,
   };
-} /** Minimal HTML escape for Gmail HTML bodies (subset Gmail expects). */
-export function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }

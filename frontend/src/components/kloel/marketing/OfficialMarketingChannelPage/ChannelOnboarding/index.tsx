@@ -96,12 +96,8 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
     if (channel === 'email') {
       void data
         .toggleEmail(true)
-        .then(() => {
-          // Only advance to the Products step when the channel actually
-          // came up. `useOfficialMarketingChannel` surfaces backend
-          // failures via `data.loadError` / `data.message`, so we gate
-          // on `data.channelSession?.connected` after the round-trip.
-          if (data.channelSession?.connected) {
+        .then((connected) => {
+          if (connected) {
             data.setCurrentStep(1);
           }
         })
@@ -114,14 +110,7 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
   const addArsenalFiles = useCallback(
     (files: FileList) => {
       setRestarted(false);
-      const additions = Array.from(files).map((file) =>
-        JSON.stringify({ type: '', productId: '', description: file.name }),
-      );
-      const nextArsenal = [...data.setup.arsenal, ...additions];
-      void data.persistSetup(
-        { ...data.setup, arsenal: nextArsenal },
-        'Arsenal do canal atualizado.',
-      );
+      void data.uploadArsenalFiles(files);
     },
     [data],
   );
@@ -139,9 +128,7 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
 
   const handleActivate = useCallback(() => {
     setRestarted(false);
-    void data
-      .persistSetup({ ...data.setup, currentStep: 3 }, 'Voz calibrada.')
-      .then(() => data.handleComplete());
+    void data.handleComplete();
   }, [data]);
 
   const glyphStep = awakened
@@ -182,11 +169,11 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
           onBack={() => goToStep(0)}
           onContinue={() => {
             setRestarted(false);
-            setOptimisticStep(2);
-            void data.persistSetup(
-              { ...data.setup, currentStep: 2 },
-              'Produtos do canal salvos.',
-            );
+            void data.saveSelectedProducts().then((saved) => {
+              if (saved) {
+                setOptimisticStep(2);
+              }
+            });
           }}
         />
       );

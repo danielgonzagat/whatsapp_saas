@@ -3,6 +3,7 @@ import { Queue } from 'bullmq';
 import { forEachSequential } from '../common/async-sequence';
 import { createBullMqConnectionOptions } from '../common/redis/redis.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { QUEUE_NAMES } from '../queue/queue-names.const';
 
 type ScraperStats = { status?: string; found?: number; [key: string]: unknown };
 
@@ -16,7 +17,7 @@ export class ScrapersService {
     this.logger.log('ScrapersService initialized');
     const connection = createBullMqConnectionOptions();
 
-    this.scraperQueue = new Queue('scraper-jobs', { connection });
+    this.scraperQueue = new Queue(QUEUE_NAMES.SCRAPER, { connection });
   }
 
   /** Create job. */
@@ -152,6 +153,10 @@ export class ScrapersService {
       importedCount++;
     });
 
-    return { message: 'Leads imported successfully', count: importedCount };
+    return {
+      message: 'Leads imported successfully',
+      count: importedCount,
+      imported: importedCount,
+    };
   }
 }

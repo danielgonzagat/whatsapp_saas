@@ -28,6 +28,7 @@ import { z } from 'zod';
 import { REPO_ROOT } from './guard.js';
 import { ok, fail } from './server-helpers-result.js';
 import {
+  assertCompleteEffectSnapshot,
   captureEffectSnapshot,
   diffEffect,
   rollbackEffect,
@@ -90,6 +91,7 @@ export function registerToolsSession(server: McpServer): void {
     async () => {
       try {
         const snap = captureEffectSnapshot(REPO_ROOT);
+        assertCompleteEffectSnapshot(snap, 'open atomic session');
         const id = randomUUID();
         const startedAt = Date.now();
         SESSIONS.set(id, { id, snap, savepoints: [], startedAt });

@@ -4,7 +4,7 @@ import { proxyWhatsAppRequest } from '../../proxy';
 /** Post. */
 export async function POST(request: NextRequest) {
   try {
-    const result = await proxyWhatsAppRequest(request, 'POST', '/whatsapp-api/session/logout');
+    const result = await proxyWhatsAppRequest(request, 'POST', '/meta/auth/disconnect');
     return NextResponse.json(result.data, { status: result.status });
   } catch (error) {
     console.error('[WhatsApp Proxy] logout error:', error);

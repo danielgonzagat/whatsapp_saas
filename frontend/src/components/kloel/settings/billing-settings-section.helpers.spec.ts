@@ -201,12 +201,20 @@ describe('extractRawPaymentMethods', () => {
     expect(extractRawPaymentMethods(envelope)).toEqual([{ id: 'pm_1' }]);
   });
 
-  it('returns [] when the envelope is undefined', () => {
-    expect(extractRawPaymentMethods(undefined)).toEqual([]);
+  it('throws when the envelope is undefined', () => {
+    expect(() => extractRawPaymentMethods(undefined)).toThrow('Payload de cartoes invalido.');
   });
 
-  it('returns [] when paymentMethods is absent', () => {
-    expect(extractRawPaymentMethods({})).toEqual([]);
+  it('throws when paymentMethods is absent', () => {
+    expect(() => extractRawPaymentMethods({})).toThrow('Payload de cartoes invalido.');
+  });
+
+  it('throws when paymentMethods is not an array', () => {
+    expect(() =>
+      extractRawPaymentMethods({ paymentMethods: { id: 'pm_1' } } as unknown as {
+        paymentMethods?: RawPaymentMethod[];
+      }),
+    ).toThrow('Payload de cartoes invalido.');
   });
 });
 

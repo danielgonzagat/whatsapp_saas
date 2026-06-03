@@ -27,7 +27,6 @@ interface WhatsAppSetupActionsProps {
   productMap: Map<string, SelectableProduct>;
   effectiveConnection: ConnectionShape;
   refreshConnection: () => Promise<unknown>;
-  requestQrCode: (opts?: { silent?: boolean }) => Promise<unknown>;
   mutateSettings: () => Promise<unknown>;
   mutateSummary: () => Promise<unknown>;
   mutateLiveStatus: () => Promise<unknown>;
@@ -37,7 +36,6 @@ interface WhatsAppSetupActionsProps {
   setBusyKey: Dispatch<SetStateAction<string | null>>;
   setUploadingCount: Dispatch<SetStateAction<number>>;
   setActivated: Dispatch<SetStateAction<boolean>>;
-  setScanProgress: Dispatch<SetStateAction<number>>;
   setSessionExpired: Dispatch<SetStateAction<boolean>>;
 }
 
@@ -48,7 +46,6 @@ export function useWhatsAppSetupActions({
   productMap,
   effectiveConnection,
   refreshConnection,
-  requestQrCode,
   mutateSettings,
   mutateSummary,
   mutateLiveStatus,
@@ -58,7 +55,6 @@ export function useWhatsAppSetupActions({
   setBusyKey,
   setUploadingCount,
   setActivated,
-  setScanProgress,
   setSessionExpired,
 }: WhatsAppSetupActionsProps) {
   const persistSetup = async (
@@ -73,21 +69,22 @@ export function useWhatsAppSetupActions({
     await Promise.all([mutateSettings(), mutateSummary(), mutateLiveStatus(), refreshConnection()]);
   };
 
-  const refreshQrCode = async () => {
+  const connectMeta = async (): Promise<string | null> => {
     setBusyKey('connect');
     setError(null);
     setSessionExpired(false);
-    setScanProgress((current) => Math.max(current, 12));
     try {
-      await initiateWhatsAppConnection(workspaceId);
-      await Promise.all([requestQrCode(), refreshConnection()]);
+      const response = await initiateWhatsAppConnection(workspaceId);
+      await Promise.all([mutateLiveStatus(), refreshConnection()]);
+      return response.authUrl || null;
     } catch (err: unknown) {
       if (getErrorStatus(err) === 401) {
         setSessionExpired(true);
         setError(SESSION_EXPIRED_MESSAGE);
-        return;
+        return null;
       }
-      setError(getErrorMessage(err, 'Não foi possível atualizar o QR Code.'));
+      setError(getErrorMessage(err, 'Não foi possível iniciar a autorização oficial da Meta.'));
+      return null;
     } finally {
       setBusyKey(null);
     }
@@ -278,6 +275,6 @@ export function useWhatsAppSetupActions({
     updateConfig,
     toggleFollowUp,
     activateAi,
-    refreshQrCode,
+    connectMeta,
   } as const;
 }

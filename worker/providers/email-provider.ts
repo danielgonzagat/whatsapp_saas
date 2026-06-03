@@ -2,8 +2,7 @@
  * @capability EmailProvider
  * @domain notifications-copilot
  */
-import nodemailer from 'nodemailer';
-import { resolveEmailConfig } from './email-config.helper';
+import { createMailTransport, resolveEmailConfig } from './email-config.helper';
 
 type WorkspaceLike = {
   id?: string;
@@ -35,12 +34,7 @@ export const emailProvider = {
     }
 
     try {
-      const transporter = nodemailer.createTransport({
-        host: cfg.host,
-        port: cfg.port,
-        secure: cfg.secure,
-        auth: cfg.user && cfg.pass ? { user: cfg.user, pass: cfg.pass } : undefined,
-      });
+      const transporter = createMailTransport(cfg);
 
       // Simple heuristic: first line is subject
       const lines = message.split('\n');
@@ -82,12 +76,7 @@ export const emailProvider = {
     }
 
     try {
-      const transporter = nodemailer.createTransport({
-        host: cfg.host,
-        port: cfg.port,
-        secure: cfg.secure,
-        auth: cfg.user && cfg.pass ? { user: cfg.user, pass: cfg.pass } : undefined,
-      });
+      const transporter = createMailTransport(cfg);
 
       await transporter.sendMail({
         from: cfg.from,

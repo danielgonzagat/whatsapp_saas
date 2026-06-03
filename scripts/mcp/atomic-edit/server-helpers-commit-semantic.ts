@@ -5,6 +5,10 @@ import { previewDiff, characterDiff, type SemanticEditResult } from './advanced.
 import { atomicWrite, sha256, log, targetDetails } from './server-helpers-io.js';
 import { runPostEditVerify } from './server-helpers-verify.js';
 import { ok, fail, type ToolOk } from './server-helpers-result.js';
+import {
+  requireNegativeProofForRemovedBytes,
+  type NegativeActionProof,
+} from './server-helpers-negative-proof.js';
 
 export function commitSemantic(
   relPath: string,
@@ -13,6 +17,7 @@ export function commitSemantic(
   r: SemanticEditResult,
   preview: boolean,
   verify?: 'typecheck' | 'lint',
+  extra: Record<string, unknown> = {},
 ): ToolOk {
   if (!r.validation.ok) {
     return fail(`rejected: would introduce a syntax error. ${r.validation.introduced ?? ''}`);
@@ -31,10 +36,27 @@ export function commitSemantic(
   const semInline = characterDiff(before, r.newText, relPath);
   const repoRoot = resolveAllowedRootForAbsolutePath(absPath) ?? REPO_ROOT;
   const semZones = computeZones(before, r.newText);
+  const detailOp = String((r.detail as Record<string, unknown>).op ?? 'edit');
+  const operator = `semantic:${detailOp}`;
+  let negativeActionProof = (extra as { negativeActionProof?: NegativeActionProof }).negativeActionProof;
+  if (!negativeActionProof) {
+    try {
+      negativeActionProof = requireNegativeProofForRemovedBytes({
+        action: operator,
+        target: relPath,
+        targetUnit: 'semantic-edit',
+        before,
+        after: r.newText,
+        preview,
+      });
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : String(e));
+    }
+  }
   const semTrace = buildTrace({
     file: relPath,
     repoRoot,
-    operator: `semantic:${String((r.detail as Record<string, unknown>).op ?? 'edit')}`,
+    operator,
     before,
     newText: r.newText,
     inlinePreview: semInline,
@@ -48,6 +70,7 @@ export function commitSemantic(
     movementZones: semZones.movementZones,
     preview,
     changed: !preview,
+    negativeActionProof,
   });
   if (preview) {
     return ok(
@@ -60,6 +83,7 @@ export function commitSemantic(
           file: relPath,
           ...targetDetails(absPath, relPath),
           ...r.detail,
+          ...extra,
         },
         {
           inlinePreview: semInline,
@@ -85,6 +109,7 @@ export function commitSemantic(
         afterSha256: sha256(r.newText),
         ...(verifyResult ? { verify: verifyResult } : {}),
         ...r.detail,
+        ...extra,
       },
       {
         inlinePreview: semInline,

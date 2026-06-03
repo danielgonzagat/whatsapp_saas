@@ -69,4 +69,27 @@ describe('secureRandomFloat', () => {
     const unique = new Set(values);
     expect(unique.size).toBe(values.length);
   });
+
+  it('returns a hex id segment with requested length', async () => {
+    const bytes = new Uint8Array([0xab, 0xcd, 0xef]);
+    const getRandomValues = vi.fn((arr: Uint8Array): Uint8Array => {
+      arr.set(bytes.slice(0, arr.length));
+      return arr;
+    });
+    vi.stubGlobal('crypto', { getRandomValues });
+
+    const secureRandomModule = await import('../secure-random');
+    const maybeRandomIdSegment: unknown = Reflect.get(secureRandomModule, 'randomIdSegment');
+    if (typeof maybeRandomIdSegment !== 'function') {
+      expect(typeof maybeRandomIdSegment).toBe('function');
+      return;
+    }
+
+    const result = maybeRandomIdSegment(5);
+    expect(result).toBe('abcde');
+    expect(getRandomValues).toHaveBeenCalledOnce();
+    const [firstCall] = getRandomValues.mock.calls;
+    expect(firstCall?.[0]).toBeInstanceOf(Uint8Array);
+    expect(firstCall?.[0]?.length).toBe(3);
+  });
 });

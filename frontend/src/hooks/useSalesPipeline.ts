@@ -55,6 +55,9 @@ export function useSalesPipeline() {
     keepPreviousData: true,
     revalidateOnFocus: false,
   });
+  const pipelinesPayloadError = pipelinesData === undefined || Array.isArray(pipelinesData)
+    ? undefined
+    : new Error('Invalid sales pipeline payload');
   const pipelines = Array.isArray(pipelinesData) ? pipelinesData : [];
   const pipeline: RawPipeline | undefined = pipelines[0];
   const pipelineId = String(pipeline?.id || pipeline?._id || '');
@@ -70,14 +73,22 @@ export function useSalesPipeline() {
       revalidateOnFocus: false,
     },
   );
+  const dealsEnvelope =
+    dealsData && typeof dealsData === 'object' && !Array.isArray(dealsData) ? dealsData : null;
+  const dealsPayloadError = pipelineId && dealsData !== undefined && !Array.isArray(dealsData) && !Array.isArray(dealsEnvelope?.deals)
+    ? new Error('Invalid sales deals payload')
+    : undefined;
   const rawDeals: RawPipelineDeal[] = Array.isArray(dealsData)
     ? dealsData
-    : Array.isArray(dealsData?.deals)
-      ? dealsData.deals
+    : Array.isArray(dealsEnvelope?.deals)
+      ? dealsEnvelope.deals
       : [];
   const deals: PipelineDeal[] = rawDeals
     .filter((deal): deal is RawPipelineDeal & { id: string } => Boolean(deal?.id || deal?._id))
     .map((deal) => ({ ...deal, id: String(deal.id || deal._id || '') }));
+  const stagesPayloadError = pipeline?.stages !== undefined && !Array.isArray(pipeline.stages)
+    ? new Error('Invalid sales pipeline payload')
+    : undefined;
   const stages: PipelineStage[] = Array.isArray(pipeline?.stages)
     ? pipeline.stages
         .filter((stage): stage is RawPipelineStage => Boolean(stage?.id || stage?._id))
@@ -104,7 +115,7 @@ export function useSalesPipeline() {
     pipeline: pipeline || null,
     stages,
     isLoading: pipelinesLoading || dealsLoading,
-    error: pipelinesError || dealsError,
+    error: pipelinesError || dealsError || pipelinesPayloadError || stagesPayloadError || dealsPayloadError,
     mutate,
   };
 }

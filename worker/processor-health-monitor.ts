@@ -3,6 +3,7 @@
  * @domain health
  */
 import { WorkerLogger } from './logger';
+import { postOpsWebhook } from './ops-webhook-post.helper';
 import { autopilotQueue } from './queue';
 import { getErrorMessage } from './utils/error-message';
 
@@ -50,17 +51,12 @@ async function sendOpsAlert(
     return;
   }
   try {
-    await globalThis.fetch(ALERT_WEBHOOK, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'autopilot_alert',
-        message,
-        meta,
-        at: new Date().toISOString(),
-        env: process.env.NODE_ENV || 'dev',
-      }),
-      signal: AbortSignal.timeout(10000),
+    await postOpsWebhook(ALERT_WEBHOOK, {
+      type: 'autopilot_alert',
+      message,
+      meta,
+      at: new Date().toISOString(),
+      env: process.env.NODE_ENV || 'dev',
     });
   } catch (err: unknown) {
     log.warn('autopilot_alert_failed', { error: getErrorMessage(err) });

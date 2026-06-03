@@ -1,17 +1,14 @@
-import { type NextRequest, NextResponse } from 'next/server';
-import { proxyWhatsAppRequest } from '../../proxy';
+import { NextResponse } from 'next/server';
 
-/** Post. */
-export async function POST(request: NextRequest) {
-  try {
-    const result = await proxyWhatsAppRequest(
-      request,
-      'POST',
-      '/whatsapp-api/session/force-reconnect',
-    );
-    return NextResponse.json(result.data, { status: result.status });
-  } catch (error) {
-    console.error('[WhatsApp Proxy] session/force-reconnect error:', error);
-    return NextResponse.json({ message: 'Falha ao forçar reconexão da sessão.' }, { status: 502 });
-  }
+/** Legacy session-force-reconnect route intentionally retired: WhatsApp uses official Meta Cloud API only. */
+export async function POST() {
+  return NextResponse.json(
+    {
+      success: false,
+      provider: 'meta-cloud',
+      notSupported: true,
+      message: 'Reconexão forçada de sessão legada não existe no modo Meta Cloud oficial.',
+    },
+    { status: 410 },
+  );
 }

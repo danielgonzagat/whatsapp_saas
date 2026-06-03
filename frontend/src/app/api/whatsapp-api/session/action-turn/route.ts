@@ -1,16 +1,14 @@
-import { type NextRequest, NextResponse } from 'next/server';
-import { proxyWhatsAppRequest } from '../../proxy';
+import { NextResponse } from 'next/server';
 
-/** Post. */
-export async function POST(request: NextRequest) {
-  try {
-    const result = await proxyWhatsAppRequest(request, 'POST', '/whatsapp-api/session/action-turn');
-    return NextResponse.json(result.data, { status: result.status });
-  } catch (error) {
-    console.error('[WhatsApp Proxy] action turn error:', error);
-    return NextResponse.json(
-      { message: 'Falha ao executar um turno multimodal no WhatsApp.' },
-      { status: 502 },
-    );
-  }
+/** Legacy visual-session turn route intentionally retired: WhatsApp uses official Meta Cloud API only. */
+export async function POST() {
+  return NextResponse.json(
+    {
+      success: false,
+      provider: 'meta-cloud',
+      notSupported: true,
+      message: 'Turnos de sessão visual não existem no modo Meta Cloud oficial.',
+    },
+    { status: 410 },
+  );
 }

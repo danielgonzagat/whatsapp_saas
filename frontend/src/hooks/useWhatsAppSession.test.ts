@@ -26,11 +26,11 @@ vi.mock('@/lib/api', () => ({
   autostartCia: vi.fn(),
   ciaApi: {
     getAccountRuntime: vi.fn(),
+    getSurface: vi.fn(),
     manualPause: vi.fn(),
     resume: vi.fn(),
   },
   disconnectWhatsApp: vi.fn(),
-  getWhatsAppQR: vi.fn(),
   getWhatsAppStatus: vi.fn(),
   initiateWhatsAppConnection: vi.fn(),
   logoutWhatsApp: vi.fn(),
@@ -53,7 +53,6 @@ describe('useWhatsAppSession', () => {
     const { result } = renderHook(() => useWhatsAppSession());
     expect(result.current.connected).toBe(false);
     expect(result.current.status).toBeNull();
-    expect(result.current.qrCode).toBeNull();
     expect(result.current.loading).toBe(false);
     expect(result.current.connecting).toBe(false);
     expect(result.current.error).toBeNull();

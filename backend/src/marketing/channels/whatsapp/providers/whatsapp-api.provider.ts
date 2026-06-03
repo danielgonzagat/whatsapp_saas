@@ -8,29 +8,26 @@ import {
   buildRuntimeConfigDiagnostics,
   buildSessionConfigDiagnosticsPayload,
   clampChatMessagePagination,
-  deriveQrCodeMessage,
   deriveSessionStateFromDetails,
   mapContactRowToWahaContact,
   mapConversationRowToWahaChat,
   mapMessageRowToWahaMessage,
 } from './whatsapp-api.provider.helpers';
 import type {
-  QrCodeResponse,
   SessionStatus,
   WahaLidMapping,
-  WahaRuntimeConfigDiagnostics,
-  WahaSessionConfigDiagnostics,
+  MetaWhatsAppRuntimeConfigDiagnostics,
+  MetaWhatsAppSessionConfigDiagnostics,
   WahaSessionOverview,
 } from './whatsapp-api.provider.types';
 
 export type {
-  QrCodeResponse,
   SessionStatus,
   WahaChatMessage,
   WahaChatSummary,
   WahaLidMapping,
-  WahaRuntimeConfigDiagnostics,
-  WahaSessionConfigDiagnostics,
+  MetaWhatsAppRuntimeConfigDiagnostics,
+  MetaWhatsAppSessionConfigDiagnostics,
   WahaSessionOverview,
 } from './whatsapp-api.provider.types';
 
@@ -49,7 +46,7 @@ export class WhatsAppApiProvider {
   }
 
   /** Get runtime config diagnostics. */
-  getRuntimeConfigDiagnostics(): WahaRuntimeConfigDiagnostics {
+  getRuntimeConfigDiagnostics(): MetaWhatsAppRuntimeConfigDiagnostics {
     return buildRuntimeConfigDiagnostics();
   }
 
@@ -73,7 +70,6 @@ export class WhatsAppApiProvider {
   /** Start session. */
   async startSession(workspaceId: string): Promise<{
     success: boolean;
-    qrCode?: string;
     message?: string;
     authUrl?: string;
   }> {
@@ -97,7 +93,6 @@ export class WhatsAppApiProvider {
   async restartSession(workspaceId: string): Promise<{
     success: boolean;
     message?: string;
-    qrCode?: string;
     authUrl?: string;
   }> {
     return this.startSession(workspaceId);
@@ -113,15 +108,6 @@ export class WhatsAppApiProvider {
       phoneNumber: details.phoneNumber || null,
       pushName: details.pushName || null,
       selfIds: details.selfIds || [],
-    };
-  }
-
-  /** Get qr code. */
-  async getQrCode(workspaceId: string): Promise<QrCodeResponse> {
-    const details = await this.metaWhatsApp.getPhoneNumberDetails(workspaceId);
-    return {
-      success: true,
-      message: deriveQrCodeMessage(details),
     };
   }
 
@@ -424,7 +410,9 @@ export class WhatsAppApiProvider {
   }
 
   /** Get session config diagnostics. */
-  async getSessionConfigDiagnostics(workspaceId: string): Promise<WahaSessionConfigDiagnostics> {
+  async getSessionConfigDiagnostics(
+    workspaceId: string,
+  ): Promise<MetaWhatsAppSessionConfigDiagnostics> {
     const details = await this.metaWhatsApp.getPhoneNumberDetails(workspaceId);
     return buildSessionConfigDiagnosticsPayload({
       sessionName: this.getResolvedSessionId(workspaceId),

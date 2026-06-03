@@ -44,9 +44,28 @@ export async function partBDeleteFile(ctx: PartBCtx): Promise<void> {
         JSON.stringify(delPrevTrace),
       );
 
-      const delCommit = (await client.callTool({
+      const delNoProof = (await client.callTool({
         name: 'atomic_delete_file',
         arguments: { file: delRel, expectedSha256: delSha },
+      })) as { content: { text: string }[]; isError?: boolean };
+      check(
+        'delete_file refuses commit without negative-byte proof',
+        delNoProof.isError === true && /proofOfIncorrectness/.test(delNoProof.content[0]?.text ?? ''),
+        delNoProof.content[0]?.text ?? '',
+      );
+      check(
+        'delete_file no-proof refusal preserves target bytes',
+        fs.existsSync(delAbs) && fs.readFileSync(delAbs, 'utf8') === delBefore,
+        fs.existsSync(delAbs) ? fs.readFileSync(delAbs, 'utf8') : 'missing',
+      );
+
+      const delCommit = (await client.callTool({
+        name: 'atomic_delete_file',
+        arguments: {
+          file: delRel,
+          expectedSha256: delSha,
+          proofOfIncorrectness: 'smoke fixture is deliberately created negative residue for delete proof',
+        },
       })) as { content: { text: string }[] };
       const delCommitBody = JSON.parse(delCommit.content.at(-1)?.text ?? '{}');
       const delCommitTracePath =
@@ -63,6 +82,7 @@ export async function partBDeleteFile(ctx: PartBCtx): Promise<void> {
           delCommitBody.changed === true &&
           delCommitBody.deleted === true &&
           delCommitBody.afterSha256 === sha('') &&
+          delCommitBody.negativeActionProof?.verdict === 'NEGATIVE_BYTES_ADMITTED' &&
           !fs.existsSync(delAbs),
         delCommit.content[0]?.text ?? '',
       );
@@ -72,7 +92,17 @@ export async function partBDeleteFile(ctx: PartBCtx): Promise<void> {
           delCommitTrace.preview === false &&
           delCommitTrace.changed === true &&
           delCommitTrace.afterSha256 === sha('') &&
-          delCommitTrace.semanticImpact === 'file_deleted',
+          delCommitTrace.semanticImpact === 'file_deleted' &&
+          delCommitTrace.negativeActionProof?.verdict === 'NEGATIVE_BYTES_ADMITTED' &&
+          delCommitTrace.negativeActionProof?.removedByteCount === Buffer.byteLength(delBefore, 'utf8'),
+        JSON.stringify(delCommitTrace),
+      );
+      check(
+        'delete_file commit trace has complete topology',
+        Array.isArray(delCommitTrace.preservedZones) &&
+          delCommitTrace.preservedZones.length > 0 &&
+          Array.isArray(delCommitTrace.modifiedZones) &&
+          delCommitTrace.modifiedZones.length > 0,
         JSON.stringify(delCommitTrace),
       );
 
@@ -131,6 +161,52 @@ export async function partBDeleteFile(ctx: PartBCtx): Promise<void> {
       } finally {
         if (fs.existsSync(delShaAbs)) fs.unlinkSync(delShaAbs);
       }
+
+      const depTargetRel = path.join(
+        'scripts',
+        'mcp',
+        'atomic-edit',
+        `.smoke-delete-dep-target.${process.pid}.ts`,
+      );
+      const depImporterRel = path.join(
+        'scripts',
+        'mcp',
+        'atomic-edit',
+        `.smoke-delete-dep-importer.${process.pid}.ts`,
+      );
+      const depTargetAbs = path.join(repoRoot, depTargetRel);
+      const depImporterAbs = path.join(repoRoot, depImporterRel);
+      const depSpecifier = './' + path.basename(depTargetRel, '.ts');
+      fs.writeFileSync(depTargetAbs, 'export const DEP_TARGET = 1;\n');
+      fs.writeFileSync(
+        depImporterAbs,
+        "import { DEP_TARGET } from '" + depSpecifier + "';\n" +
+          'export const DEP_USE = DEP_TARGET;\n',
+      );
+      try {
+        const delReferenced = (await client.callTool({
+          name: 'atomic_delete_file',
+          arguments: { file: depTargetRel },
+        })) as { content: { text: string }[]; isError?: boolean };
+        check(
+          'delete_file refuses a still-imported target',
+          delReferenced.isError === true && /still imported|reverse import|dependent/i.test(delReferenced.content[0]?.text ?? ''),
+          delReferenced.content[0]?.text ?? '',
+        );
+        check(
+          'delete_file referenced-target refusal preserves target bytes',
+          fs.existsSync(depTargetAbs) && fs.readFileSync(depTargetAbs, 'utf8') === 'export const DEP_TARGET = 1;\n',
+          fs.existsSync(depTargetAbs) ? fs.readFileSync(depTargetAbs, 'utf8') : 'missing',
+        );
+        check(
+          'delete_file referenced-target refusal preserves importer bytes',
+          fs.existsSync(depImporterAbs),
+          depImporterRel,
+        );
+      } finally {
+        if (fs.existsSync(depImporterAbs)) fs.unlinkSync(depImporterAbs);
+        if (fs.existsSync(depTargetAbs)) fs.unlinkSync(depTargetAbs);
+      }
     } finally {
       if (fs.existsSync(delAbs)) fs.unlinkSync(delAbs);
     }
@@ -146,15 +222,29 @@ export async function partBDeleteFile(ctx: PartBCtx): Promise<void> {
       `.smoke-linked-worktree.${process.pid}.ts`,
     );
     const linkedAbs = path.join(linkedRoot, linkedRel);
+    const linkedTsconfigAbs = path.join(linkedRoot, 'scripts', 'mcp', 'atomic-edit', 'tsconfig.json');
+    let linkedTsconfigCreated = false;
     try {
       childProcess.execFileSync('git', ['worktree', 'add', '--detach', linkedRoot, 'HEAD'], {
         cwd: repoRoot,
         stdio: 'ignore',
       });
+      if (!fs.existsSync(linkedTsconfigAbs)) {
+        fs.copyFileSync(
+          path.join(repoRoot, 'scripts', 'mcp', 'atomic-edit', 'tsconfig.json'),
+          linkedTsconfigAbs,
+        );
+        linkedTsconfigCreated = true;
+      }
       fs.writeFileSync(linkedAbs, 'export const LINKED = 1;\n');
       const linked = (await client.callTool({
         name: 'atomic_replace_text',
-        arguments: { file: linkedAbs, oldText: '1', newText: '2' },
+        arguments: {
+          file: linkedAbs,
+          oldText: '1',
+          newText: '2',
+          proofOfIncorrectness: 'smoke fixture linked-worktree digit is stale negative data and may be replaced',
+        },
       })) as { content: { text: string }[]; isError?: boolean };
       const linkedBody = JSON.parse(linked.content.at(-1)?.text ?? '{}');
       check(
@@ -174,6 +264,7 @@ export async function partBDeleteFile(ctx: PartBCtx): Promise<void> {
       );
     } finally {
       if (fs.existsSync(linkedAbs)) fs.unlinkSync(linkedAbs);
+      if (linkedTsconfigCreated && fs.existsSync(linkedTsconfigAbs)) fs.unlinkSync(linkedTsconfigAbs);
       try {
         childProcess.execFileSync('git', ['worktree', 'remove', linkedRoot], {
           cwd: repoRoot,

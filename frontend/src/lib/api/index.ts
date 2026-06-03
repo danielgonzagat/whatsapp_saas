@@ -6,7 +6,6 @@ export {
   type WhatsAppConnectionStatus,
   type WhatsAppProofEntry,
   type WhatsAppConnectResponse,
-  type WhatsAppScreencastTokenResponse,
   // Token & auth helpers
   tokenStorage,
   resolveWorkspaceFromAuthPayload,
@@ -47,11 +46,8 @@ export { getContacts as getLeads } from './leads';
 
 // WhatsApp channel session + messaging
 export {
-  getWhatsAppScreencastWsBase,
   getWhatsAppStatus,
   initiateWhatsAppConnection,
-  getWhatsAppQR,
-  getWhatsAppQrImageOnly,
   disconnectWhatsApp,
   logoutWhatsApp,
 } from './whatsapp';

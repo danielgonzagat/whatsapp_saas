@@ -20,9 +20,39 @@ import type {
 
 const EMAIL_CAMPAIGNS_KEY = '/marketing/email/campaigns';
 
-function emailCampaignsFetcher(key: string): Promise<EmailCampaignListItem[]> {
-  return apiFetch<EmailCampaignListResponse>(key).then((res) => res.data?.campaigns ?? []);
+type EmailApiResponse<T> = {
+  data?: T | undefined;
+  error?: string | undefined;
+};
+
+function unwrapEmailResponse<T>(response: EmailApiResponse<T>, fallbackMessage: string): T {
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  if (!response.data) {
+    throw new Error(fallbackMessage);
+  }
+  return response.data;
 }
+
+function unwrapEmailCampaign<T extends { campaign?: EmailCampaign | undefined }>(
+  response: EmailApiResponse<T>,
+  fallbackMessage: string,
+): EmailCampaign {
+  const payload = unwrapEmailResponse(response, fallbackMessage);
+  if (!payload.campaign) {
+    throw new Error(fallbackMessage);
+  }
+  return payload.campaign;
+}
+
+function emailCampaignsFetcher(key: string): Promise<EmailCampaignListItem[]> {
+  return apiFetch<EmailCampaignListResponse>(key).then((res) => {
+    const payload = unwrapEmailResponse(res, 'Não foi possível carregar as campanhas de email.');
+    return payload.campaigns ?? [];
+  });
+}
+
 
 export interface UseEmailMarketingProps {
   connectionStatus?: MarketingConnectStatus | null | undefined;
@@ -99,23 +129,27 @@ export function useEmailMarketing({
           recipients: [{ email: defaultRecipientEmail }],
         },
       });
-      const campaignData = (res.data as EmailCampaignSendResponse | undefined)?.campaign;
+      const campaignData = unwrapEmailResponse(
+        res,
+        'Não foi possível criar a campanha de email.',
+      ).campaign;
       const campaignId = campaignData?.id;
       if (!campaignId) {
-        setEmailResult({ sent: 0, failed: 1 });
-        setEmailSending(false);
-        return;
+        throw new Error('Não foi possível criar a campanha de email.');
       }
 
       const sendRes = await apiFetch<EmailCampaignSendResponse>(
         `/marketing/email/campaigns/${campaignId}/send`,
         { method: 'POST' },
       );
-      const sentCampaign = (sendRes.data as EmailCampaignSendResponse | undefined)?.campaign;
+      const sentCampaign = unwrapEmailCampaign(
+        sendRes,
+        'Não foi possível enviar a campanha de email.',
+      );
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/marketing'));
       setEmailResult({
-        sent: sentCampaign?.sentCount ?? 1,
-        failed: sentCampaign?.failedCount ?? 0,
+        sent: sentCampaign.sentCount ?? 1,
+        failed: sentCampaign.failedCount ?? 0,
       });
     } catch {
       setEmailResult({ sent: 0, failed: 1 });
@@ -131,7 +165,8 @@ export function useEmailMarketing({
 
   const getCampaign = useCallback(async (id: string): Promise<EmailCampaign | null> => {
     const res = await apiFetch<EmailCampaignDetailResponse>(`/marketing/email/campaigns/${id}`);
-    return (res.data as EmailCampaignDetailResponse | undefined)?.campaign ?? null;
+    const payload = unwrapEmailResponse(res, 'Não foi possível carregar a campanha de email.');
+    return payload.campaign ?? null;
   }, []);
 
   const createCampaign = useCallback(
@@ -140,11 +175,9 @@ export function useEmailMarketing({
         method: 'POST',
         body: input,
       });
-      const campaign = (res.data as EmailCampaignSendResponse | undefined)?.campaign;
-      if (campaign) {
-        mutateCampaigns();
-      }
-      return campaign ?? null;
+      const campaign = unwrapEmailCampaign(res, 'Não foi possível criar a campanha de email.');
+      mutateCampaigns();
+      return campaign;
     },
     [mutateCampaigns],
   );
@@ -155,11 +188,9 @@ export function useEmailMarketing({
         `/marketing/email/campaigns/${campaignId}/send`,
         { method: 'POST' },
       );
-      const campaign = (res.data as EmailCampaignSendResponse | undefined)?.campaign;
-      if (campaign) {
-        mutateCampaigns();
-      }
-      return campaign ?? null;
+      const campaign = unwrapEmailCampaign(res, 'Não foi possível enviar a campanha de email.');
+      mutateCampaigns();
+      return campaign;
     },
     [mutateCampaigns],
   );

@@ -30,7 +30,7 @@ describe('buildMindSignals — selfModel + combined services', () => {
 
       const sm = result.selfModel as Record<string, unknown> | undefined;
       expect(sm).toBeDefined();
-      expect(sm!.pulseHealth).toEqual(mockOkHealth);
+      expect(sm!.readinessHealth).toEqual(mockOkHealth);
       expect(sm!.knownGapsCount).toBe(0);
       expect(sm!.lastFailureKind).toBeNull();
     });
@@ -53,7 +53,7 @@ describe('buildMindSignals — selfModel + combined services', () => {
 
       const sm = result.selfModel as Record<string, unknown> | undefined;
       expect(sm).toBeDefined();
-      expect(sm!.pulseHealth).toBeNull();
+      expect(sm!.readinessHealth).toBeNull();
       expect(sm!.knownGapsCount).toBe(2);
       expect(sm!.lastFailureKind).toBeNull();
     });
@@ -177,7 +177,7 @@ describe('buildMindSignals — selfModel + combined services', () => {
 
       const sm = result.selfModel as Record<string, unknown>;
       expect(sm).toBeDefined();
-      expect(sm.pulseHealth).toBeNull();
+      expect(sm.readinessHealth).toBeNull();
       expect(sm.knownGapsCount).toBe(0);
       expect(sm.lastFailureKind).toBeNull();
     });
@@ -220,7 +220,7 @@ describe('buildMindSignals — selfModel + combined services', () => {
 
       const sm = result.selfModel as Record<string, unknown> | undefined;
       expect(sm).toBeDefined();
-      expect(sm!.pulseHealth).toEqual(mockOkHealth);
+      expect(sm!.readinessHealth).toEqual(mockOkHealth);
       expect(sm!.knownGapsCount).toBe(0);
     });
   });

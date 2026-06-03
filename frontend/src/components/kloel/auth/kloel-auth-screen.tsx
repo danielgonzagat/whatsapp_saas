@@ -39,6 +39,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
     signUp,
     signInWithGoogle,
     signInWithFacebook,
+    verifyMfaLogin,
     requestMagicLink,
     isAuthenticated,
   } = useAuth();
@@ -57,6 +58,8 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   const [error, setError] = useState(initialUrlState.error);
   const [forgotSent, setForgotSent] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState('');
+  const [mfaChallengeToken, setMfaChallengeToken] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
   const shouldBypassExistingSessionRedirect = useCallback(() => {
     if (typeof window === 'undefined') {
       return false;
@@ -102,6 +105,8 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
     }
     setPassword('');
     setShowPassword(false);
+    setMfaChallengeToken('');
+    setMfaCode('');
     setError('');
     setForgotSent(false);
     setMagicLinkSent('');
@@ -133,12 +138,36 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
       setIsLoading(false);
       return;
     }
+    if (result.mfaRequired && result.mfaToken) {
+      setMfaChallengeToken(result.mfaToken);
+      setMfaCode('');
+      setPassword('');
+      setIsLoading(false);
+      return;
+    }
     redirectToApp();
   };
 
   const handleFormSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     void handleSubmit();
+  };
+
+  const handleMfaSubmit = async (event?: FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
+    setError('');
+    if (!/^\d{6}$/.test(mfaCode)) {
+      setError('Informe o codigo 2FA de 6 digitos.');
+      return;
+    }
+    setIsLoading(true);
+    const result = await verifyMfaLogin(mfaChallengeToken, mfaCode);
+    if (!result.success) {
+      setError(result.error || 'Codigo 2FA invalido.');
+      setIsLoading(false);
+      return;
+    }
+    redirectToApp();
   };
 
   const handleGoogleCredential = useCallback(
@@ -318,28 +347,109 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
             </div>
 
             {/* email/password form */}
-            <AuthFormFields
-              fid={fid}
-              mode={mode}
-              name={name}
-              email={email}
-              password={password}
-              showPassword={showPassword}
-              isLoading={isLoading}
-              error={error}
-              forgotSent={forgotSent}
-              magicLinkSent={magicLinkSent}
-              inputBase={inputBase}
-              onFormSubmit={handleFormSubmit}
-              onHandleSubmit={() => void handleSubmit()}
-              onNameChange={setName}
-              onEmailChange={setEmail}
-              onPasswordChange={setPassword}
-              onTogglePassword={() => setShowPassword(!showPassword)}
-              onForgotPassword={() => void handleForgotPassword()}
-              onMagicLink={() => void handleMagicLink()}
-              onSwitchMode={switchMode}
-            />
+            {mfaChallengeToken ? (
+              <form onSubmit={handleMfaSubmit}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div>
+                    <label
+                      htmlFor={`${fid}-mfa`}
+                      style={{
+                        display: 'block',
+                        fontFamily: sora,
+                        fontSize: 12,
+                        color: colors.text.muted,
+                        marginBottom: 6,
+                      }}
+                    >
+                      {kloelT(`Codigo 2FA`)}
+                    </label>
+                    <input
+                      id={`${fid}-mfa`}
+                      aria-label="Codigo 2FA"
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      placeholder="000000"
+                      value={mfaCode}
+                      onChange={(event) => setMfaCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                      style={inputBase}
+                    />
+                  </div>
+                </div>
+                {error && (
+                  <p style={{ fontSize: 12, color: colors.ember.primary, marginTop: 12, fontFamily: sora }}>{error}</p>
+                )}
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  style={{
+                    width: '100%',
+                    height: 44,
+                    marginTop: 20,
+                    background: colors.ember.primary,
+                    color: colors.background.void,
+                    border: 'none',
+                    borderRadius: 6,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    fontFamily: sora,
+                    cursor: isLoading ? 'default' : 'pointer',
+                    opacity: isLoading ? 0.7 : 1,
+                    transition: 'opacity 150ms ease',
+                  }}
+                >
+                  {isLoading ? 'Verificando...' : 'Confirmar 2FA'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMfaChallengeToken('');
+                    setMfaCode('');
+                    setError('');
+                  }}
+                  disabled={isLoading}
+                  style={{
+                    width: '100%',
+                    height: 44,
+                    marginTop: 12,
+                    background: colors.background.surface,
+                    color: colors.text.silver,
+                    border: `1px solid ${colors.stroke}`,
+                    borderRadius: 6,
+                    fontSize: 14,
+                    fontWeight: 500,
+                    fontFamily: sora,
+                    cursor: isLoading ? 'default' : 'pointer',
+                    opacity: isLoading ? 0.7 : 1,
+                  }}
+                >
+                  {kloelT(`Voltar ao login`)}
+                </button>
+              </form>
+            ) : (
+              <AuthFormFields
+                fid={fid}
+                mode={mode}
+                name={name}
+                email={email}
+                password={password}
+                showPassword={showPassword}
+                isLoading={isLoading}
+                error={error}
+                forgotSent={forgotSent}
+                magicLinkSent={magicLinkSent}
+                inputBase={inputBase}
+                onFormSubmit={handleFormSubmit}
+                onHandleSubmit={() => void handleSubmit()}
+                onNameChange={setName}
+                onEmailChange={setEmail}
+                onPasswordChange={setPassword}
+                onTogglePassword={() => setShowPassword(!showPassword)}
+                onForgotPassword={() => void handleForgotPassword()}
+                onMagicLink={() => void handleMagicLink()}
+                onSwitchMode={switchMode}
+              />
+            )}
           </div>
         </div>
 

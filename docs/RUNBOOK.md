@@ -93,7 +93,7 @@ Automatic on push to any non-main branch. Vercel previews per PR. Backend stagin
 Manual gate. Only `chore/purga-total-debt` → `main` merges trigger production deploys.
 
 1. PR must pass CI (lint, typecheck, tests, build).
-2. PR must show `unifiedVerdict: READY_FOR_PRODUCTION` from PULSE pipeline.
+2. PR must pass the validation ladder: readiness, typecheck, tests, and build.
 3. PR must pass code review.
 4. After merge to main: `deploy-production.yml` workflow triggers, requires manual approval in GitHub Actions UI.
 5. Production rollout:

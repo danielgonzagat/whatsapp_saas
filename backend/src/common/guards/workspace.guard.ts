@@ -1,4 +1,10 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 
 type RequestLike = {
   user?: { workspaceId?: string };
@@ -39,8 +45,12 @@ export class WorkspaceGuard implements CanActivate {
     const userWorkspace = req.user?.workspaceId;
 
     // Se não temos usuário autenticado, deixa outro guard (ex: JwtAuthGuard) decidir
-    if (!userWorkspace) {
+    if (!req.user) {
       return true;
+    }
+
+    if (!userWorkspace) {
+      throw new UnauthorizedException('workspace_required');
     }
 
     const workspaceFromRequest = resolveRequestedWorkspaceId(req);

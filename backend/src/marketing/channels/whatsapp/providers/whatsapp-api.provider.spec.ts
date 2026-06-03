@@ -100,10 +100,6 @@ describe('WhatsAppApiProvider', () => {
       message: 'meta_connection_required',
       authUrl: 'https://meta.test/signup',
     });
-    await expect(provider.getQrCode('ws-1')).resolves.toEqual({
-      success: true,
-      message: 'meta_cloud_use_embedded_signup',
-    });
   });
 
   it('maps Meta phone details into the session status contract', async () => {

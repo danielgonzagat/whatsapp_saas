@@ -43,6 +43,20 @@ import {
   runToolPlanningBranch,
   type ThinkBranchContext,
 } from './kloel-thinker-think.helpers';
+import {
+  closeThinkLoopError,
+  closeThinkLoopSuccess,
+  openThinkLoop,
+  type ThinkLoopHandle,
+  type ThinkLoopServices,
+} from './kloel-thinker-think-loop.helpers';
+import { DecisionOutcomeService } from './decision-outcome.service';
+import { MindBeliefService } from './mind/inference/mind-belief.service';
+import { MindSurpriseService } from './mind/inference/mind-surprise.service';
+import { MindEventProcessorService } from './mind/runtime/mind-event-processor.service';
+import { MindGlobalPriorService } from './mind/memory/mind-global-prior.service';
+import { MindPredictorService } from './mind/inference/mind-predictor.service';
+import { ValenceTaggerService } from './mind/valence-tagger.service';
 
 export type { LocalToolExecutor } from './kloel-reply-engine.service';
 
@@ -69,8 +83,32 @@ export class KloelThinkerService {
     private readonly stateBuilder: StateBuilderService,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
     @Optional() private readonly capabilityExecutor?: MindCapabilityExecutor,
+    // P0-C: optional cognition services for the streaming-path learning loop.
+    // SAME services the reply engine injects — reused, not re-implemented. All
+    // @Optional() so flag-off (and DI contexts that don't provide them) resolve
+    // to undefined and the reused fire-and-forget helpers short-circuit.
+    @Optional() private readonly decisionOutcomeService?: DecisionOutcomeService,
+    @Optional() private readonly mindBeliefService?: MindBeliefService,
+    @Optional() private readonly mindSurpriseService?: MindSurpriseService,
+    @Optional() private readonly mindEventProcessorService?: MindEventProcessorService,
+    @Optional() private readonly mindGlobalPriorService?: MindGlobalPriorService,
+    @Optional() private readonly mindPredictorService?: MindPredictorService,
+    @Optional() private readonly valenceTagger?: ValenceTaggerService,
   ) {
     this.conversationStore = new KloelConversationStore(prisma, this.logger);
+  }
+
+  /** Bundle the optional cognition services for the think-loop helpers. */
+  private get thinkLoopServices(): ThinkLoopServices {
+    return {
+      decisionOutcomeService: this.decisionOutcomeService,
+      mindBeliefService: this.mindBeliefService,
+      mindSurpriseService: this.mindSurpriseService,
+      mindEventProcessorService: this.mindEventProcessorService,
+      mindGlobalPriorService: this.mindGlobalPriorService,
+      mindPredictorService: this.mindPredictorService,
+      valenceTagger: this.valenceTagger,
+    };
   }
 
   /** Streaming SSE think loop. */
@@ -110,6 +148,11 @@ export class KloelThinkerService {
     streamWriter.init();
     const thinkStartedAt = Date.now();
     let thinkErrorCode: string | null = null;
+    // P0-C: handle for the streaming-path cognition loop. Stays null when the
+    // KLOEL_THINK_LOOP_ENABLED flag is OFF (byte-identical legacy behavior) or
+    // when there is no workspace to learn against. Opened just before the main
+    // conversational stream and closed after finalize / in the catch arm.
+    let thinkLoopHandle: ThinkLoopHandle | null = null;
 
     try {
       const deterministicWorkspaceId =
@@ -345,15 +388,31 @@ export class KloelThinkerService {
         });
         await this.llmBudget.assertBudget(workspaceId, estimatedCost);
       }
+      // P0-C: open the cognition learning loop BEFORE the stream starts —
+      // mirrors the sync path (recordChatReplyDecision + predictChatReply ahead
+      // of the LLM call). No-op + null handle when the flag is OFF, so the
+      // critical path below is byte-identical to legacy in that case.
+      thinkLoopHandle = openThinkLoop(this.thinkLoopServices, this.logger, {
+        workspaceId,
+        messageLength: message.length,
+      });
       safeWrite(createKloelStatusEvent('thinking'));
       const streamedReply = await streamWriterResponse(messages, responseTemperature);
       if (workspaceId && streamedReply) {
         this.llmBudget.recordSpend(workspaceId, streamedReply.estimatedTokens).catch(() => {});
       }
       if (!streamedReply) {
+        // Aborted/disconnected mid-stream: close the loop as a non-won outcome
+        // so the open prediction/decision row doesn't dangle. No-op when the
+        // handle is null (flag OFF). Fire-and-forget — never throws.
+        closeThinkLoopError(this.thinkLoopServices, this.logger, thinkLoopHandle);
         return;
       }
       let fullResponse = streamedReply.fullResponse;
+      // P0-C: a real (non-empty) model reply is outcome 1; the empty-stream
+      // fallback below is outcome 0 — identical to the sync path's
+      // `assistantMessage.length > 0 ? 1 : 0` decision.
+      const replyOutcome: 0 | 1 = fullResponse.trim() ? 1 : 0;
       if (!fullResponse.trim()) {
         // Recoverable (non-terminal) empty-stream: stream the fallback text as
         // a content event so the UI renders it, then let
@@ -365,6 +424,14 @@ export class KloelThinkerService {
         safeWrite(createKloelContentEvent(fullResponse));
       }
       await finalizeSuccessfulReply(fullResponse, streamedReply.estimatedTokens, branchCtx);
+      // P0-C: close the learning loop AFTER the reply is finalized — mirrors the
+      // sync path's success arm (closeChatReplyOutcome + applyReplyEnginePostReply:
+      // belief observe + resolveChatReplySurprise + global-prior + valence +
+      // event-processor). No-op when the handle is null (flag OFF). Fire-and-
+      // forget — wrapped so a loop failure can never wedge the SSE stream.
+      closeThinkLoopSuccess(this.thinkLoopServices, this.logger, thinkLoopHandle, replyOutcome);
+      // Consume the handle so the outer catch can't double-close this outcome.
+      thinkLoopHandle = null;
       // Persist this conversational turn to the cognitive spine so it
       // becomes CROSS-SESSION memory (MindPerceptionService reads
       // autopilotEvent → working/episodic/consolidated/beliefs → ABI).
@@ -382,6 +449,10 @@ export class KloelThinkerService {
     } catch (error: unknown) {
       this.logger.error('Erro no KLOEL Thinker:', error);
       thinkErrorCode = resolveThinkErrorCode(abortReason(), 'think_unhandled_error');
+      // P0-C: close the loop as a failed outcome — mirrors the sync path's catch
+      // arm (closeChatReplyOutcome 'chat.error', won=false). No-op when the
+      // handle is null (flag OFF, or the throw happened before the loop opened).
+      closeThinkLoopError(this.thinkLoopServices, this.logger, thinkLoopHandle);
       try {
         if (!isClientDisconnected()) {
           const code = resolveThinkErrorCode(abortReason(), 'Erro ao processar mensagem');

@@ -136,13 +136,18 @@ export function appendAssistantTraceFromEvent(
   event: KloelStreamEvent,
 ): Record<string, unknown> | undefined {
   const normalizedMetadata = normalizeAssistantMessageMetadata(metadata) || {};
+  const eventMetadata =
+    event.type === 'done' ? normalizeAssistantMessageMetadata(event.metadata) : undefined;
+  const mergedMetadata = eventMetadata
+    ? { ...normalizedMetadata, ...eventMetadata }
+    : normalizedMetadata;
   const nextEntry = createAssistantTraceEntryFromStreamEvent(event);
 
   if (!nextEntry) {
-    return Object.keys(normalizedMetadata).length > 0 ? normalizedMetadata : undefined;
+    return Object.keys(mergedMetadata).length > 0 ? mergedMetadata : undefined;
   }
 
-  const currentEntries = getAssistantProcessingTrace(normalizedMetadata);
+  const currentEntries = getAssistantProcessingTrace(mergedMetadata);
   const previousEntry = currentEntries[currentEntries.length - 1];
 
   if (
@@ -152,11 +157,11 @@ export function appendAssistantTraceFromEvent(
     previousEntry.kind === nextEntry.kind
   ) {
     return {
-      ...normalizedMetadata,
+      ...mergedMetadata,
       processingSummary: summarizeAssistantProcessingTrace(
         currentEntries,
-        typeof normalizedMetadata.processingSummary === 'string'
-          ? normalizedMetadata.processingSummary
+        typeof mergedMetadata.processingSummary === 'string'
+          ? mergedMetadata.processingSummary
           : undefined,
       ),
     };
@@ -165,7 +170,7 @@ export function appendAssistantTraceFromEvent(
   const nextEntries = [...currentEntries, nextEntry].slice(-16);
 
   return {
-    ...normalizedMetadata,
+    ...mergedMetadata,
     processingTrace: nextEntries,
     processingSummary: summarizeAssistantProcessingTrace(nextEntries),
   };

@@ -83,6 +83,23 @@ export async function partBCreateFile(ctx: PartBCtx): Promise<void> {
         fs.readFileSync(createAbs, 'utf8') === 'export const CREATED = 1;\n',
         fs.readFileSync(createAbs, 'utf8'),
       );
+      const createCommitTracePath =
+        typeof createCommitBody.tracePath === 'string'
+          ? path.join(repoRoot, createCommitBody.tracePath)
+          : '';
+      const createCommitTrace =
+        createCommitTracePath && fs.existsSync(createCommitTracePath)
+          ? JSON.parse(fs.readFileSync(createCommitTracePath, 'utf8'))
+          : {};
+      check(
+        'create_file commit trace has complete topology',
+        createCommitTrace.operation === 'atomic_create_file' &&
+          Array.isArray(createCommitTrace.preservedZones) &&
+          createCommitTrace.preservedZones.length > 0 &&
+          Array.isArray(createCommitTrace.modifiedZones) &&
+          createCommitTrace.modifiedZones.length > 0,
+        JSON.stringify(createCommitTrace),
+      );
 
       // Existing non-empty file refused
       const createNonEmpty = (await client.callTool({

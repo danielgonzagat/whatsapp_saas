@@ -3,6 +3,7 @@ import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { useEffect, useRef, useState } from 'react';
 import { useFiscalMutations } from '@/hooks/useKyc';
+import { kycApi } from '@/lib/api/kyc';
 import { useToast } from '@/components/kloel/ToastProvider';
 import Icons from './ContaIcons';
 import { SORA, EMBER, D_RE } from './ContaConstants';
@@ -165,15 +166,14 @@ export default function DadosFiscaisSection({
       return;
     }
     setCnpjLoading(true);
+    setError('');
     try {
-      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${clean}`);
-      if (!res.ok) {
-        return;
-      }
-      const data: BrasilApiCnpjResponse = await res.json();
+      const data: BrasilApiCnpjResponse = await kycApi.lookupCnpj(clean);
       setForm((prev: FiscalFormState) => mergeCnpjIntoForm(prev, data));
-    } catch {
-      /* API offline, don't block */
+    } catch (e) {
+      const message = getErrorMessage(e) || 'Nao foi possivel consultar o CNPJ.';
+      setError(message);
+      showToast(message, 'error');
     } finally {
       setCnpjLoading(false);
     }
@@ -184,18 +184,20 @@ export default function DadosFiscaisSection({
       return;
     }
     setCepLoading(true);
+    setError('');
     try {
-      const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
-      if (!res.ok) {
-        return;
-      }
-      const data: ViaCepResponse = await res.json();
+      const data: ViaCepResponse = await kycApi.lookupCep(clean);
       if (data.erro) {
+        const message = 'CEP nao encontrado ou invalido.';
+        setError(message);
+        showToast(message, 'error');
         return;
       }
       setForm((prev: FiscalFormState) => mergeCepIntoForm(prev, data));
-    } catch {
-      /* API offline */
+    } catch (e) {
+      const message = getErrorMessage(e) || 'Nao foi possivel consultar o CEP.';
+      setError(message);
+      showToast(message, 'error');
     } finally {
       setCepLoading(false);
     }

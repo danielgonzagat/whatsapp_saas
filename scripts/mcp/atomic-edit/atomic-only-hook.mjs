@@ -24,7 +24,15 @@ const NATIVE_EDIT = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
 // Code/structured files the atomic-edit engine validates. Pure prose
 // (.md/.txt/none) is NOT blocked — Daniel's rule is about *code*.
 const CODE_EXT =
-  /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|ipynb|json|py|go|rs|java|kt|c|h|cc|cpp|hpp|cs|rb|php|swift|scala|sh|bash|zsh|css|scss|less|sql|ya?ml|toml|prisma)$/i;
+  /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|ipynb|json|py|go|rs|java|kt|c|h|cc|cpp|hpp|cs|rb|php|swift|scala|sh|bash|zsh|css|scss|less|sql|ya?ml|toml|prisma|vue|svelte|astro|erb)$/i;
+// Prose/docs that genuinely carry no executable config or credential surface — the ONLY
+// extensions a native Write/Edit may target without the atomic security/byte gates. Rank-7
+// no-bypass fix: the old `!CODE_EXT` allow let native Write reach `.env`, `.html`, a `.csv`,
+// or an extensionless dotfile (`.npmrc`/`Dockerfile`) — so a `.env` with `sk_live_…` landed
+// with NO security scan. Allow-prose-only routes every secret/config-bearing file through
+// atomic (which security-scans), deny-by-default. Atomic_create_file handles any text the
+// Write tool can produce, so routing is always feasible.
+const PROSE_EXT = /\.(md|markdown|mdx|txt|text|rst|adoc|asciidoc)$/i;
 
 function readStdinRaw() {
   try {
@@ -106,7 +114,7 @@ const STEER =
 function bashEditsCode(cmd) {
   if (!cmd) return false;
   const source = String(cmd);
-  const codeTarget = String.raw`(?!(?:/tmp/|/private/tmp/|tmp/))[^\s'"|;&>]*\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|ipynb|json|py|go|rs|java|kt|c|h|cc|cpp|hpp|cs|rb|php|swift|scala|sh|bash|zsh|css|scss|less|sql|ya?ml|toml|prisma)\b`;
+  const codeTarget = String.raw`(?!(?:/tmp/|/private/tmp/|tmp/))[^\s'"|;&>]*\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|ipynb|json|py|go|rs|java|kt|c|h|cc|cpp|hpp|cs|rb|php|swift|scala|sh|bash|zsh|css|scss|less|sql|ya?ml|toml|prisma|vue|svelte|astro|erb)\b`;
   const directMutationPatterns = [
     new RegExp(String.raw`\bsed\b[^|]*\s-i`), // sed -i
     new RegExp(String.raw`\bperl\b[^|]*\s-i`), // perl -i
@@ -115,6 +123,7 @@ function bashEditsCode(cmd) {
     new RegExp(String.raw`(?:^|[\s;&|])>{1,2}(?!>)\s*\\?["']?\s*${codeTarget}`), // > / >> [quoted] code
     new RegExp(String.raw`\b(?:cp|mv|install)\b[^|]*\s${codeTarget}(?:\s|$)`), // cp/mv/install onto code
     new RegExp(String.raw`\b(?:rm|unlink|truncate|touch)\b[^|;&]*${codeTarget}`), // delete/truncate/create code
+    new RegExp(String.raw`\b(?:ed|ex)\b[^|;&]*${codeTarget}`), // ed/ex line editor in-place on code
   ];
   if (directMutationPatterns.some((re) => re.test(source))) return true;
 
@@ -145,10 +154,154 @@ function bashEditsCode(cmd) {
   return runtimeWritePatterns.some((re) => re.test(source));
 }
 
+// Camada 4 (Bash exec leg): the strict directive routes ALL execution through
+// atomic_exec. So general shell that atomic_exec handles (npm test / node / ls /
+// cat / jq / tsc / build / read-only git …) is DENIED here and steered to
+// atomic_exec. ESCAPE — atomic_exec genuinely cannot/should-not run these, so
+// they pass natively:
+//   (a) network/remote (git push|pull|fetch|clone, curl, wget, ssh, scp, rsync)
+//   (b) local git that mutates the index/worktree (commit|add|stash|checkout|
+//       reset|merge|rebase|tag|cherry-pick) — atomic_exec's effect-proof cannot
+//       snapshot the whole repo (cap), so these stay native to keep git usable
+//   (c) interactive/login/privileged/provider (claude, ssh, sudo, gcloud, op, gh…)
+//   (d) package install/publish (npm/pip/cargo install|publish — external registry)
+//   (e) shell control-flow / cd / source / subshell openers
+// Gated by ATOMIC_EXEC_MANDATORY (default on); set ATOMIC_EXEC_MANDATORY=0 to disable.
+//
+// CLOSED HOLE (Daniel, 2026-06-01): the first-token verb check let a WRAPPER
+// smuggle arbitrary execution past routing — `bash -c …`, `( … )`, a `for`/`if`
+// loop, an env-prefix (`FOO=bar node …`), or an exec-prefix (`time`/`nice`/
+// `nohup`/`timeout`/`env`). Two defences below: (1) effectiveCommand() peels
+// env-assignments + benign exec-prefix wrappers so the EFFECTIVE verb is what
+// actually runs; (2) escape tokens are matched at command-HEAD positions over
+// the whole string (start, after ; & | ( {, or after `-c "`), so a wrapped
+// `git push`/`curl`/`sudo` still escapes while a routable wrapper/loop/subshell
+// now correctly ROUTES into the atomic envelope.
+
+// Peel leading env-assignments + benign exec-prefix wrappers to the program that
+// actually runs. `FOO=bar time nice -n5 node x` -> `node x`.
+function effectiveCommand(c) {
+  let s = String(c || '').trim();
+  let prev = null;
+  let guard = 0;
+  while (s !== prev && guard++ < 12) {
+    prev = s;
+    s = s.replace(/^[A-Za-z_][A-Za-z0-9_]*=(?:"[^"]*"|'[^']*'|[^\s]*)\s+/, '');
+    const m = s.match(/^(?:time|nice|nohup|stdbuf|command|exec|timeout|ionice|setsid|env)\b\s*/);
+    if (m) {
+      let rest = s.slice(m[0].length);
+      rest = rest.replace(/^(?:-{1,2}[A-Za-z0-9._-]+(?:=\S+)?\s+)*/, ''); // -flags
+      rest = rest.replace(/^(?:\d+(?:\.\d+)?[smhd]?\s+)?/, ''); // numeric arg (timeout 30)
+      s = rest.trim();
+    }
+  }
+  return s.trim();
+}
+
+// Genuine escapes (atomic_exec cannot/should-not run) matched at command-HEAD
+// positions over the WHOLE command, so a wrapper can't smuggle them past the
+// first-token check, yet an escape verb appearing as a mere path argument
+// (e.g. `cat docker-compose.yml`) does NOT spuriously escape.
+function hasEscapeToken(c) {
+  const s = String(c || '');
+  const H = String.raw`(?:^|[\n;&|({]|-c\s+["']?)\s*`;
+  const net = new RegExp(
+    H +
+      String.raw`(?:git\s+(?:push|pull|fetch|clone|remote|submodule|lfs)|curl|wget|ssh|scp|sftp|rsync)\b`,
+  );
+  const gitMut = new RegExp(
+    H +
+      String.raw`git\s+(?:commit|add|stash|checkout|switch|reset|restore|merge|rebase|tag|cherry-pick|revert|rm|mv|clean|apply|am)\b`,
+  );
+  const interactive = new RegExp(
+    H +
+      String.raw`(?:claude|codex|opencode|hermes|vim|vi|nano|emacs|less|more|top|htop|ssh|scp|sudo|su|doas|gcloud|aws|az|kubectl|helm|docker|podman|op|kaisser|railway|vercel|stripe|gh|psql|mysql|mongosh|redis-cli|open|code|subl)\b`,
+  );
+  const pkg = new RegExp(
+    H +
+      String.raw`(?:npm|pnpm|yarn|bun|pip|pipx|poetry|cargo|go|gem|bundle|composer)\s+(?:install|add|update|publish|deploy|i|ci)\b`,
+  );
+  return net.test(s) || gitMut.test(s) || interactive.test(s) || pkg.test(s);
+}
+
+function shouldRouteThroughAtomicExec(cmd) {
+  // The mandatory routing may be self-disabled (ATOMIC_EXEC_MANDATORY=0) ONLY outside an
+  // atomic-only host envelope. In a host-launched session (ATOMIC_HOST_ATOMIC_ONLY=1) the
+  // disable is IGNORED — a closed-loop session cannot neutralize routing by exporting the
+  // env var (rank-6 no-bypass hole). Owner config outside the envelope is still honored.
+  if (process.env.ATOMIC_EXEC_MANDATORY === '0' && process.env.ATOMIC_HOST_ATOMIC_ONLY !== '1')
+    return false;
+  const raw = String(cmd || '').trim();
+  if (!raw) return false;
+  // Genuine escape anywhere (even wrapped) -> leave native; atomic_exec can't run it.
+  if (hasEscapeToken(raw)) return false;
+
+  const eff = effectiveCommand(raw);
+  const verb = (eff.split(/\s+/)[0] || '').split('/').pop();
+
+  // Shell-wrapper / control-flow / subshell with no escape token: atomic_exec
+  // wraps the whole string in `/bin/bash -c`, so it CAN run it. Route it.
+  if (/^(?:bash|sh|zsh|dash|ksh)$/.test(verb) && /\s-c\b/.test(eff)) return true;
+  if (/^(?:for|if|while|until|case|select|function)$/.test(verb)) return true;
+  if (/^[({]/.test(eff)) return true;
+
+  // Route-by-default (Daniel, 2026-06-02 — rank-1 no-bypass hole). After the genuine-
+  // escape filter (`hasEscapeToken` returned false above) and the wrapper/control-flow
+  // branches, EVERY remaining command routes through the atomic envelope. The prior
+  // fixed allowlist let any non-listed program run NATIVELY, fully outside atomic —
+  // python3/python/ruby/perl/php/osascript/Rscript/lua/julia/dotnet/swift/groovy and any
+  // `./local-bin` or `/abs/path/bin`. `osascript -e` alone can drive the whole macOS GUI
+  // and the network, uncounted. Routing-by-default is strictly MORE coverage than the
+  // allowlist (monotonic: every verb the allowlist routed still routes), and atomic_exec
+  // runs them all via `/bin/bash -c` under snapshot + trace + rollback. The only residual
+  // is a bare interactive REPL (`node`/`python3` with no script): atomic_exec gets EOF on
+  // a non-TTY stdin and the command timeout bounds it — acceptable vs. the leak it closes.
+  // `verb`/`eff` above still gate the wrapper/control-flow short-circuits; this fallthrough
+  // is the new default for everything the escape filter did not exempt.
+  return true;
+}
+
+// Destructive worktree escapes that atomic_exec deliberately cannot reverse (no
+// whole-repo snapshot) and that `hasEscapeToken` would otherwise wave through to NATIVE
+// Bash — silently destroying uncommitted human/agent work. These are DENIED outright
+// (not routed, not allowed): `git restore` (CLAUDE.md ABSOLUTE prohibition), `git reset
+// --hard`, `git clean -f…`, and the file-restore forms of checkout (`checkout -- <path>`,
+// `checkout .`). Branch ops (checkout <branch>, switch, reset --soft) are NOT matched.
+// Matched at command-HEAD positions so a mere path argument (`cat git-restore.md`) never
+// trips it.
+function isDestructiveWorktreeEscape(c) {
+  const s = String(c || '');
+  const H = String.raw`(?:^|[\n;&|({]|-c\s+["']?)\s*`;
+  const gitRestore = new RegExp(H + String.raw`git\s+restore\b`);
+  const gitResetHard = new RegExp(H + String.raw`git\s+reset\b[^\n;&|]*?\s--hard\b`);
+  const gitCleanForce = new RegExp(H + String.raw`git\s+clean\b[^\n;&|]*?\s-[A-Za-z]*f`);
+  const gitCheckoutPath = new RegExp(
+    H + String.raw`git\s+checkout\b[^\n;&|]*?(?:\s--\s|\s\.(?=\s|$))`,
+  );
+  return (
+    gitRestore.test(s) || gitResetHard.test(s) || gitCleanForce.test(s) || gitCheckoutPath.test(s)
+  );
+}
+
 if (tool === 'Bash') {
   const cmd = ti.command ?? ti.cmd ?? '';
   if (bashEditsCode(String(cmd)))
     deny(`TUI-abolished rule: shell in-place edit of a code file is banned. ${STEER}`);
+  if (isDestructiveWorktreeEscape(String(cmd)))
+    deny(
+      `Destructive worktree command refused — atomic cannot reverse it and CLAUDE.md ` +
+        `forbids git restore. \`git restore\` / \`git reset --hard\` / \`git clean -f\` / ` +
+        `\`git checkout -- <path>\` silently destroy uncommitted work. Commit or stash first, ` +
+        `restore from an explicit snapshot, or stop and ask — never discard the working tree blind.`,
+    );
+  if (shouldRouteThroughAtomicExec(String(cmd)))
+    deny(
+      `atomic_exec-mandatory rule: route this shell command through the atomic envelope. ` +
+        `Call mcp__atomic-edit__atomic_exec { command, cwd, intent, proveEffect } instead of ` +
+        `native Bash — it wraps the command in sandbox + trace + rollback. Network/remote, ` +
+        `local git mutations (commit/add/stash/checkout/…), interactive/login, package-install, ` +
+        `and shell control-flow still pass natively because atomic_exec cannot run them.`,
+    );
   allow();
 }
 
@@ -171,10 +324,14 @@ if (tool === 'apply_patch') {
 }
 
 if (!NATIVE_EDIT.has(tool)) allow();
-if (filePath && !CODE_EXT.test(String(filePath))) allow(); // prose/docs OK
+// Allow native Write/Edit ONLY for genuine prose (.md/.txt/…). Everything else — code AND
+// secret/config-bearing non-code (.env, .html, .csv, extensionless dotfiles) — routes
+// through atomic so it is security-scanned + byte-gated (rank-7 no-bypass fix).
+if (filePath && PROSE_EXT.test(String(filePath))) allow();
 
 deny(
-  `TUI-abolished rule: native ${tool} on code is banned so the harness never ` +
+  `TUI-abolished rule: native ${tool} on this file is banned (code, or a secret/config- ` +
+    `bearing non-prose file the security gate must scan) so the harness never ` +
     `renders its whole-line +/- diff. Use mcp__atomic-edit__* instead ` +
     `(atomic_replace_range / atomic_replace_text / atomic_edit_symbol / ` +
     `atomic_replace_literal / atomic_replace_property_value / atomic_wrap_range / ` +

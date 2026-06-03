@@ -20,10 +20,10 @@ interface Conversation {
 }
 
 interface ConversationApiPayload {
-  items?: Conversation[];
-  total?: number;
-  nextCursor?: string | null;
-  hasMore?: boolean;
+  items?: unknown;
+  total?: unknown;
+  nextCursor?: unknown;
+  hasMore?: unknown;
   [key: string]: unknown;
 }
 
@@ -42,6 +42,7 @@ interface ConversationHistoryContextType {
   hasMoreConversations: boolean;
   isLoadingMoreConversations: boolean;
   totalConversations: number | null;
+  lastError: Error | null;
   addConversation: (title?: string) => Promise<string | null>;
   updateConversationTitle: (id: string, title: string) => void;
   deleteConversation: (id: string) => void;
@@ -59,6 +60,7 @@ const ConversationHistoryContext = createContext<ConversationHistoryContextType>
   hasMoreConversations: false,
   isLoadingMoreConversations: false,
   totalConversations: null,
+  lastError: null,
   addConversation: async () => null,
   updateConversationTitle: () => {},
   deleteConversation: () => {},
@@ -92,27 +94,60 @@ function sortConversations(items: Conversation[]): Conversation[] {
   });
 }
 
-function unwrapConversationPayload(
-  response: { data?: ConversationApiPayload } | ConversationApiPayload,
-): ConversationApiPayload | undefined {
-  if (response && typeof response === 'object' && 'data' in response) {
-    return (response as { data?: ConversationApiPayload }).data;
-  }
-  return response as ConversationApiPayload;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function readThreadPage(
-  response: { data?: ConversationApiPayload } | ConversationApiPayload,
-): ThreadPage {
+function isOptionalString(value: unknown): value is string | undefined {
+  return value === undefined || typeof value === 'string';
+}
+
+function isConversationPayload(value: unknown): value is Conversation {
+  return (
+    isRecord(value) &&
+    typeof value.id === 'string' &&
+    typeof value.title === 'string' &&
+    isOptionalString(value.updatedAt) &&
+    isOptionalString(value.lastMessagePreview)
+  );
+}
+
+function unwrapConversationPayload(response: unknown): unknown {
+  if (isRecord(response) && typeof response.error === 'string' && response.error.length > 0) {
+    throw new Error(response.error);
+  }
+  if (isRecord(response) && 'data' in response) {
+    return response.data;
+  }
+  return response;
+}
+
+function readThreadPage(response: unknown): ThreadPage {
   const payload = unwrapConversationPayload(response);
   if (Array.isArray(payload)) {
+    if (!payload.every(isConversationPayload)) {
+      throw new Error('Invalid Kloel thread payload');
+    }
     return { items: payload, total: payload.length, nextCursor: null, hasMore: false };
   }
+  if (!isRecord(payload)) {
+    throw new Error('Invalid Kloel thread payload');
+  }
+  if (
+    !Array.isArray(payload.items) ||
+    !payload.items.every(isConversationPayload) ||
+    typeof payload.total !== 'number' ||
+    !Number.isFinite(payload.total) ||
+    !(payload.nextCursor === null || payload.nextCursor === undefined || typeof payload.nextCursor === 'string') ||
+    typeof payload.hasMore !== 'boolean'
+  ) {
+    throw new Error('Invalid Kloel thread payload');
+  }
   return {
-    items: Array.isArray(payload?.items) ? payload.items : [],
-    total: typeof payload?.total === 'number' ? payload.total : 0,
-    nextCursor: typeof payload?.nextCursor === 'string' ? payload.nextCursor : null,
-    hasMore: Boolean(payload?.hasMore),
+    items: payload.items,
+    total: payload.total,
+    nextCursor: typeof payload.nextCursor === 'string' ? payload.nextCursor : null,
+    hasMore: payload.hasMore,
   };
 }
 
@@ -124,6 +159,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
   const [hasMoreConversations, setHasMoreConversations] = useState(false);
   const [isLoadingMoreConversations, setIsLoadingMoreConversations] = useState(false);
   const [totalConversations, setTotalConversations] = useState<number | null>(null);
+  const [lastError, setLastError] = useState<Error | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const didSyncRef = useRef(false);
 
@@ -166,7 +202,9 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
       setNextCursor(page?.nextCursor ?? null);
       setHasMoreConversations(Boolean(page?.hasMore));
       setTotalConversations(typeof page?.total === 'number' ? page.total : page.items.length);
-    } catch {
+      setLastError(null);
+    } catch (error) {
+      setLastError(error instanceof Error ? error : new Error(String(error || 'kloel_threads_failed')));
       // Keep current conversations when backend is temporarily unavailable
     }
   }, [applyConversations, isAuthenticated]);
@@ -185,7 +223,9 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
       setNextCursor(page?.nextCursor ?? null);
       setHasMoreConversations(Boolean(page?.hasMore));
       setTotalConversations(typeof page?.total === 'number' ? page.total : null);
-    } catch {
+      setLastError(null);
+    } catch (error) {
+      setLastError(error instanceof Error ? error : new Error(String(error || 'kloel_threads_failed')));
       // Keep the current list; the sentinel can retry on the next scroll.
     } finally {
       setIsLoadingMoreConversations(false);
@@ -202,24 +242,31 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
     if (!isAuthenticated) {
       return conversations;
     }
-    const all: Conversation[] = [];
-    let cursor: string | null = null;
-    let keepGoing = true;
-    while (keepGoing) {
-      const query: string = cursor
-        ? `/kloel/threads?limit=50&cursor=${encodeURIComponent(cursor)}`
-        : '/kloel/threads?limit=50';
-      const res = await apiFetch<ConversationApiPayload>(query);
-      const page = readThreadPage(res);
-      all.push(...page.items);
-      cursor = page?.nextCursor ?? null;
-      keepGoing = Boolean(page?.hasMore && cursor);
+    try {
+      const all: Conversation[] = [];
+      let cursor: string | null = null;
+      let keepGoing = true;
+      while (keepGoing) {
+        const query: string = cursor
+          ? `/kloel/threads?limit=50&cursor=${encodeURIComponent(cursor)}`
+          : '/kloel/threads?limit=50';
+        const res = await apiFetch<ConversationApiPayload>(query);
+        const page = readThreadPage(res);
+        all.push(...page.items);
+        cursor = page?.nextCursor ?? null;
+        keepGoing = Boolean(page?.hasMore && cursor);
+      }
+      mergeConversations(all);
+      setNextCursor(null);
+      setHasMoreConversations(false);
+      setTotalConversations(all.length);
+      setLastError(null);
+      return all;
+    } catch (error) {
+      const historyError = error instanceof Error ? error : new Error(String(error || 'kloel_threads_failed'));
+      setLastError(historyError);
+      throw historyError;
     }
-    mergeConversations(all);
-    setNextCursor(null);
-    setHasMoreConversations(false);
-    setTotalConversations(all.length);
-    return all;
   }, [conversations, isAuthenticated, mergeConversations]);
 
   useEffect(() => {
@@ -273,6 +320,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
   }, [isAuthenticated, isLoading, refreshConversations]);
 
   const addConversation = useCallback(async (title?: string): Promise<string | null> => {
+    setLastError(null);
     try {
       const res = await apiFetch<Partial<Conversation>>('/kloel/threads', {
         method: 'POST',
@@ -289,29 +337,42 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
         setConversations((prev) => [conv, ...prev]);
         return payload.id;
       }
-    } catch {
-      // Backend unavailable — cannot create conversation without persistence
+      throw new Error('Payload de conversa criado invalido.');
+    } catch (error) {
+      setLastError(error instanceof Error ? error : new Error(String(error || 'kloel_thread_create_failed')));
     }
     return null;
   }, []);
 
   const updateConversationTitle = useCallback((id: string, title: string) => {
-    setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, title } : c)));
+    setLastError(null);
     apiFetch(`/kloel/threads/${id}`, { method: 'PUT', body: { title } })
-      .then(() => {
+      .then((res) => {
+        if (res.error) {
+          throw new Error(res.error);
+        }
+        setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, title } : c)));
         mutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/threads'));
       })
-      .catch(() => {});
+      .catch((error: unknown) => {
+        setLastError(error instanceof Error ? error : new Error(String(error || 'kloel_thread_rename_failed')));
+      });
   }, []);
 
   const deleteConversation = useCallback((id: string) => {
-    setConversations((prev) => prev.filter((c) => c.id !== id));
-    setActiveConv((current) => (current === id ? null : current));
+    setLastError(null);
     apiFetch(`/kloel/threads/${id}`, { method: 'DELETE' })
-      .then(() => {
+      .then((res) => {
+        if (res.error) {
+          throw new Error(res.error);
+        }
+        setConversations((prev) => prev.filter((c) => c.id !== id));
+        setActiveConv((current) => (current === id ? null : current));
         mutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/threads'));
       })
-      .catch(() => {});
+      .catch((error: unknown) => {
+        setLastError(error instanceof Error ? error : new Error(String(error || 'kloel_thread_delete_failed')));
+      });
   }, []);
 
   const setActiveConversation = useCallback((id: string | null) => {
@@ -347,6 +408,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
         hasMoreConversations,
         isLoadingMoreConversations,
         totalConversations,
+        lastError,
         addConversation,
         updateConversationTitle,
         deleteConversation,

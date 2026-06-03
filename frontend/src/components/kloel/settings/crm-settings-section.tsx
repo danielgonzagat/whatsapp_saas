@@ -16,9 +16,55 @@ import { RotateCw, Sparkles, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { SettingsNotice, kloelSettingsClass } from './contract';
 import { errorMessage } from './crm-settings-section.helpers';
+import { fetchCrmInitialData } from './crm-settings-section.handlers';
 import { ContactCard, SegmentationCard, StatCard } from './crm-settings-section.parts';
 import { PipelineCard } from './crm-settings-section.pipeline';
 
+
+interface PresetSegmentContactPayload {
+  id: string;
+  phone: string;
+  name?: string | null;
+}
+
+function isPresetSegmentContactPayload(value: unknown): value is PresetSegmentContactPayload {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const candidate = value as { id?: unknown; phone?: unknown };
+  return typeof candidate.id === 'string' && typeof candidate.phone === 'string';
+}
+
+function normalizePresetSegmentPayload(response: unknown): {
+  contacts: Array<{ id: string; phone: string; name?: string | undefined }>;
+  total: number;
+} {
+  const data = response && typeof response === 'object' && 'data' in response
+    ? (response as { data?: unknown }).data
+    : undefined;
+
+  if (!data || typeof data !== 'object' || !('contacts' in data)) {
+    throw new Error('Payload de segmento CRM invalido.');
+  }
+
+  const segment = data as { contacts?: unknown; total?: unknown };
+  if (!Array.isArray(segment.contacts) || !segment.contacts.every(isPresetSegmentContactPayload)) {
+    throw new Error('Payload de segmento CRM invalido.');
+  }
+  if (typeof segment.total !== 'number') {
+    throw new Error('Payload de segmento CRM invalido.');
+  }
+
+  return {
+    contacts: segment.contacts.map((contact) => ({
+      id: contact.id,
+      phone: contact.phone,
+      name: contact.name || undefined,
+    })),
+    total: segment.total,
+  };
+}
 
 /** Crm settings section. */
 export function CrmSettingsSection() {
@@ -92,38 +138,24 @@ export function CrmSettingsSection() {
       .then(() => {
         setLoading(true);
         setError(null);
-        return Promise.all([
-          crmApi.listContacts({ page: 1, limit: 20 }),
-          crmApi.listPipelines(),
-          crmApi.listDeals(),
-          segmentationApi.getPresets(),
-          segmentationApi.getStats(),
-        ]);
+        return fetchCrmInitialData();
       })
-      .then(
-        ([contactsResponse, pipelinesResponse, dealsResponse, presetsResponse, statsResponse]) => {
-          const nextContacts = contactsResponse.data?.data || [];
-          const nextPipelines = pipelinesResponse.data || [];
-          const nextDeals = dealsResponse.data || [];
-          const nextPresets = presetsResponse.data?.presets || [];
-          const nextStats = statsResponse.data || null;
+      .then((nextData) => {
+        setContacts(nextData.contacts);
+        setPipelines(nextData.pipelines);
+        setDeals(nextData.deals);
+        setPresets(nextData.presets);
+        setSegmentStats(nextData.stats);
 
-          setContacts(nextContacts);
-          setPipelines(nextPipelines);
-          setDeals(nextDeals);
-          setPresets(nextPresets);
-          setSegmentStats(nextStats);
-
-          const firstPipeline = nextPipelines[0];
-          if (firstPipeline && !selectedPipelineId) {
-            setSelectedPipelineId(firstPipeline.id);
-          }
-          const firstPreset = nextPresets[0];
-          if (firstPreset && !selectedPreset) {
-            setSelectedPreset(firstPreset.name);
-          }
-        },
-      )
+        const firstPipeline = nextData.pipelines[0];
+        if (firstPipeline && !selectedPipelineId) {
+          setSelectedPipelineId(firstPipeline.id);
+        }
+        const firstPreset = nextData.presets[0];
+        if (firstPreset && !selectedPreset) {
+          setSelectedPreset(firstPreset.name);
+        }
+      })
       .catch((loadError: unknown) => {
         setError(errorMessage(loadError, 'Nao foi possivel carregar CRM e pipeline.'));
       })
@@ -168,14 +200,9 @@ export function CrmSettingsSection() {
         if (!active) {
           return;
         }
-        setPresetContacts(
-          (response.data?.contacts || []).map((contact) => ({
-            id: contact.id,
-            phone: contact.phone,
-            name: contact.name || undefined,
-          })),
-        );
-        setPresetTotal(response.data?.total || 0);
+        const nextSegment = normalizePresetSegmentPayload(response);
+        setPresetContacts(nextSegment.contacts);
+        setPresetTotal(nextSegment.total);
       })
       .catch((presetError: unknown) => {
         if (!active) {

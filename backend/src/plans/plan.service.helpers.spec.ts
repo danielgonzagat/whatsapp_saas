@@ -109,7 +109,10 @@ describe('plan.service.helpers', () => {
     it('lists the changed field names', () => {
       const result = buildPlanUpdatePatch({ name: 'X', price: 10 }, null);
       expect(result).not.toBeNull();
-      expect(result!.changes.sort()).toEqual(['name', 'price']);
+      // A price change additively dual-writes priceInCents (PRODUCT-PLAN PHASE A).
+      expect(result!.changes.sort()).toEqual(['name', 'price', 'priceInCents']);
+      expect(result!.updates.price).toBe(10);
+      expect(result!.updates.priceInCents).toBe(1000);
     });
 
     it('merges acceptCoupons / imageUrl into checkoutImages on top of existing', () => {

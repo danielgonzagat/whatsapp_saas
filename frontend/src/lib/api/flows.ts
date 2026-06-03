@@ -36,13 +36,49 @@ export type {
 const invalidateFlows = () =>
   mutate((key: string) => typeof key === 'string' && key.startsWith('/flows'));
 
-/** Get flow templates. */
-export async function getFlowTemplates(): Promise<FlowTemplate[]> {
-  const res = await apiFetch<FlowTemplate[]>(`/flows/templates`);
+type FlowApiEnvelope<T> = {
+  data?: T;
+  error?: string;
+  status?: number;
+};
+
+function confirmFlowPayload<T>(
+  res: FlowApiEnvelope<T>,
+  fallbackError: string,
+  missingPayloadError: string,
+): T {
   if (res.error) {
     throw new Error(res.error);
   }
-  return res.data ?? [];
+  if (typeof res.status === 'number' && res.status >= 400) {
+    throw new Error(fallbackError);
+  }
+  if (res.data === undefined || res.data === null) {
+    throw new Error(missingPayloadError);
+  }
+  return res.data;
+}
+
+function confirmFlowListPayload<T>(
+  res: FlowApiEnvelope<T[]>,
+  fallbackError: string,
+  missingPayloadError: string,
+): T[] {
+  const data = confirmFlowPayload(res, fallbackError, missingPayloadError);
+  if (!Array.isArray(data)) {
+    throw new Error(missingPayloadError);
+  }
+  return data;
+}
+
+/** Get flow templates. */
+export async function getFlowTemplates(): Promise<FlowTemplate[]> {
+  const res = await apiFetch<FlowTemplate[]>(`/flows/templates`);
+  return confirmFlowListPayload(
+    res,
+    'Failed to load flow templates',
+    'Flow templates did not return a confirmed payload',
+  );
 }
 
 /** Run flow. */
@@ -57,8 +93,11 @@ export async function runFlow(body: {
     method: 'POST',
     body: body,
   });
-  if (res.error) {
-    throw new Error(res.error);
+  if (res.error || res.status >= 400) {
+    throw new Error(res.error || 'Failed to run flow');
+  }
+  if (!res.data) {
+    throw new Error('Flow run did not return a confirmed payload');
   }
   invalidateFlows();
   return res.data;
@@ -74,8 +113,11 @@ export async function runSavedFlow(
     method: 'POST',
     body: body,
   });
-  if (res.error) {
-    throw new Error(res.error);
+  if (res.error || res.status >= 400) {
+    throw new Error(res.error || 'Failed to run saved flow');
+  }
+  if (!res.data) {
+    throw new Error('Saved flow run did not return a confirmed payload');
   }
   return res.data;
 }
@@ -90,8 +132,11 @@ export async function saveFlow(
     method: 'POST',
     body: flow,
   });
-  if (res.error) {
-    throw new Error(res.error);
+  if (res.error || res.status >= 400) {
+    throw new Error(res.error || 'Failed to save flow');
+  }
+  if (!res.data) {
+    throw new Error('Flow save did not return a confirmed payload');
   }
   invalidateFlows();
   return res.data;
@@ -107,8 +152,11 @@ export async function updateFlow(
     method: 'PUT',
     body: flow,
   });
-  if (res.error) {
-    throw new Error(res.error);
+  if (res.error || res.status >= 400) {
+    throw new Error(res.error || 'Failed to update flow');
+  }
+  if (!res.data) {
+    throw new Error('Flow update did not return a confirmed payload');
   }
   invalidateFlows();
   return res.data;
@@ -124,8 +172,11 @@ export async function createFlowVersion(
     method: 'POST',
     body: payload,
   });
-  if (res.error) {
-    throw new Error(res.error);
+  if (res.error || res.status >= 400) {
+    throw new Error(res.error || 'Failed to create flow version');
+  }
+  if (!res.data) {
+    throw new Error('Flow version creation did not return a confirmed payload');
   }
   invalidateFlows();
   return res.data;
@@ -142,8 +193,11 @@ export async function logFlowExecution(
     method: 'POST',
     body: { logs, user },
   });
-  if (res.error) {
-    throw new Error(res.error);
+  if (res.error || res.status >= 400) {
+    throw new Error(res.error || 'Failed to log flow execution');
+  }
+  if (!res.data?.ok) {
+    throw new Error('Flow execution log did not return confirmed ok');
   }
   return res.data;
 }
@@ -154,28 +208,31 @@ export async function getFlowLogs(
   flowId: string,
 ): Promise<FlowExecutionLog[]> {
   const res = await apiFetch<FlowExecutionLog[]>(`/flows/log/${workspaceId}/${flowId}`);
-  if (res.error) {
-    throw new Error(res.error);
-  }
-  return res.data ?? [];
+  return confirmFlowListPayload(
+    res,
+    'Failed to load flow logs',
+    'Flow logs did not return a confirmed payload',
+  );
 }
 
 /** List flows. */
 export async function listFlows(workspaceId: string): Promise<Flow[]> {
   const res = await apiFetch<Flow[]>(`/flows/${workspaceId}`);
-  if (res.error) {
-    throw new Error(res.error);
-  }
-  return res.data ?? [];
+  return confirmFlowListPayload(
+    res,
+    'Failed to load flows',
+    'Flow list did not return a confirmed payload',
+  );
 }
 
 /** Get flow. */
 export async function getFlow(workspaceId: string, flowId: string): Promise<Flow> {
   const res = await apiFetch<Flow>(`/flows/${workspaceId}/${flowId}`);
-  if (res.error) {
-    throw new Error(res.error);
-  }
-  return res.data as Flow;
+  return confirmFlowPayload(
+    res,
+    'Failed to load flow',
+    'Flow did not return a confirmed payload',
+  );
 }
 
 /** List flow executions. */
@@ -186,21 +243,21 @@ export async function listFlowExecutions(
   const res = await apiFetch<FlowExecutionSummary[]>(
     '/flows/' + workspaceId + '/executions' + buildQuery({ limit }),
   );
-  if (res.error) {
-    throw new Error(res.error);
-  }
-  return res.data ?? [];
+  return confirmFlowListPayload(
+    res,
+    'Failed to load flow executions',
+    'Flow executions did not return a confirmed payload',
+  );
 }
 
 /** Get flow execution. */
-export async function getFlowExecution(
-  executionId: string,
-): Promise<FlowExecutionSummary | undefined> {
+export async function getFlowExecution(executionId: string): Promise<FlowExecutionSummary> {
   const res = await apiFetch<FlowExecutionSummary>(`/flows/execution/${executionId}`);
-  if (res.error) {
-    throw new Error(res.error);
-  }
-  return res.data;
+  return confirmFlowPayload(
+    res,
+    'Failed to load flow execution',
+    'Flow execution did not return a confirmed payload',
+  );
 }
 
 /** Retry flow execution. */
@@ -210,8 +267,11 @@ export async function retryFlowExecution(
   const res = await apiFetch<FlowExecutionSummary>(`/flows/execution/${executionId}/retry`, {
     method: 'POST',
   });
-  if (res.error) {
-    throw new Error(res.error);
+  if (res.error || res.status >= 400) {
+    throw new Error(res.error || 'Failed to retry flow execution');
+  }
+  if (!res.data) {
+    throw new Error('Flow execution retry did not return a confirmed payload');
   }
   invalidateFlows();
   return res.data;
@@ -223,10 +283,11 @@ export async function listFlowVersions(
   flowId: string,
 ): Promise<FlowVersion[]> {
   const res = await apiFetch<FlowVersion[]>(`/flows/${workspaceId}/${flowId}/versions`);
-  if (res.error) {
-    throw new Error(res.error);
-  }
-  return res.data ?? [];
+  return confirmFlowListPayload(
+    res,
+    'Failed to load flow versions',
+    'Flow versions did not return a confirmed payload',
+  );
 }
 
 /** Get flow version. */
@@ -234,12 +295,13 @@ export async function getFlowVersion(
   workspaceId: string,
   flowId: string,
   versionId: string,
-): Promise<FlowVersion | undefined> {
+): Promise<FlowVersion> {
   const res = await apiFetch<FlowVersion>(`/flows/${workspaceId}/${flowId}/versions/${versionId}`);
-  if (res.error) {
-    throw new Error(res.error);
-  }
-  return res.data;
+  return confirmFlowPayload(
+    res,
+    'Failed to load flow version',
+    'Flow version did not return a confirmed payload',
+  );
 }
 
 /** Create flow from template. */
@@ -252,8 +314,11 @@ export async function createFlowFromTemplate(
     method: 'POST',
     body: payload,
   });
-  if (res.error) {
-    throw new Error(res.error);
+  if (res.error || res.status >= 400) {
+    throw new Error(res.error || 'Failed to create flow from template');
+  }
+  if (!res.data) {
+    throw new Error('Flow template instantiation did not return a confirmed payload');
   }
   invalidateFlows();
   return res.data;
@@ -268,10 +333,11 @@ export async function createFlowFromTemplate(
  */
 export async function listPublicFlowTemplates(): Promise<FlowTemplate[]> {
   const res = await apiFetch<FlowTemplate[]>('/flow-templates/public');
-  if (res.error) {
-    throw new Error(res.error);
-  }
-  return Array.isArray(res.data) ? res.data : [];
+  return confirmFlowListPayload(
+    res,
+    'Failed to load public flow templates',
+    'Public flow templates did not return a confirmed payload',
+  );
 }
 
 /**
@@ -279,10 +345,11 @@ export async function listPublicFlowTemplates(): Promise<FlowTemplate[]> {
  */
 export async function listAllFlowTemplates(): Promise<FlowTemplate[]> {
   const res = await apiFetch<FlowTemplate[]>('/flow-templates');
-  if (res.error) {
-    throw new Error(res.error);
-  }
-  return Array.isArray(res.data) ? res.data : [];
+  return confirmFlowListPayload(
+    res,
+    'Failed to load flow templates',
+    'Flow templates did not return a confirmed payload',
+  );
 }
 
 /**
@@ -290,10 +357,11 @@ export async function listAllFlowTemplates(): Promise<FlowTemplate[]> {
  */
 export async function getFlowTemplate(id: string): Promise<FlowTemplate> {
   const res = await apiFetch<FlowTemplate>(`/flow-templates/${encodeURIComponent(id)}`);
-  if (res.error) {
-    throw new Error(res.error);
-  }
-  return res.data as FlowTemplate;
+  return confirmFlowPayload(
+    res,
+    'Failed to load flow template',
+    'Flow template did not return a confirmed payload',
+  );
 }
 
 /**
@@ -311,11 +379,14 @@ export async function createFlowTemplate(payload: {
     method: 'POST',
     body: payload,
   });
-  if (res.error) {
-    throw new Error(res.error);
+  if (res.error || res.status >= 400) {
+    throw new Error(res.error || 'Failed to create flow template');
+  }
+  if (!res.data) {
+    throw new Error('Flow template creation did not return a confirmed payload');
   }
   invalidateFlows();
-  return res.data as FlowTemplate;
+  return res.data;
 }
 
 /**
@@ -325,10 +396,13 @@ export async function downloadFlowTemplate(id: string): Promise<FlowTemplate> {
   const res = await apiFetch<FlowTemplate>(`/flow-templates/${encodeURIComponent(id)}/download`, {
     method: 'POST',
   });
-  if (res.error) {
-    throw new Error(res.error);
+  if (res.error || res.status >= 400) {
+    throw new Error(res.error || 'Failed to download flow template');
   }
-  return res.data as FlowTemplate;
+  if (!res.data) {
+    throw new Error('Flow template download did not return a confirmed payload');
+  }
+  return res.data;
 }
 
 // ============================================
@@ -345,8 +419,11 @@ export async function optimizeFlow(flowId: string): Promise<FlowOptimizeResult |
       method: 'POST',
     },
   );
-  if (res.error) {
-    throw new Error(res.error);
+  if (res.error || res.status >= 400) {
+    throw new Error(res.error || 'Failed to optimize flow');
+  }
+  if (!res.data) {
+    throw new Error('Flow optimization did not return a confirmed payload');
   }
   invalidateFlows();
   return res.data;

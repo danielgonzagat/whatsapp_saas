@@ -4,6 +4,7 @@ import { applyEdits, replaceText, renameSymbol, replaceLiteral } from './engine.
 import { resolveSafeTarget } from './guard.js';
 import { editSymbol, addNamedImport, removeNamedImport, replacePropertyValue, type SymbolOp, renamePropertyKey } from './advanced.js';
 import { guardSha, readUtf8 } from './server-helpers-io.js';
+import { requireNegativeActionProof, requireNegativeProofForRemovedBytes, removedByteCountBetween } from './server-helpers-negative-proof.js';
 import { ok, fail, commit, writeWithTrace } from './server-helpers-result.js';
 import { commitSemantic } from './server-helpers-commit-semantic.js';
 import { registerToolsA2 } from './server-tools-a-2.js';
@@ -51,6 +52,10 @@ server.registerTool(
       anchor: z.string().optional(),
       expectedSha256: z.string().optional(),
       preview: z.boolean().optional(),
+      proofOfIncorrectness: z
+        .string()
+        .optional()
+        .describe('required for negative byte actions: proof that removed bytes are non-correct/negative'),
       verify: z.enum(['typecheck', 'lint']).optional(),
       lock: z.boolean().optional(),
     },
@@ -69,6 +74,7 @@ server.registerTool(
           occurrence: a.occurrence,
           expectedSha256: a.expectedSha256,
           preview: a.preview,
+          proofOfIncorrectness: a.proofOfIncorrectness,
           verify: a.verify,
           lock: a.lock,
         });
@@ -81,20 +87,65 @@ server.registerTool(
         case 'replace_text': {
           if (!a.oldText || a.newText === undefined) throw new Error('replace_text requires oldText+newText');
           const r = replaceText(relPath, before, a.oldText, a.newText, a.occurrence);
-          return commit(relPath, absPath, before, r, { op: 'atomic_edit:replace_text' }, a.preview ?? false, a.verify, a.lock);
+          const negativeActionProof = requireNegativeProofForRemovedBytes({
+            action: 'atomic_edit:replace_text',
+            target: relPath,
+            targetUnit: 'file',
+            before,
+            after: r.newText,
+            proofOfIncorrectness: a.proofOfIncorrectness,
+            preview: a.preview ?? false,
+          });
+          return commit(
+            relPath,
+            absPath,
+            before,
+            r,
+            { op: 'atomic_edit:replace_text', ...(negativeActionProof ? { negativeActionProof } : {}) },
+            a.preview ?? false,
+            a.verify,
+            a.lock,
+          );
         }
         case 'replace_range': {
           if (!a.startLine || !a.startColumn || !a.endLine || !a.endColumn || a.newText === undefined) throw new Error('replace_range requires coordinates+newText');
           const r = applyEdits(relPath, before, [{ start: { line: a.startLine, column: a.startColumn }, end: { line: a.endLine, column: a.endColumn }, newText: a.newText }]);
-          return commit(relPath, absPath, before, r, { op: 'atomic_edit:replace_range' }, a.preview ?? false, a.verify, a.lock);
+          const negativeActionProof = requireNegativeProofForRemovedBytes({
+            action: 'atomic_edit:replace_range',
+            target: relPath,
+            targetUnit: 'range',
+            before,
+            after: r.newText,
+            proofOfIncorrectness: a.proofOfIncorrectness,
+            preview: a.preview ?? false,
+          });
+          return commit(
+            relPath,
+            absPath,
+            before,
+            r,
+            { op: 'atomic_edit:replace_range', ...(negativeActionProof ? { negativeActionProof } : {}) },
+            a.preview ?? false,
+            a.verify,
+            a.lock,
+          );
         }
         case 'replace_literal': {
           if (!a.oldText || a.newText === undefined) throw new Error('replace_literal requires oldText+newText');
           const r = await replaceLiteral(relPath, before, a.oldText, a.newText, a.startLine);
           if (!r.validation.ok) return fail('rejected: replace_literal would break syntax. ' + (r.validation.introduced ?? ''));
           if (r.newText === before) return ok({ ok: true, changed: false, note: 'no change', file: relPath });
-          if (!a.preview) writeWithTrace(relPath, absPath, before, r.newText, 'atomic_edit:replace_literal', r.validation);
-          return ok({ ok: true, changed: !a.preview, file: relPath, matched: r.matched });
+          const negativeActionProof = requireNegativeProofForRemovedBytes({
+            action: 'atomic_edit:replace_literal',
+            target: relPath,
+            targetUnit: 'literal',
+            before,
+            after: r.newText,
+            proofOfIncorrectness: a.proofOfIncorrectness,
+            preview: a.preview ?? false,
+          });
+          if (!a.preview) writeWithTrace(relPath, absPath, before, r.newText, 'atomic_edit:replace_literal', r.validation, negativeActionProof);
+          return ok({ ok: true, changed: !a.preview, file: relPath, matched: r.matched, ...(negativeActionProof ? { negativeActionProof } : {}) });
         }
         case 'insert_at': {
           if (!a.startLine || !a.startColumn || a.newText === undefined) throw new Error('insert_at requires position+newText');
@@ -105,15 +156,33 @@ server.registerTool(
         case 'delete_range': {
           if (!a.startLine || !a.startColumn || !a.endLine || !a.endColumn) throw new Error('delete_range requires coordinates');
           const r = applyEdits(relPath, before, [{ start: { line: a.startLine, column: a.startColumn }, end: { line: a.endLine, column: a.endColumn }, newText: '' }]);
-          return commit(relPath, absPath, before, r, { op: 'atomic_edit:delete_range' }, a.preview ?? false);
+          const negativeActionProof = a.preview
+            ? undefined
+            : requireNegativeActionProof({
+                action: 'atomic_edit:delete_range',
+                target: relPath,
+                targetUnit: 'range',
+                removedByteCount: removedByteCountBetween(before, r.newText),
+                proofOfIncorrectness: a.proofOfIncorrectness,
+              });
+          return commit(relPath, absPath, before, r, { op: 'atomic_edit:delete_range', negativeActionProof }, a.preview ?? false);
         }
         case 'edit_symbol': {
           if (!a.selector || !a.symbolOp) throw new Error('edit_symbol requires selector+symbolOp');
           const r = await editSymbol(relPath, before, a.selector, a.symbolOp as SymbolOp, a.code);
           if (!r.validation.ok) return fail('rejected: ' + a.symbolOp + ' on ' + r.selector + ' would introduce a syntax error. ' + (r.validation.introduced ?? ''));
           if (r.newText === before) return ok({ ok: true, changed: false, note: 'no change', file: relPath });
-          if (!a.preview) writeWithTrace(relPath, absPath, before, r.newText, 'atomic_edit:edit_symbol', r.validation);
-          return ok({ ok: true, changed: !a.preview, preview: a.preview ?? false, file: relPath, selector: r.selector, op: r.op });
+          const negativeActionProof = a.symbolOp === 'remove' && !(a.preview ?? false)
+            ? requireNegativeActionProof({
+                action: 'atomic_edit:edit_symbol:remove',
+                target: `${relPath}:${r.selector}`,
+                targetUnit: 'symbol',
+                removedByteCount: removedByteCountBetween(before, r.newText),
+                proofOfIncorrectness: a.proofOfIncorrectness,
+              })
+            : undefined;
+          if (!a.preview) writeWithTrace(relPath, absPath, before, r.newText, 'atomic_edit:edit_symbol', r.validation, negativeActionProof);
+          return ok({ ok: true, changed: !a.preview, preview: a.preview ?? false, file: relPath, selector: r.selector, op: r.op, ...(negativeActionProof ? { negativeActionProof } : {}) });
         }
         case 'add_import': {
           if (!a.name || !a.module) throw new Error('add_import requires name+module');
@@ -123,24 +192,76 @@ server.registerTool(
         case 'remove_import': {
           if (!a.name || !a.module) throw new Error('remove_import requires name+module');
           const r = await removeNamedImport(relPath, before, a.module, a.name);
-          return commitSemantic(relPath, absPath, before, r, a.preview ?? false);
+          const negativeActionProof = a.preview
+            ? undefined
+            : requireNegativeActionProof({
+                action: 'atomic_edit:remove_import',
+                target: `${relPath}:${a.module}:${a.name}`,
+                targetUnit: 'import',
+                removedByteCount: removedByteCountBetween(before, r.newText),
+                proofOfIncorrectness: a.proofOfIncorrectness,
+              });
+          return commitSemantic(relPath, absPath, before, r, a.preview ?? false, undefined, { negativeActionProof });
         }
         case 'replace_property_value': {
           if (!a.property || a.value === undefined) throw new Error('replace_property_value requires property+value');
           const r = await replacePropertyValue(relPath, before, a.property, a.value, a.selector);
-          return commitSemantic(relPath, absPath, before, r, a.preview ?? false);
+          const negativeActionProof = requireNegativeProofForRemovedBytes({
+            action: 'atomic_edit:replace_property_value',
+            target: `${relPath}:${a.property}`,
+            targetUnit: 'property-value',
+            before,
+            after: r.newText,
+            proofOfIncorrectness: a.proofOfIncorrectness,
+            preview: a.preview ?? false,
+          });
+          return commitSemantic(
+            relPath,
+            absPath,
+            before,
+            r,
+            a.preview ?? false,
+            undefined,
+            negativeActionProof ? { negativeActionProof } : {},
+          );
         }
         case 'rename_property_key': {
           if (!a.property || !a.newKey) throw new Error('rename_property_key requires property+newKey');
           const r = await renamePropertyKey(relPath, before, a.property, a.newKey, a.selector);
-          return commitSemantic(relPath, absPath, before, r, a.preview ?? false);
+          const negativeActionProof = requireNegativeProofForRemovedBytes({
+            action: 'atomic_edit:rename_property_key',
+            target: `${relPath}:${a.property}->${a.newKey}`,
+            targetUnit: 'property-key',
+            before,
+            after: r.newText,
+            proofOfIncorrectness: a.proofOfIncorrectness,
+            preview: a.preview ?? false,
+          });
+          return commitSemantic(
+            relPath,
+            absPath,
+            before,
+            r,
+            a.preview ?? false,
+            undefined,
+            negativeActionProof ? { negativeActionProof } : {},
+          );
         }
         case 'rename_symbol': {
           if (!a.startLine || !a.startColumn || !a.newText) throw new Error('rename_symbol requires position+newText');
           const r = await renameSymbol(relPath, before, { line: a.startLine, column: a.startColumn }, a.newText);
           if (!r.validation.ok) return fail('Rename rejected: ' + (r.validation.introduced ?? ''));
-          if (!a.preview) writeWithTrace(relPath, absPath, before, r.newText, 'atomic_edit:rename_symbol', r.validation);
-          return ok({ ok: true, changed: !a.preview, file: relPath, symbol: r.symbol, occurrences: r.occurrences });
+          const negativeActionProof = requireNegativeProofForRemovedBytes({
+            action: 'atomic_edit:rename_symbol',
+            target: `${relPath}:${r.symbol}->${a.newText}`,
+            targetUnit: 'symbol',
+            before,
+            after: r.newText,
+            proofOfIncorrectness: a.proofOfIncorrectness,
+            preview: a.preview ?? false,
+          });
+          if (!a.preview) writeWithTrace(relPath, absPath, before, r.newText, 'atomic_edit:rename_symbol', r.validation, negativeActionProof);
+          return ok({ ok: true, changed: !a.preview, file: relPath, symbol: r.symbol, occurrences: r.occurrences, ...(negativeActionProof ? { negativeActionProof } : {}) });
         }
         default:
           return fail('Unknown op: ' + a.op);
@@ -172,6 +293,10 @@ server.registerTool(
         .boolean()
         .optional()
         .describe('dry-run only when uncertain; exact edits are already validated before write'),
+      proofOfIncorrectness: z
+        .string()
+        .optional()
+        .describe('required when replacement removes bytes: proof that removed bytes are non-correct/negative'),
       verify: z.enum(['typecheck', 'lint']).optional(),
       lock: z.boolean().optional(),
     },
@@ -187,7 +312,25 @@ server.registerTool(
           newText: a.newText,
         },
       ]);
-      return commit(relPath, absPath, before, r, {}, a.preview ?? false, a.verify, a.lock);
+      const negativeActionProof = requireNegativeProofForRemovedBytes({
+        action: 'atomic_replace_range',
+        target: relPath,
+        targetUnit: 'range',
+        before,
+        after: r.newText,
+        proofOfIncorrectness: a.proofOfIncorrectness,
+        preview: a.preview ?? false,
+      });
+      return commit(
+        relPath,
+        absPath,
+        before,
+        r,
+        { op: 'atomic_replace_range', ...(negativeActionProof ? { negativeActionProof } : {}) },
+        a.preview ?? false,
+        a.verify,
+        a.lock,
+      );
     } catch (e) {
       return fail(e instanceof Error ? e.message : String(e));
     }
@@ -228,6 +371,10 @@ server.registerTool(
         .boolean()
         .optional()
         .describe('dry-run only when uncertain; exact edits are already validated before write'),
+      proofOfIncorrectness: z
+        .string()
+        .optional()
+        .describe('required when replacement removes bytes: proof that removed bytes are non-correct/negative'),
       verify: z.enum(['typecheck', 'lint']).optional(),
       lock: z.boolean().optional(),
     },
@@ -238,7 +385,25 @@ server.registerTool(
       const before = readUtf8(absPath);
       guardSha(before, a.expectedSha256);
       const r = replaceText(relPath, before, a.oldText, a.newText, a.occurrence);
-      return commit(relPath, absPath, before, r, {}, a.preview ?? false, a.verify, a.lock);
+      const negativeActionProof = requireNegativeProofForRemovedBytes({
+        action: 'atomic_replace_text',
+        target: relPath,
+        targetUnit: 'file',
+        before,
+        after: r.newText,
+        proofOfIncorrectness: a.proofOfIncorrectness,
+        preview: a.preview ?? false,
+      });
+      return commit(
+        relPath,
+        absPath,
+        before,
+        r,
+        { op: 'atomic_replace_text', ...(negativeActionProof ? { negativeActionProof } : {}) },
+        a.preview ?? false,
+        a.verify,
+        a.lock,
+      );
     } catch (e) {
       return fail(e instanceof Error ? e.message : String(e));
     }

@@ -41,6 +41,13 @@ function getServerOnlineSnapshot(): boolean {
   return true;
 }
 
+function normalizeCheckoutList(response: unknown): Checkout[] {
+  if (!Array.isArray(response)) {
+    throw new Error('Payload de checkouts invalido.');
+  }
+  return response as Checkout[];
+}
+
 /** Product checkouts tab. */
 export function ProductCheckoutsTab({ productId }: { productId: string }) {
   const fid = useId();
@@ -67,10 +74,9 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
     apiFetch<Checkout[]>(`/products/${productId}/checkouts`)
       .then((r) => {
         setLoadError(null);
-        setItems(Array.isArray(r) ? r : []);
+        setItems(normalizeCheckoutList(r));
       })
       .catch((error: unknown) => {
-        setItems([]);
         setLoadError(toCheckoutErrorMessage(error, CHECKOUT_TAB_COPY.loadError));
       })
       .finally(() => setLoading(false));
@@ -291,7 +297,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
           },
         ]}
         rows={items}
-        emptyText={kloelT(`Nenhum checkout criado`)}
+        emptyText={loadError ? '' : kloelT(`Nenhum checkout criado`)}
       />
 
       {showModal && (

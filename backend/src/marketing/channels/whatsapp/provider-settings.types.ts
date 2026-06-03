@@ -11,8 +11,6 @@
 export interface ProviderSessionSnapshot {
   /** Status property. */
   status?: string;
-  /** Qr code property. */
-  qrCode?: string | null;
   /** Provider property. */
   provider?: string;
   /** Disconnect reason property. */

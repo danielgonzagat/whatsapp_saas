@@ -38,6 +38,7 @@ import { KloelLeadProcessorService } from './kloel-lead-processor.service';
 import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import { KloelService } from './kloel.service';
 import { KloelThreadSearchService } from './kloel-thread-search.service';
+import { KloelGlobalSearchService } from './kloel-global-search.service';
 import { KloelThreadService } from './kloel-thread.service';
 import { KloelThreadSummaryService } from './kloel-thread-summary.service';
 import { KloelThinkerService } from './kloel-thinker.service';
@@ -50,7 +51,7 @@ import { OnboardingProfileController } from './onboarding-profile.controller';
 import { OnboardingService } from './onboarding.service';
 import { PaymentController } from './payment.controller';
 import { PaymentService } from './payment.service';
-import { WhatsAppBrainController } from './whatsapp-brain.controller';
+import { WhatsAppMindController } from './whatsapp-brain.controller';
 
 import { LLMBudgetService } from './llm-budget.service';
 import { MemoryManagementService } from './memory-management.service';
@@ -60,6 +61,7 @@ import { MemorySearchService } from './memory-search.service';
 import { MemoryService } from './memory.service';
 import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 import { MindMessageService } from './mind/aliases/mind-message.service';
+import { MindCanonicalService } from './mind/mind-canonical.service';
 // ── services-v2 (Wave 1) — boot-safe capability domain services ──
 import { ThemeService } from './services-v2/theme.service';
 import { AIConfigService } from './services-v2/ai-config.service';
@@ -102,7 +104,6 @@ import { PaymentsModule } from '../payments/payments.module';
 import { MetricsModule } from '../metrics/metrics.module';
 import { PartnershipsModule } from '../partnerships/partnerships.module';
 import { PrismaModule } from '../prisma/prisma.module';
-import { PulseArtifactService } from '../pulse/pulse-artifact.service';
 import { WalletModule } from '../wallet/wallet.module';
 import { ContactsModule } from '../contacts/contacts.module';
 import { ContactIdentityResolverService } from '../contacts/contact-identity-resolver.service';
@@ -155,7 +156,7 @@ import { UNIFIED_AGENT_TOKEN } from './tokens';
 import { UploadController } from './upload.controller';
 import { WebinarController } from './webinar.controller';
 import { LacunasController } from './lacunas.controller';
-import { BrainRuntimeController } from './mind/coordination/mind-runtime.controller';
+import { MindRuntimeController } from './mind/coordination/mind-runtime.controller';
 import {
   EmailChannelTransport,
   InstagramChannelTransport,
@@ -218,7 +219,7 @@ import {
   AgentRuntimeMemoryCuratorService,
   AgentRuntimeMemoryManagerService,
   AgentRuntimePolicyService,
-  AgentRuntimePulseSelfModelService,
+  AgentRuntimeReadinessSelfModelService,
   AgentRuntimeSchedulerService,
   AgentRuntimeSessionStore,
   AgentRuntimeSkillRegistry,
@@ -287,7 +288,7 @@ import { CrmModule } from '../crm/crm.module';
     KloelController,
     KloelDataController,
     GuestChatController,
-    WhatsAppBrainController,
+    WhatsAppMindController,
     PaymentController,
     OnboardingProfileController,
     MemoryController,
@@ -317,7 +318,7 @@ import { CrmModule } from '../crm/crm.module';
     AdRulesController,
     WebinarController,
     ChannelSetupController,
-    BrainRuntimeController,
+    MindRuntimeController,
     LacunasController,
     MindController,
     InternalMindSelfEvolutionController,
@@ -330,6 +331,7 @@ import { CrmModule } from '../crm/crm.module';
     StateBuilderService,
     KloelReplyEngineService,
     KloelThreadSearchService,
+    KloelGlobalSearchService,
     KloelThreadService,
     KloelThreadSummaryService,
     KloelChatToolsService,
@@ -460,7 +462,6 @@ import { CrmModule } from '../crm/crm.module';
     MindVerbalizerService,
     MindWorkspaceStateService,
     VectorService,
-    PulseArtifactService,
     AgentRuntimeContextService,
     AgentRuntimeContextCompressorService,
     AgentRuntimeBuiltinMemoryProvider,
@@ -469,12 +470,13 @@ import { CrmModule } from '../crm/crm.module';
     AgentRuntimeMemoryManagerService,
     AgentRuntimeJobRunnerService,
     AgentRuntimePolicyService,
-    AgentRuntimePulseSelfModelService,
+    AgentRuntimeReadinessSelfModelService,
     AgentRuntimeSchedulerService,
     AgentRuntimeSessionStore,
     AgentRuntimeSkillRegistry,
     MindMessageService,
     MindMemoryItemService,
+    MindCanonicalService,
     // ── services-v2 (Wave 1) capability domain services ──
     ThemeService,
     AIConfigService,
@@ -562,6 +564,12 @@ import { CrmModule } from '../crm/crm.module';
     MindVerbalizerService,
     DecisionOutcomeService,
     AgentRuntimeContextService,
+    // One-Mind unification: export the two cognition services CopilotModule needs
+    // to inject @Optional() for its KLOEL_COPILOT_LOOP_ENABLED learning loop
+    // (DecisionOutcomeService / MindBeliefService / MindGlobalPriorService above
+    // are already exported). REUSE — these are the same providers think/reply use.
+    MindSurpriseService,
+    MindPredictorService,
     AgentRuntimeContextCompressorService,
     AgentRuntimeBuiltinMemoryProvider,
     AgentRuntimeEvidenceStoreService,
@@ -569,12 +577,13 @@ import { CrmModule } from '../crm/crm.module';
     AgentRuntimeMemoryManagerService,
     AgentRuntimeJobRunnerService,
     AgentRuntimePolicyService,
-    AgentRuntimePulseSelfModelService,
+    AgentRuntimeReadinessSelfModelService,
     AgentRuntimeSchedulerService,
     AgentRuntimeSessionStore,
     AgentRuntimeSkillRegistry,
     MindMessageService,
     MindMemoryItemService,
+    MindCanonicalService,
   ],
 })
 export class KloelModule {}

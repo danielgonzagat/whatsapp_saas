@@ -57,15 +57,15 @@ export interface SubstrateBelief {
   examples: string[];
 }
 
-export interface SubstratePulseTruthGate {
+export interface SubstrateReadinessTruthGate {
   name: string;
   status: 'PASS' | 'FAIL';
 }
 
-export interface SubstratePulseTruth {
+export interface SubstrateReadinessTruth {
   noOverclaimStatus: 'PASS';
   capabilityHealthScore: number;
-  gates: SubstratePulseTruthGate[];
+  gates: SubstrateReadinessTruthGate[];
   certificationVerdict: {
     verdict: 'DEVELOPING' | 'INSUFFICIENT_EVIDENCE';
     score: number;
@@ -101,7 +101,7 @@ export interface CognitiveSubstrate {
   workingMemory: string[];
   episodicRefs: Array<{ ref: string; summary: string; occurredAt: string }>;
   consolidatedRefs: unknown[];
-  pulseTruth: SubstratePulseTruth;
+  readinessTruth: SubstrateReadinessTruth;
   attention: {
     candidates: Array<{ label: string; recency: number; valence: number }>;
   };
@@ -236,12 +236,12 @@ export function buildSubstratePredictions(events: NormalizedSpineEvent[]): {
   return { active: [], recentSurprises: [] };
 }
 
-/** Build the `pulseTruth` block — pure synthesis of three already-computed scalars. */
-export function buildSubstratePulseTruth(
+/** Build the `readinessTruth` block — pure synthesis of three already-computed scalars. */
+export function buildSubstrateReadinessTruth(
   eventCount: number,
   health: number,
   measuredAt: string = new Date().toISOString(),
-): SubstratePulseTruth {
+): SubstrateReadinessTruth {
   return {
     noOverclaimStatus: 'PASS',
     capabilityHealthScore: health,
@@ -298,7 +298,7 @@ export function buildCognitiveSubstrateFromAutopilotRows(
       occurredAt: event.occurredAt,
     })),
     consolidatedRefs: [],
-    pulseTruth: buildSubstratePulseTruth(events.length, health, clock().toISOString()),
+    readinessTruth: buildSubstrateReadinessTruth(events.length, health, clock().toISOString()),
     attention: {
       candidates: events
         .slice(-SUBSTRATE_ATTENTION_TAIL)

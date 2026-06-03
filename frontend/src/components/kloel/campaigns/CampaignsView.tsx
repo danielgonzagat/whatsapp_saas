@@ -46,7 +46,6 @@ export function CampaignsView() {
       setCampaigns(data);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
-      setCampaigns([]);
     } finally {
       setLoading(false);
     }
@@ -172,7 +171,44 @@ export function CampaignsView() {
       />
 
       {/* Content */}
-      {error ? (
+      {error && campaigns.length > 0 ? (
+        <div
+          role="alert"
+          style={{
+            background: 'rgba(248, 113, 113, 0.1)',
+            border: '1px solid rgba(248, 113, 113, 0.3)',
+            borderRadius: 6,
+            padding: 12,
+            marginBottom: 16,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+          }}
+        >
+          <p style={{ fontFamily: SORA, fontSize: 12, color: TEXT_SECONDARY, margin: 0 }}>
+            {error}
+          </p>
+          <button
+            type="button"
+            onClick={load}
+            style={{
+              background: ACCENT,
+              color: colors.background.void,
+              border: 'none',
+              borderRadius: 6,
+              padding: '8px 16px',
+              fontSize: 12,
+              fontFamily: SORA,
+              cursor: 'pointer',
+            }}
+          >
+            {kloelT('Tentar novamente')}
+          </button>
+        </div>
+      ) : null}
+
+      {error && campaigns.length === 0 ? (
         <div style={{ padding: 40, textAlign: 'center' }}>
           <p style={{ fontFamily: SORA, fontSize: 13, color: TEXT_TERTIARY }}>{error}</p>
           <button

@@ -4,7 +4,6 @@ import { SafeQueryService } from './safe-query.service';
 import { SelfHealthService } from './self-health.service';
 import { SelfGapsService } from './self-gaps.service';
 import { CognitiveBridgeService } from './cognitive-bridge.service';
-import { PulseRuntimeService } from './pulse-runtime.service';
 import { DepsCoverageService } from './deps-coverage.service';
 
 @Module({
@@ -14,7 +13,6 @@ import { DepsCoverageService } from './deps-coverage.service';
     SelfHealthService,
     SelfGapsService,
     CognitiveBridgeService,
-    PulseRuntimeService,
     DepsCoverageService,
   ],
   exports: [
@@ -23,7 +21,6 @@ import { DepsCoverageService } from './deps-coverage.service';
     SelfHealthService,
     SelfGapsService,
     CognitiveBridgeService,
-    PulseRuntimeService,
     DepsCoverageService,
   ],
 })

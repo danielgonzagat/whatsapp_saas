@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { compare as bcryptCompare, hash as bcryptHash } from 'bcrypt';
 import { Prisma } from '@prisma/client';
+import { AccountMfaService } from '../auth/account-mfa.service';
 import { AuditService } from '../audit/audit.service';
 import { BCRYPT_ROUNDS } from '../common/constants';
 import { ConnectService } from '../payments/connect/connect.service';
@@ -14,6 +15,7 @@ import { StorageService } from '../common/storage/storage.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { KycEventEmitterService } from '../kloel/kyc-emitter/kyc-event-emitter.service';
 import { KycChangePasswordDto } from './dto/change-password.dto';
+import { KycMfaCodeDto } from './dto/mfa.dto';
 import { UpdateBankDto } from './dto/update-bank.dto';
 import { UpdateFiscalDto } from './dto/update-fiscal.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -43,6 +45,30 @@ import {
   deriveDisplayAccount,
   computeKycCompletion,
 } from './kyc.service.helpers';
+import {
+  lookupCnpj as lookupCnpjProvider,
+  lookupCep as lookupCepProvider,
+  listBrazilianBanks as listBrazilianBanksProvider,
+} from './kyc.lookup.helpers';
+
+const PROFILE_SELECT = Prisma.validator<Prisma.AgentSelect>()({
+  id: true,
+  name: true,
+  email: true,
+  phone: true,
+  avatarUrl: true,
+  birthDate: true,
+  documentType: true,
+  documentNumber: true,
+  kycStatus: true,
+  kycSubmittedAt: true,
+  kycApprovedAt: true,
+  kycRejectedReason: true,
+  publicName: true,
+  bio: true,
+  website: true,
+  instagram: true,
+});
 
 /** Kyc service. */
 @Injectable()
@@ -55,6 +81,7 @@ export class KycService {
     private readonly auditService: AuditService,
     private readonly connectService: ConnectService,
     private readonly kycEventEmitter: KycEventEmitterService,
+    private readonly accountMfaService: AccountMfaService,
   ) {}
 
   private get syncDeps() {
@@ -70,24 +97,7 @@ export class KycService {
   async getProfile(agentId: string) {
     return this.prisma.agent.findUnique({
       where: { id: agentId, workspaceId: { not: '' } },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        avatarUrl: true,
-        birthDate: true,
-        documentType: true,
-        documentNumber: true,
-        kycStatus: true,
-        kycSubmittedAt: true,
-        kycApprovedAt: true,
-        kycRejectedReason: true,
-        publicName: true,
-        bio: true,
-        website: true,
-        instagram: true,
-      },
+      select: PROFILE_SELECT,
     });
   }
 
@@ -111,7 +121,11 @@ export class KycService {
           data.kycStatus = 'pending';
           data.kycRejectedReason = null;
         }
-        return tx.agent.update({ where: { id: agentId, workspaceId: agent.workspaceId }, data });
+        return tx.agent.update({
+          where: { id: agentId, workspaceId: agent.workspaceId },
+          data,
+          select: PROFILE_SELECT,
+        });
       },
       { isolationLevel: 'ReadCommitted' },
     );
@@ -145,6 +159,14 @@ export class KycService {
     });
   }
 
+  async lookupCnpj(cnpj: string): Promise<unknown> {
+    return lookupCnpjProvider(cnpj);
+  }
+
+  async lookupCep(cep: string): Promise<unknown> {
+    return lookupCepProvider(cep);
+  }
+
   // ═══ DOCUMENTS ═══
 
   async getDocuments(agentId: string, workspaceId: string) {
@@ -156,7 +178,12 @@ export class KycService {
         workspaceId: true,
         type: true,
         status: true,
+        rejectedReason: true,
+        reviewedAt: true,
         fileUrl: true,
+        fileName: true,
+        fileSize: true,
+        mimeType: true,
         createdAt: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -212,6 +239,12 @@ export class KycService {
       where: { id: documentId, workspaceId: doc.workspaceId },
     });
     return { success: true };
+  }
+
+  async listBrazilianBanks(): Promise<
+    Array<{ code: number; name: string; fullName: string; ispb: string }>
+  > {
+    return listBrazilianBanksProvider();
   }
 
   // ═══ BANK ═══
@@ -279,6 +312,112 @@ export class KycService {
     );
   }
 
+  async getSecurity(agentId: string) {
+    const agent = await this.prisma.agent.findUnique({
+      where: { id: agentId, workspaceId: { not: '' } },
+      select: { mfaEnabled: true, mfaPendingSetup: true },
+    });
+    if (!agent) {
+      throw new NotFoundException('Agent not found');
+    }
+    return {
+      mfa: {
+        enabled: agent.mfaEnabled,
+        pendingSetup: agent.mfaPendingSetup,
+      },
+    };
+  }
+
+  async startMfaSetup(agentId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const agent = await tx.agent.findUnique({
+        where: { id: agentId, workspaceId: { not: '' } },
+        select: {
+          id: true,
+          email: true,
+          workspaceId: true,
+          mfaSecret: true,
+          mfaEnabled: true,
+          mfaPendingSetup: true,
+        },
+      });
+      if (!agent) {
+        throw new NotFoundException('Agent not found');
+      }
+      if (agent.mfaEnabled && !agent.mfaPendingSetup) {
+        throw new BadRequestException('2FA ja esta ativo nesta conta.');
+      }
+
+      const setup =
+        agent.mfaSecret && agent.mfaPendingSetup && !agent.mfaEnabled
+          ? await this.accountMfaService.resumeSetup(agent.email, agent.mfaSecret)
+          : await this.accountMfaService.createSetup(agent.email);
+
+      if (!agent.mfaSecret || !agent.mfaPendingSetup || agent.mfaEnabled) {
+        await tx.agent.update({
+          where: { id: agent.id, workspaceId: agent.workspaceId },
+          data: {
+            mfaSecret: setup.encryptedSecret,
+            mfaEnabled: false,
+            mfaPendingSetup: true,
+          },
+        });
+      }
+
+      return {
+        mfa: { enabled: false, pendingSetup: true },
+        qrDataUrl: setup.qrDataUrl,
+        otpauthUrl: setup.otpauthUrl,
+      };
+    });
+  }
+
+  async verifyMfaSetup(agentId: string, dto: KycMfaCodeDto) {
+    return this.prisma.$transaction(async (tx) => {
+      const agent = await tx.agent.findUnique({
+        where: { id: agentId, workspaceId: { not: '' } },
+        select: { id: true, workspaceId: true, mfaSecret: true, mfaPendingSetup: true },
+      });
+      if (!agent) {
+        throw new NotFoundException('Agent not found');
+      }
+      if (!agent.mfaSecret || !agent.mfaPendingSetup) {
+        throw new BadRequestException('Inicie a configuracao 2FA antes de confirmar.');
+      }
+      this.accountMfaService.verifyCode(agent.mfaSecret, dto.code);
+      await tx.agent.update({
+        where: { id: agent.id, workspaceId: agent.workspaceId },
+        data: { mfaEnabled: true, mfaPendingSetup: false },
+      });
+      return { mfa: { enabled: true, pendingSetup: false } };
+    });
+  }
+
+  async disableMfa(agentId: string, dto: KycMfaCodeDto) {
+    return this.prisma.$transaction(async (tx) => {
+      const agent = await tx.agent.findUnique({
+        where: { id: agentId, workspaceId: { not: '' } },
+        select: {
+          id: true,
+          workspaceId: true,
+          mfaSecret: true,
+          mfaEnabled: true,
+          mfaPendingSetup: true,
+        },
+      });
+      if (!agent) {
+        throw new NotFoundException('Agent not found');
+      }
+      if (agent.mfaEnabled) {
+        this.accountMfaService.verifyCode(agent.mfaSecret, dto.code);
+      }
+      await tx.agent.update({
+        where: { id: agent.id, workspaceId: agent.workspaceId },
+        data: { mfaSecret: null, mfaEnabled: false, mfaPendingSetup: false },
+      });
+      return { mfa: { enabled: false, pendingSetup: false } };
+    });
+  }
   // ═══ KYC STATUS & COMPLETION ═══
 
   async getStatus(agentId: string) {

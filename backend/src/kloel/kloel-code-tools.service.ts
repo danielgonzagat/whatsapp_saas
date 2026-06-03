@@ -6,7 +6,6 @@ import { exec as cpExec } from 'child_process';
 import { promisify } from 'util';
 import { REPO_ROOT, repoPath } from './kloel-code-analysis.service';
 import { CognitiveBridgeService } from './self-awareness/cognitive-bridge.service';
-import { PulseRuntimeService } from './self-awareness/pulse-runtime.service';
 import {
   MAX_FILE_BYTES,
   buildDirEntries,
@@ -49,24 +48,7 @@ interface JestOutput {
 export class KloelCodeToolsService {
   private readonly logger = StructuredLogger.from(KloelCodeToolsService.name);
 
-  constructor(
-    private readonly cognitiveBridge: CognitiveBridgeService,
-    private readonly pulseRuntime: PulseRuntimeService,
-  ) {}
-
-  // ── PULSE / Runtime awareness (Wave 7 PI-DD) ──
-
-  async toolPulseHealth(moduleName?: string): Promise<ToolResult> {
-    return this.pulseRuntime.pulseHealth(moduleName);
-  }
-
-  async toolBehaviorGraphNode(symbol: string, file?: string): Promise<ToolResult> {
-    return this.pulseRuntime.behaviorGraphNode(symbol, file);
-  }
-
-  async toolRuntimeErrors(): Promise<ToolResult> {
-    return this.pulseRuntime.runtimeErrors();
-  }
+  constructor(private readonly cognitiveBridge: CognitiveBridgeService) {}
 
   // ── COGNITIVE BRIDGE (Wave 7 PI-CC) ──
 

@@ -26,6 +26,7 @@ export async function partBMultiTx(ctx: PartBCtx): Promise<void> {
             edits: [{ startLine: 1, startColumn: 18, endLine: 1, endColumn: 19, newText: '8' }],
           },
         ],
+        proofOfIncorrectness: 'smoke transaction fixture digits are stale negative data and may be replaced',
       },
     })) as { content: { text: string }[] };
     const txb = JSON.parse(txOk.content.at(-1)?.text ?? '{}');

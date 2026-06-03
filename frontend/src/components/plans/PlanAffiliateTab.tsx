@@ -3,6 +3,7 @@ import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
+import { formatBRLFromCents as formatCents } from '@/lib/common/money';
 import { useEffect, useRef, useState } from 'react';
 import { mutate } from 'swr';
 
@@ -66,10 +67,6 @@ export function PlanAffiliateTab({
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [productId]);
-
-  const formatCents = (cents: number): string => {
-    return `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`;
-  };
 
   const simulateCommission = (sales: number): string => {
     const commissionPerSale = (priceInCents * commissionPercent) / 100;

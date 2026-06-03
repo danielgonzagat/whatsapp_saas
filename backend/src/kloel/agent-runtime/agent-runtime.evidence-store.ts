@@ -9,7 +9,6 @@ export type AgentEvidenceType =
   | 'tool_result'
   | 'runtime_observation'
   | 'validation'
-  | 'pulse'
   | 'commercial_event'
   | 'manual';
 
@@ -349,7 +348,6 @@ export class AgentRuntimeEvidenceStoreService {
     return value === 'tool_result' ||
       value === 'runtime_observation' ||
       value === 'validation' ||
-      value === 'pulse' ||
       value === 'commercial_event' ||
       value === 'manual'
       ? value

@@ -4,7 +4,11 @@ import { proxyWhatsAppRequest } from '../../proxy';
 /** Post. */
 export async function POST(request: NextRequest) {
   try {
-    const result = await proxyWhatsAppRequest(request, 'POST', '/whatsapp-api/session/start');
+    const result = await proxyWhatsAppRequest(
+      request,
+      'GET',
+      '/meta/auth/url?channel=whatsapp&returnTo=/whatsapp',
+    );
     return NextResponse.json(result.data, { status: result.status });
   } catch (error) {
     console.error('[WhatsApp Proxy] start session error:', error);

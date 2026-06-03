@@ -21,11 +21,14 @@ export function TrackingDashboard({ focus }: { focus?: string }) {
     { name: 'Purchase', fires: 0 },
   ];
 
+  // Honest state: there is no tracking/postback backend wiring these to live
+  // pixel/postback data yet, so none can be claimed CONNECTED. They flip to
+  // connected once a real tracking integration reports status (anti-hardcode).
   const integrations = [
-    { name: 'Checkout Kloel', connected: true },
+    { name: 'Checkout Kloel', connected: false },
     { name: 'Meta Pixel', connected: false },
     { name: 'Google Tag', connected: false },
-    { name: 'CRM Kloel', connected: true },
+    { name: 'CRM Kloel', connected: false },
   ];
 
   const retargetingCards = [
@@ -154,6 +157,29 @@ export function TrackingDashboard({ focus }: { focus?: string }) {
             ))}
           </div>
         )}
+      </div>
+
+      <div
+        style={{
+          background: 'rgba(232,93,48,.06)',
+          border: `1px solid ${EMBER}33`,
+          borderRadius: 6,
+          padding: '12px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+        }}
+      >
+        <span style={{ color: EMBER, display: 'flex' }}>{IC.zap(16)}</span>
+        <div>
+          <div style={{ fontSize: 12, fontFamily: SORA, color: 'var(--app-text-primary)', fontWeight: 600 }}>
+            {kloelT(`Rastreamento ainda não está ativo`)}
+          </div>
+          <div style={{ fontSize: 11, fontFamily: SORA, color: 'var(--app-text-secondary)', lineHeight: 1.6, marginTop: 4 }}>
+            {kloelT(`Os números abaixo permanecem zerados até você instalar o pixel Kloel no seu site
+            (snippet mais abaixo). Assim que o pixel disparar, as métricas passam a refletir os eventos reais.`)}
+          </div>
+        </div>
       </div>
 
       <div style={{ textAlign: 'center' as const, padding: '16px 0 8px' }}>

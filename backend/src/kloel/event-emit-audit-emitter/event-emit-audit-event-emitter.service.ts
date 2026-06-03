@@ -10,7 +10,7 @@ import type { CoverageReport } from '../spine/spine-coverage-auditor.service';
  * This surface has no business transitions of its own (it observes other
  * surfaces). Instead of hooking into transition sites like a commerce
  * surface would, this service runs the SpineCoverageAuditorService and
- * emits pulse.gate_passed or pulse.gate_failed with the coverage report
+ * emits readiness.gate_passed or readiness.gate_failed with the coverage report
  * as payload.
  *
  * Emission NEVER throws. The audit path must not break consumers.
@@ -38,7 +38,7 @@ export class EventEmitAuditEventEmitterService {
       .map((s) => s.surfaceId);
 
     const gatePassed = zeroCoverageSurfaces.length === 0;
-    const eventName = gatePassed ? 'pulse.gate_passed' : 'pulse.gate_failed';
+    const eventName = gatePassed ? 'readiness.gate_passed' : 'readiness.gate_failed';
 
     try {
       void this.spineEmitter.emit({

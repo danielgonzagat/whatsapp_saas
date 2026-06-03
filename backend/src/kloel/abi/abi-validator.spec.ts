@@ -42,7 +42,7 @@ describe('validateAbiPayload', () => {
           windowHours: 24,
         },
       },
-      pulseTruth: {
+      readinessTruth: {
         noOverclaimStatus: 'PASS',
         capabilityHealthScore: 1,
         gates: [],

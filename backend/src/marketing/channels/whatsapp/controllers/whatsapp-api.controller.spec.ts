@@ -1,5 +1,5 @@
+import { GoneException } from '@nestjs/common';
 import { AuthenticatedRequest } from '../../../../common/interfaces';
-import { partialMatch } from '../../../../../test/helpers/match-instance';
 import { WhatsAppApiController } from './whatsapp-api.controller';
 import { WhatsAppCatalogController } from './whatsapp-catalog.controller';
 import { WhatsAppMetaCompatController } from './whatsapp-meta-compat.controller';
@@ -18,9 +18,6 @@ describe('WhatsAppApiController', () => {
     getSessionConfigDiagnostics: jest.Mock;
     getClientInfo: jest.Mock;
     getRuntimeConfigDiagnostics: jest.Mock;
-  };
-  let catchupService: {
-    triggerCatchup: jest.Mock;
   };
   let agentEvents: {
     getRecent: jest.Mock;
@@ -53,9 +50,6 @@ describe('WhatsAppApiController', () => {
   let workspaces: {
     getWorkspace: jest.Mock;
     patchSettings: jest.Mock;
-  };
-  let watchdog: {
-    checkWorkspaceSession: jest.Mock;
   };
   let controller: WhatsAppApiController;
   let metaCompatController: WhatsAppMetaCompatController;
@@ -105,9 +99,6 @@ describe('WhatsAppApiController', () => {
         storeEnabled: true,
         storeFullSync: true,
       }),
-    };
-    catchupService = {
-      triggerCatchup: jest.fn().mockResolvedValue({ scheduled: true }),
     };
     agentEvents = {
       getRecent: jest.fn().mockReturnValue([]),
@@ -165,93 +156,55 @@ describe('WhatsAppApiController', () => {
       }),
       patchSettings: jest.fn().mockResolvedValue({}),
     };
-    watchdog = {
-      checkWorkspaceSession: jest.fn().mockResolvedValue(undefined),
-    };
 
     controller = new WhatsAppApiController(
       providerRegistry as never,
       whatsappApi as never,
-      catchupService as never,
       agentEvents as never,
       ciaRuntime as never,
       whatsappService as never,
       accountAgent as never,
       workspaces as never,
-      watchdog as never,
     );
-    metaCompatController = new WhatsAppMetaCompatController(providerRegistry as never);
+    metaCompatController = new WhatsAppMetaCompatController();
     catalogController = new WhatsAppCatalogController(whatsappService as never);
   });
 
-  it('returns provider-aware session status', async () => {
-    providerRegistry.getSessionStatus.mockResolvedValue({
-      connected: true,
-      status: 'CONNECTED',
-    });
-
-    await expect(
-      controller.getStatus({ workspaceId: 'ws-1' } as never as AuthenticatedRequest),
-    ).resolves.toEqual({
-      connected: true,
-      status: 'CONNECTED',
-      provider: 'meta-cloud',
-    });
-  });
-
-  it('returns QR code from the active provider registry instead of the meta provider', async () => {
-    providerRegistry.getQrCode.mockResolvedValue({
-      success: true,
-      qr: 'data:image/png;base64,qr-live',
-    });
-
-    await expect(
-      controller.getQrCode({ workspaceId: 'ws-1' } as never as AuthenticatedRequest),
-    ).resolves.toEqual({
-      available: true,
-      qr: 'data:image/png;base64,qr-live',
-    });
-    expect(providerRegistry.getQrCode).toHaveBeenCalledWith('ws-1');
-  });
-
-  it('still triggers catchup when startSession reports already connected', async () => {
-    providerRegistry.startSession.mockResolvedValue({
-      success: true,
-      message: 'already_connected',
-    });
-
-    await expect(
-      controller.startSession({ workspaceId: 'ws-1' } as never as AuthenticatedRequest),
-    ).resolves.toEqual({
-      success: true,
-      message: 'already_connected',
-    });
-    expect(catchupService.triggerCatchup).toHaveBeenCalledWith(
-      'ws-1',
-      'session_start_already_connected',
-    );
-  });
-
-  it('forces a watchdog check and returns diagnostics', async () => {
-    providerRegistry.getSessionStatus.mockResolvedValue({
-      connected: true,
-      status: 'CONNECTED',
-    });
-
-    const result = await controller.forceCheck({
-      workspaceId: 'ws-1',
-    } as never as AuthenticatedRequest);
-
-    expect(watchdog.checkWorkspaceSession).toHaveBeenCalledWith('ws-1', 'Workspace Teste');
-    expect(result).toEqual(
-      expect.objectContaining({
-        success: true,
-        diagnostics: partialMatch({
-          workspaceId: 'ws-1',
-          providerType: 'meta-cloud',
+  function expectMetaOnlyGone(run: () => unknown, feature: string) {
+    try {
+      run();
+    } catch (error) {
+      if (!(error instanceof GoneException)) {
+        throw error;
+      }
+      expect(error.getStatus()).toBe(410);
+      expect(error.getResponse()).toEqual(
+        expect.objectContaining({
+          provider: 'meta-cloud',
+          notSupported: true,
+          feature,
         }),
-      }),
-    );
+      );
+      return;
+    }
+    throw new Error(`Expected ${feature} to reject with GoneException`);
+  }
+
+  it('rejects legacy session lifecycle endpoints with Meta-only Gone responses', () => {
+    expectMetaOnlyGone(() => controller.getStatus(), 'legacy_session_status');
+    expectMetaOnlyGone(() => controller.startSession(), 'legacy_session_start');
+    expectMetaOnlyGone(() => controller.forceCheck(), 'legacy_session_force_check');
+    expectMetaOnlyGone(() => controller.forceReconnect(), 'legacy_session_force_reconnect');
+    expectMetaOnlyGone(() => controller.repairConfig(), 'legacy_session_repair_config');
+    expectMetaOnlyGone(() => controller.getRetiredSessionCode(), 'legacy_session_code');
+    expectMetaOnlyGone(() => controller.getSessionView(), 'legacy_session_view');
+    expectMetaOnlyGone(() => controller.disconnect(), 'legacy_session_disconnect');
+    expectMetaOnlyGone(() => controller.logout(), 'legacy_session_logout');
+
+    expect(providerRegistry.startSession).not.toHaveBeenCalled();
+    expect(providerRegistry.restartSession).not.toHaveBeenCalled();
+    expect(providerRegistry.getQrCode).not.toHaveBeenCalled();
+    expect(providerRegistry.syncSessionConfig).not.toHaveBeenCalled();
   });
 
   it('falls back to the resolved workspace session id when sessionName is malformed', async () => {
@@ -289,24 +242,17 @@ describe('WhatsAppApiController', () => {
     expect(ciaRuntime.startBacklogRun).toHaveBeenCalledWith('ws-1', 'reply_all_recent_first', 12);
   });
 
-  it('returns a not-supported response for legacy session linking', async () => {
-    providerRegistry.getSessionStatus.mockResolvedValue({
-      connected: false,
-      status: 'CONNECTION_INCOMPLETE',
-      authUrl: 'https://meta.test/signup',
-    });
-
-    await expect(
-      metaCompatController.linkSession({ workspaceId: 'ws-1' } as never as AuthenticatedRequest, {
-        sessionName: 'legacy',
-      }),
-    ).resolves.toEqual({
-      success: false,
-      provider: 'meta-cloud',
-      notSupported: true,
-      message: 'legacy_session_link_not_supported_for_meta_cloud',
-      authUrl: 'https://meta.test/signup',
-    });
+  it('rejects legacy compat and recreate endpoints with Meta-only Gone responses', () => {
+    expectMetaOnlyGone(() => metaCompatController.linkSession(), 'legacy_session_link');
+    expectMetaOnlyGone(() => metaCompatController.claimSession(), 'legacy_session_claim');
+    expectMetaOnlyGone(
+      () => metaCompatController.getSessionStreamToken(),
+      'legacy_session_stream_token',
+    );
+    expectMetaOnlyGone(
+      () => catalogController.recreateSessionIfInvalid(),
+      'legacy_session_recreate_if_invalid',
+    );
   });
 
   it('delegates contacts, chats, backlog and sync actions to WhatsappService', async () => {

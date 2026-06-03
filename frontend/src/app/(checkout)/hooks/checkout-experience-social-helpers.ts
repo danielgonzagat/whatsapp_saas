@@ -95,6 +95,7 @@ type DerivedStateArgs = {
   payMethod: 'card' | 'pix' | 'boleto';
   dynamicShippingInCents: number | null;
   step: number;
+  bumpTotalInCents?: number | undefined;
 };
 
 type DerivedShippingMode = 'FREE' | 'FIXED' | 'VARIABLE';
@@ -299,6 +300,7 @@ export function deriveCheckoutExperienceState({
   payMethod,
   dynamicShippingInCents,
   step,
+  bumpTotalInCents = 0,
 }: DerivedStateArgs) {
   const { fmt, normalizeTestimonials } = helpers;
   const productName =
@@ -326,7 +328,7 @@ export function deriveCheckoutExperienceState({
     config?.enableTestimonials,
   );
   const subtotal = unitPriceInCents * qty;
-  const total = Math.max(0, subtotal + shippingInCents - discount);
+  const total = Math.max(0, subtotal + shippingInCents - discount) + bumpTotalInCents;
   const installments = Math.max(1, Number.parseInt(form.installments || '1', 10) || 1);
   const pricing = buildDerivedPricing(total, payMethod, installments, paymentProvider);
   const totalWithInterest = payMethod === 'card' ? pricing.chargedTotalInCents : total;

@@ -87,6 +87,14 @@ describe('mergeAIConfigPayload', () => {
     const merged = mergeAIConfigPayload(prev, { tone: 'Urgente' });
     expect(merged.tone).toBe('Urgente');
   });
+
+  it('throws for malformed objections instead of trusting a fake objections list', () => {
+    expect(() =>
+      mergeAIConfigPayload(createDefaultAIConfig(), {
+        objections: { q: 'caro?', a: 'vale' } as unknown as Array<{ q: string; a: string }>,
+      }),
+    ).toThrow('Payload de objecoes invalido.');
+  });
 });
 
 describe('buildAIConfigBody', () => {

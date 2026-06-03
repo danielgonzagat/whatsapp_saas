@@ -15,6 +15,7 @@ import {
   extractPixels,
   extractPlansFromDetail,
   matchesProduct,
+  requireCheckoutMutationSuccess,
   resolveOrdersTotal,
   unwrapArrayOrEnvelope,
   type CheckoutProductItem,
@@ -132,7 +133,8 @@ async function createCheckoutProductId(product: DashboardProduct): Promise<strin
     method: 'POST',
     body: buildCheckoutProductBody(product),
   });
-  return created?.data?.id || null;
+  const response = requireCheckoutMutationSuccess(created, 'Erro ao criar produto de checkout');
+  return response?.data?.id || null;
 }
 
 async function ensureCheckoutProduct(product: DashboardProduct): Promise<string | null> {
@@ -181,6 +183,7 @@ export function useCheckoutPlans(product: DashboardProductInput | null | undefin
         method: 'POST',
         body,
       });
+      requireCheckoutMutationSuccess(res, 'Erro ao criar plano');
       mutate();
       return res;
     },
@@ -190,6 +193,7 @@ export function useCheckoutPlans(product: DashboardProductInput | null | undefin
   const updatePlan = useCallback(
     async (planId: string, body: Partial<PlanCreateBody>) => {
       const res = await apiFetch(`/checkout/plans/${planId}`, { method: 'PUT', body });
+      requireCheckoutMutationSuccess(res, 'Erro ao atualizar plano');
       mutate();
       return res;
     },
@@ -198,8 +202,10 @@ export function useCheckoutPlans(product: DashboardProductInput | null | undefin
 
   const deletePlan = useCallback(
     async (planId: string) => {
-      await apiFetch(`/checkout/plans/${planId}`, { method: 'DELETE' });
+      const res = await apiFetch(`/checkout/plans/${planId}`, { method: 'DELETE' });
+      requireCheckoutMutationSuccess(res, 'Erro ao remover plano');
       mutate();
+      return res;
     },
     [mutate],
   );
@@ -213,6 +219,7 @@ export function useCheckoutPlans(product: DashboardProductInput | null | undefin
         method: 'POST',
         body: buildDuplicatePlanBody(plan),
       });
+      requireCheckoutMutationSuccess(res, 'Erro ao duplicar plano');
       mutate();
       return res;
     },
@@ -228,6 +235,7 @@ export function useCheckoutPlans(product: DashboardProductInput | null | undefin
         method: 'POST',
         body,
       });
+      requireCheckoutMutationSuccess(res, 'Erro ao criar checkout');
       mutate();
       return res;
     },
@@ -239,6 +247,7 @@ export function useCheckoutPlans(product: DashboardProductInput | null | undefin
       const res = await apiFetch(`/checkout/checkouts/${checkoutId}/duplicate`, {
         method: 'POST',
       });
+      requireCheckoutMutationSuccess(res, 'Erro ao duplicar checkout');
       mutate();
       return res;
     },
@@ -247,8 +256,10 @@ export function useCheckoutPlans(product: DashboardProductInput | null | undefin
 
   const deleteCheckout = useCallback(
     async (checkoutId: string) => {
-      await apiFetch(`/checkout/checkouts/${checkoutId}`, { method: 'DELETE' });
+      const res = await apiFetch(`/checkout/checkouts/${checkoutId}`, { method: 'DELETE' });
+      requireCheckoutMutationSuccess(res, 'Erro ao remover checkout');
       mutate();
+      return res;
     },
     [mutate],
   );
@@ -259,6 +270,7 @@ export function useCheckoutPlans(product: DashboardProductInput | null | undefin
         method: 'PUT',
         body: { planIds },
       });
+      requireCheckoutMutationSuccess(res, 'Erro ao sincronizar links do checkout');
       mutate();
       return res;
     },
@@ -293,24 +305,33 @@ export function useOrderBumps(planId: string | null) {
 
   const createBump = useCallback(
     async (body: Record<string, unknown>) => {
-      await apiFetch(`/checkout/plans/${planId}/bumps`, { method: 'POST', body });
+      if (!planId) {
+        return null;
+      }
+      const res = await apiFetch(`/checkout/plans/${planId}/bumps`, { method: 'POST', body });
+      requireCheckoutMutationSuccess(res, 'Erro ao criar order bump');
       mutate();
+      return res;
     },
     [planId, mutate],
   );
 
   const updateBump = useCallback(
     async (id: string, body: Record<string, unknown>) => {
-      await apiFetch(`/checkout/bumps/${id}`, { method: 'PUT', body });
+      const res = await apiFetch(`/checkout/bumps/${id}`, { method: 'PUT', body });
+      requireCheckoutMutationSuccess(res, 'Erro ao atualizar order bump');
       mutate();
+      return res;
     },
     [mutate],
   );
 
   const deleteBump = useCallback(
     async (id: string) => {
-      await apiFetch(`/checkout/bumps/${id}`, { method: 'DELETE' });
+      const res = await apiFetch(`/checkout/bumps/${id}`, { method: 'DELETE' });
+      requireCheckoutMutationSuccess(res, 'Erro ao remover order bump');
       mutate();
+      return res;
     },
     [mutate],
   );
@@ -329,24 +350,33 @@ export function useUpsells(planId: string | null) {
 
   const createUpsell = useCallback(
     async (body: Record<string, unknown>) => {
-      await apiFetch(`/checkout/plans/${planId}/upsells`, { method: 'POST', body });
+      if (!planId) {
+        return null;
+      }
+      const res = await apiFetch(`/checkout/plans/${planId}/upsells`, { method: 'POST', body });
+      requireCheckoutMutationSuccess(res, 'Erro ao criar upsell');
       mutate();
+      return res;
     },
     [planId, mutate],
   );
 
   const updateUpsell = useCallback(
     async (id: string, body: Record<string, unknown>) => {
-      await apiFetch(`/checkout/upsells/${id}`, { method: 'PUT', body });
+      const res = await apiFetch(`/checkout/upsells/${id}`, { method: 'PUT', body });
+      requireCheckoutMutationSuccess(res, 'Erro ao atualizar upsell');
       mutate();
+      return res;
     },
     [mutate],
   );
 
   const deleteUpsell = useCallback(
     async (id: string) => {
-      await apiFetch(`/checkout/upsells/${id}`, { method: 'DELETE' });
+      const res = await apiFetch(`/checkout/upsells/${id}`, { method: 'DELETE' });
+      requireCheckoutMutationSuccess(res, 'Erro ao remover upsell');
       mutate();
+      return res;
     },
     [mutate],
   );
@@ -367,24 +397,30 @@ export function useCheckoutCoupons() {
 
   const createCoupon = useCallback(
     async (body: Record<string, unknown>) => {
-      await apiFetch('/checkout/coupons', { method: 'POST', body });
+      const res = await apiFetch('/checkout/coupons', { method: 'POST', body });
+      requireCheckoutMutationSuccess(res, 'Erro ao criar cupom');
       mutate();
+      return res;
     },
     [mutate],
   );
 
   const updateCoupon = useCallback(
     async (id: string, body: Record<string, unknown>) => {
-      await apiFetch(`/checkout/coupons/${id}`, { method: 'PUT', body });
+      const res = await apiFetch(`/checkout/coupons/${id}`, { method: 'PUT', body });
+      requireCheckoutMutationSuccess(res, 'Erro ao atualizar cupom');
       mutate();
+      return res;
     },
     [mutate],
   );
 
   const deleteCoupon = useCallback(
     async (id: string) => {
-      await apiFetch(`/checkout/coupons/${id}`, { method: 'DELETE' });
+      const res = await apiFetch(`/checkout/coupons/${id}`, { method: 'DELETE' });
+      requireCheckoutMutationSuccess(res, 'Erro ao remover cupom');
       mutate();
+      return res;
     },
     [mutate],
   );
@@ -400,6 +436,7 @@ export function useCheckoutProduct(productId: string | null) {
         return null;
       }
       const res = await apiFetch(`/checkout/products/${productId}`, { method: 'PUT', body });
+      requireCheckoutMutationSuccess(res, 'Erro ao atualizar produto de checkout');
       return res;
     },
     [productId],
@@ -407,9 +444,11 @@ export function useCheckoutProduct(productId: string | null) {
 
   const deleteProduct = useCallback(async () => {
     if (!productId) {
-      return;
+      return null;
     }
-    await apiFetch(`/checkout/products/${productId}`, { method: 'DELETE' });
+    const res = await apiFetch(`/checkout/products/${productId}`, { method: 'DELETE' });
+    requireCheckoutMutationSuccess(res, 'Erro ao remover produto de checkout');
+    return res;
   }, [productId]);
 
   return { updateProduct, deleteProduct };
@@ -432,6 +471,7 @@ export function useCheckoutOrders(params?: { status?: string; page?: number; lim
         method: 'PATCH',
         body: { status, ...extra },
       });
+      requireCheckoutMutationSuccess(res, 'Erro ao atualizar pedido');
       mutate();
       return res;
     },
@@ -468,6 +508,7 @@ export function usePixels(planId: string | null) {
         return null;
       }
       const res = await apiFetch(`/checkout/config/${configId}/pixels`, { method: 'POST', body });
+      requireCheckoutMutationSuccess(res, 'Erro ao criar pixel');
       mutate();
       return res;
     },
@@ -480,6 +521,7 @@ export function usePixels(planId: string | null) {
       body: Partial<{ type: string; pixelId: string; accessToken: string }>,
     ) => {
       const res = await apiFetch(`/checkout/pixels/${pixelId}`, { method: 'PUT', body });
+      requireCheckoutMutationSuccess(res, 'Erro ao atualizar pixel');
       mutate();
       return res;
     },
@@ -488,8 +530,10 @@ export function usePixels(planId: string | null) {
 
   const deletePixel = useCallback(
     async (pixelId: string) => {
-      await apiFetch(`/checkout/pixels/${pixelId}`, { method: 'DELETE' });
+      const res = await apiFetch(`/checkout/pixels/${pixelId}`, { method: 'DELETE' });
+      requireCheckoutMutationSuccess(res, 'Erro ao remover pixel');
       mutate();
+      return res;
     },
     [mutate],
   );
@@ -507,15 +551,25 @@ export function useCheckoutConfig(planId: string | null) {
 
   const updateConfig = useCallback(
     async (body: Record<string, unknown>) => {
-      await apiFetch(`/checkout/plans/${planId}/config`, { method: 'PATCH', body });
+      if (!planId) {
+        return null;
+      }
+      const res = await apiFetch(`/checkout/plans/${planId}/config`, { method: 'PATCH', body });
+      requireCheckoutMutationSuccess(res, 'Erro ao atualizar configuracao do checkout');
       mutate();
+      return res;
     },
     [planId, mutate],
   );
 
   const resetConfig = useCallback(async () => {
-    await apiFetch(`/checkout/plans/${planId}/config/reset`, { method: 'POST' });
+    if (!planId) {
+      return null;
+    }
+    const res = await apiFetch(`/checkout/plans/${planId}/config/reset`, { method: 'POST' });
+    requireCheckoutMutationSuccess(res, 'Erro ao resetar configuracao do checkout');
     mutate();
+    return res;
   }, [planId, mutate]);
 
   return { config: data || null, isLoading, mutate, updateConfig, resetConfig };

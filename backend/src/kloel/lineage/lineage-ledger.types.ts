@@ -22,7 +22,7 @@ export type LineageEventName =
   | 'lineage.genesis'
   | 'lineage.capability_acquired'
   | 'lineage.skill_consolidated'
-  | 'lineage.ciclo_pulse_nao_regressivo';
+  | 'lineage.ciclo_readiness_nao_regressivo';
 
 /**
  * Payload for a `lineage.capability_acquired` entry.
@@ -44,9 +44,9 @@ interface SkillConsolidatedPayload {
 }
 
 /**
- * Payload for a `lineage.ciclo_pulse_nao_regressivo` entry.
+ * Payload for a `lineage.ciclo_readiness_nao_regressivo` entry.
  */
-interface CiclePulseNonRegressivePayload {
+interface CicleReadinessNonRegressivePayload {
   readonly cycleNumber: number;
   readonly score: number;
   readonly verdict: 'SIM' | 'NAO' | 'INSUFFICIENT_EVIDENCE';
@@ -59,7 +59,7 @@ export type LineagePayloadByEvent = {
   readonly 'lineage.genesis': import('./genesis-event').GenesisPayload;
   readonly 'lineage.capability_acquired': CapabilityAcquiredPayload;
   readonly 'lineage.skill_consolidated': SkillConsolidatedPayload;
-  readonly 'lineage.ciclo_pulse_nao_regressivo': CiclePulseNonRegressivePayload;
+  readonly 'lineage.ciclo_readiness_nao_regressivo': CicleReadinessNonRegressivePayload;
 };
 
 /**

@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import type { KloelMemory, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { isMindMemoryDualWriteEnabled } from './mindmemory-dualwrite.flag';
 
 /**
  * Canonical Brain → Mind alias surface for `KloelMemory`.
@@ -21,6 +22,8 @@ export type MindMemoryItem = KloelMemory;
 
 @Injectable()
 export class MindMemoryItemService {
+  private readonly logger = new Logger(MindMemoryItemService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   /**
@@ -76,10 +79,35 @@ export class MindMemoryItemService {
     payload: { value: Prisma.InputJsonValue; category?: string; type?: string; content?: string },
   ): Promise<MindMemoryItem> {
     const { value, category = 'general', type, content } = payload;
-    return this.prisma.kloelMemory.upsert({
+    // Legacy canonical write — kept EXACTLY as-is. This is the source of truth.
+    const result = await this.prisma.kloelMemory.upsert({
       where: { workspaceId_key: { workspaceId, key } },
       create: { workspaceId, key, value, category, type, content },
       update: { value, category, type, content },
     });
+
+    // ADDITIVE, flag-gated, best-effort dual-write to the canonical
+    // `RAC_MindMemory` table (currently writer-less). Behind
+    // `KLOEL_MINDMEMORY_DUALWRITE` (default OFF). Any failure here is swallowed
+    // with a warn-log so it can NEVER break the legacy write above. No read path
+    // depends on this; `namespace` uses the model default.
+    if (isMindMemoryDualWriteEnabled()) {
+      try {
+        await this.prisma.mindMemory.upsert({
+          where: { workspaceId_namespace_key: { workspaceId, namespace: 'default', key } },
+          create: { workspaceId, key, value, category, type, content },
+          update: { value, category, type, content },
+        });
+      } catch (error) {
+        this.logger.warn(
+          `MindMemory dual-write failed (workspaceId=${workspaceId}, key=${key}); ` +
+            `legacy KloelMemory write succeeded and is unaffected: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+        );
+      }
+    }
+
+    return result;
   }
 }

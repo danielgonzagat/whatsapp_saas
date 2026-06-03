@@ -1,12 +1,117 @@
-# ADR 0013: Kloel Mind — unification of Brain, AI-Brain, CIA, and Mind
+# ADR 0013: Kloel Mind — o organismo cognitivo único (Brain + Mind + CIA + Autopilot + Copilot + Voice + Flows)
 
-Data: 2026-05-26
+Data: 2026-05-26 · **Escopo expandido: 2026-06-02**
 
 ## Status
 
 Aceita (com restrições explícitas sobre schema — ver §"Schema").
 
+**Escopo canônico vigente (2026-06-02)**: este ADR cobre o **organismo
+cognitivo completo** do Kloel. Ver §"Escopo canônico — o organismo cognitivo
+completo" abaixo. O escopo original e mais estreito (apenas Brain + AI-Brain +
+CIA + Mind) está **SUPERSEDED desde 2026-06-02** — preservado integralmente
+nas seções históricas para rastreabilidade, mas substituído pela diretiva do
+dono do repo de absorver **toda** a cognição num só organismo.
+
+---
+
+## Escopo canônico — o organismo cognitivo completo (diretiva 2026-06-02)
+
+> **Diretiva do dono do repo (2026-06-02)**: o **Kloel Mind** deixa de ser
+> apenas a unificação de Brain + AI-Brain + CIA + Mind e passa a ser o **único
+> organismo cognitivo canônico** do produto. **Toda** a cognição —
+> percepção, decisão, ação, aprendizado e verbalização — vive sob `Kloel Mind`.
+> Esta diretiva **supersede** qualquer escopo anterior mais estreito deste ADR.
+
+### O loop cognitivo único
+
+O Kloel Mind é definido pelo **loop fechado de cognição**, não por uma pasta:
+
+```
+estado → percepção → decisão → ação → consequência → aprendizado
+  ↑                                                        │
+  └────────────────────  (atualiza estado)  ───────────────┘
+```
+
+Cada subsistema cognitivo que hoje existe separado é uma **fase** ou um
+**adaptador** deste loop, não um domínio independente. O nome oficial de todo
+o loop, em UI, eventos, DB e código, é **Kloel Mind**.
+
+### Subsistemas que se dissolvem em Kloel Mind
+
+| Subsistema | Fase do loop que ele encarna | Destino canônico |
+|---|---|---|
+| **Brain** (`brain-*`, `backend/src/brain/`) | percepção + coordenação | `kloel/mind/coordination/` + `kloel/mind/observability/` |
+| **Mind** (`MindBelief/Policy/Prediction/...`) | decisão + inferência + aprendizado | `kloel/mind/{inference,policy,memory}/` (já canônico) |
+| **AI-Brain** (`backend/src/ai-brain/`) | percepção/conhecimento (KB, vetor, mídia) | `kloel/mind/knowledge/` |
+| **CIA** (`backend/src/cia/`) | adaptador de aprendizado (ADR-0006) | `kloel/mind/cia/` |
+| **Autopilot** (`backend/src/autopilot/`) | ação autônoma (executa decisão sem humano) | superfície de **ação** do Mind — orquestrada por `MindAutonomyCoordinator`; Autopilot vira o *modo de execução autônoma* do loop, não um motor paralelo |
+| **Copilot** (`backend/src/copilot/`) | ação assistida (humano-no-loop) | superfície de **ação** do Mind no modo assistido; consome a mesma decisão/percepção, com handoff humano explícito |
+| **Voice** (`backend/src/voice/`) | percepção + verbalização por canal de voz | **canal** de entrada/saída do Mind: STT alimenta percepção, TTS verbaliza a ação; sem cognição própria |
+| **Flows** (`backend/src/flows/`) | ação determinística / política pré-compilada | **plano de ação** do Mind: um flow é uma política fixa que o Mind seleciona e executa; o engine de flows é o executor determinístico dentro do loop |
+
+> **Princípio de absorção**: Autopilot, Copilot, Voice e Flows **não** ganham
+> motor cognitivo próprio. Eles são **canais** (Voice), **modos de execução**
+> (Autopilot autônomo / Copilot assistido) e **políticas pré-compiladas**
+> (Flows) que plugam nas fases do loop único do Mind. A decisão, a percepção e
+> o aprendizado são **sempre** do Kloel Mind. Isto preserva ADR-0006 (Brain
+> coordena, Mind escolhe, UnifiedAgent executa, LLM verbaliza) e o expande: o
+> "executar" agora tem três superfícies (autônoma, assistida, determinística)
+> e duas modalidades de canal (texto, voz), todas servidas pelo mesmo cérebro.
+
+### O que já está feito vs. pendente (honesto)
+
+**Já entregue** (não-destrutivo, em produção):
+
+- **Dual-write aliases / wrapper surface**: `MindMessageService` e
+  `MindMemoryItemService` em `backend/src/kloel/mind/aliases/` expõem o nome
+  canônico `Mind*` apontando para as tabelas legadas (`prisma.kloelMessage`,
+  `prisma.kloelMemory`) na mesma linha física — código novo já fala "Mind",
+  código antigo continua funcionando (ver §10 do BRAIN_MIND_UNIFICATION_PLAN).
+- **Modelos `RAC_Mind*` no schema**: as tabelas do motor de inferência
+  (`RAC_MindBelief`, `RAC_MindPrediction`, `RAC_MindPolicy`, `RAC_MindBanditArm`,
+  `RAC_MindCase`, `RAC_MindGraphNode/Edge`, `RAC_MindGuardAudit`,
+  `RAC_MindOutboxEvent`, `RAC_MindDailyReport`, `RAC_MindGlobalPrior`,
+  `RAC_MindWorkspaceState`, etc.) já existem e são canônicas.
+- **`MindCanonicalService`** (`backend/src/kloel/mind/mind-canonical.service.ts`)
+  — ponto de entrada canônico do motor cognitivo.
+- **Sinais do Mind já consumidos** pelo reply-engine
+  (`*.mind-signal.*` specs: attention, beliefs, concepts) e guards no
+  tool-dispatcher.
+
+**Ainda pendente** (sob este escopo expandido):
+
+- **Absorção de Autopilot / Copilot** sob a superfície de ação do Mind:
+  `backend/src/autopilot/` e `backend/src/copilot/` continuam como pastas
+  top-level separadas; falta o adaptador que os roteia por
+  `MindAutonomyCoordinator` (autônomo) e por handoff assistido (Copilot).
+- **Voice como canal do Mind**: `backend/src/voice/` ainda não alimenta a
+  percepção do Mind via STT nem verbaliza a ação via TTS pelo mesmo verbalizer.
+- **Flows como política do Mind**: `backend/src/flows/` ainda é um engine
+  paralelo; falta expor cada flow como política selecionável pelo
+  `MindPolicyService` e executável pelo loop.
+- **Renomes de service Brain → Mind** (M1–M7 abaixo) ainda em janela de alias.
+- **Unificação física do schema de mensagens** (`RAC_KloelMessage` +
+  `RAC_ChatMessage` + `RAC_KloelConversation` → `RAC_MindMessage`) permanece
+  **bloqueada** até ADR-0014 (migração destrutiva exige backup verificado).
+
+Nenhum item pendente é autorizado a violar as **anti-decisões** abaixo
+(sem drop de tabela, sem rename sem alias, sem tocar UnifiedAgent/ToolDispatcher,
+sem desabilitar gates). A expansão de escopo **amplia o alvo**, não relaxa a
+governança.
+
+---
+
 ## Contexto
+
+> **Nota de escopo (2026-06-02)**: as seções a seguir (Contexto, Decisão, Plano
+> de migração, Gates) descrevem o **escopo original e mais estreito** deste ADR
+> — apenas a unificação das quatro pastas cognitivas (Brain, AI-Brain, CIA,
+> Mind). Esse escopo está **SUPERSEDED desde 2026-06-02** pela seção "Escopo
+> canônico — o organismo cognitivo completo" no topo, que absorve também
+> Autopilot, Copilot, Voice e Flows. Mantidas como registro histórico: o
+> mecanismo (alias aditivo → deprecar → remover após 4 semanas) e as
+> anti-decisões continuam **válidos e em vigor** para todo o escopo expandido.
 
 O Kloel acumulou **quatro pastas de domínio com responsabilidade cognitiva**
 sobrepostas, mesmas regras de chamada, e divergência de nomenclatura:
@@ -260,10 +365,21 @@ que tool execution é separado da decisão cognitiva. Manter.
 
 ## Referências
 
+- ADR-0004 — CIA legacy decommission (CIA = adaptador de aprendizado).
 - ADR-0006 — papéis cognitivos canônicos.
 - ADR-0012 — OmniCore channel unification (irmão deste ADR).
+- `docs/architecture/BRAIN_MIND_UNIFICATION_PLAN.md` — plano executável em N PRs.
 - `docs/architecture/CANONICAL_DOMAINS.md` — contagens por domínio.
 - `docs/architecture/SERVICE_CATALOG.md` — 580 services categorizados.
 - `docs/architecture/EVENT_TAXONOMY.md` — 39 eventos atuais.
 - `docs/architecture/CAPABILITY_MAP.md` — 12+ capabilities mapeadas.
 - ADR-0014 (futuro) — schema unification dos modelos Message + Brain/Mind tables.
+
+### Subsistemas absorvidos pelo escopo expandido (2026-06-02)
+
+- `backend/src/autopilot/` — superfície de ação autônoma do Mind (pendente).
+- `backend/src/copilot/` — superfície de ação assistida do Mind (pendente).
+- `backend/src/voice/` — canal de voz (STT→percepção, ação→TTS) do Mind (pendente).
+- `backend/src/flows/` — políticas pré-compiladas selecionáveis pelo Mind (pendente).
+- `backend/src/kloel/mind/mind-canonical.service.ts` — entrada canônica (feito).
+- `backend/src/kloel/mind/aliases/` — wrapper dual-surface `Mind*` (feito).

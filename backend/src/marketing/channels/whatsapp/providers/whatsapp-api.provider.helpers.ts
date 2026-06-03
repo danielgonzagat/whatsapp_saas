@@ -1,6 +1,6 @@
 import type {
-  WahaRuntimeConfigDiagnostics,
-  WahaSessionConfigDiagnostics,
+  MetaWhatsAppRuntimeConfigDiagnostics,
+  MetaWhatsAppSessionConfigDiagnostics,
   WahaSessionOverview,
 } from './whatsapp-api.provider.types';
 
@@ -48,24 +48,6 @@ export function deriveSessionStateFromDetails(details: {
     return 'DEGRADED';
   }
   return 'DISCONNECTED';
-}
-
-/**
- * Returns the human-readable QR-code message keyed off the channel session state.
- * Mirrors the previous inline ternary in WhatsAppApiProvider.getQrCode without changing the
- * public message contract consumed by the frontend.
- */
-export function deriveQrCodeMessage(details: {
-  connected?: boolean;
-  authUrl?: string | null;
-}): string {
-  if (details.connected) {
-    return 'meta_cloud_connected';
-  }
-  if (details.authUrl) {
-    return 'meta_cloud_use_embedded_signup';
-  }
-  return 'meta_cloud_has_no_qr';
 }
 
 /** Compose the canonical WAHA-style chat id (`<phone>@s.whatsapp.net`) from a phone string. */
@@ -200,7 +182,7 @@ export function clampChatMessagePagination(options?: { limit?: number; offset?: 
  * and {@link hasAnyEnv}, but the assembly itself is pure relative to those
  * boolean inputs and emits a stable shape consumed by the frontend.
  */
-export function buildRuntimeConfigDiagnostics(): WahaRuntimeConfigDiagnostics {
+export function buildRuntimeConfigDiagnostics(): MetaWhatsAppRuntimeConfigDiagnostics {
   const secretConfigured = hasAnyEnv(['META_APP_SECRET', 'FACEBOOK_APP_SECRET']);
   const verifyTokenConfigured = hasAnyEnv(['META_VERIFY_TOKEN', 'META_WEBHOOK_VERIFY_TOKEN']);
   return {
@@ -256,8 +238,8 @@ export function buildSessionConfigDiagnosticsPayload(input: {
     authUrl?: string | null;
     phoneNumberId?: string | null;
   };
-  runtimeConfig: WahaRuntimeConfigDiagnostics;
-}): WahaSessionConfigDiagnostics {
+  runtimeConfig: MetaWhatsAppRuntimeConfigDiagnostics;
+}): MetaWhatsAppSessionConfigDiagnostics {
   const { sessionName, details, runtimeConfig } = input;
   const degradedReason = details.degradedReason;
   const authUrl = details.authUrl;

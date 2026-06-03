@@ -27,6 +27,65 @@ interface KnowledgeBaseSectionProps {
   onSourcesLoaded?: (count: number) => void;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isKnowledgeSourceType(value: unknown): value is KnowledgeSourceItem['type'] {
+  return value === 'TEXT' || value === 'URL' || value === 'PDF';
+}
+
+function normalizeKnowledgeSourcePayload(value: unknown): KnowledgeSourceItem {
+  if (!isRecord(value) || typeof value.id !== 'string' || !isKnowledgeSourceType(value.type)) {
+    throw new Error('Payload de fonte de conhecimento invalido.');
+  }
+  const source: KnowledgeSourceItem = {
+    id: value.id,
+    type: value.type,
+  };
+  if (typeof value.content === 'string') {
+    source.content = value.content;
+  }
+  if (typeof value.status === 'string') {
+    source.status = value.status;
+  }
+  if (typeof value.createdAt === 'string') {
+    source.createdAt = value.createdAt;
+  }
+  return source;
+}
+
+function normalizeKnowledgeSourcesPayload(value: unknown): KnowledgeSourceItem[] {
+  if (!Array.isArray(value)) {
+    throw new Error('Payload de fontes de conhecimento invalido.');
+  }
+  return value.map(normalizeKnowledgeSourcePayload);
+}
+
+function normalizeKnowledgeBasePayload(value: unknown): KnowledgeBaseItem {
+  if (!isRecord(value) || typeof value.id !== 'string' || typeof value.name !== 'string') {
+    throw new Error('Payload de base de conhecimento invalido.');
+  }
+  const knowledgeBase: KnowledgeBaseItem = {
+    id: value.id,
+    name: value.name,
+  };
+  if (Array.isArray(value.sources)) {
+    knowledgeBase.sources = normalizeKnowledgeSourcesPayload(value.sources);
+  }
+  if (typeof value.createdAt === 'string') {
+    knowledgeBase.createdAt = value.createdAt;
+  }
+  return knowledgeBase;
+}
+
+function normalizeKnowledgeBasesPayload(value: unknown): KnowledgeBaseItem[] {
+  if (!Array.isArray(value)) {
+    throw new Error('Payload de bases de conhecimento invalido.');
+  }
+  return value.map(normalizeKnowledgeBasePayload);
+}
+
 export function KnowledgeBaseSection({ onSourcesLoaded }: KnowledgeBaseSectionProps) {
   const workspaceId = tokenStorage.getWorkspaceId();
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBaseItem[]>([]);
@@ -56,7 +115,7 @@ export function KnowledgeBaseSection({ onSourcesLoaded }: KnowledgeBaseSectionPr
         return knowledgeBaseApi.list();
       })
       .then((response) => {
-        const items = (response.data as KnowledgeBaseItem[]) || [];
+        const items = normalizeKnowledgeBasesPayload(response.data);
         setKnowledgeBases(items);
         const nextSelectedId = selectedKnowledgeBaseId || items[0]?.id || '';
         setSelectedKnowledgeBaseId(nextSelectedId);
@@ -66,7 +125,7 @@ export function KnowledgeBaseSection({ onSourcesLoaded }: KnowledgeBaseSectionPr
           return undefined;
         }
         return knowledgeBaseApi.listSources(nextSelectedId).then((sourcesResponse) => {
-          const sources = (sourcesResponse.data as KnowledgeSourceItem[]) || [];
+          const sources = normalizeKnowledgeSourcesPayload(sourcesResponse.data);
           setKnowledgeSources(sources);
           onSourcesLoaded?.(sources.length);
         });
@@ -92,10 +151,10 @@ export function KnowledgeBaseSection({ onSourcesLoaded }: KnowledgeBaseSectionPr
     setKnowledgeSuccess('');
     try {
       const response = await knowledgeBaseApi.create(newKnowledgeBaseName.trim());
-      const created = response.data as KnowledgeBaseItem;
-      setKnowledgeSuccess(`Base ${created?.name || newKnowledgeBaseName} criada.`);
+      const created = normalizeKnowledgeBasePayload(response.data);
+      setKnowledgeSuccess(`Base ${created.name} criada.`);
       setNewKnowledgeBaseName('');
-      setSelectedKnowledgeBaseId(created?.id || '');
+      setSelectedKnowledgeBaseId(created.id);
       await hydrateKnowledgeBase();
     } catch (error: unknown) {
       setKnowledgeError(error instanceof Error ? error.message : 'Nao foi possivel criar a base.');

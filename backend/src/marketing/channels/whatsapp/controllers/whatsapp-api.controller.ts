@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  GoneException,
   Inject,
   Param,
   Post,
@@ -23,8 +24,6 @@ import {
 } from '../../../../kloel/mind/cia/cia-runtime.port';
 import { WhatsAppProviderRegistry } from '../providers/provider-registry';
 import { WhatsAppApiProvider } from '../providers/whatsapp-api.provider';
-import { WhatsAppCatchupService } from '../whatsapp-catchup.service';
-import { WhatsAppWatchdogService } from '../whatsapp-watchdog.service';
 import { WhatsappService } from '../whatsapp.service';
 import { InternalEndpoint } from '../../../../common/decorators/internal-endpoint.decorator';
 import { RouteClass } from '../../../../common/throttler/route-class.decorator';
@@ -44,14 +43,23 @@ export class WhatsAppApiController {
   constructor(
     private readonly providerRegistry: WhatsAppProviderRegistry,
     private readonly whatsappApi: WhatsAppApiProvider,
-    private readonly catchupService: WhatsAppCatchupService,
     private readonly agentEvents: AgentEventsService,
     @Inject(CIA_RUNTIME_SERVICE) private readonly ciaRuntime: CiaRuntimePort,
     private readonly whatsappService: WhatsappService,
     private readonly accountAgent: AccountAgentService,
     private readonly workspaces: WorkspaceService,
-    private readonly watchdog: WhatsAppWatchdogService,
   ) {}
+
+  private throwMetaOnlyGone(feature: string): never {
+    throw new GoneException({
+      success: false,
+      provider: 'meta-cloud',
+      notSupported: true,
+      feature,
+      message: 'WhatsApp agora conecta somente pela API oficial da Meta.',
+      use: '/meta/auth/url?channel=whatsapp&returnTo=/whatsapp',
+    });
+  }
 
   private async getSessionDiagnostics(workspaceId: string) {
     const workspace = await this.workspaces.getWorkspace(workspaceId);
@@ -84,26 +92,13 @@ export class WhatsAppApiController {
   }
   /** Start session. */
   @Post('session/start')
-  async startSession(@Req() req: AuthenticatedRequest) {
-    const workspaceId = req.workspaceId!;
-    const result = await this.providerRegistry.startSession(workspaceId);
-    if (result.success && result.message === 'already_connected') {
-      await this.catchupService.triggerCatchup(workspaceId, 'session_start_already_connected');
-    }
-    return result;
+  startSession() {
+    return this.throwMetaOnlyGone('legacy_session_start');
   }
   /** Get status. */
   @Get('session/status')
-  async getStatus(@Req() req: AuthenticatedRequest) {
-    const workspaceId = req.workspaceId!;
-    const [providerType, status] = await Promise.all([
-      this.providerRegistry.getProviderType(workspaceId),
-      this.providerRegistry.getSessionStatus(workspaceId),
-    ]);
-    return {
-      ...status,
-      provider: providerType,
-    };
+  getStatus() {
+    return this.throwMetaOnlyGone('legacy_session_status');
   }
   /** Get diagnostics. */
   @InternalEndpoint('whatsapp session diagnostics')
@@ -114,45 +109,20 @@ export class WhatsAppApiController {
   /** Force check. */
   @InternalEndpoint('whatsapp session force-check')
   @Post('session/force-check')
-  async forceCheck(@Req() req: AuthenticatedRequest) {
-    const workspace = await this.workspaces.getWorkspace(req.workspaceId!);
-    await this.watchdog.checkWorkspaceSession(
-      req.workspaceId!,
-      workspace?.name || req.workspaceId!,
-    );
-    return {
-      success: true,
-      diagnostics: await this.getSessionDiagnostics(req.workspaceId!),
-    };
+  forceCheck() {
+    return this.throwMetaOnlyGone('legacy_session_force_check');
   }
   /** Force reconnect. */
   @InternalEndpoint('whatsapp session force-reconnect')
   @Post('session/force-reconnect')
-  async forceReconnect(@Req() req: AuthenticatedRequest) {
-    const diagnosticsBefore = await this.getSessionDiagnostics(req.workspaceId!);
-    const providerType = await this.providerRegistry.getProviderType(req.workspaceId!);
-    const reconnectResult = diagnosticsBefore?.status?.connected
-      ? { success: true, message: 'already_connected' }
-      : await this.providerRegistry.restartSession(req.workspaceId!);
-    return {
-      success: Boolean(reconnectResult?.success),
-      providerType,
-      reconnectResult,
-      diagnostics: await this.getSessionDiagnostics(req.workspaceId!),
-    };
+  forceReconnect() {
+    return this.throwMetaOnlyGone('legacy_session_force_reconnect');
   }
   /** Repair config. */
   @InternalEndpoint('whatsapp session repair-config')
   @Post('session/repair-config')
-  async repairConfig(@Req() req: AuthenticatedRequest) {
-    const providerType = await this.providerRegistry.getProviderType(req.workspaceId!);
-    await this.providerRegistry.syncSessionConfig(req.workspaceId!);
-    return {
-      success: true,
-      repaired: true,
-      providerType,
-      diagnostics: await this.getSessionDiagnostics(req.workspaceId!),
-    };
+  repairConfig() {
+    return this.throwMetaOnlyGone('legacy_session_repair_config');
   }
   /** Bootstrap session. */
   @InternalEndpoint('whatsapp session bootstrap')
@@ -305,76 +275,25 @@ export class WhatsAppApiController {
       }
     });
   }
-  /** Get qr code. */
+  /** Retired non-Meta session-code endpoint. */
   @Get('session/qr')
-  async getQrCode(@Req() req: AuthenticatedRequest) {
-    const sessionStatus = await this.providerRegistry.getSessionStatus(req.workspaceId!);
-    if (sessionStatus?.connected) {
-      return {
-        available: false,
-        connected: true,
-        status: 'connected',
-        message: 'Sessão já conectada.',
-      };
-    }
-    const fallbackQr = sessionStatus?.qrCode || null;
-    if (fallbackQr) {
-      return {
-        available: true,
-        status: sessionStatus?.status || 'pending',
-        qr: fallbackQr,
-        message: 'QR Code recuperado do snapshot da sessão.',
-      };
-    }
-    const result = await this.providerRegistry.getQrCode(req.workspaceId!);
-    if (result.qr) {
-      return {
-        available: true,
-        qr: result.qr, // base64 data URL
-      };
-    }
-    return {
-      available: false,
-      connected: false,
-      message: result.message || 'QR Code não disponível. Verifique se a sessão foi iniciada.',
-    };
+  getRetiredSessionCode() {
+    return this.throwMetaOnlyGone('legacy_session_code');
   }
   /** Get session view. */
   @Get('session/view')
-  async getSessionView(@Req() req: AuthenticatedRequest) {
-    const workspaceId = req.workspaceId!;
-    const providerType = await this.providerRegistry.getProviderType(workspaceId);
-    const status = await this.providerRegistry.getSessionStatus(workspaceId);
-    return {
-      success: true,
-      provider: providerType,
-      workerAvailable: false,
-      degraded: false,
-      snapshot: {
-        workspaceId,
-        state: status.connected ? 'CONNECTED' : status.status || 'DISCONNECTED',
-        connected: status.connected,
-        screenshotDataUrl: null,
-        viewerAvailable: false,
-        takeoverActive: false,
-        agentPaused: false,
-        viewport: null,
-      },
-      image: null,
-      message: 'meta_cloud_uses_official_api_no_qr_viewer',
-    };
+  getSessionView() {
+    return this.throwMetaOnlyGone('legacy_session_view');
   }
   /** Disconnect. */
   @Delete('session/disconnect')
-  async disconnect(@Req() req: AuthenticatedRequest) {
-    const workspaceId = req.workspaceId!;
-    return this.providerRegistry.disconnect(workspaceId);
+  disconnect() {
+    return this.throwMetaOnlyGone('legacy_session_disconnect');
   }
   /** Logout. */
   @Post('session/logout')
-  async logout(@Req() req: AuthenticatedRequest) {
-    const workspaceId = req.workspaceId!;
-    return this.providerRegistry.logout(workspaceId);
+  logout() {
+    return this.throwMetaOnlyGone('legacy_session_logout');
   }
   // messageLimit: enforced via PlanLimitsService.trackMessageSend
   /** Check registration. */

@@ -116,11 +116,18 @@ describe('normalizeCommissionList', () => {
     expect(normalizeCommissionList(list)).toBe(list);
   });
 
-  it('returns an empty array for non-array values', () => {
-    expect(normalizeCommissionList(null)).toEqual([]);
-    expect(normalizeCommissionList(undefined)).toEqual([]);
-    expect(normalizeCommissionList({ data: [] })).toEqual([]);
-    expect(normalizeCommissionList('string')).toEqual([]);
+  it('returns the data array when given a backend envelope', () => {
+    const list = [makeCommission()];
+    expect(normalizeCommissionList({ data: list })).toBe(list);
+  });
+
+  it('throws for invalid non-array values instead of rendering a fake empty commission list', () => {
+    expect(() => normalizeCommissionList(null)).toThrow('Payload de comissoes invalido.');
+    expect(() => normalizeCommissionList(undefined)).toThrow('Payload de comissoes invalido.');
+    expect(() => normalizeCommissionList({ data: { id: 'com-1' } })).toThrow(
+      'Payload de comissoes invalido.',
+    );
+    expect(() => normalizeCommissionList('string')).toThrow('Payload de comissoes invalido.');
   });
 });
 

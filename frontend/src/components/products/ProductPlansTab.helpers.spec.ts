@@ -112,11 +112,11 @@ describe('normalizePlansResponse', () => {
     expect(normalizePlansResponse([samplePlan])).toEqual([samplePlan]);
   });
 
-  it('returns an empty array for non-array input', () => {
-    expect(normalizePlansResponse(null)).toEqual([]);
-    expect(normalizePlansResponse(undefined)).toEqual([]);
-    expect(normalizePlansResponse({ data: [] })).toEqual([]);
-    expect(normalizePlansResponse('x')).toEqual([]);
+  it('throws for non-array input instead of rendering a fake empty plan list', () => {
+    expect(() => normalizePlansResponse(null)).toThrow('Payload de planos invalido.');
+    expect(() => normalizePlansResponse(undefined)).toThrow('Payload de planos invalido.');
+    expect(() => normalizePlansResponse({ data: [] })).toThrow('Payload de planos invalido.');
+    expect(() => normalizePlansResponse('x')).toThrow('Payload de planos invalido.');
   });
 });
 

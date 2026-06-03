@@ -14,18 +14,6 @@ export {
 export type { NormalizedConnectionStatus, WhatsAppProviderType };
 export type { BuildSnapshotParams };
 
-/** Pick waha qr code. */
-export function pickWahaQrCode(providerType: WhatsAppProviderType, qrCode: unknown): string | null {
-  if (providerType !== 'whatsapp-api') {
-    return null;
-  }
-  if (typeof qrCode !== 'string') {
-    return null;
-  }
-  const trimmed = qrCode.trim();
-  return trimmed ? qrCode : null;
-}
-
 /** Pick meta auth url. */
 export function pickMetaAuthUrl(
   providerType: WhatsAppProviderType,
@@ -45,14 +33,11 @@ function metaRawStatusFallback(phoneNumberId: string | null): string {
   return phoneNumberId ? 'CONNECTION_INCOMPLETE' : 'DISCONNECTED';
 }
 
-function wahaRawStatusFallback(normalizedStatus: NormalizedConnectionStatus): string {
-  return normalizedStatus === 'connecting' ? 'SCAN_QR_CODE' : 'DISCONNECTED';
-}
 
 /** Resolve raw status fallback. */
 export function resolveRawStatusFallback(
   rawStatus: string,
-  providerType: WhatsAppProviderType,
+  _providerType: WhatsAppProviderType,
   normalizedStatus: NormalizedConnectionStatus,
   phoneNumberId: string | null,
 ): string {
@@ -62,9 +47,7 @@ export function resolveRawStatusFallback(
   if (normalizedStatus === 'connected') {
     return 'CONNECTED';
   }
-  return providerType === 'meta-cloud'
-    ? metaRawStatusFallback(phoneNumberId)
-    : wahaRawStatusFallback(normalizedStatus);
+  return metaRawStatusFallback(phoneNumberId);
 }
 
 /** Resolve self ids. */
@@ -113,7 +96,6 @@ export function buildProviderSessionSnapshot(params: BuildSnapshotParams): Provi
   } = params;
 
   return {
-    qrCode: pickWahaQrCode(providerType, session.qrCode),
     status: normalizedStatus,
     authUrl: pickMetaAuthUrl(providerType, session.authUrl),
     selfIds: resolveSelfIds(session.selfIds),

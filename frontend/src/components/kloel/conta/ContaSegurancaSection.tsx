@@ -1,21 +1,42 @@
 'use client';
+import Image from 'next/image';
 import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useState } from 'react';
-import { useSecurityMutations } from '@/hooks/useKyc';
+import { useSecurityMutations, useSecurityState } from '@/hooks/useKyc';
 import { SORA } from './ContaConstants';
 import { getErrorMessage } from './ContaHelpers';
 import { Field, SaveButton, SectionCard } from './ContaShared';
 
 export default function SegurancaSection() {
-  const { changePassword } = useSecurityMutations();
+  const { security, isLoading: loadingSecurity, error: securityError, mutate } = useSecurityState();
+  const { changePassword, startMfaSetup, verifyMfaSetup, disableMfa } = useSecurityMutations();
   const [saving, setSaving] = useState(false);
   const [pwForm, setPwForm] = useState({ current: '', newPw: '', confirm: '' });
   const [pwError, setPwError] = useState('');
   const [pwSuccess, setPwSuccess] = useState(false);
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaQrDataUrl, setMfaQrDataUrl] = useState('');
+  const [mfaBusy, setMfaBusy] = useState<'idle' | 'setup' | 'verify' | 'disable'>('idle');
+  const [mfaError, setMfaError] = useState('');
+  const [mfaSuccess, setMfaSuccess] = useState('');
 
   const setPw = (k: string, v: string) => setPwForm((prev) => ({ ...prev, [k]: v }));
+  const mfaEnabled = security?.mfa.enabled === true;
+  const mfaPendingSetup = security?.mfa.pendingSetup === true;
+  const mfaStatusColor = mfaEnabled
+    ? colors.semantic.success
+    : mfaPendingSetup
+      ? colors.semantic.warning
+      : 'var(--app-text-placeholder)';
+  const mfaStatusLabel = loadingSecurity
+    ? 'Carregando estado 2FA...'
+    : mfaEnabled
+      ? '2FA ativo nesta conta'
+      : mfaPendingSetup
+        ? 'Configuracao 2FA pendente'
+        : '2FA inativo nesta conta';
 
   const handleChangePw = async () => {
     setPwError('');
@@ -38,6 +59,75 @@ export default function SegurancaSection() {
       setPwError(getErrorMessage(e) || 'Erro ao alterar senha. Verifique a senha atual.');
     }
     setSaving(false);
+  };
+
+  const showMfaSuccess = (message: string) => {
+    setMfaSuccess(message);
+    setTimeout(() => setMfaSuccess(''), 3500);
+  };
+
+  const requireMfaCode = () => {
+    if (!/^\d{6}$/.test(mfaCode)) {
+      setMfaError('Informe o codigo de 6 digitos do aplicativo autenticador.');
+      return false;
+    }
+    return true;
+  };
+
+  const handleStartMfa = async () => {
+    setMfaError('');
+    setMfaSuccess('');
+    setMfaBusy('setup');
+    try {
+      const result = await startMfaSetup();
+      setMfaQrDataUrl(result.qrDataUrl || '');
+      setMfaCode('');
+      await mutate();
+      showMfaSuccess('QR code 2FA gerado. Confirme o codigo para ativar.');
+    } catch (e) {
+      setMfaError(getErrorMessage(e) || 'Nao foi possivel iniciar o 2FA.');
+    } finally {
+      setMfaBusy('idle');
+    }
+  };
+
+  const handleVerifyMfa = async () => {
+    setMfaError('');
+    setMfaSuccess('');
+    if (!requireMfaCode()) {
+      return;
+    }
+    setMfaBusy('verify');
+    try {
+      await verifyMfaSetup(mfaCode);
+      setMfaQrDataUrl('');
+      setMfaCode('');
+      await mutate();
+      showMfaSuccess('2FA ativado com sucesso.');
+    } catch (e) {
+      setMfaError(getErrorMessage(e) || 'Codigo 2FA invalido.');
+    } finally {
+      setMfaBusy('idle');
+    }
+  };
+
+  const handleDisableMfa = async () => {
+    setMfaError('');
+    setMfaSuccess('');
+    if (!requireMfaCode()) {
+      return;
+    }
+    setMfaBusy('disable');
+    try {
+      await disableMfa(mfaCode);
+      setMfaCode('');
+      await mutate();
+      showMfaSuccess('2FA desativado.');
+    } catch (e) {
+      setMfaError(getErrorMessage(e) || 'Nao foi possivel desativar o 2FA.');
+    } finally {
+      setMfaBusy('idle');
+    }
   };
 
   return (
@@ -102,7 +192,7 @@ export default function SegurancaSection() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span
               style={{
-                width: 8, height: 8, borderRadius: '16%', background: 'var(--app-text-placeholder)',
+                width: 8, height: 8, borderRadius: '16%', background: mfaStatusColor,
               }}
             />
             <span
@@ -110,7 +200,7 @@ export default function SegurancaSection() {
                 fontSize: 13, fontWeight: 600, color: 'var(--app-text-primary)', fontFamily: SORA,
               }}
             >
-              {kloelT(`Ainda indisponivel nesta conta`)}
+              {kloelT(mfaStatusLabel)}
             </span>
           </div>
           <p
@@ -118,9 +208,71 @@ export default function SegurancaSection() {
               fontSize: 12, color: 'var(--app-text-secondary)', fontFamily: SORA, marginTop: 6, lineHeight: 1.5,
             }}
           >
-            {kloelT(`Enquanto isso, mantenha uma senha forte e acompanhe acessos suspeitos pelo seu e-mail de
-            cadastro.`)}
+            {mfaEnabled
+              ? kloelT(`Digite um codigo do aplicativo autenticador para desativar o 2FA.`)
+              : kloelT(`Use um aplicativo autenticador para proteger o login desta conta.`)}
           </p>
+
+          {securityError && (
+            <span style={{ fontSize: 11, color: colors.semantic.error, marginTop: 8, display: 'block', fontFamily: SORA }}>
+              {getErrorMessage(securityError) || 'Nao foi possivel carregar a seguranca.'}
+            </span>
+          )}
+
+          {mfaQrDataUrl && (
+            <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginTop: 16, flexWrap: 'wrap' as const }}>
+              <Image
+                src={mfaQrDataUrl}
+                alt="QR code 2FA"
+                width={132}
+                height={132}
+                unoptimized
+                style={{ borderRadius: 6, border: '1px solid var(--app-border-primary)' }}
+              />
+              <p style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA, lineHeight: 1.5, flex: 1, minWidth: 180 }}>
+                {kloelT(`Escaneie o QR code e confirme o codigo de 6 digitos exibido no aplicativo.`)}
+              </p>
+            </div>
+          )}
+
+          {(mfaPendingSetup || mfaEnabled || mfaQrDataUrl) && (
+            <div style={{ marginTop: 16 }}>
+              <Field
+                label={kloelT(`Codigo 2FA`)}
+                placeholder={kloelT(`000000`)}
+                value={mfaCode}
+                onChange={(value) => setMfaCode(value.replace(/\D/g, '').slice(0, 6))}
+                mono
+              />
+            </div>
+          )}
+
+          {mfaError && (
+            <span style={{ fontSize: 11, color: colors.semantic.error, marginTop: 8, display: 'block', fontFamily: SORA }}>
+              {mfaError}
+            </span>
+          )}
+          {mfaSuccess && (
+            <span style={{ fontSize: 12, fontWeight: 600, color: colors.semantic.success, marginTop: 8, display: 'block', fontFamily: SORA }}>
+              {mfaSuccess}
+            </span>
+          )}
+
+          <div style={{ marginTop: 18, display: 'flex', gap: 10, justifyContent: 'flex-end' as const, flexWrap: 'wrap' as const }}>
+            {!mfaEnabled && (
+              <SaveButton
+                saving={mfaBusy === 'setup'}
+                onClick={handleStartMfa}
+                label={mfaPendingSetup || mfaQrDataUrl ? kloelT(`Reabrir QR code`) : kloelT(`Configurar 2FA`)}
+              />
+            )}
+            {(mfaPendingSetup || mfaQrDataUrl) && (
+              <SaveButton saving={mfaBusy === 'verify'} onClick={handleVerifyMfa} label={kloelT(`Confirmar 2FA`)} />
+            )}
+            {mfaEnabled && (
+              <SaveButton saving={mfaBusy === 'disable'} onClick={handleDisableMfa} label={kloelT(`Desativar 2FA`)} />
+            )}
+          </div>
         </div>
       </SectionCard>
 

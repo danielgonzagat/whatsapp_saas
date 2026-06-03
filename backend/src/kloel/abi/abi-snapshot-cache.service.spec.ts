@@ -43,7 +43,7 @@ function sampleAbi(overrides?: Partial<CognitiveStateAbi>): CognitiveStateAbi {
         windowHours: 24,
       },
     },
-    pulseTruth: {
+    readinessTruth: {
       noOverclaimStatus: 'PASS',
       capabilityHealthScore: 0,
       gates: [],

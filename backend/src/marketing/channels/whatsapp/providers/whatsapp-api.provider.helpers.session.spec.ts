@@ -1,7 +1,6 @@
 import {
   WhatsAppSessionState,
   buildSessionConfigDiagnosticsPayload,
-  deriveQrCodeMessage,
   deriveSessionStateFromDetails,
   hasAnyEnv,
   hasEnv,
@@ -82,74 +81,6 @@ describe('whatsapp-api.provider.helpers (session state + qr + diagnostics)', () 
     });
   });
 
-  describe('deriveQrCodeMessage', () => {
-    it('should return meta_cloud_connected when connected is true', () => {
-      const result = deriveQrCodeMessage({ connected: true });
-      expect(result).toBe('meta_cloud_connected');
-    });
-
-    it('should return meta_cloud_connected even with authUrl', () => {
-      const result = deriveQrCodeMessage({
-        connected: true,
-        authUrl: 'https://example.com/auth',
-      });
-      expect(result).toBe('meta_cloud_connected');
-    });
-
-    it('should return meta_cloud_use_embedded_signup when authUrl is set', () => {
-      const result = deriveQrCodeMessage({
-        connected: false,
-        authUrl: 'https://example.com/auth',
-      });
-      expect(result).toBe('meta_cloud_use_embedded_signup');
-    });
-
-    it('should return meta_cloud_has_no_qr as default fallback', () => {
-      const result = deriveQrCodeMessage({
-        connected: false,
-      });
-      expect(result).toBe('meta_cloud_has_no_qr');
-    });
-
-    it('should return meta_cloud_has_no_qr when authUrl is empty', () => {
-      const result = deriveQrCodeMessage({
-        connected: false,
-        authUrl: '',
-      });
-      expect(result).toBe('meta_cloud_has_no_qr');
-    });
-
-    it('should return meta_cloud_has_no_qr when authUrl is null', () => {
-      const result = deriveQrCodeMessage({
-        connected: false,
-        authUrl: null,
-      });
-      expect(result).toBe('meta_cloud_has_no_qr');
-    });
-
-    it('should prioritize connected over authUrl', () => {
-      const result = deriveQrCodeMessage({
-        connected: true,
-        authUrl: '',
-      });
-      expect(result).toBe('meta_cloud_connected');
-    });
-
-    it('should handle empty object', () => {
-      const result = deriveQrCodeMessage({});
-      expect(result).toBe('meta_cloud_has_no_qr');
-    });
-
-    it('should return string message keys suitable for i18n', () => {
-      const messages = [
-        deriveQrCodeMessage({ connected: true }),
-        deriveQrCodeMessage({ connected: false, authUrl: 'url' }),
-        deriveQrCodeMessage({}),
-      ];
-      expect(messages.every((m) => m.startsWith('meta_cloud_'))).toBe(true);
-    });
-  });
-
   describe('integration scenarios', () => {
     it('should handle happy path: connected account with env check', () => {
       process.env.META_TOKEN = 'token123';
@@ -157,9 +88,6 @@ describe('whatsapp-api.provider.helpers (session state + qr + diagnostics)', () 
 
       const state = deriveSessionStateFromDetails({ connected: true });
       expect(state).toBe('CONNECTED');
-
-      const message = deriveQrCodeMessage({ connected: true });
-      expect(message).toBe('meta_cloud_connected');
     });
 
     it('should handle degraded account with fallback auth', () => {
@@ -168,12 +96,6 @@ describe('whatsapp-api.provider.helpers (session state + qr + diagnostics)', () 
         status: 'DEGRADED',
       });
       expect(state).toBe('DEGRADED');
-
-      const message = deriveQrCodeMessage({
-        connected: false,
-        authUrl: 'https://auth.example.com',
-      });
-      expect(message).toBe('meta_cloud_use_embedded_signup');
     });
 
     it('should handle env fallback scenario (META_VERIFY_TOKEN vs META_WEBHOOK_VERIFY_TOKEN)', () => {

@@ -39,7 +39,7 @@ export interface KloelApprovalRequest {
 
 interface KloelApprovalListResponse {
   /** Pending approvals. */
-  approvals?: KloelApprovalRequest[];
+  approvals?: unknown;
 }
 
 export type KloelApprovalDecision = 'approve' | 'reject' | 'adjust';
@@ -55,6 +55,27 @@ export interface KloelApprovalDecisionResponse {
 
 function isRecord(value: unknown): value is JsonRecord {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isOptionalNullableString(value: unknown): value is string | null | undefined {
+  return value === null || value === undefined || typeof value === 'string';
+}
+
+function isKloelApprovalRequest(value: unknown): value is KloelApprovalRequest {
+  return (
+    isRecord(value) &&
+    typeof value.id === 'string' &&
+    typeof value.kind === 'string' &&
+    isOptionalNullableString(value.scope) &&
+    isOptionalNullableString(value.entityType) &&
+    isOptionalNullableString(value.entityId) &&
+    typeof value.state === 'string' &&
+    typeof value.title === 'string' &&
+    typeof value.prompt === 'string' &&
+    isRecord(value.payload) &&
+    typeof value.createdAt === 'string' &&
+    typeof value.updatedAt === 'string'
+  );
 }
 
 /** Get kloel health. */
@@ -76,7 +97,11 @@ export async function listPendingKloelApprovals(): Promise<KloelApprovalRequest[
   if (res.error) {
     throw new Error(res.error);
   }
-  return Array.isArray(res.data?.approvals) ? res.data.approvals : [];
+  const approvals = res.data?.approvals;
+  if (!Array.isArray(approvals) || !approvals.every(isKloelApprovalRequest)) {
+    throw new Error('Invalid Kloel approvals payload');
+  }
+  return approvals;
 }
 
 /** Decide a pending Kloel approval request. */
@@ -117,15 +142,21 @@ export async function uploadPdf(workspaceId: string, file: File): Promise<JsonRe
   return isRecord(payload) ? payload : {};
 }
 
-// Chat file upload — POST /kloel/upload-chat
-export async function uploadChatFile(file: File): Promise<{
+export interface UploadChatFileResponse {
   success: boolean;
   url: string;
   type: 'image' | 'document' | 'audio';
   name: string;
   size: number;
   mimeType: string;
-}> {
+}
+
+function normalizeChatUploadType(value: unknown): UploadChatFileResponse['type'] {
+  return value === 'image' || value === 'audio' ? value : 'document';
+}
+
+// Chat file upload — POST /kloel/upload-chat
+export async function uploadChatFile(file: File): Promise<UploadChatFileResponse> {
   const formData = new FormData();
   formData.append('file', file);
 
@@ -138,10 +169,24 @@ export async function uploadChatFile(file: File): Promise<{
       'x-workspace-id': tokenStorage.getWorkspaceId() || '',
     },
   });
+  const payload = (await res.json().catch(() => null)) as unknown;
   if (!res.ok) {
-    throw new Error('Failed to upload chat file');
+    throw new Error(isRecord(payload) && typeof payload.message === 'string' ? payload.message : 'Failed to upload chat file');
   }
-  return res.json();
+  if (!isRecord(payload) || payload.success !== true || typeof payload.url !== 'string') {
+    throw new Error(isRecord(payload) && typeof payload.error === 'string' ? payload.error : 'Failed to upload chat file');
+  }
+  return {
+    success: true,
+    url: payload.url,
+    type: normalizeChatUploadType(payload.type),
+    name: typeof payload.name === 'string' && payload.name.trim() ? payload.name : file.name,
+    size: typeof payload.size === 'number' ? payload.size : file.size,
+    mimeType:
+      typeof payload.mimeType === 'string' && payload.mimeType.trim()
+        ? payload.mimeType
+        : file.type || 'application/octet-stream',
+  };
 }
 
 // Payment Link

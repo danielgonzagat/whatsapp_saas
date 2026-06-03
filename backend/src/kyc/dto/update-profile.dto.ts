@@ -1,4 +1,4 @@
-import { IsDateString, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsDateString, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 
 /** Update profile dto. */
 export class UpdateProfileDto {
@@ -9,7 +9,10 @@ export class UpdateProfileDto {
   /** Phone property. */
   @IsOptional() @IsString() @MaxLength(20) phone?: string;
   /** Birth date property. */
-  @IsOptional() @IsDateString() birthDate?: string;
+  @IsOptional()
+  @IsDateString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'birthDate must use YYYY-MM-DD without time' })
+  birthDate?: string;
   /** Document type property. */
   @IsOptional() @IsString() @MaxLength(255) documentType?: string;
   /** Document number property. */

@@ -6,7 +6,6 @@ import {
   check,
   daysSince,
   failures,
-  isTracked,
   passes,
   readText,
   requireFile,
@@ -59,7 +58,6 @@ const requiredFiles = [
   ['.github/workflows/dependabot-auto-merge.yml', 'Dependabot auto-merge workflow exists'],
   ['.github/workflows/deploy-staging.yml', 'Staging deploy workflow exists'],
   ['.github/workflows/deploy-production.yml', 'Production deploy workflow exists'],
-  ['.github/workflows/nightly-ops-audit.yml', 'Nightly ops audit workflow exists'],
   ['.github/workflows/release-please.yml', 'Release Please workflow exists'],
   ['.github/dependabot.yml', 'Dependabot config exists'],
   ['.github/CODEOWNERS', 'CODEOWNERS policy exists'],
@@ -88,7 +86,6 @@ const requiredFiles = [
   ['.husky/pre-commit', 'Husky pre-commit hook exists'],
   ['.husky/pre-push', 'Husky pre-push hook exists'],
   ['.husky/commit-msg', 'Husky commit-msg hook exists'],
-  ['.claude/settings.json', 'Claude hooks config exists'],
   ['scripts/ops/auto-sync-main.sh', 'Auto-sync runner exists'],
   ['scripts/ops/install-auto-sync-launchagent.sh', 'Auto-sync installer exists'],
   ['scripts/ops/print-auto-sync-status.sh', 'Auto-sync status printer exists'],
@@ -108,21 +105,6 @@ for (const [relPath, title] of requiredFiles) {
   requireFile(relPath, title);
 }
 
-for (const relPath of [
-  'ratchet.json',
-  'PULSE_HEALTH.json',
-  'PULSE_CLI_DIRECTIVE.json',
-  'PULSE_ARTIFACT_INDEX.json',
-  'PULSE_WORLD_STATE.json',
-  'PULSE_CERTIFICATE.json',
-]) {
-  check(
-    isTracked(relPath),
-    `${relPath} is versioned`,
-    `${relPath} must be tracked so CI and nightly ratchets do not depend on local-only artifacts`,
-  );
-}
-
 const packageJsonPath = safeRepoPath('package.json');
 const packageJson = JSON.parse(readText(packageJsonPath));
 check(
@@ -131,12 +113,7 @@ check(
   'package.json must expose readiness:check',
 );
 check(
-  packageJson.scripts?.['pulse:ci'] === 'node scripts/ops/run-pulse-ci.mjs',
-  'Root PULSE CI script is registered',
-  'package.json must expose pulse:ci',
-);
-check(
-  packageJson.scripts?.['ops:audit'] === 'npm run readiness:check && npm run pulse:ci',
+  packageJson.scripts?.['ops:audit'] === 'npm run readiness:check',
   'Root ops audit script is registered',
   'package.json must expose ops:audit',
 );
@@ -338,11 +315,6 @@ for (const variable of [
   requireIncludes(frontendEnvPath, variable, `Frontend env example documents ${variable}`);
 }
 
-const claudeSettingsPath = safeRepoPath('.claude/settings.json');
-requireIncludes(claudeSettingsPath, 'PreToolUse', 'Claude settings define pre-write hooks');
-requireIncludes(claudeSettingsPath, 'PostToolUse', 'Claude settings define post-write hooks');
-requireIncludes(claudeSettingsPath, 'Stop', 'Claude settings define stop hooks');
-
 const huskyPrePushPath = safeRepoPath('.husky/pre-push');
 requireIncludes(
   huskyPrePushPath,
@@ -367,20 +339,6 @@ for (const keyword of [
   'release-please',
 ]) {
   requireIncludes(githubSettingsDocPath, keyword, `GitHub settings doc covers ${keyword}`);
-}
-
-const mcpConfigPath = safeRepoPath('.mcp.json');
-if (!safeExistsSync(mcpConfigPath)) {
-  check(false, 'Codacy MCP server is configured', 'missing .mcp.json');
-} else {
-  const mcpConfig = readText(mcpConfigPath);
-  const usesOfficialPackage = mcpConfig.includes('@codacy/codacy-mcp');
-  const usesLauncher = mcpConfig.includes('scripts/mcp/codacy-mcp-launcher.sh');
-  check(
-    usesOfficialPackage || usesLauncher,
-    'Codacy MCP server is configured',
-    '.mcp.json must include "@codacy/codacy-mcp" or "scripts/mcp/codacy-mcp-launcher.sh"',
-  );
 }
 
 const branchProtectionPath = safeRepoPath('.github/branch-protection.json');
@@ -412,7 +370,6 @@ if (safeExistsSync(branchProtectionPath)) {
       'quality',
       'e2e',
       'Analyze (javascript-typescript)',
-      'claude-review',
       'Visual diff (Chromium)',
       'codecov/patch',
       'Codacy Analysis',
@@ -505,7 +462,7 @@ for (const keyword of ['LGPD', 'Asaas', 'chargeback', 'refund', 'nota fiscal', '
 }
 
 const readinessDocPath = safeRepoPath('docs/PRODUCTION_READINESS.md');
-for (const keyword of ['readiness:check', 'pulse:ci', 'staging', 'backup', 'monitoring']) {
+for (const keyword of ['readiness:check', 'staging', 'backup', 'monitoring']) {
   requireIncludes(readinessDocPath, keyword, `Production readiness doc covers ${keyword}`);
 }
 

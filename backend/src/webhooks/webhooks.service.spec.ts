@@ -209,9 +209,15 @@ describe('WebhooksService', () => {
       const localPrisma = createPartialPrismaMock({
         webhookEvent: ['upsert', 'updateMany', 'findUnique'],
       });
-      if (webhookEvent.upsert) localPrisma.webhookEvent.upsert = webhookEvent.upsert;
-      if (webhookEvent.updateMany) localPrisma.webhookEvent.updateMany = webhookEvent.updateMany;
-      if (webhookEvent.findUnique) localPrisma.webhookEvent.findUnique = webhookEvent.findUnique;
+      if (webhookEvent.upsert) {
+        localPrisma.webhookEvent.upsert = webhookEvent.upsert;
+      }
+      if (webhookEvent.updateMany) {
+        localPrisma.webhookEvent.updateMany = webhookEvent.updateMany;
+      }
+      if (webhookEvent.findUnique) {
+        localPrisma.webhookEvent.findUnique = webhookEvent.findUnique;
+      }
       const localService = new WebhooksService(
         localPrisma as unknown as PrismaService,
         { emitToWorkspace: jest.fn() } as unknown as InboxGateway,
@@ -232,9 +238,14 @@ describe('WebhooksService', () => {
       const findUnique = jest.fn<() => Promise<unknown>>();
       const { localService, localPrisma } = buildService({ upsert, updateMany, findUnique });
 
-      const result = await localService.logWebhookEvent('stripe', 'payment_intent.succeeded', 'pi_fresh', {
-        id: 'pi_fresh',
-      });
+      const result = await localService.logWebhookEvent(
+        'stripe',
+        'payment_intent.succeeded',
+        'pi_fresh',
+        {
+          id: 'pi_fresh',
+        },
+      );
 
       // The atomic claim must run, gated on the still-`received` row.
       expect(localPrisma.webhookEvent.updateMany).toHaveBeenCalledWith({
@@ -258,9 +269,14 @@ describe('WebhooksService', () => {
       const updateMany = jest.fn<() => Promise<unknown>>().mockResolvedValue({ count: 0 });
       const { localService, localPrisma } = buildService({ upsert, updateMany });
 
-      const result = await localService.logWebhookEvent('stripe', 'payment_intent.succeeded', 'pi_done', {
-        id: 'pi_done',
-      });
+      const result = await localService.logWebhookEvent(
+        'stripe',
+        'payment_intent.succeeded',
+        'pi_done',
+        {
+          id: 'pi_done',
+        },
+      );
 
       // Post-TTL Stripe redelivery: the row is already `processed`. We must
       // hand that status back so the controller short-circuits, and must NOT
@@ -286,9 +302,14 @@ describe('WebhooksService', () => {
       });
       const { localService } = buildService({ upsert, updateMany, findUnique });
 
-      const result = await localService.logWebhookEvent('stripe', 'payment_intent.succeeded', 'pi_race', {
-        id: 'pi_race',
-      });
+      const result = await localService.logWebhookEvent(
+        'stripe',
+        'payment_intent.succeeded',
+        'pi_race',
+        {
+          id: 'pi_race',
+        },
+      );
 
       // The loser must surface the live status (`processing`), not `received`,
       // so the caller does not run the handler chain a second time.
@@ -296,5 +317,4 @@ describe('WebhooksService', () => {
       expect(result.status).toBe('processing');
     });
   });
-
 });

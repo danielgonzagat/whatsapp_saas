@@ -1,3 +1,5 @@
+import { jest } from '@jest/globals';
+import { AccountMfaService } from './account-mfa.service';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -156,6 +158,14 @@ describe('AuthService', () => {
         { provide: ConnectService, useValue: mockConnectService },
         { provide: RateLimitService, useValue: mockRateLimitService },
         { provide: AuthTokenService, useValue: mockAuthTokenService },
+        {
+          provide: AccountMfaService,
+          useValue: {
+            verifyCode: jest.fn(),
+            createSetup: jest.fn(),
+            resumeSetup: jest.fn(),
+          },
+        },
       ],
     }).compile();
 

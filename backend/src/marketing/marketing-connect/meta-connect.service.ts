@@ -72,20 +72,11 @@ export class MetaConnectService {
         : snapshotStatus || 'DISCONNECTED';
     const liveStatus = rawLiveStatus.trim().toLowerCase();
     const whatsappConnected = Boolean(safeWhatsApp.connected) || snapshotConnected;
-    const whatsappStatusValue =
-      providerType === 'whatsapp-api'
-        ? whatsappConnected
-          ? 'connected'
-          : liveStatus === 'scan_qr_code' || liveStatus === 'starting' || liveStatus === 'opening'
-            ? 'connecting'
-            : liveStatus === 'failed'
-              ? 'failed'
-              : liveStatus || snapshotStatus || 'disconnected'
-        : whatsappConnected
-          ? 'connected'
-          : liveStatus === 'connection_incomplete'
-            ? 'connection_incomplete'
-            : liveStatus || snapshotStatus || 'disconnected';
+    const whatsappStatusValue = whatsappConnected
+      ? 'connected'
+      : liveStatus === 'connection_incomplete'
+        ? 'connection_incomplete'
+        : liveStatus || snapshotStatus || 'disconnected';
 
     return {
       meta: {

@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { applyEdits } from './engine.js';
 import { resolveSafeTarget } from './guard.js';
 import { guardSha, readUtf8 } from './server-helpers-io.js';
+import { requireNegativeActionProof, removedByteCountBetween } from './server-helpers-negative-proof.js';
 import { ok, fail, commit, writeWithTrace } from './server-helpers-result.js';
 import { replaceCalleeKeepArgs, replaceCallArg, insertCallArg, removeCallArg } from './engine-ops.js';
 import { universalReplaceLiteral, universalReplacePropertyValue, universalRenamePropertyKey } from './engine-universal.js';
@@ -23,6 +24,10 @@ server.registerTool(
       endLine: z.number().int().min(1),
       endColumn: z.number().int().min(1),
       preview: z.boolean().optional().describe('dry-run: validate + return diff, do not write'),
+      proofOfIncorrectness: z
+        .string()
+        .optional()
+        .describe('required for non-preview deletion: proof that the removed bytes are non-correct/negative'),
     },
   },
   async (a) => {
@@ -36,7 +41,16 @@ server.registerTool(
           newText: '',
         },
       ]);
-      return commit(relPath, absPath, before, r, {}, a.preview ?? false);
+      const negativeActionProof = a.preview
+        ? undefined
+        : requireNegativeActionProof({
+            action: 'atomic_delete_range',
+            target: relPath,
+            targetUnit: 'range',
+            removedByteCount: removedByteCountBetween(before, r.newText),
+            proofOfIncorrectness: a.proofOfIncorrectness,
+          });
+      return commit(relPath, absPath, before, r, { op: 'atomic_delete_range', negativeActionProof }, a.preview ?? false);
     } catch (e) {
       return fail(e instanceof Error ? e.message : String(e));
     }
@@ -219,6 +233,10 @@ server.registerTool(
       line: z.number().int().min(1), column: z.number().int().min(1),
       argIndex: z.number().int().min(0).describe('0-based argument index to remove'),
       preview: z.boolean().optional(),
+      proofOfIncorrectness: z
+        .string()
+        .optional()
+        .describe('required for non-preview argument removal: proof that the removed bytes are non-correct/negative'),
     },
   },
   async (a) => {
@@ -229,8 +247,15 @@ server.registerTool(
       if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
       if (r.newText === before) return ok({ ok: true, changed: false, note: 'no change', file: relPath });
       if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath });
-      writeWithTrace(relPath, absPath, before, r.newText, 'atomic_remove_arg', r.validation);
-      return ok({ ok: true, changed: true, file: relPath });
+      const negativeActionProof = requireNegativeActionProof({
+        action: 'atomic_remove_arg',
+        target: `${relPath}:${a.line}:${a.column}:${a.argIndex}`,
+        targetUnit: 'argument',
+        removedByteCount: removedByteCountBetween(before, r.newText),
+        proofOfIncorrectness: a.proofOfIncorrectness,
+      });
+      writeWithTrace(relPath, absPath, before, r.newText, 'atomic_remove_arg', r.validation, negativeActionProof);
+      return ok({ ok: true, changed: true, file: relPath, negativeActionProof });
     } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
   },
 );

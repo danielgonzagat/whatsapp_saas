@@ -122,7 +122,10 @@ export function buildCouponCreatePayload(form: CouponForm): CouponCreatePayload 
 
 /** Normalize an API response into a strictly typed Coupon array. */
 export function normalizeCouponList(response: unknown): Coupon[] {
-  return Array.isArray(response) ? (response as Coupon[]) : [];
+  if (!Array.isArray(response)) {
+    throw new Error('Payload de cupons invalido.');
+  }
+  return response as Coupon[];
 }
 
 /** Coerce a value into a numeric coupon discount value (used by table render). */

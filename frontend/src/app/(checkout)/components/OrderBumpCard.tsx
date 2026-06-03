@@ -2,6 +2,7 @@
 import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
+import { formatBRLFromCents as formatBRL } from '@/lib/common/money';
 import Image from 'next/image';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
@@ -16,15 +17,15 @@ export interface OrderBumpData {
   /** Product name property. */
   productName: string;
   /** Image property. */
-  image?: string;
+  image?: string | undefined;
   /** Price in cents property. */
   priceInCents: number;
   /** Compare at price property. */
-  compareAtPrice?: number;
+  compareAtPrice?: number | undefined;
   /** Highlight color property. */
-  highlightColor?: string;
+  highlightColor?: string | undefined;
   /** Checkbox label property. */
-  checkboxLabel?: string;
+  checkboxLabel?: string | undefined;
 }
 
 interface OrderBumpCardProps {
@@ -35,12 +36,6 @@ interface OrderBumpCardProps {
   cardBg?: string;
   mutedColor?: string;
   textColor?: string;
-}
-
-/* ─── Helpers ──────────────────────────────────────────────────────────────── */
-
-function formatBRL(cents: number): string {
-  return `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`;
 }
 
 /* ─── Component ────────────────────────────────────────────────────────────── */

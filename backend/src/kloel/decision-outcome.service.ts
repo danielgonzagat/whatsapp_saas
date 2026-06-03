@@ -4,6 +4,11 @@ import { randomUUID } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MindBanditService } from './mind/policy/mind-bandit.service';
+import { isDecisionLedgerDualWriteEnabled } from './decision-ledger-dualwrite.flag';
+import {
+  mirrorDecisionToMindPolicy,
+  resolveMirroredMindPolicy,
+} from './decision-ledger-dualwrite.helpers';
 
 function inputJson(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
@@ -49,6 +54,31 @@ export class DecisionOutcomeService {
         contextSnapshot: inputJson(input.contextSnapshot),
       },
     });
+
+    // ADDITIVE, flag-gated, best-effort dual-write to the parallel
+    // `RAC_MindPolicy` ledger (P1-B prep). Behind
+    // `KLOEL_DECISION_LEDGER_DUALWRITE` (default OFF). Any failure here is
+    // swallowed with a warn-log so it can NEVER break the canonical
+    // `RAC_DecisionOutcome` create above. No read path depends on this; no
+    // backfill is performed.
+    if (isDecisionLedgerDualWriteEnabled()) {
+      try {
+        await mirrorDecisionToMindPolicy(this.prisma, {
+          workspaceId: input.workspaceId,
+          decisionType: input.decisionType,
+          chosenAction: input.chosenAction,
+          baselineAction: input.baselineAction ?? null,
+          outcomeKey: input.outcomeKey,
+          contextSnapshot: input.contextSnapshot,
+        });
+      } catch (err: unknown) {
+        this.logger.warn('Failed to mirror decision into MindPolicy ledger', {
+          outcomeKey: input.outcomeKey,
+          decisionType: input.decisionType,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
 
     // Close the bandit loop: idempotently register the arms of this decision
     // (the chosen action + its baseline, e.g. 'engage'/'silence' for
@@ -116,6 +146,27 @@ export class DecisionOutcomeService {
           });
         } catch (err: unknown) {
           this.logger.warn('Failed to record bandit outcome from closeOutcome', {
+            outcomeKey: input.outcomeKey,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
+
+      // ADDITIVE, flag-gated, best-effort dual-write resolution of the mirrored
+      // `RAC_MindPolicy` row(s) for this outcomeKey (P1-B prep). Behind
+      // `KLOEL_DECISION_LEDGER_DUALWRITE` (default OFF). Any failure is
+      // swallowed with a warn-log so it can NEVER break the canonical
+      // `RAC_DecisionOutcome` close above. Reuses the already-fetched `closed`
+      // row's workspaceId; no extra read on the user-facing path when OFF.
+      if (closed && isDecisionLedgerDualWriteEnabled()) {
+        try {
+          await resolveMirroredMindPolicy(this.prisma, {
+            workspaceId: closed.workspaceId,
+            outcomeKey: input.outcomeKey,
+            outcome: input.wonVsBaseline ? 1 : 0,
+          });
+        } catch (err: unknown) {
+          this.logger.warn('Failed to resolve mirrored MindPolicy outcome', {
             outcomeKey: input.outcomeKey,
             error: err instanceof Error ? err.message : String(err),
           });

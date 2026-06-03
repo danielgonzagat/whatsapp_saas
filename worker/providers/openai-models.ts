@@ -2,6 +2,18 @@
  * @capability WorkerOpenAiModelResolver
  * @domain commercial-intelligence
  */
+import OpenAI from 'openai';
+
+/**
+ * Single factory for the worker's OpenAI client. Centralizes
+ * `new OpenAI({ apiKey })` so every provider/processor shares one construction
+ * site (model resolution already lives in this module). Behavior-preserving:
+ * all prior call sites passed only `{ apiKey }`.
+ */
+export function createOpenAIClient(apiKey: string): OpenAI {
+  return new OpenAI({ apiKey });
+}
+
 /** Worker open ai model role type. */
 export type WorkerOpenAIModelRole =
   | 'brain'

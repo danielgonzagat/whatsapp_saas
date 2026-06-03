@@ -51,9 +51,15 @@ const SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
 const ROOT_BASENAME_RE = /^(index|main|server|app|cli|bootstrap|setup)\.(ts|tsx|js|jsx|mjs|cjs)$/;
 const TEST_SURFACE_RE = /\.(spec|test|proof|e2e|stories|bench)\.(ts|tsx|js|jsx|mjs|cjs)$/;
 const NEST_ROOT_RE = /\.(controller|module|gateway|resolver|processor|consumer|cron|command|seed)\.(ts|tsx|js|jsx|mjs|cjs)$/;
+const OPERATIONAL_SCRIPT_DIR_RE = /(^|\/)(scripts|bin|tools)\//;
+const OPERATIONAL_SCRIPT_BASENAME_RE = /^(build|smoke(?:[-.].*)?|benchmark|bench|operational-use|demo(?:[-.].*)?|trace-coverage-audit|worker-scope-check|audit-atomicity|bypass-report|.*(?:-hook|-launcher|-broker)(?:[-.].*)?)\.(ts|tsx|js|jsx|mjs|cjs)$/;
 // Next.js routing roots: a segment file that the framework loads by convention.
 const NEXT_ROUTE_BASENAME_RE = /^(page|layout|route|loading|error|not-found|template|default|middleware|head|sitemap|robots|opengraph-image|icon|apple-icon|manifest)\.(ts|tsx|js|jsx|mjs)$/;
 const NEXT_ROUTE_DIR_RE = /(^|\/)(app|pages)\//;
+
+function isOperationalScriptRoot(norm: string, base: string): boolean {
+  return OPERATIONAL_SCRIPT_DIR_RE.test(norm) && OPERATIONAL_SCRIPT_BASENAME_RE.test(base);
+}
 
 /** A source file is a ROOT iff the program/harness enters it by convention, not via an import. */
 function isRoot(rel: string): boolean {
@@ -61,6 +67,7 @@ function isRoot(rel: string): boolean {
   const base = norm.slice(norm.lastIndexOf('/') + 1);
   if (TEST_SURFACE_RE.test(base)) return true; // the test/proof harness IS a root
   if (ROOT_BASENAME_RE.test(base)) return true; // index/main/server/app entrypoints
+  if (isOperationalScriptRoot(norm, base)) return true; // scripts/bin/tools operational roots
   if (NEST_ROOT_RE.test(base)) return true; // NestJS DI roots (loaded by the framework, never imported by app code)
   if (NEXT_ROUTE_DIR_RE.test(norm) && NEXT_ROUTE_BASENAME_RE.test(base)) return true; // Next.js file-system routes
   return false;
@@ -94,14 +101,40 @@ async function importSpecifiers(content: string, rel: string): Promise<string[] 
  * "does anything reach `target`?". Bounded ⇒ on a cap we report unjudged, never a
  * false orphan.
  */
+function normalizeSourceRoot(rel: string): string {
+  const normalized = rel.replaceAll('\\', '/').replace(/\/+$/g, '');
+  return normalized === '.' ? '' : normalized;
+}
+
+function isWithinSourceRoot(rel: string, root: string): boolean {
+  const file = rel.replaceAll('\\', '/');
+  const scope = normalizeSourceRoot(root);
+  return scope === '' || file === scope || file.startsWith(`${scope}/`);
+}
+
+function lensScopedSourceRoots(changedFiles: string[]): string[] {
+  const sourceFiles = changedFiles.map((rel) => rel.replaceAll('\\', '/')).filter(isSource);
+  if (sourceFiles.length === 0) return [''];
+  const knownRoots = ['scripts/mcp/atomic-edit', 'backend', 'frontend', 'worker'];
+  for (const root of knownRoots) {
+    if (sourceFiles.every((rel) => isWithinSourceRoot(rel, root))) return [root];
+  }
+  return [''];
+}
+
 function enumerateSourceFiles(
   repoRoot: string,
   overlay: Map<string, string>,
   cap: number,
+  roots: string[] = [''],
 ): { files: string[]; capped: boolean } {
   const SKIP = new Set(['node_modules', '.git', 'dist', '.next', 'build', 'coverage', '.atomic', '.turbo', 'vendor', '.cache']);
+  const scopeRoots = roots.length > 0 ? roots.map(normalizeSourceRoot) : [''];
   const seen = new Set<string>();
-  for (const rel of overlay.keys()) if (isSource(rel)) seen.add(rel.replaceAll('\\', '/'));
+  for (const rel of overlay.keys()) {
+    const normalized = rel.replaceAll('\\', '/');
+    if (isSource(normalized) && scopeRoots.some((root) => isWithinSourceRoot(normalized, root))) seen.add(normalized);
+  }
   let capped = false;
   const walk = (dirRel: string): void => {
     if (seen.size >= cap) { capped = true; return; }
@@ -122,7 +155,7 @@ function enumerateSourceFiles(
       }
     }
   };
-  walk('');
+  for (const root of scopeRoots) walk(root);
   return { files: [...seen], capped };
 }
 
@@ -182,11 +215,51 @@ async function buildEdges(
 }
 
 /** BFS the forward-import closure of the ROOT set → the set of reachable source files. */
-function reachableFromRoots(universe: string[], forward: Map<string, Set<string>>): Set<string> {
+const BUILD_MANIFEST_BASENAME_RE = /^build\.(mjs|cjs|js|ts)$/;
+const BUILD_ENTRY_LITERAL_RE = /['"]([^'"]+\.(?:ts|tsx|js|jsx|mjs|cjs))['"]/g;
+
+function buildManifestCandidates(universe: string[], changedFiles: string[]): string[] {
+  const candidates = new Set<string>();
+  const add = (rel: string): void => {
+    const norm = rel.replaceAll('\\', '/');
+    const base = norm.slice(norm.lastIndexOf('/') + 1);
+    if (BUILD_MANIFEST_BASENAME_RE.test(base)) candidates.add(norm);
+  };
+  for (const rel of universe) add(rel);
+  for (const rel of changedFiles) {
+    let dir = normalizeSourceRoot(rel);
+    while (true) {
+      for (const base of ['build.mjs', 'build.cjs', 'build.js', 'build.ts']) add(dir ? `${dir}/${base}` : base);
+      const slash = dir.lastIndexOf('/');
+      if (slash < 0) break;
+      dir = dir.slice(0, slash);
+    }
+  }
+  return [...candidates];
+}
+
+function buildDeclaredSourceRoots(ctx: GateContext, universe: string[]): Set<string> {
+  const universeSet = new Set(universe);
+  const roots = new Set<string>();
+  for (const manifest of buildManifestCandidates(universe, ctx.changedFiles)) {
+    const content = ctx.readFile(manifest);
+    if (content === null || !/\bENTRY\b/.test(content)) continue;
+    const dir = manifest.includes('/') ? manifest.slice(0, manifest.lastIndexOf('/')) : '';
+    for (const match of content.matchAll(BUILD_ENTRY_LITERAL_RE)) {
+      const spec = match[1].replaceAll('\\', '/');
+      if (spec.startsWith('/') || spec.includes('://')) continue;
+      const rel = path.posix.normalize(dir ? `${dir}/${spec}` : spec);
+      if (universeSet.has(rel)) roots.add(rel);
+    }
+  }
+  return roots;
+}
+
+function reachableFromRoots(universe: string[], forward: Map<string, Set<string>>, extraRoots = new Set<string>()): Set<string> {
   const reached = new Set<string>();
   const queue: string[] = [];
   for (const f of universe) {
-    if (isRoot(f)) {
+    if (isRoot(f) || extraRoots.has(f)) {
       reached.add(f);
       queue.push(f);
     }
@@ -215,11 +288,20 @@ const reachabilityGate: GateModule = {
       'every changed non-root source file is reachable from a root (entrypoint/route/test) over the import-edge closure';
 
     // 1. The file universe the gate can SEE (overlay + bounded disk walk).
-    const { files: universe, capped } = enumerateSourceFiles(ctx.repoRoot, ctx.overlay, MAX_UNIVERSE);
+    const sourceRoots = ctx.lensMode ? lensScopedSourceRoots(ctx.changedFiles) : [''];
+    const scopeLabel = sourceRoots.length === 1 && sourceRoots[0] !== '' ? ` in source root '${sourceRoots[0]}'` : '';
+    const { files: universe, capped } = enumerateSourceFiles(ctx.repoRoot, ctx.overlay, MAX_UNIVERSE, sourceRoots);
     if (capped) {
       // Cannot enumerate the full inbound surface ⇒ cannot prove an absence of
       // inbound edges ⇒ refuse to guess. Honest unjudged, never a false orphan.
-      return { gate: this.name, green: true, reds: [], note, unjudged: true };
+      return {
+        gate: this.name,
+        green: true,
+        reds: [],
+        note,
+        unjudged: true,
+        unjudgedReason: `source universe${scopeLabel} exceeded ${MAX_UNIVERSE} files; cannot prove absence of inbound import edges`,
+      };
     }
 
     // 2. Edge set + root-closure reachability over the WHOLE visible tree, built
@@ -230,9 +312,17 @@ const reachabilityGate: GateModule = {
       // At least one visible source file has no grammar ⇒ its real import edges are
       // unreadable ⇒ we cannot prove the absence of an inbound edge for any target.
       // Honest unjudged, never a guessed orphan.
-      return { gate: this.name, green: true, reds: [], note, unjudged: true };
+      return {
+        gate: this.name,
+        green: true,
+        reds: [],
+        note,
+        unjudged: true,
+        unjudgedReason: 'at least one visible source file has no grammar/perception; import edges are unreadable',
+      };
     }
-    const reachable = reachableFromRoots(universe, forward);
+    const buildRoots = buildDeclaredSourceRoots(ctx, universe);
+    const reachable = reachableFromRoots(universe, forward, buildRoots);
 
     // 3. WRITE-direction claim: judge ONLY the changed files, and only the ones
     //    THIS write could have orphaned — a pre-existing orphan never blocks an

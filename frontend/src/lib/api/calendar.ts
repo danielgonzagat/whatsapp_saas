@@ -12,6 +12,28 @@ export interface CalendarEvent {
   meetingLink?: string;
 }
 
+type CalendarApiEnvelope<T> = {
+  data?: T | undefined;
+  error?: string | undefined;
+  status: number;
+};
+
+function confirmCalendarPayload<T>(
+  response: CalendarApiEnvelope<T>,
+  fallbackMessage: string,
+  missingPayloadMessage: string,
+): T {
+  if (response.error || response.status >= 400) {
+    throw new Error(response.error ?? fallbackMessage);
+  }
+
+  if (response.data === undefined || response.data === null) {
+    throw new Error(missingPayloadMessage);
+  }
+
+  return response.data;
+}
+
 export async function listCalendarEvents(
   startDate?: string,
   endDate?: string,
@@ -25,11 +47,14 @@ export async function listCalendarEvents(
     params.append('endDate', endDate);
   }
 
-  const res = await apiFetch<CalendarEvent[]>(`/calendar/events?${params.toString()}`);
-  if (res.error) {
-    return [];
-  }
-  return res.data ?? [];
+  const query = params.toString();
+  const endpoint = query ? `/calendar/events?${query}` : '/calendar/events';
+  const res = await apiFetch<CalendarEvent[]>(endpoint);
+  return confirmCalendarPayload(
+    res,
+    'Erro ao listar eventos',
+    'Calendar event list did not return a confirmed payload',
+  );
 }
 
 export async function createCalendarEvent(
@@ -40,11 +65,13 @@ export async function createCalendarEvent(
     method: 'POST',
     body: event,
   });
-  if (res.error) {
-    throw new Error(res.error || 'Erro ao criar evento');
-  }
+  const createdEvent = confirmCalendarPayload(
+    res,
+    'Erro ao criar evento',
+    'Calendar event creation did not return a confirmed payload',
+  );
   mutate((key: string) => typeof key === 'string' && key.startsWith('/calendar'));
-  return res.data as CalendarEvent;
+  return createdEvent;
 }
 
 export async function cancelCalendarEvent(
@@ -54,9 +81,14 @@ export async function cancelCalendarEvent(
   const res = await apiFetch<{ success: boolean }>(`/calendar/events/${eventId}`, {
     method: 'DELETE',
   });
-  if (res.error) {
-    throw new Error(res.error || 'Erro ao cancelar evento');
+  const cancellation = confirmCalendarPayload(
+    res,
+    'Erro ao cancelar evento',
+    'Calendar event cancellation did not return a confirmed payload',
+  );
+  if (cancellation.success !== true) {
+    throw new Error('Calendar event cancellation was not confirmed');
   }
   mutate((key: string) => typeof key === 'string' && key.startsWith('/calendar'));
-  return res.data as { success: boolean };
+  return cancellation;
 }

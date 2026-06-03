@@ -19,6 +19,10 @@ export interface SubscriptionItem {
   totalPaid?: number;
   startedAt?: string;
   nextBillingAt?: string;
+  // Returned by the backend subscription list (the row carries productId/planId);
+  // needed to fetch the product's real ProductPlans when changing plan.
+  productId?: string;
+  planId?: string;
 }
 
 export interface OrderItem {

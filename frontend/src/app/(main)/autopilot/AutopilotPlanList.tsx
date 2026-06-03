@@ -4,6 +4,7 @@ import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import { CenterStage, Section } from '@/components/kloel';
 import { DollarSign, Layers } from 'lucide-react';
+import { formatCurrency, formatDateTime } from './page.ui';
 
 interface PlanRevenueEvent {
   id?: string;
@@ -15,31 +16,6 @@ interface PlanRevenueEvent {
   reason?: string;
   createdAt: string;
   [key: string]: unknown;
-}
-
-function formatCurrency(value?: number) {
-  if (value == null) {
-    return 'R$ 0';
-  }
-  return (
-    'R$ ' + value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-  );
-}
-
-function formatDateTime(value?: string | null) {
-  if (!value) {
-    return '—';
-  }
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return '—';
-  }
-  return parsed.toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
 }
 
 interface AutopilotPlanListProps {

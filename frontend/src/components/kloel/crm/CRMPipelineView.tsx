@@ -18,6 +18,7 @@ export default function CRMPipelineView() {
   const [selectedPipeline, setSelectedPipeline] = useState<string>('');
   const [detailDeal, setDetailDeal] = useState<CRMDeal | null>(null);
   const [dragDealId, setDragDealId] = useState<string | null>(null);
+  const [pipelineError, setPipelineError] = useState<string | null>(null);
 
   const pipeArr: CRMPipeline[] = Array.isArray(pipelines) ? (pipelines as CRMPipeline[]) : [];
   const pipeId = selectedPipeline || pipeArr[0]?._id || pipeArr[0]?.id || '';
@@ -33,6 +34,8 @@ export default function CRMPipelineView() {
   const stages = currentPipeline?.stages || [];
   const showPipelineLoading = plLoading;
   const showDealLoading = dlLoading && !dealArr.length;
+  const resolvePipelineError = (error: unknown, fallback: string) =>
+    error instanceof Error && error.message ? error.message : fallback;
 
   const onDragStart = useCallback((e: ReactDragEvent<HTMLDivElement>, dealId: string) => {
     setDragDealId(dealId);
@@ -45,15 +48,30 @@ export default function CRMPipelineView() {
       if (!currentDragId) {
         return;
       }
+      setPipelineError(null);
       try {
         await moveDeal(currentDragId, stageId);
         await mutateDeals();
-      } catch {
-        /* silent */
+      } catch (error) {
+        setPipelineError(resolvePipelineError(error, 'Erro ao mover negócio.'));
+      } finally {
+        setDragDealId(null);
       }
-      setDragDealId(null);
     },
     [dragDealId, moveDeal, mutateDeals],
+  );
+
+  const handleCreateDeal = useCallback(
+    async (payload: Record<string, unknown>) => {
+      setPipelineError(null);
+      try {
+        return await createDeal(payload);
+      } catch (error) {
+        setPipelineError(resolvePipelineError(error, 'Erro ao criar negócio.'));
+        throw error;
+      }
+    },
+    [createDeal],
   );
 
   function dealsForStage(stageId: string) {
@@ -84,6 +102,23 @@ export default function CRMPipelineView() {
         isLoading={showPipelineLoading}
         onSelectPipeline={setSelectedPipeline}
       />
+      {pipelineError && (
+        <div
+          role="alert"
+          aria-live="polite"
+          style={{
+            border: '1px solid rgba(239,68,68,0.34)',
+            background: 'rgba(239,68,68,0.08)',
+            color: 'var(--app-text-primary)',
+            borderRadius: 6,
+            padding: '10px 12px',
+            marginBottom: 12,
+            fontSize: 12,
+          }}
+        >
+          {pipelineError}
+        </div>
+      )}
 
       <div
         style={{
@@ -129,7 +164,7 @@ export default function CRMPipelineView() {
                 onDragStart={onDragStart}
                 onDropDeal={handleDropDeal}
                 onDealClick={setDetailDeal}
-                onCreateDeal={createDeal}
+                onCreateDeal={handleCreateDeal}
                 onDealCreated={mutateDeals}
               />
             );

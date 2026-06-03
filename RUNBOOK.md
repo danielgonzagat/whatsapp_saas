@@ -301,93 +301,6 @@ unsubscribe links break.
 
 ---
 
-## Incident 4: PULSE NOT_CERTIFIED
-
-### Context
-
-PULSE is the platform's self-audit and certification machine. It runs
-as a CI gate in `deploy-production.yml` (`npm run pulse:ci`) and blocks
-production deploys when the certification status is `NOT_CERTIFIED` or
-`NOT_READY`. The full re-certification procedure is documented in
-`docs/evidence/pulse-recert.md`.
-
-### Symptoms
-
-- CI job `pulse-certification-gate` fails with exit code 1.
-- `.pulse/current/PULSE_CERTIFICATE.json` shows `unifiedVerdict: NOT_READY`.
-- `scripts/dev/check-pulse-status.mjs` exits non-zero.
-- Production deploy is blocked.
-
-### Step 1: Read the Recert Guide
-
-```bash
-cat docs/evidence/pulse-recert.md
-```
-
-This documents severity levels (critical, high, medium, low), artifact
-sources (`.pulse/current/PULSE_CERTIFICATE.json`,
-`.pulse/current/PULSE_HEALTH.json`, `.pulse/current/PULSE_REPORT.md`),
-and the certification statuses (READY, READY_WITH_CAVEATS, NOT_READY).
-
-### Step 2: Run Re-Certification Locally
-
-```bash
-cd /Users/danielpenin/whatsapp_saas
-bash scripts/dev/run-pulse-recert.sh
-```
-
-This script:
-
-1. Invokes `npx ts-node --transpile-only --project scripts/pulse/tsconfig.json
-   scripts/pulse/index.ts --report`, regenerating all PULSE artifacts in
-   `.pulse/current/`.
-2. Runs `node scripts/dev/check-pulse-status.mjs` to parse the artifacts
-   and surface certification status.
-
-### Step 3: Classify Breaks
-
-Open `.pulse/current/PULSE_HEALTH.json` and inspect the `breaks` array:
-
-```bash
-cat .pulse/current/PULSE_HEALTH.json | python3 -c "
-import json, sys
-data = json.load(sys.stdin)
-breaks = data.get('breaks', [])
-severity_counts = {}
-for b in breaks:
-    sev = b.get('severity', 'unknown')
-    severity_counts[sev] = severity_counts.get(sev, 0) + 1
-    print(f\"[{sev.upper()}] {b.get('description', b.get('id', '?'))}\")
-print(f\"\nTotal: {len(breaks)}\")
-for sev, count in sorted(severity_counts.items()):
-    print(f'  {sev}: {count}')
-"
-```
-
-### Step 4: Fix by Severity
-
-| Severity | Action |
-| --- | --- |
-| **critical** | Must be fixed before any deploy. Blocks production. |
-| **high** | Real gap that could cause failures. Fix before production deploy. |
-| **medium** | Unused DB model, unobserved route. Fix in next sprint. |
-| **low** | Minor inconsistency. Deferrable. |
-
-Critical/high breaks must be addressed in code and verified with a
-re-run of `bash scripts/dev/run-pulse-recert.sh`. After all critical
-and high breaks are resolved, the status should reach at minimum
-`READY_WITH_CAVEATS`.
-
-### Step 5: Verify Gate Passes
-
-```bash
-# Simulate CI pulse gate:
-PULSE_CI_TIMEOUT_MS=300000 PULSE_DISABLE_LOCAL_ENV=true npm run pulse:ci
-# Expected exit code: 0
-```
-
----
-
 ## Incident 5: Redis Down
 
 ### Context
@@ -779,7 +692,6 @@ Verify CI passes on the PR.
 | Stripe webhook deadletter | Critical | May need rollback | 15 min |
 | JWT key rotation | Low (planned) | No | 10 min |
 | JWT key rotation (emergency) | Critical | No | 5 min |
-| PULSE NOT_CERTIFIED | High | Can't deploy until fixed | Varies |
 | Redis down | Critical | Rollback if recent deploy | 15 min |
 | WAHA session loss | Medium | No | 10 min |
 | Meta tokens revoked | High | No | 15 min |

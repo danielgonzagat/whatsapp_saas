@@ -5,10 +5,10 @@ import {
 } from './provider-env';
 
 describe('provider-env', () => {
-  it('normalizes WAHA aliases into whatsapp-api', () => {
-    expect(normalizeWhatsAppProvider('whatsapp-api')).toBe('whatsapp-api');
-    expect(normalizeWhatsAppProvider('waha')).toBe('whatsapp-api');
-    expect(normalizeWhatsAppProvider('whatsapp-web-agent')).toBe('whatsapp-api');
+  it('rejects legacy WAHA aliases', () => {
+    expect(normalizeWhatsAppProvider('whatsapp-api')).toBeNull();
+    expect(normalizeWhatsAppProvider('waha')).toBeNull();
+    expect(normalizeWhatsAppProvider('whatsapp-web-agent')).toBeNull();
   });
 
   it('normalizes Meta aliases into meta-cloud', () => {
@@ -17,7 +17,7 @@ describe('provider-env', () => {
   });
 
   it('normalizes with case insensitivity and whitespace', () => {
-    expect(normalizeWhatsAppProvider('  WAHA  ')).toBe('whatsapp-api');
+    expect(normalizeWhatsAppProvider('  WAHA  ')).toBeNull();
     expect(normalizeWhatsAppProvider('  Meta-Cloud  ')).toBe('meta-cloud');
     expect(normalizeWhatsAppProvider('  meta  ')).toBe('meta-cloud');
   });

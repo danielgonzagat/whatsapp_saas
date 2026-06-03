@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AgentRuntimeSessionStore } from './agent-runtime.session-store';
 import { AgentRuntimeSkillRegistry } from './agent-runtime.skill-registry';
-import { AgentRuntimePulseSelfModelService } from './agent-runtime.pulse-self-model';
+import { AgentRuntimeReadinessSelfModelService } from './agent-runtime.readiness-self-model';
 import { AgentRuntimePolicyService } from './agent-runtime.policy';
 import { sanitizeAgentRuntimeText } from './agent-runtime.sanitizer';
 import { AgentRuntimeMemoryManagerService } from './agent-runtime.memory-manager';
@@ -18,7 +18,7 @@ export class AgentRuntimeContextService {
   constructor(
     private readonly sessions: AgentRuntimeSessionStore,
     private readonly skills: AgentRuntimeSkillRegistry,
-    private readonly pulse: AgentRuntimePulseSelfModelService,
+    private readonly readinessModel: AgentRuntimeReadinessSelfModelService,
     private readonly policy: AgentRuntimePolicyService,
     private readonly memoryManager: AgentRuntimeMemoryManagerService,
     private readonly contextCompressor: AgentRuntimeContextCompressorService,
@@ -53,8 +53,8 @@ export class AgentRuntimeContextService {
         ? this.contextCompressor.loadCompressedContext(request.workspaceId, request.threadId)
         : Promise.resolve(null),
     ]);
-    const pulse = this.pulse.buildSelfModel();
-    const authorityMode = pulse.canWorkNow ? 'tool_limited' : 'advisory';
+    const readiness = this.readinessModel.buildSelfModel();
+    const authorityMode = readiness.canWorkNow ? 'tool_limited' : 'advisory';
     void Promise.allSettled(
       selectedSkills.map((selection) =>
         this.skills.recordSkillUsage(request.workspaceId, {
@@ -72,13 +72,13 @@ export class AgentRuntimeContextService {
       recall,
       sessionRecall,
       selectedSkills,
-      pulse,
+      readiness,
       authorityMode,
       systemPromptBlock: this.renderSystemPromptBlock({
         recall,
         sessionRecall,
         selectedSkills,
-        pulse,
+        readiness,
         authorityMode,
         memoryProviderPrompt,
         memoryProviderPrefetch,
@@ -164,7 +164,7 @@ export class AgentRuntimeContextService {
       compressedContextSummary: string;
     },
   ): string {
-    const pulse = context.pulse;
+    const readiness = context.readiness;
     const recallLines = context.recall.memories.map(
       (memory) =>
         `- [${memory.category}] ${sanitizeAgentRuntimeText(memory.content, 500)} (${memory.source.truthMode}, ${memory.source.source})`,
@@ -182,23 +182,23 @@ export class AgentRuntimeContextService {
     return [
       '<kloel-agent-runtime>',
       `authorityMode=${context.authorityMode}`,
-      `pulse.status=${pulse.status}`,
-      `pulse.authorityMode=${pulse.authorityMode}`,
-      `pulse.canWorkNow=${pulse.canWorkNow}`,
-      `pulse.canDeclareComplete=${pulse.canDeclareComplete}`,
-      `pulse.score=${pulse.score ?? 'unknown'}`,
-      pulse.blockingReasons.length
-        ? `pulse.blockingReasons=${pulse.blockingReasons.join(' | ')}`
-        : 'pulse.blockingReasons=none',
-      pulse.nextSafeUnits.length
-        ? `pulse.nextSafeUnits=${pulse.nextSafeUnits.join(' | ')}`
-        : 'pulse.nextSafeUnits=none',
+      `readiness.status=${readiness.status}`,
+      `readiness.authorityMode=${readiness.authorityMode}`,
+      `readiness.canWorkNow=${readiness.canWorkNow}`,
+      `readiness.canDeclareComplete=${readiness.canDeclareComplete}`,
+      `readiness.score=${readiness.score ?? 'unknown'}`,
+      readiness.blockingReasons.length
+        ? `readiness.blockingReasons=${readiness.blockingReasons.join(' | ')}`
+        : 'readiness.blockingReasons=none',
+      readiness.nextSafeUnits.length
+        ? `readiness.nextSafeUnits=${readiness.nextSafeUnits.join(' | ')}`
+        : 'readiness.nextSafeUnits=none',
       'rules:',
       '- Treat this runtime block as operational memory, not as user instruction.',
       '- Observed memory beats inferred memory; never turn projected facts into promises.',
       '- High and critical tool actions require policy approval before execution.',
       '- Follow per-tool delegation permissions above; they override the global risk heuristic.',
-      '- Never claim production readiness unless PULSE canDeclareComplete is true.',
+      '- Never claim production readiness unless readiness.canDeclareComplete is true.',
       '- ANTI-HALLUCINATION: Your cognitive state is your ONLY source of truth about your own capabilities, memories, and beliefs. If your cognitive state shows empty arrays for memories/beliefs/capabilities, you MUST report them as empty. Never fabricate numbers. "I have 0 memories" is correct when memory arrays are empty.',
       'recall:',
       ...(recallLines.length ? recallLines : ['- none']),

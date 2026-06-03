@@ -2,7 +2,6 @@ import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ModuleRef } from '@nestjs/core';
 import { StructuredLogger } from '../logging/structured-logger';
-import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
@@ -21,6 +20,7 @@ import { markSubscriptionStatusHelper } from './billing-subscription-status.help
 import { cancelSubscriptionByStripeId } from './billing-webhook.cancel';
 import { fulfillCheckout } from './billing-webhook.fulfillment';
 import { syncSubscriptionStatus } from './billing-webhook.sync-subscription';
+import { claimWebhookEvent } from '../webhooks/webhook-event-dedup.helper';
 
 /**
  * BillingWebhookService
@@ -119,33 +119,19 @@ export class BillingWebhookService {
 
     const webhookIdempotencyKey = `stripe:${event.id}`;
 
-    // $transaction + unique-constraint fallback
-    const idempotent = await this.prisma.$transaction(async (tx) => {
-      const alreadyProcessed = await tx.webhookEvent.findFirst({
-        where: { provider: 'stripe', externalId: webhookIdempotencyKey, status: 'processed' },
-      });
-      if (alreadyProcessed) {
-        return true;
-      }
-
-      try {
-        await tx.webhookEvent.create({
-          data: {
-            provider: 'stripe',
-            eventType: event.type,
-            externalId: webhookIdempotencyKey,
-            payload: toPrismaJsonValue(event),
-            status: 'received',
-          },
-        });
-      } catch (err: unknown) {
-        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-          return true;
-        }
-        throw err;
-      }
-      return false;
-    });
+    // $transaction + unique-constraint fallback. Delegates the shared
+    // "findFirst(processed) → create → P2002 duplicate" primitive to the
+    // canonical dedup helper; `requireProcessedToDedup` reproduces the
+    // pre-check that lets a mid-flight (non-`processed`) row be retried.
+    const { alreadyProcessed: idempotent } = await this.prisma.$transaction((tx) =>
+      claimWebhookEvent(tx, {
+        provider: 'stripe',
+        eventType: event.type,
+        externalId: webhookIdempotencyKey,
+        payload: toPrismaJsonValue(event),
+        requireProcessedToDedup: true,
+      }),
+    );
 
     if (idempotent) {
       this.logger.log(`Webhook idempotent skip: ${event.type} (id=${event.id})`);

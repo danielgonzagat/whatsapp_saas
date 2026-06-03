@@ -12,6 +12,7 @@ import {
 import { Public } from '../../auth/public.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WalletService } from '../../wallet/wallet.service';
+import { claimWebhookEvent } from '../../webhooks/webhook-event-dedup.helper';
 
 import { MercadoPagoConfigService } from './mercadopago.config';
 import { MercadoPagoPixChargeService } from './mercadopago-pix-charge.service';
@@ -77,29 +78,21 @@ export class MercadoPagoWebhookController {
     }
     const externalId = String(dataId);
 
-    // Idempotency: persist event; if duplicate, short-circuit.
-    try {
-      await this.prisma.webhookEvent.create({
-        data: {
-          provider: 'mercadopago',
-          externalId,
-          eventType: body?.type ?? body?.action ?? 'payment',
-          // MP webhook payload has optional fields; cast to Prisma's
-          // InputJsonValue (JSON-serialisable plain object).
-          payload: { ...(body ?? {}) },
-          status: 'received',
-          receivedAt: new Date(),
-        },
-      });
-    } catch (err) {
-      // Unique constraint @@unique([provider, externalId]) — duplicate event,
-      // we already processed it. MP retries every webhook a few times.
-      const code = (err as { code?: string })?.code;
-      if (code === 'P2002') {
-        this.logger.log(`mp_webhook_duplicate externalId=${externalId}`);
-        return { received: true, duplicate: true };
-      }
-      throw err;
+    // Idempotency: persist event via the canonical dedup primitive; if
+    // duplicate (unique-constraint violation), short-circuit. MP retries every
+    // webhook a few times. The payload spread preserves the prior inline shape.
+    const dedup = await claimWebhookEvent(this.prisma, {
+      provider: 'mercadopago',
+      externalId,
+      eventType: body?.type ?? body?.action ?? 'payment',
+      // MP webhook payload has optional fields; cast to Prisma's
+      // InputJsonValue (JSON-serialisable plain object).
+      payload: { ...(body ?? {}) },
+      receivedAt: new Date(),
+    });
+    if (dedup.alreadyProcessed) {
+      this.logger.log(`mp_webhook_duplicate externalId=${externalId}`);
+      return { received: true, duplicate: true };
     }
 
     // Fetch authoritative status (defense-in-depth).

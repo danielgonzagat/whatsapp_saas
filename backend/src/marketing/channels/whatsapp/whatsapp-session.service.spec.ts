@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, GoneException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { OpsAlertService } from '../../../observability/ops-alert.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
@@ -10,6 +10,25 @@ jest.mock('../../../queue/queue', () => ({
   flowQueue: { add: jest.fn().mockResolvedValue(undefined) },
   autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) },
 }));
+
+async function expectMetaOnlyGone(promise: Promise<unknown>, feature: string) {
+  try {
+    await promise;
+  } catch (error) {
+    expect(error).toBeInstanceOf(GoneException);
+    const response = error instanceof GoneException ? error.getResponse() : null;
+    expect(response).toEqual(
+      expect.objectContaining({
+        feature,
+        notSupported: true,
+        provider: 'meta-cloud',
+      }),
+    );
+    return;
+  }
+
+  throw new Error(`Expected ${feature} to be rejected`);
+}
 
 describe('WhatsappSessionService', () => {
   let service: WhatsappSessionService;
@@ -80,9 +99,16 @@ describe('WhatsappSessionService', () => {
   });
 
   describe('createSession', () => {
-    it('returns qr_pending when QR code is available', async () => {
+    it('returns Meta connected session details when the phone is active', async () => {
       const result = await service.createSession('ws-1');
-      expect(result).toEqual({ status: 'qr_pending', code: 'qr-data', qrCode: 'qr-data' });
+      expect(result).toEqual({
+        status: 'already_connected',
+        authUrl: undefined,
+        phoneNumber: '5511999991234',
+        phoneNumberId: undefined,
+        provider: 'meta-cloud',
+        whatsappBusinessId: undefined,
+      });
     });
 
     it('returns error when session start fails', async () => {
@@ -91,25 +117,48 @@ describe('WhatsappSessionService', () => {
       expect(result).toEqual({ error: true, message: 'error' });
     });
 
-    it('returns already_connected when session exists and no QR', async () => {
-      providerRegistry.getQrCode.mockResolvedValue({ success: false });
+    it('returns Meta authorization guidance when the phone still needs connection', async () => {
+      providerRegistry.startSession.mockResolvedValue({
+        success: true,
+        authUrl: 'https://meta.test/signup',
+      });
+      providerRegistry.getSessionStatus.mockResolvedValueOnce({
+        connected: false,
+        status: 'CONNECTION_INCOMPLETE',
+        authUrl: 'https://meta.test/status-signup',
+        phoneNumberId: 'phone-id',
+        whatsappBusinessId: 'biz-id',
+      });
+
       const result = await service.createSession('ws-1');
-      expect(result).toEqual({ status: 'already_connected', qrCode: undefined });
+      expect(result).toEqual({
+        status: 'CONNECTION_INCOMPLETE',
+        authUrl: 'https://meta.test/signup',
+        phoneNumber: undefined,
+        phoneNumberId: 'phone-id',
+        provider: 'meta-cloud',
+        whatsappBusinessId: 'biz-id',
+      });
     });
   });
 
   describe('recreateSessionIfInvalid', () => {
-    it('returns healthy when diagnostics are good', async () => {
+    it('returns connected Meta status when diagnostics are good', async () => {
       const result = await service.recreateSessionIfInvalid('ws-1');
       expect(result).toEqual({
         recreated: false,
-        reason: 'session_config_healthy',
+        reason: 'meta_session_connected',
         diagnostics: result.diagnostics,
+        status: {
+          connected: true,
+          status: 'CONNECTED',
+          phoneNumber: '5511999991234',
+        },
       });
       expect(result.diagnostics).toBeDefined();
     });
 
-    it('recreates session when config is mismatched', async () => {
+    it('keeps mismatched legacy config under official Meta auth management', async () => {
       providerRegistry.getSessionDiagnostics.mockResolvedValue({
         available: true,
         configMismatch: true,
@@ -117,17 +166,30 @@ describe('WhatsappSessionService', () => {
         inboundEventsConfigured: true,
         storeEnabled: true,
       });
+      providerRegistry.getSessionStatus.mockResolvedValueOnce({
+        connected: false,
+        status: 'CONNECTION_INCOMPLETE',
+      });
+
       const result = await service.recreateSessionIfInvalid('ws-1');
-      expect(providerRegistry.deleteSession).toHaveBeenCalled();
-      expect(providerRegistry.startSession).toHaveBeenCalled();
-      expect(result.recreated).toBe(true);
+      expect(providerRegistry.deleteSession).not.toHaveBeenCalled();
+      expect(providerRegistry.startSession).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        recreated: false,
+        reason: 'meta_connection_managed_by_official_auth',
+        diagnostics: result.diagnostics,
+        status: {
+          connected: false,
+          status: 'CONNECTION_INCOMPLETE',
+        },
+      });
     });
   });
 
   describe('getSession', () => {
     it('returns workspace info', () => {
       const result = service.getSession('ws-1');
-      expect(result).toEqual({ workspaceId: 'ws-1', provider: 'dynamic' });
+      expect(result).toEqual({ workspaceId: 'ws-1', provider: 'meta-cloud' });
     });
   });
 
@@ -138,28 +200,24 @@ describe('WhatsappSessionService', () => {
         connected: true,
         status: 'CONNECTED',
         phoneNumber: '5511999991234',
-        qrCode: undefined,
+        authUrl: undefined,
+        phoneNumberId: undefined,
+        provider: 'meta-cloud',
+        whatsappBusinessId: undefined,
       });
     });
   });
 
   describe('getQrCode', () => {
-    it('returns QR when available', async () => {
-      const result = await service.getQrCode('ws-1');
-      expect(result).toBe('qr-data');
-    });
-
-    it('returns null when QR fetch fails', async () => {
-      providerRegistry.getQrCode.mockResolvedValue({ success: false });
-      const result = await service.getQrCode('ws-1');
-      expect(result).toBeNull();
+    it('rejects legacy QR requests with Meta-only guidance', async () => {
+      await expectMetaOnlyGone(service.getQrCode('ws-1'), 'legacy_session_qr');
     });
   });
 
   describe('disconnect', () => {
-    it('calls providerRegistry.disconnect', async () => {
-      await service.disconnect('ws-1');
-      expect(providerRegistry.disconnect).toHaveBeenCalledWith('ws-1');
+    it('rejects legacy disconnect requests with Meta-only guidance', async () => {
+      await expectMetaOnlyGone(service.disconnect('ws-1'), 'legacy_session_disconnect');
+      expect(providerRegistry.disconnect).not.toHaveBeenCalled();
     });
   });
 

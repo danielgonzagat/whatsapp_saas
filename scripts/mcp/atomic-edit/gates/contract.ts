@@ -33,8 +33,12 @@ export interface GateResult {
   reds: GateRed[];
   /** one-line statement of the invariant this gate enforces */
   note?: string;
+  /** true = no relevant fact/property exists in this change; explicit green by non-applicability */
+  notApplicable?: boolean;
   /** true = could not decide from the available bytes (honest); neither red nor green-by-assumption */
   unjudged?: boolean;
+  /** concrete reason the gate could not decide; required by the lens for byte-auditable unknowns */
+  unjudgedReason?: string;
 }
 
 export type GateKind = 'static' | 'dynamic';
@@ -45,6 +49,8 @@ export interface GateContext {
   overlay: Map<string, string>;
   /** relPaths being judged this run */
   changedFiles: string[];
+  /** true when gates are reading committed bytes for an explicit lens scope, not admitting a write */
+  lensMode?: boolean;
   /** resolve a repo-relative path against overlay OR disk */
   existsInTree(rel: string): boolean;
   /** overlay-aware read: overlay wins, else disk, else null */
@@ -251,5 +257,5 @@ export function makeContext(
     const base = path.posix.normalize(path.posix.join(path.posix.dirname(norm(fromRel)), spec));
     return probeBase(base);
   };
-  return { repoRoot, overlay, changedFiles, existsInTree, readFile, resolveRelImport, priorOf };
+  return { repoRoot, overlay, changedFiles, lensMode, existsInTree, readFile, resolveRelImport, priorOf };
 }

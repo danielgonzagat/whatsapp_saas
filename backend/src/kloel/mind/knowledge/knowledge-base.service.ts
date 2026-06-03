@@ -159,7 +159,7 @@ export class KnowledgeBaseService {
     let finalContent = content || '';
     if (type === 'URL') {
       const requestedUrl = String(content || '').trim();
-      // Same sanitizer-barrier pattern that pulse.service.ts and crm.service.ts
+      // Same sanitizer-barrier pattern that readiness.service.ts and crm.service.ts
       // use successfully: invoke validateNoInternalAccess for its throwing side
       // effect, then pass the original string to fetch. CodeQL recognizes this
       // shape as a request-forgery sanitizer.

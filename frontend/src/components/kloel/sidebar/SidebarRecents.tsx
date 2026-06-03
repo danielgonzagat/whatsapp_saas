@@ -1,8 +1,8 @@
 'use client';
 import { kloelT } from '@/lib/i18n/t';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
-import { apiFetch } from '@/lib/api';
 import { KLOEL_CHAT_ROUTE } from '@/lib/kloel-dashboard-context';
+import { loadKloelThreadMessages, type ThreadMessagePayload } from '@/lib/kloel-conversations';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -19,33 +19,17 @@ interface ConversationExportSource {
   lastMessagePreview?: string | undefined;
 }
 
-function extractThreadMessages(payload: unknown): Array<Record<string, unknown>> {
-  if (Array.isArray(payload)) {
-    return payload as Array<Record<string, unknown>>;
-  }
-  const wrapped = payload as { data?: unknown };
-  return Array.isArray(wrapped?.data) ? (wrapped.data as Array<Record<string, unknown>>) : [];
-}
-
-function serializeThreadMessages(payload: unknown) {
-  const messages = [];
-  for (const message of extractThreadMessages(payload)) {
-    messages.push({
-      role: message.role,
-      content: message.content,
-      createdAt: message.createdAt,
-    });
-  }
-  return messages;
+function serializeThreadMessages(messages: ThreadMessagePayload[]) {
+  return messages.map((message) => ({
+    role: message.role,
+    content: message.content,
+    createdAt: message.createdAt,
+  }));
 }
 
 async function fetchConversationForExport(conv: ConversationExportSource) {
-  try {
-    const response = await apiFetch<unknown>(`/kloel/threads/${conv.id}/messages`);
-    return { ...conv, messages: serializeThreadMessages(response) };
-  } catch {
-    return { ...conv, messages: [] };
-  }
+  const messages = await loadKloelThreadMessages(conv.id);
+  return { ...conv, messages: serializeThreadMessages(messages) };
 }
 
 /** Sidebar recents. */
@@ -64,11 +48,13 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
   const handleExport = useCallback(async () => {
     if (conversations.length === 0 || exporting) {
       return;
     }
     setExporting(true);
+    setExportError(null);
     try {
       const allConversations = await loadAllConversations();
       // Fetch full messages for each conversation from backend
@@ -83,10 +69,13 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : kloelT(`Falha ao exportar conversas reais`));
     } finally {
       setExporting(false);
     }
   }, [conversations.length, exporting, loadAllConversations]);
+
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -181,6 +170,19 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
           </svg>
         </button>
       </div>
+      {exportError ? (
+        <div
+          style={{
+            padding: '0 10px 6px',
+            fontSize: 10,
+            lineHeight: 1.35,
+            color: KLOEL_THEME.accent,
+            fontFamily: "'Sora', sans-serif",
+          }}
+        >
+          {exportError}
+        </div>
+      ) : null}
       <div
         style={{
           minHeight: 0,

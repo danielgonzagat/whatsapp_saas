@@ -1,10 +1,25 @@
 // billingApi object
 import { mutate } from 'swr';
 import { apiFetch, tokenStorage } from './core';
+import type { SalesReportSummary } from './shared-types';
 
 const invalidateBilling = () =>
   mutate((key: string) => typeof key === 'string' && key.startsWith('/billing'));
-import type { SalesReportSummary } from './shared-types';
+
+type BillingMutationEnvelope = { error?: string | undefined; status: number };
+
+function confirmBillingMutation<T extends BillingMutationEnvelope>(
+  response: T,
+  fallbackMessage: string,
+): T {
+  if (response.error) {
+    throw new Error(response.error);
+  }
+  if (response.status >= 400) {
+    throw new Error(fallbackMessage);
+  }
+  return response;
+}
 
 /** Billing api. */
 export const billingApi = {
@@ -31,8 +46,9 @@ export const billingApi = {
       `/billing/activate-trial?workspaceId=${encodeURIComponent(workspaceId)}`,
       { method: 'POST' },
     );
+    const confirmed = confirmBillingMutation(res, 'Falha ao ativar trial.');
     invalidateBilling();
-    return res;
+    return confirmed;
   },
 
   cancelSubscription: async () => {
@@ -44,8 +60,9 @@ export const billingApi = {
       `/billing/cancel?workspaceId=${encodeURIComponent(workspaceId)}`,
       { method: 'POST' },
     );
+    const confirmed = confirmBillingMutation(res, 'Falha ao cancelar assinatura.');
     invalidateBilling();
-    return res;
+    return confirmed;
   },
 
   getBillingUsage: () => {
@@ -61,8 +78,9 @@ export const billingApi = {
       method: 'POST',
       body: { paymentMethodId },
     });
+    const confirmed = confirmBillingMutation(res, 'Falha ao anexar metodo de pagamento.');
     invalidateBilling();
-    return res;
+    return confirmed;
   },
 
   getPaymentMethods: () => {
@@ -86,8 +104,9 @@ export const billingApi = {
         method: 'POST',
       },
     );
+    const confirmed = confirmBillingMutation(res, 'Falha ao definir cartao padrao.');
     invalidateBilling();
-    return res;
+    return confirmed;
   },
 
   removePaymentMethod: async (paymentMethodId: string) => {
@@ -97,8 +116,9 @@ export const billingApi = {
         method: 'DELETE',
       },
     );
+    const confirmed = confirmBillingMutation(res, 'Falha ao remover metodo de pagamento.');
     invalidateBilling();
-    return res;
+    return confirmed;
   },
 
   createCheckoutSession: async (priceId: string) => {
@@ -110,8 +130,9 @@ export const billingApi = {
       method: 'POST',
       body: { workspaceId, plan: priceId },
     });
+    const confirmed = confirmBillingMutation(res, 'Falha ao criar checkout.');
     invalidateBilling();
-    return res;
+    return confirmed;
   },
 
   getSalesReport: (period = 'week') => {

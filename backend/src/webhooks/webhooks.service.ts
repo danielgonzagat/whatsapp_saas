@@ -453,7 +453,7 @@ export class WebhooksService {
     // 'processing', which blocks any concurrent or post-TTL replay from
     // re-claiming it.
     return { ...row, status: 'received' as const };
-}
+  }
 
   /** Mark webhook processed. */
   async markWebhookProcessed(id: string) {

@@ -222,7 +222,7 @@ async function bootstrap() {
   //   - X-Requested-With: XMLHttpRequest header is enforced by the frontend apiFetch
   //   - CORS is restricted to known origins (allowedOriginsExact list above)
   // Traditional CSRF tokens (csurf/csrfProtection) are therefore unnecessary.
-  // PULSE:ACCEPTED_RISK CSRF — JWT+SameSite+X-Requested-With provides equivalent mitigation
+  // ACCEPTED_RISK CSRF — JWT+SameSite+X-Requested-With provides equivalent mitigation
 
   // Headers de segurança.
   //

@@ -21,6 +21,7 @@ describe('BillingCheckoutHelperService', () => {
     contact: { findFirst: jest.Mock };
     subscription: { findFirst: jest.Mock; update: jest.Mock };
     workspace: {
+      findFirst: jest.Mock;
       findUnique: jest.Mock;
       update: jest.Mock<Promise<unknown>, [WorkspaceUpdateCall]>;
     };
@@ -39,6 +40,7 @@ describe('BillingCheckoutHelperService', () => {
         update: jest.fn().mockResolvedValue({}),
       },
       workspace: {
+        findFirst: jest.fn().mockResolvedValue(null),
         findUnique: jest.fn().mockResolvedValue({ providerSettings: {} }),
         update: jest.fn<Promise<unknown>, [WorkspaceUpdateCall]>().mockResolvedValue({}),
       },
@@ -119,6 +121,56 @@ describe('BillingCheckoutHelperService', () => {
       prisma.subscription.findFirst.mockResolvedValue(null);
       (stripe.subscriptions!.retrieve as jest.Mock).mockRejectedValue(new Error('not found'));
       await service.markSubscriptionStatus('sub_unknown', 'PAST_DUE');
+      expect(prisma.subscription.update).not.toHaveBeenCalled();
+    });
+
+    it('CROSS-TENANT GUARD: never uses the raw Stripe customer id (cus_...) as workspaceId', async () => {
+      // Subscription has NO metadata.workspaceId — only a Stripe customer id.
+      (stripe.subscriptions!.retrieve as jest.Mock).mockResolvedValue({
+        id: 'sub_xtenant',
+        customer: 'cus_ATTACKER123',
+        metadata: {},
+      });
+      // The customer maps to the REAL owning workspace via stripeCustomerId.
+      prisma.workspace.findFirst.mockResolvedValue({ id: 'ws-real-owner' });
+      // Local subscription fallback would resolve a DIFFERENT (wrong) workspace —
+      // it must NOT be consulted because the Stripe path already resolved.
+      prisma.subscription.findFirst.mockResolvedValue({ workspaceId: 'ws-WRONG-fallback' });
+
+      await service.markSubscriptionStatus('sub_xtenant', 'PAST_DUE');
+
+      // Resolution went through the canonical stripeCustomerId -> workspace mapping.
+      expect(prisma.workspace.findFirst).toHaveBeenCalledWith({
+        where: { stripeCustomerId: 'cus_ATTACKER123' },
+        select: { id: true },
+      });
+      // The REAL workspace id is used everywhere — never the cus_ id.
+      expect(prisma.subscription.update).toHaveBeenCalledWith({
+        where: { workspaceId: 'ws-real-owner' },
+        data: { status: 'PAST_DUE' },
+      });
+      for (const call of prisma.subscription.update.mock.calls as { where?: { workspaceId?: string } }[][]) {
+        expect(call[0].where?.workspaceId).not.toMatch(/^cus_/);
+      }
+      const auditCall = prisma.auditLog.create.mock.calls[0][0] as {
+        data: { workspaceId: string };
+      };
+      expect(auditCall.data.workspaceId).toBe('ws-real-owner');
+      expect(auditCall.data.workspaceId).not.toMatch(/^cus_/);
+    });
+
+    it('no-ops when the Stripe customer id maps to no workspace and no local subscription exists', async () => {
+      (stripe.subscriptions!.retrieve as jest.Mock).mockResolvedValue({
+        id: 'sub_orphan',
+        customer: 'cus_ORPHAN',
+        metadata: {},
+      });
+      prisma.workspace.findFirst.mockResolvedValue(null);
+      prisma.subscription.findFirst.mockResolvedValue(null);
+
+      await service.markSubscriptionStatus('sub_orphan', 'PAST_DUE');
+
+      // Unresolvable -> honest no-op, never a cus_ leak.
       expect(prisma.subscription.update).not.toHaveBeenCalled();
     });
   });

@@ -33,6 +33,17 @@ import { SettingsNotice, kloelSettingsClass } from './contract';
 import { tokenStorage, workspaceApi } from '@/lib/api';
 import { useCallback, useEffect, useState } from 'react';
 
+function normalizeProfileStringList(value: unknown, field: 'personas' | 'rules'): string[] {
+  if (value == null) {
+    return [];
+  }
+  if (!Array.isArray(value) || !value.every((item) => typeof item === 'string')) {
+    throw new Error(`Payload de perfil Kloel invalido: ${field}.`);
+  }
+
+  return value;
+}
+
 export function BrainSettingsSection() {
   const workspaceId = tokenStorage.getWorkspaceId();
   const [company, setCompany] = useState<CompanyProfile>({
@@ -94,9 +105,9 @@ export function BrainSettingsSection() {
         const provSettings = ws?.providerSettings as Record<string, unknown> | undefined;
         const profile = (provSettings?.kloelProfile || {}) as Record<string, unknown>;
         setCompany(normalizeCompanyProfile(profile.company));
-        setPersonas(Array.isArray(profile.personas) ? profile.personas.filter((v: unknown) => typeof v === 'string') : []);
+        setPersonas(normalizeProfileStringList(profile.personas, 'personas'));
         setVoiceTone(normalizeVoiceToneProfile(profile.voiceTone));
-        setRules(Array.isArray(profile.rules) ? profile.rules.filter((v: unknown) => typeof v === 'string') : []);
+        setRules(normalizeProfileStringList(profile.rules, 'rules'));
         setFaqs(normalizeFaqs(profile.faqs));
         setOpeningMessage(normalizeOpeningMessage(profile.openingMessage));
         setEmergencyMode(normalizeEmergencyMode(profile.emergencyMode));

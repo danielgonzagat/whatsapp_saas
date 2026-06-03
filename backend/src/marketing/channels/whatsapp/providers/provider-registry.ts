@@ -19,7 +19,6 @@ import {
   persistSessionSnapshot,
   startSession as startSessionFn,
   getSessionStatus as getSessionStatusFn,
-  getQrCode as getQrCodeFn,
 } from './provider-registry-session';
 import {
   sendMessage as sendMessageFn,
@@ -134,7 +133,6 @@ export class WhatsAppProviderRegistry {
 
   async startSession(workspaceId: string): Promise<{
     success: boolean;
-    qrCode?: string;
     message?: string;
     authUrl?: string;
   }> {
@@ -143,12 +141,6 @@ export class WhatsAppProviderRegistry {
 
   async getSessionStatus(workspaceId: string): Promise<SessionStatus> {
     return getSessionStatusFn(this.buildSessionDeps(), workspaceId);
-  }
-
-  async getQrCode(
-    workspaceId: string,
-  ): Promise<{ success: boolean; qr?: string; message?: string }> {
-    return getQrCodeFn(this.buildSessionDeps(), workspaceId);
   }
 
   async sendMessage(
@@ -179,7 +171,7 @@ export class WhatsAppProviderRegistry {
 
   async restartSession(
     workspaceId: string,
-  ): Promise<{ success: boolean; message?: string; qrCode?: string; authUrl?: string }> {
+  ): Promise<{ success: boolean; message?: string; authUrl?: string }> {
     return restartSessionFn(this.buildOpDeps(), workspaceId);
   }
 

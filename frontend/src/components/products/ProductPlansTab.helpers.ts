@@ -79,7 +79,10 @@ export function buildDuplicatedPlanBody(plan: Plan): PlanCreateBody {
 
 /** Coerce arbitrary API payload into a Plan list. */
 export function normalizePlansResponse(response: unknown): Plan[] {
-  return Array.isArray(response) ? (response as Plan[]) : [];
+  if (!Array.isArray(response)) {
+    throw new Error('Payload de planos invalido.');
+  }
+  return response as Plan[];
 }
 
 /** Coerce a raw "itens por plano" input string into an integer >= 1.

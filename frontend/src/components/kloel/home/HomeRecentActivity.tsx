@@ -6,24 +6,13 @@ import type { DashboardHomeResponse, DashboardHomeCheckpoint, DashboardHomeConve
 import { useRouter } from 'next/navigation';
 import NextImage from 'next/image';
 import { useState } from 'react';
+import {
+  formatCurrency,
+  formatInteger,
+  formatOneDecimal,
+} from './HomeScreen.helpers';
 
 const FONT_MONO = "'JetBrains Mono', monospace";
-
-const formatCurrency = (amountInCents: number) =>
-  new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 2,
-  }).format((Number(amountInCents || 0) || 0) / 100);
-
-const formatInteger = (value: number) =>
-  new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(Number(value || 0) || 0);
-
-const formatOneDecimal = (value: number, suffix = '') =>
-  `${new Intl.NumberFormat('pt-BR', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 1,
-  }).format(Number(value || 0) || 0)}${suffix}`;
 
 function formatRelativeTime(value?: string | null) {
   if (!value) {

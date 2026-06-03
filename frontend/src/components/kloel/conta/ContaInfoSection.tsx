@@ -22,7 +22,7 @@ export function ContaInfoSection() {
           { label: 'Termos de uso', url: '/terms' },
           { label: 'Politica de privacidade', url: '/privacy' },
           { label: 'Documentacao', url: '/terms' },
-          { label: 'Contato', url: 'mailto:suporte@kloel.com' },
+          { label: 'Contato', url: 'mailto:ajuda@kloel.com?subject=Contato%20Kloel' },
         ].map((link) => (
           <a
             key={link.label}

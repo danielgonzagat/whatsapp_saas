@@ -18,6 +18,7 @@ import { FacebookOAuthDto } from './dto/facebook-oauth.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { GoogleOAuthDto } from './dto/google-oauth.dto';
 import { LoginDto } from './dto/login.dto';
+import { MfaLoginDto } from './dto/mfa-login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RequestMagicLinkDto } from './dto/request-magic-link.dto';
@@ -111,7 +112,7 @@ export class AuthController {
       ...body,
       ...ipSpread(req.ip),
     });
-    if (result?.access_token) {
+    if ('access_token' in result && result.access_token) {
       Sentry.addBreadcrumb({
         message: `login: user authenticated`,
         category: 'auth',
@@ -119,6 +120,25 @@ export class AuthController {
       });
       setAuthCookie(res, result.access_token);
     }
+    return result;
+  }
+
+  @ApiOperation({ summary: 'Confirm account MFA login code and return an access token' })
+  @ApiResponse({ status: 200, description: 'MFA login successful' })
+  @ApiResponse({ status: 401, description: 'Invalid MFA token or code' })
+  @ApiBody({ type: MfaLoginDto })
+  @Public()
+  @Post('mfa/verify')
+  async verifyMfaLogin(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+    @Body() body: MfaLoginDto,
+  ) {
+    const result = await this.auth.verifyMfaLogin({
+      ...body,
+      ...ipSpread(req.ip),
+    });
+    setAuthCookie(res, result.access_token);
     return result;
   }
 

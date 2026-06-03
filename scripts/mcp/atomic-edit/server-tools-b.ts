@@ -1,13 +1,95 @@
 import * as fs from 'node:fs';
+import * as path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { applyEdits, renameSymbol, replaceLiteral, type TextEditSpec, computeZones } from './engine.js';
+import { extractImportSpecifiers } from './connection-gate.js';
 import { resolveSafeTarget } from './guard.js';
 import { buildTrace, levelFor, shapePayload, writeTrace } from './trace.js';
 import { browse, outline, readSymbol } from './nav.js';
 import { previewDiff, characterDiff } from './advanced.js';
 import { sha256, guardSha, log, readUtf8, targetDetails } from './server-helpers-io.js';
+import { requireNegativeActionProof, requireNegativeProofForRemovedBytes } from './server-helpers-negative-proof.js';
 import { ok, fail, commit, writeWithTrace } from './server-helpers-result.js';
+
+const DELETE_REVERSE_SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
+const DELETE_REVERSE_SKIP_DIRS = new Set([
+  '.git',
+  '.atomic',
+  '.next',
+  'coverage',
+  'dist',
+  'node_modules',
+]);
+
+function deleteCandidateTargets(baseAbs: string): string[] {
+  const candidates = [
+    baseAbs,
+    `${baseAbs}.ts`,
+    `${baseAbs}.tsx`,
+    `${baseAbs}.js`,
+    `${baseAbs}.jsx`,
+    `${baseAbs}.mjs`,
+    `${baseAbs}.cjs`,
+    `${baseAbs}.json`,
+    path.join(baseAbs, 'index.ts'),
+    path.join(baseAbs, 'index.tsx'),
+    path.join(baseAbs, 'index.js'),
+  ];
+  if (baseAbs.endsWith('.js')) {
+    candidates.push(`${baseAbs.slice(0, -3)}.ts`, `${baseAbs.slice(0, -3)}.tsx`);
+  }
+  return candidates;
+}
+
+function relativeImportTargetsDeletedFile(fromAbs: string, spec: string, deletedAbs: string): boolean {
+  if (!spec.startsWith('.')) return false;
+  const baseAbs = path.resolve(path.dirname(fromAbs), spec);
+  return deleteCandidateTargets(baseAbs).some((cand) => path.resolve(cand) === deletedAbs);
+}
+
+function collectDeleteReverseSourceFiles(absDir: string, out: string[]): void {
+  let entries: fs.Dirent[];
+  try {
+    entries = fs.readdirSync(absDir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  for (const entry of entries) {
+    if (DELETE_REVERSE_SKIP_DIRS.has(entry.name)) continue;
+    const abs = path.join(absDir, entry.name);
+    if (entry.isDirectory()) {
+      collectDeleteReverseSourceFiles(abs, out);
+    } else if (entry.isFile() && DELETE_REVERSE_SOURCE_RE.test(abs)) {
+      out.push(abs);
+    }
+  }
+}
+
+function findDeleteReverseImportDependents(
+  repoRoot: string,
+  deletedAbs: string,
+): { file: string; spec: string }[] {
+  const target = path.resolve(deletedAbs);
+  const files: string[] = [];
+  collectDeleteReverseSourceFiles(repoRoot, files);
+  const dependents: { file: string; spec: string }[] = [];
+  for (const abs of files) {
+    if (path.resolve(abs) === target) continue;
+    let content: string;
+    try {
+      content = fs.readFileSync(abs, 'utf8');
+    } catch {
+      continue;
+    }
+    for (const spec of extractImportSpecifiers(content)) {
+      if (relativeImportTargetsDeletedFile(abs, spec, target)) {
+        dependents.push({ file: path.relative(repoRoot, abs).replaceAll('\\', '/'), spec });
+      }
+    }
+  }
+  return dependents;
+}
 
 const pos = z.object({
   line: z.number().int().min(1).describe('1-based line'),
@@ -23,7 +105,7 @@ server.registerTool(
       'Delete a file through the same governance guard as every atomic op: repo-containment, ' +
       'protected-file refusal, and trace persistence. Refuses directories. Idempotent for ' +
       'missing files (returns changed:false without throwing). Preview returns what would be ' +
-      'removed without deleting. Supports preview?: boolean and expectedSha256?: string.',
+      'removed without deleting. Supports preview?: boolean, expectedSha256?: string, and proofOfIncorrectness?: string for non-preview deletion.',
     inputSchema: {
       file: z.string().describe('repo-relative path of the file to delete'),
       expectedSha256: z
@@ -31,6 +113,10 @@ server.registerTool(
         .optional()
         .describe("optimistic-concurrency guard: refuse if the file's sha256 differs"),
       preview: z.boolean().optional().describe('dry-run: validate + return diff, do not delete'),
+      proofOfIncorrectness: z
+        .string()
+        .optional()
+        .describe('required for non-preview deletion: proof that the removed bytes are non-correct/negative'),
     },
   },
   async (a) => {
@@ -54,7 +140,28 @@ server.registerTool(
 
       const before = readUtf8(absPath);
       guardSha(before, a.expectedSha256);
+      const reverseDependents = findDeleteReverseImportDependents(repoRoot, absPath);
+      if (reverseDependents.length > 0) {
+        const sample = reverseDependents
+          .slice(0, 5)
+          .map((d) => `${d.file} imports ${d.spec}`)
+          .join('; ');
+        return fail(
+          `refused: ${relPath} is still imported by ${reverseDependents.length} dependent file(s): ${sample}. ` +
+            'Remove or rewrite those reverse imports in the same atomic transaction before deleting this file.',
+        );
+      }
       const preview = a.preview ?? false;
+      const beforeByteLength = Buffer.byteLength(before, 'utf8');
+      const negativeActionProof = preview
+        ? undefined
+        : requireNegativeActionProof({
+            action: 'atomic_delete_file',
+            target: relPath,
+            targetUnit: 'file',
+            removedByteCount: beforeByteLength,
+            proofOfIncorrectness: a.proofOfIncorrectness,
+          });
       const inlinePreview = characterDiff(before, '', relPath);
       const delZones = computeZones(before, '');
       const trace = buildTrace({
@@ -69,14 +176,15 @@ server.registerTool(
           changedChars: before.length,
           lineRewriteSurfaceChars: before.length,
           expansionFactorAvoided: 1,
-          bytesNet: -before.length,
+          bytesNet: -beforeByteLength,
         },
         preservedZones: delZones.preservedZones,
         modifiedZones: delZones.modifiedZones,
         movementZones: delZones.movementZones,
         targetUnit: 'file',
-        intention: `delete ${relPath} (${before.length} bytes)`,
+        intention: `delete ${relPath} (${beforeByteLength} bytes)`,
         semanticImpact: preview ? 'preview_file_deletion' : 'file_deleted',
+        negativeActionProof,
         preview,
         changed: !preview,
       });
@@ -92,7 +200,7 @@ server.registerTool(
               file: relPath,
               ...targetDetails(absPath, relPath),
               note: 'dry-run: file NOT deleted',
-              bytesWouldFree: before.length,
+              bytesWouldFree: beforeByteLength,
               afterSha256: sha256(before),
             },
             { inlinePreview, legacyDiff: previewDiff(before, '', relPath), trace },
@@ -102,14 +210,14 @@ server.registerTool(
 
       fs.unlinkSync(absPath);
       const persisted = writeTrace(trace);
-      log(`deleted ${relPath} (${before.length} bytes)`);
+      log(`deleted ${relPath} (${beforeByteLength} bytes)`);
       return ok({
         ok: true,
         changed: true,
         deleted: true,
         file: relPath,
         ...targetDetails(absPath, relPath),
-        bytesDeleted: before.length,
+        bytesDeleted: beforeByteLength,
         afterSha256: sha256(''),
         validation: {
           language: 'generic',
@@ -118,11 +226,12 @@ server.registerTool(
         },
         summaryForHuman:
           `✅ Deleted ${relPath} ` +
-          `(${before.length} bytes freed). ` +
+          `(${beforeByteLength} bytes freed). ` +
           `Full proof persisted to trace file (not echoed back, to save context).`,
         operation: trace.operation,
         operationId: trace.operationId,
         founder: trace.audit,
+        negativeActionProof,
         ...persisted,
       });
     } catch (e) {
@@ -151,6 +260,10 @@ server.registerTool(
         )
         .min(1),
       preview: z.boolean().optional().describe('dry-run: validate + return diff, do not write'),
+      proofOfIncorrectness: z
+        .string()
+        .optional()
+        .describe('required when any edit removes bytes: proof that removed bytes are non-correct/negative'),
     },
   },
   async (a) => {
@@ -158,7 +271,23 @@ server.registerTool(
       const { absPath, relPath } = resolveSafeTarget(a.file);
       const before = readUtf8(absPath);
       const r = applyEdits(relPath, before, a.edits as TextEditSpec[]);
-      return commit(relPath, absPath, before, r, { editCount: a.edits.length }, a.preview ?? false);
+      const negativeActionProof = requireNegativeProofForRemovedBytes({
+        action: 'atomic_apply_edits',
+        target: relPath,
+        targetUnit: 'edits',
+        before,
+        after: r.newText,
+        proofOfIncorrectness: a.proofOfIncorrectness,
+        preview: a.preview ?? false,
+      });
+      return commit(
+        relPath,
+        absPath,
+        before,
+        r,
+        { editCount: a.edits.length, op: 'atomic_apply_edits', ...(negativeActionProof ? { negativeActionProof } : {}) },
+        a.preview ?? false,
+      );
     } catch (e) {
       return fail(e instanceof Error ? e.message : String(e));
     }
@@ -178,6 +307,10 @@ server.registerTool(
       line: z.number().int().min(1),
       column: z.number().int().min(1),
       newName: z.string().min(1),
+      proofOfIncorrectness: z
+        .string()
+        .optional()
+        .describe('required when rename removes bytes: proof that removed bytes are non-correct/negative'),
     },
   },
   async (a) => {
@@ -192,7 +325,15 @@ server.registerTool(
       }
       if (r.newText === before)
         return ok({ ok: true, changed: false, note: 'no change', file: relPath });
-      writeWithTrace(relPath, absPath, before, r.newText, 'atomic_rename_symbol', r.validation);
+      const negativeActionProof = requireNegativeProofForRemovedBytes({
+        action: 'atomic_rename_symbol',
+        target: `${relPath}:${r.symbol}->${a.newName}`,
+        targetUnit: 'symbol',
+        before,
+        after: r.newText,
+        proofOfIncorrectness: a.proofOfIncorrectness,
+      });
+      writeWithTrace(relPath, absPath, before, r.newText, 'atomic_rename_symbol', r.validation, negativeActionProof);
       log(`renamed ${r.symbol} in ${relPath} (${r.occurrences} refs)`);
       return ok({
         ok: true,
@@ -200,6 +341,7 @@ server.registerTool(
         file: relPath,
         symbol: r.symbol,
         references: r.occurrences,
+        ...(negativeActionProof ? { negativeActionProof } : {}),
       });
     } catch (e) {
       return fail(e instanceof Error ? e.message : String(e));
@@ -229,6 +371,10 @@ server.registerTool(
         .optional()
         .describe("optimistic-concurrency guard: refuse if the file's sha256 differs"),
       preview: z.boolean().optional().describe('dry-run: validate + return diff, do not write'),
+      proofOfIncorrectness: z
+        .string()
+        .optional()
+        .describe('required when replacement removes bytes: proof that removed bytes are non-correct/negative'),
     },
   },
   async (a) => {
@@ -248,6 +394,15 @@ server.registerTool(
       if (applied.newText !== r.newText) {
         return fail('literal replacement span mismatch — file NOT modified.');
       }
+      const negativeActionProof = requireNegativeProofForRemovedBytes({
+        action: 'atomic_replace_literal',
+        target: relPath,
+        targetUnit: 'literal',
+        before,
+        after: applied.newText,
+        proofOfIncorrectness: a.proofOfIncorrectness,
+        preview: a.preview ?? false,
+      });
       return commit(
         relPath,
         absPath,
@@ -256,6 +411,7 @@ server.registerTool(
         {
           matched: r.matched,
           op: 'replace_literal',
+          ...(negativeActionProof ? { negativeActionProof } : {}),
         },
         a.preview ?? false,
       );

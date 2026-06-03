@@ -21,13 +21,27 @@ export function useMarketingConnection({
   const [emailTestResult, setEmailTestResult] = useState<string | null>(null);
   const [connectionMessage, setConnectionMessage] = useState<string | null>(null);
 
+  function requireConnectionSuccess<T extends { error?: string | undefined }>(
+    response: T,
+    fallback: string,
+  ): T {
+    if (response.error) {
+      throw kloelError(response.error || fallback);
+    }
+    return response;
+  }
+
   const handleConnectMeta = useCallback(
     async (channelKey: 'whatsapp' | 'instagram' | 'facebook') => {
       setConnectingKey(channelKey);
+      setConnectionMessage(null);
       try {
         const returnTo = `/marketing/${channelKey}`;
-        const res = await apiFetch<{ url?: string }>(
-          `/meta/auth/url?channel=${encodeURIComponent(channelKey)}&returnTo=${encodeURIComponent(returnTo)}`,
+        const res = requireConnectionSuccess(
+          await apiFetch<{ url?: string }>(
+            `/meta/auth/url?channel=${encodeURIComponent(channelKey)}&returnTo=${encodeURIComponent(returnTo)}`,
+          ),
+          'Nao foi possivel iniciar a conexao oficial da Meta.',
         );
         const url = String(res?.data?.url || '').trim();
         if (!url) {
@@ -47,8 +61,12 @@ export function useMarketingConnection({
 
   const handleConnectEmail = useCallback(async () => {
     setConnectingKey('email');
+    setEmailTestResult(null);
     try {
-      await apiFetch('/marketing/connect/email', { method: 'POST', body: { enabled: true } });
+      requireConnectionSuccess(
+        await apiFetch('/marketing/connect/email', { method: 'POST', body: { enabled: true } }),
+        'Falha ao ativar o canal de email.',
+      );
       await mutateConnectionStatus();
       setEmailTestResult(
         'Email ativado com sucesso. Agora voce pode enviar campanhas e testar o provider.',
@@ -64,8 +82,12 @@ export function useMarketingConnection({
 
   const handleDisconnectEmail = useCallback(async () => {
     setConnectingKey('email');
+    setEmailTestResult(null);
     try {
-      await apiFetch('/marketing/connect/email', { method: 'POST', body: { enabled: false } });
+      requireConnectionSuccess(
+        await apiFetch('/marketing/connect/email', { method: 'POST', body: { enabled: false } }),
+        'Falha ao desativar o canal de email.',
+      );
       await mutateConnectionStatus();
       setEmailTestResult('Canal de email desativado para este workspace.');
     } catch (error: unknown) {
@@ -79,13 +101,17 @@ export function useMarketingConnection({
 
   const handleSendEmailTest = useCallback(async () => {
     setEmailTestSending(true);
+    setEmailTestResult(null);
     try {
-      const res = await apiFetch<{ toEmail?: string; provider?: string }>(
-        '/marketing/connect/email/test',
-        {
-          method: 'POST',
-          body: { toEmail: userEmail || undefined },
-        },
+      const res = requireConnectionSuccess(
+        await apiFetch<{ toEmail?: string; provider?: string }>(
+          '/marketing/connect/email/test',
+          {
+            method: 'POST',
+            body: { toEmail: userEmail || undefined },
+          },
+        ),
+        'Falha ao enviar email de teste.',
       );
       const payload = res?.data;
       setEmailTestResult(

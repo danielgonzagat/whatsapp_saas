@@ -1,0 +1,22 @@
+-- PRODUCT-PLAN migration PHASE A: money-in-cents on RAC_ProductPlan.
+--
+-- The legacy ProductPlan model stores `price` as a Float, violating the
+-- money-in-cents rule (canonical CheckoutProductPlan uses priceInCents Int).
+-- This migration ADDITIVELY introduces a nullable `priceInCents` integer column
+-- so new writes can converge on integer cents while existing rows and all reads
+-- stay untouched.
+--
+-- ADDITIVE migration. Adds ONE nullable column to RAC_ProductPlan. NO backfill,
+-- NO data move, NO destructive change — no column drops, no type changes, no
+-- change to the existing `price` Float column (which remains the read source
+-- until a future gated phase). Existing rows keep priceInCents = NULL until a
+-- later, explicitly-gated backfill.
+--
+-- NOT YET APPLIED — left for human review. Do NOT run
+-- `prisma db push` / `prisma migrate deploy` from autonomous execution.
+
+-- ============================================================
+-- New nullable money-in-cents column on RAC_ProductPlan.
+-- Guarded for idempotency (IF NOT EXISTS) — safe to re-run / out-of-order.
+-- ============================================================
+ALTER TABLE "RAC_ProductPlan" ADD COLUMN IF NOT EXISTS "priceInCents" INTEGER;

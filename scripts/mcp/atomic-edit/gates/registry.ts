@@ -28,6 +28,9 @@ import prismaReferenceGate from './prisma-reference-gate.js';
 import configKeyGate from './config-key-gate.js';
 import structuralLintGate from './structural-lint-gate.js';
 import lintFixGate from './lint-fix-gate.js';
+import securityGate from './security-gate.js';
+import testExecutionGate from './test-execution-gate.js';
+import publicContractGate from './public-contract-gate.js';
 
 /**
  * Static gates safe in the WRITE direction — each asserts "this write did not
@@ -51,6 +54,11 @@ export const WRITE_GATES: GateModule[] = [
   // a dangling NAMED re-export when './m' resolves but does not EXPORT Foo. Static,
   // in-process ts-morph; NEW-only delta vs priorOf; star/unresolvable → unjudged.
   reexportSymbolGate,
+  // Public-contract / breaking-change (proof #3): a write may not REMOVE an exported
+  // name still imported by another file in the changed set — that orphans a live
+  // consumer (binds to undefined). Static in-process ts-morph; NEW-only (removed vs
+  // prior export surface); co-change exonerated; export*/unparseable → unjudged.
+  publicContractGate,
   // Red class #11's tsc-blind escape hatch (Prisma): a `prismaAny.<accessor>` whose
   // accessor is not a real model camelCase, or a $queryRaw `FROM "<table>"` whose
   // quoted name is not a real @@map, dangles. Static, schema.prisma dictionary;
@@ -64,6 +72,11 @@ export const WRITE_GATES: GateModule[] = [
   // no-useless-escape, no-empty, prefer-const). Static, tree-sitter perception; a
   // write may not INTRODUCE one (NEW-only delta); type-aware rules stay deferred.
   structuralLintGate,
+  // Proof #3 security layer: a write may not INTRODUCE a hardcoded secret
+  // (AWS/PEM/Stripe-live/GitHub/Slack/Google/JWT shape, or a high-entropy
+  // secret-named assignment). Static regex+entropy byte fact; NEW-only delta vs
+  // priorOf; placeholders/env exonerated. Perception ceiling: shape, not taint.
+  securityGate,
 ];
 
 /**
@@ -91,6 +104,12 @@ export const DYNAMIC_GATES: GateModule[] = [
   // Needs prior-vs-new — converge runs it with the snapshotted prior on disk and
   // the candidate (NEW) in the overlay (see server-tools-converge dynamic path).
   behaviorContractGate,
+  // Proof #3 test-execution layer: a write must not turn a previously-passing
+  // `// @test-on-change cmd="…"` command into a failing one. Deterministic (run
+  // twice; disagreement → unjudged), NEW-failure-only vs prior bytes. Distinct
+  // from probe-convergence (reached-bit) and behavior-contract (output stability):
+  // this is the canonical "the declared test still passes" execution fact.
+  testExecutionGate,
   // Canonical-form drain (the mechanically-fixable, idempotent lint subset, ~prettier).
   // Pure in-process prettier.format over the overlay — NO file write, NO revert (safer
   // than probe-convergence). Reds a non-canonical file and exposes the byte-splice to
@@ -105,19 +124,35 @@ export interface UnifiedRed {
   locus?: string;
   fact: string;
 }
+export type GateAdmissionPolicy = 'permissive' | 'strict';
+
+export interface UnifiedUnjudged {
+  gate: string;
+  reason: string;
+  note?: string;
+  affectedFiles: string[];
+}
+
 export interface RegistryRun {
   green: boolean;
   reds: UnifiedRed[];
+  /** gates whose invariant had no relevant fact/property in this change */
+  notApplicable: string[];
   /** gates that honestly could not decide (threw, or returned unjudged) — never counted as red */
   unjudged: string[];
-  /** gates that actually applied to ≥1 changed file and ran */
+  /** structured evidence for every unjudged domain; the reader must show why unknown stayed unknown */
+  unjudgedEvidence?: UnifiedUnjudged[];
+  /** gates that actually applied to >=1 changed file and ran */
   ran: string[];
+  /** permissive keeps historical lens behavior; strict is the Y write-admission law */
+  admissionPolicy?: GateAdmissionPolicy;
 }
 
 /**
  * Run a set of gates over one context, mapping every red to a uniform shape. A
- * gate that throws or returns unjudged is recorded honest-unjudged — never a
- * false red, never a green-by-assumption.
+ * gate that throws or returns unjudged is recorded honest-unjudged. In the
+ * historical permissive policy it does not become a red; in strict Y admission
+ * it prevents green because "unjudged" is not approval.
  */
 export async function runGates(
   gates: GateModule[],
@@ -125,23 +160,36 @@ export async function runGates(
   overlay: Map<string, string>,
   changedFiles: string[],
   lensMode = false,
+  admissionPolicy: GateAdmissionPolicy = 'permissive',
 ): Promise<RegistryRun> {
   const reds: UnifiedRed[] = [];
+  const notApplicable: string[] = [];
   const unjudged: string[] = [];
+  const unjudgedEvidence: UnifiedUnjudged[] = [];
   const ran: string[] = [];
   for (const g of gates) {
     if (!changedFiles.some((f) => g.appliesTo(f))) continue;
+    const affectedFiles = changedFiles.filter((f) => g.appliesTo(f)).slice(0, 50);
     ran.push(g.name);
     try {
       const res = await Promise.resolve(g.run(makeContext(repoRoot, overlay, changedFiles, lensMode)));
+      if (res.notApplicable) {
+        notApplicable.push(g.name);
+        continue;
+      }
       if (res.unjudged) {
+        const reason = res.unjudgedReason ?? res.note ?? 'gate returned unjudged without a specific reason';
         unjudged.push(g.name);
+        unjudgedEvidence.push({ gate: g.name, reason, note: res.note, affectedFiles });
         continue;
       }
       for (const r of res.reds) reds.push({ gate: res.gate, file: r.file, locus: r.locus, fact: r.fact });
     } catch (e) {
-      unjudged.push(`${g.name} (threw: ${e instanceof Error ? e.message : String(e)})`);
+      const reason = `threw: ${e instanceof Error ? e.message : String(e)}`;
+      unjudged.push(`${g.name} (${reason})`);
+      unjudgedEvidence.push({ gate: g.name, reason, affectedFiles });
     }
   }
-  return { green: reds.length === 0, reds, unjudged, ran };
+  const green = reds.length === 0 && (admissionPolicy === 'permissive' || unjudged.length === 0);
+  return { green, reds, notApplicable, unjudged, unjudgedEvidence, ran, admissionPolicy };
 }

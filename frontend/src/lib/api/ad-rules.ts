@@ -20,6 +20,12 @@ export const adRulesApi = {
         body: data,
       },
     );
+    if (res.error) {
+      throw new Error(res.error);
+    }
+    if (res.status >= 400) {
+      throw new Error('Falha ao atualizar regra de anuncio.');
+    }
     mutate((key: string) => typeof key === 'string' && key.startsWith('/ad-rules'));
     return res;
   },

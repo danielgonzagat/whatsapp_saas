@@ -2,11 +2,7 @@
 
 import { useProducts } from '@/hooks/useProducts';
 import { affiliateApi } from '@/lib/api/affiliate';
-import {
-  type WhatsAppConnectionStatus,
-  getWhatsAppQrImageOnly,
-  getWhatsAppStatus,
-} from '@/lib/api/whatsapp';
+import { type WhatsAppConnectionStatus, getWhatsAppStatus } from '@/lib/api/whatsapp';
 import { swrFetcher } from '@/lib/fetcher';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import useSWR from 'swr';
@@ -35,11 +31,7 @@ import type { SummaryProductCard } from './WhatsAppExperience.dashboard-cards';
 import { useWhatsAppSetupActions } from './WhatsAppExperience.actions';
 import { useWhatsAppConnectionEffects } from './WhatsAppExperience.effects';
 
-/**
- * Minimum scan-progress percentage advanced by an out-of-band QR refresh
- * so the UI does not visually regress while a fresh code is fetched.
- */
-const QR_REFRESH_MIN_PROGRESS = 28;
+
 
 export interface WhatsAppSummaryResponse {
   configured: boolean;
@@ -85,10 +77,9 @@ export function useWhatsAppExperienceController({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const hydratedRef = useRef(false);
   const hydratedSetupKeyRef = useRef<string | null>(null);
-  const autoStartRef = useRef(false);
   const advancedRef = useRef(false);
   const pollCountRef = useRef(0);
-  const qrRequestInFlightRef = useRef(false);
+  const metaStatusRequestInFlightRef = useRef(false);
 
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<WhatsAppSetupState>(() => buildDefaultSetup(workspaceId));
@@ -96,8 +87,6 @@ export function useWhatsAppExperienceController({
   const [activated, setActivated] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
-  const [qrCode, setQrCode] = useState('');
-  const [scanProgress, setScanProgress] = useState(0);
   const [uploadingCount, setUploadingCount] = useState(0);
   const [sessionExpired, setSessionExpired] = useState(false);
   const [metaConnecting, setMetaConnecting] = useState(false);
@@ -150,7 +139,7 @@ export function useWhatsAppExperienceController({
     [settingsData],
   );
 
-  const { isWahaProvider, effectiveProvider } = resolveEffectiveProvider(
+  const { effectiveProvider } = resolveEffectiveProvider(
     liveStatus?.provider,
     channelSession?.provider,
     settingsData?.providerSettings?.whatsappProvider,
@@ -165,52 +154,49 @@ export function useWhatsAppExperienceController({
         liveStatus: liveStatus as LiveStatusShape | undefined,
         channelSession,
         effectiveProvider,
-        isWahaProvider,
       }),
-    [channelSession, effectiveProvider, isWahaProvider, liveStatus, sessionSnapshot],
+    [channelSession, effectiveProvider, liveStatus, sessionSnapshot],
   );
 
-  const requestQrCodeRef = useRef<
+  const requestMetaStatusRef = useRef<
     (opts?: { silent?: boolean }) => Promise<{
-      qrCode: string | null;
       connected: boolean;
       status?: string | undefined;
       message?: string | undefined;
     } | null>
   >(async () => null);
 
-  const requestQrCode = useCallback(
+  const requestMetaStatus = useCallback(
     async ({ silent = false }: { silent?: boolean } = {}) => {
-      if (qrRequestInFlightRef.current) {
+      if (metaStatusRequestInFlightRef.current) {
         return null;
       }
-      qrRequestInFlightRef.current = true;
+      metaStatusRequestInFlightRef.current = true;
       try {
-        const qr = await getWhatsAppQrImageOnly(workspaceId);
-        if (qr.qrCode) {
-          setQrCode(qr.qrCode);
-          setScanProgress((current) => Math.max(current, QR_REFRESH_MIN_PROGRESS));
-        } else if (qr.connected) {
-          setQrCode('');
-        }
-        return qr;
+        const nextStatus = await getWhatsAppStatus(workspaceId);
+        await mutateLiveStatus(nextStatus, { revalidate: false });
+        return {
+          connected: nextStatus.connected,
+          status: nextStatus.status,
+          message: nextStatus.message,
+        };
       } catch (err: unknown) {
         if (getErrorStatus(err) === 401) {
           setSessionExpired(true);
           setError(SESSION_EXPIRED_MESSAGE);
         } else if (!silent) {
-          setError(getErrorMessage(err, 'Não foi possível carregar o QR Code.'));
+          setError(getErrorMessage(err, 'Não foi possível atualizar o status Meta.'));
         }
         return null;
       } finally {
-        qrRequestInFlightRef.current = false;
+        metaStatusRequestInFlightRef.current = false;
       }
     },
-    [workspaceId],
+    [mutateLiveStatus, workspaceId],
   );
   useEffect(() => {
-    requestQrCodeRef.current = requestQrCode;
-  }, [requestQrCode]);
+    requestMetaStatusRef.current = requestMetaStatus;
+  }, [requestMetaStatus]);
 
   const selectableProducts = useMemo(() => {
     const own = ownedProducts
@@ -258,31 +244,25 @@ export function useWhatsAppExperienceController({
 
   useWhatsAppConnectionEffects({
     mode,
-    workspaceId,
     savedSetup,
     savedSetupKey,
     draft,
     step,
     showWizard,
     isActivated,
-    isWahaProvider,
     sessionExpired,
     effectiveConnection,
     hydratedRef,
     hydratedSetupKeyRef,
-    autoStartRef,
     advancedRef,
     pollCountRef,
-    qrRequestInFlightRef,
-    requestQrCodeRef,
+    metaStatusRequestInFlightRef,
+    requestMetaStatusRef,
     refreshConnection,
     setDraft,
     setReconfiguring,
     setStep,
-    setBusyKey,
     setError,
-    setQrCode,
-    setScanProgress,
     setSessionExpired,
     setActivated,
     activated,
@@ -299,7 +279,7 @@ export function useWhatsAppExperienceController({
     updateConfig,
     toggleFollowUp,
     activateAi,
-    refreshQrCode,
+    connectMeta,
   } = useWhatsAppSetupActions({
     workspaceId,
     draft,
@@ -307,7 +287,6 @@ export function useWhatsAppExperienceController({
     productMap,
     effectiveConnection,
     refreshConnection,
-    requestQrCode,
     mutateSettings: async () => {
       await mutateSettings();
     },
@@ -323,7 +302,6 @@ export function useWhatsAppExperienceController({
     setBusyKey,
     setUploadingCount,
     setActivated,
-    setScanProgress,
     setSessionExpired,
   });
 
@@ -339,11 +317,8 @@ export function useWhatsAppExperienceController({
     draft,
     error,
     busyKey,
-    qrCode,
-    scanProgress,
     uploadingCount,
     effectiveConnection,
-    isWahaProvider,
     selectableProducts,
     selectedIds,
     selectedProductsList,
@@ -365,7 +340,7 @@ export function useWhatsAppExperienceController({
     updateConfig,
     toggleFollowUp,
     activateAi,
-    refreshQrCode,
+    connectMeta,
     reconfigure,
     resolveProfileName,
     resolveConnectedPhone,

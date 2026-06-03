@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../../logging/structured-logger';
+import { escapeHtml } from '../../common/utils/html-escape.util';
 import { sanitizeAgentRuntimeText } from './agent-runtime.sanitizer';
 import { AgentRuntimeSessionStore } from './agent-runtime.session-store';
 import { AgentRuntimeMemoryProviderBase } from './agent-runtime.memory-provider';
@@ -407,11 +408,7 @@ export class AgentRuntimeMemoryManagerService {
   }
 
   private escapeHtmlAttribute(value: string): string {
-    return value
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+    return escapeHtml(value);
   }
 
   private wrapMemoryContext(providerName: string, rawContext: string): string {

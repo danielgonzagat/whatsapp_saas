@@ -27,6 +27,12 @@ export function DealCreateInlineForm({
   const [value, setValue] = useState('');
   const [contact, setContact] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const resolveSubmitError = (submitError: unknown) =>
+    submitError instanceof Error && submitError.message
+      ? submitError.message
+      : 'Erro ao criar negócio.';
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -34,6 +40,7 @@ export function DealCreateInlineForm({
       return;
     }
     setSubmitting(true);
+    setError(null);
     try {
       await onCreateDeal({
         title: title.trim(),
@@ -45,17 +52,19 @@ export function DealCreateInlineForm({
       setTitle('');
       setValue('');
       setContact('');
-      onCreated();
-    } catch {
-      /* silent */
+      await onCreated();
+    } catch (submitError) {
+      setError(resolveSubmitError(submitError));
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
 
   const handleCancel = () => {
     setTitle('');
     setValue('');
     setContact('');
+    setError(null);
     onCancel();
   };
 
@@ -81,6 +90,19 @@ export function DealCreateInlineForm({
         onChange={(e) => setContact(e.target.value)}
         style={inputStyle}
       />
+      {error && (
+        <div
+          role="alert"
+          aria-live="polite"
+          style={{
+            color: colors.semantic.error,
+            fontSize: 11,
+            lineHeight: 1.35,
+          }}
+        >
+          {error}
+        </div>
+      )}
       <div style={{ display: 'flex', gap: 6 }}>
         <button
           type="submit"

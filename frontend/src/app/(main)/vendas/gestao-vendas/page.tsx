@@ -67,7 +67,10 @@ export default function GestaoVendasPage() {
       }}
     >
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 1000 }}>
-        <PageTitle title={kloelT(`Gestao de Vendas`)} sub={`${total} contatos no CRM`} />
+        <PageTitle
+          title={kloelT(`Contatos do CRM`)}
+          sub={`${total} contatos no CRM (Gestao de Vendas)`}
+        />
 
         {/* Search and Filters */}
         <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>

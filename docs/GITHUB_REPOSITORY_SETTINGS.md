@@ -195,14 +195,6 @@ The repository intentionally ignores discardable local outputs that should not
 enter Git history:
 
 - `screenshots/`
-- `PULSE_EXECUTION_TRACE.json`
-
-The live PULSE execution trace now writes outside the repo by default:
-
-- `~/Library/Application Support/Kloel/pulse/PULSE_EXECUTION_TRACE.json`
-
-`PULSE_EXECUTION_TRACE.json` remains ignored in the repo root because CI and
-final artifact generation may still materialize a root copy intentionally.
-
-Versioned PULSE evidence files remain part of the repository contract; only
-local-only trace/screenshot spillover is ignored.
+  Local operational traces and screenshots must stay outside the repository. CI
+  artifacts should be emitted by workflows and retained by GitHub, not committed
+  as source files.

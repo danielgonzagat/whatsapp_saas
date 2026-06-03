@@ -13,6 +13,14 @@ import type { ProductUrlItem, ProductUrlFormData } from './ProductUrlForm';
 import { ProductUrlList } from './ProductUrlList';
 import { ProductUrlDeleteModal } from './ProductUrlDeleteModal';
 
+function normalizeProductUrlList(response: unknown): ProductUrlItem[] {
+  if (!Array.isArray(response)) {
+    throw new Error('Payload de URLs invalido.');
+  }
+
+  return response;
+}
+
 export function ProductUrlsTab({ productId }: { productId: string }) {
   const fid = useId();
   const [items, setItems] = useState<ProductUrlItem[]>([]);
@@ -25,13 +33,10 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
   const fetch_ = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await apiFetch<ProductUrlItem[] | { data?: ProductUrlItem[] }>(
-        `/products/${productId}/urls`,
-      );
-      setItems(Array.isArray(response) ? response : []);
+      const response = await apiFetch<unknown>(`/products/${productId}/urls`);
+      setItems(normalizeProductUrlList(response));
       setError(null);
     } catch (caughtError: unknown) {
-      setItems([]);
       setError(toProductUrlErrorMessage(caughtError, PRODUCT_URLS_COPY.loadError));
     } finally {
       setLoading(false);
@@ -111,7 +116,9 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
         </div>
       )}
       <ProductUrlForm productId={productId} creating={creating} fid={fid} onCreate={handleCreate} />
-      <ProductUrlList items={items} onDelete={setUrlPendingDelete} />
+      {error && items.length === 0 ? null : (
+        <ProductUrlList items={items} onDelete={setUrlPendingDelete} />
+      )}
       <ProductUrlDeleteModal
         urlPendingDelete={urlPendingDelete}
         deletingId={deletingId}

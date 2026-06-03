@@ -202,8 +202,9 @@ function pickCanonicalStandard(standards) {
   return sorted[0] || null;
 }
 
-async function countEnabledNonDeprecatedPatterns(codingStandardId, tools, deprecatedUuids) {
+async function countNonDeprecatedPatternState(codingStandardId, tools, deprecatedUuids) {
   let enabledPatterns = 0;
+  let disabledPatterns = 0;
   for (const tool of tools) {
     if (deprecatedUuids.has(tool.uuid)) {
       continue;
@@ -215,13 +216,15 @@ async function countEnabledNonDeprecatedPatterns(codingStandardId, tools, deprec
       for (const pattern of page.data) {
         if (pattern.enabled === true || pattern.patternDefinition?.enabled === true) {
           enabledPatterns += 1;
+        } else {
+          disabledPatterns += 1;
         }
       }
       const nextCursor = page.cursor;
       cursor = nextCursor && nextCursor !== cursor ? nextCursor : '';
     } while (cursor);
   }
-  return enabledPatterns;
+  return { disabledPatterns, enabledPatterns };
 }
 
 async function listAllCodingStandardToolPatterns(codingStandardId, toolUuid) {
@@ -257,7 +260,7 @@ async function verifyCanonicalStandard(codingStandard) {
     totalOrganizationPatterns += await api.getToolPatternTotal(tool.uuid);
   }
 
-  const enabledNonDeprecatedPatternsCount = await countEnabledNonDeprecatedPatterns(
+  const nonDeprecatedPatternState = await countNonDeprecatedPatternState(
     codingStandard.id,
     orgTools,
     deprecatedUuids,
@@ -320,7 +323,7 @@ async function verifyCanonicalStandard(codingStandard) {
     totalOrganizationPatterns,
     enabledToolsCount,
     enabledPatternsCount,
-    enabledNonDeprecatedPatternsCount,
+    disabledNonDeprecatedPatternsCount: nonDeprecatedPatternState.disabledPatterns,
     deprecatedActuallyDisabled,
     deprecatedPatternsFullyDisabled,
     metadataDoesNotUndercountEnabledPatterns,
@@ -329,7 +332,7 @@ async function verifyCanonicalStandard(codingStandard) {
       enabledNonDeprecatedTools.length === targetEnabledToolsCount &&
       deprecatedActuallyDisabled,
     hasAllPatternsEnabled:
-      enabledNonDeprecatedPatternsCount === totalOrganizationPatterns &&
+      nonDeprecatedPatternState.disabledPatterns === 0 &&
       deprecatedPatternsFullyDisabled &&
       metadataDoesNotUndercountEnabledPatterns,
   };
@@ -429,19 +432,20 @@ async function main() {
         standardVerification.hasAllToolsEnabled &&
         standardVerification.hasAllPatternsEnabled,
       expected: {
-        linkedStandards: 1,
+        linkedStandards: [Number(canonicalStandard.id)],
         codingStandardId: Number(canonicalStandard.id),
         enabledToolsCount: standardVerification.targetEnabledToolsCount,
-        enabledPatternsCount: standardVerification.totalOrganizationPatterns,
-        enabledNonDeprecatedPatternsCount: standardVerification.totalOrganizationPatterns,
+        minimumEnabledPatternsCount: standardVerification.totalOrganizationPatterns,
+        disabledNonDeprecatedPatternsCount: 0,
         deprecatedToolsDisabled: DEPRECATED_DISABLED_TOOLS.map((entry) => entry.name),
       },
       actual: {
-        linkedStandards: (repoBefore.standards || []).map((standard) => standard.id),
+        linkedStandards: (repoBefore.standards || []).map((standard) => Number(standard.id)),
         codingStandardId: Number(repoBefore.codingStandardId),
         enabledToolsCount: standardVerification.enabledToolsCount,
         enabledPatternsCount: standardVerification.enabledPatternsCount,
-        enabledNonDeprecatedPatternsCount: standardVerification.enabledNonDeprecatedPatternsCount,
+        disabledNonDeprecatedPatternsCount:
+          standardVerification.disabledNonDeprecatedPatternsCount,
         deprecatedToolsDisabled: standardVerification.deprecatedActuallyDisabled
           ? DEPRECATED_DISABLED_TOOLS.map((entry) => entry.name)
           : [],
@@ -571,7 +575,7 @@ async function main() {
   }
   if (!standardAfter.hasAllToolsEnabled || !standardAfter.hasAllPatternsEnabled) {
     finalFailures.push(
-      `canonical coding standard ${canonicalAfter.id} is not fully enabled (tools ${standardAfter.enabledToolsCount}/${standardAfter.orgToolCount}, pattern metadata ${standardAfter.enabledPatternsCount}/${standardAfter.totalOrganizationPatterns}, non-deprecated patterns ${standardAfter.enabledNonDeprecatedPatternsCount}/${standardAfter.totalOrganizationPatterns})`,
+      `canonical coding standard ${canonicalAfter.id} is not fully enabled (tools ${standardAfter.enabledToolsCount}/${standardAfter.orgToolCount}, pattern metadata ${standardAfter.enabledPatternsCount}/${standardAfter.totalOrganizationPatterns}, disabled non-deprecated patterns ${standardAfter.disabledNonDeprecatedPatternsCount})`,
     );
   }
 

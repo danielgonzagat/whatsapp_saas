@@ -64,24 +64,61 @@ export interface Message {
 
 type MutationResult = Record<string, unknown> | undefined;
 
+type ConversationApiEnvelope<T> = {
+  data?: T;
+  error?: string;
+  status?: number;
+};
+
+function confirmConversationPayload<T>(
+  res: ConversationApiEnvelope<T>,
+  fallbackError: string,
+  missingPayloadError: string,
+): T {
+  if (res.error) {
+    throw new Error(res.error);
+  }
+  if (typeof res.status === 'number' && res.status >= 400) {
+    throw new Error(fallbackError);
+  }
+  if (res.data === undefined || res.data === null) {
+    throw new Error(missingPayloadError);
+  }
+  return res.data;
+}
+
+function confirmConversationListPayload<T>(
+  res: ConversationApiEnvelope<T[]>,
+  fallbackError: string,
+  missingPayloadError: string,
+): T[] {
+  const data = confirmConversationPayload(res, fallbackError, missingPayloadError);
+  if (!Array.isArray(data)) {
+    throw new Error(missingPayloadError);
+  }
+  return data;
+}
+
 /** List conversations. */
 export async function listConversations(workspaceId: string): Promise<Conversation[]> {
   const res = await apiFetch<Conversation[]>(
     `/inbox/${encodeURIComponent(workspaceId)}/conversations`,
   );
-  if (res.error) {
-    throw new Error(res.error);
-  }
-  return res.data ?? [];
+  return confirmConversationListPayload(
+    res,
+    'Erro ao carregar conversas',
+    'Conversation list did not return a confirmed payload',
+  );
 }
 
 /** List inbox agents. */
 export async function listInboxAgents(workspaceId: string): Promise<InboxAgent[]> {
   const res = await apiFetch<InboxAgent[]>(`/inbox/${encodeURIComponent(workspaceId)}/agents`);
-  if (res.error) {
-    throw new Error(res.error);
-  }
-  return res.data ?? [];
+  return confirmConversationListPayload(
+    res,
+    'Erro ao carregar agentes do inbox',
+    'Inbox agents did not return a confirmed payload',
+  );
 }
 
 /** Get conversation messages. */
@@ -89,10 +126,11 @@ export async function getConversationMessages(conversationId: string): Promise<M
   const res = await apiFetch<Message[]>(
     `/inbox/conversations/${encodeURIComponent(conversationId)}/messages`,
   );
-  if (res.error) {
-    throw new Error(res.error);
-  }
-  return res.data ?? [];
+  return confirmConversationListPayload(
+    res,
+    'Erro ao carregar mensagens da conversa',
+    'Conversation messages did not return a confirmed payload',
+  );
 }
 
 /** Close conversation. */
@@ -101,8 +139,11 @@ export async function closeConversation(conversationId: string): Promise<Mutatio
     `/inbox/conversations/${encodeURIComponent(conversationId)}/close`,
     { method: 'POST' },
   );
-  if (res.error) {
-    throw new Error(res.error);
+  if (res.error || res.status >= 400) {
+    throw new Error(res.error || 'Erro ao fechar conversa');
+  }
+  if (!res.data) {
+    throw new Error('Conversation close did not return a confirmed payload');
   }
   invalidateInbox();
   return res.data;
@@ -120,8 +161,11 @@ export async function assignConversation(
       body: { agentId },
     },
   );
-  if (res.error) {
-    throw new Error(res.error);
+  if (res.error || res.status >= 400) {
+    throw new Error(res.error || 'Erro ao atribuir conversa');
+  }
+  if (!res.data) {
+    throw new Error('Conversation assignment did not return a confirmed payload');
   }
   invalidateInbox();
   return res.data;

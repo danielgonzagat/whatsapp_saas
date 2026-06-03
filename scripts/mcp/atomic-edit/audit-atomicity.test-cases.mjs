@@ -133,5 +133,43 @@ export function buildSelfTestCases() {
         },
       },
     },
+    {
+      name: 'ratio-not-applicable-file-create',
+      expectedPass: true,
+      expectedTopologyPass: true,
+      expectedRatioPass: true,
+      trace: {
+        operationId: 'self-test-ratio-na-create',
+        file: 'src/new-file.ts',
+        operator: 'atomic_create_file',
+        targetUnit: 'file',
+        semanticImpact: 'file_created',
+        preservedZones: [
+          {
+            kind: 'whole_target_scope_boundary',
+            description: 'No pre-existing in-file bytes were available to preserve.',
+            byteStart: 0,
+            byteEnd: 0,
+            byteLength: 0,
+          },
+        ],
+        modifiedZones: [
+          {
+            kind: 'changed_span',
+            byteStart: 0,
+            byteEnd: 0,
+            newByteLength: 26,
+          },
+        ],
+        movementZones: [],
+        fallback: false,
+        metrics: {
+          changedChars: 26,
+          lineRewriteSurfaceChars: 0,
+          expansionFactorAvoided: 0,
+          lineRewriteAvoided: false,
+        },
+      },
+    },
   ];
 }

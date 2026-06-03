@@ -3,11 +3,7 @@ import { KycApprovedGuard } from './kyc-approved.guard';
 
 type AgentRow = { kycStatus: string } | null;
 
-function buildGuard(options: {
-  kycRequired: boolean;
-  agent?: AgentRow;
-  user?: { sub?: string };
-}) {
+function buildGuard(options: { kycRequired: boolean; agent?: AgentRow; user?: { sub?: string } }) {
   const reflector = {
     getAllAndOverride: jest.fn().mockReturnValue(options.kycRequired),
   };

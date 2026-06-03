@@ -225,7 +225,7 @@ export async function runAbiEnrichmentBranch(deps: {
   if (useAbi && abiBuilder) {
     try {
       // Close the read-back loop: feed the REAL persisted cognitive
-      // substrate (memory/beliefs/predictions/valence/pulseTruth from
+      // substrate (memory/beliefs/predictions/valence/readinessTruth from
       // the spine via #363) into the CONVERSATIONAL ABI — previously
       // only inspect_self got it, so the chat had no cross-session
       // memory. Safe: whole block is try/caught with legacy fallback.
@@ -276,7 +276,7 @@ export async function runAbiEnrichmentBranch(deps: {
           if (handoffFlags.observe) {
             const snapshot = computeHandoffConfidence(
               abiResult.abi.beliefs,
-              abiResult.abi.pulseTruth,
+              abiResult.abi.readinessTruth,
             );
             // Dual-emit: `kloel.handoff.confidence` is the legacy event
             // name; `cognition.handoff.confidence` is the canonical name

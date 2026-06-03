@@ -41,17 +41,20 @@ export function useAIConfig(productId: string) {
   useEffect(() => {
     apiFetch(`/products/${productId}/ai-config`)
       .then((r) => setAiCfg(unwrapApiPayload<AiConfigShape>(r) || {}))
-      .catch(() => setAiCfg({}))
+      .catch((error) => {
+        console.error(error);
+        setAiCfg(null);
+        showToast(
+          error instanceof Error ? error.message : 'Erro ao carregar configuração de IA',
+          'error',
+        );
+      })
       .finally(() => setAiLoading(false));
-  }, [productId]);
+  }, [productId, showToast]);
   const [whobuys, setWhobuys] = useState('');
   const [pains, setPains] = useState('');
   const [promise, setPromise] = useState('');
-  const [objs, setObjs] = useState<{ id: string; label: string; response: string }[]>([
-    { id: 'obj-seed-1', label: 'É caro', response: '' },
-    { id: 'obj-seed-2', label: 'Não confio', response: '' },
-    { id: 'obj-seed-3', label: 'Funciona?', response: '' },
-  ]);
+  const [objs, setObjs] = useState<{ id: string; label: string; response: string }[]>([]);
   const objIdCounter = useRef(0);
   const nextObjId = () => {
     objIdCounter.current += 1;
@@ -82,6 +85,8 @@ export function useAIConfig(productId: string) {
           response: obj.response || obj.a || '',
         })),
       );
+    } else {
+      setObjs([]);
     }
     setTone(aiCfg.tone || 'CONSULTIVE');
     setPersist(String(aiCfg.persistenceLevel ?? 3));
@@ -96,27 +101,29 @@ export function useAIConfig(productId: string) {
   const handleSaveAI = async () => {
     setAiSaving(true);
     try {
-      await apiFetch(`/products/${productId}/ai-config`, {
-        method: 'PUT',
-        body: {
-          customerProfile: { whobuys, pains, promise },
-          objections: objs,
-          tone,
-          persistenceLevel: Number.parseInt(persist, 10) || 3,
-          messageLimit: Number.parseInt(msgLimit, 10) || 10,
-          followUpConfig: {
-            schedule: followUp,
-            autoCheckoutLink: autoLink,
-            offerDiscount: offerDisc,
-            useUrgency: useUrg,
+      unwrapApiPayload(
+        await apiFetch(`/products/${productId}/ai-config`, {
+          method: 'PUT',
+          body: {
+            customerProfile: { whobuys, pains, promise },
+            objections: objs,
+            tone,
+            persistenceLevel: Number.parseInt(persist, 10) || 3,
+            messageLimit: Number.parseInt(msgLimit, 10) || 10,
+            followUpConfig: {
+              schedule: followUp,
+              autoCheckoutLink: autoLink,
+              offerDiscount: offerDisc,
+              useUrgency: useUrg,
+            },
+            salesArguments: {
+              autoCheckoutLink: autoLink,
+              offerDiscount: offerDisc,
+              useUrgency: useUrg,
+            },
           },
-          salesArguments: {
-            autoCheckoutLink: autoLink,
-            offerDiscount: offerDisc,
-            useUrgency: useUrg,
-          },
-        },
-      });
+        }),
+      );
       setAiSaved(true);
       setTimeout(() => setAiSaved(false), 2000);
       showToast('Configuração de IA salva', 'success');

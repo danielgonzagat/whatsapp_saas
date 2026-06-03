@@ -15,6 +15,7 @@ import {
   Sparkles,
   TrendingUp,
 } from 'lucide-react';
+import { formatCurrency } from './page.ui';
 
 interface MoneyReportLike {
   totalRevenue?: number;
@@ -24,15 +25,6 @@ interface MoneyReportLike {
   conversions?: number;
   avgTicket?: number;
   revenueByDay?: Record<string, number>;
-}
-
-function formatCurrency(value?: number) {
-  if (value == null) {
-    return 'R$ 0';
-  }
-  return (
-    'R$ ' + value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-  );
 }
 
 function StatCard({

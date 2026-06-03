@@ -153,7 +153,7 @@ describe('ConversationalOnboardingService intent-router log telemetry', () => {
               windowHours: 24,
             },
           },
-          pulseTruth: {
+          readinessTruth: {
             noOverclaimStatus: 'PASS',
             capabilityHealthScore: 0,
             gates: [],

@@ -55,6 +55,7 @@ describe('KloelController', () => {
       {} as never,
       prisma as never as ConstructorParameters<typeof KloelController>[3],
       {} as never,
+      {} as never,
       toolDispatcher as never,
     );
   });

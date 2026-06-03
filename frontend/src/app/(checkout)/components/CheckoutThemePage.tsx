@@ -5,6 +5,7 @@ import type { PublicCheckoutThemeProps } from '@/lib/public-checkout-contract';
 import { useCheckoutExperienceSocial } from '../hooks/useCheckoutExperienceSocial';
 import { CheckoutLeadSections } from './CheckoutLeadSections';
 import { CheckoutPaymentSection, CheckoutSuccessModal } from './CheckoutPaymentSection';
+import { OrderBumpsList } from './OrderBumpsList';
 import CountdownTimer from './CountdownTimer';
 import StockCounter from './StockCounter';
 import {
@@ -280,6 +281,19 @@ export function CheckoutThemePage({
         {config?.timerPosition === 'above_button' ? (
           <div style={{ flex: '1 1 100%', maxWidth: 420 }}>{urgency}</div>
         ) : null}
+        {checkout.step === 3 && (
+          <div style={{ flex: '1 1 100%', maxWidth: 420 }}>
+            <OrderBumpsList
+              bumps={checkout.orderBumps}
+              selectedIds={checkout.selectedBumpIds}
+              onToggle={checkout.toggleBump}
+              accentColor={theme.accent}
+              cardBg={theme.cardBackground}
+              mutedColor={theme.mutedText}
+              textColor={theme.text}
+            />
+          </div>
+        )}
         <CheckoutPaymentSection
           theme={theme}
           {...(config ? { config } : {})}

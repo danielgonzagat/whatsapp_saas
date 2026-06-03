@@ -144,4 +144,26 @@ describe('kloel-message-ui', () => {
 
     expect(getAssistantProcessingTrace(second)).toHaveLength(1);
   });
+
+  it('merges live capability metadata from terminal stream events', () => {
+    const metadata = appendAssistantTraceFromEvent(
+      { clientRequestId: 'req-1' },
+      {
+        type: 'done',
+        metadata: {
+          capability: 'create_image',
+          generatedImageUrl: 'https://cdn.example.test/generated.png',
+        },
+      },
+    );
+
+    expect(metadata).toEqual(
+      expect.objectContaining({
+        clientRequestId: 'req-1',
+        capability: 'create_image',
+        generatedImageUrl: 'https://cdn.example.test/generated.png',
+      }),
+    );
+    expect(getAssistantProcessingTrace(metadata)).toEqual([]);
+  });
 });

@@ -88,7 +88,7 @@ describe('mind-capability-executor.helpers (cognitive + readers)', () => {
         predictions: { active: [{ id: 'p' }] },
         perception: { recentSalientEvents: [{ id: 's' }] },
         lineage: { status: 'intact' },
-        pulseTruth: { certificationVerdict: 'PASS' },
+        readinessTruth: { certificationVerdict: 'PASS' },
       };
       // top-level capabilities is the array form; with the nested-array seeded
       // above the top-level still needs to be a non-empty array for the
@@ -155,31 +155,31 @@ describe('mind-capability-executor.helpers (cognitive + readers)', () => {
       expect(gapsNumeric.some((g) => g.startsWith('lineage_'))).toBe(false);
     });
 
-    it('appends a lowercased pulse gap when pulseTruth.certificationVerdict is non-PASS', () => {
+    it('appends a lowercased readiness gap when readinessTruth.certificationVerdict is non-PASS', () => {
       expect(
-        computeCognitiveGaps({ pulseTruth: { certificationVerdict: 'NOT_CERTIFIED' } }),
-      ).toContain('pulse_not_certified');
-      expect(computeCognitiveGaps({ pulseTruth: { certificationVerdict: 'FAIL' } })).toContain(
-        'pulse_fail',
+        computeCognitiveGaps({ readinessTruth: { certificationVerdict: 'NOT_CERTIFIED' } }),
+      ).toContain('readiness_not_certified');
+      expect(computeCognitiveGaps({ readinessTruth: { certificationVerdict: 'FAIL' } })).toContain(
+        'readiness_fail',
       );
     });
 
-    it('does not append a pulse gap when verdict is PASS or non-string', () => {
-      const gapsPass = computeCognitiveGaps({ pulseTruth: { certificationVerdict: 'PASS' } });
-      expect(gapsPass.some((g) => g.startsWith('pulse_'))).toBe(false);
+    it('does not append a readiness gap when verdict is PASS or non-string', () => {
+      const gapsPass = computeCognitiveGaps({ readinessTruth: { certificationVerdict: 'PASS' } });
+      expect(gapsPass.some((g) => g.startsWith('readiness_'))).toBe(false);
 
-      const gapsMissing = computeCognitiveGaps({ pulseTruth: { certificationVerdict: 42 } });
-      expect(gapsMissing.some((g) => g.startsWith('pulse_'))).toBe(false);
+      const gapsMissing = computeCognitiveGaps({ readinessTruth: { certificationVerdict: 42 } });
+      expect(gapsMissing.some((g) => g.startsWith('readiness_'))).toBe(false);
     });
 
-    it('combines empty-array flags with lineage and pulse flags into a single list', () => {
+    it('combines empty-array flags with lineage and readiness flags into a single list', () => {
       const gaps = computeCognitiveGaps({
         beliefs: [],
         lineage: { status: 'broken' },
-        pulseTruth: { certificationVerdict: 'CRITICAL' },
+        readinessTruth: { certificationVerdict: 'CRITICAL' },
       });
       expect(gaps).toEqual(
-        expect.arrayContaining(['no_beliefs_formed', 'lineage_broken', 'pulse_critical']),
+        expect.arrayContaining(['no_beliefs_formed', 'lineage_broken', 'readiness_critical']),
       );
     });
   });

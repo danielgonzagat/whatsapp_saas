@@ -119,16 +119,32 @@ function buildSalesArguments(payload?: AIConfigPayload['salesArguments']) {
   };
 }
 
+function normalizeObjections(payload?: AIConfigPayload['objections']) {
+  if (payload === undefined) {
+    return [];
+  }
+  if (!Array.isArray(payload)) {
+    throw new Error('Payload de objecoes invalido.');
+  }
+  return payload.map((objection) => {
+    if (typeof objection?.q !== 'string' || typeof objection?.a !== 'string') {
+      throw new Error('Payload de objecoes invalido.');
+    }
+    return objection;
+  });
+}
+
 /** Merge ai config payload. */
 export function mergeAIConfigPayload(prev: AIConfig, payload: AIConfigPayload): AIConfig {
   const customerProfile = buildCustomerProfile(payload.customerProfile);
   const salesArguments = buildSalesArguments(payload.salesArguments);
+  const objections = normalizeObjections(payload.objections);
   return {
     ...prev,
     idealCustomer: customerProfile.idealCustomer,
     painPoints: customerProfile.painPoints,
     promisedResult: customerProfile.promisedResult,
-    objections: payload.objections || [],
+    objections,
     tone: payload.tone || 'Consultivo',
     persistence: payload.persistenceLevel ?? 3,
     messageLimit: payload.messageLimit ?? 10,

@@ -13,7 +13,7 @@ import { KloelLoadingState, KloelMushroomMark } from '@/components/kloel/KloelBr
 import { useFlowExecutions } from '@/hooks/useFlowExecutions';
 import { useFlowOptimize } from '@/hooks/useFlowOptimize';
 import { useFlowTemplates } from '@/hooks/useFlowTemplates';
-import { useFlows } from '@/hooks/useFlows';
+import { useFlows, type Flow } from '@/hooks/useFlows';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { Clock, FileText, LayoutTemplate, Sparkles } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
@@ -47,7 +47,7 @@ function FlowPageContent() {
   const requestedLeadId = searchParams.get('leadId') || '';
   const workspaceId = useWorkspaceId();
 
-  const { saveFlow, error } = useFlows(workspaceId);
+  const { saveFlow, fetchFlow, error } = useFlows(workspaceId);
   const {
     executions,
     loading: execLoading,
@@ -106,6 +106,33 @@ function FlowPageContent() {
     },
     [handleSave],
   );
+
+  // Load an existing flow before mounting the builder. Opening ?id=<flow> used to
+  // mount FlowBuilder with an empty seed; if the user then clicked Salvar, that
+  // blank graph overwrote the saved nodes/edges (silent data loss). We now gate
+  // the builder until the saved flow is fetched and pass it as initial state.
+  const existingFlowId = searchParams.get('id');
+  const [loadedFlow, setLoadedFlow] = useState<Flow | null>(null);
+  const [flowReady, setFlowReady] = useState(!existingFlowId);
+
+  useEffect(() => {
+    if (!existingFlowId || !workspaceId) {
+      setFlowReady(true);
+      return;
+    }
+    let cancelled = false;
+    setFlowReady(false);
+    void fetchFlow(existingFlowId).then((flow) => {
+      if (cancelled) {
+        return;
+      }
+      setLoadedFlow(flow);
+      setFlowReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [existingFlowId, workspaceId, fetchFlow]);
 
   useEffect(() => {
     if (activeTab === 'executions') {
@@ -209,14 +236,20 @@ function FlowPageContent() {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
-        {activeTab === 'editor' && (
-          <FlowBuilder
-            flowId={flowId}
-            workspaceId={workspaceId}
-            onSave={handleSave}
-            onTest={handleTest}
-          />
-        )}
+        {activeTab === 'editor' &&
+          (flowReady ? (
+            <FlowBuilder
+              key={flowId}
+              flowId={flowId}
+              workspaceId={workspaceId}
+              initialNodes={loadedFlow?.nodes ?? []}
+              initialEdges={loadedFlow?.edges ?? []}
+              onSave={handleSave}
+              onTest={handleTest}
+            />
+          ) : (
+            <KloelLoadingState />
+          ))}
 
         {activeTab === 'templates' && (
           <FlowTemplatesTab

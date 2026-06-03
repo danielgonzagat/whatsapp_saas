@@ -39,7 +39,6 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
       setItems(normalizeCouponList(response));
       setError(null);
     } catch (caughtError: unknown) {
-      setItems([]);
       setError(toCouponErrorMessage(caughtError, PRODUCT_COUPONS_COPY.loadError));
     } finally {
       setLoading(false);

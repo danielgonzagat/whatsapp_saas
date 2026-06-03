@@ -51,6 +51,7 @@ export default function CiaPage() {
     openApprovals,
     pendingSessions,
     activeWorkItems,
+    advancedError,
     loadAdvancedData,
   } = useCiaAdvanced(workspaceId);
 
@@ -99,7 +100,7 @@ export default function CiaPage() {
           message={surface?.now?.message || ''}
           phase={surface?.now?.phase}
           loading={loading}
-          error={error}
+          error={error || advancedError}
         />
 
         <CiaMoneyEvents events={moneyEvents} />

@@ -127,22 +127,38 @@ export class AffiliateController {
       },
     });
 
-    if (existingRequest) {
+    // A previously-SAVED (or rejected) marketplace row is upgradable into a real
+    // application; only an active PENDING/APPROVED request blocks re-requesting.
+    // Without this, a user who clicked "Salvar" first could never apply (the apply
+    // always 400'd "Affiliation already requested").
+    if (
+      existingRequest &&
+      (existingRequest.status === 'PENDING' || existingRequest.status === 'APPROVED')
+    ) {
       throw new BadRequestException('Affiliation already requested');
     }
 
     // Auto-approve or set to pending based on product config
     const status = product.approvalMode === 'AUTO' ? 'APPROVED' : 'PENDING';
 
-    const request = await this.prisma.affiliateRequest.create({
-      data: {
-        affiliateProductId: productId,
-        affiliateWorkspaceId: workspaceId,
-        affiliateName: body.name || null,
-        affiliateEmail: body.email || null,
-        status,
-      },
-    });
+    const request = existingRequest
+      ? await this.prisma.affiliateRequest.update({
+          where: { id: existingRequest.id },
+          data: {
+            affiliateName: body.name || null,
+            affiliateEmail: body.email || null,
+            status,
+          },
+        })
+      : await this.prisma.affiliateRequest.create({
+          data: {
+            affiliateProductId: productId,
+            affiliateWorkspaceId: workspaceId,
+            affiliateName: body.name || null,
+            affiliateEmail: body.email || null,
+            status,
+          },
+        });
 
     // If auto-approved, create the affiliate link immediately
     let link = null;

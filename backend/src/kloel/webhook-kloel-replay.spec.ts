@@ -2,10 +2,8 @@ import { ForbiddenException } from '@nestjs/common';
 
 jest.mock('./kloel.service', () => ({}));
 
-describe('WhatsAppBrainController — replay safety', () => {
-  let controller: InstanceType<
-    typeof import('./whatsapp-brain.controller').WhatsAppBrainController
-  >;
+describe('WhatsAppMindController — replay safety', () => {
+  let controller: InstanceType<typeof import('./whatsapp-brain.controller').WhatsAppMindController>;
   let redis: { set: jest.Mock };
   let webhooksService: {
     logWebhookEvent: jest.Mock;
@@ -13,12 +11,12 @@ describe('WhatsAppBrainController — replay safety', () => {
     markWebhookFailed: jest.Mock;
   };
   let whatsappBrain: { processWebhook: jest.Mock };
-  let ControllerClass: typeof import('./whatsapp-brain.controller').WhatsAppBrainController;
+  let ControllerClass: typeof import('./whatsapp-brain.controller').WhatsAppMindController;
 
   beforeAll(async () => {
     process.env.NODE_ENV = 'test';
-    const { WhatsAppBrainController } = await import('./whatsapp-brain.controller');
-    ControllerClass = WhatsAppBrainController;
+    const { WhatsAppMindController } = await import('./whatsapp-brain.controller');
+    ControllerClass = WhatsAppMindController;
   });
 
   beforeEach(() => {

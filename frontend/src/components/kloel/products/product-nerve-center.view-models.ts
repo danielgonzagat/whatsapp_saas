@@ -107,6 +107,16 @@ interface RawCheckout {
 }
 
 /** Map product editor plans. */
+function readProductEditorLinks(value: unknown, message: string): unknown[] {
+  if (value === undefined || value === null) {
+    return [];
+  }
+  if (Array.isArray(value)) {
+    return value;
+  }
+  throw new Error(message);
+}
+
 export function mapProductEditorPlans(rawPlans: unknown): ProductEditorPlanView[] {
   if (!Array.isArray(rawPlans)) {
     return [];
@@ -126,7 +136,10 @@ export function mapProductEditorPlans(rawPlans: unknown): ProductEditorPlanView[
     inst: Number(plan.maxInstallments || 1),
     vis: plan.visibleToAffiliates !== false,
     freeShip: plan.freeShipping === true,
-    checkoutLinks: Array.isArray(plan.planLinks) ? plan.planLinks : [],
+    checkoutLinks: readProductEditorLinks(
+      plan.planLinks,
+      'Invalid product plan links payload',
+    ),
   }));
 }
 
@@ -167,7 +180,10 @@ export function mapProductEditorCheckouts(rawCheckouts: unknown): ProductEditorC
       coupon: cfg.enableCoupon !== false,
       urgency: Boolean(cfg.enableTimer || cfg.showStockCounter),
       popup: Boolean(cfg.showCouponPopup),
-      linkedPlans: Array.isArray(checkout.checkoutLinks) ? checkout.checkoutLinks : [],
+      linkedPlans: readProductEditorLinks(
+        checkout.checkoutLinks,
+        'Invalid product checkout links payload',
+      ),
     };
   });
 }

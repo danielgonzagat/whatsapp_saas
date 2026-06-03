@@ -102,7 +102,7 @@ describe('ConversationalOnboardingService', () => {
               windowHours: 24,
             },
           },
-          pulseTruth: {
+          readinessTruth: {
             noOverclaimStatus: 'PASS',
             capabilityHealthScore: 0,
             gates: [],

@@ -93,6 +93,9 @@ function FaqItem({
 
 export default function AjudaSection() {
   const [openQuestion, setOpenQuestion] = useState<number | null>(null);
+  const supportEmailHref = 'mailto:ajuda@kloel.com?subject=Suporte%20Kloel';
+  const centralHelpHref = 'mailto:ajuda@kloel.com?subject=Central%20de%20Ajuda';
+  const supportWhatsappHref = 'mailto:ajuda@kloel.com?subject=WhatsApp%20Kloel';
 
   const faqs = [
     {
@@ -118,10 +121,10 @@ export default function AjudaSection() {
   };
 
   const helpLinks = [
-    { label: 'Central de Ajuda', href: '#', target: '_blank', icon: Icons.help },
+    { label: 'Central de Ajuda', href: centralHelpHref, target: undefined, icon: Icons.help },
     {
       label: 'Contato / Suporte',
-      href: 'mailto:suporte@kloel.com',
+      href: supportEmailHref,
       target: undefined,
       icon: Icons.bell,
     },
@@ -182,9 +185,7 @@ export default function AjudaSection() {
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
         <a
-          href="https://wa.me/5500000000000"
-          target="_blank"
-          rel="noopener noreferrer"
+          href={supportWhatsappHref}
           style={{
             flex: 1,
             padding: '14px 20px',
@@ -205,7 +206,7 @@ export default function AjudaSection() {
           {kloelT(`WhatsApp`)}
         </a>
         <a
-          href="mailto:suporte@kloel.com"
+          href={supportEmailHref}
           style={{
             flex: 1,
             padding: '14px 20px',

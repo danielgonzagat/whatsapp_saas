@@ -6,21 +6,16 @@ vi.mock('next/script', () => ({
   default: () => null,
 }));
 
-vi.mock('@/components/kloel/PulseFrontendHeartbeat', () => ({
-  PulseFrontendHeartbeat: () => null,
-}));
-
 vi.mock('@/components/kloel/AppShell', () => ({
   AppShell: ({ children }: { children: ReactNode }) => (
     <div data-testid="legacy-app-shell">{children}</div>
   ),
 }));
 
-// The canonical surface is the owner-authored KloelGraph prototype, mounted via
-// KloelGraphClient. It is self-contained (renders its own full-screen graph, not
-// the route children), so the mock is a childless marker — matching real behavior.
-vi.mock('@/components/kloel/graph/KloelGraphClient', () => ({
-  KloelGraphClient: () => <div data-testid="kloel-graph-app-shell" />,
+vi.mock('@/components/kloel/graph/KloelGraphShell', () => ({
+  KloelGraphShell: ({ children }: { children: ReactNode }) => (
+    <div data-testid="kloel-graph-app-shell">{children}</div>
+  ),
 }));
 
 import { MainAppLayoutShell } from './MainAppLayoutShell';
@@ -32,14 +27,14 @@ afterEach(() => {
 });
 
 describe('MainAppLayoutShell graph rollout', () => {
-  it('mounts the KloelGraph prototype by default so the app is graph-first', () => {
+  it('mounts the KloelGraph shell by default so the app is graph-first', () => {
     render(
       <MainAppLayoutShell>
         <div>Graph route</div>
       </MainAppLayoutShell>,
     );
 
-    expect(screen.getByTestId('kloel-graph-app-shell')).toBeTruthy();
+    expect(screen.getByTestId('kloel-graph-app-shell')).toHaveTextContent('Graph route');
     expect(screen.queryByTestId('legacy-app-shell')).toBeNull();
   });
 
@@ -56,7 +51,7 @@ describe('MainAppLayoutShell graph rollout', () => {
     expect(screen.queryByTestId('kloel-graph-app-shell')).toBeNull();
   });
 
-  it('keeps mounting the KloelGraph prototype when the graph flag is explicitly enabled', () => {
+  it('keeps mounting the KloelGraph shell when the graph flag is explicitly enabled', () => {
     process.env.NEXT_PUBLIC_KLOEL_GRAPH_ENABLED = 'true';
 
     render(
@@ -65,7 +60,7 @@ describe('MainAppLayoutShell graph rollout', () => {
       </MainAppLayoutShell>,
     );
 
-    expect(screen.getByTestId('kloel-graph-app-shell')).toBeTruthy();
+    expect(screen.getByTestId('kloel-graph-app-shell')).toHaveTextContent('Graph route');
     expect(screen.queryByTestId('legacy-app-shell')).toBeNull();
   });
 });

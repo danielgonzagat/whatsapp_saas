@@ -163,67 +163,64 @@ export const WorkspaceMeResponseSchema = z.object({
   role: z.string(),
 });
 
-// ─── WhatsApp session ──────────────────────────────────────────────────────
+// ─── WhatsApp Meta auth ────────────────────────────────────────────────────
+
+const MetaWhatsAppChannelStatusSchema = z
+  .object({
+    connected: z.boolean().optional(),
+    provider: z.string().optional(),
+    phoneNumberId: z.string().nullable().optional(),
+    whatsappBusinessId: z.string().nullable().optional(),
+    displayPhoneNumber: z.string().nullable().optional(),
+    username: z.string().nullable().optional(),
+    status: z.string().nullable().optional(),
+  })
+  .passthrough();
+
+const FORBIDDEN_LEGACY_WHATSAPP_STATUS_KEYS = [
+  'qrCode',
+  'qrAvailable',
+  'browserSessionStatus',
+  'screencastStatus',
+  'viewerAvailable',
+  'viewport',
+] as const;
 
 /**
- * Response to GET /whatsapp-api/session/status. The frontend's
- * inbox header, autopilot screen, and admin connect flow all read
- * from this. Many fields are optional because the active provider
- * (Meta Cloud vs WAHA) determines which subset is populated.
+ * Response to GET /meta/auth/status. WhatsApp is connected only through
+ * the official Meta Cloud API; legacy non-Meta fields are not part of this
+ * frontend contract.
  */
-export const WhatsAppStatusResponseSchema = z.object({
-  connected: z.boolean(),
-  status: z.string().optional(),
-  phone: z.string().optional(),
-  pushName: z.string().optional(),
-  authUrl: z.string().optional(),
-  phoneNumberId: z.string().optional(),
-  whatsappBusinessId: z.string().nullable().optional(),
-  qrCode: z.string().optional(),
-  message: z.string().optional(),
-  provider: z.string().optional(),
-  workerAvailable: z.boolean().optional(),
-  workerHealthy: z.boolean().optional(),
-  workerError: z.string().nullable().optional(),
-  degraded: z.boolean().optional(),
-  qrAvailable: z.boolean().optional(),
-  browserSessionStatus: z.string().optional(),
-  screencastStatus: z.string().optional(),
-  viewerAvailable: z.boolean().optional(),
-  takeoverActive: z.boolean().optional(),
-  agentPaused: z.boolean().optional(),
-  lastObservationAt: z.string().nullable().optional(),
-  lastActionAt: z.string().nullable().optional(),
-  observationSummary: z.string().nullable().optional(),
-  activeProvider: z.string().nullable().optional(),
-  proofCount: z.number().optional(),
-  degradedReason: z.string().nullable().optional(),
-  viewport: z
-    .object({
-      width: z.number(),
-      height: z.number(),
-    })
-    .optional(),
-});
+export const WhatsAppStatusResponseSchema = z
+  .object({
+    connected: z.boolean(),
+    tokenExpired: z.boolean().optional(),
+    channels: z
+      .object({
+        whatsapp: MetaWhatsAppChannelStatusSchema.nullable().optional(),
+      })
+      .partial()
+      .optional(),
+    whatsappPhoneNumberId: z.string().nullable().optional(),
+    whatsappBusinessId: z.string().nullable().optional(),
+    pageName: z.string().nullable().optional(),
+  })
+  .passthrough()
+  .superRefine((value, ctx) => {
+    for (const key of FORBIDDEN_LEGACY_WHATSAPP_STATUS_KEYS) {
+      if (key in value) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Legacy WhatsApp field "${key}" is not part of the Meta auth contract.`,
+          path: [key],
+        });
+      }
+    }
+  });
 
-/**
- * Response to POST /whatsapp-api/session/start — initiates a new
- * session and returns either a QR code (WAHA) or an OAuth URL
- * (Meta Cloud). This is the primary connect flow.
- */
-export const WhatsAppStartSessionResponseSchema = z.object({
-  success: z.boolean(),
-  qrCode: z.string().optional(),
-  message: z.string().optional(),
-  authUrl: z.string().optional(),
-});
-
-/**
- * Response to GET /whatsapp-api/session/qr.
- */
-export const WhatsAppQrResponseSchema = z.object({
-  available: z.boolean(),
-  qr: z.string().optional(),
+/** Response to GET /meta/auth/url for the official Meta OAuth / Embedded Signup flow. */
+export const MetaAuthUrlResponseSchema = z.object({
+  url: z.string().url(),
 });
 
 // ─── Health ────────────────────────────────────────────────────────────────

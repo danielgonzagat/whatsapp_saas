@@ -378,7 +378,7 @@ export default function ContaView() {
                       'Para encerrar sua conta, entre em contato com nosso suporte via chat ou WhatsApp.',
                     )
                   ) {
-                    /* no-op */
+                    handleSelectSection('ajuda');
                   }
                 }}
                 style={{

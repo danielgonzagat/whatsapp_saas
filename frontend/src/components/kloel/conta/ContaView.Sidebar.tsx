@@ -88,7 +88,7 @@ export function ContaSidebar({ section, sectionStatus, onSelectSection }: ContaS
                 'Para encerrar sua conta, entre em contato com nosso suporte via chat ou WhatsApp.',
               )
             ) {
-              /* no-op */
+              onSelectSection('ajuda');
             }
           }}
           style={{

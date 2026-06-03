@@ -39,6 +39,9 @@ export function useTikTokMarketing(): UseTikTokMarketingReturn {
     const response = await apiFetch<{ url?: string }>(
       `/marketing/connect/tiktok/url?kind=${kind}`,
     );
+    if (response.error) {
+      throw new Error(response.error);
+    }
     const url = String(response?.data?.url ?? '').trim();
     if (!url || !isTrustedUrl(url)) {
       throw new Error('URL oficial do TikTok indisponivel.');

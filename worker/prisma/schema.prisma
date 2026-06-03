@@ -327,6 +327,11 @@ model Agent {
   // Onboarding
   onboardingCompletedAt DateTime?
 
+  // Security
+  mfaSecret       String? @map("mfa_secret")
+  mfaEnabled      Boolean @default(false) @map("mfa_enabled")
+  mfaPendingSetup Boolean @default(false) @map("mfa_pending_setup")
+
   // KYC Profile
   birthDate         DateTime?
   documentType      String? // CPF, CNPJ
@@ -413,6 +418,16 @@ model Contact {
   purchaseProbability String  @default("LOW") // LOW, MEDIUM, HIGH
   nextBestAction      String? // "Send Offer", "Wait 2 days"
   aiSummary           String? // Auto-generated summary
+
+  // --- LEAD FUNNEL SNAPSHOT (additive, nullable — PERSON+SITE migration PHASE 0) ---
+  // Denormalized funnel state mirrored from KloelLead so a promoted/unified
+  // Contact carries its lead funnel context. All nullable except the counter,
+  // which defaults to 0. No data move in this phase — pure column add.
+  leadStatus    String? // mirror of KloelLead.status (new/hot/warm/cold/converted/lost)
+  leadStage     String? // mirror of KloelLead.stage (new/interested/negotiation/objection/closed)
+  lastMessage   String? // last inbound message snapshot
+  lastIntent    String? // last detected intent snapshot
+  totalMessages Int     @default(0) // running message count
 
   insights           ContactInsight[]
   channelIdentifiers ChannelIdentifier[]
@@ -2202,6 +2217,11 @@ model ProductPlan {
 
   name         String
   price        Float
+  // Additive money-in-cents column (PRODUCT-PLAN migration PHASE A). Nullable so
+  // existing rows stay null until a future gated backfill; canonical money rule is
+  // integer cents (mirrors CheckoutProductPlan.priceInCents). New writes set this
+  // alongside `price`; reads/checkout still consume `price` until a later phase.
+  priceInCents Int?
   currency     String @default("BRL")
   billingType  String @default("ONE_TIME") // ONE_TIME, RECURRING, FREE
   itemsPerPlan Int    @default(1)
@@ -3869,6 +3889,10 @@ model MindMemory {
   @@map("RAC_MindMemory")
 }
 
+/// @deprecated Superseded by the richer canonical `MindGlobalPrior` model.
+/// Retained for data safety (table `RAC_KloelGlobalPrior`) — do NOT drop without
+/// an owner-approved migration. New code should read/write `MindGlobalPrior` via
+/// `MindGlobalPriorService`. See `docs/architecture/MIND_SERVICE_CONSOLIDATION.md` §1.
 model KloelGlobalPrior {
   id           String   @id @default(cuid())
   channel      String
@@ -4725,6 +4749,11 @@ model Site {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   publishedAt DateTime?
+
+  // --- LEGACY BACKFILL KEY (additive, nullable unique — PERSON+SITE migration PHASE 0) ---
+  // Idempotency key for a future KloelSite → Site backfill. Nullable so existing
+  // Sites are unaffected; unique so a legacy source maps to at most one Site.
+  legacyKloelSiteId String? @unique
 
   domains SiteDomain[]
   apps    SiteAppIntegration[]

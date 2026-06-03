@@ -56,6 +56,28 @@ interface WorkspaceConnectAccountsResponse {
   accounts?: WorkspaceConnectAccount[];
 }
 
+function resolveConnectAccountsPayload(
+  payload: WorkspaceConnectAccountsResponse | undefined,
+  isEnabled: boolean,
+  isLoading: boolean,
+): { accounts: WorkspaceConnectAccount[]; payloadError?: Error } {
+  if (!isEnabled) {
+    return { accounts: [] };
+  }
+
+  if (payload === undefined) {
+    return isLoading
+      ? { accounts: [] }
+      : { accounts: [], payloadError: new Error('Invalid connect accounts payload') };
+  }
+
+  if (Array.isArray(payload.accounts)) {
+    return { accounts: payload.accounts };
+  }
+
+  return { accounts: [], payloadError: new Error('Invalid connect accounts payload') };
+}
+
 /** Use workspace connect accounts. */
 export function useWorkspaceConnectAccounts() {
   const workspaceId = useWorkspaceId();
@@ -68,11 +90,16 @@ export function useWorkspaceConnectAccounts() {
       revalidateOnFocus: false,
     },
   );
+  const { accounts, payloadError } = resolveConnectAccountsPayload(
+    data,
+    Boolean(workspaceId),
+    isLoading,
+  );
 
   return {
-    accounts: data?.accounts || [],
+    accounts,
     isLoading,
-    error,
+    error: error ?? payloadError,
     mutate,
   };
 }

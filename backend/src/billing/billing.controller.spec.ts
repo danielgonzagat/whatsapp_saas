@@ -13,6 +13,22 @@ jest.mock('@nestjs/throttler', () => {
   };
 });
 
+jest.mock('../auth/jwt-auth.guard', () => ({
+  JwtAuthGuard: class SpecJwtAuthGuard {
+    canActivate() {
+      return true;
+    }
+  },
+}));
+
+jest.mock('../common/guards/workspace.guard', () => ({
+  WorkspaceGuard: class SpecWorkspaceGuard {
+    canActivate() {
+      return true;
+    }
+  },
+}));
+
 import { BillingController } from './billing.controller';
 import { BillingService } from './billing.service';
 

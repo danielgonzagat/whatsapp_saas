@@ -70,11 +70,14 @@ export async function toggleAutopilot(
     method: 'POST',
     body: { workspaceId, enabled },
   });
-  if (res.error) {
+  if (res.error || res.status >= 400) {
     throw new Error('Failed to toggle autopilot');
   }
+  if (!res.data) {
+    throw new Error('Autopilot toggle did not return a confirmed payload');
+  }
   invalidateAutopilot();
-  return res.data as AutopilotStatus;
+  return res.data;
 }
 
 /** Get autopilot config. */
@@ -99,11 +102,14 @@ export async function updateAutopilotConfig(
     method: 'POST',
     body: { workspaceId, ...config },
   });
-  if (res.error) {
+  if (res.error || res.status >= 400) {
     throw new Error('Failed to update autopilot config');
   }
+  if (!res.data) {
+    throw new Error('Autopilot config update did not return a confirmed payload');
+  }
   invalidateAutopilot();
-  return res.data as AutopilotConfig;
+  return res.data;
 }
 
 /** Get autopilot stats. */
@@ -163,10 +169,13 @@ export async function runAutopilotSmokeTest(params: {
       liveSend: params.liveSend,
     },
   });
-  if (res.error) {
+  if (res.error || res.status >= 400) {
     throw new Error('Failed to run autopilot smoke test');
   }
-  return res.data as AutopilotSmokeTest;
+  if (!res.data) {
+    throw new Error('Autopilot smoke test did not return a confirmed payload');
+  }
+  return res.data;
 }
 
 /** Get system health. */
@@ -190,10 +199,13 @@ export async function getAutopilotActions(
       status: options?.status,
     })}`,
   );
-  if (res.error) {
+  if (res.error || res.status >= 400) {
     throw new Error('Failed to fetch autopilot actions');
   }
-  return res.data ?? [];
+  if (!Array.isArray(res.data)) {
+    throw new Error('Autopilot actions did not return a confirmed payload');
+  }
+  return res.data;
 }
 
 /** Export autopilot actions. */
@@ -223,11 +235,14 @@ export async function retryAutopilotContact(
     method: 'POST',
     body: { workspaceId, contactId },
   });
-  if (res.error) {
+  if (res.error || res.status >= 400) {
     throw new Error('Failed to retry autopilot contact');
   }
+  if (!res.data) {
+    throw new Error('Autopilot retry did not return a confirmed payload');
+  }
   invalidateAutopilot();
-  return res.data as Record<string, unknown>;
+  return res.data;
 }
 
 /** Mark autopilot conversion. */
@@ -249,11 +264,14 @@ export async function markAutopilotConversion(params: {
       meta: params.meta,
     },
   });
-  if (res.error) {
+  if (res.error || res.status >= 400) {
     throw new Error('Failed to mark conversion');
   }
+  if (!res.data) {
+    throw new Error('Autopilot conversion did not return a confirmed payload');
+  }
   invalidateAutopilot();
-  return res.data as Record<string, unknown>;
+  return res.data;
 }
 
 /** Run autopilot. */
@@ -275,11 +293,14 @@ export async function runAutopilot(params: {
       forceLocal: params.forceLocal,
     },
   });
-  if (res.error) {
+  if (res.error || res.status >= 400) {
     throw new Error('Failed to run autopilot');
   }
+  if (!res.data) {
+    throw new Error('Autopilot run did not return a confirmed payload');
+  }
   invalidateAutopilot();
-  return res.data as Record<string, unknown>;
+  return res.data;
 }
 
 /** Get autopilot money report. */
@@ -334,11 +355,14 @@ export async function activateMoneyMachine(params: {
       smartTime: params.smartTime ?? false,
     },
   });
-  if (res.error) {
-    throw new Error((res.error as string) || 'Failed to activate money machine');
+  if (res.error || res.status >= 400) {
+    throw new Error(res.error || 'Failed to activate money machine');
+  }
+  if (!res.data) {
+    throw new Error('Money machine did not return a confirmed payload');
   }
   invalidateAutopilot();
-  return res.data as MoneyMachineResult;
+  return res.data;
 }
 
 /** Ask insights result shape. */
@@ -359,10 +383,13 @@ export async function askAutopilotInsights(
     method: 'POST',
     body: { workspaceId, question },
   });
-  if (res.error) {
-    throw new Error((res.error as string) || 'Failed to ask insights');
+  if (res.error || res.status >= 400) {
+    throw new Error(res.error || 'Failed to ask insights');
   }
-  return res.data as AskInsightsResult;
+  if (!res.data) {
+    throw new Error('Autopilot insights did not return a confirmed payload');
+  }
+  return res.data;
 }
 
 /** Send direct result shape. */
@@ -388,10 +415,13 @@ export async function sendAutopilotDirectMessage(params: {
       message: params.message,
     },
   });
-  if (res.error) {
-    throw new Error((res.error as string) || 'Failed to send direct message');
+  if (res.error || res.status >= 400) {
+    throw new Error(res.error || 'Failed to send direct message');
   }
-  return res.data as SendDirectResult;
+  if (!res.data) {
+    throw new Error('Autopilot direct send did not return a confirmed payload');
+  }
+  return res.data;
 }
 
 /** Runtime config shape. */

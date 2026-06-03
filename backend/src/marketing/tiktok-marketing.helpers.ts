@@ -1,4 +1,12 @@
+import { ServiceUnavailableException } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
+
+// Canonical trim→null primitive (backend/src/common/parse.ts). The prior
+// local `readString` had an identical contract (trim, return null on empty);
+// re-exported here to preserve the public surface for importing services.
+import { readStringOrNull as readString } from '../common/parse';
+
+export { readString };
 
 export const CREATOR_AUTH_URL = 'https://www.tiktok.com/v2/auth/authorize/';
 export const CREATOR_TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
@@ -106,7 +114,7 @@ export function resolveKind(raw: unknown): TikTokKind {
 export function readRequiredEnv(keys: string[], label: string): string {
   const value = keys.map((key) => String(process.env[key] || '').trim()).find(Boolean);
   if (!value) {
-    throw new Error(`${label}_not_configured`);
+    throw new ServiceUnavailableException(`${label}_not_configured`);
   }
   return value;
 }
@@ -118,11 +126,6 @@ export function tryReadEnv(keys: string[]): string {
 export function expiresAtFromSeconds(seconds: unknown): string | null {
   const expiresIn = Number(seconds || 0);
   return expiresIn > 0 ? new Date(Date.now() + expiresIn * 1000).toISOString() : null;
-}
-
-export function readString(value: unknown): string | null {
-  const result = typeof value === 'string' ? value.trim() : '';
-  return result || null;
 }
 
 export function readStringArray(value: unknown): string[] {

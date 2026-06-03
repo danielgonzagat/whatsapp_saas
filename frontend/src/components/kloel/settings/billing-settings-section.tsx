@@ -76,9 +76,12 @@ export function BillingSettingsSection({
           response.data as { paymentMethods?: RawPaymentMethod[] } | undefined,
         );
         setCards(mapPaymentMethods(rawMethods));
+        setBillingError('');
       })
-      .catch(() => {
-        setCards([]);
+      .catch((loadError) => {
+        setBillingError(
+          loadError instanceof Error ? loadError.message : 'Nao foi possivel carregar os cartoes.',
+        );
       });
   }, []);
 

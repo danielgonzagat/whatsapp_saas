@@ -106,7 +106,6 @@ export class DiagnosticsController {
       nodeEnv: process.env.NODE_ENV || 'development',
       guestChatEnabled: (process.env.GUEST_CHAT_ENABLED ?? 'true').toLowerCase() !== 'false',
       openAiConfigured: !!process.env.OPENAI_API_KEY,
-      wahaApiUrl: process.env.WAHA_API_URL || process.env.WAHA_BASE_URL ? '(set)' : '(missing)',
       corsAllowedOrigins: process.env.CORS_ALLOWED_ORIGINS ? '(set)' : '(defaults only)',
       corsAllowedOriginRegex: process.env.CORS_ALLOWED_ORIGIN_REGEX ? '(set)' : '(defaults only)',
     };

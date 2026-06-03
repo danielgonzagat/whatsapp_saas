@@ -9,6 +9,7 @@ import { getTraceHeaders } from '../common/trace-headers';
 import { safeStorageFetch } from '../common/utils/url-safety';
 import { collectAllowedHosts, validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
+import { QUEUE_NAMES } from '../queue/queue-names.const';
 
 /**
  * Decode a base64 image payload — accepts a bare base64 string or a full
@@ -56,7 +57,7 @@ export class MediaService {
     private readonly storage: StorageService,
   ) {
     const connection = createBullMqConnectionOptions();
-    this.mediaQueue = new Queue('media-jobs', { connection });
+    this.mediaQueue = new Queue(QUEUE_NAMES.MEDIA, { connection });
     this.baseUrl =
       this.config.get('MEDIA_BASE_URL') || this.config.get('APP_URL', 'http://localhost:3001');
     this.allowedStorageHosts = collectAllowedHosts(

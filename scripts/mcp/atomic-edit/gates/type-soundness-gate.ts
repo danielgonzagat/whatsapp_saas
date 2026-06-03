@@ -53,21 +53,104 @@ const isCheckable = (rel: string): boolean => TS_RE.test(rel) && !rel.endsWith('
  * also the signal by which this gate bails to `unjudged` in lens mode (a whole-repo
  * type sweep is the verify tool's job, not the per-write floor's).
  */
-const MAX_CHANGED = 8;
+const MAX_CHANGED = 256;
 const MAX_DIAG_REPORT = 20;
 
-/** Walk from the changed file's directory up to repoRoot looking for a tsconfig.json. */
-function nearestTsconfig(repoRoot: string, fromRel: string): string | null {
+const TEST_FILE_RE = /\.(spec|test)\.[cm]?[jt]sx?$/;
+const TEST_CONFIG_NAMES = [
+  'tsconfig.spec.json',
+  'tsconfig.test.json',
+  'tsconfig.jest.json',
+  'tsconfig.vitest.json',
+];
+
+/**
+ * The tsconfig that GOVERNS a file's real compilation. Walking up from the file's
+ * directory: a TEST file (.spec/.test) prefers a sibling test config
+ * (tsconfig.spec.json/…) — a project's app tsconfig typically EXCLUDES specs
+ * (`**​/*spec.ts`) AND is stricter, so compiling a spec under it fabricates errors
+ * the real `jest`/`vitest` run never sees (missing jest globals, noUnusedLocals,
+ * noUncheckedIndexedAccess). A non-test file uses the nearest tsconfig.json.
+ *
+ * Name-based, NOT include-glob membership: a globbed file set goes stale for files
+ * created mid-session (a brand-new file the glob predates would look "excluded"),
+ * and a project's eslint tsconfig often globs specs too but with the wrong options —
+ * so the test-config NAME is the faithful selector for how the file really compiles.
+ */
+function selectConfig(repoRoot: string, fromRel: string): string | null {
   const rootAbs = path.resolve(repoRoot);
+  const isTest = TEST_FILE_RE.test(fromRel);
   let dir = path.dirname(path.resolve(repoRoot, fromRel));
   for (;;) {
-    const cand = path.join(dir, 'tsconfig.json');
-    if (fs.existsSync(cand)) return cand;
+    if (isTest) {
+      for (const name of TEST_CONFIG_NAMES) {
+        const cand = path.join(dir, name);
+        if (fs.existsSync(cand)) return cand;
+      }
+    }
+    const primary = path.join(dir, 'tsconfig.json');
+    if (fs.existsSync(primary)) return primary;
     if (dir === rootAbs) return null;
     const parent = path.dirname(dir);
     if (parent === dir) return null; // hit fs root without finding repoRoot — stop
     dir = parent;
   }
+}
+
+/**
+ * The ambient `@types/*` packages the project's REAL compiler would auto-include.
+ *
+ * TypeScript ≤5.x implicitly included every `@types/*` package found in the
+ * effective type roots when `compilerOptions.types` was unset; TypeScript ≥6.0
+ * dropped that implicit inclusion. This gate roots a fresh `createProgram` on just
+ * the changed files (for single-file delta speed) and may run under a different TS
+ * major than the project's own toolchain — so relying on the implicit behaviour
+ * makes a normal `process.env` (a `@types/node` global the real `next build`
+ * resolves) or a JSX global look UNDEFINED. That is a false positive, and the gate
+ * doctrine is "sound under-approximation, NEVER a false positive".
+ *
+ * Fix: reproduce the legacy auto-inclusion explicitly. Enumerate the `@types/*`
+ * package names under the effective type roots — anchored on the tsconfig's own
+ * directory (via a throwaway options clone carrying `configFilePath`) so the
+ * project's local `@types` resolve exactly as its real compiler sees them — and
+ * pass them as `options.types`. This only ADDS the ambient globals the real
+ * compiler already has: it can make a previously-false error resolve, never
+ * suppress a genuine one, so it stays a sound under-approximation. A project that
+ * pinned `types` itself keeps that explicit choice untouched.
+ */
+function ambientTypeNames(
+  tsconfigPath: string,
+  baseOptions: ts.CompilerOptions,
+  host: ts.CompilerHost,
+): string[] {
+  if (Array.isArray(baseOptions.types)) return baseOptions.types;
+  const roots =
+    ts.getEffectiveTypeRoots({ ...baseOptions, configFilePath: tsconfigPath }, host) ?? [];
+  const names = new Set<string>();
+  for (const root of roots) {
+    let entries: fs.Dirent[];
+    try {
+      entries = fs.readdirSync(root, { withFileTypes: true });
+    } catch {
+      continue; // a non-existent type root contributes nothing
+    }
+    for (const e of entries) {
+      if (!(e.isDirectory() || e.isSymbolicLink()) || e.name.startsWith('.')) continue;
+      if (e.name.startsWith('@')) {
+        // scoped `@types/@scope/pkg` → the package name "@scope/pkg"
+        try {
+          for (const s of fs.readdirSync(path.join(root, e.name), { withFileTypes: true })) {
+            if (s.isDirectory() || s.isSymbolicLink()) names.add(`${e.name}/${s.name}`);
+          }
+        } catch {
+          // unreadable scoped dir → contributes nothing
+        }
+      } else {
+        names.add(e.name);
+      }
+    }
+  }
+  return [...names];
 }
 
 /**
@@ -84,7 +167,16 @@ function diagnoseChanged(
   overrides: Map<string, string>,
 ): { counts: Map<string, number>; diags: Map<string, ts.Diagnostic[]> } {
   const cfg = ts.readConfigFile(tsconfigPath, ts.sys.readFile);
-  const parsed = ts.parseJsonConfigFileContent(cfg.config ?? {}, ts.sys, path.dirname(tsconfigPath));
+  const parsed = ts.parseJsonConfigFileContent(
+    cfg.config ?? {},
+    ts.sys,
+    path.dirname(tsconfigPath),
+  );
+  // The project's ambient declaration files (global augmentations like `declare
+  // global { interface Window { … } }`, `next-env.d.ts`). The real compiler loads
+  // them via the tsconfig `include`; the bounded single-file program would miss
+  // them and falsely red a global the real build resolves. Rooted below.
+  const ambientDts = parsed.fileNames.filter((f) => f.endsWith('.d.ts'));
   const options: ts.CompilerOptions = {
     ...parsed.options,
     noEmit: true,
@@ -117,7 +209,26 @@ function diagnoseChanged(
     return origGetSource(fileName, languageVersionOrOptions, onError, shouldCreate);
   };
 
-  const program = ts.createProgram(changed.map(absOf), options, host);
+  // Match the project compiler's ambient @types before constructing the program
+  // (see ambientTypeNames) so single-file rooting under TS ≥6.0 never reds a real
+  // `process`/JSX/global as undefined — closing the type-soundness lens FP class.
+  options.types = ambientTypeNames(tsconfigPath, options, host);
+  // Anchor type-root resolution on the tsconfig's OWN directory so an explicitly
+  // listed type (e.g. `types: ["node","jest"]`) resolves from the PROJECT's
+  // node_modules/@types — not from the gate process's cwd, which in a monorepo
+  // need not contain the package (`@types/jest` lives in `backend/node_modules`).
+  // Without this, a respected `types` list still fails to load and every spec file
+  // falsely reds `describe`/`it`/`jest` as undefined.
+  options.typeRoots =
+    ts.getEffectiveTypeRoots({ ...options, configFilePath: tsconfigPath }, host) ??
+    options.typeRoots;
+  // Root the project's ambient .d.ts alongside the changed files so global
+  // augmentations resolve exactly as the real compiler sees them. The counts loop
+  // below iterates only `changed`, so these declarations are loaded but never judged.
+  const rootNames = [
+    ...new Set([...changed.map(absOf), ...ambientDts.map((f) => path.normalize(f))]),
+  ];
+  const program = ts.createProgram(rootNames, options, host);
   const counts = new Map<string, number>();
   const diags = new Map<string, ts.Diagnostic[]>();
   for (const rel of changed) {
@@ -126,9 +237,10 @@ function diagnoseChanged(
       counts.set(rel, -1);
       continue;
     }
-    const errs = [...program.getSyntacticDiagnostics(sf), ...program.getSemanticDiagnostics(sf)].filter(
-      (d) => d.category === ts.DiagnosticCategory.Error,
-    );
+    const errs = [
+      ...program.getSyntacticDiagnostics(sf),
+      ...program.getSemanticDiagnostics(sf),
+    ].filter((d) => d.category === ts.DiagnosticCategory.Error);
     counts.set(rel, errs.length);
     diags.set(rel, errs);
   }
@@ -145,64 +257,109 @@ function toRed(repoRoot: string, rel: string, d: ts.Diagnostic): GateRed {
   return { file: rel, locus, fact: `type error TS${d.code}: ${msg}` };
 }
 
+/**
+ * Judge ONE group of changed files that share a governing tsconfig: candidate
+ * compile, fast-path when every file is clean, else a prior compile to apply delta
+ * semantics (only NEW errors red; pre-existing debt and single-file-rooting
+ * structural false-errors cancel). Returns the reds, or an unjudged signal when the
+ * bytes cannot be read/computed — never red-by-guess.
+ */
+function judgeGroup(
+  ctx: GateContext,
+  tsconfigPath: string,
+  files: string[],
+): { reds: GateRed[] } | { unjudgedReason: string } {
+  const candOverrides = new Map<string, string>();
+  for (const rel of files) {
+    const content = ctx.readFile(rel);
+    if (content === null) return { unjudgedReason: `cannot read candidate bytes for '${rel}'` };
+    candOverrides.set(rel, content);
+  }
+  const cand = diagnoseChanged(ctx.repoRoot, tsconfigPath, files, candOverrides);
+  if ([...cand.counts.values()].some((c) => c < 0)) {
+    return {
+      unjudgedReason:
+        'candidate TypeScript diagnostics could not be computed for at least one changed file',
+    };
+  }
+  // Fast path: a candidate clean in every file cannot be a regression → green.
+  if ([...cand.counts.values()].every((c) => c === 0)) return { reds: [] };
+
+  const priorOverrides = new Map<string, string>();
+  for (const rel of files) priorOverrides.set(rel, ctx.priorOf(rel));
+  const prior = diagnoseChanged(ctx.repoRoot, tsconfigPath, files, priorOverrides);
+
+  const reds: GateRed[] = [];
+  for (const rel of files) {
+    const now = cand.counts.get(rel) ?? 0;
+    const was = prior.counts.get(rel);
+    // A prior file that failed to load (-1) cannot anchor a delta → skip honestly.
+    if (was === undefined || was < 0) continue;
+    if (now > was) {
+      for (const d of cand.diags.get(rel) ?? []) {
+        if (reds.length >= MAX_DIAG_REPORT) break;
+        reds.push(toRed(ctx.repoRoot, rel, d));
+      }
+    }
+  }
+  return { reds };
+}
+
 const gate: GateModule = {
   name: 'type-soundness',
   kind: 'dynamic',
   appliesTo: (rel) => isCheckable(rel),
   run(ctx: GateContext): GateResult {
-    const note = 'this write introduces no NEW TypeScript error (delta vs prior; pre-existing debt tolerated)';
+    const note =
+      'this write introduces no NEW TypeScript error (delta vs prior; pre-existing debt tolerated)';
     const changed = ctx.changedFiles.filter(isCheckable);
     if (changed.length === 0) return { gate: 'type-soundness', green: true, reds: [], note };
     if (changed.length > MAX_CHANGED) {
-      return { gate: 'type-soundness', green: true, reds: [], note, unjudged: true };
+      return {
+        gate: 'type-soundness',
+        green: true,
+        reds: [],
+        note,
+        unjudged: true,
+        unjudgedReason: `changed TypeScript surface has ${changed.length} files, above MAX_CHANGED=${MAX_CHANGED}`,
+      };
     }
 
-    // All changed files must share one tsconfig — refuse to mix projects.
-    const configs = new Set<string>();
+    // Group each changed file under the tsconfig that GOVERNS its real compilation
+    // (a spec file under its test config, not the app config that excludes it), then
+    // judge each group under its own options. Mixed scopes no longer bail unjudged —
+    // each governing project is judged independently. No tsconfig at all → unjudged.
+    const groups = new Map<string, string[]>();
     for (const rel of changed) {
-      const tc = nearestTsconfig(ctx.repoRoot, rel);
-      if (!tc) return { gate: 'type-soundness', green: true, reds: [], note, unjudged: true };
-      configs.add(tc);
-    }
-    if (configs.size !== 1) return { gate: 'type-soundness', green: true, reds: [], note, unjudged: true };
-    const tsconfigPath = [...configs][0];
-
-    // Candidate compile: changed files served from the overlay (overlay wins, else disk).
-    const candOverrides = new Map<string, string>();
-    for (const rel of changed) {
-      const content = ctx.readFile(rel);
-      if (content === null) return { gate: 'type-soundness', green: true, reds: [], note, unjudged: true };
-      candOverrides.set(rel, content);
-    }
-    const cand = diagnoseChanged(ctx.repoRoot, tsconfigPath, changed, candOverrides);
-    if ([...cand.counts.values()].some((c) => c < 0)) {
-      return { gate: 'type-soundness', green: true, reds: [], note, unjudged: true };
-    }
-    // Fast path: a candidate with zero errors in every changed file cannot be a
-    // regression regardless of prior — green without the second compile.
-    if ([...cand.counts.values()].every((c) => c === 0)) {
-      return { gate: 'type-soundness', green: true, reds: [], note };
-    }
-
-    // Prior compile (identical roots + host scoping) to apply delta semantics: the
-    // changed files served from their pre-write disk bytes (ctx.priorOf). Structural
-    // false-errors from single-file rooting appear in both passes and cancel here.
-    const priorOverrides = new Map<string, string>();
-    for (const rel of changed) priorOverrides.set(rel, ctx.priorOf(rel));
-    const prior = diagnoseChanged(ctx.repoRoot, tsconfigPath, changed, priorOverrides);
-
-    const reds: GateRed[] = [];
-    for (const rel of changed) {
-      const now = cand.counts.get(rel) ?? 0;
-      const was = prior.counts.get(rel);
-      // A prior file that failed to load (-1) cannot anchor a delta → skip honestly.
-      if (was === undefined || was < 0) continue;
-      if (now > was) {
-        for (const d of cand.diags.get(rel) ?? []) {
-          if (reds.length >= MAX_DIAG_REPORT) break;
-          reds.push(toRed(ctx.repoRoot, rel, d));
-        }
+      const tc = selectConfig(ctx.repoRoot, rel);
+      if (!tc) {
+        return {
+          gate: 'type-soundness',
+          green: true,
+          reds: [],
+          note,
+          unjudged: true,
+          unjudgedReason: `no tsconfig found for '${rel}'`,
+        };
       }
+      const arr = groups.get(tc);
+      if (arr) arr.push(rel);
+      else groups.set(tc, [rel]);
+    }
+    const reds: GateRed[] = [];
+    for (const [tsconfigPath, files] of groups) {
+      const r = judgeGroup(ctx, tsconfigPath, files);
+      if ('unjudgedReason' in r) {
+        return {
+          gate: 'type-soundness',
+          green: true,
+          reds: [],
+          note,
+          unjudged: true,
+          unjudgedReason: r.unjudgedReason,
+        };
+      }
+      reds.push(...r.reds);
     }
     return { gate: 'type-soundness', green: reds.length === 0, reds, note };
   },

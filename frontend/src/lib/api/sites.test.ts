@@ -1,7 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { mutate } from 'swr';
+
+vi.mock('swr', () => ({
+  mutate: vi.fn(),
+}));
+
 import { sitesApi } from './sites';
 
+const mutateMock = vi.mocked(mutate);
+
+
 beforeEach(() => {
+  mutateMock.mockReset();
   document.cookie = 'kloel_access_token=test-token; path=/';
   vi.spyOn(globalThis, 'fetch').mockResolvedValue({
     ok: true,
@@ -162,6 +172,17 @@ describe('sitesApi', () => {
       } as Response);
       const res = await sitesApi.listSites('ws1');
       expect(res.error).toBeTruthy();
+    });
+
+    it('does not invalidate sites when create returns an API error envelope', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: async () => ({ message: 'Invalid site' }),
+      } as Response);
+
+      await expect(sitesApi.createSite('ws1', { name: 'New' })).rejects.toThrow('Invalid site');
+      expect(mutateMock).not.toHaveBeenCalled();
     });
   });
 });

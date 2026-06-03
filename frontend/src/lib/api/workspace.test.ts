@@ -38,6 +38,16 @@ function lastFetch(): { url: string; method: string; headers: Record<string, str
 
 describe('Workspace API (non-payment)', () => {
   describe('listApiKeys', () => {
+    beforeEach(() => {
+      // Real backend `GET /settings/api-keys` returns a bare array (Prisma
+      // findMany), so the list client requires `data` to be an array.
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => [{ id: 'k1', name: 'Default', createdAt: '2025-01-01', lastUsedAt: null }],
+      } as Response);
+    });
+
     it('GETs /settings/api-keys', async () => {
       await listApiKeys();
       const { url, method } = lastFetch();

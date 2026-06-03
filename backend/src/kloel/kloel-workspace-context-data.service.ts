@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import type { KloelContextFormatterLimits } from './kloel-context-formatter.types';
 import { buildWorkspaceProductSelect } from './kloel-workspace-context-product-select';
 import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
+import { MindCanonicalService } from './mind/mind-canonical.service';
 
 const PRODUCT_CONTEXT_LIMIT = 20;
 
@@ -67,6 +68,7 @@ export class KloelWorkspaceContextDataService {
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly mindMemory?: MindMemoryItemService,
+    @Optional() private readonly mindCanonical?: MindCanonicalService,
   ) {
     this.logger.log('KloelWorkspaceContextDataService initialized');
   }
@@ -268,9 +270,15 @@ export class KloelWorkspaceContextDataService {
           })
         : Promise.resolve([]),
       userId
-        ? this.mindMemoryItems?.findUnique?.({
-            where: { workspaceId_key: { workspaceId, key: `user_profile:${userId}` } },
-          })
+        ? // Canonical Mind facade is the preferred memory-by-key read; it hits
+          // the SAME `(workspaceId, key)` row the defensive delegate path below
+          // returns. Falls back to the raw delegate when the facade is absent
+          // (e.g. unit tests that construct the service without it).
+          this.mindCanonical
+          ? this.mindCanonical.getMemoryItem(workspaceId, `user_profile:${userId}`)
+          : this.mindMemoryItems?.findUnique?.({
+              where: { workspaceId_key: { workspaceId, key: `user_profile:${userId}` } },
+            })
         : Promise.resolve(null),
     ]);
 

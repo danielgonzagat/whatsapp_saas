@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   Logger,
   NotFoundException,
@@ -56,6 +57,9 @@ export class ProductService {
   ): Promise<ProductResult> {
     const resolvedActor = actor ?? { id: 'kloel-resolver' };
     assertWorkspaceId(workspaceId);
+    if (typeof dto.price !== 'number' || !Number.isFinite(dto.price) || dto.price < 0) {
+      throw new BadRequestException('price is required and must be a non-negative number');
+    }
 
     const product = await this.prisma.product.create({
       data: {

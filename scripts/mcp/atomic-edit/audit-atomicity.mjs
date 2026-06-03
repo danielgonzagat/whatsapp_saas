@@ -97,9 +97,11 @@ function evaluateTrace(t) {
   const expansionFactorAvoided = Number(m.expansionFactorAvoided ?? 0);
   const operator = String(t.operator ?? t.operation ?? '');
   const fallback = Boolean(t.fallback);
-  const traceProvesAtomic = !fallback && operator.startsWith('atomic') && expansionFactorAvoided > 1;
+  const ratioApplicable = !fallback && changedChars > 0 && lineRewriteSurfaceChars > changedChars;
+  const traceProvesAtomic = ratioApplicable && operator.startsWith('atomic') && expansionFactorAvoided > 1;
   const lineRewriteAvoided = Boolean(m.lineRewriteAvoided) || traceProvesAtomic;
-  const isOffender = changedChars <= MICRO_CHANGE && lineRewriteSurfaceChars >= LINE_NOISE && !lineRewriteAvoided;
+  const isOffender =
+    ratioApplicable && changedChars <= MICRO_CHANGE && lineRewriteSurfaceChars >= LINE_NOISE && !lineRewriteAvoided;
 
   return {
     operationId: t.operationId,
@@ -109,6 +111,7 @@ function evaluateTrace(t) {
     changedChars,
     lineRewriteSurfaceChars,
     expansionFactorAvoided,
+    ratioApplicable,
     lineRewriteAvoided,
     isOffender,
     hasTopology: traceHasTopology(t),
@@ -127,7 +130,10 @@ function auditTraces(traces, options = {}) {
   const n = traceResults.length;
   if (n === 0) return { empty: true, report: null, traceResults };
 
-  const avoided = traceResults.filter((t) => t.lineRewriteAvoided).length;
+  const ratioApplicableResults = traceResults.filter((t) => t.ratioApplicable);
+  const avoided = ratioApplicableResults.filter((t) => t.lineRewriteAvoided).length;
+  const ratioDenominator = ratioApplicableResults.length;
+  const ratioNotApplicable = n - ratioDenominator;
   const fallback = traceResults.filter((t) => t.fallback).length;
   const expSum = traceResults.reduce((sum, t) => sum + t.expansionFactorAvoided, 0);
   const offenders = traceResults.filter((t) => t.isOffender);
@@ -142,7 +148,8 @@ function auditTraces(traces, options = {}) {
   }));
   const dishonestPreviewCount = dishonestPreviews.length;
   const previewHonestyPass = dishonestPreviewCount === 0;
-  const ratioPass = avoided / n >= minRatio;
+  const ratioValue = ratioDenominator === 0 ? 1 : avoided / ratioDenominator;
+  const ratioPass = ratioValue >= minRatio;
   const topologyCount = traceResults.filter((t) => t.hasTopology).length;
   const topologyCoverage = Number((topologyCount / n).toFixed(4));
   const topologyPass = topologyCount === n;
@@ -156,9 +163,15 @@ function auditTraces(traces, options = {}) {
     .filter((t) => t.hasTopology && typeof t.tsMs === 'number')
     .reduce((earliest, t) => Math.min(earliest, t.tsMs), Number.POSITIVE_INFINITY);
   const hasTopologyEpoch = Number.isFinite(topologyEpochMs);
-  const currentTraceResults = hasTopologyEpoch
-    ? traceResults.filter((t) => typeof t.tsMs === 'number' && t.tsMs >= topologyEpochMs)
-    : [];
+  const latestMissingTopologyMs = missingTopologyResults
+    .filter((t) => typeof t.tsMs === 'number')
+    .reduce((latest, t) => Math.max(latest, t.tsMs), Number.NEGATIVE_INFINITY);
+  const hasMissingTopologyEpoch = Number.isFinite(latestMissingTopologyMs);
+  const currentTraceResults = hasMissingTopologyEpoch
+    ? traceResults.filter((t) => typeof t.tsMs === 'number' && t.tsMs > latestMissingTopologyMs)
+    : hasTopologyEpoch
+      ? traceResults.filter((t) => typeof t.tsMs === 'number' && t.tsMs >= topologyEpochMs)
+      : [];
   const currentMissingTopologyResults = currentTraceResults.filter((t) => !t.hasTopology);
   const currentMissingTopology = currentMissingTopologyResults.map((t) => ({
     operationId: t.operationId,
@@ -166,7 +179,7 @@ function auditTraces(traces, options = {}) {
     ts: t.ts,
   }));
   const legacyMissingTopology = missingTopologyResults
-    .filter((t) => !hasTopologyEpoch || typeof t.tsMs !== 'number' || t.tsMs < topologyEpochMs)
+    .filter((t) => !hasMissingTopologyEpoch || typeof t.tsMs !== 'number' || t.tsMs <= latestMissingTopologyMs)
     .map((t) => ({ operationId: t.operationId, file: t.file, ts: t.ts }));
   const currentTopologyCount = currentTraceResults.filter((t) => t.hasTopology).length;
   const currentTopologyCoverage = currentTraceResults.length
@@ -185,7 +198,9 @@ function auditTraces(traces, options = {}) {
     traceResults,
     report: {
       traces: n,
-      atomic_edit_ratio: Number((avoided / n).toFixed(4)),
+      atomic_edit_ratio: Number(ratioValue.toFixed(4)),
+      ratio_applicable_traces: ratioDenominator,
+      ratio_not_applicable_traces: ratioNotApplicable,
       mean_expansion_avoided: Number((expSum / n).toFixed(2)),
       fallback_rate: Number((fallback / n).toFixed(4)),
       coarse_unjustified: offenders.length,
@@ -266,15 +281,65 @@ if (args.includes('--self-test')) {
     const previewMatches =
       selfTestCase.expectedPreviewHonestyPass === undefined ||
       audit.report.previewHonestyPass === selfTestCase.expectedPreviewHonestyPass;
-    const passed = passMatches && topologyMatches && previewMatches;
+    const ratioMatches =
+      selfTestCase.expectedRatioPass === undefined || audit.report.ratioPass === selfTestCase.expectedRatioPass;
+    const passed = passMatches && topologyMatches && previewMatches && ratioMatches;
     return {
       name: selfTestCase.name,
       expectedPreviewHonestyPass: selfTestCase.expectedPreviewHonestyPass,
       expectedPass: selfTestCase.expectedPass,
       expectedTopologyPass: selfTestCase.expectedTopologyPass,
+      expectedRatioPass: selfTestCase.expectedRatioPass,
       passed,
       report: audit.report,
     };
+  });
+  const recoveryAudit = auditTraces(
+    [
+      {
+        operationId: 'self-test-current-good-v1',
+        file: 'src/current-good-v1.ts',
+        operator: 'atomic_replace_text',
+        targetUnit: 'literal_value',
+        semanticImpact: 'literal_swap',
+        preservedZones: [{ kind: 'prefix_preserved', description: 'prefix', byteStart: 0, byteEnd: 1, byteLength: 1 }],
+        modifiedZones: [{ kind: 'changed_span', byteStart: 1, byteEnd: 2, newByteLength: 1 }],
+        movementZones: [],
+        fallback: false,
+        ts: '2026-01-01T00:00:00.000Z',
+        metrics: { changedChars: 1, lineRewriteSurfaceChars: 10, expansionFactorAvoided: 10 },
+      },
+      {
+        operationId: 'self-test-current-missing-mid',
+        file: 'src/current-missing-mid.ts',
+        operator: 'atomic_create_file',
+        fallback: false,
+        ts: '2026-01-01T00:01:00.000Z',
+        metrics: { changedChars: 1, lineRewriteSurfaceChars: 0, expansionFactorAvoided: 0 },
+      },
+      {
+        operationId: 'self-test-current-good-v2',
+        file: 'src/current-good-v2.ts',
+        operator: 'atomic_create_file',
+        targetUnit: 'file',
+        semanticImpact: 'file_created',
+        preservedZones: [
+          { kind: 'whole_target_scope_boundary', description: 'boundary', byteStart: 0, byteEnd: 0, byteLength: 0 },
+        ],
+        modifiedZones: [{ kind: 'changed_span', byteStart: 0, byteEnd: 0, newByteLength: 1 }],
+        movementZones: [],
+        fallback: false,
+        ts: '2026-01-01T00:02:00.000Z',
+        metrics: { changedChars: 1, lineRewriteSurfaceChars: 0, expansionFactorAvoided: 0 },
+      },
+    ],
+    { strictRatio: false, strictTopology: false, strictCurrentTopology: true },
+  );
+  cases.push({
+    name: 'current-topology-recovers-after-last-missing-trace',
+    expectedCurrentTopologyPass: true,
+    passed: recoveryAudit.report.currentTopologyPass === true && recoveryAudit.report.currentTraceCount === 1,
+    report: recoveryAudit.report,
   });
   const aggregate = auditTraces(
     buildSelfTestCases().map((selfTestCase) => selfTestCase.trace),

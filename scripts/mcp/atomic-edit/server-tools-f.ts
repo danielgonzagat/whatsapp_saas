@@ -82,6 +82,10 @@ server.registerTool(
         .min(1)
         .describe('one entry per file; each with ≥1 non-overlapping ranged edit'),
       preview: z.boolean().optional().describe('dry-run: validate all, write nothing'),
+      proofOfIncorrectness: z
+        .string()
+        .optional()
+        .describe('required when the transaction removes/replaces bytes: proof that removed bytes are non-correct/negative'),
     },
   },
   async (a) => {
@@ -94,7 +98,7 @@ server.registerTool(
           newText: e.newText,
         })),
       }));
-      return applyMultiFilePlan(plan, 'Atomic transaction', a.preview ?? false);
+      return applyMultiFilePlan(plan, 'Atomic transaction', a.preview ?? false, a.proofOfIncorrectness);
     } catch (e) {
       return fail(e instanceof Error ? e.message : String(e));
     }

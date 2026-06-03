@@ -88,8 +88,12 @@ export function useInstagramMarketing(
     if (res.error) {
       return { error: res.error };
     }
+    const post = res.data?.post;
+    if (!post) {
+      return { error: 'Publicacao do Instagram sem post confirmado.' };
+    }
     await refreshPosts();
-    return { post: res.data?.post };
+    return { post };
   };
 
   return {

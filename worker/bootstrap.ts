@@ -138,8 +138,3 @@ console.log('========================================');
 // Dynamic import: ensures process.env is fully populated before any
 // downstream module evaluates its imports.
 import('./processor');
-import('./pulse-runtime').then(({ startPulseRuntimeReporter }) => {
-  const stopPulseReporter = startPulseRuntimeReporter();
-  process.once('SIGINT', stopPulseReporter);
-  process.once('SIGTERM', stopPulseReporter);
-});

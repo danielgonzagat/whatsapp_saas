@@ -16,7 +16,9 @@ const DOMAIN_EVENT_BRIDGES = new Map([
   ['product.updated', 'commerce.product.updated'],
   ['product.published', 'commerce.product.published'],
   ['product.deleted', 'commerce.product.deleted'],
+  ['checkout.created', 'commerce.checkout.created'],
   ['checkout.updated', 'commerce.checkout.updated'],
+  ['checkout.deleted', 'commerce.checkout.deleted'],
   ['coupon.created', 'commerce.coupon.created'],
   ['coupon.updated', 'commerce.coupon.updated'],
   ['coupon.deleted', 'commerce.coupon.deleted'],
@@ -27,7 +29,7 @@ function readExistingEvents() {
 
   try {
     const spec = JSON.parse(readFileSync(OUT, 'utf8'));
-    return new Set(Object.keys(spec.channels || {}));
+    return new Set(Object.keys(spec.channels || {}).map(canonicalEventName));
   } catch {
     return new Set();
   }

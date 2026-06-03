@@ -6,7 +6,7 @@ export * from './agent-runtime.memory-curator';
 export * from './agent-runtime.memory-manager';
 export * from './agent-runtime.memory-provider';
 export * from './agent-runtime.policy';
-export * from './agent-runtime.pulse-self-model';
+export * from './agent-runtime.readiness-self-model';
 export * from './agent-runtime.scheduler';
 export * from './agent-runtime.session-store';
 export * from './agent-runtime.skill-registry';

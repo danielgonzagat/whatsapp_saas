@@ -54,4 +54,18 @@ describe('getDashboardStats', () => {
 
     await expect(getDashboardStats()).rejects.toThrow('Service Unavailable');
   });
+
+  it('throws when the backend does not confirm a stats payload', async () => {
+    apiFetch.mockResolvedValueOnce({ data: undefined, status: 200 });
+
+    await expect(getDashboardStats()).rejects.toThrow(
+      'Dashboard stats did not return a confirmed payload',
+    );
+  });
+
+  it('throws on failed status even when the envelope omits an error message', async () => {
+    apiFetch.mockResolvedValueOnce({ data: baseStats, status: 503 });
+
+    await expect(getDashboardStats()).rejects.toThrow('Erro ao carregar dashboard');
+  });
 });

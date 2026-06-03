@@ -115,7 +115,10 @@ export function useInboxData({
     setLoadingConversations(true);
     try {
       const data = await listConversations(workspaceId);
-      const next = Array.isArray(data) ? data : [];
+      if (!Array.isArray(data)) {
+        throw new Error('Payload de conversas invalido.');
+      }
+      const next = data;
       setConversations(next);
       if (requestedConversationId) {
         setSelectedConversationId(requestedConversationId);
@@ -144,9 +147,12 @@ export function useInboxData({
     }
     try {
       const data = await listInboxAgents(workspaceId);
-      setAgents(Array.isArray(data) ? data : []);
-    } catch {
-      setAgents([]);
+      if (!Array.isArray(data)) {
+        throw new Error('Payload de agentes invalido.');
+      }
+      setAgents(data);
+    } catch (e: unknown) {
+      setError(extractErrorMessage(e, 'Falha ao carregar agentes'));
     }
   }, [workspaceId]);
 
@@ -155,7 +161,10 @@ export function useInboxData({
     setLoadingMessages(true);
     try {
       const data = await getConversationMessages(conversationId);
-      setMessages(Array.isArray(data) ? data : []);
+      if (!Array.isArray(data)) {
+        throw new Error('Payload de mensagens invalido.');
+      }
+      setMessages(data);
     } catch (e: unknown) {
       setError(extractErrorMessage(e, 'Falha ao carregar mensagens'));
     } finally {

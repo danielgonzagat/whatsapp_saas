@@ -122,8 +122,13 @@ function mapRawCheckoutLink(rawLink: unknown): NormalizedCheckoutLink {
 
 /** Normalize checkout links. */
 export function normalizeCheckoutLinks(links: unknown): NormalizedCheckoutLink[] {
-  const source = Array.isArray(links) ? links : [];
-  return source.map(mapRawCheckoutLink).filter((link) => Boolean(link.id));
+  if (links === undefined || links === null) {
+    return [];
+  }
+  if (!Array.isArray(links)) {
+    throw new Error('Invalid checkout links payload');
+  }
+  return links.map(mapRawCheckoutLink).filter((link) => Boolean(link.id));
 }
 
 /** Get primary checkout link for plan. */

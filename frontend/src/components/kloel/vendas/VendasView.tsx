@@ -28,6 +28,7 @@ import { SORA } from './utils';
 import { SmartPaymentModal } from './SmartPaymentModal';
 import { DetailModal } from './DetailModal';
 import { ShipModal } from './ShipModal';
+import { ChangePlanModal, type ChangePlanOption } from './ChangePlanModal';
 import { GestaoVendas } from './GestaoVendas';
 import { GestaoAssinaturas } from './GestaoAssinaturas';
 import { GestaoFisicos } from './GestaoFisicos';
@@ -85,6 +86,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [detailType, setDetailType] = useState<'sale' | 'sub' | 'order'>('sale');
   const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [shipTrackingCode, setShipTrackingCode] = useState('');
   const [showShipModal, setShowShipModal] = useState<string | null>(null);
   const [showSmartPayment, setShowSmartPayment] = useState(false);
@@ -98,6 +100,13 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
   const { stats: salesStats } = useSalesStats();
   const { chart } = useSalesChart();
   const { subscriptions, mutate: mutateSubs } = useSubscriptions();
+  const [changePlanModal, setChangePlanModal] = useState<{
+    subId: string;
+    currentPlanId?: string | undefined;
+    plans: ChangePlanOption[];
+  } | null>(null);
+  const [changePlanLoading, setChangePlanLoading] = useState(false);
+  const [changePlanError, setChangePlanError] = useState<string | null>(null);
   const { stats: subStats } = useSubscriptionStats();
   const { orders, mutate: mutateOrders } = useOrders();
   const { stats: orderStats } = useOrderStats();
@@ -133,84 +142,169 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
   const invalidateSales = () =>
     mutate((key: string) => typeof key === 'string' && key.startsWith('/sales'));
 
-  const handleRefund = async (id: string) => {
+  function requireActionSuccess<T extends { error?: string | undefined; success?: boolean | undefined }>(
+    response: T,
+    fallback: string,
+  ): T {
+    if (response.error) {
+      throw new Error(response.error);
+    }
+    if (response.success === false) {
+      throw new Error(fallback);
+    }
+    return response;
+  }
+
+  const resolveActionError = (error: unknown, fallback: string) =>
+    error instanceof Error && error.message ? error.message : fallback;
+
+  const runSalesAction = async (operation: () => Promise<void>, fallback: string) => {
     setActionLoading(true);
-    await apiFetch(`/sales/${id}/refund`, { method: 'POST' });
-    await mutateSales();
-    invalidateSales();
-    setActionLoading(false);
-    setDetailId(null);
+    setActionError(null);
+    try {
+      await operation();
+    } catch (error) {
+      setActionError(resolveActionError(error, fallback));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRefund = async (id: string) => {
+    const message = 'Não foi possível reembolsar a venda.';
+    await runSalesAction(async () => {
+      requireActionSuccess(await apiFetch(`/sales/${id}/refund`, { method: 'POST' }), message);
+      await mutateSales();
+      invalidateSales();
+      setDetailId(null);
+    }, message);
   };
 
   const handlePauseSub = async (id: string) => {
-    setActionLoading(true);
-    await apiFetch(`/sales/subscriptions/${id}/pause`, { method: 'POST' });
-    await mutateSubs();
-    invalidateSales();
-    setActionLoading(false);
-    setDetailId(null);
+    const message = 'Não foi possível pausar a assinatura.';
+    await runSalesAction(async () => {
+      requireActionSuccess(
+        await apiFetch(`/sales/subscriptions/${id}/pause`, { method: 'POST' }),
+        message,
+      );
+      await mutateSubs();
+      invalidateSales();
+      setDetailId(null);
+    }, message);
   };
 
   const handleResumeSub = async (id: string) => {
-    setActionLoading(true);
-    await apiFetch(`/sales/subscriptions/${id}/resume`, { method: 'POST' });
-    await mutateSubs();
-    invalidateSales();
-    setActionLoading(false);
-    setDetailId(null);
+    const message = 'Não foi possível retomar a assinatura.';
+    await runSalesAction(async () => {
+      requireActionSuccess(
+        await apiFetch(`/sales/subscriptions/${id}/resume`, { method: 'POST' }),
+        message,
+      );
+      await mutateSubs();
+      invalidateSales();
+      setDetailId(null);
+    }, message);
   };
 
   const handleCancelSub = async (id: string) => {
-    setActionLoading(true);
-    await apiFetch(`/sales/subscriptions/${id}/cancel`, { method: 'POST' });
-    await mutateSubs();
-    invalidateSales();
-    setActionLoading(false);
-    setDetailId(null);
+    const message = 'Não foi possível cancelar a assinatura.';
+    await runSalesAction(async () => {
+      requireActionSuccess(
+        await apiFetch(`/sales/subscriptions/${id}/cancel`, { method: 'POST' }),
+        message,
+      );
+      await mutateSubs();
+      invalidateSales();
+      setDetailId(null);
+    }, message);
   };
 
   const handleShipOrder = async (id: string) => {
     if (!shipTrackingCode.trim()) {
       return;
     }
-    setActionLoading(true);
-    await apiFetch(`/sales/orders/${id}/ship`, {
-      method: 'PUT',
-      body: { trackingCode: shipTrackingCode },
-    });
-    await mutateOrders();
-    invalidateSales();
-    setActionLoading(false);
-    setShowShipModal(null);
-    setShipTrackingCode('');
+    const message = 'Não foi possível marcar o pedido como enviado.';
+    await runSalesAction(async () => {
+      requireActionSuccess(
+        await apiFetch(`/sales/orders/${id}/ship`, {
+          method: 'PUT',
+          body: { trackingCode: shipTrackingCode },
+        }),
+        message,
+      );
+      await mutateOrders();
+      invalidateSales();
+      setShowShipModal(null);
+      setShipTrackingCode('');
+    }, message);
   };
 
   const handleChangePlan = async (id: string) => {
-    const planName = prompt('Nome do novo plano:');
-    if (!planName) {
+    setChangePlanError(null);
+    const sub = (subscriptions as SubscriptionItem[]).find((s) => s.id === id);
+    const productId = sub?.productId;
+    if (!productId) {
+      setActionError(
+        'Esta assinatura nao esta vinculada a um produto com planos, entao nao ha para onde trocar.',
+      );
       return;
     }
-    const amount = prompt('Valor do novo plano (ex: 97.00):');
-    if (!amount) {
+    setChangePlanLoading(true);
+    try {
+      const res = await apiFetch<unknown>(`/products/${productId}/plans`);
+      if (res.error) {
+        setActionError(res.error);
+        return;
+      }
+      const rows = Array.isArray(res.data) ? (res.data as Record<string, unknown>[]) : [];
+      const plans: ChangePlanOption[] = rows.map((p) => ({
+        id: String(p.id ?? ''),
+        name: String(p.name ?? 'Plano'),
+        price: Number(p.price ?? 0),
+      }));
+      setChangePlanModal({ subId: id, currentPlanId: sub?.planId, plans });
+    } catch (error) {
+      setActionError(
+        error instanceof Error ? error.message : 'Nao foi possivel carregar os planos do produto.',
+      );
+    } finally {
+      setChangePlanLoading(false);
+    }
+  };
+
+  const submitChangePlan = async (newPlanId: string) => {
+    if (!changePlanModal) {
       return;
     }
-    setActionLoading(true);
-    await apiFetch(`/sales/subscriptions/${id}/change-plan`, {
-      method: 'PUT',
-      body: { newPlanId: id, newPlanName: planName, newAmount: Number.parseFloat(amount) },
-    });
-    await mutateSubs();
-    setActionLoading(false);
-    setDetailId(null);
+    const subId = changePlanModal.subId;
+    const message = 'Nao foi possivel mudar o plano da assinatura.';
+    setChangePlanError(null);
+    setChangePlanLoading(true);
+    try {
+      requireActionSuccess(
+        await apiFetch(`/sales/subscriptions/${subId}/change-plan`, {
+          method: 'PUT',
+          body: { newPlanId },
+        }),
+        message,
+      );
+      await mutateSubs();
+      setChangePlanModal(null);
+      setDetailId(null);
+    } catch (error) {
+      setChangePlanError(resolveActionError(error, message));
+    } finally {
+      setChangePlanLoading(false);
+    }
   };
 
   const { returnOrder } = useReturnOrder();
   const handleReturnOrder = async (id: string) => {
-    setActionLoading(true);
-    await returnOrder(id);
-    await mutateOrders();
-    setActionLoading(false);
-    setDetailId(null);
+    await runSalesAction(async () => {
+      await returnOrder(id);
+      await mutateOrders();
+      setDetailId(null);
+    }, 'Não foi possível solicitar devolução do pedido.');
   };
 
   const {
@@ -219,6 +313,18 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
     generateAlerts,
     resolveAlert,
   } = useOrderAlerts();
+
+  const handleGenerateAlerts = async () => {
+    await runSalesAction(async () => {
+      await generateAlerts();
+    }, 'Não foi possível gerar alertas de pedidos.');
+  };
+
+  const handleResolveAlert = async (id: string) => {
+    await runSalesAction(async () => {
+      await resolveAlert(id);
+    }, 'Não foi possível resolver o alerta de pedido.');
+  };
 
   const estrategiasTabContent = (
     <EstrategiasTab
@@ -270,6 +376,18 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
         onShipOrder={handleShipOrder}
         actionLoading={actionLoading}
       />
+      <ChangePlanModal
+        open={changePlanModal !== null}
+        plans={changePlanModal?.plans ?? []}
+        currentPlanId={changePlanModal?.currentPlanId}
+        loading={changePlanLoading}
+        error={changePlanError}
+        onSelect={submitChangePlan}
+        onClose={() => {
+          setChangePlanModal(null);
+          setChangePlanError(null);
+        }}
+      />
       {showSmartPayment && (
         <SmartPaymentModal workspaceId={workspaceId} onClose={() => setShowSmartPayment(false)} />
       )}
@@ -277,9 +395,27 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
       <OrderAlertsBanner
         alerts={orderAlerts}
         alertCounts={alertCounts}
-        onGenerate={() => generateAlerts()}
-        onResolve={resolveAlert}
+        onGenerate={handleGenerateAlerts}
+        onResolve={handleResolveAlert}
       />
+      {actionError && (
+        <div
+          role="alert"
+          aria-live="polite"
+          style={{
+            border: '1px solid rgba(239,68,68,0.34)',
+            background: 'rgba(239,68,68,0.08)',
+            color: 'var(--app-text-primary)',
+            borderRadius: 6,
+            padding: '10px 12px',
+            marginBottom: 16,
+            fontSize: 12,
+            fontFamily: SORA,
+          }}
+        >
+          {actionError}
+        </div>
+      )}
 
       <div style={SUBINTERFACE_PILL_ROW_STYLE}>
         {TABS.map((t) => (

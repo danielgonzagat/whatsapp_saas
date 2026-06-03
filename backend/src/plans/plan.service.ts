@@ -11,6 +11,7 @@ import {
   checkoutImagesWith,
   orderBumpConfigJson,
   paymentMethodsJson,
+  planPriceInCents,
   shippingConfigJson,
   type AffiliateConfig,
   type CreatePlanDto,
@@ -54,6 +55,9 @@ export class PlanService {
         productId: dto.productId,
         name: dto.name,
         price: dto.price,
+        // Additive money-in-cents dual-write (PRODUCT-PLAN PHASE A). Converges
+        // new rows onto integer cents; `price` Float stays the read source.
+        priceInCents: planPriceInCents(dto.price),
         itemsPerPlan: dto.itemsPerPlan ?? 1,
         maxInstallments: dto.maxInstallments ?? 1,
         billingType: dto.billingType ?? 'ONE_TIME',

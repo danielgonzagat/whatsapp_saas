@@ -33,7 +33,7 @@ export const validAbi = {
       recentTrace: [],
       aggregatedMood: { positive: 0, negative: 0, neutral: 1, ambiguous: 0, windowHours: 24 },
     },
-    pulseTruth: {
+    readinessTruth: {
       noOverclaimStatus: 'PASS' as const,
       capabilityHealthScore: 0,
       gates: [],

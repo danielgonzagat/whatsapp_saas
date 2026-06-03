@@ -1,10 +1,11 @@
+import { describe, expect, it, jest } from '@jest/globals';
 import { ChannelSetupService, normalizeSetupChannel } from './channel-setup.service';
 
 function buildPrisma(overrides: Record<string, unknown> = {}) {
   return {
     channelSetup: {
       findUnique: jest.fn(),
-      upsert: jest.fn(() => ({ query: 'setup' })),
+      upsert: jest.fn((_query?: unknown) => ({ query: 'setup' })),
     },
     channelConfig: {
       findUnique: jest.fn(),
@@ -32,11 +33,11 @@ describe('ChannelSetupService', () => {
   it('uploads arsenal files through storage and persists the returned storage path', async () => {
     const prisma = buildPrisma();
     const storage = {
-      upload: jest.fn().mockResolvedValue({
+      upload: jest.fn(async (_buffer: Buffer, _options: unknown) => ({
         path: 'r2://channel-arsenal/ws-1/instagram/audio.mp3',
         size: 12,
         url: 'https://cdn.kloel.test/audio.mp3',
-      }),
+      })),
     };
     const service = new ChannelSetupService(prisma as never, storage as never);
 
@@ -144,6 +145,25 @@ describe('ChannelSetupService', () => {
       service.saveProducts('ws-1', 'whatsapp', { productIds: ['prod-1', 'prod-2'] }),
     ).rejects.toThrow('produto_do_canal_nao_encontrado');
     expect(prisma.channelProduct.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it('advances persisted setup to arsenal step after saving channel products', async () => {
+    const prisma = buildPrisma({
+      product: {
+        count: jest.fn(async () => 2),
+        findMany: jest.fn(async () => []),
+      },
+    });
+    const service = new ChannelSetupService(prisma as never, { upload: jest.fn() } as never);
+
+    await service.saveProducts('ws-1', 'whatsapp', { productIds: ['prod-1', 'prod-2'] });
+
+    expect(prisma.channelSetup.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ currentStep: 2 }),
+        update: expect.objectContaining({ currentStep: 2 }),
+      }),
+    );
   });
 
   it('requires config before marking a channel setup as complete', async () => {

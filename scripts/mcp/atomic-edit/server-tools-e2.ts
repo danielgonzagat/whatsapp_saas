@@ -4,6 +4,7 @@ import { applyEdits } from './engine.js';
 import { resolveSafeTarget } from './guard.js';
 import { guardSha, readUtf8 } from './server-helpers-io.js';
 import { fail, commit } from './server-helpers-result.js';
+import { requireNegativeProofForRemovedBytes } from './server-helpers-negative-proof.js';
 import { shaArg } from './server-helpers-schema.js';
 
 export function registerToolsE2(server: McpServer): void {
@@ -173,6 +174,10 @@ server.registerTool(
         .optional()
         .describe('1-based; omit to require a unique match (refuses ambiguity)'),
       ...shaArg,
+      proofOfIncorrectness: z
+        .string()
+        .optional()
+        .describe('required when replacement removes bytes: proof that removed bytes are non-correct/negative'),
     },
   },
   async (a) => {
@@ -229,12 +234,21 @@ server.registerTool(
           newText: a.replacementText,
         },
       ]);
+      const negativeActionProof = requireNegativeProofForRemovedBytes({
+        action: 'atomic_replace_between_anchors',
+        target: relPath,
+        targetUnit: 'anchor-range',
+        before,
+        after: r.newText,
+        proofOfIncorrectness: a.proofOfIncorrectness,
+        preview: a.preview ?? false,
+      });
       return commit(
         relPath,
         absPath,
         before,
         r,
-        { op: 'replace_between_anchors' },
+        { op: 'replace_between_anchors', ...(negativeActionProof ? { negativeActionProof } : {}) },
         a.preview ?? false,
       );
     } catch (e) {
@@ -282,6 +296,10 @@ server.registerTool(
         .optional()
         .describe('1-based; omit to require a unique oldText match in region (refuses ambiguity)'),
       ...shaArg,
+      proofOfIncorrectness: z
+        .string()
+        .optional()
+        .describe('required when replacement removes bytes: proof that removed bytes are non-correct/negative'),
     },
   },
   async (a) => {
@@ -364,13 +382,22 @@ server.registerTool(
       })();
 
       const r = applyEdits(relPath, before, [{ start: startPos, end: endPos, newText: a.newText }]);
+      const negativeActionProof = requireNegativeProofForRemovedBytes({
+        action: 'atomic_replace_text_in_anchor_region',
+        target: relPath,
+        targetUnit: 'anchor-region-text',
+        before,
+        after: r.newText,
+        proofOfIncorrectness: a.proofOfIncorrectness,
+        preview: a.preview ?? false,
+      });
 
       return commit(
         relPath,
         absPath,
         before,
         r,
-        { op: 'replace_text_in_anchor_region' },
+        { op: 'replace_text_in_anchor_region', ...(negativeActionProof ? { negativeActionProof } : {}) },
         a.preview ?? false,
       );
     } catch (e) {

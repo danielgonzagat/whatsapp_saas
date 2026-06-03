@@ -28,33 +28,170 @@ interface AffiliateLinksResponse {
   };
 }
 
+type AffiliateApiEnvelope<T> = {
+  data?: T;
+  error?: string;
+  status: number;
+  success?: boolean;
+};
+
+type AffiliateCategoryPayload =
+  | string[]
+  | { categories?: Array<string | { name?: string | null }> };
+
+type AffiliateProductsPayload = AffiliateProduct[] | { products?: unknown };
+
+type AffiliateMarketplacePayload =
+  | AffiliateProduct[]
+  | { products?: unknown; total?: number; count?: number };
+
+type AffiliateSearchPayload = {
+  products?: unknown;
+  results?: unknown;
+};
+
+export function requireAffiliateApiSuccess<T>(
+  response: T & { error?: string; success?: boolean },
+  fallback: string,
+): T & { error?: string; success?: boolean } {
+  if (response.error || response.success === false) {
+    throw new Error(response.error || fallback);
+  }
+  return response;
+}
+
+function withAffiliateData<TData, TMapped>(
+  response: AffiliateApiEnvelope<TData>,
+  data: TMapped,
+): AffiliateApiEnvelope<TMapped> {
+  return { ...response, data };
+}
+
+function normalizeAffiliateProducts(
+  payload: AffiliateProductsPayload | undefined,
+  invalidMessage = 'Affiliate products did not return a confirmed payload',
+): AffiliateProduct[] {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+  if (payload && typeof payload === 'object' && Object.prototype.hasOwnProperty.call(payload, 'products')) {
+    if (Array.isArray(payload.products)) {
+      return payload.products;
+    }
+    throw new Error(invalidMessage);
+  }
+  throw new Error(invalidMessage);
+}
+
+function normalizeMarketplacePayload(payload: AffiliateMarketplacePayload | undefined) {
+  if (Array.isArray(payload)) {
+    return { products: payload, total: payload.length };
+  }
+  const products = normalizeAffiliateProducts(
+    payload,
+    'Affiliate marketplace products did not return a confirmed payload',
+  );
+  return { products, total: payload?.total ?? payload?.count ?? products.length };
+}
+
+function normalizeAffiliateCategories(payload: AffiliateCategoryPayload | undefined): string[] {
+  const categories = Array.isArray(payload)
+    ? payload
+    : Array.isArray(payload?.categories)
+      ? payload.categories
+      : [];
+  return categories
+    .map((category) => (typeof category === 'string' ? category : category.name || ''))
+    .filter((category) => category.length > 0);
+}
+
+function normalizeAffiliateSearch(payload: AffiliateSearchPayload | undefined): AffiliateProduct[] {
+  const invalidMessage = 'Affiliate search products did not return a confirmed payload';
+  if (!payload || typeof payload !== 'object') {
+    throw new Error(invalidMessage);
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'results')) {
+    if (Array.isArray(payload.results)) {
+      return payload.results;
+    }
+    throw new Error(invalidMessage);
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, 'products')) {
+    if (Array.isArray(payload.products)) {
+      return payload.products;
+    }
+    throw new Error(invalidMessage);
+  }
+  throw new Error(invalidMessage);
+}
+
+const invalidateAffiliate = () =>
+  mutate((key: string) => typeof key === 'string' && key.startsWith('/affiliate'));
+
 export const affiliateApi = {
-  marketplace: (params?: Record<string, string>) => {
+  marketplace: async (params?: Record<string, string>) => {
     const qs = params ? `?${new URLSearchParams(params).toString()}` : '';
-    return apiFetch<{ products: AffiliateProduct[]; total: number }>(`/affiliate/marketplace${qs}`);
-  },
-  marketplaceStats: () =>
-    apiFetch<{ totalProducts: number; totalAffiliates: number }>('/affiliate/marketplace/stats'),
-  categories: () => apiFetch<string[]>('/affiliate/marketplace/categories'),
-  recommended: () => apiFetch<AffiliateProduct[]>('/affiliate/marketplace/recommended'),
-  requestAffiliation: async (productId: string) => {
-    const res = await apiFetch<{ success: boolean; affiliationId?: string }>(
-      `/affiliate/request/${productId}`,
-      { method: 'POST' },
+    const res = requireAffiliateApiSuccess(
+      await apiFetch<AffiliateMarketplacePayload>(`/affiliate/marketplace${qs}`),
+      'Could not load affiliate marketplace',
     );
-    mutate((key: string) => typeof key === 'string' && key.startsWith('/affiliate'));
+    return withAffiliateData(res, normalizeMarketplacePayload(res.data));
+  },
+  marketplaceStats: async () =>
+    requireAffiliateApiSuccess(
+      await apiFetch<{ totalProducts: number; totalAffiliates: number }>(
+        '/affiliate/marketplace/stats',
+      ),
+      'Could not load affiliate marketplace stats',
+    ),
+  categories: async () => {
+    const res = requireAffiliateApiSuccess(
+      await apiFetch<AffiliateCategoryPayload>('/affiliate/marketplace/categories'),
+      'Could not load affiliate categories',
+    );
+    return withAffiliateData(res, normalizeAffiliateCategories(res.data));
+  },
+  recommended: async () => {
+    const res = requireAffiliateApiSuccess(
+      await apiFetch<AffiliateProductsPayload>('/affiliate/marketplace/recommended'),
+      'Could not load recommended affiliate products',
+    );
+    return withAffiliateData(res, normalizeAffiliateProducts(res.data));
+  },
+  requestAffiliation: async (productId: string) => {
+    const res = requireAffiliateApiSuccess(
+      await apiFetch<{ success: boolean; affiliationId?: string }>(
+        `/affiliate/request/${productId}`,
+        { method: 'POST' },
+      ),
+      'Could not request affiliation',
+    );
+    invalidateAffiliate();
     return res;
   },
-  myProducts: () => apiFetch<AffiliateProduct[]>('/affiliate/my-products'),
+  myProducts: async () => {
+    const res = requireAffiliateApiSuccess(
+      await apiFetch<AffiliateProductsPayload>('/affiliate/my-products'),
+      'Could not load affiliate products',
+    );
+    return withAffiliateData(res, normalizeAffiliateProducts(res.data));
+  },
   listProduct: async (productId: string, config: Record<string, unknown>) => {
-    const res = await apiFetch<{ success: boolean }>(`/affiliate/list-product/${productId}`, {
-      method: 'POST',
-      body: config,
-    });
-    mutate((key: string) => typeof key === 'string' && key.startsWith('/affiliate'));
+    const res = requireAffiliateApiSuccess(
+      await apiFetch<{ success: boolean }>(`/affiliate/list-product/${productId}`, {
+        method: 'POST',
+        body: config,
+      }),
+      'Could not list product on affiliate marketplace',
+    );
+    invalidateAffiliate();
     return res;
   },
-  myLinks: () => apiFetch<AffiliateLinksResponse>('/affiliate/my-links'),
+  myLinks: async () =>
+    requireAffiliateApiSuccess(
+      await apiFetch<AffiliateLinksResponse>('/affiliate/my-links'),
+      'Could not load affiliate links',
+    ),
   configureProduct: async (
     productId: string,
     config: {
@@ -70,41 +207,51 @@ export const affiliateApi = {
       promoMaterials?: Record<string, unknown>;
     },
   ) => {
-    const res = await apiFetch<{ success: boolean }>(
-      `/affiliate/config/${encodeURIComponent(productId)}`,
-      {
+    const res = requireAffiliateApiSuccess(
+      await apiFetch<{ success: boolean }>(`/affiliate/config/${encodeURIComponent(productId)}`, {
         method: 'PUT',
         body: config,
-      },
+      }),
+      'Could not configure affiliate product',
     );
-    mutate((key: string) => typeof key === 'string' && key.startsWith('/affiliate'));
+    invalidateAffiliate();
     return res;
   },
-  aiSearch: (query: string) =>
-    apiFetch<{ results: AffiliateProduct[] }>('/affiliate/ai-search', {
-      method: 'POST',
-      body: { query },
-    }),
-  suggest: () =>
-    apiFetch<{ products: AffiliateProduct[] }>('/affiliate/suggest', { method: 'POST' }),
-  saveProduct: async (productId: string) => {
-    const res = await apiFetch<{ success: boolean }>(
-      `/affiliate/saved/${encodeURIComponent(productId)}`,
-      {
+  aiSearch: async (query: string) => {
+    const res = requireAffiliateApiSuccess(
+      await apiFetch<AffiliateSearchPayload>('/affiliate/ai-search', {
         method: 'POST',
-      },
+        body: { query },
+      }),
+      'Could not search affiliate marketplace',
     );
-    mutate((key: string) => typeof key === 'string' && key.startsWith('/affiliate'));
+    return withAffiliateData(res, { results: normalizeAffiliateSearch(res.data) });
+  },
+  suggest: async () => {
+    const res = requireAffiliateApiSuccess(
+      await apiFetch<AffiliateProductsPayload>('/affiliate/suggest', { method: 'POST' }),
+      'Could not load affiliate suggestions',
+    );
+    return withAffiliateData(res, { products: normalizeAffiliateProducts(res.data) });
+  },
+  saveProduct: async (productId: string) => {
+    const res = requireAffiliateApiSuccess(
+      await apiFetch<{ success: boolean }>(`/affiliate/saved/${encodeURIComponent(productId)}`, {
+        method: 'POST',
+      }),
+      'Could not save affiliate product',
+    );
+    invalidateAffiliate();
     return res;
   },
   unsaveProduct: async (productId: string) => {
-    const res = await apiFetch<{ success: boolean }>(
-      `/affiliate/saved/${encodeURIComponent(productId)}`,
-      {
+    const res = requireAffiliateApiSuccess(
+      await apiFetch<{ success: boolean }>(`/affiliate/saved/${encodeURIComponent(productId)}`, {
         method: 'DELETE',
-      },
+      }),
+      'Could not unsave affiliate product',
     );
-    mutate((key: string) => typeof key === 'string' && key.startsWith('/affiliate'));
+    invalidateAffiliate();
     return res;
   },
 };

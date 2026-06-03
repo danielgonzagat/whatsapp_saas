@@ -1,8 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { memberAreaApi } from './member-area';
+
+const mocks = vi.hoisted(() => ({
+  mutate: vi.fn(),
+}));
+
+vi.mock('swr', () => ({
+  mutate: mocks.mutate,
+}));
+
+import { memberAreaApi, memberAreaStudentsApi } from './member-area';
 
 beforeEach(() => {
   document.cookie = 'kloel_access_token=test-token; path=/';
+  mocks.mutate.mockReset();
   vi.spyOn(globalThis, 'fetch').mockResolvedValue({
     ok: true,
     status: 200,
@@ -60,11 +70,12 @@ describe('memberAreaApi', () => {
   });
 
   describe('create', () => {
-    it('POSTs to /member-areas', async () => {
+    it('POSTs to /member-areas and invalidates member area cache after success', async () => {
       await memberAreaApi.create({ name: 'New Area' });
       const { url, method } = lastFetch();
       expect(method).toBe('POST');
       expect(url).toContain('/member-areas');
+      expect(mocks.mutate).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -83,6 +94,30 @@ describe('memberAreaApi', () => {
       } as Response);
       const res = await memberAreaApi.list();
       expect(res.error).toBeTruthy();
+    });
+
+    it('rejects create error envelopes without invalidating cache', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ error: 'Area invalida' }),
+      } as Response);
+
+      await expect(memberAreaApi.create({ name: 'New Area' })).rejects.toThrow('Area invalida');
+      expect(mocks.mutate).not.toHaveBeenCalled();
+    });
+
+    it('rejects student update error envelopes without invalidating cache', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ error: 'Aluno invalido' }),
+      } as Response);
+
+      await expect(
+        memberAreaStudentsApi.update('area-1', 'student-1', { status: 'active' }),
+      ).rejects.toThrow('Aluno invalido');
+      expect(mocks.mutate).not.toHaveBeenCalled();
     });
   });
 });

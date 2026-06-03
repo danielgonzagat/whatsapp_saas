@@ -84,26 +84,38 @@ function isWalletTransactionsResponse(
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
-function extractTransactionItems(payload: WalletTransactionsPayload): WalletTransaction[] {
-  if (isWalletTransactionsResponse(payload)) {
-    if ('transactions' in payload) {
-      return payload.transactions || [];
-    }
-    if ('data' in payload) {
-      return payload.data || [];
-    }
+function resolveWalletTransactionsPayload(
+  payload: WalletTransactionsPayload,
+  isEnabled: boolean,
+  isLoading: boolean,
+): { transactions: WalletTransaction[]; total: number; payloadError?: Error } {
+  if (!isEnabled) {
+    return { transactions: [], total: 0 };
   }
-  if (Array.isArray(payload)) {
-    return payload;
-  }
-  return [];
-}
 
-function extractTransactionTotal(payload: WalletTransactionsPayload, fallback: number): number {
-  if (isWalletTransactionsResponse(payload) && 'total' in payload) {
-    return payload.total ?? fallback;
+  if (payload === undefined) {
+    return isLoading
+      ? { transactions: [], total: 0 }
+      : { transactions: [], total: 0, payloadError: new Error('Invalid wallet transactions payload') };
   }
-  return fallback;
+
+  if (Array.isArray(payload)) {
+    return { transactions: payload, total: payload.length };
+  }
+
+  if (isWalletTransactionsResponse(payload)) {
+    const transactions = Array.isArray(payload.transactions)
+      ? payload.transactions
+      : Array.isArray(payload.data)
+        ? payload.data
+        : null;
+    if (transactions) {
+      const total = typeof payload.total === 'number' ? payload.total : transactions.length;
+      return { transactions, total };
+    }
+  }
+
+  return { transactions: [], total: 0, payloadError: new Error('Invalid wallet transactions payload') };
 }
 
 /** Use wallet transactions. */
@@ -114,10 +126,12 @@ export function useWalletTransactions() {
     swrFetcher,
     { keepPreviousData: true },
   );
-  const d = data as WalletTransactionsPayload;
-  const items = extractTransactionItems(d);
-  const total = extractTransactionTotal(d, items.length);
-  return { transactions: items, total, isLoading, error, mutate };
+  const { transactions, total, payloadError } = resolveWalletTransactionsPayload(
+    data as WalletTransactionsPayload,
+    Boolean(wsId),
+    isLoading,
+  );
+  return { transactions, total, isLoading, error: error ?? payloadError, mutate };
 }
 
 /* ── Wallet chart ── */
@@ -149,18 +163,51 @@ export function useWalletMonthly() {
   };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function resolveWalletArrayPayload<T>(
+  payload: unknown,
+  key: string,
+  isEnabled: boolean,
+  isLoading: boolean,
+  invalidMessage: string,
+): { items: T[]; payloadError?: Error } {
+  if (!isEnabled) {
+    return { items: [] };
+  }
+
+  if (payload === undefined) {
+    return isLoading ? { items: [] } : { items: [], payloadError: new Error(invalidMessage) };
+  }
+
+  if (isRecord(payload) && Array.isArray(payload[key])) {
+    return { items: payload[key] as T[] };
+  }
+
+  return { items: [], payloadError: new Error(invalidMessage) };
+}
+
 /* ── Wallet withdrawals ── */
 export function useWalletWithdrawals() {
   const wsId = useWorkspaceId();
-  const { data, isLoading, mutate } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR(
     wsId ? `/kloel/wallet/${wsId}/withdrawals` : null,
     swrFetcher,
     { keepPreviousData: true },
   );
-  return {
-    withdrawals:
-      ((data as Record<string, unknown>)?.withdrawals as Array<Record<string, unknown>>) || [],
+  const { items, payloadError } = resolveWalletArrayPayload<Record<string, unknown>>(
+    data,
+    'withdrawals',
+    Boolean(wsId),
     isLoading,
+    'Invalid wallet withdrawals payload',
+  );
+  return {
+    withdrawals: items,
+    isLoading,
+    error: error ?? payloadError,
     mutate,
   };
 }
@@ -168,12 +215,24 @@ export function useWalletWithdrawals() {
 /* ── Bank accounts ── */
 export function useBankAccounts() {
   const wsId = useWorkspaceId();
-  const { data, isLoading, mutate } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR(
     wsId ? `/kloel/wallet/${wsId}/bank-accounts` : null,
     swrFetcher,
     { keepPreviousData: true },
   );
-  const accounts = ((data as Record<string, unknown>)?.accounts as WalletBankAccount[]) || [];
+  const { items: accounts, payloadError } = resolveWalletArrayPayload<WalletBankAccount>(
+    data,
+    'accounts',
+    Boolean(wsId),
+    isLoading,
+    'Invalid wallet bank accounts payload',
+  );
+  const requireWalletMutationSuccess = <T extends { error?: string }>(res: T, fallback: string) => {
+    if (res.error) {
+      throw new Error(res.error || fallback);
+    }
+    return res;
+  };
 
   const addBankAccount = async (dto: Record<string, unknown>) => {
     if (!wsId) {
@@ -183,6 +242,7 @@ export function useBankAccounts() {
       method: 'POST',
       body: dto,
     });
+    requireWalletMutationSuccess(res, 'Erro ao cadastrar conta bancaria');
     await mutate();
     return res;
   };
@@ -191,30 +251,63 @@ export function useBankAccounts() {
     if (!wsId) {
       return;
     }
-    await apiFetch(`/kloel/wallet/${wsId}/bank-accounts/${id}`, { method: 'DELETE' });
+    const res = await apiFetch(`/kloel/wallet/${wsId}/bank-accounts/${id}`, { method: 'DELETE' });
+    requireWalletMutationSuccess(res, 'Erro ao remover conta bancaria');
     await mutate();
   };
 
-  return { accounts, isLoading, mutate, addBankAccount, removeBankAccount };
+  return { accounts, isLoading, error: error ?? payloadError, mutate, addBankAccount, removeBankAccount };
 }
 
 /* ── Wallet anticipations ── */
+type WalletAnticipationTotals = {
+  totalAnticipated: number;
+  totalFees: number;
+  count: number;
+};
+
+const DEFAULT_WALLET_ANTICIPATION_TOTALS: WalletAnticipationTotals = {
+  totalAnticipated: 0,
+  totalFees: 0,
+  count: 0,
+};
+
+function isWalletAnticipationTotals(value: unknown): value is WalletAnticipationTotals {
+  return (
+    isRecord(value) &&
+    typeof value.totalAnticipated === 'number' &&
+    typeof value.totalFees === 'number' &&
+    typeof value.count === 'number'
+  );
+}
+
 export function useWalletAnticipations() {
   const wsId = useWorkspaceId();
-  const { data, isLoading, mutate } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR(
     wsId ? `/kloel/wallet/${wsId}/anticipations` : null,
     swrFetcher,
     { keepPreviousData: true },
   );
-  const d = data as Record<string, unknown> | undefined;
-  return {
-    anticipations: (d?.anticipations as Array<Record<string, unknown>>) || [],
-    totals: (d?.totals as Record<string, number>) || {
-      totalAnticipated: 0,
-      totalFees: 0,
-      count: 0,
-    },
+  const { items: anticipations, payloadError } = resolveWalletArrayPayload<Record<string, unknown>>(
+    data,
+    'anticipations',
+    Boolean(wsId),
     isLoading,
+    'Invalid wallet anticipations payload',
+  );
+  const totals = isRecord(data) && isWalletAnticipationTotals(data.totals)
+    ? data.totals
+    : DEFAULT_WALLET_ANTICIPATION_TOTALS;
+  const totalsError =
+    Boolean(wsId) && data !== undefined && !isLoading && !isWalletAnticipationTotals(isRecord(data) ? data.totals : undefined)
+      ? new Error('Invalid wallet anticipations payload')
+      : undefined;
+
+  return {
+    anticipations,
+    totals,
+    isLoading,
+    error: error ?? payloadError ?? totalsError,
     mutate,
   };
 }

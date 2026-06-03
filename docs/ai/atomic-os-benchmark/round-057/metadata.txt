@@ -1,6 +1,0 @@
-round_dir=/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/round-057
-normal=/private/tmp/kloel-ab057-normal-20260517090124
-atomic=/private/tmp/kloel-ab057-atomic-20260517090124
-normal_branch=bench/ab057-normal-20260517090124
-atomic_branch=bench/ab057-atomic-20260517090124
-stamp=20260517090124

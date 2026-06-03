@@ -18,55 +18,109 @@ export interface MemoryItem {
 
 /** Product shape. */
 export interface Product {
+  /** Product id property. */
+  productId: string;
   /** Name property. */
   name: string;
+  /** Description property. */
+  description: string;
   /** Price property. */
   price: number;
-  /** Description property. */
-  description?: string;
+  /** Benefits property. */
+  benefits?: string[];
 }
 
-export async function getMemoryStats(
-  workspaceId: string,
-): Promise<{ totalItems: number; products: number; knowledge: number }> {
-  const res = await apiFetch<{ totalItems: number; products: number; knowledge: number }>(
-    `/kloel/memory/${workspaceId}/stats`,
-  );
-  if (res.error) {
-    throw new Error('Failed to fetch memory stats');
+type MemoryStats = { totalItems: number; products: number; knowledge: number };
+
+type MemoryApiEnvelope<T> = {
+  data?: T | undefined;
+  error?: string | undefined;
+  status: number;
+};
+
+type MemoryListPayload = {
+  memories: MemoryItem[];
+};
+
+type ProductMemorySaveResponse = {
+  status?: string | undefined;
+  memory?: unknown;
+};
+
+function confirmMemoryPayload<T>(
+  response: MemoryApiEnvelope<T>,
+  fallbackMessage: string,
+  missingPayloadMessage: string,
+): T {
+  if (response.error || response.status >= 400) {
+    throw new Error(response.error ?? fallbackMessage);
   }
-  return res.data as { totalItems: number; products: number; knowledge: number };
+  if (response.data === undefined || response.data === null) {
+    throw new Error(missingPayloadMessage);
+  }
+  return response.data;
+}
+
+function confirmMemoryListPayload(
+  response: MemoryApiEnvelope<MemoryListPayload>,
+  fallbackMessage: string,
+  missingPayloadMessage: string,
+): MemoryItem[] {
+  const payload = confirmMemoryPayload(response, fallbackMessage, missingPayloadMessage);
+  if (!Array.isArray(payload.memories)) {
+    throw new Error(missingPayloadMessage);
+  }
+  return payload.memories;
+}
+
+export async function getMemoryStats(workspaceId: string): Promise<MemoryStats> {
+  const res = await apiFetch<MemoryStats>(`/kloel/memory/${workspaceId}/stats`);
+  return confirmMemoryPayload(
+    res,
+    'Failed to fetch memory stats',
+    'Memory stats did not return a confirmed payload',
+  );
 }
 
 /** Get memory list. */
 export async function getMemoryList(workspaceId: string): Promise<MemoryItem[]> {
-  const res = await apiFetch<{ memories: MemoryItem[] }>(`/kloel/memory/${workspaceId}/list`);
-  if (res.error) {
-    throw new Error('Failed to fetch memories');
-  }
-  return res.data?.memories || [];
+  const res = await apiFetch<MemoryListPayload>(`/kloel/memory/${workspaceId}/list`);
+  return confirmMemoryListPayload(
+    res,
+    'Failed to fetch memories',
+    'Memory list did not return a confirmed payload',
+  );
 }
 
 /** Save product. */
-export async function saveProduct(workspaceId: string, product: Product): Promise<unknown> {
-  const res = await apiFetch<unknown>(`/kloel/memory/${workspaceId}/product`, {
+export async function saveProduct(
+  workspaceId: string,
+  product: Product,
+): Promise<ProductMemorySaveResponse> {
+  const res = await apiFetch<ProductMemorySaveResponse>(`/kloel/memory/${workspaceId}/product`, {
     method: 'POST',
     body: product,
   });
-  if (res.error) {
-    throw new Error('Failed to save product');
+  const payload = confirmMemoryPayload(
+    res,
+    'Failed to save product',
+    'Product memory save did not return a confirmed payload',
+  );
+  if (payload.status !== 'saved') {
+    throw new Error('Product memory save was not confirmed');
   }
-  return res.data;
+  return payload;
 }
 
 /** Search memory. */
 export async function searchMemory(workspaceId: string, query: string): Promise<MemoryItem[]> {
-  const res = await apiFetch<{ memories: MemoryItem[] }>(`/kloel/memory/${workspaceId}/search`, {
+  const res = await apiFetch<MemoryListPayload>(`/kloel/memory/${workspaceId}/search`, {
     method: 'POST',
     body: { query },
   });
-  if (res.error) {
-    throw new Error('Failed to search memory');
-  }
-  return res.data?.memories || [];
+  return confirmMemoryListPayload(
+    res,
+    'Failed to search memory',
+    'Memory search did not return a confirmed payload',
+  );
 }

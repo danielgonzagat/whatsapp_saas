@@ -1,9 +1,0 @@
-stamp=20260516195641
-round_dir=docs/ai/atomic-os-benchmark/round-027
-normal_dir=/private/tmp/kloel-ab027-normal-20260516195641
-atomic_dir=/private/tmp/kloel-ab027-atomic-20260516195641
-normal_branch=codex/ab027-normal-20260516195641
-atomic_branch=codex/ab027-atomic-20260516195641
-base_head=565b0f84daa9f20b33a174374191a9f1f519a26e
-atomic_os_update=eslint_success_receipt_139_chars_plus_no_full_diff_doctrine
-previous_verdict=round-026_no_scale_atomic_lost_mcp_payload_external_wall_tie_and_test_duration

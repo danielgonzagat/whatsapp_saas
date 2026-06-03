@@ -1,4 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { mutate } from 'swr';
 import {
   getAutopilotStatus,
   toggleAutopilot,
@@ -80,6 +81,13 @@ describe('toggleAutopilot', () => {
   it('throws on failure', async () => {
     apiFetch.mockResolvedValueOnce({ error: 'Forbidden', status: 403 });
     await expect(toggleAutopilot('ws1', false)).rejects.toThrow('Failed to toggle autopilot');
+  });
+
+  it('rejects failed HTTP status without invalidating cache', async () => {
+    apiFetch.mockResolvedValueOnce({ data: { enabled: true }, status: 500 });
+
+    await expect(toggleAutopilot('ws1', true)).rejects.toThrow('Failed to toggle autopilot');
+    expect(mutate).not.toHaveBeenCalled();
   });
 });
 
@@ -211,10 +219,20 @@ describe('getAutopilotActions', () => {
     expect(result).toEqual(actionsMock);
   });
 
-  it('returns empty array when data is nullish', async () => {
+  it('rejects missing actions payloads instead of returning a fake empty list', async () => {
     apiFetch.mockResolvedValueOnce({ data: undefined, status: 200 });
-    const result = await getAutopilotActions('ws1');
-    expect(result).toEqual([]);
+
+    await expect(getAutopilotActions('ws1')).rejects.toThrow(
+      'Autopilot actions did not return a confirmed payload',
+    );
+  });
+
+  it('rejects failed action list status without an error envelope', async () => {
+    apiFetch.mockResolvedValueOnce({ data: [], status: 503 });
+
+    await expect(getAutopilotActions('ws1')).rejects.toThrow(
+      'Failed to fetch autopilot actions',
+    );
   });
 
   it('passes limit and status params', async () => {
@@ -281,6 +299,15 @@ describe('runAutopilot', () => {
     apiFetch.mockResolvedValueOnce({ error: 'Error', status: 500 });
     await expect(runAutopilot({ workspaceId: 'ws1' })).rejects.toThrow('Failed to run autopilot');
   });
+
+  it('rejects missing run confirmation without invalidating cache', async () => {
+    apiFetch.mockResolvedValueOnce({ data: undefined, status: 200 });
+
+    await expect(runAutopilot({ workspaceId: 'ws1' })).rejects.toThrow(
+      'Autopilot run did not return a confirmed payload',
+    );
+    expect(mutate).not.toHaveBeenCalled();
+  });
 });
 
 describe('activateMoneyMachine', () => {
@@ -340,6 +367,14 @@ describe('sendAutopilotDirectMessage', () => {
     await expect(
       sendAutopilotDirectMessage({ workspaceId: 'ws1', contactId: 'c1', message: 'x' }),
     ).rejects.toThrow('Error');
+  });
+
+  it('rejects missing direct send confirmation', async () => {
+    apiFetch.mockResolvedValueOnce({ data: undefined, status: 200 });
+
+    await expect(
+      sendAutopilotDirectMessage({ workspaceId: 'ws1', contactId: 'c1', message: 'x' }),
+    ).rejects.toThrow('Autopilot direct send did not return a confirmed payload');
   });
 });
 

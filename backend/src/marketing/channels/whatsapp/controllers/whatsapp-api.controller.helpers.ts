@@ -2,8 +2,8 @@ import { asProviderSettings, type ProviderSessionSnapshot } from '../provider-se
 import type { CiaRuntimePort } from '../../../../kloel/mind/cia/cia-runtime.port';
 import type { SessionStatus } from '../providers/provider-registry.types';
 import type {
-  WahaRuntimeConfigDiagnostics,
-  WahaSessionConfigDiagnostics,
+  MetaWhatsAppRuntimeConfigDiagnostics,
+  MetaWhatsAppSessionConfigDiagnostics,
 } from '../providers/whatsapp-api.provider.types';
 
 /**
@@ -59,8 +59,8 @@ export interface ProviderStatusBacklog {
 
 /** Input bundle for {@link deriveProviderStatusDegradedReasons}. */
 export interface DeriveDegradedReasonsInput {
-  runtimeDiagnostics: WahaRuntimeConfigDiagnostics;
-  sessionDiagnostics: WahaSessionConfigDiagnostics;
+  runtimeDiagnostics: MetaWhatsAppRuntimeConfigDiagnostics;
+  sessionDiagnostics: MetaWhatsAppSessionConfigDiagnostics;
   sessionStatus: SessionStatus;
   sessionMeta: ProviderSessionSnapshot | null;
   backlog: ProviderStatusBacklog | null;

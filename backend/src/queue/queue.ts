@@ -7,6 +7,7 @@ import {
   maskRedisUrl,
 } from '../common/redis/redis.util';
 import { classifyWebhook } from './webhook-classifier';
+import { QUEUE_NAMES } from './queue-names.const';
 
 type GlobalWithFetch = { fetch?: typeof fetch; [key: string]: unknown };
 
@@ -386,24 +387,24 @@ function lazyQueueProxy(name: string): BullQueue {
 }
 
 /** Flow queue. */
-export const flowQueue = lazyQueueProxy('flow-jobs');
+export const flowQueue = lazyQueueProxy(QUEUE_NAMES.FLOW);
 /** Campaign queue. */
-export const campaignQueue = lazyQueueProxy('campaign-jobs');
+export const campaignQueue = lazyQueueProxy(QUEUE_NAMES.CAMPAIGN);
 /** Scraper queue. */
-export const scraperQueue = lazyQueueProxy('scraper-jobs');
+export const scraperQueue = lazyQueueProxy(QUEUE_NAMES.SCRAPER);
 /** Media queue. */
-export const mediaQueue = lazyQueueProxy('media-jobs');
+export const mediaQueue = lazyQueueProxy(QUEUE_NAMES.MEDIA);
 /** Voice queue. */
-export const voiceQueue = lazyQueueProxy('voice-jobs');
+export const voiceQueue = lazyQueueProxy(QUEUE_NAMES.VOICE);
 /** Autopilot queue. */
-export const autopilotQueue = lazyQueueProxy('autopilot-jobs');
+export const autopilotQueue = lazyQueueProxy(QUEUE_NAMES.AUTOPILOT);
 /** Memory queue. */
-export const memoryQueue = lazyQueueProxy('memory-jobs');
+export const memoryQueue = lazyQueueProxy(QUEUE_NAMES.MEMORY);
 /** Crm queue. */
-export const crmQueue = lazyQueueProxy('crm-jobs');
+export const crmQueue = lazyQueueProxy(QUEUE_NAMES.CRM);
 /** Webhook queue. */
-export const webhookQueue = lazyQueueProxy('webhook-jobs');
+export const webhookQueue = lazyQueueProxy(QUEUE_NAMES.WEBHOOK);
 /** Google Ads sync queue. */
-export const googleAdsSyncQueue = lazyQueueProxy('google-ads-sync-jobs');
+export const googleAdsSyncQueue = lazyQueueProxy(QUEUE_NAMES.GOOGLE_ADS_SYNC);
 /** Meta Ads sync queue (retry 5x exponential backoff, 200 calls/hr rate limit). */
-export const metaAdsSyncQueue = lazyQueueProxy('ads-sync-meta');
+export const metaAdsSyncQueue = lazyQueueProxy(QUEUE_NAMES.META_ADS_SYNC);

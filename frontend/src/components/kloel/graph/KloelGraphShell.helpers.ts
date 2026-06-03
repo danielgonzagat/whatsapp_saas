@@ -60,22 +60,31 @@ export async function loadCheckoutGraphProducts(): Promise<KloelGraphProductLike
     0,
     MAX_CHECKOUT_GRAPH_PRODUCTS,
   );
-  const details = await Promise.allSettled(
+  return Promise.all(
     checkoutProducts.map(async (product) => {
-      const detail = await swrFetcher<CheckoutProductDetailShape>(
-        `/checkout/products/${product.id}`,
-      );
-      return {
+      const baseProduct = {
         id: product.id,
         name: product.name,
         label: product.name,
         slug: product.slug ?? null,
-        plans: extractPlansFromDetail(detail),
-        checkouts: extractCheckoutsFromDetail(detail),
+        plans: [],
+        checkouts: [],
       } satisfies KloelGraphProductLike;
+
+      try {
+        const detail = await swrFetcher<CheckoutProductDetailShape>(
+          `/checkout/products/${product.id}`,
+        );
+        return {
+          ...baseProduct,
+          plans: extractPlansFromDetail(detail),
+          checkouts: extractCheckoutsFromDetail(detail),
+        } satisfies KloelGraphProductLike;
+      } catch {
+        return baseProduct;
+      }
     }),
   );
-  return details.flatMap((result) => (result.status === 'fulfilled' ? [result.value] : []));
 }
 
 export function mergeGraphProducts(

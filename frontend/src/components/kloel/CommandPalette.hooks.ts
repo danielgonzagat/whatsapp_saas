@@ -2,11 +2,17 @@
 
 import { type Dispatch, type SetStateAction, useCallback } from 'react';
 
+export interface CommandPaletteKeyboardResult {
+  id: string;
+  href?: string | undefined;
+  type?: string | undefined;
+}
+
 interface KeyboardArgs {
-  results: Array<{ id: string }>;
+  results: CommandPaletteKeyboardResult[];
   selectedIndex: number;
   setSelectedIndex: Dispatch<SetStateAction<number>>;
-  openConversation: (conversationId: string) => void;
+  openResult: (result: CommandPaletteKeyboardResult) => void;
   onClose: () => void;
 }
 
@@ -19,7 +25,7 @@ export function useCommandPaletteKeyboard({
   results,
   selectedIndex,
   setSelectedIndex,
-  openConversation,
+  openResult,
   onClose,
 }: KeyboardArgs) {
   return useCallback(
@@ -38,7 +44,7 @@ export function useCommandPaletteKeyboard({
 
       if (event.key === 'Enter' && results[selectedIndex]) {
         event.preventDefault();
-        openConversation(results[selectedIndex].id);
+        openResult(results[selectedIndex]);
         return;
       }
 
@@ -47,6 +53,6 @@ export function useCommandPaletteKeyboard({
         onClose();
       }
     },
-    [onClose, openConversation, results, selectedIndex, setSelectedIndex],
+    [onClose, openResult, results, selectedIndex, setSelectedIndex],
   );
 }

@@ -22,8 +22,8 @@
  *   (3) MULTI-FILE not false-reddened — with a pending A→B set registered, the per-file
  *                               type-soundness rung is deferred (sibling-blind) so the set
  *                               is not reddened mid-write.
- *   (4) UNJUDGED non-blocking  — a write with no resolvable tsconfig leaves type-soundness
- *                               unjudged → the write is NOT blocked (honest, never red-by-guess).
+ *   (4) UNJUDGED blocks        — a write with no resolvable tsconfig leaves type-soundness
+ *                               unjudged, which is not green approval, so the byte is refused.
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -123,18 +123,16 @@ try {
     fs.writeFileSync(aAbs, 'export const x: number = 1;\n'); // restore
   }
 
-  // (4) UNJUDGED non-blocking — write a file in a dir with NO resolvable tsconfig up to
-  //     REPO_ROOT-relative path: type-soundness bails unjudged → the write is NOT blocked.
-  //     We prove this by removing the project's tsconfig so the gate cannot decide; a
-  //     type-broken-in-isolation candidate then still WRITES (unjudged is non-blocking),
-  //     proving an honest can't-decide never red-by-guesses.
+  // (4) UNJUDGED blocks — write a file in a dir with NO resolvable tsconfig up to
+  //     REPO_ROOT-relative path: type-soundness bails unjudged. Under Y, an honest
+  //     cannot-decide is not green approval, so the byte is refused before disk.
   {
     fs.rmSync(path.join(proj, 'tsconfig.json'));
     const cAbs = path.join(proj, 'c.ts');
     // c.ts has no relative imports (connection green), no bare deps (supply-chain green); the
-    // only judgeable rung is type-soundness, which is now unjudged (no tsconfig) → write lands.
+    // only applicable rung is type-soundness, which is now unjudged (no tsconfig) and must block.
     const msg = threw(() => atomicWrite(cAbs, 'export const y: number = nope();\n'));
-    check('(4) UNJUDGED non-blocking: no-tsconfig write is NOT blocked (lands)', msg === null && fs.existsSync(cAbs));
+    check('(4) UNJUDGED at floor: no-tsconfig write is refused before disk', !!msg && /UNJUDGED|unjudged/.test(msg) && !fs.existsSync(cAbs));
   }
 } finally {
   fs.rmSync(proj, { recursive: true, force: true });

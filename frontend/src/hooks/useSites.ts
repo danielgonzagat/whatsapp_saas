@@ -1,8 +1,15 @@
 'use client';
 
 import useSWR, { useSWRConfig } from 'swr';
+import { apiFetch } from '@/lib/api/core';
 import { sitesApi } from '@/lib/api/sites';
-import type { Site, SiteDomain, SiteAppIntegration, ListSitesParams } from '@/lib/api/sites';
+import type {
+  Site,
+  SiteStatus,
+  SiteDomain,
+  SiteAppIntegration,
+  ListSitesParams,
+} from '@/lib/api/sites';
 
 /* ── SWR key builders ── */
 
@@ -22,14 +29,6 @@ function appsKey(ws: string, siteId: string) {
 
 /* ── Response unwrappers ── */
 
-function unwrapList(data: unknown): Site[] {
-  if (Array.isArray(data)) {return data;}
-  const d = data as Record<string, unknown> | undefined;
-  if (Array.isArray(d?.data)) {return d!.data as Site[];}
-  if (Array.isArray(d?.sites)) {return d!.sites as Site[];}
-  return [];
-}
-
 function unwrapItem(data: unknown): Site | null {
   if (!data) {return null;}
   if (typeof data === 'object' && data !== null && 'id' in data) {return data as Site;}
@@ -37,6 +36,73 @@ function unwrapItem(data: unknown): Site | null {
   if (d?.data && typeof d.data === 'object' && 'id' in (d.data as object)) {return d.data as Site;}
   if (d?.site) {return d.site as Site;}
   return null;
+}
+
+function unwrapRelatedList<T>(data: unknown, message: string): T[] {
+  if (data === undefined || data === null) {return [];}
+  if (Array.isArray(data)) {return data as T[];}
+  if (typeof data !== 'object') {throw new Error(message);}
+  const d = data as Record<string, unknown>;
+  if (Object.prototype.hasOwnProperty.call(d, 'data')) {
+    if (Array.isArray(d.data)) {return d.data as T[];}
+    throw new Error(message);
+  }
+  return [];
+}
+
+/* ── KloelSite (canonical create store) → Site shape ── */
+
+interface KloelSiteRow {
+  id: string;
+  workspaceId: string;
+  name: string;
+  slug: string | null;
+  published: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const invalidSitesListPayloadMessage = 'Invalid sites list payload';
+
+function isKloelSiteRow(value: unknown): value is KloelSiteRow {
+  if (typeof value !== 'object' || value === null) {return false;}
+  const row = value as Partial<Record<keyof KloelSiteRow, unknown>>;
+  return (
+    typeof row.id === 'string' &&
+    typeof row.workspaceId === 'string' &&
+    typeof row.name === 'string' &&
+    (typeof row.slug === 'string' || row.slug === null) &&
+    typeof row.published === 'boolean' &&
+    typeof row.createdAt === 'string' &&
+    typeof row.updatedAt === 'string'
+  );
+}
+
+function unwrapKloelSiteRows(data: unknown): KloelSiteRow[] {
+  if (data === undefined || data === null) {return [];}
+  if (typeof data !== 'object') {throw new Error(invalidSitesListPayloadMessage);}
+  const envelope = data as { sites?: unknown };
+  if (envelope.sites === undefined || envelope.sites === null) {return [];}
+  if (!Array.isArray(envelope.sites) || !envelope.sites.every(isKloelSiteRow)) {
+    throw new Error(invalidSitesListPayloadMessage);
+  }
+  return envelope.sites;
+}
+
+function mapKloelSiteToSite(row: KloelSiteRow): Site {
+  return {
+    id: row.id,
+    workspaceId: row.workspaceId,
+    name: row.name,
+    slug: row.slug ?? '',
+    status: (row.published ? 'PUBLISHED' : 'DRAFT') as SiteStatus,
+    template: null,
+    content: {},
+    seoMeta: {},
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    publishedAt: null,
+  };
 }
 
 /* ── Hooks ── */
@@ -49,9 +115,13 @@ export function useSites(
   const key = workspaceId ? listKey(workspaceId, params as Record<string, unknown>) : null;
 
   const fetcher = async () => {
-    const res = await sitesApi.listSites(workspaceId, params);
+    // Read the canonical KloelSite store (where CriarSite/EditarSite actually
+    // write) instead of the parallel RAC_Site `/sites` table — otherwise the
+    // overview shows "Nenhum site" forever even after the user creates one.
+    const res = await apiFetch<{ sites: KloelSiteRow[] }>('/kloel/site/list');
     if (res.error) {throw new Error(res.error);}
-    return unwrapList(res.data);
+    const sites = unwrapKloelSiteRows(res.data);
+    return sites.map(mapKloelSiteToSite);
   };
 
   const { data, error, isLoading, mutate } = useSWR(key, fetcher, {
@@ -96,11 +166,7 @@ export function useSiteDomains(workspaceId: string, siteId: string | null) {
   const fetcher = async () => {
     const res = await sitesApi.listDomains(workspaceId, siteId!);
     if (res.error) {throw new Error(res.error);}
-    const d = res.data as unknown;
-    if (Array.isArray(d)) {return d as SiteDomain[];}
-    const obj = d as Record<string, unknown> | undefined;
-    if (Array.isArray(obj?.data)) {return obj!.data as SiteDomain[];}
-    return [];
+    return unwrapRelatedList<SiteDomain>(res.data, 'Invalid site domains payload');
   };
 
   const { data, error, isLoading, mutate } = useSWR(key, fetcher, {
@@ -122,11 +188,7 @@ export function useSiteApps(workspaceId: string, siteId: string | null) {
   const fetcher = async () => {
     const res = await sitesApi.listApps(workspaceId, siteId!);
     if (res.error) {throw new Error(res.error);}
-    const d = res.data as unknown;
-    if (Array.isArray(d)) {return d as SiteAppIntegration[];}
-    const obj = d as Record<string, unknown> | undefined;
-    if (Array.isArray(obj?.data)) {return obj!.data as SiteAppIntegration[];}
-    return [];
+    return unwrapRelatedList<SiteAppIntegration>(res.data, 'Invalid site apps payload');
   };
 
   const { data, error, isLoading, mutate } = useSWR(key, fetcher, {

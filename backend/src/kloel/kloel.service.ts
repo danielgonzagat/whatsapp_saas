@@ -15,6 +15,7 @@ import { KloelConversationStore } from './kloel-conversation-store';
 import { LeadMindCoordinator } from './mind/coordination/lead-mind-coordinator.service';
 import { MindMessageService } from './mind/aliases/mind-message.service';
 import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
+import { MindCanonicalService } from './mind/mind-canonical.service';
 import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import { KloelThreadService } from './kloel-thread.service';
 import { KloelThinkerService, ThinkRequest, ThinkSyncResult } from './kloel-thinker.service';
@@ -56,6 +57,7 @@ export class KloelService {
     @Optional() private readonly agentRuntime?: AgentRuntimeContextService,
     @Optional() private readonly mindMessage?: MindMessageService,
     @Optional() private readonly mindMemory?: MindMemoryItemService,
+    @Optional() private readonly mindCanonical?: MindCanonicalService,
   ) {
     this.conversationStore = new KloelConversationStore(
       prisma,
@@ -63,6 +65,7 @@ export class KloelService {
       undefined,
       this.mindMessage,
       this.mindMemory,
+      this.mindCanonical,
     );
   }
 
@@ -290,6 +293,16 @@ export class KloelService {
   async getHistory(
     workspaceId: string,
   ): Promise<{ id: string; role: string; content: string; timestamp: Date }[]> {
+    // Canonical Mind facade is the preferred conversation-history read surface;
+    // `getConversationHistory` delegates to the SAME `RAC_KloelMessage` rows
+    // (oldest→newest, take 50) the legacy paths below return identically.
+    if (this.mindCanonical) {
+      try {
+        return await this.mindCanonical.getConversationHistory(workspaceId, 50);
+      } catch {
+        return [];
+      }
+    }
     if (this.mindMessage) {
       try {
         return await this.mindMessage.getHistory(workspaceId, 50);

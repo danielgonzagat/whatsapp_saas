@@ -46,24 +46,18 @@ These are the minimum alerts the platform should treat as paging conditions:
 - Disaster recovery: `docs/DISASTER_RECOVERY.md`
 - Restore procedure: `docs/RESTORE.md`
 - Production gate: `npm run readiness:check`
-- Static/runtime certification gate: `npm run pulse:ci`
+- Static/runtime checks: `npm run typecheck`, `npm run test`, `npm run build`
 
 ## Operational Review Cadence
 
 - Continuous: Sentry and infrastructure health.
-- Daily: nightly GitHub Actions audit.
-- Before every production deploy: readiness + PULSE tier-0 gate.
+- Daily: GitHub Actions and provider health review.
+- Before every production deploy: readiness, typecheck, tests, and build.
 - Monthly: disaster recovery exercise.
 
-## Nightly Audit
+## Operational Audit
 
-`.github/workflows/nightly-ops-audit.yml` runs:
-
-- `npm run readiness:check`
-- `npm run pulse:report`
-- `npm run pulse:ci`
-
-Artifacts from that run must be retained for forensic inspection.
+GitHub Actions and deployment workflows must retain build, test, and readiness artifacts for forensic inspection.
 
 ## Definition of Healthy Production
 

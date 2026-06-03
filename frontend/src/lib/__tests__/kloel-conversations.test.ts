@@ -28,6 +28,8 @@ vi.mock('../api/core', () => ({
 
 import { apiFetch } from '../api/core';
 import {
+  loadKloelThreadMessages,
+  searchKloelThreads,
   sendAuthenticatedKloelMessage,
   streamAuthenticatedKloelMessage,
 } from '../kloel-conversations';
@@ -141,6 +143,47 @@ describe('sendAuthenticatedKloelMessage', () => {
     await expect(promise).rejects.toThrow('Aborted');
     expectSyncKloelRequest(controller.signal);
     expect(mutateMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('loadKloelThreadMessages', () => {
+  beforeEach(() => {
+    apiFetchMock.mockReset();
+  });
+
+  it('rejects malformed successful message payloads instead of fake empty history', async () => {
+    apiFetchMock.mockResolvedValue({ status: 200, data: { items: [] } });
+
+    await expect(loadKloelThreadMessages('thread-1')).rejects.toThrow(
+      'Invalid Kloel thread messages payload',
+    );
+  });
+
+  it('returns real wrapped thread messages from the backend contract', async () => {
+    const message = {
+      id: 'msg-1',
+      role: 'assistant' as const,
+      content: 'Resposta real',
+      metadata: { source: 'kloel' },
+      createdAt: '2026-06-01T13:00:00.000Z',
+    };
+    apiFetchMock.mockResolvedValue({ status: 200, data: [message] });
+
+    await expect(loadKloelThreadMessages('thread-1')).resolves.toEqual([message]);
+  });
+});
+
+describe('searchKloelThreads', () => {
+  beforeEach(() => {
+    apiFetchMock.mockReset();
+  });
+
+  it('rejects malformed successful search payloads instead of fake empty results', async () => {
+    apiFetchMock.mockResolvedValue({ status: 200, data: [{ id: 'thread-1', title: 42 }] });
+
+    await expect(searchKloelThreads('pdrn')).rejects.toThrow(
+      'Invalid Kloel thread search payload',
+    );
   });
 });
 

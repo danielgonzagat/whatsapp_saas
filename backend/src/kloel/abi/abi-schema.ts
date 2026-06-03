@@ -216,9 +216,9 @@ export interface AbiValenceSection {
 }
 
 // ---------------------------------------------------------------------------
-// 3.11 pulseTruth
+// 3.11 readinessTruth
 // ---------------------------------------------------------------------------
-interface AbiPulseGateSnapshot {
+interface AbiReadinessGateSnapshot {
   readonly gateName: string;
   readonly status: 'PASS' | 'FAIL';
   readonly mode: 'log_only' | 'hard_fail';
@@ -231,10 +231,10 @@ interface AbiCertificationVerdict {
   readonly measuredAt: string;
 }
 
-export interface AbiPulseTruth {
+export interface AbiReadinessTruth {
   readonly noOverclaimStatus: 'PASS' | 'WARN' | 'FAIL';
   readonly capabilityHealthScore: number;
-  readonly gates: readonly AbiPulseGateSnapshot[];
+  readonly gates: readonly AbiReadinessGateSnapshot[];
   readonly certificationVerdict: AbiCertificationVerdict;
   readonly overclaimRisk: number;
 }
@@ -330,7 +330,7 @@ export interface CognitiveStateAbi {
   readonly memory: AbiMemory;
   readonly capabilities: AbiCapabilities;
   readonly valence: AbiValenceSection;
-  readonly pulseTruth: AbiPulseTruth;
+  readonly readinessTruth: AbiReadinessTruth;
   readonly workspaceLocalProfile?: AbiWorkspaceLocalProfile;
   readonly wisdomContext?: readonly AbiWisdomPattern[];
   readonly roleContext?: AbiRoleContext;
@@ -351,6 +351,6 @@ export const ABI_REQUIRED_KEYS = [
   'memory',
   'capabilities',
   'valence',
-  'pulseTruth',
+  'readinessTruth',
   'currentInput',
 ] as const;

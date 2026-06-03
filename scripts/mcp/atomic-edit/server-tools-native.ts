@@ -247,6 +247,10 @@ export function registerToolsNative(server: McpServer): void {
         strictness: z.enum(STRICTNESS).optional(),
         maxFiles: z.number().int().min(1).max(500).optional(),
         preview: z.boolean().optional(),
+        proofOfIncorrectness: z
+          .string()
+          .optional()
+          .describe('required when the structural rewrite removes/replaces bytes: proof that removed bytes are non-correct/negative'),
       },
     },
     async (a) => {
@@ -298,7 +302,7 @@ export function registerToolsNative(server: McpServer): void {
           }
           plan.push({ file: abs, edits });
         }
-        return applyMultiFilePlan(plan, 'atomic_ast_edit', a.preview ?? false);
+        return applyMultiFilePlan(plan, 'atomic_ast_edit', a.preview ?? false, a.proofOfIncorrectness);
       } catch (e) {
         return fail(e instanceof Error ? e.message : String(e));
       }
@@ -348,6 +352,10 @@ export function registerToolsNative(server: McpServer): void {
           )
           .optional(),
         preview: z.boolean().optional(),
+        proofOfIncorrectness: z
+          .string()
+          .optional()
+          .describe('required when the workspace edit removes/replaces bytes: proof that removed bytes are non-correct/negative'),
       },
     },
     async (a) => {
@@ -376,7 +384,7 @@ export function registerToolsNative(server: McpServer): void {
           }
         }
         if (plan.length === 0) return fail('workspace edit has no changes/documentChanges');
-        return applyMultiFilePlan(plan, 'atomic_apply_workspace_edit', a.preview ?? false);
+        return applyMultiFilePlan(plan, 'atomic_apply_workspace_edit', a.preview ?? false, a.proofOfIncorrectness);
       } catch (e) {
         return fail(e instanceof Error ? e.message : String(e));
       }

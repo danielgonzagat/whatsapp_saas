@@ -10,10 +10,7 @@ import { toPrismaJsonValue } from '../../common/prisma/prisma-json.util';
 import { FINANCIAL_TRANSACTION_OPTIONS, logLedgerWrite } from './ledger-audit.helper';
 import { creditAvailableByAdjustmentImpl } from './ledger-adjustments.helper';
 import { isLedgerIdempotencyRecoveryCode, mapBalanceToSnapshot } from './ledger-entry.helper';
-import {
-  emitPaymentSpineEvent,
-  type LedgerSpineEventName,
-} from './ledger.spine-events.helpers';
+import { emitPaymentSpineEvent, type LedgerSpineEventName } from './ledger.spine-events.helpers';
 import {
   applyAbsorptionDebit,
   assertPositiveAmount,

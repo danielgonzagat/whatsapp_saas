@@ -74,7 +74,7 @@ describe('AffiliateController', () => {
         id: 'ap-1',
         approvalMode: 'MANUAL',
       });
-      prisma.affiliateRequest.findUnique.mockResolvedValue({ id: 'req-old' });
+      prisma.affiliateRequest.findUnique.mockResolvedValue({ id: 'req-old', status: 'PENDING' });
       await expect(controller.requestAffiliation(mockReq(), 'ap-1', {})).rejects.toThrow(
         BadRequestException,
       );

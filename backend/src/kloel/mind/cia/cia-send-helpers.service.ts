@@ -4,7 +4,7 @@ import type Redis from 'ioredis';
 import { ChannelTransportRegistry } from '../../channel-transport.registry';
 import { OpsAlertService } from '../../../observability/ops-alert.service';
 import { AgentEventsService } from '../../../marketing/channels/whatsapp/agent-events.service';
-import { NON_DIGIT_RE } from '../../../common/phone';
+import { normalizePhone } from '../../../common/phone/phone-normalization.util';
 import { WHITESPACE_G_RE } from '../../../common/regex';
 import { SpineEmitterService } from '../../spine/spine-emitter.service';
 import { MindPolicyService } from '../policy/mind-policy.service';
@@ -77,7 +77,7 @@ export class CiaSendHelpersService {
     contactId?: string | null,
     phone?: string | null,
   ): string {
-    const normalizedPhone = String(phone || '').replace(NON_DIGIT_RE, '');
+    const normalizedPhone = normalizePhone(phone)?.digits ?? '';
     return `autopilot:reply:${workspaceId}:${contactId || normalizedPhone}`;
   }
 

@@ -19,6 +19,7 @@ import {
   type BlancInputTheme,
 } from './CheckoutBlanc.order-summary';
 import { BlancPaymentStep } from './CheckoutBlanc.payment-step';
+import { OrderBumpsList } from './OrderBumpsList';
 
 type CheckoutBlancProps = PublicCheckoutThemeProps;
 
@@ -88,6 +89,9 @@ export default function CheckoutBlanc({
     goStep,
     applyCoupon,
     finalizeOrder,
+    orderBumps,
+    selectedBumpIds,
+    toggleBump,
   } = useCheckoutExperience({
     product,
     config,
@@ -345,6 +349,17 @@ export default function CheckoutBlanc({
         </div>
 
         <div className="ck-col" style={{ flex: '0 0 34%', minWidth: 280 }}>
+          {step === 3 && (
+            <OrderBumpsList
+              bumps={orderBumps}
+              selectedIds={selectedBumpIds}
+              onToggle={toggleBump}
+              accentColor={colors.accent}
+              cardBg={colors.card}
+              mutedColor={colors.muted}
+              textColor={colors.text}
+            />
+          )}
           <BlancPaymentStep
             fid={fid}
             step={step}

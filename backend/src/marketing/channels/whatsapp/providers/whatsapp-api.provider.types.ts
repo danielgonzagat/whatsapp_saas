@@ -22,16 +22,6 @@ export interface SessionStatus {
   selfIds?: string[];
 }
 
-/** Qr code response shape. */
-export interface QrCodeResponse {
-  /** Success property. */
-  success: boolean;
-  /** Qr property. */
-  qr?: string;
-  /** Message property. */
-  message?: string;
-}
-
 /** Waha chat summary shape. */
 export interface WahaChatSummary {
   /** Id property. */
@@ -115,8 +105,8 @@ export interface WahaSessionOverview {
   pushName?: string | null;
 }
 
-/** Waha runtime config diagnostics shape. */
-export interface WahaRuntimeConfigDiagnostics {
+/** Meta Cloud WhatsApp runtime config diagnostics shape. */
+export interface MetaWhatsAppRuntimeConfigDiagnostics {
   /** Provider property. */
   provider: 'meta-cloud';
   /** Webhook configured property. */
@@ -141,8 +131,8 @@ export interface WahaRuntimeConfigDiagnostics {
   phoneNumberIdConfigured: boolean;
 }
 
-/** Waha session config diagnostics shape. */
-export interface WahaSessionConfigDiagnostics {
+/** Meta Cloud WhatsApp session config diagnostics shape. */
+export interface MetaWhatsAppSessionConfigDiagnostics {
   /** Session name property. */
   sessionName: string;
   /** Available property. */

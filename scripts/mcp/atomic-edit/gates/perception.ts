@@ -83,14 +83,18 @@ const unquote = (s: string): string | null => {
  */
 export async function importSpecs(content: string, rel: string): Promise<string[] | null> {
   const lang = langOf(rel);
-  const nodes = await astNodes(content, lang, new Set(['import_statement', 'call_expression']));
+  const nodes = await astNodes(content, lang, new Set(['import_statement', 'export_statement', 'call_expression']));
   if (nodes === null) return null;
   const specs: string[] = [];
   for (const n of nodes) {
     if (n.type === 'import_statement') {
-      // import { x } from 'spec'  |  import 'spec'  — the only string in the node is the specifier
+      // import { x } from 'spec' | import 'spec'
       const m = /\bfrom\s+['"]([^'"]+)['"]|^\s*import\s+['"]([^'"]+)['"]/.exec(n.text);
       if (m) specs.push((m[1] ?? m[2]) as string);
+    } else if (n.type === 'export_statement') {
+      // export { x } from 'spec' | export type { X } from 'spec' | export * from 'spec'
+      const m = /^\s*export\s+(?:type\s+)?(?:\*|\{[\s\S]*?\})\s+from\s+['"]([^'"]+)['"]/.exec(n.text);
+      if (m) specs.push(m[1]);
     } else {
       // call_expression: ONLY a require(...)/import(...) whose callee STARTS the node text.
       // Anchoring at ^ stops `it('… from "X" …')` / `foo('require("y")')` — a `from`/`require`

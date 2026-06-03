@@ -12,7 +12,7 @@ import {
   AbiEpisodicRef,
   AbiPredictions,
   AbiPerceptionSnapshot,
-  AbiPulseTruth,
+  AbiReadinessTruth,
   AbiAttention,
   AbiSalientEvent,
   AbiTruthMode,
@@ -20,7 +20,7 @@ import {
   AbiWorkingMemoryItem,
   CognitiveStateAbi,
 } from './abi-schema';
-import type { PulseTruthSnapshot } from './pulse-truth-snapshot.service';
+import type { ReadinessTruthSnapshot } from './readiness-truth-snapshot.service';
 
 /**
  * UTP-ABI-002 — Cognitive State ABI builder (shadow mode).
@@ -28,7 +28,7 @@ import type { PulseTruthSnapshot } from './pulse-truth-snapshot.service';
  * Implements PCI.2 §5 (docs/contracts/pci/02-abi-schema.md).
  *
  * Composes the ABI payload from real cognitive substrate when available
- * (lineage today; PULSE/mind/wisdom/role come online in subsequent UTPs)
+ * (lineage today; readiness/mind/wisdom/role come online in subsequent UTPs)
  * and provides honest empty/default sections for substrate not yet wired.
  *
  * "Shadow mode" means the builder runs alongside the legacy system-prompt
@@ -66,7 +66,7 @@ export interface AbiBuildInput {
     readonly consolidatedRefs?: readonly AbiConsolidatedRef[];
     readonly beliefs?: readonly AbiBelief[];
     readonly predictions?: AbiPredictions;
-    readonly pulseTruth?: AbiPulseTruth;
+    readonly readinessTruth?: AbiReadinessTruth;
     readonly valence?: AbiValenceSection;
     readonly attention?: AbiAttention;
   };
@@ -80,7 +80,7 @@ export type AbiBuildResult =
 export class AbiBuilderService {
   public constructor(
     private readonly projector: IdentityProjectorService,
-    @Optional() private readonly pulseTruthSnapshot?: PulseTruthSnapshot,
+    @Optional() private readonly readinessTruthSnapshot?: ReadinessTruthSnapshot,
   ) {}
 
   public async build(input: AbiBuildInput): Promise<AbiBuildResult> {
@@ -158,22 +158,25 @@ export class AbiBuilderService {
           windowHours: 24,
         },
       },
-      pulseTruth: this.buildPulseTruth(measuredAt, input.cognitiveSubstrate?.pulseTruth),
+      readinessTruth: this.buildReadinessTruth(
+        measuredAt,
+        input.cognitiveSubstrate?.readinessTruth,
+      ),
       currentInput: input.currentInput,
     };
 
     return { status: 'ok', abi };
   }
 
-  private buildPulseTruth(measuredAt: string, override?: AbiPulseTruth): AbiPulseTruth {
+  private buildReadinessTruth(measuredAt: string, override?: AbiReadinessTruth): AbiReadinessTruth {
     // ABI 1.1.0 additive seam (ADR-0008): caller may hydrate a REAL,
-    // spine-evidence-grounded pulseTruth. Builder stays PURE — pure
+    // spine-evidence-grounded readinessTruth. Builder stays PURE — pure
     // function of input; absent ⇒ historical static snapshot/default.
     if (override) {
       return override;
     }
-    if (this.pulseTruthSnapshot) {
-      return this.pulseTruthSnapshot.snapshot();
+    if (this.readinessTruthSnapshot) {
+      return this.readinessTruthSnapshot.snapshot();
     }
 
     return {

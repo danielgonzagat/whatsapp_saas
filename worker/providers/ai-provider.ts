@@ -7,7 +7,8 @@ import type {
   ChatCompletionMessage,
   ChatCompletionMessageParam,
 } from 'openai/resources/chat/completions';
-import { resolveWorkerOpenAIModel } from './openai-models';
+import { createOpenAIClient, resolveWorkerOpenAIModel } from './openai-models';
+import { sleep } from './whatsapp-engine.helpers';
 
 /**
  * =====================================================================
@@ -49,15 +50,11 @@ function isTransient(error: unknown): boolean {
   return false;
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 export class AIProvider {
   private openai: OpenAI;
 
   constructor(apiKey: string) {
-    this.openai = new OpenAI({ apiKey });
+    this.openai = createOpenAIClient(apiKey);
   }
 
   private resolveModel(modelOrRole?: string): string {

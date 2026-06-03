@@ -34,6 +34,7 @@ function mapApiCampaignToView(c: AnunciosCampaign): Campaign {
 
 function buildPlatformsFromStatuses(
   statuses: AnunciosPlatformStatus[],
+  apiCampaigns: AnunciosCampaign[] = [],
 ): Record<PlatformKey, PlatformData> {
   const result = { ...PLATFORM_DEFAULTS } as Record<PlatformKey, PlatformData>;
   for (const s of statuses) {
@@ -43,6 +44,30 @@ function buildPlatformsFromStatuses(
         connected: s.connected,
       };
     }
+  }
+  // Aggregate the fetched campaign metrics into each platform's headline cards;
+  // without this the War Room shows 0/--- even with synced campaigns.
+  for (const key of ['meta', 'google', 'tiktok'] as PlatformKey[]) {
+    const rows = apiCampaigns.filter((c) => ((c.platform || 'meta') as PlatformKey) === key);
+    if (rows.length === 0) {
+      continue;
+    }
+    const spend = rows.reduce((a, c) => a + (c.spend || 0), 0);
+    const revenue = rows.reduce((a, c) => a + (c.revenue || 0), 0);
+    const conversions = rows.reduce((a, c) => a + (c.conversions || 0), 0);
+    const impressions = rows.reduce((a, c) => a + (c.impressions || 0), 0);
+    const clicks = rows.reduce((a, c) => a + (c.clicks || 0), 0);
+    result[key] = {
+      ...result[key],
+      spend,
+      revenue,
+      conversions,
+      impressions,
+      clicks,
+      roas: spend > 0 ? revenue / spend : 0,
+      ctr: impressions > 0 ? (clicks / impressions) * 100 : 0,
+      cpc: clicks > 0 ? spend / clicks : 0,
+    };
   }
   return result;
 }
@@ -77,10 +102,10 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
 
   useEffect(() => {
-    if (statuses.length > 0) {
-      queueMicrotask(() => setPlatforms(buildPlatformsFromStatuses(statuses)));
+    if (statuses.length > 0 || apiCampaigns.length > 0) {
+      queueMicrotask(() => setPlatforms(buildPlatformsFromStatuses(statuses, apiCampaigns)));
     }
-  }, [statuses]);
+  }, [statuses, apiCampaigns]);
 
   useEffect(() => {
     queueMicrotask(() => {

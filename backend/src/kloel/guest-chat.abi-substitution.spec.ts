@@ -78,7 +78,7 @@ function makeValidAbi(overrides: Record<string, unknown> = {}) {
         windowHours: 24,
       },
     },
-    pulseTruth: {
+    readinessTruth: {
       noOverclaimStatus: 'PASS' as const,
       capabilityHealthScore: 1,
       gates: [],

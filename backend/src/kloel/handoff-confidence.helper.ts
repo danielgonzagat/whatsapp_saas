@@ -1,4 +1,4 @@
-import type { AbiBelief, AbiPulseTruth } from './abi/abi-schema';
+import type { AbiBelief, AbiReadinessTruth } from './abi/abi-schema';
 
 /**
  * Phase-1 confidence collector for the WAVE4_HANDOFF_DESIGN proposal:
@@ -19,7 +19,7 @@ import type { AbiBelief, AbiPulseTruth } from './abi/abi-schema';
  * Rationale:
  *  - meanBeliefConfidence: primary cognitive truth signal (avg confidence
  *    across beliefs that ABI synthesized this turn)
- *  - capabilityHealth: operational reality from PulseTruth (a system in
+ *  - capabilityHealth: operational reality from ReadinessTruth (a system in
  *    degraded health should hand off more eagerly)
  *  - overclaimRisk: 1 = max risk, penalizes fabrication-prone states
  */
@@ -37,7 +37,7 @@ export const HANDOFF_THRESHOLD = 0.4;
 
 export function computeHandoffConfidence(
   beliefs: readonly AbiBelief[] | undefined,
-  pulseTruth: AbiPulseTruth | undefined,
+  readinessTruth: AbiReadinessTruth | undefined,
 ): HandoffConfidenceSnapshot {
   const beliefArr = beliefs ?? [];
   const meanBeliefConfidence =
@@ -45,11 +45,11 @@ export function computeHandoffConfidence(
       ? beliefArr.reduce((sum, b) => sum + (Number.isFinite(b.confidence) ? b.confidence : 0), 0) /
         beliefArr.length
       : 0;
-  const capabilityHealth = Number.isFinite(pulseTruth?.capabilityHealthScore)
-    ? Number(pulseTruth?.capabilityHealthScore)
+  const capabilityHealth = Number.isFinite(readinessTruth?.capabilityHealthScore)
+    ? Number(readinessTruth?.capabilityHealthScore)
     : 0;
-  const overclaimRiskRaw = Number.isFinite(pulseTruth?.overclaimRisk)
-    ? Number(pulseTruth?.overclaimRisk)
+  const overclaimRiskRaw = Number.isFinite(readinessTruth?.overclaimRisk)
+    ? Number(readinessTruth?.overclaimRisk)
     : 0;
   const overclaimRisk = Math.min(1, Math.max(0, overclaimRiskRaw));
   const composite =

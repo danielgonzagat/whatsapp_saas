@@ -25,11 +25,8 @@ export interface WizardPanelProps {
   draft: WhatsAppSetupState;
   error: string | null;
   busyKey: string | null;
-  qrCode: string;
-  scanProgress: number;
   uploadingCount: number;
   effectiveConnection: EffectiveConnection;
-  isWahaProvider: boolean;
   selectableProducts: SelectableProduct[];
   selectedIds: Set<string>;
   selectedProductsList: SelectableProduct[];
@@ -48,11 +45,10 @@ export interface WizardPanelProps {
   ) => void;
   onToggleFollowUp: () => void;
   onActivateAi: () => void;
-  onRefreshQrCode: () => void;
   metaAuthUrl: string | null;
   isMetaProvider: boolean;
   metaConnecting: boolean;
-  onConnectMeta: (url: string) => void;
+  onConnectMeta: (url?: string | null) => void;
 }
 
 function WizardChrome({
@@ -112,11 +108,7 @@ export function WizardPanel(props: WizardPanelProps) {
       {props.step === 0 ? (
         <ConnectionStep
           effectiveConnection={props.effectiveConnection}
-          isWahaProvider={props.isWahaProvider}
-          qrCode={props.qrCode}
-          scanProgress={props.scanProgress}
           busyKey={props.busyKey}
-          onRefreshQrCode={props.onRefreshQrCode}
           metaAuthUrl={props.metaAuthUrl}
           isMetaProvider={props.isMetaProvider}
           metaConnecting={props.metaConnecting}

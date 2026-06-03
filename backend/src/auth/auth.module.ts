@@ -7,6 +7,7 @@ import { AppleLoginDiagnosticController } from './apple-login-diagnostic.control
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthTokenService } from './auth.token.service';
+import { AccountMfaService } from './account-mfa.service';
 import { AppleAuthService } from './apple-auth.service';
 import { EmailService } from './email.service';
 import { FacebookAuthService } from './facebook-auth.service';
@@ -40,6 +41,7 @@ import { getJwtExpiresIn, getJwtSecret } from './jwt-config';
   providers: [
     AuthService,
     AuthTokenService,
+    AccountMfaService,
     EmailService,
     GoogleAuthService,
     FacebookAuthService,
