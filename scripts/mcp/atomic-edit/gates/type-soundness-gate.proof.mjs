@@ -69,6 +69,19 @@ function writeNodeTypes(d) {
     'declare var process: { env: { [k: string]: string | undefined } };\n',
   );
 }
+// Scaffold an arbitrary `@types/<name>` package declaring a global ambient symbol.
+// Used to prove type-ROOT anchoring: the package exists ONLY in the tmp project's
+// node_modules/@types, never in the gate process's cwd, so the global resolves iff
+// the gate anchors type-root resolution on the tsconfig dir (not cwd).
+function writeTypesPkg(d, name, body) {
+  const td = path.join(d, 'node_modules', '@types', name);
+  fs.mkdirSync(td, { recursive: true });
+  fs.writeFileSync(
+    path.join(td, 'package.json'),
+    JSON.stringify({ name: `@types/${name}`, version: '0.0.0', types: 'index.d.ts' }),
+  );
+  fs.writeFileSync(path.join(td, 'index.d.ts'), body);
+}
 
 // 1) RED — overlay introduces a NEW type error vs a valid prior on disk.
 {
@@ -209,6 +222,58 @@ function writeNodeTypes(d) {
     res.green === false && res.reds.some((r) => r.fact.includes('TS2591')),
   );
   fs.rmSync(d, { recursive: true, force: true });
+}
+
+// 9) TYPE-ROOT ANCHORING — an explicitly listed `types: ["proj"]` that lives in the
+//    PROJECT's node_modules/@types (not the gate process's cwd) must resolve. This is
+//    the backend-monorepo class: `tsconfig.json` lists `types:["node","jest"]` but
+//    @types/jest sits in `backend/node_modules`, so every spec falsely reds `jest`
+//    /`describe` until type-root resolution is anchored on the tsconfig directory.
+{
+  const d = mkTmp();
+  writeTsconfig(d, { types: ['proj'] });
+  writeTypesPkg(d, 'proj', 'declare const __PROJ_GLOBAL__: number;\n');
+  const res = await judge(d, { 'u.ts': 'export const x: number = __PROJ_GLOBAL__;\n' }, ['u.ts']);
+  check(
+    'TYPEROOT: explicit project-local @types resolves (anchored on tsconfig dir)',
+    res.green === true && res.reds.length === 0 && !res.unjudged,
+  );
+  // Not vacuous: a genuine error in the same file still reds.
+  const bad = await judge(d, { 'u.ts': 'export const x: string = __PROJ_GLOBAL__;\n' }, ['u.ts']);
+  check(
+    'TYPEROOT: genuine TS2322 still reds with the global resolved',
+    bad.green === false && bad.reds.some((r) => r.fact.includes('TS2322')),
+  );
+  fs.rmSync(d, { recursive: true, force: true });
+}
+
+// 10) AMBIENT .d.ts — a global augmentation declared in an ambient `.d.ts` the
+//     tsconfig includes (but the changed file does not import) must resolve. This is
+//     the `window.google`/`declare global` class: the bounded single-file program
+//     would miss it and red the global; rooting the project's ambient .d.ts fixes it.
+{
+  const d = mkTmp();
+  writeTsconfig(d);
+  fs.writeFileSync(path.join(d, 'globals.d.ts'), 'declare const __AMBIENT_AUG__: number;\n');
+  const res = await judge(d, { 'consumer.ts': 'export const x: number = __AMBIENT_AUG__;\n' }, [
+    'consumer.ts',
+  ]);
+  check(
+    'AMBIENT: a global from an ambient .d.ts resolves (rooted alongside changed files)',
+    res.green === true && res.reds.length === 0 && !res.unjudged,
+  );
+  // Earned, not blanket: with NO ambient .d.ts the same global honestly reds.
+  const d2 = mkTmp();
+  writeTsconfig(d2);
+  const res2 = await judge(d2, { 'consumer.ts': 'export const x: number = __AMBIENT_AUG__;\n' }, [
+    'consumer.ts',
+  ]);
+  check(
+    'AMBIENT: the global honestly reds when no ambient .d.ts declares it',
+    res2.green === false && res2.reds.some((r) => r.fact.includes('Cannot find name')),
+  );
+  fs.rmSync(d, { recursive: true, force: true });
+  fs.rmSync(d2, { recursive: true, force: true });
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

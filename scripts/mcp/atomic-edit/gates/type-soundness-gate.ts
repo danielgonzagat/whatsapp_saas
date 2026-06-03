@@ -145,6 +145,11 @@ function diagnoseChanged(
     ts.sys,
     path.dirname(tsconfigPath),
   );
+  // The project's ambient declaration files (global augmentations like `declare
+  // global { interface Window { … } }`, `next-env.d.ts`). The real compiler loads
+  // them via the tsconfig `include`; the bounded single-file program would miss
+  // them and falsely red a global the real build resolves. Rooted below.
+  const ambientDts = parsed.fileNames.filter((f) => f.endsWith('.d.ts'));
   const options: ts.CompilerOptions = {
     ...parsed.options,
     noEmit: true,
@@ -181,7 +186,22 @@ function diagnoseChanged(
   // (see ambientTypeNames) so single-file rooting under TS ≥6.0 never reds a real
   // `process`/JSX/global as undefined — closing the type-soundness lens FP class.
   options.types = ambientTypeNames(tsconfigPath, options, host);
-  const program = ts.createProgram(changed.map(absOf), options, host);
+  // Anchor type-root resolution on the tsconfig's OWN directory so an explicitly
+  // listed type (e.g. `types: ["node","jest"]`) resolves from the PROJECT's
+  // node_modules/@types — not from the gate process's cwd, which in a monorepo
+  // need not contain the package (`@types/jest` lives in `backend/node_modules`).
+  // Without this, a respected `types` list still fails to load and every spec file
+  // falsely reds `describe`/`it`/`jest` as undefined.
+  options.typeRoots =
+    ts.getEffectiveTypeRoots({ ...options, configFilePath: tsconfigPath }, host) ??
+    options.typeRoots;
+  // Root the project's ambient .d.ts alongside the changed files so global
+  // augmentations resolve exactly as the real compiler sees them. The counts loop
+  // below iterates only `changed`, so these declarations are loaded but never judged.
+  const rootNames = [
+    ...new Set([...changed.map(absOf), ...ambientDts.map((f) => path.normalize(f))]),
+  ];
+  const program = ts.createProgram(rootNames, options, host);
   const counts = new Map<string, number>();
   const diags = new Map<string, ts.Diagnostic[]>();
   for (const rel of changed) {
