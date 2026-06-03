@@ -133,7 +133,7 @@ export class BillingCheckoutHelperService {
     if (this.stripe) {
       try {
         const sub = await this.stripe.subscriptions.retrieve(stripeSubscriptionId);
-        workspaceId = this.resolveWorkspaceId(sub);
+        workspaceId = await this.resolveWorkspaceId(sub);
       } catch {
         this.logger.debug(
           'Unable to resolve workspace from Stripe subscription; checking local subscription.',
@@ -238,12 +238,31 @@ export class BillingCheckoutHelperService {
     }
   }
 
-  private resolveWorkspaceId(subscription: StripeSubscription): string | null {
+  /**
+   * Resolve the REAL workspaceId for a Stripe subscription.
+   *
+   * Canonical mapping (mirrors {@link BillingWebhookService.resolveWorkspaceId}):
+   * 1. `subscription.metadata.workspaceId` when explicitly stamped.
+   * 2. Otherwise map the Stripe customer id to the owning workspace via
+   *    `workspace.stripeCustomerId === customer → workspace.id`.
+   *
+   * NEVER returns the raw Stripe customer id (`cus_...`) — that is a Stripe
+   * identifier, not a workspaceId, and leaking it cross-tenant would let one
+   * tenant's billing event mutate another's records.
+   */
+  private async resolveWorkspaceId(subscription: StripeSubscription): Promise<string | null> {
     const metaWs = subscription.metadata?.workspaceId;
     if (metaWs) {
       return metaWs;
     }
     const customerId = subscription.customer as string;
-    return customerId || null;
+    if (!customerId) {
+      return null;
+    }
+    const ws = await this.prisma.workspace.findFirst({
+      where: { stripeCustomerId: customerId },
+      select: { id: true },
+    });
+    return ws?.id || null;
   }
 }
