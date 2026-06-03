@@ -1,8 +1,8 @@
 import type { ProviderSessionSnapshot } from '../provider-settings.types';
 import type { SessionStatus } from '../providers/provider-registry.types';
 import type {
-  WahaRuntimeConfigDiagnostics,
-  WahaSessionConfigDiagnostics,
+  MetaWhatsAppRuntimeConfigDiagnostics,
+  MetaWhatsAppSessionConfigDiagnostics,
 } from '../providers/whatsapp-api.provider.types';
 
 import {
@@ -13,7 +13,7 @@ import {
   readText,
 } from './whatsapp-api.controller.helpers';
 
-const runtimeHealthy = (): WahaRuntimeConfigDiagnostics => ({
+const runtimeHealthy = (): MetaWhatsAppRuntimeConfigDiagnostics => ({
   provider: 'meta-cloud',
   webhookConfigured: true,
   inboundEventsConfigured: true,
@@ -27,7 +27,7 @@ const runtimeHealthy = (): WahaRuntimeConfigDiagnostics => ({
   phoneNumberIdConfigured: true,
 });
 
-const sessionHealthy = (): WahaSessionConfigDiagnostics => ({
+const sessionHealthy = (): MetaWhatsAppSessionConfigDiagnostics => ({
   sessionName: 'workspace-1',
   available: true,
   rawStatus: 'WORKING',
@@ -177,7 +177,7 @@ describe('whatsapp-api.controller.helpers', () => {
     });
 
     it('flags meta_session_config_unavailable when diagnostics offline but session is connected', () => {
-      const sessionDiag: WahaSessionConfigDiagnostics = {
+      const sessionDiag: MetaWhatsAppSessionConfigDiagnostics = {
         ...sessionHealthy(),
         available: false,
       };
@@ -192,7 +192,7 @@ describe('whatsapp-api.controller.helpers', () => {
     });
 
     it('omits meta_session_config_unavailable when session is disconnected', () => {
-      const sessionDiag: WahaSessionConfigDiagnostics = {
+      const sessionDiag: MetaWhatsAppSessionConfigDiagnostics = {
         ...sessionHealthy(),
         available: false,
       };

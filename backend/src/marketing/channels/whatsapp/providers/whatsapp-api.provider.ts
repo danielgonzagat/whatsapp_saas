@@ -16,8 +16,8 @@ import {
 import type {
   SessionStatus,
   WahaLidMapping,
-  WahaRuntimeConfigDiagnostics,
-  WahaSessionConfigDiagnostics,
+  MetaWhatsAppRuntimeConfigDiagnostics,
+  MetaWhatsAppSessionConfigDiagnostics,
   WahaSessionOverview,
 } from './whatsapp-api.provider.types';
 
@@ -26,8 +26,8 @@ export type {
   WahaChatMessage,
   WahaChatSummary,
   WahaLidMapping,
-  WahaRuntimeConfigDiagnostics,
-  WahaSessionConfigDiagnostics,
+  MetaWhatsAppRuntimeConfigDiagnostics,
+  MetaWhatsAppSessionConfigDiagnostics,
   WahaSessionOverview,
 } from './whatsapp-api.provider.types';
 
@@ -46,7 +46,7 @@ export class WhatsAppApiProvider {
   }
 
   /** Get runtime config diagnostics. */
-  getRuntimeConfigDiagnostics(): WahaRuntimeConfigDiagnostics {
+  getRuntimeConfigDiagnostics(): MetaWhatsAppRuntimeConfigDiagnostics {
     return buildRuntimeConfigDiagnostics();
   }
 
@@ -410,7 +410,9 @@ export class WhatsAppApiProvider {
   }
 
   /** Get session config diagnostics. */
-  async getSessionConfigDiagnostics(workspaceId: string): Promise<WahaSessionConfigDiagnostics> {
+  async getSessionConfigDiagnostics(
+    workspaceId: string,
+  ): Promise<MetaWhatsAppSessionConfigDiagnostics> {
     const details = await this.metaWhatsApp.getPhoneNumberDetails(workspaceId);
     return buildSessionConfigDiagnosticsPayload({
       sessionName: this.getResolvedSessionId(workspaceId),

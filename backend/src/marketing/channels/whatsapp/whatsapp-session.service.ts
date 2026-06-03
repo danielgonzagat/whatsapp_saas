@@ -6,7 +6,7 @@ import { forEachSequential } from '../../../common/async-sequence';
 import { WhatsAppProviderRegistry, type SessionStatus } from './providers/provider-registry';
 import {
   WhatsAppApiProvider,
-  type WahaRuntimeConfigDiagnostics,
+  type MetaWhatsAppRuntimeConfigDiagnostics,
 } from './providers/whatsapp-api.provider';
 import { normalizeJsonObjExt, normalizeNumber } from './whatsapp-service.helpers';
 import { asProviderSettings, type ProviderSettings } from './provider-settings.types';
@@ -174,7 +174,7 @@ export class WhatsappSessionService {
     const issues = this.validateWorkspaceProvider(workspace);
     const pt = await this.providerRegistry.getProviderType(ws);
     const d: {
-      webhook: WahaRuntimeConfigDiagnostics;
+      webhook: MetaWhatsAppRuntimeConfigDiagnostics;
       session: (SessionStatus & { error?: string }) | null;
     } = {
       webhook: this.whatsappApi.getRuntimeConfigDiagnostics(),
