@@ -64,12 +64,7 @@
  *    judged. This removes non-code false positives without hiding real runtime access.
  */
 import { blankComments } from '../connection-gate.js';
-import {
-  type GateContext,
-  type GateModule,
-  type GateRed,
-  type GateResult,
-} from './contract.js';
+import { type GateContext, type GateModule, type GateRed, type GateResult } from './contract.js';
 
 // ─────────────────────────── the schema dictionary ───────────────────────────
 
@@ -285,11 +280,19 @@ function collectPrismaAnyRefs(rawBody: string): PrismaAnyRef[] {
  */
 function collectRawTableRefs(rawBody: string): { refs: RawTableRef[]; dynamicRegions: number } {
   const body = blankComments(rawBody);
+  // Locate REAL `$queryRaw` tags only. A `$queryRaw` token embedded INSIDE an outer
+  // string/template literal — a test fixture (`'… $queryRaw`…`'`), a doc example —
+  // is not a live query; it must never be reddened. So find the tag token in the
+  // literal-blanked LOCATOR (where such embedded tokens are whitespace), but read the
+  // SQL region from `body` (literals preserved) so a genuine tagged-template's SQL
+  // stays intact. `blankJsLiteralText` is length-preserving, so locator/body indices
+  // align. Mirrors collectPrismaAnyRefs, which already blanks literal text first.
+  const locator = blankJsLiteralText(body);
   const out: RawTableRef[] = [];
   let dynamicRegions = 0;
   const rawTagRe = /\$queryRaw(?:Unsafe)?/g;
   let m: RegExpExecArray | null;
-  while ((m = rawTagRe.exec(body)) !== null) {
+  while ((m = rawTagRe.exec(locator)) !== null) {
     const region = sqlRegionAfter(body, m.index + m[0].length);
     if (region === null) continue;
     const { text, start } = region;
@@ -325,7 +328,11 @@ function collectRawTableRefs(rawBody: string): { refs: RawTableRef[]; dynamicReg
 function sqlRegionAfter(body: string, idx: number): { text: string; start: number } | null {
   // skip whitespace
   let i = idx;
-  while (i < body.length && (body[i] === ' ' || body[i] === '\t' || body[i] === '\n' || body[i] === '\r')) i += 1;
+  while (
+    i < body.length &&
+    (body[i] === ' ' || body[i] === '\t' || body[i] === '\n' || body[i] === '\r')
+  )
+    i += 1;
   // generic type arg like $queryRaw<{...}[]>` — skip a balanced <…> if present
   if (body[i] === '<') {
     let depth = 0;
@@ -339,7 +346,11 @@ function sqlRegionAfter(body: string, idx: number): { text: string; start: numbe
         }
       }
     }
-    while (i < body.length && (body[i] === ' ' || body[i] === '\t' || body[i] === '\n' || body[i] === '\r')) i += 1;
+    while (
+      i < body.length &&
+      (body[i] === ' ' || body[i] === '\t' || body[i] === '\n' || body[i] === '\r')
+    )
+      i += 1;
   }
   if (body[i] === '`') {
     // template literal region up to the matching (unescaped) backtick
