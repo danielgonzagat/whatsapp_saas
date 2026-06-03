@@ -38,3 +38,18 @@ Additional migration gate proof for `abb90d1cc` on 2026-06-03:
   `zz_20260602150000_add_site_legacy_id`.
 - `DATABASE_URL=postgresql://postgres:postgres@localhost:55432/whatsapp_saas_test npm --prefix backend run prisma:validate`:
   `schema.prisma` is valid.
+
+Additional PR gate proof for the 2026-06-03 gate-recovery commits:
+
+- The PULSE spec deletions are approved as part of the PR 484 cleanup and are
+  recorded in `ops/test-deletion-approvals.json`; the deleted specs imported
+  `scripts/pulse/**` modules that were already removed by the approved cleanup.
+- `npm run check:tests`: passed with 1547 test files and 34622 `expect()` calls.
+- `npm run check:casts`: passed after replacing the PERSON backfill runner double
+  cast with a typed Prisma adapter.
+- `npm run check:queries`: passed after making the PERSON backfill runner
+  `workspaceId` filters explicit in Prisma query literals.
+- `npm --prefix backend run typecheck`: passed after the typed Prisma adapter
+  change.
+- `npm run check:all`: passed all gates locally after the deletion approvals and
+  runner adapter fixes.
