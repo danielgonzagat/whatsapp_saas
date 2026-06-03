@@ -30,6 +30,7 @@ type MockPrisma = {
     updateMany: FlexMock;
   };
   message: { create: FlexMock };
+  mindMessage: { create: FlexMock };
   $transaction: FlexMock;
 };
 
@@ -168,6 +169,7 @@ describe('InboxService', () => {
         updateMany: jest.fn().mockResolvedValue({ count: 1 }) as FlexMock,
       },
       message: { create: jest.fn() as FlexMock },
+      mindMessage: { create: jest.fn().mockResolvedValue({ id: 'mind-1' }) as FlexMock },
       $transaction: jest.fn() as FlexMock,
     };
     gateway = { emitToWorkspace: jest.fn() };
@@ -441,6 +443,88 @@ describe('InboxService', () => {
         channel: 'WHATSAPP',
         status: 'PENDING',
       });
+    });
+  });
+
+  describe('MindMessage dual-write (additive, flag-gated)', () => {
+    const FLAG = 'KLOEL_MINDMESSAGE_DUALWRITE';
+    let prevFlag: string | undefined;
+
+    beforeEach(() => {
+      prevFlag = process.env[FLAG];
+      const tx = buildTxClient();
+      prisma.$transaction.mockImplementation(async (cb: (tx: TxClientMock) => Promise<unknown>) =>
+        cb(tx),
+      );
+    });
+
+    afterEach(() => {
+      if (prevFlag === undefined) {
+        delete process.env[FLAG];
+      } else {
+        process.env[FLAG] = prevFlag;
+      }
+    });
+
+    it('does NOT write to prisma.mindMessage when the flag is OFF', async () => {
+      delete process.env[FLAG];
+
+      await service.saveMessage({
+        workspaceId: 'ws-1',
+        contactId: 'contact-1',
+        content: 'hi',
+        direction: 'INBOUND',
+      });
+
+      expect(prisma.mindMessage.create).not.toHaveBeenCalled();
+    });
+
+    it('dual-writes to prisma.mindMessage with source=channel and role=user for INBOUND when the flag is ON', async () => {
+      process.env[FLAG] = 'true';
+
+      await service.saveMessage({
+        workspaceId: 'ws-1',
+        contactId: 'contact-1',
+        content: 'hi there',
+        direction: 'INBOUND',
+      });
+
+      expect(prisma.mindMessage.create).toHaveBeenCalledTimes(1);
+      expect(prisma.mindMessage.create).toHaveBeenCalledWith({
+        data: { workspaceId: 'ws-1', source: 'channel', role: 'user', content: 'hi there' },
+      });
+    });
+
+    it('maps OUTBOUND direction to role=assistant when the flag is ON', async () => {
+      process.env[FLAG] = 'true';
+
+      await service.saveMessage({
+        workspaceId: 'ws-1',
+        contactId: 'contact-1',
+        content: 'reply',
+        direction: 'OUTBOUND',
+        silent: true,
+      });
+
+      expect(prisma.mindMessage.create).toHaveBeenCalledWith({
+        data: { workspaceId: 'ws-1', source: 'channel', role: 'assistant', content: 'reply' },
+      });
+    });
+
+    it('never breaks the legacy write when the dual-write throws (flag ON)', async () => {
+      process.env[FLAG] = 'true';
+      prisma.mindMessage.create.mockRejectedValueOnce(new Error('mind boom'));
+
+      const result = await service.saveMessage({
+        workspaceId: 'ws-1',
+        contactId: 'contact-1',
+        content: 'hi',
+        direction: 'INBOUND',
+      });
+
+      // Legacy write succeeded and is returned despite the dual-write failure.
+      expect(result).toBeDefined();
+      expect(prisma.mindMessage.create).toHaveBeenCalledTimes(1);
     });
   });
 });

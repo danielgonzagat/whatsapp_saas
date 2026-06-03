@@ -14,6 +14,7 @@ import {
   getOrCreateConversationWithClient,
   saveMessageInTx,
 } from './inbox.conversation.helpers';
+import { isMindMessageDualWriteEnabled } from '../kloel/mind/aliases/mindmessage-dualwrite.flag';
 
 /** Inbox service. */
 @Injectable()
@@ -26,6 +27,52 @@ export class InboxService {
     private webhookDispatcher: WebhookDispatcherService,
     private channelTransports: ChannelTransportRegistry,
   ) {}
+
+  /**
+   * ADDITIVE, flag-gated, best-effort dual-write of a channel/inbound message
+   * to the canonical `RAC_MindMessage` table (currently writer-less). Behind
+   * `KLOEL_MINDMESSAGE_DUALWRITE` (default OFF). Runs strictly AFTER the
+   * legacy `RAC_Message` write has COMMITTED (outside the inbox $transaction,
+   * alongside the existing WebSocket/webhook projections), so it can NEVER
+   * abort the atomic message+conversation write nor add latency to it under a
+   * rollback. Any failure is swallowed with a warn-log. No read path depends
+   * on this. `source: 'channel'` is the unified-table discriminator.
+   *
+   * Field-gap check mirrors the merged dashboard dual-write: `RAC_MindMessage`
+   * requires `workspaceId`, `role`, and `content`. The legacy channel message
+   * carries `direction` (INBOUND/OUTBOUND), not `role`, so it is mapped to the
+   * canonical role vocabulary (INBOUND → 'user', OUTBOUND → 'assistant'). If
+   * any required field is missing/empty the dual-write is skipped.
+   */
+  private async dualWriteChannelMindMessage(message: {
+    workspaceId: string;
+    content: string;
+    direction: string;
+  }): Promise<void> {
+    if (!isMindMessageDualWriteEnabled()) {
+      return;
+    }
+    const role = message.direction === 'OUTBOUND' ? 'assistant' : 'user';
+    if (!message.workspaceId || !message.content) {
+      return;
+    }
+    try {
+      await this.prisma.mindMessage.create({
+        data: {
+          workspaceId: message.workspaceId,
+          source: 'channel',
+          role,
+          content: message.content,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(
+        `MindMessage dual-write failed (workspaceId=${message.workspaceId}, ` +
+          `direction=${message.direction}, source=channel); legacy Message write ` +
+          `committed and is unaffected: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
 
   /** List agents. */
   async listAgents(workspaceId: string) {
@@ -178,6 +225,15 @@ export class InboxService {
       (tx) => saveMessageInTx(tx, data, messageCreatedAt, this.logger),
       { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
     );
+
+    // ADDITIVE, flag-gated, best-effort canonical dual-write. Runs AFTER the
+    // transaction commits — like the projections below — so it can never abort
+    // the durable message write. Default OFF (see helper).
+    await this.dualWriteChannelMindMessage({
+      workspaceId: data.workspaceId,
+      content: data.content,
+      direction: data.direction,
+    });
 
     // 4. Post-commit projections (WebSocket + webhook). These happen
     //    OUTSIDE the transaction — at-least-once delivery on top of the

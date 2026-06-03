@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { isMindMessageDualWriteEnabled } from './mind/aliases/mindmessage-dualwrite.flag';
 import { type KloelStreamEvent } from './kloel-stream-events';
 import { KloelThreadSummaryService } from './kloel-thread-summary.service';
 import OpenAI from 'openai';
@@ -40,6 +41,44 @@ export class KloelThreadService {
     private readonly summaryService: KloelThreadSummaryService,
   ) {
     this.logger.log('KloelThreadService initialized');
+  }
+
+  /**
+   * ADDITIVE, flag-gated, best-effort dual-write of a thread message to the
+   * canonical `RAC_MindMessage` table (currently writer-less). Behind
+   * `KLOEL_MINDMESSAGE_DUALWRITE` (default OFF). Any failure here is swallowed
+   * with a warn-log so it can NEVER break the legacy `RAC_ChatMessage` write
+   * that the caller already performed. No read path depends on this.
+   * `source: 'thread'` is the unified-table discriminator recording which
+   * legacy surface the row came from.
+   *
+   * Field-gap check mirrors the merged dashboard dual-write: `workspaceId`,
+   * `role`, and `content` are all required by `RAC_MindMessage`; if any is
+   * missing/empty the dual-write is skipped (the legacy write is unaffected).
+   */
+  private async dualWriteThreadMindMessage(
+    workspaceId: string,
+    role: string,
+    content: string,
+  ): Promise<void> {
+    if (!isMindMessageDualWriteEnabled()) {
+      return;
+    }
+    if (!workspaceId || !role || !content) {
+      return;
+    }
+    try {
+      await this.prisma.mindMessage.create({
+        data: { workspaceId, source: 'thread', role, content },
+      });
+    } catch (error) {
+      this.logger.warn(
+        `MindMessage dual-write failed (workspaceId=${workspaceId}, role=${role}, ` +
+          `source=thread); legacy ChatMessage write succeeded and is unaffected: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+      );
+    }
   }
 
   async resolveThread(
@@ -172,6 +211,7 @@ export class KloelThreadService {
       },
       select: { id: true },
     });
+    await this.dualWriteThreadMindMessage(workspaceId, 'user', userMessage);
     await this.touchThread(threadId, workspaceId);
     return created;
   }
@@ -195,6 +235,7 @@ export class KloelThreadService {
       },
       select: { id: true },
     });
+    await this.dualWriteThreadMindMessage(workspaceId, 'assistant', assistantMessage);
     await this.touchThread(threadId, workspaceId);
     return created;
   }

@@ -12,6 +12,7 @@ type ThreadPrismaMock = {
     findMany: jest.Mock;
     count: jest.Mock;
   };
+  mindMessage: { create: jest.Mock };
 };
 describe('KloelThreadService', () => {
   let service: KloelThreadService;
@@ -38,6 +39,7 @@ describe('KloelThreadService', () => {
         findMany: jest.fn().mockResolvedValue([]),
         count: jest.fn().mockResolvedValue(0),
       },
+      mindMessage: { create: jest.fn().mockResolvedValue({ id: 'mind-1' }) },
     };
     summaryService = {
       maybeGenerateThreadTitle: jest.fn().mockResolvedValue('Título'),
@@ -218,6 +220,72 @@ describe('KloelThreadService', () => {
           data: assistantDataMatcher,
         }),
       );
+    });
+  });
+  describe('MindMessage dual-write (additive, flag-gated)', () => {
+    const FLAG = 'KLOEL_MINDMESSAGE_DUALWRITE';
+    let prevFlag: string | undefined;
+    beforeEach(() => {
+      prevFlag = process.env[FLAG];
+    });
+    afterEach(() => {
+      if (prevFlag === undefined) {
+        delete process.env[FLAG];
+      } else {
+        process.env[FLAG] = prevFlag;
+      }
+    });
+
+    it('does NOT write to prisma.mindMessage when the flag is OFF (user)', async () => {
+      delete process.env[FLAG];
+      await service.persistUserThreadMessage('thread-1', wsId, 'Olá');
+      expect(prisma.chatMessage.create).toHaveBeenCalledTimes(1);
+      expect(prisma.mindMessage.create).not.toHaveBeenCalled();
+    });
+
+    it('does NOT write to prisma.mindMessage when the flag is OFF (assistant)', async () => {
+      delete process.env[FLAG];
+      await service.persistAssistantThreadMessage('thread-1', wsId, 'Resposta');
+      expect(prisma.mindMessage.create).not.toHaveBeenCalled();
+    });
+
+    it('dual-writes source=thread role=user when the flag is ON', async () => {
+      process.env[FLAG] = 'true';
+      await service.persistUserThreadMessage('thread-1', wsId, 'Pergunta do usuário');
+      expect(prisma.mindMessage.create).toHaveBeenCalledTimes(1);
+      expect(prisma.mindMessage.create).toHaveBeenCalledWith({
+        data: { workspaceId: wsId, source: 'thread', role: 'user', content: 'Pergunta do usuário' },
+      });
+    });
+
+    it('dual-writes source=thread role=assistant when the flag is ON', async () => {
+      process.env[FLAG] = 'true';
+      await service.persistAssistantThreadMessage('thread-1', wsId, 'Resposta do assistente');
+      expect(prisma.mindMessage.create).toHaveBeenCalledWith({
+        data: {
+          workspaceId: wsId,
+          source: 'thread',
+          role: 'assistant',
+          content: 'Resposta do assistente',
+        },
+      });
+    });
+
+    it('skips the dual-write when the field-gap check fails (empty content)', async () => {
+      process.env[FLAG] = 'true';
+      await service.persistUserThreadMessage('thread-1', wsId, '');
+      // Legacy write still happens; canonical dual-write is skipped (content empty).
+      expect(prisma.chatMessage.create).toHaveBeenCalledTimes(1);
+      expect(prisma.mindMessage.create).not.toHaveBeenCalled();
+    });
+
+    it('never breaks the legacy write when the dual-write throws (flag ON)', async () => {
+      process.env[FLAG] = 'true';
+      prisma.mindMessage.create.mockRejectedValueOnce(new Error('mind boom'));
+      const result = await service.persistUserThreadMessage('thread-1', wsId, 'Olá');
+      // Legacy write succeeded and is returned despite the dual-write failure.
+      expect(result).toEqual({ id: 'msg-1' });
+      expect(prisma.chatThread.updateMany).toHaveBeenCalled();
     });
   });
   describe('buildStoredResponseVersions', () => {
