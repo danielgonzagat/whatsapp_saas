@@ -14,7 +14,8 @@
  *
  * Envelope (STRICT): every command is classified. A small allowlist of read-only
  * commands may run with trace-only receipts; every mutable-or-unknown command
- * requires proveEffect:true or rollbackOnNonZero:true before it is spawned. Known
+ * requires proveEffect:true before it is spawned. rollbackOnNonZero is recovery
+ * after proof, never admission. Known
  * network/database/provider/remote-host/package/runtime-control commands are
  * external-or-host-effect and refused before spawn, because a filesystem snapshot
  * cannot prove those effects. The byte-effect snapshot must be complete, or the
@@ -58,20 +59,40 @@ const FORBIDDEN: { re: RegExp; reason: string }[] = [
     reason:
       'git restore is absolutely forbidden in this repo — it can silently destroy uncommitted work. Restore from an explicit snapshot (git checkout <ref> -- <path>) or stop.',
   },
-  { re: /--no-verify\b/, reason: '--no-verify bypasses husky/commit gates (forbidden by CLAUDE.md).' },
-  { re: /\[(?:skip ci|ci skip|skip codacy|codacy skip)\]/i, reason: 'CI/Codacy skip tags are forbidden bypasses.' },
-  { re: /\bprisma\s+db\s+push\b/, reason: 'prisma db push is forbidden in this repo (CI/Docker/automation).' },
+  {
+    re: /--no-verify\b/,
+    reason: '--no-verify bypasses husky/commit gates (forbidden by CLAUDE.md).',
+  },
+  {
+    re: /\[(?:skip ci|ci skip|skip codacy|codacy skip)\]/i,
+    reason: 'CI/Codacy skip tags are forbidden bypasses.',
+  },
+  {
+    re: /\bprisma\s+db\s+push\b/,
+    reason: 'prisma db push is forbidden in this repo (CI/Docker/automation).',
+  },
   {
     re: /\bgit\s+push\b[^\n]*--force(?!-with-lease)/,
-    reason: 'plain --force push is forbidden; use --force-with-lease and never to a protected branch.',
+    reason:
+      'plain --force push is forbidden; use --force-with-lease and never to a protected branch.',
   },
-  { re: /\bgit\s+push\b[^\n]*\s-f(?:\s|$)/, reason: 'force push (-f) is forbidden; use --force-with-lease.' },
-  { re: /\brm\s+-[a-z]*r[a-z]*f?\s+(?:\/(?:\s|$)|~|\$HOME|\*)/, reason: 'recursive remove of a root/home/glob path refused.' },
-  { re: /\bmkfs\b|\bdd\s+if=|>\s*\/dev\/(?:sd|nvme|disk)/, reason: 'disk-destructive command refused.' },
+  {
+    re: /\bgit\s+push\b[^\n]*\s-f(?:\s|$)/,
+    reason: 'force push (-f) is forbidden; use --force-with-lease.',
+  },
+  {
+    re: /\brm\s+-[a-z]*r[a-z]*f?\s+(?:\/(?:\s|$)|~|\$HOME|\*)/,
+    reason: 'recursive remove of a root/home/glob path refused.',
+  },
+  {
+    re: /\bmkfs\b|\bdd\s+if=|>\s*\/dev\/(?:sd|nvme|disk)/,
+    reason: 'disk-destructive command refused.',
+  },
   { re: /:\s*\(\s*\)\s*\{[^}]*\}\s*;\s*:/, reason: 'fork bomb refused.' },
   {
     re: /(?:chmod|chflags|mv|rm|cp|tee|>>?)\s*[^\n]*no-hardcoded-reality-audit/,
-    reason: 'the locked PULSE auditor (no-hardcoded-reality-audit.ts) must not be moved/chmod/overwritten.',
+    reason:
+      'the locked PULSE auditor (no-hardcoded-reality-audit.ts) must not be moved/chmod/overwritten.',
   },
   // Catchable evasions surfaced by the closeout audit. A flat regex over a
   // `/bin/bash -c` string is best-effort DEFENSE-IN-DEPTH, NOT a boundary —
@@ -79,12 +100,25 @@ const FORBIDDEN: { re: RegExp; reason: string }[] = [
   // mutations inside an isolated git worktree for real reversibility.
   {
     re: /\bgit\s+push\b[^\n]*\s\+[^\s:]+(?::|\s|$)/,
-    reason: 'plus-refspec force-push (git push ... +ref) is forbidden; use --force-with-lease, never to a protected branch.',
+    reason:
+      'plus-refspec force-push (git push ... +ref) is forbidden; use --force-with-lease, never to a protected branch.',
   },
-  { re: /\bfind\b[^|]*\s-delete\b/, reason: 'find ... -delete is a mass-delete; refused (use the atomic delete tool).' },
-  { re: /\|\s*(?:sh|bash|zsh|dash)\b/, reason: 'piping into a shell (| sh/bash) hides the real command from the denylist; refused.' },
-  { re: /\bgit\s+config\b[^\n]*\balias\./, reason: 'defining a git alias can smuggle a banned verb (restore / push --force); refused.' },
-  { re: /\brm\b[^|;&]*\s--recursive\b/, reason: 'rm --recursive (long-form) is refused; use the atomic delete tool.' },
+  {
+    re: /\bfind\b[^|]*\s-delete\b/,
+    reason: 'find ... -delete is a mass-delete; refused (use the atomic delete tool).',
+  },
+  {
+    re: /\|\s*(?:sh|bash|zsh|dash)\b/,
+    reason: 'piping into a shell (| sh/bash) hides the real command from the denylist; refused.',
+  },
+  {
+    re: /\bgit\s+config\b[^\n]*\balias\./,
+    reason: 'defining a git alias can smuggle a banned verb (restore / push --force); refused.',
+  },
+  {
+    re: /\brm\b[^|;&]*\s--recursive\b/,
+    reason: 'rm --recursive (long-form) is refused; use the atomic delete tool.',
+  },
 ];
 
 /**
@@ -126,6 +160,26 @@ function protectedWriteTarget(cmd: string): string | null {
   return null;
 }
 
+/**
+ * Repo-relative PROTECTED-file hits among the REALIZED byte-effect (rank-3 no-bypass).
+ * `protectedWriteTarget` reads the command STRING and so misses an obfuscated write
+ * (`node -e fs.writeFileSync`, a path built at runtime, a symlink alias). The realized
+ * effect cannot be obfuscated: this inspects every file the command actually changed
+ * (created / modified / deleted) and reports any that resolve to a protected file. Mirrors
+ * `protectedWriteTarget`'s repo-relative resolution. Pure + exported so it is unit-provable.
+ */
+export function protectedEffectHits(rootAbs: string, effects: { file: string }[]): string[] {
+  const hits: string[] = [];
+  for (const e of effects) {
+    const abs = path.isAbsolute(e.file) ? e.file : path.resolve(rootAbs, e.file);
+    const rel = path.relative(REPO_ROOT, abs).split(path.sep).join('/');
+    if (rel.startsWith('..')) continue; // outside the repo — not a repo-protected file
+    const hit = isProtectedRelative(rel);
+    if (hit) hits.push(`${rel} (matches "${hit}")`);
+  }
+  return hits;
+}
+
 function guardCommand(cmd: string): GuardVerdict {
   const c = cmd.trim();
   if (!c) return { allowed: false, reason: 'empty command' };
@@ -148,17 +202,36 @@ function guardCommand(cmd: string): GuardVerdict {
 type CommandClass = 'read-only' | 'mutable-or-unknown' | 'external-or-host-effect';
 
 const EXTERNAL_OR_HOST_EFFECT_COMMANDS: { re: RegExp; reason: string }[] = [
-  { re: /^git\s+(?:push|pull|fetch|clone|submodule|lfs)\b/, reason: 'git remote/submodule operation can change or depend on external host state' },
-  { re: /^(?:curl|wget|http)\b/, reason: 'network client effect is outside the filesystem byte snapshot' },
+  {
+    re: /^git\s+(?:push|pull|fetch|clone|submodule|lfs)\b/,
+    reason: 'git remote/submodule operation can change or depend on external host state',
+  },
+  {
+    re: /^(?:curl|wget|http)\b/,
+    reason: 'network client effect is outside the filesystem byte snapshot',
+  },
   { re: /\b(?:ssh|scp|rsync)\b/, reason: 'remote shell/file transfer can mutate another host' },
-  { re: /^(?:psql|mysql|sqlite3|redis-cli|mongosh|mongo)\b/, reason: 'database client effect is outside the filesystem byte snapshot' },
-  { re: /^(?:kubectl|helm|docker|docker-compose|podman)\b/, reason: 'orchestrator/container/host effect is outside the repo byte snapshot' },
-  { re: /^(?:railway|vercel|gh|stripe|aws|gcloud|az|flyctl|supabase|firebase)\b/, reason: 'provider CLI can mutate external runtime or cloud state' },
+  {
+    re: /^(?:psql|mysql|sqlite3|redis-cli|mongosh|mongo)\b/,
+    reason: 'database client effect is outside the filesystem byte snapshot',
+  },
+  {
+    re: /^(?:kubectl|helm|docker|docker-compose|podman)\b/,
+    reason: 'orchestrator/container/host effect is outside the repo byte snapshot',
+  },
+  {
+    re: /^(?:railway|vercel|gh|stripe|aws|gcloud|az|flyctl|supabase|firebase)\b/,
+    reason: 'provider CLI can mutate external runtime or cloud state',
+  },
   {
     re: /^(?:npm|pnpm|yarn|bun|pip|pipx|poetry|cargo|go|mvn|gradle|gem|bundle)\s+(?:install|add|update|get|publish|deploy|push)\b/,
-    reason: 'package manager install/publish/deploy can mutate network, caches, hooks, or registries',
+    reason:
+      'package manager install/publish/deploy can mutate network, caches, hooks, or registries',
   },
-  { re: /\b(?:fetch\s*\(|XMLHttpRequest|https?:\/\/|node:https|node:http)\b/, reason: 'inline runtime network access is not a filesystem byte effect' },
+  {
+    re: /\b(?:fetch\s*\(|XMLHttpRequest|https?:\/\/|node:https|node:http)\b/,
+    reason: 'inline runtime network access is not a filesystem byte effect',
+  },
 ];
 
 const READ_ONLY_COMMANDS: RegExp[] = [
@@ -227,7 +300,10 @@ function sandboxReceipt(active: boolean, writeRoot: string | null): Record<strin
 }
 
 function hostSandboxActive(): boolean {
-  return process.env.ATOMIC_HOST_SANDBOX === 'macos-sandbox-exec' && process.env.ATOMIC_HOST_ATOMIC_ONLY === '1';
+  return (
+    process.env.ATOMIC_HOST_SANDBOX === 'macos-sandbox-exec' &&
+    process.env.ATOMIC_HOST_ATOMIC_ONLY === '1'
+  );
 }
 
 function hostSandboxWriteRoot(): string | null {
@@ -250,17 +326,45 @@ function brokerSocketPath(): string | null {
  * (cwd-only writes, network denied), but the OS sandbox is applied by the
  * out-of-sandbox broker per command rather than by a nested sandbox-exec.
  */
-function brokerSandboxReceipt(writeRoot: string): Record<string, unknown> {
+function brokerSandboxReceipt(writeRoot: string | null): Record<string, unknown> {
   return {
     active: true,
     engine: 'macos-broker-sandbox',
     writeRoot,
-    fileWrites: 'cwd-only',
+    fileWrites: writeRoot ? 'cwd-only' : 'denied',
     tempRoot: writeRoot,
     network: 'denied',
     nestedSandbox: false,
     broker: true,
   };
+}
+
+function nearestExistingBrokerPath(target: string): string {
+  let current = path.resolve(target);
+  while (!fs.existsSync(current)) {
+    const next = path.dirname(current);
+    if (next === current) return current;
+    current = next;
+  }
+  return current;
+}
+
+function hostVisibleBrokerPath(target: string): string {
+  const host = process.env.ATOMIC_HOST_WRITE_ROOT?.trim();
+  if (!host) return path.resolve(target);
+  try {
+    const hostRoot = path.resolve(host);
+    const hostReal = fs.realpathSync.native(hostRoot);
+    const nearest = nearestExistingBrokerPath(target);
+    const nearestReal = fs.realpathSync.native(nearest);
+    const relNearest = path.relative(hostReal, nearestReal);
+    if (relNearest === '' || (!relNearest.startsWith('..') && !path.isAbsolute(relNearest))) {
+      return path.join(hostRoot, relNearest, path.relative(nearest, path.resolve(target)));
+    }
+  } catch {
+    // Fall through to the resolved target.
+  }
+  return path.resolve(target);
 }
 
 interface SpawnLikeResult {
@@ -281,7 +385,7 @@ interface SpawnLikeResult {
 function runViaBroker(
   command: string,
   cwd: string,
-  effectRoot: string,
+  effectRoot: string | null,
   timeoutMs: number,
   env: Record<string, string> | undefined,
   stdin: string | undefined,
@@ -299,19 +403,34 @@ function runViaBroker(
       stderr: '',
     };
   }
-  const clientPath = path.join(REPO_ROOT, 'scripts/mcp/atomic-edit/atomic-exec-broker-client.mjs');
-  const reqObj: Record<string, unknown> = { command, cwd, effectRoot, timeoutMs };
+  const clientPath = hostVisibleBrokerPath(
+    path.join(REPO_ROOT, 'scripts/mcp/atomic-edit/atomic-exec-broker-client.mjs'),
+  );
+  const brokerCwd = hostVisibleBrokerPath(cwd);
+  const brokerEffectRoot = effectRoot ? hostVisibleBrokerPath(effectRoot) : null;
+  const reqObj: Record<string, unknown> = {
+    command,
+    cwd: brokerCwd,
+    effectRoot: brokerEffectRoot,
+    timeoutMs,
+  };
   if (env) reqObj.env = env;
   if (stdin !== undefined) reqObj.stdin = stdin;
   const res = childProcess.spawnSync(process.execPath, [clientPath, sockPath], {
-    cwd,
+    cwd: brokerCwd,
     encoding: 'utf8',
     maxBuffer: 32 * 1024 * 1024,
     timeout: timeoutMs + 5000,
     input: JSON.stringify(reqObj),
   });
   if (res.error) {
-    return { error: res.error as Error & { code?: string }, status: null, signal: null, stdout: '', stderr: '' };
+    return {
+      error: res.error as Error & { code?: string },
+      status: null,
+      signal: null,
+      stdout: '',
+      stderr: '',
+    };
   }
   let reply: Record<string, unknown>;
   try {
@@ -326,7 +445,22 @@ function runViaBroker(
     };
   }
   if (reply.brokerUnreachable) {
-    return { error: new Error(String(reply.error ?? 'broker unreachable')), status: null, signal: null, stdout: '', stderr: '' };
+    return {
+      error: new Error(String(reply.error ?? 'broker unreachable')),
+      status: null,
+      signal: null,
+      stdout: '',
+      stderr: '',
+    };
+  }
+  if (reply.ok === false && typeof reply.exitCode !== 'number') {
+    return {
+      error: new Error(String(reply.error ?? 'broker refused command')),
+      status: null,
+      signal: null,
+      stdout: String(reply.stdout ?? ''),
+      stderr: String(reply.stderr ?? ''),
+    };
   }
   return {
     error: null,
@@ -361,7 +495,9 @@ function resolveCwd(input?: string): string {
     : REPO_ROOT;
   const root = resolveAllowedRootForAbsolutePath(candidate);
   if (!root) {
-    throw new Error(`atomic_exec refused: cwd escapes allowed roots (${candidate}). Allowed = repo root + registered git worktrees.`);
+    throw new Error(
+      `atomic_exec refused: cwd escapes allowed roots (${candidate}). Allowed = repo root + registered git worktrees.`,
+    );
   }
   return candidate;
 }
@@ -369,7 +505,10 @@ function resolveCwd(input?: string): string {
 function tryGit(cwd: string, args: string[]): string | null {
   try {
     return childProcess
-      .execFileSync('git', ['-C', cwd, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+      .execFileSync('git', ['-C', cwd, ...args], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      })
       .trim();
   } catch {
     return null;
@@ -418,7 +557,7 @@ export function registerToolsExec(server: McpServer): void {
         'root / a registered git worktree), a host sandbox where available (macOS sandbox-exec: no writes ' +
         'for trace-only commands; cwd-only writes for byte-effect-proven commands; network denied; ' +
         'host-launched mode delegates each command to the out-of-sandbox broker, which re-applies a fresh ' +
-        'per-command sandbox-exec and fails closed if the broker socket is absent), plus a ' +
+        'per-command sandbox-exec, allows read-only commands with no write permission, and fails closed if the broker socket is absent), plus a ' +
         'best-effort denylist (DEFENSE-IN-DEPTH — refuses git ' +
         'tags, prisma db push, force-push, pipe-to-shell, disk/auditor destroyers, and shell writes to ' +
         'governance-protected files; env-var/eval/alias indirection can still evade it), a trace receipt ' +
@@ -426,7 +565,7 @@ export function registerToolsExec(server: McpServer): void {
         'redaction on every returned/traced surface, and a hard timeout. Returns the REAL exit code (never ' +
         'fakes success): a non-zero exit comes back as {ok:false, exitCode, stdout, stderr}. Commands are ' +
         'classified conservatively: read-only allowlisted commands may run trace-only, mutable-or-unknown ' +
-        'commands require proveEffect:true or rollbackOnNonZero:true before spawn, and external-or-host-effect ' +
+        'commands require proveEffect:true before spawn; rollbackOnNonZero is recovery after proof, never admission. host-mode read-only commands run trace-only through the broker no-write sandbox, and external-or-host-effect ' +
         'commands (network/database/provider/remote-host/package/runtime-control) are refused because filesystem ' +
         'proof cannot approve external state. snapshot:true remains a ' +
         'tracked-content restore point only; byte-effect proof is the strict admission layer. Use this instead ' +
@@ -437,22 +576,36 @@ export function registerToolsExec(server: McpServer): void {
         cwd: z
           .string()
           .optional()
-          .describe('working directory (default: repo root); must resolve inside an allowed root / git worktree'),
-        timeoutMs: z.number().int().min(1000).max(600000).optional().describe('hard timeout in ms (default 120000)'),
+          .describe(
+            'working directory (default: repo root); must resolve inside an allowed root / git worktree',
+          ),
+        timeoutMs: z
+          .number()
+          .int()
+          .min(1000)
+          .max(600000)
+          .optional()
+          .describe('hard timeout in ms (default 120000)'),
         stdin: z.string().optional().describe('data piped to the command stdin'),
         env: z
           .record(z.string(), z.string())
           .optional()
-          .describe('extra env vars merged over process.env (NOT written to the trace; their values are masked from returned stdout/stderr)'),
+          .describe(
+            'extra env vars merged over process.env (NOT written to the trace; their values are masked from returned stdout/stderr)',
+          ),
         intent: z.string().optional().describe('one-line product intent, recorded in the trace'),
         snapshot: z
           .boolean()
           .optional()
-          .describe('take a non-destructive git stash snapshot before running, for rollback (default false)'),
+          .describe(
+            'take a non-destructive git stash snapshot before running, for rollback (default false)',
+          ),
         rollbackOnNonZero: z
           .boolean()
           .optional()
-          .describe('if a snapshot was taken and exit≠0, restore the working tree from it'),
+          .describe(
+            'on non-zero exit, restore already-captured state: git snapshot when snapshot:true, and byte effects only when proveEffect:true; never grants write admission',
+          ),
         proveEffect: z
           .boolean()
           .optional()
@@ -470,11 +623,18 @@ export function registerToolsExec(server: McpServer): void {
         const cwd = resolveCwd(a.cwd);
         const verdict = guardCommand(a.command);
         if (!verdict.allowed) {
-          appendTrace({ ts: startedAt, kind: 'refused', reason: verdict.reason, command: redactSecrets(a.command), cwd });
+          appendTrace({
+            ts: startedAt,
+            kind: 'refused',
+            reason: verdict.reason,
+            command: redactSecrets(a.command),
+            cwd,
+          });
           return fail(`atomic_exec refused (invariant law): ${verdict.reason}`);
         }
         const commandClass = classifyCommand(a.command);
-        const externalReason = commandClass === 'external-or-host-effect' ? externalEffectReason(a.command) : null;
+        const externalReason =
+          commandClass === 'external-or-host-effect' ? externalEffectReason(a.command) : null;
         if (externalReason) {
           const reason =
             `external-or-host-effect command refused under Y admission: ${externalReason}. ` +
@@ -493,28 +653,43 @@ export function registerToolsExec(server: McpServer): void {
         const hostSandbox = hostSandboxActive();
         const hostWriteRoot = hostSandboxWriteRoot();
         if (hostSandbox && !hostWriteRoot) {
-          const reason = 'atomic host sandbox is active but ATOMIC_HOST_WRITE_ROOT is missing or invalid.';
-          appendTrace({ ts: startedAt, kind: 'refused', reason, commandClass, command: redactSecrets(a.command), cwd });
+          const reason =
+            'atomic host sandbox is active but ATOMIC_HOST_WRITE_ROOT is missing or invalid.';
+          appendTrace({
+            ts: startedAt,
+            kind: 'refused',
+            reason,
+            commandClass,
+            command: redactSecrets(a.command),
+            cwd,
+          });
           return fail(`atomic_exec refused (host sandbox invalid): ${reason}`);
         }
-        const needsEffectProof = commandClass === 'mutable-or-unknown' || hostSandbox;
-        if (needsEffectProof && !a.proveEffect && !a.rollbackOnNonZero) {
-          const reason = hostSandbox
-            ? 'host-sandboxed atomic_exec requires proveEffect:true (or rollbackOnNonZero:true) for every command because nested no-write sandboxing is not available.'
-            : 'mutable-or-unknown command requires proveEffect:true (or rollbackOnNonZero:true) under Y admission; unproven shell effects are not byte-correct-by-construction.';
-          appendTrace({ ts: startedAt, kind: 'refused', reason, commandClass, command: redactSecrets(a.command), cwd });
+        const needsEffectProof = commandClass === 'mutable-or-unknown';
+        if (needsEffectProof && !a.proveEffect) {
+          const reason =
+            'mutable-or-unknown command requires proveEffect:true under Y admission; rollbackOnNonZero is recovery, not proof, and unproven shell effects are not byte-correct-by-construction.';
+          appendTrace({
+            ts: startedAt,
+            kind: 'refused',
+            reason,
+            commandClass,
+            command: redactSecrets(a.command),
+            cwd,
+          });
           return fail(`atomic_exec refused (effect proof required): ${reason}`);
         }
 
         const snap = a.snapshot ? gitSnapshot(cwd) : null;
-        // With the broker, host-mode commands are confined to cwd just like
-        // non-host mode (the broker re-applies a fresh per-command sandbox-exec
-        // around each command). So the effect substrate is the cwd in BOTH modes.
-        const effectRoot = cwd;
-        const effectSnap: EffectSnapshot | null = a.proveEffect || a.rollbackOnNonZero
+        // Effect proof is only for commands admitted to write. Trace-only read
+        // commands run under a no-write sandbox, so there is no cwd write surface
+        // to snapshot and no root-size cap to hide behind.
+        const effectRoot: string | null = a.proveEffect ? cwd : null;
+        const effectSnap: EffectSnapshot | null = effectRoot
           ? captureEffectSnapshot(effectRoot, {})
           : null;
-        if (effectSnap) assertCompleteEffectSnapshot(effectSnap, 'run atomic_exec with byte-effect proof');
+        if (effectSnap)
+          assertCompleteEffectSnapshot(effectSnap, 'run atomic_exec with byte-effect proof');
         const timeout = a.timeoutMs ?? 120000;
         // Host mode: per-command sandboxing is delegated to the out-of-sandbox
         // broker (macOS forbids nested sandbox-exec). It MUST be present, or we
@@ -524,20 +699,50 @@ export function registerToolsExec(server: McpServer): void {
           const reason =
             'host-sandboxed atomic_exec requires a running broker (ATOMIC_EXEC_BROKER_SOCKET is unset). ' +
             'Relaunch Claude through scripts/mcp/atomic-edit/claude-atomic-host-launcher.mjs, which starts the broker.';
-          appendTrace({ ts: startedAt, kind: 'refused', reason, commandClass, command: redactSecrets(a.command), cwd });
+          appendTrace({
+            ts: startedAt,
+            kind: 'refused',
+            reason,
+            commandClass,
+            command: redactSecrets(a.command),
+            cwd,
+          });
           return fail(`atomic_exec refused (broker required): ${reason}`);
         }
         const sandboxActive = hostSandbox ? Boolean(brokerSock) : sandboxExecAvailable();
         if (!sandboxActive) {
-          const reason = 'atomic_exec requires a real process sandbox under Y admission; ' + `${SANDBOX_EXEC} is not available on this host.`;
-          appendTrace({ ts: startedAt, kind: 'refused', reason, commandClass, command: redactSecrets(a.command), cwd });
+          const reason =
+            'atomic_exec requires a real process sandbox under Y admission; ' +
+            `${SANDBOX_EXEC} is not available on this host.`;
+          appendTrace({
+            ts: startedAt,
+            kind: 'refused',
+            reason,
+            commandClass,
+            command: redactSecrets(a.command),
+            cwd,
+          });
           return fail(`atomic_exec refused (sandbox unavailable): ${reason}`);
         }
-        const sandboxWriteRoot = effectSnap ? cwd : null;
-        const sandbox = hostSandbox ? brokerSandboxReceipt(cwd) : sandboxReceipt(true, sandboxWriteRoot);
-        const sandboxEnv: Record<string, string> = effectSnap ? { TMPDIR: effectRoot, TMP: effectRoot, TEMP: effectRoot } : {};
+        const sandboxWriteRoot = effectRoot;
+        const sandbox = hostSandbox
+          ? brokerSandboxReceipt(sandboxWriteRoot)
+          : sandboxReceipt(true, sandboxWriteRoot);
+        const sandboxEnv: Record<string, string> = {};
+        if (sandboxWriteRoot) {
+          sandboxEnv.TMPDIR = sandboxWriteRoot;
+          sandboxEnv.TMP = sandboxWriteRoot;
+          sandboxEnv.TEMP = sandboxWriteRoot;
+        }
         const res: SpawnLikeResult = hostSandbox
-          ? runViaBroker(a.command, cwd, effectRoot, timeout, { ...(a.env ?? {}), ...sandboxEnv }, a.stdin)
+          ? runViaBroker(
+              a.command,
+              cwd,
+              effectRoot,
+              timeout,
+              { ...(a.env ?? {}), ...sandboxEnv },
+              a.stdin,
+            )
           : (childProcess.spawnSync(
               SANDBOX_EXEC,
               ['-p', atomicSandboxProfile(sandboxWriteRoot), '/bin/bash', '-c', a.command],
@@ -586,7 +791,9 @@ export function registerToolsExec(server: McpServer): void {
         let rollbackScope: 'none' | 'tracked-content-only' = 'none';
         if (snap && snap.stashSha && exitCode !== 0 && a.rollbackOnNonZero) {
           try {
-            childProcess.execFileSync('git', ['-C', cwd, 'checkout', snap.stashSha, '--', '.'], { stdio: 'ignore' });
+            childProcess.execFileSync('git', ['-C', cwd, 'checkout', snap.stashSha, '--', '.'], {
+              stdio: 'ignore',
+            });
             rolledBack = true;
             rollbackScope = 'tracked-content-only';
           } catch {
@@ -602,6 +809,33 @@ export function registerToolsExec(server: McpServer): void {
         let effectRestored = 0;
         if (effectSnap && effects && exitCode !== 0 && a.rollbackOnNonZero) {
           effectRestored = rollbackEffect(effectSnap, effects);
+        }
+
+        // Govern the EFFECT, not the command (rank-3 no-bypass). A write that reached a
+        // PROTECTED file by any obfuscated means (`node -e fs.writeFileSync`, a runtime-built
+        // path, a symlink alias) slips past the command-string guard but is visible in the
+        // realized byte-effect. If any realized effect touched a protected file, reverse the
+        // WHOLE effect byte-exactly and REFUSE — protected infrastructure is never a
+        // legitimate atomic_exec target, regardless of exit code.
+        if (effectSnap && effects && effects.length > 0) {
+          const protectedHits = protectedEffectHits(effectSnap.rootAbs, effects);
+          if (protectedHits.length > 0) {
+            const reversed = rollbackEffect(effectSnap, effects);
+            appendTrace({
+              ts: startedAt,
+              kind: 'exec-protected-effect-refused',
+              intent: a.intent ?? null,
+              command: redactSecrets(a.command),
+              protectedHits,
+              reversed,
+            });
+            return fail(
+              `atomic_exec refused: the command's realized byte-effect touched protected ` +
+                `file(s) [${protectedHits.join('; ')}]. Protected infrastructure may only be ` +
+                `changed by the repo owner — never through exec. The whole effect was reversed ` +
+                `byte-exactly (${reversed} file(s) restored). Govern the effect, not the command.`,
+            );
+          }
         }
 
         appendTrace({
@@ -646,6 +880,9 @@ export function registerToolsExec(server: McpServer): void {
                   change: e.change,
                   bytesBefore: e.bytesBefore,
                   bytesAfter: e.bytesAfter,
+                  ...(e.modeBefore === undefined ? {} : { modeBefore: e.modeBefore }),
+                  ...(e.modeAfter === undefined ? {} : { modeAfter: e.modeAfter }),
+                  ...(e.metadataOnly === true ? { metadataOnly: true } : {}),
                   ...(e.atomicDiff ? { atomicDiff: redactAll(e.atomicDiff) } : {}),
                 })),
               }
