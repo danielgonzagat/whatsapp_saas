@@ -1,3 +1,6 @@
+import { formatBRLFromCents } from '@/lib/common/money';
+import { formatTime as formatClock } from '@/lib/common/format';
+
 /** Upsell data shape. */
 export interface UpsellData {
   /** Id property. */
@@ -34,16 +37,14 @@ export interface OrderUpsellsResponse {
   currentIndex: number;
 }
 
-/** Format brl. */
+/** Format brl. Re-exported from the canonical cents formatter. */
 export function formatBRL(cents: number): string {
-  return `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`;
+  return formatBRLFromCents(cents);
 }
 
-/** Format time. */
+/** Format time. Re-exported from the canonical mm:ss clock formatter. */
 export function formatTime(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return formatClock(seconds);
 }
 
 /** Parse upsells query. */

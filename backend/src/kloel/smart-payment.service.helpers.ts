@@ -1,19 +1,12 @@
 // @@index: pure helpers extracted from smart-payment.service.ts (Wave 105B)
 // All functions are side-effect-free. No Prisma, no async, no I/O.
 
-const BRL_DISPLAY_FORMATTER = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-});
+// Canonical BRL display formatter lives in `money-format.util`. Re-exported here
+// so this module's internal callers and existing importers keep resolving while
+// the duplicate definition is removed (byte-identical output).
+import { formatBrlAmount } from './money-format.util';
 
-/**
- * Format a BRL amount for display in Brazilian locale.
- * Non-finite values are rendered as zero.
- */
-export function formatBrlAmount(amount: number): string {
-  const normalized = Number.isFinite(amount) ? amount : 0;
-  return BRL_DISPLAY_FORMATTER.format(normalized);
-}
+export { formatBrlAmount };
 
 /**
  * Normalize an amount into a stable key string (rounded to 2 decimal places).
