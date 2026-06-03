@@ -32,7 +32,25 @@ type NodeSeed = readonly [
 
 const CHANNELS = ['whatsapp', 'instagram', 'tiktok', 'facebook', 'email'] as const;
 const WALLET_TABS = ['saldo', 'extrato', 'saques', 'antecipacoes', 'movimentacoes'] as const;
-const REPORT_TABS = ['vendas', 'assinaturas', 'abandonos', 'estornos'] as const;
+const REPORT_TABS = [
+  'vendas',
+  'afterpay',
+  'churn',
+  'abandonos',
+  'satisfacao',
+  'afiliados',
+  'indicadores',
+  'assinaturas',
+  'ind_prod',
+  'recusa',
+  'origem',
+  'metricas',
+  'estornos',
+  'chargeback',
+  'engajamento',
+  'envio',
+  'exportacoes',
+] as const;
 
 function toNode([id, label, area, type, route, parentId, overlayLabel]: NodeSeed): KloelGraphNode {
   return {
@@ -73,7 +91,6 @@ const CORE_ROUTE_SEEDS: readonly NodeSeed[] = [
   ['perfil-account', 'Conta', 'perfil', 'route', '/account', 'perfil', 'Conta'],
   ['kloel-chat', 'Novo Chat', 'kloel', 'route', '/chat', 'kloel', 'Kloel'],
   ['kloel-search', 'Buscar', 'kloel', 'route', '/chat?graphAction=search', 'kloel', 'Buscar'],
-  ['kloel-images', 'Imagens', 'kloel', 'route', '/chat?graphAction=images', 'kloel', 'Imagens'],
   ['kloel-recents', 'Recentes', 'kloel', 'route', '/chat?graphAction=recents', 'kloel', 'Recentes'],
   ['kloel-tools', 'Ferramentas', 'kloel', 'route', '/ferramentas', 'kloel', 'Ferramentas'],
   ['kloel-cia', 'CIA', 'kloel', 'route', '/cia', 'kloel', 'CIA'],
@@ -148,6 +165,10 @@ const CORE_ROUTE_SEEDS: readonly NodeSeed[] = [
   ['conectar-marketing', 'Marketing', 'conectar', 'route', '/marketing', 'conectar', 'Marketing'],
   ['conectar-leads', 'Leads', 'conectar', 'route', '/leads', 'conectar', 'Leads'],
   ['conectar-followups', 'Followups', 'conectar', 'route', '/followups', 'conectar', 'Followups'],
+  ['conectar-flow', 'Flow', 'conectar', 'route', '/flow', 'conectar', 'Flow'],
+  ['conectar-scrapers', 'Scrapers', 'conectar', 'route', '/scrapers', 'conectar', 'Scrapers'],
+  ['conectar-whatsapp', 'WhatsApp', 'conectar', 'route', '/whatsapp', 'conectar', 'WhatsApp'],
+  ['conectar-sales', 'Sales', 'conectar', 'route', '/sales', 'conectar-crm', 'Vendas'],
   [
     'conectar-channel-google-ads',
     'Google Ads',
@@ -168,6 +189,7 @@ const CORE_ROUTE_SEEDS: readonly NodeSeed[] = [
   ],
   ['consultar-payments', 'Payments', 'consultar', 'route', '/payments', 'consultar', 'Pagamentos'],
   ['consultar-billing', 'Billing', 'consultar', 'route', '/billing', 'consultar', 'Billing'],
+  ['consultar-pricing', 'Planos', 'consultar', 'route', '/pricing', 'consultar-billing', 'Planos'],
 ];
 
 const dynamicRouteSeeds = [

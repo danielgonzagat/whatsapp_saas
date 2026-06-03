@@ -110,7 +110,6 @@ describe('KloelGraph route contract', () => {
     expect(getKloelGraphNodeById('kloel')?.route).toBe('/chat');
     expect(getKloelGraphNodeById('kloel-chat')?.label).toBe('Novo Chat');
     expect(getKloelGraphNodeById('kloel-search')?.route).toBe('/chat?graphAction=search');
-    expect(getKloelGraphNodeById('kloel-images')?.route).toBe('/chat?graphAction=images');
     expect(getKloelGraphNodeById('kloel-recents')?.route).toBe('/chat?graphAction=recents');
     expect(
       resolveKloelGraphNodeForPath('/chat', new URLSearchParams('graphAction=recents'))?.id,
