@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { isMindMessageDualWriteEnabled } from '../kloel/mind/aliases/mindmessage-dualwrite.flag';
 
 export interface ChatMessageResult {
   id: string;
@@ -64,6 +65,26 @@ export class ChatService {
       data: { threadId: conversationId, workspaceId, userId, role, content },
       select: { id: true, role: true, content: true, createdAt: true, userId: true },
     });
+
+    // ADDITIVE, flag-gated, best-effort dual-write to the canonical
+    // `RAC_MindMessage` table (currently writer-less). Behind
+    // `KLOEL_MINDMESSAGE_DUALWRITE` (default OFF). Any failure here is swallowed
+    // with a warn-log so it can NEVER break the legacy ChatMessage write above.
+    // No read path depends on this. `source: 'dashboard'` is the unified-table
+    // discriminator recording which legacy surface the row came from.
+    if (isMindMessageDualWriteEnabled()) {
+      try {
+        await this.prisma.mindMessage.create({
+          data: { workspaceId, source: 'dashboard', role, content },
+        });
+      } catch (error) {
+        this.logger.warn(
+          `MindMessage dual-write failed (workspaceId=${workspaceId}, ` +
+            `conversationId=${conversationId}); legacy ChatMessage write succeeded ` +
+            `and is unaffected: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
 
     await this.prisma.chatThread.updateMany({
       where: { id: conversationId, workspaceId },
