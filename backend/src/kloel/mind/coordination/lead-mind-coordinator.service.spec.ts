@@ -192,8 +192,8 @@ describe('LeadMindCoordinator', () => {
         }),
       );
       expect(prisma.contact.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          create: expect.objectContaining({
+        partialMatch({
+          create: partialMatch({
             leadStatus: 'hot',
             leadStage: 'negotiation',
             lastMessage: 'Quero comprar',
@@ -201,7 +201,7 @@ describe('LeadMindCoordinator', () => {
             totalMessages: 5,
             kloelLeadId: 'lead-1',
           }),
-          update: expect.objectContaining({
+          update: partialMatch({
             leadStatus: 'hot',
             leadStage: 'negotiation',
             kloelLeadId: 'lead-1',
@@ -213,11 +213,10 @@ describe('LeadMindCoordinator', () => {
     it('does not overwrite an existing Contact.kloelLeadId (write-if-null)', async () => {
       prisma.contact.findUnique.mockResolvedValue({ kloelLeadId: 'other-lead' });
       await service.getOrCreateLead(wsId, '5511999999999');
-      expect(prisma.contact.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          update: expect.not.objectContaining({ kloelLeadId: expect.anything() }),
-        }),
-      );
+      const upsertArg = castMock<[{ update: Record<string, unknown> }]>(
+        prisma.contact.upsert.mock.calls[0],
+      )[0];
+      expect(upsertArg.update).not.toHaveProperty('kloelLeadId');
     });
 
     it('skips Contact sync for an unnormalizable phone', async () => {

@@ -152,6 +152,10 @@ export class ScrapersService {
       importedCount++;
     });
 
-    return { message: 'Leads imported successfully', count: importedCount, imported: importedCount };
+    return {
+      message: 'Leads imported successfully',
+      count: importedCount,
+      imported: importedCount,
+    };
   }
 }

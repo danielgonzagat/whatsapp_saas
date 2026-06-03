@@ -237,8 +237,8 @@ describe('WhatsAppMindCoordinator', () => {
         }),
       );
       expect(prisma.contact.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          create: expect.objectContaining({
+        partialMatch({
+          create: partialMatch({
             workspaceId: wsId,
             phone,
             leadStatus: 'new',
@@ -246,7 +246,7 @@ describe('WhatsAppMindCoordinator', () => {
             totalMessages: 0,
             kloelLeadId: 'new-lead-1',
           }),
-          update: expect.objectContaining({ leadStatus: 'new', kloelLeadId: 'new-lead-1' }),
+          update: partialMatch({ leadStatus: 'new', kloelLeadId: 'new-lead-1' }),
         }),
       );
     });

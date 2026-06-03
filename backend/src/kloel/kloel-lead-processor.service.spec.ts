@@ -283,9 +283,9 @@ describe('KloelLeadProcessorService', () => {
         }),
       );
       expect(prisma.contact.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           where: { workspaceId_phone: { workspaceId: wsId, phone: '5511999999999' } },
-          create: expect.objectContaining({
+          create: partialMatch({
             workspaceId: wsId,
             phone: '5511999999999',
             leadStatus: 'hot',
@@ -295,7 +295,7 @@ describe('KloelLeadProcessorService', () => {
             totalMessages: 3,
             kloelLeadId: 'lead-1',
           }),
-          update: expect.objectContaining({
+          update: partialMatch({
             leadStatus: 'hot',
             leadStage: 'negotiation',
             kloelLeadId: 'lead-1',
@@ -307,11 +307,10 @@ describe('KloelLeadProcessorService', () => {
     it('does not overwrite an existing Contact.kloelLeadId (write-if-null)', async () => {
       prisma.contact.findUnique.mockResolvedValue({ kloelLeadId: 'other-lead' });
       await service.processWhatsAppMessage(wsId, '5511999999999', 'Oi', () => Promise.resolve('c'));
-      expect(prisma.contact.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          update: expect.not.objectContaining({ kloelLeadId: expect.anything() }),
-        }),
-      );
+      const upsertArg = castMock<[{ update: Record<string, unknown> }]>(
+        prisma.contact.upsert.mock.calls[0],
+      )[0];
+      expect(upsertArg.update).not.toHaveProperty('kloelLeadId');
     });
 
     it('is fail-open when Contact dual-write throws', async () => {
