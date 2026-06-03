@@ -19,6 +19,8 @@ import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { CampaignEventEmitterService } from '../kloel/campaign-emitter/campaign-event-emitter.service';
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
+import { WhatsappMessageDispatcherService } from '../marketing/channels/whatsapp/whatsapp-message-dispatcher.service';
+import { isCompliantWhatsappSendEnabled } from '../common/feature-flags/compliant-whatsapp-send.flag';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
@@ -50,10 +52,40 @@ export class CampaignsService {
     private campaignEmitter: CampaignEventEmitterService,
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly metaWhatsApp?: MetaWhatsAppService,
+    @Optional() private readonly whatsappDispatcher?: WhatsappMessageDispatcherService,
   ) {
     const connection = createBullMqConnectionOptions();
 
     this.campaignQueue = new Queue('campaign-jobs', { connection });
+  }
+
+  /**
+   * Send one campaign WhatsApp message for the bulk blast.
+   *
+   * P0-B compliance flag (KLOEL_COMPLIANT_WHATSAPP_SEND): when ON and the
+   * canonical {@link WhatsappMessageDispatcherService} is injected, route the
+   * send through it so plan-limit enforcement, opt-in enforcement, queue
+   * routing and billing metering all apply to the mass blast. Flag OFF
+   * (default) → byte-identical legacy raw `metaWhatsApp.sendTextMessage` path.
+   *
+   * @returns `true` when the message was accepted (queued or sent), mirroring
+   *          the legacy `delivered.success` boolean the caller branches on.
+   */
+  private async sendCampaignWhatsApp(
+    workspaceId: string,
+    phone: string,
+    body: string,
+  ): Promise<boolean> {
+    if (isCompliantWhatsappSendEnabled() && this.whatsappDispatcher) {
+      const result = await this.whatsappDispatcher.sendMessage(workspaceId, phone, body);
+      const obj = (result ?? {}) as Record<string, unknown>;
+      return obj.ok === true && obj.error !== true;
+    }
+    if (!this.metaWhatsApp) {
+      return false;
+    }
+    const delivered = await this.metaWhatsApp.sendTextMessage(workspaceId, phone, body);
+    return delivered.success === true;
   }
 
   /** Create. */
@@ -297,17 +329,13 @@ export class CampaignsService {
           return;
         }
 
-        if (delivery.whatsappReady && contact.phone && this.metaWhatsApp) {
+        if (delivery.whatsappReady && contact.phone && (this.metaWhatsApp || this.whatsappDispatcher)) {
           const bodyText = (campaign.messageTemplate || '').replace(
             NAME_RE,
             contact.name || 'Cliente',
           );
-          const delivered = await this.metaWhatsApp.sendTextMessage(
-            workspaceId,
-            contact.phone,
-            bodyText,
-          );
-          if (!delivered.success) {
+          const delivered = await this.sendCampaignWhatsApp(workspaceId, contact.phone, bodyText);
+          if (!delivered) {
             failed += 1;
             return;
           }

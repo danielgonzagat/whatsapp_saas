@@ -90,6 +90,7 @@ import {
   ],
   exports: [
     WhatsappService,
+    WhatsappMessageDispatcherService,
     WHATSAPP_MESSAGING,
     InboundProcessorService,
     INBOUND_PROCESSOR,
