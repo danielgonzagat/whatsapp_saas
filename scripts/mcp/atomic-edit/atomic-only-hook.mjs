@@ -198,17 +198,20 @@ function hasEscapeToken(c) {
   const s = String(c || '');
   const H = String.raw`(?:^|[\n;&|({]|-c\s+["']?)\s*`;
   const net = new RegExp(
-    H + String.raw`(?:git\s+(?:push|pull|fetch|clone|remote|submodule|lfs)|curl|wget|ssh|scp|sftp|rsync)\b`,
+    H +
+      String.raw`(?:git\s+(?:push|pull|fetch|clone|remote|submodule|lfs)|curl|wget|ssh|scp|sftp|rsync)\b`,
   );
   const gitMut = new RegExp(
-    H + String.raw`git\s+(?:commit|add|stash|checkout|switch|reset|restore|merge|rebase|tag|cherry-pick|revert|rm|mv|clean|apply|am)\b`,
+    H +
+      String.raw`git\s+(?:commit|add|stash|checkout|switch|reset|restore|merge|rebase|tag|cherry-pick|revert|rm|mv|clean|apply|am)\b`,
   );
   const interactive = new RegExp(
     H +
       String.raw`(?:claude|codex|opencode|hermes|vim|vi|nano|emacs|less|more|top|htop|ssh|scp|sudo|su|doas|gcloud|aws|az|kubectl|helm|docker|podman|op|kaisser|railway|vercel|stripe|gh|psql|mysql|mongosh|redis-cli|open|code|subl)\b`,
   );
   const pkg = new RegExp(
-    H + String.raw`(?:npm|pnpm|yarn|bun|pip|pipx|poetry|cargo|go|gem|bundle|composer)\s+(?:install|add|update|publish|deploy|i|ci)\b`,
+    H +
+      String.raw`(?:npm|pnpm|yarn|bun|pip|pipx|poetry|cargo|go|gem|bundle|composer)\s+(?:install|add|update|publish|deploy|i|ci)\b`,
   );
   return net.test(s) || gitMut.test(s) || interactive.test(s) || pkg.test(s);
 }
@@ -229,8 +232,20 @@ function shouldRouteThroughAtomicExec(cmd) {
   if (/^(?:for|if|while|until|case|select|function)$/.test(verb)) return true;
   if (/^[({]/.test(eff)) return true;
 
-  const handled = /^(git|npm|npx|pnpm|yarn|bun|node|deno|ts-node|tsx|ls|cat|echo|printf|mkdir|rmdir|rm|cp|mv|ln|test|grep|rg|ag|ack|find|fd|wc|head|tail|sed|awk|cut|sort|uniq|tr|jq|yq|diff|patch|tar|chmod|touch|stat|date|pwd|basename|dirname|realpath|make|tsc|jest|vitest|eslint|prettier|biome|ruff|pytest|rustc|javac|xargs|tee|env|which|kill|pkill)$/;
-  return handled.test(verb);
+  // Route-by-default (Daniel, 2026-06-02 — rank-1 no-bypass hole). After the genuine-
+  // escape filter (`hasEscapeToken` returned false above) and the wrapper/control-flow
+  // branches, EVERY remaining command routes through the atomic envelope. The prior
+  // fixed allowlist let any non-listed program run NATIVELY, fully outside atomic —
+  // python3/python/ruby/perl/php/osascript/Rscript/lua/julia/dotnet/swift/groovy and any
+  // `./local-bin` or `/abs/path/bin`. `osascript -e` alone can drive the whole macOS GUI
+  // and the network, uncounted. Routing-by-default is strictly MORE coverage than the
+  // allowlist (monotonic: every verb the allowlist routed still routes), and atomic_exec
+  // runs them all via `/bin/bash -c` under snapshot + trace + rollback. The only residual
+  // is a bare interactive REPL (`node`/`python3` with no script): atomic_exec gets EOF on
+  // a non-TTY stdin and the command timeout bounds it — acceptable vs. the leak it closes.
+  // `verb`/`eff` above still gate the wrapper/control-flow short-circuits; this fallthrough
+  // is the new default for everything the escape filter did not exempt.
+  return true;
 }
 
 if (tool === 'Bash') {

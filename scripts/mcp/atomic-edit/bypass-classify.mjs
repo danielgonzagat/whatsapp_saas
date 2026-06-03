@@ -15,9 +15,17 @@
 const CODE_EXT =
   /\.(ts|tsx|js|jsx|mjs|cjs|json|prisma|go|rs|rb|py|java|c|cc|cpp|h|hpp|cs|php|swift|kt|scala|sh|bash|sql|ya?ml|toml)$/i;
 
-/** Verbs atomic_exec can run inside its envelope (general, non-interactive shell). */
+/**
+ * Verbs atomic_exec can run inside its envelope (general, non-interactive shell).
+ * Parity with atomic-only-hook.mjs route-by-default (2026-06-02): the hook now routes
+ * EVERY non-escape command, so the interpreter family (python/perl/osascript/Rscript/
+ * lua/julia/tclsh/groovy — in addition to node/ruby/php/go/cargo already listed) has an
+ * atomic_exec equivalent and is a DETECTABLE bypass when run native. This stays a finite
+ * allowlist (the metric's "an atomic equivalent EXISTS" axis); a bare `./local-bin` is
+ * the residual the route-by-default hook also routes but this list does not yet name.
+ */
 const ATOMIC_EXEC_HANDLES =
-  /^(git|npm|npx|pnpm|yarn|bun|node|deno|ts-node|tsx|ls|cat|echo|printf|mkdir|rmdir|rm|cp|mv|ln|test|true|false|grep|rg|ag|ack|find|fd|wc|head|tail|sed|awk|cut|sort|uniq|tr|jq|yq|diff|patch|tar|gzip|gunzip|zip|unzip|chmod|chown|touch|stat|date|pwd|basename|dirname|realpath|make|cmake|tsc|jest|vitest|mocha|eslint|prettier|biome|ruff|black|mypy|pytest|go|cargo|rustc|javac|gradle|mvn|ruby|gem|bundle|php|composer|dotnet|swift|kotlinc|xargs|tee|env|which|type|history|wait|kill|pkill|sleep)$/;
+  /^(git|npm|npx|pnpm|yarn|bun|node|deno|ts-node|tsx|ls|cat|echo|printf|mkdir|rmdir|rm|cp|mv|ln|test|true|false|grep|rg|ag|ack|find|fd|wc|head|tail|sed|awk|cut|sort|uniq|tr|jq|yq|diff|patch|tar|gzip|gunzip|zip|unzip|chmod|chown|touch|stat|date|pwd|basename|dirname|realpath|make|cmake|tsc|jest|vitest|mocha|eslint|prettier|biome|ruff|black|mypy|pytest|python3?|perl|osascript|Rscript|lua|julia|tclsh|groovy|go|cargo|rustc|javac|gradle|mvn|ruby|gem|bundle|php|composer|dotnet|swift|kotlinc|xargs|tee|env|which|type|history|wait|kill|pkill|sleep)$/;
 
 /** Verbs atomic_exec genuinely cannot/should-not run (interactive/login/external). */
 const NON_ATOMIC_VERB =
@@ -128,8 +136,12 @@ export function classifyToolCall({ tool, toolInput, strictAtomicOnly = false }) 
     const cmd = String(ti.command || '');
     const verb = (cmd.trim().split(/\s+/)[0] || '').split('/').pop();
     const inlineEvalWrite =
-      /\b(?:node|deno|bun|ts-node|tsx|python3?|ruby|php|perl)\b[^\n]*?(?:\s-(?:e|pe?|c|r)\b|--eval\b|\beval\b)/.test(cmd) &&
-      /(?:writeFileSync|appendFileSync|createWriteStream|renameSync|copyFileSync|rmSync|unlinkSync|mkdirSync|write_text|os\.replace|shutil\.(?:move|copy))/.test(cmd);
+      /\b(?:node|deno|bun|ts-node|tsx|python3?|ruby|php|perl)\b[^\n]*?(?:\s-(?:e|pe?|c|r)\b|--eval\b|\beval\b)/.test(
+        cmd,
+      ) &&
+      /(?:writeFileSync|appendFileSync|createWriteStream|renameSync|copyFileSync|rmSync|unlinkSync|mkdirSync|write_text|os\.replace|shutil\.(?:move|copy))/.test(
+        cmd,
+      );
     const mutatesCode =
       /\bsed\b[^|]*\s-i/.test(cmd) ||
       /\bperl\b[^|]*\s-i/.test(cmd) ||
@@ -156,19 +168,37 @@ export function classifyToolCall({ tool, toolInput, strictAtomicOnly = false }) 
     }
     if (/^(grep|rg|ag|ack)$/.test(verb)) {
       return withStrictDeny(
-        { category: 'bash-grep', atomicEquivalent: 'atomic_grep', detectable: true, blockedByDenyHook: false, target: verb },
+        {
+          category: 'bash-grep',
+          atomicEquivalent: 'atomic_grep',
+          detectable: true,
+          blockedByDenyHook: false,
+          target: verb,
+        },
         strict,
       );
     }
     if (/^(find|fd)$/.test(verb)) {
       return withStrictDeny(
-        { category: 'bash-glob', atomicEquivalent: 'atomic_glob', detectable: true, blockedByDenyHook: false, target: verb },
+        {
+          category: 'bash-glob',
+          atomicEquivalent: 'atomic_glob',
+          detectable: true,
+          blockedByDenyHook: false,
+          target: verb,
+        },
         strict,
       );
     }
     if (/^cat$/.test(verb) && CODE_EXT.test(cmd)) {
       return withStrictDeny(
-        { category: 'bash-read', atomicEquivalent: 'atomic_outline / Read', detectable: true, blockedByDenyHook: false, target: verb },
+        {
+          category: 'bash-read',
+          atomicEquivalent: 'atomic_outline / Read',
+          detectable: true,
+          blockedByDenyHook: false,
+          target: verb,
+        },
         strict,
       );
     }
@@ -189,14 +219,32 @@ export function classifyToolCall({ tool, toolInput, strictAtomicOnly = false }) 
       /^[({]/.test(peeled);
     if (isWrapper || (ATOMIC_EXEC_HANDLES.test(effVerb) && !NON_ATOMIC_VERB.test(effVerb))) {
       return withStrictDeny(
-        { category: 'bash-exec', atomicEquivalent: 'atomic_exec', detectable: true, blockedByDenyHook: false, target: effVerb },
+        {
+          category: 'bash-exec',
+          atomicEquivalent: 'atomic_exec',
+          detectable: true,
+          blockedByDenyHook: false,
+          target: effVerb,
+        },
         strict,
       );
     }
     // claude / ssh / sudo / gcloud / vim / ... — atomic_exec cannot/should-not run these.
-    return { category: 'bash-other', atomicEquivalent: null, detectable: false, blockedByDenyHook: false, target: verb };
+    return {
+      category: 'bash-other',
+      atomicEquivalent: null,
+      detectable: false,
+      blockedByDenyHook: false,
+      target: verb,
+    };
   }
 
   // MCP atomic tools themselves, or anything ambiguous — not a bypass.
-  return { category: 'other', atomicEquivalent: null, detectable: false, blockedByDenyHook: false, target: '' };
+  return {
+    category: 'other',
+    atomicEquivalent: null,
+    detectable: false,
+    blockedByDenyHook: false,
+    target: '',
+  };
 }
