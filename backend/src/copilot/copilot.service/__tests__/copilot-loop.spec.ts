@@ -32,11 +32,23 @@ jest.mock('../../../kloel/openai-wrapper', () => ({
 import { chatCompletionWithRetry } from '../../../kloel/openai-wrapper';
 import { CopilotService } from '../../copilot.service';
 import { PrismaService } from '../../../prisma/prisma.service';
-import type { DecisionOutcomeService } from '../../../kloel/decision-outcome.service';
-import type { MindBeliefService } from '../../../kloel/mind/inference/mind-belief.service';
-import type { MindSurpriseService } from '../../../kloel/mind/inference/mind-surprise.service';
-import type { MindGlobalPriorService } from '../../../kloel/mind/memory/mind-global-prior.service';
-import type { MindPredictorService } from '../../../kloel/mind/inference/mind-predictor.service';
+
+type DecisionRecordPayload = {
+  workspaceId: string;
+  decisionType: string;
+  chosenAction: string;
+  contextSnapshot?: { surface?: string };
+};
+
+type PredictionPayload = {
+  workspaceId: string;
+  features?: { template?: string };
+};
+
+type CloseOutcomePayload = {
+  outcomeName: string;
+  wonVsBaseline: boolean;
+};
 
 describe('CopilotService — KLOEL_COPILOT_LOOP_ENABLED cognition loop', () => {
   const workspaceId = 'ws-loop';
@@ -51,21 +63,28 @@ describe('CopilotService — KLOEL_COPILOT_LOOP_ENABLED cognition loop', () => {
   let planLimits: { ensureTokenBudget: jest.Mock; trackAiUsage: jest.Mock };
 
   // Cognition service mocks — the SAME methods the reused helpers call.
-  let decisionOutcomeService: { recordDecision: jest.Mock; closeOutcome: jest.Mock };
+  let decisionOutcomeService: {
+    recordDecision: jest.MockedFunction<(payload: DecisionRecordPayload) => Promise<void>>;
+    closeOutcome: jest.MockedFunction<(payload: CloseOutcomePayload) => Promise<void>>;
+  };
   let mindBeliefService: { observeBinary: jest.Mock };
   let mindSurpriseService: { resolveReply: jest.Mock };
   let mindGlobalPriorService: { recordObservation: jest.Mock };
-  let mindPredictorService: { predictReply: jest.Mock };
+  let mindPredictorService: {
+    predictReply: jest.MockedFunction<
+      (payload: PredictionPayload, horizonSec: number) => Promise<void>
+    >;
+  };
 
   function build(): CopilotService {
     return new CopilotService(
       prisma as never as PrismaService,
       planLimits as never,
-      decisionOutcomeService as never as DecisionOutcomeService,
-      mindBeliefService as never as MindBeliefService,
-      mindSurpriseService as never as MindSurpriseService,
-      mindGlobalPriorService as never as MindGlobalPriorService,
-      mindPredictorService as never as MindPredictorService,
+      decisionOutcomeService as never,
+      mindBeliefService as never,
+      mindSurpriseService as never,
+      mindGlobalPriorService as never,
+      mindPredictorService as never,
     );
   }
 
@@ -129,7 +148,7 @@ describe('CopilotService — KLOEL_COPILOT_LOOP_ENABLED cognition loop', () => {
   const flush = () => new Promise((r) => setImmediate(r));
 
   describe('flag OFF (default)', () => {
-    it('produces the answer WITHOUT touching any cognition service', async () => {
+    it('produces the answer WITHOUT touching cognition services', async () => {
       delete process.env.KLOEL_COPILOT_LOOP_ENABLED;
       const service = build();
 
