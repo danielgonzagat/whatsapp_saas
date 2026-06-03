@@ -248,10 +248,39 @@ function shouldRouteThroughAtomicExec(cmd) {
   return true;
 }
 
+// Destructive worktree escapes that atomic_exec deliberately cannot reverse (no
+// whole-repo snapshot) and that `hasEscapeToken` would otherwise wave through to NATIVE
+// Bash — silently destroying uncommitted human/agent work. These are DENIED outright
+// (not routed, not allowed): `git restore` (CLAUDE.md ABSOLUTE prohibition), `git reset
+// --hard`, `git clean -f…`, and the file-restore forms of checkout (`checkout -- <path>`,
+// `checkout .`). Branch ops (checkout <branch>, switch, reset --soft) are NOT matched.
+// Matched at command-HEAD positions so a mere path argument (`cat git-restore.md`) never
+// trips it.
+function isDestructiveWorktreeEscape(c) {
+  const s = String(c || '');
+  const H = String.raw`(?:^|[\n;&|({]|-c\s+["']?)\s*`;
+  const gitRestore = new RegExp(H + String.raw`git\s+restore\b`);
+  const gitResetHard = new RegExp(H + String.raw`git\s+reset\b[^\n;&|]*?\s--hard\b`);
+  const gitCleanForce = new RegExp(H + String.raw`git\s+clean\b[^\n;&|]*?\s-[A-Za-z]*f`);
+  const gitCheckoutPath = new RegExp(
+    H + String.raw`git\s+checkout\b[^\n;&|]*?(?:\s--\s|\s\.(?=\s|$))`,
+  );
+  return (
+    gitRestore.test(s) || gitResetHard.test(s) || gitCleanForce.test(s) || gitCheckoutPath.test(s)
+  );
+}
+
 if (tool === 'Bash') {
   const cmd = ti.command ?? ti.cmd ?? '';
   if (bashEditsCode(String(cmd)))
     deny(`TUI-abolished rule: shell in-place edit of a code file is banned. ${STEER}`);
+  if (isDestructiveWorktreeEscape(String(cmd)))
+    deny(
+      `Destructive worktree command refused — atomic cannot reverse it and CLAUDE.md ` +
+        `forbids git restore. \`git restore\` / \`git reset --hard\` / \`git clean -f\` / ` +
+        `\`git checkout -- <path>\` silently destroy uncommitted work. Commit or stash first, ` +
+        `restore from an explicit snapshot, or stop and ask — never discard the working tree blind.`,
+    );
   if (shouldRouteThroughAtomicExec(String(cmd)))
     deny(
       `atomic_exec-mandatory rule: route this shell command through the atomic envelope. ` +
