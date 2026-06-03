@@ -1,7 +1,7 @@
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockSitesApi } = vi.hoisted(() => ({
+const { mockSitesApi, mockApiFetch } = vi.hoisted(() => ({
   mockSitesApi: {
     listSites: vi.fn(),
     getSite: vi.fn(),
@@ -16,6 +16,7 @@ const { mockSitesApi } = vi.hoisted(() => ({
     deleteDomain: vi.fn(),
     upsertApp: vi.fn(),
   },
+  mockApiFetch: vi.fn(),
 }));
 
 vi.mock('swr', () => ({
@@ -25,6 +26,9 @@ vi.mock('swr', () => ({
 vi.mock('@/lib/api/sites', () => ({
   sitesApi: mockSitesApi,
 }));
+vi.mock('@/lib/api/core', () => ({
+  apiFetch: mockApiFetch,
+}));
 
 import useSWR from 'swr';
 
@@ -33,6 +37,7 @@ import { useSites, useSite, useSiteDomains, useSiteApps } from './useSites';
 describe('useSites', () => {
   beforeEach(() => {
     Object.values(mockSitesApi).forEach((fn) => fn.mockReset());
+    mockApiFetch.mockReset();
     vi.mocked(useSWR).mockReturnValue({
       data: undefined,
       error: undefined,
@@ -85,7 +90,7 @@ describe('useSites', () => {
   });
 
   it('surfaces malformed site list envelopes instead of returning a false empty site list', async () => {
-    mockSitesApi.listSites.mockResolvedValue({ data: { sites: { id: 'site-1' } } });
+    mockApiFetch.mockResolvedValue({ data: { sites: { id: 'site-1' } } });
     renderHook(() => useSites('ws1'));
 
     const fetcher = vi.mocked(useSWR).mock.calls.at(-1)?.[1] as (() => Promise<unknown>) | undefined;

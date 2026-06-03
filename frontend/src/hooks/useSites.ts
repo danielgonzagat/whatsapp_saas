@@ -62,6 +62,33 @@ interface KloelSiteRow {
   updatedAt: string;
 }
 
+const invalidSitesListPayloadMessage = 'Invalid sites list payload';
+
+function isKloelSiteRow(value: unknown): value is KloelSiteRow {
+  if (typeof value !== 'object' || value === null) {return false;}
+  const row = value as Partial<Record<keyof KloelSiteRow, unknown>>;
+  return (
+    typeof row.id === 'string' &&
+    typeof row.workspaceId === 'string' &&
+    typeof row.name === 'string' &&
+    (typeof row.slug === 'string' || row.slug === null) &&
+    typeof row.published === 'boolean' &&
+    typeof row.createdAt === 'string' &&
+    typeof row.updatedAt === 'string'
+  );
+}
+
+function unwrapKloelSiteRows(data: unknown): KloelSiteRow[] {
+  if (data === undefined || data === null) {return [];}
+  if (typeof data !== 'object') {throw new Error(invalidSitesListPayloadMessage);}
+  const envelope = data as { sites?: unknown };
+  if (envelope.sites === undefined || envelope.sites === null) {return [];}
+  if (!Array.isArray(envelope.sites) || !envelope.sites.every(isKloelSiteRow)) {
+    throw new Error(invalidSitesListPayloadMessage);
+  }
+  return envelope.sites;
+}
+
 function mapKloelSiteToSite(row: KloelSiteRow): Site {
   return {
     id: row.id,
@@ -93,7 +120,8 @@ export function useSites(
     // overview shows "Nenhum site" forever even after the user creates one.
     const res = await apiFetch<{ sites: KloelSiteRow[] }>('/kloel/site/list');
     if (res.error) {throw new Error(res.error);}
-    return (res.data?.sites ?? []).map(mapKloelSiteToSite);
+    const sites = unwrapKloelSiteRows(res.data);
+    return sites.map(mapKloelSiteToSite);
   };
 
   const { data, error, isLoading, mutate } = useSWR(key, fetcher, {
