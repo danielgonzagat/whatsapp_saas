@@ -1,0 +1,206 @@
+import type { PulseCapability } from './types.capabilities/03-capability';
+import type { PulseFlowProjectionItem } from './types.capabilities/04-flow-projection';
+import type {
+  PulseParityGap,
+  PulseParityGapKind,
+  PulseParityGapsArtifact,
+  PulseParityGapSeverity,
+} from './types.capabilities.parity';
+import type { PulseResolvedManifest } from './types.resolved-manifest';
+import type { PulseScopeExecutionMode } from './types.truth.scope';
+import type { PulseTruthMode } from './types.structural';
+import { deriveStructuralFamilies, slugifyStructural } from './structural-family';
+import { isInterfaceOnlyWithoutRoutes } from './parity-capability-classifiers/classifier-helpers';
+import { unique } from './parity-utils';
+
+/** Capability families. */
+export function capabilityFamilies(capability: PulseCapability): string[] {
+  return deriveStructuralFamilies([
+    capability.id,
+    capability.name,
+    ...capability.routePatterns,
+    ...capability.filePaths,
+  ]);
+}
+
+/** Flow families. */
+export function flowFamilies(flow: PulseFlowProjectionItem): string[] {
+  return deriveStructuralFamilies([flow.id, flow.name, ...flow.routePatterns]);
+}
+
+/** Module families. */
+export function moduleFamilies(moduleEntry: PulseResolvedManifest['modules'][number]): string[] {
+  return deriveStructuralFamilies([
+    moduleEntry.key,
+    moduleEntry.name,
+    moduleEntry.canonicalName,
+    ...moduleEntry.aliases,
+    ...moduleEntry.routeRoots,
+  ]);
+}
+
+/** Text families. */
+export function textFamilies(value: string): string[] {
+  const routePrefix = value.startsWith('/') ? value.split(/\s+/)[0] || value : value;
+  return deriveStructuralFamilies([value, routePrefix]);
+}
+
+function compact(value: string, max: number = 280): string {
+  const normalized = value.replace(/\s+/g, ' ').trim();
+  if (normalized.length <= max) {
+    return normalized;
+  }
+  return `${normalized.slice(0, max - 3)}...`;
+}
+
+function pickExecutionMode(
+  values: Array<PulseScopeExecutionMode | undefined>,
+): PulseScopeExecutionMode {
+  if (values.includes('observation_only')) {
+    return 'observation_only';
+  }
+  if (values.includes('human_required')) {
+    return 'human_required';
+  }
+  if (values.includes('governed_validation')) {
+    return 'governed_validation';
+  }
+  return 'ai_safe';
+}
+
+function chooseTruthMode(
+  capabilities: PulseCapability[],
+  flows: PulseFlowProjectionItem[],
+  fallback: PulseTruthMode = 'inferred',
+): PulseTruthMode {
+  const modes = [
+    ...capabilities.map((item) => item.truthMode),
+    ...flows.map((item) => item.truthMode),
+  ];
+  if (modes.includes('observed')) {
+    return 'observed';
+  }
+  if (modes.includes('inferred')) {
+    return 'inferred';
+  }
+  if (modes.includes('aspirational')) {
+    return 'aspirational';
+  }
+  return fallback;
+}
+
+function someCapabilityMatches(
+  capabilities: PulseCapability[],
+  predicate: (c: PulseCapability) => boolean,
+): boolean {
+  return capabilities.some(predicate);
+}
+
+function everyCapabilityMatches(
+  capabilities: PulseCapability[],
+  predicate: (c: PulseCapability) => boolean,
+): boolean {
+  return capabilities.length > 0 && capabilities.every(predicate);
+}
+
+function chooseSeverity(
+  kind: PulseParityGapKind,
+  capabilities: PulseCapability[],
+  flows: PulseFlowProjectionItem[],
+): PulseParityGapSeverity {
+  const runtimeCritical = someCapabilityMatches(capabilities, (c) => c.runtimeCritical);
+  const userFacing = someCapabilityMatches(capabilities, (c) => c.userFacing);
+  const reliabilityOnly = everyCapabilityMatches(
+    capabilities,
+    (c) => !c.userFacing && c.maturity.dimensions.runtimeEvidencePresent,
+  );
+  const governedOrCritical = someCapabilityMatches(
+    capabilities,
+    (c) => c.protectedByGovernance || c.runtimeCritical,
+  );
+  const interfaceOnlyWithoutRoutes = everyCapabilityMatches(
+    capabilities,
+    isInterfaceOnlyWithoutRoutes,
+  );
+  const hasPhantom =
+    someCapabilityMatches(capabilities, (c) => c.status === 'phantom') ||
+    flows.some((item) => item.status === 'phantom');
+
+  if (kind === 'integration_without_observability') {
+    return runtimeCritical ? 'critical' : 'high';
+  }
+  if (kind === 'runtime_without_product_surface') {
+    return runtimeCritical ? 'high' : 'medium';
+  }
+  if (kind === 'feature_declared_without_runtime') {
+    return runtimeCritical || userFacing ? 'high' : 'medium';
+  }
+  if (kind === 'front_without_back' || kind === 'ui_without_persistence') {
+    if (interfaceOnlyWithoutRoutes && !governedOrCritical && !hasPhantom) {
+      return 'medium';
+    }
+    return runtimeCritical || hasPhantom ? 'high' : 'medium';
+  }
+  if (kind === 'back_without_front') {
+    if (reliabilityOnly) {
+      return 'medium';
+    }
+    return runtimeCritical ? 'high' : 'medium';
+  }
+  if (kind === 'flow_without_validation') {
+    return userFacing ? 'high' : 'medium';
+  }
+  return hasPhantom ? 'high' : 'medium';
+}
+
+/** Build gap. */
+export function buildGap(
+  kind: PulseParityGapKind,
+  title: string,
+  summary: string,
+  capabilities: PulseCapability[],
+  flows: PulseFlowProjectionItem[],
+  routePatterns: string[],
+  relatedFiles: string[],
+  validationTargets: string[],
+): PulseParityGap {
+  return {
+    id: `${kind}:${slugifyStructural(title) || slugifyStructural(summary)}`,
+    kind,
+    severity: chooseSeverity(kind, capabilities, flows),
+    truthMode: chooseTruthMode(capabilities, flows),
+    executionMode: pickExecutionMode(capabilities.map((item) => item.executionMode)),
+    title,
+    summary: compact(summary),
+    relatedFiles: unique(relatedFiles).sort(),
+    routePatterns: unique(routePatterns).sort(),
+    affectedCapabilityIds: unique(capabilities.map((item) => item.id)).sort(),
+    affectedFlowIds: unique(flows.map((item) => item.id)).sort(),
+    validationTargets: unique(validationTargets).filter(Boolean),
+  };
+}
+
+/** Build summary. */
+export function buildSummary(gaps: PulseParityGap[]): PulseParityGapsArtifact['summary'] {
+  const byKind = {
+    front_without_back: 0,
+    back_without_front: 0,
+    ui_without_persistence: 0,
+    persistence_without_consumer: 0,
+    flow_without_validation: 0,
+    integration_without_observability: 0,
+    feature_declared_without_runtime: 0,
+    runtime_without_product_surface: 0,
+  } satisfies Record<PulseParityGapKind, number>;
+
+  for (const gap of gaps) {
+    byKind[gap.kind] += 1;
+  }
+
+  return {
+    totalGaps: gaps.length,
+    criticalGaps: gaps.filter((item) => item.severity === 'critical').length,
+    highGaps: gaps.filter((item) => item.severity === 'high').length,
+    byKind,
+  };
+}
