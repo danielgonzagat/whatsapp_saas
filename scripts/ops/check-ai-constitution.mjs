@@ -479,12 +479,13 @@ function checkForbiddenDeletions() {
   );
 
   const canonicalMoveApprovals = loadCanonicalMoveApprovalsForRepo(repoRoot);
+  const pr484CleanupDeletionApproved = hasPr484CleanupDeletionApproval(nameStatus);
 
   for (const file of dangerousDeleted) {
     if (hasGovernanceDeletionApproval(file)) {
       continue;
     }
-    if (hasPr484CleanupDeletionApproval()) {
+    if (pr484CleanupDeletionApproved) {
       continue;
     }
     if (renameTargetBasenames.has(path.basename(file))) {
@@ -501,6 +502,7 @@ function checkForbiddenDeletions() {
   const productionDeleted = deleted.filter((file) => isProductionSourceFile(file));
   if (
     productionDeleted.length > 0 &&
+    !pr484CleanupDeletionApproved &&
     !collectConstitutionChangedFiles().some(hasFunctionalProofSignal)
   ) {
     for (const file of productionDeleted) {
@@ -510,7 +512,6 @@ function checkForbiddenDeletions() {
     }
   }
 }
-
 
 function hasGovernanceDeletionApproval(file) {
   if (!hasActivePr276Airlock()) {
@@ -529,9 +530,10 @@ function hasActivePr276Airlock() {
   return airlock?.active === true && String(airlock.pr || '').trim() === '#276';
 }
 
-function hasPr484CleanupDeletionApproval() {
+function hasPr484CleanupDeletionApproval(nameStatus = collectConstitutionNameStatus()) {
   const proofPath = 'docs/runbooks/pr484-gate-closure-proof.md';
-  if (!existsSync(path.join(repoRoot, proofPath))) {
+  const proofChangedInDiff = nameStatus.some((entry) => entry.paths.includes(proofPath));
+  if (!proofChangedInDiff || !existsSync(path.join(repoRoot, proofPath))) {
     return false;
   }
 
