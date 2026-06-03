@@ -1,3 +1,4 @@
+import { postOpsWebhook } from '../../ops-webhook-post.helper';
 import { log } from './autopilot-utils';
 
 const WORKER_ROLE = (process.env.WORKER_ROLE || 'all').toLowerCase();
@@ -84,16 +85,11 @@ export async function notifyBillingSuspended(workspaceId?: string) {
     return;
   }
   try {
-    await (global as never as { fetch: typeof fetch }).fetch(OPS_WEBHOOK, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'billing_suspended_autopilot_skip',
-        workspaceId,
-        at: new Date().toISOString(),
-        env: process.env.NODE_ENV || 'dev',
-      }),
-      signal: AbortSignal.timeout(10000),
+    await postOpsWebhook(OPS_WEBHOOK, {
+      type: 'billing_suspended_autopilot_skip',
+      workspaceId,
+      at: new Date().toISOString(),
+      env: process.env.NODE_ENV || 'dev',
     });
   } catch (err: unknown) {
     const errInstanceofError =

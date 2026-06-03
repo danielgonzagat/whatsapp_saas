@@ -1,4 +1,5 @@
 import { Queue } from 'bullmq';
+import { postOpsWebhook } from './ops-webhook-post.helper';
 import { buildQueueOptions, queueRegistry } from './queue';
 import { redis } from './redis-client';
 import { forEachSequential } from './utils/async-sequence';
@@ -21,18 +22,13 @@ async function notify(queue: string, waiting: number, failed: number) {
   }
 
   try {
-    await globalThis.fetch(OPS_WEBHOOK, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'dlq_alert',
-        queue,
-        waiting,
-        failed,
-        at: new Date().toISOString(),
-        env: process.env.NODE_ENV || 'dev',
-      }),
-      signal: AbortSignal.timeout(10000),
+    await postOpsWebhook(OPS_WEBHOOK, {
+      type: 'dlq_alert',
+      queue,
+      waiting,
+      failed,
+      at: new Date().toISOString(),
+      env: process.env.NODE_ENV || 'dev',
     });
     lastAlert[queue] = now;
   } catch (err: unknown) {
