@@ -5,6 +5,8 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { removePath, writeText } from './broker-fixture-io.mjs';
+import { inheritedBrokerSocketFromState } from './proof-host-env.mjs';
 
 const jsonMode = process.argv.includes('--json');
 const sourceDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -27,18 +29,14 @@ function launcherSourceAssertions() {
     capturesFindErrorsWithoutStdout: source.includes('-newer "${DIST}" -print -quit 2>&1'),
     capturesFreshnessErrorsWithoutStdout: source.includes('freshness_output="$(node "${SRC_DIR}/dist-freshness.mjs" --check 2>&1)"'),
     avoidsSandboxUnsafeDevNull: !source.includes('/dev/null'),
+    selfHostsUnhostedCodexMcp:
+      source.includes('ATOMIC_EDIT_MCP_SELF_HOSTED') && source.includes('codex-atomic-host-launcher.mjs'),
   };
 }
 
+
 function inheritedBrokerSocket() {
-  if (
-    process.env.ATOMIC_HOST_SANDBOX === 'macos-sandbox-exec' &&
-    process.env.ATOMIC_HOST_ATOMIC_ONLY === '1' &&
-    process.env.ATOMIC_EXEC_BROKER_SOCKET
-  ) {
-    return process.env.ATOMIC_EXEC_BROKER_SOCKET;
-  }
-  return null;
+  return inheritedBrokerSocketFromState(repoRoot);
 }
 
 function startBroker() {
@@ -112,9 +110,51 @@ async function hostedLauncherStartsMcp(brokerSocket) {
   }
 }
 
+async function unhostedLauncherStartsMcp() {
+  const previous = fs.existsSync(brokerState) ? fs.readFileSync(brokerState, 'utf8') : null;
+  removePath(brokerState);
+
+  const transport = new StdioClientTransport({
+    command: launcher,
+    args: [],
+    cwd: repoRoot,
+    stderr: 'pipe',
+    env: {
+      ...process.env,
+      ATOMIC_SINGLE_TOOL_CALL: '',
+      ATOMIC_SINGLE_TOOL_NAME: '',
+      ATOMIC_SINGLE_TOOL_ARGS_JSON: '',
+      ATOMIC_HOST_SANDBOX: '',
+      ATOMIC_HOST_ATOMIC_ONLY: '',
+      ATOMIC_HOST_WRITE_ROOT: '',
+      ATOMIC_EXEC_BROKER_SOCKET: '',
+      ATOMIC_EDIT_MCP_SELF_HOSTED: '',
+      CODEX_PROJECT_DIR: '',
+      TMPDIR: '',
+      TMP: '',
+      TEMP: '',
+    },
+  });
+  const client = new Client({ name: 'mcp-launcher-unhosted-self-host-proof', version: '1.0.0' });
+  try {
+    await client.connect(transport);
+    const listed = await client.listTools();
+    return { ok: listed.tools?.some((tool) => tool.name === 'atomic_y_certificate') === true, tools: listed.tools?.length ?? 0 };
+  } finally {
+    try {
+      await client.close();
+    } catch {
+      // best effort
+    }
+    if (previous === null) removePath(brokerState);
+    else writeText(brokerState, previous, 0o600);
+  }
+}
+
+
 async function stateFileLauncherStartsMcp(brokerSocket) {
   const previous = fs.existsSync(brokerState) ? fs.readFileSync(brokerState, 'utf8') : null;
-  fs.writeFileSync(
+  writeText(
     brokerState,
     JSON.stringify(
       {
@@ -128,7 +168,7 @@ async function stateFileLauncherStartsMcp(brokerSocket) {
       null,
       2,
     ) + '\n',
-    { mode: 0o600 },
+    0o600,
   );
   const transport = new StdioClientTransport({
     command: launcher,
@@ -161,18 +201,18 @@ async function stateFileLauncherStartsMcp(brokerSocket) {
     } catch {
       // best effort
     }
-    if (previous === null) fs.rmSync(brokerState, { force: true });
-    else fs.writeFileSync(brokerState, previous);
+    if (previous === null) removePath(brokerState);
+    else writeText(brokerState, previous, 0o600);
   }
 }
 function withBrokerStateSuppressed(run) {
   const previous = fs.existsSync(brokerState) ? fs.readFileSync(brokerState, "utf8") : null;
   try {
-    fs.rmSync(brokerState, { force: true });
+    removePath(brokerState);
     return run();
   } finally {
-    if (previous === null) fs.rmSync(brokerState, { force: true });
-    else fs.writeFileSync(brokerState, previous);
+    if (previous === null) removePath(brokerState);
+    else writeText(brokerState, previous, 0o600);
   }
 }
 
@@ -186,27 +226,8 @@ async function main() {
     sourceAssertions,
   );
 
-  const denied = withBrokerStateSuppressed(() =>
-    childProcess.spawnSync(launcher, [], {
-      cwd: repoRoot,
-      encoding: "utf8",
-      timeout: 5000,
-      env: {
-        ...process.env,
-        ATOMIC_SINGLE_TOOL_CALL: "",
-        ATOMIC_SINGLE_TOOL_NAME: "",
-        ATOMIC_SINGLE_TOOL_ARGS_JSON: "",
-        ATOMIC_HOST_SANDBOX: "",
-        ATOMIC_HOST_ATOMIC_ONLY: "",
-        ATOMIC_HOST_WRITE_ROOT: "",
-        ATOMIC_EXEC_BROKER_SOCKET: "",
-      },
-    }),
-  );
-  record(results, "unhosted MCP launcher is refused before server start", denied.status === 79 && /requires the atomic host sandbox boundary/.test(denied.stderr ?? ""), {
-    status: denied.status,
-    stderr: denied.stderr,
-  });
+  const unhosted = await unhostedLauncherStartsMcp();
+  record(results, "unhosted MCP launcher self-hosts and starts the Atomic server", unhosted.ok === true, unhosted);
 
   const noBroker = withBrokerStateSuppressed(() =>
     childProcess.spawnSync(launcher, [], {
@@ -257,6 +278,7 @@ async function main() {
 
   return { ok: results.every((entry) => entry.ok), results };
 }
+
 
 main().then((result) => {
   if (jsonMode) process.stdout.write(JSON.stringify(result) + '\n');

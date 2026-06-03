@@ -4,6 +4,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { mkdirPath, removePath } from './broker-fixture-io.mjs';
+import { installInheritedAtomicHostEnv } from './proof-host-env.mjs';
 
 /**
  * external-runtime-denial proof.
@@ -48,15 +50,7 @@ async function callAtomicExec(client, command, args = {}) {
 }
 
 function serverTransport() {
-  const inheritedHostEnv = {
-    ATOMIC_HOST_SANDBOX: process.env.ATOMIC_HOST_SANDBOX ?? '',
-    ATOMIC_HOST_ATOMIC_ONLY: process.env.ATOMIC_HOST_ATOMIC_ONLY ?? '',
-    ATOMIC_HOST_WRITE_ROOT: process.env.ATOMIC_HOST_WRITE_ROOT ?? '',
-    ATOMIC_EXEC_BROKER_SOCKET: process.env.ATOMIC_EXEC_BROKER_SOCKET ?? '',
-    TMPDIR: process.env.TMPDIR ?? '',
-    TMP: process.env.TMP ?? '',
-    TEMP: process.env.TEMP ?? '',
-  };
+  const inheritedHostEnv = installInheritedAtomicHostEnv(repoRoot);
   const compiledServer = path.join(sourceDir, 'dist', 'server.js');
   if (fs.existsSync(compiledServer)) {
     return new StdioClientTransport({
@@ -90,8 +84,8 @@ async function expectExternalRefusal(client, results, name, command) {
 
 async function main() {
   const results = [];
-  fs.rmSync(fixture, { recursive: true, force: true });
-  fs.mkdirSync(fixture, { recursive: true });
+  removePath(fixture);
+  mkdirPath(fixture);
 
   const transport = serverTransport();
   const client = new Client({ name: 'external-runtime-denial-proof', version: '1.0.0' });
@@ -128,7 +122,7 @@ async function main() {
     try {
       await client.close();
     } catch {}
-    fs.rmSync(fixture, { recursive: true, force: true });
+    removePath(fixture);
   }
 
   const ok = results.every((entry) => entry.ok);

@@ -54,15 +54,20 @@ function codexConfigContract() {
   const body = tableBody(text, 'mcp_servers.atomic-edit');
   const timeoutMatch = body?.match(/startup_timeout_sec\s*=\s*([0-9.]+)/);
   const startupTimeout = timeoutMatch ? Number(timeoutMatch[1]) : null;
+  const launcherReal = realpathIfPresent(mcpLauncher);
+  const configuredLaunchers = [...(body ?? '').matchAll(/"([^"]*atomic-edit-mcp-launcher\.sh)"/g)].map((match) => match[1]);
+  const argsUseRepoLauncher = configuredLaunchers.some((value) => realpathIfPresent(value) === launcherReal);
   return {
     codexConfigPath,
     hooksEnabled: /^hooks\s*=\s*true\b/m.test(text),
     tablePresent: body !== null,
     commandIsBash: /command\s*=\s*"bash"/.test(body ?? ''),
-    argsUseRepoLauncher: (body ?? '').includes(`"${mcpLauncher}"`),
+    argsUseRepoLauncher,
+    configuredLaunchers,
     startupTimeout,
     startupTimeoutEnough: typeof startupTimeout === 'number' && startupTimeout >= 30,
     expectedLauncher: mcpLauncher,
+    expectedLauncherReal: launcherReal,
   };
 }
 
@@ -108,18 +113,87 @@ function hookContract() {
   };
 }
 
-function runProof(name, timeout = 90000) {
+function shellPath(value) {
+  return `'${String(value).replaceAll("'", "'\\''")}'`;
+}
+
+function proofEnv() {
+  const hostRoot = process.env.ATOMIC_HOST_WRITE_ROOT
+    ? path.resolve(process.env.ATOMIC_HOST_WRITE_ROOT)
+    : repoRoot;
+  const codexHome = process.env.CODEX_HOME ?? path.join(hostRoot, '.codex');
+  return {
+    ...process.env,
+    ATOMIC_BUILD_BROKER: '1',
+    ATOMIC_HOST_ATOMIC_ONLY: '1',
+    ATOMIC_HOST_SANDBOX: process.env.ATOMIC_HOST_SANDBOX ?? 'macos-sandbox-exec',
+    ATOMIC_HOST_WRITE_ROOT: hostRoot,
+    CODEX_HOME: codexHome,
+    CODEX_PROJECT_DIR: hostRoot,
+    TMPDIR: sourceDir,
+    TMP: sourceDir,
+    TEMP: sourceDir,
+  };
+}
+
+function proofResult(status, stdout, stderr) {
+  return {
+    status,
+    stdout,
+    stderr,
+    parsed: parseJson(stdout),
+  };
+}
+
+function runProofDirect(name, timeout, env) {
   const result = childProcess.spawnSync(process.execPath, [path.join(sourceDir, 'gates', name), '--json'], {
     cwd: sourceDir,
+    env,
     encoding: 'utf8',
     timeout,
   });
-  return {
-    status: result.status,
-    stdout: result.stdout,
-    stderr: result.stderr,
-    parsed: parseJson(result.stdout),
-  };
+  return proofResult(result.status, result.stdout, result.stderr);
+}
+
+function runProofViaBroker(name, timeout, env) {
+  const socket = env.ATOMIC_EXEC_BROKER_SOCKET ?? '';
+  const client = path.join(env.ATOMIC_HOST_WRITE_ROOT ?? repoRoot, 'scripts/mcp/atomic-edit/atomic-exec-broker-client.mjs');
+  if (!socket || !fs.existsSync(client)) {
+    return runProofDirect(name, timeout, env);
+  }
+
+  const proofPath = path.join(sourceDir, 'gates', name);
+  const request = JSON.stringify({
+    command: `${shellPath(process.execPath)} ${shellPath(proofPath)} --json`,
+    cwd: env.ATOMIC_HOST_WRITE_ROOT ?? repoRoot,
+    effectRoot: env.ATOMIC_HOST_WRITE_ROOT ?? repoRoot,
+    timeoutMs: timeout,
+    env,
+  });
+  const result = childProcess.spawnSync(process.execPath, [client, socket], {
+    cwd: env.ATOMIC_HOST_WRITE_ROOT ?? repoRoot,
+    env,
+    input: request,
+    encoding: 'utf8',
+    timeout: timeout + 5000,
+  });
+  const reply = parseJson(result.stdout);
+  if (!reply || typeof reply !== 'object') {
+    return proofResult(result.status, result.stdout, result.stderr);
+  }
+
+  const stdout = typeof reply.stdout === 'string' ? reply.stdout : '';
+  const stderr = typeof reply.stderr === 'string' ? reply.stderr : '';
+  const status = typeof reply.exitCode === 'number' ? reply.exitCode : result.status;
+  return proofResult(status, stdout, stderr);
+}
+
+function runProof(name, timeout = 90000) {
+  const env = proofEnv();
+  if (env.ATOMIC_EXEC_BROKER_SOCKET && !process.env.ATOMIC_EXEC_BROKER_ROOT) {
+    return runProofViaBroker(name, timeout, env);
+  }
+  return runProofDirect(name, timeout, env);
 }
 
 function inspectHostEnv(env, mode) {
@@ -159,6 +233,10 @@ function inspectHostEnv(env, mode) {
   };
 }
 
+function pathInsideRepo(realPath) {
+  return realPath === repoRootReal || (typeof realPath === 'string' && realPath.startsWith(repoRootReal + path.sep));
+}
+
 function hostEnvOk(detail) {
   const base =
     detail.hostSandbox === 'macos-sandbox-exec' &&
@@ -173,7 +251,8 @@ function hostEnvOk(detail) {
   // pin codex-only project/home/temp vars (Claude has no CODEX_HOME), so for a
   // claude host the contract is the host-boundary essentials, NOT the codex env.
   // This generalization ADDS an equally-enforced claude branch; the codex branch
-  // below stays exactly as strict.
+  // below stays exactly as strict on identity and allows broker-invoked proof
+  // temp roots only when they remain inside the same repo write boundary.
   if (detail.agent === 'claude') {
     return base;
   }
@@ -181,9 +260,9 @@ function hostEnvOk(detail) {
     base &&
     detail.codexHomeReal === codexHomeReal &&
     detail.codexProjectDirReal === repoRootReal &&
-    detail.tmpdirReal === repoRootReal &&
-    detail.tmpReal === repoRootReal &&
-    detail.tempReal === repoRootReal
+    pathInsideRepo(detail.tmpdirReal) &&
+    pathInsideRepo(detail.tmpReal) &&
+    pathInsideRepo(detail.tempReal)
   );
 }
 

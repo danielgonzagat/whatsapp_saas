@@ -24,9 +24,12 @@ import { fileURLToPath } from 'node:url';
 
 const endpoint = process.argv[2] || process.env.ATOMIC_EXEC_BROKER_SOCKET;
 
+function writeStdoutAndExit(text, code) {
+  process.stdout.write(text, () => process.exit(code));
+}
+
 function emit(obj, code) {
-  process.stdout.write(JSON.stringify(obj));
-  process.exit(code);
+  writeStdoutAndExit(JSON.stringify(obj), code);
 }
 
 function writeJsonAtomic(file, obj) {
@@ -63,8 +66,7 @@ function sendViaFiles(endpointValue, req) {
       if (fs.existsSync(responseFile)) {
         const text = fs.readFileSync(responseFile, 'utf8');
         fs.rmSync(responseFile, { force: true });
-        process.stdout.write(text);
-        process.exit(0);
+        writeStdoutAndExit(text, 0);
       }
     } catch (error) {
       emit({ ok: false, brokerUnreachable: true, error: 'broker file response failed: ' + String(error?.message || error) }, 1);
@@ -96,8 +98,7 @@ function sendViaSocket(socketPath, req) {
       buf = buf.subarray(4);
     }
     if (need >= 0 && buf.length >= need) {
-      process.stdout.write(buf.subarray(0, need).toString('utf8'));
-      process.exit(0);
+      writeStdoutAndExit(buf.subarray(0, need).toString('utf8'), 0);
     }
   });
   sock.on('error', (e) => {

@@ -7,7 +7,7 @@ import { resolveSafeTarget, REPO_ROOT } from './guard.js';
 import { guardSha, atomicWrite, readUtf8, sha256, targetDetails } from './server-helpers-io.js';
 import { withSelfExpansionAdmission, isAtomicSelfExpansionPath } from './server-helpers-self-expansion.js';
 import { ok, fail } from './server-helpers-result.js';
-import { captureEffectSnapshot, diffEffect, rollbackEffect } from './server-helpers-effect.js';
+import { captureEffectSnapshot, diffEffect, rollbackEffectStrict, type FileEffect } from './server-helpers-effect.js';
 import { requireNegativeActionProof, requireNegativeProofForRemovedBytes, type NegativeActionProof } from './server-helpers-negative-proof.js';
 import { registerToolsDispatch } from './server-tools-dispatch.js';
 
@@ -53,6 +53,9 @@ const MANDATORY_SELF_EXPANSION_VALIDATORS: readonly SelfExpansionValidator[] = [
   { phase: 'runtime', command: 'node gates/codex-entrypoint-contract.proof.mjs --json' },
   { phase: 'runtime', command: 'node gates/compiled-mcp-y-certificate.proof.mjs --json' },
   { phase: 'usability', command: 'node gates/atomic-exec-readonly-usability.proof.mjs --json' },
+  { phase: 'effect-metadata', command: 'node gates/effect-metadata-mode.proof.mjs --json' },
+  { phase: 'effect-admission', command: 'node gates/atomic-exec-prove-effect-required.proof.mjs --json' },
+  { phase: 'effect-scope', command: 'node gates/self-expansion-unexpected-effects.proof.mjs --json' },
   { phase: 'no-bypass', command: 'node codex-atomic-only-hook.proof.mjs --json' },
 ];
 
@@ -100,21 +103,212 @@ function proofTimeoutMs(command: string): number {
   return 60000;
 }
 
-function runProofCommands(commands: string[]): { command: string; ok: boolean; stdout: string; stderr: string }[] {
-  return commands.map((command) => {
-    const res = childProcess.spawnSync('/bin/bash', ['-c', command], {
-      cwd: path.join(REPO_ROOT, 'scripts/mcp/atomic-edit'),
-      encoding: 'utf8',
-      timeout: proofTimeoutMs(command),
-      maxBuffer: 32 * 1024 * 1024,
-    });
-    return {
-      command,
-      ok: res.status === 0,
-      stdout: res.stdout ?? '',
-      stderr: res.stderr ?? (res.error instanceof Error ? res.error.message : ''),
-    };
+function selfExpansionBrokerSocketPath(): string | null {
+  const value = process.env.ATOMIC_EXEC_BROKER_SOCKET;
+  return value && value.trim() ? value : null;
+}
+
+function shellPath(value: string): string {
+  return JSON.stringify(String(value));
+}
+
+function runProofCommandDirect(
+  command: string,
+  cwd: string,
+  timeoutMs: number,
+  env: NodeJS.ProcessEnv = process.env,
+): { command: string; ok: boolean; stdout: string; stderr: string } {
+  const res = childProcess.spawnSync('/bin/bash', ['-c', command], {
+    cwd,
+    env,
+    encoding: 'utf8',
+    timeout: timeoutMs,
+    maxBuffer: 32 * 1024 * 1024,
   });
+  return {
+    command,
+    ok: res.status === 0,
+    stdout: res.stdout ?? '',
+    stderr: res.stderr ?? (res.error instanceof Error ? res.error.message : ''),
+  };
+}
+
+function runProofCommandViaBroker(command: string, cwd: string, timeoutMs: number): { command: string; ok: boolean; stdout: string; stderr: string } | null {
+  const socket = selfExpansionBrokerSocketPath();
+  if (!socket) return null;
+  const brokerRoot = process.env.ATOMIC_HOST_WRITE_ROOT ?? REPO_ROOT;
+  const codexHome = process.env.CODEX_HOME ?? path.join(brokerRoot, '.codex');
+  const client = path.join(brokerRoot, 'scripts/mcp/atomic-edit/atomic-exec-broker-client.mjs');
+  const req = {
+    command,
+    cwd,
+    effectRoot: cwd,
+    timeoutMs,
+    env: {
+      ATOMIC_BUILD_BROKER: '1',
+      ATOMIC_HOST_ATOMIC_ONLY: process.env.ATOMIC_HOST_ATOMIC_ONLY ?? '1',
+      ATOMIC_HOST_SANDBOX: process.env.ATOMIC_HOST_SANDBOX ?? 'macos-sandbox-exec',
+      ATOMIC_HOST_WRITE_ROOT: brokerRoot,
+      ATOMIC_EXEC_BROKER_SOCKET: socket,
+      CODEX_HOME: codexHome,
+      CODEX_PROJECT_DIR: brokerRoot,
+      TMPDIR: brokerRoot,
+      TMP: brokerRoot,
+      TEMP: brokerRoot,
+    },
+  };
+  const res = childProcess.spawnSync(process.execPath, [client, socket], {
+    cwd,
+    encoding: 'utf8',
+    input: JSON.stringify(req),
+    maxBuffer: 64 * 1024 * 1024,
+    timeout: timeoutMs + 5000,
+  });
+  if (res.error) {
+    return { command, ok: false, stdout: res.stdout ?? '', stderr: res.error instanceof Error ? res.error.message : String(res.error) };
+  }
+  let reply: Record<string, unknown>;
+  try {
+    reply = JSON.parse(res.stdout || '{}') as Record<string, unknown>;
+  } catch {
+    return { command, ok: false, stdout: res.stdout ?? '', stderr: 'proof broker returned unparseable output: ' + String(res.stdout).slice(0, 300) };
+  }
+  return {
+    command,
+    ok: reply.ok === true && reply.exitCode === 0,
+    stdout: String(reply.stdout ?? ''),
+    stderr: String(reply.stderr ?? reply.error ?? res.stderr ?? ''),
+  };
+}
+
+function selfExpansionProofRoot(): string {
+  const socket = selfExpansionBrokerSocketPath();
+  const candidates = new Set<string>();
+  for (const value of [REPO_ROOT, process.env.ATOMIC_HOST_WRITE_ROOT, process.env.CODEX_PROJECT_DIR]) {
+    if (value) candidates.add(path.resolve(value));
+  }
+  if (socket) {
+    const marker = `${path.sep}.atomic${path.sep}`;
+    const index = socket.indexOf(marker);
+    if (index > 0) candidates.add(socket.slice(0, index));
+  }
+  for (const root of candidates) {
+    const statePath = path.join(root, '.atomic', 'codex-broker-current.json');
+    try {
+      const payload = JSON.parse(fs.readFileSync(statePath, 'utf8')) as { agent?: unknown; repoRoot?: unknown; socket?: unknown };
+      if (payload.agent === 'codex' && typeof payload.repoRoot === 'string') {
+        if (!socket || typeof payload.socket !== 'string' || path.resolve(payload.socket) === path.resolve(socket)) {
+          return path.resolve(payload.repoRoot);
+        }
+      }
+    } catch {
+      // Keep searching; broker state may be absent in non-hosted contexts.
+    }
+  }
+  if (socket) {
+    const marker = `${path.sep}.atomic${path.sep}`;
+    const index = socket.indexOf(marker);
+    if (index > 0) return socket.slice(0, index);
+  }
+  return process.env.ATOMIC_HOST_WRITE_ROOT ?? REPO_ROOT;
+}
+
+function selfExpansionHostProofEnv(socket: string, cwd: string): NodeJS.ProcessEnv {
+  const hostRoot = selfExpansionProofRoot();
+  return {
+    ...process.env,
+    ATOMIC_BUILD_BROKER: '1',
+    ATOMIC_HOST_ATOMIC_ONLY: process.env.ATOMIC_HOST_ATOMIC_ONLY ?? '1',
+    ATOMIC_HOST_SANDBOX: process.env.ATOMIC_HOST_SANDBOX ?? 'macos-sandbox-exec',
+    ATOMIC_HOST_WRITE_ROOT: hostRoot,
+    ATOMIC_EXEC_BROKER_SOCKET: socket,
+    CODEX_HOME: process.env.CODEX_HOME ?? path.join(hostRoot, '.codex'),
+    CODEX_PROJECT_DIR: hostRoot,
+    TMPDIR: hostRoot,
+    TMP: hostRoot,
+    TEMP: hostRoot,
+  };
+}
+
+function selfExpansionProofCwd(): string {
+  return path.join(selfExpansionProofRoot(), 'scripts/mcp/atomic-edit');
+}
+
+function selfExpansionProofMustRunHostDirect(command: string): boolean {
+  return [
+    'atomic-exec-readonly-usability.proof.mjs',
+    'atomic-exec-sandbox.proof.mjs',
+    'external-runtime-denial.proof.mjs',
+    'mcp-launcher-host-boundary.proof.mjs',
+    'codex-entrypoint-contract.proof.mjs',
+    'compiled-mcp-y-certificate.proof.mjs',
+  ].some((name) => command.includes(name));
+}
+
+function runProofCommands(commands: string[]): { command: string; ok: boolean; stdout: string; stderr: string }[] {
+  const cwd = selfExpansionProofCwd();
+  return commands.map((command) => {
+    const timeout = proofTimeoutMs(command);
+    const socket = selfExpansionBrokerSocketPath();
+    if (socket && selfExpansionProofMustRunHostDirect(command)) {
+      return runProofCommandDirect(command, cwd, timeout, selfExpansionHostProofEnv(socket, cwd));
+    }
+    return runProofCommandViaBroker(command, cwd, timeout) ?? runProofCommandDirect(command, cwd, timeout);
+  });
+}
+function proofFailureSnippet(value: string, maxBytes = 1200): string {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  return trimmed.length > maxBytes ? trimmed.slice(0, maxBytes) + '...<truncated>' : trimmed;
+}
+
+function proofFailureStdoutSummary(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  try {
+    const parsed = JSON.parse(trimmed) as {
+      ok?: unknown;
+      error?: unknown;
+      assertion?: unknown;
+      certificate?: {
+        blockers?: unknown;
+        domains?: { domain?: unknown; status?: unknown; evidence?: unknown; requiredChange?: unknown; detail?: unknown }[];
+      };
+    };
+    const nonGreen = Array.isArray(parsed.certificate?.domains)
+      ? parsed.certificate.domains
+          .filter((domain) => domain.status !== 'GREEN')
+          .map((domain) => ({
+            domain: domain.domain,
+            status: domain.status,
+            evidence: proofFailureSnippet(String(domain.evidence ?? ''), 400),
+            requiredChange: proofFailureSnippet(String(domain.requiredChange ?? ''), 300),
+            detail: proofFailureSnippet(JSON.stringify(domain.detail ?? null), 500),
+          }))
+      : undefined;
+    return JSON.stringify({
+      ok: parsed.ok,
+      error: parsed.error,
+      assertion: parsed.assertion,
+      blockers: parsed.certificate?.blockers,
+      nonGreen,
+    });
+  } catch {
+    return trimmed;
+  }
+}
+
+function formatFailedProofs(failed: { command: string; stdout: string; stderr: string }[]): string {
+  return failed
+    .map((proof) => {
+      const parts = [proof.command];
+      const stderr = proofFailureSnippet(proof.stderr);
+      const stdout = proofFailureSnippet(proofFailureStdoutSummary(proof.stdout), 8000);
+      if (stderr) parts.push('stderr=' + JSON.stringify(stderr));
+      if (stdout) parts.push('stdout=' + JSON.stringify(stdout));
+      return parts.join(' ');
+    })
+    .join('; ');
 }
 
 /**
@@ -138,6 +332,30 @@ function enforceSecurityMonotonicity(options: { ratchet?: boolean } = {}): void 
   if (res.status !== 0) {
     throw new Error(
       `security monotonicity refused this expansion: ${(res.stderr || res.stdout || 'unknown').toString().trim()}`,
+    );
+  }
+}
+
+function isEphemeralSelfExpansionEffect(file: string): boolean {
+  const rel = file.replaceAll('\\', '/');
+  return rel.startsWith('.proof-') || rel.startsWith('.atomic-exec-sandbox-') || rel.startsWith('.external-runtime-denial-');
+}
+
+function selfRootRelativeEffectPath(file: string): string {
+  const rel = file.replaceAll('\\', '/');
+  const prefix = 'scripts/mcp/atomic-edit/';
+  return rel.startsWith(prefix) ? rel.slice(prefix.length) : rel;
+}
+
+function assertNoUnexpectedSelfExpansionEffects(effects: FileEffect[], applied: { file: string }[]): void {
+  const requested = new Set(applied.map((entry) => selfRootRelativeEffectPath(entry.file)));
+  const unexpected = effects.filter((effect) => {
+    const rel = selfRootRelativeEffectPath(effect.file);
+    return !requested.has(rel) && !isEphemeralSelfExpansionEffect(rel);
+  });
+  if (unexpected.length > 0) {
+    throw new Error(
+      `self-expansion produced unrequested non-fixture effect(s): ${unexpected.map((effect) => effect.file).join(', ')}`,
     );
   }
 }
@@ -292,12 +510,13 @@ export function registerToolsSelf(server: McpServer): void {
           const failed = proofs.filter((p) => !p.ok);
           if (failed.length > 0) {
             const effects = diffEffect(snap);
-            const restored = rollbackEffect(snap, effects);
+            const restored = rollbackEffectStrict(snap, effects, 'atomic_expand_self');
             return fail(
-              `atomic_expand_self rolled back ${restored} file effect(s): proof failed: ` +
-                failed.map((p) => p.command).join(', '),
+              `atomic_expand_self rolled back ${restored} file effect(s): proof failed: ` + formatFailedProofs(failed),
             );
           }
+          const effectsBeforeRatchet = diffEffect(snap);
+          assertNoUnexpectedSelfExpansionEffects(effectsBeforeRatchet, applied);
           // All proofs passed - the expansion is fully validated. RATCHET the
           // security baseline so any strengthening of the engine's own surface
           // immediately becomes the locked minimum (closes the persistence window
@@ -309,6 +528,7 @@ export function registerToolsSelf(server: McpServer): void {
             /* baseline persistence is best-effort; the check already passed */
           }
           const effects = diffEffect(snap);
+          assertNoUnexpectedSelfExpansionEffects(effects, applied);
           return ok({
             ok: true,
             changed: true,
@@ -329,7 +549,7 @@ export function registerToolsSelf(server: McpServer): void {
           });
         } catch (e) {
           const effects = diffEffect(snap);
-          const restored = rollbackEffect(snap, effects);
+          const restored = rollbackEffectStrict(snap, effects, 'atomic_expand_self');
           const message = e instanceof Error ? e.message : String(e);
           return fail(`atomic_expand_self rolled back ${restored} file effect(s): ${message}`);
         }

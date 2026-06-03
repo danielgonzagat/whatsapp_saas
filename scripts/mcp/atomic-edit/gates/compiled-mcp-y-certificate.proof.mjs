@@ -67,6 +67,30 @@ function mandatoryDomainReport(cert) {
   };
 }
 
+function compactDetail(value, depth = 0) {
+  if (typeof value === 'string') return value.length > 1000 ? value.slice(0, 1000) + '...<truncated>' : value;
+  if (!value || typeof value !== 'object') return value;
+  if (depth >= 3) return '[depth-limit]';
+  if (Array.isArray(value)) return value.slice(0, 4).map((entry) => compactDetail(entry, depth + 1));
+  const out = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (['detail', 'results'].includes(key) && depth > 0) continue;
+    out[key] = compactDetail(entry, depth + 1);
+  }
+  return out;
+}
+
+function nonGreenDomainDetails(cert) {
+  return (Array.isArray(cert?.domains) ? cert.domains : [])
+    .filter((entry) => entry?.status !== 'GREEN')
+    .map((entry) => ({
+      domain: entry.domain,
+      status: entry.status,
+      evidence: compactDetail(entry.evidence),
+      detail: compactDetail(entry.detail),
+    }));
+}
+
 function writeJsonAtomic(file, obj) {
   const tmp = file + '.' + process.pid + '.tmp';
   fs.writeFileSync(tmp, JSON.stringify(obj), { mode: 0o600 });
@@ -87,6 +111,32 @@ function inheritedBrokerEndpoint() {
     return process.env.ATOMIC_EXEC_BROKER_SOCKET;
   }
   return null;
+}
+
+function brokerStateHostRoot(endpoint) {
+  const candidates = new Set();
+  for (const value of [process.env.ATOMIC_HOST_WRITE_ROOT, process.env.CODEX_PROJECT_DIR, repoRoot]) {
+    if (value) candidates.add(path.resolve(value));
+  }
+  if (endpoint) {
+    const marker = `${path.sep}.atomic${path.sep}`;
+    const index = endpoint.indexOf(marker);
+    if (index > 0) candidates.add(endpoint.slice(0, index));
+  }
+  for (const root of candidates) {
+    const statePath = path.join(root, '.atomic', 'codex-broker-current.json');
+    try {
+      const payload = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+      if (payload?.agent === 'codex' && typeof payload.repoRoot === 'string') {
+        if (!endpoint || typeof payload.socket !== 'string' || path.resolve(payload.socket) === path.resolve(endpoint)) {
+          return path.resolve(payload.repoRoot);
+        }
+      }
+    } catch {
+      // Broker state is optional outside inherited host sessions.
+    }
+  }
+  return process.env.ATOMIC_HOST_WRITE_ROOT ? path.resolve(process.env.ATOMIC_HOST_WRITE_ROOT) : repoRoot;
 }
 
 
@@ -182,21 +232,25 @@ async function main() {
   const inheritedBroker = inheritedBrokerEndpoint();
   try {
     broker = inheritedBroker ? { endpoint: inheritedBroker, inherited: true } : await startBroker();
+    const hostRoot = brokerStateHostRoot(broker.endpoint);
     const transport = new StdioClientTransport({
       command: launcher,
       args: [],
-      cwd: repoRoot,
+      cwd: hostRoot,
       stderr: 'pipe',
       env: {
         ...process.env,
         ATOMIC_HOST_SANDBOX: 'macos-sandbox-exec',
         ATOMIC_HOST_ATOMIC_ONLY: '1',
-        ATOMIC_HOST_WRITE_ROOT: repoRoot,
+        ATOMIC_HOST_WRITE_ROOT: hostRoot,
         ATOMIC_EXEC_BROKER_SOCKET: broker.endpoint,
-        CODEX_PROJECT_DIR: repoRoot,
-        TMPDIR: repoRoot,
-        TMP: repoRoot,
-        TEMP: repoRoot,
+        CODEX_PROJECT_DIR: hostRoot,
+        TMPDIR: hostRoot,
+        TMP: hostRoot,
+        TEMP: hostRoot,
+        ATOMIC_SINGLE_TOOL_CALL: '',
+        ATOMIC_SINGLE_TOOL_NAME: '',
+        ATOMIC_SINGLE_TOOL_ARGS_JSON: '',
       },
     });
     const client = new Client({ name: 'compiled-mcp-y-certificate-proof', version: '1.0.0' });
@@ -243,6 +297,7 @@ async function main() {
           certificateEntrypointGreen,
           mandatoryDomainsGreen: mandatory.ok,
           mandatoryDomainStatuses: mandatory.statuses,
+          nonGreenDomainDetails: nonGreenDomainDetails(cert),
           bypassStatus: bypass?.status,
           bypassReportStatus,
           staticPolicyStatus: staticPolicy?.status,

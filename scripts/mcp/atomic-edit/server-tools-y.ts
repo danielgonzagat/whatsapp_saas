@@ -6,7 +6,8 @@ import { fileURLToPath } from 'node:url';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { REPO_ROOT } from './guard.js';
-import { ok, fail } from './server-helpers-result.js';
+import { ok, fail, type ToolOk } from './server-helpers-result.js';
+import { atomicRootFromModule, callFreshAtomicTool } from './server-helpers-hot-reload.js';
 import { ensureReady, nativeAvailable, nativeLanguages } from './native-bridge.js';
 
 type YStatus = 'GREEN' | 'RED' | 'UNJUDGED';
@@ -44,6 +45,8 @@ const MANDATORY_MCP_CONTROLLED_DOMAINS: readonly string[] = [
 const RUNTIME_SOURCE_EXTENSIONS = new Set(['.ts', '.mjs', '.json', '.sh']);
 const RUNTIME_DIST_EXTENSIONS = new Set(['.js', '.mjs', '.json']);
 const RUNTIME_HASH_SKIP_DIRS = new Set(['dist', 'node_modules', '.atomic', '.git', 'node-compile-cache']);
+const Y_CERTIFICATE_DELEGATE_DEPTH_ENV = 'ATOMIC_Y_CERTIFICATE_DELEGATE_DEPTH';
+const Y_CERTIFICATE_FORCE_STALE_ENV = 'ATOMIC_Y_CERTIFICATE_FORCE_STALE';
 
 function skipRuntimeHashEntry(name: string): boolean {
   return (
@@ -148,36 +151,204 @@ function scriptPath(name: string): string {
   return fs.existsSync(direct) ? direct : path.resolve(here, '..', name);
 }
 
+function shellPath(value: string): string {
+  return `'${String(value).replaceAll("'", "'\\''")}'`;
+}
+
+function jsonScriptHostRoot(): string {
+  const socket = process.env.ATOMIC_EXEC_BROKER_SOCKET ?? '';
+  const candidates = new Set<string>();
+  for (const value of [process.env.ATOMIC_HOST_WRITE_ROOT, process.env.CODEX_PROJECT_DIR, REPO_ROOT]) {
+    if (value) candidates.add(path.resolve(value));
+  }
+  if (socket) {
+    const marker = `${path.sep}.atomic${path.sep}`;
+    const index = socket.indexOf(marker);
+    if (index > 0) candidates.add(socket.slice(0, index));
+  }
+  for (const root of candidates) {
+    const statePath = path.join(root, '.atomic', 'codex-broker-current.json');
+    try {
+      const payload = JSON.parse(fs.readFileSync(statePath, 'utf8')) as {
+        agent?: unknown;
+        repoRoot?: unknown;
+        socket?: unknown;
+      };
+      if (payload.agent === 'codex' && typeof payload.repoRoot === 'string') {
+        if (!socket || typeof payload.socket !== 'string' || path.resolve(payload.socket) === path.resolve(socket)) {
+          return path.resolve(payload.repoRoot);
+        }
+      }
+    } catch {
+      // Broker state is optional outside hosted Codex sessions.
+    }
+  }
+  if (process.env.ATOMIC_HOST_WRITE_ROOT) return path.resolve(process.env.ATOMIC_HOST_WRITE_ROOT);
+  if (socket) {
+    const marker = `${path.sep}.atomic${path.sep}`;
+    const index = socket.indexOf(marker);
+    if (index > 0) return socket.slice(0, index);
+  }
+  return REPO_ROOT;
+}
+
+function jsonScriptEnv(root: string): NodeJS.ProcessEnv {
+  return {
+    ...process.env,
+    ATOMIC_SINGLE_TOOL_CALL: '',
+    ATOMIC_SINGLE_TOOL_NAME: '',
+    ATOMIC_SINGLE_TOOL_ARGS_JSON: '',
+    ATOMIC_HOST_WRITE_ROOT: root,
+    CODEX_PROJECT_DIR: root,
+    TMPDIR: root,
+    TMP: root,
+    TEMP: root,
+  };
+}
+
+function jsonScriptMustRunHostDirect(name: string): boolean {
+  return new Set([
+    'gates/atomic-exec-readonly-usability.proof.mjs',
+    'gates/atomic-exec-sandbox.proof.mjs',
+    'gates/external-runtime-denial.proof.mjs',
+    'gates/mcp-launcher-host-boundary.proof.mjs',
+    'gates/codex-entrypoint-contract.proof.mjs',
+  ]).has(name);
+}
+
+function jsonScriptError(
+  e: unknown,
+  stdoutOverride?: string,
+  stderrOverride?: string,
+  statusOverride?: number | null,
+  signalOverride?: NodeJS.Signals | null,
+): { ok: false; error: string } {
+  const err = e as Error & { stdout?: Buffer | string; stderr?: Buffer | string; status?: number | null; signal?: NodeJS.Signals | null };
+  const stdout = stdoutOverride ?? (Buffer.isBuffer(err.stdout) ? err.stdout.toString('utf8') : String(err.stdout ?? ''));
+  const stderr = stderrOverride ?? (Buffer.isBuffer(err.stderr) ? err.stderr.toString('utf8') : String(err.stderr ?? ''));
+  const status = statusOverride ?? err.status;
+  const signal = signalOverride ?? err.signal;
+  const details = [
+    err.message,
+    typeof status === 'number' ? `status=${status}` : '',
+    signal ? `signal=${signal}` : '',
+    stdout.trim() ? `stdout=${stdout.slice(0, 4000)}` : '',
+    stderr.trim() ? `stderr=${stderr.slice(0, 4000)}` : '',
+  ].filter(Boolean).join(' | ');
+  return { ok: false, error: details || String(e) };
+}
+
+function parseJsonScriptOutput(out: string): { ok: true; value: Record<string, unknown> } | { ok: false; error: string } {
+  try {
+    return { ok: true, value: JSON.parse(out) as Record<string, unknown> };
+  } catch (e) {
+    return jsonScriptError(e, out, '', null, null);
+  }
+}
+
+function runJsonScriptDirect(
+  name: string,
+  args: string[],
+  timeoutMs: number,
+): { ok: true; value: Record<string, unknown> } | { ok: false; error: string } {
+  try {
+    const root = jsonScriptHostRoot();
+    const out = childProcess.execFileSync(process.execPath, [scriptPath(name), ...args], {
+      cwd: root,
+      encoding: 'utf8',
+      timeout: timeoutMs,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: jsonScriptEnv(root),
+    });
+    return parseJsonScriptOutput(out);
+  } catch (e) {
+    return jsonScriptError(e);
+  }
+}
+
+function runJsonScriptViaBroker(
+  name: string,
+  args: string[],
+  timeoutMs: number,
+): { ok: true; value: Record<string, unknown> } | { ok: false; error: string } | null {
+  const socket = process.env.ATOMIC_EXEC_BROKER_SOCKET ?? '';
+  const root = jsonScriptHostRoot();
+  const client = path.join(root, 'scripts/mcp/atomic-edit/atomic-exec-broker-client.mjs');
+  if (!socket || process.env.ATOMIC_EXEC_BROKER_ROOT || !fs.existsSync(client)) return null;
+
+  const command = [process.execPath, scriptPath(name), ...args].map(shellPath).join(' ');
+  const env = jsonScriptEnv(root);
+  const result = childProcess.spawnSync(process.execPath, [client, socket], {
+    cwd: root,
+    input: JSON.stringify({ command, cwd: root, effectRoot: root, timeoutMs, env }),
+    encoding: 'utf8',
+    timeout: timeoutMs + 5000,
+    maxBuffer: 16 * 1024 * 1024,
+  });
+  if (result.error) return jsonScriptError(result.error);
+
+  let reply: Record<string, unknown>;
+  try {
+    reply = JSON.parse(result.stdout || '{}') as Record<string, unknown>;
+  } catch (e) {
+    return jsonScriptError(e, String(result.stdout ?? ''), String(result.stderr ?? ''), result.status, result.signal);
+  }
+  const stdout = typeof reply.stdout === 'string' ? reply.stdout : '';
+  const stderr = typeof reply.stderr === 'string' ? reply.stderr : '';
+  const exitCode = typeof reply.exitCode === 'number' ? reply.exitCode : result.status;
+  if (reply.brokerUnreachable || reply.ok === false || exitCode !== 0) {
+    return jsonScriptError(
+      new Error(String(reply.error ?? `brokered ${name} failed`)),
+      stdout,
+      stderr,
+      exitCode,
+      (reply.signal as NodeJS.Signals | null) ?? result.signal,
+    );
+  }
+  return parseJsonScriptOutput(stdout);
+}
+
 function runJsonScript(
   name: string,
   args: string[],
   timeoutMs = 15000,
 ): { ok: true; value: Record<string, unknown> } | { ok: false; error: string } {
-  try {
-    const out = childProcess.execFileSync(process.execPath, [scriptPath(name), ...args], {
-      cwd: REPO_ROOT,
-      encoding: 'utf8',
-      timeout: timeoutMs,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-    return { ok: true, value: JSON.parse(out) as Record<string, unknown> };
-  } catch (e) {
-    const err = e as Error & { stdout?: Buffer | string; stderr?: Buffer | string; status?: number | null; signal?: NodeJS.Signals | null };
-    const stdout = Buffer.isBuffer(err.stdout) ? err.stdout.toString('utf8') : String(err.stdout ?? '');
-    const stderr = Buffer.isBuffer(err.stderr) ? err.stderr.toString('utf8') : String(err.stderr ?? '');
-    const details = [
-      err.message,
-      typeof err.status === 'number' ? `status=${err.status}` : '',
-      err.signal ? `signal=${err.signal}` : '',
-      stdout.trim() ? `stdout=${stdout.slice(0, 4000)}` : '',
-      stderr.trim() ? `stderr=${stderr.slice(0, 4000)}` : '',
-    ].filter(Boolean).join(' | ');
-    return { ok: false, error: details || String(e) };
+  if (!jsonScriptMustRunHostDirect(name)) {
+    const brokered = runJsonScriptViaBroker(name, args, timeoutMs);
+    if (brokered) return brokered;
   }
+  return runJsonScriptDirect(name, args, timeoutMs);
 }
 
 function blockers(domains: YDomain[]): YDomain[] {
   return domains.filter((d) => d.status !== 'GREEN');
+}
+
+function isToolResult(value: unknown): value is ToolOk {
+  return Boolean(value) && typeof value === 'object' && Array.isArray((value as ToolOk).content);
+}
+
+function annotateDelegatedCertificateResult(
+  result: unknown,
+  delegatedFromStaleRuntime: Record<string, unknown>,
+): ToolOk {
+  if (!isToolResult(result) || result.content.length === 0) {
+    throw new Error('fresh atomic_y_certificate returned a non-tool result');
+  }
+  const last = result.content[result.content.length - 1];
+  if (!last || last.type !== 'text') {
+    throw new Error('fresh atomic_y_certificate returned no text payload');
+  }
+
+  try {
+    const payload = JSON.parse(last.text) as Record<string, unknown>;
+    return ok({ ...payload, delegatedFromStaleRuntime });
+  } catch (error) {
+    throw new Error(
+      'fresh atomic_y_certificate returned non-JSON text payload: ' +
+        (error instanceof Error ? error.message : String(error)),
+    );
+  }
 }
 
 export function registerToolsY(server: McpServer): void {
@@ -219,7 +390,28 @@ export function registerToolsY(server: McpServer): void {
         const currentRuntimeFingerprint = computeRuntimeFingerprint();
         const runtimeProcessFresh =
           RUNTIME_BOOT_FINGERPRINT.sourceHash === currentRuntimeFingerprint.sourceHash &&
-          RUNTIME_BOOT_FINGERPRINT.distHash === currentRuntimeFingerprint.distHash;
+          RUNTIME_BOOT_FINGERPRINT.distHash === currentRuntimeFingerprint.distHash &&
+          process.env[Y_CERTIFICATE_FORCE_STALE_ENV] !== '1';
+        const rawDelegateDepth = Number.parseInt(process.env[Y_CERTIFICATE_DELEGATE_DEPTH_ENV] ?? '0', 10);
+        const delegateDepth = Number.isFinite(rawDelegateDepth) ? rawDelegateDepth : 0;
+        if (freshness.fresh && !runtimeProcessFresh && delegateDepth < 1) {
+          const delegated = await callFreshAtomicTool(
+            atomicRootFromModule(),
+            {
+              ...process.env,
+              [Y_CERTIFICATE_DELEGATE_DEPTH_ENV]: String(delegateDepth + 1),
+              [Y_CERTIFICATE_FORCE_STALE_ENV]: '',
+            },
+            'atomic_y_certificate',
+            { scope, includeAudits: Boolean(a.includeAudits) },
+          );
+          return annotateDelegatedCertificateResult(delegated, {
+            staleRuntimePid: process.pid,
+            staleRuntimeBootFingerprint: RUNTIME_BOOT_FINGERPRINT,
+            staleRuntimeCurrentFingerprint: currentRuntimeFingerprint,
+            reason: 'stale Atomic MCP runtime delegated certificate issuance to freshly compiled dist/server.js',
+          });
+        }
         const distFreshnessGreen = freshness.fresh && runtimeProcessFresh;
         const domains: YDomain[] = [
           {
@@ -420,13 +612,13 @@ export function registerToolsY(server: McpServer): void {
           domain: 'atomicExecReadOnlyUsability',
           status: readOnlyUsabilityGreen ? 'GREEN' : 'RED',
           evidence: readOnlyUsabilityGreen
-            ? 'atomic-exec-readonly-usability.proof.mjs passed: atomic_exec can perform legitimate read-only repo inspection under the Atomic sandbox, including protected-file reads and git status despite /dev/null usage, while protected writes remain refused.'
+            ? 'atomic-exec-readonly-usability.proof.mjs passed: atomic_exec can perform legitimate repo-root read-only inspection under the Atomic broker no-write sandbox, including protected-file reads and git status despite /dev/null usage, while protected writes remain refused.'
             : readOnlyUsability.ok
               ? `atomic_exec read-only usability proof reported non-green: ${JSON.stringify(readOnlyUsability.value)}`
               : `atomic_exec read-only usability proof could not run: ${readOnlyUsability.error}`,
           requiredChange: readOnlyUsabilityGreen
             ? undefined
-            : 'Repair atomic_exec host/broker sandbox usability so legitimate read-only inspection works without reopening protected writes or external effects.',
+            : 'Repair atomic_exec host/broker sandbox usability so legitimate repo-root read-only inspection works without reopening protected writes or external effects.',
           detail: readOnlyUsability.ok ? readOnlyUsability.value : undefined,
         });
 

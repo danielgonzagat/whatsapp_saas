@@ -98,6 +98,7 @@ export function registerToolsLens(server: McpServer): void {
           ran: report.ran,
           unjudgedCount: report.unjudged.length,
           unjudgedDomains: report.unjudged.slice(0, 50),
+          unjudgedEvidence: (report.unjudgedEvidence ?? []).slice(0, 50),
           reds: report.reds,
           byteEvidenceCount: report.negativeByteEvidence.length,
           byteEvidence: report.negativeByteEvidence,

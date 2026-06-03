@@ -4,20 +4,19 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { mkdirPath, removePath } from './broker-fixture-io.mjs';
+import { installInheritedAtomicHostEnv } from './proof-host-env.mjs';
 
 /**
  * atomic_exec sandbox proof.
  *
  * Asserts that atomic_exec confines every command under a real OS sandbox:
- * cwd-only writes, network denied, byte-effect proven. With the out-of-sandbox
+ * cwd-only writes for byte-effect-proven commands, no command write permission
+ * for trace-only read commands, and network denied. With the out-of-sandbox
  * broker now backing host-launched mode (macOS forbids nested sandbox-exec),
- * host mode is byte-for-byte identical to non-host mode — cwd-only writes,
- * tempRoot=cwd, per-command network denial — so this proof runs the SAME
- * assertions in both modes (the broker engine label is 'macos-broker-sandbox',
- * the direct engine label is 'macos-sandbox-exec'; both report active:true,
- * fileWrites:'cwd-only', network:'denied'). Host mode additionally forces
- * proveEffect on EVERY command, so a trace-only command without proveEffect is
- * refused (asserted below).
+ * host mode preserves the same command containment as direct mode: effect-proven
+ * commands report fileWrites:'cwd-only', while trace-only read commands report
+ * fileWrites:'denied'. Both modes report active:true and network:'denied'.
  */
 const jsonMode = process.argv.includes('--json');
 const sourceDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -52,15 +51,7 @@ async function callAtomicExec(client, command, args = {}) {
 }
 
 function serverTransport() {
-  const inheritedHostEnv = {
-    ATOMIC_HOST_SANDBOX: process.env.ATOMIC_HOST_SANDBOX ?? '',
-    ATOMIC_HOST_ATOMIC_ONLY: process.env.ATOMIC_HOST_ATOMIC_ONLY ?? '',
-    ATOMIC_HOST_WRITE_ROOT: process.env.ATOMIC_HOST_WRITE_ROOT ?? '',
-    ATOMIC_EXEC_BROKER_SOCKET: process.env.ATOMIC_EXEC_BROKER_SOCKET ?? '',
-    TMPDIR: process.env.TMPDIR ?? '',
-    TMP: process.env.TMP ?? '',
-    TEMP: process.env.TEMP ?? '',
-  };
+  const inheritedHostEnv = installInheritedAtomicHostEnv(repoRoot);
   const compiledServer = path.join(sourceDir, 'dist', 'server.js');
   if (fs.existsSync(compiledServer)) {
     return new StdioClientTransport({
@@ -83,14 +74,14 @@ function serverTransport() {
 async function main() {
   const results = [];
   const hostMode = process.env.ATOMIC_HOST_SANDBOX === 'macos-sandbox-exec' && process.env.ATOMIC_HOST_ATOMIC_ONLY === '1';
-  // With the broker, host mode is identical to non-host mode: cwd-only writes,
-  // tempRoot=cwd, network denied. Only the engine label differs.
+  // Effect-proven commands use cwd-only writes in both direct and broker mode;
+  // trace-only read commands are checked separately for fileWrites=denied.
   const expectedWriteMode = 'cwd-only';
   const expectedTempRoot = fixture;
-  fs.rmSync(fixture, { recursive: true, force: true });
-  fs.mkdirSync(fixture, { recursive: true });
-  fs.rmSync(forbidden, { force: true });
-  fs.rmSync(tmpForbidden, { force: true });
+  removePath(fixture);
+  mkdirPath(fixture);
+  removePath(forbidden);
+  removePath(tmpForbidden);
 
   const transport = serverTransport();
   const client = new Client({ name: 'atomic-exec-sandbox-proof', version: '1.0.0' });
@@ -146,13 +137,11 @@ async function main() {
     const readOnlyTmpText = String((readOnlyTmp.stdout ?? '') + '\n' + (readOnlyTmp.stderr ?? ''));
     record(
       results,
-      'trace-only read command cannot write temp bytes outside snapshot',
+      'trace-only read command cannot write temp bytes without byte-effect proof',
       readOnlyTmp.ok === false &&
         !fs.existsSync(tmpForbidden) &&
-        (hostMode
-          ? /effect proof required|host-sandboxed atomic_exec requires proveEffect/i.test(String(readOnlyTmp.error ?? '') + readOnlyTmpText)
-          : readOnlyTmp.atomicEnvelope?.sandbox?.fileWrites === 'denied' &&
-            /EPERM|EACCES|Operation not permitted|not permitted/i.test(readOnlyTmpText)),
+        readOnlyTmp.atomicEnvelope?.sandbox?.fileWrites === 'denied' &&
+        /EPERM|EACCES|Operation not permitted|not permitted/i.test(readOnlyTmpText),
       { ok: readOnlyTmp.ok, sandbox: readOnlyTmp.atomicEnvelope?.sandbox, stdout: readOnlyTmp.stdout, stderr: readOnlyTmp.stderr, error: readOnlyTmp.error },
     );
 
@@ -208,9 +197,9 @@ async function main() {
     try {
       await client.close();
     } catch {}
-    fs.rmSync(fixture, { recursive: true, force: true });
-    fs.rmSync(forbidden, { force: true });
-    fs.rmSync(tmpForbidden, { force: true });
+    removePath(fixture);
+    removePath(forbidden);
+    removePath(tmpForbidden);
   }
 
   const ok = results.every((entry) => entry.ok);

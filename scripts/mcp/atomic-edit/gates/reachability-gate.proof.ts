@@ -163,6 +163,72 @@ async function main(): Promise<void> {
     fs.rmSync(root, { recursive: true, force: true });
   }
 
+  // CASE 7: scripts/ operational entrypoints are roots. This prevents the
+  // lens from calling positive executable harness bytes negative, while keeping
+  // ordinary helper-looking files red when no root reaches them.
+  {
+    const root = mkrepo({
+      'scripts/mcp/atomic-edit/smoke.mjs': '#!/usr/bin/env node\nimport "./smoke-part-a.js";\n',
+      'scripts/mcp/atomic-edit/smoke-part-a.ts': 'export const part = 1;\n',
+      'scripts/mcp/atomic-edit/build.mjs': 'console.log("build");\n',
+      'scripts/mcp/atomic-edit/advanced-diff.ts': 'export const helper = 1;\n',
+    });
+    const ctx = makeContext(root, new Map(), [
+      'scripts/mcp/atomic-edit/smoke.mjs',
+      'scripts/mcp/atomic-edit/smoke-part-a.ts',
+      'scripts/mcp/atomic-edit/build.mjs',
+      'scripts/mcp/atomic-edit/advanced-diff.ts',
+    ]);
+    const r = (await gate.run(ctx)) as GateResult;
+    const redFiles = new Set(r.reds.map((x) => x.file));
+    show('CASE 7 (operational script roots)', r);
+    expect(!redFiles.has('scripts/mcp/atomic-edit/smoke.mjs'), 'smoke.mjs is a scripts/ operational root');
+    expect(!redFiles.has('scripts/mcp/atomic-edit/smoke-part-a.ts'), 'smoke-part-a.ts is part of the smoke harness root surface');
+    expect(!redFiles.has('scripts/mcp/atomic-edit/build.mjs'), 'build.mjs is a scripts/ operational root');
+    expect(
+      redFiles.has('scripts/mcp/atomic-edit/advanced-diff.ts'),
+      'ordinary helper under scripts/ remains RED when no root reaches it',
+    );
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+
+  // CASE 8: GREEN - export-from declarations are dependency edges too.
+  // Barrel files that re-export an implementation module keep that module live.
+  {
+    const im = 'im' + 'port';
+    const ex = 'ex' + 'port';
+    const from = 'fr' + 'om';
+    const barrel = '.' + '/barrel';
+    const leaf = '.' + '/leaf';
+    const root = mkrepo({
+      'index.ts': `${im} { leaf } ${from} '${barrel}';\nexport const run = () => leaf();\n`,
+      'barrel.ts': `${ex} { leaf } ${from} '${leaf}';\n`,
+      'leaf.ts': 'export const leaf = (): number => 7;\n',
+    });
+    const ctx = makeContext(root, new Map(), ['leaf.ts']);
+    const r = (await gate.run(ctx)) as GateResult;
+    show('CASE 8 (export-from edge reaches leaf)', r);
+    expect(r.green, 'export-from barrel edge makes leaf.ts reachable');
+    expect(r.reds.length === 0, 'no reds when a root reaches a file through export-from');
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+
+  // CASE 9: GREEN - source files declared in a local build ENTRY manifest
+  // are positive build roots even when loaded later through generated dist files.
+  {
+    const root = mkrepo({
+      'scripts/tool/build.mjs': "const ENTRY = ['gates/algebra.ts', 'gates/merge.ts'];\n",
+      'scripts/tool/gates/algebra.ts': "export const algebra = 'live';\n",
+      'scripts/tool/gates/merge.ts': "export const merge = 'live';\n",
+    });
+    const ctx = makeContext(root, new Map(), ['scripts/tool/gates/algebra.ts', 'scripts/tool/gates/merge.ts']);
+    const r = (await gate.run(ctx)) as GateResult;
+    show('CASE 9 (build ENTRY roots)', r);
+    expect(r.green, 'build ENTRY source files are GREEN roots');
+    expect(r.reds.length === 0, 'no reds when files are declared build inputs');
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+
   console.log('');
   if (failures === 0) {
     console.log('PROOF PASS');

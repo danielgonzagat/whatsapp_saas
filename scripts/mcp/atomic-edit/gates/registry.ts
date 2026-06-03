@@ -126,6 +126,13 @@ export interface UnifiedRed {
 }
 export type GateAdmissionPolicy = 'permissive' | 'strict';
 
+export interface UnifiedUnjudged {
+  gate: string;
+  reason: string;
+  note?: string;
+  affectedFiles: string[];
+}
+
 export interface RegistryRun {
   green: boolean;
   reds: UnifiedRed[];
@@ -133,6 +140,8 @@ export interface RegistryRun {
   notApplicable: string[];
   /** gates that honestly could not decide (threw, or returned unjudged) — never counted as red */
   unjudged: string[];
+  /** structured evidence for every unjudged domain; the reader must show why unknown stayed unknown */
+  unjudgedEvidence?: UnifiedUnjudged[];
   /** gates that actually applied to >=1 changed file and ran */
   ran: string[];
   /** permissive keeps historical lens behavior; strict is the Y write-admission law */
@@ -156,9 +165,11 @@ export async function runGates(
   const reds: UnifiedRed[] = [];
   const notApplicable: string[] = [];
   const unjudged: string[] = [];
+  const unjudgedEvidence: UnifiedUnjudged[] = [];
   const ran: string[] = [];
   for (const g of gates) {
     if (!changedFiles.some((f) => g.appliesTo(f))) continue;
+    const affectedFiles = changedFiles.filter((f) => g.appliesTo(f)).slice(0, 50);
     ran.push(g.name);
     try {
       const res = await Promise.resolve(g.run(makeContext(repoRoot, overlay, changedFiles, lensMode)));
@@ -167,14 +178,18 @@ export async function runGates(
         continue;
       }
       if (res.unjudged) {
+        const reason = res.unjudgedReason ?? res.note ?? 'gate returned unjudged without a specific reason';
         unjudged.push(g.name);
+        unjudgedEvidence.push({ gate: g.name, reason, note: res.note, affectedFiles });
         continue;
       }
       for (const r of res.reds) reds.push({ gate: res.gate, file: r.file, locus: r.locus, fact: r.fact });
     } catch (e) {
-      unjudged.push(`${g.name} (threw: ${e instanceof Error ? e.message : String(e)})`);
+      const reason = `threw: ${e instanceof Error ? e.message : String(e)}`;
+      unjudged.push(`${g.name} (${reason})`);
+      unjudgedEvidence.push({ gate: g.name, reason, affectedFiles });
     }
   }
   const green = reds.length === 0 && (admissionPolicy === 'permissive' || unjudged.length === 0);
-  return { green, reds, notApplicable, unjudged, ran, admissionPolicy };
+  return { green, reds, notApplicable, unjudged, unjudgedEvidence, ran, admissionPolicy };
 }

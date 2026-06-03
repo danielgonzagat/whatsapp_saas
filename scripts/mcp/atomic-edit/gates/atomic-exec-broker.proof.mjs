@@ -6,9 +6,10 @@
  *   1. client fail-closed when the broker is absent (refuse, not run unsandboxed)
  *   2. write inside effectRoot   -> allowed, file exists, exit 0
  *   3. write outside effectRoot  -> denied (EPERM), file absent
- *   4. network connect           -> denied per-command (EPERM in stderr)
- *   5. real exit code returned   -> `exit 3` comes back exitCode===3
- *   6. invariant denial enforced -> `git restore .` refused by the broker
+ *   4. effectRoot:null           -> denies cwd writes for read-only envelopes
+ *   5. network connect           -> denied per-command (EPERM in stderr)
+ *   6. real exit code returned   -> `exit 3` comes back exitCode===3
+ *   7. invariant denial enforced -> `git restore .` refused by the broker
  *
  * The final payload is ALSO written to .atomic/broker-proof-last.json so the
  * result is readable even when run inside atomic_expand_self (which discards
@@ -112,6 +113,15 @@ async function main() {
       name: 'write outside effectRoot denied',
       ok: r3.exitCode !== 0 && !fs.existsSync(homeForbidden) && /EPERM|not permitted/i.test(String(r3.stderr || '')),
       detail: { exitCode: r3.exitCode, stderr: (r3.stderr || '').slice(0, 200) },
+    });
+
+    const noWriteFile = path.join(fixture, 'no-write.tmp');
+    fs.rmSync(noWriteFile, { force: true });
+    const rNoWrite = callBroker({ command: wb(noWriteFile), cwd: fixture, effectRoot: null });
+    results.push({
+      name: 'explicit null effectRoot denies cwd writes',
+      ok: rNoWrite.exitCode !== 0 && !fs.existsSync(noWriteFile) && /EPERM|not permitted/i.test(String(rNoWrite.stderr || '')),
+      detail: { exitCode: rNoWrite.exitCode, stderr: (rNoWrite.stderr || '').slice(0, 200) },
     });
 
     const netCmd =

@@ -34,10 +34,11 @@ trace → rollback.
 The filesystem is the **universal observable**: a command's persistent effect is
 just a byte-delta on files. So govern the **effect**, not the command.
 
-`atomic_exec` (`proveEffect` / implied by `rollbackOnNonZero`): snapshot the
-file-bytes under cwd → run → report the EXACT per-file change (modified/created/
-deleted, char-level diff) → reverse **byte-exact + untracked-inclusive** on
-failure. Plus: real exit code (never faked), invariant denylist (defense-in-depth,
+`atomic_exec` (`proveEffect`; `rollbackOnNonZero` is recovery-only): snapshot the
+file-bytes under cwd before spawn → run → report the EXACT per-file change
+(modified/created/deleted, char-level diff) → reverse **byte-exact +
+untracked-inclusive** on failure after proof. Plus: real exit code (never faked),
+invariant denylist (defense-in-depth,
 not a sandbox), protected-file shell-write refusal, secret redaction, timeout,
 cwd guard.
 

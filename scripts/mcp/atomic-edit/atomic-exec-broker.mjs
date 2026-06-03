@@ -32,9 +32,9 @@ import { fileURLToPath } from 'node:url';
 
 const SANDBOX_EXEC = '/usr/bin/sandbox-exec';
 const endpointValue = process.argv[2] || process.env.ATOMIC_EXEC_BROKER_SOCKET;
-const allowedRoot = process.env.ATOMIC_EXEC_BROKER_ROOT
-  ? path.resolve(process.env.ATOMIC_EXEC_BROKER_ROOT)
-  : process.cwd();
+const allowedRoot = canonicalPathForContainment(
+  process.env.ATOMIC_EXEC_BROKER_ROOT ? process.env.ATOMIC_EXEC_BROKER_ROOT : process.cwd(),
+);
 
 if (!endpointValue) {
   process.stderr.write('[atomic-exec-broker] endpoint required (argv[2] or ATOMIC_EXEC_BROKER_SOCKET)\n');
@@ -73,6 +73,18 @@ function realOr(p) {
     return path.resolve(p);
   }
 }
+function canonicalPathForContainment(target) {
+  const resolved = path.resolve(target);
+  let cursor = resolved;
+  const suffix = [];
+  while (!fs.existsSync(cursor)) {
+    const parent = path.dirname(cursor);
+    if (parent === cursor) return resolved;
+    suffix.unshift(path.basename(cursor));
+    cursor = parent;
+  }
+  return path.join(realOr(cursor), ...suffix);
+}
 function profile(effectRoot) {
   const writeRule = effectRoot ? `(allow file-write* (subpath "${esc(realOr(effectRoot))}"))` : '';
   return [
@@ -92,7 +104,7 @@ function profile(effectRoot) {
     .join(' ');
 }
 function within(child, root) {
-  const rel = path.relative(root, child);
+  const rel = path.relative(canonicalPathForContainment(root), canonicalPathForContainment(child));
   return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
 }
 
@@ -107,14 +119,18 @@ function handle(req) {
   }
   const runCwd = req.cwd ? path.resolve(req.cwd) : allowedRoot;
   if (!within(runCwd, allowedRoot)) return { ok: false, error: 'broker: cwd escapes allowed root' };
-  const eRoot = req.effectRoot ? path.resolve(req.effectRoot) : runCwd;
-  if (!within(eRoot, allowedRoot)) return { ok: false, error: 'broker: effectRoot escapes allowed root' };
+  const hasEffectRoot = Object.prototype.hasOwnProperty.call(req, 'effectRoot');
+  const eRoot = hasEffectRoot
+    ? (typeof req.effectRoot === 'string' && req.effectRoot.length > 0 ? path.resolve(req.effectRoot) : null)
+    : runCwd;
+  if (eRoot && !within(eRoot, allowedRoot)) return { ok: false, error: 'broker: effectRoot escapes allowed root' };
+  const tempRoot = eRoot || runCwd;
   const res = spawnSync(SANDBOX_EXEC, ['-p', profile(eRoot), '/bin/bash', '-c', command], {
     cwd: runCwd,
     timeout: req.timeoutMs || 120000,
     encoding: 'utf8',
     maxBuffer: 32 * 1024 * 1024,
-    env: { ...process.env, ...(req.env || {}), TMPDIR: eRoot, TMP: eRoot, TEMP: eRoot },
+    env: { ...process.env, ...(req.env || {}), TMPDIR: tempRoot, TMP: tempRoot, TEMP: tempRoot },
     ...(typeof req.stdin === 'string' ? { input: req.stdin } : {}),
   });
   if (res.error) {

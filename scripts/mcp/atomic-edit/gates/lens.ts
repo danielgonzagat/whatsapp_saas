@@ -19,7 +19,7 @@ import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { LENS_GATES, runGates, type UnifiedRed } from './registry.js';
+import { LENS_GATES, runGates, type UnifiedRed, type UnifiedUnjudged } from './registry.js';
 
 const SKIP = new Set(['node_modules', '.git', 'dist', '.next', 'build', 'coverage', 'vendor', '.atomic']);
 const SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
@@ -109,6 +109,7 @@ export interface LensReport {
   containedGeneratedCodeEvidence: NegativeByteEvidence[];
   containedRegExpSourceEvidence: NegativeByteEvidence[];
   unjudged: string[];
+  unjudgedEvidence?: UnifiedUnjudged[];
   ran: string[];
 }
 
@@ -346,6 +347,7 @@ export async function runLens(repoRoot: string, scopeRel: string): Promise<LensR
     containedGeneratedCodeEvidence: evidence.filter((entry) => entry.classification === 'contained-generated-code'),
     containedRegExpSourceEvidence: evidence.filter((entry) => entry.classification === 'contained-regexp-source'),
     unjudged: run.unjudged,
+    unjudgedEvidence: run.unjudgedEvidence ?? [],
     ran: run.ran,
   };
 }

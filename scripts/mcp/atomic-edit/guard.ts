@@ -39,10 +39,46 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 // worktree arm run the SAME OS binary while resolving relative paths against —
 // and being sandboxed to — its own tree, never the code's repo.
 const ROOT_OVERRIDE = process.env.ATOMIC_EDIT_REPO_ROOT?.trim();
-export const REPO_ROOT = ROOT_OVERRIDE ? canonicalPath(ROOT_OVERRIDE) : findRepoRoot(HERE);
+const HOST_WRITE_ROOT = process.env.ATOMIC_HOST_WRITE_ROOT?.trim();
+export const REPO_ROOT = canonicalPath(ROOT_OVERRIDE ? ROOT_OVERRIDE : findRepoRoot(HERE));
+
+function nearestExistingPath(target: string): { existing: string; suffix: string[] } | null {
+  let cursor = path.resolve(target);
+  const suffix: string[] = [];
+  for (;;) {
+    if (fs.existsSync(cursor)) return { existing: cursor, suffix };
+    const parent = path.dirname(cursor);
+    if (parent === cursor) return null;
+    suffix.unshift(path.basename(cursor));
+    cursor = parent;
+  }
+}
+
+function hostVisiblePath(target: string): string | null {
+  if (!HOST_WRITE_ROOT) return null;
+  const hostRoot = path.resolve(HOST_WRITE_ROOT);
+  let hostReal: string;
+  try {
+    hostReal = fs.realpathSync.native(hostRoot);
+  } catch {
+    return null;
+  }
+  const targetExisting = nearestExistingPath(target);
+  if (!targetExisting) return null;
+  let existingReal: string;
+  try {
+    existingReal = fs.realpathSync.native(targetExisting.existing);
+  } catch {
+    return null;
+  }
+  if (!containsPath(hostReal, existingReal)) return null;
+  return path.join(hostRoot, path.relative(hostReal, existingReal), ...targetExisting.suffix);
+}
 
 function canonicalPath(target: string): string {
   const resolved = path.resolve(target);
+  const hostVisible = hostVisiblePath(resolved);
+  if (hostVisible) return hostVisible;
   try {
     return fs.realpathSync.native(resolved);
   } catch {
