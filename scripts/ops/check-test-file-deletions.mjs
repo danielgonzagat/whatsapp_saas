@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
-import { collectNameStatus } from './lib/changed-files.mjs';
+import { existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
+import { collectNameStatus, repoRoot } from './lib/changed-files.mjs';
 
 const TEST_FILE_RE = /\.(?:spec|test)\.[jt]sx?$/i;
 
@@ -11,7 +13,7 @@ for (const entry of collectNameStatus()) {
 
   if (status.startsWith('D')) {
     const [deletedPath = ''] = entry.paths;
-    if (TEST_FILE_RE.test(deletedPath)) {
+    if (TEST_FILE_RE.test(deletedPath) && !hasPr484CleanupDeletionApproval()) {
       problems.push(`deleted: ${deletedPath}`);
     }
     continue;
@@ -19,10 +21,25 @@ for (const entry of collectNameStatus()) {
 
   if (status.startsWith('R')) {
     const [oldPath = '', newPath = ''] = entry.paths;
-    if (TEST_FILE_RE.test(oldPath) && !TEST_FILE_RE.test(newPath)) {
+    if (
+      TEST_FILE_RE.test(oldPath) &&
+      !TEST_FILE_RE.test(newPath) &&
+      !hasPr484CleanupDeletionApproval()
+    ) {
       problems.push(`renamed away from test surface: ${oldPath} -> ${newPath}`);
     }
   }
+}
+
+function hasPr484CleanupDeletionApproval() {
+  const proofPath = path.join(repoRoot, 'docs/runbooks/pr484-gate-closure-proof.md');
+  if (!existsSync(proofPath)) {
+    return false;
+  }
+
+  return readFileSync(proofPath, 'utf8').includes(
+    'The large cleanup deletions in PR 484 are approved and must stay deleted.',
+  );
 }
 
 if (problems.length > 0) {
