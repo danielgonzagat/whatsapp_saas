@@ -153,7 +153,7 @@ describe('ConversationalOnboardingService degraded logging', () => {
               windowHours: 24,
             },
           },
-          pulseTruth: {
+          readinessTruth: {
             noOverclaimStatus: 'PASS',
             capabilityHealthScore: 0,
             gates: [],

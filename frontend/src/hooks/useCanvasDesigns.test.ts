@@ -53,6 +53,24 @@ describe('useCanvasDesigns', () => {
     expect(result.current.error).toBe('Invalid canvas designs payload');
   });
 
+  it('keeps real canvas designs and reports invalid payload when refresh omits the design list', async () => {
+    const design = makeDesign();
+    apiFetchMock.mockResolvedValueOnce({ data: { designs: [design] }, status: 200 });
+
+    const { result } = renderHook(() => useCanvasDesigns());
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.designs).toEqual([design]);
+    apiFetchMock.mockResolvedValueOnce({ data: {}, status: 200 });
+
+    await act(async () => {
+      await result.current.fetchDesigns();
+    });
+
+    expect(result.current.designs).toEqual([design]);
+    expect(result.current.error).toBe('Invalid canvas designs payload');
+  });
+
   it('does not remove a design or invalidate canvas cache when delete returns an API error envelope', async () => {
     const design = makeDesign();
     apiFetchMock.mockResolvedValueOnce({ data: { designs: [design] }, status: 200 });

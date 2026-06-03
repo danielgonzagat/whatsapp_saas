@@ -3,7 +3,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import { UI } from '@/lib/ui-tokens';
 import type { SelectableProduct, WhatsAppSetupState } from './WhatsAppExperience.helpers';
-import { ConnectedCelebration, QRCodePane } from './WhatsAppExperience.connection-panes';
+import { ConnectedCelebration } from './WhatsAppExperience.connection-panes';
 import { ProductCard } from './WhatsAppExperience.dashboard-cards';
 import {
   B,
@@ -19,15 +19,11 @@ import {
 
 export interface ConnectionStepProps {
   effectiveConnection: EffectiveConnection;
-  isWahaProvider: boolean;
-  qrCode: string;
-  scanProgress: number;
   busyKey: string | null;
-  onRefreshQrCode: () => void;
   metaAuthUrl: string | null;
   isMetaProvider: boolean;
   metaConnecting: boolean;
-  onConnectMeta: (url: string) => void;
+  onConnectMeta: (url?: string | null) => void;
 }
 
 const META_ICON = (s: number) => (
@@ -42,34 +38,24 @@ const META_ICON = (s: number) => (
 
 export function ConnectionStep({
   effectiveConnection,
-  isWahaProvider,
-  qrCode,
-  scanProgress,
   busyKey,
-  onRefreshQrCode,
   metaAuthUrl,
   isMetaProvider,
   metaConnecting,
   onConnectMeta,
 }: ConnectionStepProps) {
+  const connecting = metaConnecting || busyKey === 'connect';
+
   return (
     <div className="fade-in" style={{ textAlign: 'center' }}>
       <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8, fontFamily: F }}>
         {kloelT(`Conectar WhatsApp`)}
       </h2>
       <p style={{ fontSize: 13, color: S, marginBottom: 32, fontFamily: F }}>
-        {kloelT(`Escaneie o QR Code para a IA começar a vender pelo seu número`)}
+        {kloelT(`Autorize a Meta Cloud API para a IA começar a vender pelo seu número`)}
       </p>
       {effectiveConnection.connected ? (
         <ConnectedCelebration />
-      ) : isWahaProvider ? (
-        <QRCodePane
-          qrCode={qrCode}
-          progress={scanProgress}
-          connected={effectiveConnection.connected}
-          loading={busyKey === 'connect'}
-          onRefresh={onRefreshQrCode}
-        />
       ) : isMetaProvider && metaAuthUrl ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
           <div
@@ -95,7 +81,7 @@ export function ConnectionStep({
           <button
             type="button"
             onClick={() => onConnectMeta(metaAuthUrl)}
-            disabled={metaConnecting}
+            disabled={connecting}
             style={{
               background: E,
               color: UI.inverse,
@@ -104,16 +90,16 @@ export function ConnectionStep({
               padding: '14px 36px',
               fontSize: 15,
               fontWeight: 700,
-              cursor: metaConnecting ? 'wait' : 'pointer',
+              cursor: connecting ? 'wait' : 'pointer',
               fontFamily: F,
               display: 'flex',
               alignItems: 'center',
               gap: 10,
-              opacity: metaConnecting ? 0.75 : 1,
+              opacity: connecting ? 0.75 : 1,
             }}
           >
             {META_ICON(20)}
-            {metaConnecting ? 'Redirecionando...' : 'Conectar com Meta'}
+            {connecting ? 'Redirecionando...' : 'Conectar com Meta'}
           </button>
           <p style={{ fontSize: 11, color: D, fontFamily: F, maxWidth: 360 }}>
             {kloelT(
@@ -141,13 +127,13 @@ export function ConnectionStep({
           </div>
           <p style={{ fontSize: 14, color: S, maxWidth: 360, lineHeight: 1.6, fontFamily: F }}>
             {kloelT(
-              `A URL de autorizacao Meta ainda nao esta disponivel. Verifique a configuracao do app Meta Business no backend.`,
+              `A autorizacao Meta ainda nao esta disponivel nesta sessao. Inicie novamente o fluxo oficial pelo backend Meta Business.`,
             )}
           </p>
           <button
             type="button"
-            onClick={onRefreshQrCode}
-            disabled={busyKey === 'connect'}
+            onClick={() => onConnectMeta(null)}
+            disabled={connecting}
             style={{
               background: E,
               color: V,
@@ -156,12 +142,12 @@ export function ConnectionStep({
               padding: '12px 28px',
               fontSize: 14,
               fontWeight: 600,
-              cursor: 'pointer',
+              cursor: connecting ? 'wait' : 'pointer',
               fontFamily: F,
-              opacity: busyKey === 'connect' ? 0.7 : 1,
+              opacity: connecting ? 0.7 : 1,
             }}
           >
-            {busyKey === 'connect' ? 'Verificando...' : 'Tentar novamente'}
+            {connecting ? 'Abrindo Meta...' : 'Gerar autorizacao Meta'}
           </button>
         </div>
       )}

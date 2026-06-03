@@ -11,11 +11,11 @@ messaging, or customer data.
 These are the repository-level hard gates:
 
 - `npm run readiness:check`
-- `npm run pulse:ci`
+- `npm run check:security`
+- `npm run check:architecture`
 - GitHub Actions `CI`
 - GitHub Actions `deploy-staging.yml`
 - GitHub Actions `deploy-production.yml`
-- GitHub Actions `nightly-ops-audit.yml`
 
 ## Minimum Launch Baseline
 
@@ -62,9 +62,7 @@ following remain true:
 
 ## What This Does Not Replace
 
-`readiness:check` and `pulse:ci` are hard guards, not legal advice and not full
-penetration testing. They reduce blind spots; they do not eliminate engineering
-responsibility.
+`readiness:check`, security checks, architecture checks, tests and builds are hard guards, not legal advice and not full penetration testing. They reduce blind spots; they do not eliminate engineering responsibility.
 
 ## Rule
 

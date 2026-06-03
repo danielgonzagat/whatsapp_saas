@@ -152,6 +152,14 @@ describe('getAnalyticsDailyActivity', () => {
     );
   });
 
+  it('throws when daily activity entries are malformed', async () => {
+    apiFetch.mockResolvedValueOnce({ data: [{ date: '2026-01-01', inbound: 50 }], status: 200 });
+
+    await expect(getAnalyticsDailyActivity()).rejects.toThrow(
+      'Analytics daily activity did not return a confirmed payload',
+    );
+  });
+
   it('throws on error', async () => {
     apiFetch.mockResolvedValueOnce({ error: 'Server Error', status: 500 });
 
@@ -201,6 +209,20 @@ describe('getAnalyticsAdvanced', () => {
 
   it('throws when the backend does not confirm an advanced analytics payload', async () => {
     apiFetch.mockResolvedValueOnce({ data: undefined, status: 200 });
+
+    await expect(getAnalyticsAdvanced()).rejects.toThrow(
+      'Analytics advanced did not return a confirmed payload',
+    );
+  });
+
+  it('throws when nested advanced analytics collections are malformed', async () => {
+    apiFetch.mockResolvedValueOnce({
+      data: {
+        ...baseAdvanced,
+        funnels: { ...baseAdvanced.funnels, topFlows: { flowId: 'f1' } },
+      },
+      status: 200,
+    });
 
     await expect(getAnalyticsAdvanced()).rejects.toThrow(
       'Analytics advanced did not return a confirmed payload',

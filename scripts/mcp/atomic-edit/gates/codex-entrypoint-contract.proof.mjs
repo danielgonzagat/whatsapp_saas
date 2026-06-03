@@ -61,7 +61,7 @@ function codexConfigContract() {
     codexConfigPath,
     hooksEnabled: /^hooks\s*=\s*true\b/m.test(text),
     tablePresent: body !== null,
-    commandIsBash: /command\s*=\s*"bash"/.test(body ?? ''),
+    commandIsBash: /command\s*=\s*"(?:[^"]*\/)?bash"/.test(body ?? ''),
     argsUseRepoLauncher,
     configuredLaunchers,
     startupTimeout,

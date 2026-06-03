@@ -35,9 +35,6 @@
     "dist",
     "prisma.config.ts",
     "**/*spec.ts",
-    "**/*.fixtures.ts",
-    "src/pulse/*.spec.ts",
-    "src/pulse/**/*.spec.ts",
-    "src/pulse/**/*.fixtures.ts"
+    "**/*.fixtures.ts"
   ]
 }

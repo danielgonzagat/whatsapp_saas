@@ -1,20 +1,14 @@
-import { type NextRequest, NextResponse } from 'next/server';
-import { proxyWhatsAppRequest } from '../../proxy';
+import { NextResponse } from 'next/server';
 
-/** Post. */
-export async function POST(request: NextRequest) {
-  try {
-    const result = await proxyWhatsAppRequest(
-      request,
-      'POST',
-      '/whatsapp-api/session/repair-config',
-    );
-    return NextResponse.json(result.data, { status: result.status });
-  } catch (error) {
-    console.error('[WhatsApp Proxy] session/repair-config error:', error);
-    return NextResponse.json(
-      { message: 'Falha ao reparar configuração da sessão.' },
-      { status: 502 },
-    );
-  }
+/** Legacy session-repair route intentionally retired: WhatsApp uses official Meta Cloud API only. */
+export async function POST() {
+  return NextResponse.json(
+    {
+      success: false,
+      provider: 'meta-cloud',
+      notSupported: true,
+      message: 'Reparo de sessão legada não existe no modo Meta Cloud oficial.',
+    },
+    { status: 410 },
+  );
 }

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, GoneException, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../../../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../../../../common/interfaces';
@@ -186,8 +186,15 @@ export class WhatsAppCatalogController {
   /** Recreate session if invalid. */
   @InternalEndpoint('whatsapp session recreate')
   @Post('session/recreate-if-invalid')
-  async recreateSessionIfInvalid(@Req() req: AuthenticatedRequest) {
-    return this.whatsappService.recreateSessionIfInvalid(req.workspaceId!);
+  recreateSessionIfInvalid() {
+    throw new GoneException({
+      success: false,
+      provider: 'meta-cloud',
+      notSupported: true,
+      feature: 'legacy_session_recreate_if_invalid',
+      message: 'WhatsApp agora conecta somente pela API oficial da Meta.',
+      use: '/meta/auth/url?channel=whatsapp&returnTo=/whatsapp',
+    });
   }
 
   /** Sync. */

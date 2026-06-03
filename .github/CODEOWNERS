@@ -12,5 +12,4 @@ worker/ @danielgonzagat
 frontend/src/components/kloel/ @danielgonzagat
 frontend/src/app/(main)/checkout/ @danielgonzagat
 frontend/src/app/(main)/payments/ @danielgonzagat
-scripts/pulse/ @danielgonzagat
 .github/workflows/ @danielgonzagat

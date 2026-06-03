@@ -8,5 +8,5 @@ export {
   panelMiniLabelStyle,
   panelMiniValueStyle,
 } from './WhatsAppExperience.dashboard-cards';
-export { Steps, QRCodePane } from './WhatsAppExperience.connection-panes';
+export { Steps } from './WhatsAppExperience.connection-panes';
 export { TONE_OPTIONS } from './WhatsAppExperience.helpers';

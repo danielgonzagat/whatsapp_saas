@@ -36,7 +36,7 @@ export class LineageBootstrapHook implements OnModuleInit {
  * directly to the LINEAGE_LEDGER_REPOSITORY token.
  *
  * Exports the three operational services so consumers (ABI builder,
- * capability registry, PULSE) can inject them.
+ * capability registry, readiness) can inject them.
  */
 @Module({
   imports: [PrismaModule],

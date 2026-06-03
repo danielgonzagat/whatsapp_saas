@@ -118,7 +118,10 @@ export function mapPaymentMethods(rawMethods: ReadonlyArray<RawPaymentMethod>): 
 export function extractRawPaymentMethods(
   envelope: { paymentMethods?: RawPaymentMethod[] } | undefined,
 ): RawPaymentMethod[] {
-  return envelope?.paymentMethods ?? [];
+  if (!envelope || !Array.isArray(envelope.paymentMethods)) {
+    throw new Error('Payload de cartoes invalido.');
+  }
+  return envelope.paymentMethods;
 }
 
 /**

@@ -22,7 +22,7 @@ export async function disconnect(
   deps: OpDeps,
   workspaceId: string,
 ): Promise<{ success: boolean; message?: string }> {
-  await deps.persistSessionSnapshot(workspaceId, { status: 'disconnected', qrCode: null });
+  await deps.persistSessionSnapshot(workspaceId, { status: 'disconnected' });
   return { success: true, message: 'disconnected' };
 }
 
@@ -36,7 +36,7 @@ export async function logout(
 export async function restartSession(
   deps: OpDeps,
   workspaceId: string,
-): Promise<{ success: boolean; message?: string; qrCode?: string; authUrl?: string }> {
+): Promise<{ success: boolean; message?: string; authUrl?: string }> {
   return deps.metaCloudProvider.restartSession(workspaceId);
 }
 

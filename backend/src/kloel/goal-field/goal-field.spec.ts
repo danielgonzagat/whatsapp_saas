@@ -92,7 +92,7 @@ describe('Cognitive detectors (UTP-GOAL-COG-*)', () => {
   it('runtime_critical_without_observability fires on hard_fail', () => {
     const events = [
       ev({
-        eventName: 'pulse.gate_failed',
+        eventName: 'readiness.gate_failed',
         payload: { mode: 'hard_fail', gateName: 'origin-immutability' },
       }),
     ];
@@ -172,7 +172,7 @@ describe('GoalFieldService — orchestrator', () => {
         eventId: 'o2',
       }),
       ev({
-        eventName: 'pulse.gate_failed',
+        eventName: 'readiness.gate_failed',
         payload: { mode: 'hard_fail', gateName: 'origin-immutability' },
         entityRef: { entityType: 'gate', entityId: 'origin-immutability' },
       }),
@@ -189,7 +189,7 @@ describe('GoalFieldService — orchestrator', () => {
     const svc = new GoalFieldService();
     const events: SpineEventRef[] = [
       ev({
-        eventName: 'pulse.gate_failed',
+        eventName: 'readiness.gate_failed',
         payload: { mode: 'hard_fail', gateName: 'lineage-integrity' },
         entityRef: { entityType: 'gate', entityId: 'lineage-integrity' },
       }),
@@ -204,7 +204,7 @@ describe('GoalFieldService — orchestrator', () => {
     const svc = new GoalFieldService();
     const events: SpineEventRef[] = [
       ev({
-        eventName: 'pulse.gate_failed',
+        eventName: 'readiness.gate_failed',
         payload: { mode: 'hard_fail', gateName: 'foo' },
         entityRef: { entityType: 'gate', entityId: 'foo' },
       }),

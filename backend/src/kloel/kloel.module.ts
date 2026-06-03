@@ -104,7 +104,6 @@ import { PaymentsModule } from '../payments/payments.module';
 import { MetricsModule } from '../metrics/metrics.module';
 import { PartnershipsModule } from '../partnerships/partnerships.module';
 import { PrismaModule } from '../prisma/prisma.module';
-import { PulseArtifactService } from '../pulse/pulse-artifact.service';
 import { WalletModule } from '../wallet/wallet.module';
 import { ContactsModule } from '../contacts/contacts.module';
 import { ContactIdentityResolverService } from '../contacts/contact-identity-resolver.service';
@@ -220,7 +219,7 @@ import {
   AgentRuntimeMemoryCuratorService,
   AgentRuntimeMemoryManagerService,
   AgentRuntimePolicyService,
-  AgentRuntimePulseSelfModelService,
+  AgentRuntimeReadinessSelfModelService,
   AgentRuntimeSchedulerService,
   AgentRuntimeSessionStore,
   AgentRuntimeSkillRegistry,
@@ -463,7 +462,6 @@ import { CrmModule } from '../crm/crm.module';
     MindVerbalizerService,
     MindWorkspaceStateService,
     VectorService,
-    PulseArtifactService,
     AgentRuntimeContextService,
     AgentRuntimeContextCompressorService,
     AgentRuntimeBuiltinMemoryProvider,
@@ -472,7 +470,7 @@ import { CrmModule } from '../crm/crm.module';
     AgentRuntimeMemoryManagerService,
     AgentRuntimeJobRunnerService,
     AgentRuntimePolicyService,
-    AgentRuntimePulseSelfModelService,
+    AgentRuntimeReadinessSelfModelService,
     AgentRuntimeSchedulerService,
     AgentRuntimeSessionStore,
     AgentRuntimeSkillRegistry,
@@ -573,7 +571,7 @@ import { CrmModule } from '../crm/crm.module';
     AgentRuntimeMemoryManagerService,
     AgentRuntimeJobRunnerService,
     AgentRuntimePolicyService,
-    AgentRuntimePulseSelfModelService,
+    AgentRuntimeReadinessSelfModelService,
     AgentRuntimeSchedulerService,
     AgentRuntimeSessionStore,
     AgentRuntimeSkillRegistry,

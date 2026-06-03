@@ -6,10 +6,6 @@ vi.mock('next/script', () => ({
   default: () => null,
 }));
 
-vi.mock('@/components/kloel/PulseFrontendHeartbeat', () => ({
-  PulseFrontendHeartbeat: () => null,
-}));
-
 vi.mock('@/components/kloel/AppShell', () => ({
   AppShell: ({ children }: { children: ReactNode }) => (
     <div data-testid="legacy-app-shell">{children}</div>

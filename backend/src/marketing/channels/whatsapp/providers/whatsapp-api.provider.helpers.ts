@@ -50,24 +50,6 @@ export function deriveSessionStateFromDetails(details: {
   return 'DISCONNECTED';
 }
 
-/**
- * Returns the human-readable QR-code message keyed off the channel session state.
- * Mirrors the previous inline ternary in WhatsAppApiProvider.getQrCode without changing the
- * public message contract consumed by the frontend.
- */
-export function deriveQrCodeMessage(details: {
-  connected?: boolean;
-  authUrl?: string | null;
-}): string {
-  if (details.connected) {
-    return 'meta_cloud_connected';
-  }
-  if (details.authUrl) {
-    return 'meta_cloud_use_embedded_signup';
-  }
-  return 'meta_cloud_has_no_qr';
-}
-
 /** Compose the canonical WAHA-style chat id (`<phone>@s.whatsapp.net`) from a phone string. */
 export function composeWhatsAppChatId(phone: string): string {
   return `${phone}@s.whatsapp.net`;

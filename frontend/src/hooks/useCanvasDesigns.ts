@@ -60,10 +60,6 @@ export function useCanvasDesigns() {
       const res = await apiFetch<{ designs?: CanvasDesign[] }>('/canvas/designs');
       const payload = unwrapCanvasResponse(res, 'Não foi possível carregar os designs.');
       const list = payload.designs;
-      if (list === undefined) {
-        setDesigns([]);
-        return;
-      }
       if (!Array.isArray(list)) {
         throw new Error('Invalid canvas designs payload');
       }

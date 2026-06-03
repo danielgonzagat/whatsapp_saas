@@ -61,8 +61,13 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
     commission: 0,
   });
   const [affiliateProducts, setAffiliateProducts] = useState<AffiliateProductItem[]>([]);
+  const [affiliateLoading, setAffiliateLoading] = useState(false);
+  const [affiliateLoadError, setAffiliateLoadError] = useState<string | null>(null);
 
   const hydrateAffiliate = useCallback(async () => {
+    setAffiliateLoading(true);
+    setAffiliateLoadError(null);
+
     try {
       const [marketplaceResponse, statsResponse, linksResponse, productsResponse] =
         await Promise.all([
@@ -81,12 +86,11 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
       setAffiliateTotals(lnkData?.totals ?? { clicks: 0, sales: 0, revenue: 0, commission: 0 });
       const prdData = productsResponse.data;
       setAffiliateProducts(Array.isArray(prdData) ? prdData : []);
-    } catch {
-      setMarketplace([]);
-      setMarketplaceStats({});
-      setAffiliateLinks([]);
-      setAffiliateTotals({ clicks: 0, sales: 0, revenue: 0, commission: 0 });
-      setAffiliateProducts([]);
+    } catch (error) {
+      console.error(error);
+      setAffiliateLoadError(error instanceof Error ? error.message : 'Erro ao carregar afiliacao');
+    } finally {
+      setAffiliateLoading(false);
     }
   }, []);
 
@@ -271,6 +275,8 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
             marketplaceStats={marketplaceStats}
             affiliateLinks={affiliateLinks}
             affiliateProducts={affiliateProducts}
+            affiliateLoading={affiliateLoading}
+            affiliateLoadError={affiliateLoadError}
             onRefresh={hydrateAffiliate}
           />
         )}

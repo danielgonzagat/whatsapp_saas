@@ -3,10 +3,6 @@
 // transforms only.
 
 export const STEPS = ['Conectar', 'Produtos', 'Arsenal', 'Configurar'] as const;
-/** Waha_qr_poll_interval_ms. */
-export const WAHA_QR_POLL_INTERVAL_MS = 1200;
-/** Waha_qr_transition_delay_ms. */
-export const WAHA_QR_TRANSITION_DELAY_MS = 150;
 
 const ICON_PHOTO = String.fromCodePoint(0x1f4f8);
 const ICON_VIDEO = String.fromCodePoint(0x1f3ac);

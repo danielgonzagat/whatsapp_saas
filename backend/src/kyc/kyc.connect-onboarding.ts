@@ -77,7 +77,10 @@ export function isConnectKycApproved(
  * state — never rubber-stamped to 'approved'.
  */
 export async function doApproveIfConnectEnabled(
-  deps: { prisma: AutoApprovePrisma['prisma']; connectService: Pick<ConnectService, 'getOnboardingStatus'> },
+  deps: {
+    prisma: AutoApprovePrisma['prisma'];
+    connectService: Pick<ConnectService, 'getOnboardingStatus'>;
+  },
   agentId: string,
   workspaceId: string,
 ): Promise<{ approved: boolean; connectEnabled: boolean }> {

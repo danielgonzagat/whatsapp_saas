@@ -54,7 +54,7 @@ const v1_0_0_baseline: CognitiveStateAbi = Object.freeze({
       windowHours: 24,
     },
   },
-  pulseTruth: {
+  readinessTruth: {
     noOverclaimStatus: 'PASS',
     capabilityHealthScore: 1,
     gates: [],

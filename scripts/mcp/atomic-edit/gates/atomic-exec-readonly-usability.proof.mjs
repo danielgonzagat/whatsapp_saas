@@ -23,7 +23,7 @@ const hostVisibleRepoRoot = process.env.ATOMIC_HOST_WRITE_ROOT
 const hostMode = process.env.ATOMIC_HOST_SANDBOX === 'macos-sandbox-exec' && process.env.ATOMIC_HOST_ATOMIC_ONLY === '1';
 const readOnlyArgs = {};
 const readOnlyCwd = hostVisibleRepoRoot;
-const protectedReadCommand = "sed -n '1,1p' CLAUDE.md";
+const protectedReadCommand = "sed -n '1,1p' package.json";
 
 function parseToolResult(result) {
   const text = result.content?.at(-1)?.text ?? '{}';
@@ -113,7 +113,7 @@ async function main() {
 
     const protectedWrite = await callAtomicExec(
       client,
-      "sed -i '' -e 's/__atomic_never__/__atomic_never__/g' CLAUDE.md",
+      "sed -i '' -e 's/__atomic_never__/__atomic_never__/g' package.json",
       { cwd: readOnlyCwd, intent: 'proof protected governance sed write remains refused' },
     );
     record(

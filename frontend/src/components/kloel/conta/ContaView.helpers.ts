@@ -2,6 +2,7 @@
 // No JSX, no React — these are data-shape transforms only.
 
 import type { KycCompletion } from '@/hooks/useKyc';
+import { legalConstants } from '@/lib/legal-constants';
 import type { SettingsSectionKey } from './ContaTypes';
 import { DEFAULT_SETTINGS_SECTION } from './ContaConstants';
 
@@ -15,6 +16,12 @@ const SECTIONS_WITH_SYSTEM_ALERTS: ReadonlySet<SettingsSectionKey> = new Set<Set
   'analytics',
   'activity',
 ]);
+
+/** Account closure requests are handled by the real account help section. */
+export const ACCOUNT_CLOSURE_SUPPORT_SECTION: SettingsSectionKey = 'ajuda';
+
+/** Canonical support email shared with public legal pages. */
+export const KLOEL_SUPPORT_EMAIL = legalConstants.company.emailSupport;
 
 /** Subscription status union accepted by the BillingSettingsSection. */
 export type SubscriptionStatus = 'none' | 'trial' | 'active' | 'expired' | 'suspended';
@@ -118,6 +125,53 @@ export function buildSectionUrl(
 ): string {
   const query = buildSectionQueryString(currentSearch, nextSection, defaultSection);
   return query ? `${pathname}?${query}` : pathname;
+}
+
+
+/** Build the canonical route for account closure support requests. */
+export function buildAccountClosureSupportUrl(
+  pathname: string,
+  currentSearch: URLSearchParams | string,
+): string {
+  return buildSectionUrl(pathname, currentSearch, ACCOUNT_CLOSURE_SUPPORT_SECTION);
+}
+
+function isPlaceholderWhatsappNumber(digits: string): boolean {
+  const localNumber = digits.startsWith('55') ? digits.slice(2) : digits;
+  return localNumber.length > 0 && /^0+$/.test(localNumber);
+}
+
+function normalizeWhatsappDigits(value: string): string | null {
+  const digits = value.replace(/\D/g, '');
+  if (digits.length < 10 || digits.length > 15 || isPlaceholderWhatsappNumber(digits)) {
+    return null;
+  }
+  return digits;
+}
+
+/** Build a support mail link using the canonical Kloel support address. */
+export function buildKloelSupportMailHref(subject?: string): string {
+  const normalizedSubject = subject?.trim();
+  if (!normalizedSubject) {
+    return `mailto:${KLOEL_SUPPORT_EMAIL}`;
+  }
+  return `mailto:${KLOEL_SUPPORT_EMAIL}?subject=${encodeURIComponent(normalizedSubject)}`;
+}
+
+/** Build a WhatsApp support link only when a real number or wa.me URL is configured. */
+export function buildKloelSupportWhatsappHref(raw?: string | null): string | null {
+  const value = raw?.trim();
+  if (!value) {
+    return null;
+  }
+
+  const existingWaMeUrl = value.match(/^https:\/\/wa\.me\/(\d{10,15})(\?.*)?$/);
+  if (existingWaMeUrl) {
+    return isPlaceholderWhatsappNumber(existingWaMeUrl[1]) ? null : value;
+  }
+
+  const digits = normalizeWhatsappDigits(value);
+  return digits ? `https://wa.me/${digits}` : null;
 }
 
 /**

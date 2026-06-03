@@ -51,12 +51,14 @@ export default function SitesView({ defaultTab = 'visao-geral' }: { defaultTab?:
 
       <div style={{ maxWidth: 1240, margin: '0 auto' }}>
         {tab === 'visao-geral' && <VisaoGeral switchTab={switchTab} sites={sites} loading={sitesLoading} error={sitesError} />}
-        {tab === 'dominios' && <Dominios sites={sites} loading={sitesLoading} />}
-        {tab === 'hospedagem' && <Hospedagem />}
+        {tab === 'dominios' && <Dominios workspaceId={workspaceId} sites={sites} loading={sitesLoading} />}
+        {tab === 'hospedagem' && <Hospedagem sites={sites} loading={sitesLoading} error={sitesError} />}
         {tab === 'criar' && (rawMode ? <CriarSite mode={rawMode} /> : <CriarSite />)}
         {tab === 'editar' && (rawMode ? <EditarSite mode={rawMode} /> : <EditarSite />)}
-        {tab === 'apps' && <Apps />}
-        {tab === 'protecao' && <Protecao />}
+        {tab === 'apps' && (
+          <Apps workspaceId={workspaceId} sites={sites} loading={sitesLoading} error={sitesError} />
+        )}
+        {tab === 'protecao' && <Protecao workspaceId={workspaceId} sites={sites} loading={sitesLoading} />}
       </div>
     </div>
   );

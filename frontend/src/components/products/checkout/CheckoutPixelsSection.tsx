@@ -9,6 +9,29 @@ const EMBER = 'colors.ember.primary';
 const BORDER = 'var(--border-space, colors.border.space)';
 const SECONDARY = 'var(--text-moonlight, colors.text.muted)';
 const FAINT = 'var(--text-dust, colors.text.dim)';
+const ERROR = 'var(--app-error, #e85d30)';
+
+function toPixelErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
+function normalizePixelsResponse(response: unknown): Pixel[] {
+  const data =
+    response && typeof response === 'object' && 'data' in response
+      ? (response as { data?: unknown }).data
+      : undefined;
+
+  if (!data || typeof data !== 'object' || !('pixels' in data)) {
+    return [];
+  }
+
+  const pixels = (data as { pixels?: unknown }).pixels;
+  if (!Array.isArray(pixels)) {
+    throw new Error('Payload de pixels invalido.');
+  }
+
+  return pixels;
+}
 
 export function PixelsSection({ configId, planId }: { configId: string | null; planId: string }) {
   const fid = useId();
@@ -31,11 +54,11 @@ export function PixelsSection({ configId, planId }: { configId: string | null; p
     }
     setLoading(true);
     try {
-      const res = await apiFetch(`/checkout/plans/${planId}/config`);
-      const data = res.data as { pixels?: Pixel[] } | undefined;
-      setPixels(Array.isArray(data?.pixels) ? data.pixels : []);
-    } catch {
-      setPixels([]);
+      const res = await apiFetch<unknown>(`/checkout/plans/${planId}/config`);
+      setPixels(normalizePixelsResponse(res));
+      setError('');
+    } catch (caughtError: unknown) {
+      setError(toPixelErrorMessage(caughtError, 'Falha ao carregar pixels'));
     } finally {
       setLoading(false);
     }
@@ -122,6 +145,11 @@ export function PixelsSection({ configId, planId }: { configId: string | null; p
           {kloelT(`Carregando pixels...`)}
         </p>
       )}
+      {error && !showAdd && (
+        <p style={{ fontFamily: "'Sora', sans-serif", fontSize: 12, color: ERROR, marginBottom: 12 }}>
+          {error}
+        </p>
+      )}
       {pixels.map((pixel) => (
         <PixelRow
           key={pixel.id}
@@ -136,7 +164,7 @@ export function PixelsSection({ configId, planId }: { configId: string | null; p
           onDelete={() => void handleDelete(pixel.id)}
         />
       ))}
-      {pixels.length === 0 && !loading && (
+      {pixels.length === 0 && !loading && !error && (
         <p
           style={{ fontFamily: "'Sora', sans-serif", fontSize: 12, color: FAINT, marginBottom: 12 }}
         >

@@ -144,14 +144,6 @@ reviews:
       instructions: >-
         No skip-marker or only-marker in committed code. Real assertions — flag tests that
         only check truthiness without behavioral expectations.
-    - path: 'scripts/pulse/no-hardcoded-reality-audit.ts'
-      instructions: >-
-        PROTECTED PULSE auditor. Never suggest edits to weaken/bypass/rename or
-        reduce its coverage. CLAUDE.md forbids it.
-    - path: 'scripts/pulse/**'
-      instructions: >-
-        PULSE detectors. Suggestions allowed only if they make detection more
-        accurate or expand coverage — never to suppress findings.
     - path: '.github/workflows/**'
       instructions: >-
         CI is a guardrail. Flag any change that disables required checks

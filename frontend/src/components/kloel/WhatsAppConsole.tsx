@@ -10,7 +10,7 @@ import { ChevronLeft, Power, X } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { AgentActivity } from './AgentConsole';
 import { type ChatPreview, normalizeChats, normalizeMessages } from './WhatsAppConsole.helpers';
-import { QrConnectCard } from './QrConnectCard';
+import { MetaConnectCard } from './QrConnectCard';
 import { ChatsSyncList } from './ChatsSyncList';
 import { WhatsAppLiveView } from './WhatsAppLiveView';
 import { AgentActivityCard } from './AgentActivityCard';
@@ -87,7 +87,6 @@ function WhatsAppConsoleInner({
     error,
     isPaused,
     loading,
-    qrCode,
     reset,
     status,
     statusMessage,
@@ -255,7 +254,7 @@ function WhatsAppConsoleInner({
               className={cn('h-6 w-6', connected && !isPaused ? 'animate-pulse' : undefined)}
             />
             <span className="text-xs font-medium text-slate-600">
-              {connected ? (isPaused ? 'Pausado' : 'Ao vivo') : 'QR Code'}
+              {connected ? (isPaused ? 'Pausado' : 'Ao vivo') : 'Meta'}
             </span>
           </div>
         </button>
@@ -280,8 +279,8 @@ function WhatsAppConsoleInner({
                 {connected
                   ? `${status?.pushName || 'Sessão conectada'}${status?.phone ? ` · ${status.phone}` : ''}`
                   : connecting
-                    ? 'Aguardando leitura do QR Code'
-                    : 'Sessão desconectada'}
+                    ? 'Abrindo autorização Meta'
+                    : 'Meta Cloud desconectado'}
               </div>
             </div>
           </div>
@@ -309,8 +308,7 @@ function WhatsAppConsoleInner({
 
         <div ref={listRef} className="flex-1 overflow-y-auto px-4 py-4">
           {!connected ? (
-            <QrConnectCard
-              qrCode={qrCode}
+            <MetaConnectCard
               connecting={connecting}
               loading={loading}
               error={error}

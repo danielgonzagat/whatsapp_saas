@@ -1,30 +1,22 @@
 /**
  * Pure helpers extracted from {@link ./useWhatsAppSession.ts}.
  *
- * These constants and functions touch no React state, no SWR, no network,
- * no `tokenStorage`, no `window`. They exist so the hook file can shrink
- * and so the status-key/autonomy-mode logic can be unit-tested in
- * isolation without spinning up `renderHook`.
- *
- * Anything that touches `authApi`, `ciaApi`, `tokenStorage`, or React
- * state stays in `useWhatsAppSession.ts`.
+ * WhatsApp connection is Meta Cloud API only. No legacy non-Meta branch is
+ * part of this hook contract.
  */
 
 import { kloelT } from '@/lib/i18n/t';
 
-/* ── Status / autonomy classification sets ── */
+/* -- Status / autonomy classification sets -- */
 
-/**
- * Connection statuses that indicate the WhatsApp session is mid-handshake
- * and the UI should be polling for the QR code rather than treating the
- * session as live.
- */
-export const PENDING_QR_STATUSES: ReadonlySet<string> = new Set([
-  'qr_pending',
-  'scan_qr_code',
-  'starting',
-  'opening',
+/** Connection statuses that indicate the official Meta authorization is not complete yet. */
+export const PENDING_META_STATUSES: ReadonlySet<string> = new Set([
+  'authorization_required',
+  'authorization_expired',
+  'connect_required',
+  'connection_incomplete',
   'connecting',
+  'reconnect_required',
 ]);
 
 /** CIA autonomy modes where the autopilot is actively driving the inbox. */
@@ -33,10 +25,10 @@ export const CIA_ACTIVE_MODES: ReadonlySet<string> = new Set(['LIVE', 'BACKLOG',
 /** CIA autonomy modes that map to a human-requested pause of the autopilot. */
 export const CIA_MANUAL_PAUSE_MODES: ReadonlySet<string> = new Set(['HUMAN_ONLY', 'SUSPENDED']);
 
-/** Canonical wire values returned by the WhatsApp status/connect endpoints. */
+/** Canonical wire values returned by the Meta connection endpoints. */
 export const STATUS_RESPONSES = {
   alreadyConnected: 'already_connected',
-  qrReady: 'qr_ready',
+  connectRequired: 'connect_required',
   disconnected: 'disconnected',
 } as const;
 
@@ -48,56 +40,53 @@ export const AUTONOMY_ACTIONS = {
 /** Polling intervals (ms) used by the hook. */
 export const POLL_INTERVALS = {
   statusMs: 12_000,
-  qrMs: 3_000,
 } as const;
 
-/** Connect/QR setTimeout durations (ms). */
+/** Connect feedback delay (ms). Meta authorization redirects after the official URL is issued. */
 export const TIMEOUTS = {
   connectFeedbackMs: 1_500,
-  qrGenerationMs: 500,
 } as const;
 
-/* ── User-facing copy (PT-BR, wrapped via kloelT) ── */
+/* -- User-facing copy (PT-BR, wrapped via kloelT) -- */
 
 export const SESSION_COPY = {
-  active: kloelT(`Sessão ativa e sincronizada.`),
-  waitingQr: kloelT(`Aguardando leitura do QR Code no aparelho.`),
-  disconnected: kloelT(`WhatsApp desconectado.`),
+  active: kloelT(`Meta Cloud API ativa e sincronizada.`),
+  authorizingMeta: kloelT(`Conexão oficial da Meta pendente.`),
+  disconnected: kloelT(`WhatsApp Meta Cloud desconectado.`),
   workspaceReload: kloelT(
     `Workspace não carregado. Recarregue a página para sincronizar sua conta.`,
   ),
   workspaceRetry: kloelT(`Workspace não carregado. Tente novamente.`),
-  loadStatusFailed: kloelT(`Não foi possível carregar o status agora.`),
-  scanQr: kloelT(`Escaneie o QR Code para conectar.`),
-  connectedSuccess: kloelT(`Sessão conectada com sucesso.`),
-  alreadyConnected: kloelT(`Sessão já estava conectada.`),
-  connectFailed: kloelT(`Falha ao iniciar conexão.`),
-  connectRetry: kloelT(`Falha ao iniciar conexão. Tente novamente.`),
-  disconnectSuccess: kloelT(`Sessão desconectada.`),
-  disconnectRetry: kloelT(`Falha ao desconectar. Tente novamente.`),
-  resetSuccess: kloelT(`Sessão resetada. Gere um novo QR Code para reconectar.`),
-  resetRetry: kloelT(`Falha ao resetar a sessão. Tente novamente.`),
-  pauseSuccess: kloelT(`IA pausada. O WhatsApp continua conectado.`),
+  loadStatusFailed: kloelT(`Não foi possível carregar o status Meta agora.`),
+  connectedSuccess: kloelT(`Meta Cloud API conectada com sucesso.`),
+  alreadyConnected: kloelT(`Meta Cloud API já estava conectada.`),
+  connectFailed: kloelT(`Falha ao iniciar a conexão oficial da Meta.`),
+  connectRetry: kloelT(`Falha ao abrir a conexão oficial da Meta. Tente novamente.`),
+  disconnectSuccess: kloelT(`Meta desconectada.`),
+  disconnectRetry: kloelT(`Falha ao desconectar a Meta. Tente novamente.`),
+  resetSuccess: kloelT(`Conexão Meta reiniciada. Conecte novamente pelo fluxo oficial.`),
+  resetRetry: kloelT(`Falha ao reiniciar a conexão Meta. Tente novamente.`),
+  pauseSuccess: kloelT(`IA pausada. O WhatsApp Meta Cloud continua conectado.`),
   pauseRetry: kloelT(`Falha ao pausar a IA.`),
   resumeSuccess: kloelT(`IA retomada. O atendimento automático voltou a agir.`),
   resumeRetry: kloelT(`Falha ao retomar a IA.`),
-  runtimeResumeSuccess: kloelT(`Sessão ativa. A autonomia total foi retomada automaticamente.`),
-  qrRefreshRetry: kloelT(`Falha ao atualizar o QR Code. Tente novamente.`),
+  runtimeResumeSuccess: kloelT(`Meta Cloud ativa. A autonomia total foi retomada automaticamente.`),
+  redirectingMeta: kloelT(`Abrindo autorização oficial da Meta.`),
+  invalidMetaRedirect: kloelT(`Redirecionamento bloqueado: destino Meta inválido.`),
 } as const;
 
 /** Log-prefix strings for the hook's console.error calls. */
 export const SESSION_LOG = {
   recoverWorkspace: 'Failed to recover authenticated workspace:',
   recoverWorkspaceOnMount: 'Failed to recover workspace on session hook mount:',
-  loadStatus: 'Failed to load WhatsApp status:',
-  loadQr: 'Failed to load QR:',
-  connect: 'Failed to initiate channel session:',
-  disconnect: 'Failed to disconnect:',
-  reset: 'Failed to reset WhatsApp session:',
-  syncRuntime: 'Failed to sync CIA runtime for connected session:',
+  loadStatus: 'Failed to load Meta WhatsApp status:',
+  connect: 'Failed to initiate official Meta WhatsApp connection:',
+  disconnect: 'Failed to disconnect Meta WhatsApp:',
+  reset: 'Failed to reset Meta WhatsApp connection:',
+  syncRuntime: 'Failed to sync CIA runtime for connected Meta WhatsApp:',
 } as const;
 
-/* ── Pure helpers ── */
+/* -- Pure helpers -- */
 
 /** Lowercase / trim a wire status string for set-membership checks. */
 export function normalizeStatusKey(status?: string | null): string {
@@ -106,30 +95,23 @@ export function normalizeStatusKey(status?: string | null): string {
     .toLowerCase();
 }
 
-/** True when the wire status indicates the session is waiting for QR scan. */
-export function isPendingQrStatus(status?: string | null): boolean {
-  return PENDING_QR_STATUSES.has(normalizeStatusKey(status));
+/** True when the wire status indicates the official Meta authorization is pending. */
+export function isPendingMetaStatus(status?: string | null): boolean {
+  return PENDING_META_STATUSES.has(normalizeStatusKey(status));
 }
 
-/**
- * Resolve the user-facing status banner from the current connection data.
- * Connected → active; pending → waitingQr; otherwise → disconnected.
- */
+/** Connected -> active; pending Meta authorization -> action-needed; otherwise -> disconnected. */
 export function resolveStatusMessage(data: { connected: boolean; status?: string | null }): string {
   if (data.connected) {
     return SESSION_COPY.active;
   }
-  if (isPendingQrStatus(data.status)) {
-    return SESSION_COPY.waitingQr;
+  if (isPendingMetaStatus(data.status)) {
+    return SESSION_COPY.authorizingMeta;
   }
   return SESSION_COPY.disconnected;
 }
 
-/**
- * True when the CIA autonomy payload represents an active autopilot — i.e.,
- * the mode is one of LIVE/BACKLOG/FULL and there is no manual-pause marker
- * on either the reason or the mode itself.
- */
+/** True when the CIA autonomy payload represents an active autopilot. */
 export function isCiaAutonomyActive(autonomy: Record<string, unknown> | null | undefined): boolean {
   const mode = String(autonomy?.mode || 'OFF').toUpperCase();
   const reason = String(autonomy?.reason || '');
@@ -143,7 +125,7 @@ export function createSessionError(message: string): Error {
   return new Error(message);
 }
 
-/* ── Credentials state classification ── */
+/* -- Credentials state classification -- */
 
 /** True when both an auth token and a workspaceId are present (non-empty). */
 export function hasCompleteCredentials(creds: {
@@ -153,10 +135,7 @@ export function hasCompleteCredentials(creds: {
   return Boolean(creds.authToken) && Boolean(creds.workspaceId);
 }
 
-/**
- * True when a token exists but no workspaceId — the signal that we must call
- * /auth/me to recover the workspaceId before proceeding.
- */
+/** True when a token exists but no workspaceId. */
 export function needsWorkspaceRecovery(creds: {
   authToken?: string | null | undefined;
   workspaceId?: string | null | undefined;
@@ -164,33 +143,42 @@ export function needsWorkspaceRecovery(creds: {
   return Boolean(creds.authToken) && !creds.workspaceId;
 }
 
-/* ── Connect response classification ── */
+/* -- Connect response classification -- */
 
 /** Shape of the subset of WhatsAppConnectResponse we branch on. */
 export interface ConnectResponseLike {
   status?: string | null | undefined;
   error?: unknown;
   message?: string | null | undefined;
-  qrCode?: string | null | undefined;
-  qrCodeImage?: string | null | undefined;
+  authUrl?: string | null | undefined;
 }
 
-/**
- * Discriminated outcome of {@link classifyConnectResponse}. Lets the hook
- * branch on a single tag instead of repeating string comparisons.
- */
+/** Discriminated outcome of {@link classifyConnectResponse}. */
 export type ConnectOutcome =
   | { kind: 'error'; message: string }
   | { kind: 'already_connected' }
-  | { kind: 'qr_ready'; qrCode: string | null; message: string }
+  | { kind: 'connect_required'; authUrl: string; message: string }
   | { kind: 'pending' };
 
-/**
- * Classify a /whatsapp/connect response into a discriminated outcome the
- * hook can pattern-match on. Errors win first (any truthy error field or
- * `status === 'error'`); then the two canonical wire values; otherwise
- * the call is treated as still pending and the hook should poll for QR.
- */
+/** True for absolute URLs under official Meta/Facebook authorization hosts. */
+export function isTrustedMetaAuthorizationUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:') {
+      return false;
+    }
+    return url.hostname === 'www.facebook.com'
+      || url.hostname === 'facebook.com'
+      || url.hostname.endsWith('.facebook.com')
+      || url.hostname === 'business.facebook.com'
+      || url.hostname === 'www.meta.com'
+      || url.hostname.endsWith('.meta.com');
+  } catch {
+    return false;
+  }
+}
+
+/** Classify the Meta connect response without any legacy fallback. */
 export function classifyConnectResponse(response: ConnectResponseLike): ConnectOutcome {
   if (response.error || response.status === 'error') {
     return {
@@ -203,81 +191,46 @@ export function classifyConnectResponse(response: ConnectResponseLike): ConnectO
     return { kind: 'already_connected' };
   }
 
-  if (response.status === STATUS_RESPONSES.qrReady) {
+  const authUrl = String(response.authUrl || '').trim();
+  if (authUrl || response.status === STATUS_RESPONSES.connectRequired) {
+    if (!authUrl || !isTrustedMetaAuthorizationUrl(authUrl)) {
+      return { kind: 'error', message: SESSION_COPY.invalidMetaRedirect };
+    }
     return {
-      kind: 'qr_ready',
-      qrCode: selectQrCodeFromResponse(response),
-      message: response.message || SESSION_COPY.scanQr,
+      kind: 'connect_required',
+      authUrl,
+      message: response.message || SESSION_COPY.redirectingMeta,
     };
   }
 
   return { kind: 'pending' };
 }
 
-/**
- * Prefer `qrCode`, fall back to `qrCodeImage`, fall back to null. Centralises
- * the wire-shape compatibility shim so callers don't repeat the `||` chain.
- */
-export function selectQrCodeFromResponse(response: {
-  qrCode?: string | null | undefined;
-  qrCodeImage?: string | null | undefined;
-}): string | null {
-  return response.qrCode || response.qrCodeImage || null;
-}
+/* -- Status snapshot factories -- */
 
-/* ── Status snapshot factories ── */
-
-/**
- * Minimal connection-status snapshot used by the hook when it must reset to a
- * disconnected state (after disconnect/reset, or when status load fails).
- * Returned as a fresh object each call so callers can safely mutate the
- * surrounding React state without aliasing.
- */
+/** Minimal disconnected state after Meta disconnect/reset or status failures. */
 export interface DisconnectedSnapshot {
   connected: false;
   status: typeof STATUS_RESPONSES.disconnected;
+  provider: 'meta-cloud';
 }
 
 export function buildDisconnectedStatus(): DisconnectedSnapshot {
-  return { connected: false, status: STATUS_RESPONSES.disconnected };
+  return { connected: false, status: STATUS_RESPONSES.disconnected, provider: 'meta-cloud' };
 }
 
-/* ── Effect-gating predicates ── */
+/* -- Effect-gating predicates -- */
 
-/**
- * Inputs shared by every polling/effect gate. Modelled as a struct so callers
- * can spread the hook's current state in without re-ordering positional args.
- */
 export interface SessionGate {
   enabled: boolean;
   workspaceId: string;
   authToken: string;
 }
 
-/**
- * True iff the hook may issue status/QR polls. Centralises the
- * `enabled && workspaceId && authToken` triad used by four useEffect bodies.
- */
 export function isSessionPollEnabled(gate: SessionGate): boolean {
   return Boolean(gate.enabled && gate.workspaceId && gate.authToken);
 }
 
-/**
- * True iff the QR-polling effect should be active — extends
- * {@link isSessionPollEnabled} with the in-flight connect signal and the
- * "already connected" short-circuit.
- */
-export function isQrPollEnabled(
-  gate: SessionGate & { connecting: boolean; connected: boolean },
-): boolean {
-  return isSessionPollEnabled(gate) && gate.connecting && !gate.connected;
-}
-
-/**
- * True when the CIA runtime-sync effect must bail before doing any work:
- * either the hook isn't fully wired yet, the session isn't connected, or the
- * bootstrap guard has already claimed this workspaceId.
- */
 export function shouldSkipCiaRuntimeSync(
   gate: SessionGate & { connected: boolean; guardedWorkspaceId: string | null },
 ): boolean {
@@ -287,16 +240,8 @@ export function shouldSkipCiaRuntimeSync(
   return gate.guardedWorkspaceId === gate.workspaceId;
 }
 
-/* ── Auth/me payload resolution ── */
+/* -- Auth/me payload resolution -- */
 
-/**
- * Resolve a workspaceId from a `/auth/me`-shaped payload using an injected
- * resolver (kept as a parameter so the helper stays free of `@/lib/api`
- * imports and remains trivially unit-testable).
- *
- * Returns the empty string when the resolver can't find a workspace, matching
- * the wire-shape contract the hook expects.
- */
 export function pickRecoveredWorkspaceId<TPayload, TWorkspace extends { id?: string | null }>(
   payload: TPayload,
   resolver: (data: TPayload) => TWorkspace | null | undefined,
@@ -304,12 +249,8 @@ export function pickRecoveredWorkspaceId<TPayload, TWorkspace extends { id?: str
   return resolver(payload)?.id || '';
 }
 
-/* ── Connection-change detection ── */
+/* -- Connection-change detection -- */
 
-/**
- * Detect a transition in the boolean "connected" flag. Used by the hook to
- * fire `onConnectionChange` exactly when the state actually flips.
- */
 export function hasConnectionStateChanged(previous: boolean, current: boolean): boolean {
   return previous !== current;
 }

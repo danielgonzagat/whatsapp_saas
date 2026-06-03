@@ -125,6 +125,11 @@ scripts/mcp/**/.red-*/
 .atomic/HEAD
 .atomic/broker-proof-last.json
 .atomic/*.stderr
+.atomic/_*
+.atomic/*.txt
+# Deep-cleanup session scratch (process artifacts, not Kloel product)
+.cleanup-scratch/
+PLANO-DE-LIMPEZA.md
 # Root-level jest cache (haste-map / transform-cache / perf-cache — regenerable)
 jest_dx/
 # node v8 compile cache (uid-suffixed, regenerable)

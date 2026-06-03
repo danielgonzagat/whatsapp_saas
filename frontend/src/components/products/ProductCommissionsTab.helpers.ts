@@ -92,7 +92,14 @@ export function buildCommissionPayload(form: CommissionForm): CommissionPayload 
 
 /** Normalize an API response into a strictly typed Commission array. */
 export function normalizeCommissionList(response: unknown): Commission[] {
-  return Array.isArray(response) ? (response as Commission[]) : [];
+  const responseRecord = response && typeof response === 'object' && !Array.isArray(response)
+    ? (response as { data?: unknown })
+    : null;
+  const list = Array.isArray(response) ? response : responseRecord?.data;
+  if (!Array.isArray(list)) {
+    throw new Error('Payload de comissoes invalido.');
+  }
+  return list as Commission[];
 }
 
 /** Resolve the role label for a given role value (falls back to the raw value). */

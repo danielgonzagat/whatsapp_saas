@@ -104,7 +104,7 @@ Sentry.init({
   maxBreadcrumbs: 100,
 
   // Deny specific URLs from creating transactions (health checks, etc.)
-  denyUrls: [/\/health(\/.*)?$/, /\/api\/pulse\/.*$/],
+  denyUrls: [/\/health(\/.*)?$/],
 
   // Ignore specific errors that are expected / not actionable
   ignoreErrors: [

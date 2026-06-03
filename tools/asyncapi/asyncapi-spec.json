@@ -3,7 +3,7 @@
   "info": {
     "title": "Kloel Event Spine",
     "version": "1.0.0",
-    "description": "Auto-extracted event contracts. 125 events across 26 domains."
+    "description": "Auto-extracted event contracts. 133 events across 28 domains."
   },
   "servers": {
     "spine": {
@@ -78,6 +78,18 @@
         }
       }
     },
+    "affiliate.coproduction_updated": {
+      "description": "affiliate domain event",
+      "parameters": {
+        "domain": "affiliate"
+      },
+      "publish": {
+        "summary": "affiliate.coproduction_updated",
+        "message": {
+          "$ref": "#/components/messages/affiliate_coproduction_updated"
+        }
+      }
+    },
     "affiliate.program_updated": {
       "description": "affiliate domain event",
       "parameters": {
@@ -87,6 +99,18 @@
         "summary": "affiliate.program_updated",
         "message": {
           "$ref": "#/components/messages/affiliate_program_updated"
+        }
+      }
+    },
+    "affiliate.request_created": {
+      "description": "affiliate domain event",
+      "parameters": {
+        "domain": "affiliate"
+      },
+      "publish": {
+        "summary": "affiliate.request_created",
+        "message": {
+          "$ref": "#/components/messages/affiliate_request_created"
         }
       }
     },
@@ -138,6 +162,18 @@
         }
       }
     },
+    "autopilot.money_machine_run": {
+      "description": "autopilot domain event",
+      "parameters": {
+        "domain": "autopilot"
+      },
+      "publish": {
+        "summary": "autopilot.money_machine_run",
+        "message": {
+          "$ref": "#/components/messages/autopilot_money_machine_run"
+        }
+      }
+    },
     "autopilot.toggled": {
       "description": "autopilot domain event",
       "parameters": {
@@ -186,6 +222,18 @@
         }
       }
     },
+    "buyer.data_filled": {
+      "description": "buyer domain event",
+      "parameters": {
+        "domain": "buyer"
+      },
+      "publish": {
+        "summary": "buyer.data_filled",
+        "message": {
+          "$ref": "#/components/messages/buyer_data_filled"
+        }
+      }
+    },
     "campaign.created": {
       "description": "campaign domain event",
       "parameters": {
@@ -195,6 +243,18 @@
         "summary": "campaign.created",
         "message": {
           "$ref": "#/components/messages/campaign_created"
+        }
+      }
+    },
+    "campaign.product_linked": {
+      "description": "campaign domain event",
+      "parameters": {
+        "domain": "campaign"
+      },
+      "publish": {
+        "summary": "campaign.product_linked",
+        "message": {
+          "$ref": "#/components/messages/campaign_product_linked"
         }
       }
     },
@@ -219,6 +279,30 @@
         "summary": "channel.message_sent",
         "message": {
           "$ref": "#/components/messages/channel_message_sent"
+        }
+      }
+    },
+    "checkout.created": {
+      "description": "checkout domain event",
+      "parameters": {
+        "domain": "checkout"
+      },
+      "publish": {
+        "summary": "checkout.created",
+        "message": {
+          "$ref": "#/components/messages/checkout_created"
+        }
+      }
+    },
+    "checkout.deleted": {
+      "description": "checkout domain event",
+      "parameters": {
+        "domain": "checkout"
+      },
+      "publish": {
+        "summary": "checkout.deleted",
+        "message": {
+          "$ref": "#/components/messages/checkout_deleted"
         }
       }
     },
@@ -1026,6 +1110,18 @@
         }
       }
     },
+    "health.snapshot": {
+      "description": "health domain event",
+      "parameters": {
+        "domain": "health"
+      },
+      "publish": {
+        "summary": "health.snapshot",
+        "message": {
+          "$ref": "#/components/messages/health_snapshot"
+        }
+      }
+    },
     "lineage.capability_acquired": {
       "description": "lineage domain event",
       "parameters": {
@@ -1035,18 +1131,6 @@
         "summary": "lineage.capability_acquired",
         "message": {
           "$ref": "#/components/messages/lineage_capability_acquired"
-        }
-      }
-    },
-    "lineage.ciclo_pulse_nao_regressivo": {
-      "description": "lineage domain event",
-      "parameters": {
-        "domain": "lineage"
-      },
-      "publish": {
-        "summary": "lineage.ciclo_pulse_nao_regressivo",
-        "message": {
-          "$ref": "#/components/messages/lineage_ciclo_pulse_nao_regressivo"
         }
       }
     },
@@ -1098,6 +1182,18 @@
         }
       }
     },
+    "marketplace.template_installed": {
+      "description": "marketplace domain event",
+      "parameters": {
+        "domain": "marketplace"
+      },
+      "publish": {
+        "summary": "marketplace.template_installed",
+        "message": {
+          "$ref": "#/components/messages/marketplace_template_installed"
+        }
+      }
+    },
     "memory.updated": {
       "description": "memory domain event",
       "parameters": {
@@ -1131,6 +1227,18 @@
         "summary": "payment.link_created",
         "message": {
           "$ref": "#/components/messages/payment_link_created"
+        }
+      }
+    },
+    "payment.pending": {
+      "description": "payment domain event",
+      "parameters": {
+        "domain": "payment"
+      },
+      "publish": {
+        "summary": "payment.pending",
+        "message": {
+          "$ref": "#/components/messages/payment_pending"
         }
       }
     },
@@ -1194,6 +1302,42 @@
         }
       }
     },
+    "product.activated": {
+      "description": "product domain event",
+      "parameters": {
+        "domain": "product"
+      },
+      "publish": {
+        "summary": "product.activated",
+        "message": {
+          "$ref": "#/components/messages/product_activated"
+        }
+      }
+    },
+    "product.ai_config_updated": {
+      "description": "product domain event",
+      "parameters": {
+        "domain": "product"
+      },
+      "publish": {
+        "summary": "product.ai_config_updated",
+        "message": {
+          "$ref": "#/components/messages/product_ai_config_updated"
+        }
+      }
+    },
+    "product.deactivated": {
+      "description": "product domain event",
+      "parameters": {
+        "domain": "product"
+      },
+      "publish": {
+        "summary": "product.deactivated",
+        "message": {
+          "$ref": "#/components/messages/product_deactivated"
+        }
+      }
+    },
     "product.pixel_configured": {
       "description": "product domain event",
       "parameters": {
@@ -1203,6 +1347,18 @@
         "summary": "product.pixel_configured",
         "message": {
           "$ref": "#/components/messages/product_pixel_configured"
+        }
+      }
+    },
+    "product.review_created": {
+      "description": "product domain event",
+      "parameters": {
+        "domain": "product"
+      },
+      "publish": {
+        "summary": "product.review_created",
+        "message": {
+          "$ref": "#/components/messages/product_review_created"
         }
       }
     },
@@ -1254,42 +1410,6 @@
         }
       }
     },
-    "pulse.capability_promoted": {
-      "description": "pulse domain event",
-      "parameters": {
-        "domain": "pulse"
-      },
-      "publish": {
-        "summary": "pulse.capability_promoted",
-        "message": {
-          "$ref": "#/components/messages/pulse_capability_promoted"
-        }
-      }
-    },
-    "pulse.gate_failed": {
-      "description": "pulse domain event",
-      "parameters": {
-        "domain": "pulse"
-      },
-      "publish": {
-        "summary": "pulse.gate_failed",
-        "message": {
-          "$ref": "#/components/messages/pulse_gate_failed"
-        }
-      }
-    },
-    "pulse.gate_passed": {
-      "description": "pulse domain event",
-      "parameters": {
-        "domain": "pulse"
-      },
-      "publish": {
-        "summary": "pulse.gate_passed",
-        "message": {
-          "$ref": "#/components/messages/pulse_gate_passed"
-        }
-      }
-    },
     "sale.created": {
       "description": "sale domain event",
       "parameters": {
@@ -1299,6 +1419,18 @@
         "summary": "sale.created",
         "message": {
           "$ref": "#/components/messages/sale_created"
+        }
+      }
+    },
+    "sale.refunded": {
+      "description": "sale domain event",
+      "parameters": {
+        "domain": "sale"
+      },
+      "publish": {
+        "summary": "sale.refunded",
+        "message": {
+          "$ref": "#/components/messages/sale_refunded"
         }
       }
     },
@@ -1610,6 +1742,31 @@
           }
         }
       },
+      "affiliate_coproduction_updated": {
+        "name": "affiliate.coproduction_updated",
+        "title": "coproduction_updated",
+        "summary": "affiliate event",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "eventName": {
+              "type": "string",
+              "const": "affiliate.coproduction_updated"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "payload": {
+              "type": "object",
+              "description": "Event-specific payload (see spine-event.types.ts)"
+            }
+          }
+        }
+      },
       "affiliate_program_updated": {
         "name": "affiliate.program_updated",
         "title": "program_updated",
@@ -1620,6 +1777,31 @@
             "eventName": {
               "type": "string",
               "const": "affiliate.program_updated"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "payload": {
+              "type": "object",
+              "description": "Event-specific payload (see spine-event.types.ts)"
+            }
+          }
+        }
+      },
+      "affiliate_request_created": {
+        "name": "affiliate.request_created",
+        "title": "request_created",
+        "summary": "affiliate event",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "eventName": {
+              "type": "string",
+              "const": "affiliate.request_created"
             },
             "workspaceId": {
               "type": "string"
@@ -1735,6 +1917,31 @@
           }
         }
       },
+      "autopilot_money_machine_run": {
+        "name": "autopilot.money_machine_run",
+        "title": "money_machine_run",
+        "summary": "autopilot event",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "eventName": {
+              "type": "string",
+              "const": "autopilot.money_machine_run"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "payload": {
+              "type": "object",
+              "description": "Event-specific payload (see spine-event.types.ts)"
+            }
+          }
+        }
+      },
       "autopilot_toggled": {
         "name": "autopilot.toggled",
         "title": "toggled",
@@ -1835,6 +2042,31 @@
           }
         }
       },
+      "buyer_data_filled": {
+        "name": "buyer.data_filled",
+        "title": "data_filled",
+        "summary": "buyer event",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "eventName": {
+              "type": "string",
+              "const": "buyer.data_filled"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "payload": {
+              "type": "object",
+              "description": "Event-specific payload (see spine-event.types.ts)"
+            }
+          }
+        }
+      },
       "campaign_created": {
         "name": "campaign.created",
         "title": "created",
@@ -1845,6 +2077,31 @@
             "eventName": {
               "type": "string",
               "const": "campaign.created"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "payload": {
+              "type": "object",
+              "description": "Event-specific payload (see spine-event.types.ts)"
+            }
+          }
+        }
+      },
+      "campaign_product_linked": {
+        "name": "campaign.product_linked",
+        "title": "product_linked",
+        "summary": "campaign event",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "eventName": {
+              "type": "string",
+              "const": "campaign.product_linked"
             },
             "workspaceId": {
               "type": "string"
@@ -1895,6 +2152,56 @@
             "eventName": {
               "type": "string",
               "const": "channel.message_sent"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "payload": {
+              "type": "object",
+              "description": "Event-specific payload (see spine-event.types.ts)"
+            }
+          }
+        }
+      },
+      "checkout_created": {
+        "name": "checkout.created",
+        "title": "created",
+        "summary": "checkout event",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "eventName": {
+              "type": "string",
+              "const": "checkout.created"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "payload": {
+              "type": "object",
+              "description": "Event-specific payload (see spine-event.types.ts)"
+            }
+          }
+        }
+      },
+      "checkout_deleted": {
+        "name": "checkout.deleted",
+        "title": "deleted",
+        "summary": "checkout event",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "eventName": {
+              "type": "string",
+              "const": "checkout.deleted"
             },
             "workspaceId": {
               "type": "string"
@@ -3585,16 +3892,16 @@
           }
         }
       },
-      "lineage_capability_acquired": {
-        "name": "lineage.capability_acquired",
-        "title": "capability_acquired",
-        "summary": "lineage event",
+      "health_snapshot": {
+        "name": "health.snapshot",
+        "title": "snapshot",
+        "summary": "health event",
         "payload": {
           "type": "object",
           "properties": {
             "eventName": {
               "type": "string",
-              "const": "lineage.capability_acquired"
+              "const": "health.snapshot"
             },
             "workspaceId": {
               "type": "string"
@@ -3610,16 +3917,16 @@
           }
         }
       },
-      "lineage_ciclo_pulse_nao_regressivo": {
-        "name": "lineage.ciclo_pulse_nao_regressivo",
-        "title": "ciclo_pulse_nao_regressivo",
+      "lineage_capability_acquired": {
+        "name": "lineage.capability_acquired",
+        "title": "capability_acquired",
         "summary": "lineage event",
         "payload": {
           "type": "object",
           "properties": {
             "eventName": {
               "type": "string",
-              "const": "lineage.ciclo_pulse_nao_regressivo"
+              "const": "lineage.capability_acquired"
             },
             "workspaceId": {
               "type": "string"
@@ -3735,6 +4042,31 @@
           }
         }
       },
+      "marketplace_template_installed": {
+        "name": "marketplace.template_installed",
+        "title": "template_installed",
+        "summary": "marketplace event",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "eventName": {
+              "type": "string",
+              "const": "marketplace.template_installed"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "payload": {
+              "type": "object",
+              "description": "Event-specific payload (see spine-event.types.ts)"
+            }
+          }
+        }
+      },
       "memory_updated": {
         "name": "memory.updated",
         "title": "updated",
@@ -3795,6 +4127,31 @@
             "eventName": {
               "type": "string",
               "const": "payment.link_created"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "payload": {
+              "type": "object",
+              "description": "Event-specific payload (see spine-event.types.ts)"
+            }
+          }
+        }
+      },
+      "payment_pending": {
+        "name": "payment.pending",
+        "title": "pending",
+        "summary": "payment event",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "eventName": {
+              "type": "string",
+              "const": "payment.pending"
             },
             "workspaceId": {
               "type": "string"
@@ -3935,6 +4292,81 @@
           }
         }
       },
+      "product_activated": {
+        "name": "product.activated",
+        "title": "activated",
+        "summary": "product event",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "eventName": {
+              "type": "string",
+              "const": "product.activated"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "payload": {
+              "type": "object",
+              "description": "Event-specific payload (see spine-event.types.ts)"
+            }
+          }
+        }
+      },
+      "product_ai_config_updated": {
+        "name": "product.ai_config_updated",
+        "title": "ai_config_updated",
+        "summary": "product event",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "eventName": {
+              "type": "string",
+              "const": "product.ai_config_updated"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "payload": {
+              "type": "object",
+              "description": "Event-specific payload (see spine-event.types.ts)"
+            }
+          }
+        }
+      },
+      "product_deactivated": {
+        "name": "product.deactivated",
+        "title": "deactivated",
+        "summary": "product event",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "eventName": {
+              "type": "string",
+              "const": "product.deactivated"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "payload": {
+              "type": "object",
+              "description": "Event-specific payload (see spine-event.types.ts)"
+            }
+          }
+        }
+      },
       "product_pixel_configured": {
         "name": "product.pixel_configured",
         "title": "pixel_configured",
@@ -3945,6 +4377,31 @@
             "eventName": {
               "type": "string",
               "const": "product.pixel_configured"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "payload": {
+              "type": "object",
+              "description": "Event-specific payload (see spine-event.types.ts)"
+            }
+          }
+        }
+      },
+      "product_review_created": {
+        "name": "product.review_created",
+        "title": "review_created",
+        "summary": "product event",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "eventName": {
+              "type": "string",
+              "const": "product.review_created"
             },
             "workspaceId": {
               "type": "string"
@@ -4060,81 +4517,6 @@
           }
         }
       },
-      "pulse_capability_promoted": {
-        "name": "pulse.capability_promoted",
-        "title": "capability_promoted",
-        "summary": "pulse event",
-        "payload": {
-          "type": "object",
-          "properties": {
-            "eventName": {
-              "type": "string",
-              "const": "pulse.capability_promoted"
-            },
-            "workspaceId": {
-              "type": "string"
-            },
-            "timestamp": {
-              "type": "string",
-              "format": "date-time"
-            },
-            "payload": {
-              "type": "object",
-              "description": "Event-specific payload (see spine-event.types.ts)"
-            }
-          }
-        }
-      },
-      "pulse_gate_failed": {
-        "name": "pulse.gate_failed",
-        "title": "gate_failed",
-        "summary": "pulse event",
-        "payload": {
-          "type": "object",
-          "properties": {
-            "eventName": {
-              "type": "string",
-              "const": "pulse.gate_failed"
-            },
-            "workspaceId": {
-              "type": "string"
-            },
-            "timestamp": {
-              "type": "string",
-              "format": "date-time"
-            },
-            "payload": {
-              "type": "object",
-              "description": "Event-specific payload (see spine-event.types.ts)"
-            }
-          }
-        }
-      },
-      "pulse_gate_passed": {
-        "name": "pulse.gate_passed",
-        "title": "gate_passed",
-        "summary": "pulse event",
-        "payload": {
-          "type": "object",
-          "properties": {
-            "eventName": {
-              "type": "string",
-              "const": "pulse.gate_passed"
-            },
-            "workspaceId": {
-              "type": "string"
-            },
-            "timestamp": {
-              "type": "string",
-              "format": "date-time"
-            },
-            "payload": {
-              "type": "object",
-              "description": "Event-specific payload (see spine-event.types.ts)"
-            }
-          }
-        }
-      },
       "sale_created": {
         "name": "sale.created",
         "title": "created",
@@ -4145,6 +4527,31 @@
             "eventName": {
               "type": "string",
               "const": "sale.created"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "payload": {
+              "type": "object",
+              "description": "Event-specific payload (see spine-event.types.ts)"
+            }
+          }
+        }
+      },
+      "sale_refunded": {
+        "name": "sale.refunded",
+        "title": "refunded",
+        "summary": "sale event",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "eventName": {
+              "type": "string",
+              "const": "sale.refunded"
             },
             "workspaceId": {
               "type": "string"

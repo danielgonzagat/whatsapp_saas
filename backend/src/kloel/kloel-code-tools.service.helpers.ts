@@ -1,7 +1,7 @@
 /**
  * Pure helpers extracted from `KloelCodeToolsService` to keep the service
  * body a thin orchestrator over `fs`, `child_process`, and the
- * CodeGraph / cognitive / pulse bridges.
+ * CodeGraph / cognitive / readiness bridges.
  *
  * Constraints:
  *   - No `this` access — every helper is a free function or const.

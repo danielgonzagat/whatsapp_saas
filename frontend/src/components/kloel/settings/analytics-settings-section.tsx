@@ -71,8 +71,8 @@ export function AnalyticsSettingsSection() {
       })
       .then(([dashboard, daily, advancedResponse]) => {
         setStats(dashboard);
-        setActivity(Array.isArray(daily) ? daily : []);
-        setAdvanced(advancedResponse || null);
+        setActivity(daily);
+        setAdvanced(advancedResponse);
       })
       .catch((loadError: unknown) => {
         setError(
@@ -324,7 +324,7 @@ export function AnalyticsSettingsSection() {
                   {kloelT(`Inbox por status`)}
                 </h4>
                 <div className="mt-4 grid grid-cols-2 gap-3">
-                  {Object.entries(advanced.inbox.conversationsByStatus || {})
+                  {Object.entries(advanced.inbox.conversationsByStatus)
                     .slice(0, 8)
                     .map(([key, value]) => (
                       <SettingsMetricTile key={key}>
@@ -344,7 +344,7 @@ export function AnalyticsSettingsSection() {
                   {kloelT(`Top flows e filas`)}
                 </h4>
                 <div className="mt-4 space-y-2">
-                  {(advanced.funnels.topFlows || []).slice(0, 5).map((flow) => (
+                  {advanced.funnels.topFlows.slice(0, 5).map((flow) => (
                     <div
                       key={flow.flowId}
                       className="flex items-center justify-between rounded-md border border-[var(--app-border-subtle)] bg-[var(--app-bg-primary)] px-4 py-3"
@@ -357,7 +357,7 @@ export function AnalyticsSettingsSection() {
                       </span>
                     </div>
                   ))}
-                  {(advanced.queues.stats || []).slice(0, 4).map((queue) => (
+                  {advanced.queues.stats.slice(0, 4).map((queue) => (
                     <div
                       key={queue.id}
                       className="flex items-center justify-between rounded-md border border-[var(--app-border-subtle)] bg-[var(--app-bg-primary)] px-4 py-3"

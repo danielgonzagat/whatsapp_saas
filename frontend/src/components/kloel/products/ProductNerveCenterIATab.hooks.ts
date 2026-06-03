@@ -41,17 +41,20 @@ export function useAIConfig(productId: string) {
   useEffect(() => {
     apiFetch(`/products/${productId}/ai-config`)
       .then((r) => setAiCfg(unwrapApiPayload<AiConfigShape>(r) || {}))
-      .catch(() => setAiCfg({}))
+      .catch((error) => {
+        console.error(error);
+        setAiCfg(null);
+        showToast(
+          error instanceof Error ? error.message : 'Erro ao carregar configuração de IA',
+          'error',
+        );
+      })
       .finally(() => setAiLoading(false));
-  }, [productId]);
+  }, [productId, showToast]);
   const [whobuys, setWhobuys] = useState('');
   const [pains, setPains] = useState('');
   const [promise, setPromise] = useState('');
-  const [objs, setObjs] = useState<{ id: string; label: string; response: string }[]>([
-    { id: 'obj-seed-1', label: 'É caro', response: '' },
-    { id: 'obj-seed-2', label: 'Não confio', response: '' },
-    { id: 'obj-seed-3', label: 'Funciona?', response: '' },
-  ]);
+  const [objs, setObjs] = useState<{ id: string; label: string; response: string }[]>([]);
   const objIdCounter = useRef(0);
   const nextObjId = () => {
     objIdCounter.current += 1;
@@ -82,6 +85,8 @@ export function useAIConfig(productId: string) {
           response: obj.response || obj.a || '',
         })),
       );
+    } else {
+      setObjs([]);
     }
     setTone(aiCfg.tone || 'CONSULTIVE');
     setPersist(String(aiCfg.persistenceLevel ?? 3));

@@ -21,6 +21,27 @@ describe('useAIConfig', () => {
     showToast.mockReset();
   });
 
+  it('does not seed fake objections when the backend has no AI objections', async () => {
+    apiFetch.mockResolvedValueOnce({ data: {}, status: 200 });
+
+    const { result } = renderHook(() => useAIConfig('prod-1'));
+
+    await waitFor(() => expect(result.current.aiLoading).toBe(false));
+
+    expect(result.current.objs).toEqual([]);
+  });
+
+  it('surfaces backend load errors instead of treating them as empty AI config', async () => {
+    apiFetch.mockRejectedValueOnce(new Error('AI config offline'));
+
+    const { result } = renderHook(() => useAIConfig('prod-1'));
+
+    await waitFor(() => expect(result.current.aiLoading).toBe(false));
+
+    expect(result.current.aiCfg).toBeNull();
+    expect(showToast).toHaveBeenCalledWith('AI config offline', 'error');
+  });
+
   it('surfaces backend save errors instead of showing a false success toast', async () => {
     apiFetch
       .mockResolvedValueOnce({ data: {}, status: 200 })

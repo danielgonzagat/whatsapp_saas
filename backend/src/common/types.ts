@@ -58,8 +58,7 @@ export function asString(value: unknown): string | null {
  * `isObject` returns a boolean predicate suitable for early-return
  * guard patterns.
  *
- * Wave F (2026-05-21) found 8 byte-identical declarations across
- * `backend/src/kloel/abi/` and `backend/src/kloel/pulse-gates/`.
+ * Wave F (2026-05-21) found duplicate declarations across runtime helpers.
  */
 export function isObject(value: unknown): value is UnknownRecord {
   return typeof value === 'object' && value !== null && !Array.isArray(value);

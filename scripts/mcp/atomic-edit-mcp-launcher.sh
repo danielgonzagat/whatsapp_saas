@@ -52,16 +52,31 @@ try {
   fail();
 }
 
-if (payload?.agent !== "codex" || payload?.repoRoot !== repoRoot || typeof payload?.socket !== "string") fail();
+function realDir(value) {
+  try {
+    return fs.realpathSync.native(value);
+  } catch {
+    fail();
+  }
+}
+function containsPath(root, target) {
+  const rel = path.relative(root, target);
+  return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+}
+
+if (payload?.agent !== "codex" || typeof payload?.repoRoot !== "string" || typeof payload?.socket !== "string") fail();
+const repoRootReal = realDir(repoRoot);
+const payloadRootReal = realDir(payload.repoRoot);
+if (payloadRootReal !== repoRootReal) fail();
 
 const endpoint = payload.socket;
 if (endpoint.startsWith("file://")) {
   const dir = fileURLToPath(endpoint);
-  if (!dir.startsWith(repoRoot + path.sep)) fail();
+  if (!containsPath(repoRootReal, realDir(dir))) fail();
   if (!fs.existsSync(path.join(dir, "requests")) || !fs.existsSync(path.join(dir, "responses"))) fail();
 } else {
   const socketPath = path.resolve(endpoint);
-  if (!socketPath.startsWith(repoRoot + path.sep)) fail();
+  if (!containsPath(repoRootReal, realDir(socketPath))) fail();
   let stat;
   try {
     stat = fs.statSync(socketPath);
@@ -87,6 +102,10 @@ if [[ "${ATOMIC_HOST_SANDBOX:-}" != "macos-sandbox-exec" || "${ATOMIC_HOST_ATOMI
 fi
 
 if [[ "${ATOMIC_HOST_SANDBOX:-}" != "macos-sandbox-exec" || "${ATOMIC_HOST_ATOMIC_ONLY:-}" != "1" || "${ATOMIC_HOST_WRITE_ROOT:-}" != "${REPO_ROOT}" ]]; then
+  if [[ "${ATOMIC_EDIT_MCP_SELF_HOSTED:-}" != "1" ]]; then
+    export ATOMIC_EDIT_MCP_SELF_HOSTED=1
+    exec node "${SRC_DIR}/codex-atomic-host-launcher.mjs" -- /bin/bash "${BASH_SOURCE[0]}" "$@"
+  fi
   echo "[atomic-edit-launcher] REFUSED: atomic-edit MCP requires the atomic host sandbox boundary." >&2
   echo "[atomic-edit-launcher] Relaunch the agent through: node scripts/mcp/atomic-edit/codex-atomic-host-launcher.mjs -- <agent-command>" >&2
   exit 79

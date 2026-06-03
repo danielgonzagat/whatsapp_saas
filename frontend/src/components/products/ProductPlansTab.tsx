@@ -70,7 +70,6 @@ export function ProductPlansTab({ productId }: { productId: string }) {
       setPlans(normalizePlansResponse(response));
       setError(null);
     } catch (caughtError: unknown) {
-      setPlans([]);
       setError(toPlanErrorMessage(caughtError, PRODUCT_PLANS_COPY.loadError));
     } finally {
       setLoading(false);

@@ -4,7 +4,7 @@ import { proxyWhatsAppRequest } from '../../proxy';
 /** Get. */
 export async function GET(request: NextRequest) {
   try {
-    const result = await proxyWhatsAppRequest(request, 'GET', '/whatsapp-api/session/status');
+    const result = await proxyWhatsAppRequest(request, 'GET', '/meta/auth/status');
     return NextResponse.json(result.data, { status: result.status });
   } catch (error) {
     console.error('[WhatsApp Proxy] status error:', error);

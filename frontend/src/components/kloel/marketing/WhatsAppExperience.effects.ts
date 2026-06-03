@@ -1,11 +1,8 @@
 'use client';
 
-import { initiateWhatsAppConnection } from '@/lib/api/whatsapp';
-import { secureRandomFloat } from '@/lib/secure-random';
 import { type Dispatch, type MutableRefObject, type SetStateAction, useEffect } from 'react';
 import {
   type WhatsAppSetupState,
-  getErrorMessage,
   getErrorStatus,
   SESSION_EXPIRED_MESSAGE,
 } from './WhatsAppExperience.helpers';
@@ -14,42 +11,35 @@ interface ConnectionShape {
   connected: boolean;
 }
 
-interface RequestQrResult {
-  qrCode: string | null;
+interface RequestMetaStatusResult {
   connected: boolean;
   status?: string | undefined;
   message?: string | undefined;
 }
 
-type RequestQrCode = (opts?: { silent?: boolean }) => Promise<RequestQrResult | null>;
+type RequestMetaStatus = (opts?: { silent?: boolean }) => Promise<RequestMetaStatusResult | null>;
 
 interface WhatsAppConnectionEffectsProps {
   mode?: string | undefined;
-  workspaceId: string;
   savedSetup: WhatsAppSetupState;
   savedSetupKey: string;
   draft: WhatsAppSetupState;
   step: number;
   showWizard: boolean;
   isActivated: boolean;
-  isWahaProvider: boolean;
   sessionExpired: boolean;
   effectiveConnection: ConnectionShape;
   hydratedRef: MutableRefObject<boolean>;
   hydratedSetupKeyRef: MutableRefObject<string | null>;
-  autoStartRef: MutableRefObject<boolean>;
   advancedRef: MutableRefObject<boolean>;
   pollCountRef: MutableRefObject<number>;
-  qrRequestInFlightRef: MutableRefObject<boolean>;
-  requestQrCodeRef: MutableRefObject<RequestQrCode>;
+  metaStatusRequestInFlightRef: MutableRefObject<boolean>;
+  requestMetaStatusRef: MutableRefObject<RequestMetaStatus>;
   refreshConnection: () => Promise<unknown>;
   setDraft: Dispatch<SetStateAction<WhatsAppSetupState>>;
   setReconfiguring: Dispatch<SetStateAction<boolean>>;
   setStep: Dispatch<SetStateAction<number>>;
-  setBusyKey: Dispatch<SetStateAction<string | null>>;
   setError: Dispatch<SetStateAction<string | null>>;
-  setQrCode: Dispatch<SetStateAction<string>>;
-  setScanProgress: Dispatch<SetStateAction<number>>;
   setSessionExpired: Dispatch<SetStateAction<boolean>>;
   setActivated: Dispatch<SetStateAction<boolean>>;
   activated: boolean;
@@ -57,31 +47,25 @@ interface WhatsAppConnectionEffectsProps {
 
 export function useWhatsAppConnectionEffects({
   mode,
-  workspaceId,
   savedSetup,
   savedSetupKey,
   draft,
   step,
   showWizard,
   isActivated,
-  isWahaProvider,
   sessionExpired,
   effectiveConnection,
   hydratedRef,
   hydratedSetupKeyRef,
-  autoStartRef,
   advancedRef,
   pollCountRef,
-  qrRequestInFlightRef,
-  requestQrCodeRef,
+  metaStatusRequestInFlightRef,
+  requestMetaStatusRef,
   refreshConnection,
   setDraft,
   setReconfiguring,
   setStep,
-  setBusyKey,
   setError,
-  setQrCode,
-  setScanProgress,
   setSessionExpired,
   setActivated,
   activated,
@@ -99,11 +83,10 @@ export function useWhatsAppConnectionEffects({
 
   useEffect(() => {
     if (effectiveConnection.connected) {
-      qrRequestInFlightRef.current = false;
-      setQrCode('');
+      metaStatusRequestInFlightRef.current = false;
       setSessionExpired(false);
     }
-  }, [effectiveConnection.connected, qrRequestInFlightRef, setQrCode, setSessionExpired]);
+  }, [effectiveConnection.connected, metaStatusRequestInFlightRef, setSessionExpired]);
 
   useEffect(() => {
     if (!showWizard) {
@@ -132,69 +115,20 @@ export function useWhatsAppConnectionEffects({
   ]);
 
   useEffect(() => {
-    if (
-      !showWizard ||
-      step !== 0 ||
-      effectiveConnection.connected ||
-      autoStartRef.current ||
-      !isWahaProvider ||
-      sessionExpired
-    ) {
+    if (!showWizard || step !== 0 || effectiveConnection.connected || sessionExpired) {
       return;
     }
-    autoStartRef.current = true;
-    void (async () => {
-      setBusyKey('connect');
-      setError(null);
-      setSessionExpired(false);
-      setScanProgress((current) => Math.max(current, 12));
-      try {
-        await initiateWhatsAppConnection(workspaceId);
-        void requestQrCodeRef.current({ silent: true });
-        await refreshConnection();
-      } catch (err: unknown) {
-        if (getErrorStatus(err) === 401) {
-          setSessionExpired(true);
-          setError(SESSION_EXPIRED_MESSAGE);
-          return;
-        }
-        setError(getErrorMessage(err, 'Não foi possível iniciar a sessão do WhatsApp.'));
-      } finally {
-        setBusyKey(null);
-      }
-    })();
-  }, [
-    autoStartRef,
-    effectiveConnection.connected,
-    isWahaProvider,
-    refreshConnection,
-    requestQrCodeRef,
-    sessionExpired,
-    setBusyKey,
-    setError,
-    setScanProgress,
-    setSessionExpired,
-    showWizard,
-    step,
-    workspaceId,
-  ]);
+    void requestMetaStatusRef.current({ silent: true });
+  }, [effectiveConnection.connected, requestMetaStatusRef, sessionExpired, showWizard, step]);
 
   useEffect(() => {
-    if (
-      !showWizard ||
-      step !== 0 ||
-      effectiveConnection.connected ||
-      !isWahaProvider ||
-      sessionExpired
-    ) {
-      autoStartRef.current = false;
+    if (!showWizard || step !== 0 || effectiveConnection.connected || sessionExpired) {
       pollCountRef.current = 0;
-      qrRequestInFlightRef.current = false;
+      metaStatusRequestInFlightRef.current = false;
       return;
     }
     const intervalId = window.setInterval(() => {
       pollCountRef.current += 1;
-      setScanProgress((current) => Math.min(92, Math.max(18, current + secureRandomFloat() * 5)));
       void refreshConnection().catch((err: unknown) => {
         if (getErrorStatus(err) === 401) {
           setSessionExpired(true);
@@ -202,30 +136,22 @@ export function useWhatsAppConnectionEffects({
           window.clearInterval(intervalId);
         }
       });
-      if (!qrRequestInFlightRef.current) {
-        void (async () => {
-          const qr = await requestQrCodeRef.current({ silent: true });
-          if (!qr?.qrCode && !qr?.connected && pollCountRef.current % 6 === 0) {
-            autoStartRef.current = false;
-          }
-        })();
+      if (!metaStatusRequestInFlightRef.current) {
+        void requestMetaStatusRef.current({ silent: true });
       }
-    }, 1200);
+    }, 12000);
     return () => {
-      qrRequestInFlightRef.current = false;
+      metaStatusRequestInFlightRef.current = false;
       window.clearInterval(intervalId);
     };
   }, [
-    autoStartRef,
     effectiveConnection.connected,
-    isWahaProvider,
+    metaStatusRequestInFlightRef,
     pollCountRef,
-    qrRequestInFlightRef,
     refreshConnection,
-    requestQrCodeRef,
+    requestMetaStatusRef,
     sessionExpired,
     setError,
-    setScanProgress,
     setSessionExpired,
     showWizard,
     step,
@@ -234,7 +160,6 @@ export function useWhatsAppConnectionEffects({
   useEffect(() => {
     if (!showWizard || step !== 0 || !effectiveConnection.connected || advancedRef.current) {return;}
     advancedRef.current = true;
-    setScanProgress(100);
     const timeoutId = window.setTimeout(() => {
       setStep(
         draft.selectedProducts.length ? Math.min(3, Math.max(1, draft.lastCompletedStep + 1)) : 1,
@@ -248,7 +173,6 @@ export function useWhatsAppConnectionEffects({
     draft.lastCompletedStep,
     draft.selectedProducts.length,
     effectiveConnection.connected,
-    setScanProgress,
     setStep,
     showWizard,
     step,

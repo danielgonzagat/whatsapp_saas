@@ -81,10 +81,7 @@ function stringList(value: unknown): string[] {
 }
 
 function agentSkillCategory(value: unknown): AgentSkillDefinition['category'] {
-  return value === 'commercial' ||
-    value === 'operational' ||
-    value === 'pulse' ||
-    value === 'workspace'
+  return value === 'commercial' || value === 'operational' || value === 'workspace'
     ? value
     : 'operational';
 }
@@ -122,7 +119,6 @@ function agentEvidenceType(value: unknown): AgentEvidenceType {
   return value === 'tool_result' ||
     value === 'runtime_observation' ||
     value === 'validation' ||
-    value === 'pulse' ||
     value === 'commercial_event' ||
     value === 'manual'
     ? value

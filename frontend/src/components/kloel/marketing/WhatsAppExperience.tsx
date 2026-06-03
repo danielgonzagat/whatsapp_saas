@@ -12,8 +12,6 @@ import {
   useWhatsAppExperienceController,
 } from './WhatsAppExperience.controller';
 
-export { QRCodePane } from './WhatsAppExperience.qr-pane';
-
 export type WhatsAppExperienceProps = WhatsAppExperienceControllerProps;
 
 const META_OAUTH_HOSTS = new Set([
@@ -52,11 +50,8 @@ export default function WhatsAppExperience(props: WhatsAppExperienceProps) {
     draft,
     error,
     busyKey,
-    qrCode,
-    scanProgress,
     uploadingCount,
     effectiveConnection,
-    isWahaProvider,
     selectableProducts,
     selectedIds,
     selectedProductsList,
@@ -78,7 +73,7 @@ export default function WhatsAppExperience(props: WhatsAppExperienceProps) {
     updateConfig,
     toggleFollowUp,
     activateAi,
-    refreshQrCode,
+    connectMeta,
     reconfigure,
     workspaceId,
     operator,
@@ -99,11 +94,8 @@ export default function WhatsAppExperience(props: WhatsAppExperienceProps) {
         draft={draft}
         error={error}
         busyKey={busyKey}
-        qrCode={qrCode}
-        scanProgress={scanProgress}
         uploadingCount={uploadingCount}
         effectiveConnection={effectiveConnection}
-        isWahaProvider={isWahaProvider}
         selectableProducts={selectableProducts}
         selectedIds={selectedIds}
         selectedProductsList={selectedProductsList}
@@ -119,21 +111,23 @@ export default function WhatsAppExperience(props: WhatsAppExperienceProps) {
         onUpdateConfig={updateConfig}
         onToggleFollowUp={toggleFollowUp}
         onActivateAi={() => void activateAi()}
-        onRefreshQrCode={() => void refreshQrCode()}
         metaAuthUrl={metaAuthUrl}
         isMetaProvider={isMetaProvider}
         metaConnecting={metaConnecting}
         onConnectMeta={(url) => {
-          if (!isTrustedMetaUrl(url)) {
-            setMetaConnecting(false);
-            return;
-          }
-          setMetaConnecting(true);
-          try {
-            navigateMetaUrl(url);
-          } catch {
-            setMetaConnecting(false);
-          }
+          void (async () => {
+            const targetUrl = url || (await connectMeta());
+            if (!targetUrl || !isTrustedMetaUrl(targetUrl)) {
+              setMetaConnecting(false);
+              return;
+            }
+            setMetaConnecting(true);
+            try {
+              navigateMetaUrl(targetUrl);
+            } catch {
+              setMetaConnecting(false);
+            }
+          })();
         }}
       />
     );

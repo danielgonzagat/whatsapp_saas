@@ -1,7 +1,7 @@
 /**
  * Shared backend-base-URL resolver consolidating the duplicate copies that
  * previously lived in `worker/providers/mind-client.ts`,
- * `worker/providers/unified-agent-integrator.ts`, and `worker/pulse-runtime.ts`.
+ * and `worker/providers/unified-agent-integrator.ts`.
  *
  * Pure: only reads `process.env` and normalizes the string. No I/O, no logger,
  * no side effects at import time. Safe to import from any worker module.

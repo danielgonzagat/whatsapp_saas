@@ -1,13 +1,13 @@
 import { AgentRuntimeContextService } from './agent-runtime.context';
 import type {
-  AgentRuntimePulseSelfModel,
+  AgentReadinessSelfModel,
   AgentRuntimeRecallResult,
   AgentRuntimeSessionRecallResult,
   AgentSkillSelection,
 } from './agent-runtime.types';
 
 describe('AgentRuntimeContextService', () => {
-  it('renders frozen operational context with recall, skills, and PULSE truth boundary', async () => {
+  it('renders frozen operational context with recall, skills, and readiness truth boundary', async () => {
     const recall: AgentRuntimeRecallResult = {
       query: 'checkout',
       tokens: ['checkout'],
@@ -29,7 +29,7 @@ describe('AgentRuntimeContextService', () => {
         },
       ],
     };
-    const pulse: AgentRuntimePulseSelfModel = {
+    const readiness: AgentReadinessSelfModel = {
       status: 'degraded',
       authorityMode: 'advisory',
       canWorkNow: true,
@@ -116,7 +116,7 @@ describe('AgentRuntimeContextService', () => {
         selectSkills: jest.fn().mockResolvedValue(selectedSkills),
         recordSkillUsage: jest.fn().mockResolvedValue({ ok: true }),
       },
-      { buildSelfModel: jest.fn().mockReturnValue(pulse) },
+      { buildSelfModel: jest.fn().mockReturnValue(readiness) },
       { buildEnvelope: jest.fn() },
       memoryManager,
       {
@@ -135,7 +135,7 @@ describe('AgentRuntimeContextService', () => {
     });
 
     expect(context.systemPromptBlock).toContain('<kloel-agent-runtime>');
-    expect(context.systemPromptBlock).toContain('pulse.canDeclareComplete=false');
+    expect(context.systemPromptBlock).toContain('readiness.canDeclareComplete=false');
     expect(context.systemPromptBlock).toContain('checkout-recovery');
     expect(context.systemPromptBlock).toContain('delegation:');
     expect(context.systemPromptBlock).toContain('checkout-recovery[max=R3]');

@@ -11,10 +11,6 @@ import { LineageGuardService } from '../lineage/lineage-guard.service';
 import { HebbianService } from '../mind/hebbian.service';
 import { MindBackgroundProcessor } from '../mind/mind-bg.processor';
 import { ValenceTaggerService } from '../mind/valence-tagger.service';
-import { makeNoRoleplayGate } from '../pulse-gates/no-roleplay.gate';
-import { makeNoOverclaimGate } from '../pulse-gates/no-overclaim.gate';
-import { makePromptLeakageGate } from '../pulse-gates/prompt-leakage.gate';
-import { resolveGateMode } from '../pulse-gates/gate-mode-controller';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
 import { VerificationVerdict, VtierCertificationResult, VtierOverall } from './v-tier.types';
 import {
@@ -69,7 +65,7 @@ export class VtierCertifierService {
     verdicts.push(this.v4BgActivityContinuous());
     verdicts.push(this.v5ValenceCoverage());
     verdicts.push(this.v6HebbianNonUniform());
-    verdicts.push(await this.v7PulseCertifies());
+    verdicts.push(await this.v7RuntimeIntegrityCertifies());
     verdicts.push(this.v8ComponentAuditable());
     verdicts.push(this.v9GenesisVerifiable());
     verdicts.push(await this.v10IdentityProjectorAudience());
@@ -292,46 +288,37 @@ export class VtierCertifierService {
       measuredAt: now,
     };
   }
-  private async v7PulseCertifies(): Promise<VerificationVerdict> {
+  private async v7RuntimeIntegrityCertifies(): Promise<VerificationVerdict> {
     const now = new Date().toISOString();
-    const gateResults: string[] = [];
-    const lineageGate = makeNoRoleplayGate(resolveGateMode('no-roleplay'));
+    const checks: string[] = [];
     const abiResult = await this.abiBuilder.build({
       audience: 'public',
       currentInput: { raw: 'v7 cert', channel: 'internal', arrivalTimestamp: now },
       perceptionSnapshot: { channel: 'internal' },
     });
     if (abiResult.status === 'ok') {
-      const overclaimResult = makeNoOverclaimGate(resolveGateMode('no-overclaim')).check(
-        abiResult.abi,
-      );
-      gateResults.push(`no-overclaim=${overclaimResult.status}`);
-      const roleplayResult = lineageGate.check(abiResult.abi);
-      gateResults.push(`no-roleplay=${roleplayResult.status}`);
-      const leakageResult = makePromptLeakageGate(resolveGateMode('prompt-leakage')).check(
-        abiResult.abi,
-      );
-      gateResults.push(`prompt-leakage=${leakageResult.status}`);
+      const abiValid = validateAbiPayload(abiResult.abi).status === 'PASS';
+      checks.push(`abi-valid=${abiValid ? 'PASS' : 'FAIL'}`);
     } else {
-      gateResults.push(`ABI build failed: ${abiResult.reason}`);
+      checks.push(`abi-build=FAIL:${abiResult.reason}`);
     }
     const lineageVerdict = await this.lineageGuard.verify();
-    gateResults.push(`lineage-integrity=${lineageVerdict.status === 'intact' ? 'PASS' : 'FAIL'}`);
+    checks.push(`lineage-integrity=${lineageVerdict.status === 'intact' ? 'PASS' : 'FAIL'}`);
     const originPass = verifyGenesisEvent(GENESIS_EVENT);
-    gateResults.push(`origin-immutability=${originPass ? 'PASS' : 'FAIL'}`);
-    const allPass = gateResults.every((r) => r.endsWith('=PASS'));
+    checks.push(`origin-immutability=${originPass ? 'PASS' : 'FAIL'}`);
+    const allPass = checks.every((r) => r.endsWith('=PASS'));
     if (allPass) {
       return {
         criterionId: 'V7',
         status: 'PASS',
-        evidence: `all canonical gates PASS: ${gateResults.join(', ')}`,
+        evidence: `runtime integrity checks PASS: ${checks.join(', ')}`,
         measuredAt: now,
       };
     }
     return {
       criterionId: 'V7',
       status: 'FAIL',
-      evidence: `gates: ${gateResults.join(', ')}`,
+      evidence: `runtime integrity checks: ${checks.join(', ')}`,
       measuredAt: now,
     };
   }

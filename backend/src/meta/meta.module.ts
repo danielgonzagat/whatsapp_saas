@@ -21,7 +21,12 @@ import { MetaWebhookController } from './meta-webhook.controller';
 // timestamps from Meta Graph API; duplicate entries skipped by externalId.
 @Global()
 @Module({
-  imports: [PrismaModule, forwardRef(() => InboxModule), WebhooksModule, forwardRef(() => WhatsappModule)],
+  imports: [
+    PrismaModule,
+    forwardRef(() => InboxModule),
+    WebhooksModule,
+    forwardRef(() => WhatsappModule),
+  ],
   controllers: [
     MetaAuthController,
     MetaCoreWebhookController,

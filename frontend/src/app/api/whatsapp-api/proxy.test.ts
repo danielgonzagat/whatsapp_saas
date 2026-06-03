@@ -34,7 +34,7 @@ describe('proxyWhatsAppRequest', () => {
 
   it('forwards shared auth cookies to the upstream request', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ connected: false, status: 'DISCONNECTED' }), {
+      new Response(JSON.stringify({ connected: false, channels: { whatsapp: null } }), {
         status: 200,
         headers: {
           'Content-Type': 'application/json',
@@ -50,14 +50,14 @@ describe('proxyWhatsAppRequest', () => {
         },
       }),
       'GET',
-      '/whatsapp-api/session/status',
+      '/meta/auth/status',
     );
 
     expect(result.status).toBe(200);
-    expect(result.data).toEqual({ connected: false, status: 'DISCONNECTED' });
+    expect(result.data).toEqual({ connected: false, channels: { whatsapp: null } });
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(fetchSpy).toHaveBeenCalledWith(
-      'https://backend.example.com/whatsapp-api/session/status',
+      'https://backend.example.com/meta/auth/status',
       expect.objectContaining({
         method: 'GET',
         redirect: 'manual',
@@ -81,7 +81,7 @@ describe('proxyWhatsAppRequest', () => {
     );
 
     await expect(
-      proxyWhatsAppRequest(createRequest(), 'GET', '/whatsapp-api/session/qr'),
+      proxyWhatsAppRequest(createRequest(), 'GET', '/meta/auth/url?channel=whatsapp'),
     ).rejects.toMatchObject({
       status: 401,
     });
@@ -98,7 +98,7 @@ describe('proxyWhatsAppRequest', () => {
     );
 
     await expect(
-      proxyWhatsAppRequest(createRequest(), 'GET', '/whatsapp-api/session/status'),
+      proxyWhatsAppRequest(createRequest(), 'GET', '/meta/auth/status'),
     ).rejects.toMatchObject({
       status: 401,
     });

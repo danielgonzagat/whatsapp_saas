@@ -76,7 +76,7 @@ export function certifyMachineHumanAuditable(): VerificationVerdict {
     criterionId: 'V12',
     status: 'PASS',
     evidence:
-      'architectural property — all cognitive state is machine-readable and human-auditable via event spine + PULSE reports',
+      'architectural property — all cognitive state is machine-readable and human-auditable via event spine + readiness reports',
     measuredAt: new Date().toISOString(),
   };
 }

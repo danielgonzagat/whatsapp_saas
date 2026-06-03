@@ -24,7 +24,7 @@ Ensure you have access to all production env vars. They are stored in:
 
 1. Railway project settings (backend + worker)
 2. Vercel project settings (frontend)
-3. `.env.pulse.local` (local diagnostics only, gitignored)
+3. Gitignored local diagnostic env files, if needed
 
 ---
 

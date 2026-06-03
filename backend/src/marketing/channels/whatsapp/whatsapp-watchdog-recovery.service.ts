@@ -45,7 +45,12 @@ export class WhatsAppWatchdogRecoveryService {
     ) || 300,
   );
 
-  private readonly pendingStatuses = new Set(['SCAN_QR_CODE', 'QR_PENDING', 'STARTING', 'OPENING']);
+  private readonly pendingStatuses = new Set([
+    'CONNECTION_INCOMPLETE',
+    'CONNECTION_REQUIRED',
+    'STARTING',
+    'OPENING',
+  ]);
 
   constructor(
     private readonly prisma: PrismaService,

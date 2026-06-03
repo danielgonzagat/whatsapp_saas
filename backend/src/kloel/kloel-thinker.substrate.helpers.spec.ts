@@ -213,8 +213,8 @@ describe('kloel-thinker.substrate.helpers', () => {
       });
       expect(substrate.workingMemory).toHaveLength(SUBSTRATE_WORKING_MEMORY_TAIL);
       expect(substrate.episodicRefs).toHaveLength(6);
-      expect(substrate.pulseTruth.certificationVerdict.measuredAt).toBe(FIXED_ISO);
-      expect(substrate.pulseTruth.certificationVerdict.verdict).toBe('INSUFFICIENT_EVIDENCE');
+      expect(substrate.readinessTruth.certificationVerdict.measuredAt).toBe(FIXED_ISO);
+      expect(substrate.readinessTruth.certificationVerdict.verdict).toBe('INSUFFICIENT_EVIDENCE');
       expect(substrate.perception.currentSnapshot).toEqual({
         channel: 'web',
         workspaceId: 'ws-1',
@@ -233,7 +233,7 @@ describe('kloel-thinker.substrate.helpers', () => {
         spineRow({ createdAt: new Date(FIXED_TIME + i * 1000) }),
       );
       const substrate = buildCognitiveSubstrateFromAutopilotRows(rows, 'ws-1');
-      expect(substrate?.pulseTruth.certificationVerdict.verdict).toBe('DEVELOPING');
+      expect(substrate?.readinessTruth.certificationVerdict.verdict).toBe('DEVELOPING');
     });
 
     it('caps salient slices at SUBSTRATE_SALIENT_HEAD and episodic at SUBSTRATE_EPISODIC_TAIL', () => {

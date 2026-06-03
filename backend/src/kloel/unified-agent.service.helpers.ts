@@ -33,7 +33,7 @@ export const SEED_SYSTEM_MESSAGE_CONTENT =
  * real cognitiveState payload arrives in the user message.
  */
 export const COGNITIVE_STATE_PREAMBLE =
-  'COGNITIVE STATE: capabilities.available=[], memory.workingMemory=[], memory.episodicRefs=[], memory.consolidatedRefs=[], beliefs=[], predictions.active=[], pulseTruth.verdict=INSUFFICIENT_EVIDENCE.';
+  'COGNITIVE STATE: capabilities.available=[], memory.workingMemory=[], memory.episodicRefs=[], memory.consolidatedRefs=[], beliefs=[], predictions.active=[], readinessTruth.verdict=INSUFFICIENT_EVIDENCE.';
 
 /**
  * Strict English instruction telling the LLM to treat cognitiveState as the

@@ -5,6 +5,22 @@ jest.mock('qrcode', () => ({
   toDataURL: jest.fn().mockResolvedValue('data:image/png;base64,mockQRCode'),
 }));
 
+jest.mock('../auth/jwt-auth.guard', () => ({
+  JwtAuthGuard: class SpecJwtAuthGuard {
+    canActivate() {
+      return true;
+    }
+  },
+}));
+
+jest.mock('../common/guards/workspace.guard', () => ({
+  WorkspaceGuard: class SpecWorkspaceGuard {
+    canActivate() {
+      return true;
+    }
+  },
+}));
+
 describe('GrowthController', () => {
   let controller: GrowthController;
 

@@ -8,14 +8,12 @@ import {
   buildRuntimeConfigDiagnostics,
   buildSessionConfigDiagnosticsPayload,
   clampChatMessagePagination,
-  deriveQrCodeMessage,
   deriveSessionStateFromDetails,
   mapContactRowToWahaContact,
   mapConversationRowToWahaChat,
   mapMessageRowToWahaMessage,
 } from './whatsapp-api.provider.helpers';
 import type {
-  QrCodeResponse,
   SessionStatus,
   WahaLidMapping,
   WahaRuntimeConfigDiagnostics,
@@ -24,7 +22,6 @@ import type {
 } from './whatsapp-api.provider.types';
 
 export type {
-  QrCodeResponse,
   SessionStatus,
   WahaChatMessage,
   WahaChatSummary,
@@ -73,7 +70,6 @@ export class WhatsAppApiProvider {
   /** Start session. */
   async startSession(workspaceId: string): Promise<{
     success: boolean;
-    qrCode?: string;
     message?: string;
     authUrl?: string;
   }> {
@@ -97,7 +93,6 @@ export class WhatsAppApiProvider {
   async restartSession(workspaceId: string): Promise<{
     success: boolean;
     message?: string;
-    qrCode?: string;
     authUrl?: string;
   }> {
     return this.startSession(workspaceId);
@@ -113,15 +108,6 @@ export class WhatsAppApiProvider {
       phoneNumber: details.phoneNumber || null,
       pushName: details.pushName || null,
       selfIds: details.selfIds || [],
-    };
-  }
-
-  /** Get qr code. */
-  async getQrCode(workspaceId: string): Promise<QrCodeResponse> {
-    const details = await this.metaWhatsApp.getPhoneNumberDetails(workspaceId);
-    return {
-      success: true,
-      message: deriveQrCodeMessage(details),
     };
   }
 

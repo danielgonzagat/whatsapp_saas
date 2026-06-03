@@ -4,7 +4,7 @@ import {
   AUTONOMY_ACTIONS,
   CIA_ACTIVE_MODES,
   CIA_MANUAL_PAUSE_MODES,
-  PENDING_QR_STATUSES,
+  PENDING_META_STATUSES,
   POLL_INTERVALS,
   SESSION_COPY,
   STATUS_RESPONSES,
@@ -15,20 +15,19 @@ import {
   hasCompleteCredentials,
   hasConnectionStateChanged,
   isCiaAutonomyActive,
-  isPendingQrStatus,
-  isQrPollEnabled,
+  isPendingMetaStatus,
   isSessionPollEnabled,
+  isTrustedMetaAuthorizationUrl,
   needsWorkspaceRecovery,
   normalizeStatusKey,
   pickRecoveredWorkspaceId,
   resolveStatusMessage,
-  selectQrCodeFromResponse,
   shouldSkipCiaRuntimeSync,
 } from './useWhatsAppSession.helpers';
 
 describe('normalizeStatusKey', () => {
   it('trims and lowercases the status string', () => {
-    expect(normalizeStatusKey('  QR_Pending ')).toBe('qr_pending');
+    expect(normalizeStatusKey('  CONNECTION_INCOMPLETE ')).toBe('connection_incomplete');
     expect(normalizeStatusKey('CONNECTING')).toBe('connecting');
   });
 
@@ -39,37 +38,42 @@ describe('normalizeStatusKey', () => {
   });
 });
 
-describe('isPendingQrStatus', () => {
-  it('returns true for every pending QR status (case-insensitive)', () => {
-    for (const s of PENDING_QR_STATUSES) {
-      expect(isPendingQrStatus(s)).toBe(true);
-      expect(isPendingQrStatus(s.toUpperCase())).toBe(true);
+describe('isPendingMetaStatus', () => {
+  it('returns true for every pending Meta status', () => {
+    for (const status of PENDING_META_STATUSES) {
+      expect(isPendingMetaStatus(status)).toBe(true);
+      expect(isPendingMetaStatus(status.toUpperCase())).toBe(true);
     }
   });
 
+  it('does not treat legacy non-Meta statuses as valid pending states', () => {
+    expect(isPendingMetaStatus('legacy_pending')).toBe(false);
+    expect(isPendingMetaStatus('external_scan_required')).toBe(false);
+  });
+
   it('returns false for connected/disconnected/unknown statuses', () => {
-    expect(isPendingQrStatus('connected')).toBe(false);
-    expect(isPendingQrStatus('disconnected')).toBe(false);
-    expect(isPendingQrStatus('totally_unknown')).toBe(false);
-    expect(isPendingQrStatus(null)).toBe(false);
-    expect(isPendingQrStatus(undefined)).toBe(false);
+    expect(isPendingMetaStatus('connected')).toBe(false);
+    expect(isPendingMetaStatus('disconnected')).toBe(false);
+    expect(isPendingMetaStatus('totally_unknown')).toBe(false);
+    expect(isPendingMetaStatus(null)).toBe(false);
+    expect(isPendingMetaStatus(undefined)).toBe(false);
   });
 });
 
 describe('resolveStatusMessage', () => {
   it('returns the active copy when connected, regardless of status string', () => {
     expect(resolveStatusMessage({ connected: true })).toBe(SESSION_COPY.active);
-    expect(resolveStatusMessage({ connected: true, status: 'qr_pending' })).toBe(
+    expect(resolveStatusMessage({ connected: true, status: 'connection_incomplete' })).toBe(
       SESSION_COPY.active,
     );
   });
 
-  it('returns waiting-QR copy when not connected but mid-handshake', () => {
-    expect(resolveStatusMessage({ connected: false, status: 'qr_pending' })).toBe(
-      SESSION_COPY.waitingQr,
+  it('returns Meta authorization copy when not connected but Meta is pending', () => {
+    expect(resolveStatusMessage({ connected: false, status: 'connection_incomplete' })).toBe(
+      SESSION_COPY.authorizingMeta,
     );
-    expect(resolveStatusMessage({ connected: false, status: 'CONNECTING' })).toBe(
-      SESSION_COPY.waitingQr,
+    expect(resolveStatusMessage({ connected: false, status: 'CONNECT_REQUIRED' })).toBe(
+      SESSION_COPY.authorizingMeta,
     );
   });
 
@@ -89,7 +93,7 @@ describe('isCiaAutonomyActive', () => {
     expect(isCiaAutonomyActive({ mode: 'LIVE' })).toBe(true);
     expect(isCiaAutonomyActive({ mode: 'BACKLOG' })).toBe(true);
     expect(isCiaAutonomyActive({ mode: 'FULL' })).toBe(true);
-    expect(isCiaAutonomyActive({ mode: 'live' })).toBe(true); // case-insensitive
+    expect(isCiaAutonomyActive({ mode: 'live' })).toBe(true);
   });
 
   it('returns false when reason indicates a manual pause even on active mode', () => {
@@ -145,28 +149,24 @@ describe('needsWorkspaceRecovery', () => {
     expect(needsWorkspaceRecovery({ authToken: 't', workspaceId: 'w' })).toBe(false);
   });
 
-  it('returns false when token is missing (anonymous-fallback territory)', () => {
+  it('returns false when token is missing', () => {
     expect(needsWorkspaceRecovery({ authToken: '', workspaceId: 'w' })).toBe(false);
     expect(needsWorkspaceRecovery({ authToken: '', workspaceId: '' })).toBe(false);
     expect(needsWorkspaceRecovery({ authToken: null, workspaceId: 'w' })).toBe(false);
   });
 });
 
-describe('selectQrCodeFromResponse', () => {
-  it('prefers qrCode over qrCodeImage', () => {
-    expect(selectQrCodeFromResponse({ qrCode: 'A', qrCodeImage: 'B' })).toBe('A');
+describe('isTrustedMetaAuthorizationUrl', () => {
+  it('accepts official Meta/Facebook HTTPS authorization hosts', () => {
+    expect(isTrustedMetaAuthorizationUrl('https://www.facebook.com/v20.0/dialog/oauth')).toBe(true);
+    expect(isTrustedMetaAuthorizationUrl('https://business.facebook.com/latest/whatsapp/signup')).toBe(true);
+    expect(isTrustedMetaAuthorizationUrl('https://www.meta.com/business')).toBe(true);
   });
 
-  it('falls back to qrCodeImage when qrCode is missing', () => {
-    expect(selectQrCodeFromResponse({ qrCodeImage: 'B' })).toBe('B');
-    expect(selectQrCodeFromResponse({ qrCode: '', qrCodeImage: 'B' })).toBe('B');
-    expect(selectQrCodeFromResponse({ qrCode: null, qrCodeImage: 'B' })).toBe('B');
-  });
-
-  it('returns null when neither field has content', () => {
-    expect(selectQrCodeFromResponse({})).toBeNull();
-    expect(selectQrCodeFromResponse({ qrCode: '', qrCodeImage: '' })).toBeNull();
-    expect(selectQrCodeFromResponse({ qrCode: null, qrCodeImage: null })).toBeNull();
+  it('rejects non-Meta, non-HTTPS, and malformed URLs', () => {
+    expect(isTrustedMetaAuthorizationUrl('http://www.facebook.com/dialog/oauth')).toBe(false);
+    expect(isTrustedMetaAuthorizationUrl('https://evil.example.com/oauth')).toBe(false);
+    expect(isTrustedMetaAuthorizationUrl('not-a-url')).toBe(false);
   });
 });
 
@@ -191,33 +191,32 @@ describe('classifyConnectResponse', () => {
     });
   });
 
-  it('classifies STATUS_RESPONSES.qrReady and lifts qrCode + message', () => {
-    const outcome = classifyConnectResponse({
-      status: STATUS_RESPONSES.qrReady,
-      qrCode: 'data:image/png;base64,AAA',
-      message: 'scan it',
-    });
-    expect(outcome).toEqual({
-      kind: 'qr_ready',
-      qrCode: 'data:image/png;base64,AAA',
-      message: 'scan it',
+  it('classifies official Meta authorization URLs as connect_required', () => {
+    const authUrl = 'https://www.facebook.com/v20.0/dialog/oauth?client_id=app';
+    expect(classifyConnectResponse({ status: STATUS_RESPONSES.connectRequired, authUrl })).toEqual({
+      kind: 'connect_required',
+      authUrl,
+      message: SESSION_COPY.redirectingMeta,
     });
   });
 
-  it('falls back to qrCodeImage and default copy when qr_ready omits qrCode/message', () => {
+  it('rejects connect_required responses without a trusted Meta URL', () => {
+    expect(classifyConnectResponse({ status: STATUS_RESPONSES.connectRequired })).toEqual({
+      kind: 'error',
+      message: SESSION_COPY.invalidMetaRedirect,
+    });
     expect(
       classifyConnectResponse({
-        status: STATUS_RESPONSES.qrReady,
-        qrCodeImage: 'data:image/png;base64,BBB',
+        status: STATUS_RESPONSES.connectRequired,
+        authUrl: 'https://evil.example.com/oauth',
       }),
     ).toEqual({
-      kind: 'qr_ready',
-      qrCode: 'data:image/png;base64,BBB',
-      message: SESSION_COPY.scanQr,
+      kind: 'error',
+      message: SESSION_COPY.invalidMetaRedirect,
     });
   });
 
-  it('returns pending for unknown/missing statuses (driving the QR poll fallback)', () => {
+  it('returns pending for unknown/missing statuses without starting any legacy fallback', () => {
     expect(classifyConnectResponse({})).toEqual({ kind: 'pending' });
     expect(classifyConnectResponse({ status: 'starting' })).toEqual({ kind: 'pending' });
     expect(classifyConnectResponse({ status: null })).toEqual({ kind: 'pending' });
@@ -237,11 +236,11 @@ describe('classifyConnectResponse', () => {
 });
 
 describe('buildDisconnectedStatus', () => {
-  it('returns a fresh disconnected snapshot every call', () => {
+  it('returns a fresh Meta Cloud disconnected snapshot every call', () => {
     const a = buildDisconnectedStatus();
     const b = buildDisconnectedStatus();
-    expect(a).toEqual({ connected: false, status: STATUS_RESPONSES.disconnected });
-    expect(b).toEqual({ connected: false, status: STATUS_RESPONSES.disconnected });
+    expect(a).toEqual({ connected: false, status: STATUS_RESPONSES.disconnected, provider: 'meta-cloud' });
+    expect(b).toEqual({ connected: false, status: STATUS_RESPONSES.disconnected, provider: 'meta-cloud' });
     expect(a).not.toBe(b);
   });
 });
@@ -256,43 +255,6 @@ describe('isSessionPollEnabled', () => {
     expect(isSessionPollEnabled({ enabled: true, workspaceId: '', authToken: 't' })).toBe(false);
     expect(isSessionPollEnabled({ enabled: true, workspaceId: 'w', authToken: '' })).toBe(false);
     expect(isSessionPollEnabled({ enabled: false, workspaceId: '', authToken: '' })).toBe(false);
-  });
-});
-
-describe('isQrPollEnabled', () => {
-  const base = { enabled: true, workspaceId: 'w', authToken: 't' };
-
-  it('returns true while mid-connect and not yet connected', () => {
-    expect(isQrPollEnabled({ ...base, connecting: true, connected: false })).toBe(true);
-  });
-
-  it('returns false once the session reports connected', () => {
-    expect(isQrPollEnabled({ ...base, connecting: true, connected: true })).toBe(false);
-  });
-
-  it('returns false when no connect attempt is in flight', () => {
-    expect(isQrPollEnabled({ ...base, connecting: false, connected: false })).toBe(false);
-  });
-
-  it('returns false when the base poll gate is closed', () => {
-    expect(
-      isQrPollEnabled({
-        enabled: false,
-        workspaceId: 'w',
-        authToken: 't',
-        connecting: true,
-        connected: false,
-      }),
-    ).toBe(false);
-    expect(
-      isQrPollEnabled({
-        enabled: true,
-        workspaceId: '',
-        authToken: 't',
-        connecting: true,
-        connected: false,
-      }),
-    ).toBe(false);
   });
 });
 
@@ -366,22 +328,27 @@ describe('hasConnectionStateChanged', () => {
 });
 
 describe('exported constants', () => {
-  it('STATUS_RESPONSES is the canonical wire-value set', () => {
+  it('STATUS_RESPONSES is the Meta-only wire-value set', () => {
+    expect(Object.keys(STATUS_RESPONSES)).toEqual([
+      'alreadyConnected',
+      'connectRequired',
+      'disconnected',
+    ]);
     expect(STATUS_RESPONSES.alreadyConnected).toBe('already_connected');
-    expect(STATUS_RESPONSES.qrReady).toBe('qr_ready');
+    expect(STATUS_RESPONSES.connectRequired).toBe('connect_required');
     expect(STATUS_RESPONSES.disconnected).toBe('disconnected');
   });
 
-  it('POLL_INTERVALS / TIMEOUTS are positive ms values', () => {
+  it('POLL_INTERVALS / TIMEOUTS expose only the Meta connection timers', () => {
+    expect(Object.keys(POLL_INTERVALS)).toEqual(['statusMs']);
     expect(POLL_INTERVALS.statusMs).toBeGreaterThan(0);
-    expect(POLL_INTERVALS.qrMs).toBeGreaterThan(0);
+    expect(Object.keys(TIMEOUTS)).toEqual(['connectFeedbackMs']);
     expect(TIMEOUTS.connectFeedbackMs).toBeGreaterThan(0);
-    expect(TIMEOUTS.qrGenerationMs).toBeGreaterThan(0);
   });
 
   it('CIA_ACTIVE_MODES and CIA_MANUAL_PAUSE_MODES do not overlap', () => {
-    for (const m of CIA_ACTIVE_MODES) {
-      expect(CIA_MANUAL_PAUSE_MODES.has(m)).toBe(false);
+    for (const mode of CIA_ACTIVE_MODES) {
+      expect(CIA_MANUAL_PAUSE_MODES.has(mode)).toBe(false);
     }
   });
 });

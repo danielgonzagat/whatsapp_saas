@@ -101,22 +101,6 @@ const DEFAULT_SKILLS: AgentSkillDefinition[] = [
     version: 1,
     updatedAt: new Date(0).toISOString(),
   },
-  {
-    id: 'pulse-self-check',
-    title: 'PULSE Self Check',
-    summary: 'Consulta o estado operacional PULSE antes de planejar ação autônoma.',
-    category: 'pulse',
-    riskLevel: 'safe',
-    allowedTools: [],
-    requiredEvidence: ['pulse_certificate', 'machine_readiness', 'directive'],
-    validation: ['no_overclaim', 'authority_boundary'],
-    rollback: ['stop_when_pulse_degraded'],
-    metrics: ['blocked_overclaims', 'safe_next_units'],
-    delegationRules: [],
-    body: 'Trate PULSE como fonte de verdade operacional. Diferencie canWorkNow de canDeclareComplete.',
-    version: 1,
-    updatedAt: new Date(0).toISOString(),
-  },
 ];
 
 @Injectable()
@@ -199,7 +183,7 @@ export class AgentRuntimeSkillRegistry {
           reasons,
         };
       })
-      .filter((selection) => selection.score > 0 || selection.skill.category === 'pulse')
+      .filter((selection) => selection.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, Math.max(1, Math.min(limit, 8)));
   }

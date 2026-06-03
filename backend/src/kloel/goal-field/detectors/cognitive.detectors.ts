@@ -150,14 +150,14 @@ const repeatedAgentFailureDetector: Detector = {
 };
 
 /**
- * COG-004: capability declared in pulse.capability_promoted without runtime
+ * COG-004: capability declared in readiness.capability_promoted without runtime
  * evidence event in the window.
  */
 const capabilityWithoutRuntimeEvidenceDetector: Detector = {
   name: 'cognitive.capability_without_runtime_evidence',
   dimension: 'cognitive',
   detect: (events, nowMs) => {
-    const promotions = events.filter((e) => e.eventName === 'pulse.capability_promoted');
+    const promotions = events.filter((e) => e.eventName === 'readiness.capability_promoted');
     const out: Tension[] = [];
     for (const p of promotions) {
       const cap = p.payload?.['capabilityId'] as string | undefined;
@@ -166,7 +166,7 @@ const capabilityWithoutRuntimeEvidenceDetector: Detector = {
       }
       const usageEvidence = events.some(
         (e) =>
-          (e.eventName === 'pulse.gate_passed' || e.eventName.startsWith('cognition.')) &&
+          (e.eventName === 'readiness.gate_passed' || e.eventName.startsWith('cognition.')) &&
           (e.payload?.['capabilityId'] as string | undefined) === cap,
       );
       if (usageEvidence) {
@@ -188,7 +188,7 @@ const capabilityWithoutRuntimeEvidenceDetector: Detector = {
 };
 
 /**
- * COG-005: any pulse.gate_failed in hard_fail mode = critical without
+ * COG-005: any readiness.gate_failed in hard_fail mode = critical without
  * subsequent observability event.
  */
 export const runtimeCriticalWithoutObservabilityDetector: Detector = {
@@ -198,14 +198,14 @@ export const runtimeCriticalWithoutObservabilityDetector: Detector = {
     const out: Tension[] = [];
     const fails = events.filter(
       (e) =>
-        e.eventName === 'pulse.gate_failed' &&
+        e.eventName === 'readiness.gate_failed' &&
         (e.payload?.['mode'] as string | undefined) === 'hard_fail',
     );
     for (const f of fails) {
       out.push(
         tensionFor(
           'cognitive.runtime_critical_without_observability',
-          `pulse gate hard_fail: ${(f.payload?.['gateName'] as string | undefined) ?? 'unknown'}`,
+          `readiness gate hard_fail: ${(f.payload?.['gateName'] as string | undefined) ?? 'unknown'}`,
           0.95,
           f,
           [f.eventId],

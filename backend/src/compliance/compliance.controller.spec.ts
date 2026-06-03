@@ -1,6 +1,11 @@
 import { expectValueOf } from '../../test/expect-value-of';
 import { createHmac } from 'node:crypto';
-import { INestApplication } from '@nestjs/common';
+import {
+  Catch,
+  type ArgumentsHost,
+  type ExceptionFilter,
+  type INestApplication,
+} from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
 import { PrismaService } from '../prisma/prisma.service';
@@ -8,6 +13,7 @@ import { ComplianceController } from './compliance.controller';
 import { ComplianceService } from './compliance.service';
 import { JwtSetValidator } from './utils/jwt-set.validator';
 import { type Server } from 'node:http';
+import { type Response } from 'express';
 import { stringContains } from '../../test/helpers/match-instance';
 
 function encodeBase64Url(input: Buffer | string) {
@@ -22,6 +28,38 @@ function buildSignedRequest(payload: Record<string, unknown>, secret: string) {
   const encodedPayload = encodeBase64Url(JSON.stringify(payload));
   const signature = createHmac('sha256', secret).update(encodedPayload).digest();
   return `${encodeBase64Url(signature)}.${encodedPayload}`;
+}
+
+type HttpLikeException = {
+  getResponse: () => unknown;
+  getStatus: () => number;
+};
+
+function isHttpLikeException(exception: unknown): exception is HttpLikeException {
+  return (
+    typeof exception === 'object' &&
+    exception !== null &&
+    'getResponse' in exception &&
+    'getStatus' in exception &&
+    typeof exception.getResponse === 'function' &&
+    typeof exception.getStatus === 'function'
+  );
+}
+
+@Catch()
+class SpecHttpExceptionFilter implements ExceptionFilter {
+  catch(exception: unknown, host: ArgumentsHost) {
+    const response = host.switchToHttp().getResponse<Response>();
+    if (!isHttpLikeException(exception)) {
+      response.status(500).json({ message: 'Internal server error', statusCode: 500 });
+      return;
+    }
+
+    const body = exception.getResponse();
+    response
+      .status(exception.getStatus())
+      .json(typeof body === 'string' ? { message: body } : body);
+  }
 }
 
 describe('ComplianceController', () => {
@@ -78,6 +116,7 @@ describe('ComplianceController', () => {
     }).compile();
 
     app = moduleRef.createNestApplication();
+    app.useGlobalFilters(new SpecHttpExceptionFilter());
     await app.init();
   });
 

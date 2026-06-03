@@ -11,7 +11,7 @@ const CONNECT_COPY: Record<ChannelKey, { provider: string; how: string[] }> = {
   whatsapp: {
     provider: 'WhatsApp Cloud API (Meta oficial)',
     how: [
-      'Sem QR Code — conexão oficial via login Meta Business.',
+      'Conexão oficial via login Meta Business.',
       'Você autoriza o número no Gerenciador da Meta; o Kloel passa a enviar e responder pela API oficial.',
       'Mensagens, leads e vendas aparecem no painel do canal automaticamente.',
     ],
@@ -36,7 +36,7 @@ const CONNECT_COPY: Record<ChannelKey, { provider: string; how: string[] }> = {
     provider: 'TikTok via OAuth oficial',
     how: [
       'Login oficial TikTok — conta de criador ou advertiser.',
-      'Sem QR Code: autorização pelo fluxo oficial do TikTok.',
+      'Autorização pelo fluxo oficial do TikTok.',
       'O modo conectado define quais ações o Kloel pode executar.',
     ],
   },
@@ -51,7 +51,7 @@ const CONNECT_COPY: Record<ChannelKey, { provider: string; how: string[] }> = {
   email: {
     provider: 'Email transacional Kloel',
     how: [
-      'Ativação direta — sem QR Code.',
+      'Ativação direta pelo canal transacional configurado.',
       'O Kloel passa a enviar campanhas e responder pelo domínio configurado.',
       'Use "Enviar teste" para validar a entrega antes de ativar a IA.',
     ],
@@ -59,7 +59,7 @@ const CONNECT_COPY: Record<ChannelKey, { provider: string; how: string[] }> = {
 };
 
 /**
- * Step 0 hero. Explains the OFFICIAL channel session (no QR Code) for the channel.
+ * Step 0 hero. Explains the official provider authorization for the channel.
  * The real connect action lives in <ActionButtons/> below the panel; this is
  * the contextual explanation + status. Theme-token based (light/dark).
  */

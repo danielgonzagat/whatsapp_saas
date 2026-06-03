@@ -361,6 +361,9 @@ it('does not update a thread title when backend returns an API error envelope', 
     expect(apiFetchMock).toHaveBeenCalledTimes(2);
   });
   expect(result.current.conversations[0]?.title).toBe('Original');
+  await waitFor(() => {
+    expect(Reflect.get(result.current, 'lastError')).toMatchObject({ message: 'Rename failed' });
+  });
   expect(swrMutateMock).not.toHaveBeenCalled();
 });
 
@@ -387,5 +390,8 @@ it('does not remove a thread when backend returns an API error envelope', async 
     expect(apiFetchMock).toHaveBeenCalledTimes(2);
   });
   expect(result.current.conversations.map((threadItem) => threadItem.id)).toEqual(['thread-1']);
+  await waitFor(() => {
+    expect(Reflect.get(result.current, 'lastError')).toMatchObject({ message: 'Delete failed' });
+  });
   expect(swrMutateMock).not.toHaveBeenCalled();
 });

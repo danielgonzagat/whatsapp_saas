@@ -167,7 +167,7 @@ export const KLOEL_CHAT_TOOLS_SETTINGS_CAMPAIGNS: ChatCompletionTool[] = [
           summary: { type: 'string', description: 'Resumo do procedimento' },
           category: {
             type: 'string',
-            enum: ['commercial', 'operational', 'pulse', 'workspace'],
+            enum: ['commercial', 'operational', 'workspace'],
           },
           riskLevel: { type: 'string', enum: ['safe', 'normal', 'high', 'critical'] },
           allowedTools: { type: 'array', items: { type: 'string' } },
@@ -244,7 +244,7 @@ export const KLOEL_CHAT_TOOLS_SETTINGS_CAMPAIGNS: ChatCompletionTool[] = [
     function: {
       name: 'record_agent_evidence',
       description:
-        'Registra evidência operacional durável com hash de integridade para decisões, validações, PULSE, eventos comerciais ou resultados de ferramenta',
+        'Registra evidência operacional durável com hash de integridade para decisões, validações, eventos comerciais ou resultados de ferramenta',
       parameters: {
         type: 'object',
         properties: {
@@ -256,7 +256,6 @@ export const KLOEL_CHAT_TOOLS_SETTINGS_CAMPAIGNS: ChatCompletionTool[] = [
               'tool_result',
               'runtime_observation',
               'validation',
-              'pulse',
               'commercial_event',
               'manual',
             ],
@@ -304,7 +303,6 @@ export const KLOEL_CHAT_TOOLS_SETTINGS_CAMPAIGNS: ChatCompletionTool[] = [
               'tool_result',
               'runtime_observation',
               'validation',
-              'pulse',
               'commercial_event',
               'manual',
             ],

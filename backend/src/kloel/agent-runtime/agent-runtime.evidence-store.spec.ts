@@ -133,7 +133,7 @@ describe('AgentRuntimeEvidenceStoreService', () => {
           .fn()
           .mockResolvedValue([
             makeRow({ id: 'ev_1', source: 'tool_result', content: 'checkout recovered' }),
-            makeRow({ id: 'ev_2', source: 'pulse', content: 'unrelated' }),
+            makeRow({ id: 'ev_2', source: 'readiness', content: 'unrelated' }),
           ]),
       },
     };
@@ -171,12 +171,15 @@ describe('AgentRuntimeEvidenceStoreService', () => {
   it('summarizes evidence by type, verification state, and actor', async () => {
     const prisma = {
       kloelMemory: {
-        findMany: jest
-          .fn()
-          .mockResolvedValue([
-            makeRow({ id: 'ev_1', type: 'validation', actor: 'codex' }),
-            makeRow({ id: 'ev_2', type: 'pulse', actor: 'codex', verification: 'unverified' }),
-          ]),
+        findMany: jest.fn().mockResolvedValue([
+          makeRow({ id: 'ev_1', type: 'validation', actor: 'codex' }),
+          makeRow({
+            id: 'ev_2',
+            type: 'runtime_observation',
+            actor: 'codex',
+            verification: 'unverified',
+          }),
+        ]),
       },
     };
     const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma));
@@ -185,7 +188,7 @@ describe('AgentRuntimeEvidenceStoreService', () => {
 
     expect(summary).toEqual({
       total: 2,
-      byType: { validation: 1, pulse: 1 },
+      byType: { validation: 1, runtime_observation: 1 },
       byVerification: { single_source: 1, unverified: 1 },
       uniqueActors: ['codex'],
     });
@@ -243,8 +246,8 @@ describe('AgentRuntimeEvidenceStoreService', () => {
           }),
           makeRow({
             id: 'ev_2',
-            type: 'pulse',
-            source: 'pulse-auditor',
+            type: 'runtime_observation',
+            source: 'readiness-auditor',
             content: 'integrity verified',
             actor: 'worker',
             parentId: 'ev_1',

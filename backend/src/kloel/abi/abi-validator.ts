@@ -15,7 +15,7 @@ import { isObject } from '../../common/types';
  * Implements PCI.2 §6 + §4 (docs/contracts/pci/02-abi-schema.md).
  *
  * Validates a payload against the canonical schema and runs the static
- * checks that PULSE gates `prompt-leakage`, `no-roleplay`, and
+ * checks that runtime integrity gates `prompt-leakage`, `no-roleplay`, and
  * `no-overclaim` (PCI.4 §3.1, §3.4, §3.8) require BEFORE the payload is
  * sent to the LLM.
  *
@@ -278,7 +278,7 @@ function valenceSanityCheck(payload: unknown): readonly AbiValidationIssue[] {
 }
 
 /**
- * Validate a payload against the canonical ABI schema + PULSE static gates.
+ * Validate a payload against the canonical ABI schema + runtime integrity static gates.
  *
  * Returns { status, issues }. Caller decides what to do with FAIL.
  */

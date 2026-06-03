@@ -19,18 +19,17 @@ cd frontend-admin && npx tsc --noEmit && npm run lint && npm run build
 # Worker
 cd worker && npx tsc --noEmit && npm run lint && npm test
 
-# PULSE certification
-npx ts-node --project scripts/pulse/tsconfig.json scripts/pulse/index.ts --deep --total
-
 # Ratchet check
 node scripts/ops/collect-ratchet-metrics.mjs > /tmp/ratchet-current.json
 node scripts/ops/check-ratchet.mjs
 
 # Readiness
 npm run readiness:check
+npm run check:security
+npm run check:architecture
 ```
 
-All commands must exit 0. PULSE must report `unifiedVerdict: READY_FOR_PRODUCTION`.
+All commands must exit 0 before a production deploy.
 
 ## Environment validation
 

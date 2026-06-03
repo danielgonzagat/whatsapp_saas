@@ -104,10 +104,10 @@ describe('normalizeCouponList', () => {
     expect(normalizeCouponList(list)).toBe(list);
   });
 
-  it('returns [] for non-array input', () => {
-    expect(normalizeCouponList(null)).toEqual([]);
-    expect(normalizeCouponList(undefined)).toEqual([]);
-    expect(normalizeCouponList({ items: [] })).toEqual([]);
+  it('throws for non-array input instead of rendering a fake empty coupon list', () => {
+    expect(() => normalizeCouponList(null)).toThrow('Payload de cupons invalido.');
+    expect(() => normalizeCouponList(undefined)).toThrow('Payload de cupons invalido.');
+    expect(() => normalizeCouponList({ items: [] })).toThrow('Payload de cupons invalido.');
   });
 });
 

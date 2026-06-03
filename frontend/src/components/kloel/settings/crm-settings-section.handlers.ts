@@ -17,6 +17,54 @@ export interface CrmFetchedData {
   stats: SegmentationStats | null;
 }
 
+function readApiData(response: unknown): unknown {
+  return response && typeof response === 'object' && 'data' in response
+    ? (response as { data?: unknown }).data
+    : undefined;
+}
+
+function requireArrayPayload<T>(value: unknown, label: string): T[] {
+  if (!Array.isArray(value)) {
+    throw new Error(`Payload de ${label} CRM invalido.`);
+  }
+
+  return value as T[];
+}
+
+function normalizeContactsPayload(response: unknown): CrmContact[] {
+  const data = readApiData(response);
+  const contacts = data && typeof data === 'object' && 'data' in data
+    ? (data as { data?: unknown }).data
+    : undefined;
+
+  return requireArrayPayload<CrmContact>(contacts, 'contatos');
+}
+
+function normalizeDirectArrayPayload<T>(response: unknown, label: string): T[] {
+  return requireArrayPayload<T>(readApiData(response), label);
+}
+
+function normalizePresetsPayload(response: unknown): SegmentationPreset[] {
+  const data = readApiData(response);
+  const presets = data && typeof data === 'object' && 'presets' in data
+    ? (data as { presets?: unknown }).presets
+    : undefined;
+
+  return requireArrayPayload<SegmentationPreset>(presets, 'presets');
+}
+
+function normalizeStatsPayload(response: unknown): SegmentationStats | null {
+  const data = readApiData(response);
+  if (data == null) {
+    return null;
+  }
+  if (typeof data !== 'object' || Array.isArray(data)) {
+    throw new Error('Payload de stats CRM invalido.');
+  }
+
+  return data as SegmentationStats;
+}
+
 export async function fetchCrmInitialData(): Promise<CrmFetchedData> {
   const [contactsResponse, pipelinesResponse, dealsResponse, presetsResponse, statsResponse] =
     await Promise.all([
@@ -27,11 +75,11 @@ export async function fetchCrmInitialData(): Promise<CrmFetchedData> {
       segmentationApi.getStats(),
     ]);
   return {
-    contacts: contactsResponse.data?.data || [],
-    pipelines: pipelinesResponse.data || [],
-    deals: dealsResponse.data || [],
-    presets: presetsResponse.data?.presets || [],
-    stats: statsResponse.data || null,
+    contacts: normalizeContactsPayload(contactsResponse),
+    pipelines: normalizeDirectArrayPayload<CrmPipeline>(pipelinesResponse, 'pipelines'),
+    deals: normalizeDirectArrayPayload<CrmDeal>(dealsResponse, 'deals'),
+    presets: normalizePresetsPayload(presetsResponse),
+    stats: normalizeStatsPayload(statsResponse),
   };
 }
 

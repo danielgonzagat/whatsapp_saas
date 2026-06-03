@@ -340,7 +340,7 @@ function countFilesOverLimit(files, maxLines) {
   return createMetric(total, 'max', samples, { limit: maxLines });
 }
 
-export function collectRatchetMetrics(options = {}) {
+export function collectRatchetMetrics() {
   const codeFiles = getTrackedFiles(CODE_PATHS, SOURCE_EXTENSIONS);
   const productFiles = getTrackedFiles(PRODUCT_CODE_PATHS, SOURCE_EXTENSIONS);
   const frontendFiles = getTrackedFiles(FRONTEND_PATHS, STYLE_EXTENSIONS);

@@ -8,7 +8,7 @@ import { SpineEventRef } from './mind.types';
  * working → episodic → consolidated.
  *
  * Initial mode: `dry-run` — emits proposals without mutating durable
- * stores. Promotion to real mode happens in CONS-002 once PULSE
+ * stores. Promotion to real mode happens in CONS-002 once readiness
  * confirms healthy DB metrics.
  */
 

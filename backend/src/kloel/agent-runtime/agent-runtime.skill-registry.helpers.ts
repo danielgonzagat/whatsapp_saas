@@ -25,10 +25,7 @@ export function stringArray(value: unknown): string[] {
 
 /** Coerce an unknown into one of the allowed skill categories. */
 export function categoryFor(value: unknown): AgentSkillDefinition['category'] {
-  return value === 'commercial' ||
-    value === 'operational' ||
-    value === 'pulse' ||
-    value === 'workspace'
+  return value === 'commercial' || value === 'operational' || value === 'workspace'
     ? value
     : 'operational';
 }

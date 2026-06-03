@@ -269,7 +269,7 @@ export async function buildMindSignals(
         }
       }
 
-      selfModel.pulseHealth = healthSnap;
+      selfModel.readinessHealth = healthSnap;
       selfModel.knownGapsCount = gapsResult?.unwired?.length ?? 0;
       selfModel.lastFailureKind = lastFailureKind;
 

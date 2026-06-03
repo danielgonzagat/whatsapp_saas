@@ -15,6 +15,14 @@ import { Loader2, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { mutate } from 'swr';
 
+function normalizeReviewList(response: unknown): Review[] {
+  if (!Array.isArray(response)) {
+    throw new Error('Payload de avaliacoes invalido.');
+  }
+
+  return response;
+}
+
 /** Product reviews tab. */
 export function ProductReviewsTab({ productId }: { productId: string }) {
   const [items, setItems] = useState<Review[]>([]);
@@ -26,13 +34,10 @@ export function ProductReviewsTab({ productId }: { productId: string }) {
   const fetch_ = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await apiFetch<Review[] | { data?: Review[] }>(
-        `/products/${productId}/reviews`,
-      );
-      setItems(Array.isArray(response) ? response : []);
+      const response = await apiFetch<unknown>(`/products/${productId}/reviews`);
+      setItems(normalizeReviewList(response));
       setError(null);
     } catch (caughtError: unknown) {
-      setItems([]);
       setError(toReviewErrorMessage(caughtError, PRODUCT_REVIEWS_COPY.loadError));
     } finally {
       setLoading(false);
@@ -112,7 +117,9 @@ export function ProductReviewsTab({ productId }: { productId: string }) {
       </div>
 
       {items.length === 0 ? (
-        <EmptyReviewsState />
+        error ? null : (
+          <EmptyReviewsState />
+        )
       ) : (
         <div className="space-y-3">
           {items.map((review) => (

@@ -22,16 +22,6 @@ export interface SessionStatus {
   selfIds?: string[];
 }
 
-/** Qr code response shape. */
-export interface QrCodeResponse {
-  /** Success property. */
-  success: boolean;
-  /** Qr property. */
-  qr?: string;
-  /** Message property. */
-  message?: string;
-}
-
 /** Waha chat summary shape. */
 export interface WahaChatSummary {
   /** Id property. */

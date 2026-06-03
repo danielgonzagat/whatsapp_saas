@@ -320,6 +320,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
   }, [isAuthenticated, isLoading, refreshConversations]);
 
   const addConversation = useCallback(async (title?: string): Promise<string | null> => {
+    setLastError(null);
     try {
       const res = await apiFetch<Partial<Conversation>>('/kloel/threads', {
         method: 'POST',
@@ -336,13 +337,15 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
         setConversations((prev) => [conv, ...prev]);
         return payload.id;
       }
-    } catch {
-      // Backend unavailable — cannot create conversation without persistence
+      throw new Error('Payload de conversa criado invalido.');
+    } catch (error) {
+      setLastError(error instanceof Error ? error : new Error(String(error || 'kloel_thread_create_failed')));
     }
     return null;
   }, []);
 
   const updateConversationTitle = useCallback((id: string, title: string) => {
+    setLastError(null);
     apiFetch(`/kloel/threads/${id}`, { method: 'PUT', body: { title } })
       .then((res) => {
         if (res.error) {
@@ -351,10 +354,13 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
         setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, title } : c)));
         mutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/threads'));
       })
-      .catch(() => {});
+      .catch((error: unknown) => {
+        setLastError(error instanceof Error ? error : new Error(String(error || 'kloel_thread_rename_failed')));
+      });
   }, []);
 
   const deleteConversation = useCallback((id: string) => {
+    setLastError(null);
     apiFetch(`/kloel/threads/${id}`, { method: 'DELETE' })
       .then((res) => {
         if (res.error) {
@@ -364,7 +370,9 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
         setActiveConv((current) => (current === id ? null : current));
         mutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/threads'));
       })
-      .catch(() => {});
+      .catch((error: unknown) => {
+        setLastError(error instanceof Error ? error : new Error(String(error || 'kloel_thread_delete_failed')));
+      });
   }, []);
 
   const setActiveConversation = useCallback((id: string | null) => {

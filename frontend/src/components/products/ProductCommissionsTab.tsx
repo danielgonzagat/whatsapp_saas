@@ -43,7 +43,6 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
       setItems(normalizeCommissionList(response));
       setError(null);
     } catch (caughtError: unknown) {
-      setItems([]);
       setError(toCommissionErrorMessage(caughtError, PRODUCT_COMMISSIONS_COPY.loadError));
     } finally {
       setLoading(false);

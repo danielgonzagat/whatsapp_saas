@@ -88,7 +88,7 @@ export interface CoverageReport {
  * reports per-surface event coverage as defined by PCI.6.
  *
  * Does NOT emit events itself. The event-emit-audit-emitter wraps this
- * auditor and emits pulse.gate_passed / pulse.gate_failed based on the
+ * auditor and emits readiness.gate_passed / readiness.gate_failed based on the
  * coverage report.
  */
 @Injectable()

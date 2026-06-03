@@ -6,7 +6,7 @@ import { kloelT } from '@/lib/i18n/t';
 import { UI } from '@/lib/ui-tokens';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 
-export { QRCodePane } from './WhatsAppExperience.qr-pane';
+
 
 const E = UI.accent;
 const V = KLOEL_THEME.bgPrimary;
@@ -57,20 +57,14 @@ export function resolveEffectiveProvider(
   workspaceProvider: unknown,
   sessionProvider: unknown,
   phoneNumberId: unknown,
-): { providerToken: string; isWahaProvider: boolean; effectiveProvider: string } {
-  void phoneNumberId;
-
+): { providerToken: string; effectiveProvider: string } {
   const providerToken = String(
-    liveProvider || connectionProvider || workspaceProvider || sessionProvider || '',
+    liveProvider || connectionProvider || workspaceProvider || sessionProvider || phoneNumberId || '',
   )
     .trim()
     .toLowerCase();
-  const isWahaProvider =
-    providerToken === 'whatsapp-api' ||
-    providerToken === 'waha' ||
-    providerToken === 'whatsapp-web-agent';
-  const effectiveProvider = isWahaProvider ? 'whatsapp-api' : 'meta-cloud';
-  return { providerToken, isWahaProvider, effectiveProvider };
+
+  return { providerToken, effectiveProvider: 'meta-cloud' };
 }
 
 export function buildEffectiveConnection(params: {
@@ -78,20 +72,16 @@ export function buildEffectiveConnection(params: {
   liveStatus?: LiveStatusShape | undefined;
   channelSession?: MarketingWhatsAppConnection | undefined;
   effectiveProvider: string;
-  isWahaProvider: boolean;
 }) {
-  const { sessionSnapshot, liveStatus, channelSession, effectiveProvider, isWahaProvider } = params;
+  const { sessionSnapshot, liveStatus, channelSession, effectiveProvider } = params;
   const snapshotStatus = String(
     sessionSnapshot.status || sessionSnapshot.rawStatus || channelSession?.status || 'disconnected',
   ).toLowerCase();
   const snapshotConnected = snapshotStatus === 'connected' || snapshotStatus === 'working';
-  const remoteConnected = isWahaProvider
-    ? snapshotConnected
-    : channelSession?.connected === true || snapshotConnected;
+  const remoteConnected = channelSession?.connected === true || snapshotConnected;
   const connected = liveStatus?.connected === true || remoteConnected;
-  const statusBase = isWahaProvider ? snapshotStatus : channelSession?.status;
   const status = String(
-    liveStatus?.status || statusBase || snapshotStatus || 'disconnected',
+    liveStatus?.status || channelSession?.status || snapshotStatus || 'disconnected',
   ).toLowerCase();
 
   return {

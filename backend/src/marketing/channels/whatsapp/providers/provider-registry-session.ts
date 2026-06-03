@@ -21,7 +21,6 @@ function readSessionSnapshot(value: unknown): ProviderSessionSnapshot {
     phoneNumber: readString(snapshot.phoneNumber) ?? null,
     pushName: readString(snapshot.pushName) ?? null,
     selfIds: readStringArrayOr(snapshot.selfIds) ?? [],
-    qrCode: readString(snapshot.qrCode) ?? null,
     authUrl: readString(snapshot.authUrl) ?? null,
     phoneNumberId: readString(snapshot.phoneNumberId) ?? null,
     whatsappBusinessId: readString(snapshot.whatsappBusinessId) ?? null,
@@ -84,7 +83,6 @@ export async function startSession(
   workspaceId: string,
 ): Promise<{
   success: boolean;
-  qrCode?: string;
   message?: string;
   authUrl?: string;
 }> {
@@ -93,7 +91,6 @@ export async function startSession(
   const result = await deps.metaCloudProvider.startSession(workspaceId);
   await persistSessionSnapshot(deps.prisma, deps.defaultProvider, workspaceId, {
     status: result.message === 'already_connected' ? 'connected' : 'connection_required',
-    qrCode: null,
     authUrl: result.authUrl || null,
     sessionName: workspaceId,
   });
@@ -154,13 +151,4 @@ export async function getSessionStatus(
     whatsappBusinessId: status.whatsappBusinessId || null,
   });
   return status;
-}
-
-export async function getQrCode(
-  deps: SessionDeps,
-  workspaceId: string,
-): Promise<{ success: boolean; qr?: string; message?: string }> {
-  await deps.getProviderType(workspaceId);
-
-  return deps.metaCloudProvider.getQrCode(workspaceId);
 }

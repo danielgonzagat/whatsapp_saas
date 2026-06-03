@@ -1,25 +1,15 @@
-import { type NextRequest, NextResponse } from 'next/server';
-import { proxyWhatsAppRequest } from '../../proxy';
+import { NextResponse } from 'next/server';
 
-/** Get. */
-export async function GET(request: NextRequest) {
-  try {
-    const result = await proxyWhatsAppRequest(request, 'GET', '/whatsapp-api/session/qr');
-    return NextResponse.json(result.data, { status: result.status });
-  } catch (error) {
-    console.error('[WhatsApp Proxy] qr error:', error);
-    const status =
-      typeof (error as { status?: number })?.status === 'number'
-        ? (error as { status: number }).status
-        : 502;
-    return NextResponse.json(
-      {
-        message:
-          status === 401
-            ? 'Sua sessão expirou. Faça login novamente para continuar com o QR Code.'
-            : 'Falha ao obter QR Code do WhatsApp.',
-      },
-      { status },
-    );
-  }
+/** Legacy session-code route intentionally retired: WhatsApp uses official Meta Cloud API only. */
+export async function GET() {
+  return NextResponse.json(
+    {
+      success: false,
+      provider: 'meta-cloud',
+      notSupported: true,
+      message: 'WhatsApp agora conecta somente pela API oficial da Meta.',
+      use: '/meta/auth/url?channel=whatsapp&returnTo=/whatsapp',
+    },
+    { status: 410 },
+  );
 }

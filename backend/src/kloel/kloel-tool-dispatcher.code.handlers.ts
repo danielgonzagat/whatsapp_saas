@@ -3,7 +3,7 @@
  * KloelToolDispatcherService. Covers read/list/search/outline source code,
  * git inspection, build/test status, lint/detect-issues, the CodeGraph
  * knowledge-graph surface, the Cognitive Bridge (LSP/OpenAPI/AsyncAPI/Static
- * Analysis), and PULSE/runtime awareness.
+ * Analysis).
  *
  * Each case is a thin delegation to {@link KloelCodeToolsService} or
  * {@link KloelCodeAnalysisService}. Behaviour and argument coercion are
@@ -53,9 +53,6 @@ export const CODE_TOOL_NAMES = new Set<string>([
   'openapi_route',
   'asyncapi_events',
   'static_analysis',
-  // PULSE / Runtime awareness
-  'pulse_health',
-  'runtime_errors',
 ]);
 
 export function isCodeTool(toolName: string): boolean {
@@ -134,11 +131,6 @@ export async function dispatchCodeTool(
       return await codeToolsService.toolAsyncApiEvents(asStr(args.domain));
     case 'static_analysis':
       return await codeToolsService.toolStaticAnalysis(asStr(args.file));
-    // ── PULSE / Runtime awareness (Wave 7 PI-DD) ──
-    case 'pulse_health':
-      return await codeToolsService.toolPulseHealth(asOptStr(args.module));
-    case 'runtime_errors':
-      return await codeToolsService.toolRuntimeErrors();
     default:
       return null;
   }

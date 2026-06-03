@@ -32,6 +32,8 @@ export default function AfiliarSe({
   marketplaceStats,
   affiliateLinks,
   affiliateProducts,
+  affiliateLoading = false,
+  affiliateLoadError = null,
   onRefresh,
 }: {
   marketplace: MarketplaceItem[];
@@ -39,7 +41,9 @@ export default function AfiliarSe({
   marketplaceStats?: MarketplaceStats;
   affiliateLinks: AffiliateLink[];
   affiliateProducts: AffiliateProductItem[];
-  onRefresh: () => void;
+  affiliateLoading?: boolean;
+  affiliateLoadError?: string | null;
+  onRefresh: () => void | Promise<void>;
 }) {
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState<string | null>(null);
@@ -134,6 +138,50 @@ export default function AfiliarSe({
         catFilter={catFilter}
         setCatFilter={setCatFilter}
       />
+
+      {affiliateLoadError && (
+        <div
+          role="alert"
+          style={{
+            background: 'rgba(255, 80, 80, 0.08)',
+            border: '1px solid rgba(255, 80, 80, 0.24)',
+            borderRadius: 6,
+            padding: 12,
+            marginBottom: 20,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+          }}
+        >
+          <div>
+            <div style={{ fontFamily: SORA, fontSize: 11, fontWeight: 700, color: 'var(--app-text-primary)', letterSpacing: '0.12em', textTransform: 'uppercase' as const }}>
+              {kloelT('Dados de afiliacao indisponiveis')}
+            </div>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--app-text-secondary)', marginTop: 4 }}>
+              {affiliateLoadError}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => void onRefresh()}
+            disabled={affiliateLoading}
+            style={{
+              border: `1px solid ${BORDER}`,
+              borderRadius: 4,
+              background: 'var(--app-bg-secondary)',
+              color: 'var(--app-text-primary)',
+              fontFamily: MONO,
+              fontSize: 11,
+              padding: '8px 10px',
+              cursor: affiliateLoading ? 'wait' : 'pointer',
+              opacity: affiliateLoading ? 0.72 : 1,
+            }}
+          >
+            {affiliateLoading ? kloelT('Atualizando...') : kloelT('Atualizar')}
+          </button>
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
         {[

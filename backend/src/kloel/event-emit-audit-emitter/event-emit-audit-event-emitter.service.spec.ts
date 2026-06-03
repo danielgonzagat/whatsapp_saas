@@ -31,7 +31,7 @@ describe('EventEmitAuditEventEmitterService', () => {
     return { emitter, auditor, svc };
   }
 
-  it('emits pulse.gate_failed when one or more surfaces have zero coverage', () => {
+  it('emits readiness.gate_failed when one or more surfaces have zero coverage', () => {
     const { emitter, svc } = build();
     void emitter.emit(input({ eventName: 'commerce.cart.created' }));
     const report = svc.auditAndEmit();
@@ -39,7 +39,7 @@ describe('EventEmitAuditEventEmitterService', () => {
     const events = emitter.recentEvents();
     const gateEvent = events.find(
       (e) =>
-        e.eventName === 'pulse.gate_failed' &&
+        e.eventName === 'readiness.gate_failed' &&
         e.payload &&
         typeof e.payload === 'object' &&
         'gateName' in e.payload &&
@@ -50,7 +50,7 @@ describe('EventEmitAuditEventEmitterService', () => {
     expect(report.surfaces).toHaveLength(7);
   });
 
-  it('emits pulse.gate_passed when all surfaces have nonzero coverage', () => {
+  it('emits readiness.gate_passed when all surfaces have nonzero coverage', () => {
     const { emitter, svc } = build();
     const onePerSurface: SpineEventInput[] = [
       input({ eventName: 'commerce.cart.created' }),
@@ -69,7 +69,7 @@ describe('EventEmitAuditEventEmitterService', () => {
     const events = emitter.recentEvents();
     const gateEvent = events.find(
       (e) =>
-        e.eventName === 'pulse.gate_passed' &&
+        e.eventName === 'readiness.gate_passed' &&
         e.payload &&
         typeof e.payload === 'object' &&
         'gateName' in e.payload &&
@@ -132,7 +132,7 @@ describe('EventEmitAuditEventEmitterService', () => {
 
     const events = emitter.recentEvents();
     const gateEvents = events.filter(
-      (e) => e.eventName === 'pulse.gate_passed' || e.eventName === 'pulse.gate_failed',
+      (e) => e.eventName === 'readiness.gate_passed' || e.eventName === 'readiness.gate_failed',
     );
     expect(gateEvents.length).toBeGreaterThanOrEqual(2);
     const eventIds = new Set(gateEvents.map((e) => e.eventId));

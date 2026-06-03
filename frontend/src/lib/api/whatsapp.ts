@@ -1,146 +1,133 @@
-// WhatsApp channel session API functions
-import { apiFetch } from './core';
+// WhatsApp channel API functions — official Meta Cloud API only.
+import { apiFetch, buildQuery } from './core';
 import {
   createWhatsAppApiError,
   invalidateWhatsApp,
-  isConnectedWhatsAppStatus,
-  mapWhatsAppStatusPayload,
-  normalizeWhatsAppStatusLabel,
-  normalizeWsBase,
-  resolveWhatsAppQrConnectedFlag,
-  whatsappMutatingRequest,
-  type WhatsAppQrImageData,
-  type WhatsAppStatusRaw,
 } from './whatsapp-helpers';
 import type { WhatsAppConnectResponse, WhatsAppConnectionStatus } from './core';
 
 export type { WhatsAppConnectionStatus, WhatsAppConnectResponse };
 
-/** Get whats app screencast ws base. */
-export function getWhatsAppScreencastWsBase(): string {
-  const explicit = normalizeWsBase(process.env.NEXT_PUBLIC_SCREENCAST_WS_URL);
-  if (explicit) {
-    return explicit;
-  }
+type MetaWhatsAppChannelStatus = {
+  connected?: boolean;
+  phoneNumberId?: string | null;
+  whatsappBusinessId?: string | null;
+  username?: string | null;
+  displayPhoneNumber?: string | null;
+  status?: string | null;
+};
 
-  if (typeof window !== 'undefined') {
-    console.warn('[Kloel] NEXT_PUBLIC_SCREENCAST_WS_URL not set — screencast disabled');
-  }
-  return '';
+type MetaAuthStatusResponse = {
+  connected?: boolean;
+  tokenExpired?: boolean;
+  channels?: {
+    whatsapp?: MetaWhatsAppChannelStatus | null;
+  };
+  whatsappPhoneNumberId?: string | null;
+  whatsappBusinessId?: string | null;
+  pageName?: string | null;
+};
+
+function readString(value: unknown): string | undefined {
+  const text = typeof value === 'string' ? value.trim() : '';
+  return text || undefined;
 }
 
-/** Get whats app status. */
-export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppConnectionStatus> {
-  const res = await apiFetch<WhatsAppStatusRaw>(`/whatsapp-api/session/status`);
+function readNullableString(value: unknown): string | null {
+  return readString(value) || null;
+}
+
+function assertMetaPayload<T>(
+  res: { data?: T; error?: string; status?: number },
+  fallbackError: string,
+  missingPayloadError: string,
+): T {
   if (res.error) {
     throw createWhatsAppApiError(res.error, res.status);
   }
-
-  const data = res.data as WhatsAppStatusRaw | undefined;
-  const connected = isConnectedWhatsAppStatus(data as Record<string, unknown>);
-  const rawStatus = String(data?.status || '');
-  const normalizedStatus = normalizeWhatsAppStatusLabel(rawStatus, connected);
-
-  return mapWhatsAppStatusPayload(data, connected, normalizedStatus);
+  if (typeof res.status === 'number' && res.status >= 400) {
+    throw createWhatsAppApiError(fallbackError, res.status);
+  }
+  if (res.data === undefined || res.data === null) {
+    throw createWhatsAppApiError(missingPayloadError, res.status);
+  }
+  return res.data;
 }
 
-/** Initiate whats app channel session. */
+
+/** Get the official Meta Cloud WhatsApp status for the current workspace. */
+export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppConnectionStatus> {
+  const res = await apiFetch<MetaAuthStatusResponse>('/meta/auth/status');
+  const data = assertMetaPayload(
+    res,
+    'Falha ao consultar status oficial da Meta.',
+    'Meta status did not return a confirmed payload.',
+  );
+  const whatsapp = data.channels?.whatsapp || null;
+  const phoneNumberId = readString(whatsapp?.phoneNumberId) || readString(data.whatsappPhoneNumberId);
+  const whatsappBusinessId = readNullableString(whatsapp?.whatsappBusinessId || data.whatsappBusinessId);
+  const tokenExpired = data.tokenExpired === true;
+  const connected = Boolean(whatsapp?.connected || phoneNumberId) && !tokenExpired;
+  const status = connected
+    ? 'connected'
+    : tokenExpired
+      ? 'authorization_expired'
+      : readString(whatsapp?.status) || 'connection_incomplete';
+
+  return {
+    connected,
+    status,
+    phone: readString(whatsapp?.displayPhoneNumber),
+    pushName: readString(whatsapp?.username || data.pageName),
+    phoneNumberId,
+    whatsappBusinessId,
+    provider: 'meta-cloud',
+    workerAvailable: true,
+    workerHealthy: connected || !tokenExpired,
+    workerError: tokenExpired ? 'meta_token_expired' : null,
+    degraded: tokenExpired,
+    degradedReason: tokenExpired ? 'meta_token_expired' : null,
+    takeoverActive: false,
+    agentPaused: false,
+    proofCount: 0,
+  };
+}
+
+/** Initiate the official Meta OAuth / Embedded Signup flow. */
 export async function initiateWhatsAppConnection(
   _workspaceId: string,
 ): Promise<WhatsAppConnectResponse> {
-  const res = await apiFetch<Record<string, unknown>>(`/whatsapp-api/session/start`, {
-    method: 'POST',
-  });
+  const res = await apiFetch<{ url?: string }>('/meta/auth/url' + buildQuery({
+    channel: 'whatsapp',
+    returnTo: '/whatsapp',
+  }));
+  const data = assertMetaPayload(
+    res,
+    'Falha ao iniciar conexao oficial da Meta.',
+    'Meta auth URL did not return a confirmed payload.',
+  );
+  const authUrl = readString(data.url);
+  if (!authUrl) {
+    throw createWhatsAppApiError('Meta auth URL did not return a confirmed payload.', res.status);
+  }
+  return {
+    status: 'connect_required',
+    authUrl,
+    message: 'Abrindo autorizacao oficial da Meta.',
+  };
+}
+
+/** Disconnect the official Meta integration for this workspace. */
+export async function disconnectWhatsApp(_workspaceId: string): Promise<unknown> {
+  const res = await apiFetch('/meta/auth/disconnect', { method: 'POST' });
   if (res.error) {
     throw createWhatsAppApiError(res.error, res.status);
   }
   invalidateWhatsApp();
-
-  interface SessionStartData {
-    success?: boolean;
-    message?: string;
-    authUrl?: string;
-    qr?: string;
-    qrCode?: string;
-    qrCodeImage?: string;
-  }
-  const data = res.data as SessionStartData | undefined;
-  return {
-    status:
-      data?.success === false
-        ? 'error'
-        : data?.message === 'already_connected'
-          ? 'already_connected'
-          : data?.authUrl
-            ? 'connect_required'
-            : 'pending',
-    message: data?.message,
-    authUrl: data?.authUrl,
-    qrCode: data?.qr || data?.qrCode,
-    qrCodeImage: data?.qrCodeImage || data?.qr || data?.qrCode,
-    error: data?.success === false,
-  };
+  return res.data;
 }
 
-/** Get whats app qr. */
-export async function getWhatsAppQR(
-  _workspaceId: string,
-): Promise<{ qrCode: string | null; connected: boolean; status?: string | undefined; message?: string | undefined }> {
-  const [qrResponse, statusResponse] = await Promise.all([
-    getWhatsAppQrImageOnly(_workspaceId),
-    apiFetch<Record<string, unknown>>(`/whatsapp-api/session/status`),
-  ]);
-
-  if (statusResponse.error) {
-    throw createWhatsAppApiError(statusResponse.error, statusResponse.status);
-  }
-
-  interface StatusData {
-    status?: string;
-    message?: string;
-    connected?: boolean;
-  }
-  const statusData = (statusResponse.data || {}) as StatusData;
-  const connected = isConnectedWhatsAppStatus(statusData as Record<string, unknown>);
-
-  return {
-    qrCode: qrResponse.qrCode,
-    connected,
-    status: connected
-      ? 'connected'
-      : String(statusData.status || qrResponse.status || 'pending').toLowerCase(),
-    message: qrResponse.message || statusData.message || undefined,
-  };
-}
-
-/** Get whats app qr image only. */
-export async function getWhatsAppQrImageOnly(
-  _workspaceId: string,
-): Promise<{ qrCode: string | null; connected: boolean; status?: string | undefined; message?: string | undefined }> {
-  const qrResponse = await apiFetch<Record<string, unknown>>(`/whatsapp-api/session/qr`);
-
-  if (qrResponse.error) {
-    throw createWhatsAppApiError(qrResponse.error, qrResponse.status);
-  }
-
-  const qrData = (qrResponse.data || {}) as WhatsAppQrImageData;
-  const rawStatus = String(qrData.status || '').toLowerCase();
-  const connected = resolveWhatsAppQrConnectedFlag(rawStatus, qrData.connected);
-
-  return {
-    qrCode: qrData.qr || qrData.qrCode || null,
-    connected,
-    status: rawStatus || undefined,
-    message: qrData.message || undefined,
-  };
-}
-
-/** Disconnect whats app. */
-export async function disconnectWhatsApp(_workspaceId: string): Promise<unknown> {
-  return whatsappMutatingRequest(`/whatsapp-api/session/disconnect`, { method: 'DELETE' });
-}
-
-/** Logout whats app. */
+/** Reset is an alias for disconnect in the Meta-only channel model. */
 export async function logoutWhatsApp(_workspaceId: string): Promise<unknown> {
-  return whatsappMutatingRequest(`/whatsapp-api/session/logout`, { method: 'POST' });
+  return disconnectWhatsApp(_workspaceId);
 }

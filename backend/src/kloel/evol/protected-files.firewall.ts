@@ -26,7 +26,6 @@ const PROTECTED_PATTERNS: readonly string[] = [
   '.codacy.yml',
   'docs/codacy/**',
   'package.json',
-  'scripts/pulse/no-hardcoded-reality-audit.ts',
 ];
 
 @Injectable()

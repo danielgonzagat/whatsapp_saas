@@ -16,7 +16,7 @@ const DOMAIN_VALUE_WEIGHTS: Readonly<Record<string, number>> = {
   lineage: 2.0,
   cognition: 2.5,
   goal_field: 1.0,
-  pulse: 0.5,
+  readiness: 0.5,
   legitimacy: 1.5,
   incentive: 1.0,
   evolution: 2.0,

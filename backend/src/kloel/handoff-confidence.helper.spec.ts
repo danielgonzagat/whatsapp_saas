@@ -1,5 +1,5 @@
 import { computeHandoffConfidence } from './handoff-confidence.helper';
-import type { AbiBelief, AbiPulseTruth } from './abi/abi-schema';
+import type { AbiBelief, AbiReadinessTruth } from './abi/abi-schema';
 
 const mkBelief = (confidence: number): AbiBelief => ({
   beliefId: 'b1',
@@ -11,7 +11,7 @@ const mkBelief = (confidence: number): AbiBelief => ({
   truthMode: 'observed',
 });
 
-const mkPulse = (capabilityHealth: number, overclaimRisk: number): AbiPulseTruth => ({
+const mkReadiness = (capabilityHealth: number, overclaimRisk: number): AbiReadinessTruth => ({
   noOverclaimStatus: 'PASS',
   capabilityHealthScore: capabilityHealth,
   gates: [],
@@ -31,30 +31,30 @@ describe('computeHandoffConfidence', () => {
     expect(out.wouldEscalateAtThreshold04).toBe(true);
   });
 
-  it('returns high composite when beliefs are confident + pulse healthy', () => {
-    const out = computeHandoffConfidence([mkBelief(0.9), mkBelief(0.85)], mkPulse(0.95, 0.05));
+  it('returns high composite when beliefs are confident + readiness healthy', () => {
+    const out = computeHandoffConfidence([mkBelief(0.9), mkBelief(0.85)], mkReadiness(0.95, 0.05));
     // 0.5*0.875 + 0.35*0.95 + 0.15*0.95 = 0.4375 + 0.3325 + 0.1425 = 0.9125
     expect(out.composite).toBeCloseTo(0.9125, 3);
     expect(out.wouldEscalateAtThreshold04).toBe(false);
   });
 
   it('flags escalation when composite < 0.4', () => {
-    const out = computeHandoffConfidence([mkBelief(0.2)], mkPulse(0.3, 0.8));
+    const out = computeHandoffConfidence([mkBelief(0.2)], mkReadiness(0.3, 0.8));
     // 0.5*0.2 + 0.35*0.3 + 0.15*0.2 = 0.1 + 0.105 + 0.03 = 0.235
     expect(out.composite).toBeCloseTo(0.235, 3);
     expect(out.wouldEscalateAtThreshold04).toBe(true);
   });
 
   it('clamps overclaimRisk to [0,1]', () => {
-    const outHigh = computeHandoffConfidence([mkBelief(0.5)], mkPulse(0.5, 5));
+    const outHigh = computeHandoffConfidence([mkBelief(0.5)], mkReadiness(0.5, 5));
     // overclaimRisk should clamp to 1; 0.15 * (1-1) = 0
     expect(outHigh.overclaimRisk).toBe(1);
-    const outLow = computeHandoffConfidence([mkBelief(0.5)], mkPulse(0.5, -2));
+    const outLow = computeHandoffConfidence([mkBelief(0.5)], mkReadiness(0.5, -2));
     expect(outLow.overclaimRisk).toBe(0);
   });
 
   it('handles non-finite belief confidence as zero', () => {
-    const out = computeHandoffConfidence([mkBelief(NaN), mkBelief(0.8)], mkPulse(0.5, 0.1));
+    const out = computeHandoffConfidence([mkBelief(NaN), mkBelief(0.8)], mkReadiness(0.5, 0.1));
     // NaN treated as 0 → mean = 0.4
     expect(out.meanBeliefConfidence).toBeCloseTo(0.4, 3);
   });
@@ -62,7 +62,7 @@ describe('computeHandoffConfidence', () => {
   it('reports beliefCount', () => {
     const out = computeHandoffConfidence(
       [mkBelief(0.5), mkBelief(0.6), mkBelief(0.7)],
-      mkPulse(0.5, 0.1),
+      mkReadiness(0.5, 0.1),
     );
     expect(out.beliefCount).toBe(3);
   });
@@ -85,7 +85,10 @@ describe('Phase-2 flag-gated integration', () => {
     const enabled = process.env['HANDOFF_CONFIDENCE_GATE_ENABLED'] === 'true';
     expect(enabled).toBe(true);
 
-    const snapshot = computeHandoffConfidence([mkBelief(0.7), mkBelief(0.8)], mkPulse(0.9, 0.1));
+    const snapshot = computeHandoffConfidence(
+      [mkBelief(0.7), mkBelief(0.8)],
+      mkReadiness(0.9, 0.1),
+    );
 
     // Snapshot shape is loggable: every field is a JSON-safe primitive.
     expect(typeof snapshot.composite).toBe('number');
@@ -120,7 +123,7 @@ describe('Phase-2 flag-gated integration', () => {
       expect(shouldComputeSnapshot).toBe(false);
 
       // The helper itself still works when called independently.
-      const snapshot = computeHandoffConfidence([mkBelief(0.25)], mkPulse(0.3, 0.7));
+      const snapshot = computeHandoffConfidence([mkBelief(0.25)], mkReadiness(0.3, 0.7));
       // Confidence is low, but with both flags off, no escalation.
       expect(snapshot.wouldEscalateAtThreshold04).toBe(true);
 
@@ -141,7 +144,7 @@ describe('Phase-2 flag-gated integration', () => {
       const shouldComputeSnapshot = gateEnabled || blockingEnabled;
       expect(shouldComputeSnapshot).toBe(true);
 
-      const snapshot = computeHandoffConfidence([mkBelief(0.2)], mkPulse(0.25, 0.8));
+      const snapshot = computeHandoffConfidence([mkBelief(0.2)], mkReadiness(0.25, 0.8));
 
       // Confidence below threshold (composite ≈ 0.1 + 0.0875 + 0.03 = 0.2175).
       expect(snapshot.wouldEscalateAtThreshold04).toBe(true);
@@ -163,7 +166,7 @@ describe('Phase-2 flag-gated integration', () => {
       const shouldComputeSnapshot = gateEnabled || blockingEnabled;
       expect(shouldComputeSnapshot).toBe(true);
 
-      const snapshot = computeHandoffConfidence([mkBelief(0.15)], mkPulse(0.2, 0.85));
+      const snapshot = computeHandoffConfidence([mkBelief(0.15)], mkReadiness(0.2, 0.85));
 
       // Confidence well below 0.4 threshold.
       expect(snapshot.wouldEscalateAtThreshold04).toBe(true);

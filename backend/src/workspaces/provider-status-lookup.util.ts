@@ -69,13 +69,10 @@ export function resolveMetaStatus(
 
 /** Compute normalized status. */
 export function computeNormalizedStatus(
-  providerType: WhatsAppProviderType,
+  _providerType: WhatsAppProviderType,
   rawStatus: string,
   phoneNumberId: string | null,
 ): NormalizedConnectionStatus {
-  if (providerType === 'whatsapp-api') {
-    return resolveWahaStatus(rawStatus);
-  }
   return resolveMetaStatus(rawStatus, phoneNumberId);
 }
 

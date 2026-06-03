@@ -104,7 +104,7 @@ describe('Cognitive detectors — COG-004: capability_without_runtime_evidence',
   it('fires when capability promoted but no runtime evidence', () => {
     const events = [
       ev({
-        eventName: 'pulse.capability_promoted',
+        eventName: 'readiness.capability_promoted',
         payload: { capabilityId: 'cap_origin_check' },
         eventId: 'prom_1',
       }),
@@ -119,12 +119,12 @@ describe('Cognitive detectors — COG-004: capability_without_runtime_evidence',
   it('is silent when capability has gate_passed evidence', () => {
     const events = [
       ev({
-        eventName: 'pulse.capability_promoted',
+        eventName: 'readiness.capability_promoted',
         payload: { capabilityId: 'cap_x' },
         eventId: 'prom_1',
       }),
       ev({
-        eventName: 'pulse.gate_passed',
+        eventName: 'readiness.gate_passed',
         payload: { capabilityId: 'cap_x' },
         eventId: 'gate_1',
       }),
@@ -135,7 +135,7 @@ describe('Cognitive detectors — COG-004: capability_without_runtime_evidence',
   it('is silent when capability has cognition.* evidence', () => {
     const events = [
       ev({
-        eventName: 'pulse.capability_promoted',
+        eventName: 'readiness.capability_promoted',
         payload: { capabilityId: 'cap_y' },
         eventId: 'prom_1',
       }),
@@ -151,7 +151,7 @@ describe('Cognitive detectors — COG-004: capability_without_runtime_evidence',
   it('skips promotions without capabilityId in payload', () => {
     const events = [
       ev({
-        eventName: 'pulse.capability_promoted',
+        eventName: 'readiness.capability_promoted',
         payload: {},
         eventId: 'prom_1',
       }),
@@ -162,12 +162,12 @@ describe('Cognitive detectors — COG-004: capability_without_runtime_evidence',
   it('fires for multiple unmatched capabilities', () => {
     const events = [
       ev({
-        eventName: 'pulse.capability_promoted',
+        eventName: 'readiness.capability_promoted',
         payload: { capabilityId: 'cap_a' },
         eventId: 'p_a',
       }),
       ev({
-        eventName: 'pulse.capability_promoted',
+        eventName: 'readiness.capability_promoted',
         payload: { capabilityId: 'cap_b' },
         eventId: 'p_b',
       }),
@@ -180,17 +180,17 @@ describe('Cognitive detectors — COG-004: capability_without_runtime_evidence',
   it('only flags unmatched when evidence exists for some', () => {
     const events = [
       ev({
-        eventName: 'pulse.capability_promoted',
+        eventName: 'readiness.capability_promoted',
         payload: { capabilityId: 'cap_a' },
         eventId: 'p_a',
       }),
       ev({
-        eventName: 'pulse.capability_promoted',
+        eventName: 'readiness.capability_promoted',
         payload: { capabilityId: 'cap_b' },
         eventId: 'p_b',
       }),
       ev({
-        eventName: 'pulse.gate_passed',
+        eventName: 'readiness.gate_passed',
         payload: { capabilityId: 'cap_a' },
         eventId: 'g_a',
       }),
@@ -202,10 +202,10 @@ describe('Cognitive detectors — COG-004: capability_without_runtime_evidence',
 });
 
 describe('Cognitive detectors — COG-005: runtime_critical_without_observability', () => {
-  it('fires on pulse.gate_failed in hard_fail mode', () => {
+  it('fires on readiness.gate_failed in hard_fail mode', () => {
     const events = [
       ev({
-        eventName: 'pulse.gate_failed',
+        eventName: 'readiness.gate_failed',
         payload: { mode: 'hard_fail', gateName: 'origin-immutability' },
         eventId: 'fail_1',
       }),
@@ -220,7 +220,7 @@ describe('Cognitive detectors — COG-005: runtime_critical_without_observabilit
   it('includes gateName in description', () => {
     const events = [
       ev({
-        eventName: 'pulse.gate_failed',
+        eventName: 'readiness.gate_failed',
         payload: { mode: 'hard_fail', gateName: 'lineage-integrity' },
       }),
     ];
@@ -232,7 +232,7 @@ describe('Cognitive detectors — COG-005: runtime_critical_without_observabilit
   it('shows "unknown" for gateName when missing', () => {
     const events = [
       ev({
-        eventName: 'pulse.gate_failed',
+        eventName: 'readiness.gate_failed',
         payload: { mode: 'hard_fail' },
       }),
     ];
@@ -241,10 +241,10 @@ describe('Cognitive detectors — COG-005: runtime_critical_without_observabilit
     expect(tens[0]?.description).toContain('unknown');
   });
 
-  it('does NOT fire on pulse.gate_failed in soft_fail mode', () => {
+  it('does NOT fire on readiness.gate_failed in soft_fail mode', () => {
     const events = [
       ev({
-        eventName: 'pulse.gate_failed',
+        eventName: 'readiness.gate_failed',
         payload: { mode: 'soft_fail', gateName: 'some-gate' },
       }),
     ];
@@ -254,7 +254,7 @@ describe('Cognitive detectors — COG-005: runtime_critical_without_observabilit
   it('does NOT fire when no mode in payload', () => {
     const events = [
       ev({
-        eventName: 'pulse.gate_failed',
+        eventName: 'readiness.gate_failed',
         payload: { gateName: 'some-gate' },
       }),
     ];
@@ -264,12 +264,12 @@ describe('Cognitive detectors — COG-005: runtime_critical_without_observabilit
   it('fires for each hard_fail event', () => {
     const events = [
       ev({
-        eventName: 'pulse.gate_failed',
+        eventName: 'readiness.gate_failed',
         payload: { mode: 'hard_fail', gateName: 'gate_a' },
         eventId: 'f_a',
       }),
       ev({
-        eventName: 'pulse.gate_failed',
+        eventName: 'readiness.gate_failed',
         payload: { mode: 'hard_fail', gateName: 'gate_b' },
         eventId: 'f_b',
       }),
@@ -284,7 +284,7 @@ describe('Cognitive detectors — COG-005: runtime_critical_without_observabilit
 
   it('returns empty array on non-failed events', () => {
     const events = [
-      ev({ eventName: 'pulse.gate_passed' }),
+      ev({ eventName: 'readiness.gate_passed' }),
       ev({ eventName: 'commerce.lead.replied' }),
     ];
     expect(runtimeCriticalWithoutObservabilityDetector.detect(events, NOW)).toHaveLength(0);
@@ -315,7 +315,7 @@ describe('Cognitive detectors — array export', () => {
         correlationId: 'corr_2',
       }),
       ev({
-        eventName: 'pulse.gate_failed',
+        eventName: 'readiness.gate_failed',
         payload: { mode: 'hard_fail', gateName: 'test' },
       }),
     ];

@@ -1,29 +1,92 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
+import { useSiteDomains, useSiteMutations } from '@/hooks/useSites';
 import { kloelT } from '@/lib/i18n/t';
-import { IC, SORA, EMBER, TEXT, TEXT_DIM, TEXT_MUTED } from './SitesViewIcons';
-import { Card } from './SitesViewAtoms';
-import type { Site } from '@/lib/api/sites';
+import { IC, SORA, EMBER, TEXT, TEXT_DIM, TEXT_MUTED, BORDER } from './SitesViewIcons';
+import { Badge, Btn, Card } from './SitesViewAtoms';
+import type { Site, SiteDomain } from '@/lib/api/sites';
 
-/**
- * Domains tab. KloelSite publishes to a real slug-based public address
- * (`/s/<slug>`, served by site-public.controller). Custom-domain connection
- * (Cloudflare/DNS) is not built yet, so this lists the REAL working public URLs
- * of the user's published sites and keeps an honest note about custom domains —
- * no fabricated domain rows.
- */
-export function Dominios({
-  sites = [],
-  loading = false,
-}: {
+interface DominiosProps {
+  workspaceId?: string;
   sites?: Site[];
   loading?: boolean;
-}) {
-  const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
+}
 
-  const published = sites.filter((s) => s.status === 'PUBLISHED' && s.slug);
+const fieldStyle: CSSProperties = {
+  width: '100%',
+  marginTop: 6,
+  padding: '10px 12px',
+  borderRadius: 6,
+  border: `1px solid ${BORDER}`,
+  background: 'var(--app-bg-secondary)',
+  color: TEXT,
+  fontFamily: SORA,
+  fontSize: 12,
+  outline: 'none',
+};
+
+function normalizeHostname(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .replace(/\/.*$/, '');
+}
+
+function dnsStatusColor(status: SiteDomain['dnsStatus']) {
+  if (status === 'VERIFIED') {
+    return '#22c55e';
+  }
+  if (status === 'FAILED') {
+    return '#ef4444';
+  }
+  return EMBER;
+}
+
+function sslStatusColor(status: string) {
+  if (status === 'ACTIVE' || status === 'VERIFIED') {
+    return '#22c55e';
+  }
+  if (status === 'FAILED') {
+    return '#ef4444';
+  }
+  return EMBER;
+}
+
+export function Dominios({ workspaceId = '', sites = [], loading = false }: DominiosProps) {
+  const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
+  const [selectedSiteId, setSelectedSiteId] = useState(() => sites[0]?.id ?? '');
+  const [hostnameDraft, setHostnameDraft] = useState('');
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [addingDomain, setAddingDomain] = useState(false);
+
+  const published = useMemo(() => sites.filter((s) => s.status === 'PUBLISHED' && s.slug), [sites]);
+  const selectableSites = useMemo(() => (published.length > 0 ? published : sites), [published, sites]);
+  const effectiveSelectedSiteId = useMemo(() => {
+    if (selectableSites.some((site) => site.id === selectedSiteId)) {
+      return selectedSiteId;
+    }
+    return selectableSites[0]?.id ?? '';
+  }, [selectableSites, selectedSiteId]);
+  const selectedSite = useMemo(
+    () => selectableSites.find((site) => site.id === effectiveSelectedSiteId) ?? null,
+    [effectiveSelectedSiteId, selectableSites],
+  );
+
+  const { domains, isLoading: domainsLoading, error: domainsError, mutate: mutateDomains } = useSiteDomains(
+    workspaceId,
+    effectiveSelectedSiteId || null,
+  );
+  const { addDomain } = useSiteMutations(workspaceId);
   const draftCount = sites.length - published.length;
+  const domainsErrorMessage = domainsError instanceof Error
+    ? domainsError.message
+    : domainsError
+      ? kloelT(`Nao foi possivel carregar os dominios deste site.`)
+      : null;
 
   const copyUrl = (slug: string) => {
     if (typeof window === 'undefined' || !navigator.clipboard) {
@@ -32,6 +95,37 @@ export function Dominios({
     void navigator.clipboard.writeText(`${window.location.origin}/s/${slug}`);
     setCopiedSlug(slug);
     window.setTimeout(() => setCopiedSlug((current) => (current === slug ? null : current)), 1800);
+  };
+
+  const handleAddDomain = async () => {
+    const hostname = normalizeHostname(hostnameDraft);
+    setActionError(null);
+    setActionSuccess(null);
+
+    if (!workspaceId || !selectedSite) {
+      setActionError(kloelT(`Selecione um site real antes de conectar o dominio.`));
+      return;
+    }
+
+    if (!hostname) {
+      setActionError(kloelT(`Informe um dominio valido.`));
+      return;
+    }
+
+    setAddingDomain(true);
+    try {
+      const response = await addDomain(selectedSite.id, { hostname });
+      if (response?.error) {
+        throw new Error(response.error);
+      }
+      await mutateDomains();
+      setHostnameDraft('');
+      setActionSuccess(kloelT(`Dominio enviado para verificacao DNS.`));
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : kloelT(`Nao foi possivel adicionar o dominio.`));
+    } finally {
+      setAddingDomain(false);
+    }
   };
 
   return (
@@ -137,14 +231,106 @@ export function Dominios({
         </div>
       )}
 
-      <Card style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '16px 18px' }}>
-        <div style={{ fontFamily: SORA, fontSize: 13, color: TEXT }}>
-          {kloelT(`Dominio proprio`)}
+      <Card style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '16px 18px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontFamily: SORA, fontSize: 13, color: TEXT }}>
+              {kloelT(`Dominio proprio`)}
+            </div>
+            <div style={{ fontFamily: SORA, fontSize: 12, color: TEXT_DIM, lineHeight: 1.6, marginTop: 4 }}>
+              {kloelT(`Conecte dominios ao site selecionado. A verificacao de DNS e SSL vem do backend real.`)}
+            </div>
+          </div>
+          {selectedSite && <Badge>{selectedSite.name || kloelT(`Site sem titulo`)}</Badge>}
         </div>
-        <div style={{ fontFamily: SORA, fontSize: 12, color: TEXT_DIM, lineHeight: 1.6 }}>
-          {kloelT(`Conectar um dominio proprio (ex: seusite.com.br) via Cloudflare ainda nao esta disponivel
-          no painel. Enquanto isso, seus sites publicados funcionam no endereco /s/seu-slug acima, e voce pode
-          apontar um dominio manualmente no seu provedor de DNS.`)}
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(180px, 0.85fr) minmax(220px, 1.15fr) auto', gap: 12, alignItems: 'end' }}>
+          <label style={{ fontFamily: SORA, fontSize: 11, color: TEXT_DIM }}>
+            {kloelT(`Site`)}
+            <select
+              aria-label={kloelT(`Site para dominio`)}
+              value={effectiveSelectedSiteId}
+              onChange={(event) => setSelectedSiteId(event.target.value)}
+              disabled={loading || selectableSites.length === 0}
+              style={fieldStyle}
+            >
+              {selectableSites.length === 0 ? (
+                <option value="">{kloelT(`Nenhum site`)}</option>
+              ) : (
+                selectableSites.map((site) => (
+                  <option key={site.id} value={site.id}>
+                    {site.name || site.slug || site.id}
+                  </option>
+                ))
+              )}
+            </select>
+          </label>
+
+          <label style={{ fontFamily: SORA, fontSize: 11, color: TEXT_DIM }}>
+            {kloelT(`Dominio proprio`)}
+            <input
+              aria-label={kloelT(`Dominio proprio`)}
+              value={hostnameDraft}
+              onChange={(event) => setHostnameDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  void handleAddDomain();
+                }
+              }}
+              placeholder="loja.seudominio.com.br"
+              style={fieldStyle}
+            />
+          </label>
+
+          <Btn
+            onClick={() => { void handleAddDomain(); }}
+            disabled={!workspaceId || !selectedSite || !hostnameDraft.trim() || addingDomain}
+          >
+            {addingDomain ? kloelT(`Adicionando...`) : kloelT(`Adicionar dominio`)}
+          </Btn>
+        </div>
+
+        {actionError && <div style={{ fontFamily: SORA, fontSize: 12, color: '#ef4444' }}>{actionError}</div>}
+        {actionSuccess && <div style={{ fontFamily: SORA, fontSize: 12, color: '#22c55e' }}>{actionSuccess}</div>}
+        {domainsErrorMessage && <div style={{ fontFamily: SORA, fontSize: 12, color: '#ef4444' }}>{domainsErrorMessage}</div>}
+
+        <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {domainsLoading ? (
+            <div style={{ fontFamily: SORA, fontSize: 12, color: TEXT_DIM }}>
+              {kloelT(`Carregando dominios cadastrados...`)}
+            </div>
+          ) : domains.length === 0 ? (
+            <div style={{ fontFamily: SORA, fontSize: 12, color: TEXT_DIM, lineHeight: 1.6 }}>
+              {kloelT(`Nenhum dominio proprio cadastrado para este site.`)}
+            </div>
+          ) : (
+            domains.map((domain) => (
+              <div
+                key={domain.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                  padding: '10px 12px',
+                  border: `1px solid ${BORDER}`,
+                  borderRadius: 8,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontFamily: SORA, fontSize: 13, color: TEXT }}>{domain.hostname}</div>
+                  <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: TEXT_MUTED }}>
+                    {domain.isCustom ? kloelT(`Dominio customizado`) : kloelT(`Dominio nativo`)}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <Badge color={dnsStatusColor(domain.dnsStatus)}>DNS {domain.dnsStatus}</Badge>
+                  <Badge color={sslStatusColor(domain.sslStatus)}>SSL {domain.sslStatus || 'PENDING'}</Badge>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </Card>
     </div>

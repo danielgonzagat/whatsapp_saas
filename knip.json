@@ -10,7 +10,6 @@
     "typescript",
     "@nestjs/event-emitter",
     "@nestjs/schedule",
-    "@opencode-ai/sdk",
     "lucide-react",
     "qrcode",
     "react",
@@ -24,11 +23,7 @@
     ".": {
       "entry": ["scripts/**/*.{ts,mjs}"],
       "project": ["scripts/**/*.{ts,mjs}"],
-      "ignore": [
-        "scripts/orchestration/**",
-        "scripts/obsidian-mirror-daemon.mjs",
-        "scripts/agent-orchestrator.ts"
-      ],
+      "ignore": ["scripts/obsidian-mirror-daemon.mjs"],
       "ignoreDependencies": ["ts-node", "@nestjs/common", "@prisma/client"]
     },
     "backend": {

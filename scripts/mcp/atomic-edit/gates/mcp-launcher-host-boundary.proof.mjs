@@ -226,6 +226,82 @@ async function main() {
     sourceAssertions,
   );
 
+  const inheritedSocketForHost = inheritedBrokerSocket();
+  const inHostEnvelope =
+    process.env.ATOMIC_HOST_SANDBOX === 'macos-sandbox-exec' &&
+    process.env.ATOMIC_HOST_ATOMIC_ONLY === '1' &&
+    typeof inheritedSocketForHost === 'string' &&
+    inheritedSocketForHost.length > 0;
+  if (inHostEnvelope) {
+    const writeRoot = process.env.ATOMIC_HOST_WRITE_ROOT
+      ? path.resolve(process.env.ATOMIC_HOST_WRITE_ROOT)
+      : null;
+    let socketReady = false;
+    if (inheritedSocketForHost.startsWith('file://')) {
+      socketReady = fs.existsSync(path.join(inheritedSocketForHost.slice(7), 'requests'));
+    } else {
+      try {
+        socketReady = fs.statSync(inheritedSocketForHost).isSocket();
+      } catch {
+        socketReady = false;
+      }
+    }
+    record(
+      results,
+      'host-envelope live MCP runtime is bootstrapped under the atomic host boundary (positive witness)',
+      writeRoot === repoRoot && socketReady === true,
+      { writeRoot, repoRoot, socketReady },
+    );
+    const hostBaseEnv = {
+      ...process.env,
+      ATOMIC_SINGLE_TOOL_CALL: '',
+      ATOMIC_SINGLE_TOOL_NAME: '',
+      ATOMIC_SINGLE_TOOL_ARGS_JSON: '',
+    };
+    const refuse79 = withBrokerStateSuppressed(() =>
+      childProcess.spawnSync(launcher, [], {
+        cwd: repoRoot,
+        encoding: 'utf8',
+        timeout: 10000,
+        env: {
+          ...hostBaseEnv,
+          ATOMIC_HOST_SANDBOX: '',
+          ATOMIC_HOST_ATOMIC_ONLY: '',
+          ATOMIC_HOST_WRITE_ROOT: '',
+          ATOMIC_EXEC_BROKER_SOCKET: '',
+          ATOMIC_EDIT_MCP_SELF_HOSTED: '1',
+        },
+      }),
+    );
+    record(
+      results,
+      'host-envelope launcher refuses (exit 79) when self-hosted but host marks are absent',
+      refuse79.status === 79 && /requires the atomic host sandbox boundary/.test(refuse79.stderr ?? ''),
+      { status: refuse79.status, stderr: String(refuse79.stderr ?? '').slice(0, 200) },
+    );
+    const refuse80 = withBrokerStateSuppressed(() =>
+      childProcess.spawnSync(launcher, [], {
+        cwd: repoRoot,
+        encoding: 'utf8',
+        timeout: 10000,
+        env: {
+          ...hostBaseEnv,
+          ATOMIC_HOST_SANDBOX: 'macos-sandbox-exec',
+          ATOMIC_HOST_ATOMIC_ONLY: '1',
+          ATOMIC_HOST_WRITE_ROOT: repoRoot,
+          ATOMIC_EXEC_BROKER_SOCKET: '',
+        },
+      }),
+    );
+    record(
+      results,
+      'host-envelope launcher refuses (exit 80) when host-marked but the broker socket is absent',
+      refuse80.status === 80 && /ATOMIC_EXEC_BROKER_SOCKET/.test(refuse80.stderr ?? ''),
+      { status: refuse80.status, stderr: String(refuse80.stderr ?? '').slice(0, 200) },
+    );
+    return { ok: results.every((entry) => entry.ok), results, mode: 'host-envelope-attested' };
+  }
+
   const unhosted = await unhostedLauncherStartsMcp();
   record(results, "unhosted MCP launcher self-hosts and starts the Atomic server", unhosted.ok === true, unhosted);
 

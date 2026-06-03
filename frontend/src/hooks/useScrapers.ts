@@ -26,14 +26,43 @@ export interface ScrapingJob {
 }
 
 /** Use scrapers. */
-export function useScrapers() {
-  const { data, error, isLoading, mutate } = useSWR<ScrapingJob[] | { jobs?: ScrapingJob[] }>(
-    '/scrapers/jobs',
-    swrFetcher,
-  );
-  const jobs: ScrapingJob[] = Array.isArray(data) ? data : data?.jobs || [];
-  return { jobs, isLoading, error, mutate };
+export function normalizeScraperJobsPayload(data: unknown): ScrapingJob[] {
+  if (data === undefined) {
+    return [];
+  }
+
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  if (!data || typeof data !== 'object' || !('jobs' in data)) {
+    throw new Error('Invalid scraper jobs payload');
+  }
+
+  const jobs = (data as { jobs?: unknown }).jobs;
+  if (!Array.isArray(jobs)) {
+    throw new Error('Invalid scraper jobs payload');
+  }
+
+  return jobs;
 }
+
+/** Use scrapers. */
+export function useScrapers() {
+  const { data, error, isLoading, mutate } = useSWR<unknown>('/scrapers/jobs', swrFetcher);
+  let jobs: ScrapingJob[] = [];
+  let payloadError: Error | undefined;
+
+  try {
+    jobs = normalizeScraperJobsPayload(data);
+  } catch (caughtError: unknown) {
+    payloadError =
+      caughtError instanceof Error ? caughtError : new Error('Invalid scraper jobs payload');
+  }
+
+  return { jobs, isLoading, error: error ?? payloadError, mutate };
+}
+
 
 /** Use scraper. */
 export function useScraper(id: string) {

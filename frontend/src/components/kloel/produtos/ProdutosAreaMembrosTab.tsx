@@ -83,9 +83,16 @@ export default function AreaMembros({
         throw new Error(res.error);
       }
       const resData = res.data;
-      setStudents(Array.isArray(resData) ? resData : Array.isArray(resData?.students) ? resData.students : []);
+      const nextStudents = Array.isArray(resData)
+        ? resData
+        : Array.isArray(resData?.students)
+          ? resData.students
+          : null;
+      if (!nextStudents) {
+        throw new Error('Payload de alunos invalido.');
+      }
+      setStudents(nextStudents);
     } catch (error) {
-      setStudents([]);
       setOperationError(error, 'Erro ao carregar alunos.');
     } finally {
       setStudentLoading(false);

@@ -26,7 +26,12 @@ export class WhatsAppWatchdogSessionService {
   private readonly sessionHealth = new Map<string, SessionHealth>();
 
   private readonly ALERT_THRESHOLD = 3;
-  private readonly pendingStatuses = new Set(['SCAN_QR_CODE', 'QR_PENDING', 'STARTING', 'OPENING']);
+  private readonly pendingStatuses = new Set([
+    'CONNECTION_INCOMPLETE',
+    'CONNECTION_REQUIRED',
+    'STARTING',
+    'OPENING',
+  ]);
 
   // Prometheus metrics
   private readonly sessionStatusGauge =

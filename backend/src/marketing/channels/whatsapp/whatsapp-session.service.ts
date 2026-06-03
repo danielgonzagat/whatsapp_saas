@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Optional } from '@nestjs/common';
+import { BadRequestException, GoneException, Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { OpsAlertService } from '../../../observability/ops-alert.service';
@@ -53,22 +53,22 @@ export class WhatsappSessionService {
     return this.providerRegistry.extractPhoneFromChatId.bind(this.providerRegistry);
   }
 
+  private throwMetaOnlyGone(feature: string): never {
+    throw new GoneException({
+      success: false,
+      provider: 'meta-cloud',
+      notSupported: true,
+      feature,
+      message: 'WhatsApp agora conecta somente pela API oficial da Meta.',
+      use: '/meta/auth/url?channel=whatsapp&returnTo=/whatsapp',
+    });
+  }
+
   async createSession(ws: string) {
     const result = await this.providerRegistry.startSession(ws);
-    this.logger.log(`Session start attempted for ws=${ws}: success=${result.success}`);
+    this.logger.log(`Meta auth status resolved for ws=${ws}: success=${result.success}`);
     if (!result.success) {
-      return { error: true, message: result.message || 'failed_to_start_session' };
-    }
-    const qr = await this.providerRegistry.getQrCode(ws);
-    if (qr.success && qr.qr) {
-      if (this.whatsappEmitter) {
-        this.whatsappEmitter.emitSessionLifecycle({
-          workspaceId: ws,
-          event: 'qr',
-          reason: 'session_created',
-        });
-      }
-      return { status: 'qr_pending', code: qr.qr, qrCode: qr.qr };
+      return { error: true, message: result.message || 'meta_connection_failed' };
     }
     const status = await this.providerRegistry.getSessionStatus(ws);
     if (status.connected && this.whatsappEmitter) {
@@ -76,46 +76,40 @@ export class WhatsappSessionService {
         workspaceId: ws,
         event: 'connected',
         phoneNumber: status.phoneNumber ?? undefined,
-        reason: 'session_already_connected',
+        reason: 'meta_session_connected',
       });
     }
     return {
-      status: status.connected ? 'already_connected' : status.status,
-      qrCode: status.qrCode,
+      status: status.connected ? 'already_connected' : status.status || 'meta_connection_required',
+      authUrl: result.authUrl ?? status.authUrl,
+      phoneNumber: status.phoneNumber,
+      phoneNumberId: status.phoneNumberId,
+      provider: 'meta-cloud',
+      whatsappBusinessId: status.whatsappBusinessId,
     };
   }
 
   async recreateSessionIfInvalid(ws: string) {
     await this.providerRegistry.getProviderType(ws);
-    const d = await this.providerRegistry.getSessionDiagnostics(ws);
-    await this.providerRegistry.getSessionStatus(ws).catch((e: unknown) => {
+    const diagnostics = await this.providerRegistry.getSessionDiagnostics(ws);
+    const status = await this.providerRegistry.getSessionStatus(ws).catch((e: unknown) => {
       this.logger.warn(
-        `Session status check failed for ws=${ws}: ${e instanceof Error ? e.message : 'unknown'}`,
+        `Meta session status check failed for ws=${ws}: ${e instanceof Error ? e.message : 'unknown'}`,
       );
       return null;
     });
-    const invalid =
-      !d?.available ||
-      d?.configMismatch ||
-      d?.webhookConfigured !== true ||
-      d?.inboundEventsConfigured !== true ||
-      d?.storeEnabled !== true;
-    if (!invalid) {
-      return { recreated: false, reason: 'session_config_healthy', diagnostics: d };
-    }
-    this.logger.warn(`Session invalid for ws=${ws}, recreating`);
-    await this.providerRegistry.deleteSession(ws).catch((e: unknown) => {
-      this.logger.warn(
-        `Session delete failed for ws=${ws}: ${e instanceof Error ? e.message : 'unknown'}`,
-      );
-      return undefined;
-    });
-    const start = await this.providerRegistry.startSession(ws);
-    return { recreated: start.success === true, reason: start.message, diagnostics: d };
+    return {
+      recreated: false,
+      reason: status?.connected
+        ? 'meta_session_connected'
+        : 'meta_connection_managed_by_official_auth',
+      diagnostics,
+      status,
+    };
   }
 
   getSession(ws: string) {
-    return { workspaceId: ws, provider: 'dynamic' };
+    return { workspaceId: ws, provider: 'meta-cloud' };
   }
 
   async getConnectionStatus(ws: string) {
@@ -124,24 +118,19 @@ export class WhatsappSessionService {
       connected: s.connected,
       status: s.status,
       phoneNumber: s.phoneNumber,
-      qrCode: s.qrCode,
+      authUrl: s.authUrl,
+      phoneNumberId: s.phoneNumberId,
+      provider: 'meta-cloud',
+      whatsappBusinessId: s.whatsappBusinessId,
     };
   }
 
-  async getQrCode(ws: string) {
-    const q = await this.providerRegistry.getQrCode(ws);
-    return q.success ? q.qr || null : null;
+  async getQrCode(_ws: string) {
+    return this.throwMetaOnlyGone('legacy_session_qr');
   }
 
-  async disconnect(ws: string) {
-    await this.providerRegistry.disconnect(ws);
-    if (this.whatsappEmitter) {
-      this.whatsappEmitter.emitSessionLifecycle({
-        workspaceId: ws,
-        event: 'disconnected',
-        reason: 'manual_disconnect',
-      });
-    }
+  async disconnect(_ws: string) {
+    return this.throwMetaOnlyGone('legacy_session_disconnect');
   }
 
   async setPresence(

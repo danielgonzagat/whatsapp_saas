@@ -36,7 +36,7 @@ describe('unified-agent.service.helpers', () => {
       expect(COGNITIVE_STATE_PREAMBLE).toContain('memory.workingMemory=[]');
       expect(COGNITIVE_STATE_PREAMBLE).toContain('beliefs=[]');
       expect(COGNITIVE_STATE_PREAMBLE).toContain('predictions.active=[]');
-      expect(COGNITIVE_STATE_PREAMBLE).toContain('pulseTruth.verdict=INSUFFICIENT_EVIDENCE');
+      expect(COGNITIVE_STATE_PREAMBLE).toContain('readinessTruth.verdict=INSUFFICIENT_EVIDENCE');
     });
 
     it('declares cognitiveState as the source of truth in the context instruction', () => {

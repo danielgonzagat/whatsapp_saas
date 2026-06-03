@@ -40,7 +40,7 @@ describe('GoalFieldService — shadow accumulator integration', () => {
     const svc = new GoalFieldService();
     const events: SpineEventRef[] = [
       ev({
-        eventName: 'pulse.gate_failed',
+        eventName: 'readiness.gate_failed',
         payload: { mode: 'hard_fail', gateName: 'origin-immutability' },
         entityRef: { entityType: 'gate', entityId: 'origin-immutability' },
       }),
@@ -55,7 +55,7 @@ describe('GoalFieldService — shadow accumulator integration', () => {
     const svc = new GoalFieldService([runtimeCriticalWithoutObservabilityDetector], acc);
     const events: SpineEventRef[] = [
       ev({
-        eventName: 'pulse.gate_failed',
+        eventName: 'readiness.gate_failed',
         payload: { mode: 'hard_fail', gateName: 'origin-immutability' },
         workspaceId: 'wks_shadow',
         entityRef: { entityType: 'gate', entityId: 'origin-immutability' },
@@ -84,7 +84,7 @@ describe('GoalFieldService — shadow accumulator integration', () => {
 
     const events: SpineEventRef[] = [
       ev({
-        eventName: 'pulse.gate_failed',
+        eventName: 'readiness.gate_failed',
         payload: { mode: 'hard_fail', gateName: 'origin-immutability' },
         workspaceId: 'wks_ready',
         entityRef: { entityType: 'gate', entityId: 'origin-immutability' },
@@ -105,7 +105,7 @@ describe('GoalFieldService — shadow accumulator integration', () => {
     const svc = new GoalFieldService(undefined, acc);
     const events: SpineEventRef[] = [
       ev({
-        eventName: 'pulse.gate_failed',
+        eventName: 'readiness.gate_failed',
         payload: { mode: 'hard_fail', gateName: 'origin-immutability' },
         workspaceId: undefined as string,
         entityRef: { entityType: 'gate', entityId: 'origin-immutability' },
@@ -140,7 +140,7 @@ describe('GoalFieldService — shadow accumulator integration', () => {
 
     const events: SpineEventRef[] = [
       ev({
-        eventName: 'pulse.gate_failed',
+        eventName: 'readiness.gate_failed',
         payload: { mode: 'hard_fail', gateName: 'a' },
         workspaceId: 'wks_eligible',
         entityRef: { entityType: 'gate', entityId: 'a' },
@@ -182,7 +182,7 @@ describe('GoalFieldService — shadow accumulator integration', () => {
 
     const events: SpineEventRef[] = [
       ev({
-        eventName: 'pulse.gate_failed',
+        eventName: 'readiness.gate_failed',
         payload: { mode: 'hard_fail', gateName: 'foo' },
         workspaceId: 'wks_ready',
         entityRef: { entityType: 'gate', entityId: 'foo' },

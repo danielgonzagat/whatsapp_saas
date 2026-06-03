@@ -1,0 +1,129 @@
+#!/usr/bin/env node
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { mkdirPath, removePath } from './broker-fixture-io.mjs';
+
+/**
+ * atomic_exec pre-admission proof.
+ *
+ * Rollback is recovery, not proof. A mutable-or-unknown command must be refused
+ * before spawn unless proveEffect:true is present. This proof calls the compiled
+ * atomic_exec handler directly, so the refusal is verified before any nested MCP
+ * server or broker socket can become part of the result.
+ */
+const jsonMode = process.argv.includes('--json');
+const sourceDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const fixture = path.join(sourceDir, '.atomic-exec-prove-effect-required-' + process.pid + '-' + Date.now());
+
+function parseToolResponse(response) {
+  const text = response.content?.at(-1)?.text ?? '{}';
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error('invalid JSON tool response: ' + text.slice(0, 2000));
+  }
+}
+
+function record(results, name, ok, detail) {
+  results.push({ name, ok: Boolean(ok), detail });
+}
+
+function writeCommand(file, text) {
+  const code =
+    'const fs=require("node:fs");' +
+    `fs.writeFileSync(${JSON.stringify(file)}, ${JSON.stringify(text)});` +
+    'process.exit(0);';
+  return `node -e ${JSON.stringify(code)}`;
+}
+
+async function atomicExecHandler() {
+  const compiled = path.join(sourceDir, 'dist', 'server-tools-exec.js');
+  if (!fs.existsSync(compiled)) {
+    throw new Error('compiled server-tools-exec.js is missing; run node build.mjs first');
+  }
+  const mod = await import(pathToFileURL(compiled).href + '?proof=' + Date.now());
+  let captured = null;
+  const fakeServer = {
+    registerTool(name, _definition, handler) {
+      if (name === 'atomic_exec') captured = handler;
+    },
+  };
+  mod.registerToolsExec(fakeServer);
+  if (!captured) throw new Error('atomic_exec handler was not registered');
+  return captured;
+}
+
+async function main() {
+  const results = [];
+  removePath(fixture);
+  mkdirPath(fixture);
+
+  try {
+    const handler = await atomicExecHandler();
+    const rollbackOnlyFile = 'rollback-only.tmp';
+    const rollbackOnly = parseToolResponse(
+      await handler({
+        command: writeCommand(rollbackOnlyFile, 'unproved'),
+        cwd: fixture,
+        rollbackOnNonZero: true,
+        timeoutMs: 30000,
+      }),
+    );
+    const rollbackOnlyText = String(
+      (rollbackOnly.error ?? '') + '\n' + (rollbackOnly.stdout ?? '') + '\n' + (rollbackOnly.stderr ?? ''),
+    );
+    record(
+      results,
+      'rollbackOnNonZero alone is refused before mutable command spawn',
+      rollbackOnly.ok === false &&
+        /effect proof required|proveEffect:true/i.test(rollbackOnlyText) &&
+        !/broker unreachable|failed to spawn|exitCode/i.test(rollbackOnlyText) &&
+        !fs.existsSync(path.join(fixture, rollbackOnlyFile)),
+      {
+        ok: rollbackOnly.ok,
+        exitCode: rollbackOnly.exitCode,
+        error: rollbackOnly.error,
+        fileExists: fs.existsSync(path.join(fixture, rollbackOnlyFile)),
+      },
+    );
+
+    const source = fs.readFileSync(path.join(sourceDir, 'server-tools-exec.ts'), 'utf8');
+    const compiled = fs.readFileSync(path.join(sourceDir, 'dist', 'server-tools-exec.js'), 'utf8');
+    record(
+      results,
+      'source and compiled runtime do not use rollback as effect admission',
+      !source.includes('!a.proveEffect && !a.rollbackOnNonZero') &&
+        !source.includes('a.proveEffect || a.rollbackOnNonZero ? cwd : null') &&
+        !compiled.includes('!a.proveEffect && !a.rollbackOnNonZero') &&
+        !compiled.includes('a.proveEffect || a.rollbackOnNonZero ? cwd : null'),
+      {
+        sourceAdmissionAllowsRollback: source.includes('!a.proveEffect && !a.rollbackOnNonZero'),
+        sourceEffectRootAllowsRollback: source.includes('a.proveEffect || a.rollbackOnNonZero ? cwd : null'),
+        compiledAdmissionAllowsRollback: compiled.includes('!a.proveEffect && !a.rollbackOnNonZero'),
+        compiledEffectRootAllowsRollback: compiled.includes('a.proveEffect || a.rollbackOnNonZero ? cwd : null'),
+      },
+    );
+  } finally {
+    removePath(fixture);
+  }
+
+  const ok = results.every((entry) => entry.ok);
+  return { ok, results };
+}
+
+main()
+  .then((payload) => {
+    if (jsonMode) {
+      console.log(JSON.stringify(payload, null, 2));
+    } else if (!payload.ok) {
+      console.error(JSON.stringify(payload, null, 2));
+    }
+    process.exit(payload.ok ? 0 : 1);
+  })
+  .catch((error) => {
+    const payload = { ok: false, error: error instanceof Error ? error.message : String(error) };
+    if (jsonMode) console.log(JSON.stringify(payload, null, 2));
+    else console.error(payload.error);
+    process.exit(1);
+  });
