@@ -7,7 +7,7 @@ const A_Z0_9_RE = /[^a-z0-9]+/g;
 const PATTERN_RE = /^-+|-+$/g;
 
 import { safeStr } from '../../../common/string';
-import { readNumberLoose } from '../../../common/parse';
+import { readNumberLoose, readStringOrUntrimmed } from '../../../common/parse';
 
 export { safeStr };
 
@@ -201,7 +201,10 @@ export function coerceArray(value: unknown): unknown[] {
 }
 
 export function coerceString(value: unknown): string {
-  return typeof value === 'string' ? value : '';
+  // Delegates to the canonical untrimmed string-or-empty primitive
+  // (backend/src/common/parse.ts). Behavior-identical: returns the
+  // string AS-IS when input is a string, else ''. Callers trim downstream.
+  return readStringOrUntrimmed(value, '');
 }
 
 export function coerceObject(value: unknown): LooseObject {

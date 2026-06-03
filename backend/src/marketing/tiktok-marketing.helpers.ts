@@ -1,6 +1,13 @@
 import { ServiceUnavailableException } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
 
+// Canonical trim→null primitive (backend/src/common/parse.ts). The prior
+// local `readString` had an identical contract (trim, return null on empty);
+// re-exported here to preserve the public surface for importing services.
+import { readStringOrNull as readString } from '../common/parse';
+
+export { readString };
+
 export const CREATOR_AUTH_URL = 'https://www.tiktok.com/v2/auth/authorize/';
 export const CREATOR_TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
 export const CREATOR_USER_INFO_URL = 'https://open.tiktokapis.com/v2/user/info/';
@@ -119,11 +126,6 @@ export function tryReadEnv(keys: string[]): string {
 export function expiresAtFromSeconds(seconds: unknown): string | null {
   const expiresIn = Number(seconds || 0);
   return expiresIn > 0 ? new Date(Date.now() + expiresIn * 1000).toISOString() : null;
-}
-
-export function readString(value: unknown): string | null {
-  const result = typeof value === 'string' ? value.trim() : '';
-  return result || null;
 }
 
 export function readStringArray(value: unknown): string[] {
