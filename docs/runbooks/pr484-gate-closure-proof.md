@@ -11,9 +11,15 @@ Verified locally on 2026-06-03:
 - `git push origin HEAD:feat/kloelgraph-prototype-engine`: pre-push validation passed
   before the c8a25f9d upload.
 
-The later readiness-only commit restores `.claude/settings.json` and
-`ratchet.json` from `origin/main` so CI production-readiness no longer depends
-on local-only artifacts.
+Correction on 2026-06-03:
+
+- The large cleanup deletions in PR 484 are approved and must stay deleted.
+- The temporary restoration of agent prompt/skill files, PULSE runtime files,
+  PULSE root artifacts, `.claude/settings.json`, and `ratchet.json` was removed.
+- Production-readiness and deploy-production were realigned so the PR gate does
+  not resurrect deleted PULSE surfaces or local-only governance artifacts.
+- Remaining gate work should validate the surviving runtime surfaces and the
+  Prisma migration chain, not cancel approved cleanup deletions.
 
 Additional migration gate proof for `abb90d1cc` on 2026-06-03:
 
