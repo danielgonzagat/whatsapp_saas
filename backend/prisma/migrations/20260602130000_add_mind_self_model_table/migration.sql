@@ -4,7 +4,7 @@
 -- so MindProcessorService.snapshot() crashed every ~30s with
 -- "The table public.RAC_MindSelfModel does not exist". Additive — no existing
 -- table is altered or dropped.
-CREATE TABLE "RAC_MindSelfModel" (
+CREATE TABLE IF NOT EXISTS "RAC_MindSelfModel" (
     "id" TEXT NOT NULL,
     "workspaceId" TEXT NOT NULL,
     "version" INTEGER NOT NULL,
@@ -20,10 +20,23 @@ CREATE TABLE "RAC_MindSelfModel" (
 );
 
 -- CreateIndex
-CREATE INDEX "RAC_MindSelfModel_workspaceId_snapshotAt_idx" ON "RAC_MindSelfModel"("workspaceId", "snapshotAt" DESC);
+CREATE INDEX IF NOT EXISTS "RAC_MindSelfModel_workspaceId_snapshotAt_idx" ON "RAC_MindSelfModel"("workspaceId", "snapshotAt" DESC);
 
 -- CreateIndex
-CREATE UNIQUE INDEX "RAC_MindSelfModel_workspaceId_version_key" ON "RAC_MindSelfModel"("workspaceId", "version");
+CREATE UNIQUE INDEX IF NOT EXISTS "RAC_MindSelfModel_workspaceId_version_key" ON "RAC_MindSelfModel"("workspaceId", "version");
 
 -- AddForeignKey
-ALTER TABLE "RAC_MindSelfModel" ADD CONSTRAINT "RAC_MindSelfModel_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "RAC_Workspace"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF to_regclass('"RAC_Workspace"') IS NOT NULL
+        AND NOT EXISTS (
+            SELECT 1
+            FROM pg_constraint
+            WHERE conname = 'RAC_MindSelfModel_workspaceId_fkey'
+        ) THEN
+        ALTER TABLE "RAC_MindSelfModel"
+        ADD CONSTRAINT "RAC_MindSelfModel_workspaceId_fkey"
+        FOREIGN KEY ("workspaceId") REFERENCES "RAC_Workspace"("id")
+        ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+END $$;

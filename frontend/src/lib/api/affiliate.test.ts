@@ -109,7 +109,8 @@ describe('affiliateApi', () => {
 
     await affiliateApi.requestAffiliation('ap-1');
 
-    expect(mutate).toHaveBeenCalledWith(expect.any(Function));
+    const [mutateArg] = mutate.mock.calls[0] ?? [];
+    expect(typeof mutateArg).toBe('function');
   });
 
   it('throws backend mutation errors without invalidating affiliate caches', async () => {

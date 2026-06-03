@@ -7,3 +7,13 @@
 export function fmtCompact(value: number): string {
   return value >= 1000 ? `${(value / 1000).toFixed(1)}K` : value.toString();
 }
+
+/**
+ * Format a duration in **seconds** as a zero-padded `mm:ss` clock string.
+ * Consolidates two byte-identical checkout copies (`pix/page`, `upsell.helpers`).
+ */
+export function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}

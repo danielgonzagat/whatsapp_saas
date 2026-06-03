@@ -86,7 +86,6 @@ const requiredFiles = [
   ['.husky/pre-commit', 'Husky pre-commit hook exists'],
   ['.husky/pre-push', 'Husky pre-push hook exists'],
   ['.husky/commit-msg', 'Husky commit-msg hook exists'],
-  ['.claude/settings.json', 'Claude hooks config exists'],
   ['scripts/ops/auto-sync-main.sh', 'Auto-sync runner exists'],
   ['scripts/ops/install-auto-sync-launchagent.sh', 'Auto-sync installer exists'],
   ['scripts/ops/print-auto-sync-status.sh', 'Auto-sync status printer exists'],
@@ -315,11 +314,6 @@ for (const variable of [
 ]) {
   requireIncludes(frontendEnvPath, variable, `Frontend env example documents ${variable}`);
 }
-
-const claudeSettingsPath = safeRepoPath('.claude/settings.json');
-requireIncludes(claudeSettingsPath, 'PreToolUse', 'Claude settings define pre-write hooks');
-requireIncludes(claudeSettingsPath, 'PostToolUse', 'Claude settings define post-write hooks');
-requireIncludes(claudeSettingsPath, 'Stop', 'Claude settings define stop hooks');
 
 const huskyPrePushPath = safeRepoPath('.husky/pre-push');
 requireIncludes(

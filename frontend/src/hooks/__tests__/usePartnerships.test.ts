@@ -78,17 +78,11 @@ describe('useCollaborators', () => {
   });
 
   it('surfaces malformed collaborators payload instead of fake empty arrays', () => {
-    mockSWR({
-      data: {},
-      isLoading: false,
-    });
-
+    mockSWR({ data: {}, isLoading: false });
     const { result } = renderHook(() => useCollaborators());
-    const current = result.current as typeof result.current & { error?: Error };
-
     expect(result.current.agents).toEqual([]);
     expect(result.current.invites).toEqual([]);
-    expect(current.error?.message).toBe('Invalid collaborators payload');
+    expect((result.current as typeof result.current & { error?: Error }).error?.message).toBe('Invalid collaborators payload');
   });
 });
 
@@ -111,16 +105,10 @@ describe('useCollaboratorStats', () => {
   });
 
   it('surfaces malformed collaborator stats payload instead of fake zero stats', () => {
-    mockSWR({
-      data: { total: '5', online: 3, pendingInvites: 2 },
-      isLoading: false,
-    });
-
+    mockSWR({ data: { total: '5', online: 3, pendingInvites: 2 }, isLoading: false });
     const { result } = renderHook(() => useCollaboratorStats());
-    const current = result.current as typeof result.current & { error?: Error };
-
     expect(result.current.stats).toEqual({ total: 0, online: 0, pendingInvites: 0 });
-    expect(current.error?.message).toBe('Invalid collaborator stats payload');
+    expect((result.current as typeof result.current & { error?: Error }).error?.message).toBe('Invalid collaborator stats payload');
   });
 });
 
@@ -183,16 +171,10 @@ describe('useAffiliates', () => {
   });
 
   it('surfaces malformed affiliates payload instead of a fake empty list', () => {
-    mockSWR({
-      data: {},
-      isLoading: false,
-    });
-
+    mockSWR({ data: {}, isLoading: false });
     const { result } = renderHook(() => useAffiliates());
-    const current = result.current as typeof result.current & { error?: Error };
-
     expect(result.current.affiliates).toEqual([]);
-    expect(current.error?.message).toBe('Invalid affiliates payload');
+    expect((result.current as typeof result.current & { error?: Error }).error?.message).toBe('Invalid affiliates payload');
   });
 
   it('handles missing data', () => {
@@ -309,28 +291,10 @@ describe('useAffiliateStats', () => {
   });
 
   it('surfaces malformed affiliate stats payload instead of fake zero stats', () => {
-    mockSWR({
-      data: {
-        activeAffiliates: 1,
-        producers: 1,
-        totalRevenue: '1000',
-        totalCommissions: 200,
-        topPartner: 'Maria',
-      },
-      isLoading: false,
-    });
-
+    mockSWR({ data: { activeAffiliates: 1, producers: 1, totalRevenue: '1000', totalCommissions: 200, topPartner: 'Maria' }, isLoading: false });
     const { result } = renderHook(() => useAffiliateStats());
-    const current = result.current as typeof result.current & { error?: Error };
-
-    expect(result.current.stats).toEqual({
-      activeAffiliates: 0,
-      producers: 0,
-      totalRevenue: 0,
-      totalCommissions: 0,
-      topPartner: null,
-    });
-    expect(current.error?.message).toBe('Invalid affiliate stats payload');
+    expect(result.current.stats).toEqual({ activeAffiliates: 0, producers: 0, totalRevenue: 0, totalCommissions: 0, topPartner: null });
+    expect((result.current as typeof result.current & { error?: Error }).error?.message).toBe('Invalid affiliate stats payload');
   });
 });
 
@@ -355,16 +319,10 @@ describe('useAffiliateDetail', () => {
   });
 
   it('surfaces malformed affiliate detail payload instead of fake null detail', () => {
-    mockSWR({
-      data: {},
-      isLoading: false,
-    });
-
+    mockSWR({ data: {}, isLoading: false });
     const { result } = renderHook(() => useAffiliateDetail('aff-1'));
-    const current = result.current as typeof result.current & { error?: Error };
-
     expect(result.current.affiliate).toBeNull();
-    expect(current.error?.message).toBe('Invalid affiliate detail payload');
+    expect((result.current as typeof result.current & { error?: Error }).error?.message).toBe('Invalid affiliate detail payload');
   });
 
   it('does not fetch when id is null', () => {
@@ -419,16 +377,10 @@ describe('usePartnerChatContacts', () => {
   });
 
   it('surfaces malformed partner chat contacts payload instead of fake empty contacts', () => {
-    mockSWR({
-      data: {},
-      isLoading: false,
-    });
-
+    mockSWR({ data: {}, isLoading: false });
     const { result } = renderHook(() => usePartnerChatContacts());
-    const current = result.current as typeof result.current & { error?: Error };
-
     expect(result.current.contacts).toEqual([]);
-    expect(current.error?.message).toBe('Invalid partner chat contacts payload');
+    expect((result.current as typeof result.current & { error?: Error }).error?.message).toBe('Invalid partner chat contacts payload');
   });
 });
 
@@ -493,16 +445,10 @@ describe('usePartnerMessages', () => {
   });
 
   it('surfaces malformed partner messages payload instead of fake empty messages', () => {
-    mockSWR({
-      data: {},
-      isLoading: false,
-    });
-
+    mockSWR({ data: {}, isLoading: false });
     const { result } = renderHook(() => usePartnerMessages('partner-1'));
-    const current = result.current as typeof result.current & { error?: Error };
-
     expect(result.current.messages).toEqual([]);
-    expect(current.error?.message).toBe('Invalid partner messages payload');
+    expect((result.current as typeof result.current & { error?: Error }).error?.message).toBe('Invalid partner messages payload');
   });
 });
 

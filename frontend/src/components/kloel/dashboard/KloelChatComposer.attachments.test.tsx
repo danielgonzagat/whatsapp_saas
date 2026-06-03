@@ -57,7 +57,7 @@ describe('KloelChatComposer attachments', () => {
     expect(props.onSend).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps send blocked while any upload is still pending', () => {
+  it('keeps send blocked while an upload is still pending', () => {
     const attachments: KloelChatAttachment[] = [
       {
         id: 'attachment_uploading_pdf',

@@ -140,6 +140,9 @@ export function buildCreatePlanData(
     productId,
     name: parseStr(args.planName, 'Plano'),
     price: parseNum(args.price),
+    // Additive money-in-cents dual-write (PRODUCT-PLAN PHASE A). Converges new
+    // rows onto integer cents; `price` Float stays the read source.
+    priceInCents: Math.round(parseNum(args.price) * 100),
     billingType: parseStr(args.billingType, 'ONE_TIME'),
     itemsPerPlan: args.quantity ? parseNum(args.quantity) : 1,
     maxInstallments: args.maxInstallments ? parseNum(args.maxInstallments) : null,
@@ -171,6 +174,9 @@ export function buildUpdatePlanData(args: UnknownRecord): UnknownRecord {
   }
   if (args.price !== undefined) {
     data.price = parseNum(args.price);
+    // Additive money-in-cents dual-write (PRODUCT-PLAN PHASE A). Written
+    // alongside `price`; reads/checkout still consume `price` for now.
+    data.priceInCents = Math.round(parseNum(args.price) * 100);
   }
   if (args.active !== undefined) {
     data.active = Boolean(args.active);

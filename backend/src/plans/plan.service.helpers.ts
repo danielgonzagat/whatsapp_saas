@@ -135,6 +135,9 @@ export function buildPlanUpdatePatch(
   }
   if (dto.price !== undefined) {
     updates.price = Number(dto.price);
+    // Additive money-in-cents dual-write (PRODUCT-PLAN PHASE A). Written
+    // alongside `price`; reads/checkout still consume `price` for now.
+    updates.priceInCents = planPriceInCents(Number(dto.price));
   }
   if (dto.active !== undefined) {
     updates.active = Boolean(dto.active);

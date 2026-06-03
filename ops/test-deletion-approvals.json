@@ -47,5 +47,96 @@
     "reason": "Legacy WAHA provider purged during WhatsApp/OmniCore canonicalization; source waha.provider.ts deleted — spec covered non-existent code.",
     "issue": "PR#462 CANONICAL_MOVES.md",
     "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/pulse/artifact-gc.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 PULSE cleanup removed the scripts/pulse artifact GC implementation; this spec imports the approved-deleted module and now covers non-existent code.",
+    "issue": "PR#484 user-approved PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/pulse/daemon-incremental.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 PULSE cleanup removed the scripts/pulse daemon/config implementation; this spec imports approved-deleted modules and now covers non-existent code.",
+    "issue": "PR#484 user-approved PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/pulse/daemon-watch.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 PULSE cleanup removed the scripts/pulse daemon implementation; this spec imports approved-deleted modules and now covers non-existent code.",
+    "issue": "PR#484 user-approved PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/pulse/external-signal-state.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 PULSE cleanup removed the scripts/pulse external signal implementation; this spec imports approved-deleted modules and now covers non-existent code.",
+    "issue": "PR#484 user-approved PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/pulse/ordering-timing-checker.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 PULSE cleanup removed the scripts/pulse ordering timing checker; this spec imports approved-deleted modules and now covers non-existent code.",
+    "issue": "PR#484 user-approved PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/pulse/profiles.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 PULSE cleanup removed the scripts/pulse profiles implementation; this spec imports approved-deleted modules and now covers non-existent code.",
+    "issue": "PR#484 user-approved PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/pulse/resolved-manifest-backfill.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 PULSE cleanup removed the scripts/pulse resolved manifest implementation; this spec imports approved-deleted modules and now covers non-existent code.",
+    "issue": "PR#484 user-approved PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/pulse/scope-state.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 PULSE cleanup removed the scripts/pulse scope-state implementation; this spec imports approved-deleted modules and now covers non-existent code.",
+    "issue": "PR#484 user-approved PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/pulse/structural-reconstruction-observed.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 PULSE cleanup removed the scripts/pulse structural reconstruction implementation; this spec imports approved-deleted modules and now covers non-existent code.",
+    "issue": "PR#484 user-approved PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/pulse/structural-reconstruction.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 PULSE cleanup removed the scripts/pulse structural reconstruction implementation; this spec imports approved-deleted modules and now covers non-existent code.",
+    "issue": "PR#484 user-approved PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "scripts/pulse/orphan-prisma/__tests__/enhanced-detector.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 PULSE cleanup removed the scripts/pulse orphan-prisma detector surface; this spec now covers approved-deleted code.",
+    "issue": "PR#484 user-approved PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "scripts/pulse/orphan-prisma/__tests__/orphan-detector.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 PULSE cleanup removed the scripts/pulse orphan-prisma detector surface; this spec now covers approved-deleted code.",
+    "issue": "PR#484 user-approved PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "scripts/pulse/scope-engine/build-state.test.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 PULSE cleanup removed the scripts/pulse scope-engine build-state surface; this test now covers approved-deleted code.",
+    "issue": "PR#484 user-approved PULSE cleanup",
+    "expires": "2026-12-31"
   }
 ]

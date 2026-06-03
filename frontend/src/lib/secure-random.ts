@@ -17,3 +17,25 @@ export function secureRandomFloat(): number {
   fallbackSeed = (fallbackSeed * 1664525 + 1013904223) >>> 0;
   return fallbackSeed / 0x100000000;
 }
+
+
+export function randomIdSegment(length: number): string {
+  if (!Number.isInteger(length) || length <= 0) {
+    throw new Error('randomIdSegment length must be a positive integer');
+  }
+
+  const byteCount = Math.ceil(length / 2);
+  const bytes = new Uint8Array(byteCount);
+  const cryptoApi = globalThis.crypto;
+  if (cryptoApi && typeof cryptoApi.getRandomValues === 'function') {
+    cryptoApi.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < byteCount; i++) {
+      bytes[i] = Math.floor(secureRandomFloat() * 256);
+    }
+  }
+
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0'))
+    .join('')
+    .slice(0, length);
+}

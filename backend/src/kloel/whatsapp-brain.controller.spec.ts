@@ -103,13 +103,13 @@ describe('WhatsAppMindController', () => {
       expect(res.sentStatus).toBe(403);
     });
 
-    it('returns 500 when WHATSAPP_VERIFY_TOKEN is not configured', () => {
+    it('returns 503 when WHATSAPP_VERIFY_TOKEN is not configured', () => {
       delete process.env.WHATSAPP_VERIFY_TOKEN;
       const res = makeResponse();
 
       controller.verifyWebhook('subscribe', 'x', 'y', castMock(res));
 
-      expect(res.sentStatus).toBe(500);
+      expect(res.sentStatus).toBe(503);
     });
   });
 

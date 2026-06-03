@@ -2,6 +2,9 @@
 // component's surface area. Behaviour is identical to the original inline
 // logic; no visual delta is introduced.
 
+// `formatMoney` re-exported from the canonical money helper (DUP merge).
+export { formatMoney } from '@/lib/common/money';
+
 export type SubscriptionStatus = 'none' | 'trial' | 'active' | 'expired' | 'suspended';
 
 export type SubscriptionTone = 'success' | 'warning' | 'danger' | 'neutral';
@@ -23,14 +26,6 @@ export interface RawPaymentMethod {
   expMonth?: number | string;
   expYear?: number | string;
   isDefault?: boolean;
-}
-
-/** Format BRL currency. Mirrors crm-settings-section.helpers `formatMoney`. */
-export function formatMoney(value?: number | null): string {
-  if (typeof value !== 'number' || Number.isNaN(value)) {
-    return 'R$ 0,00';
-  }
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
 /** Map subscription status onto the visual pill tone. */

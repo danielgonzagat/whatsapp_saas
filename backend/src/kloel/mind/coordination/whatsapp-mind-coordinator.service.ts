@@ -15,8 +15,10 @@
  * @see docs/adr/0012-kloel-omnicore-channel-unification.md
  */
 import { Injectable } from '@nestjs/common';
+import { KloelLead } from '@prisma/client';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { normalizePhone } from '../../../common/phone/phone-normalization.util';
 import {
   includesAnyPhrase,
   normalizeIntentText,
@@ -187,7 +189,62 @@ Mensagem do cliente: ${msg.message}`;
       this.logger.log(`Novo lead criado: ${lead.id}`);
     }
 
+    // PERSON migration PHASE 1 dual-write: keep Contact as the single source of
+    // truth for the person behind a KloelLead. Awaited but fail-open — a Contact
+    // sync failure must never break lead processing.
+    await this.syncCanonicalContact(workspaceId, phone, lead);
+
     return { id: lead.id };
+  }
+
+  /**
+   * Upsert the canonical Contact for a lead's phone so Contact stays the single
+   * source of truth for the person. Idempotent (upsert on workspaceId_phone),
+   * workspace-isolated, and fail-open. Mirrors the lead funnel snapshot
+   * (status/stage/lastMessage/lastIntent/totalMessages) and stamps `kloelLeadId`
+   * write-if-null so the first lead that produced a Contact keeps provenance
+   * without ever overwriting an existing link.
+   */
+  private async syncCanonicalContact(
+    workspaceId: string,
+    phone: string,
+    lead: KloelLead,
+  ): Promise<void> {
+    const normalizedPhone = normalizePhone(phone)?.digits;
+    if (!normalizedPhone) {
+      return;
+    }
+    try {
+      const existing = await this.prisma.contact.findUnique({
+        where: { workspaceId_phone: { workspaceId, phone: normalizedPhone } },
+        select: { kloelLeadId: true },
+      });
+      const funnel = {
+        leadStatus: lead.status,
+        leadStage: lead.stage,
+        lastMessage: lead.lastMessage,
+        lastIntent: lead.lastIntent,
+        totalMessages: lead.totalMessages,
+      };
+      await this.prisma.contact.upsert({
+        where: { workspaceId_phone: { workspaceId, phone: normalizedPhone } },
+        update: {
+          ...funnel,
+          ...(existing && existing.kloelLeadId === null ? { kloelLeadId: lead.id } : {}),
+        },
+        create: {
+          workspaceId,
+          phone: normalizedPhone,
+          name: `Contato ${normalizedPhone.slice(-4)}`,
+          ...funnel,
+          kloelLeadId: lead.id,
+        },
+        select: { id: true },
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'unknown error';
+      this.logger.warn(`Falha ao sincronizar contato canônico: ${msg}`);
+    }
   }
 }
 

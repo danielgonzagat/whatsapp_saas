@@ -517,41 +517,11 @@ export function AuthModal({
                     <>
                       <div className="space-y-2">
                         <Label className="text-sm text-gray-700">{kloelT(`Codigo 2FA`)}</Label>
-                        <Input
-                          type="text"
-                          inputMode="numeric"
-                          autoComplete="one-time-code"
-                          placeholder="000000"
-                          value={mfaCode}
-                          onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                          onKeyDown={(e) => e.key === 'Enter' && handleMfaVerify()}
-                          className={`rounded-md border-gray-200 py-5 ${errors.password ? 'border-red-500' : ''}`}
-                        />
+                        <Input type="text" inputMode="numeric" autoComplete="one-time-code" placeholder="000000" value={mfaCode} onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))} onKeyDown={(e) => e.key === 'Enter' && handleMfaVerify()} className={`rounded-md border-gray-200 py-5 ${errors.password ? 'border-red-500' : ''}`} />
                         {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
                       </div>
-
-                      <Button
-                        type="submit"
-                        onClick={handleMfaVerify}
-                        disabled={isLoading}
-                        className="w-full rounded-md bg-gray-900 py-5 text-white hover:bg-gray-800"
-                      >
-                        {isLoading ? 'Verificando...' : 'Confirmar 2FA'}
-                      </Button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMfaToken('');
-                          setMfaCode('');
-                          setPassword('');
-                          setErrors({});
-                        }}
-                        disabled={isLoading}
-                        className="w-full text-sm text-gray-500 hover:text-gray-700 hover:underline"
-                      >
-                        {kloelT(`Voltar ao login`)}
-                      </button>
+                      <Button type="submit" onClick={handleMfaVerify} disabled={isLoading} className="w-full rounded-md bg-gray-900 py-5 text-white hover:bg-gray-800">{isLoading ? 'Verificando...' : 'Confirmar 2FA'}</Button>
+                      <button type="button" onClick={() => { setMfaToken(''); setMfaCode(''); setPassword(''); setErrors({}); }} disabled={isLoading} className="w-full text-sm text-gray-500 hover:text-gray-700 hover:underline">{kloelT(`Voltar ao login`)}</button>
                     </>
                   ) : (
                     <>

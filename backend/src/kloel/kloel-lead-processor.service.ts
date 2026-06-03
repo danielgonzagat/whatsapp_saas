@@ -85,14 +85,35 @@ export class KloelLeadProcessorService {
 
       let contactId: string | null = null;
       try {
-        if (normalizedPhone) {
+        // PERSON migration PHASE 1 dual-write: mirror the lead funnel snapshot
+        // onto the canonical Contact and stamp `kloelLeadId` write-if-null.
+        // Idempotent on workspaceId_phone, workspace-isolated, and fail-open —
+        // a Contact sync failure must never break lead processing.
+        const canonicalPhone = normalizePhone(senderPhone)?.digits;
+        if (canonicalPhone) {
+          const existing = await this.prisma.contact.findUnique({
+            where: { workspaceId_phone: { workspaceId, phone: canonicalPhone } },
+            select: { kloelLeadId: true },
+          });
+          const funnel = {
+            leadStatus: lead.status,
+            leadStage: lead.stage,
+            lastMessage: lead.lastMessage,
+            lastIntent: lead.lastIntent,
+            totalMessages: lead.totalMessages,
+          };
           const contact = await this.prisma.contact.upsert({
-            where: { workspaceId_phone: { workspaceId, phone: normalizedPhone } },
-            update: {},
+            where: { workspaceId_phone: { workspaceId, phone: canonicalPhone } },
+            update: {
+              ...funnel,
+              ...(existing && existing.kloelLeadId === null ? { kloelLeadId: lead.id } : {}),
+            },
             create: {
               workspaceId,
-              phone: normalizedPhone,
-              name: `Contato ${normalizedPhone.slice(-4)}`,
+              phone: canonicalPhone,
+              name: `Contato ${canonicalPhone.slice(-4)}`,
+              ...funnel,
+              kloelLeadId: lead.id,
             },
             select: { id: true },
           });

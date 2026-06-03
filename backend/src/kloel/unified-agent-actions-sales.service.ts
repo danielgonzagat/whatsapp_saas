@@ -175,10 +175,7 @@ export class UnifiedAgentActionsSalesService {
           },
         },
       });
-      const priceFormatted = new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL',
-      }).format(finalPrice);
+      const priceFormatted = formatBrlAmount(finalPrice);
       const message = [
         'Oferta comercial para você',
         '',

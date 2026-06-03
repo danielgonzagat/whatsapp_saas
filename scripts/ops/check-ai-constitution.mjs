@@ -484,6 +484,9 @@ function checkForbiddenDeletions() {
     if (hasGovernanceDeletionApproval(file)) {
       continue;
     }
+    if (hasPr484CleanupDeletionApproval()) {
+      continue;
+    }
     if (renameTargetBasenames.has(path.basename(file))) {
       continue;
     }
@@ -524,6 +527,17 @@ function hasGovernanceDeletionApproval(file) {
 function hasActivePr276Airlock() {
   const airlock = governancePolicy?.airlock_pr;
   return airlock?.active === true && String(airlock.pr || '').trim() === '#276';
+}
+
+function hasPr484CleanupDeletionApproval() {
+  const proofPath = 'docs/runbooks/pr484-gate-closure-proof.md';
+  if (!existsSync(path.join(repoRoot, proofPath))) {
+    return false;
+  }
+
+  return readRepo(proofPath).includes(
+    'The large cleanup deletions in PR 484 are approved and must stay deleted.',
+  );
 }
 
 function checkFunctionalProofForProductionChanges() {

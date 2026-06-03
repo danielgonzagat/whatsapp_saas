@@ -1,20 +1,6 @@
 import type { Page } from '@playwright/test';
+import { decodeJwtPayload } from './e2e-helpers';
 import type { E2EAuthContext, E2EBaseUrls } from './e2e-helpers';
-
-function decodeJwtPayload(token: string): Record<string, unknown> | null {
-  const [, payload = ''] = token.split('.');
-  if (!payload) {
-    return null;
-  }
-
-  try {
-    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
-    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
-    return JSON.parse(Buffer.from(padded, 'base64').toString('utf8'));
-  } catch {
-    return null;
-  }
-}
 
 export async function seedE2EAuthSessionWithUrls(
   page: Page,

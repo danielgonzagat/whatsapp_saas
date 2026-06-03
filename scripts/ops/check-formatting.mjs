@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 const rootDir = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
@@ -37,9 +38,11 @@ const targets = [
   'scripts/ops/check-formatting.mjs',
 ];
 
+const existingTargets = targets.filter((target) => existsSync(path.join(rootDir, target)));
+
 const result = spawnSync(
   path.join(rootDir, 'node_modules', '.bin', 'prettier'),
-  ['--check', '--ignore-unknown', ...targets],
+  ['--check', '--ignore-unknown', ...existingTargets],
   {
     cwd: rootDir,
     stdio: 'inherit',
