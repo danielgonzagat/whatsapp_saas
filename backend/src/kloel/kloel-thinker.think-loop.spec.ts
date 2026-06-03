@@ -17,7 +17,6 @@
  * call sequence is asserted end-to-end, not stubbed.
  */
 import { Test, TestingModule } from '@nestjs/testing';
-import { Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { LLMBudgetService } from './llm-budget.service';
@@ -102,7 +101,7 @@ jest.mock('./kloel-stream-writer', () => ({
 import { KloelThreadService } from './kloel-thread.service';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
 import { KloelComposerService } from './kloel-composer.service';
-import { KloelReplyEngineService, LocalToolExecutor } from './kloel-reply-engine.service';
+import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import { KLOEL_LLM_E2E_GUARD } from './kloel-llm-e2e-guard';
 import { KloelThinkerService } from './kloel-thinker.service';
 
@@ -122,7 +121,9 @@ describe('KloelThinkerService — P0-C streaming cognition loop (KLOEL_THINK_LOO
 
   // Cognition service mocks — the loop's underlying producers.
   let decisionOutcomeService: { recordDecision: jest.Mock; closeOutcome: jest.Mock };
-  let mindPredictorService: { predictReply: jest.Mock };
+  let mindPredictorService: {
+    predictReply: jest.MockedFunction<(payload: unknown, latencyMs: number) => Promise<unknown>>;
+  };
   let mindSurpriseService: { resolveReply: jest.Mock; computeSurprise: jest.Mock };
   let mindBeliefService: { observeBinary: jest.Mock; getOrInit: jest.Mock };
   let mindGlobalPriorService: { recordObservation: jest.Mock };
@@ -256,11 +257,11 @@ describe('KloelThinkerService — P0-C streaming cognition loop (KLOEL_THINK_LOO
   const runThink = async (): Promise<void> => {
     await service.think(
       { message: 'oi kloel', workspaceId: wsId },
-      {} as Response,
+      {},
       null,
       undefined,
       undefined,
-      jest.fn() as unknown as LocalToolExecutor,
+      jest.fn(),
     );
     // Let the fire-and-forget post-reply microtasks settle.
     await new Promise((r) => setImmediate(r));
@@ -276,7 +277,7 @@ describe('KloelThinkerService — P0-C streaming cognition loop (KLOEL_THINK_LOO
   });
 
   describe('flag OFF (default)', () => {
-    it('does NOT call any cognition-loop producer', async () => {
+    it('does NOT call cognition-loop producers', async () => {
       delete process.env.KLOEL_THINK_LOOP_ENABLED;
       service = await buildService();
 
@@ -325,14 +326,12 @@ describe('KloelThinkerService — P0-C streaming cognition loop (KLOEL_THINK_LOO
 
     it('predicts the reply with the canonical features at stream start', async () => {
       expect(mindPredictorService.predictReply).toHaveBeenCalledTimes(1);
-      expect(mindPredictorService.predictReply).toHaveBeenCalledWith(
-        expect.objectContaining({
-          workspaceId: wsId,
-          subject: wsId,
-          features: expect.objectContaining({ template: 'dashboard', channel: 'dashboard' }),
-        }),
-        expect.any(Number),
-      );
+      expect(mindPredictorService.predictReply.mock.calls[0]?.[0]).toMatchObject({
+        workspaceId: wsId,
+        subject: wsId,
+        features: { template: 'dashboard', channel: 'dashboard' },
+      });
+      expect(mindPredictorService.predictReply.mock.calls[0]?.[1]).toBe(60);
     });
 
     it('closes the outcome as chat.replied (won) AFTER the reply', async () => {
