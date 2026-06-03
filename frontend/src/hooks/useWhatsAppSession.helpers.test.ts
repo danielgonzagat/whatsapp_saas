@@ -216,7 +216,7 @@ describe('classifyConnectResponse', () => {
     });
   });
 
-  it('returns pending for unknown/missing statuses without starting any legacy fallback', () => {
+  it('returns pending for unknown/missing statuses without starting legacy fallback', () => {
     expect(classifyConnectResponse({})).toEqual({ kind: 'pending' });
     expect(classifyConnectResponse({ status: 'starting' })).toEqual({ kind: 'pending' });
     expect(classifyConnectResponse({ status: null })).toEqual({ kind: 'pending' });

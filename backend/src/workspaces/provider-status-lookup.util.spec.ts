@@ -1,11 +1,9 @@
 import {
   extractRawStatus,
   extractPhoneNumberId,
-  resolveWahaStatus,
   resolveMetaStatus,
   computeNormalizedStatus,
   metaDisconnectReason,
-  wahaDisconnectReason,
   computeDisconnectReason,
 } from './provider-status-lookup.util';
 
@@ -44,11 +42,6 @@ describe('extractRawStatus', () => {
 });
 
 describe('extractPhoneNumberId', () => {
-  it('returns null for non-meta-cloud providers', () => {
-    const session = { phoneNumberId: '123456789' };
-    expect(extractPhoneNumberId('whatsapp-api', session as Record<string, unknown>)).toBeNull();
-  });
-
   it('returns phoneNumberId for meta-cloud', () => {
     const session = { phoneNumberId: ' 123456789 ' };
     expect(extractPhoneNumberId('meta-cloud', session as Record<string, unknown>)).toBe(
@@ -59,27 +52,6 @@ describe('extractPhoneNumberId', () => {
   it('returns null when phoneNumberId is empty for meta-cloud', () => {
     expect(extractPhoneNumberId('meta-cloud', {})).toBeNull();
     expect(extractPhoneNumberId('meta-cloud', { phoneNumberId: '' })).toBeNull();
-  });
-});
-
-describe('resolveWahaStatus', () => {
-  it.each([
-    ['CONNECTED', 'connected'],
-    ['WORKING', 'connected'],
-    ['SCAN_QR_CODE', 'connecting'],
-    ['STARTING', 'connecting'],
-    ['OPENING', 'connecting'],
-    ['FAILED', 'failed'],
-  ])('maps %s to %s', (raw, expected) => {
-    expect(resolveWahaStatus(raw)).toBe(expected);
-  });
-
-  it('returns disconnected for unknown status', () => {
-    expect(resolveWahaStatus('UNKNOWN_STATUS')).toBe('disconnected');
-  });
-
-  it('returns disconnected for empty string', () => {
-    expect(resolveWahaStatus('')).toBe('disconnected');
   });
 });
 
@@ -102,12 +74,6 @@ describe('resolveMetaStatus', () => {
 });
 
 describe('computeNormalizedStatus', () => {
-  it('delegates to resolveWahaStatus for whatsapp-api', () => {
-    expect(computeNormalizedStatus('whatsapp-api', 'CONNECTED', null)).toBe('connected');
-    expect(computeNormalizedStatus('whatsapp-api', 'FAILED', null)).toBe('failed');
-    expect(computeNormalizedStatus('whatsapp-api', 'SCAN_QR_CODE', null)).toBe('connecting');
-  });
-
   it('delegates to resolveMetaStatus for meta-cloud', () => {
     expect(computeNormalizedStatus('meta-cloud', 'CONNECTED', '123')).toBe('connected');
     expect(computeNormalizedStatus('meta-cloud', 'DISCONNECTED', null)).toBe('disconnected');
@@ -127,21 +93,6 @@ describe('metaDisconnectReason', () => {
   });
 });
 
-describe('wahaDisconnectReason', () => {
-  it('returns qr_pending when connecting', () => {
-    expect(wahaDisconnectReason('connecting')).toBe('waha_qr_pending');
-  });
-
-  it('returns session_failed when failed', () => {
-    expect(wahaDisconnectReason('failed')).toBe('waha_session_failed');
-  });
-
-  it('returns session_disconnected for other states', () => {
-    expect(wahaDisconnectReason('disconnected')).toBe('waha_session_disconnected');
-    expect(wahaDisconnectReason('connected')).toBe('waha_session_disconnected');
-  });
-});
-
 describe('computeDisconnectReason', () => {
   it('uses session.disconnectReason when present and non-empty', () => {
     expect(
@@ -158,17 +109,5 @@ describe('computeDisconnectReason', () => {
     expect(
       computeDisconnectReason({ disconnectReason: '' }, 'meta-cloud', 'disconnected', null),
     ).toBe('meta_auth_required');
-  });
-
-  it('falls back to waha reason for whatsapp-api', () => {
-    expect(
-      computeDisconnectReason({ disconnectReason: '' }, 'whatsapp-api', 'connecting', null),
-    ).toBe('waha_qr_pending');
-  });
-
-  it('returns null when connected with no session reason', () => {
-    expect(
-      computeDisconnectReason({ disconnectReason: '' }, 'whatsapp-api', 'connected', null),
-    ).toBe('waha_session_disconnected');
   });
 });

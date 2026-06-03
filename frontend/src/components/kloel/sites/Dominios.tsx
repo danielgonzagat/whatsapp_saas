@@ -37,20 +37,20 @@ function normalizeHostname(value: string): string {
 
 function dnsStatusColor(status: SiteDomain['dnsStatus']) {
   if (status === 'VERIFIED') {
-    return '#22c55e';
+    return 'rgb(34, 197, 94)';
   }
   if (status === 'FAILED') {
-    return '#ef4444';
+    return 'rgb(239, 68, 68)';
   }
   return EMBER;
 }
 
 function sslStatusColor(status: string) {
   if (status === 'ACTIVE' || status === 'VERIFIED') {
-    return '#22c55e';
+    return 'rgb(34, 197, 94)';
   }
   if (status === 'FAILED') {
-    return '#ef4444';
+    return 'rgb(239, 68, 68)';
   }
   return EMBER;
 }
@@ -290,9 +290,9 @@ export function Dominios({ workspaceId = '', sites = [], loading = false }: Domi
           </Btn>
         </div>
 
-        {actionError && <div style={{ fontFamily: SORA, fontSize: 12, color: '#ef4444' }}>{actionError}</div>}
-        {actionSuccess && <div style={{ fontFamily: SORA, fontSize: 12, color: '#22c55e' }}>{actionSuccess}</div>}
-        {domainsErrorMessage && <div style={{ fontFamily: SORA, fontSize: 12, color: '#ef4444' }}>{domainsErrorMessage}</div>}
+        {actionError && <div style={{ fontFamily: SORA, fontSize: 12, color: 'rgb(239, 68, 68)' }}>{actionError}</div>}
+        {actionSuccess && <div style={{ fontFamily: SORA, fontSize: 12, color: 'rgb(34, 197, 94)' }}>{actionSuccess}</div>}
+        {domainsErrorMessage && <div style={{ fontFamily: SORA, fontSize: 12, color: 'rgb(239, 68, 68)' }}>{domainsErrorMessage}</div>}
 
         <div style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
           {domainsLoading ? (

@@ -7,7 +7,7 @@
  *   - the nightly workflow can commit, and
  *   - LLM agents without MCP access (e.g. Codex) can read at session start.
  *
- * Contract (see CLAUDE.md / PULSE_CLI_DIRECTIVE.json): every convergence
+ * Contract: every convergence
  * session MUST read PULSE_CODACY_STATE.json first, treat highPriorityBatch as
  * the next 50 issues to resolve, and resolve HIGH > MEDIUM > LOW.
  *

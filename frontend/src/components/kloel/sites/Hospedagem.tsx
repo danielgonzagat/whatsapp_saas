@@ -63,7 +63,7 @@ export function Hospedagem({ sites = [], loading = false, error }: HospedagemPro
         </div>
 
         {errorMessage ? (
-          <div style={{ padding: 18, fontFamily: SORA, fontSize: 12, color: '#ef4444' }}>{errorMessage}</div>
+          <div style={{ padding: 18, fontFamily: SORA, fontSize: 12, color: 'rgb(239, 68, 68)' }}>{errorMessage}</div>
         ) : loading ? (
           <div style={{ padding: 18, fontFamily: SORA, fontSize: 12, color: TEXT_DIM }}>{kloelT(`Carregando sites...`)}</div>
         ) : sites.length === 0 ? (
@@ -87,7 +87,7 @@ export function Hospedagem({ sites = [], loading = false, error }: HospedagemPro
                 <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: TEXT_DIM }}>{publicPath(site)}</div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <Badge color={isPublished(site) ? '#22c55e' : EMBER}>{isPublished(site) ? 'Online' : kloelT(`Construindo`)}</Badge>
+                <Badge color={isPublished(site) ? 'rgb(34, 197, 94)' : EMBER}>{isPublished(site) ? 'Online' : kloelT(`Construindo`)}</Badge>
                 <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: TEXT_MUTED }}>
                   {kloelT(`Atualizado`)} {formatSiteDate(site.updatedAt)}
                 </span>

@@ -33,14 +33,11 @@ function metaRawStatusFallback(phoneNumberId: string | null): string {
   return phoneNumberId ? 'CONNECTION_INCOMPLETE' : 'DISCONNECTED';
 }
 
-function wahaRawStatusFallback(normalizedStatus: NormalizedConnectionStatus): string {
-  return normalizedStatus === 'connecting' ? 'SCAN_QR_CODE' : 'DISCONNECTED';
-}
 
 /** Resolve raw status fallback. */
 export function resolveRawStatusFallback(
   rawStatus: string,
-  providerType: WhatsAppProviderType,
+  _providerType: WhatsAppProviderType,
   normalizedStatus: NormalizedConnectionStatus,
   phoneNumberId: string | null,
 ): string {
@@ -50,9 +47,7 @@ export function resolveRawStatusFallback(
   if (normalizedStatus === 'connected') {
     return 'CONNECTED';
   }
-  return providerType === 'meta-cloud'
-    ? metaRawStatusFallback(phoneNumberId)
-    : wahaRawStatusFallback(normalizedStatus);
+  return metaRawStatusFallback(phoneNumberId);
 }
 
 /** Resolve self ids. */

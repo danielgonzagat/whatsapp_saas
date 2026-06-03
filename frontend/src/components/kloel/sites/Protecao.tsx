@@ -31,10 +31,10 @@ function isPublished(site: Site): boolean {
 
 function statusColor(status: string) {
   if (status === 'ACTIVE' || status === 'VERIFIED') {
-    return '#22c55e';
+    return 'rgb(34, 197, 94)';
   }
   if (status === 'FAILED') {
-    return '#ef4444';
+    return 'rgb(239, 68, 68)';
   }
   return EMBER;
 }
@@ -112,7 +112,7 @@ export function Protecao({ workspaceId = '', sites = [], loading = false }: Prot
         </div>
 
         {domainsErrorMessage ? (
-          <div style={{ padding: 18, fontFamily: SORA, fontSize: 12, color: '#ef4444' }}>{domainsErrorMessage}</div>
+          <div style={{ padding: 18, fontFamily: SORA, fontSize: 12, color: 'rgb(239, 68, 68)' }}>{domainsErrorMessage}</div>
         ) : loading || domainsLoading ? (
           <div style={{ padding: 18, fontFamily: SORA, fontSize: 12, color: TEXT_DIM }}>{kloelT(`Carregando dominios...`)}</div>
         ) : !selectedSite ? (

@@ -138,5 +138,243 @@
     "reason": "PR484 PULSE cleanup removed the scripts/pulse scope-engine build-state surface; this test now covers approved-deleted code.",
     "issue": "PR#484 user-approved PULSE cleanup",
     "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/pulse-gates/disclosure-engine.gate.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE cleanup removed the corresponding PULSE gate/runtime/tooling implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/pulse-gates/ecosystem-privacy-guard.gate.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE cleanup removed the corresponding PULSE gate/runtime/tooling implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/pulse-gates/evidence-provenance.gate.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE cleanup removed the corresponding PULSE gate/runtime/tooling implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/pulse-gates/identity-projection.gate.part2.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE cleanup removed the corresponding PULSE gate/runtime/tooling implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/pulse-gates/identity-projection.gate.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE cleanup removed the corresponding PULSE gate/runtime/tooling implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/pulse-gates/internal-knowledge-leak-guard.gate.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE cleanup removed the corresponding PULSE gate/runtime/tooling implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/pulse-gates/lineage-integrity.gate.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE cleanup removed the corresponding PULSE gate/runtime/tooling implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/pulse-gates/no-overclaim.gate.part2.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE cleanup removed the corresponding PULSE gate/runtime/tooling implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/pulse-gates/no-overclaim.gate.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE cleanup removed the corresponding PULSE gate/runtime/tooling implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/pulse-gates/no-roleplay.gate.part2.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE cleanup removed the corresponding PULSE gate/runtime/tooling implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/pulse-gates/no-roleplay.gate.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE cleanup removed the corresponding PULSE gate/runtime/tooling implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/pulse-gates/origin-immutability.gate.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE cleanup removed the corresponding PULSE gate/runtime/tooling implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/pulse-gates/platform-bias-monitor.gate.part2.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE cleanup removed the corresponding PULSE gate/runtime/tooling implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/pulse-gates/platform-bias-monitor.gate.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE cleanup removed the corresponding PULSE gate/runtime/tooling implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/pulse-gates/prompt-leakage.gate.part2.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE cleanup removed the corresponding PULSE gate/runtime/tooling implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/pulse-gates/prompt-leakage.gate.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE cleanup removed the corresponding PULSE gate/runtime/tooling implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/pulse-gates/pulse-gates-truth-aggregator.service.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE cleanup removed the corresponding PULSE gate/runtime/tooling implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/pulse-gates/pulse-gates.module.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE cleanup removed the corresponding PULSE gate/runtime/tooling implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/pulse-gates/pulse-gates.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE cleanup removed the corresponding PULSE gate/runtime/tooling implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/pulse-gates/pulse-spine.bridge.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE cleanup removed the corresponding PULSE gate/runtime/tooling implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/pulse-gates/truth-mode-honesty.gate.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE cleanup removed the corresponding PULSE gate/runtime/tooling implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/self-awareness/pulse-runtime.service.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE cleanup removed the corresponding PULSE gate/runtime/tooling implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/pulse/dto/internal-heartbeat.dto.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE cleanup removed the corresponding PULSE gate/runtime/tooling implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/pulse/pulse-artifact.service.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE cleanup removed the corresponding PULSE gate/runtime/tooling implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/pulse/pulse.service.helpers.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE cleanup removed the corresponding PULSE gate/runtime/tooling implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/pulse/pulse.service.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE cleanup removed the corresponding PULSE gate/runtime/tooling implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "scripts/cognitive-participation.spec.mjs",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE/tooling cleanup removed the corresponding implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "scripts/pci/divergence-scan.spec.mjs",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE/tooling cleanup removed the corresponding implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "tools/auto-pr/stub-route-detector.test.mjs",
+    "rule": "testDeletion",
+    "reason": "PR484 deep PULSE/tooling cleanup removed the corresponding implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved deep PULSE cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/capability-registry/capability-registry.service.part2.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 cleanup removed the corresponding legacy capability-registry implementation surface; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/capability-registry/capability-registry.service.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 cleanup removed the corresponding legacy capability-registry implementation surface; the user explicitly approved all deletions in this PR, so this test covered approved-deleted code.",
+    "issue": "PR#484 user-approved cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/marketing/channels/whatsapp/whatsapp-watchdog-recovery.service.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 Meta-only WhatsApp cleanup removed the legacy WAHA watchdog/session recovery implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted legacy code.",
+    "issue": "PR#484 user-approved cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/marketing/channels/whatsapp/whatsapp-watchdog-session.service.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 Meta-only WhatsApp cleanup removed the legacy WAHA watchdog/session recovery implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted legacy code.",
+    "issue": "PR#484 user-approved cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/marketing/channels/whatsapp/whatsapp-watchdog.service.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR484 Meta-only WhatsApp cleanup removed the legacy WAHA watchdog/session recovery implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted legacy code.",
+    "issue": "PR#484 user-approved cleanup",
+    "expires": "2026-12-31"
   }
 ]

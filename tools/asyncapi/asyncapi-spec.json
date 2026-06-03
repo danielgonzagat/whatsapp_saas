@@ -3,7 +3,7 @@
   "info": {
     "title": "Kloel Event Spine",
     "version": "1.0.0",
-    "description": "Auto-extracted event contracts. 133 events across 28 domains."
+    "description": "Auto-extracted event contracts. 132 events across 27 domains."
   },
   "servers": {
     "spine": {
@@ -282,30 +282,6 @@
         }
       }
     },
-    "checkout.created": {
-      "description": "checkout domain event",
-      "parameters": {
-        "domain": "checkout"
-      },
-      "publish": {
-        "summary": "checkout.created",
-        "message": {
-          "$ref": "#/components/messages/checkout_created"
-        }
-      }
-    },
-    "checkout.deleted": {
-      "description": "checkout domain event",
-      "parameters": {
-        "domain": "checkout"
-      },
-      "publish": {
-        "summary": "checkout.deleted",
-        "message": {
-          "$ref": "#/components/messages/checkout_deleted"
-        }
-      }
-    },
     "cognition.analysis_completed": {
       "description": "cognition domain event",
       "parameters": {
@@ -543,6 +519,18 @@
         "summary": "commerce.checkout.created",
         "message": {
           "$ref": "#/components/messages/commerce_checkout_created"
+        }
+      }
+    },
+    "commerce.checkout.deleted": {
+      "description": "commerce domain event",
+      "parameters": {
+        "domain": "commerce"
+      },
+      "publish": {
+        "summary": "commerce.checkout.deleted",
+        "message": {
+          "$ref": "#/components/messages/commerce_checkout_deleted"
         }
       }
     },
@@ -2167,56 +2155,6 @@
           }
         }
       },
-      "checkout_created": {
-        "name": "checkout.created",
-        "title": "created",
-        "summary": "checkout event",
-        "payload": {
-          "type": "object",
-          "properties": {
-            "eventName": {
-              "type": "string",
-              "const": "checkout.created"
-            },
-            "workspaceId": {
-              "type": "string"
-            },
-            "timestamp": {
-              "type": "string",
-              "format": "date-time"
-            },
-            "payload": {
-              "type": "object",
-              "description": "Event-specific payload (see spine-event.types.ts)"
-            }
-          }
-        }
-      },
-      "checkout_deleted": {
-        "name": "checkout.deleted",
-        "title": "deleted",
-        "summary": "checkout event",
-        "payload": {
-          "type": "object",
-          "properties": {
-            "eventName": {
-              "type": "string",
-              "const": "checkout.deleted"
-            },
-            "workspaceId": {
-              "type": "string"
-            },
-            "timestamp": {
-              "type": "string",
-              "format": "date-time"
-            },
-            "payload": {
-              "type": "object",
-              "description": "Event-specific payload (see spine-event.types.ts)"
-            }
-          }
-        }
-      },
       "cognition_analysis_completed": {
         "name": "cognition.analysis_completed",
         "title": "analysis_completed",
@@ -2702,6 +2640,31 @@
             "eventName": {
               "type": "string",
               "const": "commerce.checkout.created"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "timestamp": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "payload": {
+              "type": "object",
+              "description": "Event-specific payload (see spine-event.types.ts)"
+            }
+          }
+        }
+      },
+      "commerce_checkout_deleted": {
+        "name": "commerce.checkout.deleted",
+        "title": "deleted",
+        "summary": "commerce event",
+        "payload": {
+          "type": "object",
+          "properties": {
+            "eventName": {
+              "type": "string",
+              "const": "commerce.checkout.deleted"
             },
             "workspaceId": {
               "type": "string"

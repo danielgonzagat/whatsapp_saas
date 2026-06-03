@@ -275,7 +275,6 @@ describe('WhatsAppProviderRegistry', () => {
           providerSettings: partialMatch({
             whatsappApiSession: partialMatch({
               status: 'disconnected',
-              qrCode: null,
             }),
           }),
         }),
