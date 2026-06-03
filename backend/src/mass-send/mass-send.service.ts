@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, Logger, OnModuleDestroy } from '@nestj
 import { Queue } from 'bullmq';
 import { createBullMqConnectionOptions } from '../common/redis/redis.util';
 import { NON_DIGIT_RE } from '../common/phone';
+import { QUEUE_NAMES } from '../queue/queue-names.const';
 
 /** Mass send service. */
 @Injectable()
@@ -11,7 +12,7 @@ export class MassSendService implements OnModuleDestroy {
 
   constructor() {
     this.logger.log('MassSendService initialized');
-    this.queue = new Queue('mass-send', {
+    this.queue = new Queue(QUEUE_NAMES.MASS_SEND, {
       connection: createBullMqConnectionOptions(),
     });
   }

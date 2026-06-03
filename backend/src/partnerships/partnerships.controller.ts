@@ -19,6 +19,8 @@ import { CreateAffiliateDto } from './dto/create-affiliate.dto';
 import { PartnershipsService } from './partnerships.service';
 
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { resolveWorkspaceId } from '../auth/workspace-access';
+
 interface InviteCollaboratorBody {
   email: string;
   role: string;
@@ -40,18 +42,13 @@ export class PartnershipsController {
   constructor(private readonly service: PartnershipsService) {}
 
   private getWorkspaceId(req: AuthenticatedRequest): string {
-    const fromUser = req.user?.workspaceId;
-    if (fromUser) {
-      return fromUser;
-    }
-    const header = req.headers['x-workspace-id'];
-    if (typeof header === 'string') {
-      return header;
-    }
-    if (Array.isArray(header) && typeof header[0] === 'string') {
-      return header[0];
-    }
-    return '';
+    // Converged onto the canonical, cross-tenant-safe resolver. The previous
+    // implementation fell back to the unverified `x-workspace-id` request
+    // header, which skipped the token<->request workspace check and allowed a
+    // forged header to select another tenant's workspace. resolveWorkspaceId
+    // derives the workspace from the JWT (req.user.workspaceId) and rejects any
+    // request-supplied workspaceId that does not match the token.
+    return resolveWorkspaceId(req);
   }
 
   // ═══ COLLABORATORS ═══

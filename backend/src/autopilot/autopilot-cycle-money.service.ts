@@ -5,6 +5,7 @@ import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
 import { forEachSequential } from '../common/async-sequence';
 import { createBullMqConnectionOptions } from '../common/redis/redis.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { QUEUE_NAMES } from '../queue/queue-names.const';
 
 /**
  * Money Machine and Next-Best-Action helpers extracted from AutopilotCycleService.
@@ -24,7 +25,7 @@ export class AutopilotCycleMoneyService {
     private readonly smartTime: SmartTimeService,
   ) {
     const connection = createBullMqConnectionOptions();
-    this.campaignQueue = new Queue('campaign-jobs', { connection });
+    this.campaignQueue = new Queue(QUEUE_NAMES.CAMPAIGN, { connection });
   }
 
   private isLegacyExecutionEnabled() {

@@ -5,6 +5,7 @@ import { GoogleAdsProvider } from './google-ads.provider';
 import { MetaMarketingProvider } from './meta-marketing.provider';
 import { googleAdsSyncQueue, metaAdsSyncQueue } from '../queue/queue';
 import { createBullMqConnectionOptions } from '../common/redis/redis.util';
+import { QUEUE_NAMES } from '../queue/queue-names.const';
 import {
   persistAdAccounts,
   persistAdCampaigns,
@@ -61,7 +62,7 @@ export class AdsSyncProcessor implements OnModuleDestroy {
     const redisConnection = createBullMqConnectionOptions();
 
     this.googleWorker = new Worker(
-      'google-ads-sync-jobs',
+      QUEUE_NAMES.GOOGLE_ADS_SYNC,
       async (job: Job<AdsSyncJobData>) => {
         const { type } = job.data;
         this.logger.log(
@@ -122,7 +123,7 @@ export class AdsSyncProcessor implements OnModuleDestroy {
     const redisConnection = createBullMqConnectionOptions();
 
     this.metaWorker = new Worker(
-      'ads-sync-meta',
+      QUEUE_NAMES.META_ADS_SYNC,
       async (job: Job<MetaSyncJobData>) => {
         const { type, workspaceId } = job.data;
         this.logger.log(

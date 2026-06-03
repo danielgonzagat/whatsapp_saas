@@ -52,6 +52,20 @@ const REPORT_TABS = [
   'exportacoes',
 ] as const;
 
+// Perfil sub-tabs that ContaView only exposes as `/settings?section=<key>` query
+// params (resolveSettingsSection parses them) — surfaced here as nav nodes so the
+// constellation can browse to them. Tuple: [sectionKey, label, overlayLabel].
+const PERFIL_SECTION_TABS = [
+  ['pessoal', 'Pessoal', 'Dados pessoais'],
+  ['fiscal', 'Fiscal', 'Dados fiscais'],
+  ['documentos', 'Docs', 'Documentos'],
+  ['bancario', 'Banco', 'Dados bancarios'],
+  ['perfil', 'Publico', 'Perfil publico'],
+  ['equipe', 'Equipe', 'Equipe'],
+  ['apps', 'Apps', 'Apps'],
+  ['seguranca', 'Seguranca', 'Seguranca'],
+] as const;
+
 function toNode([id, label, area, type, route, parentId, overlayLabel]: NodeSeed): KloelGraphNode {
   return {
     id,
@@ -246,6 +260,17 @@ const dynamicRouteSeeds = [
       `/analytics?tab=${tab}`,
       'consultar',
       'Relatorios',
+    ],
+  ),
+  ...PERFIL_SECTION_TABS.map(
+    ([sectionKey, label, overlayLabel]): NodeSeed => [
+      `perfil-settings-${sectionKey}`,
+      label,
+      'perfil',
+      'route',
+      `/settings?section=${sectionKey}`,
+      'perfil-settings',
+      overlayLabel,
     ],
   ),
 ] as const;

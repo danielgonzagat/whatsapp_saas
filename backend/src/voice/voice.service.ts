@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { createBullMqConnectionOptions } from '../common/redis/redis.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { QUEUE_NAMES } from '../queue/queue-names.const';
 
 /** Voice service. */
 @Injectable()
@@ -12,7 +13,7 @@ export class VoiceService {
   constructor(private prisma: PrismaService) {
     this.logger.log('VoiceService initialized');
     const connection = createBullMqConnectionOptions();
-    this.voiceQueue = new Queue('voice-jobs', { connection });
+    this.voiceQueue = new Queue(QUEUE_NAMES.VOICE, { connection });
   }
 
   /** Create voice profile. */
