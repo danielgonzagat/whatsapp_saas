@@ -7,6 +7,17 @@ export interface ReportFilters {
   product?: string;
   status?: string;
   paymentMethod?: string;
+  orderCode?: string;
+  buyerName?: string;
+  buyerEmail?: string;
+  cpfCnpj?: string;
+  planName?: string;
+  utmSource?: string;
+  utmMedium?: string;
+  affiliateEmail?: string;
+  isFirstPurchase?: string;
+  isRecovery?: string;
+  isUpsell?: string;
   page?: number;
   perPage?: number;
 }

@@ -196,6 +196,34 @@ describe('KloelGraphShell', () => {
     expect(push).not.toHaveBeenCalled();
   });
 
+  it('drops pending node feedback when the route signature changes', () => {
+    const { container, rerender } = renderShell();
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Abrir Afiliar' }), {
+      clientX: 10,
+      clientY: 10,
+    });
+    fireEvent.pointerUp(screen.getByRole('button', { name: 'Abrir Afiliar' }), {
+      clientX: 11,
+      clientY: 11,
+    });
+    expect(container.querySelector('circle[data-node-id="afiliar"]')?.getAttribute('stroke')).toBe(
+      'rgb(232,93,48)',
+    );
+
+    pathname = '/produtos/afiliar-se';
+    searchParams = new URLSearchParams();
+    rerender(
+      <KloelGraphShell>
+        <div>Affiliate screen</div>
+      </KloelGraphShell>,
+    );
+
+    expect(container.querySelector('circle[data-node-id="afiliar"]')?.getAttribute('stroke')).toBe(
+      'none',
+    );
+  });
+
   it('opens dynamic product nodes and product tab subnodes from real product data', () => {
     renderShell();
 

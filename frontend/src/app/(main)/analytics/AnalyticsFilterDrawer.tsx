@@ -37,15 +37,15 @@ export function AnalyticsFilterDrawer({ open, onClose, filters, setFilters }: Fi
           </div>
           <div>
             <span style={labelStyle}>{kloelT(`Codigo da venda`)}</span>
-            <input aria-label="Codigo da venda" placeholder={kloelT(`Ex: ORD-12345`)} style={inputStyle} />
+            <input aria-label="Codigo da venda" placeholder={kloelT(`Ex: ORD-12345`)} value={filters.orderCode ?? ''} onChange={(e) => setFilters((f) => ({ ...f, orderCode: e.target.value }))} style={inputStyle} />
           </div>
           <div>
             <span style={labelStyle}>{kloelT(`Comprador`)}</span>
-            <input aria-label="Nome do comprador" placeholder={kloelT(`Nome do comprador`)} style={inputStyle} />
+            <input aria-label="Nome do comprador" placeholder={kloelT(`Nome do comprador`)} value={filters.buyerName ?? ''} onChange={(e) => setFilters((f) => ({ ...f, buyerName: e.target.value }))} style={inputStyle} />
           </div>
           <div>
             <span style={labelStyle}>{kloelT(`CPF / CNPJ`)}</span>
-            <input aria-label="CPF ou CNPJ" placeholder="000.000.000-00" style={inputStyle} />
+            <input aria-label="CPF ou CNPJ" placeholder="000.000.000-00" value={filters.cpfCnpj ?? ''} onChange={(e) => setFilters((f) => ({ ...f, cpfCnpj: e.target.value }))} style={inputStyle} />
           </div>
           <div>
             <span style={labelStyle}>{kloelT(`Forma de pagamento`)}</span>
@@ -75,30 +75,30 @@ export function AnalyticsFilterDrawer({ open, onClose, filters, setFilters }: Fi
           </div>
           <div>
             <span style={labelStyle}>{kloelT(`Plano`)}</span>
-            <input aria-label="Nome do plano" placeholder={kloelT(`Nome do plano`)} style={inputStyle} />
+            <input aria-label="Nome do plano" placeholder={kloelT(`Nome do plano`)} value={filters.planName ?? ''} onChange={(e) => setFilters((f) => ({ ...f, planName: e.target.value }))} style={inputStyle} />
           </div>
           <div>
             <span style={labelStyle}>{kloelT(`UTM Source / Medium`)}</span>
             <div style={{ display: 'flex', gap: 8 }}>
-              <input aria-label="UTM Source" placeholder="utm_source" style={inputStyle} />
-              <input aria-label="UTM Medium" placeholder="utm_medium" style={inputStyle} />
+              <input aria-label="UTM Source" placeholder="utm_source" value={filters.utmSource ?? ''} onChange={(e) => setFilters((f) => ({ ...f, utmSource: e.target.value }))} style={inputStyle} />
+              <input aria-label="UTM Medium" placeholder="utm_medium" value={filters.utmMedium ?? ''} onChange={(e) => setFilters((f) => ({ ...f, utmMedium: e.target.value }))} style={inputStyle} />
             </div>
           </div>
           <div>
             <span style={labelStyle}>{kloelT(`Email afiliado`)}</span>
-            <input aria-label="Email do afiliado" placeholder={kloelT(`email@afiliado.com`)} style={inputStyle} />
+            <input aria-label="Email do afiliado" placeholder={kloelT(`email@afiliado.com`)} value={filters.affiliateEmail ?? ''} onChange={(e) => setFilters((f) => ({ ...f, affiliateEmail: e.target.value }))} style={inputStyle} />
           </div>
           <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
-            {['Primeira compra', 'Recuperacao', 'Upsell'].map((label) => (
+            {([['Primeira compra', 'isFirstPurchase'], ['Recuperacao', 'isRecovery'], ['Upsell', 'isUpsell']] as const).map(([label, key]) => (
               <label key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: V.t2, cursor: 'pointer' }}>
-                <input type="checkbox" style={{ accentColor: V.em }} />{label}
+                <input type="checkbox" checked={filters[key] === 'true'} onChange={(e) => setFilters((f) => ({ ...f, [key]: e.target.checked ? 'true' : '' }))} style={{ accentColor: V.em }} />{label}
               </label>
             ))}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 10, marginTop: 28 }}>
           <Button primary onClick={onClose}>{kloelT(`Aplicar filtros`)}</Button>
-          <Button onClick={onClose}>{kloelT(`Limpar`)}</Button>
+          <Button onClick={() => setFilters(() => ({}))}>{kloelT(`Limpar`)}</Button>
         </div>
       </div>
     </div>
