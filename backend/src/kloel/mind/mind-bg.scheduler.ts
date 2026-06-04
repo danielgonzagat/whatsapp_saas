@@ -74,9 +74,7 @@ export class MindBackgroundScheduler implements OnModuleInit, OnModuleDestroy {
       // No Redis: the BullMQ loop cannot start. Flip the in-process flag so the
       // @Cron fallback below keeps the learning edge alive (decay/consolidation).
       this.redisAbsent = true;
-      this.logger.warn(
-        'Mind BG scheduler: no Redis URL resolved, using in-process @Cron fallback',
-      );
+      this.logger.warn('Mind BG scheduler: no Redis URL resolved, using in-process @Cron fallback');
       return;
     }
     const connection = { url: redisUrl };
@@ -282,9 +280,15 @@ export class MindBackgroundScheduler implements OnModuleInit, OnModuleDestroy {
     try {
       await this.executeTick();
     } catch (err: unknown) {
-      this.logger.warn(
-        `In-process MIND tick fallback failed: ${err instanceof Error ? err.message : String(err)}`,
-      );
+      let message = 'unknown error';
+      if (err instanceof Error) {
+        message = err.message;
+      } else if (typeof err === 'string') {
+        message = err;
+      } else {
+        message = JSON.stringify(err) ?? 'unknown error';
+      }
+      this.logger.warn(`In-process MIND tick fallback failed: ${message}`);
     }
   }
 }

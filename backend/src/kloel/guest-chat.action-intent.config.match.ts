@@ -42,7 +42,7 @@ export function detectConfigIntent(msg: string): ActionIntent {
   if (/(meus |minhas )?dados\s+banc[aá]rios|conta\s+banc[aá]ria|banco/i.test(msg)) {
     return { tool: 'get_settings', args: {} };
   }
-  if (/documento|upload.*doc|enviar.*doc|enviar.*pdf|fazer.*upload/i.test(msg)) {
+  if (/upload.*doc|enviar.*doc|anexar.*doc|subir.*doc|enviar.*pdf|fazer.*upload/i.test(msg)) {
     return {
       tool: 'upload_document',
       args: { documentType: msg.match(/rg|cpf|cnpj|contrato|identidade/i)?.[0] || 'document' },
