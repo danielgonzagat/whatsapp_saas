@@ -278,6 +278,11 @@ export function Ticker({
   duration?: string;
 }) {
   const prefersReducedMotion = usePrefersReducedMotion({ defaultValue: true });
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  const reduced = !mounted || prefersReducedMotion;
   const text = items.join('  ///  ');
   return (
     <div
@@ -294,15 +299,15 @@ export function Ticker({
         style={{
           display: 'inline-block',
           whiteSpace: 'nowrap',
-          animation: prefersReducedMotion ? 'none' : `tickerScroll ${duration} linear infinite`,
+          animation: reduced ? 'none' : `tickerScroll ${duration} linear infinite`,
           fontFamily: MONO,
           fontSize: 11,
           color,
           opacity: 0.7,
-          transform: prefersReducedMotion ? 'translateX(0)' : undefined,
+          transform: reduced ? 'translateX(0)' : undefined,
         }}
       >
-        {prefersReducedMotion ? text : `${text}\u00a0\u00a0\u00a0///\u00a0\u00a0\u00a0${text}`}
+        {reduced ? text : `${text}   ///   ${text}`}
       </div>
     </div>
   );
