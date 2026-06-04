@@ -660,6 +660,22 @@ describe('kloel-message-ui', () => {
     expect(atob(downloadUrl.split(',')[1] ?? '')).toBe(body);
   });
 
+
+  it('derives downloadable files from a trailing unclosed fenced answer block', () => {
+    const fence = '```';
+    const body = [
+      '# Plano Truncado',
+      '',
+      ...Array.from(
+        { length: 12 },
+        (_, index) => `Parte ${index + 1}: conteudo preservado mesmo sem fence final.`,
+      ),
+    ].join('\n');
+
+    const files = detectDeliverableAnswerFiles(`Segue:\n\n${fence}markdown\n${body}`);
+
+    expect(files.map((file) => file.name)).toEqual(['plano-truncado.md']);
+  });
   it('does not duplicate answer-derived files already present in reasoning metadata', () => {
     const fence = '```';
     const body = [

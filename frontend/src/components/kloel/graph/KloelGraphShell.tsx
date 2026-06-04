@@ -230,7 +230,7 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
  */
 export function KloelGraphShell({ children }: { readonly children: ReactNode }) {
   return (
-    <GraphThemeProvider>
+    <GraphThemeProvider initialMode="dark">
       <KloelGraphShellSurface>{children}</KloelGraphShellSurface>
     </GraphThemeProvider>
   );

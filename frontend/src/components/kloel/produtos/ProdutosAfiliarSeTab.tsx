@@ -212,6 +212,7 @@ export default function AfiliarSe({
 
       <MarketplaceProductGrid
         filteredMarket={filteredMarket}
+        searchQuery={search.trim()}
         onSelectItem={setSelectedMarketItem}
         onToggleSave={handleToggleSave}
       />

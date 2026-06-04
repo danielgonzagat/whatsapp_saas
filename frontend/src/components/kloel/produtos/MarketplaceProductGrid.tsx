@@ -18,13 +18,23 @@ import type { MarketplaceItem } from './ProdutosView.types';
 
 export default function MarketplaceProductGrid({
   filteredMarket,
+  searchQuery = '',
   onSelectItem,
   onToggleSave,
 }: {
   filteredMarket: MarketplaceItem[];
+  searchQuery?: string;
   onSelectItem: (item: MarketplaceItem) => void;
   onToggleSave: (productId: string, isSaved: boolean) => void;
 }) {
+  const hasSearchQuery = searchQuery.trim().length > 0;
+  const emptyTitle = hasSearchQuery
+    ? 'Nenhum produto encontrado para esta busca.'
+    : 'Nenhum produto disponivel no marketplace.';
+  const emptyDescription = hasSearchQuery
+    ? 'Limpe a busca ou tente outro termo.'
+    : 'Novos produtos serao exibidos aqui quando estiverem disponiveis.';
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       {filteredMarket.length === 0 && (
@@ -47,10 +57,10 @@ export default function MarketplaceProductGrid({
               marginBottom: 6,
             }}
           >
-            {kloelT('Nenhum produto disponivel no marketplace.')}
+            {kloelT(emptyTitle)}
           </div>
           <div style={{ fontFamily: SORA, fontSize: 13, color: 'var(--app-text-secondary)' }}>
-            {kloelT('Novos produtos serao exibidos aqui quando estiverem disponiveis.')}
+            {kloelT(emptyDescription)}
           </div>
         </div>
       )}

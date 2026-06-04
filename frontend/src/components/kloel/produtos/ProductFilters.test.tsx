@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import ProductFilters from './ProductFilters';
+import AfiliarSe from './ProdutosAfiliarSeTab';
 import { normalizeDisplayProduct } from './ProdutosView.helpers';
 
 describe('ProductFilters', () => {
@@ -24,6 +25,28 @@ describe('ProductFilters', () => {
 
     expect(onSearchChange).toHaveBeenCalledWith('mentoria');
     expect(onSearchChange).toHaveBeenCalledWith('');
+  });
+});
+
+describe('AfiliarSe marketplace search', () => {
+  it('explains an empty marketplace result when search is active', () => {
+    render(
+      <AfiliarSe
+        marketplace={[]}
+        earnings={0}
+        marketplaceStats={{}}
+        affiliateLinks={[]}
+        affiliateProducts={[]}
+        onRefresh={vi.fn()}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText('Buscar produtos para se afiliar'), {
+      target: { value: 'produto inexistente' },
+    });
+
+    expect(screen.getByText('Nenhum produto encontrado para esta busca.')).toBeTruthy();
+    expect(screen.getByText('Limpe a busca ou tente outro termo.')).toBeTruthy();
   });
 });
 

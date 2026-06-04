@@ -27,7 +27,7 @@ export function detectPaymentsWalletIntent(msg: string): ActionIntent {
   if (/saque|solicitar saque|(?:quero|preciso|gostaria|vou)\s+sacar/.test(msg)) {
     return { tool: 'request_withdrawal', args: {} };
   }
-  if (/antecipa|c[aã]o|antecipar|adiantar\s+receb[ií]vel/.test(msg)) {
+  if (/antecipa|adiantar\s+receb[ií]vel/.test(msg)) {
     return { tool: 'request_anticipation', args: {} };
   }
   if (/extrato|hist[oó]rico.*financeiro/.test(msg)) {

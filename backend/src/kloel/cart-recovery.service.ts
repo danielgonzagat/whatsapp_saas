@@ -6,6 +6,7 @@ import { EmailService } from '../auth/email.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { ChannelTransportRegistry } from './channel-transport.registry';
+import { CheckoutEventEmitterService } from './checkout-emitter/checkout-event-emitter.service';
 import { MindBanditService } from './mind/policy/mind-bandit.service';
 import { MindCaseMemoryService } from './mind/memory/mind-case-memory.service';
 import { MindGuardsService } from './mind/policy/mind-guards.service';
@@ -109,6 +110,7 @@ export class CartRecoveryService {
     @Optional() private readonly guards?: MindGuardsService,
     @Optional() private readonly transportRegistry?: ChannelTransportRegistry,
     @Optional() private readonly bandit?: MindBanditService,
+    @Optional() private readonly checkoutEvents?: CheckoutEventEmitterService,
   ) {}
 
   /** Check abandoned carts and dispatch MIND-chosen recovery actions. */
@@ -283,6 +285,17 @@ export class CartRecoveryService {
                 ...mindDecisionMeta,
               },
             },
+          });
+
+          // Feed the abandonment into the spine ring so the Mind learning loop
+          // (mind-bg.scheduler) can consume it. The recoveryEmailSent metadata
+          // flag persisted above is the idempotency marker: the toRecover filter
+          // excludes already-flagged orders, so this emits at most once per order.
+          await this.checkoutEvents?.cartAbandoned({
+            workspaceId: wsId,
+            orderId: order.id,
+            planId: order.planId,
+            minutesSinceCreation: ageMinutes,
           });
 
           this.logger.log(`Recovery email sent for order ${order.id} (action=${recoveryAction})`);

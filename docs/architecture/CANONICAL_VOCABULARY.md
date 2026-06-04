@@ -6,7 +6,7 @@
 |---|---|---|
 | `ChannelSession` | `whatsappSession`, `waSession`, `connection`, `instance`, `botSession` | Authoritative session entity across all messaging channels |
 | `Contact` | `Lead`, `Client`, `Customer`, `Prospect`, `User` (in messaging context) | General entity; `Lead`/`Customer` allowed only as funnel-stage labels |
-| `MessageDispatchService` | `WahaService.sendMessage`, `WhatsappApiService.sendText`, `MessageWorker.process` (in send role) | Single send pipeline; channel-specific adapters live below it |
+| `ChannelMessageDispatchService` | `WhatsappApiService.sendText`, `MessageWorker.process` (in send role) | Single backend send entrypoint (`backend/src/marketing/channel-message-dispatch.service.ts:55`); routes through the canonical `ChannelDispatchRegistry.send` port (see `SEND_MESSAGE_CANONICAL.md`). Channel-specific adapters live below it. |
 | `Webhook` | `Hook`, `Callback`, `Notification`, `IncomingEvent` | External provider → internal event boundary |
 | `Workspace` | `Tenant`, `Org`, `Account` (in scope context) | The multi-tenant unit |
 

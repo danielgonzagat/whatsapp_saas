@@ -86,6 +86,158 @@ describe('buildMindSignals', () => {
       expect(result.attention).toBeDefined();
     });
 
+    it('folds recent spine events into the attention input alongside prisma rows (PI P2-1)', async () => {
+      const rows = [
+        makeAutopilotRow({
+          id: 'evt-1',
+          intent: 'commerce.lead.replied',
+          createdAt: new Date('2026-05-28T11:55:00Z'),
+        }),
+      ];
+      const recentEventsAsRef = jest.fn().mockReturnValue([
+        {
+          eventId: 'spine-evt-1',
+          eventName: 'cognition.decision_made',
+          workspaceId: 'ws-1',
+          occurredAt: '2026-05-28T11:59:00Z',
+          truthMode: 'observed' as const,
+          entityRef: { entityType: 'lead', entityId: 'lead-99' },
+        },
+      ]);
+
+      const result = await buildMindSignals(
+        {
+          prisma: mockPrisma(rows),
+          attentionService: new AttentionService(),
+          valenceAggregatorService: new ValenceAggregatorService(),
+          spineEmitterService: { recentEventsAsRef },
+          logger: mockLogger,
+        },
+        'ws-1',
+        'hello',
+      );
+
+      // The live spine percept is read and merged ALONGSIDE the prisma row.
+      expect(recentEventsAsRef).toHaveBeenCalled();
+      expect(result.source).toBe('autopilot_events');
+      // 1 prisma row + 1 fresh spine percept = 2 events in the attention window.
+      expect(result.eventCount).toBe(2);
+      const att = result.attention as Record<string, unknown>;
+      const candidates = att.candidates as Array<{ targetId: string }>;
+      // The spine percept carried an entityRef, so it produces an attention candidate.
+      expect(candidates.some((c) => c.targetId === 'lead-99')).toBe(true);
+    });
+
+    it('de-dupes spine percepts already persisted as autopilot rows by eventId (PI P2-1)', async () => {
+      const rows = [
+        makeAutopilotRow({
+          id: 'shared-evt',
+          intent: 'commerce.lead.replied',
+          createdAt: new Date('2026-05-28T11:55:00Z'),
+        }),
+      ];
+      const recentEventsAsRef = jest.fn().mockReturnValue([
+        {
+          eventId: 'shared-evt',
+          eventName: 'commerce.lead.replied',
+          workspaceId: 'ws-1',
+          occurredAt: '2026-05-28T11:55:00Z',
+          truthMode: 'observed' as const,
+        },
+      ]);
+
+      const result = await buildMindSignals(
+        {
+          prisma: mockPrisma(rows),
+          attentionService: new AttentionService(),
+          valenceAggregatorService: new ValenceAggregatorService(),
+          spineEmitterService: { recentEventsAsRef },
+          logger: mockLogger,
+        },
+        'ws-1',
+        'hello',
+      );
+
+      expect(recentEventsAsRef).toHaveBeenCalled();
+      // The spine percept shares its eventId with the prisma row, so it is not
+      // double-counted — eventCount stays 1.
+      expect(result.eventCount).toBe(1);
+    });
+
+    it('ignores spine percepts from other workspaces (PI P2-1)', async () => {
+      const recentEventsAsRef = jest.fn().mockReturnValue([
+        {
+          eventId: 'foreign-evt',
+          eventName: 'commerce.lead.replied',
+          workspaceId: 'ws-OTHER',
+          occurredAt: '2026-05-28T11:59:00Z',
+          truthMode: 'observed' as const,
+        },
+      ]);
+
+      const result = await buildMindSignals(
+        {
+          prisma: mockPrisma([]),
+          attentionService: new AttentionService(),
+          valenceAggregatorService: new ValenceAggregatorService(),
+          spineEmitterService: { recentEventsAsRef },
+          logger: mockLogger,
+        },
+        'ws-1',
+        'hello',
+      );
+
+      expect(recentEventsAsRef).toHaveBeenCalled();
+      // Foreign-workspace percept is filtered out → no events in the window.
+      expect(result.eventCount).toBe(0);
+    });
+
+    it('degrades silently when spineEmitterService.recentEventsAsRef throws (PI P2-1)', async () => {
+      const recentEventsAsRef = jest.fn().mockImplementation(() => {
+        throw new Error('ring read failed');
+      });
+
+      const result = await buildMindSignals(
+        {
+          prisma: mockPrisma([
+            makeAutopilotRow({ id: 'evt-1', createdAt: new Date('2026-05-28T11:55:00Z') }),
+          ]),
+          attentionService: new AttentionService(),
+          valenceAggregatorService: new ValenceAggregatorService(),
+          spineEmitterService: { recentEventsAsRef },
+          logger: mockLogger,
+        },
+        'ws-1',
+        'hello',
+      );
+
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'kloel_spine_perception_skipped',
+        expect.objectContaining({ reason: 'ring read failed' }),
+      );
+      // Falls back to the prisma-only set — existing behavior preserved.
+      expect(result.source).toBe('autopilot_events');
+      expect(result.eventCount).toBe(1);
+    });
+
+    it('preserves prisma-only behavior when spineEmitterService is absent (PI P2-1)', async () => {
+      const result = await buildMindSignals(
+        {
+          prisma: mockPrisma([
+            makeAutopilotRow({ id: 'evt-1', createdAt: new Date('2026-05-28T11:55:00Z') }),
+          ]),
+          attentionService: new AttentionService(),
+          valenceAggregatorService: new ValenceAggregatorService(),
+          logger: mockLogger,
+        },
+        'ws-1',
+        'hello',
+      );
+
+      expect(result.source).toBe('autopilot_events');
+      expect(result.eventCount).toBe(1);
+    });
+
     it('sets status no_services when attentionService is absent', async () => {
       const result = await buildMindSignals(
         {

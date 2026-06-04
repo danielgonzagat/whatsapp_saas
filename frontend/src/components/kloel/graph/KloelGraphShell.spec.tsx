@@ -89,6 +89,16 @@ function renderShell(children: ReactNode = <div>Real screen</div>) {
 }
 
 describe('KloelGraphShell', () => {
+  it('defaults the graph chrome to dark mode so the constellation matches the near-black app shell', () => {
+    renderShell(<main>ProdutosView real</main>);
+
+    const shell = screen.getByTestId('kloel-graph-shell');
+    // Dark palette void is the near-black rgb(10,10,12); the light/cream default
+    // rgb(250,250,247) would mean the graph still renders on a cream background.
+    expect(shell.style.background).toBe('rgb(10, 10, 12)');
+    expect(shell.style.background).not.toBe('rgb(250, 250, 247)');
+  });
+
   it('renders the graph canvas behind an 80 percent overlay containing the real route children', () => {
     renderShell(<main>ProdutosView real</main>);
 
@@ -151,11 +161,12 @@ describe('KloelGraphShell', () => {
     const kloelNav = screen.getByRole('button', { name: 'Kloel' });
     const educarNav = screen.getByRole('button', { name: 'Educar' });
 
-    await waitFor(() => expect(kloelNav.style.background).toBe('rgb(24, 24, 28)'));
+    // Dark-mode silver: the active nav pill is the light-on-near-black rgb(232,230,225).
+    await waitFor(() => expect(kloelNav.style.background).toBe('rgb(232, 230, 225)'));
 
     fireEvent.click(educarNav);
 
-    expect(educarNav.style.background).toBe('rgb(24, 24, 28)');
+    expect(educarNav.style.background).toBe('rgb(232, 230, 225)');
     expect(kloelNav.style.background).toBe('transparent');
     expect(pushState).toHaveBeenCalledWith(null, '', '/produtos/area-membros?graph=1');
     expect(push).not.toHaveBeenCalled();

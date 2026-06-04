@@ -8,6 +8,7 @@ import type { MindPredictionService } from './mind-prediction.service';
 import type { SelfHealthService } from '../self-awareness/self-health.service';
 import type { SelfGapsService } from '../self-awareness/self-gaps.service';
 import type { RiskClassService } from '../risk-class/risk-class.service';
+import type { SpineEventRef } from './mind.types';
 import type { KnowledgeBaseService } from './knowledge/knowledge-base.service';
 
 /** Minimal prisma surface needed by the helper — only autopilotEvent queries. */
@@ -70,5 +71,15 @@ export interface BuildMindSignalsDeps {
   };
   knowledgeBaseService?: Pick<KnowledgeBaseService, 'search'>;
   agentAssistService?: Pick<AgentAssistService, 'suggestActions'>;
+  /**
+   * Optional in-process spine emitter (PI P2-1). When present, the live
+   * reply's just-emitted percepts (recentEventsAsRef) are merged ALONGSIDE
+   * the persisted autopilotEvent rows into the attention window, so a reply's
+   * own emitted cognition informs its own perception window (not only the
+   * next EVERY_MINUTE tick). Read-path only — never written to.
+   */
+  spineEmitterService?: {
+    recentEventsAsRef?: (limit?: number) => readonly SpineEventRef[];
+  };
   logger: Pick<StructuredLogger, 'warn'>;
 }

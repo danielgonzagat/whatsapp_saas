@@ -54,7 +54,18 @@ export default function MarketingView({ defaultTab = 'whatsapp' }: { defaultTab?
   }, [pathname, router]);
 
   const metaState = searchParams?.get('meta') || null;
-  const initialStep = metaState === 'success' ? 1 : undefined;
+  // Capability cards deep-link into a channel with `?mode=...` to land the user
+  // on a relevant onboarding step instead of the generic connect screen. The
+  // map mirrors the existing `meta=success -> initialStep=1` idiom: a known mode
+  // advances past the connect step. Unknown / absent `mode` => undefined, so the
+  // default behavior is preserved exactly.
+  const requestedMode = searchParams?.get('mode') || null;
+  const MODE_INITIAL_STEP: Record<string, number> = {
+    broadcast: 1,
+    templates: 1,
+  };
+  const modeStep = requestedMode ? MODE_INITIAL_STEP[requestedMode] : undefined;
+  const initialStep = metaState === 'success' ? 1 : modeStep;
 
   const switchChannel = useCallback(
     (next: ChannelKey) => {

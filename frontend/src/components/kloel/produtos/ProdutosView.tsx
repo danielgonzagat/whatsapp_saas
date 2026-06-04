@@ -96,14 +96,18 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
   }, []);
 
   useEffect(() => {
-    if (affiliateHydratedRef.current) {
+    if (
+      activeTab !== 'afiliar' ||
+      pathname !== '/produtos/afiliar-se' ||
+      affiliateHydratedRef.current
+    ) {
       return;
     }
     affiliateHydratedRef.current = true;
     queueMicrotask(() => {
       void hydrateAffiliate();
     });
-  }, [hydrateAffiliate]);
+  }, [activeTab, hydrateAffiliate, pathname]);
 
 
   const displayProducts: DisplayProduct[] = useMemo(

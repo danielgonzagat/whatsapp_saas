@@ -1,4 +1,5 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger, Optional } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { Queue, Worker } from 'bullmq';
 import { MindBackgroundProcessor } from './mind-bg.processor';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
@@ -23,6 +24,15 @@ export class MindBackgroundScheduler implements OnModuleInit, OnModuleDestroy {
   private dlq: Queue | null = null;
 
   private readonly enabled: boolean;
+
+  /**
+   * True once onModuleInit determined Redis is unavailable while the scheduler
+   * is otherwise enabled. Gates the in-process @Cron fallback so the learning
+   * edge (hebbian.decay + consolidation.runCycle, driven via executeTick) keeps
+   * firing without Redis — and so it NEVER double-runs when the BullMQ loop is
+   * active (that loop only exists when a Redis URL resolved).
+   */
+  private redisAbsent = false;
 
   /**
    * Workspaces explicitly registered for MIND ticking by the autonomy
@@ -61,7 +71,12 @@ export class MindBackgroundScheduler implements OnModuleInit, OnModuleDestroy {
     }
     const redisUrl = resolveRedisUrl();
     if (!redisUrl) {
-      this.logger.warn('Mind BG scheduler: no Redis URL resolved, skipping startup');
+      // No Redis: the BullMQ loop cannot start. Flip the in-process flag so the
+      // @Cron fallback below keeps the learning edge alive (decay/consolidation).
+      this.redisAbsent = true;
+      this.logger.warn(
+        'Mind BG scheduler: no Redis URL resolved, using in-process @Cron fallback',
+      );
       return;
     }
     const connection = { url: redisUrl };
@@ -248,6 +263,28 @@ export class MindBackgroundScheduler implements OnModuleInit, OnModuleDestroy {
           `Cognitive health scan failed for ${workspaceId}: ${err instanceof Error ? err.message : String(err)}`,
         );
       }
+    }
+  }
+
+  /**
+   * In-process learning-edge fallback. When Redis is absent the BullMQ tick loop
+   * never starts, so without this the MIND learning edge (hebbian.decay +
+   * consolidation.runCycle, reached through executeTick → tickWorkspace →
+   * processor.tick) silently stops. This @Cron mirrors MindEventIngestor's
+   * EVERY_MINUTE pattern and is guarded by redisAbsent so it ONLY runs when the
+   * BullMQ loop is NOT active — no double-ticking when Redis is present.
+   */
+  @Cron(CronExpression.EVERY_MINUTE)
+  async inProcessTick(): Promise<void> {
+    if (!this.enabled || !this.redisAbsent) {
+      return;
+    }
+    try {
+      await this.executeTick();
+    } catch (err: unknown) {
+      this.logger.warn(
+        `In-process MIND tick fallback failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   }
 }

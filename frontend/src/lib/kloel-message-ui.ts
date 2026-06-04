@@ -551,6 +551,34 @@ export function detectDeliverableAnswerFiles(answer: string): AssistantReasoning
       downloadUrl: `data:${kind.mime};charset=utf-8;base64,${toUtf8Base64(content)}`,
     });
   }
+  // Trailing unclosed fence: a document whose closing ``` never arrived (the
+  // answer was cut off / is the only block) still gets a card so truncated
+  // documents remain downloadable.
+  if (files.length < MAX_ANSWER_FILES) {
+    const fenceCount = (source.match(/```/g) || []).length;
+    const lastFence = source.lastIndexOf('```');
+    if (fenceCount % 2 === 1 && lastFence >= 0) {
+      const tail = source.slice(lastFence + 3);
+      const nlIndex = tail.indexOf('\n');
+      if (nlIndex >= 0) {
+        const lang = tail.slice(0, nlIndex).trim().toLowerCase();
+        const content = tail.slice(nlIndex + 1).replace(ANSWER_TRAILING_WS_G_RE, '');
+        const dedupeKey = content.slice(0, 160);
+        if (content.trim().length >= MIN_ANSWER_FILE_CHARS && !seen.has(dedupeKey)) {
+          const kind = ANSWER_FILE_KIND_BY_LANG[lang] || DEFAULT_ANSWER_FILE_KIND;
+          const headingMatch = content.match(ANSWER_FILE_HEADING_RE);
+          const base = headingMatch
+            ? slugifyAnswerFileBase(headingMatch[1] || '')
+            : `documento-${files.length + 1}`;
+          files.push({
+            name: `${base}.${kind.ext}`,
+            meta: `${kind.label} · ${kind.ext.toUpperCase()}`,
+            downloadUrl: `data:${kind.mime};charset=utf-8;base64,${toUtf8Base64(content)}`,
+          });
+        }
+      }
+    }
+  }
   return files;
 }
 

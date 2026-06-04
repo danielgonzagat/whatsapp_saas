@@ -14,8 +14,19 @@ vi.mock('next/navigation', () => ({
 
 // Heavy hook chain swallowed by the canonical screen — we just need a stub.
 vi.mock('./OfficialMarketingChannelPage', () => ({
-  OfficialMarketingChannelPage: ({ channel }: { channel: string }) => (
-    <div data-testid="channel-onboarding-stub">channel={channel}</div>
+  OfficialMarketingChannelPage: ({
+    channel,
+    initialStep,
+  }: {
+    channel: string;
+    initialStep?: number;
+  }) => (
+    <div
+      data-testid="channel-onboarding-stub"
+      data-initial-step={initialStep === undefined ? 'none' : String(initialStep)}
+    >
+      channel={channel}
+    </div>
   ),
 }));
 
@@ -90,9 +101,42 @@ describe('MarketingView — six-channel PreviewBar (canonical anexo contract)', 
   it('advances to step 1 when meta=success returns from OAuth', () => {
     mockSearchParams.set('meta', 'success');
     render(<MarketingView defaultTab="whatsapp" />);
-    // The stub doesn't capture initialStep, but the render must succeed
-    // without throwing — the param is read and forwarded.
-    expect(screen.getByTestId('channel-onboarding-stub')).toBeTruthy();
+    // The param is read and forwarded as initialStep=1.
+    expect(
+      screen.getByTestId('channel-onboarding-stub').getAttribute('data-initial-step'),
+    ).toBe('1');
     mockSearchParams.delete('meta');
+  });
+
+  it('forwards initialStep for known capability deep-link modes (broadcast / templates)', () => {
+    mockSearchParams.set('mode', 'broadcast');
+    const { rerender } = render(<MarketingView defaultTab="whatsapp" />);
+    expect(
+      screen.getByTestId('channel-onboarding-stub').getAttribute('data-initial-step'),
+    ).toBe('1');
+
+    mockSearchParams.set('mode', 'templates');
+    mockPathname = '/marketing/email';
+    rerender(<MarketingView defaultTab="email" />);
+    expect(
+      screen.getByTestId('channel-onboarding-stub').getAttribute('data-initial-step'),
+    ).toBe('1');
+    mockSearchParams.delete('mode');
+  });
+
+  it('keeps default behavior (no initialStep) when no meta/mode param is present', () => {
+    render(<MarketingView defaultTab="whatsapp" />);
+    expect(
+      screen.getByTestId('channel-onboarding-stub').getAttribute('data-initial-step'),
+    ).toBe('none');
+  });
+
+  it('ignores an unknown mode value (default behavior preserved)', () => {
+    mockSearchParams.set('mode', 'totally-unknown');
+    render(<MarketingView defaultTab="whatsapp" />);
+    expect(
+      screen.getByTestId('channel-onboarding-stub').getAttribute('data-initial-step'),
+    ).toBe('none');
+    mockSearchParams.delete('mode');
   });
 });

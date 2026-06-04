@@ -55,6 +55,11 @@ const eventOn = /\.on\s*\(\s*['"`]([\w.:_-]+)['"`]/g;
 // NestJS event-emitter
 const nestEventEmit = /eventEmitter\.emit\s*\(\s*['"`]([\w.:_-]+)['"`]/g;
 const nestOnEvent = /@OnEvent\s*\(\s*['"`]([\w.:_-]+)['"`]/g;
+// Spine emitter — `spine.emit({ eventName: 'commerce.cart.created', … })` and any
+// emit/safeEmit/dispatch envelope that names its event via `eventName: '…'`.
+// This is the DOMINANT governed-event pattern across the Spine domain emitters
+// (commerce.*, cognition.*, lineage.*, readiness.*); `.emit('literal')` misses it.
+const spineEventEmit = /\beventName\s*:\s*['"`]([\w.:_-]+)['"`]/g;
 // BullMQ — direct Queue/Worker + NestJS @Processor + @Process + BullModule.registerQueue
 const queueRegister = /(?:new\s+Queue|BullModule\.registerQueue|registerQueue)\s*\(\s*[{'"]*[^'"]*['"`]?(?:name\s*:\s*)?['"`]([\w._-]+)['"`]/g;
 const bullProcessor = /@Processor\(\s*['"`]([\w._-]+)['"`]/g;
@@ -119,12 +124,13 @@ for (const file of tsFiles) {
     }
   }
 
-  // events — native + NestJS event-emitter
+  // events — native + NestJS event-emitter + Spine `eventName: '…'` envelopes
   for (const [re, kind] of [
     [eventEmit, 'emit'],
     [eventOn, 'listen'],
     [nestEventEmit, 'emit'],
     [nestOnEvent, 'listen'],
+    [spineEventEmit, 'emit'],
   ]) {
     re.lastIndex = 0;
     let em;
@@ -181,6 +187,33 @@ for (const file of tsFiles) {
   }
 }
 
+// ─────────── authoritative Spine event catalog ───────────
+// The spine-coverage-auditor enumerates every canonical commerce.* event in its
+// `EVENT_TO_TRANSITION` map (PCI.6). Ingest it as the AUTHORITATIVE catalog so
+// governed events are present in the taxonomy even if no recognized emit pattern
+// matched them at a call site. Each catalog entry is recorded as a `catalog` ref.
+const SPINE_CATALOG_FILE = 'backend/src/kloel/spine/spine-coverage-auditor.service.ts';
+function ingestSpineCatalog() {
+  let src;
+  try { src = readFileSync(join(ROOT, SPINE_CATALOG_FILE), 'utf8'); } catch { return; }
+  // The map literal lives between `EVENT_TO_TRANSITION ... new Map([` and its `]);`.
+  const mapStart = src.indexOf('EVENT_TO_TRANSITION');
+  if (mapStart < 0) return;
+  const region = src.slice(mapStart);
+  // Each row: ['commerce.cart.created', 'cart_created'],  → capture the event name (1st tuple elem).
+  const rowRe = /\[\s*['"`]([\w.:_-]+)['"`]\s*,\s*['"`][\w.:_-]+['"`]\s*\]/g;
+  let m;
+  let count = 0;
+  while ((m = rowRe.exec(region))) {
+    const e = m[1];
+    if (!events.has(e)) events.set(e, []);
+    events.get(e).push({ file: SPINE_CATALOG_FILE, kind: 'catalog' });
+    count++;
+  }
+  console.log(`Ingested ${count} authoritative events from ${SPINE_CATALOG_FILE}`);
+}
+ingestSpineCatalog();
+
 console.log(`Found: ${symbols.length} symbols, ${services.length} services, ${controllers.length} controllers, ${modules.length} modules, ${processors.length} processors, ${events.size} events, ${queues.size} queues, ${routes.length} routes`);
 
 // ─────────── domain inference ───────────
@@ -230,17 +263,17 @@ const CANONICAL_PATTERNS = [
   { canonical: 'send_message', regex: /^(sendMessage|sendWhatsapp|sendText|sendChannel|dispatchText|dispatchMessage|deliverMessage|emitMessage|postMessage|publishMessage|wahaSend|MessageDispatch)/i },
   { canonical: 'normalize_phone', regex: /^(normalizePhone|normalizeNumber|cleanPhone|formatPhone|toE164|phoneToE164|phoneNormalize|phoneDigits|phoneOptional|phoneWhatsapp)/i },
   { canonical: 'resolve_tenant', regex: /^(resolveTenant|resolveWorkspace|getTenantId|getWorkspaceId|extractTenant|tenantFromRequest|workspaceFrom|WorkspaceContext)/i },
-  { canonical: 'parse_webhook', regex: /^(parseWebhook|webhookParse|extractEvent|decodeWebhook|parseInbound|inboundParse|WebhookVerifier|verifyWebhookSignature|webhookHandler)/i },
+  { canonical: 'parse_webhook', regex: /^(parseWebhook|webhookParse|extractEvent|decodeWebhook|parseInbound|inboundParse|WebhookVerifier|verifyWebhookSignature|webhookHandler|handleWebhook|\w*WebhookController|PaymentWebhook|WebhookDispatcher|WebhookSettings|WebhooksController|WebhooksService|StripeWebhook|TikTokWebhook|WhatsAppApiWebhook)/i },
   { canonical: 'idempotency_check', regex: /^(isIdempotent|alreadyProcessed|checkIdempotency|dedupeEvent|hasBeenSeen|Idempotency(Guard|Service|Interceptor|Fingerprint))/i },
   { canonical: 'recover_cart', regex: /^(recoverCart|abandonedCart|recoverAbandonedCart|reactivateCart|cartRecovery|CartRecovery)/i },
   { canonical: 'score_intent', regex: /^(scoreIntent|commercialIntent|computeIntent|intentScore|RuntimeIntentResolver|IntentScorer|Mind(Catalog|Commercial|Recovery)Decision)/i },
-  { canonical: 'qualify_contact', regex: /^(qualifyContact|qualifyLead|leadQualification|contactQualify|ContactQualification|LeadProcessor)/i },
+  { canonical: 'qualify_contact', regex: /^(qualifyContact|qualifyLead|leadQualification|contactQualify|ContactQualification|LeadProcessor|NeuroCrm|nextBestAction|analyzeContact|scoreContact|scoreLead)/i },
   { canonical: 'authenticate_user', regex: /^(authenticate|loginUser|signIn|verifyCredentials|checkCredentials|AuthService|JwtAuth|AdminAuth)/i },
   { canonical: 'connect_channel', regex: /^(connectChannel|connectWhatsapp|startSession|initSession|attachChannel|ChannelSession|WhatsappSession|MetaConnect|WahaConnect)/i },
   { canonical: 'process_payment', regex: /^(processPayment|chargePayment|capturePayment|confirmPayment|payNow|PaymentIntent|StripeCharge|MercadoPagoCharge|PaymentService)/i },
   { canonical: 'create_checkout', regex: /^(createCheckout|startCheckout|initCheckout|buildCheckout|newCheckout|CheckoutSession|CheckoutPayment)/i },
-  { canonical: 'verify_webhook_signature', regex: /^(verifyWebhookSignature|validateStripeSignature|validateMpSignature|validateMercadoPagoSignature|checkSignature|hmacVerify)/i },
-  { canonical: 'split_payment', regex: /^(splitPayment|splitEngine|computeSplit|SplitEngine|MarketplaceSplit)/i },
+  { canonical: 'verify_webhook_signature', regex: /^(verifyWebhookSignature|validateStripeSignature|validateMpSignature|validateMercadoPagoSignature|checkSignature|hmacVerify|verifySignature|parseSignatureHeader|\w*WebhookSignatureVerifier|MercadoPagoWebhookSignature|StripeSignature)/i },
+  { canonical: 'split_payment', regex: /^(splitPayment|splitEngine|computeSplit|calculateSplit|applySplit|resolveSplit|buildSplit|SplitEngine|SplitService|MarketplaceSplit)/i },
   { canonical: 'ledger_entry', regex: /^(LedgerEntry|ledgerWrite|recordTransaction|writeLedger|appendLedger|LedgerService)/i },
   { canonical: 'fraud_check', regex: /^(fraudCheck|FraudEngine|assessFraud|fraudScore|riskScore|RiskClass)/i },
   { canonical: 'kyc_verify', regex: /^(verifyKyc|KycVerification|kycSubmit|KycService|onboardingKyc)/i },

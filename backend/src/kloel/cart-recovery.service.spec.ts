@@ -49,6 +49,12 @@ function makeStubBandit(options: { arm?: string } = {}) {
   };
 }
 
+function makeStubCheckoutEvents() {
+  return {
+    cartAbandoned: jest.fn().mockResolvedValue(undefined),
+  };
+}
+
 function makeStubMindPolicy(action: string) {
   return {
     choose: jest.fn().mockResolvedValue({
@@ -101,6 +107,7 @@ describe('CartRecoveryService', () => {
       workspaceId: 'ws-1',
       orderNumber: '1001',
       status: 'PENDING',
+      planId: 'plan-1',
       customerEmail: overrides?.email ?? 'cliente@kloel.test',
       metadata: overrides?.metadata ?? undefined,
       createdAt: new Date(Date.now() - 45 * 60 * 1000),
@@ -532,6 +539,65 @@ describe('CartRecoveryService', () => {
       expect(stubTransport.send).toHaveBeenCalledTimes(1);
       expect(sendEmail).not.toHaveBeenCalled();
       expect(prisma.checkoutOrder.updateMany).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('spine abandonment emission', () => {
+    function makeService(stubCheckoutEvents: ReturnType<typeof makeStubCheckoutEvents>) {
+      return new CartRecoveryService(
+        prisma as never,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        stubCheckoutEvents as never,
+      );
+    }
+
+    it('emits commerce.cart.abandoned once for a newly-abandoned order', async () => {
+      prisma.checkoutOrder.findMany.mockResolvedValue([pendingOrder()]);
+      const stubCheckoutEvents = makeStubCheckoutEvents();
+      service = makeService(stubCheckoutEvents);
+
+      await service.checkAbandonedCarts();
+
+      expect(stubCheckoutEvents.cartAbandoned).toHaveBeenCalledTimes(1);
+      expect(stubCheckoutEvents.cartAbandoned).toHaveBeenCalledWith(
+        partialMatch({
+          workspaceId: 'ws-1',
+          orderId: 'order-1',
+          planId: 'plan-1',
+        }),
+      );
+    });
+
+    it('does not re-emit on a second cron pass once recovery metadata is recorded', async () => {
+      const stubCheckoutEvents = makeStubCheckoutEvents();
+      service = makeService(stubCheckoutEvents);
+
+      // First pass: order is freshly abandoned (no recovery metadata).
+      prisma.checkoutOrder.findMany.mockResolvedValueOnce([pendingOrder()]);
+      await service.checkAbandonedCarts();
+      expect(stubCheckoutEvents.cartAbandoned).toHaveBeenCalledTimes(1);
+
+      // Second pass: the recoveryEmailSent marker is now set, so the toRecover
+      // filter excludes the order and no further abandonment is emitted.
+      prisma.checkoutOrder.findMany.mockResolvedValueOnce([
+        pendingOrder({ metadata: { recoveryEmailSent: true } }),
+      ]);
+      await service.checkAbandonedCarts();
+      expect(stubCheckoutEvents.cartAbandoned).toHaveBeenCalledTimes(1);
+    });
+
+    it('preserves recovery behavior when the emitter is not injected', async () => {
+      prisma.checkoutOrder.findMany.mockResolvedValue([pendingOrder()]);
+      service = new CartRecoveryService(prisma as never);
+
+      await service.checkAbandonedCarts();
+
+      expect(sendEmail).toHaveBeenCalledTimes(1);
     });
   });
 });
