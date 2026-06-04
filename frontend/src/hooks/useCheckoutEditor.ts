@@ -47,9 +47,20 @@ export function useCheckoutEditor(planId: string | null) {
         saveTimerRef.current = setTimeout(async () => {
           savingRef.current = true;
           try {
+            const body: Record<string, unknown> = { ...next };
+            // The GET returns computed/display-only fields the update DTO rejects
+            // (forbidNonWhitelisted). Strip them and coerce trustBadges to the
+            // DTO shape ({ label }) so the config actually persists.
+            delete body.pricing;
+            delete body.socialProofAlerts;
+            if (Array.isArray(body.trustBadges)) {
+              body.trustBadges = body.trustBadges.map((badge) =>
+                typeof badge === 'string' ? { label: badge } : badge,
+              );
+            }
             await apiFetch(`/checkout/plans/${planId}/config`, {
               method: 'PATCH',
-              body: next,
+              body,
             });
             mutate();
           } finally {

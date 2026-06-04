@@ -554,7 +554,20 @@ export function useCheckoutConfig(planId: string | null) {
       if (!planId) {
         return null;
       }
-      const res = await apiFetch(`/checkout/plans/${planId}/config`, { method: 'PATCH', body });
+      // Drop computed/display-only fields the update DTO forbids and coerce
+      // trustBadges to the DTO shape ({ label }) so the PATCH isn't rejected (400).
+      const clean: Record<string, unknown> = { ...body };
+      delete clean.pricing;
+      delete clean.socialProofAlerts;
+      if (Array.isArray(clean.trustBadges)) {
+        clean.trustBadges = clean.trustBadges.map((badge) =>
+          typeof badge === 'string' ? { label: badge } : badge,
+        );
+      }
+      const res = await apiFetch(`/checkout/plans/${planId}/config`, {
+        method: 'PATCH',
+        body: clean,
+      });
       requireCheckoutMutationSuccess(res, 'Erro ao atualizar configuracao do checkout');
       mutate();
       return res;
