@@ -40,6 +40,7 @@ export function AccountSettingsSection() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
+  const [sendingReset, setSendingReset] = useState(false);
   const [profile, setProfile] = useState({
     name: '',
     email: '',
@@ -369,8 +370,32 @@ export function AccountSettingsSection() {
         </div>
 
         <div className="mb-6">
-          <Button variant="outline" className={`text-sm ${kloelSettingsClass.outlineButton}`}>
-            {kloelT(`Enviar link de redefinição para meu e-mail`)}
+          <Button
+            variant="outline"
+            disabled={sendingReset}
+            onClick={async () => {
+              if (!profile.email) {
+                setError('E-mail da conta indisponível.');
+                return;
+              }
+              setFeedback(null);
+              setError(null);
+              setSendingReset(true);
+              try {
+                const res = await authApi.forgotPassword(profile.email);
+                if (res.error) {
+                  throw new Error(res.error);
+                }
+                setFeedback('Link de redefinição enviado para o seu e-mail.');
+              } catch (err: unknown) {
+                setError(err instanceof Error ? err.message : 'Não foi possível enviar o link de redefinição.');
+              } finally {
+                setSendingReset(false);
+              }
+            }}
+            className={`text-sm ${kloelSettingsClass.outlineButton}`}
+          >
+            {sendingReset ? 'Enviando...' : kloelT(`Enviar link de redefinição para meu e-mail`)}
           </Button>
         </div>
 
