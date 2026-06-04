@@ -18,6 +18,106 @@ import { KloelLLME2EGuard } from './kloel-llm-e2e-guard';
 const U2028_U2029_RE = /[<>&\u2028\u2029]/g;
 type ChatCompletionStream = AsyncIterable<OpenAI.ChatCompletionChunk>;
 
+const FENCED_BLOCK_G_RE = /```([a-zA-Z0-9_+-]*)[^\S\r\n]*\r?\n([\s\S]*?)```/g;
+const TRAILING_WS_G_RE = /\s+$/;
+const DIACRITICS_G_RE = /[̀-ͯ]/g;
+const NON_SLUG_G_RE = /[^a-zA-Z0-9]+/g;
+const EDGE_DASH_G_RE = /^-+|-+$/g;
+const FILE_HEADING_RE = /^\s*#{1,3}\s+(.+)$/m;
+
+interface DeliverableFileKind {
+  ext: string;
+  mime: string;
+  label: string;
+}
+
+const FILE_KIND_BY_LANG: Record<string, DeliverableFileKind> = {
+  markdown: { ext: 'md', mime: 'text/markdown', label: 'Documento' },
+  md: { ext: 'md', mime: 'text/markdown', label: 'Documento' },
+  html: { ext: 'html', mime: 'text/html', label: 'Página HTML' },
+  svg: { ext: 'svg', mime: 'image/svg+xml', label: 'Imagem SVG' },
+  csv: { ext: 'csv', mime: 'text/csv', label: 'Planilha CSV' },
+  json: { ext: 'json', mime: 'application/json', label: 'Dados JSON' },
+  mermaid: { ext: 'mmd', mime: 'text/plain', label: 'Diagrama' },
+  yaml: { ext: 'yaml', mime: 'text/plain', label: 'Configuração' },
+  yml: { ext: 'yml', mime: 'text/plain', label: 'Configuração' },
+  sql: { ext: 'sql', mime: 'text/plain', label: 'Script SQL' },
+  python: { ext: 'py', mime: 'text/x-python', label: 'Código Python' },
+  py: { ext: 'py', mime: 'text/x-python', label: 'Código Python' },
+  javascript: { ext: 'js', mime: 'text/javascript', label: 'Código JavaScript' },
+  js: { ext: 'js', mime: 'text/javascript', label: 'Código JavaScript' },
+  typescript: { ext: 'ts', mime: 'text/plain', label: 'Código TypeScript' },
+  ts: { ext: 'ts', mime: 'text/plain', label: 'Código TypeScript' },
+  tsx: { ext: 'tsx', mime: 'text/plain', label: 'Componente React' },
+  jsx: { ext: 'jsx', mime: 'text/javascript', label: 'Componente React' },
+  bash: { ext: 'sh', mime: 'text/x-sh', label: 'Script Shell' },
+  sh: { ext: 'sh', mime: 'text/x-sh', label: 'Script Shell' },
+};
+
+const DEFAULT_FILE_KIND: DeliverableFileKind = {
+  ext: 'txt',
+  mime: 'text/plain',
+  label: 'Documento',
+};
+const MIN_DELIVERABLE_CHARS = 280;
+const MAX_DELIVERABLE_CARDS = 3;
+
+function slugifyFileBase(value: string): string {
+  const slug = value
+    .normalize('NFD')
+    .replace(DIACRITICS_G_RE, '')
+    .replace(NON_SLUG_G_RE, '-')
+    .replace(EDGE_DASH_G_RE, '')
+    .toLowerCase()
+    .slice(0, 48);
+  return slug || 'documento';
+}
+
+export interface DeliverableFileCard {
+  name: string;
+  meta: string;
+  downloadUrl: string;
+}
+
+/**
+ * Detect substantial fenced document/code blocks in a completed answer and turn
+ * each into a downloadable file card (data: URL). FIRST producer for the
+ * already-built file-event pipeline. Honest: only real blocks become cards;
+ * small inline snippets (< MIN_DELIVERABLE_CHARS) are ignored.
+ */
+export function detectDeliverableFileCards(answer: string): DeliverableFileCard[] {
+  const source = String(answer || '');
+  const cards: DeliverableFileCard[] = [];
+  const seen = new Set<string>();
+  FENCED_BLOCK_G_RE.lastIndex = 0;
+  let match = FENCED_BLOCK_G_RE.exec(source);
+  while (match && cards.length < MAX_DELIVERABLE_CARDS) {
+    const lang = String(match[1] || '').toLowerCase();
+    const content = String(match[2] || '').replace(TRAILING_WS_G_RE, '');
+    match = FENCED_BLOCK_G_RE.exec(source);
+    if (content.trim().length < MIN_DELIVERABLE_CHARS) {
+      continue;
+    }
+    const dedupeKey = content.slice(0, 160);
+    if (seen.has(dedupeKey)) {
+      continue;
+    }
+    seen.add(dedupeKey);
+    const kind = FILE_KIND_BY_LANG[lang] || DEFAULT_FILE_KIND;
+    const headingMatch = content.match(FILE_HEADING_RE);
+    const base = headingMatch
+      ? slugifyFileBase(headingMatch[1] || '')
+      : `documento-${cards.length + 1}`;
+    const base64 = Buffer.from(content, 'utf-8').toString('base64');
+    cards.push({
+      name: `${base}.${kind.ext}`,
+      meta: `${kind.label} · ${kind.ext.toUpperCase()}`,
+      downloadUrl: `data:${kind.mime};charset=utf-8;base64,${base64}`,
+    });
+  }
+  return cards;
+}
+
 interface KloelStreamWriterOptions {
   signal?: AbortSignal;
   logger: {
@@ -316,6 +416,20 @@ export class KloelStreamWriter {
     }
 
     emitAnswerChunk(visibleTextFilter.flush());
+
+    // Deliverable artifacts: any substantial fenced document/code block in the
+    // completed answer becomes a downloadable file card. The file-event pipeline
+    // already exists end-to-end (the frontend renders the card with "Baixar");
+    // this is its first producer. Honest: only real blocks emit cards.
+    for (const fileCard of detectDeliverableFileCards(fullResponse)) {
+      this.write({
+        type: 'file',
+        name: fileCard.name,
+        meta: fileCard.meta,
+        downloadUrl: fileCard.downloadUrl,
+        done: false,
+      });
+    }
 
     return {
       fullResponse,

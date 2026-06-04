@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Check, ChevronDown, Clock, Download, FileText } from 'lucide-react';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { kloelT } from '@/lib/i18n/t';
@@ -108,14 +108,8 @@ export function ReasoningTimeline({
   const hasReasoningText = reasoning.text.trim().length > 0;
   const hasContent = hasReasoningText || toolSteps.length > 0;
 
-  const [collapsed, setCollapsed] = useState(false);
-  const [autoCollapsed, setAutoCollapsed] = useState(false);
-  useEffect(() => {
-    if (isComplete && !autoCollapsed) {
-      setCollapsed(true);
-      setAutoCollapsed(true);
-    }
-  }, [isComplete, autoCollapsed]);
+  const [collapseOverride, setCollapseOverride] = useState<boolean | null>(null);
+  const collapsed = collapseOverride ?? isComplete;
 
   // Honest empty state: if the model emitted no reasoning and ran no tools and is not
   // working, there is nothing real to show — render nothing rather than fabricate.
@@ -150,7 +144,7 @@ export function ReasoningTimeline({
 
       <button
         type="button"
-        onClick={() => setCollapsed((value) => !value)}
+        onClick={() => setCollapseOverride((value) => !(value ?? isComplete))}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -390,6 +384,7 @@ export function ReasoningTimeline({
             {href ? (
               <a
                 href={href}
+                download={file.name}
                 target="_blank"
                 rel="noreferrer"
                 style={{
