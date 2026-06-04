@@ -229,7 +229,7 @@ export function PropertyBar({
               cursor: 'pointer',
             }}
           >
-            {kloelT(`P&amp;B`)}
+            {kloelT(`P&B`)}
           </button>
           <button
             type="button"

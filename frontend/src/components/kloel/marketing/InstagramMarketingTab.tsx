@@ -147,7 +147,7 @@ export default function InstagramMarketingTab({
             </div>
             <div style={{ fontFamily: MONO, fontSize: 12, color: 'var(--app-text-secondary)' }}>
               {igProfile.followers_count ?? igProfile.followersCount ?? 0}{' '}
-              {kloelT(`seguidores &rgb(17, 136, 51);`)} {igProfile.media_count ?? igProfile.mediaCount ?? 0}{' '}
+              {kloelT(`seguidores ·`)} {igProfile.media_count ?? igProfile.mediaCount ?? 0}{' '}
               publicacoes
             </div>
           </div>

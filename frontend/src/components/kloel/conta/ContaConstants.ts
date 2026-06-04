@@ -1,3 +1,4 @@
+import { colors } from '@/lib/design-tokens';
 import type { SettingsSectionKey } from './ContaTypes';
 
 export const D_RE = /\D/g;
@@ -6,7 +7,7 @@ export const HTTPS_RE = /^https?:\/\//;
 
 export const SORA = "'Sora', sans-serif";
 export const MONO = "'JetBrains Mono', monospace";
-export const EMBER = 'colors.ember.primary';
+export const EMBER = colors.ember.primary;
 
 export const DEFAULT_SETTINGS_SECTION: SettingsSectionKey = 'pessoal';
 

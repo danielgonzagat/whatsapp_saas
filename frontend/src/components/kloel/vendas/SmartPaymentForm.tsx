@@ -99,7 +99,7 @@ export function SmartPaymentFormView({
           style={{
             flex: 1,
             padding: '10px 16px',
-            background: hasRequired ? 'colors.ember.primary' : 'var(--app-bg-secondary)',
+            background: hasRequired ? colors.ember.primary : 'var(--app-bg-secondary)',
             border: 'none',
             borderRadius: 6,
             color: hasRequired ? 'var(--app-text-on-accent)' : 'var(--app-text-placeholder)',

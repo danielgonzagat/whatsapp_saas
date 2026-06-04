@@ -2,7 +2,7 @@
 import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 
-const EMBER = 'colors.ember.primary';
+const EMBER = colors.ember.primary;
 const BORDER = 'var(--border-space, colors.border.space)';
 const TEXT = 'var(--text-starlight, colors.text.silver)';
 const TEXT_ON_ACCENT = 'var(--app-text-on-accent)';

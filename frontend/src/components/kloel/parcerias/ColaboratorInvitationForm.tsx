@@ -8,7 +8,7 @@ import { IC } from './ParceriasView.icons';
 import { C, FONT } from './ParceriasDesignTokens';
 
 const ROLES: { value: string; label: string; color: string }[] = [
-  { value: 'admin', label: 'Admin', color: 'colors.ember.primary' },
+  { value: 'admin', label: 'Admin', color: colors.ember.primary },
   { value: 'manager', label: 'Manager', color: colors.semantic.info },
   { value: 'support', label: 'Support', color: colors.semantic.success },
   { value: 'finance', label: 'Finance', color: colors.semantic.warning },

@@ -1,4 +1,6 @@
 'use client';
+
+import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import {
   NP,
@@ -135,7 +137,7 @@ export default function MarketplaceProductGrid({
                 marginTop: 2,
               }}
             >
-              {m.category} {kloelT('&middot; por')} {m.producer}
+              {m.category} {kloelT('· por')} {m.producer}
             </div>
           </div>
           <NP w={100} h={24} color={GREEN} />
@@ -155,7 +157,7 @@ export default function MarketplaceProductGrid({
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ color: 'colors.ember.primary' }}>{IC.star(12)}</span>
+            <span style={{ color: colors.ember.primary }}>{IC.star(12)}</span>
             <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--app-text-secondary)' }}>
               {m.rating || 0}
             </span>

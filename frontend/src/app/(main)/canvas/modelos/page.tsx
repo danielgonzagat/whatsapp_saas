@@ -346,7 +346,7 @@ function TemplateCard({
           {tpl.name}
         </p>
         <p style={{ fontSize: 9, color: 'var(--app-text-tertiary)', fontFamily: M }}>
-          {tpl.w}x{tpl.h} {kloelT(`&middot;`)} {tpl.fmt}
+          {tpl.w}x{tpl.h} {kloelT(`·`)} {tpl.fmt}
         </p>
       </div>
     </button>

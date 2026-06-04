@@ -1,5 +1,7 @@
 'use client';
 
+import { colors } from '@/lib/design-tokens';
+
 import { kloelT } from '@/lib/i18n/t';
 import { MemberAreaSidebarSkeleton, SkeletonBlock } from './MemberAreaSkeleton';
 import type { MemberArea } from './member-area.types';
@@ -74,7 +76,7 @@ export function MemberAreaSidebar({
                 border: 'none',
                 textAlign: 'left',
                 cursor: 'pointer',
-                color: activeModuleId === mod.id ? 'colors.text.silver' : 'colors.text.muted',
+                color: activeModuleId === mod.id ? colors.text.silver : colors.text.muted,
                 fontSize: 13,
                 fontWeight: 600,
                 fontFamily: SORA,
@@ -97,7 +99,7 @@ export function MemberAreaSidebar({
                     textAlign: 'left',
                     cursor: 'pointer',
                     color:
-                      activeLessonId === les.id ? 'colors.ember.primary' : 'colors.text.dim',
+                      activeLessonId === les.id ? colors.ember.primary : colors.text.dim,
                     fontSize: 12,
                     fontFamily: SORA,
                     display: 'flex',

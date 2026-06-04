@@ -148,7 +148,7 @@ export function FinalManifestLoop() {
     >
       <KloelMushroomVisual
         size={136}
-        traceColor={kloelT('colors.text.silver')}
+        traceColor={kloelT(colors.text.silver)}
         animated={!prefersReducedMotion}
         spores={prefersReducedMotion ? 'none' : 'animated'}
         ariaHidden

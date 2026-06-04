@@ -16,7 +16,7 @@ interface GestaoAssinaturasProps {
 
 const LIFECYCLE_BARS = [
   { label: 'Trial', key: 'trial' as const, color: colors.semantic.info },
-  { label: 'Ativas', key: 'active' as const, color: 'colors.ember.primary' },
+  { label: 'Ativas', key: 'active' as const, color: colors.ember.primary },
   { label: 'Atrasadas', key: 'past_due' as const, color: colors.semantic.warning },
   { label: 'Pausadas', key: 'paused' as const, color: 'var(--app-text-secondary)' },
   { label: 'Canceladas', key: 'cancelled' as const, color: 'var(--app-text-tertiary)' },
@@ -43,7 +43,7 @@ export function GestaoAssinaturas({
         <Stat
           label="MRR"
           value={fmtBRL(st.mrr || 0)}
-          color="colors.ember.primary"
+          color={colors.ember.primary}
           trend={st.mrrTrend}
         />
         <Stat label={kloelT('Assinaturas ativas')} value={String(st.activeCount || 0)} />
@@ -56,7 +56,7 @@ export function GestaoAssinaturas({
         <Stat
           label={kloelT('ARR projetado')}
           value={fmtBRL(st.arr || 0)}
-          color="colors.ember.primary"
+          color={colors.ember.primary}
         />
       </div>
 
@@ -232,7 +232,7 @@ export function GestaoAssinaturas({
                 style={{
                   fontFamily: MONO,
                   fontSize: 12,
-                  color: 'colors.ember.primary',
+                  color: colors.ember.primary,
                   fontWeight: 600,
                   alignSelf: 'center',
                 }}

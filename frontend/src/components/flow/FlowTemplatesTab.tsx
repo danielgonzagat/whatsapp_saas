@@ -125,11 +125,11 @@ export function FlowTemplatesTab({
 
                   <div className="flex items-center gap-3 text-xs text-muted">
                     <span>{nodeCount} nodes</span>
-                    <span>{kloelT('&middot;')}</span>
+                    <span>{kloelT('·')}</span>
                     <span>{edgeCount} conexoes</span>
                     {tmpl.downloads !== undefined && (
                       <>
-                        <span>{kloelT('&middot;')}</span>
+                        <span>{kloelT('·')}</span>
                         <span>{tmpl.downloads} usos</span>
                       </>
                     )}

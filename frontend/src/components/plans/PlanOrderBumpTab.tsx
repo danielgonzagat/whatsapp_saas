@@ -12,12 +12,12 @@ import { BumpFormPanel, type BumpFormData, defaultForm, cardStyle } from './Plan
 
 /* ── Design Tokens ── */
 
-const BG_SURFACE = 'colors.background.surface';
-const BORDER = 'colors.border.space';
-const TEXT_PRIMARY = 'colors.text.silver';
-const TEXT_MUTED = 'colors.text.muted';
-const TEXT_DIM = 'colors.text.dim';
-const EMBER = 'colors.ember.primary';
+const BG_SURFACE = colors.background.surface;
+const BORDER = colors.border.space;
+const TEXT_PRIMARY = colors.text.silver;
+const TEXT_MUTED = colors.text.muted;
+const TEXT_DIM = colors.text.dim;
+const EMBER = colors.ember.primary;
 const GREEN = colors.semantic.success;
 const RED = colors.semantic.error;
 const FONT_BODY = "'Sora', sans-serif";

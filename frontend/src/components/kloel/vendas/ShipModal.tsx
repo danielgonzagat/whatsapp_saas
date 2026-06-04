@@ -1,3 +1,4 @@
+import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { useId } from 'react';
 import { SORA, MONO } from './utils';
@@ -129,7 +130,7 @@ export function ShipModal({
             style={{
               flex: 1,
               padding: '10px 16px',
-              background: hasCode ? 'colors.ember.primary' : 'var(--app-bg-secondary)',
+              background: hasCode ? colors.ember.primary : 'var(--app-bg-secondary)',
               border: 'none',
               borderRadius: 6,
               color: hasCode ? 'var(--app-text-on-accent)' : 'var(--app-text-placeholder)',

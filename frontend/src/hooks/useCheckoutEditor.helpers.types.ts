@@ -246,11 +246,11 @@ export interface CheckoutConfig {
 /** Default_config. */
 export const DEFAULT_CONFIG: CheckoutConfig = {
   theme: 'NOIR',
-  accentColor: 'colors.ember.primary',
+  accentColor: colors.ember.primary,
   accentColor2: colors.ember.primary,
-  backgroundColor: 'colors.background.void',
-  cardColor: 'colors.background.surface',
-  textColor: 'colors.text.silver',
+  backgroundColor: colors.background.void,
+  cardColor: colors.background.surface,
+  textColor: colors.text.silver,
   brandName: '',
   brandLogo: '',
   headerMessage: '',

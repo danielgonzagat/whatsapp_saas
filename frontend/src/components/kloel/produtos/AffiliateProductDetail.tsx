@@ -81,7 +81,7 @@ export default function AffiliateProductDetail({
             padding: 0,
           }}
         >
-          {kloelT('&larr; Marketplace')}
+          {kloelT('← Marketplace')}
         </button>
         <span style={{ color: 'var(--app-text-tertiary)' }}>/</span>
         <span style={{ fontFamily: SORA, fontSize: 13, color: 'var(--app-text-primary)' }}>
@@ -167,7 +167,7 @@ export default function AffiliateProductDetail({
                 ...mt(4),
               }}
             >
-              por {item.producer} {kloelT('&middot;')} {item.category}
+              por {item.producer} {kloelT('·')} {item.category}
             </div>
           </div>
         </div>

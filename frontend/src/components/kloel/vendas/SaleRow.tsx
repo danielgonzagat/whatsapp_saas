@@ -1,3 +1,4 @@
+import { colors } from '@/lib/design-tokens';
 import { Badge } from './Badge';
 import { SORA, MONO, SALE_STATUS, PAY_METHODS, fmtBRL, fmtDate } from './utils';
 import type { SaleItem } from './types';
@@ -48,7 +49,7 @@ export function MobileSaleRow({ sale, isLast, onOpenDetail }: MobileSaleRowProps
             fontFamily: MONO,
             fontSize: 13,
             fontWeight: 600,
-            color: 'colors.ember.primary',
+            color: colors.ember.primary,
           }}
         >
           {fmtBRL(sale.amount)}
@@ -146,7 +147,7 @@ export function DesktopSaleRow({ sale, isLast, onOpenDetail }: DesktopSaleRowPro
           fontFamily: MONO,
           fontSize: 13,
           fontWeight: 600,
-          color: 'colors.ember.primary',
+          color: colors.ember.primary,
           alignSelf: 'center',
         }}
       >

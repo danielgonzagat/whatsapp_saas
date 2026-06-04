@@ -1,3 +1,4 @@
+import { colors } from '@/lib/design-tokens';
 import { useId } from 'react';
 
 interface MiniChartProps {
@@ -5,7 +6,7 @@ interface MiniChartProps {
   color?: string;
 }
 
-export function MiniChart({ data, color = 'colors.ember.primary' }: MiniChartProps) {
+export function MiniChart({ data, color = colors.ember.primary }: MiniChartProps) {
   const idPrefix = useId();
   const max = Math.max(...data, 1);
   return (

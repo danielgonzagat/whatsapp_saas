@@ -148,7 +148,7 @@ export function AdAccountsBoard({
                             fontWeight: 600,
                           }}
                         >
-                          {kloelT(`&mdash;`)}
+                          {kloelT(`—`)}
                         </div>
                       </div>
                     ))}

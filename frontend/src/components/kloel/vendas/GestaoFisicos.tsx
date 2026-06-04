@@ -18,7 +18,7 @@ interface GestaoFisicosProps {
 const PIPELINE_LEGEND = [
   { l: 'Processando', c: colors.semantic.warning, key: 'processing' as const },
   { l: 'Enviados', c: colors.semantic.info, key: 'shipped' as const },
-  { l: 'Entregues', c: 'colors.ember.primary', key: 'delivered' as const },
+  { l: 'Entregues', c: colors.ember.primary, key: 'delivered' as const },
 ];
 
 export function GestaoFisicos({
@@ -55,7 +55,7 @@ export function GestaoFisicos({
         <Stat
           label={kloelT('Entregues')}
           value={String(st.delivered || 0)}
-          color="colors.ember.primary"
+          color={colors.ember.primary}
         />
       </div>
 
@@ -97,7 +97,7 @@ export function GestaoFisicos({
           <div
             style={{
               width: `${((pl.delivered || 0) / total) * 100}%`,
-              background: 'colors.ember.primary',
+              background: colors.ember.primary,
               borderRadius: '4 4px 4px 0',
             }}
           />

@@ -200,7 +200,7 @@ export function CustomSizePanel({
               })
             }
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'colors.ember.glow40';
+              e.currentTarget.style.borderColor = colors.ember.glow40;
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor =

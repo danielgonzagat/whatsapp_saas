@@ -161,7 +161,7 @@ export const focusPrimaryInput = (element: HTMLInputElement | null) => {
 export function NP({
   w = 160,
   h = 28,
-  color = 'colors.ember.primary',
+  color = colors.ember.primary,
 }: {
   w?: number;
   h?: number;
@@ -266,7 +266,7 @@ export function NP({
 // ── Ticker — scrolling horizontal text ──
 export function Ticker({
   items,
-  color = 'colors.ember.primary',
+  color = colors.ember.primary,
   duration = '22s',
 }: {
   items: string[];
@@ -307,7 +307,7 @@ export function Ticker({
 // ── LiveFeed — small event list ──
 export function LiveFeed({
   events,
-  color = 'colors.ember.primary',
+  color = colors.ember.primary,
 }: {
   events: LiveFeedEvent[];
   color?: string;

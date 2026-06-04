@@ -96,7 +96,7 @@ export function EstrategiasTab({
         <Stat
           label={kloelT('Receita viva')}
           value={fmtBRL(salesStats.totalRevenue || 0)}
-          color="colors.ember.primary"
+          color={colors.ember.primary}
           sub={kloelT('Volume do período')}
         />
         <Stat
@@ -162,7 +162,7 @@ export function EstrategiasTab({
               style={{
                 fontFamily: MONO,
                 fontSize: 11,
-                color: 'colors.ember.primary',
+                color: colors.ember.primary,
                 marginTop: 10,
               }}
             >
@@ -174,7 +174,7 @@ export function EstrategiasTab({
               style={{
                 marginTop: 14,
                 padding: '8px 16px',
-                background: 'colors.ember.primary',
+                background: colors.ember.primary,
                 border: 'none',
                 borderRadius: 6,
                 color: 'var(--app-text-on-accent)',

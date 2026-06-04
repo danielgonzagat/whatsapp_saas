@@ -75,7 +75,7 @@ export default function EmailMarketingTab({
               {conn?.providerAvailable ? 'Provider detectado e pronto para ativacao' : 'Nenhum provider de email configurado no backend'}
             </div>
             <div style={{ fontFamily: MONO, fontSize: 12, color: 'var(--app-text-secondary)', lineHeight: 1.6 }}>
-              {kloelT(`Provider:`)} {conn?.provider || 'log'} {kloelT(`&middot; Remetente:`)} {conn?.fromName || 'KLOEL'} {kloelT(`&lt;`)}{conn?.fromEmail || 'noreply@kloel.com'}{kloelT(`&gt;`)}
+              {kloelT(`Provider:`)} {conn?.provider || 'log'} {kloelT(`· Remetente:`)} {conn?.fromName || 'KLOEL'} {kloelT(`<`)}{conn?.fromEmail || 'noreply@kloel.com'}{kloelT(`>`)}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

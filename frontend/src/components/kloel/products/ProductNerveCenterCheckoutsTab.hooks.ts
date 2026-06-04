@@ -1,5 +1,7 @@
 'use client';
 
+import { colors } from '@/lib/design-tokens';
+
 import { useState } from 'react';
 import type { JsonRecord, JsonValue } from './product-nerve-center.shared';
 
@@ -78,7 +80,7 @@ export function useCheckoutConfigForm(
     enableTimer: Boolean(ckLocal.enableTimer),
     timerMinutes: Number(ckLocal.timerMinutes || 15),
     timerMessage: ckLocal.timerMessage || '',
-    accentColor: ckLocal.accentColor || 'colors.ember.primary',
+    accentColor: ckLocal.accentColor || colors.ember.primary,
   });
 
   const originalConfigSignature = JSON.stringify({
@@ -91,7 +93,7 @@ export function useCheckoutConfigForm(
     enableTimer: Boolean(ckCfg?.enableTimer),
     timerMinutes: Number(ckCfg?.timerMinutes || 15),
     timerMessage: ckCfg?.timerMessage || '',
-    accentColor: ckCfg?.accentColor || 'colors.ember.primary',
+    accentColor: ckCfg?.accentColor || colors.ember.primary,
   });
 
   const hasUnsavedChanges =

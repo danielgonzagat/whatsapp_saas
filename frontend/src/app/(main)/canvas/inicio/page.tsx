@@ -389,7 +389,7 @@ function DesignCard({
               fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace",
             }}
           >
-            {design.format} {kloelT(`&middot;`)} {dateStr}
+            {design.format} {kloelT(`·`)} {dateStr}
           </p>
         </div>
       </button>

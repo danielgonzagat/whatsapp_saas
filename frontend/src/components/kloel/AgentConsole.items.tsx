@@ -71,9 +71,9 @@ function ActivityItem({ activity }: ActivityItemProps) {
               color: colors.text.muted,
             }}
           >
-            {kloelT(`&ldquo;`)}
+            {kloelT(`“`)}
             {activity.metadata.messagePreview}
-            {kloelT(`&rdquo;`)}
+            {kloelT(`”`)}
           </div>
         )}
       </div>

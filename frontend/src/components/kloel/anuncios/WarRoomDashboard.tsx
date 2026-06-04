@@ -64,7 +64,7 @@ export function WarRoomDashboard({
           </div>
         ) : (
           <div style={{ fontSize: 48, fontWeight: 800, fontFamily: MONO, color: 'var(--app-text-tertiary)', lineHeight: 1 }}>
-            {kloelT(`&mdash;`)}
+            {kloelT(`—`)}
           </div>
         )}
       </div>
@@ -85,7 +85,7 @@ export function WarRoomDashboard({
             {hasData ? <Ticker value={totalSpend} /> : '\u2014'}
           </div>
         </div>
-        {!isMobile && <div style={{ fontSize: 28, color: 'var(--app-text-tertiary)' }}>{kloelT(`&rarr;`)}</div>}
+        {!isMobile && <div style={{ fontSize: 28, color: 'var(--app-text-tertiary)' }}>{kloelT(`→`)}</div>}
         <div style={{ background: 'var(--app-bg-card)', border: '1px solid var(--app-border-primary)', borderRadius: 6, padding: 20, textAlign: 'center' as const }}>
           <div style={{ fontSize: 11, fontFamily: MONO, color: 'var(--app-text-secondary)', letterSpacing: 1, marginBottom: 6 }}>
             RETORNO
@@ -137,7 +137,7 @@ export function WarRoomDashboard({
                       IF {r.condition}
                     </div>
                     <div style={{ fontSize: 10, fontFamily: MONO, color: EMBER, marginTop: 2 }}>
-                      {kloelT(`&rarr;`)} {r.action}
+                      {kloelT(`→`)} {r.action}
                     </div>
                     <div style={{ fontSize: 10, fontFamily: MONO, color: 'var(--app-text-tertiary)', marginTop: 2 }}>
                       {r.fires} execucoes

@@ -8,6 +8,7 @@
  * React state owned here beyond what is threaded back via setter props. The
  * call signatures match the original `useCallback` references one-for-one.
  */
+import { colors } from '@/lib/design-tokens';
 import { useCallback, type Dispatch, type RefObject, type SetStateAction } from 'react';
 import type { KloelEditor } from '@/lib/fabric';
 import type { ProductTemplate } from '@/hooks/useProductTemplates';
@@ -243,7 +244,7 @@ export function useCanvasEditorHandlers(
     (ed.canvas as { isDrawingMode: boolean }).isDrawingMode = nextMode;
     if (nextMode && ed.canvas.freeDrawingBrush) {
       (ed.canvas.freeDrawingBrush as { color: string; width: number }).color =
-        'colors.ember.primary';
+        colors.ember.primary;
       (ed.canvas.freeDrawingBrush as { color: string; width: number }).width = 3;
     }
     setIsDrawing(nextMode);

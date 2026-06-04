@@ -45,7 +45,7 @@ export default function AreaMembrosStudentsPanel({
   const searchRow = { padding: '12px 20px', ...hdrBorder, display: 'flex', gap: 8 };
   const addFormStyle = { padding: '12px 20px', ...hdrBorder, display: 'flex', flexDirection: 'column' as const, gap: 8 };
   const listArea = { flex: 1, overflowY: 'auto' as const, padding: '0 20px' };
-  const avatarCircle = { width: 32, height: 32, borderRadius: '16%', background: BG_ELEVATED, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, color: 'colors.ember.primary', fontFamily: SORA, flexShrink: 0 };
+  const avatarCircle = { width: 32, height: 32, borderRadius: '16%', background: BG_ELEVATED, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, color: colors.ember.primary, fontFamily: SORA, flexShrink: 0 };
   const studentRow = { display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: `1px solid ${BG_ELEVATED}` };
   const statusDot = (s: string) => s === 'active' ? colors.semantic.success : colors.semantic.error;
 
@@ -111,7 +111,7 @@ export default function AreaMembrosStudentsPanel({
             </div>
           ) : students.length === 0 ? (
             <div style={{ padding: 48, textAlign: 'center' as const }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: 'colors.ember.primary', letterSpacing: '.25em', textTransform: 'uppercase' as const, marginBottom: 8 }}>{kloelT('SEM ALUNOS')}</div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: colors.ember.primary, letterSpacing: '.25em', textTransform: 'uppercase' as const, marginBottom: 8 }}>{kloelT('SEM ALUNOS')}</div>
               <div style={{ fontSize: 14, color: 'var(--app-text-primary)', fontFamily: SORA }}>{kloelT('Nenhum aluno matriculado')}</div>
               <div style={{ fontSize: 12, color: 'var(--app-text-tertiary)', fontFamily: SORA, marginTop: 4 }}>{kloelT('Clique em "+ Aluno" para adicionar')}</div>
             </div>

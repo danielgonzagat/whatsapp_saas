@@ -187,7 +187,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
                   alignItems: 'center',
                   gap: 9,
                   padding: '8px 14px',
-                  background: cat === c.id ? 'colors.ember.bg' : 'none',
+                  background: cat === c.id ? colors.ember.bg : 'none',
                   border: 'none',
                   borderLeft:
                     cat === c.id ? '2px solid colors.ember.primary' : '2px solid transparent',

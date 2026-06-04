@@ -152,9 +152,9 @@ export default function PlanDetailPage() {
                   fontFamily: "'Sora', sans-serif",
                 }}
               >
-                {kloelT(`Aba &ldquo;`)}
+                {kloelT(`Aba “`)}
                 {SUB_TABS.find((t) => t.id === activeTab)?.label}
-                {kloelT(`&rdquo; -- em construcao`)}
+                {kloelT(`” -- em construcao`)}
               </p>
             </div>
           )}

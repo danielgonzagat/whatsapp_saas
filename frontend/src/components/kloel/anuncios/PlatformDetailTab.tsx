@@ -51,7 +51,7 @@ export function PlatformDetailTab({
           </div>
         ) : (
           <div style={{ fontSize: 48, fontWeight: 800, fontFamily: MONO, color: 'var(--app-text-tertiary)', lineHeight: 1 }}>
-            {kloelT(`&mdash;`)}
+            {kloelT(`—`)}
           </div>
         )}
       </div>
@@ -146,7 +146,7 @@ export function PlatformDetailTab({
                 <span
                   style={{
                     fontSize: 10, fontFamily: MONO, padding: '2px 6px', borderRadius: 4,
-                    background: c.status === 'active' ? `${G}18` : 'colors.text.dim18', color: c.status === 'active' ? G : colors.text.muted,
+                    background: c.status === 'active' ? `${G}18` : colors.background.elevated, color: c.status === 'active' ? G : colors.text.muted,
                   }}
                 >
                   {c.status === 'active' ? 'Ativo' : 'Pausado'}

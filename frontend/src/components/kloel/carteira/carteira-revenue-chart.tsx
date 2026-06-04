@@ -1,4 +1,6 @@
 'use client';
+
+import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { formatCompactNumber } from './carteira.helpers';
 
@@ -65,8 +67,8 @@ export function RevenueChart({ data }: { data: number[] }) {
                     height: `${(v / max) * 70}px`,
                     background:
                       i === revenueWeek.length - 1
-                        ? 'colors.ember.primary'
-                        : 'colors.ember.primary40',
+                        ? colors.ember.primary
+                        : colors.ember.glow40,
                     borderRadius: '4px 3px 0 0',
                   }}
                 />

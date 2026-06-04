@@ -203,7 +203,7 @@ export function CarteiraWithdrawModal({
                 fontFamily: "'JetBrains Mono',monospace",
                 fontSize: 24,
                 fontWeight: 700,
-                color: 'colors.ember.primary',
+                color: colors.ember.primary,
               }}
             >
               {kloelT(`R$`)} {Fmt(available)}
@@ -282,7 +282,7 @@ export function CarteiraWithdrawModal({
                 >
                   <span style={{ fontSize: 12, color: 'var(--app-text-secondary)' }}>
                     {kloelT(`Nenhuma conta cadastrada. Cadastre em`)}{' '}
-                    <strong>{kloelT(`Configuracoes &gt; Dados bancarios`)}</strong>.
+                    <strong>{kloelT(`Configuracoes > Dados bancarios`)}</strong>.
                   </span>
                 </div>
               ) : (
@@ -314,7 +314,7 @@ export function CarteiraWithdrawModal({
                         width: 16,
                         height: 16,
                         borderRadius: 4,
-                        border: `2px solid ${selectedBank === i ? 'colors.ember.primary' : 'var(--app-text-placeholder)'}`,
+                        border: `2px solid ${selectedBank === i ? colors.ember.primary : 'var(--app-text-placeholder)'}`,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -326,7 +326,7 @@ export function CarteiraWithdrawModal({
                             width: 8,
                             height: 8,
                             borderRadius: 4,
-                            background: 'colors.ember.primary',
+                            background: colors.ember.primary,
                           }}
                         />
                       )}
@@ -375,7 +375,7 @@ export function CarteiraWithdrawModal({
             style={{
               width: '100%',
               padding: '14px 24px',
-              background: withdrawLoading ? 'var(--app-bg-secondary)' : 'colors.ember.primary',
+              background: withdrawLoading ? 'var(--app-bg-secondary)' : colors.ember.primary,
               color: withdrawLoading ? 'var(--app-text-secondary)' : 'var(--app-text-on-accent)',
               border: 'none',
               borderRadius: 6,

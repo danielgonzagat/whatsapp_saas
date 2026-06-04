@@ -157,7 +157,7 @@ export default function LaunchpadPage() {
   return (
     <SectionPage
       title={kloelT(`Launchpad`)}
-      icon={kloelT(`&rgb(18, 134, 64);`)}
+      icon={kloelT(``)}
       description={kloelT(`Gerencie lancamentos com grupos WhatsApp automatizados`)}
       back={() => router.push('/ferramentas/gerencie')}
     >

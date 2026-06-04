@@ -62,7 +62,7 @@ export function RuleNerveFiber({
               IF {rule.condition}
             </div>
             <div style={{ fontSize: 11, fontFamily: MONO, color: EMBER }}>
-              {kloelT(`&rarr;`)} {rule.action}
+              {kloelT(`→`)} {rule.action}
             </div>
           </div>
           <NP color={rule.active ? EMBER : colors.text.dim} intensity={rule.active ? 1.2 : 0.3} width={80} height={20} />
@@ -93,7 +93,7 @@ export function RuleNerveFiber({
             style={{ background: 'none', border: 'none', color: 'var(--app-text-secondary)', cursor: 'pointer', padding: 4, fontSize: 14, fontFamily: MONO, transition: 'color 150ms ease' }}
             title={kloelT(`Remover regra`)}
           >
-            {kloelT(`&times;`)}
+            {kloelT(`×`)}
           </button>
         </div>
       )}

@@ -1,11 +1,13 @@
 'use client';
+
+import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
 import { useCallback, useEffect, useState, useId } from 'react';
 import { mutate } from 'swr';
 import { PixelRow, PixelAddPanel, type Pixel, type PixelFormState } from './CheckoutPixelRow';
 
-const EMBER = 'colors.ember.primary';
+const EMBER = colors.ember.primary;
 const BORDER = 'var(--border-space, colors.border.space)';
 const SECONDARY = 'var(--text-moonlight, colors.text.muted)';
 const FAINT = 'var(--text-dust, colors.text.dim)';

@@ -180,7 +180,7 @@ export default function NewProductPage() {
               marginBottom: 4,
             }}
           >
-            {kloelT('Home &rarr; Produtos &rarr; Cadastrar produto')}
+            {kloelT('Home → Produtos → Cadastrar produto')}
           </p>
           <h1
             style={{

@@ -1,5 +1,7 @@
 'use client';
 
+import { colors } from '@/lib/design-tokens';
+
 import { kloelT } from '@/lib/i18n/t';
 import { useState, useId } from 'react';
 import { useBankAccounts } from '@/hooks/useWallet';
@@ -97,7 +99,7 @@ export default function CarteiraSaque({
               fontFamily: "'JetBrains Mono',monospace",
               fontSize: 20,
               fontWeight: 700,
-              color: 'colors.ember.primary',
+              color: colors.ember.primary,
             }}
           >
             {kloelT(`R$`)} {Fmt(available)}
@@ -108,7 +110,7 @@ export default function CarteiraSaque({
           onClick={onOpenWithdraw}
           style={{
             padding: '10px 24px',
-            background: 'colors.ember.primary',
+            background: colors.ember.primary,
             color: 'var(--app-text-on-accent)',
             border: 'none',
             borderRadius: 6,
@@ -153,7 +155,7 @@ export default function CarteiraSaque({
               background: showAddAccount ? 'var(--app-bg-secondary)' : 'var(--app-accent-light)',
               border: `1px solid ${showAddAccount ? 'var(--app-border-primary)' : 'var(--app-accent-medium)'}`,
               borderRadius: 6,
-              color: showAddAccount ? 'var(--app-text-secondary)' : 'colors.ember.primary',
+              color: showAddAccount ? 'var(--app-text-secondary)' : colors.ember.primary,
               fontSize: 11,
               fontWeight: 600,
               cursor: 'pointer',
@@ -196,7 +198,7 @@ export default function CarteiraSaque({
                   padding: '10px 14px',
                 }}
               >
-                <span style={{ color: 'colors.ember.primary', display: 'flex' }}>
+                <span style={{ color: colors.ember.primary, display: 'flex' }}>
                   {IC.bank(16)}
                 </span>
                 <div style={{ flex: 1 }}>
@@ -225,7 +227,7 @@ export default function CarteiraSaque({
                     style={{
                       fontSize: 9,
                       fontWeight: 600,
-                      color: 'colors.ember.primary',
+                      color: colors.ember.primary,
                       background: 'rgba(232,93,48,0.1)',
                       padding: '2px 6px',
                       borderRadius: 4,

@@ -77,7 +77,7 @@ export function DetailActions({
           style={{
             flex: 1,
             padding: '10px 16px',
-            background: 'colors.ember.primary',
+            background: colors.ember.primary,
             border: 'none',
             borderRadius: 6,
             color: 'var(--app-text-on-accent)',
@@ -103,7 +103,7 @@ export function DetailActions({
           style={{
             flex: 1,
             padding: '10px 16px',
-            background: 'colors.ember.primary',
+            background: colors.ember.primary,
             border: 'none',
             borderRadius: 6,
             color: 'var(--app-text-on-accent)',
@@ -192,7 +192,7 @@ const emphasizedStyle: React.CSSProperties = {
   background: 'none',
   border: '1px solid colors.ember.primary',
   borderRadius: 6,
-  color: 'colors.ember.primary',
+  color: colors.ember.primary,
   fontSize: 12,
   fontWeight: 600,
   cursor: 'pointer',

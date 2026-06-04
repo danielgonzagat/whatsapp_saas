@@ -85,8 +85,8 @@ export function MarketingVisaoGeral({
             padding: isMobile ? '0 12px' : 0,
           }}
         >
-          {Fmt(realStats.totalMessages)} {kloelT(`msgs &middot;`)} {Fmt(realStats.totalLeads)}{' '}
-          {kloelT(`leads &middot;`)} {realStats.totalSales} vendas
+          {Fmt(realStats.totalMessages)} {kloelT(`msgs ·`)} {Fmt(realStats.totalLeads)}{' '}
+          {kloelT(`leads ·`)} {realStats.totalSales} vendas
         </div>
       </div>
 

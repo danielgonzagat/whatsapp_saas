@@ -1,5 +1,7 @@
 'use client';
 
+import { colors } from '@/lib/design-tokens';
+
 import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
 import { useParams } from 'next/navigation';
@@ -70,7 +72,7 @@ export default function MemberAreaPreviewPage() {
           height={16}
           viewBox="0 0 24 24"
           fill="none"
-          stroke="colors.ember.primary"
+          stroke={colors.ember.primary}
           strokeWidth={2}
           aria-hidden="true"
         >
@@ -81,7 +83,7 @@ export default function MemberAreaPreviewPage() {
           style={{
             fontSize: 12,
             fontWeight: 600,
-            color: 'colors.ember.primary',
+            color: colors.ember.primary,
             letterSpacing: '.04em',
           }}
         >

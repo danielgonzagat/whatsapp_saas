@@ -106,7 +106,7 @@ export default function GestaoVendasPage() {
                 opacity: 0.4,
               }}
             >
-              {kloelT(`&rgb(18, 130, 105);`)}
+              {kloelT(``)}
             </span>
           </div>
           <input
@@ -140,7 +140,7 @@ export default function GestaoVendasPage() {
                 width: 20,
                 height: 20,
                 border: '2px solid transparent',
-                borderTopColor: 'colors.ember.primary',
+                borderTopColor: colors.ember.primary,
                 borderRadius: '16%',
                 animation: 'spin 1s linear infinite',
               }}
@@ -306,7 +306,7 @@ export default function GestaoVendasPage() {
                                     opacity: 0.7,
                                   }}
                                 >
-                                  {kloelT(`&times;`)}
+                                  {kloelT(`×`)}
                                 </button>
                               </span>
                             ))}

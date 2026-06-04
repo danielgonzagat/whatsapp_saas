@@ -236,9 +236,9 @@ export default function CanvasEditor() {
         display: 'flex',
         flexDirection: 'column',
         height: '100vh',
-        background: 'colors.background.void',
+        background: colors.background.void,
         fontFamily: S,
-        color: 'colors.text.silver',
+        color: colors.text.silver,
         overflow: 'hidden',
         userSelect: 'none',
       }}
@@ -275,7 +275,7 @@ export default function CanvasEditor() {
           <div
             style={{
               width: 56,
-              background: 'colors.background.void',
+              background: colors.background.void,
               borderRight: `1px solid ${colors.canvas.border}`,
               display: 'flex',
               flexDirection: 'column',
@@ -299,7 +299,7 @@ export default function CanvasEditor() {
                     borderRadius: 8,
                     border: 'none',
                     background: active ? colors.canvas.border : 'transparent',
-                    color: active ? 'colors.ember.primary' : 'colors.text.muted',
+                    color: active ? colors.ember.primary : colors.text.muted,
                     cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
@@ -330,7 +330,7 @@ export default function CanvasEditor() {
             <div
               style={{
                 width: 280,
-                background: 'colors.background.void',
+                background: colors.background.void,
                 overflowY: 'auto',
                 padding: 16,
                 borderRight: `1px solid ${colors.canvas.border}`,
@@ -368,7 +368,7 @@ export default function CanvasEditor() {
         <section
           style={{
             flex: 1,
-            background: 'colors.background.elevated',
+            background: colors.background.elevated,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

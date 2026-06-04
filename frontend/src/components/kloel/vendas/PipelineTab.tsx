@@ -1,3 +1,4 @@
+import { colors } from '@/lib/design-tokens';
 import CRMPipelineView from '@/components/kloel/crm/CRMPipelineView';
 import { SORA } from './utils';
 import type { PipelineStage, PipelineDeal } from './types';
@@ -36,7 +37,7 @@ export function PipelineTab({ stages, isLoading }: PipelineTabProps) {
                     width: 8,
                     height: 8,
                     borderRadius: '16%',
-                    background: stage.color || 'colors.ember.primary',
+                    background: stage.color || colors.ember.primary,
                     flexShrink: 0,
                   }}
                 />

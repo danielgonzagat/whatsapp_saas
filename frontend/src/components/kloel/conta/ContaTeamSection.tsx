@@ -424,7 +424,7 @@ export function TeamSection() {
                     <span
                       style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}
                     >
-                      {ROLES[inv.role] || inv.role} {kloelT(`&middot; Aguardando aceite`)}
+                      {ROLES[inv.role] || inv.role} {kloelT(`· Aguardando aceite`)}
                     </span>
                   </div>
                   <span

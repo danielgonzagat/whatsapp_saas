@@ -53,7 +53,7 @@ export default function CarteiraSaldoCard({
               left: 0,
               right: 0,
               height: 2,
-              background: 'colors.ember.primary',
+              background: colors.ember.primary,
             }}
           />
           <span
@@ -74,7 +74,7 @@ export default function CarteiraSaldoCard({
               fontFamily: "'JetBrains Mono',monospace",
               fontSize: 32,
               fontWeight: 700,
-              color: 'colors.ember.primary',
+              color: colors.ember.primary,
               display: 'block',
               marginBottom: 4,
             }}
@@ -91,7 +91,7 @@ export default function CarteiraSaldoCard({
               style={{
                 flex: 1,
                 padding: '10px 16px',
-                background: 'colors.ember.primary',
+                background: colors.ember.primary,
                 color: 'var(--app-text-on-accent)',
                 border: 'none',
                 borderRadius: 6,

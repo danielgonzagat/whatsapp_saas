@@ -56,7 +56,7 @@ export function CarteiraTabAntecipacoes({
               fontFamily: "'JetBrains Mono',monospace",
               fontSize: 20,
               fontWeight: 600,
-              color: 'colors.ember.primary',
+              color: colors.ember.primary,
             }}
           >
             {kloelT(`R$`)} {Fmt(pending)}
@@ -143,7 +143,7 @@ export function CarteiraTabAntecipacoes({
             onClick={onOpenAntecipate}
             style={{
               padding: '10px 24px',
-              background: 'colors.ember.primary',
+              background: colors.ember.primary,
               color: 'var(--app-text-on-accent)',
               border: 'none',
               borderRadius: 6,
@@ -240,7 +240,7 @@ export function CarteiraTabAntecipacoes({
                   fontFamily: "'JetBrains Mono',monospace",
                   fontSize: 13,
                   fontWeight: 600,
-                  color: 'colors.ember.primary',
+                  color: colors.ember.primary,
                 }}
               >
                 {kloelT(`R$`)} {Fmt(a.net || a.netAmount || 0)}

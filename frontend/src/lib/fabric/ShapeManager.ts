@@ -3,7 +3,7 @@ import { type Canvas, Circle, Line, Polygon, Rect, Triangle } from 'fabric';
 import type { HistoryManager } from './HistoryManager';
 
 
-const DEFAULT_FILL = 'colors.text.silver';
+const DEFAULT_FILL = colors.text.silver;
 
 /** Shape manager. */
 export class ShapeManager {
