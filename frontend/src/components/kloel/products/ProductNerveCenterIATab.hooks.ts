@@ -144,23 +144,24 @@ export function useAIConfig(productId: string) {
   const [aiLoading, setAiLoading] = useState(true);
   const [_aiSaving, setAiSaving] = useState(false);
   const [aiSaved, setAiSaved] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
   useEffect(() => {
+    setAiLoading(true);
+    setAiError(null);
     apiFetch(`/products/${productId}/ai-config`)
       .then((r) => setAiCfg(unwrapApiPayload<AiConfigShape>(r) || {}))
       .catch((error) => {
-        console.error(error);
+        const message = error instanceof Error ? error.message : 'Erro ao carregar configuração de IA';
         setAiCfg(null);
-        showToast(
-          error instanceof Error ? error.message : 'Erro ao carregar configuração de IA',
-          'error',
-        );
+        setAiError(message);
+        showToast(message, 'error');
       })
       .finally(() => setAiLoading(false));
   }, [productId, showToast]);
   const [whobuys, setWhobuys] = useState('');
   const [pains, setPains] = useState('');
   const [promise, setPromise] = useState('');
-  const [objs, setObjs] = useState<{ id: string; label: string; response: string }[]>([]);
+  const [objs, setObjs] = useState<AiObjectionDraft[]>([]);
   const objIdCounter = useRef(0);
   const nextObjId = () => {
     objIdCounter.current += 1;
@@ -204,38 +205,53 @@ export function useAIConfig(productId: string) {
     setOfferDisc((sa.offerDiscount ?? fc.offerDiscount) !== false);
     setUseUrg((sa.useUrgency ?? fc.useUrgency) !== false);
   }
+  const clearAiError = () => setAiError(null);
   const handleSaveAI = async () => {
+    const payloadResult = buildAIConfigPayload({
+      whobuys,
+      pains,
+      promise,
+      objs,
+      tone,
+      persist,
+      msgLimit,
+      followUp,
+      autoLink,
+      offerDisc,
+      useUrg,
+    });
+
+    if (!payloadResult.ok) {
+      setAiSaved(false);
+      setAiError(payloadResult.error);
+      showToast(payloadResult.error, 'error');
+      return;
+    }
+
+    setAiError(null);
     setAiSaving(true);
     try {
       unwrapApiPayload(
         await apiFetch(`/products/${productId}/ai-config`, {
           method: 'PUT',
-          body: {
-            customerProfile: { whobuys, pains, promise },
-            objections: objs,
-            tone,
-            persistenceLevel: Number.parseInt(persist, 10) || 3,
-            messageLimit: Number.parseInt(msgLimit, 10) || 10,
-            followUpConfig: {
-              schedule: followUp,
-              autoCheckoutLink: autoLink,
-              offerDiscount: offerDisc,
-              useUrgency: useUrg,
-            },
-            salesArguments: {
-              autoCheckoutLink: autoLink,
-              offerDiscount: offerDisc,
-              useUrgency: useUrg,
-            },
-          },
+          body: payloadResult.payload,
         }),
+      );
+      setObjs(
+        payloadResult.payload.objections.map((obj, idx) => ({
+          id: `obj-saved-${idx}`,
+          label: obj.label,
+          response: obj.response,
+        })),
       );
       setAiSaved(true);
       setTimeout(() => setAiSaved(false), 2000);
       showToast('Configuração de IA salva', 'success');
     } catch (e) {
-      console.error(e);
-      showToast(e instanceof Error ? e.message : 'Erro ao salvar configuração de IA', 'error');
+      const message = e instanceof Error ? e.message : 'Erro ao salvar configuração de IA';
+      setAiSaved(false);
+      setAiError(message);
+      showToast(message, 'error');
     } finally {
       setAiSaving(false);
     }
@@ -245,6 +261,8 @@ export function useAIConfig(productId: string) {
     aiLoading,
     _aiSaving,
     aiSaved,
+    aiError,
+    clearAiError,
     whobuys,
     setWhobuys,
     pains,
