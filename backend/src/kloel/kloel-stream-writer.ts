@@ -417,7 +417,7 @@ export class KloelStreamWriter {
 
     emitAnswerChunk(visibleTextFilter.flush());
 
-    // Deliverable artifacts: any substantial fenced document/code block in the
+    // Deliverable artifacts — any substantial fenced document/code block in the
     // completed answer becomes a downloadable file card. The file-event pipeline
     // already exists end-to-end (the frontend renders the card with "Baixar");
     // this is its first producer. Honest: only real blocks emit cards.
