@@ -35,6 +35,7 @@ import {
 import { RouteClass } from '../common/throttler/route-class.decorator';
 import {
   buildAnthropicSiteRequestBody,
+  buildDeterministicFallbackSiteHtml,
   buildOpenAiSiteRequestBody,
   buildSiteSlug,
   buildSiteSystemPrompt,
@@ -224,9 +225,14 @@ export class SiteController {
 
     const providerPreference = resolveSiteProviderPreference({ openaiKey, anthropicKey });
     if (!providerPreference) {
-      throw new ServiceUnavailableException(
-        'AI site generation is not available. Configure OPENAI_API_KEY or ANTHROPIC_API_KEY.',
-      );
+      return {
+        success: true,
+        html: buildDeterministicFallbackSiteHtml({
+          prompt: dto.prompt,
+          currentHtml: dto.currentHtml,
+        }),
+        message: 'Generated via deterministic fallback',
+      };
     }
 
     const systemPrompt = buildSiteSystemPrompt({ currentHtml: dto.currentHtml });

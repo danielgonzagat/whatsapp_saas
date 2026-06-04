@@ -64,6 +64,87 @@ export function buildSiteSystemPrompt(input: { currentHtml?: string | undefined 
     .join('\n');
 }
 
+const HTML_ESCAPE_RE = /[&<>"']/g;
+const HTML_ESCAPE_MAP: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+};
+
+function escapeSiteHtml(value: string): string {
+  return value.replace(HTML_ESCAPE_RE, (char) => HTML_ESCAPE_MAP[char] ?? char);
+}
+
+function normalizeFallbackPrompt(prompt: string): string {
+  const trimmed = prompt.trim().replace(/\s+/g, ' ');
+  return trimmed ? trimmed.slice(0, 180) : 'sua oferta';
+}
+
+/**
+ * Build a complete deterministic landing page when no LLM provider is configured.
+ * This keeps the product flow functional without pretending an AI provider ran.
+ */
+export function buildDeterministicFallbackSiteHtml(input: {
+  prompt: string;
+  currentHtml?: string | undefined;
+}): string {
+  const offer = escapeSiteHtml(normalizeFallbackPrompt(input.prompt));
+  const editContext = input.currentHtml?.trim()
+    ? '<p class="notice">Modo fallback: a edicao foi gerada sem provedor IA configurado. Revise o HTML antes de publicar.</p>'
+    : '';
+
+  return `<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${offer}</title>
+  <style>
+    :root { color-scheme: dark; --void: ${BRAND_COLORS.VOID}; --ember: ${BRAND_COLORS.EMBER}; --silver: ${BRAND_COLORS.SILVER}; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Inter, Arial, sans-serif; background: var(--void); color: var(--silver); }
+    main { min-height: 100vh; display: grid; place-items: center; padding: 56px 20px; }
+    .page { width: min(1040px, 100%); display: grid; gap: 28px; }
+    .eyebrow { color: var(--ember); text-transform: uppercase; letter-spacing: .14em; font-size: 12px; font-weight: 800; }
+    h1 { margin: 0; font-size: clamp(36px, 7vw, 76px); line-height: .95; letter-spacing: 0; max-width: 900px; }
+    p { margin: 0; color: rgba(224, 221, 216, .76); font-size: 18px; line-height: 1.7; max-width: 760px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+    a { color: var(--silver); text-decoration: none; border: 1px solid rgba(232, 93, 48, .45); border-radius: 6px; padding: 13px 18px; font-weight: 800; }
+    a.primary { background: var(--ember); border-color: var(--ember); color: #0a0a0c; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .card { border: 1px solid rgba(224, 221, 216, .14); border-radius: 6px; padding: 18px; background: rgba(255,255,255,.035); }
+    .card strong { display: block; margin-bottom: 8px; color: var(--silver); }
+    .notice { border-left: 3px solid var(--ember); padding-left: 14px; color: rgba(224, 221, 216, .68); }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="page">
+      <div class="eyebrow">Kloel site fallback</div>
+      <h1>${offer}</h1>
+      <p>Pagina inicial pronta para validacao comercial enquanto o provedor IA e configurado. Ajuste textos, conecte checkout, publique e substitua por uma geracao IA quando a chave estiver ativa.</p>
+      ${editContext}
+      <div class="actions">
+        <a class="primary" href="#checkout">Comprar agora</a>
+        <a href="#faq">Ver perguntas</a>
+      </div>
+      <div class="grid">
+        <div class="card"><strong>Oferta clara</strong><span>Headline, promessa e chamada para acao em primeiro plano.</span></div>
+        <div class="card"><strong>Prova social</strong><span>Espaco reservado para depoimentos, resultados e autoridade.</span></div>
+        <div class="card"><strong>Conversao</strong><span>Estrutura simples para conectar checkout, URL e campanha.</span></div>
+      </div>
+      <section id="faq" class="card">
+        <strong>Perguntas frequentes</strong>
+        <p>Inclua garantia, entrega, acesso e suporte antes de publicar para clientes reais.</p>
+      </section>
+    </section>
+  </main>
+</body>
+</html>`;
+}
+
 /**
  * Estimate the quote cost for a site-generation request. Returns `undefined`
  * when the provider has no published pricing for the requested model.
