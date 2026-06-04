@@ -32,15 +32,13 @@ export function MemberAreaSidebar({
       style={{
         width: 280,
         background: 'var(--app-bg-card)',
-        borderRight: '1px solid colors.border.space',
+        borderRight: `1px solid ${colors.border.space}`,
         padding: '20px 0',
         overflowY: 'auto',
         flexShrink: 0,
       }}
     >
-      <div
-        style={{ padding: '0 16px 16px', borderBottom: '1px solid var(--app-border-subtle)' }}
-      >
+      <div style={{ padding: '0 16px 16px', borderBottom: '1px solid var(--app-border-subtle)' }}>
         {loading ? (
           <>
             <SkeletonBlock width="72%" height={18} style={{ marginBottom: 8 }} />
@@ -93,13 +91,11 @@ export function MemberAreaSidebar({
                   style={{
                     width: '100%',
                     padding: '8px 16px 8px 32px',
-                    background:
-                      activeLessonId === les.id ? 'rgba(232,93,48,0.1)' : 'transparent',
+                    background: activeLessonId === les.id ? 'rgba(232,93,48,0.1)' : 'transparent',
                     border: 'none',
                     textAlign: 'left',
                     cursor: 'pointer',
-                    color:
-                      activeLessonId === les.id ? colors.ember.primary : colors.text.dim,
+                    color: activeLessonId === les.id ? colors.ember.primary : colors.text.dim,
                     fontSize: 12,
                     fontFamily: SORA,
                     display: 'flex',

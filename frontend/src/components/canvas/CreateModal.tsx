@@ -2,11 +2,7 @@
 
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
-import {
-  CATEGORIES,
-  FORMAT_DATA,
-  type FormatItem,
-} from '@/lib/canvas-formats';
+import { CATEGORIES, FORMAT_DATA, type FormatItem } from '@/lib/canvas-formats';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { IC, getIcon } from './CanvasIcons';
@@ -170,8 +166,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
                 }}
                 onMouseEnter={(e) => {
                   if (cat !== c.id) {
-                    e.currentTarget.style.background =
-                      colors.canvas.surfaceAlt;
+                    e.currentTarget.style.background = colors.canvas.surfaceAlt;
                     e.currentTarget.style.color = colors.text.silver;
                   }
                 }}
@@ -190,7 +185,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
                   background: cat === c.id ? colors.ember.bg : 'none',
                   border: 'none',
                   borderLeft:
-                    cat === c.id ? '2px solid colors.ember.primary' : '2px solid transparent',
+                    cat === c.id ? `2px solid ${colors.ember.primary}` : '2px solid transparent',
                   cursor: 'pointer',
                   fontFamily: S,
                   fontSize: 12,
@@ -229,4 +224,3 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
     </div>
   );
 }
-

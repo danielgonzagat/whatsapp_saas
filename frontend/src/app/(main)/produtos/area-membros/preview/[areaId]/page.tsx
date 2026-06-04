@@ -60,7 +60,7 @@ export default function MemberAreaPreviewPage() {
       <div
         style={{
           background: 'rgba(232,93,48,0.06)',
-          borderBottom: '1px solid colors.ember.primary',
+          borderBottom: `1px solid ${colors.ember.primary}`,
           padding: '10px 24px',
           display: 'flex',
           alignItems: 'center',
