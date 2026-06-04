@@ -15,7 +15,7 @@ import { StorageService } from '../common/storage/storage.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { KycEventEmitterService } from '../kloel/kyc-emitter/kyc-event-emitter.service';
 import { KycChangePasswordDto } from './dto/change-password.dto';
-import { KycMfaCodeDto } from './dto/mfa.dto';
+import { KycMfaCodeDto, KycMfaDisableDto } from './dto/mfa.dto';
 import { UpdateBankDto } from './dto/update-bank.dto';
 import { UpdateFiscalDto } from './dto/update-fiscal.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -235,10 +235,11 @@ export class KycService {
       agentId,
       details: { deletedBy: 'user', type: doc.type },
     });
-    await this.prisma.kycDocument.delete({
+    const deleted = await this.prisma.kycDocument.delete({
       where: { id: documentId, workspaceId: doc.workspaceId },
+      select: { id: true },
     });
-    return { success: true };
+    return { success: deleted.id === documentId };
   }
 
   async listBrazilianBanks(): Promise<
@@ -302,11 +303,12 @@ export class KycService {
           throw new UnauthorizedException('Current password is incorrect');
         }
         const hashedPassword = await bcryptHash(dto.newPassword, BCRYPT_ROUNDS);
-        await tx.agent.update({
+        const updated = await tx.agent.update({
           where: { id: agentId, workspaceId: agent.workspaceId },
           data: { password: hashedPassword },
+          select: { id: true },
         });
-        return { success: true };
+        return { success: updated.id === agentId };
       },
       { isolationLevel: 'ReadCommitted' },
     );
@@ -325,7 +327,32 @@ export class KycService {
         enabled: agent.mfaEnabled,
         pendingSetup: agent.mfaPendingSetup,
       },
+      sessions: await this.listSecuritySessions(agentId),
     };
+  }
+
+  async listSecuritySessions(agentId: string) {
+    const rows = await this.prisma.refreshToken.findMany({
+      where: { agentId, revoked: false, expiresAt: { gt: new Date() } },
+      select: { id: true, createdAt: true, expiresAt: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    return rows.map((session) => ({
+      id: session.id,
+      createdAt: session.createdAt.toISOString(),
+      expiresAt: session.expiresAt.toISOString(),
+    }));
+  }
+
+  async revokeSecuritySession(agentId: string, sessionId: string) {
+    const result = await this.prisma.refreshToken.updateMany({
+      where: { id: sessionId, agentId, revoked: false },
+      data: { revoked: true },
+    });
+    if (result.count === 0) {
+      throw new NotFoundException('Security session not found');
+    }
+    return { success: result.count === 1 };
   }
 
   async startMfaSetup(agentId: string) {
@@ -393,7 +420,7 @@ export class KycService {
     });
   }
 
-  async disableMfa(agentId: string, dto: KycMfaCodeDto) {
+  async disableMfa(agentId: string, dto: KycMfaDisableDto) {
     return this.prisma.$transaction(async (tx) => {
       const agent = await tx.agent.findUnique({
         where: { id: agentId, workspaceId: { not: '' } },
@@ -409,6 +436,9 @@ export class KycService {
         throw new NotFoundException('Agent not found');
       }
       if (agent.mfaEnabled) {
+        if (!dto.code) {
+          throw new BadRequestException('Informe o codigo 2FA para desativar.');
+        }
         this.accountMfaService.verifyCode(agent.mfaSecret, dto.code);
       }
       await tx.agent.update({

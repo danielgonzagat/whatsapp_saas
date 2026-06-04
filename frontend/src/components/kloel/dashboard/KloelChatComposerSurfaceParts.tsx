@@ -95,21 +95,21 @@ export function RemoveIconButton({
       onClick={onClick}
       style={{
         position: 'absolute',
-        top: 8,
-        right: 8,
-        width: 24,
-        height: 24,
+        top: 6,
+        right: 6,
+        width: 22,
+        height: 22,
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
         border: 'none',
-        borderRadius: 12,
+        borderRadius: 6,
         background: OVERLAY,
         color: KLOEL_THEME.textInverse,
         cursor: 'pointer',
       }}
     >
-      <X size={12} strokeWidth={2.2} aria-hidden="true" />
+      <X size={11} strokeWidth={2.2} aria-hidden="true" />
     </button>
   );
 }

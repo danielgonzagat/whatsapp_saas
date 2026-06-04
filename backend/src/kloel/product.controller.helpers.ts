@@ -32,6 +32,33 @@ export const AFTER_PAY_SHIPPING_PROVIDERS = [
   'outro',
 ] as const;
 
+/** Canonical product taxonomy shown before a workspace has created products. */
+export const CANONICAL_PRODUCT_CATEGORIES = [
+  'Dermocosméticos',
+  'Cosméticos',
+  'Suplementos',
+  'Saúde e Bem-estar',
+  'Beleza e Cuidados',
+  'Cabelos',
+  'Emagrecimento',
+  'Fitness e Esportes',
+  'Cursos Online',
+  'E-books',
+  'Mentorias e Consultorias',
+  'Software e SaaS',
+  'Serviços',
+  'Eventos e Ingressos',
+  'Moda e Acessórios',
+  'Casa e Decoração',
+  'Eletrônicos',
+  'Pet',
+  'Alimentos e Bebidas',
+  'Infantil',
+  'Espiritualidade',
+  'Finanças e Negócios',
+  'Outros',
+] as const;
+
 /** Bounds for commission percent and cookie-window validations. */
 export const COMMISSION_PERCENT_MIN = 0;
 export const COMMISSION_PERCENT_MAX = 100;
@@ -288,15 +315,31 @@ export function calculateProductStats(
 }
 
 /**
- * Extracts the truthy `category` values from a list of `{ category }` rows.
- * Mirrors the behaviour of the `categories/list` endpoint.
+ * Builds the product category list for the workspace selector.
+ * Canonical taxonomy is reference data; workspace-only categories remain visible after legacy imports.
  */
 export function extractCategoriesFromProducts(
   products: Array<{ category: string | null | undefined }>,
 ): string[] {
-  return products
-    .map((product) => product.category)
-    .filter((category): category is string => Boolean(category));
+  const categories: string[] = [];
+  const seen = new Set<string>();
+
+  for (const category of CANONICAL_PRODUCT_CATEGORIES) {
+    seen.add(category);
+    categories.push(category);
+  }
+
+  for (const product of products) {
+    const category = product.category?.trim();
+    if (!category || seen.has(category)) {
+      continue;
+    }
+
+    seen.add(category);
+    categories.push(category);
+  }
+
+  return categories;
 }
 
 /** Per-row outcome of a bulk-import call. */

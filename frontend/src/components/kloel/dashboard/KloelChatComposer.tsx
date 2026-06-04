@@ -196,16 +196,26 @@ export function KloelChatComposer({
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <textarea
+          id="kloel-chat-composer-input"
+          name="message"
+          aria-label="Mensagem para o Kloel"
           ref={inputRef}
           value={input}
-          onChange={(event) => onInputChange(event.target.value)}
+          onChange={(event) => {
+            const nextValue = event.target.value;
+            if (nextValue !== input) {
+              onInputChange(nextValue);
+            }
+          }}
           onKeyDown={(event) => {
             if (event.nativeEvent.isComposing) {
               return;
             }
             if (event.key === 'Enter' && !event.shiftKey) {
               event.preventDefault();
-              onSend();
+              if (canSend && !hasPendingUploads) {
+                onSend();
+              }
             }
           }}
           rows={1}

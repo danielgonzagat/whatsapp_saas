@@ -34,6 +34,13 @@ const codecovBundleAnalysisEnabled = Boolean(process.env.CODECOV_TOKEN);
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  allowedDevOrigins: [
+    'root.localhost',
+    '*.root.localhost',
+    'auth.root.localhost',
+    'app.root.localhost',
+    'pay.root.localhost',
+  ],
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '**' },

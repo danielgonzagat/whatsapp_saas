@@ -1,5 +1,9 @@
 /** Kloel chat capability type. */
-export type KloelChatCapability = 'create_image' | 'create_site' | 'search_web';
+export type KloelChatCapability =
+  | 'create_image'
+  | 'create_site'
+  | 'search_web'
+  | 'refine_response';
 
 /** Kloel chat attachment kind type. */
 export type KloelChatAttachmentKind = 'image' | 'document' | 'audio';
@@ -75,6 +79,7 @@ export const KLOEL_CHAT_CAPABILITY_LABELS: Record<KloelChatCapability, string> =
   create_image: 'Criar imagem',
   create_site: 'Criar site',
   search_web: 'Buscar',
+  refine_response: 'Mesa de refinamento',
 };
 
 /** Kloel_chat_capability_placeholders. */
@@ -82,6 +87,7 @@ export const KLOEL_CHAT_CAPABILITY_PLACEHOLDERS: Record<KloelChatCapability, str
   create_image: 'Descreva a imagem que deseja criar...',
   create_site: 'Descreva o site que deseja criar...',
   search_web: 'Buscar na Web...',
+  refine_response: 'Descreva o que você quer refinar...',
 };
 
 /** Kloel chat quick action shape. */

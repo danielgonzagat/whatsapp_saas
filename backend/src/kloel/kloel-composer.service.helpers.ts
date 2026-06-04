@@ -6,6 +6,7 @@ export const INVALID_RE = /invalid/i;
 export const KLOEL_SEARCH_WEB_MODEL = resolveKloelCapabilityModel('search_web');
 export const KLOEL_IMAGE_MODEL = resolveKloelCapabilityModel('create_image');
 export const KLOEL_SITE_MODEL = resolveKloelCapabilityModel('create_site');
+export const KLOEL_REFINE_MODEL = KLOEL_SEARCH_WEB_MODEL;
 
 export const ERR_UNSUPPORTED_CAPABILITY = 'Capacidade do composer não suportada.';
 export const ERR_IMAGE_API_KEY_MISSING =
@@ -20,7 +21,7 @@ export const ANTHROPIC_SITE_RETRY_BASE_MS = 500;
 export const ANTHROPIC_SITE_MAX_RETRIES = 3;
 export const ANTHROPIC_SITE_TIMEOUT_MS = 60_000;
 
-export type ComposerCapability = 'create_image' | 'create_site' | 'search_web';
+export type ComposerCapability = 'create_image' | 'create_site' | 'search_web' | 'refine_response';
 
 export interface WebSearchDigest {
   answer: string;
@@ -91,6 +92,68 @@ export function buildCapabilityPrompt(message: string, composerContext?: string)
   return [String(message || '').trim(), composerContext?.trim()].filter(Boolean).join('\n\n');
 }
 
+/** Build the public model prompt for the refinement-table composer action. */
+export function buildRefinementPrompt(message: string, composerContext?: string): string {
+  const request = buildCapabilityPrompt(message, composerContext) || 'Refine a próxima resposta.';
+  return [
+    'Você é a Mesa de refinamento do Kloel.',
+    'Trabalhe como um editor estratégico de alta exigência para melhorar a próxima resposta do Kloel.',
+    'Use o contexto real recebido, mas não exponha chain-of-thought bruto, nomes internos de ferramentas, código ou segredos operacionais.',
+    'Use linguagem pública: prefira “ações executadas”, “observações” e “capacidades”; não escreva “ferramentas utilizadas” nem “nomes de ferramentas”, salvo quando o usuário pedir explicitamente a taxonomia de tool/function calling.',
+    'Entregue em português do Brasil, com linguagem objetiva, sofisticada e acionável.',
+    'Use Markdown real e respirado: cada seção deve ficar em linha própria com título `##`, listas devem usar bullets em linhas separadas, e deve haver uma linha em branco entre blocos.',
+    'Formato obrigatório:',
+    '## Diagnóstico executivo',
+    '## Lacunas e riscos',
+    '## Versão refinada',
+    '## Próxima ação verificável',
+    '',
+    'Pedido e contexto:',
+    request,
+  ].join('\n');
+}
+
+/** Honest unavailable response when the refinement model client is not configured. */
+export function normalizeRefinementMarkdown(content: string): string {
+  const sectionHeadings = [
+    'Diagnóstico executivo',
+    'Lacunas e riscos',
+    'Versão refinada',
+    'Próxima ação verificável',
+  ];
+  const escapedHeadings = sectionHeadings.map((heading) =>
+    heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+  );
+  const sectionPattern = new RegExp(
+    `^(#{2,6}\\s+(?:${escapedHeadings.join('|')}))\\s+([^\\n-].*)$`,
+    'gm',
+  );
+  const sectionBulletPattern = new RegExp(
+    `^(#{2,6}\\s+(?:${escapedHeadings.join('|')}))\\s*[-–—]\\s+`,
+    'gm',
+  );
+
+  return content
+    .replace(/\r\n?/g, '\n')
+    .trim()
+    .replace(/(?!^)\s+(#{2,6}\s+)/g, '\n\n$1')
+    .replace(sectionBulletPattern, '$1\n\n- ')
+    .replace(sectionPattern, '$1\n\n$2')
+    .replace(/([^\n])[ \t]+([*-])[ \t]+(?=\S)/g, '$1\n$2 ')
+    .replace(/:[ \t]*([*-])[ \t]+(?=\S)/g, ':\n$1 ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+export function codeNativeRefinementResponse(message: string): string {
+  const subject = String(message || '').trim();
+  const suffix = subject ? ` para "${subject.slice(0, 160)}"` : '';
+  return (
+    `A mesa de refinamento está conectada, mas a configuração de IA para refinamento ainda não foi concluída neste ambiente. ` +
+    `Não consegui executar o refinamento${suffix}. Finalize a configuração e tente novamente.`
+  );
+}
+
 /**
  * Format a web search digest as user-facing Markdown, including a numbered
  * source list when present.
@@ -125,9 +188,9 @@ export function codeNativeSearchWeb(query: string): WebSearchDigest {
 
   return {
     answer:
-      `Pesquisa web indisponível no momento (motor LLM não configurado). ` +
-      `A busca por ${termList} não pode ser completada. ` +
-      `Verifique a configuração da API key ou tente novamente mais tarde.`,
+      `A busca na web está conectada, mas a configuração de pesquisa com IA ainda não foi concluída neste ambiente. ` +
+      `A consulta por ${termList} não pôde ser completada agora. ` +
+      `Finalize a configuração e tente novamente mais tarde.`,
     sources: [],
     totalTokens: 0,
   };

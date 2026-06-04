@@ -27,8 +27,15 @@ export interface KycMfaState {
   pendingSetup: boolean;
 }
 
+export interface KycAuthSession {
+  id: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
 export interface KycSecurityResponse {
   mfa: KycMfaState;
+  sessions?: KycAuthSession[];
 }
 
 export interface KycMfaSetupResponse extends KycSecurityResponse {
@@ -102,11 +109,13 @@ export const kycApi = {
       method: 'POST',
       body: { code },
     }),
-  disableMfa: (code: string) =>
+  disableMfa: (code?: string) =>
     kycMutation<KycSecurityResponse>('/kyc/security/mfa/disable', {
       method: 'POST',
-      body: { code },
+      body: code ? { code } : {},
     }),
+  revokeSecuritySession: (sessionId: string) =>
+    kycMutation('/kyc/security/sessions/' + encodeURIComponent(sessionId), { method: 'DELETE' }),
   getKycStatus: () => apiFetch('/kyc/status'),
   getKycCompletion: () => apiFetch('/kyc/completion'),
   submitKyc: () => kycMutation('/kyc/submit', { method: 'POST' }),

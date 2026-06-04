@@ -228,7 +228,10 @@ export class KloelController {
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: KLOEL_UPLOAD_MAX_BYTES }),
-          new FileTypeValidator({ fileType: KLOEL_UPLOAD_GENERIC_MIME_RE }),
+          new FileTypeValidator({
+            fileType: KLOEL_UPLOAD_GENERIC_MIME_RE,
+            fallbackToMimetype: true,
+          }),
         ],
         fileIsRequired: false,
       }),
@@ -258,7 +261,10 @@ export class KloelController {
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: KLOEL_UPLOAD_MAX_BYTES }),
-          new FileTypeValidator({ fileType: KLOEL_UPLOAD_CHAT_MIME_RE }),
+          new FileTypeValidator({
+            fileType: KLOEL_UPLOAD_CHAT_MIME_RE,
+            fallbackToMimetype: true,
+          }),
         ],
         fileIsRequired: false,
       }),

@@ -11,7 +11,7 @@ import { Field, SaveButton, SectionCard } from './ContaShared';
 
 export default function SegurancaSection() {
   const { security, isLoading: loadingSecurity, error: securityError, mutate } = useSecurityState();
-  const { changePassword, startMfaSetup, verifyMfaSetup, disableMfa } = useSecurityMutations();
+  const { changePassword, startMfaSetup, verifyMfaSetup, disableMfa, revokeSession } = useSecurityMutations();
   const [saving, setSaving] = useState(false);
   const [pwForm, setPwForm] = useState({ current: '', newPw: '', confirm: '' });
   const [pwError, setPwError] = useState('');
@@ -21,6 +21,9 @@ export default function SegurancaSection() {
   const [mfaBusy, setMfaBusy] = useState<'idle' | 'setup' | 'verify' | 'disable'>('idle');
   const [mfaError, setMfaError] = useState('');
   const [mfaSuccess, setMfaSuccess] = useState('');
+  const [sessionBusyId, setSessionBusyId] = useState('');
+  const [sessionError, setSessionError] = useState('');
+  const [sessionSuccess, setSessionSuccess] = useState('');
 
   const setPw = (k: string, v: string) => setPwForm((prev) => ({ ...prev, [k]: v }));
   const mfaEnabled = security?.mfa.enabled === true;
@@ -37,6 +40,14 @@ export default function SegurancaSection() {
       : mfaPendingSetup
         ? 'Configuracao 2FA pendente'
         : '2FA inativo nesta conta';
+  const sessions = security?.sessions ?? [];
+  const formatSessionDate = (value: string) => {
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      return value;
+    }
+    return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(parsed);
+  };
 
   const handleChangePw = async () => {
     setPwError('');
@@ -127,6 +138,39 @@ export default function SegurancaSection() {
       setMfaError(getErrorMessage(e) || 'Nao foi possivel desativar o 2FA.');
     } finally {
       setMfaBusy('idle');
+    }
+  };
+
+  const handleCancelMfaSetup = async () => {
+    setMfaError('');
+    setMfaSuccess('');
+    setMfaBusy('disable');
+    try {
+      await disableMfa();
+      setMfaQrDataUrl('');
+      setMfaCode('');
+      await mutate();
+      showMfaSuccess('Configuracao 2FA cancelada.');
+    } catch (e) {
+      setMfaError(getErrorMessage(e) || 'Nao foi possivel cancelar a configuracao 2FA.');
+    } finally {
+      setMfaBusy('idle');
+    }
+  };
+
+  const handleRevokeSession = async (sessionId: string) => {
+    setSessionError('');
+    setSessionSuccess('');
+    setSessionBusyId(sessionId);
+    try {
+      await revokeSession(sessionId);
+      await mutate();
+      setSessionSuccess('Sessao revogada.');
+      setTimeout(() => setSessionSuccess(''), 3000);
+    } catch (e) {
+      setSessionError(getErrorMessage(e) || 'Nao foi possivel revogar esta sessao.');
+    } finally {
+      setSessionBusyId('');
     }
   };
 
@@ -267,6 +311,9 @@ export default function SegurancaSection() {
               />
             )}
             {(mfaPendingSetup || mfaQrDataUrl) && (
+              <SaveButton saving={mfaBusy === 'disable'} onClick={handleCancelMfaSetup} label={kloelT(`Cancelar configuracao 2FA`)} />
+            )}
+            {(mfaPendingSetup || mfaQrDataUrl) && (
               <SaveButton saving={mfaBusy === 'verify'} onClick={handleVerifyMfa} label={kloelT(`Confirmar 2FA`)} />
             )}
             {mfaEnabled && (
@@ -278,31 +325,63 @@ export default function SegurancaSection() {
 
       <SectionCard
         title={kloelT(`Sessoes ativas`)}
-        subtitle={kloelT(`Gerencie os dispositivos conectados a sua conta`)}
+        subtitle={kloelT(`Gerencie os acessos autenticados a sua conta`)}
       >
-        <div style={{ padding: '16px 0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-            <span
-              style={{
-                width: 8, height: 8, borderRadius: '16%', background: 'var(--app-text-placeholder)',
-              }}
-            />
-            <span
-              style={{
-                fontSize: 13, fontWeight: 600, color: 'var(--app-text-primary)', fontFamily: SORA,
-              }}
-            >
-              {kloelT(`Visao unificada ainda nao disponivel`)}
+        <div style={{ padding: '16px 0', display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
+          {sessionError && (
+            <span style={{ fontSize: 11, color: colors.semantic.error, fontFamily: SORA }}>
+              {sessionError}
             </span>
-          </div>
-          <p
-            style={{
-              fontSize: 12, color: 'var(--app-text-secondary)', fontFamily: SORA, lineHeight: 1.5,
-            }}
-          >
-            {kloelT(`Esta area sera usada para listar dispositivos e permitir revogar acessos sem sair do
-            painel principal.`)}
-          </p>
+          )}
+          {sessionSuccess && (
+            <span style={{ fontSize: 12, fontWeight: 600, color: colors.semantic.success, fontFamily: SORA }}>
+              {sessionSuccess}
+            </span>
+          )}
+          {loadingSecurity ? (
+            <span style={{ fontSize: 12, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
+              {kloelT(`Carregando sessoes...`)}
+            </span>
+          ) : securityError ? (
+            <span style={{ fontSize: 12, color: colors.semantic.error, fontFamily: SORA }}>
+              {getErrorMessage(securityError) || 'Nao foi possivel carregar as sessoes.'}
+            </span>
+          ) : sessions.length === 0 ? (
+            <p style={{ fontSize: 12, color: 'var(--app-text-secondary)', fontFamily: SORA, lineHeight: 1.5, margin: 0 }}>
+              {kloelT(`Nenhuma sessao ativa encontrada para esta conta.`)}
+            </p>
+          ) : (
+            sessions.map((session) => (
+              <div
+                key={session.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 14,
+                  padding: '12px 14px',
+                  border: '1px solid var(--app-border-primary)',
+                  borderRadius: 6,
+                  background: 'var(--app-bg-secondary)',
+                  flexWrap: 'wrap' as const,
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 4, minWidth: 220 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--app-text-primary)', fontFamily: SORA }}>
+                    {kloelT(`Sessao autenticada`)}
+                  </span>
+                  <span style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
+                    {kloelT(`Criada em`)} {formatSessionDate(session.createdAt)} · {kloelT(`Expira em`)} {formatSessionDate(session.expiresAt)}
+                  </span>
+                </div>
+                <SaveButton
+                  saving={sessionBusyId === session.id}
+                  onClick={() => handleRevokeSession(session.id)}
+                  label={kloelT(`Revogar sessao`)}
+                />
+              </div>
+            ))
+          )}
         </div>
       </SectionCard>
     </>

@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 export interface FileEntry {
   name: string;
   path: string;
@@ -124,11 +124,14 @@ export class CodeAccessService {
   } /** Search code using ripgrep */
   search(query: string, opts?: { glob?: string; max?: number }): CodeHit[] {
     const max = Math.min(opts?.max ?? MAX_SEARCH_RESULTS, MAX_SEARCH_RESULTS);
-    const globFlag = opts?.glob ? `--glob '${opts.glob}'` : '';
-    const cmd = `rg --no-heading --line-number --column --max-count ${max} ${globFlag} '${query.replace(/'/g, "\\'")}' ${this.root}`;
+    const args = ['--no-heading', '--line-number', '--column', '--max-count', String(max)];
+    if (opts?.glob) {
+      args.push('--glob', opts.glob);
+    }
+    args.push(query, this.root);
 
     try {
-      const stdout = execSync(cmd, {
+      const stdout = execFileSync('rg', args, {
         cwd: this.root,
         timeout: 5000,
         maxBuffer: 1024 * 500,
@@ -137,7 +140,7 @@ export class CodeAccessService {
       return this.parseRgOutput(stdout, max);
     } catch (err: unknown) {
       // rg exits with code 1 when no matches (which is fine)
-      // execSync errors expose .status; narrow structurally instead of `as any`.
+      // execFileSync errors expose .status; narrow structurally before reading it.
       if (err instanceof Error && 'status' in err && (err as { status?: unknown }).status === 1) {
         return [];
       }

@@ -1,5 +1,6 @@
 'use client';
 
+import { sanitizeAssistantVisibleContent } from '@/lib/kloel-message-ui';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import type { HTMLAttributes } from 'react';
 import ReactMarkdown from 'react-markdown';
@@ -19,12 +20,14 @@ const MONO = "'JetBrains Mono', monospace";
 
 /** Kloel markdown. */
 export function KloelMarkdown({ content }: { content: string }) {
+  const sanitizedContent = sanitizeAssistantVisibleContent(String(content || ''));
+
   return (
     <div
       className="kloel-markdown"
       style={{
-        fontSize: 15,
-        lineHeight: 1.78,
+        fontSize: 14.5,
+        lineHeight: 1.68,
         color: TEXT,
         fontFamily: FONT,
       }}
@@ -36,13 +39,11 @@ export function KloelMarkdown({ content }: { content: string }) {
           h2: ({ children }) => (
             <h2
               style={{
-                fontSize: 18,
-                fontWeight: 700,
+                fontSize: 16,
+                fontWeight: 600,
                 color: KLOEL_THEME.textPrimary,
-                margin: '20px 0 10px',
-                paddingBottom: 6,
-                borderBottom: `1px solid ${BORDER}`,
-                letterSpacing: '-0.02em',
+                margin: '16px 0 8px',
+                letterSpacing: 0,
               }}
             >
               {children}
@@ -51,11 +52,11 @@ export function KloelMarkdown({ content }: { content: string }) {
           h3: ({ children }) => (
             <h3
               style={{
-                fontSize: 16,
-                fontWeight: 700,
+                fontSize: 14.5,
+                fontWeight: 600,
                 color: KLOEL_THEME.textPrimary,
-                margin: '18px 0 8px',
-                letterSpacing: '-0.02em',
+                margin: '14px 0 7px',
+                letterSpacing: 0,
               }}
             >
               {children}
@@ -64,16 +65,16 @@ export function KloelMarkdown({ content }: { content: string }) {
           p: ({ children }) => (
             <p
               style={{
-                margin: '10px 0',
+                margin: '8px 0',
                 color: TEXT,
-                lineHeight: 1.78,
+                lineHeight: 1.68,
               }}
             >
               {children}
             </p>
           ),
           strong: ({ children }) => (
-            <strong style={{ color: KLOEL_THEME.textPrimary, fontWeight: 700 }}>{children}</strong>
+            <strong style={{ color: KLOEL_THEME.textPrimary, fontWeight: 600 }}>{children}</strong>
           ),
           a: ({ href, children }) => {
             const external = typeof href === 'string' && HTTPS_RE.test(href);
@@ -93,12 +94,12 @@ export function KloelMarkdown({ content }: { content: string }) {
             );
           },
           ul: ({ children }) => (
-            <ul style={{ margin: '10px 0 10px 18px', padding: 0, color: TEXT }}>{children}</ul>
+            <ul style={{ margin: '8px 0 8px 17px', padding: 0, color: TEXT }}>{children}</ul>
           ),
           ol: ({ children }) => (
-            <ol style={{ margin: '10px 0 10px 18px', padding: 0, color: TEXT }}>{children}</ol>
+            <ol style={{ margin: '8px 0 8px 17px', padding: 0, color: TEXT }}>{children}</ol>
           ),
-          li: ({ children }) => <li style={{ margin: '6px 0', lineHeight: 1.7 }}>{children}</li>,
+          li: ({ children }) => <li style={{ margin: '5px 0', lineHeight: 1.62 }}>{children}</li>,
           blockquote: ({ children }) => (
             <blockquote
               style={{
@@ -227,7 +228,7 @@ export function KloelMarkdown({ content }: { content: string }) {
           ),
         }}
       >
-        {String(content || '')}
+        {sanitizedContent}
       </ReactMarkdown>
     </div>
   );

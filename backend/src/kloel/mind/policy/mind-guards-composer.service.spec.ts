@@ -216,7 +216,10 @@ describe('code-native MIND guards and composer', () => {
 
     const digest = composer.codeNativeSearchWeb('preço do café no Brasil');
 
-    expect(digest.answer).toContain('Pesquisa web indisponível');
+    expect(digest.answer).toContain('A busca na web está conectada');
+    expect(digest.answer).not.toContain('provedor');
+    expect(digest.answer).not.toContain('chave');
+    expect(digest.answer).not.toContain('motor LLM');
     expect(digest.answer).toContain('preço');
     expect(digest.answer).toContain('café');
     expect(digest.sources).toEqual([]);

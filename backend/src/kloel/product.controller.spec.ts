@@ -272,14 +272,33 @@ describe('ProductController', () => {
   });
 
   describe('getCategories', () => {
-    it('returns distinct non-null categories', async () => {
+    it('returns the canonical product taxonomy before the workspace has products', async () => {
+      prisma.product.findMany.mockResolvedValue([]);
+
+      const result = await controller.getCategories(mockReq());
+
+      expect(result.categories).toEqual(
+        expect.arrayContaining(['Dermocosméticos', 'Cursos Online', 'Outros']),
+      );
+      expect(result.categories.length).toBeGreaterThanOrEqual(20);
+    });
+
+    it('keeps distinct workspace categories that are outside the canonical taxonomy', async () => {
       prisma.product.findMany.mockResolvedValue([
+        { category: 'Dermocosméticos' },
         { category: 'cursos' },
         { category: 'mentorias' },
         { category: null },
       ]);
+
       const result = await controller.getCategories(mockReq());
-      expect(result).toEqual({ categories: ['cursos', 'mentorias'] });
+
+      expect(result.categories).toEqual(
+        expect.arrayContaining(['Dermocosméticos', 'cursos', 'mentorias']),
+      );
+      expect(result.categories.filter((category) => category === 'Dermocosméticos')).toHaveLength(
+        1,
+      );
     });
   });
 

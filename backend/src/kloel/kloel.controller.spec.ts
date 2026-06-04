@@ -1,5 +1,28 @@
+import { FileTypeValidator } from '@nestjs/common';
+import { ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
 import { KloelController } from './kloel.controller';
 import { partialMatch } from '../../test/helpers/match-instance';
+
+function readUploadChatFileTypeValidator() {
+  const routeArgs = Reflect.getMetadata(ROUTE_ARGS_METADATA, KloelController, 'uploadFile') as
+    | Record<string, { pipes?: unknown[] }>
+    | undefined;
+  const pipes = Object.values(routeArgs ?? {}).flatMap((entry) => entry.pipes ?? []);
+  const validators = pipes.flatMap((pipe) =>
+    Array.isArray((pipe as { validators?: unknown[] }).validators)
+      ? ((pipe as { validators?: unknown[] }).validators ?? [])
+      : [],
+  );
+  const validator = validators.find(
+    (item): item is FileTypeValidator =>
+      typeof (item as FileTypeValidator | undefined)?.isValid === 'function' &&
+      Boolean((item as { validationOptions?: { fileType?: unknown } }).validationOptions?.fileType),
+  );
+  if (!validator) {
+    throw new Error('upload_chat_file_type_validator_not_found');
+  }
+  return validator;
+}
 
 describe('KloelController', () => {
   let kloelService: {
@@ -58,6 +81,19 @@ describe('KloelController', () => {
       {} as never,
       toolDispatcher as never,
     );
+  });
+
+  it('accepts plain text chat uploads through the controller file validator', async () => {
+    const validator = readUploadChatFileTypeValidator();
+
+    await expect(
+      validator.isValid({
+        buffer: Buffer.from('plain text upload proof'),
+        originalname: 'proof.txt',
+        mimetype: 'text/plain',
+        size: 23,
+      } as never),
+    ).resolves.toBe(true);
   });
 
   it('uses legacy string user.id as a fallback when sub is absent', async () => {

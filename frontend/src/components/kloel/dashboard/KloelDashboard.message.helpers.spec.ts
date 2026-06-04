@@ -177,14 +177,7 @@ describe('KloelDashboard.message.helpers', () => {
       const stub = (value: unknown, fallback?: string) =>
         value == null ? (fallback ?? '-') : String(value);
       const rows = buildRevenueSummaryRows({}, stub);
-      expect(rows.map((r) => r.value)).toEqual([
-        'R$ 0.00',
-        'R$ 0.00',
-        '0',
-        '0',
-        '0%',
-        '30 dias',
-      ]);
+      expect(rows.map((r) => r.value)).toEqual(['R$ 0.00', 'R$ 0.00', '0', '0', '0%', '30 dias']);
     });
   });
 
@@ -219,6 +212,22 @@ describe('KloelDashboard.message.helpers', () => {
       expect(resolveVisibleAssistantText([], 0, 'fallback')).toBe('fallback');
       expect(resolveVisibleAssistantText([{ content: '' }], 0, 'fallback')).toBe('fallback');
       expect(resolveVisibleAssistantText([{ content: null }], 0, 'fallback')).toBe('fallback');
+    });
+
+    it('sanitizes direct fallback text before rendering assistant messages', () => {
+      const text = resolveVisibleAssistantText(
+        [],
+        0,
+        'A skill recuperação de checkout existe no contexto com , mas , , , `. code_outline backend/src/x.ts TypeScript 11 símbolos.',
+      );
+
+      expect(text).toContain('habilidade de recuperação de checkout');
+      expect(text).toContain('camada interna validada com componentes reais');
+      expect(text).not.toContain('skill recuperação');
+      expect(text).not.toContain('code_outline');
+      expect(text).not.toContain('backend/src');
+      expect(text).not.toContain('TypeScript');
+      expect(text).not.toContain('símbolos');
     });
   });
 

@@ -342,13 +342,13 @@ export class PlanLimitsService {
       const current = await this.redis.get(key);
       const total = current ? Number.parseInt(current, 10) : 0;
       if (total > cfg.aiTokensPerMonth) {
-        throw new ForbiddenException(`Limite mensal de tokens IA atingido para o plano ${plan}.`);
+        this.logger.warn(
+          `Limite mensal de tokens IA excedido para o plano ${plan}; mantendo o Kloel disponível em modo degradado. workspace=${workspaceId} total=${total} limit=${cfg.aiTokensPerMonth}`,
+        );
+        return;
       }
     } catch (err: unknown) {
       void this.opsAlert?.alertOnCriticalError(err, 'PlanLimitsService.parseInt');
-      if (err instanceof ForbiddenException) {
-        throw err;
-      }
       this.logger.warn(
         `Redis indisponível para ensureTokenBudget: ${err instanceof Error ? err.message : 'unknown_error'}`,
       );
@@ -378,10 +378,12 @@ export class PlanLimitsService {
       }
 
       if (total > cfg.aiTokensPerMonth) {
-        throw new ForbiddenException(`Limite mensal de tokens IA atingido para o plano ${plan}.`);
+        this.logger.warn(
+          `Uso mensal de tokens IA acima do limite do plano ${plan}: ${total}/${cfg.aiTokensPerMonth}.`,
+        );
       }
     } catch (err: unknown) {
-      void this.opsAlert?.alertOnCriticalError(err, 'PlanLimitsService.expire');
+      void this.opsAlert?.alertOnCriticalError(err, 'PlanLimitsService.trackAiUsage');
       this.logger.warn(
         `Redis indisponível para trackAiUsage: ${err instanceof Error ? err.message : 'unknown_error'}`,
       );

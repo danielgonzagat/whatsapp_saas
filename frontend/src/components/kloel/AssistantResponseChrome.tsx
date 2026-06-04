@@ -4,8 +4,6 @@ import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { useEffect, useState } from 'react';
 import { KloelMushroomVisual } from './KloelBrand';
-const PATTERN_RE = /_/g;
-
 /** Assistant chrome theme shape. */
 export interface AssistantChromeTheme {
   /** Border color property. */
@@ -34,6 +32,16 @@ export interface AssistantProcessEntry {
   label: string;
   /** Phase property. */
   phase: string;
+  /** Kind property. */
+  kind?: 'status' | 'tool_call' | 'tool_result' | 'system' | undefined;
+  /** Span id property. */
+  spanId?: string | undefined;
+  /** Artifact id property. */
+  artifactId?: string | undefined;
+  /** Success property. */
+  success?: boolean | undefined;
+  /** Duration ms property. */
+  durationMs?: number | undefined;
 }
 
 const DEFAULT_THEME: Required<AssistantChromeTheme> = {
@@ -52,6 +60,42 @@ function resolveTheme(theme?: AssistantChromeTheme) {
     ...DEFAULT_THEME,
     ...(theme || {}),
   };
+}
+
+function countTraceActions(entries: AssistantProcessEntry[]): number {
+  return entries.filter((entry) => entry.kind === 'tool_call' || entry.phase === 'tool_calling')
+    .length;
+}
+
+function countTraceObservations(entries: AssistantProcessEntry[]): number {
+  return entries.filter((entry) => entry.kind === 'tool_result' || entry.phase === 'tool_result')
+    .length;
+}
+
+function countTraceSpans(entries: AssistantProcessEntry[]): number {
+  return new Set(entries.map((entry) => entry.spanId).filter(Boolean)).size;
+}
+
+function buildTraceConceptLabels(
+  entries: AssistantProcessEntry[],
+  isProcessing: boolean,
+): string[] {
+  const actionCount = countTraceActions(entries);
+  const observationCount = countTraceObservations(entries);
+  const spanCount = countTraceSpans(entries);
+  const labels = ['Reasoning summary', 'Agent trace'];
+
+  if (entries.length > 0 || isProcessing) {
+    labels.push('CoT privado', 'Scratchpad privado');
+  }
+  if (actionCount > 0 || observationCount > 0) {
+    labels.push('ReAct trajectory', 'Tool/function calling');
+  }
+  if (spanCount > 0 || actionCount > 0 || observationCount > 0) {
+    labels.push('Traces + spans');
+  }
+
+  return labels;
 }
 
 /** Assistant version navigator. */
@@ -102,9 +146,9 @@ export function AssistantVersionNavigator({
 
       <span
         style={{
-          fontSize: 16,
-          fontWeight: 700,
-          letterSpacing: '0.12em',
+          fontSize: 14,
+          fontWeight: 600,
+          letterSpacing: '0.08em',
           textTransform: 'uppercase',
           color: resolvedTheme.mutedColor,
           minWidth: 58,
@@ -149,6 +193,7 @@ export function AssistantProcessingTraceCard({
 }) {
   const resolvedTheme = resolveTheme(theme);
   const [expanded, setExpanded] = useState(isProcessing);
+  const conceptLabels = buildTraceConceptLabels(entries, isProcessing);
 
   useEffect(() => {
     if (isProcessing) {
@@ -165,10 +210,10 @@ export function AssistantProcessingTraceCard({
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: 12,
+        gap: 9,
         marginBottom,
-        padding: '14px 16px',
-        borderRadius: 16,
+        padding: '11px 12px',
+        borderRadius: 8,
         background: resolvedTheme.surfaceColor,
         border: `1px solid ${resolvedTheme.borderColor}`,
       }}
@@ -178,7 +223,7 @@ export function AssistantProcessingTraceCard({
           display: 'flex',
           alignItems: 'flex-start',
           justifyContent: 'space-between',
-          gap: 16,
+          gap: 10,
         }}
       >
         <div
@@ -191,7 +236,7 @@ export function AssistantProcessingTraceCard({
           }}
         >
           <KloelMushroomVisual
-            size={18}
+            size={16}
             traceColor={resolvedTheme.iconTraceColor}
             animated={isProcessing}
             spores={isProcessing ? 'animated' : 'none'}
@@ -200,26 +245,57 @@ export function AssistantProcessingTraceCard({
           <div style={{ minWidth: 0 }}>
             <div
               style={{
-                marginBottom: 4,
-                fontSize: 16,
-                fontWeight: 700,
-                letterSpacing: '0.12em',
+                marginBottom: 3,
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: '0.04em',
                 textTransform: 'uppercase',
                 color: resolvedTheme.mutedColor,
               }}
             >
-              {isProcessing ? 'Kloel está processando' : 'Atividade operacional'}
+              Pré-resposta executável
             </div>
             <p
               style={{
                 margin: 0,
-                fontSize: 16,
-                lineHeight: 1.6,
+                fontSize: 12.25,
+                lineHeight: 1.42,
                 color: isProcessing ? resolvedTheme.textColor : resolvedTheme.mutedColor,
               }}
             >
               {summary}
             </p>
+            {conceptLabels.length > 0 ? (
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 5,
+                  marginTop: 8,
+                }}
+              >
+                {conceptLabels.map((label) => (
+                  <span
+                    key={label}
+                    style={{
+                      borderRadius: 6,
+                      border: `1px solid ${resolvedTheme.nestedBorderColor}`,
+                      background: resolvedTheme.nestedSurfaceColor,
+                      color: resolvedTheme.subtleTextColor,
+                      fontSize: 8.5,
+                      fontWeight: 500,
+                      letterSpacing: '0.04em',
+                      lineHeight: 1,
+                      padding: '4px 6px',
+                      textTransform: 'uppercase',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {label}
+                  </span>
+                ))}
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -229,12 +305,12 @@ export function AssistantProcessingTraceCard({
             onClick={() => setExpanded((current) => !current)}
             style={{
               border: `1px solid ${resolvedTheme.borderColor}`,
-              borderRadius: 16,
+              borderRadius: 6,
               background: 'transparent',
               color: resolvedTheme.mutedColor,
-              fontSize: 16,
+              fontSize: 11,
               fontWeight: 600,
-              padding: '6px 10px',
+              padding: '5px 8px',
               cursor: 'pointer',
               flexShrink: 0,
             }}
@@ -250,9 +326,9 @@ export function AssistantProcessingTraceCard({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: 12,
-            padding: '10px 12px',
-            borderRadius: 12,
+            gap: 10,
+            padding: '8px 10px',
+            borderRadius: 6,
             background: resolvedTheme.nestedSurfaceColor,
             border: `1px solid ${resolvedTheme.nestedBorderColor}`,
           }}
@@ -260,8 +336,8 @@ export function AssistantProcessingTraceCard({
           <p
             style={{
               margin: 0,
-              fontSize: 16,
-              lineHeight: 1.5,
+              fontSize: 12.5,
+              lineHeight: 1.42,
               color: resolvedTheme.mutedColor,
             }}
           >
@@ -275,12 +351,12 @@ export function AssistantProcessingTraceCard({
               onClick={onCancel}
               style={{
                 border: `1px solid ${resolvedTheme.borderColor}`,
-                borderRadius: 16,
+                borderRadius: 6,
                 background: 'transparent',
                 color: resolvedTheme.textColor,
-                fontSize: 16,
+                fontSize: 11,
                 fontWeight: 600,
-                padding: '6px 10px',
+                padding: '5px 8px',
                 cursor: 'pointer',
                 flexShrink: 0,
               }}
@@ -292,36 +368,38 @@ export function AssistantProcessingTraceCard({
       ) : null}
 
       {expanded && entries.length > 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {entries.map((entry) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {entries.map((entry, index) => (
             <div
-              key={entry.id}
+              key={`${entry.id}:${entry.phase}:${index}`}
               style={{
                 display: 'flex',
-                flexDirection: 'column',
-                gap: 4,
-                padding: '10px 12px',
-                borderRadius: 12,
+                alignItems: 'flex-start',
+                gap: 9,
+                padding: '8px 10px',
+                borderRadius: 6,
                 background: resolvedTheme.nestedSurfaceColor,
                 border: `1px solid ${resolvedTheme.nestedBorderColor}`,
               }}
             >
-              <div
+              <span
+                aria-hidden
                 style={{
-                  fontSize: 16,
-                  fontWeight: 700,
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                  color: resolvedTheme.subtleTextColor,
+                  width: 5,
+                  height: 5,
+                  marginTop: 7,
+                  borderRadius: 6,
+                  background: resolvedTheme.mutedColor,
+                  opacity: 0.72,
+                  flexShrink: 0,
                 }}
-              >
-                {entry.phase.replace(PATTERN_RE, ' ')}
-              </div>
+              />
               <p
                 style={{
+                  minWidth: 0,
                   margin: 0,
-                  fontSize: 16,
-                  lineHeight: 1.55,
+                  fontSize: 12.5,
+                  lineHeight: 1.48,
                   color: resolvedTheme.textColor,
                 }}
               >

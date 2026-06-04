@@ -12,6 +12,8 @@ import { Prisma } from '@prisma/client';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { StorageService } from '../common/storage/storage.service';
 import { getTraceHeaders } from '../common/trace-headers';
+import { createTextLlmClient } from '../lib/llm-provider';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { KloelComposerE2EGuard, KLOEL_COMPOSER_E2E_GUARD } from './kloel-composer-e2e-guard';
 import { callOpenAIWithRetry } from './openai-wrapper';
 import {
@@ -29,6 +31,8 @@ import {
   buildAnthropicSiteBody,
   buildCapabilityPrompt,
   buildGeneratedImageFilename,
+  buildRefinementPrompt,
+  codeNativeRefinementResponse,
   codeNativeSearchWeb,
   composeAbortSignal,
   computeRetryDelayMs,
@@ -40,6 +44,7 @@ import {
   formatSiteRetryExhaustedMessage,
   generatedImageStorageFolder,
   isModelInvalidError,
+  normalizeRefinementMarkdown,
   normalizeWebSearchSources,
   shouldRetryAnthropicStatus,
   shouldTrackTokenUsage,
@@ -56,6 +61,7 @@ export type { CapabilityExecutionResult, ComposerCapability, WebSearchDigest };
 export class KloelComposerService {
   private readonly logger = StructuredLogger.from(KloelComposerService.name);
   private readonly openai: OpenAI | null;
+  private readonly textLlm: OpenAI | null;
 
   constructor(
     private readonly planLimits: PlanLimitsService,
@@ -65,6 +71,7 @@ export class KloelComposerService {
     this.openai = process.env.OPENAI_API_KEY
       ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
       : null;
+    this.textLlm = createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 });
   }
 
   buildCapabilityPrompt(message: string, composerContext?: string): string {
@@ -160,6 +167,21 @@ export class KloelComposerService {
     return stored.url;
   }
 
+  private async trackCapabilityAiUsage(
+    workspaceId: string,
+    usageTokens: number,
+    capability: ComposerCapability,
+  ): Promise<void> {
+    try {
+      await this.planLimits.trackAiUsage(workspaceId, usageTokens);
+    } catch (error: unknown) {
+      const reason = error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `Falha ao registrar uso de IA do composer capability=${capability} ws=${workspaceId} tokens=${usageTokens}: ${reason}`,
+      );
+    }
+  }
+
   async executeComposerCapability(input: {
     capability: ComposerCapability;
     message: string;
@@ -179,11 +201,58 @@ export class KloelComposerService {
       const content = this.formatSearchDigestAsMarkdown(digest);
       const usageTokens = Number(digest.totalTokens || 0);
       if (workspaceId && shouldTrackTokenUsage(usageTokens)) {
-        await this.planLimits.trackAiUsage(workspaceId, usageTokens).catch(() => {});
+        await this.trackCapabilityAiUsage(workspaceId, usageTokens, capability);
       }
       return {
         content,
         metadata: { capability, webSources: digest.sources },
+        estimatedTokens: shouldTrackTokenUsage(usageTokens) ? usageTokens : 0,
+      };
+    }
+
+    if (capability === 'refine_response') {
+      if (workspaceId) {
+        await this.planLimits.ensureTokenBudget(workspaceId);
+      }
+
+      const textLlm = this.textLlm;
+      if (!textLlm) {
+        return {
+          content: codeNativeRefinementResponse(message),
+          metadata: { capability, refinementUnavailable: true },
+          estimatedTokens: 0,
+        };
+      }
+
+      const refinementPrompt = buildRefinementPrompt(message, composerContext);
+      const requestOptions: OpenAI.RequestOptions | undefined = signal ? { signal } : undefined;
+      const response = await callOpenAIWithRetry(() =>
+        requestOptions
+          ? textLlm.chat.completions.create(
+              {
+                model: resolveBackendOpenAIModel('writer'),
+                messages: [{ role: 'user', content: refinementPrompt }],
+                temperature: 0.3,
+              },
+              requestOptions,
+            )
+          : textLlm.chat.completions.create({
+              model: resolveBackendOpenAIModel('writer'),
+              messages: [{ role: 'user', content: refinementPrompt }],
+              temperature: 0.3,
+            }),
+      );
+      const rawContent =
+        String(response.choices?.[0]?.message?.content || '').trim() ||
+        'Não consegui gerar uma mesa de refinamento útil agora. Ajuste o pedido e tente novamente.';
+      const content = normalizeRefinementMarkdown(rawContent);
+      const usageTokens = extractTotalTokens(response.usage);
+      if (workspaceId && shouldTrackTokenUsage(usageTokens)) {
+        await this.trackCapabilityAiUsage(workspaceId, usageTokens, capability);
+      }
+      return {
+        content,
+        metadata: { capability, refinementMode: 'response_table' },
         estimatedTokens: shouldTrackTokenUsage(usageTokens) ? usageTokens : 0,
       };
     }
@@ -255,7 +324,7 @@ export class KloelComposerService {
 
       const usageTokens = Number(response?.usage?.total_tokens || 0);
       if (workspaceId && shouldTrackTokenUsage(usageTokens)) {
-        await this.planLimits.trackAiUsage(workspaceId, usageTokens).catch(() => {});
+        await this.trackCapabilityAiUsage(workspaceId, usageTokens, capability);
       }
       return {
         content: 'Imagem gerada e pronta para revisão.',
@@ -300,7 +369,12 @@ export class KloelComposerService {
           });
 
           if (!response.ok) {
-            const errorText = await response.text().catch(() => '');
+            let errorText = '';
+            try {
+              errorText = await response.text();
+            } catch (error: unknown) {
+              this.logger.warn(`Falha ao ler erro da Anthropic: ${String(error)}`);
+            }
             const status = response.status;
             if (shouldRetryAnthropicStatus(status)) {
               lastError = new Error(`Anthropic ${status}: ${errorText}`);
@@ -341,7 +415,7 @@ export class KloelComposerService {
 
       const usageTokens = extractAnthropicUsageTokens(result);
       if (workspaceId && shouldTrackTokenUsage(usageTokens)) {
-        await this.planLimits.trackAiUsage(workspaceId, usageTokens).catch(() => {});
+        await this.trackCapabilityAiUsage(workspaceId, usageTokens, capability);
       }
       return {
         content: 'Site gerado e pronto para revisão.',

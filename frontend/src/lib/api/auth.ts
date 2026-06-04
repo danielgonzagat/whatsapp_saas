@@ -51,7 +51,8 @@ export interface AuthPayload {
   [k: string]: unknown;
 }
 
-type AuthResponse = { data?: AuthPayload | null; error?: string | null };
+type AuthResponse = { data?: AuthPayload | null; error?: string | null; status?: number };
+type AuthApiResponse = { data?: AuthPayload; error?: string; status: number };
 
 function persistAuthPayload(res: AuthResponse): void {
   const payload = res.data ?? null;
@@ -68,6 +69,78 @@ function persistAuthPayload(res: AuthResponse): void {
   const wsId = resolveWorkspaceFromAuthPayload(payload as Record<string, unknown> | null)?.id;
   if (wsId) {
     tokenStorage.setWorkspaceId(wsId);
+  }
+}
+
+function readAuthErrorMessage(payload: unknown, fallback: string): string {
+  if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+    const record = payload as Record<string, unknown>;
+    const { message, error } = record;
+    if (Array.isArray(message)) {
+      return message.join(', ');
+    }
+    if (typeof message === 'string' && message.trim().length > 0) {
+      return message;
+    }
+    if (typeof error === 'string' && error.trim().length > 0) {
+      return error;
+    }
+  }
+  return fallback;
+}
+
+async function readOptionalJsonPayload(response: Response): Promise<unknown> {
+  if (typeof response.text === 'function') {
+    const body = await response.text();
+    const trimmed = body.trim();
+    if (!trimmed) {
+      return null;
+    }
+    try {
+      return JSON.parse(trimmed) as unknown;
+    } catch {
+      return { message: trimmed };
+    }
+  }
+
+  if (typeof response.json === 'function') {
+    return response.json() as Promise<unknown>;
+  }
+
+  return null;
+}
+
+async function fetchWorkspaceMe(): Promise<AuthApiResponse> {
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  const token = tokenStorage.getToken();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+    headers['x-kloel-access-token'] = token;
+  }
+  const workspaceId = tokenStorage.getWorkspaceId();
+  if (workspaceId) {
+    headers['x-workspace-id'] = workspaceId;
+  }
+
+  try {
+    const response = await fetch('/api/workspace/me', {
+      method: 'GET',
+      credentials: 'include',
+      headers,
+    });
+    const payload = await readOptionalJsonPayload(response);
+    if (!response.ok) {
+      return {
+        error: readAuthErrorMessage(payload, response.statusText || `HTTP ${response.status}`),
+        status: response.status,
+      };
+    }
+    return { data: payload as AuthPayload, status: response.status };
+  } catch (err: unknown) {
+    return {
+      error: err instanceof Error ? err.message : 'Network error',
+      status: 0,
+    };
   }
 }
 
@@ -178,5 +251,5 @@ export const authApi = {
     tokenStorage.clear();
   },
 
-  getMe: () => apiFetch<AuthPayload>('/workspace/me'),
+  getMe: fetchWorkspaceMe,
 };

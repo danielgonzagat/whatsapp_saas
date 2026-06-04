@@ -56,7 +56,11 @@ export default function ContaBankSelectorField({
         disabled={banksLoading}
         aria-haspopup="listbox"
         aria-expanded={bankDropdownOpen}
-        aria-label="Selecionar banco"
+        aria-label={
+          formBankName
+            ? `Banco selecionado: ${formBankCode ? `${formBankCode} ` : ''}${formBankName}`
+            : 'Selecionar banco'
+        }
         aria-busy={banksLoading}
         style={{
           width: '100%',

@@ -3,8 +3,213 @@
 import type { KloelStreamEvent, KloelStreamPhase } from './kloel-stream-events';
 
 const WHITESPACE_G_RE = /\s+/g;
-const SEPARATOR_G_RE = /[_-]+/g;
 const TRAILING_DOTS_RE = /[.]+$/;
+const ASSISTANT_DSML_TOOL_CALLS_BLOCK_RE =
+  /<[\uFF5C|]{2}DSML[\uFF5C|]{2}tool_calls\b[^>]*>[\s\S]*?<\/[\uFF5C|]{2}DSML[\uFF5C|]{2}tool_calls>/gi;
+const ASSISTANT_DSML_INVOKE_BLOCK_RE =
+  /<[\uFF5C|]{2}DSML[\uFF5C|]{2}invoke\b[^>]*>[\s\S]*?<\/[\uFF5C|]{2}DSML[\uFF5C|]{2}invoke>/gi;
+const ASSISTANT_XML_TOOL_CALLS_BLOCK_RE = /<tool_calls\b[^>]*>[\s\S]*?<\/tool_calls>/gi;
+const ASSISTANT_XML_INVOKE_BLOCK_RE = /<invoke\b[^>]*>[\s\S]*?<\/invoke>/gi;
+const ASSISTANT_OPEN_TOOL_MARKUP_RE =
+  /<[\uFF5C|]{2}DSML[\uFF5C|]{2}(?:tool_calls|invoke)\b[\s\S]*$|<(?:tool_calls|invoke)\b[\s\S]*$/i;
+const ASSISTANT_IMPLEMENTATION_PATH_RE =
+  /\b(?:backend|frontend|src|scripts|apps|packages)\/[A-Za-z0-9._~!$&'()*+,;=:@/%-]+/g;
+const ASSISTANT_FILE_REFERENCE_RE =
+  /\barquivo\s+(?=[A-Za-z0-9._~!$&'()*+,;=:@/%-]*(?:[\\/\\\\]|(?:\.[A-Za-z0-9]{1,12}\b)))[A-Za-z0-9._~!$&'()*+,;=:@/%-]+/gi;
+const ASSISTANT_IMPLEMENTATION_LANGUAGE_RE = /\b(?:TypeScript|JavaScript|TSX|JSX)\b/g;
+const ASSISTANT_SYMBOL_COUNT_RE = /\b\d+\s+s[ií]mbolos?\b/gi;
+const ASSISTANT_INTERNAL_CERTIFICATION_SENTENCE_RE =
+  /\s*Meu status de\s+["“]?no overclaim["”]?\s+é\s+PASS\.[ \t]*/gi;
+const ASSISTANT_INTERNAL_CERTIFICATION_TOKEN_RE =
+  /\b(?:no overclaim|overclaim|PASS(?![-A-Za-zÀ-ÖØ-öø-ÿ0-9_])|ABI\s+\d+(?:\.\d+){1,3}|certificationVerdict|runtimeEvidencePct|INSUFFICIENT_EVIDENCE)\b/gi;
+const ASSISTANT_INTERNAL_VERSION_RE = /\bversão\s+\d+(?:\.\d+){1,3}\b/gi;
+const ASSISTANT_PRODUCT_LANGUAGE_REPLACEMENTS: Array<[RegExp, string]> = [
+  [/\bcode_outline\b/gi, 'inspeção da arquitetura interna'],
+  [/\bcode outline\b/gi, 'inspeção da arquitetura interna'],
+  [/\bsearch_codebase\b/gi, 'busca na arquitetura interna'],
+  [/\bcode_detect_issues\b/gi, 'auditoria da arquitetura interna'],
+  [/\brun_backend_tests\b/gi, 'validação operacional'],
+  [/\brun backend tests\b/gi, 'validação operacional'],
+  [/\bget_workspace_status\b/gi, 'verificação do estado do ambiente operacional'],
+  [/\blist_products\b/gi, 'catálogo de produtos'],
+  [/\blist products\b/gi, 'catálogo de produtos'],
+  [/\bget_settings\b/gi, 'configurações da conta'],
+  [/\bget settings\b/gi, 'configurações da conta'],
+  [/\bget_billing_status\b/gi, 'status da assinatura'],
+  [/\bget billing status\b/gi, 'status da assinatura'],
+  [/\bget_product_plans\b/gi, 'consultar planos do produto'],
+  [/\bworkingMemory\b/g, 'memória de trabalho'],
+  [/\battention\.candidates\b/gi, 'foco de atenção'],
+  [/\bdashboard:chat\b/gi, 'chat do Kloel'],
+  [/\bdashboard\b/gi, 'chat do Kloel'],
+  [/\bskill\s+checkout-recovery\b/gi, 'habilidade de recuperação de checkout'],
+  [/\bskill\s+recuperação de checkout\b/gi, 'habilidade de recuperação de checkout'],
+  [/\bcheckout-recovery\b/gi, 'recuperação de checkout'],
+  [/\bwebhook\b/gi, 'integração externa'],
+  [/\bbilling\b/gi, 'assinatura e cobrança'],
+  [/\bscore\b/gi, 'pontuação'],
+  [/\bworkspace\b/gi, 'ambiente operacional'],
+  [/\bruntime\b/gi, 'arquitetura cognitiva'],
+  [/\bbackend\b/gi, 'infraestrutura'],
+  [/\bfrontend\b/gi, 'interface'],
+  [/\bstateless\b/gi, 'sem memória persistente'],
+  [/\bpending\b/gi, 'pendente'],
+  [/\bactive\b/gi, 'ativo'],
+  [/\bhealthy\b/gi, 'saudável'],
+  [/\bdeveloping\b/gi, 'em desenvolvimento'],
+  [/\bstable\b/gi, 'estável'],
+  [/\bproven\b/gi, 'comprovado'],
+  [/\bobserved\b/gi, 'observado'],
+  [/\bcertificação interna\b/gi, 'verificação de consistência'],
+  [/\bpassos e ferramentas acionados\b/gi, 'passos e ações executadas'],
+  [/\bferramentas utilizadas\b/gi, 'ações executadas'],
+  [/\bferramentas acionad[ao]s\b/gi, 'ações acionadas'],
+  [/\bnomes de ferramentas\b/gi, 'nomes internos de capacidades'],
+  [/\bmódulo principal\b/gi, 'núcleo operacional'],
+];
+
+export function sanitizeAssistantVisibleContent(value: string): string {
+  return ASSISTANT_PRODUCT_LANGUAGE_REPLACEMENTS.reduce(
+    (text, [pattern, replacement]) => text.replace(pattern, replacement),
+    value,
+  )
+    .replace(ASSISTANT_DSML_TOOL_CALLS_BLOCK_RE, ' ')
+    .replace(ASSISTANT_DSML_INVOKE_BLOCK_RE, ' ')
+    .replace(ASSISTANT_XML_TOOL_CALLS_BLOCK_RE, ' ')
+    .replace(ASSISTANT_XML_INVOKE_BLOCK_RE, ' ')
+    .replace(ASSISTANT_OPEN_TOOL_MARKUP_RE, '')
+    .replace(/\bcapacidade:\s*[A-Za-z0-9_.-]+\b/gi, 'Ação operacional')
+    .replace(
+      /\bErro:\s*Venda\s+n[aã]o\s+encontrada\.?/gi,
+      'Não encontrei uma venda correspondente para essa consulta.',
+    )
+    .replace(
+      /\bA criação de site está conectada, mas o provedor de geração de sites ainda não está configurado neste ambiente\. Configure a chave do provedor e tente novamente\.?/gi,
+      'A criação de site está conectada, mas a configuração de geração de sites ainda não foi concluída neste ambiente. Finalize a configuração e tente novamente.',
+    )
+    .replace(
+      /\bA[cç][aã]o\s+"?catálogo de produtos"?\s+executada com sucesso\.?/gi,
+      'Consultei seu catálogo real e registrei a observação operacional.',
+    )
+    .replace(
+      /\bFalha ao executar\s+"?catálogo de produtos"?:\s*Missing Authorization header\.?\s*Tente novamente\.?/gi,
+      'Não consegui consultar o catálogo de produtos agora porque sua sessão expirou. Faça login novamente para continuar.',
+    )
+    .replace(/\bMissing Authorization header\b/gi, 'sessão expirada')
+    .replace(
+      ASSISTANT_INTERNAL_CERTIFICATION_SENTENCE_RE,
+      ' A verificação de consistência não detectou capacidades sem evidência observada. ',
+    )
+    .replace(/\bc[oó]digo(?:\s+fonte)?\b/gi, 'arquitetura interna')
+    .replace(ASSISTANT_FILE_REFERENCE_RE, 'camada interna')
+    .replace(ASSISTANT_IMPLEMENTATION_PATH_RE, 'arquitetura interna')
+    .replace(ASSISTANT_IMPLEMENTATION_LANGUAGE_RE, 'tecnologia interna')
+    .replace(ASSISTANT_SYMBOL_COUNT_RE, 'componentes reais')
+    .replace(ASSISTANT_INTERNAL_VERSION_RE, 'versão atual')
+    .replace(ASSISTANT_INTERNAL_CERTIFICATION_TOKEN_RE, 'verificação de consistência')
+    .replace(/\balegação acima do observadoos\b/gi, 'passos')
+    .replace(/\bvers[aã]o\s+verifica[cç][aã]o de consist[eê]ncia\b/gi, 'versão atual')
+    .replace(
+      /(?:\s+com)?\s+verifica[cç][aã]o de consist[eê]ncia(?:\s+verifica[cç][aã]o de consist[eê]ncia)+/gi,
+      ' verificação de consistência',
+    )
+    .replace(
+      /existe(?:\s+no contexto)?\s+com\s+outcome:\s*[^.]+/gi,
+      'está registrada, mas ainda sem execução real',
+    )
+    .replace(/\b(?:outcome|success|failure|patch|view):\s*[^\s,.`]+`?/gi, '')
+    .replace(/\bmétrica interna\b/gi, '')
+    .replace(
+      /A\s+(?:skill|habilidade)\s+`?(?:checkout-recovery|recuperação de checkout|habilidade de recuperação de checkout)`?\s+existe no contexto com[^.]*\./gi,
+      'A habilidade de recuperação de checkout está registrada, mas ainda não foi exercitada.',
+    )
+    .replace(
+      /A habilidade de recuperação de checkout existe no contexto com[^.]*\./gi,
+      'A habilidade de recuperação de checkout está registrada, mas ainda não foi exercitada.',
+    )
+    .replace(
+      /A skill recuperação de checkout existe no contexto com[^.]*\./gi,
+      'A habilidade de recuperação de checkout está registrada, mas ainda não foi exercitada.',
+    )
+    .replace(/(?:[\u2705\u274c\u26a0\u{1f680}]|\uFE0F)+/gu, '')
+    .replace(/\binfraestrutura\/arquitetura interna\b/gi, 'camada interna')
+    .replace(/\bcamada internaexado\b/gi, 'arquivo anexado')
+    .replace(/\bcamada interna teste\b/gi, 'Arquivo de teste')
+    .replace(/\bcamada interna\s+interna\b/gi, 'camada interna')
+    .replace(
+      /\bEle está em tecnologia interna, no arquivo camada interna\./gi,
+      'Ela está acessível em uma camada operacional validada.',
+    )
+    .replace(
+      /\bEle está em camada operacional, no arquivo camada interna\./gi,
+      'Ela está acessível em uma camada operacional validada.',
+    )
+    .replace(/\barquivo\s+camada interna\b/gi, 'camada operacional')
+    .replace(/\btecnologia interna\b/gi, 'camada operacional')
+    .replace(/\bcamada operacional\s+intern[ao]\b/gi, 'camada operacional')
+    .replace(/\bO módulo contém componentes reais\./gi, 'O núcleo contém capacidades reais.')
+    .replace(/\bfunções,\s*classes,\s*tipos\b/gi, 'componentes reais')
+    .replace(/\bs[ií]mbolos reais\b/gi, 'componentes reais')
+    .replace(/\bcomponentes reais\s*\(componentes reais\)/gi, 'componentes reais')
+    .replace(/\barquitetura cognitiva\s+cognitiva\b/gi, 'arquitetura cognitiva')
+    .replace(
+      /\binspeção da arquitetura interna\s+camada interna\s+camada operacional\s+componentes reais\b/gi,
+      'camada interna validada com componentes reais',
+    )
+    .replace(
+      /\binspeção da arquitetura interna\s+camada interna\s+tecnologia interna\s+componentes reais\b/gi,
+      'camada interna validada com componentes reais',
+    )
+    .replace(
+      /\barquitetura interna\s+camada interna\s+componentes reais\b/gi,
+      'camada interna validada com componentes reais',
+    )
+    .replace(/\bmeu arquitetura interna\b/gi, 'minha arquitetura interna')
+    .replace(/\bmeu próprio arquitetura interna\b/gi, 'minha própria arquitetura interna')
+    .replace(/\bao minha própria arquitetura interna\b/gi, 'à minha própria arquitetura interna')
+    .replace(/\bdo minha arquitetura interna\b/gi, 'da minha arquitetura interna')
+    .replace(
+      /\bnão é uma simulação, é o camada interna na infraestrutura\b/gi,
+      'não é uma simulação; é acesso real à camada operacional',
+    )
+    .replace(/\bo arquitetura interna\b/gi, 'a arquitetura interna')
+    .replace(/\bdo arquitetura interna\b/gi, 'da arquitetura interna')
+    .replace(/\bno arquitetura interna\b/gi, 'na arquitetura interna')
+    .replace(/\bcamada interna no infraestrutura\b/gi, 'camada interna na infraestrutura')
+    .replace(
+      /\bEle está em camada operacional,\s+no\s+arquivo\s+`?camada interna`?\./gi,
+      'Ela está acessível em uma camada operacional validada.',
+    )
+    .replace(/\bno\s+arquivo\s+`?camada interna`?\b/gi, 'em uma camada operacional')
+    .replace(/\bno\s+chat do Kloel\b/gi, 'pelo chat do Kloel')
+    .replace(/\barquitetura interna\b/gi, 'camada operacional')
+    .replace(/\bcamada operacional\s+intern[ao]\b/gi, 'camada operacional')
+    .replace(/\bambiente operacional está operacional\b/gi, 'ambiente operacional está ativo')
+    .replace(/\binspeção da camada operacional\b/gi, 'checagem privada')
+    .replace(/\bbusca na camada operacional\b/gi, 'checagem privada')
+    .replace(/\bauditoria da camada operacional\b/gi, 'checagem privada')
+    .replace(/\bestado oculto da ferramenta\b/gi, 'estado privado')
+    .replace(/\bchamada a sistema\b/gi, 'detalhe privado')
+    .replace(/\bcamada operacional\b/gi, 'processo privado')
+    .replace(/à processo privado\b/gi, 'ao processo privado')
+    .replace(/\bda processo privado\b/gi, 'do processo privado')
+    .replace(/\bna processo privado\b/gi, 'no processo privado')
+    .replace(/"em desenvolvimento"\s+\(em desenvolvimento\)/gi, '"em desenvolvimento"')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n[ \t]+/g, '\n')
+    .replace(/\n{2,}/g, '\n')
+    .trim();
+}
+
+function sanitizeAssistantTraceLabel(value: string): string {
+  return sanitizeAssistantVisibleContent(value)
+    .replace(/\bAção enviada para [^.]+\.?/gi, 'Consultei contexto operacional relevante antes de responder.')
+    .replace(/\bObservação recebida de [^.]+\.?/gi, 'Incorporei as observações encontradas antes de responder.')
+    .replace(/\bFalha observada em [^.]+\.?/gi, 'Registrei uma limitação operacional antes de responder.')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+}
 
 function createMessageUiId(prefix: string) {
   return `${prefix}_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
@@ -36,6 +241,12 @@ export interface AssistantProcessingTraceEntry {
   createdAt?: string | undefined;
   /** Tool property. */
   tool?: string | undefined;
+  /** Span id property. */
+  spanId?: string | undefined;
+  /** Artifact id property. */
+  artifactId?: string | undefined;
+  /** Duration ms property. */
+  durationMs?: number | undefined;
   /** Success property. */
   success?: boolean | undefined;
 }
@@ -64,7 +275,8 @@ export function getAssistantResponseVersions(
 
   const versions = rawVersions
     .map((entry) => normalizeResponseVersion(entry))
-    .filter((entry): entry is AssistantResponseVersion => !!entry);
+    .filter((entry): entry is AssistantResponseVersion => !!entry)
+    .map((entry) => ({ ...entry, content: sanitizeAssistantVisibleContent(entry.content) }));
 
   if (versions.length > 0) {
     return versions;
@@ -77,7 +289,7 @@ export function getAssistantResponseVersions(
   return [
     {
       id: fallbackId,
-      content: fallbackContent,
+      content: sanitizeAssistantVisibleContent(fallbackContent),
       source: 'initial',
     },
   ];
@@ -100,7 +312,7 @@ export function summarizeAssistantProcessingTrace(
   entries: AssistantProcessingTraceEntry[],
   fallbackSummary?: string,
 ): string {
-  const fallback = String(fallbackSummary || '').trim();
+  const fallback = sanitizeAssistantTraceLabel(String(fallbackSummary || ''));
   if (fallback) {
     return fallback;
   }
@@ -109,7 +321,10 @@ export function summarizeAssistantProcessingTrace(
     new Set(
       entries
         .map((entry) =>
-          entry.label.replace(WHITESPACE_G_RE, ' ').trim().replace(TRAILING_DOTS_RE, ''),
+          sanitizeAssistantTraceLabel(entry.label)
+            .replace(WHITESPACE_G_RE, ' ')
+            .trim()
+            .replace(TRAILING_DOTS_RE, ''),
         )
         .filter(Boolean),
     ),
@@ -194,6 +409,10 @@ function createAssistantTraceEntryFromStreamEvent(
   event: KloelStreamEvent,
 ): AssistantProcessingTraceEntry | null {
   if (event.type === 'status') {
+    if (event.phase === 'tool_calling' || event.phase === 'tool_result') {
+      return null;
+    }
+
     const label = String(event.label || '').trim();
     if (!label) {
       return null;
@@ -203,27 +422,35 @@ function createAssistantTraceEntryFromStreamEvent(
   }
 
   if (event.type === 'tool_call') {
+    const spanId = event.spanId || event.callId;
     return {
-      id: event.callId || `trace_tool_call_${Date.now()}`,
+      id: event.callId ? `${event.callId}:call` : `trace_tool_call_${Date.now()}`,
       kind: 'tool_call',
       phase: 'tool_calling',
-      label: `Executando ${formatTraceToolLabel(event.tool)}.`,
+      label: sanitizeAssistantTraceLabel('Consultei contexto operacional relevante antes de responder.'),
       createdAt: new Date().toISOString(),
       tool: event.tool,
+      ...(spanId ? { spanId } : {}),
     };
   }
 
   if (event.type === 'tool_result') {
+    const spanId = event.spanId || event.callId;
     return {
-      id: event.callId || `trace_tool_result_${Date.now()}`,
+      id: event.callId ? `${event.callId}:result` : `trace_tool_result_${Date.now()}`,
       kind: 'tool_result',
       phase: 'tool_result',
-      label: event.success
-        ? `Concluiu ${formatTraceToolLabel(event.tool)}.`
-        : `Falhou ao executar ${formatTraceToolLabel(event.tool)}.`,
+      label: sanitizeAssistantTraceLabel(
+        event.success
+          ? 'Incorporei as observações encontradas antes de responder.'
+          : 'Registrei uma limitação operacional antes de responder.',
+      ),
       createdAt: new Date().toISOString(),
       tool: event.tool,
       success: event.success,
+      ...(spanId ? { spanId } : {}),
+      ...(event.artifactId ? { artifactId: event.artifactId } : {}),
+      ...(typeof event.durationMs === 'number' ? { durationMs: event.durationMs } : {}),
     };
   }
 
@@ -269,35 +496,33 @@ function normalizeProcessingTraceEntry(value: unknown): AssistantProcessingTrace
     candidate.phase === 'streaming'
       ? candidate.phase
       : 'thinking';
+  const kind =
+    candidate.kind === 'tool_call' ||
+    candidate.kind === 'tool_result' ||
+    candidate.kind === 'system'
+      ? candidate.kind
+      : 'status';
+  const tool = typeof candidate.tool === 'string' ? candidate.tool : undefined;
+  const success = typeof candidate.success === 'boolean' ? candidate.success : undefined;
+  const normalizedLabel = sanitizeAssistantTraceLabel(label);
 
   return {
     id:
       typeof candidate.id === 'string' && candidate.id.trim()
         ? candidate.id
         : createMessageUiId(`trace_${rawPhase}`),
-    kind:
-      candidate.kind === 'tool_call' ||
-      candidate.kind === 'tool_result' ||
-      candidate.kind === 'system'
-        ? candidate.kind
-        : 'status',
+    kind,
     phase: rawPhase,
-    label,
+    label: normalizedLabel,
     createdAt: typeof candidate.createdAt === 'string' ? candidate.createdAt : undefined,
-    tool: typeof candidate.tool === 'string' ? candidate.tool : undefined,
-    success: typeof candidate.success === 'boolean' ? candidate.success : undefined,
+    tool,
+    spanId: typeof candidate.spanId === 'string' ? candidate.spanId : undefined,
+    artifactId: typeof candidate.artifactId === 'string' ? candidate.artifactId : undefined,
+    durationMs: typeof candidate.durationMs === 'number' ? candidate.durationMs : undefined,
+    success,
   };
 }
 
-function formatTraceToolLabel(toolName?: string | null) {
-  const normalized = String(toolName || 'ferramenta')
-    .trim()
-    .replace(SEPARATOR_G_RE, ' ')
-    .replace(WHITESPACE_G_RE, ' ')
-    .toLowerCase();
-
-  return normalized || 'ferramenta';
-}
 
 function lowercaseLeadingCharacter(value: string) {
   if (!value) {

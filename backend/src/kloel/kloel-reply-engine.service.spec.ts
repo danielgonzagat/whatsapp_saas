@@ -183,6 +183,19 @@ describe('KloelReplyEngineService', () => {
       ).toBe(true);
     });
 
+    it('routes reflective agent-trace and internal-tool questions through model planning', () => {
+      expect(
+        service.shouldAttemptToolPlanningPass(
+          'voce consegue observar seu codigo fonte e suas ferramentas internas?',
+        ),
+      ).toBe(true);
+      expect(
+        service.shouldAttemptToolPlanningPass(
+          'explique seu agent execution trace com raciocinio, acoes e observacoes',
+        ),
+      ).toBe(true);
+    });
+
     it('returns false for ideas-only messages', () => {
       expect(service.shouldAttemptToolPlanningPass('Me dê ideias de produtos')).toBe(false);
     });

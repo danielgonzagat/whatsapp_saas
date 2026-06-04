@@ -27,6 +27,7 @@ export function KloelGraphOverlay({
   const { C } = useGraphTheme();
   return (
     <div
+      onClick={onClose}
       style={{
         position: 'fixed',
         inset: 0,
@@ -42,6 +43,7 @@ export function KloelGraphOverlay({
     >
       <section
         aria-label={getKloelGraphOverlayLabel(activeNode)}
+        onClick={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"
         style={{

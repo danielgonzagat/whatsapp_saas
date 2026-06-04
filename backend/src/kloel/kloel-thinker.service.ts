@@ -9,11 +9,13 @@ import { KloelComposerService } from './kloel-composer.service';
 import { KloelConversationStore } from './kloel-conversation-store';
 import { KLOEL_LLM_E2E_GUARD, KloelLLME2EGuard } from './kloel-llm-e2e-guard';
 import {
+  createKloelContentEvent,
   createKloelErrorEvent,
+  createKloelPublicStreamingLabel,
+  createKloelPublicThinkingLabel,
   createKloelStatusEvent,
   createKloelThreadEvent,
   type KloelStreamEvent,
-  createKloelContentEvent,
 } from './kloel-stream-events';
 import { KloelStreamWriter } from './kloel-stream-writer';
 import { KloelThreadService, StoredProcessingTraceEntry } from './kloel-thread.service';
@@ -57,10 +59,11 @@ import { MindEventProcessorService } from './mind/runtime/mind-event-processor.s
 import { MindGlobalPriorService } from './mind/memory/mind-global-prior.service';
 import { MindPredictorService } from './mind/inference/mind-predictor.service';
 import { ValenceTaggerService } from './mind/valence-tagger.service';
+import { extractComposerMetadata } from './kloel.service.composer.helpers';
 
 export type { LocalToolExecutor } from './kloel-reply-engine.service';
 
-type ComposerCapability = 'create_image' | 'create_site' | 'search_web';
+type ComposerCapability = 'create_image' | 'create_site' | 'search_web' | 'refine_response';
 
 export type { ChatMessage, ThinkRequest, ThinkSyncResult } from './kloel-thinker.types';
 import type { ThinkRequest, ThinkSyncResult } from './kloel-thinker.types';
@@ -159,7 +162,15 @@ export class KloelThinkerService {
         mode === 'chat' && typeof workspaceId === 'string' && workspaceId.length > 0
           ? workspaceId
           : undefined;
-      const deterministicAction = deterministicWorkspaceId ? detectActionIntent(message) : null;
+      const composerMetadata = extractComposerMetadata(metadata);
+      const hasExplicitComposerContext =
+        !!composerCapability ||
+        !!composerMetadata.linkedProduct ||
+        (composerMetadata.attachments?.length ?? 0) > 0;
+      const deterministicAction =
+        deterministicWorkspaceId && !hasExplicitComposerContext
+          ? detectActionIntent(message)
+          : null;
       if (deterministicAction && deterministicWorkspaceId) {
         await runDeterministicActionBranch(
           deterministicAction,
@@ -239,6 +250,51 @@ export class KloelThinkerService {
         metadata,
         enrichedCompanyContext,
       });
+
+      if (mode === 'chat' && composerCapability) {
+        if (thread?.id) {
+          safeWrite(createKloelThreadEvent(thread.id, thread.title));
+        }
+
+        const persistedUserMessage = thread?.id
+          ? await this.threadService.persistUserThreadMessage(
+              thread.id,
+              workspaceId ?? '',
+              message,
+              this.threadService.buildThreadMessageMetadata(metadata, {
+                clientRequestId,
+                mode,
+                transport: 'sse',
+                requestState: 'accepted',
+              }),
+            )
+          : null;
+
+        await runComposerCapabilityBranch(
+          composerCapability,
+          effectiveCompanyContext,
+          signal,
+          this.composerService,
+          {
+            workspaceId,
+            userId,
+            message,
+            mode,
+            metadata,
+            clientRequestId,
+            thread,
+            persistedUserMessage,
+            processingTraceEntries,
+            safeWrite,
+            streamWriter,
+            replyEngine: this.replyEngine,
+            threadService: this.threadService,
+            conversationStore: this.conversationStore,
+            planLimits: this.planLimits,
+          },
+        );
+        return;
+      }
 
       // Y-4 / X §2.6/3.4: assemble the REAL per-turn ConversationState
       // from production sources. The LLM verbalizes this State; it does
@@ -350,6 +406,8 @@ export class KloelThinkerService {
         userMessage: finalUserMessage,
         workspaceId,
       });
+      const publicThinkingLabel = createKloelPublicThinkingLabel(finalUserMessage);
+      const publicStreamingLabel = createKloelPublicStreamingLabel(finalUserMessage);
       const streamWriterResponse = (
         writerMessages: ChatCompletionMessageParam[],
         temperature: number,
@@ -359,6 +417,8 @@ export class KloelThinkerService {
           writerMessages,
           temperature,
           responseMaxTokens,
+          thinkingLabel: publicThinkingLabel,
+          streamingLabel: publicStreamingLabel,
         });
 
       if (mode === 'chat' && workspaceId && shouldPlanWithTools) {
@@ -396,7 +456,7 @@ export class KloelThinkerService {
         workspaceId,
         messageLength: message.length,
       });
-      safeWrite(createKloelStatusEvent('thinking'));
+      safeWrite(createKloelStatusEvent('thinking', publicThinkingLabel));
       const streamedReply = await streamWriterResponse(messages, responseTemperature);
       if (workspaceId && streamedReply) {
         this.llmBudget.recordSpend(workspaceId, streamedReply.estimatedTokens).catch(() => {});

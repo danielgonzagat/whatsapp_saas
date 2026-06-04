@@ -436,6 +436,7 @@ export function MessageBlock({
     message.text,
   );
   const hasProcessingTrace = processingTrace.length > 0;
+  const hasProcessingSummary = !!processingSummary.trim();
   const hasVisibleAssistantText = !!visibleAssistantText.trim();
 
   if (shouldShowThinkingPlaceholder(isThinking, hasVisibleAssistantText)) {
@@ -451,7 +452,11 @@ export function MessageBlock({
       );
     }
 
-    return <AssistantThinkingState label={kloelT(`Kloel está pensando`)} />;
+    return (
+      <AssistantThinkingState
+        label={hasProcessingSummary ? processingSummary : kloelT(`Pensando...`)}
+      />
+    );
   }
 
   return (

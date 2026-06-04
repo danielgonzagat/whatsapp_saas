@@ -89,8 +89,15 @@ export interface KycMfaState {
   pendingSetup: boolean;
 }
 
+export interface KycAuthSession {
+  id: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
 export interface KycSecurityState {
   mfa: KycMfaState;
+  sessions?: KycAuthSession[];
 }
 
 type ApiObjectEnvelope<T> = { data?: T };
@@ -142,6 +149,16 @@ function isKycBankAccount(value: unknown): value is KycBankAccount {
     isOptionalNullableString(record.holderDocument)
   );
 }
+function isKycAuthSession(value: unknown): value is KycAuthSession {
+  const record = asRecord(value);
+  return (
+    record !== null &&
+    typeof record.id === 'string' &&
+    typeof record.createdAt === 'string' &&
+    typeof record.expiresAt === 'string'
+  );
+}
+
 
 function normalizeKycCompletionPayload(value: unknown): KycCompletion | null {
   const envelope = asRecord(value);
@@ -279,15 +296,20 @@ export function useSecurityState() {
   );
   const payload = asRecord(data);
   const mfa = asRecord(payload?.mfa);
-  const isSecurityPayload = Boolean(
+  const sessions = payload?.sessions;
+  const hasValidMfa = Boolean(
     mfa &&
       typeof mfa.enabled === 'boolean' &&
       typeof mfa.pendingSetup === 'boolean',
   );
+  const hasValidSessions = sessions === undefined || (Array.isArray(sessions) && sessions.every(isKycAuthSession));
+  const isSecurityPayload = hasValidMfa && hasValidSessions;
   const security = isSecurityPayload ? (data as KycSecurityState) : null;
   const payloadError = data === undefined || data === null || isSecurityPayload
     ? undefined
-    : new Error('Invalid KYC security payload');
+    : hasValidMfa
+      ? new Error('Invalid KYC security sessions payload')
+      : new Error('Invalid KYC security payload');
 
   return {
     security,
@@ -303,7 +325,8 @@ export function useSecurityMutations() {
       kycApi.changePassword(currentPassword, newPassword),
     startMfaSetup: () => kycApi.startMfaSetup(),
     verifyMfaSetup: (code: string) => kycApi.verifyMfaSetup(code),
-    disableMfa: (code: string) => kycApi.disableMfa(code),
+    disableMfa: (code?: string) => kycApi.disableMfa(code),
+    revokeSession: (sessionId: string) => kycApi.revokeSecuritySession(sessionId),
   };
 }
 

@@ -139,6 +139,12 @@ export class TeamService {
         password: hashedPassword,
         role: invite.role,
       },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+      },
     });
 
     // Delete invite
@@ -189,7 +195,15 @@ export class TeamService {
       resourceId: memberId,
       details: { deletedBy: 'user', email: agent.email },
     });
-    return this.prisma.agent.delete({ where: { id: memberId, workspaceId } });
+    return this.prisma.agent.delete({
+      where: { id: memberId, workspaceId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+      },
+    });
   }
 
   /** Update member role. */

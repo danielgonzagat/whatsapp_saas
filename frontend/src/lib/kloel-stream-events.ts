@@ -39,6 +39,8 @@ export interface KloelStreamToolCallEvent {
   type: 'tool_call';
   /** Call id property. */
   callId?: string | undefined;
+  /** Span id property. */
+  spanId?: string | undefined;
   /** Tool property. */
   tool: string;
   /** Args property. */
@@ -51,6 +53,8 @@ export interface KloelStreamToolResultEvent {
   type: 'tool_result';
   /** Call id property. */
   callId?: string | undefined;
+  /** Span id property. */
+  spanId?: string | undefined;
   /** Tool property. */
   tool: string;
   /** Success property. */
@@ -59,6 +63,10 @@ export interface KloelStreamToolResultEvent {
   result?: unknown | undefined;
   /** Error property. */
   error?: string | undefined;
+  /** Artifact id property. */
+  artifactId?: string | undefined;
+  /** Duration ms property. */
+  durationMs?: number | undefined;
 }
 
 /** Kloel stream done event shape. */
@@ -142,6 +150,7 @@ function tryAppendToolCall(event: Record<string, unknown>, events: KloelStreamEv
   events.push({
     type: 'tool_call',
     callId: typeof event.callId === 'string' ? event.callId : undefined,
+    spanId: typeof event.spanId === 'string' ? event.spanId : undefined,
     tool: event.tool,
     args: isRecord(event.args) ? event.args : undefined,
   });
@@ -154,10 +163,13 @@ function tryAppendToolResult(event: Record<string, unknown>, events: KloelStream
   events.push({
     type: 'tool_result',
     callId: typeof event.callId === 'string' ? event.callId : undefined,
+    spanId: typeof event.spanId === 'string' ? event.spanId : undefined,
     tool: event.tool,
     success: typeof event.success === 'boolean' ? event.success : undefined,
     result: event.result,
     error: typeof event.error === 'string' ? event.error : undefined,
+    artifactId: typeof event.artifactId === 'string' ? event.artifactId : undefined,
+    durationMs: typeof event.durationMs === 'number' ? event.durationMs : undefined,
   });
 }
 

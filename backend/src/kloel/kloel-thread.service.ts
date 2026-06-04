@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { isMindMessageDualWriteEnabled } from './mind/aliases/mindmessage-dualwrite.flag';
 import { type KloelStreamEvent } from './kloel-stream-events';
+import { normalizeRefinementMarkdown } from './kloel-composer.service.helpers';
 import { KloelThreadSummaryService } from './kloel-thread-summary.service';
 import OpenAI from 'openai';
 import {
@@ -225,17 +226,21 @@ export class KloelThreadService {
     if (!threadId) {
       return null;
     }
+    const persistedAssistantMessage =
+      this.normalizeThreadMessageMetadataRecord(metadata).capability === 'refine_response'
+        ? normalizeRefinementMarkdown(assistantMessage)
+        : assistantMessage;
     const created = await this.prisma.chatMessage.create({
       data: {
         thread: { connect: { id: threadId } },
         workspaceId,
         role: 'assistant',
-        content: assistantMessage,
+        content: persistedAssistantMessage,
         ...(metadata !== undefined ? { metadata } : {}),
       },
       select: { id: true },
     });
-    await this.dualWriteThreadMindMessage(workspaceId, 'assistant', assistantMessage);
+    await this.dualWriteThreadMindMessage(workspaceId, 'assistant', persistedAssistantMessage);
     await this.touchThread(threadId, workspaceId);
     return created;
   }

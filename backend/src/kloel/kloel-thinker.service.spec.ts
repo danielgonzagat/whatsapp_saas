@@ -1,3 +1,4 @@
+import { ForbiddenException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { KloelThinkerService } from './kloel-thinker.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -45,7 +46,10 @@ import { KloelComposerService } from './kloel-composer.service';
 import { KloelReplyEngineService, LocalToolExecutor } from './kloel-reply-engine.service';
 import { KLOEL_LLM_E2E_GUARD, KloelLLME2EGuard } from './kloel-llm-e2e-guard';
 import { KloelStreamWriter } from './kloel-stream-writer';
-import { finalizeSuccessfulReply } from './kloel-thinker-think.helpers';
+import {
+  finalizeSuccessfulReply,
+  runComposerCapabilityBranch,
+} from './kloel-thinker-think.helpers';
 jest.mock('./kloel-thinker.helpers', () => ({
   thinkSyncImpl: jest.fn(),
   regenerateThreadAssistantResponseImpl: jest.fn(),
@@ -77,6 +81,12 @@ jest.mock('./kloel-stream-writer', () => ({
     streamModelResponse: jest.fn(),
   })),
 }));
+
+jest.mock('./openai-wrapper', () => ({
+  chatCompletionWithFallback: jest.fn(),
+}));
+
+import { chatCompletionWithFallback } from './openai-wrapper';
 
 type ThinkerPrismaMock = {
   workspace: { findUnique: jest.Mock };
@@ -199,10 +209,11 @@ describe('KloelThinkerService', () => {
       isClientDisconnected: jest.fn().mockReturnValue(false),
       buildStreamAbortMessage: jest.fn().mockReturnValue('timeout'),
       openai: {} as Pick<KloelReplyEngineService, 'openai'>['openai'],
-      unavailableMessage: 'Indisponível no momento.',
+      unavailableMessage:
+        'Eu fiquei sem acesso ao motor de resposta agora. Me chama de novo em instantes que eu retomo sem te fazer repetir tudo.',
       contextFormatter: {
         sanitizeUserNameForAssistant: jest.fn().mockReturnValue('User'),
-      } as Pick<KloelReplyEngineService, 'contextFormatter'>['contextFormatter'],
+      } as unknown as Pick<KloelReplyEngineService, 'contextFormatter'>['contextFormatter'],
     };
 
     llmE2EGuard = {
@@ -295,7 +306,7 @@ describe('KloelThinkerService', () => {
       );
 
       expect(executeLocalTool).toHaveBeenCalledWith(wsId, 'list_products', {}, 'agent-1');
-      expect(replyEngine.hasOpenAiKey).not.toHaveBeenCalled();
+      expect(replyEngine.hasOpenAiKey).toHaveBeenCalledTimes(1);
       expect(replyEngine.buildChatModelMessages).not.toHaveBeenCalled();
       const streamWriter = (KloelStreamWriter as jest.Mock).mock.results.at(-1)?.value as {
         write: jest.Mock<void, [unknown]>;
@@ -322,6 +333,122 @@ describe('KloelThinkerService', () => {
       expect(finalizeSuccessfulReply).toHaveBeenCalledWith(
         expect.stringContaining('PDRN'),
         0,
+        expect.objectContaining({ workspaceId: wsId, message: 'listar produtos' }),
+      );
+    });
+
+    it('lets an explicit composer capability bypass generic action routing', async () => {
+      const executeLocalTool = jest.fn().mockResolvedValue({ success: true });
+      jest.mocked(runComposerCapabilityBranch).mockResolvedValueOnce(undefined);
+
+      await service.think(
+        {
+          message: 'rode os testes backend e crie uma landing page curta para Serum Graph Proof',
+          workspaceId: wsId,
+          userId: 'agent-1',
+          metadata: { capability: 'create_site' },
+        },
+        {} as Response,
+        'create_site',
+        undefined,
+        undefined,
+        executeLocalTool as LocalToolExecutor,
+      );
+
+      expect(executeLocalTool).not.toHaveBeenCalled();
+      expect(runComposerCapabilityBranch).toHaveBeenCalledWith(
+        'create_site',
+        undefined,
+        undefined,
+        expect.anything(),
+        expect.objectContaining({
+          workspaceId: wsId,
+          message: 'rode os testes backend e crie uma landing page curta para Serum Graph Proof',
+          metadata: { capability: 'create_site' },
+        }),
+      );
+    });
+
+    it('lets an explicit linked product bypass generic sales action routing', async () => {
+      const executeLocalTool = jest.fn().mockResolvedValue({ success: true });
+
+      await service.think(
+        {
+          message:
+            'Use o produto vinculado para responder: confirme nome e status do produto sem expor IDs internos.',
+          workspaceId: wsId,
+          userId: 'agent-1',
+          metadata: {
+            linkedProduct: {
+              id: 'prod-1',
+              productId: 'prod-1',
+              name: 'Produto chat link',
+              source: 'owned',
+              status: 'draft',
+            },
+          },
+        },
+        {} as Response,
+        null,
+        undefined,
+        undefined,
+        executeLocalTool as LocalToolExecutor,
+      );
+
+      expect(executeLocalTool).not.toHaveBeenCalled();
+      expect(replyEngine.buildChatModelMessages).toHaveBeenCalled();
+    });
+
+    it('synthesizes deterministic tool observations through the model when the AI provider is available', async () => {
+      jest.mocked(chatCompletionWithFallback).mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content:
+                'Raciocínio resumido: consultei o catálogo real.\nAções: executei a leitura operacional.\nObservações: encontrei PDRN como produto ativo.\nResposta final: Consultei seu catálogo real e encontrei PDRN ativo para você revisar.',
+            },
+          },
+        ],
+        usage: { total_tokens: 222 },
+      } as never);
+      const executeLocalTool = jest
+        .fn()
+        .mockResolvedValue({ success: true, products: [{ name: 'PDRN', price: 197 }] });
+
+      await service.think(
+        { message: 'listar produtos', workspaceId: wsId, userId: 'agent-1' },
+        {} as Response,
+        null,
+        undefined,
+        undefined,
+        executeLocalTool as LocalToolExecutor,
+      );
+
+      expect(executeLocalTool).toHaveBeenCalledWith(wsId, 'list_products', {}, 'agent-1');
+      expect(chatCompletionWithFallback).toHaveBeenCalledTimes(1);
+      const synthesisCall = jest.mocked(chatCompletionWithFallback).mock.calls[0];
+      expect(synthesisCall?.[0]).toBe(replyEngine.openai);
+      expect(JSON.stringify(synthesisCall?.[1])).toContain('Produtos: PDRN - R$ 197');
+      const streamWriter = (KloelStreamWriter as jest.Mock).mock.results.at(-1)?.value as {
+        write: jest.Mock<void, [unknown]>;
+      };
+      expect(
+        streamWriter.write.mock.calls.some(([event]) => {
+          if (event === null || typeof event !== 'object' || Array.isArray(event)) {
+            return false;
+          }
+          const candidate = event as { type?: unknown; content?: unknown };
+          return (
+            candidate.type === 'content' &&
+            typeof candidate.content === 'string' &&
+            candidate.content.includes('Consultei seu catálogo real')
+          );
+        }),
+      ).toBe(true);
+      expect(finalizeSuccessfulReply).toHaveBeenCalledWith(
+        expect.stringContaining('Consultei seu catálogo real'),
+        222,
         expect.objectContaining({ workspaceId: wsId, message: 'listar produtos' }),
       );
     });
@@ -422,6 +549,584 @@ describe('KloelThinkerService', () => {
         'Erro: tool_not_allowed',
         0,
         expect.objectContaining({ workspaceId: wsId, message: 'listar produtos' }),
+      );
+    });
+
+    it('persists model-generated executable pre-response as thread processing trace', async () => {
+      const { finalizeSuccessfulReply: realFinalizeSuccessfulReply } = jest.requireActual<
+        typeof import('./kloel-thinker-think.helpers')
+      >('./kloel-thinker-think.helpers');
+      const { buildProcessingTraceSummary } =
+        jest.requireActual<typeof import('./kloel-thread.helpers')>('./kloel-thread.helpers');
+      const localThreadService = {
+        persistAssistantThreadMessage: jest.fn().mockResolvedValue({ id: 'msg-assistant-1' }),
+        buildThreadMessageMetadata: jest.fn((_metadata: unknown, meta: unknown): unknown => meta),
+        maybeRefreshThreadSummary: jest.fn().mockResolvedValue(undefined),
+        maybeGenerateThreadTitle: jest.fn().mockResolvedValue('Nova conversa'),
+        buildProcessingTraceSummary,
+      };
+      const localConversationStore = { saveMessage: jest.fn().mockResolvedValue(undefined) };
+      const localStreamWriter = { close: jest.fn() };
+      const events: unknown[] = [];
+
+      await realFinalizeSuccessfulReply(
+        '**Raciocínio resumido:** entendi o contexto do operador.\n**Ações:** verifiquei a conversa ativa.\n**Observações:** não houve chamada de ferramenta nesta resposta.\n**Resposta final:** A resposta limpa para o usuário.',
+        120,
+        {
+          workspaceId: wsId,
+          message: 'Explique seu trace executivo',
+          mode: 'chat',
+          metadata: {},
+          clientRequestId: 'req-trace-1',
+          thread: { id: 'thread-trace-1', title: 'Nova conversa' },
+          persistedUserMessage: { id: 'msg-user-1' },
+          processingTraceEntries: [],
+          safeWrite: (event) => events.push(event),
+          streamWriter: localStreamWriter,
+          replyEngine: { unavailableMessage: 'Indisponível.', openai: null },
+          threadService: localThreadService,
+          conversationStore: localConversationStore,
+          planLimits,
+        } as unknown as Parameters<typeof realFinalizeSuccessfulReply>[2],
+      );
+
+      expect(localThreadService.persistAssistantThreadMessage).toHaveBeenCalledWith(
+        'thread-trace-1',
+        wsId,
+        'A resposta limpa para o usuário.',
+        expect.objectContaining({
+          responseVersions: [
+            expect.objectContaining({ content: 'A resposta limpa para o usuário.' }),
+          ],
+          processingTrace: [
+            expect.objectContaining({
+              phase: 'thinking',
+              label: 'Raciocínio resumido: entendi o contexto do operador.',
+            }),
+            expect.objectContaining({
+              phase: 'tool_calling',
+              label: 'Ações: verifiquei a conversa ativa.',
+            }),
+            expect.objectContaining({
+              phase: 'tool_result',
+              label: 'Observações: não houve chamada de ferramenta nesta resposta.',
+            }),
+          ],
+          processingSummary: 'Entendi o contexto do operador.',
+        }),
+      );
+      expect(localConversationStore.saveMessage).toHaveBeenLastCalledWith(
+        wsId,
+        'assistant',
+        'A resposta limpa para o usuário.',
+      );
+      expect(events).toEqual(expect.arrayContaining([expect.objectContaining({ type: 'done' })]));
+    });
+
+    it('emits action and observation events for deterministic composer capabilities', async () => {
+      const { runComposerCapabilityBranch } = jest.requireActual<
+        typeof import('./kloel-thinker-think.helpers')
+      >('./kloel-thinker-think.helpers');
+      const events: unknown[] = [];
+      const localComposerService = {
+        executeComposerCapability: jest.fn().mockResolvedValue({
+          content: 'Resultado real da busca web.',
+          metadata: {
+            capability: 'search_web',
+            sources: [{ title: 'Fonte', url: 'https://example.com' }],
+          },
+        }),
+      };
+      const localThreadService = {
+        persistAssistantThreadMessage: jest.fn().mockResolvedValue({ id: 'msg-assistant-1' }),
+        buildThreadMessageMetadata: jest.fn((_metadata: unknown, meta: unknown): unknown => meta),
+        buildProcessingTraceSummary: jest
+          .fn()
+          .mockReturnValue('Resumo persistido da pré-resposta.'),
+        maybeRefreshThreadSummary: jest.fn().mockResolvedValue(undefined),
+        maybeGenerateThreadTitle: jest.fn().mockResolvedValue('Nova conversa'),
+      };
+      const localConversationStore = {
+        saveMessage: jest.fn().mockResolvedValue(undefined),
+      };
+      const localStreamWriter = { close: jest.fn() };
+      const processingTraceEntries = [
+        {
+          id: 'trace-thinking',
+          kind: 'status' as const,
+          phase: 'thinking' as const,
+          label: 'Raciocínio resumido antes da resposta.',
+          createdAt: '2026-06-04T00:00:00.000Z',
+        },
+        {
+          id: 'trace-action',
+          kind: 'tool_call' as const,
+          phase: 'tool_calling' as const,
+          label: 'Consultei contexto operacional relevante antes de responder.',
+          tool: 'busca web',
+          spanId: 'req-1',
+          createdAt: '2026-06-04T00:00:01.000Z',
+        },
+      ];
+
+      await runComposerCapabilityBranch(
+        'search_web',
+        'Contexto operacional real',
+        undefined,
+        localComposerService as unknown as KloelComposerService,
+        {
+          workspaceId: wsId,
+          message: 'Busque referencias atuais',
+          mode: 'chat',
+          metadata: { capability: 'search_web' },
+          clientRequestId: 'req-1',
+          thread: { id: 'thread-1', title: 'Nova conversa' },
+          persistedUserMessage: { id: 'msg-user-1' },
+          processingTraceEntries,
+          safeWrite: (event) => events.push(event),
+          streamWriter: localStreamWriter,
+          replyEngine: { openai: null },
+          threadService: localThreadService,
+          conversationStore: localConversationStore,
+          planLimits,
+        } as unknown as Parameters<typeof runComposerCapabilityBranch>[4],
+      );
+
+      expect(events).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ type: 'tool_call', tool: 'search_web' }),
+          expect.objectContaining({ type: 'tool_result', tool: 'search_web', success: true }),
+          expect.objectContaining({ type: 'content', content: 'Resultado real da busca web.' }),
+        ]),
+      );
+      expect(localComposerService.executeComposerCapability).toHaveBeenCalledWith(
+        expect.objectContaining({ capability: 'search_web', message: 'Busque referencias atuais' }),
+      );
+      expect(localThreadService.buildProcessingTraceSummary).toHaveBeenCalledWith(
+        processingTraceEntries,
+      );
+      expect(localThreadService.persistAssistantThreadMessage).toHaveBeenCalledWith(
+        'thread-1',
+        wsId,
+        'Resultado real da busca web.',
+        expect.objectContaining({
+          capability: 'search_web',
+          processingSummary: 'Resumo persistido da pré-resposta.',
+          processingTrace: expect.arrayContaining([
+            expect.objectContaining({
+              id: 'trace-thinking',
+              label: 'Raciocínio resumido antes da resposta.',
+            }),
+            expect.objectContaining({
+              id: 'trace-action',
+              tool: 'busca web',
+            }),
+          ]) as unknown,
+        }),
+      );
+      expect(events).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'done',
+            metadata: expect.objectContaining({
+              processingSummary: 'Resumo persistido da pré-resposta.',
+              processingTrace: expect.arrayContaining([
+                expect.objectContaining({ id: 'trace-thinking' }),
+                expect.objectContaining({ id: 'trace-action' }),
+              ]) as unknown,
+            }) as unknown,
+          }),
+        ]),
+      );
+    });
+
+    it('normalizes refine_response markdown at the SSE stream and persistence boundary', async () => {
+      const { runComposerCapabilityBranch } = jest.requireActual<
+        typeof import('./kloel-thinker-think.helpers')
+      >('./kloel-thinker-think.helpers');
+      const events: unknown[] = [];
+      const rawContent =
+        '## Diagnóstico executivo Texto bruto inline. ## Lacunas e riscos * Risco um. * Risco dois. ## Versão refinada * Item refinado. ## Próxima ação verificável Validar no Chrome.';
+      const normalizedContent =
+        '## Diagnóstico executivo\n\nTexto bruto inline.\n\n## Lacunas e riscos\n\n* Risco um.\n* Risco dois.\n\n## Versão refinada\n\n* Item refinado.\n\n## Próxima ação verificável\n\nValidar no Chrome.';
+      const localComposerService = {
+        executeComposerCapability: jest.fn().mockResolvedValue({
+          content: rawContent,
+          metadata: { capability: 'refine_response' },
+        }),
+      };
+      const localThreadService = {
+        persistAssistantThreadMessage: jest.fn().mockResolvedValue({ id: 'msg-assistant-1' }),
+        buildThreadMessageMetadata: jest.fn((_metadata: unknown, meta: unknown): unknown => meta),
+        buildProcessingTraceSummary: jest
+          .fn()
+          .mockReturnValue('Resumo persistido da pré-resposta.'),
+        maybeRefreshThreadSummary: jest.fn().mockResolvedValue(undefined),
+        maybeGenerateThreadTitle: jest.fn().mockResolvedValue('Nova conversa'),
+      };
+      const localConversationStore = {
+        saveMessage: jest.fn().mockResolvedValue(undefined),
+      };
+      const localStreamWriter = { close: jest.fn() };
+
+      await runComposerCapabilityBranch(
+        'refine_response',
+        'Contexto operacional real',
+        undefined,
+        localComposerService as unknown as KloelComposerService,
+        {
+          workspaceId: wsId,
+          message: 'Refine para documentação pública',
+          mode: 'chat',
+          metadata: { capability: 'refine_response' },
+          clientRequestId: 'req-refine-normalize',
+          thread: { id: 'thread-1', title: 'Nova conversa' },
+          persistedUserMessage: { id: 'msg-user-1' },
+          processingTraceEntries: [],
+          safeWrite: (event) => events.push(event),
+          streamWriter: localStreamWriter,
+          replyEngine: { openai: null },
+          threadService: localThreadService,
+          conversationStore: localConversationStore,
+          planLimits,
+        } as unknown as Parameters<typeof runComposerCapabilityBranch>[4],
+      );
+
+      expect(events).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ type: 'content', content: normalizedContent }),
+        ]),
+      );
+      expect(localThreadService.persistAssistantThreadMessage).toHaveBeenCalledWith(
+        'thread-1',
+        wsId,
+        normalizedContent,
+        expect.objectContaining({ capability: 'refine_response' }),
+      );
+      expect(localConversationStore.saveMessage).toHaveBeenLastCalledWith(
+        wsId,
+        'assistant',
+        normalizedContent,
+      );
+    });
+
+    it('turns composer provider setup errors into persisted user-facing replies', async () => {
+      const { runComposerCapabilityBranch } = jest.requireActual<
+        typeof import('./kloel-thinker-think.helpers')
+      >('./kloel-thinker-think.helpers');
+      const events: unknown[] = [];
+      const localComposerService = {
+        executeComposerCapability: jest
+          .fn()
+          .mockRejectedValue(new Error('ANTHROPIC API_KEY missing')),
+      };
+      const localThreadService = {
+        persistAssistantThreadMessage: jest.fn().mockResolvedValue({ id: 'msg-assistant-1' }),
+        buildThreadMessageMetadata: jest.fn((_metadata: unknown, meta: unknown): unknown => meta),
+        buildProcessingTraceSummary: jest
+          .fn()
+          .mockReturnValue('Resumo persistido da pré-resposta.'),
+        maybeRefreshThreadSummary: jest.fn().mockResolvedValue(undefined),
+        maybeGenerateThreadTitle: jest.fn().mockResolvedValue('Nova conversa'),
+      };
+      const localConversationStore = {
+        saveMessage: jest.fn().mockResolvedValue(undefined),
+      };
+      const localStreamWriter = { close: jest.fn() };
+
+      await expect(
+        runComposerCapabilityBranch(
+          'create_site',
+          undefined,
+          undefined,
+          localComposerService as unknown as KloelComposerService,
+          {
+            workspaceId: wsId,
+            message: 'Crie uma landing page',
+            mode: 'chat',
+            metadata: { capability: 'create_site' },
+            clientRequestId: 'req-site-missing-provider',
+            thread: { id: 'thread-1', title: 'Nova conversa' },
+            persistedUserMessage: { id: 'msg-user-1' },
+            processingTraceEntries: [],
+            safeWrite: (event) => events.push(event),
+            streamWriter: localStreamWriter,
+            replyEngine: { openai: null },
+            threadService: localThreadService,
+            conversationStore: localConversationStore,
+            planLimits,
+          } as unknown as Parameters<typeof runComposerCapabilityBranch>[4],
+        ),
+      ).resolves.toBeUndefined();
+
+      const contentEvent = events.find(
+        (event): event is { type: string; content: string } =>
+          !!event &&
+          typeof event === 'object' &&
+          !Array.isArray(event) &&
+          (event as { type?: unknown }).type === 'content',
+      );
+      expect(contentEvent?.content).toContain('A criação de site está conectada');
+      expect(contentEvent?.content).toContain('configuração de geração de sites');
+      expect(contentEvent?.content).not.toContain('provedor');
+      expect(contentEvent?.content).not.toContain('chave');
+      expect(contentEvent?.content).not.toContain('ANTHROPIC');
+      expect(contentEvent?.content).not.toContain('API_KEY');
+      expect(events).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ type: 'tool_result', tool: 'create_site', success: false }),
+          expect.objectContaining({ type: 'done' }),
+        ]),
+      );
+      expect(localThreadService.persistAssistantThreadMessage).toHaveBeenCalledWith(
+        'thread-1',
+        wsId,
+        expect.stringContaining('A criação de site está conectada'),
+        expect.objectContaining({
+          capability: 'create_site',
+          capabilityError: true,
+          requestState: 'completed',
+        }),
+      );
+      expect(localConversationStore.saveMessage).toHaveBeenLastCalledWith(
+        wsId,
+        'assistant',
+        expect.stringContaining('A criação de site está conectada'),
+      );
+    });
+
+    it('keeps generated site HTML out of composer observation events', async () => {
+      const { runComposerCapabilityBranch } = jest.requireActual<
+        typeof import('./kloel-thinker-think.helpers')
+      >('./kloel-thinker-think.helpers');
+      const events: unknown[] = [];
+      const generatedSiteHtml = '<html><body><main>Landing completa gerada</main></body></html>';
+      const localComposerService = {
+        executeComposerCapability: jest.fn().mockResolvedValue({
+          content: 'Site gerado e pronto para revisão.',
+          metadata: {
+            capability: 'create_site',
+            generatedSiteHtml,
+            siteDraftId: 'site-draft-1',
+          },
+        }),
+      };
+      const localThreadService = {
+        persistAssistantThreadMessage: jest.fn().mockResolvedValue({ id: 'msg-assistant-1' }),
+        buildThreadMessageMetadata: jest.fn((_metadata: unknown, meta: unknown): unknown => meta),
+        buildProcessingTraceSummary: jest
+          .fn()
+          .mockReturnValue('Resumo persistido da pré-resposta.'),
+        maybeRefreshThreadSummary: jest.fn().mockResolvedValue(undefined),
+        maybeGenerateThreadTitle: jest.fn().mockResolvedValue('Nova conversa'),
+      };
+      const localConversationStore = {
+        saveMessage: jest.fn().mockResolvedValue(undefined),
+      };
+      const localStreamWriter = { close: jest.fn() };
+
+      await runComposerCapabilityBranch(
+        'create_site',
+        undefined,
+        undefined,
+        localComposerService as unknown as KloelComposerService,
+        {
+          workspaceId: wsId,
+          message: 'Crie uma landing page',
+          mode: 'chat',
+          metadata: { capability: 'create_site' },
+          clientRequestId: 'req-site-1',
+          thread: { id: 'thread-1', title: 'Nova conversa' },
+          persistedUserMessage: { id: 'msg-user-1' },
+          processingTraceEntries: [],
+          safeWrite: (event) => events.push(event),
+          streamWriter: localStreamWriter,
+          replyEngine: { openai: null },
+          threadService: localThreadService,
+          conversationStore: localConversationStore,
+          planLimits,
+        } as unknown as Parameters<typeof runComposerCapabilityBranch>[4],
+      );
+
+      const resultEvent = events.find((event): event is Record<string, unknown> => {
+        if (!event || typeof event !== 'object' || Array.isArray(event)) {
+          return false;
+        }
+        const candidate = event as Record<string, unknown>;
+        return candidate.type === 'tool_result';
+      });
+
+      expect(JSON.stringify(resultEvent)).not.toContain(generatedSiteHtml);
+      expect(resultEvent).toEqual(
+        expect.objectContaining({
+          result: expect.objectContaining({
+            capability: 'create_site',
+            generatedSiteHtmlBytes: generatedSiteHtml.length,
+            generatedSiteHtmlOmitted: true,
+            siteDraftId: 'site-draft-1',
+          }) as unknown,
+        }),
+      );
+    });
+
+    it('does not re-check plan budget mid tool-planning turn after the first model call overshoots usage', async () => {
+      const { runToolPlanningBranch } = jest.requireActual<
+        typeof import('./kloel-thinker-think.helpers')
+      >('./kloel-thinker-think.helpers');
+      const chatCompletionWithFallbackMock = jest.mocked(chatCompletionWithFallback);
+      chatCompletionWithFallbackMock.mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content: null,
+              tool_calls: [
+                {
+                  id: 'call-1',
+                  type: 'function',
+                  function: {
+                    name: 'code_outline',
+                    arguments: '{"file":"backend/src/kloel/kloel-thinker.service.ts"}',
+                  },
+                },
+              ],
+            },
+          },
+        ],
+        usage: { total_tokens: 1200 },
+      } as never);
+      const localPlanLimits = {
+        ensureTokenBudget: jest
+          .fn()
+          .mockResolvedValueOnce(undefined)
+          .mockRejectedValue(
+            new ForbiddenException('Limite mensal de tokens IA atingido para o plano FREE.'),
+          ),
+        trackAiUsage: jest.fn().mockResolvedValue(undefined),
+      };
+      const events: unknown[] = [];
+      const localReplyEngine = {
+        openai: {},
+        unavailableMessage: replyEngine.unavailableMessage,
+        toolRouter: {
+          executeAssistantToolCalls: jest
+            .fn()
+            .mockImplementation((input: { safeWrite: (event: unknown) => void }) => {
+              input.safeWrite({
+                type: 'tool_call',
+                callId: 'call-1',
+                spanId: 'call-1',
+                tool: 'code_outline',
+                args: { file: 'backend/src/kloel/kloel-thinker.service.ts' },
+                done: false,
+              });
+              input.safeWrite({
+                type: 'tool_result',
+                callId: 'call-1',
+                spanId: 'call-1',
+                tool: 'code_outline',
+                success: true,
+                result: { success: true, symbols: [{ name: 'think' }] },
+                durationMs: 12,
+                done: false,
+              });
+              return Promise.resolve({
+                toolMessages: [
+                  {
+                    role: 'tool',
+                    tool_call_id: 'call-1',
+                    content: JSON.stringify({ success: true, symbols: [{ name: 'think' }] }),
+                  },
+                ],
+                receipts: [],
+                usedSearchWeb: false,
+              });
+            }),
+        },
+        buildChatModelMessages: jest
+          .fn()
+          .mockResolvedValue([{ role: 'user', content: 'responda com base na observação' }]),
+      };
+      const localThreadService = {
+        persistAssistantThreadMessage: jest.fn().mockResolvedValue({ id: 'msg-assistant-1' }),
+        buildThreadMessageMetadata: jest.fn((_metadata: unknown, meta: unknown): unknown => meta),
+        maybeRefreshThreadSummary: jest.fn().mockResolvedValue(undefined),
+        maybeGenerateThreadTitle: jest.fn().mockResolvedValue('Nova conversa'),
+        buildProcessingTraceSummary: jest
+          .fn()
+          .mockReturnValue(
+            'Raciocínio resumido, 1 ação real e 1 observação antes da resposta final.',
+          ),
+      };
+      const localConversationStore = { saveMessage: jest.fn().mockResolvedValue(undefined) };
+      const localStreamWriter = { close: jest.fn() };
+      const streamWriterResponse = jest.fn().mockResolvedValue({
+        fullResponse:
+          'Eu observei a arquitetura real e finalizei sem vazar ferramenta interna.\n<｜｜DSML｜｜tool_calls> <｜｜DSML｜｜invoke name="get_workspace_status"> </｜｜DSML｜｜invoke> </｜｜DSML｜｜tool_calls>',
+        estimatedTokens: 320,
+      });
+
+      await expect(
+        runToolPlanningBranch(
+          [{ role: 'user', content: 'valide sua trajetória' }],
+          'system prompt',
+          'dynamic context',
+          null,
+          null,
+          0.2,
+          500,
+          jest.fn() as LocalToolExecutor,
+          ['code_outline'],
+          undefined,
+          streamWriterResponse,
+          {
+            workspaceId: wsId,
+            message: 'valide sua trajetória',
+            mode: 'chat',
+            metadata: {},
+            clientRequestId: 'req-1',
+            thread: { id: 'thread-1', title: 'Nova conversa' },
+            persistedUserMessage: { id: 'msg-user-1' },
+            processingTraceEntries: [],
+            safeWrite: (event) => events.push(event),
+            streamWriter: localStreamWriter,
+            replyEngine: localReplyEngine,
+            threadService: localThreadService,
+            conversationStore: localConversationStore,
+            planLimits: localPlanLimits,
+          } as unknown as Parameters<typeof runToolPlanningBranch>[11],
+        ),
+      ).resolves.toBeUndefined();
+
+      expect(localPlanLimits.ensureTokenBudget).toHaveBeenCalledTimes(1);
+      expect(streamWriterResponse).toHaveBeenCalled();
+      expect(localThreadService.persistAssistantThreadMessage).toHaveBeenCalledWith(
+        'thread-1',
+        wsId,
+        expect.stringContaining('arquitetura real'),
+        expect.any(Object),
+      );
+      const assistantPersistCalls = localThreadService.persistAssistantThreadMessage.mock
+        .calls as Array<[string, string, string, unknown]>;
+      const persistedAssistantText = assistantPersistCalls[0]?.[2] ?? '';
+      expect(persistedAssistantText).not.toContain('DSML');
+      expect(persistedAssistantText).not.toContain('tool_calls');
+      const writerCalls = streamWriterResponse.mock.calls as Array<[Array<{ content?: unknown }>]>;
+      const finalWriterMessages = writerCalls[0]?.[0] ?? [];
+      expect(
+        finalWriterMessages.some(
+          (item) =>
+            typeof item.content === 'string' &&
+            item.content.includes('resposta final') &&
+            item.content.includes('markup de ferramenta'),
+        ),
+      ).toBe(true);
+      expect(events).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ type: 'tool_call', tool: 'code_outline' }),
+          expect.objectContaining({ type: 'tool_result', tool: 'code_outline', success: true }),
+          expect.objectContaining({ type: 'done' }),
+        ]),
       );
     });
 

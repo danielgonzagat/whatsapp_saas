@@ -7,7 +7,7 @@ type KloelGraphArea =
   | 'conectar'
   | 'consultar';
 
-type KloelGraphNodeType = 'sun' | 'route' | 'metric' | 'entity';
+type KloelGraphNodeType = 'core' | 'sun' | 'route' | 'metric' | 'entity';
 
 interface KloelGraphNode {
   readonly id: string;
@@ -79,7 +79,7 @@ function toNode([id, label, area, type, route, parentId, overlayLabel]: NodeSeed
 }
 
 const PRIMARY_NODE_SEEDS: readonly NodeSeed[] = [
-  ['perfil', 'Perfil', 'perfil', 'sun', '/settings', undefined, 'Perfil'],
+  ['perfil', 'Perfil', 'perfil', 'core', '/settings', undefined, 'Perfil'],
   ['kloel', 'Kloel', 'kloel', 'sun', '/chat', undefined, 'Kloel'],
   ['criar', 'Criar', 'criar', 'sun', '/products', undefined, 'Produtos'],
   ['afiliar', 'Afiliar', 'afiliar', 'sun', '/produtos/afiliar-se', undefined, 'Afiliar-se'],
@@ -92,6 +92,87 @@ export const KLOEL_GRAPH_PRIMARY_NODES = PRIMARY_NODE_SEEDS.map(toNode);
 
 const CORE_ROUTE_SEEDS: readonly NodeSeed[] = [
   ['dashboard', 'Dashboard', 'perfil', 'route', '/dashboard', 'perfil', 'Dashboard'],
+  [
+    'dashboard-metric-total-revenue',
+    'Receita total',
+    'perfil',
+    'metric',
+    '/analytics?tab=vendas&graphMetric=total-revenue',
+    'dashboard',
+    'Receita total',
+  ],
+  [
+    'dashboard-metric-month-revenue',
+    'Este mes',
+    'perfil',
+    'metric',
+    '/analytics?tab=vendas&graphMetric=month-revenue',
+    'dashboard',
+    'Este mes',
+  ],
+  [
+    'dashboard-metric-today-revenue',
+    'Hoje',
+    'perfil',
+    'metric',
+    '/analytics?tab=vendas&graphMetric=today-revenue',
+    'dashboard',
+    'Vendas hoje',
+  ],
+  [
+    'dashboard-metric-available-balance',
+    'Saldo',
+    'perfil',
+    'metric',
+    '/carteira/saldo?graphMetric=available-balance',
+    'dashboard',
+    'Saldo disponivel',
+  ],
+  [
+    'dashboard-metric-pending-balance',
+    'A receber',
+    'perfil',
+    'metric',
+    '/carteira/saldo?graphMetric=pending-balance',
+    'dashboard',
+    'A receber',
+  ],
+  [
+    'dashboard-metric-revenue',
+    'Receita',
+    'perfil',
+    'metric',
+    '/analytics?tab=vendas&graphMetric=revenue',
+    'dashboard',
+    'Receita',
+  ],
+  [
+    'dashboard-metric-sales',
+    'Vendas',
+    'perfil',
+    'metric',
+    '/analytics?tab=vendas&graphMetric=sales',
+    'dashboard',
+    'Vendas',
+  ],
+  [
+    'dashboard-metric-conversion',
+    'Conversao',
+    'perfil',
+    'metric',
+    '/analytics?tab=metricas&graphMetric=conversion',
+    'dashboard',
+    'Conversao',
+  ],
+  [
+    'dashboard-metric-average-ticket',
+    'Ticket medio',
+    'perfil',
+    'metric',
+    '/analytics?tab=metricas&graphMetric=average-ticket',
+    'dashboard',
+    'Ticket medio',
+  ],
   ['perfil-settings', 'Configuracoes', 'perfil', 'route', '/settings', 'perfil', 'Perfil'],
   [
     'perfil-privacy',

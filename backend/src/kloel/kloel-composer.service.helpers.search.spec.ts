@@ -2,9 +2,28 @@ import {
   codeNativeSearchWeb,
   extractTotalTokens,
   formatSearchDigestAsMarkdown,
+  normalizeRefinementMarkdown,
   normalizeWebSearchSources,
   shouldTrackTokenUsage,
 } from './kloel-composer.service.helpers';
+
+describe('normalizeRefinementMarkdown', () => {
+  it('splits inline Mesa sections and bullets into real markdown blocks', () => {
+    const raw =
+      '## Diagnóstico executivo - O texto base contém erros. - A frase original é compacta. ## Lacunas e riscos - Clareza conceitual: permanece abstrata. - Precisão sobre raciocínio: falta corte público. ## Versão refinada Documentação pública sugerida: - Reasoning summary – Resumo público. - Agent trace – Registro operacional. ## Próxima ação verificável - Submeter a revisão técnica. - Obter avaliação de compreensão.';
+
+    const normalized = normalizeRefinementMarkdown(raw);
+
+    expect(normalized).toContain('## Diagnóstico executivo\n\n- O texto base');
+    expect(normalized).toContain('\n\n## Lacunas e riscos\n\n- Clareza conceitual');
+    expect(normalized).toContain(
+      '\n\n## Versão refinada\n\nDocumentação pública sugerida:\n- Reasoning summary',
+    );
+    expect(normalized).toContain('\n\n## Próxima ação verificável\n\n- Submeter');
+    expect(normalized).not.toContain('## Diagnóstico executivo -');
+    expect(normalized).not.toContain('## Lacunas e riscos -');
+  });
+});
 
 describe('formatSearchDigestAsMarkdown', () => {
   it('renders body plus numbered sources block', () => {
@@ -49,7 +68,12 @@ describe('codeNativeSearchWeb', () => {
     const digest = codeNativeSearchWeb('como criar campanha de email no kloel hoje');
     expect(digest.sources).toEqual([]);
     expect(digest.totalTokens).toBe(0);
-    expect(digest.answer).toContain('Pesquisa web indisponível');
+    expect(digest.answer).toContain('A busca na web está conectada');
+    expect(digest.answer).toContain('configuração de pesquisa com IA');
+    expect(digest.answer).not.toContain('provedor');
+    expect(digest.answer).not.toContain('chave');
+    expect(digest.answer).not.toContain('motor LLM');
+    expect(digest.answer).not.toContain('API key');
     expect(digest.answer).toContain('"como"');
     expect(digest.answer).toContain('"criar"');
     // 'de' and 'no' filtered out (length <= 2); should be at most 5 quoted terms

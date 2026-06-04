@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { KloelThreadService } from './kloel-thread.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelThreadSummaryService } from './kloel-thread-summary.service';
-import { partialMatch } from '../../test/helpers/match-instance';
+import { partialMatch, stringContains } from '../../test/helpers/match-instance';
 import { castMock } from '../../test/helpers/cast-mock';
 
 type ThreadPrismaMock = {
@@ -221,6 +221,37 @@ describe('KloelThreadService', () => {
         }),
       );
     });
+
+    it('normalizes refine_response markdown before writing the assistant message', async () => {
+      await service.persistAssistantThreadMessage(
+        'thread-1',
+        wsId,
+        '## Diagnóstico executivo Texto. ## Lacunas e riscos - Item.',
+        { capability: 'refine_response' },
+      );
+
+      expect(prisma.chatMessage.create).toHaveBeenCalledWith(
+        partialMatch({
+          data: partialMatch({
+            content: stringContains('## Diagnóstico executivo\n\nTexto.'),
+          }),
+        }),
+      );
+      expect(prisma.chatMessage.create).toHaveBeenCalledWith(
+        partialMatch({
+          data: partialMatch({
+            content: stringContains('## Lacunas e riscos\n\n- Item.'),
+          }),
+        }),
+      );
+      expect(prisma.chatMessage.create).not.toHaveBeenCalledWith(
+        partialMatch({
+          data: partialMatch({
+            content: stringContains('## Diagnóstico executivo Texto'),
+          }),
+        }),
+      );
+    });
   });
   describe('MindMessage dual-write (additive, flag-gated)', () => {
     const FLAG = 'KLOEL_MINDMESSAGE_DUALWRITE';
@@ -374,9 +405,9 @@ describe('KloelThreadService', () => {
         },
       ];
       const result = service.buildProcessingTraceSummary(entries);
-      expect(result).toContain('Pensando');
-      expect(result).toContain('buscando');
-      expect(result).toContain('respondendo');
+      expect(result).toContain('Raciocínio resumido');
+      expect(result).toContain('1 ação real');
+      expect(result).toContain('1 observação');
     });
   });
 

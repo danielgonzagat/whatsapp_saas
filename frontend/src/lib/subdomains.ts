@@ -120,8 +120,9 @@ function localRootHost(hostname: string): string {
 
 function localSubdomainHost(target: KloelHostTarget, hostname: string, port: string): string {
   const rootHost = localRootHost(hostname);
+  const sharedRootHost = rootHost === 'localhost' && target !== 'marketing' ? 'root.localhost' : rootHost;
   const prefix = target === 'marketing' ? '' : `${target}.`;
-  return `${prefix}${rootHost}${port ? `:${port}` : ''}`;
+  return `${prefix}${sharedRootHost}${port ? `:${port}` : ''}`;
 }
 
 function withPath(base: string, path = '/'): string {
@@ -241,6 +242,10 @@ export function buildHostTargetUrl(
 
   if (target === 'auth' && env) {
     return withPath(env, path);
+  }
+
+  if (isLocalHostname(hostname) && detectLocalHost(hostname) === target) {
+    return withPath(`http://${hostname}${port ? `:${port}` : ''}`, path);
   }
 
   if (target === 'auth' && isLocalHostname(hostname)) {

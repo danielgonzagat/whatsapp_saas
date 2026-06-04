@@ -161,6 +161,12 @@ export default function KloelDashboard() {
     [conversationTitleMap, setActiveConversation],
   );
 
+  const clearComposerContext = useCallback(() => {
+    clearAllAttachments();
+    setLinkedProduct(null);
+    setActiveCapability(null);
+  }, [clearAllAttachments]);
+
   const resetToNewChat = useCallback(
     (replaceUrl = false) => {
       activeStreamRef.current?.abort();
@@ -176,15 +182,13 @@ export default function KloelDashboard() {
       setIsThinking(false);
       setStreamingMessageId(null);
       setShowSlowHint(false);
-      setLinkedProduct(null);
-      setActiveCapability(null);
-      clearAllAttachments();
+      clearComposerContext();
       setActiveConversation(null);
       if (replaceUrl) {
         router.replace(KLOEL_CHAT_ROUTE, { scroll: false });
       }
     },
-    [clearAllAttachments, router, setActiveConversation],
+    [clearComposerContext, router, setActiveConversation],
   );
 
   const onTitle = useCallback(
@@ -245,6 +249,7 @@ export default function KloelDashboard() {
       conversationTitle,
       conversationTitleMap,
       clearAllAttachments,
+      clearComposerContext,
       loadConversation,
       refreshConversations,
       upsertConversation,
@@ -255,6 +260,7 @@ export default function KloelDashboard() {
       linkedProduct,
       activeCapability,
       activeStreamRef,
+      loadedConversationIdRef,
       streamingMessageId,
     }),
     [
@@ -263,6 +269,7 @@ export default function KloelDashboard() {
       conversationTitle,
       conversationTitleMap,
       clearAllAttachments,
+      clearComposerContext,
       loadConversation,
       refreshConversations,
       upsertConversation,
@@ -318,6 +325,7 @@ export default function KloelDashboard() {
     }
 
     void handleSendMessage(input);
+    setInput('');
   }, [
     activeCapability,
     attachments,

@@ -4,6 +4,7 @@ import { kycApi } from './kyc';
 type KycLookupApi = typeof kycApi & {
   lookupCnpj(cnpj: string): Promise<unknown>;
   lookupCep(cep: string): Promise<unknown>;
+  revokeSecuritySession(sessionId: string): Promise<unknown>;
 };
 
 const lookupApi = kycApi as KycLookupApi;
@@ -46,5 +47,14 @@ describe('kycApi lookups', () => {
     await expect(lookupApi.lookupCnpj('123')).rejects.toThrow('CNPJ invalido');
     await expect(lookupApi.lookupCep('123')).rejects.toThrow('CEP invalido');
     expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it('revokes an authenticated security session through the backend endpoint', async () => {
+    await lookupApi.revokeSecuritySession('rt-1');
+
+    expect(lastFetchUrl()).toContain('/kyc/security/sessions/rt-1');
+    const request = vi.mocked(globalThis.fetch).mock.calls.at(-1)?.[0];
+    expect(request).toBeInstanceOf(Request);
+    expect((request as Request).method).toBe('DELETE');
   });
 });

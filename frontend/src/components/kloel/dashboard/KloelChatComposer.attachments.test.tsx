@@ -50,6 +50,8 @@ describe('KloelChatComposer attachments', () => {
 
     const { props } = renderComposer({ attachments });
 
+    expect(screen.queryByText(/pronto/i)).toBeNull();
+
     const sendButton = screen.getByLabelText('Enviar mensagem') as HTMLButtonElement;
     expect(sendButton.disabled).toBe(false);
 
@@ -75,6 +77,28 @@ describe('KloelChatComposer attachments', () => {
     expect(sendButton.disabled).toBe(true);
 
     fireEvent.click(sendButton);
+    expect(props.onSend).not.toHaveBeenCalled();
+  });
+
+  it('keeps the Enter shortcut blocked while an upload is still pending', () => {
+    const attachments: KloelChatAttachment[] = [
+      {
+        id: 'attachment_uploading_pdf',
+        name: 'catalogo.pdf',
+        size: 2048,
+        mimeType: 'application/pdf',
+        kind: 'document',
+        status: 'uploading',
+      },
+    ];
+
+    const { props } = renderComposer({ input: 'Use o arquivo', attachments });
+
+    fireEvent.keyDown(screen.getByPlaceholderText('Como posso ajudar você hoje?'), {
+      key: 'Enter',
+      code: 'Enter',
+    });
+
     expect(props.onSend).not.toHaveBeenCalled();
   });
 });

@@ -136,7 +136,7 @@ export function ComposerSection({
           linkedProduct={linkedProduct}
           selectableProducts={selectableProducts}
           productsLoading={selectableProductsLoading}
-          popoverPlacement={hasMessages ? 'above' : 'below'}
+          popoverPlacement="above"
           inputRef={inputRef}
           onInputChange={onInputChange}
           onSend={onSend}

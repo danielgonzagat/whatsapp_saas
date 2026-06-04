@@ -26,6 +26,12 @@ export interface GraphThemePalette {
   readonly emberSoft: string;
   readonly emberBorder: string;
   readonly emberGlow: string;
+  readonly amber: string;
+  readonly green: string;
+  readonly blue: string;
+  readonly purple: string;
+  readonly rose: string;
+  readonly red: string;
   readonly glass: string;
 }
 
@@ -49,6 +55,12 @@ export const GRAPH_THEMES: Record<GraphThemeMode, GraphThemePalette> = {
     emberSoft: 'rgba(232,93,48,0.06)',
     emberBorder: 'rgba(232,93,48,0.18)',
     emberGlow: 'rgba(232,93,48,0.15)',
+    amber: 'rgb(184,136,76)',
+    green: 'rgb(45,157,94)',
+    blue: 'rgb(63,111,182)',
+    purple: 'rgb(139,95,184)',
+    rose: 'rgb(201,83,119)',
+    red: 'rgb(214,69,69)',
     glass: 'rgba(255,255,255,0.85)',
   },
   dark: {
@@ -68,6 +80,12 @@ export const GRAPH_THEMES: Record<GraphThemeMode, GraphThemePalette> = {
     emberSoft: 'rgba(232,93,48,0.08)',
     emberBorder: 'rgba(232,93,48,0.22)',
     emberGlow: 'rgba(232,93,48,0.18)',
+    amber: 'rgb(212,166,86)',
+    green: 'rgb(62,188,118)',
+    blue: 'rgb(91,141,206)',
+    purple: 'rgb(167,123,207)',
+    rose: 'rgb(216,112,147)',
+    red: 'rgb(229,101,78)',
     glass: 'rgba(13,13,16,0.78)',
   },
 };

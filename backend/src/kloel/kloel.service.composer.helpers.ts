@@ -1,7 +1,7 @@
 import type { Prisma } from '@prisma/client';
 
 /** Composer capability tags surfaced from chat metadata or inferred from intent. */
-export type ComposerCapability = 'create_image' | 'create_site' | 'search_web';
+export type ComposerCapability = 'create_image' | 'create_site' | 'search_web' | 'refine_response';
 
 /** Attachment metadata persisted alongside composer messages. */
 export interface ComposerAttachmentMetadata {
@@ -85,7 +85,8 @@ export function extractComposerMetadata(
   const capability =
     normalized.capability === 'create_image' ||
     normalized.capability === 'create_site' ||
-    normalized.capability === 'search_web'
+    normalized.capability === 'search_web' ||
+    normalized.capability === 'refine_response'
       ? normalized.capability
       : null;
   const attachments = Array.isArray(normalized.attachments)

@@ -39,7 +39,7 @@ function buildRegenerationError(message: string) {
 /** Sync think loop — extracted to keep KloelThinkerService under 400 lines. */
 export async function thinkSyncImpl(
   request: ThinkRequest,
-  composerCapability: 'create_image' | 'create_site' | 'search_web' | null,
+  composerCapability: 'create_image' | 'create_site' | 'search_web' | 'refine_response' | null,
   effectiveCompanyContext: string | undefined,
   deps: {
     replyEngine: KloelReplyEngineService;

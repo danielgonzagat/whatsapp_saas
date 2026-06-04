@@ -116,12 +116,23 @@ function FlowPageContent() {
   const [flowReady, setFlowReady] = useState(!existingFlowId);
 
   useEffect(() => {
-    if (!existingFlowId || !workspaceId) {
-      setFlowReady(true);
-      return;
-    }
     let cancelled = false;
-    setFlowReady(false);
+    const setFlowReadyIfMounted = (ready: boolean) => {
+      queueMicrotask(() => {
+        if (!cancelled) {
+          setFlowReady(ready);
+        }
+      });
+    };
+
+    if (!existingFlowId || !workspaceId) {
+      setFlowReadyIfMounted(true);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setFlowReadyIfMounted(false);
     void fetchFlow(existingFlowId).then((flow) => {
       if (cancelled) {
         return;

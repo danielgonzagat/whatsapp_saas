@@ -18,9 +18,6 @@ const TEXT = KLOEL_THEME.textPrimary;
 const MUTED = KLOEL_THEME.textSecondary;
 const MUTED_2 = KLOEL_THEME.textTertiary;
 const DIVIDER = KLOEL_THEME.borderPrimary;
-const SUCCESS = KLOEL_THEME.success;
-const INFO = KLOEL_THEME.info;
-const WARNING = KLOEL_THEME.warning;
 const EMBER = KLOEL_THEME.accent;
 
 function attachmentIcon(kind: KloelChatAttachment['kind']) {
@@ -47,26 +44,6 @@ function resolveVisualAttachmentSource(attachment: KloelChatAttachment) {
   return previewUrl || uploadedUrl || null;
 }
 
-function formatFileSize(size: number) {
-  if (!Number.isFinite(size) || size <= 0) {
-    return '0 KB';
-  }
-  if (size >= 1024 * 1024) {
-    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-  }
-  return `${Math.max(1, Math.round(size / 1024))} KB`;
-}
-
-function statusColor(status: KloelLinkedProduct['status']) {
-  if (status === 'published') {
-    return SUCCESS;
-  }
-  if (status === 'affiliate') {
-    return INFO;
-  }
-  return WARNING;
-}
-
 interface ComposerTopRailProps {
   attachments: KloelChatAttachment[];
   linkedProduct: KloelLinkedProduct | null;
@@ -88,9 +65,9 @@ export function ComposerTopRail({
       style={{
         display: 'flex',
         flexWrap: 'wrap',
-        gap: 8,
-        paddingBottom: 10,
-        marginBottom: 12,
+        gap: 5,
+        paddingBottom: 5,
+        marginBottom: 7,
       }}
     >
       {attachments.map((attachment) => {
@@ -101,10 +78,10 @@ export function ComposerTopRail({
             key={attachment.id}
             style={{
               position: 'relative',
-              width: 72,
-              height: 72,
+              width: 48,
+              height: 48,
               padding: 0,
-              borderRadius: 12,
+              borderRadius: 6,
               overflow: 'hidden',
               border: `1px solid ${DIVIDER}`,
               background: SURFACE_ALT,
@@ -133,8 +110,8 @@ export function ComposerTopRail({
                 <Image
                   src={visualSource}
                   alt={attachment.name}
-                  width={56}
-                  height={56}
+                  width={48}
+                  height={48}
                   unoptimized
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
@@ -170,20 +147,20 @@ export function ComposerTopRail({
               position: 'relative',
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
+              gap: 8,
               maxWidth: 240,
-              minHeight: 58,
-              padding: '10px 40px 10px 12px',
-              borderRadius: 12,
+              minHeight: 40,
+              padding: '6px 30px 6px 8px',
+              borderRadius: 6,
               border: `1px solid ${DIVIDER}`,
               background: SURFACE_ALT,
             }}
           >
             <div
               style={{
-                width: 34,
-                height: 34,
-                borderRadius: 8,
+                width: 26,
+                height: 26,
+                borderRadius: 6,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -198,9 +175,9 @@ export function ComposerTopRail({
             <div style={{ minWidth: 0, flex: 1 }}>
               <div
                 style={{
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: 600,
-                  lineHeight: 1.35,
+                  lineHeight: 1.25,
                   color: TEXT,
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
@@ -210,13 +187,23 @@ export function ComposerTopRail({
               >
                 {attachment.name}
               </div>
-              <div style={{ marginTop: 3, fontSize: 11, lineHeight: 1.2, color: MUTED_2 }}>
-                {attachment.status === 'error'
-                  ? attachment.error || 'Falha no upload'
-                  : attachment.status === 'uploading'
-                    ? 'Enviando arquivo...'
-                    : `${formatFileSize(attachment.size)} · pronto`}
-              </div>
+              {attachment.status !== 'ready' ? (
+                <div
+                  style={{
+                    marginTop: 2,
+                    fontSize: 10.5,
+                    lineHeight: 1.15,
+                    color: MUTED_2,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {attachment.status === 'error'
+                    ? attachment.error || 'Falha no upload'
+                    : 'Enviando'}
+                </div>
+              ) : null}
               {attachment.status === 'error' ? (
                 <button
                   type="button"
@@ -253,26 +240,26 @@ export function ComposerTopRail({
             position: 'relative',
             display: 'flex',
             alignItems: 'center',
-            gap: 10,
+            gap: 8,
             maxWidth: 280,
-            minHeight: 58,
-            padding: '10px 40px 10px 12px',
-            borderRadius: 12,
-            border: `1px solid color-mix(in srgb, ${EMBER} 18%, ${DIVIDER})`,
-            background: `color-mix(in srgb, ${EMBER} 10%, ${SURFACE})`,
+            minHeight: 40,
+            padding: '6px 30px 6px 8px',
+            borderRadius: 6,
+            border: `1px solid color-mix(in srgb, ${EMBER} 12%, ${DIVIDER})`,
+            background: `color-mix(in srgb, ${EMBER} 5%, ${SURFACE})`,
           }}
         >
           {linkedProduct.imageUrl ? (
             <Image
               src={linkedProduct.imageUrl}
               alt=""
-              width={36}
-              height={36}
+              width={26}
+              height={26}
               unoptimized
               style={{
-                width: 36,
-                height: 36,
-                borderRadius: 8,
+                width: 26,
+                height: 26,
+                borderRadius: 6,
                 objectFit: 'cover',
                 flexShrink: 0,
               }}
@@ -280,9 +267,9 @@ export function ComposerTopRail({
           ) : (
             <div
               style={{
-                width: 36,
-                height: 36,
-                borderRadius: 8,
+                width: 26,
+                height: 26,
+                borderRadius: 6,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -291,7 +278,7 @@ export function ComposerTopRail({
                 flexShrink: 0,
               }}
             >
-              <Link2 size={15} strokeWidth={2} aria-hidden="true" />
+              <Link2 size={13} strokeWidth={2} aria-hidden="true" />
             </div>
           )}
 
@@ -309,9 +296,9 @@ export function ComposerTopRail({
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 6,
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: 600,
-                  lineHeight: 1.35,
+                  lineHeight: 1.25,
                   color: TEXT,
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
@@ -319,56 +306,8 @@ export function ComposerTopRail({
                 }}
                 title={linkedProduct.name}
               >
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 18,
-                    height: 18,
-                    borderRadius: 12,
-                    background: `color-mix(in srgb, ${EMBER} 18%, ${SURFACE_ALT})`,
-                    color: EMBER,
-                    flexShrink: 0,
-                  }}
-                >
-                  <Link2 size={10} strokeWidth={2.1} aria-hidden="true" />
-                </span>
                 {linkedProduct.name}
               </span>
-            </div>
-            <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span
-                style={{
-                  fontSize: 11,
-                  lineHeight: 1.2,
-                  fontWeight: 700,
-                  color: statusColor(linkedProduct.status),
-                  letterSpacing: '0.03em',
-                  textTransform: 'uppercase',
-                }}
-              >
-                {linkedProduct.status === 'published'
-                  ? 'Publicado'
-                  : linkedProduct.status === 'affiliate'
-                    ? 'Afiliado'
-                    : 'Rascunho'}
-              </span>
-              {linkedProduct.subtitle ? (
-                <span
-                  style={{
-                    fontSize: 11,
-                    lineHeight: 1.2,
-                    color: MUTED_2,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                  title={linkedProduct.subtitle}
-                >
-                  {linkedProduct.subtitle}
-                </span>
-              ) : null}
             </div>
           </div>
 

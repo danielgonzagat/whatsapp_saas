@@ -110,7 +110,9 @@ export function buildService(options?: {
       ? [{ type: 'DOCUMENT_FRONT' }, { type: 'COMPANY_DOCUMENT' }]
       : [{ type: 'DOCUMENT_FRONT' }, { type: 'PROOF_OF_ADDRESS' }];
 
-  const agentFindUnique = jest.fn(({ select }: { select?: Record<string, boolean> } = {}) => {
+  const agentFindUnique = jest.fn<
+    ({ select }?: { select?: Record<string, boolean> }) => Promise<unknown>
+  >(({ select }: { select?: Record<string, boolean> } = {}) => {
     if (select && 'kycStatus' in select && Object.keys(select).length === 1) {
       return Promise.resolve({ kycStatus: agentRecord.kycStatus });
     }
@@ -129,7 +131,8 @@ export function buildService(options?: {
 
     return Promise.resolve(agentRecord);
   });
-  const resolved = <T>(value: T) => jest.fn<() => Promise<T>>().mockResolvedValue(value);
+  const resolved = <T>(value: T) =>
+    jest.fn<(...args: unknown[]) => Promise<T>>().mockResolvedValue(value);
   const prisma = {
     agent: {
       findUnique: agentFindUnique,
@@ -149,6 +152,10 @@ export function buildService(options?: {
     },
     bankAccount: {
       findFirst: resolved(bankAccountRecord),
+    },
+    refreshToken: {
+      findMany: resolved([]),
+      updateMany: resolved({ count: 1 }),
     },
     connectAccountBalance: {
       findFirst: resolved(

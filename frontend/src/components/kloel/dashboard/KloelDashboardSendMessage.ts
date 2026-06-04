@@ -25,6 +25,7 @@ export interface SendMessageContext {
   conversationTitle: string;
   conversationTitleMap: Map<string, string>;
   clearAllAttachments: () => void;
+  clearComposerContext: () => void;
   loadConversation: (id: string) => Promise<void>;
   refreshConversations: () => Promise<void>;
   upsertConversation: (conv: {
@@ -40,6 +41,7 @@ export interface SendMessageContext {
   linkedProduct: KloelLinkedProduct | null;
   activeCapability: KloelChatCapability | null;
   activeStreamRef: MutableRefObject<{ abort: () => void } | null>;
+  loadedConversationIdRef: MutableRefObject<string | null>;
   streamingMessageId: string | null;
 }
 
@@ -80,10 +82,13 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
     };
 
     ctx.setMessages((current) => [...current, userMessage]);
-    ctx.clearAllAttachments();
+    ctx.clearComposerContext();
     ctx.setIsThinking(true);
 
     const assistantId = `assistant_${Date.now()}`;
+    const initialAssistantMetadata = {
+      clientRequestId,
+    };
     let streamedReply = '';
     let renderBuffer = '';
     let nextConversationId = ctx.activeConversationId || null;
@@ -145,7 +150,15 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
           lastMessagePreview: streamedReply.trim() || 'Resposta gerada pelo Kloel',
         });
         void ctx.refreshConversations();
-        void ctx.loadConversation(nextConversationId);
+        if (!finalError) {
+          void ctx.loadConversation(nextConversationId);
+        }
+        if (ctx.requestedConversationId !== nextConversationId) {
+          ctx.router.replace(
+            `${KLOEL_CHAT_ROUTE}?conversationId=${encodeURIComponent(nextConversationId)}`,
+            { scroll: false },
+          );
+        }
       }
     };
 
@@ -200,7 +213,7 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
           id: assistantId,
           role: 'assistant',
           text: '',
-          metadata: { clientRequestId },
+          metadata: initialAssistantMetadata,
         },
       ]);
       ctx.setStreamingMessageId(assistantId);
@@ -270,14 +283,9 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
 
             ctx.setActiveConversationId(thread.conversationId);
             ctx.setConversationTitle(nextTitle || 'Nova conversa');
+            ctx.loadedConversationIdRef.current = thread.conversationId;
             ctx.setActiveConversation(thread.conversationId);
 
-            if (ctx.requestedConversationId !== thread.conversationId) {
-              ctx.router.replace(
-                `${KLOEL_CHAT_ROUTE}?conversationId=${encodeURIComponent(thread.conversationId)}`,
-                { scroll: false },
-              );
-            }
           },
           onDone: () => {
             streamEnded = true;

@@ -23,6 +23,38 @@ describe('guest chat action intent helpers', () => {
     expect(
       formatToolResult('self.health', { success: true, outputs: { status: 'degraded' } }),
     ).toBe('Saúde do Kloel: degraded.');
+    const healthReply = appendToolResultProof('Saúde do Kloel: consultada.', {
+      success: true,
+      capabilityId: 'self.health',
+    });
+    expect(healthReply).toContain('Ação operacional: saúde operacional');
+    expect(healthReply).not.toContain('Capacidade:');
+    expect(healthReply).not.toContain('self.health');
+  });
+
+  it('keeps reflective self-code questions on the LLM reasoning path', () => {
+    const action = detectActionIntent(
+      'impressionante, e voce consegue olhar/observar o seu proprio codigo fonte? ferramentas internas que eu conectei a voce e etc?',
+    );
+
+    expect(action).toBeNull();
+  });
+
+  it('does not route conversational test wording to backend test execution', () => {
+    const action = detectActionIntent(
+      'Teste Codex: responda em portugues, com uma pre-resposta executavel de alto nivel sobre reasoning summary, agent trace e ReAct trajectory.',
+    );
+
+    expect(action).toBeNull();
+  });
+
+  it('routes explicit file inspection to the code outline tool', () => {
+    const action = detectActionIntent('ler arquivo backend/src/kloel/kloel.service.ts');
+
+    expect(action).toEqual({
+      tool: 'code_outline',
+      args: { path: 'backend/src/kloel/kloel.service.ts' },
+    });
   });
 
   it('routes URL deletion with the URL payload preserved', () => {
@@ -208,9 +240,12 @@ describe('guest chat action intent helpers', () => {
       cardResult,
     );
 
+    expect(pixReply).toContain('Ação operacional: geração de PIX');
     expect(pixReply).toContain('Provedor: mercadopago');
     expect(pixReply).toContain('Método: PIX');
     expect(pixReply).toContain('Método do provedor: pix');
+    expect(pixReply).not.toContain('Capacidade:');
+    expect(pixReply).not.toContain('sales.create_pix');
     expect(pixReply).toContain(
       'Contrato de prova: saleId, externalPaymentId, pixCopiaECola, pixQrCode',
     );

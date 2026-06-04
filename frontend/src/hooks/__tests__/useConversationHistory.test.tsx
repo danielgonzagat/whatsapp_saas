@@ -107,6 +107,44 @@ it('loads threads after auth bootstrap completes', async () => {
   });
 });
 
+it('deduplicates concurrent recent-thread refreshes', async () => {
+  authState.isAuthenticated = true;
+  apiFetchMock.mockResolvedValueOnce(
+    page([makeThread('thread-1', 'Inicial', '2026-04-21T18:00:00.000Z')], 1, null, false),
+  );
+  const { result } = renderHook(() => useConversationHistory(), {
+    wrapper: ConversationHistoryProvider,
+  });
+
+  await waitFor(() => {
+    expect(result.current.conversations).toHaveLength(1);
+  });
+
+  let resolveRefresh: ((value: unknown) => void) | null = null;
+  apiFetchMock.mockClear();
+  apiFetchMock.mockReturnValueOnce(
+    new Promise((resolve) => {
+      resolveRefresh = resolve;
+    }),
+  );
+
+  const firstRefresh = result.current.refreshConversations();
+  const secondRefresh = result.current.refreshConversations();
+
+  expect(apiFetchMock).toHaveBeenCalledTimes(1);
+  expect(apiFetchMock).toHaveBeenCalledWith('/kloel/threads?limit=20');
+
+  await act(async () => {
+    resolveRefresh?.(
+      page([makeThread('thread-2', 'Atualizada', '2026-04-22T18:00:00.000Z')], 1, null, false),
+    );
+    await Promise.all([firstRefresh, secondRefresh]);
+  });
+
+  expect(result.current.conversations.map((threadItem) => threadItem.id)).toEqual(['thread-2']);
+
+});
+
 it('loads additional recent threads with cursor pagination', async () => {
   authState.isAuthenticated = true;
   mockCursorPages();

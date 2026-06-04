@@ -24,7 +24,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { KycChangePasswordDto } from './dto/change-password.dto';
 import { KycDocumentTypeDto } from './dto/kyc-document-type.dto';
-import { KycMfaCodeDto } from './dto/mfa.dto';
+import { KycMfaCodeDto, KycMfaDisableDto } from './dto/mfa.dto';
 import { UpdateBankDto } from './dto/update-bank.dto';
 import { UpdateFiscalDto } from './dto/update-fiscal.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -231,6 +231,23 @@ export class KycController {
     return this.kycService.getSecurity(req.user.sub);
   }
 
+  @ApiOperation({ summary: 'List active authenticated account sessions' })
+  @ApiResponse({ status: 200, description: 'Active security sessions' })
+  @Get('security/sessions')
+  async listSecuritySessions(@Req() req: AuthenticatedRequest) {
+    return this.kycService.listSecuritySessions(req.user.sub);
+  }
+
+  @ApiOperation({ summary: 'Revoke one authenticated account session' })
+  @ApiResponse({ status: 200, description: 'Security session revoked' })
+  @Delete('security/sessions/:sessionId')
+  async revokeSecuritySession(
+    @Req() req: AuthenticatedRequest,
+    @Param('sessionId') sessionId: string,
+  ) {
+    return this.kycService.revokeSecuritySession(req.user.sub, sessionId);
+  }
+
   @ApiOperation({ summary: 'Start MFA setup for the authenticated user' })
   @ApiResponse({ status: 201, description: 'MFA setup QR generated' })
   @Post('security/mfa/setup')
@@ -248,9 +265,9 @@ export class KycController {
 
   @ApiOperation({ summary: 'Disable MFA for the authenticated user' })
   @ApiResponse({ status: 200, description: 'MFA disabled' })
-  @ApiBody({ type: KycMfaCodeDto })
+  @ApiBody({ type: KycMfaDisableDto })
   @Post('security/mfa/disable')
-  async disableMfa(@Req() req: AuthenticatedRequest, @Body() dto: KycMfaCodeDto) {
+  async disableMfa(@Req() req: AuthenticatedRequest, @Body() dto: KycMfaDisableDto) {
     return this.kycService.disableMfa(req.user.sub, dto);
   }
   // ═══ KYC STATUS ═══

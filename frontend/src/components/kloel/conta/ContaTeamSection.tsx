@@ -6,7 +6,13 @@ import { useState, useId } from 'react';
 import useSWR from 'swr';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import type { TeamListResponse } from '@/lib/api/team';
-import { inviteTeamMember, listTeam, removeTeamMember, revokeTeamInvite } from '@/lib/api/team';
+import {
+  inviteTeamMember,
+  listTeam,
+  removeTeamMember,
+  revokeTeamInvite,
+  updateMemberRole,
+} from '@/lib/api/team';
 import Icons from './ContaIcons';
 import { SORA, EMBER } from './ContaConstants';
 import { getErrorMessage } from './ContaHelpers';
@@ -49,6 +55,7 @@ export function TeamSection() {
   const [inviteSuccess, setInviteSuccess] = useState('');
   const [teamActionError, setTeamActionError] = useState('');
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
 
   const handleInvite = async () => {
@@ -97,6 +104,22 @@ export function TeamSection() {
       setTeamActionError(getErrorMessage(e) || 'Erro ao remover membro');
     } finally {
       setRemovingId(null);
+    }
+  };
+
+  const handleRoleChange = async (memberId: string, currentRole: string, nextRole: string) => {
+    if (!nextRole || nextRole === currentRole) {
+      return;
+    }
+    setUpdatingRoleId(memberId);
+    setTeamActionError('');
+    try {
+      await updateMemberRole(memberId, nextRole);
+      await mutate();
+    } catch (e) {
+      setTeamActionError(getErrorMessage(e) || 'Erro ao atualizar cargo');
+    } finally {
+      setUpdatingRoleId(null);
     }
   };
 
@@ -306,9 +329,31 @@ export function TeamSection() {
                   <span
                     style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}
                   >
-                    {m.email} {kloelT(`&middot;`)} {ROLES[m.role] || m.role}
+                    {m.email}
                   </span>
                 </div>
+                <select
+                  id={`${fid}-team-role-${m.id}`}
+                  name={`team-role-${m.id}`}
+                  aria-label={kloelT(`Funcao de ${m.name || m.email}`)}
+                  value={m.role}
+                  onChange={(e) => handleRoleChange(m.id, m.role, e.target.value)}
+                  disabled={updatingRoleId === m.id}
+                  style={{
+                    ...selectStyle,
+                    width: 132,
+                    padding: '6px 8px',
+                    fontSize: 11,
+                    opacity: updatingRoleId === m.id ? 0.58 : 1,
+                  }}
+                  title={kloelT(`Alterar cargo de ${m.name || m.email}`)}
+                >
+                  {Object.entries(ROLES).map(([k, v]) => (
+                    <option key={k} value={k}>
+                      {v}
+                    </option>
+                  ))}
+                </select>
                 <span
                   style={{
                     fontSize: 9,
@@ -337,7 +382,8 @@ export function TeamSection() {
                     display: 'flex',
                     opacity: removingId === m.id ? 0.5 : 1,
                   }}
-                  title={kloelT(`Remover membro`)}
+                  aria-label={kloelT(`Remover ${m.name || m.email}`)}
+                  title={kloelT(`Remover ${m.name || m.email}`)}
                 >
                   {Icons.trash(12)}
                 </button>

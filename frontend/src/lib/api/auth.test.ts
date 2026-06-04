@@ -16,17 +16,36 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+function collectHeaders(source: RequestInit['headers'] | undefined): Record<string, string> {
+  const headers: Record<string, string> = {};
+  if (!source) {
+    return headers;
+  }
+  if (source instanceof Headers) {
+    source.forEach((v, k) => {
+      headers[k] = v;
+    });
+    return headers;
+  }
+  if (Array.isArray(source)) {
+    for (const [k, v] of source) {
+      headers[k.toLowerCase()] = v;
+    }
+    return headers;
+  }
+  for (const [k, v] of Object.entries(source)) {
+    headers[k.toLowerCase()] = String(v);
+  }
+  return headers;
+}
+
 function lastFetch(): { url: string; method: string; headers: Record<string, string> } {
   const call = vi.mocked(globalThis.fetch).mock.calls.at(-1);
   const input = call?.[0];
+  const init = call?.[1] as RequestInit | undefined;
   const url = input instanceof Request ? input.url : String(input ?? '');
-  const method = input instanceof Request ? input.method : 'GET';
-  const headers: Record<string, string> = {};
-  if (input instanceof Request) {
-    input.headers.forEach((v, k) => {
-      headers[k] = v;
-    });
-  }
+  const method = input instanceof Request ? input.method : init?.method || 'GET';
+  const headers = input instanceof Request ? collectHeaders(input.headers) : collectHeaders(init?.headers);
   return { url, method, headers };
 }
 
@@ -55,11 +74,20 @@ describe('authApi', () => {
   });
 
   describe('getMe', () => {
-    it('GETs /workspace/me', async () => {
+    it('GETs the normalized workspace proxy', async () => {
       await authApi.getMe();
       const { url, method } = lastFetch();
       expect(method).toBe('GET');
-      expect(url).toContain('/workspace/me');
+      expect(url).toContain('/api/workspace/me');
+    });
+
+    it('forwards auth context to the workspace proxy', async () => {
+      document.cookie = 'kloel_workspace_id=workspace-1; path=/';
+      await authApi.getMe();
+      const { headers } = lastFetch();
+      expect(headers.authorization).toBe('Bearer test-token');
+      expect(headers['x-kloel-access-token']).toBe('test-token');
+      expect(headers['x-workspace-id']).toBe('workspace-1');
     });
 
     it('returns the auth payload', async () => {

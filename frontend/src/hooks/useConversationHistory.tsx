@@ -162,6 +162,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
   const [lastError, setLastError] = useState<Error | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const didSyncRef = useRef(false);
+  const refreshInFlightRef = useRef<Promise<void> | null>(null);
 
   const applyConversations = useCallback((nextConversations: Conversation[]) => {
     const normalized = sortConversations(
@@ -193,19 +194,34 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
     if (!isAuthenticated) {
       return;
     }
+    if (refreshInFlightRef.current) {
+      return refreshInFlightRef.current;
+    }
+
+    const refreshPromise = (async () => {
+      try {
+        const res = await apiFetch<ConversationApiPayload>(
+          `/kloel/threads?limit=${CONVERSATION_PAGE_SIZE}`,
+        );
+        const page = readThreadPage(res);
+        applyConversations(page.items);
+        setNextCursor(page?.nextCursor ?? null);
+        setHasMoreConversations(Boolean(page?.hasMore));
+        setTotalConversations(typeof page?.total === 'number' ? page.total : page.items.length);
+        setLastError(null);
+      } catch (error) {
+        setLastError(error instanceof Error ? error : new Error(String(error || 'kloel_threads_failed')));
+        // Keep current conversations when backend is temporarily unavailable.
+      }
+    })();
+
+    refreshInFlightRef.current = refreshPromise;
     try {
-      const res = await apiFetch<ConversationApiPayload>(
-        `/kloel/threads?limit=${CONVERSATION_PAGE_SIZE}`,
-      );
-      const page = readThreadPage(res);
-      applyConversations(page.items);
-      setNextCursor(page?.nextCursor ?? null);
-      setHasMoreConversations(Boolean(page?.hasMore));
-      setTotalConversations(typeof page?.total === 'number' ? page.total : page.items.length);
-      setLastError(null);
-    } catch (error) {
-      setLastError(error instanceof Error ? error : new Error(String(error || 'kloel_threads_failed')));
-      // Keep current conversations when backend is temporarily unavailable
+      await refreshPromise;
+    } finally {
+      if (refreshInFlightRef.current === refreshPromise) {
+        refreshInFlightRef.current = null;
+      }
     }
   }, [applyConversations, isAuthenticated]);
 

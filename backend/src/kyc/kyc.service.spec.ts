@@ -269,13 +269,97 @@ describe('KycService.submitKyc', () => {
 
     await service.updateProfile('agent_1', { name: 'Safe Projection' });
 
-    const updateCall = (prisma.agent.update.mock.calls as unknown[][]).at(-1)?.[0] as
+    const updateCall = prisma.agent.update.mock.calls.at(-1)?.[0] as
       | { select?: Record<string, unknown> }
       | undefined;
     expect(updateCall?.select).toBeDefined();
     expect(updateCall?.select).not.toHaveProperty('password');
     expect(updateCall?.select).not.toHaveProperty('mfaSecret');
     expect(updateCall?.select).toHaveProperty('id', true);
+  });
+
+  it('lists active security sessions from real refresh tokens', async () => {
+    const { service, prisma } = buildService();
+    const securityService = service as unknown as {
+      listSecuritySessions(
+        agentId: string,
+      ): Promise<Array<{ id: string; createdAt: string; expiresAt: string }>>;
+    };
+    prisma.refreshToken.findMany.mockResolvedValue([
+      {
+        id: 'rt-1',
+        createdAt: new Date('2026-06-01T10:00:00.000Z'),
+        expiresAt: new Date('2026-07-01T10:00:00.000Z'),
+      },
+    ]);
+
+    await expect(securityService.listSecuritySessions('agent_1')).resolves.toEqual([
+      {
+        id: 'rt-1',
+        createdAt: '2026-06-01T10:00:00.000Z',
+        expiresAt: '2026-07-01T10:00:00.000Z',
+      },
+    ]);
+    expect(prisma.refreshToken.findMany).toHaveBeenCalledWith({
+      where: { agentId: 'agent_1', revoked: false, expiresAt: { gt: expect.any(Date) } },
+      select: { id: true, createdAt: true, expiresAt: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  });
+
+  it('revokes one security session owned by the authenticated agent', async () => {
+    const { service, prisma } = buildService();
+    const securityService = service as unknown as {
+      revokeSecuritySession(agentId: string, sessionId: string): Promise<{ success: boolean }>;
+    };
+
+    await expect(securityService.revokeSecuritySession('agent_1', 'rt-1')).resolves.toEqual({
+      success: true,
+    });
+
+    expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith({
+      where: { id: 'rt-1', agentId: 'agent_1', revoked: false },
+      data: { revoked: true },
+    });
+  });
+
+  it('cancels a pending MFA setup without requiring a code', async () => {
+    const { service, prisma, accountMfaService } = buildService();
+    prisma.agent.findUnique.mockResolvedValueOnce({
+      id: 'agent_1',
+      workspaceId: 'ws_1',
+      mfaSecret: 'encrypted-secret',
+      mfaEnabled: false,
+      mfaPendingSetup: true,
+    });
+
+    await expect(service.disableMfa('agent_1', {})).resolves.toEqual({
+      mfa: { enabled: false, pendingSetup: false },
+    });
+
+    expect(accountMfaService.verifyCode).not.toHaveBeenCalled();
+    expect(prisma.agent.update).toHaveBeenCalledWith({
+      where: { id: 'agent_1', workspaceId: 'ws_1' },
+      data: { mfaSecret: null, mfaEnabled: false, mfaPendingSetup: false },
+    });
+  });
+
+  it('requires a code before disabling active MFA', async () => {
+    const { service, prisma, accountMfaService } = buildService();
+    prisma.agent.findUnique.mockResolvedValueOnce({
+      id: 'agent_1',
+      workspaceId: 'ws_1',
+      mfaSecret: 'encrypted-secret',
+      mfaEnabled: true,
+      mfaPendingSetup: false,
+    });
+
+    await expect(service.disableMfa('agent_1', {})).rejects.toThrow(
+      'Informe o codigo 2FA para desativar.',
+    );
+
+    expect(accountMfaService.verifyCode).not.toHaveBeenCalled();
+    expect(prisma.agent.update).not.toHaveBeenCalled();
   });
 
   it('adminApprove transitions status to approved', async () => {
@@ -294,7 +378,7 @@ describe('KycService.submitKyc', () => {
         kycApprovedAt: expect.anything(),
       }) as unknown,
     });
-    const adminUpdateCall = (prisma.agent.update.mock.calls as unknown[][]).at(-1)?.[0] as
+    const adminUpdateCall = prisma.agent.update.mock.calls.at(-1)?.[0] as
       | { data: { kycApprovedAt: unknown } }
       | undefined;
     expect(adminUpdateCall?.data.kycApprovedAt).toBeInstanceOf(Date);
@@ -444,7 +528,7 @@ describe('KycService.submitKyc', () => {
         kycApprovedAt: expect.anything(),
       }) as unknown,
     });
-    const autoApproveCall = (prisma.agent.update.mock.calls as unknown[][]).at(-1)?.[0] as
+    const autoApproveCall = prisma.agent.update.mock.calls.at(-1)?.[0] as
       | { data: { kycApprovedAt: unknown } }
       | undefined;
     expect(autoApproveCall?.data.kycApprovedAt).toBeInstanceOf(Date);

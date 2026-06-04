@@ -321,30 +321,35 @@ describe('product.controller.helpers', () => {
   });
 
   describe('extractCategoriesFromProducts', () => {
-    it('returns the unique truthy categories', () => {
-      expect(
-        extractCategoriesFromProducts([
-          { category: 'edu' },
-          { category: 'fitness' },
-          { category: 'edu' },
-        ]),
-      ).toEqual(['edu', 'fitness', 'edu']);
+    it('returns canonical categories plus distinct workspace-only categories', () => {
+      const result = extractCategoriesFromProducts([
+        { category: 'edu' },
+        { category: 'fitness' },
+        { category: 'edu' },
+      ]);
+
+      expect(result).toEqual(
+        expect.arrayContaining(['Dermocosméticos', 'Cursos Online', 'Outros', 'edu', 'fitness']),
+      );
+      expect(result.filter((category) => category === 'edu')).toHaveLength(1);
+      expect(result.indexOf('Dermocosméticos')).toBeLessThan(result.indexOf('edu'));
     });
 
-    it('filters out null and empty values', () => {
-      expect(
-        extractCategoriesFromProducts([
-          { category: 'edu' },
-          { category: null },
-          { category: '' },
-          { category: undefined },
-        ]),
-      ).toEqual(['edu']);
+    it('filters out null and empty workspace values', () => {
+      const result = extractCategoriesFromProducts([
+        { category: 'edu' },
+        { category: null },
+        { category: '' },
+        { category: undefined },
+      ]);
+
+      expect(result).toEqual(expect.arrayContaining(['Dermocosméticos', 'edu']));
+      expect(result).not.toContain('');
     });
 
-    it('returns an empty list when nothing matches', () => {
+    it('returns the canonical taxonomy when nothing matches in the workspace', () => {
       expect(extractCategoriesFromProducts([{ category: null }, { category: undefined }])).toEqual(
-        [],
+        expect.arrayContaining(['Dermocosméticos', 'Cursos Online', 'Outros']),
       );
     });
   });

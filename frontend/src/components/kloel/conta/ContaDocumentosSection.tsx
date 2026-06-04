@@ -118,6 +118,7 @@ function UploadZone({
         {(doc.status === 'pending' || !doc.status) && (
           <button
             type="button"
+            aria-label={`Excluir ${doc.fileName || doc.originalName || label}`}
             onClick={() => onDelete(doc.id)}
             style={{
               background: 'none',
@@ -136,6 +137,9 @@ function UploadZone({
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-label={`Enviar ${label}`}
       onClick={() => inputRef.current?.click()}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}

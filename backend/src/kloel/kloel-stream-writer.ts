@@ -5,6 +5,7 @@ import { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import {
   type KloelStreamEvent,
+  createKloelAssistantVisibleTextStreamFilter,
   createKloelContentEvent,
   createKloelStatusEvent,
   createKloelDoneEvent,
@@ -247,6 +248,7 @@ export class KloelStreamWriter {
 
     let fullResponse = '';
     let hasStreamedContent = false;
+    const visibleTextFilter = createKloelAssistantVisibleTextStreamFilter();
 
     const emitAnswerChunk = (content: string) => {
       if (!content) {
@@ -279,8 +281,10 @@ export class KloelStreamWriter {
       if (!content) {
         continue;
       }
-      emitAnswerChunk(content);
+      emitAnswerChunk(visibleTextFilter.push(content));
     }
+
+    emitAnswerChunk(visibleTextFilter.flush());
 
     return {
       fullResponse,

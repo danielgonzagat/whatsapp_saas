@@ -311,6 +311,7 @@ export class MindRuntime {
       intent,
       ok: capabilityResult.ok,
       error: capabilityResult.error,
+      result: capabilityResult.data,
     });
 
     if (thread) {

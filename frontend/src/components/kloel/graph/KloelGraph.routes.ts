@@ -9,7 +9,7 @@ export type KloelGraphArea =
   | 'conectar'
   | 'consultar';
 
-export type KloelGraphNodeType = 'sun' | 'route' | 'metric' | 'entity';
+export type KloelGraphNodeType = 'core' | 'sun' | 'route' | 'metric' | 'entity';
 
 export interface KloelGraphNode {
   readonly id: string;
@@ -86,7 +86,7 @@ export function resolveKloelGraphNodeForPathFromNodes(
   if (parts[0] === 'checkout' && parts[1]) {
     return resolveCheckoutNode(parts[1], searchParams, path, nodes);
   }
-  return resolveKloelGraphNodeForPath(pathname, searchParams);
+  return findStaticRouteNode(path, searchParams, nodes);
 }
 
 export function resolveKloelGraphNodeForPath(

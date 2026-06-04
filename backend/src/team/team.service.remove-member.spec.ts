@@ -50,10 +50,21 @@ describe('TeamService removeMember', () => {
       workspaceId: wsId,
       email: 'alice@x.com',
     });
-    prisma.agent.delete.mockResolvedValue({ id: memberId });
+    prisma.agent.delete.mockResolvedValue({
+      id: memberId,
+      name: 'Alice',
+      email: 'alice@x.com',
+      role: 'MEMBER',
+    });
 
-    await service.removeMember(wsId, memberId);
+    const result = await service.removeMember(wsId, memberId);
 
+    expect(result).toEqual({
+      id: memberId,
+      name: 'Alice',
+      email: 'alice@x.com',
+      role: 'MEMBER',
+    });
     expect(auditService.log).toHaveBeenCalledWith({
       workspaceId: wsId,
       action: 'DELETE_RECORD',
@@ -63,6 +74,12 @@ describe('TeamService removeMember', () => {
     });
     expect(prisma.agent.delete).toHaveBeenCalledWith({
       where: { id: memberId, workspaceId: wsId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+      },
     });
   });
 

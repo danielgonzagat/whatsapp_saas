@@ -319,6 +319,16 @@ describe('MindRuntime', () => {
     expect(events.record).toHaveBeenCalledWith(expect.objectContaining({ action: 'brain.decide' }));
     expect(result.intent).toBe('list_products');
     expect(result.confidence).toBe(1);
+    expect(result.response).toContain('Consultei seu catálogo real');
+    expect(result.response).toContain('Produto A');
+    expect(result.response).not.toContain('list_products');
+    expect(result.response).not.toContain('Acao');
+    expect(threads.persistAssistantThreadMessage).toHaveBeenCalledWith(
+      'thread-1',
+      'ws-1',
+      expect.stringContaining('Produto A'),
+      expect.objectContaining({ brainIntent: 'list_products' }),
+    );
     expect(result.actions).toHaveLength(1);
     expect(result.actions[0]).toEqual(expect.objectContaining({ tool: 'list_products' }));
   });

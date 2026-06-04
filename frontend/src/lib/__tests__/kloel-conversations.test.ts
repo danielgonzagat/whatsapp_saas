@@ -204,7 +204,7 @@ describe('streamAuthenticatedKloelMessage', () => {
       .mockResolvedValue(
         buildSseResponse([
           'data: {"type":"thread","conversationId":"thread-1","title":"Nova conversa"}\n\n',
-          'data: {"type":"status","phase":"thinking","message":"Kloel está pensando"}\n\n',
+          'data: {"type":"status","phase":"thinking","message":"Entendi que você quer validar o chat; estou transformando isso em um resumo público do raciocínio."}\n\n',
           'data: {"type":"status","phase":"tool_calling"}\n\n',
           'data: {"type":"tool_call","callId":"call-1","tool":"search_web","args":{"query":"pdrn"}}\n\n',
           'data: {"type":"tool_result","callId":"call-1","tool":"search_web","success":true,"result":{"answer":"ok"}}\n\n',
@@ -264,7 +264,7 @@ describe('streamAuthenticatedKloelMessage', () => {
       .fn()
       .mockResolvedValue(
         buildSseResponse([
-          'data: {"type":"status","phase":"thinking","message":"Kloel está pensando"}\n\n',
+          'data: {"type":"status","phase":"thinking","message":"Entendi que você quer validar o chat; estou transformando isso em um resumo público do raciocínio."}\n\n',
           'data: {"type":"error","error":"stream_failed","content":"Falha no stream","done":true}\n\n',
         ]),
       );
@@ -297,7 +297,7 @@ describe('streamAuthenticatedKloelMessage', () => {
       .mockResolvedValue(
         buildSseResponse([
           'data: {"type":"thread","conversationId":"thread-1","title":"Nova conversa"}\n\n',
-          'data: {"type":"status","phase":"thinking","message":"Kloel está pensando"}\n\n',
+          'data: {"type":"status","phase":"thinking","message":"Entendi que você quer validar o chat; estou transformando isso em um resumo público do raciocínio."}\n\n',
           'data: {"type":"content","content":"Resposta parcial"}\n\n',
         ]),
       );

@@ -3,6 +3,10 @@ import type { Prisma } from '@prisma/client';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { KloelService } from './kloel.service';
 import { clampLimit } from '../common/pagination-clamp.pipe';
+import {
+  formatTraceToolLabel,
+  sanitizeAssistantThreadContentForRead,
+} from './kloel-thread.helpers';
 
 export interface ControllerDeps {
   prisma: PrismaService;
@@ -112,6 +116,67 @@ export async function deleteThread(
   }
 }
 
+function sanitizeThreadResponseVersionForRead(value: unknown): unknown {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return value;
+  }
+  const record = value as Record<string, unknown>;
+  if (typeof record.content !== 'string') {
+    return value;
+  }
+  return { ...record, content: sanitizeAssistantThreadContentForRead(record.content) };
+}
+
+function sanitizeThreadMessageMetadataValueForRead(value: unknown): unknown {
+  if (typeof value === 'string') {
+    return sanitizeAssistantThreadContentForRead(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(sanitizeThreadMessageMetadataValueForRead);
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+
+  const record = value as Record<string, unknown>;
+  const sanitized: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(record)) {
+    if ((key === 'tool' || key === 'brainIntent') && typeof item === 'string') {
+      sanitized[key] = formatTraceToolLabel(item);
+      continue;
+    }
+    if (key === 'responseVersions' && Array.isArray(item)) {
+      sanitized[key] = item.map(sanitizeThreadResponseVersionForRead);
+      continue;
+    }
+    sanitized[key] = sanitizeThreadMessageMetadataValueForRead(item);
+  }
+  return sanitized;
+}
+
+function sanitizeThreadMessageMetadataForRead(
+  metadata: Prisma.JsonValue | null,
+): Prisma.JsonValue | null {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    return metadata;
+  }
+  return sanitizeThreadMessageMetadataValueForRead(metadata) as Prisma.JsonValue;
+}
+
+function sanitizeThreadMessageForRead<
+  T extends { role: string; content: string; metadata: Prisma.JsonValue | null },
+>(message: T): T {
+  const metadata = sanitizeThreadMessageMetadataForRead(message.metadata);
+  if (message.role !== 'assistant') {
+    return { ...message, metadata };
+  }
+  return {
+    ...message,
+    content: sanitizeAssistantThreadContentForRead(message.content),
+    metadata,
+  };
+}
+
 export async function getThreadMessages(
   deps: Pick<ControllerDeps, 'prisma'>,
   id: string,
@@ -137,7 +202,9 @@ export async function getThreadMessages(
     orderBy: { createdAt: 'asc' },
     take: 200,
   });
-  return messages.filter((m) => String(m.content || '').trim().length > 0);
+  return messages
+    .filter((m) => String(m.content || '').trim().length > 0)
+    .map(sanitizeThreadMessageForRead);
 }
 
 export async function addThreadMessage(

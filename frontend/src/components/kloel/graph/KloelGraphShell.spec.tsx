@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -6,6 +6,14 @@ let pathname = '/products';
 let searchParams = new URLSearchParams();
 const push = vi.fn();
 const openPalette = vi.fn();
+let memberAreas = [
+  {
+    id: 'area_1',
+    name: 'Curso real',
+    description: 'Area real do backend',
+    active: true,
+  },
+];
 
 vi.mock('next/navigation', () => ({
   usePathname: () => pathname,
@@ -18,13 +26,22 @@ vi.mock('@/hooks/useProducts', () => ({
     products: [
       {
         id: 'prod_1',
-        name: 'GHK-CU',
+        name: 'Produto real',
         category: 'Dermocosmeticos',
         status: 'active',
         plans: [{ id: 'plan_1', name: 'Plano principal', active: true }],
         checkouts: [{ id: 'checkout_1', name: 'Checkout principal', active: true }],
       },
     ],
+  }),
+}));
+
+vi.mock('@/hooks/useMemberAreas', () => ({
+  useMemberAreas: () => ({
+    areas: memberAreas,
+    isLoading: false,
+    error: null,
+    mutate: vi.fn(),
   }),
 }));
 
@@ -54,6 +71,14 @@ afterEach(() => {
   cleanup();
   pathname = '/products';
   searchParams = new URLSearchParams();
+  memberAreas = [
+    {
+      id: 'area_1',
+      name: 'Curso real',
+      description: 'Area real do backend',
+      active: true,
+    },
+  ];
   push.mockClear();
   openPalette.mockClear();
 });
@@ -82,6 +107,37 @@ describe('KloelGraphShell', () => {
     expect(screen.getByTestId('kloel-graph-shell')).toBeTruthy();
   });
 
+  it('does not keep the current route node selected after the overlay is closed', async () => {
+    pathname = '/products';
+    searchParams = new URLSearchParams('graph=1');
+
+    const { container } = renderShell(<main>ProdutosView hidden</main>);
+
+    await waitFor(() => {
+      expect(container.querySelector('circle[data-node-id="criar-products"]')).toBeTruthy();
+    });
+    expect(container.querySelector('circle[data-node-id="criar-products"]')?.getAttribute('stroke')).toBe(
+      'none',
+    );
+  });
+
+  it('lets floating navigation recenter graph-only mode away from the active route', async () => {
+    pathname = '/chat';
+    searchParams = new URLSearchParams('graph=1');
+
+    renderShell(<main>Chat hidden</main>);
+
+    const kloelNav = screen.getByRole('button', { name: 'Kloel' });
+    const educarNav = screen.getByRole('button', { name: 'Educar' });
+
+    await waitFor(() => expect(kloelNav.style.background).toBe('rgb(24, 24, 28)'));
+
+    fireEvent.click(educarNav);
+
+    expect(educarNav.style.background).toBe('rgb(24, 24, 28)');
+    expect(kloelNav.style.background).toBe('transparent');
+  });
+
   it('navigates by node clicks without opening on drag movement', () => {
     renderShell();
 
@@ -101,6 +157,17 @@ describe('KloelGraphShell', () => {
       clientY: 10,
     });
     fireEvent.pointerUp(screen.getByRole('button', { name: 'Abrir Educar' }), {
+      clientX: 15,
+      clientY: 10,
+    });
+    expect(push).not.toHaveBeenCalled();
+
+    push.mockClear();
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Abrir Educar' }), {
+      clientX: 10,
+      clientY: 10,
+    });
+    fireEvent.pointerUp(screen.getByRole('button', { name: 'Abrir Educar' }), {
       clientX: 50,
       clientY: 50,
     });
@@ -110,11 +177,11 @@ describe('KloelGraphShell', () => {
   it('opens dynamic product nodes and product tab subnodes from real product data', () => {
     renderShell();
 
-    fireEvent.pointerDown(screen.getByRole('button', { name: 'Abrir GHK-CU' }), {
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Abrir Produto real' }), {
       clientX: 10,
       clientY: 10,
     });
-    fireEvent.pointerUp(screen.getByRole('button', { name: 'Abrir GHK-CU' }), {
+    fireEvent.pointerUp(screen.getByRole('button', { name: 'Abrir Produto real' }), {
       clientX: 11,
       clientY: 11,
     });
@@ -130,6 +197,20 @@ describe('KloelGraphShell', () => {
       clientY: 11,
     });
     expect(push).toHaveBeenCalledWith('/products/prod_1?tab=cupons');
+  });
+
+  it('opens dynamic member area nodes from real member area data', () => {
+    renderShell();
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Abrir Curso real' }), {
+      clientX: 10,
+      clientY: 10,
+    });
+    fireEvent.pointerUp(screen.getByRole('button', { name: 'Abrir Curso real' }), {
+      clientX: 11,
+      clientY: 11,
+    });
+    expect(push).toHaveBeenCalledWith('/produtos/area-membros?areaId=area_1');
   });
 
   it('opens Kloel search deep-links through the existing command palette', () => {
@@ -164,6 +245,16 @@ describe('KloelGraphShell', () => {
       clientY: 11,
     });
     expect(openPalette).toHaveBeenCalledWith({ initialQuery: '' });
+  });
+
+  it('closes the overlay on outside click while preserving clicks inside the real screen', () => {
+    const { container } = renderShell(<main>ProdutosView real</main>);
+
+    fireEvent.click(screen.getByRole('dialog', { name: /Produtos/i }));
+    expect(push).not.toHaveBeenCalled();
+
+    fireEvent.click(container.querySelector('[role="dialog"]')?.parentElement as Element);
+    expect(push).toHaveBeenCalledWith('/products?graph=1');
   });
 
   it('closes the overlay back to graph-only mode on the current node route', () => {

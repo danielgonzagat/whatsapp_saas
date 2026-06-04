@@ -101,19 +101,25 @@ describe('parseKloelStreamPayload', () => {
       parseKloelStreamPayload({
         type: 'tool_result',
         callId: 'call-1',
+        spanId: 'span-1',
         tool: 'search_web',
         success: true,
         result: { answer: 'ok' },
+        artifactId: 'artifact-1',
+        durationMs: 42,
         done: false,
       }),
     ).toEqual([
       {
         type: 'tool_result',
         callId: 'call-1',
+        spanId: 'span-1',
         tool: 'search_web',
         success: true,
         result: { answer: 'ok' },
         error: undefined,
+        artifactId: 'artifact-1',
+        durationMs: 42,
       },
     ]);
   });

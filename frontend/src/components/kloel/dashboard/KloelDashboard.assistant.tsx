@@ -14,7 +14,7 @@ interface AssistantAssetSource {
   url?: string | null;
 }
 
-export function AssistantThinkingState({ label }: { label: 'Kloel está pensando' }) {
+export function AssistantThinkingState({ label }: { label: string }) {
   return (
     <div
       style={{
