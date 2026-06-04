@@ -142,6 +142,35 @@ check(
   missingTool.stdout || missingTool.stderr,
 );
 
+// Non-mutating MCP servers (browser inspection / docs / reasoning) are admitted —
+// before the host sandbox, like atomic tools — because they cannot mutate local code.
+const cdpUnhosted = run({ tool_name: 'mcp__chrome-devtools__navigate_page', tool_input: { url: 'https://example.com' } });
+check(
+  'unhosted chrome-devtools MCP tool is admitted (browser inspection, no code mutation)',
+  cdpUnhosted.status === 0 && cdpUnhosted.stdout === '',
+  cdpUnhosted.stdout || cdpUnhosted.stderr,
+);
+
+const cdpHosted = run({ tool_name: 'mcp__chrome-devtools__take_snapshot', tool_input: {} }, hostEnv);
+check('hosted chrome-devtools MCP tool passes silently', cdpHosted.status === 0 && cdpHosted.stdout === '', cdpHosted.stdout || cdpHosted.stderr);
+
+const context7 = run({ tool_name: 'mcp__context7__query-docs', tool_input: { q: 'react' } }, hostEnv);
+check('hosted context7 docs MCP tool passes silently', context7.status === 0 && context7.stdout === '', context7.stdout || context7.stderr);
+
+const seqThinking = run({ tool_name: 'mcp__sequential-thinking__sequentialthinking', tool_input: {} }, hostEnv);
+check('hosted sequential-thinking MCP tool passes silently', seqThinking.status === 0 && seqThinking.stdout === '', seqThinking.stdout || seqThinking.stderr);
+
+// REGRESSION GUARD: a code-editing MCP server (serena can rewrite symbol bodies) is
+// NOT on the non-mutating allowlist, so it stays denied — local code mutation keeps
+// flowing through atomic-edit only. If this ever passes, the allowlist leaked.
+const serenaEdit = run({ tool_name: 'mcp__serena__replace_symbol_body', tool_input: { name: 'foo' } }, hostEnv);
+const serenaEditBody = parsed(serenaEdit.stdout);
+check(
+  'code-editing MCP server (serena) stays denied — atomic-edit invariant preserved',
+  serenaEdit.status === 0 && isDeny(serenaEditBody) && /native\/non-atomic tool/.test(denialReason(serenaEditBody)),
+  serenaEdit.stdout || serenaEdit.stderr,
+);
+
 if (jsonMode) {
   process.stdout.write(JSON.stringify({ ok: failed === 0, passed, failed, failures }) + '\n');
 } else {
