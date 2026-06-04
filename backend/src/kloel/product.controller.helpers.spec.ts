@@ -197,6 +197,15 @@ describe('product.controller.helpers', () => {
       });
     });
 
+    it('maps legacy guaranteeDays into persisted warrantyDays', () => {
+      const data = buildCreateProductData('ws_1', {
+        name: 'Curso',
+        guaranteeDays: 30,
+      });
+
+      expect(data.warrantyDays).toBe(30);
+    });
+
     it('omits optional keys when not supplied', () => {
       const data = buildCreateProductData('ws_1', { name: 'X' });
       expect(data).not.toHaveProperty('sku');

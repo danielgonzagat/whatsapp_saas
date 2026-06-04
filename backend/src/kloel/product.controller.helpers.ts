@@ -177,6 +177,7 @@ export interface CreateProductDtoLike {
   reclameAquiUrl?: string;
   supportEmail?: string;
   warrantyDays?: number;
+  guaranteeDays?: number;
   isSample?: boolean;
   shippingType?: string;
   shippingValue?: number;
@@ -213,7 +214,7 @@ export function buildCreateProductData(
     ...(dto.thankyouPixUrl !== undefined ? { thankyouPixUrl: dto.thankyouPixUrl } : {}),
     ...(dto.reclameAquiUrl !== undefined ? { reclameAquiUrl: dto.reclameAquiUrl } : {}),
     supportEmail: dto.supportEmail || null,
-    warrantyDays: dto.warrantyDays || null,
+    warrantyDays: dto.warrantyDays ?? dto.guaranteeDays ?? null,
     isSample: dto.isSample || false,
     shippingType: dto.shippingType || null,
     shippingValue: dto.shippingValue || null,
