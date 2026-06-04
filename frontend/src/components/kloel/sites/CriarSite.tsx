@@ -80,6 +80,10 @@ export function CriarSite({ mode }: { mode?: string }) {
   const invalidateSites = () =>
     mutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/site'));
 
+  const upsertSavedSite = (site: SiteItem) => {
+    setSavedSites((prev) => [site, ...prev.filter((item) => item.id !== site.id)]);
+  };
+
   const handleGenerate = async () => {
     if (!prompt.trim()) {
       return;
@@ -115,6 +119,10 @@ export function CriarSite({ mode }: { mode?: string }) {
       if (res.error) {
         setError(res.error);
       } else {
+        const data = res.data as { site?: SiteItem } | undefined;
+        if (data?.site) {
+          upsertSavedSite(data.site);
+        }
         invalidateSites();
       }
     } else {
@@ -122,9 +130,10 @@ export function CriarSite({ mode }: { mode?: string }) {
       if (res.error) {
         setError(res.error);
       } else {
-        const data = res.data as { site?: { id?: string } } | undefined;
-        if (data?.site?.id) {
+        const data = res.data as { site?: SiteItem } | undefined;
+        if (data?.site) {
           setSavedSiteId(data.site.id);
+          upsertSavedSite(data.site);
         }
         invalidateSites();
       }

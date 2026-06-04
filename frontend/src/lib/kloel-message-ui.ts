@@ -428,6 +428,41 @@ function applyReasoningStreamEventToMetadata(
 }
 
 /** Append assistant trace from event. */
+/**
+ * Map a raw internal tool identifier to a safe, human label for the live
+ * reasoning timeline. Mirrors the backend formatTraceToolLabel so the streamed
+ * trace matches the persisted/reloaded one and never shows a raw code
+ * identifier (e.g. "request_anticipation") on the user's screen.
+ */
+const LIVE_TOOL_DISPLAY_LABELS: Record<string, string> = {
+  'code outline': 'inspeção da arquitetura interna',
+  'search codebase': 'busca na arquitetura interna',
+  'code detect issues': 'auditoria da arquitetura interna',
+  'run backend tests': 'validação operacional',
+  'search web': 'pesquisa na web',
+  'refine response': 'mesa de refinamento',
+  'create site': 'criação de site',
+  'create image': 'criação de imagem',
+  'list products': 'catálogo de produtos',
+  'get settings': 'configurações da conta',
+  'get billing status': 'status da assinatura',
+  'request anticipation': 'antecipação de recebíveis',
+  'request withdrawal': 'solicitação de saque',
+  'list sales': 'consulta de vendas',
+  'create product': 'criação de produto',
+  'self.health': 'saúde operacional',
+};
+
+export function formatLiveTraceToolLabel(toolName?: string | null): string {
+  const raw = String(toolName || 'ferramenta').trim();
+  const normalized = raw.replace(/[_-]+/g, ' ').replace(WHITESPACE_G_RE, ' ').toLowerCase();
+  const mapped = LIVE_TOOL_DISPLAY_LABELS[normalized] ?? LIVE_TOOL_DISPLAY_LABELS[raw];
+  if (mapped) {
+    return mapped;
+  }
+  return normalized || 'a ferramenta';
+}
+
 export function appendAssistantTraceFromEvent(
   metadata: unknown,
   event: KloelStreamEvent,
@@ -516,7 +551,7 @@ function createAssistantTraceEntryFromStreamEvent(
       phase: 'tool_calling',
       label: sanitizeAssistantTraceLabel('Consultei contexto operacional relevante antes de responder.'),
       createdAt: new Date().toISOString(),
-      tool: event.tool,
+      tool: formatLiveTraceToolLabel(event.tool),
       ...(spanId ? { spanId } : {}),
     };
   }
@@ -533,7 +568,7 @@ function createAssistantTraceEntryFromStreamEvent(
           : 'Registrei uma limitação operacional antes de responder.',
       ),
       createdAt: new Date().toISOString(),
-      tool: event.tool,
+      tool: formatLiveTraceToolLabel(event.tool),
       success: event.success,
       ...(spanId ? { spanId } : {}),
       ...(event.artifactId ? { artifactId: event.artifactId } : {}),
