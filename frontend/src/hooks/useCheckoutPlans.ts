@@ -270,7 +270,12 @@ export function useCheckoutPlans(product: DashboardProductInput | null | undefin
         method: 'PUT',
         body: { planIds },
       });
-      requireCheckoutMutationSuccess(res, 'Erro ao sincronizar links do checkout');
+      // PUT /links returns a markerless 200; check apiFetch's error field rather
+      // than the mutation-envelope marker (which would false-throw on success).
+      const linksError = (res as { error?: unknown }).error;
+      if (typeof linksError === 'string' && linksError.trim()) {
+        throw new Error(linksError);
+      }
       mutate();
       return res;
     },
