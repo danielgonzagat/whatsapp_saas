@@ -37,6 +37,8 @@ export default function MarketplaceFilters({
           {IC.search(16)}
         </span>
         <input
+          id="affiliate-marketplace-search"
+          name="affiliateMarketplaceSearch"
           aria-label={kloelT('Buscar produtos para se afiliar')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}

@@ -89,6 +89,44 @@ export interface KloelStreamErrorEvent {
   done?: boolean | undefined;
 }
 
+/** Kloel stream reasoning summary event shape. */
+export interface KloelStreamReasoningSummaryEvent {
+  /** Type property. */
+  type: 'reasoning_summary';
+  /** Text property. */
+  text: string;
+}
+
+/** Kloel stream reasoning delta event shape. */
+export interface KloelStreamReasoningDeltaEvent {
+  /** Type property. */
+  type: 'reasoning_delta';
+  /** Text property. */
+  text: string;
+}
+
+/** Kloel stream reasoning done event shape. */
+export interface KloelStreamReasoningDoneEvent {
+  /** Type property. */
+  type: 'reasoning_done';
+  /** Duration ms property. */
+  durationMs: number;
+}
+
+/** Kloel stream file event shape. */
+export interface KloelStreamFileEvent {
+  /** Type property. */
+  type: 'file';
+  /** Name property. */
+  name: string;
+  /** Meta property. */
+  meta?: string | undefined;
+  /** Url property. */
+  url?: string | undefined;
+  /** Download url property. */
+  downloadUrl?: string | undefined;
+}
+
 /** Kloel stream event type. */
 export type KloelStreamEvent =
   | KloelStreamThreadEvent
@@ -96,6 +134,10 @@ export type KloelStreamEvent =
   | KloelStreamContentEvent
   | KloelStreamToolCallEvent
   | KloelStreamToolResultEvent
+  | KloelStreamReasoningSummaryEvent
+  | KloelStreamReasoningDeltaEvent
+  | KloelStreamReasoningDoneEvent
+  | KloelStreamFileEvent
   | KloelStreamDoneEvent
   | KloelStreamErrorEvent;
 
@@ -196,6 +238,57 @@ function tryAppendError(event: Record<string, unknown>, events: KloelStreamEvent
   });
 }
 
+function tryAppendReasoningSummary(
+  event: Record<string, unknown>,
+  events: KloelStreamEvent[],
+): void {
+  if (
+    event.type !== 'reasoning_summary' ||
+    typeof event.text !== 'string' ||
+    event.text.length === 0
+  ) {
+    return;
+  }
+  events.push({ type: 'reasoning_summary', text: event.text });
+}
+
+function tryAppendReasoningDelta(
+  event: Record<string, unknown>,
+  events: KloelStreamEvent[],
+): void {
+  if (
+    event.type !== 'reasoning_delta' ||
+    typeof event.text !== 'string' ||
+    event.text.length === 0
+  ) {
+    return;
+  }
+  events.push({ type: 'reasoning_delta', text: event.text });
+}
+
+function tryAppendReasoningDone(
+  event: Record<string, unknown>,
+  events: KloelStreamEvent[],
+): void {
+  if (event.type !== 'reasoning_done' || typeof event.durationMs !== 'number') {
+    return;
+  }
+  events.push({ type: 'reasoning_done', durationMs: event.durationMs });
+}
+
+function tryAppendFile(event: Record<string, unknown>, events: KloelStreamEvent[]): void {
+  if (event.type !== 'file' || typeof event.name !== 'string' || event.name.length === 0) {
+    return;
+  }
+  events.push({
+    type: 'file',
+    name: event.name,
+    meta: typeof event.meta === 'string' ? event.meta : undefined,
+    url: typeof event.url === 'string' ? event.url : undefined,
+    downloadUrl: typeof event.downloadUrl === 'string' ? event.downloadUrl : undefined,
+  });
+}
+
 function shouldAppendDone(event: Record<string, unknown>, events: KloelStreamEvent[]): boolean {
   const isDoneSignal = event.type === 'done' || event.done === true;
   if (!isDoneSignal) {
@@ -225,6 +318,10 @@ export function parseKloelStreamPayload(payload: unknown): KloelStreamEvent[] {
   tryAppendToolResult(event, events);
   tryAppendContent(event, events);
   tryAppendError(event, events);
+  tryAppendReasoningSummary(event, events);
+  tryAppendReasoningDelta(event, events);
+  tryAppendReasoningDone(event, events);
+  tryAppendFile(event, events);
 
   if (shouldAppendDone(event, events)) {
     const metadata = isRecord(event.metadata) ? event.metadata : undefined;

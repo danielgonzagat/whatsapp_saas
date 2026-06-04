@@ -10,6 +10,10 @@ interface LabeledFormFieldProps {
   placeholder?: string;
   children?: ReactNode;
   style?: React.CSSProperties;
+  error?: string;
+  min?: number;
+  max?: number;
+  step?: number | string;
 }
 
 const labelStyle = {
@@ -46,7 +50,13 @@ export function LabeledFormField({
   placeholder,
   children,
   style,
+  error,
+  min,
+  max,
+  step,
 }: LabeledFormFieldProps) {
+  const errorId = error ? `${id}-error` : undefined;
+
   return (
     <div style={style}>
       <label style={labelStyle} htmlFor={id}>
@@ -61,9 +71,19 @@ export function LabeledFormField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          style={inputStyle}
+          style={{ ...inputStyle, border: error ? `1px solid ${colors.state.error}` : inputStyle.border }}
+          min={min}
+          max={max}
+          step={step}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={errorId}
         />
       )}
+      {error ? (
+        <div id={errorId} role="alert" style={{ marginTop: 6, color: colors.state.error, fontSize: 11 }}>
+          {error}
+        </div>
+      ) : null}
     </div>
   );
 }

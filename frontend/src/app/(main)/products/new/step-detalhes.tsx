@@ -82,6 +82,7 @@ export function StepDetalhes({
 
       <MonitorInputField label={kloelT('Categoria *')}>
         <select
+          aria-label={kloelT('Categoria')}
           style={selectStyle}
           onFocus={inputProps.onFocus}
           onBlur={inputProps.onBlur}

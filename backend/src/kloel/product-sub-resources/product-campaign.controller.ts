@@ -82,6 +82,19 @@ export class ProductCampaignController {
     });
   }
 
+  private serializeWithDeliveryReadiness(
+    productCampaign: LooseObject,
+    linkedCampaign: LooseObject | null,
+    deliveryReadiness: Awaited<ReturnType<CampaignsService['getDeliveryReadiness']>>,
+  ) {
+    return {
+      ...serializeProductCampaignRecord(productCampaign, linkedCampaign),
+      deliveryReady: deliveryReadiness.ready,
+      deliveryMissing: deliveryReadiness.missing,
+      deliveryGapMessage: deliveryReadiness.message,
+    };
+  }
+
   private async ensureLinkedCampaign(
     workspaceId: string,
     product: LooseObject,
@@ -127,24 +140,28 @@ export class ProductCampaignController {
   /** List. */
   @Get()
   async list(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    const workspaceId = getWorkspaceId(req);
+    await ensureWorkspaceProductAccess(this.prisma, productId, workspaceId);
 
-    const [productCampaigns, workspaceCampaigns] = await Promise.all([
+    const [productCampaigns, workspaceCampaigns, deliveryReadiness] = await Promise.all([
       this.prisma.productCampaign.findMany({
         where: { productId },
         orderBy: { createdAt: 'desc' },
         take: 100,
       }),
-      this.listWorkspaceCampaigns(getWorkspaceId(req)),
+      this.listWorkspaceCampaigns(workspaceId),
+      this.campaignsService.getDeliveryReadiness(workspaceId),
     ]);
 
     return productCampaigns.map((campaign) =>
-      serializeProductCampaignRecord(
+      this.serializeWithDeliveryReadiness(
         campaign,
         findLinkedCampaignForProductCampaign(workspaceCampaigns, campaign),
+        deliveryReadiness,
       ),
     );
   }
+
 
   /** Create. */
   @Post()
@@ -153,7 +170,8 @@ export class ProductCampaignController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: AuthenticatedRequest,
   ) {
-    const product = await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    const workspaceId = getWorkspaceId(req);
+    const product = await ensureWorkspaceProductAccess(this.prisma, productId, workspaceId);
 
     if (!safeStr(body.name).trim()) {
       throw new BadRequestException('Nome da campanha é obrigatório');
@@ -168,14 +186,20 @@ export class ProductCampaignController {
     });
 
     const linkedCampaign = await this.ensureLinkedCampaign(
-      getWorkspaceId(req),
+      workspaceId,
       product,
       createdProductCampaign,
       body,
     );
+    const deliveryReadiness = await this.campaignsService.getDeliveryReadiness(workspaceId);
 
-    return serializeProductCampaignRecord(createdProductCampaign, linkedCampaign);
+    return this.serializeWithDeliveryReadiness(
+      createdProductCampaign,
+      linkedCampaign,
+      deliveryReadiness,
+    );
   }
+
 
   /** Update. */
   @Put(':campaignId')
@@ -185,7 +209,8 @@ export class ProductCampaignController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: AuthenticatedRequest,
   ) {
-    const product = await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    const workspaceId = getWorkspaceId(req);
+    const product = await ensureWorkspaceProductAccess(this.prisma, productId, workspaceId);
 
     const productCampaign = await this.prisma.productCampaign.findFirst({
       where: { id: campaignId, productId },
@@ -203,14 +228,20 @@ export class ProductCampaignController {
     });
 
     const linkedCampaign = await this.ensureLinkedCampaign(
-      getWorkspaceId(req),
+      workspaceId,
       product,
       updatedProductCampaign,
       body,
     );
+    const deliveryReadiness = await this.campaignsService.getDeliveryReadiness(workspaceId);
 
-    return serializeProductCampaignRecord(updatedProductCampaign, linkedCampaign);
+    return this.serializeWithDeliveryReadiness(
+      updatedProductCampaign,
+      linkedCampaign,
+      deliveryReadiness,
+    );
   }
+
 
   /** Launch. */
   @Post(':campaignId/launch')

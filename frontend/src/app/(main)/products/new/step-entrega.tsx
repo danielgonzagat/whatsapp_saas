@@ -78,6 +78,7 @@ export function StepEntrega({ form, updateForm, onCarrierToggle }: StepEntregaPr
 
       <MonitorInputField label={kloelT('Prazo de despacho')}>
         <select
+          aria-label={kloelT('Prazo de despacho')}
           style={selectStyle}
           onFocus={(e) => {
             e.target.style.borderColor = colors.accent.webb;

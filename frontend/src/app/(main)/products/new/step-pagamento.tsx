@@ -71,6 +71,7 @@ export function StepPagamento({ form, updateForm }: StepCommonProps) {
         <>
           <MonitorInputField label={kloelT('Maximo de parcelas')}>
             <select
+              aria-label={kloelT('Maximo de parcelas')}
               style={selectStyle}
               onFocus={inputProps.onFocus}
               onBlur={inputProps.onBlur}
@@ -87,6 +88,7 @@ export function StepPagamento({ form, updateForm }: StepCommonProps) {
 
           <MonitorInputField label={kloelT('Parcelas sem juros')}>
             <select
+              aria-label={kloelT('Parcelas sem juros')}
               style={selectStyle}
               onFocus={inputProps.onFocus}
               onBlur={inputProps.onBlur}

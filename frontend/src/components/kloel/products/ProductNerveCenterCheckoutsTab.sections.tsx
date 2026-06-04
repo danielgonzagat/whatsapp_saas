@@ -11,6 +11,50 @@ import {
   type JsonRecord,
   type JsonValue,
 } from './product-nerve-center.shared';
+const HEX_COLOR_RE = /^#[\da-f]{6}$/i;
+const RGB_COLOR_RE = /rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/i;
+const TOKEN_RE = /[^a-z0-9]+/gi;
+const LEADING_CAP_RE = /(^|\s)([a-z])/g;
+
+function toCheckoutFieldToken(label: string) {
+  return (
+    label
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(TOKEN_RE, ' ')
+      .trim()
+      .toLowerCase() || 'field'
+  );
+}
+
+function buildCheckoutFieldIdentity(label: string, suffix?: string) {
+  const token = [toCheckoutFieldToken(label), suffix].filter(Boolean).join(' ');
+  const id = `checkout-${token.replace(/\s+/g, '-')}`;
+  const name = `checkout${token
+    .replace(LEADING_CAP_RE, (_, __, letter: string) => letter.toUpperCase())
+    .replace(/\s+/g, '')}`;
+  return { id, name };
+}
+
+function toHexChannel(value: number) {
+  return Math.min(255, Math.max(0, value)).toString(16).padStart(2, '0');
+}
+
+function normalizeColorPickerValue(value: string, fallback = '#000000') {
+  const candidates = [value, fallback];
+  for (const candidate of candidates) {
+    const trimmed = String(candidate || '').trim();
+    if (HEX_COLOR_RE.test(trimmed)) {
+      return trimmed.toLowerCase();
+    }
+    const rgb = RGB_COLOR_RE.exec(trimmed);
+    if (rgb) {
+      return `#${toHexChannel(Number(rgb[1]))}${toHexChannel(Number(rgb[2]))}${toHexChannel(Number(rgb[3]))}`;
+    }
+  }
+  return '#000000';
+}
+
 
 export function CheckoutConfigLoading() {
   return (
@@ -62,27 +106,32 @@ export function PaymentCheckboxes({ ckLocal, patch }: PaymentCheckboxesProps) {
             ['enablePix', `Pix`],
             ['enableBoleto', `Boleto`],
           ] as const
-        ).map(([key, label]) => (
-          <label
-            key={key}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              fontSize: 12,
-              color: V.t2,
-              cursor: 'pointer',
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={key === 'enableBoleto' ? Boolean(ckLocal[key]) : ckLocal[key] !== false}
-              onChange={(event) => patch(key, event.target.checked)}
-              style={{ accentColor: V.em, width: 16, height: 16 }}
-            />
-            {kloelT(label)}
-          </label>
-        ))}
+        ).map(([key, label]) => {
+          const fieldIdentity = buildCheckoutFieldIdentity(label, key);
+          return (
+            <label
+              key={key}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: 12,
+                color: V.t2,
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                id={fieldIdentity.id}
+                name={fieldIdentity.name}
+                type="checkbox"
+                checked={key === 'enableBoleto' ? Boolean(ckLocal[key]) : ckLocal[key] !== false}
+                onChange={(event) => patch(key, event.target.checked)}
+                style={{ accentColor: V.em, width: 16, height: 16 }}
+              />
+              {kloelT(label)}
+            </label>
+          );
+        })}
       </div>
     </>
   );
@@ -174,6 +223,10 @@ interface ColorPickerFieldProps {
 }
 
 export function ColorPickerField({ label, value, placeholder, onChange }: ColorPickerFieldProps) {
+  const colorIdentity = buildCheckoutFieldIdentity(label, 'color');
+  const textIdentity = buildCheckoutFieldIdentity(label, 'text');
+  const colorValue = normalizeColorPickerValue(value, placeholder);
+
   return (
     <div style={{ marginBottom: 12 }}>
       <span
@@ -189,8 +242,11 @@ export function ColorPickerField({ label, value, placeholder, onChange }: ColorP
       </span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <input
+          id={colorIdentity.id}
+          name={colorIdentity.name}
+          aria-label={`${label} seletor`}
           type="color"
-          value={value}
+          value={colorValue}
           onChange={(e) => onChange(e.target.value)}
           style={{
             width: 36,
@@ -203,6 +259,9 @@ export function ColorPickerField({ label, value, placeholder, onChange }: ColorP
           }}
         />
         <input
+          id={textIdentity.id}
+          name={textIdentity.name}
+          aria-label={label}
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}

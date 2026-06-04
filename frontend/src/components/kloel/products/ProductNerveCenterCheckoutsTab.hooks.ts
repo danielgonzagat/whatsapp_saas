@@ -19,6 +19,7 @@ export function useCheckoutConfigForm(
   const [ckLocal, setCkLocal] = useState<JsonRecord>(() => (ckCfg ? (ckCfg as JsonRecord) : {}));
   const [ckSaving, setCkSaving] = useState(false);
   const [ckSaved, setCkSaved] = useState(false);
+  const [ckError, setCkError] = useState('');
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const checkoutForCk = rawCheckouts.find((checkout) => checkout.id === ckEdit);
@@ -29,6 +30,7 @@ export function useCheckoutConfigForm(
   const [lastCkCfg, setLastCkCfg] = useState(ckCfg);
   if (ckCfg !== lastCkCfg) {
     setLastCkCfg(ckCfg);
+    setCkError('');
     if (ckCfg) {
       setCkLocal(ckCfg as JsonRecord);
     }
@@ -59,8 +61,11 @@ export function useCheckoutConfigForm(
     setOriginalLinkedPlanIds(uniquePlanIds);
   }
 
-  const patch = (key: string, value: JsonValue) =>
+  const patch = (key: string, value: JsonValue) => {
+    setCkError('');
+    setCkSaved(false);
     setCkLocal((current) => ({ ...current, [key]: value }));
+  };
 
   const selectedPlans = rawPlans.filter((planCandidate) =>
     linkedPlanIds.includes(String(planCandidate.id)),
@@ -101,6 +106,15 @@ export function useCheckoutConfigForm(
     JSON.stringify(linkedPlanIds) !== JSON.stringify(originalLinkedPlanIds);
 
   const handleSave = async () => {
+    const brandName = String(ckLocal.brandName ?? '').trim();
+    if (!brandName) {
+      const message = 'Informe o nome/descrição do checkout antes de salvar.';
+      setCkError(message);
+      setCkSaved(false);
+      showToast(message, 'error');
+      return false;
+    }
+
     setCkSaving(true);
     try {
       const {
@@ -112,11 +126,12 @@ export function useCheckoutConfigForm(
         pixels: _pixels,
         ...rest
       } = ckLocal;
-      await saveCkCfg(rest);
+      await saveCkCfg({ ...rest, brandName });
       await syncCheckoutLinks(ckEdit, linkedPlanIds);
-      if (checkoutForCk && ckLocal.brandName !== checkoutForCk.name) {
-        await updatePlan(ckEdit, { name: ckLocal.brandName || checkoutForCk.name });
+      if (checkoutForCk && brandName !== checkoutForCk.name) {
+        await updatePlan(ckEdit, { name: brandName });
       }
+      setCkError('');
       setCkSaved(true);
       setTimeout(() => setCkSaved(false), 2000);
       showToast('Checkout salvo', 'success');
@@ -145,6 +160,7 @@ export function useCheckoutConfigForm(
     ckLocal,
     ckSaving,
     ckSaved,
+    ckError,
     linkedPlanIds,
     setLinkedPlanIds,
     showExitConfirm,

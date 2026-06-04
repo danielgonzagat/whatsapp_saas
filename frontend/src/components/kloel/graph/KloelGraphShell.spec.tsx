@@ -140,7 +140,7 @@ describe('KloelGraphShell', () => {
     await waitFor(() => expect(getProductsCircle()?.getAttribute('fill')).not.toBe('rgb(232,93,48)'));
   });
 
-  it('lets floating navigation recenter graph-only mode away from the active route', async () => {
+  it('uses floating navigation as route navigation in graph-only mode', async () => {
     pathname = '/chat';
     searchParams = new URLSearchParams('graph=1');
 
@@ -155,6 +155,18 @@ describe('KloelGraphShell', () => {
 
     expect(educarNav.style.background).toBe('rgb(24, 24, 28)');
     expect(kloelNav.style.background).toBe('transparent');
+    expect(push).toHaveBeenCalledWith('/produtos/area-membros?graph=1');
+  });
+
+  it('uses floating navigation as route navigation when an overlay is open', () => {
+    pathname = '/chat';
+    searchParams = new URLSearchParams();
+
+    renderShell(<main>Chat overlay</main>);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Criar' }));
+
+    expect(push).toHaveBeenCalledWith('/products?graph=1');
   });
 
   it('navigates by node clicks without opening on drag movement', () => {

@@ -32,6 +32,8 @@ export function ProductNerveCenterAvalTab() {
     setNewRevVer,
     showRevForm,
     setShowRevForm,
+    reviewError,
+    setReviewError,
     handleCreateReview,
     handleDeleteReview,
   } = useProductReviews(productId);
@@ -51,23 +53,39 @@ export function ProductNerveCenterAvalTab() {
         <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>
           {kloelT(`Avaliações`)}
         </h2>
-        <Bt primary onClick={() => setShowRevForm(!showRevForm)}>
+        <Bt
+          primary
+          onClick={() => {
+            setReviewError('');
+            setShowRevForm(!showRevForm);
+          }}
+        >
           {kloelT(`+ Criar avaliação`)}
         </Bt>
       </div>
       {showRevForm && (
         <div style={{ ...cs, padding: 16, marginBottom: 16 }}>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <Fd label={kloelT(`Nome do autor`)} value={newRevName} onChange={setNewRevName} />
+            <Fd
+              label={kloelT(`Nome do autor`)}
+              value={newRevName}
+              onChange={(value) => {
+                setReviewError('');
+                setNewRevName(value);
+              }}
+            />
             <Fd label={kloelT(`Nota`)}>
               <div style={{ display: 'flex', gap: 4 }}>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     type="button"
                     key={star}
-                    onClick={() => setNewRevRating(star)}
+                    onClick={() => {
+                      setReviewError('');
+                      setNewRevRating(star);
+                    }}
                     aria-label={`Avaliar com ${star} estrela${star > 1 ? 's' : ''}`}
-                    aria-pressed={star <= newRevRating}
+                    aria-pressed={star === newRevRating}
                     style={{
                       cursor: 'pointer',
                       fontSize: 18,
@@ -96,10 +114,29 @@ export function ProductNerveCenterAvalTab() {
             <textarea
               style={{ ...is, height: 60 }}
               value={newRevText}
-              onChange={(e) => setNewRevText(e.target.value)}
+              onChange={(e) => {
+                setReviewError('');
+                setNewRevText(e.target.value);
+              }}
               placeholder={kloelT(`Texto da avaliação...`)}
             />
           </Fd>
+          {reviewError && (
+            <div
+              role="alert"
+              style={{
+                marginBottom: 10,
+                padding: '9px 11px',
+                borderRadius: 6,
+                border: `1px solid ${V.r}`,
+                background: 'color-mix(in srgb, #ff3b30 14%, transparent)',
+                color: V.t,
+                fontSize: 11,
+              }}
+            >
+              {reviewError}
+            </div>
+          )}
           <Tg label={kloelT(`Verificado?`)} checked={newRevVer} onChange={setNewRevVer} />
           <Bt primary onClick={handleCreateReview} style={{ marginTop: 8 }}>
             {kloelT(`Criar`)}
@@ -252,7 +289,7 @@ export function ProductNerveCenterAvalTab() {
                     onClick={() => handleDeleteReview(r.id)}
                     style={{ padding: '2px 6px', color: V.r, fontSize: 10 }}
                   >
-                    x
+                    {kloelT(`Excluir`)}
                   </Bt>
                 </div>
               </div>

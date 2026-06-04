@@ -91,14 +91,13 @@ beforeEach(() => {
 });
 
 describe('ProductUrlsTab', () => {
-  it('surfaces invalid URL payloads instead of rendering a fake empty URL list', async () => {
+  it('renders an empty URL list from enveloped API payloads', async () => {
     apiMocks.apiFetch.mockResolvedValueOnce({ data: [] });
 
     render(<ProductUrlsTab productId="prod-1" />);
 
-    await waitFor(() => expect(screen.queryByText('Payload de URLs invalido.')).not.toBeNull());
-
-    expect(screen.queryByText('Nenhuma URL cadastrada')).toBeNull();
+    expect(await screen.findByText('Nenhuma URL cadastrada')).not.toBeNull();
+    expect(screen.queryByText('Payload de URLs invalido.')).toBeNull();
   });
 
   it('keeps loaded URLs visible when a post-delete refresh fails', async () => {

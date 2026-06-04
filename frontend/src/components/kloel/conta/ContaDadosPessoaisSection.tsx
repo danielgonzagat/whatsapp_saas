@@ -2,7 +2,7 @@
 
 import { kloelT } from '@/lib/i18n/t';
 import Image from 'next/image';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useProfileMutations } from '@/hooks/useKyc';
 import { useToast } from '@/components/kloel/ToastProvider';
 import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
@@ -185,6 +185,7 @@ function BirthDatePickerField({
 }) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<BirthDateParts>(() => splitBirthDate(value));
+  const fieldId = useId();
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 121 }, (_, index) => currentYear - index);
   const draftYear = Number(draft.year) || currentYear - 18;
@@ -206,6 +207,7 @@ function BirthDatePickerField({
   return (
     <div style={{ position: 'relative' as const, width: '100%' }}>
       <label
+        htmlFor={fieldId}
         style={{
           fontSize: 11,
           fontWeight: 600,
@@ -220,6 +222,7 @@ function BirthDatePickerField({
         {kloelT(`Data de nascimento`)} <span style={{ color: 'var(--app-accent)', fontSize: 8 }}>*</span>
       </label>
       <button
+        id={fieldId}
         type="button"
         aria-label="Data de nascimento"
         aria-haspopup="dialog"

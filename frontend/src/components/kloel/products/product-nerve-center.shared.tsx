@@ -4,7 +4,7 @@ import { kloelT } from '@/lib/i18n/t';
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
-import type React from 'react';
+import * as React from 'react';
 import { useEffect, useId, useRef, useState } from 'react';
 
 import { cs, formatBrlCents, is, ls, M, S, V } from './product-nerve-center.constants';
@@ -12,6 +12,41 @@ import { buildStaticWavePoints, jn, jv, unwrapApiPayload, type JsonRecord, type 
 export { cs, formatBrlCents, is, ls, M, S, V };
 export { buildStaticWavePoints, jn, jv, unwrapApiPayload };
 export type { JsonRecord, JsonValue };
+
+type ProductNerveFieldIdentity = {
+  id: string;
+  name: string;
+};
+
+function buildProductNerveFieldToken(label: string) {
+  const parts = label
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .match(/[A-Za-z0-9]+/g);
+
+  const token = (parts || [])
+    .map((part) => {
+      const lower = part.toLowerCase();
+      return `${lower.charAt(0).toUpperCase()}${lower.slice(1)}`;
+    })
+    .join('');
+
+  return token || 'Field';
+}
+
+function toProductNerveFieldKebab(token: string) {
+  return token.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+}
+
+export function buildProductNerveFieldIdentity(label: string, reactId: string): ProductNerveFieldIdentity {
+  const token = buildProductNerveFieldToken(label);
+  const safeReactId = reactId.replace(/[^A-Za-z0-9_-]/g, '');
+
+  return {
+    id: `product-nerve-${toProductNerveFieldKebab(token)}${safeReactId ? `-${safeReactId}` : ''}`,
+    name: `productNerve${token}`,
+  };
+}
 
 /** Np. */
 export function NP({
@@ -138,24 +173,32 @@ export function Tg({
           <span style={{ display: 'block', fontSize: 10, color: V.t3, marginTop: 2 }}>{desc}</span>
         ) : null}
       </div>
-      <div
+      <button
+        type="button"
+        role="switch"
+        aria-label={label}
+        aria-checked={checked}
+        disabled={!onChange}
         onClick={onChange ? () => onChange(!checked) : undefined}
         style={{
           width: 36,
           height: 20,
+          border: 'none',
+          padding: 0,
           borderRadius: 10,
           background: checked ? V.g : V.b,
-          cursor: 'pointer',
+          cursor: onChange ? 'pointer' : 'default',
           position: 'relative',
         }}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            (e.currentTarget as HTMLElement).click();
+            e.currentTarget.click();
           }
         }}
       >
         <div
+          aria-hidden="true"
           style={{
             width: 16,
             height: 16,
@@ -167,7 +210,7 @@ export function Tg({
             transition: 'left .2s',
           }}
         />
-      </div>
+      </button>
     </div>
   );
 }
@@ -179,24 +222,83 @@ export function Fd({
   full,
   children,
   onChange,
+  error,
 }: {
   label: string;
   value?: string | number;
   full?: boolean;
   children?: React.ReactNode;
   onChange?: (value: string) => void;
+  error?: string;
 }) {
+  const fieldIdentity = buildProductNerveFieldIdentity(label, useId());
+  const errorId = error ? `${fieldIdentity.id}-error` : undefined;
+  const identifiableChildren =
+    children === undefined || children === null
+      ? null
+      : React.Children.map(children, (child) => {
+          if (!React.isValidElement(child) || typeof child.type !== 'string') {
+            return child;
+          }
+          if (!['input', 'textarea', 'select'].includes(child.type)) {
+            return child;
+          }
+
+          const props = child.props as {
+            id?: string;
+            name?: string;
+            'aria-label'?: string;
+            'aria-labelledby'?: string;
+            'aria-describedby'?: string;
+          };
+          const nextProps: Record<string, string | boolean> = {};
+
+          if (!props.id) {
+            nextProps.id = fieldIdentity.id;
+          }
+          if (!props.name) {
+            nextProps.name = fieldIdentity.name;
+          }
+          if (!props['aria-label'] && !props['aria-labelledby']) {
+            nextProps['aria-label'] = label;
+          }
+          if (error && errorId) {
+            nextProps['aria-invalid'] = 'true';
+            nextProps['aria-describedby'] = props['aria-describedby']
+              ? `${props['aria-describedby']} ${errorId}`
+              : errorId;
+          }
+
+          return React.cloneElement(child as React.ReactElement<Record<string, unknown>>, nextProps);
+        });
+
   return (
     <div style={{ flex: full ? '1 1 100%' : '1 1 45%', minWidth: 0, marginBottom: 14 }}>
       <span style={ls}>{label}</span>
-      {children || (
+      {children !== undefined && children !== null ? (
+        identifiableChildren
+      ) : (
         <input
+          id={fieldIdentity.id}
+          name={fieldIdentity.name}
+          aria-label={label}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={errorId}
           style={is}
           value={onChange !== undefined ? (value ?? '') : undefined}
           defaultValue={onChange === undefined ? value : undefined}
           onChange={onChange ? (event) => onChange(event.target.value) : undefined}
         />
       )}
+      {error ? (
+        <span
+          id={errorId}
+          role="alert"
+          style={{ display: 'block', marginTop: 6, fontSize: 11, color: V.r, lineHeight: 1.5 }}
+        >
+          {error}
+        </span>
+      ) : null}
     </div>
   );
 }

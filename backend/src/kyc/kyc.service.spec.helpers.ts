@@ -148,7 +148,7 @@ export function buildService(options?: {
     kycDocument: {
       findMany: resolved(kycDocuments),
       findUnique: resolved(null),
-      delete: resolved(undefined),
+      delete: resolved({ id: 'doc_1' }),
     },
     bankAccount: {
       findFirst: resolved(bankAccountRecord),

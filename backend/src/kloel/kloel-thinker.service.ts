@@ -456,7 +456,7 @@ export class KloelThinkerService {
         workspaceId,
         messageLength: message.length,
       });
-      safeWrite(createKloelStatusEvent('thinking', publicThinkingLabel));
+      safeWrite(createKloelStatusEvent('thinking'));
       const streamedReply = await streamWriterResponse(messages, responseTemperature);
       if (workspaceId && streamedReply) {
         this.llmBudget.recordSpend(workspaceId, streamedReply.estimatedTokens).catch(() => {});

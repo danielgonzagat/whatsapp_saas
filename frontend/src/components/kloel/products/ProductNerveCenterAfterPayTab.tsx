@@ -6,6 +6,49 @@ import { useState } from 'react';
 import { useNerveCenterContext } from './product-nerve-center.context';
 import { Bt, Fd, Tg, V, cs, is, unwrapApiPayload } from './product-nerve-center.shared';
 
+type AfterPayPayload = {
+  afterPayDuplicateAddress: boolean;
+  afterPayAffiliateCharge: boolean;
+  afterPayChargeValue: number | null;
+  afterPayShippingProvider: string | null;
+};
+
+export type AfterPayDraft = {
+  duplicateAddress: boolean;
+  affiliateCharge: boolean;
+  chargeValue: string;
+  shippingProvider: string;
+};
+
+export type AfterPayDraftResult =
+  | { ok: true; payload: AfterPayPayload }
+  | { ok: false; message: string };
+
+export const AFTER_PAY_CHARGE_VALUE_ERROR = 'Informe um valor de cobrança maior que zero.';
+
+export function buildAfterPayPayload(draft: AfterPayDraft): AfterPayDraftResult {
+  const normalizedProvider = draft.shippingProvider.trim();
+  const normalizedChargeValue = draft.chargeValue.trim().replace(',', '.');
+  const parsedChargeValue = Number(normalizedChargeValue);
+
+  if (
+    draft.affiliateCharge &&
+    (!normalizedChargeValue || !Number.isFinite(parsedChargeValue) || parsedChargeValue <= 0)
+  ) {
+    return { ok: false, message: AFTER_PAY_CHARGE_VALUE_ERROR };
+  }
+
+  return {
+    ok: true,
+    payload: {
+      afterPayDuplicateAddress: draft.duplicateAddress,
+      afterPayAffiliateCharge: draft.affiliateCharge,
+      afterPayChargeValue: draft.affiliateCharge ? parsedChargeValue : null,
+      afterPayShippingProvider: normalizedProvider || null,
+    },
+  };
+}
+
 /** Product nerve center after pay tab. */
 export function ProductNerveCenterAfterPayTab() {
   const { productId, p, updateProduct, refreshProduct } = useNerveCenterContext();
@@ -21,28 +64,43 @@ export function ProductNerveCenterAfterPayTab() {
   );
   const [apSaving, setApSaving] = useState(false);
   const [apSaved, setApSaved] = useState(false);
+  const [apError, setApError] = useState('');
+
   const handleSaveAP = async () => {
+    if (apSaving) {
+      return;
+    }
+
+    const result = buildAfterPayPayload({
+      duplicateAddress: apDup,
+      affiliateCharge: apCharge,
+      chargeValue: apChargeVal,
+      shippingProvider: apProvider,
+    });
+
+    if (!result.ok) {
+      setApError(result.message);
+      showToast(result.message, 'error');
+      return;
+    }
+
+    setApError('');
     setApSaving(true);
     try {
-      unwrapApiPayload(
-        await updateProduct(productId, {
-          afterPayDuplicateAddress: apDup,
-          afterPayAffiliateCharge: apCharge,
-          afterPayChargeValue: apCharge ? Number.parseFloat(apChargeVal) || 0 : null,
-          afterPayShippingProvider: apProvider || null,
-        }),
-      );
+      unwrapApiPayload(await updateProduct(productId, result.payload));
       await refreshProduct();
       setApSaved(true);
       setTimeout(() => setApSaved(false), 2000);
       showToast('Configurações salvas', 'success');
     } catch (e) {
-      console.error(e);
-      showToast(e instanceof Error ? e.message : 'Erro ao salvar configurações', 'error');
+      const message = e instanceof Error ? e.message : 'Erro ao salvar configurações';
+      setApError(message);
+      showToast(message, 'error');
     } finally {
       setApSaving(false);
     }
   };
+
   return (
     <div style={{ ...cs, padding: 24 }}>
       <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: '0 0 20px' }}>
@@ -55,7 +113,10 @@ export function ProductNerveCenterAfterPayTab() {
         <Tg
           label={kloelT(`Permitir endereço duplicado na venda pós-paga?`)}
           checked={apDup}
-          onChange={setApDup}
+          onChange={(checked) => {
+            setApError('');
+            setApDup(checked);
+          }}
         />
       </div>
       <div style={{ ...cs, padding: 16, marginBottom: 16 }}>
@@ -65,10 +126,20 @@ export function ProductNerveCenterAfterPayTab() {
         <Tg
           label={kloelT(`Cobrança do afiliado por pedido frustrado?`)}
           checked={apCharge}
-          onChange={setApCharge}
+          onChange={(checked) => {
+            setApError('');
+            setApCharge(checked);
+          }}
         />
         {apCharge && (
-          <Fd label={kloelT(`Valor cobrança (R$)`)} value={apChargeVal} onChange={setApChargeVal} />
+          <Fd
+            label={kloelT(`Valor cobrança (R$)`)}
+            value={apChargeVal}
+            onChange={(value) => {
+              setApError('');
+              setApChargeVal(value);
+            }}
+          />
         )}
       </div>
       <div style={{ ...cs, padding: 16 }}>
@@ -76,7 +147,14 @@ export function ProductNerveCenterAfterPayTab() {
           {kloelT(`Configurações de Envio`)}
         </h3>
         <Fd label={kloelT(`Provedor logístico`)} full>
-          <select style={is} value={apProvider} onChange={(e) => setApProvider(e.target.value)}>
+          <select
+            style={is}
+            value={apProvider}
+            onChange={(e) => {
+              setApError('');
+              setApProvider(e.target.value);
+            }}
+          >
             <option value="">{kloelT(`Selecione um provedor`)}</option>
             <option value="correios">{kloelT(`Correios`)}</option>
             <option value="jadlog">{kloelT(`Jadlog`)}</option>
@@ -85,7 +163,23 @@ export function ProductNerveCenterAfterPayTab() {
           </select>
         </Fd>
       </div>
-      <Bt primary onClick={handleSaveAP} style={{ marginTop: 16 }}>
+      {apError && (
+        <div
+          role="alert"
+          style={{
+            marginTop: 14,
+            padding: '9px 11px',
+            borderRadius: 6,
+            border: `1px solid ${V.r}`,
+            background: 'color-mix(in srgb, #ff3b30 14%, transparent)',
+            color: V.t,
+            fontSize: 11,
+          }}
+        >
+          {apError}
+        </div>
+      )}
+      <Bt primary disabled={apSaving} onClick={handleSaveAP} style={{ marginTop: 16 }}>
         <svg
           width={12}
           height={12}

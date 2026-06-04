@@ -43,6 +43,8 @@ export default function AffiliateFilterToolbar({
         <div style={{ position: 'relative', width: 280 }}>
           <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: C.muted }}>{IC.search(14)}</div>
           <input
+            id="affiliate-partner-search"
+            name="affiliatePartnerSearch"
             aria-label="Buscar parceiro" type="text" placeholder={kloelT(`Buscar parceiro...`)} value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{ width: '100%', padding: '9px 14px 9px 34px', background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, color: C.text, fontFamily: FONT.sans, fontSize: 13, outline: 'none', boxSizing: 'border-box' as const }}

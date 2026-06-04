@@ -70,6 +70,27 @@ const PROFILE_SELECT = Prisma.validator<Prisma.AgentSelect>()({
   instagram: true,
 });
 
+type PendingConnectOnboarding = {
+  synced: false;
+  status: 'pending';
+  reason: 'provider_unavailable';
+};
+
+function isRecoverableConnectSyncError(error: unknown): boolean {
+  return !(
+    error instanceof BadRequestException ||
+    error instanceof NotFoundException ||
+    error instanceof UnauthorizedException
+  );
+}
+
+function describeConnectSyncError(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return typeof error === 'string' ? error : 'Unknown Connect sync error';
+}
+
 /** Kyc service. */
 @Injectable()
 export class KycService {
@@ -509,16 +530,33 @@ export class KycService {
       { isolationLevel: 'ReadCommitted' },
     );
 
+    let onboardingStatus: Awaited<ReturnType<typeof syncSellerConnectOnboarding>> | null = null;
+    let connectOnboarding: PendingConnectOnboarding | undefined;
+
     this.logger.log('Calling Stripe Connect', {
       context: 'KycService.submitKyc',
       action: 'syncSellerConnectOnboarding',
     });
-    const onboardingStatus = await syncSellerConnectOnboarding(
-      this.syncDeps,
-      agentId,
-      workspaceId,
-      context,
-    );
+    try {
+      onboardingStatus = await syncSellerConnectOnboarding(
+        this.syncDeps,
+        agentId,
+        workspaceId,
+        context,
+      );
+    } catch (error) {
+      if (!isRecoverableConnectSyncError(error)) {
+        throw error;
+      }
+      connectOnboarding = {
+        synced: false,
+        status: 'pending',
+        reason: 'provider_unavailable',
+      };
+      this.logger.warn(
+        `Stripe Connect onboarding sync unavailable for workspace=${workspaceId}: ${describeConnectSyncError(error)}`,
+      );
+    }
 
     this.kycEventEmitter.emitDocumentSubmitted({
       agentId,
@@ -546,7 +584,11 @@ export class KycService {
         autoApproved: true,
       };
     }
-    return { success: true, status: 'submitted' };
+    return {
+      success: true,
+      status: 'submitted',
+      ...(connectOnboarding ? { connectOnboarding } : {}),
+    };
   }
 
   /**

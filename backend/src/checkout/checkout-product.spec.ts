@@ -256,6 +256,20 @@ describe('CheckoutProductService', () => {
       expect(result).toEqual(plan);
     });
 
+    it('updates affiliate visibility on checkout plans', async () => {
+      const plan = { ...makePlan({ visibleToAffiliates: false }), checkoutConfig: { id: 'cfg_1' } };
+      prisma.checkoutProductPlan.update.mockResolvedValue(plan);
+
+      const result = await service.updatePlan('plan_1', { visibleToAffiliates: false });
+
+      expect(prisma.checkoutProductPlan.update).toHaveBeenCalledWith({
+        where: { id: 'plan_1' },
+        data: { visibleToAffiliates: false },
+        include: { checkoutConfig: true },
+      });
+      expect(result).toEqual(plan);
+    });
+
     it('throws NotFoundException when updating non-existent plan', async () => {
       const err = new Prisma.PrismaClientKnownRequestError('not found', {
         code: 'P2025',

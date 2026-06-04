@@ -76,6 +76,7 @@ const APP_PATH_PREFIXES = [
   '/settings',
   '/chat',
   '/checkout',
+  '/admin',
 ];
 const STATIC_FILE_PATTERN =
   /\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|map|txt|xml)$/i;

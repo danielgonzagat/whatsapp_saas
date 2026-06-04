@@ -73,11 +73,9 @@ describe('matchesProduct', () => {
     expect(matchesProduct(candidate, { name: 'B', slug: 'b' })).toBe(false);
   });
 
-  it('treats both candidates missing slug as a slug-match', () => {
-    // Both undefined → undefined === undefined → true. This mirrors original
-    // behavior and means name comparison is short-circuited; tests pin it.
+  it('does not match different products just because both slugs are missing', () => {
     const candidate: CheckoutProductItem = { id: '1', name: 'A' };
-    expect(matchesProduct(candidate, { name: 'B' })).toBe(true);
+    expect(matchesProduct(candidate, { name: 'B' })).toBe(false);
   });
 });
 
@@ -407,6 +405,16 @@ describe('resolveOrdersTotal', () => {
 describe('requireCheckoutMutationSuccess', () => {
   it('returns the response when no backend error is present', () => {
     const response = { status: 200, data: { id: 'ok' } };
+    expect(requireCheckoutMutationSuccess(response, 'fallback')).toBe(response);
+  });
+
+  it('accepts bare arrays returned by link sync mutations', () => {
+    const response = [{ id: 'link_1', planId: 'plan_1' }];
+    expect(requireCheckoutMutationSuccess(response, 'fallback')).toBe(response);
+  });
+
+  it('accepts apiFetch envelopes with array data returned by link sync mutations', () => {
+    const response = { data: [{ id: 'link_1', planId: 'plan_1' }] };
     expect(requireCheckoutMutationSuccess(response, 'fallback')).toBe(response);
   });
 

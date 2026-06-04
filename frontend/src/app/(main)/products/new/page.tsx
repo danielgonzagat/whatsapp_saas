@@ -10,7 +10,12 @@ import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { apiFetch } from '@/lib/api';
 import { useProductCategories } from '@/hooks/useProducts';
 import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
-import { buildProductCreatePayload, extractCreatedProductId } from './page.helpers';
+import {
+  buildProductCreatePayload,
+  extractCreatedProductId,
+  validateProductCreateFlow,
+  validateProductCreateStep,
+} from './page.helpers';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -52,6 +57,14 @@ export default function NewProductPage() {
   const isFirstStep = currentVisibleIndex === 0;
 
   const goNext = () => {
+    const validation = validateProductCreateStep(form, step);
+
+    if (!validation.ok) {
+      setStep(validation.step);
+      showToast(validation.message, 'error');
+      return;
+    }
+
     if (currentVisibleIndex < visibleSteps.length - 1) {
       setStep(visibleSteps[currentVisibleIndex + 1]);
     }
@@ -107,8 +120,11 @@ export default function NewProductPage() {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) {
-      showToast('Informe o nome do produto antes de salvar.', 'error');
+    const validation = validateProductCreateFlow(form, visibleSteps);
+
+    if (!validation.ok) {
+      setStep(validation.step);
+      showToast(validation.message, 'error');
       return;
     }
 

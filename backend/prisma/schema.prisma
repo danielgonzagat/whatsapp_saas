@@ -2983,6 +2983,7 @@ model CheckoutProductPlan {
   quantity              Int                  @default(1)
   freeShipping          Boolean              @default(false)
   shippingPrice         Int?
+  visibleToAffiliates   Boolean              @default(true)
   isActive              Boolean              @default(true)
   checkoutConfig        CheckoutConfig?
   orders                CheckoutOrder[]

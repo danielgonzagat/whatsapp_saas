@@ -91,4 +91,78 @@ export const formatPlanRangeLabel = (plans: Array<{ priceInCents?: number }>) =>
 export const buildPlanSelectionPriceLabel = (plan: { priceInCents?: number }) => {
   const cents = Math.max(0, Math.round(Number(plan?.priceInCents || 0)));
   return formatBrlCents(cents);
+}
+
+
+export type ProductCouponDiscountType = '%' | 'R$';
+
+export interface ProductCouponFormState {
+  code: string;
+  type: ProductCouponDiscountType | string;
+  value: string;
+  maxUses: string;
+  expiresAt: string;
+}
+
+export interface ProductCouponCreatePayload {
+  code: string;
+  discountType: 'FIXED' | 'PERCENT';
+  discountValue: number;
+  maxUses?: number;
+  expiresAt?: string;
+}
+
+type ProductCouponValidationResult =
+  | { ok: true; payload: ProductCouponCreatePayload }
+  | { ok: false; field: keyof ProductCouponFormState; message: string };
+
+function parseCouponNumber(value: string): number | null {
+  const parsed = Number(String(value || '').trim().replace(',', '.'));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+/** Build Product Nerve Center coupon payload from modal fields. */
+export function buildProductCouponPayload(form: ProductCouponFormState): ProductCouponCreatePayload {
+  const discountType = form.type === 'R$' ? 'FIXED' : 'PERCENT';
+  const discountValue = parseCouponNumber(form.value) ?? 0;
+  const maxUses = form.maxUses.trim() ? Number.parseInt(form.maxUses, 10) : undefined;
+
+  return {
+    code: form.code.trim().toUpperCase(),
+    discountType,
+    discountValue,
+    ...(maxUses !== undefined ? { maxUses } : {}),
+    ...(form.expiresAt.trim() ? { expiresAt: form.expiresAt.trim() } : {}),
+  };
+}
+
+/** Validate Product Nerve Center coupon modal before POSTing to the backend. */
+export function validateProductCouponForm(
+  form: ProductCouponFormState,
+): ProductCouponValidationResult {
+  const code = form.code.trim();
+  if (!code) {
+    return { ok: false, field: 'code', message: 'Informe o codigo do cupom.' };
+  }
+
+  const discountValue = parseCouponNumber(form.value);
+  if (discountValue === null || discountValue <= 0) {
+    return { ok: false, field: 'value', message: 'Informe um valor de desconto maior que zero.' };
+  }
+  if (form.type !== 'R$' && discountValue > 100) {
+    return { ok: false, field: 'value', message: 'O desconto percentual nao pode passar de 100%.' };
+  }
+
+  if (form.maxUses.trim()) {
+    const maxUses = Number.parseInt(form.maxUses, 10);
+    if (!Number.isFinite(maxUses) || maxUses <= 0 || String(maxUses) !== form.maxUses.trim()) {
+      return { ok: false, field: 'maxUses', message: 'Informe um limite de usos inteiro maior que zero.' };
+    }
+  }
+
+  if (form.expiresAt.trim() && Number.isNaN(Date.parse(form.expiresAt))) {
+    return { ok: false, field: 'expiresAt', message: 'Informe uma data de expiracao valida.' };
+  }
+
+  return { ok: true, payload: buildProductCouponPayload(form) };
 };

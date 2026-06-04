@@ -136,7 +136,13 @@ export class ProductController {
   ) {
     const workspaceId = req.user.workspaceId;
 
-    const where = buildProductListWhere({ workspaceId, category, active, search });
+    const listInput = {
+      workspaceId,
+      ...(category !== undefined ? { category } : {}),
+      ...(active !== undefined ? { active } : {}),
+      ...(search !== undefined ? { search } : {}),
+    };
+    const where = buildProductListWhere(listInput);
 
     // I17 — bounded read: cap at PRODUCT_LIST_TAKE_CAP products per workspace
     // for the list endpoint. Real workspaces have tens of products; 500 is
@@ -241,7 +247,7 @@ export class ProductController {
       ? (
           await this.productService.create(
             workspaceId,
-            dto as Parameters<ProductService['create']>[1],
+            createData as unknown as Parameters<ProductService['create']>[1],
             actor,
           )
         ).product

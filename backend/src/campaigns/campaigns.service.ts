@@ -374,11 +374,27 @@ export class CampaignsService {
     );
   }
 
-  private async ensureCampaignDeliveryReady(workspaceId: string): Promise<void> {
+  async getDeliveryReadiness(workspaceId: string): Promise<{
+    emailReady: boolean;
+    whatsappReady: boolean;
+    ready: boolean;
+    missing: string[];
+    message: string | null;
+  }> {
     const delivery = await this.resolveCampaignDelivery(workspaceId);
     const gap = buildCampaignDeliveryGap(delivery);
-    if (gap) {
-      throw new BadRequestException(gap.message);
+    return {
+      ...delivery,
+      ready: gap === null,
+      missing: gap?.missing || [],
+      message: gap?.message || null,
+    };
+  }
+
+  private async ensureCampaignDeliveryReady(workspaceId: string): Promise<void> {
+    const readiness = await this.getDeliveryReadiness(workspaceId);
+    if (!readiness.ready) {
+      throw new BadRequestException(readiness.message || 'Campanha sem canal de entrega pronto');
     }
   }
 

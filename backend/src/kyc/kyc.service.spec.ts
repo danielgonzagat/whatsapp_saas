@@ -122,6 +122,33 @@ describe('KycService.submitKyc', () => {
     });
   });
 
+  it('keeps KYC submitted when Stripe Connect sync is temporarily unavailable', async () => {
+    const { service, prisma, connectService, kycEventEmitter } = buildService();
+    connectService.createCustomAccount.mockImplementationOnce(async () => {
+      throw new Error(
+        'STRIPE_SECRET_KEY is not configured. Set it in env (sk_test_* in dev, sk_live_* only in production).',
+      );
+    });
+
+    const result = await service.submitKyc('agent_1', 'ws_1');
+
+    expect(prisma.agent.update).toHaveBeenCalledTimes(1);
+    expect(connectService.submitOnboardingProfile).not.toHaveBeenCalled();
+    expect(kycEventEmitter.emitDocumentSubmitted).toHaveBeenCalledWith({
+      agentId: 'agent_1',
+      workspaceId: 'ws_1',
+    });
+    expect(result).toEqual({
+      success: true,
+      status: 'submitted',
+      connectOnboarding: {
+        synced: false,
+        status: 'pending',
+        reason: 'provider_unavailable',
+      },
+    });
+  });
+
   it('reuses an existing seller connect account and submits PJ onboarding with representative data', async () => {
     const { service, connectService } = buildService({
       scenario: 'PJ',

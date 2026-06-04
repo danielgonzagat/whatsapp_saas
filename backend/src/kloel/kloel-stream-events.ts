@@ -99,6 +99,52 @@ interface KloelDoneEvent {
   metadata?: Record<string, unknown>;
 }
 
+/** Kloel reasoning summary event shape (header summary derived from real reasoning). */
+interface KloelReasoningSummaryEvent {
+  /** Type property. */
+  type: 'reasoning_summary';
+  /** Text property. */
+  text: string;
+  /** Done property. */
+  done: false;
+}
+
+/** Kloel reasoning delta event shape (a token of the model's real reasoning_content). */
+interface KloelReasoningDeltaEvent {
+  /** Type property. */
+  type: 'reasoning_delta';
+  /** Text property. */
+  text: string;
+  /** Done property. */
+  done: false;
+}
+
+/** Kloel reasoning done event shape (reasoning to answer transition with measured duration). */
+interface KloelReasoningDoneEvent {
+  /** Type property. */
+  type: 'reasoning_done';
+  /** Duration ms property. */
+  durationMs: number;
+  /** Done property. */
+  done: false;
+}
+
+/** Kloel file event shape (a delivered/generated artifact card). */
+interface KloelFileEvent {
+  /** Type property. */
+  type: 'file';
+  /** Name property. */
+  name: string;
+  /** Meta property. */
+  meta?: string;
+  /** Url property. */
+  url?: string;
+  /** Download url property. */
+  downloadUrl?: string;
+  /** Done property. */
+  done: false;
+}
+
 /** Kloel stream event type. */
 export type KloelStreamEvent =
   | KloelThreadEvent
@@ -106,66 +152,27 @@ export type KloelStreamEvent =
   | KloelContentEvent
   | KloelToolCallEvent
   | KloelToolResultEvent
+  | KloelReasoningSummaryEvent
+  | KloelReasoningDeltaEvent
+  | KloelReasoningDoneEvent
+  | KloelFileEvent
   | KloelErrorEvent
   | KloelDoneEvent;
 
-const PUBLIC_STATUS_MAX_TOPIC_CHARS = 96;
-const PUBLIC_STATUS_WHITESPACE_RE = /\s+/g;
-const PUBLIC_STATUS_PREFIX_RE =
-  /^(?:eu\s+)?(?:quero|preciso|gostaria|queria|necessito|vamos|me\s+ajude\s+a|me\s+ajuda\s+a)\s+/i;
-const PUBLIC_STATUS_NEGATIVE_CLAUSE_RE = /\b(?:sem|não|nao)\b[\s\S]*$/i;
-const PUBLIC_STATUS_INTERNAL_TOKEN_RE = /\b(?:step|span|call_[a-z0-9_]+)\b/gi;
-const PUBLIC_STATUS_SENTENCE_BREAK_RE = /[.!?]+/;
-
-function lowercaseLeadingCharacter(value: string): string {
-  if (!value) {
-    return value;
-  }
-  return `${value.charAt(0).toLocaleLowerCase('pt-BR')}${value.slice(1)}`;
+export function createKloelPublicThinkingLabel(_message: string): string {
+  // Retired facade: the synthesized "thinking" label was a constant-shaped sentence
+  // templated from the user's own message. Real reasoning now flows as reasoning_delta
+  // (DeepSeek reasoning_content); the thinking status carries no fabricated text and
+  // the frontend drops an empty label.
+  return '';
 }
 
-function truncatePublicStatusTopic(value: string): string {
-  if (value.length <= PUBLIC_STATUS_MAX_TOPIC_CHARS) {
-    return value;
-  }
-  const truncated = value.slice(0, PUBLIC_STATUS_MAX_TOPIC_CHARS);
-  const lastSpace = truncated.lastIndexOf(' ');
-  return `${(lastSpace > 40 ? truncated.slice(0, lastSpace) : truncated).trim()}...`;
+export function createKloelPublicStreamingLabel(_message: string): string {
+  // Retired facade (see above): no synthesized streaming label; the streamed answer
+  // text is the real signal.
+  return '';
 }
 
-function extractPublicStatusTopic(message: string): string {
-  const firstSentence = String(message || '')
-    .replace(PUBLIC_STATUS_WHITESPACE_RE, ' ')
-    .trim()
-    .split(PUBLIC_STATUS_SENTENCE_BREAK_RE)
-    .find((part) => part.trim());
-  const topic = String(firstSentence || '')
-    .replace(PUBLIC_STATUS_PREFIX_RE, '')
-    .replace(PUBLIC_STATUS_NEGATIVE_CLAUSE_RE, '')
-    .replace(PUBLIC_STATUS_INTERNAL_TOKEN_RE, '')
-    .replace(/[“”"]/g, '')
-    .replace(PUBLIC_STATUS_WHITESPACE_RE, ' ')
-    .replace(/[\s,:;\u2014-]+$/g, '')
-    .trim();
-
-  return truncatePublicStatusTopic(lowercaseLeadingCharacter(topic));
-}
-
-export function createKloelPublicThinkingLabel(message: string): string {
-  const topic = extractPublicStatusTopic(message);
-  if (!topic) {
-    return 'Organizando o contexto da conversa em um resumo público do raciocínio.';
-  }
-  return `Entendi o pedido: ${topic}. Estou transformando isso em um resumo público do raciocínio.`;
-}
-
-export function createKloelPublicStreamingLabel(message: string): string {
-  const topic = extractPublicStatusTopic(message);
-  if (!topic) {
-    return 'Convertendo o raciocínio público em resposta final.';
-  }
-  return `Convertendo o raciocínio sobre ${topic} em resposta final.`;
-}
 
 /** Create kloel thread event. */
 export function createKloelThreadEvent(
@@ -388,5 +395,49 @@ export function createKloelDoneEvent(metadata?: Record<string, unknown>): KloelD
     type: 'done',
     done: true,
     ...(metadata && Object.keys(metadata).length > 0 ? { metadata } : {}),
+  };
+}
+
+/** Create kloel reasoning summary event (real header summary; never a constant). */
+export function createKloelReasoningSummaryEvent(text: string): KloelReasoningSummaryEvent {
+  return {
+    type: 'reasoning_summary',
+    text,
+    done: false,
+  };
+}
+
+/** Create kloel reasoning delta event (a token of the model's real reasoning_content). */
+export function createKloelReasoningDeltaEvent(text: string): KloelReasoningDeltaEvent {
+  return {
+    type: 'reasoning_delta',
+    text,
+    done: false,
+  };
+}
+
+/** Create kloel reasoning done event (reasoning to answer transition, measured duration). */
+export function createKloelReasoningDoneEvent(durationMs: number): KloelReasoningDoneEvent {
+  return {
+    type: 'reasoning_done',
+    durationMs,
+    done: false,
+  };
+}
+
+/** Create kloel file event (a delivered/generated artifact card). */
+export function createKloelFileEvent(input: {
+  name: string;
+  meta?: string;
+  url?: string;
+  downloadUrl?: string;
+}): KloelFileEvent {
+  return {
+    type: 'file',
+    name: input.name,
+    ...(input.meta !== undefined ? { meta: input.meta } : {}),
+    ...(input.url !== undefined ? { url: input.url } : {}),
+    ...(input.downloadUrl !== undefined ? { downloadUrl: input.downloadUrl } : {}),
+    done: false,
   };
 }

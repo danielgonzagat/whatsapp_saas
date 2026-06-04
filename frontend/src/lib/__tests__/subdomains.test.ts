@@ -385,6 +385,7 @@ describe('isKnownAppPath', () => {
     expect(isKnownAppPath('/analytics')).toBe(true);
     expect(isKnownAppPath('/inbox')).toBe(true);
     expect(isKnownAppPath('/whatsapp')).toBe(true);
+    expect(isKnownAppPath('/admin/kloel-motor')).toBe(true);
   });
 
   it('matches app paths with trailing sub-path', () => {

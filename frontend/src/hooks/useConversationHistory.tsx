@@ -256,7 +256,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
 
   const loadAllConversations = useCallback(async (): Promise<Conversation[]> => {
     if (!isAuthenticated) {
-      return conversations;
+      return [];
     }
     try {
       const all: Conversation[] = [];
@@ -283,7 +283,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
       setLastError(historyError);
       throw historyError;
     }
-  }, [conversations, isAuthenticated, mergeConversations]);
+  }, [isAuthenticated, mergeConversations]);
 
   useEffect(() => {
     if (isLoading) {

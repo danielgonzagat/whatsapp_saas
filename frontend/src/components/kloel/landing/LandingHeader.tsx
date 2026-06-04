@@ -7,9 +7,13 @@ import { buildAuthUrl } from '@/lib/subdomains';
 import { usePrefersReducedMotion } from './usePrefersReducedMotion';
 import { KloelBrandLockup } from '../KloelBrand';
 
-export function LandingHeader() {
+type LandingHeaderProps = {
+  initialHost?: string | null;
+};
+
+export function LandingHeader({ initialHost }: LandingHeaderProps = {}) {
   const prefersReducedMotion = usePrefersReducedMotion();
-  const currentHost = typeof window !== 'undefined' ? window.location.host : undefined;
+  const currentHost = initialHost;
 
   return (
     <header

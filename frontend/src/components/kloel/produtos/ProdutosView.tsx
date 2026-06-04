@@ -9,7 +9,7 @@ import { useProductMutations, useProducts } from '@/hooks/useProducts';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { affiliateApi } from '@/lib/api/affiliate';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { startTransition, useCallback, useEffect, useMemo, useState } from 'react';
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { SORA, ANIMATIONS, PURPLE, getProductPlanPriceSummary } from './ProdutosView.shared';
 import {
@@ -63,6 +63,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
   const [affiliateProducts, setAffiliateProducts] = useState<AffiliateProductItem[]>([]);
   const [affiliateLoading, setAffiliateLoading] = useState(false);
   const [affiliateLoadError, setAffiliateLoadError] = useState<string | null>(null);
+  const affiliateHydratedRef = useRef(false);
 
   const hydrateAffiliate = useCallback(async () => {
     setAffiliateLoading(true);
@@ -95,10 +96,15 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
   }, []);
 
   useEffect(() => {
+    if (affiliateHydratedRef.current) {
+      return;
+    }
+    affiliateHydratedRef.current = true;
     queueMicrotask(() => {
       void hydrateAffiliate();
     });
   }, [hydrateAffiliate]);
+
 
   const displayProducts: DisplayProduct[] = useMemo(
     () =>

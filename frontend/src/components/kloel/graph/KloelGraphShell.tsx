@@ -137,10 +137,24 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
 
   const focusGalaxy = useCallback(
     (area: KloelGraphArea) => {
+      const primaryNode = KLOEL_GRAPH_NODES.find((node) => node.area === area && !node.parentId);
+
       setManualFocus({ area, routeKey: activeRouteKey });
       setRecenterNonce((value) => value + 1);
+
+      if (!primaryNode) {
+        return;
+      }
+
+      const [path, queryString = ''] = primaryNode.route.split('?');
+      const nextParams = new URLSearchParams(queryString);
+      nextParams.set('graph', '1');
+      nextParams.delete('graphAction');
+      setPendingNode(null);
+      const query = nextParams.toString();
+      router.push(`${path}${query ? `?${query}` : ''}`);
     },
-    [activeRouteKey],
+    [activeRouteKey, graphOnly, router],
   );
 
   const toggleSettings = useCallback(() => {

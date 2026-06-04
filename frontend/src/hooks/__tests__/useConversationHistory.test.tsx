@@ -197,6 +197,35 @@ it('loads every thread page for full export', async () => {
   ]);
 });
 
+it('keeps the full-history loader stable after merging exported threads', async () => {
+  authState.isAuthenticated = true;
+  apiFetchMock
+    .mockResolvedValueOnce(
+      page([makeThread('thread-initial', 'Inicial', '2026-04-20T18:00:00.000Z')], 1, null, false),
+    )
+    .mockResolvedValueOnce(
+      page([makeThread('thread-a', 'A', '2026-04-21T18:00:00.000Z')], 1, null, false),
+    );
+  const { result } = renderHook(() => useConversationHistory(), {
+    wrapper: ConversationHistoryProvider,
+  });
+
+  await waitFor(() => {
+    expect(result.current.conversations).toHaveLength(1);
+  });
+  const loadAllBeforeMerge = result.current.loadAllConversations;
+
+  await act(async () => {
+    await result.current.loadAllConversations();
+  });
+
+  expect(result.current.conversations.map((threadItem) => threadItem.id)).toEqual([
+    'thread-a',
+    'thread-initial',
+  ]);
+  expect(result.current.loadAllConversations).toBe(loadAllBeforeMerge);
+});
+
 it('keeps current recent threads and exposes an error when full export payload is malformed', async () => {
   authState.isAuthenticated = true;
   apiFetchMock

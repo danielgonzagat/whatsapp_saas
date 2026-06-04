@@ -20,6 +20,8 @@ export class CreatePlanDto {
   @IsOptional() @IsBoolean() freeShipping?: boolean;
   /** Shipping price property. */
   @IsOptional() @IsNumber() @Min(0) @Max(99999999) shippingPrice?: number;
+  /** Affiliate visibility property. */
+  @IsOptional() @IsBoolean() visibleToAffiliates?: boolean;
   /** Brand name property. */
   @IsOptional() @IsString() @MaxLength(255) brandName?: string;
 }

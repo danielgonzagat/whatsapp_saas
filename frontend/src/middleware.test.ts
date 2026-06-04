@@ -266,6 +266,11 @@ describe('app host routing', () => {
     expectNext(response);
   });
 
+  it('allows authenticated users on app host admin graph paths', () => {
+    const response = middleware(buildRequest('https://app.kloel.com/admin/kloel-motor'));
+    expectNext(response);
+  });
+
   it('redirects legal paths on app host to marketing host', () => {
     const response = middleware(buildRequest('https://app.kloel.com/terms'));
     expectRedirect(response, 'https://kloel.com/terms');

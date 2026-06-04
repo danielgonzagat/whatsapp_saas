@@ -43,6 +43,15 @@ describe('summarizeSellerConnectAccount', () => {
     expect(summary.requirements).toEqual([]);
   });
 
+  it('returns in_review when KYC was submitted but the seller account is still pending sync', () => {
+    const summary = summarizeSellerConnectAccount(null, 'submitted');
+
+    expect(summary.state).toBe('in_review');
+    expect(summary.label).toBe('Em configuração');
+    expect(summary.description).toContain('Cadastro enviado');
+    expect(summary.requirements).toEqual([]);
+  });
+
   it('returns active when charges and payouts are enabled', () => {
     const summary = summarizeSellerConnectAccount({
       accountBalanceId: 'cab_1',

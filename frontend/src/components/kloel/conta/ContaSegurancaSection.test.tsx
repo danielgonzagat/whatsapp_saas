@@ -42,6 +42,14 @@ describe('SegurancaSection', () => {
     vi.clearAllMocks();
   });
 
+  it('renders password fields inside a semantic form', () => {
+    render(<SegurancaSection />);
+
+    expect(screen.getByLabelText('Senha atual').closest('form')).toBeTruthy();
+    expect(screen.getByLabelText('Nova senha').closest('form')).toBeTruthy();
+    expect(screen.getByLabelText('Confirmar nova senha').closest('form')).toBeTruthy();
+  });
+
   it('starts MFA setup, renders QR code, and verifies the six-digit code', async () => {
     mocks.startMfaSetup.mockResolvedValueOnce({ qrDataUrl: 'data:image/png;base64,ZmFrZQ==' });
     mocks.verifyMfaSetup.mockResolvedValueOnce({ mfa: { enabled: true, pendingSetup: false } });

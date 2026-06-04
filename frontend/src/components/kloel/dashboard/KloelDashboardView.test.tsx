@@ -100,7 +100,7 @@ describe('KloelDashboardView approvals', () => {
 });
 
 describe('KloelDashboardView trace', () => {
-  it('renders public reasoning context without mechanical step or span labels', () => {
+  it('renders the real reasoning timeline (model reasoning + tools) without the fabricated facade', () => {
     renderDashboardView({
       hasMessages: true,
       messages: [
@@ -109,18 +109,15 @@ describe('KloelDashboardView trace', () => {
           role: 'assistant',
           text: '',
           metadata: {
+            reasoningText:
+              'Vou separar o que é público do que é privado e então consultar o catálogo real.',
+            reasoningDurationMs: 1200,
             processingTrace: [
-              {
-                id: 'trace_1',
-                kind: 'system',
-                phase: 'thinking',
-                label: 'Analisei a pergunta e delimitei o que pode ser explicado publicamente.',
-                createdAt: '2026-06-03T12:00:00.000Z',
-              },
               {
                 id: 'trace_2',
                 kind: 'tool_call',
                 phase: 'tool_calling',
+                tool: 'list_products',
                 label: 'Consultei contexto operacional relevante antes de responder.',
                 spanId: 'span-search',
                 createdAt: '2026-06-03T12:00:01.000Z',
@@ -129,6 +126,7 @@ describe('KloelDashboardView trace', () => {
                 id: 'trace_3',
                 kind: 'tool_result',
                 phase: 'tool_result',
+                tool: 'list_products',
                 label: 'Incorporei as observações encontradas e descartei detalhes privados.',
                 spanId: 'span-search',
                 durationMs: 42,
@@ -145,22 +143,26 @@ describe('KloelDashboardView trace', () => {
       isReplyInFlight: true,
     });
 
-    expect(screen.getByText('Pré-resposta executável')).toBeTruthy();
-    expect(screen.getByText('Reasoning summary')).toBeTruthy();
-    expect(screen.getByText('Agent trace')).toBeTruthy();
-    expect(screen.getByText('ReAct trajectory')).toBeTruthy();
-    expect(screen.getByText('Tool/function calling')).toBeTruthy();
-    expect(screen.getByText('Traces + spans')).toBeTruthy();
-    expect(screen.getByText('Analisei a pergunta e delimitei o que pode ser explicado publicamente.')).toBeTruthy();
-    expect(screen.getByText('Consultei contexto operacional relevante antes de responder.')).toBeTruthy();
-    expect(screen.getByText('Incorporei as observações encontradas e descartei detalhes privados.')).toBeTruthy();
-    expect(screen.queryByText(/^Step\s+0?1$/i)).toBeNull();
-    expect(screen.queryByText(/^Span\s+span-search$/i)).toBeNull();
-    expect(screen.queryByText(/^raciocínio$/i)).toBeNull();
-    expect(screen.queryByText(/^ação$/i)).toBeNull();
-    expect(screen.queryByText(/^observação$/i)).toBeNull();
+    // Real reasoning: the model's streamed reasoning text + a real summary render.
     expect(
-      screen.queryByText('Pré-resposta executável: entendendo pedido, contexto e próxima ação.'),
+      screen.getByText('Analisei a pergunta e consultei contexto real antes da resposta final.'),
+    ).toBeTruthy();
+    expect(screen.getByText(/Vou separar o que é público do que é privado/)).toBeTruthy();
+    // Real tool steps surface the actual tool name, not a generic template sentence.
+    expect(screen.getAllByText('list_products').length).toBeGreaterThan(0);
+    // The fabricated concept-label taxonomy and eyebrow are GONE.
+    expect(screen.queryByText('Pré-resposta executável')).toBeNull();
+    expect(screen.queryByText('Reasoning summary')).toBeNull();
+    expect(screen.queryByText('Agent trace')).toBeNull();
+    expect(screen.queryByText('ReAct trajectory')).toBeNull();
+    expect(screen.queryByText('Tool/function calling')).toBeNull();
+    expect(screen.queryByText('Traces + spans')).toBeNull();
+    // The generic per-event template sentences are no longer shown as "reasoning".
+    expect(
+      screen.queryByText('Consultei contexto operacional relevante antes de responder.'),
+    ).toBeNull();
+    expect(
+      screen.queryByText('Incorporei as observações encontradas e descartei detalhes privados.'),
     ).toBeNull();
   });
 

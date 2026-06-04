@@ -61,13 +61,16 @@ export class ProductService {
       throw new BadRequestException('price is required and must be a non-negative number');
     }
 
+    const status = dto.status || 'DRAFT';
+    const active = dto.active ?? status === 'APPROVED';
+
     const product = await this.prisma.product.create({
       data: {
         ...dto,
         workspaceId,
         format: dto.format || 'PHYSICAL',
-        status: 'DRAFT',
-        active: false,
+        status,
+        active,
       },
     });
 

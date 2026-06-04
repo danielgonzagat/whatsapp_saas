@@ -178,6 +178,14 @@ describe('searchKloelThreads', () => {
     apiFetchMock.mockReset();
   });
 
+  it('uses the registered Kloel thread search endpoint', async () => {
+    apiFetchMock.mockResolvedValue({ status: 200, data: [] });
+
+    await expect(searchKloelThreads('pdrn', 20)).resolves.toEqual([]);
+
+    expect(apiFetchMock).toHaveBeenCalledWith('/kloel/threads/search?q=pdrn&limit=20');
+  });
+
   it('rejects malformed successful search payloads instead of fake empty results', async () => {
     apiFetchMock.mockResolvedValue({ status: 200, data: [{ id: 'thread-1', title: 42 }] });
 

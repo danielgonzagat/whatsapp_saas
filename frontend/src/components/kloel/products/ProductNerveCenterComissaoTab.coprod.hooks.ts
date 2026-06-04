@@ -6,19 +6,67 @@ import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { S, V, unwrapApiPayload, type JsonRecord } from './product-nerve-center.shared';
 
+type CoprodForm = {
+  role: string;
+  percentage: string;
+  agentName: string;
+  agentEmail: string;
+};
+
+const EMPTY_COPROD_FORM: CoprodForm = {
+  role: 'COPRODUCER',
+  percentage: '',
+  agentName: '',
+  agentEmail: '',
+};
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function parseCoprodPercentage(value: string) {
+  return Number.parseFloat(value.replace(',', '.'));
+}
+
+function validateCoprodForm(form: CoprodForm) {
+  const agentName = form.agentName.trim();
+  const agentEmail = form.agentEmail.trim();
+  const percentageText = form.percentage.trim();
+  const percentage = parseCoprodPercentage(percentageText);
+
+  if (!agentName && !agentEmail) {
+    return 'Informe ao menos nome ou e-mail do parceiro desta comissão.';
+  }
+
+  if (agentEmail && !isValidEmail(agentEmail)) {
+    return 'Informe um e-mail válido para o parceiro desta comissão.';
+  }
+
+  if (!percentageText) {
+    return 'Informe o percentual da comissão.';
+  }
+
+  if (!Number.isFinite(percentage) || percentage < 0 || percentage > 100) {
+    return 'Informe uma comissão válida entre 0 e 100.';
+  }
+
+  return null;
+}
+
 export function useCoprodState(productId: string) {
   const { showToast } = useToast();
   const [items, setItems] = useState<JsonRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({
-    role: 'COPRODUCER',
-    percentage: '',
-    agentName: '',
-    agentEmail: '',
-  });
+  const [form, setFormState] = useState<CoprodForm>(EMPTY_COPROD_FORM);
+  const [formError, setFormError] = useState('');
   const [creating, setCreating] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; agentName: string } | null>(null);
+
+  const setForm = useCallback((next: React.SetStateAction<CoprodForm>) => {
+    setFormError('');
+    setFormState(next);
+  }, []);
 
   const fetchCommissions = useCallback(() => {
     apiFetch<JsonRecord>(`/products/${productId}/commissions`)
@@ -45,16 +93,29 @@ export function useCoprodState(productId: string) {
   const selectedRoleLabel = form.role === 'MANAGER' ? 'gerente' : 'coprodutor';
 
   const handleCreate = async () => {
+    const validationError = validateCoprodForm(form);
+    if (validationError) {
+      setFormError(validationError);
+      showToast(validationError, 'error');
+      return;
+    }
+
     setCreating(true);
     try {
       unwrapApiPayload(
         await apiFetch(`/products/${productId}/commissions`, {
           method: 'POST',
-          body: { ...form, percentage: Number.parseFloat(form.percentage) || 0 },
+          body: {
+            role: form.role,
+            percentage: parseCoprodPercentage(form.percentage),
+            agentName: form.agentName.trim() || null,
+            agentEmail: form.agentEmail.trim() || null,
+          },
         }),
       );
       setShowForm(false);
-      setForm({ role: 'COPRODUCER', percentage: '', agentName: '', agentEmail: '' });
+      setFormState(EMPTY_COPROD_FORM);
+      setFormError('');
       fetchCommissions();
       showToast(`Convite do ${selectedRoleLabel} enviado`, 'success');
     } catch (e) {
@@ -104,6 +165,7 @@ export function useCoprodState(productId: string) {
     setShowForm,
     form,
     setForm,
+    formError,
     creating,
     deleteTarget,
     setDeleteTarget,

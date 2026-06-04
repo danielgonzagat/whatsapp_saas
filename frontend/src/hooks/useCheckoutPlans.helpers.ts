@@ -141,7 +141,8 @@ export function matchesProduct(
   candidate: CheckoutProductItem,
   product: Pick<DashboardProduct, 'name' | 'slug'>,
 ): boolean {
-  return candidate.slug === product.slug || candidate.name === product.name;
+  const slugsMatch = Boolean(candidate.slug && product.slug && candidate.slug === product.slug);
+  return slugsMatch || candidate.name === product.name;
 }
 
 /**
@@ -201,15 +202,16 @@ function hasCheckoutMutationSuccessMarker(response: Record<string, unknown>): bo
   return (
     response.success === true ||
     isRecord(response.data) ||
+    Array.isArray(response.data) ||
     typeof response.deleted === 'string' ||
     typeof response.id === 'string'
   );
 }
 
-export function requireCheckoutMutationSuccess<T>(
-  response: T & { error?: string; success?: boolean },
-  fallback: string,
-): T & { error?: string; success?: boolean } {
+export function requireCheckoutMutationSuccess<T>(response: T, fallback: string): T {
+  if (Array.isArray(response)) {
+    return response;
+  }
   if (!isRecord(response)) {
     throw new Error('Invalid checkout mutation response');
   }
@@ -223,7 +225,7 @@ export function requireCheckoutMutationSuccess<T>(
   if (!hasCheckoutMutationSuccessMarker(response)) {
     throw new Error('Invalid checkout mutation response');
   }
-  return response;
+  return response as T;
 }
 
 /**

@@ -180,52 +180,60 @@ export default function SegurancaSection() {
         title={kloelT(`Alterar senha`)}
         subtitle={kloelT(`Use uma senha forte com pelo menos 8 caracteres`)}
       >
-        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
-          <Field
-            label={kloelT(`Senha atual`)}
-            placeholder={kloelT(`Digite a senha atual`)}
-            value={pwForm.current}
-            onChange={(v) => setPw('current', v)}
-            type="password"
-          />
-          <Field
-            label={kloelT(`Nova senha`)}
-            placeholder={kloelT(`Minimo 8 caracteres`)}
-            value={pwForm.newPw}
-            onChange={(v) => setPw('newPw', v)}
-            type="password"
-          />
-          <Field
-            label={kloelT(`Confirmar nova senha`)}
-            placeholder={kloelT(`Repita a nova senha`)}
-            value={pwForm.confirm}
-            onChange={(v) => setPw('confirm', v)}
-            type="password"
-          />
-        </div>
-        {pwError && (
-          <span
-            style={{ fontSize: 11, color: colors.semantic.error, marginTop: 8, display: 'block', fontFamily: SORA }}
-          >
-            {pwError}
-          </span>
-        )}
-        <div
-          style={{
-            marginTop: 20,
-            display: 'flex',
-            justifyContent: 'flex-end' as const,
-            alignItems: 'center',
-            gap: 12,
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            void handleChangePw();
           }}
+          style={{ display: 'flex', flexDirection: 'column' as const }}
         >
-          {pwSuccess && (
-            <span style={{ fontSize: 12, fontWeight: 600, color: colors.semantic.success, fontFamily: SORA }}>
-              {kloelT(`Senha alterada!`)}
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
+            <Field
+              label={kloelT(`Senha atual`)}
+              placeholder={kloelT(`Digite a senha atual`)}
+              value={pwForm.current}
+              onChange={(v) => setPw('current', v)}
+              type="password"
+            />
+            <Field
+              label={kloelT(`Nova senha`)}
+              placeholder={kloelT(`Minimo 8 caracteres`)}
+              value={pwForm.newPw}
+              onChange={(v) => setPw('newPw', v)}
+              type="password"
+            />
+            <Field
+              label={kloelT(`Confirmar nova senha`)}
+              placeholder={kloelT(`Repita a nova senha`)}
+              value={pwForm.confirm}
+              onChange={(v) => setPw('confirm', v)}
+              type="password"
+            />
+          </div>
+          {pwError && (
+            <span
+              style={{ fontSize: 11, color: colors.semantic.error, marginTop: 8, display: 'block', fontFamily: SORA }}
+            >
+              {pwError}
             </span>
           )}
-          <SaveButton saving={saving} onClick={handleChangePw} label={kloelT(`Alterar senha`)} />
-        </div>
+          <div
+            style={{
+              marginTop: 20,
+              display: 'flex',
+              justifyContent: 'flex-end' as const,
+              alignItems: 'center',
+              gap: 12,
+            }}
+          >
+            {pwSuccess && (
+              <span style={{ fontSize: 12, fontWeight: 600, color: colors.semantic.success, fontFamily: SORA }}>
+                {kloelT(`Senha alterada!`)}
+              </span>
+            )}
+            <SaveButton saving={saving} onClick={handleChangePw} label={kloelT(`Alterar senha`)} />
+          </div>
+        </form>
       </SectionCard>
 
       <SectionCard

@@ -224,7 +224,14 @@ export function ProductNerveCenterCheckoutsTab({
                   <IconActionButton
                     label={kloelT(`Excluir`)}
                     color={V.r}
-                    onClick={() => onDeleteCheckout(checkout.id)}
+                    onClick={() => {
+                      if (
+                        typeof window === 'undefined' ||
+                        window.confirm(kloelT(`Excluir este checkout? Esta ação não pode ser desfeita.`))
+                      ) {
+                        void onDeleteCheckout(checkout.id);
+                      }
+                    }}
                   >
                     <svg
                       width={14}
@@ -375,7 +382,14 @@ export function ProductNerveCenterCheckoutsTab({
                   <IconActionButton
                     label={kloelT(`Excluir`)}
                     color={V.r}
-                    onClick={() => onDeleteCheckout(checkout.id)}
+                    onClick={() => {
+                      if (
+                        typeof window === 'undefined' ||
+                        window.confirm(kloelT(`Excluir este checkout? Esta ação não pode ser desfeita.`))
+                      ) {
+                        void onDeleteCheckout(checkout.id);
+                      }
+                    }}
                   >
                     <svg
                       width={14}

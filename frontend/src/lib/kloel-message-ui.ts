@@ -345,6 +345,88 @@ export function summarizeAssistantProcessingTrace(
   return `${labels[0]}, ${lowercaseLeadingCharacter(labels[1])} e ${lowercaseLeadingCharacter(labels[labels.length - 1])}.`;
 }
 
+/** Assistant reasoning file shape (a delivered/generated artifact). */
+export interface AssistantReasoningFile {
+  /** Name property. */
+  name: string;
+  /** Meta property. */
+  meta?: string | undefined;
+  /** Url property. */
+  url?: string | undefined;
+  /** Download url property. */
+  downloadUrl?: string | undefined;
+}
+
+/** Assistant reasoning shape (real model reasoning accumulated from the stream). */
+export interface AssistantReasoning {
+  /** Text property. */
+  text: string;
+  /** Summary property. */
+  summary: string;
+  /** Duration ms property. */
+  durationMs: number | null;
+  /** Files property. */
+  files: AssistantReasoningFile[];
+}
+
+/** Get the real reasoning accumulated for an assistant message. */
+export function getAssistantReasoning(metadata: unknown): AssistantReasoning {
+  const normalized = normalizeAssistantMessageMetadata(metadata);
+  const text = typeof normalized?.reasoningText === 'string' ? normalized.reasoningText : '';
+  const summary =
+    typeof normalized?.reasoningSummary === 'string' ? normalized.reasoningSummary : '';
+  const durationMs =
+    typeof normalized?.reasoningDurationMs === 'number' ? normalized.reasoningDurationMs : null;
+  const rawFiles = Array.isArray(normalized?.files) ? normalized.files : [];
+  const files = rawFiles
+    .map((entry): AssistantReasoningFile | null => {
+      if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+        return null;
+      }
+      const candidate = entry as Record<string, unknown>;
+      if (typeof candidate.name !== 'string' || !candidate.name.trim()) {
+        return null;
+      }
+      return {
+        name: candidate.name,
+        meta: typeof candidate.meta === 'string' ? candidate.meta : undefined,
+        url: typeof candidate.url === 'string' ? candidate.url : undefined,
+        downloadUrl:
+          typeof candidate.downloadUrl === 'string' ? candidate.downloadUrl : undefined,
+      };
+    })
+    .filter((entry): entry is AssistantReasoningFile => !!entry);
+  return { text, summary, durationMs, files };
+}
+
+/** Accumulate a reasoning/file stream event into assistant message metadata. */
+function applyReasoningStreamEventToMetadata(
+  metadata: Record<string, unknown>,
+  event: KloelStreamEvent,
+): Record<string, unknown> | null {
+  if (event.type === 'reasoning_delta') {
+    const current = typeof metadata.reasoningText === 'string' ? metadata.reasoningText : '';
+    return { ...metadata, reasoningText: current + event.text };
+  }
+  if (event.type === 'reasoning_summary') {
+    return { ...metadata, reasoningSummary: event.text };
+  }
+  if (event.type === 'reasoning_done') {
+    return { ...metadata, reasoningDurationMs: event.durationMs };
+  }
+  if (event.type === 'file') {
+    const currentFiles = Array.isArray(metadata.files) ? metadata.files : [];
+    const nextFile: AssistantReasoningFile = {
+      name: event.name,
+      meta: event.meta,
+      url: event.url,
+      downloadUrl: event.downloadUrl,
+    };
+    return { ...metadata, files: [...currentFiles, nextFile] };
+  }
+  return null;
+}
+
 /** Append assistant trace from event. */
 export function appendAssistantTraceFromEvent(
   metadata: unknown,
@@ -356,6 +438,11 @@ export function appendAssistantTraceFromEvent(
   const mergedMetadata = eventMetadata
     ? { ...normalizedMetadata, ...eventMetadata }
     : normalizedMetadata;
+  const reasoningMetadata = applyReasoningStreamEventToMetadata(mergedMetadata, event);
+  if (reasoningMetadata) {
+    return reasoningMetadata;
+  }
+
   const nextEntry = createAssistantTraceEntryFromStreamEvent(event);
 
   if (!nextEntry) {

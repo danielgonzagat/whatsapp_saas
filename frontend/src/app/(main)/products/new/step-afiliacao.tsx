@@ -84,6 +84,7 @@ export function StepAfiliacao({ form, updateForm }: StepCommonProps) {
             hint={kloelT('Percentual sobre cada venda')}
           >
             <input
+              aria-label={kloelT('Comissao do afiliado')}
               {...inputProps}
               type="number"
               min="0"

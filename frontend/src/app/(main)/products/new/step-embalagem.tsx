@@ -26,6 +26,7 @@ export function StepEmbalagem({ form, updateForm }: StepCommonProps) {
 
       <MonitorInputField label={kloelT('Tipo de embalagem')}>
         <select
+          aria-label={kloelT('Tipo de embalagem')}
           style={selectStyle}
           onFocus={inputProps.onFocus}
           onBlur={inputProps.onBlur}
@@ -119,6 +120,7 @@ export function StepEmbalagem({ form, updateForm }: StepCommonProps) {
 
       <MonitorInputField label={kloelT('Peso (kg)')}>
         <input
+          aria-label={kloelT('Peso em kg')}
           {...inputProps}
           type="number"
           min="0"

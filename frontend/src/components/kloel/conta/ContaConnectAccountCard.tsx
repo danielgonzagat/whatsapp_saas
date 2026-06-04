@@ -48,6 +48,7 @@ const CONNECT_STATE_CONFIG: Record<
 interface ConnectAccountStatusCardProps {
   isMobile: boolean;
   sellerAccount: ReturnType<typeof useSellerConnectAccount>['sellerAccount'];
+  kycStatus?: string | null;
   isLoading: boolean;
   error: unknown;
 }
@@ -55,21 +56,27 @@ interface ConnectAccountStatusCardProps {
 export function ConnectAccountStatusCard({
   isMobile,
   sellerAccount,
+  kycStatus,
   isLoading,
   error,
 }: ConnectAccountStatusCardProps) {
-  const summary = summarizeSellerConnectAccount(sellerAccount);
+  const summary = summarizeSellerConnectAccount(sellerAccount, kycStatus);
   const onboarding = sellerAccount?.onboarding;
+  const kycWasSubmitted = ['submitted', 'approved', 'in_review'].includes(
+    String(kycStatus || '').toLowerCase(),
+  );
   const tone = CONNECT_STATE_CONFIG[summary.state];
   const openRequirements = summary.requirements.slice(0, 5);
   const remainingRequirements = Math.max(summary.requirements.length - openRequirements.length, 0);
   const helperText = sellerAccount
     ? 'Sempre que uma nova pendência for solicitada, ela aparece aqui para regularização dentro do seu fluxo Kloel.'
-    : 'Assim que você concluir o cadastro e enviar para análise, esta área passa a mostrar as verificações e liberações da sua conta de recebimento.';
+    : kycWasSubmitted
+      ? 'O cadastro foi enviado. A conta de recebimento fica pendente enquanto a sincronização financeira é concluída.'
+      : 'Assim que você concluir o cadastro e enviar para análise, esta área passa a mostrar as verificações e liberações da sua conta de recebimento.';
   const metrics = [
     {
       label: 'Cadastro enviado',
-      value: onboarding?.detailsSubmitted ? 'Sim' : sellerAccount ? 'Parcial' : 'Não',
+      value: onboarding?.detailsSubmitted || kycWasSubmitted ? 'Sim' : sellerAccount ? 'Parcial' : 'Não',
     },
     {
       label: 'Recebimentos',

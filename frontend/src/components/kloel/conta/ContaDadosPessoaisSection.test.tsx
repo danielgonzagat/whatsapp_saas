@@ -49,6 +49,9 @@ describe('DadosPessoaisSection', () => {
     );
 
     const pickerButton = await screen.findByRole('button', { name: /data de nascimento/i });
+    const birthDateLabel = screen.getByText(/data de nascimento/i).closest('label');
+
+    expect(birthDateLabel?.control).toBe(pickerButton);
     expect(pickerButton.textContent).toContain('14/05/1990');
 
     fireEvent.click(pickerButton);

@@ -57,6 +57,7 @@ export function CheckoutConfigPanel({
     ckLocal,
     ckSaving,
     ckSaved,
+    ckError,
     setLinkedPlanIds,
     showExitConfirm,
     setShowExitConfirm,
@@ -106,6 +107,7 @@ export function CheckoutConfigPanel({
             label={kloelT(`Nome / Descrição *`)}
             value={String(ckLocal.brandName ?? '')}
             onChange={(value) => patch('brandName', value)}
+            error={ckError}
             full
           />
           <Dv />

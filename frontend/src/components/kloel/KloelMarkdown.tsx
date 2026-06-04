@@ -6,6 +6,8 @@ import type { HTMLAttributes } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import remarkGfm from 'remark-gfm';
+import DOMPurify from 'dompurify';
+import { useEffect, useState, type ReactNode } from 'react';
 
 const HTTPS_RE = /^https?:\/\//i;
 
@@ -17,6 +19,47 @@ const CODE_BG = KLOEL_THEME.bgSecondary;
 const EMBER = KLOEL_THEME.accent;
 const FONT = "'Sora', sans-serif";
 const MONO = "'JetBrains Mono', monospace";
+
+function nodeToText(node: ReactNode): string {
+  if (node == null || node === false || node === true) {
+    return '';
+  }
+  if (typeof node === 'string') {
+    return node;
+  }
+  if (typeof node === 'number') {
+    return String(node);
+  }
+  if (Array.isArray(node)) {
+    return node.map(nodeToText).join('');
+  }
+  if (typeof node === 'object' && 'props' in node) {
+    return nodeToText((node as { props?: { children?: ReactNode } }).props?.children);
+  }
+  return '';
+}
+
+/** Render a model-emitted ```svg block as a real, sanitized SVG artifact. */
+function SvgArtifact({ source }: { source: string }) {
+  const [html, setHtml] = useState('');
+  useEffect(() => {
+    // Sanitize on the client only (DOMPurify needs window): strips <script>,
+    // event handlers and foreignObject so model-authored SVG cannot execute.
+    setHtml(DOMPurify.sanitize(source, { USE_PROFILES: { svg: true, svgFilters: true } }));
+  }, [source]);
+
+  if (!html) {
+    return null;
+  }
+  return (
+    <div
+      className="kloel-artifact-svg"
+      style={{ display: 'flex', justifyContent: 'center', width: '100%', overflow: 'auto' }}
+      // Sanitized above with DOMPurify (svg profile) — no script/handlers survive.
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+}
 
 /** Kloel markdown. */
 export function KloelMarkdown({ content }: { content: string }) {
@@ -34,7 +77,7 @@ export function KloelMarkdown({ content }: { content: string }) {
     >
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeHighlight]}
+        rehypePlugins={[[rehypeHighlight, { ignoreMissing: true, detect: false }]]}
         components={{
           h2: ({ children }) => (
             <h2
@@ -125,6 +168,13 @@ export function KloelMarkdown({ content }: { content: string }) {
           ),
           code: ({ className, children, ...props }: HTMLAttributes<HTMLElement>) => {
             const inline = !className;
+            if (
+              typeof className === 'string' &&
+              /(?:^|\s)language-svg(?:\s|$)/.test(className)
+            ) {
+              return <SvgArtifact source={nodeToText(children)} />;
+            }
+
 
             if (inline) {
               return (

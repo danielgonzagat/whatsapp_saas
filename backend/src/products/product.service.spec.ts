@@ -113,6 +113,24 @@ describe('ProductService', () => {
       expect(audit.log).toHaveBeenCalledWith(objectContaining({ action: 'product.create' }));
     });
 
+    it('preserves normalized workflow status and availability when the caller supplies them', async () => {
+      const dto = {
+        name: 'Widget publicado',
+        price: 49.99,
+        format: 'DIGITAL' as const,
+        status: 'APPROVED',
+        active: true,
+      } as never;
+
+      const result = await service.create(ws, dto, actor);
+
+      expect(prisma.product.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ status: 'APPROVED', active: true }),
+      });
+      expect(result.product?.status).toBe('APPROVED');
+      expect(result.product?.active).toBe(true);
+    });
+
     it('throws ForbiddenException when workspaceId is empty', async () => {
       await expect(service.create('', { name: 'X', price: 10 }, actor)).rejects.toThrow(
         ForbiddenException,

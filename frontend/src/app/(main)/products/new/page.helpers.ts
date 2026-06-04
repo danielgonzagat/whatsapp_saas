@@ -15,6 +15,81 @@ function parseOptionalFloat(input: string): number | undefined {
   return Number.isFinite(value) ? value : undefined;
 }
 
+export type ProductCreateStepValidation =
+  | { ok: true }
+  | { ok: false; step: number; message: string };
+
+export function validateProductCreateStep(
+  form: FormState,
+  step: number,
+): ProductCreateStepValidation {
+  if (step === 1) {
+    if (!form.name.trim()) {
+      return { ok: false, step: 1, message: 'Informe o nome do produto antes de continuar.' };
+    }
+
+    if (!form.description.trim()) {
+      return { ok: false, step: 1, message: 'Informe a descricao do produto antes de continuar.' };
+    }
+
+    if (!form.category.trim()) {
+      return { ok: false, step: 1, message: 'Selecione uma categoria antes de continuar.' };
+    }
+  }
+
+  if (step === 2) {
+    const priceText = form.price.trim();
+
+    if (!priceText) {
+      return { ok: false, step: 2, message: 'Informe o preco do produto antes de continuar.' };
+    }
+
+    const price = Number.parseFloat(priceText.replace(',', '.'));
+
+    if (!Number.isFinite(price) || price < 0) {
+      return { ok: false, step: 2, message: 'Informe um preco valido antes de continuar.' };
+    }
+  }
+
+  if (step === 5 && form.affiliatesEnabled) {
+    const commissionText = form.affiliateCommissionPercent.trim();
+
+    if (!commissionText) {
+      return { ok: false, step: 5, message: 'Informe a comissao do afiliado antes de continuar.' };
+    }
+
+    const commission = Number.parseFloat(commissionText.replace(',', '.'));
+
+    if (!Number.isFinite(commission) || commission < 1 || commission > 100) {
+      return {
+        ok: false,
+        step: 5,
+        message: 'Informe uma comissao de afiliado valida entre 1 e 100.',
+      };
+    }
+  }
+
+  return { ok: true };
+}
+
+
+export function validateProductCreateFlow(
+  form: FormState,
+  steps: readonly number[],
+): ProductCreateStepValidation {
+  for (const step of steps) {
+    const validation = validateProductCreateStep(form, step);
+
+    if (!validation.ok) {
+      return validation;
+    }
+  }
+
+  return { ok: true };
+}
+
+
+
 /** Build product create payload. */
 export function buildProductCreatePayload(
   form: FormState,

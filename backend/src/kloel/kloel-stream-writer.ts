@@ -8,6 +8,8 @@ import {
   createKloelAssistantVisibleTextStreamFilter,
   createKloelContentEvent,
   createKloelStatusEvent,
+  createKloelReasoningDeltaEvent,
+  createKloelReasoningDoneEvent,
   createKloelDoneEvent,
 } from './kloel-stream-events';
 import { chatCompletionStreamWithRetry } from './openai-wrapper';
@@ -210,7 +212,10 @@ export class KloelStreamWriter {
   async streamModelResponse(
     input: StreamWriterModelResponseInput,
   ): Promise<StreamWriterModelResponseResult | null> {
-    this.write(createKloelStatusEvent('thinking', input.thinkingLabel));
+    // Flip the UI into the thinking phase WITHOUT a synthesized label — the model's
+    // real reasoning now streams as reasoning_delta below. If the provider emits no
+    // reasoning, no reasoning text is shown (honest: no fabricated chain-of-thought).
+    this.write(createKloelStatusEvent('thinking'));
 
     // before delegating to the stream writer; this helper only opens the already-approved stream.
     const openWriterStream = async (model: string) =>
@@ -249,6 +254,9 @@ export class KloelStreamWriter {
     let fullResponse = '';
     let hasStreamedContent = false;
     const visibleTextFilter = createKloelAssistantVisibleTextStreamFilter();
+    let reasoningStartedAt = 0;
+    let reasoningEmitted = false;
+    let reasoningDoneEmitted = false;
 
     const emitAnswerChunk = (content: string) => {
       if (!content) {
@@ -256,7 +264,7 @@ export class KloelStreamWriter {
       }
       if (!hasStreamedContent) {
         hasStreamedContent = true;
-        this.write(createKloelStatusEvent('streaming_token', input.streamingLabel));
+        this.write(createKloelStatusEvent('streaming_token'));
       }
 
       fullResponse += content;
@@ -277,9 +285,32 @@ export class KloelStreamWriter {
         );
       }
 
-      const content = chunk.choices[0]?.delta?.content || '';
+      const delta = chunk.choices[0]?.delta as
+        | { content?: string; reasoning_content?: string }
+        | undefined;
+
+      // Real reasoning passthrough: DeepSeek reasoner streams its chain-of-thought
+      // as delta.reasoning_content (gated by DEEPSEEK_THINKING=enabled via
+      // normalizeChatCompletionParams). We forward each piece as a reasoning_delta
+      // so the ReasoningTimeline renders the model's actual reasoning, never a
+      // fabricated label.
+      const reasoningPiece =
+        typeof delta?.reasoning_content === 'string' ? delta.reasoning_content : '';
+      if (reasoningPiece) {
+        if (!reasoningEmitted) {
+          reasoningEmitted = true;
+          reasoningStartedAt = Date.now();
+        }
+        this.write(createKloelReasoningDeltaEvent(reasoningPiece));
+      }
+
+      const content = delta?.content || '';
       if (!content) {
         continue;
+      }
+      if (reasoningEmitted && !reasoningDoneEmitted) {
+        reasoningDoneEmitted = true;
+        this.write(createKloelReasoningDoneEvent(Date.now() - reasoningStartedAt));
       }
       emitAnswerChunk(visibleTextFilter.push(content));
     }

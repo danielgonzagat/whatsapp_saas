@@ -44,7 +44,7 @@ export default function AffiliateMarketplaceSearch() {
         {kloelT(`Buscar no Marketplace`)}
       </div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <input aria-label="Buscar no marketplace por categoria ou tag" type="text"
+        <input id="affiliate-marketplace-search" name="affiliateMarketplaceSearch" aria-label="Buscar no marketplace por categoria ou tag" type="text"
           value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') {handleSearch();} }}
           placeholder={kloelT(`Buscar por categoria ou tag...`)}
