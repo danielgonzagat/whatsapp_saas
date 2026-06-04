@@ -9,7 +9,7 @@ import {
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
-import type { Product } from '@prisma/client';
+import type { Prisma, Product } from '@prisma/client';
 import { MindEventSpine } from '../kloel/mind/coordination';
 import {
   assertWorkspaceId,
@@ -64,9 +64,39 @@ export class ProductService {
     const status = dto.status || 'DRAFT';
     const active = dto.active ?? status === 'APPROVED';
 
+    // Defensive: some callers/casts pass rich create-wizard or checkout fields
+    // that are not Product columns (a raw dto here previously 500'd the Prisma
+    // create). Strip them and map the renamed ones so create is robust for every
+    // caller, not just the controller that pre-maps via buildCreateProductData.
+    const cleanDto = { ...dto } as Record<string, unknown>;
+    if (cleanDto.guaranteeDays != null) {
+      cleanDto.warrantyDays = Number(cleanDto.guaranteeDays);
+    }
+    if (cleanDto.affiliatesEnabled != null) {
+      cleanDto.affiliateEnabled = Boolean(cleanDto.affiliatesEnabled);
+    }
+    const commissionPct = cleanDto.affiliateCommissionPercent ?? cleanDto.affiliateCommission;
+    if (commissionPct != null) {
+      cleanDto.commissionPercent = Number(commissionPct);
+    }
+    for (const stripKey of [
+      'paymentType',
+      'checkoutType',
+      'billingType',
+      'maxInstallments',
+      'interestFreeInstallments',
+      'affiliateApprovalMode',
+      'affiliatesEnabled',
+      'affiliateCommission',
+      'affiliateCommissionPercent',
+      'guaranteeDays',
+    ]) {
+      delete cleanDto[stripKey];
+    }
+
     const product = await this.prisma.product.create({
       data: {
-        ...dto,
+        ...(cleanDto as Prisma.ProductUncheckedCreateInput),
         workspaceId,
         format: dto.format || 'PHYSICAL',
         status,
