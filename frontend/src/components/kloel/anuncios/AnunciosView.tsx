@@ -5,6 +5,7 @@ import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef, startTransition, useCallback } from 'react';
 import { metaAdsApi } from '@/lib/api/meta';
+import { apiFetch } from '@/lib/api';
 import { useAnunciosStatus, useAnunciosCampaigns } from '@/hooks/useAnuncios';
 import type { AnunciosPlatformStatus, AnunciosCampaign } from '@/hooks/useAnuncios';
 import { AnunciosTabBar, ROUTES } from './AnunciosTabBar';
@@ -116,15 +117,14 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
   useEffect(() => {
     const fetchSyncStatus = async () => {
       try {
-        const metaAdsResp = await fetch('/api/anuncios/sync-status/meta');
-        if (metaAdsResp.ok) {
-          const syncData = await metaAdsResp.json();
-          const metaSync = syncData?.data?.meta;
-          if (metaSync) {
-            const ts = metaSync.lastCampaignSync || metaSync.lastAccountSync;
-            if (ts) {
-              setLastSyncAt(new Date(ts).toLocaleString('pt-BR'));
-            }
+        const syncData = await apiFetch<{
+          data?: { meta?: { lastCampaignSync?: string; lastAccountSync?: string } };
+        }>('/api/anuncios/sync-status/meta');
+        const metaSync = syncData?.data?.data?.meta;
+        if (metaSync) {
+          const ts = metaSync.lastCampaignSync || metaSync.lastAccountSync;
+          if (ts) {
+            setLastSyncAt(new Date(ts).toLocaleString('pt-BR'));
           }
         }
       } catch {
