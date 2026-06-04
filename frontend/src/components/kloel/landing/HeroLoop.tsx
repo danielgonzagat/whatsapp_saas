@@ -14,10 +14,6 @@ const HERO_LOOP_PRIMARY = 'O Marketing Digital';
 const HERO_LOOP_DEATH_SUFFIX = ' acabou.';
 const HERO_LOOP_RESURRECTED = 'O Marketing Artificial começou.';
 
-
-
-
-
 function scrambleText(src: string, chaos: number) {
   return src
     .split('')
@@ -52,6 +48,8 @@ export function HeroLoop() {
   const noiseRef = useHeroNoiseCanvasRef();
   const m = useRef<boolean>(true);
   const prefersReducedMotion = usePrefersReducedMotion();
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => setIsMounted(true), []);
 
   useHeroNoiseCanvas(noiseRef, gx.on);
 
@@ -61,7 +59,9 @@ export function HeroLoop() {
       // react-hooks/set-state-in-effect (state mutation is now a side
       // effect of the rendered frame, not a synchronous render trigger).
       void Promise.resolve().then(() => {
-        if (!m.current) {return;}
+        if (!m.current) {
+          return;
+        }
         setVis({ text: '', strike: 0, suffix: '', phase: 'hidden' });
         setGx({ on: false, text: '', shk: [0, 0], chr: 0, slices: [], flash: false });
         setResurrected(true);
@@ -251,7 +251,7 @@ export function HeroLoop() {
     };
   }, [prefersReducedMotion]);
 
-  if (prefersReducedMotion) {
+  if (!isMounted || prefersReducedMotion) {
     return <HeroLoopReducedMotion />;
   }
 

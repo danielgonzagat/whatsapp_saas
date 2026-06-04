@@ -19,8 +19,11 @@ type Tone = 'light' | 'ember';
 
 export function FinalManifestLoop() {
   const prefersReducedMotion = usePrefersReducedMotion();
+  const [isMounted, setIsMounted] = useState(false);
   const [text, setText] = useState('');
   const [tone, setTone] = useState<Tone>('light');
+
+  useEffect(() => setIsMounted(true), []);
 
   useEffect(() => {
     if (prefersReducedMotion) {
@@ -189,7 +192,7 @@ export function FinalManifestLoop() {
           <span
             style={{
               color: cursorColor,
-              animation: prefersReducedMotion ? 'none' : 'blink 1s ease infinite',
+              animation: !isMounted || prefersReducedMotion ? 'none' : 'blink 1s ease infinite',
             }}
           >
             |

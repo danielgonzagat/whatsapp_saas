@@ -7,7 +7,9 @@ export function Reveal({ children, delay = 0 }: { children: React.ReactNode; del
   const prefersReducedMotion = usePrefersReducedMotion();
   const ref = useRef<HTMLDivElement | null>(null);
   const [hasEnteredViewport, setHasEnteredViewport] = useState(false);
-  const visible = prefersReducedMotion || hasEnteredViewport;
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => setIsMounted(true), []);
+  const visible = !isMounted || prefersReducedMotion || hasEnteredViewport;
 
   useEffect(() => {
     if (prefersReducedMotion) {
@@ -37,9 +39,10 @@ export function Reveal({ children, delay = 0 }: { children: React.ReactNode; del
       style={{
         opacity: visible ? 1 : 0,
         transform: visible ? 'translateY(0)' : 'translateY(28px)',
-        transition: prefersReducedMotion
-          ? 'none'
-          : `opacity .8s ease ${delay}ms, transform .8s ease ${delay}ms`,
+        transition:
+          !isMounted || prefersReducedMotion
+            ? 'none'
+            : `opacity .8s ease ${delay}ms, transform .8s ease ${delay}ms`,
       }}
     >
       {visible ? children : <div style={{ minHeight: 50 }} />}
