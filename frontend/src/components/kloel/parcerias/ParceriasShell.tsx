@@ -35,7 +35,9 @@ export default function ParceriasShell({ defaultTab = 'colaboradores' }: { defau
       chat: '/parcerias/chat',
     };
     const nextRoute = routes[t] || '/parcerias';
-    if (pathname === nextRoute) {return;}
+    if (pathname === nextRoute) {
+      return;
+    }
     startTransition(() => {
       router.push(nextRoute);
     });
@@ -146,18 +148,17 @@ export default function ParceriasShell({ defaultTab = 'colaboradores' }: { defau
           margin: '0 auto',
         }}
       >
-        {tab === 'colaboradores' && (
-          <ColaboratorRoster setShowInviteModal={setShowInviteModal} />
-        )}
+        {tab === 'colaboradores' && <ColaboratorRoster setShowInviteModal={setShowInviteModal} />}
         {tab === 'afiliados' && (
-          <AffiliateDirectory setShowAffiliateInviteModal={setShowAffiliateInviteModal} />
+          <AffiliateDirectory
+            setShowAffiliateInviteModal={setShowAffiliateInviteModal}
+            onOpenChat={() => setTab('chat')}
+          />
         )}
         {tab === 'chat' && <PartnerChatRoom />}
       </div>
 
-      {showInviteModal && (
-        <ColaboratorInvitationForm onClose={() => setShowInviteModal(false)} />
-      )}
+      {showInviteModal && <ColaboratorInvitationForm onClose={() => setShowInviteModal(false)} />}
       {showAffiliateInviteModal && (
         <AffiliateRegistrationForm onClose={() => setShowAffiliateInviteModal(false)} />
       )}
