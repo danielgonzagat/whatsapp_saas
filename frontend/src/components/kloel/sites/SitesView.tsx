@@ -2,7 +2,7 @@
 
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, startTransition } from 'react';
+import { useCallback, startTransition, useState } from 'react';
 import { SORA, EMBER, TEXT, TEXT_DIM } from './SitesViewIcons';
 import { SITE_TABS } from './SitesView.tabs';
 import { VisaoGeral } from './VisaoGeral';
@@ -15,19 +15,24 @@ import { Protecao } from './Protecao';
 import { useSites } from '@/hooks/useSites';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 
+type PendingSitesTab = { id: string; fromPathname: string | null };
+
 export default function SitesView({ defaultTab = 'visao-geral' }: { defaultTab?: string }) {
   const { isMobile } = useResponsiveViewport();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const tab = defaultTab;
+  const [pendingTab, setPendingTab] = useState<PendingSitesTab | null>(null);
+  const tab = pendingTab?.fromPathname === pathname ? pendingTab.id : defaultTab;
 
   const rawMode = searchParams?.get('mode') ?? null;
+  const modeForActiveTab = tab === defaultTab ? rawMode : null;
   const workspaceId = useWorkspaceId();
   const { sites, isLoading: sitesLoading, error: sitesError } = useSites(workspaceId);
 
   const switchTab = useCallback((id: string) => {
     const nextRoute = id === 'visao-geral' ? '/sites' : `/sites/${id}`;
+    setPendingTab({ id, fromPathname: pathname });
     if (pathname === nextRoute) {return;}
     startTransition(() => { router.push(nextRoute); });
   }, [pathname, router]);
@@ -53,8 +58,8 @@ export default function SitesView({ defaultTab = 'visao-geral' }: { defaultTab?:
         {tab === 'visao-geral' && <VisaoGeral switchTab={switchTab} sites={sites} loading={sitesLoading} error={sitesError} />}
         {tab === 'dominios' && <Dominios workspaceId={workspaceId} sites={sites} loading={sitesLoading} />}
         {tab === 'hospedagem' && <Hospedagem sites={sites} loading={sitesLoading} error={sitesError} />}
-        {tab === 'criar' && (rawMode ? <CriarSite mode={rawMode} /> : <CriarSite />)}
-        {tab === 'editar' && (rawMode ? <EditarSite mode={rawMode} /> : <EditarSite />)}
+        {tab === 'criar' && (modeForActiveTab ? <CriarSite mode={modeForActiveTab} /> : <CriarSite />)}
+        {tab === 'editar' && (modeForActiveTab ? <EditarSite mode={modeForActiveTab} /> : <EditarSite />)}
         {tab === 'apps' && (
           <Apps workspaceId={workspaceId} sites={sites} loading={sitesLoading} error={sitesError} />
         )}
