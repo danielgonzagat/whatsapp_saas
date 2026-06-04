@@ -24,6 +24,8 @@ export function detectPaymentsWalletIntent(msg: string): ActionIntent {
   }
 
   // ── CARTEIRA ── (saque antes de saldo, extrato antes de saldo/carteira)
+  // Anticipation match is anchored to the "antecipa" stem only — a bare c[aã]o
+  // alternative used to match any "cao"/"ção" word and mis-fire this financial tool.
   if (/saque|solicitar saque|(?:quero|preciso|gostaria|vou)\s+sacar/.test(msg)) {
     return { tool: 'request_withdrawal', args: {} };
   }

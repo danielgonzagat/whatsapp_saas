@@ -113,6 +113,7 @@ import { AdRulesEngineService } from './ad-rules-engine.service';
 import { AdRulesController } from './ad-rules.controller';
 import { CanvasController } from './canvas.controller';
 import { CartRecoveryService } from './cart-recovery.service';
+import { CheckoutEventEmitterService } from './checkout-emitter/checkout-event-emitter.service';
 import { DiagnosticsController } from './diagnostics.controller';
 import { EmailCampaignService } from './email-campaign.service';
 import { KloelAudioModule } from './kloel-audio.module';
@@ -404,6 +405,7 @@ import { CrmModule } from '../crm/crm.module';
     AdRulesEngineService,
     EmailCampaignService,
     CartRecoveryService,
+    CheckoutEventEmitterService,
     WebhooksService,
     WebhookDispatcherService,
     MindCapabilityRegistry,
