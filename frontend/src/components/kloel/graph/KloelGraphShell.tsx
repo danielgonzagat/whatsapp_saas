@@ -52,7 +52,10 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
   const [recenterNonce, setRecenterNonce] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [graphSettings, setGraphSettings] = useState(createDefaultKloelGraphSettings);
-  const [pendingNodeId, setPendingNodeId] = useState<string | null>(null);
+  const [pendingNode, setPendingNode] = useState<{
+    readonly id: string;
+    readonly routeSignature: string;
+  } | null>(null);
 
   const params = useMemo(() => new URLSearchParams(searchParams.toString()), [searchParams]);
   const graphProducts = useMemo(
@@ -67,6 +70,7 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
   );
   const activeNode = resolveKloelGraphNodeForPathFromNodes(pathname, params, graphNodes);
   const routeSignature = `${pathname}?${params.toString()}`;
+  const pendingNodeId = pendingNode?.routeSignature === routeSignature ? pendingNode.id : null;
   const activeRouteKey = activeNode?.id ?? routeSignature;
   const graphOnly = params.get('graph') === '1';
   const graphAction = params.get('graphAction');
@@ -86,12 +90,9 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
       } catch {}
     }
   }, [router]);
-  useEffect(() => {
-    setPendingNodeId(null);
-  }, [routeSignature]);
 
   const closeOverlay = useCallback(() => {
-    setPendingNodeId(null);
+    setPendingNode(null);
     const nextParams = new URLSearchParams(searchParams.toString());
     nextParams.set('graph', '1');
     nextParams.delete('graphAction');
@@ -117,21 +118,21 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
   const openNode = useCallback(
     (node: KloelGraphNode) => {
       if (node.id === 'kloel-search') {
-        setPendingNodeId(null);
+        setPendingNode(null);
         setPaletteMode('full');
         openPalette({ initialQuery: '' });
         return;
       }
       if (node.id === 'kloel-recents') {
-        setPendingNodeId(null);
+        setPendingNode(null);
         setPaletteMode('conversations');
         openPalette({ initialQuery: '' });
         return;
       }
-      setPendingNodeId(node.id);
+      setPendingNode({ id: node.id, routeSignature });
       router.push(node.route);
     },
-    [openPalette, router],
+    [openPalette, routeSignature, router],
   );
 
   const focusGalaxy = useCallback(
@@ -176,7 +177,7 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
         recenterNonce={recenterNonce}
         settings={graphSettings}
         onOpenNode={openNode}
-        onClearSelection={() => setPendingNodeId(null)}
+        onClearSelection={() => setPendingNode(null)}
       />
       {settingsOpen && (
         <KloelGraphSettingsPanel
