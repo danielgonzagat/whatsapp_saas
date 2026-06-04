@@ -162,7 +162,6 @@ export class ProductCampaignController {
     );
   }
 
-
   /** Create. */
   @Post()
   async create(
@@ -199,7 +198,6 @@ export class ProductCampaignController {
       deliveryReadiness,
     );
   }
-
 
   /** Update. */
   @Put(':campaignId')
@@ -241,7 +239,6 @@ export class ProductCampaignController {
       deliveryReadiness,
     );
   }
-
 
   /** Launch. */
   @Post(':campaignId/launch')

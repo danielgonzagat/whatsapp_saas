@@ -31,6 +31,112 @@ export interface AiConfigShape {
   };
 }
 
+export type AiObjectionDraft = { id: string; label: string; response: string };
+
+export type AiConfigDraftInput = {
+  whobuys: string;
+  pains: string;
+  promise: string;
+  objs: AiObjectionDraft[];
+  tone: string;
+  persist: string;
+  msgLimit: string;
+  followUp: string;
+  autoLink: boolean;
+  offerDisc: boolean;
+  useUrg: boolean;
+};
+
+export type AiConfigSavePayload = {
+  customerProfile: { whobuys: string; pains: string; promise: string };
+  objections: Array<{ label: string; response: string }>;
+  tone: string;
+  persistenceLevel: number;
+  messageLimit: number;
+  followUpConfig: {
+    schedule: string;
+    autoCheckoutLink: boolean;
+    offerDiscount: boolean;
+    useUrgency: boolean;
+  };
+  salesArguments: {
+    autoCheckoutLink: boolean;
+    offerDiscount: boolean;
+    useUrgency: boolean;
+  };
+};
+
+export type AiConfigPayloadResult =
+  | { ok: true; payload: AiConfigSavePayload }
+  | { ok: false; error: string };
+
+export const AI_CONFIG_OBJECTION_ERROR = 'Preencha a objecao e a resposta antes de salvar.';
+export const AI_CONFIG_PERSISTENCE_ERROR = 'A persistencia precisa ficar entre 1 e 5.';
+export const AI_CONFIG_MESSAGE_LIMIT_ERROR =
+  'O limite de mensagens precisa ser zero ou um inteiro positivo.';
+
+function parseIntegerField(value: string): number | null {
+  const trimmed = value.trim();
+  if (!/^-?\d+$/.test(trimmed)) {
+    return null;
+  }
+  return Number.parseInt(trimmed, 10);
+}
+
+export function buildAIConfigPayload(input: AiConfigDraftInput): AiConfigPayloadResult {
+  const objections: Array<{ label: string; response: string }> = [];
+
+  for (const objection of input.objs) {
+    const label = objection.label.trim();
+    const response = objection.response.trim();
+
+    if (!label && !response) {
+      continue;
+    }
+    if (!label || !response) {
+      return { ok: false, error: AI_CONFIG_OBJECTION_ERROR };
+    }
+
+    objections.push({ label, response });
+  }
+
+  const persistenceLevel = parseIntegerField(input.persist);
+  if (persistenceLevel === null || persistenceLevel < 1 || persistenceLevel > 5) {
+    return { ok: false, error: AI_CONFIG_PERSISTENCE_ERROR };
+  }
+
+  const messageLimit = parseIntegerField(input.msgLimit);
+  if (messageLimit === null || messageLimit < 0) {
+    return { ok: false, error: AI_CONFIG_MESSAGE_LIMIT_ERROR };
+  }
+
+  return {
+    ok: true,
+    payload: {
+      customerProfile: {
+        whobuys: input.whobuys.trim(),
+        pains: input.pains.trim(),
+        promise: input.promise.trim(),
+      },
+      objections,
+      tone: input.tone,
+      persistenceLevel,
+      messageLimit,
+      followUpConfig: {
+        schedule: input.followUp.trim() || '2h,24h,72h',
+        autoCheckoutLink: input.autoLink,
+        offerDiscount: input.offerDisc,
+        useUrgency: input.useUrg,
+      },
+      salesArguments: {
+        autoCheckoutLink: input.autoLink,
+        offerDiscount: input.offerDisc,
+        useUrgency: input.useUrg,
+      },
+    },
+  };
+}
+
 export function useAIConfig(productId: string) {
   const { showToast } = useToast();
 

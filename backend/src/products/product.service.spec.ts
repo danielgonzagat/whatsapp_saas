@@ -125,7 +125,7 @@ describe('ProductService', () => {
       const result = await service.create(ws, dto, actor);
 
       expect(prisma.product.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ status: 'APPROVED', active: true }),
+        data: objectContaining({ status: 'APPROVED', active: true }),
       });
       expect(result.product?.status).toBe('APPROVED');
       expect(result.product?.active).toBe(true);

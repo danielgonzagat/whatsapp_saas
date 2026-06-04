@@ -40,7 +40,7 @@ function toHexChannel(value: number) {
   return Math.min(255, Math.max(0, value)).toString(16).padStart(2, '0');
 }
 
-function normalizeColorPickerValue(value: string, fallback = '#000000') {
+function normalizeColorPickerValue(value: string, fallback = V.t) {
   const candidates = [value, fallback];
   for (const candidate of candidates) {
     const trimmed = String(candidate || '').trim();
@@ -52,7 +52,7 @@ function normalizeColorPickerValue(value: string, fallback = '#000000') {
       return `#${toHexChannel(Number(rgb[1]))}${toHexChannel(Number(rgb[2]))}${toHexChannel(Number(rgb[3]))}`;
     }
   }
-  return '#000000';
+  return V.t;
 }
 
 

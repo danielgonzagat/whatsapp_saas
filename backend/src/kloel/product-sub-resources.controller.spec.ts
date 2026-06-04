@@ -240,9 +240,11 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
           findMany: jest.fn().mockResolvedValue([]),
         },
         productCampaign: {
-          findMany: jest.fn().mockResolvedValue([
-            { id: 'pc-ready', productId: PROD_A, name: 'Launch', code: 'LCH' },
-          ]),
+          findMany: jest
+            .fn()
+            .mockResolvedValue([
+              { id: 'pc-ready', productId: PROD_A, name: 'Launch', code: 'LCH' },
+            ]),
         },
       });
       const localController = mod.get(ProductCampaignController);

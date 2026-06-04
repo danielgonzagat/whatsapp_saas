@@ -129,7 +129,7 @@ export function ProductNerveCenterAvalTab() {
                 padding: '9px 11px',
                 borderRadius: 6,
                 border: `1px solid ${V.r}`,
-                background: 'color-mix(in srgb, #ff3b30 14%, transparent)',
+                background: `color-mix(in srgb, ${V.r} 14%, transparent)`,
                 color: V.t,
                 fontSize: 11,
               }}

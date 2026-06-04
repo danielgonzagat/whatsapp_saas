@@ -48,7 +48,7 @@ function StepDot({ kind }: { kind: 'thinking' | 'tool' | 'done' }) {
     top: 1,
     width: 21,
     height: 21,
-    borderRadius: '50%',
+    borderRadius: 12,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -57,7 +57,7 @@ function StepDot({ kind }: { kind: 'thinking' | 'tool' | 'done' }) {
   };
   if (kind === 'tool') {
     return (
-      <span style={{ ...base, borderRadius: 5, background: NESTED, border: `1px solid ${DIVIDER}` }}>
+      <span style={{ ...base, borderRadius: 6, background: NESTED, border: `1px solid ${DIVIDER}` }}>
         <FileText size={11} strokeWidth={1.9} aria-hidden="true" />
       </span>
     );
@@ -82,7 +82,7 @@ function ThinkingDots() {
           style={{
             width: 5,
             height: 5,
-            borderRadius: '50%',
+            borderRadius: 6,
             background: TERTIARY,
             animation: `rtl-bounce 1.2s ${dot * 0.16}s infinite`,
           }}
@@ -349,7 +349,7 @@ export function ReasoningTimeline({
               style={{
                 width: 40,
                 height: 40,
-                borderRadius: 10,
+                borderRadius: 12,
                 background: NESTED,
                 border: `1px solid ${DIVIDER}`,
                 display: 'flex',
@@ -390,7 +390,7 @@ export function ReasoningTimeline({
                   border: `1px solid color-mix(in srgb, ${E} 22%, ${DIVIDER})`,
                   background: `color-mix(in srgb, ${E} 10%, ${SURFACE})`,
                   color: E,
-                  borderRadius: 9,
+                  borderRadius: 8,
                   padding: '8px 14px',
                   fontFamily: F,
                   fontSize: 13,

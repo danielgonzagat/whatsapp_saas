@@ -173,7 +173,6 @@ export function createKloelPublicStreamingLabel(_message: string): string {
   return '';
 }
 
-
 /** Create kloel thread event. */
 export function createKloelThreadEvent(
   conversationId: string,
