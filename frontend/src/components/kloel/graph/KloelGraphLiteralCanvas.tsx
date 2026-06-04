@@ -273,25 +273,43 @@ export function KloelGraphLiteralCanvas({
 
   useEffect(() => {
     let raf = 0;
+    let cancelled = false;
+    const visibleIds = new Set(visibleNodes.map((node) => node.id));
     const loop = () => {
-      const alpha = alphaRef.current;
-      const visibleIds = new Set(visibleNodes.map((node) => node.id));
-      const visibleLiveNodes = nodesRef.current.filter((node) => visibleIds.has(node.id));
-      if (alpha > 0.004 || draggingId) {
-        physicsTick(
-          visibleLiveNodes,
-          visibleEdges,
-          settings.forces,
-          draggingId ? Math.max(alpha, 0.3) : alpha,
-          degreeMap,
-        );
-        alphaRef.current = alpha + (0 - alpha) * 0.0228;
-        forceRender();
+      if (cancelled) {
+        return;
       }
-      raf = requestAnimationFrame(loop);
+      const alpha = alphaRef.current;
+      const shouldTick = alpha > 0.004 || Boolean(draggingId);
+      if (!shouldTick) {
+        alphaRef.current = 0;
+        raf = 0;
+        return;
+      }
+      const visibleLiveNodes = nodesRef.current.filter((node) => visibleIds.has(node.id));
+      physicsTick(
+        visibleLiveNodes,
+        visibleEdges,
+        settings.forces,
+        draggingId ? Math.max(alpha, 0.3) : alpha,
+        degreeMap,
+      );
+      alphaRef.current = alpha + (0 - alpha) * 0.0228;
+      forceRender();
+      if (alphaRef.current > 0.004 || draggingId) {
+        raf = requestAnimationFrame(loop);
+        return;
+      }
+      alphaRef.current = 0;
+      raf = 0;
     };
     raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelled = true;
+      if (raf) {
+        cancelAnimationFrame(raf);
+      }
+    };
   }, [degreeMap, draggingId, forceRender, settings.forces, visibleEdges, visibleNodes]);
 
   useEffect(() => {
@@ -828,7 +846,7 @@ function colorForNode(
     return focusSet.has(node.id) ? C.ember : C.dim;
   }
   if (node.parentId === SUN_OF_AREA[focusedArea]) {
-    return C.ember;
+    return C.text;
   }
   return C.dim;
 }

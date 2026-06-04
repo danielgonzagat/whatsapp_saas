@@ -121,6 +121,25 @@ describe('KloelGraphShell', () => {
     );
   });
 
+  it('keeps ember node emphasis transient instead of tinting the focused galaxy permanently', async () => {
+    pathname = '/products';
+    searchParams = new URLSearchParams('graph=1');
+
+    const { container } = renderShell(<main>ProdutosView hidden</main>);
+    const getProductsCircle = () =>
+      container.querySelector('circle[data-node-id="criar-products"]') as SVGCircleElement | null;
+
+    await waitFor(() => expect(getProductsCircle()).toBeTruthy());
+    expect(getProductsCircle()?.getAttribute('fill')).not.toBe('rgb(232,93,48)');
+
+    const productsNode = screen.getByRole('button', { name: 'Abrir Meus produtos' });
+    fireEvent.pointerEnter(productsNode);
+    expect(getProductsCircle()?.getAttribute('fill')).toBe('rgb(232,93,48)');
+
+    fireEvent.pointerLeave(productsNode);
+    await waitFor(() => expect(getProductsCircle()?.getAttribute('fill')).not.toBe('rgb(232,93,48)'));
+  });
+
   it('lets floating navigation recenter graph-only mode away from the active route', async () => {
     pathname = '/chat';
     searchParams = new URLSearchParams('graph=1');
@@ -139,7 +158,7 @@ describe('KloelGraphShell', () => {
   });
 
   it('navigates by node clicks without opening on drag movement', () => {
-    renderShell();
+    const { container } = renderShell();
 
     fireEvent.pointerDown(screen.getByRole('button', { name: 'Abrir Afiliar' }), {
       clientX: 10,
@@ -150,6 +169,9 @@ describe('KloelGraphShell', () => {
       clientY: 11,
     });
     expect(push).toHaveBeenCalledWith('/produtos/afiliar-se');
+    expect(container.querySelector('circle[data-node-id="afiliar"]')?.getAttribute('stroke')).toBe(
+      'rgb(232,93,48)',
+    );
 
     push.mockClear();
     fireEvent.pointerDown(screen.getByRole('button', { name: 'Abrir Educar' }), {
