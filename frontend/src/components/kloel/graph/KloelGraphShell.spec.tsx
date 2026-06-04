@@ -69,6 +69,7 @@ import { KloelGraphShell } from './KloelGraphShell';
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   pathname = '/products';
   searchParams = new URLSearchParams();
   memberAreas = [
@@ -140,7 +141,8 @@ describe('KloelGraphShell', () => {
     await waitFor(() => expect(getProductsCircle()?.getAttribute('fill')).not.toBe('rgb(232,93,48)'));
   });
 
-  it('uses floating navigation as route navigation in graph-only mode', async () => {
+  it('uses shallow floating navigation in graph-only mode', async () => {
+    const pushState = vi.spyOn(window.history, 'pushState');
     pathname = '/chat';
     searchParams = new URLSearchParams('graph=1');
 
@@ -155,10 +157,12 @@ describe('KloelGraphShell', () => {
 
     expect(educarNav.style.background).toBe('rgb(24, 24, 28)');
     expect(kloelNav.style.background).toBe('transparent');
-    expect(push).toHaveBeenCalledWith('/produtos/area-membros?graph=1');
+    expect(pushState).toHaveBeenCalledWith(null, '', '/produtos/area-membros?graph=1');
+    expect(push).not.toHaveBeenCalled();
   });
 
-  it('uses floating navigation as route navigation when an overlay is open', () => {
+  it('uses shallow floating navigation when an overlay is open', () => {
+    const pushState = vi.spyOn(window.history, 'pushState');
     pathname = '/chat';
     searchParams = new URLSearchParams();
 
@@ -166,7 +170,8 @@ describe('KloelGraphShell', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Criar' }));
 
-    expect(push).toHaveBeenCalledWith('/products?graph=1');
+    expect(pushState).toHaveBeenCalledWith(null, '', '/products?graph=1');
+    expect(push).not.toHaveBeenCalled();
   });
 
   it('navigates by node clicks without opening on drag movement', () => {
@@ -310,20 +315,25 @@ describe('KloelGraphShell', () => {
   });
 
   it('closes the overlay on outside click while preserving clicks inside the real screen', () => {
+    const pushState = vi.spyOn(window.history, 'pushState');
     const { container } = renderShell(<main>ProdutosView real</main>);
 
     fireEvent.click(screen.getByRole('dialog', { name: /Produtos/i }));
     expect(push).not.toHaveBeenCalled();
+    expect(pushState).not.toHaveBeenCalled();
 
     fireEvent.click(container.querySelector('[role="dialog"]')?.parentElement as Element);
-    expect(push).toHaveBeenCalledWith('/products?graph=1');
+    expect(pushState).toHaveBeenCalledWith(null, '', '/products?graph=1');
+    expect(push).not.toHaveBeenCalled();
   });
 
   it('closes the overlay back to graph-only mode on the current node route', () => {
+    const pushState = vi.spyOn(window.history, 'pushState');
     renderShell();
 
     fireEvent.click(screen.getByRole('button', { name: 'Fechar overlay do grafo' }));
 
-    expect(push).toHaveBeenCalledWith('/products?graph=1');
+    expect(pushState).toHaveBeenCalledWith(null, '', '/products?graph=1');
+    expect(push).not.toHaveBeenCalled();
   });
 });

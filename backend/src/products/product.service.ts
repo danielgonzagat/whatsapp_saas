@@ -52,7 +52,7 @@ export class ProductService {
    */
   async create(
     workspaceId: string,
-    dto: CreateProductDto,
+    dto: CreateProductDto | Prisma.ProductUncheckedCreateInput,
     actor?: { id: string; email?: string },
   ): Promise<ProductResult> {
     const resolvedActor = actor ?? { id: 'kloel-resolver' };

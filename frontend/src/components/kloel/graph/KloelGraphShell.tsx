@@ -57,6 +57,17 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
     readonly routeSignature: string;
   } | null>(null);
 
+  const pushGraphOnlyRoute = useCallback(
+    (url: string) => {
+      if (typeof window !== 'undefined') {
+        window.history.pushState(null, '', url);
+        return;
+      }
+      router.push(url);
+    },
+    [router],
+  );
+
   const params = useMemo(() => new URLSearchParams(searchParams.toString()), [searchParams]);
   const graphProducts = useMemo(
     () => mergeGraphProducts(products, checkoutProducts),
@@ -97,8 +108,8 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
     nextParams.set('graph', '1');
     nextParams.delete('graphAction');
     const query = nextParams.toString();
-    router.push(`${pathname}${query ? `?${query}` : ''}`);
-  }, [pathname, router, searchParams]);
+    pushGraphOnlyRoute(`${pathname}${query ? `?${query}` : ''}`);
+  }, [pathname, pushGraphOnlyRoute, searchParams]);
 
   useEffect(() => {
     if (graphOnly || paletteProps.open) {
@@ -152,9 +163,9 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
       nextParams.delete('graphAction');
       setPendingNode(null);
       const query = nextParams.toString();
-      router.push(`${path}${query ? `?${query}` : ''}`);
+      pushGraphOnlyRoute(`${path}${query ? `?${query}` : ''}`);
     },
-    [activeRouteKey, graphOnly, router],
+    [activeRouteKey, pushGraphOnlyRoute],
   );
 
   const toggleSettings = useCallback(() => {

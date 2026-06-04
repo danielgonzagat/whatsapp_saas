@@ -32,6 +32,7 @@ import {
 } from './KloelDashboard.message.helpers';
 import {
   getAssistantReasoning,
+  withDeliverableFiles,
   getAssistantProcessingTrace,
   getAssistantResponseVersions,
   summarizeAssistantProcessingTrace,
@@ -461,7 +462,7 @@ export function MessageBlock({
       }}
     >
       <ReasoningTimeline
-        reasoning={reasoning}
+        reasoning={withDeliverableFiles(reasoning, visibleAssistantText)}
         steps={processingTrace}
         fallbackSummary={processingSummary}
         isProcessing={isThinking}

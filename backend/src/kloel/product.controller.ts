@@ -247,7 +247,7 @@ export class ProductController {
       ? (
           await this.productService.create(
             workspaceId,
-            createData as unknown as Parameters<ProductService['create']>[1],
+            createData as Prisma.ProductUncheckedCreateInput,
             actor,
           )
         ).product
