@@ -125,14 +125,18 @@ export function ReasoningTimeline({
 
   const reasoningGist =
     reasoning.text.trim().split(/(?<=[.!?])\s/)[0]?.trim().slice(0, 96) || '';
-  const headerSummary =
-    reasoning.summary.trim() ||
-    reasoningGist ||
-    (toolSteps.length === 0 ? fallbackSummary.trim() : '');
+  const visibleFallbackSummary = fallbackSummary.trim();
+  const headerSummary = reasoning.summary.trim() || visibleFallbackSummary || reasoningGist;
   const durationLabel =
     reasoning.durationMs && reasoning.durationMs > 0
       ? `${kloelT(`Pensou por`)} ${formatDuration(reasoning.durationMs)}`
       : '';
+  const shouldShowFallbackSummary =
+    visibleFallbackSummary.length > 0 &&
+    visibleFallbackSummary !== reasoning.text.trim() &&
+    visibleFallbackSummary !== reasoning.summary.trim() &&
+    visibleFallbackSummary !== headerSummary;
+
 
   return (
     <div style={{ marginBottom: 14, fontFamily: F }}>
@@ -225,6 +229,11 @@ export function ReasoningTimeline({
                         animation: 'rtl-blink 1.05s steps(1) infinite',
                       }}
                     />
+                  ) : null}
+                  {shouldShowFallbackSummary ? (
+                    <div style={{ marginTop: 8, fontSize: 13.5, lineHeight: 1.6, color: MUTED }}>
+                      {visibleFallbackSummary}
+                    </div>
                   ) : null}
                 </div>
               </div>
