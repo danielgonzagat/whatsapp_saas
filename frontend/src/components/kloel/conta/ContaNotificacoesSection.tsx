@@ -2,6 +2,8 @@
 import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
+import { SectionCard } from './ContaShared';
+import { SORA } from './ContaConstants';
 
 export default function NotificacoesSection() {
   return (
@@ -28,5 +30,3 @@ export default function NotificacoesSection() {
   );
 }
 
-import { SectionCard } from './ContaShared';
-import { SORA } from './ContaConstants';
