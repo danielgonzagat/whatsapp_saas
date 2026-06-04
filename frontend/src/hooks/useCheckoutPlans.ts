@@ -568,7 +568,14 @@ export function useCheckoutConfig(planId: string | null) {
         method: 'PATCH',
         body: clean,
       });
-      requireCheckoutMutationSuccess(res, 'Erro ao atualizar configuracao do checkout');
+      // /config returns the config object, not a mutation envelope — checking
+      // apiFetch's own error field is the correct success criterion (a 200 here
+      // has no success-marker, which would make requireCheckoutMutationSuccess
+      // throw a false error on a save that actually persisted).
+      const resError = (res as { error?: unknown }).error;
+      if (typeof resError === 'string' && resError.trim()) {
+        throw new Error(resError);
+      }
       mutate();
       return res;
     },
