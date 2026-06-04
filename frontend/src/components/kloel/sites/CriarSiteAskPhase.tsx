@@ -7,9 +7,11 @@ import { IC, FmtMoney, SORA, MONO, EMBER, TEXT, TEXT_DIM, BORDER, BG_CARD } from
 import { Btn, Card, SectionLabel, Badge } from './SitesViewAtoms';
 import type { SiteItem } from './SitesViewIcons';
 
+type PromptSetter = (value: string | ((previous: string) => string)) => void;
+
 interface AskPhaseProps {
   prompt: string;
-  setPrompt: (v: string) => void;
+  setPrompt: PromptSetter;
   handleGenerate: () => void;
   error: string;
   productList: Array<{ name: string; price: number }>;
@@ -84,6 +86,9 @@ export function CriarSiteAskPhase({
       )}
 
       <textarea
+        id="site-generation-prompt"
+        name="siteGenerationPrompt"
+        aria-label="Prompt do site"
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
         placeholder={kloelT(`Ex: Landing page para venda de curso de marketing digital, com secao de depoimentos e botao de compra...`)}
@@ -121,7 +126,15 @@ export function CriarSiteAskPhase({
                 <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT_DIM }}>
                   {site.updatedAt ? new Date(site.updatedAt).toLocaleDateString('pt-BR') : ''}
                 </span>
-                <button type="button" onClick={() => handleDelete(site.id)}
+                <button
+                  type="button"
+                  aria-label={`Excluir ${site.name || 'Site sem titulo'}`}
+                  onClick={() => {
+                    const siteName = site.name || 'Site sem titulo';
+                    if (confirm(`Excluir o site "${siteName}"? Esta acao nao pode ser desfeita.`)) {
+                      handleDelete(site.id);
+                    }
+                  }}
                   style={{ fontFamily: MONO, fontSize: 10, padding: '2px 8px', borderRadius: 4, border: `1px solid ${BORDER}`, background: 'transparent', color: colors.semantic.error, cursor: 'pointer' }}>
                   X
                 </button>
