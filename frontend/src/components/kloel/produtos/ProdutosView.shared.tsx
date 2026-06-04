@@ -4,7 +4,7 @@ import { colors } from '@/lib/design-tokens';
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { secureRandomFloat } from '@/lib/secure-random';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type React from 'react';
 import type { LiveFeedEvent } from './ProdutosView.types';
 import { formatBRL } from '@/lib/common/money';
@@ -169,6 +169,10 @@ export function NP({
 }) {
   const prefersReducedMotion = usePrefersReducedMotion({ defaultValue: true });
   const ref = useRef<HTMLCanvasElement>(null);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const staticWave = Array.from({ length: Math.max(2, Math.floor(w / 2)) }, (_, index) => {
     const x = (index / (Math.max(2, Math.floor(w / 2)) - 1)) * w;
@@ -230,9 +234,9 @@ export function NP({
       cancelAnimationFrame(raf);
       obs.disconnect();
     };
-  }, [w, h, color, prefersReducedMotion]);
+  }, [w, h, color, prefersReducedMotion, mounted]);
 
-  if (prefersReducedMotion) {
+  if (!mounted || prefersReducedMotion) {
     return (
       <svg
         width={w}
