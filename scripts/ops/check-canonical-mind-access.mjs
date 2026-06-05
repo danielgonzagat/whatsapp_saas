@@ -5,13 +5,17 @@
  * ANTI-REGRESSION GATE — locks in the Brain → Mind memory/message
  * canonicalization (ADR-0013).
  *
- * The canonical surface for reading/writing the `RAC_KloelMemory` and
- * `RAC_KloelMessage` tables is the Mind alias layer:
+ * The canonical surface for reading/writing the `RAC_KloelMemory`,
+ * `RAC_KloelMessage`, and `RAC_ChatMessage` tables is the Mind alias layer:
  *   - `MindMemoryItemService.items`  (backend/src/kloel/mind/aliases/mind-memory-item.service.ts)
  *   - `MindMessageService.items`     (backend/src/kloel/mind/aliases/mind-message.service.ts)
+ *   - `MindChatMessageService.items` (backend/src/kloel/mind/aliases/mind-chat-message.service.ts)
  *
- * New code MUST NOT reach into `prisma.kloelMemory` / `prisma.kloelMessage`
- * (or `this.prisma.kloelMemory` / `this.prisma.kloelMessage`) directly. The
+ * `RAC_ChatMessage` (dashboard/thread chat) is a SEPARATE physical table from
+ * `RAC_KloelMessage` (brain) — no table merge; each alias targets its own row.
+ *
+ * New code MUST NOT reach into `prisma.kloelMemory` / `prisma.kloelMessage` /
+ * `prisma.chatMessage` (or the `this.`-qualified forms) directly. The
  * supported escapes are the canonical alias services, the documented
  * `?? …prisma.kloelMemory` fallback-getter idiom, transactional access inside
  * a `$transaction(tx => …)` callback, and a small explicitly grandfathered
@@ -46,9 +50,13 @@ const REPORT = process.argv.includes('--report');
 const PRISMA = 'prisma';
 const KLOEL_MEMORY = ['kloel', 'Memory'].join('');
 const KLOEL_MESSAGE = ['kloel', 'Message'].join('');
+// `RAC_ChatMessage` (dashboard/thread chat) — a SEPARATE physical table from
+// `RAC_KloelMessage`. Its canonical Mind surface is MindChatMessageService.items
+// (backend/src/kloel/mind/aliases/mind-chat-message.service.ts). No table merge.
+const CHAT_MESSAGE = ['chat', 'Message'].join('');
 
 const FORBIDDEN_RE = new RegExp(
-  ['\\b', PRISMA, '\\.(?:', KLOEL_MEMORY, '|', KLOEL_MESSAGE, ')\\b'].join(''),
+  ['\\b', PRISMA, '\\.(?:', KLOEL_MEMORY, '|', KLOEL_MESSAGE, '|', CHAT_MESSAGE, ')\\b'].join(''),
 );
 
 // Documented safe fallback-getter idiom: `… ?? <anything>prisma.kloelMemory`.
@@ -56,17 +64,29 @@ const FORBIDDEN_RE = new RegExp(
 // "use the canonical Mind delegate, fall back to raw prisma when DI is absent"
 // shape (`mindMemory?.items ?? this.prisma.kloelMemory`).
 const FALLBACK_RE = new RegExp(
-  ['\\?\\?\\s*[\\w.]*', PRISMA, '\\.(?:', KLOEL_MEMORY, '|', KLOEL_MESSAGE, ')\\b'].join(''),
+  [
+    '\\?\\?\\s*[\\w.]*',
+    PRISMA,
+    '\\.(?:',
+    KLOEL_MEMORY,
+    '|',
+    KLOEL_MESSAGE,
+    '|',
+    CHAT_MESSAGE,
+    ')\\b',
+  ].join(''),
 );
 
-// Transactional access inside a `$transaction(tx => …)` callback.
-const TX_RE = /\btx\.kloelM/;
+// Transactional access inside a `$transaction(tx => …)` callback. Covers both
+// `tx.kloelMemory` / `tx.kloelMessage` and `tx.chatMessage` — the tx client is
+// the legitimate transactional surface, not the alias service.
+const TX_RE = new RegExp(['\\btx\\.(?:', 'kloelM', '|', CHAT_MESSAGE, ')'].join(''));
 
 // DI default-parameter idiom: `memoryItems: PrismaService['kloelMemory'] = prisma.kloelMemory`.
 // The default VALUE is a raw delegate; the canonical caller always passes the
 // Mind surface. Byte-identical, zero behaviour drift.
 const DI_DEFAULT_RE = new RegExp(
-  ['=\\s*', PRISMA, '\\.(?:', KLOEL_MEMORY, '|', KLOEL_MESSAGE, ')\\b'].join(''),
+  ['=\\s*', PRISMA, '\\.(?:', KLOEL_MEMORY, '|', KLOEL_MESSAGE, '|', CHAT_MESSAGE, ')\\b'].join(''),
 );
 
 // ---------------------------------------------------------------------------
@@ -76,6 +96,9 @@ const GRANDFATHERED_FILES = new Set([
   // The canonical alias services themselves — they ARE the wrapper.
   'backend/src/kloel/mind/aliases/mind-memory-item.service.ts',
   'backend/src/kloel/mind/aliases/mind-message.service.ts',
+  // Canonical alias for the SEPARATE RAC_ChatMessage table (dashboard/thread
+  // chat). This service IS the wrapper for `prisma.chatMessage`.
+  'backend/src/kloel/mind/aliases/mind-chat-message.service.ts',
   // Deferred file (uses `prismaExt`, on the documented deferred list).
   'backend/src/kloel/conversational-onboarding-tools.service.ts',
 ]);
@@ -92,6 +115,34 @@ const GRANDFATHERED_DIRECT = new Map([
   [
     'backend/src/kloel/mind/policy/mind-policy.helpers.ts',
     [`await ${PRISMA}.${KLOEL_MEMORY}.upsert(`],
+  ],
+  // Pure-fn helpers receiving prisma as a parameter (`ctx.prisma` / `deps.prisma`
+  // / bare `prisma`). They have NO DI ctor to inject MindChatMessageService into,
+  // so canonical convergence happens caller-side (deferred — tracked as a
+  // partial in the chatmessage-converge task). Each statement is pinned with its
+  // receiver prefix so a NEW direct chatMessage access in these files still fails.
+  [
+    'backend/src/gdpr/gdpr-processing.helpers.ts',
+    [`ctx.${PRISMA}.${CHAT_MESSAGE}.findMany(`],
+  ],
+  [
+    'backend/src/kloel/kloel-thread.controller-helpers.ts',
+    [
+      `deps.${PRISMA}.${CHAT_MESSAGE}.findMany(`,
+      `deps.${PRISMA}.${CHAT_MESSAGE}.create(`,
+      `deps.${PRISMA}.${CHAT_MESSAGE}.findFirst(`,
+      `deps.${PRISMA}.${CHAT_MESSAGE}.updateMany(`,
+      `deps.${PRISMA}.${CHAT_MESSAGE}.findFirstOrThrow(`,
+    ],
+  ],
+  [
+    'backend/src/kloel/kloel-thinker.helpers.ts',
+    [
+      `${PRISMA}.${CHAT_MESSAGE}.findMany(`,
+      `${PRISMA}.${CHAT_MESSAGE}.updateMany(`,
+      `${PRISMA}.${CHAT_MESSAGE}.deleteMany(`,
+      `${PRISMA}.${CHAT_MESSAGE}.findFirst(`,
+    ],
   ],
 ]);
 

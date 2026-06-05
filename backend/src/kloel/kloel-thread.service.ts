@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { MindChatMessageService } from './mind/aliases/mind-chat-message.service';
 import { isMindMessageDualWriteEnabled } from './mind/aliases/mindmessage-dualwrite.flag';
 import { type KloelStreamEvent } from './kloel-stream-events';
 import { normalizeRefinementMarkdown } from './kloel-composer.service.helpers';
@@ -40,8 +41,14 @@ export class KloelThreadService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly summaryService: KloelThreadSummaryService,
+    @Optional() private readonly mindChatMessage?: MindChatMessageService,
   ) {
     this.logger.log('KloelThreadService initialized');
+  }
+
+  /** Canonical Brain → Mind chat-message delegate (raw-Prisma fallback). */
+  private get chatMessageItems() {
+    return this.mindChatMessage?.items ?? this.prisma.chatMessage;
   }
 
   /**
@@ -120,7 +127,7 @@ export class KloelThreadService {
       return [];
     }
 
-    const messages = await this.prisma.chatMessage.findMany({
+    const messages = await this.chatMessageItems.findMany({
       where: workspaceId ? { threadId, thread: { workspaceId } } : { threadId },
       orderBy: { createdAt: 'desc' },
       take: limit,
@@ -147,10 +154,10 @@ export class KloelThreadService {
     });
 
     const countMessages =
-      typeof this.prisma.chatMessage.count === 'function'
-        ? this.prisma.chatMessage.count({ where: { threadId, thread: { workspaceId } } })
+      typeof this.chatMessageItems.count === 'function'
+        ? this.chatMessageItems.count({ where: { threadId, thread: { workspaceId } } })
         : (async () => {
-            const rows = await this.prisma.chatMessage.findMany({
+            const rows = await this.chatMessageItems.findMany({
               where: { threadId, thread: { workspaceId } },
               take: 10_000,
               select: { id: true },
@@ -202,7 +209,7 @@ export class KloelThreadService {
     if (!threadId) {
       return null;
     }
-    const created = await this.prisma.chatMessage.create({
+    const created = await this.chatMessageItems.create({
       data: {
         thread: { connect: { id: threadId } },
         workspaceId,
@@ -230,7 +237,7 @@ export class KloelThreadService {
       this.normalizeThreadMessageMetadataRecord(metadata).capability === 'refine_response'
         ? normalizeRefinementMarkdown(assistantMessage)
         : assistantMessage;
-    const created = await this.prisma.chatMessage.create({
+    const created = await this.chatMessageItems.create({
       data: {
         thread: { connect: { id: threadId } },
         workspaceId,

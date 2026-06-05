@@ -3,6 +3,7 @@ import { StructuredLogger } from '../logging/structured-logger';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { hasTextLlmApiKey } from '../lib/llm-provider';
 import { PrismaService } from '../prisma/prisma.service';
+import { MindChatMessageService } from './mind/aliases/mind-chat-message.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import OpenAI from 'openai';
@@ -27,7 +28,13 @@ export class KloelThreadSummaryService {
     private readonly prisma: PrismaService,
     private readonly planLimits: PlanLimitsService,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly mindChatMessage?: MindChatMessageService,
   ) {}
+
+  /** Canonical Brain → Mind chat-message delegate (raw-Prisma fallback). */
+  private get chatMessageItems() {
+    return this.mindChatMessage?.items ?? this.prisma.chatMessage;
+  }
 
   private buildFallbackThreadTitle(message: string): string {
     const cleaned = String(message || '')
@@ -177,10 +184,10 @@ export class KloelThreadSummaryService {
       select: { id: true, summary: true, summaryUpdatedAt: true },
     });
     const countMessages =
-      typeof this.prisma.chatMessage.count === 'function'
-        ? this.prisma.chatMessage.count({ where: { threadId, thread: { workspaceId } } })
+      typeof this.chatMessageItems.count === 'function'
+        ? this.chatMessageItems.count({ where: { threadId, thread: { workspaceId } } })
         : (async () => {
-            const rows = await this.prisma.chatMessage.findMany({
+            const rows = await this.chatMessageItems.findMany({
               where: { threadId, thread: { workspaceId } },
               take: 10_000,
               select: { id: true },
@@ -202,7 +209,7 @@ export class KloelThreadSummaryService {
       return;
     }
 
-    const olderMessages = await this.prisma.chatMessage.findMany({
+    const olderMessages = await this.chatMessageItems.findMany({
       where: { threadId, thread: { workspaceId } },
       orderBy: { createdAt: 'asc' },
       take: olderCount,

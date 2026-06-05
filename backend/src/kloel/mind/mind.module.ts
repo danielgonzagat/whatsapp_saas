@@ -19,6 +19,7 @@ import { MindSelfModelService } from './self-model/mind-self-model.service';
 import { MindPerceptionService } from './perception/mind-perception.service';
 import { MindPredictionService } from './mind-prediction.service';
 import { MindMessageService } from './aliases/mind-message.service';
+import { MindChatMessageService } from './aliases/mind-chat-message.service';
 import { MindMemoryItemService } from './aliases/mind-memory-item.service';
 import { MindCanonicalService } from './mind-canonical.service';
 
@@ -52,6 +53,7 @@ import { MindCanonicalService } from './mind-canonical.service';
     MindWorkspaceStateService,
     MindSelfModelService,
     MindMessageService,
+    MindChatMessageService,
     MindMemoryItemService,
     MindCanonicalService,
   ],
@@ -72,6 +74,7 @@ import { MindCanonicalService } from './mind-canonical.service';
     MindWorkspaceStateService,
     MindSelfModelService,
     MindMessageService,
+    MindChatMessageService,
     MindMemoryItemService,
     MindCanonicalService,
   ],
