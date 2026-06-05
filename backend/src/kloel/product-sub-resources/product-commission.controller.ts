@@ -25,12 +25,13 @@ import {
 } from './helpers/affiliate.helpers';
 import {
   LooseObject,
-  ensureWorkspaceProductAccess,
-  getWorkspaceId,
+  ensureWorkspaceProductAccess
 } from './helpers/common.helpers';
 
 /** Product commission controller. */
 import { RouteClass } from '../../common/throttler/route-class.decorator';
+import { resolveWorkspaceId } from '../../auth/workspace-access';
+
 @Controller('products/:productId/commissions')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('mutate')
@@ -45,7 +46,7 @@ export class ProductCommissionController {
   /** List. */
   @Get()
   async list(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     return this.prisma.productCommission.findMany({
       where: { productId },
@@ -61,7 +62,7 @@ export class ProductCommissionController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: AuthenticatedRequest,
   ) {
-    const workspaceId = getWorkspaceId(req);
+    const workspaceId = resolveWorkspaceId(req);
     await ensureWorkspaceProductAccess(this.prisma, productId, workspaceId);
 
     const payload = buildCommissionPayload(body);
@@ -105,7 +106,7 @@ export class ProductCommissionController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: AuthenticatedRequest,
   ) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     return this.prisma.$transaction(async (tx) => {
       const commission = await tx.productCommission.findFirst({
@@ -132,7 +133,7 @@ export class ProductCommissionController {
     @Param('commissionId') commissionId: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     const commission = await this.prisma.productCommission.findFirst({
       where: { id: commissionId, productId },
@@ -142,7 +143,7 @@ export class ProductCommissionController {
     }
 
     await this.auditService.log({
-      workspaceId: getWorkspaceId(req),
+      workspaceId: resolveWorkspaceId(req),
       action: 'DELETE_RECORD',
       resource: 'ProductCommission',
       resourceId: commissionId,

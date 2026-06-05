@@ -18,12 +18,12 @@ import { PrismaService } from '../../prisma/prisma.service';
 import {
   LooseObject,
   ensureWorkspaceProductAccess,
-  getWorkspaceId,
   normalizeOptionalText,
   parseNumber,
 } from './helpers/common.helpers';
 import { serializeReview } from './helpers/plan.helpers';
 import { RouteClass } from '../../common/throttler/route-class.decorator';
+import { resolveWorkspaceId } from '../../auth/workspace-access';
 
 /** Product review controller. */
 @Controller('products/:productId/reviews')
@@ -38,7 +38,7 @@ export class ProductReviewController {
   /** List. */
   @Get()
   async list(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     const reviews = await this.prisma.productReview.findMany({
       where: { productId },
@@ -56,7 +56,7 @@ export class ProductReviewController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: AuthenticatedRequest,
   ) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     const rating = parseNumber(body.rating) ?? 5;
     if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
@@ -90,7 +90,7 @@ export class ProductReviewController {
     @Param('reviewId') reviewId: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     const review = await this.prisma.productReview.findFirst({
       where: { id: reviewId, productId },
@@ -100,7 +100,7 @@ export class ProductReviewController {
     }
 
     await this.auditService.log({
-      workspaceId: getWorkspaceId(req),
+      workspaceId: resolveWorkspaceId(req),
       action: 'DELETE_RECORD',
       resource: 'ProductReview',
       resourceId: reviewId,

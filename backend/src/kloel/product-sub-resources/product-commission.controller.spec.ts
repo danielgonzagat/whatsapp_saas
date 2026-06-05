@@ -1,6 +1,9 @@
+jest.mock('../../auth/workspace-access', () => ({
+  resolveWorkspaceId: jest.fn().mockReturnValue('ws-1'),
+}));
+
 jest.mock('./helpers/common.helpers', () => ({
   ensureWorkspaceProductAccess: jest.fn().mockResolvedValue({ id: 'prod-1', workspaceId: 'ws-1' }),
-  getWorkspaceId: jest.fn().mockReturnValue('ws-1'),
 }));
 
 jest.mock('./helpers/affiliate.helpers', () => ({
@@ -15,11 +18,12 @@ jest.mock('./helpers/affiliate.helpers', () => ({
 }));
 
 import { ProductCommissionController } from './product-commission.controller';
-import { ensureWorkspaceProductAccess, getWorkspaceId } from './helpers/common.helpers';
+import { ensureWorkspaceProductAccess } from './helpers/common.helpers';
+import { resolveWorkspaceId } from '../../auth/workspace-access';
 import { buildCommissionPayload, ensureNoDuplicateCommission } from './helpers/affiliate.helpers';
 
 const ensureWorkspaceProductAccessMock = ensureWorkspaceProductAccess as jest.Mock;
-const getWorkspaceIdMock = getWorkspaceId as jest.Mock;
+const getWorkspaceIdMock = resolveWorkspaceId as jest.Mock;
 const buildCommissionPayloadMock = buildCommissionPayload as jest.Mock;
 const ensureNoDuplicateCommissionMock = ensureNoDuplicateCommission as jest.Mock;
 
@@ -135,7 +139,7 @@ describe('ProductCommissionController', () => {
   });
 
   describe('identity propagation', () => {
-    it('passes user identity from req into getWorkspaceId', async () => {
+    it('passes user identity from req into resolveWorkspaceId', async () => {
       await controller.list('prod-1', req);
 
       expect(getWorkspaceIdMock).toHaveBeenCalledWith(req);

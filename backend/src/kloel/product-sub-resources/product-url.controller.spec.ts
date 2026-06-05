@@ -1,9 +1,12 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ProductUrlController } from './product-url.controller';
 
+jest.mock('../../auth/workspace-access', () => ({
+  resolveWorkspaceId: jest.fn().mockReturnValue('ws-1'),
+}));
+
 jest.mock('./helpers/common.helpers', () => ({
   ensureWorkspaceProductAccess: jest.fn().mockResolvedValue(undefined),
-  getWorkspaceId: jest.fn().mockReturnValue('ws-1'),
   removeUndefined: jest.fn().mockImplementation((v: Record<string, unknown>) => v),
 }));
 
@@ -164,12 +167,15 @@ describe('ProductUrlController', () => {
   });
 
   describe('identity propagation', () => {
-    it('passes workspaceId from req.user into getWorkspaceId and ensureWorkspaceProductAccess', async () => {
+    it('passes workspaceId from req.user into resolveWorkspaceId and ensureWorkspaceProductAccess', async () => {
       const commonHelpersMock: {
         ensureWorkspaceProductAccess: jest.Mock;
-        getWorkspaceId: jest.Mock;
       } = jest.requireMock('./helpers/common.helpers');
-      const { ensureWorkspaceProductAccess, getWorkspaceId } = commonHelpersMock;
+      const { ensureWorkspaceProductAccess } = commonHelpersMock;
+      const workspaceAccessMock: {
+        resolveWorkspaceId: jest.Mock;
+      } = jest.requireMock('../../auth/workspace-access');
+      const { resolveWorkspaceId } = workspaceAccessMock;
       productUrlFindMany.mockResolvedValue([]);
 
       const customReq = {
@@ -179,7 +185,7 @@ describe('ProductUrlController', () => {
 
       await controller.list('prod-1', customReq);
 
-      expect(getWorkspaceId).toHaveBeenCalledWith(customReq);
+      expect(resolveWorkspaceId).toHaveBeenCalledWith(customReq);
       expect(ensureWorkspaceProductAccess).toHaveBeenCalledWith(prisma, 'prod-1', 'ws-1');
     });
   });

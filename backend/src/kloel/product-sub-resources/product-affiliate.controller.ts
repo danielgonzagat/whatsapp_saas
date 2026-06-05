@@ -26,7 +26,6 @@ import {
   LooseObject,
   assertPercentageRange,
   ensureWorkspaceProductAccess,
-  getWorkspaceId,
   normalizeOptionalText,
   parseNumber,
   removeUndefined,
@@ -34,6 +33,8 @@ import {
 } from './helpers/common.helpers';
 
 import { RouteClass } from '../../common/throttler/route-class.decorator';
+import { resolveWorkspaceId } from '../../auth/workspace-access';
+
 interface AffiliateConfigContext {
   commissionType: string | undefined;
   nextCommissionType: string | undefined;
@@ -164,7 +165,7 @@ export class ProductAffiliateController {
   /** Get summary. */
   @Get()
   async getSummary(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     return buildAffiliateSummary(this.prisma, req, productId);
   }
@@ -179,13 +180,13 @@ export class ProductAffiliateController {
     const currentProduct = await ensureWorkspaceProductAccess(
       this.prisma,
       productId,
-      getWorkspaceId(req),
+      resolveWorkspaceId(req),
     );
 
     const context = buildAffiliateConfigContext(body, currentProduct);
     const productPayload = buildProductPayload(body, currentProduct, context);
 
-    const workspaceId = getWorkspaceId(req);
+    const workspaceId = resolveWorkspaceId(req);
     await this.prisma.product.updateMany({
       where: { id: productId, workspaceId },
       data: productPayload as Prisma.ProductUncheckedUpdateInput,
@@ -224,7 +225,7 @@ export class ProductAffiliateController {
     @Param('requestId') requestId: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     const request = await this.prisma.affiliateRequest.findFirst({
       where: {
@@ -283,7 +284,7 @@ export class ProductAffiliateController {
     @Param('requestId') requestId: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     const request = await this.prisma.affiliateRequest.findFirst({
       where: {
@@ -324,7 +325,7 @@ export class ProductAffiliateController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: AuthenticatedRequest,
   ) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     if (typeof body.active !== 'boolean') {
       throw new BadRequestException('Informe se o link deve ficar ativo ou não');

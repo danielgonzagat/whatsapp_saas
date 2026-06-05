@@ -20,12 +20,13 @@ import { PrismaService } from '../../prisma/prisma.service';
 import {
   LooseObject,
   ensureWorkspaceProductAccess,
-  getWorkspaceId,
   removeUndefined,
 } from './helpers/common.helpers';
 
 /** Product url controller. */
 import { RouteClass } from '../../common/throttler/route-class.decorator';
+import { resolveWorkspaceId } from '../../auth/workspace-access';
+
 @Controller('products/:productId/urls')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('mutate')
@@ -38,7 +39,7 @@ export class ProductUrlController {
   /** List. */
   @Get()
   async list(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     return this.prisma.productUrl.findMany({
       where: { productId },
@@ -54,7 +55,7 @@ export class ProductUrlController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: AuthenticatedRequest,
   ) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     if (!body.description || !body.url) {
       throw new BadRequestException('Descrição e URL são obrigatórias');
@@ -85,7 +86,7 @@ export class ProductUrlController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: AuthenticatedRequest,
   ) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     const url = await this.prisma.productUrl.findFirst({
       where: { id: urlId, productId },
@@ -118,7 +119,7 @@ export class ProductUrlController {
     @Param('urlId') urlId: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     const url = await this.prisma.productUrl.findFirst({
       where: { id: urlId, productId },
@@ -128,7 +129,7 @@ export class ProductUrlController {
     }
 
     await this.auditService.log({
-      workspaceId: getWorkspaceId(req),
+      workspaceId: resolveWorkspaceId(req),
       action: 'DELETE_RECORD',
       resource: 'ProductUrl',
       resourceId: urlId,

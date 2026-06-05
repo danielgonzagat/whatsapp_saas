@@ -19,11 +19,11 @@ import { AuthenticatedRequest } from '../../common/interfaces';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   LooseObject,
-  ensureWorkspaceProductAccess,
-  getWorkspaceId,
+  ensureWorkspaceProductAccess
 } from './helpers/common.helpers';
 import { buildPlanData, serializePlan } from './helpers/plan.helpers';
 import { RouteClass } from '../../common/throttler/route-class.decorator';
+import { resolveWorkspaceId } from '../../auth/workspace-access';
 
 /** Product plan controller. */
 @Controller('products/:productId/plans')
@@ -38,7 +38,7 @@ export class ProductPlanController {
   /** List plans. */
   @Get()
   async listPlans(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     const plans = await this.prisma.productPlan.findMany({
       where: { productId },
@@ -56,7 +56,7 @@ export class ProductPlanController {
     @Param('planId') planId: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     const plan = await this.prisma.productPlan.findFirst({
       where: { id: planId, productId },
@@ -76,7 +76,7 @@ export class ProductPlanController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: AuthenticatedRequest,
   ) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     const data = buildPlanData(body);
     if (!data.name) {
@@ -103,7 +103,7 @@ export class ProductPlanController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: AuthenticatedRequest,
   ) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     const updated = await this.prisma.$transaction(async (tx) => {
       const plan = await tx.productPlan.findFirst({
@@ -129,7 +129,7 @@ export class ProductPlanController {
     @Param('planId') planId: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     const plan = await this.prisma.productPlan.findFirst({
       where: { id: planId, productId },
@@ -139,7 +139,7 @@ export class ProductPlanController {
     }
 
     await this.auditService.log({
-      workspaceId: getWorkspaceId(req),
+      workspaceId: resolveWorkspaceId(req),
       action: 'DELETE_RECORD',
       resource: 'ProductPlan',
       resourceId: planId,
