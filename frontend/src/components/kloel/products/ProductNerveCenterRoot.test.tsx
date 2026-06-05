@@ -1,10 +1,28 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ProductNerveCenter from './ProductNerveCenterRoot';
 
+type TestProduct = {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  active: boolean;
+  warrantyDays: number;
+  format: string;
+};
+
+const testState = vi.hoisted(
+  (): { product: TestProduct | null; searchParams: URLSearchParams } => ({
+    product: null,
+    searchParams: new URLSearchParams(),
+  }),
+);
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
+  useSearchParams: () => testState.searchParams,
 }));
 
 vi.mock('@/components/kloel/ToastProvider', () => ({
@@ -34,9 +52,9 @@ vi.mock('@/lib/api', () => ({
 
 vi.mock('@/hooks/useProducts', () => ({
   useProduct: () => ({
-    product: null,
+    product: testState.product,
     isLoading: false,
-    error: new Error('Not found'),
+    error: testState.product ? undefined : new Error('Not found'),
     mutate: vi.fn(),
   }),
   useProducts: () => ({ products: [], total: 0, isLoading: false, error: undefined, mutate: vi.fn() }),
@@ -61,6 +79,11 @@ vi.mock('@/hooks/useCheckoutPlans', () => ({
   useOrderBumps: () => ({ bumps: [], createBump: vi.fn() }),
 }));
 
+beforeEach(() => {
+  testState.product = null;
+  testState.searchParams = new URLSearchParams();
+});
+
 describe('ProductNerveCenter missing product state', () => {
   it('does not render an editable placeholder when the product request finishes empty', () => {
     const onBack = vi.fn();
@@ -83,5 +106,41 @@ describe('ProductNerveCenter missing product state', () => {
     fireEvent.click(screen.getByRole('button', { name: '← Produtos' }));
 
     expect(onBack).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('ProductNerveCenter route query sync', () => {
+  it('updates the visible tab when search params change while the panel stays mounted', async () => {
+    testState.product = {
+      id: 'prod-1',
+      name: 'Produto QA',
+      description: 'Produto para teste',
+      category: 'E-books',
+      active: false,
+      warrantyDays: 30,
+      format: 'DIGITAL',
+    };
+
+    const onBack = vi.fn();
+    const node = () => (
+      <ProductNerveCenter
+        productId="prod-1"
+        onBack={onBack}
+        initialTab={undefined}
+        initialPlanSub={undefined}
+        initialComSub={undefined}
+        initialModal={undefined}
+        initialFocus={undefined}
+      />
+    );
+
+    const { rerender } = render(node());
+
+    expect(screen.getByRole('heading', { name: 'Dados do produto' })).toBeTruthy();
+
+    testState.searchParams = new URLSearchParams('tab=campanhas');
+    rerender(node());
+
+    expect(await screen.findByRole('heading', { name: 'Campanhas Registradas' })).toBeTruthy();
   });
 });
