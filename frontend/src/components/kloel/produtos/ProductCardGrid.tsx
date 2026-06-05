@@ -8,10 +8,12 @@ import type { DisplayProduct } from './ProdutosView.types';
 
 export default function ProductCardGrid({
   displayProducts,
+  isFiltered = false,
   isMobile,
   onCreateProduct,
 }: {
   displayProducts: DisplayProduct[];
+  isFiltered?: boolean;
   isMobile: boolean;
   onCreateProduct?: (() => void) | undefined | null;
 }) {
@@ -37,7 +39,9 @@ export default function ProductCardGrid({
               marginBottom: 6,
             }}
           >
-            {kloelT('Nenhum produto cadastrado.')}
+            {isFiltered
+              ? kloelT('Nenhum produto encontrado para esta busca.')
+              : kloelT('Nenhum produto cadastrado.')}
           </div>
           <div
             style={{
@@ -47,11 +51,13 @@ export default function ProductCardGrid({
               marginBottom: 16,
             }}
           >
-            {onCreateProduct != null
-              ? kloelT('Crie seu primeiro produto para comecar a vender.')
-              : kloelT('Crie seu primeiro produto para liberar esta configuracao operacional.')}
+            {isFiltered
+              ? kloelT('Limpe o filtro ou tente outro termo.')
+              : onCreateProduct != null
+                ? kloelT('Crie seu primeiro produto para comecar a vender.')
+                : kloelT('Crie seu primeiro produto para liberar esta configuracao operacional.')}
           </div>
-          {onCreateProduct != null && (
+          {onCreateProduct != null && !isFiltered && (
             <button
               type="button"
               onClick={onCreateProduct}

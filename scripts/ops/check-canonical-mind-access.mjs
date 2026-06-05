@@ -99,8 +99,12 @@ const GRANDFATHERED_FILES = new Set([
   // Canonical alias for the SEPARATE RAC_ChatMessage table (dashboard/thread
   // chat). This service IS the wrapper for `prisma.chatMessage`.
   'backend/src/kloel/mind/aliases/mind-chat-message.service.ts',
-  // Deferred file (uses `prismaExt`, on the documented deferred list).
-  'backend/src/kloel/conversational-onboarding-tools.service.ts',
+  // NOTE: conversational-onboarding-tools.service.ts was previously deferred
+  // here (it used a bespoke `prismaExt.kloelMemory`). It is now CONVERGED onto
+  // the canonical `MindMemoryItemService.items` surface via the
+  // `mindMemoryItems` getter (`mindMemory?.items ?? this.prisma.kloelMemory`,
+  // exempt as the documented fallback idiom), so the whole-file escape is
+  // removed and the gate scans it like any other file.
 ]);
 
 // ---------------------------------------------------------------------------

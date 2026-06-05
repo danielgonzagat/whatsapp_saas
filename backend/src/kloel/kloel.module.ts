@@ -211,6 +211,7 @@ import { MindSurpriseService } from './mind/inference/mind-surprise.service';
 import { MindVerbalizerService } from './mind/synthetic/mind-verbalizer.service';
 import { MindWorkspaceStateService } from './mind/memory/mind-workspace-state.service';
 import { VectorService } from './mind/knowledge/vector.service';
+import { KloelMemoryEngineService } from './kloel-memory-engine.service';
 import { AgentRuntimeJobRunnerService } from './agent-runtime/agent-runtime.job-runner';
 import {
   AgentRuntimeContextService,
@@ -375,6 +376,7 @@ import { CrmModule } from '../crm/crm.module';
     KloelWorkspaceContextLinkedProductService,
     MemoryCrudService,
     MemorySearchService,
+    KloelMemoryEngineService,
     MemoryService,
     MemoryManagementService,
     MarketingSkillLoader,

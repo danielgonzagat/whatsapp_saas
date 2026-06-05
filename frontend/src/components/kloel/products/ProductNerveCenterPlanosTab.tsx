@@ -23,6 +23,7 @@ interface ProductNerveCenterPlanosTabProps {
   setModal: (value: string | null) => void;
   copied: string | null;
   onDuplicatePlan: (planId: string) => void | Promise<void>;
+  onDeletePlan: (planId: string) => void | Promise<void>;
   renderPlanDetail: (plan: ProductEditorPlanView) => React.ReactNode;
 }
 
@@ -35,6 +36,7 @@ export function ProductNerveCenterPlanosTab({
   setModal,
   copied,
   onDuplicatePlan,
+  onDeletePlan,
   renderPlanDetail,
 }: ProductNerveCenterPlanosTabProps) {
   const { isMobile } = useResponsiveViewport();
@@ -87,6 +89,7 @@ export function ProductNerveCenterPlanosTab({
               setModal={setModal}
               copied={copied}
               onDuplicatePlan={onDuplicatePlan}
+              onDeletePlan={onDeletePlan}
             />
           ))}
         </div>
@@ -132,6 +135,7 @@ export function ProductNerveCenterPlanosTab({
                 setModal={setModal}
                 copied={copied}
                 onDuplicatePlan={onDuplicatePlan}
+                onDeletePlan={onDeletePlan}
               />
             </div>
           ))}

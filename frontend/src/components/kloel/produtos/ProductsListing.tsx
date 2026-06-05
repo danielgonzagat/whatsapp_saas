@@ -145,6 +145,7 @@ export default function ProductsListing({
 
       <ProductCardGrid
         displayProducts={filteredProducts}
+        isFiltered={search.trim().length > 0}
         isMobile={isMobile}
         {...(onCreateProduct ? { onCreateProduct } : {})}
       />

@@ -1,4 +1,5 @@
-import { act, render, renderHook, screen } from '@testing-library/react';
+import { act, fireEvent, render, renderHook, screen } from '@testing-library/react';
+import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -28,7 +29,7 @@ describe('ProductNerveCenterCheckoutsTab sections', () => {
     expect(boleto.name).toBe('checkoutBoletoEnableBoleto');
   });
 
-  it('normalizes color swatch values while keeping the raw text editable', () => {
+  it('normalizes color swatch and text values to editable hex', () => {
     render(
       <ColorPickerField
         label="Cor principal"
@@ -46,7 +47,37 @@ describe('ProductNerveCenterCheckoutsTab sections', () => {
     expect(swatch.value).toBe('#e85d30');
     expect(text.id).toBe('checkout-cor-principal-text');
     expect(text.name).toBe('checkoutCorPrincipalText');
-    expect(text.value).toBe('rgb(232, 93, 48)');
+    expect(text.value).toBe('#e85d30');
+  });
+
+  it('keeps partial hex text editable while typing a checkout color', () => {
+    function EditableColorField() {
+      const [color, setColor] = useState('var(--text-silver, rgb(224, 221, 216))');
+
+      return (
+        <ColorPickerField
+          label="Cor fundo"
+          value={color}
+          placeholder="#0a0a0c"
+          onChange={setColor}
+        />
+      );
+    }
+
+    render(<EditableColorField />);
+
+    const text = screen.getByLabelText('Cor fundo') as HTMLInputElement;
+
+    expect(text.value).toBe('#e0ddd8');
+
+    fireEvent.change(text, { target: { value: '#' } });
+    expect(text.value).toBe('#');
+
+    fireEvent.change(text, { target: { value: '#0a' } });
+    expect(text.value).toBe('#0a');
+
+    fireEvent.change(text, { target: { value: '#0a0a0c' } });
+    expect(text.value).toBe('#0a0a0c');
   });
 });
 
@@ -97,5 +128,60 @@ describe('useCheckoutConfigForm', () => {
     expect(syncCheckoutLinks).not.toHaveBeenCalled();
     expect(updatePlan).not.toHaveBeenCalled();
     expect(setCkEdit).not.toHaveBeenCalled();
+  });
+
+  it('tracks visual edits and saves normalized checkout colors', async () => {
+    const saveCkCfg = vi.fn().mockResolvedValue(undefined);
+    const syncCheckoutLinks = vi.fn().mockResolvedValue(undefined);
+    const updatePlan = vi.fn().mockResolvedValue(undefined);
+    const showToast = vi.fn();
+    const setCkEdit = vi.fn();
+
+    const ckCfg = {
+      brandName: 'Checkout Principal',
+      accentColor: 'rgb(232, 93, 48)',
+      backgroundColor: 'var(--text-silver, rgb(224, 221, 216))',
+      btnFinalizeText: 'Finalizar compra',
+      theme: 'BLANC',
+      enableTestimonials: true,
+      enableGuarantee: true,
+      showCouponPopup: false,
+    };
+    const rawCheckouts = [{ id: 'checkout-1', name: 'Checkout Principal', checkoutLinks: [] }];
+    const rawPlans: Array<{ id: string; name: string }> = [];
+
+    const { result } = renderHook(() =>
+      useCheckoutConfigForm(
+        'checkout-1',
+        ckCfg,
+        rawCheckouts,
+        rawPlans,
+        saveCkCfg,
+        syncCheckoutLinks,
+        updatePlan,
+        showToast,
+        setCkEdit,
+      ),
+    );
+
+    expect(result.current.hasUnsavedChanges).toBe(false);
+
+    act(() => {
+      result.current.patch('backgroundColor', '#0a0a0c');
+    });
+
+    expect(result.current.hasUnsavedChanges).toBe(true);
+
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    expect(saveCkCfg).toHaveBeenCalledWith(
+      expect.objectContaining({
+        brandName: 'Checkout Principal',
+        accentColor: '#e85d30',
+        backgroundColor: '#0a0a0c',
+      }),
+    );
   });
 });

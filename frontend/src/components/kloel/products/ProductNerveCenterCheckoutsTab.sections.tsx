@@ -12,6 +12,7 @@ import {
   type JsonValue,
 } from './product-nerve-center.shared';
 const HEX_COLOR_RE = /^#[\da-f]{6}$/i;
+const PARTIAL_HEX_COLOR_RE = /^#[\da-f]{0,6}$/i;
 const RGB_COLOR_RE = /rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/i;
 const TOKEN_RE = /[^a-z0-9]+/gi;
 const LEADING_CAP_RE = /(^|\s)([a-z])/g;
@@ -40,7 +41,7 @@ function toHexChannel(value: number) {
   return Math.min(255, Math.max(0, value)).toString(16).padStart(2, '0');
 }
 
-function normalizeColorPickerValue(value: string, fallback = V.t) {
+export function normalizeColorPickerValue(value: string, fallback = V.t) {
   const candidates = [value, fallback];
   for (const candidate of candidates) {
     const trimmed = String(candidate || '').trim();
@@ -54,6 +55,18 @@ function normalizeColorPickerValue(value: string, fallback = V.t) {
   }
   return V.t;
 }
+
+function normalizeColorTextValue(value: string, fallback = V.t) {
+  const trimmed = String(value || '').trim();
+  if (!trimmed) {
+    return '';
+  }
+  if (PARTIAL_HEX_COLOR_RE.test(trimmed)) {
+    return trimmed.toLowerCase();
+  }
+  return normalizeColorPickerValue(trimmed, fallback);
+}
+
 
 
 export function CheckoutConfigLoading() {
@@ -226,6 +239,7 @@ export function ColorPickerField({ label, value, placeholder, onChange }: ColorP
   const colorIdentity = buildCheckoutFieldIdentity(label, 'color');
   const textIdentity = buildCheckoutFieldIdentity(label, 'text');
   const colorValue = normalizeColorPickerValue(value, placeholder);
+  const textValue = normalizeColorTextValue(value, placeholder);
 
   return (
     <div style={{ marginBottom: 12 }}>
@@ -263,7 +277,7 @@ export function ColorPickerField({ label, value, placeholder, onChange }: ColorP
           name={textIdentity.name}
           aria-label={label}
           type="text"
-          value={value}
+          value={textValue}
           onChange={(e) => onChange(e.target.value)}
           style={{
             flex: 1,
@@ -275,7 +289,7 @@ export function ColorPickerField({ label, value, placeholder, onChange }: ColorP
             fontSize: 13,
             fontFamily: 'JetBrains Mono, monospace',
           }}
-          placeholder={placeholder}
+          placeholder={normalizeColorPickerValue(placeholder)}
         />
       </div>
     </div>

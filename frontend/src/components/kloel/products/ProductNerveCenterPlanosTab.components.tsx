@@ -18,6 +18,7 @@ interface PlanoCardProps {
   setModal: (value: string | null) => void;
   copied: string | null;
   onDuplicatePlan: (planId: string) => void | Promise<void>;
+  onDeletePlan?: (planId: string) => void | Promise<void>;
 }
 
 export function PlanoCardMobile({
@@ -26,7 +27,18 @@ export function PlanoCardMobile({
   setModal,
   copied,
   onDuplicatePlan,
+  onDeletePlan,
 }: PlanoCardProps) {
+  const handleDeletePlan = () => {
+    if (!onDeletePlan) {
+      return;
+    }
+    if (!confirm(kloelT(`Excluir este plano? Esta ação não pode ser desfeita.`))) {
+      return;
+    }
+    void onDeletePlan(plan.id);
+  };
+
   return (
     <div key={plan.id} style={{ ...cs, padding: 16 }}>
       <div
@@ -111,6 +123,23 @@ export function PlanoCardMobile({
               <path d={kloelT(`M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71`)} />
             </svg>
           </IconActionButton>
+          {onDeletePlan ? (
+            <IconActionButton label={kloelT(`Excluir`)} color={V.r} onClick={handleDeletePlan}>
+              <svg
+                width={14}
+                height={14}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                aria-hidden="true"
+              >
+                <path d={kloelT(`M3 6h18`)} />
+                <path d={kloelT(`M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2`)} />
+                <path d={kloelT(`M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6`)} />
+              </svg>
+            </IconActionButton>
+          ) : null}
         </div>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
@@ -196,7 +225,18 @@ export function PlanoRowDesktop({
   setModal,
   copied,
   onDuplicatePlan,
+  onDeletePlan,
 }: PlanoCardProps) {
+  const handleDeletePlan = () => {
+    if (!onDeletePlan) {
+      return;
+    }
+    if (!confirm(kloelT(`Excluir este plano? Esta ação não pode ser desfeita.`))) {
+      return;
+    }
+    void onDeletePlan(plan.id);
+  };
+
   return (
     <div
       style={{
@@ -296,6 +336,23 @@ export function PlanoRowDesktop({
             <path d={kloelT(`M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71`)} />
           </svg>
         </IconActionButton>
+        {onDeletePlan ? (
+          <IconActionButton label={kloelT(`Excluir`)} color={V.r} onClick={handleDeletePlan}>
+            <svg
+              width={14}
+              height={14}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              aria-hidden="true"
+            >
+              <path d={kloelT(`M3 6h18`)} />
+              <path d={kloelT(`M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2`)} />
+              <path d={kloelT(`M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6`)} />
+            </svg>
+          </IconActionButton>
+        ) : null}
       </div>
     </div>
   );

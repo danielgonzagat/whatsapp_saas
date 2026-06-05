@@ -378,5 +378,11 @@ export function isMutationSensitiveTool(toolName: string): boolean {
   ) {
     return false;
   }
+  // Wallet financial mutations whose names carry no verb from MUTATION_SENSITIVE_VERB_RE
+  // (e.g. request_anticipation, request_withdrawal, wallet.anticipate) — these move
+  // money, so treat them as confirmation-sensitive by default.
+  if (/(?:anticipat|antecip|withdraw|saque|payout)/i.test(name)) {
+    return true;
+  }
   return MUTATION_SENSITIVE_VERB_RE.test(name);
 }

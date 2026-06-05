@@ -203,6 +203,12 @@ export function KloelGraphLiteralCanvas({
     return result;
   }, [activeNodeId, hoveredId, visibleEdges]);
 
+  useEffect(() => {
+    if (!activeNodeId) {
+      setHoveredId(null);
+    }
+  }, [activeNodeId]);
+
   const forceRender = useCallback(() => {
     setSnapshot(nodesRef.current.map((node) => ({ ...node })));
   }, []);

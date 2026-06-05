@@ -252,6 +252,37 @@ describe('KloelGraphShell', () => {
     );
   });
 
+  it('clears residual hover ember when a node overlay closes into graph-only mode', async () => {
+    const { container, rerender } = renderShell();
+    const afiliarCircle = () =>
+      container.querySelector('circle[data-node-id="afiliar"]') as SVGCircleElement | null;
+    const afiliarNode = screen.getByRole('button', { name: 'Abrir Afiliar' });
+
+    fireEvent.pointerEnter(afiliarNode);
+    expect(afiliarCircle()?.getAttribute('stroke')).toBe('rgb(232,93,48)');
+
+    fireEvent.pointerDown(afiliarNode, { clientX: 10, clientY: 10 });
+    fireEvent.pointerUp(afiliarNode, { clientX: 11, clientY: 11 });
+
+    pathname = '/produtos/afiliar-se';
+    searchParams = new URLSearchParams();
+    rerender(
+      <KloelGraphShell>
+        <div>Affiliate screen</div>
+      </KloelGraphShell>,
+    );
+    expect(afiliarCircle()?.getAttribute('stroke')).toBe('rgb(232,93,48)');
+
+    searchParams = new URLSearchParams('graph=1');
+    rerender(
+      <KloelGraphShell>
+        <div>Affiliate screen hidden</div>
+      </KloelGraphShell>,
+    );
+
+    await waitFor(() => expect(afiliarCircle()?.getAttribute('stroke')).toBe('none'));
+  });
+
   it('opens dynamic product nodes and product tab subnodes from real product data', () => {
     renderShell();
 

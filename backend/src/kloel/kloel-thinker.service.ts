@@ -25,6 +25,8 @@ import { AbiBuilderService } from './abi/abi-builder.service';
 import { MindCapabilityExecutor } from './mind/coordination';
 import { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { detectActionIntent } from './guest-chat.action-intent.helpers';
+import { isMutationSensitiveTool } from './operation-receipt.helpers';
+import { KloelMemoryEngineService } from './kloel-memory-engine.service';
 import { KloelReplyEngineService, LocalToolExecutor } from './kloel-reply-engine.service';
 import { thinkSyncImpl, regenerateThreadAssistantResponseImpl } from './kloel-thinker.helpers';
 import { runAbiEnrichmentBranch } from './kloel-thinker.abi.helpers';
@@ -97,6 +99,7 @@ export class KloelThinkerService {
     @Optional() private readonly mindGlobalPriorService?: MindGlobalPriorService,
     @Optional() private readonly mindPredictorService?: MindPredictorService,
     @Optional() private readonly valenceTagger?: ValenceTaggerService,
+    @Optional() private readonly memoryEngine?: KloelMemoryEngineService,
   ) {
     this.conversationStore = new KloelConversationStore(prisma, this.logger);
   }
@@ -134,6 +137,12 @@ export class KloelThinkerService {
       metadata,
       allowedTools,
     } = request;
+    // Per-user memory (Mem0 brain): learn durable facts/preferences from this
+    // turn's user message, fire-and-forget so it never adds latency to the reply
+    // and never breaks the turn. Recalled on later turns by the context builder.
+    if (mode === 'chat' && workspaceId && userId) {
+      void this.memoryEngine?.remember(workspaceId, userId, message);
+    }
     const signal = opts?.signal;
     const isAborted = () => !!signal?.aborted;
     const abortReason = (): unknown => signal?.reason;
@@ -167,10 +176,18 @@ export class KloelThinkerService {
         !!composerCapability ||
         !!composerMetadata.linkedProduct ||
         (composerMetadata.attachments?.length ?? 0) > 0;
-      const deterministicAction =
+      const detectedAction =
         deterministicWorkspaceId && !hasExplicitComposerContext
           ? detectActionIntent(message)
           : null;
+      // MUTATION_SENSITIVE gate: the deterministic regex path bypasses the LLM
+      // tool-router's confirmation block, so never auto-execute a confirmation-
+      // sensitive tool (e.g. request_anticipation/request_withdrawal — money moves)
+      // from this path. Fall through to the LLM path, which enforces confirmation.
+      const deterministicAction =
+        detectedAction && isMutationSensitiveTool(detectedAction.tool)
+          ? null
+          : detectedAction;
       if (deterministicAction && deterministicWorkspaceId) {
         await runDeterministicActionBranch(
           deterministicAction,

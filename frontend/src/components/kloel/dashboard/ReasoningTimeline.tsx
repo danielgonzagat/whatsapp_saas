@@ -106,7 +106,8 @@ export function ReasoningTimeline({
     (step) => step.kind === 'tool_call' || step.kind === 'tool_result',
   );
   const hasReasoningText = reasoning.text.trim().length > 0;
-  const hasContent = hasReasoningText || toolSteps.length > 0;
+  const hasContent =
+    hasReasoningText || toolSteps.length > 0 || reasoning.files.length > 0;
 
   const [collapseOverride, setCollapseOverride] = useState<boolean | null>(null);
   const collapsed = collapseOverride ?? isComplete;
