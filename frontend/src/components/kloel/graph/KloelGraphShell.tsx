@@ -195,7 +195,6 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
       <CommandPalette {...paletteProps} onSelect={executeCommand} mode={commandPaletteMode} />
       <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: C.void }} />
       <KloelGraphLiteralCanvas
-        key={graphOnly ? 'graph-only' : 'overlay'}
         nodes={graphNodes}
         edges={edges}
         activeNodeId={activeGraphNodeId}

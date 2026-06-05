@@ -118,6 +118,21 @@ describe('KloelGraphShell', () => {
     expect(screen.getByTestId('kloel-graph-shell')).toBeTruthy();
   });
 
+  it('keeps the graph canvas mounted when closing an overlay into graph-only mode', () => {
+    const { rerender } = renderShell(<main>ProdutosView real</main>);
+    const canvas = screen.getByTestId('kloel-graph-canvas');
+
+    searchParams = new URLSearchParams('graph=1');
+    rerender(
+      <KloelGraphShell>
+        <main>ProdutosView hidden</main>
+      </KloelGraphShell>,
+    );
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByTestId('kloel-graph-canvas')).toBe(canvas);
+  });
+
   it('does not keep the current route node selected after the overlay is closed', async () => {
     pathname = '/products';
     searchParams = new URLSearchParams('graph=1');

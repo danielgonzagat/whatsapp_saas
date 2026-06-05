@@ -166,6 +166,11 @@ export function KloelGraphLiteralCanvas({
     panRef.current = pan;
   }, [pan]);
   useEffect(() => {
+    if (!activeNodeId) {
+      setHoveredId(null);
+    }
+  }, [activeNodeId]);
+  useEffect(() => {
     zoomRef.current = zoom;
   }, [zoom]);
   useEffect(() => {
