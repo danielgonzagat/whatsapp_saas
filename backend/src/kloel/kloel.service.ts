@@ -74,6 +74,11 @@ export class KloelService {
     return this.mindMemory?.items ?? this.prisma.kloelMemory;
   }
 
+  /** Canonical Brain → Mind message delegate (raw-Prisma fallback). */
+  private get mindMessageItems(): PrismaService['kloelMessage'] {
+    return this.mindMessage?.items ?? this.prisma.kloelMessage;
+  }
+
   // ── Context helpers ──
 
   private async buildComposerContext(params: {
@@ -314,7 +319,7 @@ export class KloelService {
       return [];
     }
     try {
-      const messages = await this.prisma.kloelMessage.findMany({
+      const messages = await this.mindMessageItems.findMany({
         where: { workspaceId },
         orderBy: { createdAt: 'asc' },
         take: 50,

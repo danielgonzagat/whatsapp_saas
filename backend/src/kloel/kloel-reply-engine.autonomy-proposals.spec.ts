@@ -1,5 +1,11 @@
-import { buildKloelAbiCognitiveState } from './kloel-reply-engine.cognitive-state.helpers';
+import {
+  buildKloelAbiCognitiveState,
+  readAbiSnapshotCache,
+  writeAbiSnapshotCache,
+  ABI_SNAPSHOT_KEY,
+} from './kloel-reply-engine.cognitive-state.helpers';
 import type { PrismaService } from '../prisma/prisma.service';
+import type { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 import type {
   MindAutonomyCoordinator,
   Proposal,
@@ -115,5 +121,116 @@ describe('buildKloelAbiCognitiveState — autonomy proposals (PI-K13-D)', () => 
 
     expect(listPendingProposals).not.toHaveBeenCalled();
     expect(state).not.toHaveProperty('autonomyProposals');
+  });
+});
+
+describe('cognitive-state cache — canonical MindMemoryItemService surface', () => {
+  const logger = { warn: jest.fn() };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('readAbiSnapshotCache routes the findUnique through mindMemory.items when provided', async () => {
+    const canonicalFindUnique = jest.fn().mockResolvedValue(null);
+    const fallbackFindUnique = jest.fn().mockResolvedValue(null);
+    const prisma = {
+      kloelMemory: { findUnique: fallbackFindUnique },
+    } as unknown as PrismaService;
+    const mindMemory = {
+      items: { findUnique: canonicalFindUnique },
+    } as unknown as MindMemoryItemService;
+
+    await readAbiSnapshotCache(prisma, logger, 'ws-canon', mindMemory);
+
+    // Canonical surface used; raw prisma delegate untouched.
+    expect(canonicalFindUnique).toHaveBeenCalledTimes(1);
+    expect(fallbackFindUnique).not.toHaveBeenCalled();
+    // Byte-identical args preserved.
+    expect(canonicalFindUnique).toHaveBeenCalledWith({
+      where: { workspaceId_key: { workspaceId: 'ws-canon', key: ABI_SNAPSHOT_KEY } },
+    });
+  });
+
+  it('readAbiSnapshotCache falls back to prisma.kloelMemory when mindMemory is absent', async () => {
+    const fallbackFindUnique = jest.fn().mockResolvedValue(null);
+    const prisma = {
+      kloelMemory: { findUnique: fallbackFindUnique },
+    } as unknown as PrismaService;
+
+    await readAbiSnapshotCache(prisma, logger, 'ws-legacy');
+
+    expect(fallbackFindUnique).toHaveBeenCalledTimes(1);
+    expect(fallbackFindUnique).toHaveBeenCalledWith({
+      where: { workspaceId_key: { workspaceId: 'ws-legacy', key: ABI_SNAPSHOT_KEY } },
+    });
+  });
+
+  it('writeAbiSnapshotCache routes the upsert through mindMemory.items with byte-identical args', async () => {
+    const canonicalUpsert = jest.fn().mockResolvedValue({});
+    const fallbackUpsert = jest.fn().mockResolvedValue({});
+    const prisma = {
+      kloelMemory: { upsert: fallbackUpsert },
+    } as unknown as PrismaService;
+    const mindMemory = {
+      items: { upsert: canonicalUpsert },
+    } as unknown as MindMemoryItemService;
+
+    const cognitiveState = { abiStatus: 'ok' };
+    await writeAbiSnapshotCache(prisma, logger, 'ws-canon', cognitiveState, mindMemory);
+
+    expect(canonicalUpsert).toHaveBeenCalledTimes(1);
+    expect(fallbackUpsert).not.toHaveBeenCalled();
+    const arg = canonicalUpsert.mock.calls[0][0];
+    expect(arg.where).toEqual({
+      workspaceId_key: { workspaceId: 'ws-canon', key: ABI_SNAPSHOT_KEY },
+    });
+    expect(arg.update).toMatchObject({
+      content: JSON.stringify(cognitiveState),
+      category: 'abi_snapshot',
+      value: {},
+    });
+    expect(arg.create).toMatchObject({
+      workspaceId: 'ws-canon',
+      key: ABI_SNAPSHOT_KEY,
+      content: JSON.stringify(cognitiveState),
+      category: 'abi_snapshot',
+      value: {},
+    });
+  });
+
+  it('writeAbiSnapshotCache falls back to prisma.kloelMemory when mindMemory is absent', async () => {
+    const fallbackUpsert = jest.fn().mockResolvedValue({});
+    const prisma = {
+      kloelMemory: { upsert: fallbackUpsert },
+    } as unknown as PrismaService;
+
+    await writeAbiSnapshotCache(prisma, logger, 'ws-legacy', { abiStatus: 'ok' });
+
+    expect(fallbackUpsert).toHaveBeenCalledTimes(1);
+  });
+
+  it('buildKloelAbiCognitiveState threads deps.mindMemory into the cache read', async () => {
+    const canonicalFindUnique = jest.fn().mockResolvedValue(null);
+    const canonicalUpsert = jest.fn().mockResolvedValue({});
+    const fallbackFindUnique = jest.fn().mockResolvedValue(null);
+    const fallbackUpsert = jest.fn().mockResolvedValue({});
+    const prisma = {
+      kloelMemory: { findUnique: fallbackFindUnique, upsert: fallbackUpsert },
+    } as unknown as PrismaService;
+    const mindMemory = {
+      items: { findUnique: canonicalFindUnique, upsert: canonicalUpsert },
+    } as unknown as MindMemoryItemService;
+
+    await buildKloelAbiCognitiveState(
+      { prisma, logger, services: {}, mindMemory },
+      { workspaceId: 'ws-canon', userMessage: 'Hi' },
+      { raw: 'Hi', channel: 'web', arrivalTimestamp: new Date().toISOString() },
+    );
+
+    expect(canonicalFindUnique).toHaveBeenCalledTimes(1);
+    expect(canonicalUpsert).toHaveBeenCalledTimes(1);
+    expect(fallbackFindUnique).not.toHaveBeenCalled();
+    expect(fallbackUpsert).not.toHaveBeenCalled();
   });
 });

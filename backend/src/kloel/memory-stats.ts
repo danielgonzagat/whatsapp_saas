@@ -14,7 +14,18 @@ function hasKloelMemoryDelegate(prisma: PrismaService): boolean {
   return 'kloelMemory' in prisma;
 }
 
-export async function computeMemoryStats(prisma: PrismaService): Promise<MemoryStats> {
+export async function computeMemoryStats(
+  prisma: PrismaService,
+  /**
+   * Canonical mind-memory delegate. Defaults to `prisma.kloelMemory` so legacy
+   * callers stay byte-identical; the canonical caller passes
+   * `MindMemoryItemService.items`, which returns the SAME `prisma.kloelMemory`
+   * delegate (same physical `RAC_KloelMemory` table) — zero behaviour drift.
+   * `$queryRaw` (a top-level Prisma method, not exposed on the delegate) stays
+   * on `prisma`, unchanged.
+   */
+  memoryDelegate: PrismaService['kloelMemory'] = prisma.kloelMemory,
+): Promise<MemoryStats> {
   if (!hasKloelMemoryDelegate(prisma)) {
     return {
       total: 0,
@@ -26,11 +37,11 @@ export async function computeMemoryStats(prisma: PrismaService): Promise<MemoryS
   }
 
   // @PublicMetric: platform-wide memory total stat
-  const total = await prisma.kloelMemory.count({ where: { workspaceId: { not: '' } } });
+  const total = await memoryDelegate.count({ where: { workspaceId: { not: '' } } });
 
   const byCategory: Record<string, number> = {};
   // @PublicMetric: platform-wide memory groupBy category stat
-  const categoryGroups = await prisma.kloelMemory.groupBy({
+  const categoryGroups = await memoryDelegate.groupBy({
     by: ['category'],
     where: { workspaceId: { not: '' } },
     _count: { id: true },
@@ -41,7 +52,7 @@ export async function computeMemoryStats(prisma: PrismaService): Promise<MemoryS
   }
 
   const byWorkspace: Record<string, number> = {};
-  const workspaceGroups = await prisma.kloelMemory.groupBy({
+  const workspaceGroups = await memoryDelegate.groupBy({
     by: ['workspaceId'],
     _count: { id: true },
     orderBy: { _count: { id: 'desc' } },
@@ -52,7 +63,7 @@ export async function computeMemoryStats(prisma: PrismaService): Promise<MemoryS
     byWorkspace[g.workspaceId] = countValue;
   }
 
-  const oldest = await prisma.kloelMemory.findFirst({
+  const oldest = await memoryDelegate.findFirst({
     orderBy: { createdAt: 'asc' },
     select: { createdAt: true, workspaceId: true },
   });

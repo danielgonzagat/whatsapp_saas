@@ -13,6 +13,7 @@
  * thrown to the caller.
  */
 import type { PrismaService } from '../prisma/prisma.service';
+import type { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 import type { AbiBuilderService } from './abi/abi-builder.service';
 import { validateAbiPayload } from './abi/abi-validator';
 import { buildMindSignals, type BuildMindSignalsDeps } from './mind/build-mind-signals.helper';
@@ -134,9 +135,14 @@ export async function readAbiSnapshotCache(
   prisma: PrismaService,
   logger: CognitiveStateLogger,
   workspaceId: string,
+  mindMemory?: MindMemoryItemService,
 ): Promise<Record<string, unknown> | null> {
+  // Canonical Mind surface: `.items` returns the same `prisma.kloelMemory`
+  // delegate (same physical table) — byte-identical args, zero behaviour drift.
+  // Falls back to `prisma.kloelMemory` when the canonical service is absent.
+  const memoryItems = mindMemory?.items ?? prisma.kloelMemory;
   try {
-    const cached = await prisma.kloelMemory.findUnique({
+    const cached = await memoryItems.findUnique({
       where: { workspaceId_key: { workspaceId, key: ABI_SNAPSHOT_KEY } },
     });
     if (cached?.content && cached.updatedAt) {
@@ -159,7 +165,12 @@ export async function writeAbiSnapshotCache(
   logger: CognitiveStateLogger,
   workspaceId: string,
   cognitiveState: Record<string, unknown>,
+  mindMemory?: MindMemoryItemService,
 ): Promise<void> {
+  // Canonical Mind surface: `.items` returns the same `prisma.kloelMemory`
+  // delegate (same physical table) — byte-identical upsert args, zero drift.
+  // Falls back to `prisma.kloelMemory` when the canonical service is absent.
+  const memoryItems = mindMemory?.items ?? prisma.kloelMemory;
   try {
     const serialized = JSON.stringify(cognitiveState);
     if (serialized.length > ABI_SNAPSHOT_MAX_BYTES) {
@@ -169,7 +180,7 @@ export async function writeAbiSnapshotCache(
       });
       return;
     }
-    await prisma.kloelMemory.upsert({
+    await memoryItems.upsert({
       where: {
         workspaceId_key: { workspaceId, key: ABI_SNAPSHOT_KEY },
       },
@@ -209,6 +220,7 @@ export async function buildKloelAbiCognitiveState(
     logger: CognitiveStateLogger;
     abiBuilder?: AbiBuilderService;
     services: KloelMindServices;
+    mindMemory?: MindMemoryItemService;
   },
   params: {
     workspaceId?: string | null;
@@ -224,7 +236,12 @@ export async function buildKloelAbiCognitiveState(
   };
 
   if (params.workspaceId) {
-    const cached = await readAbiSnapshotCache(deps.prisma, deps.logger, params.workspaceId);
+    const cached = await readAbiSnapshotCache(
+      deps.prisma,
+      deps.logger,
+      params.workspaceId,
+      deps.mindMemory,
+    );
     if (cached) {
       return cached;
     }
@@ -322,7 +339,13 @@ export async function buildKloelAbiCognitiveState(
   }
 
   if (params.workspaceId) {
-    await writeAbiSnapshotCache(deps.prisma, deps.logger, params.workspaceId, cognitiveState);
+    await writeAbiSnapshotCache(
+      deps.prisma,
+      deps.logger,
+      params.workspaceId,
+      cognitiveState,
+      deps.mindMemory,
+    );
   }
 
   return cognitiveState;

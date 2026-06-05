@@ -155,9 +155,14 @@ export async function extractProductFromMessage(
   prisma: PrismaService,
   workspaceId: string,
   message: string,
+  // Canonical Brain → Mind memory delegate. Defaults to the raw Prisma
+  // `kloelMemory` delegate so behavior is byte-identical when the caller does
+  // not route through `MindMemoryItemService`. The canonical surface hits the
+  // SAME `RAC_KloelMemory` row — no query/arg/semantic change.
+  memoryItems: PrismaService['kloelMemory'] = prisma.kloelMemory,
 ): Promise<{ name: string; price: number } | null> {
   try {
-    const products = await prisma.kloelMemory.findMany({
+    const products = await memoryItems.findMany({
       where: { workspaceId, type: 'product' },
       select: { id: true, value: true },
       take: 100,

@@ -67,6 +67,7 @@ import {
 } from './kloel-reply-engine.emotional-tone.helpers';
 import { buildRecallDirective } from './kloel-reply-engine.recall.helpers';
 import { LongTermMemoryService } from './mind/memory/long-term-memory.service';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 
 type ChatCompletionMessageParam = OpenAI.Chat.ChatCompletionMessageParam;
 
@@ -119,19 +120,25 @@ export class KloelReplyEngineService {
     private readonly emotionalIntelligenceService?: MindEmotionalIntelligenceService,
     @Optional() private readonly longTermMemoryService?: LongTermMemoryService,
     @Optional() private readonly mindPredictor?: MindPredictorService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {
     this.openai = createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 });
     this.toolRouter = new KloelToolRouter(
       this.logger,
       this.unifiedAgentService,
       async (workspaceId, key, content) => {
-        await this.prisma.kloelMemory.upsert({
+        await this.mindMemoryItems.upsert({
           where: { workspaceId_key: { workspaceId, key } },
           update: { content, value: {}, category: 'tool_artifact', updatedAt: new Date() },
           create: { workspaceId, key, value: {}, content, category: 'tool_artifact' },
         });
       },
     );
+  }
+
+  /** Canonical Brain → Mind memory delegate (raw-Prisma fallback). */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
   }
 
   get contextFormatter(): KloelContextFormatter {

@@ -261,7 +261,12 @@ export class KloelLeadProcessorService {
     );
     const buyIntent = detectBuyIntent(message);
     if (buyIntent === 'high') {
-      const productMention = await extractProductFromMessage(this.prisma, workspaceId, message);
+      const productMention = await extractProductFromMessage(
+        this.prisma,
+        workspaceId,
+        message,
+        this.mindMemoryItems,
+      );
       if (productMention) {
         const lead = await this.prisma.kloelLead.findFirst({
           where: { workspaceId, phone: senderPhone },

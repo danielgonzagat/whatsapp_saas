@@ -5,6 +5,7 @@ import { UnifiedAgentService } from './unified-agent.service';
 import { SmartPaymentService } from './smart-payment.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import { partialMatch, stringContains } from '../../test/helpers/match-instance';
 import { castMock } from '../../test/helpers/cast-mock';
@@ -360,6 +361,60 @@ describe('KloelLeadProcessorService', () => {
       );
       expect(result.paymentLink).toBeUndefined();
       expect(result.response).toBeDefined();
+    });
+  });
+
+  describe('canonical MindMemoryItemService surface', () => {
+    it('routes product extraction through MindMemoryItemService.items (not raw prisma.kloelMemory)', async () => {
+      // Canonical-surface product row, served by MindMemoryItemService.items.
+      const itemsFindMany = jest.fn().mockResolvedValue([
+        {
+          id: 'mem-canon',
+          type: 'product',
+          value: { name: 'Curso X', price: 99.9 },
+        },
+      ]);
+      // Raw prisma delegate must NOT be consulted when the canonical service is wired.
+      prisma.kloelMemory.findMany.mockResolvedValue([]);
+      prisma.kloelLead.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce({
+        id: 'lead-1',
+        workspaceId: wsId,
+        phone: '5511999999999',
+        name: 'Cliente',
+        stage: 'new',
+        score: 0,
+      });
+
+      const mindMemory = { items: { findMany: itemsFindMany } };
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          KloelLeadProcessorService,
+          { provide: PrismaService, useValue: prisma },
+          { provide: UnifiedAgentService, useValue: unifiedAgent },
+          { provide: SmartPaymentService, useValue: smartPayment },
+          { provide: PlanLimitsService, useValue: planLimits },
+          { provide: AbiBuilderService, useValue: abiBuilder },
+          { provide: MindMemoryItemService, useValue: mindMemory },
+        ],
+      }).compile();
+      const canonicalService = module.get<KloelLeadProcessorService>(KloelLeadProcessorService);
+
+      const result = await canonicalService.processWhatsAppMessageWithPayment(
+        wsId,
+        '5511999999999',
+        'Quero comprar curso x agora!',
+        () => Promise.resolve('context'),
+      );
+
+      // Behavior preserved: canonical row still yields the payment link.
+      expect(result.paymentLink).toBeDefined();
+      expect(result.response).toContain('pay.test');
+      // The product lookup hit the canonical surface…
+      expect(itemsFindMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { workspaceId: wsId, type: 'product' } }),
+      );
+      // …and NOT the raw prisma.kloelMemory delegate.
+      expect(prisma.kloelMemory.findMany).not.toHaveBeenCalled();
     });
   });
 
