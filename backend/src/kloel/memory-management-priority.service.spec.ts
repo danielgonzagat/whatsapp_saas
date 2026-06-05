@@ -308,7 +308,7 @@ describe('MemoryManagementService', () => {
       // The byte-identical deleteMany must hit the canonical surface, NOT the
       // bare prisma.kloelMemory delegate.
       expect(mindItems.deleteMany).toHaveBeenCalledWith({
-        where: expect.objectContaining({ workspaceId: 'ws-canon' }),
+        where: expect.objectContaining({ workspaceId: 'ws-canon' }) as unknown,
       });
       expect(prisma.kloelMemory.deleteMany).not.toHaveBeenCalled();
     });

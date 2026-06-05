@@ -31,6 +31,25 @@ export interface AutopilotPerceptEmitParams {
   readonly conversationProofId?: string | null;
 }
 
+function formatUnknownError(err: unknown): string {
+  if (err instanceof Error) {
+    return err.message;
+  }
+  if (typeof err === 'string') {
+    return err;
+  }
+  try {
+    const serialized: unknown = JSON.stringify(err);
+    if (typeof serialized === 'string') {
+      return serialized;
+    }
+  } catch {
+    // fall through to Object.prototype.toString
+  }
+  const fallback: unknown = Object.prototype.toString.call(err);
+  return typeof fallback === 'string' ? fallback : 'unknown error';
+}
+
 /**
  * Emit ONE canonical `cognition.autopilot.action_executed` percept into the
  * durable spine outbox (`RAC_MindOutboxEvent`) after a CIA action is dispatched.
@@ -98,7 +117,7 @@ export async function emitAutopilotActionExecutedPercept(
     logger.warn(
       `Autopilot percept emit failed (workspaceId=${params.workspaceId}, ` +
         `actionType=${params.actionType}); the CIA action dispatch succeeded ` +
-        `and is unaffected: ${err instanceof Error ? err.message : String(err)}`,
+        `and is unaffected: ${formatUnknownError(err)}`,
     );
   }
 

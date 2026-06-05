@@ -19,9 +19,10 @@ describe('computeMemoryStats — canonical Mind surface routing', () => {
         // first call → byCategory groups, second call → byWorkspace groups
         .mockResolvedValueOnce([{ category: 'general', _count: { id: 4 } }])
         .mockResolvedValueOnce([{ workspaceId: 'ws-1', _count: { id: 5 } }]),
-      findFirst: jest
-        .fn()
-        .mockResolvedValue({ createdAt: new Date('2024-01-01T00:00:00.000Z'), workspaceId: 'ws-1' }),
+      findFirst: jest.fn().mockResolvedValue({
+        createdAt: new Date('2024-01-01T00:00:00.000Z'),
+        workspaceId: 'ws-1',
+      }),
     };
   }
 

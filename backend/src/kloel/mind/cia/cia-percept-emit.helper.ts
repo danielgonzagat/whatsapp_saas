@@ -45,6 +45,25 @@ export interface CiaActionPerceptParams {
   readonly candidateCount: number;
 }
 
+function formatUnknownError(err: unknown): string {
+  if (err instanceof Error) {
+    return err.message;
+  }
+  if (typeof err === 'string') {
+    return err;
+  }
+  try {
+    const serialized: unknown = JSON.stringify(err);
+    if (typeof serialized === 'string') {
+      return serialized;
+    }
+  } catch {
+    // fall through to Object.prototype.toString
+  }
+  const fallback: unknown = Object.prototype.toString.call(err);
+  return typeof fallback === 'string' ? fallback : 'unknown error';
+}
+
 /**
  * Emit ONE canonical `cognition.cia.decision_made` percept into the durable
  * spine outbox (`RAC_MindOutboxEvent`) when CIA chooses an autonomy posture.
@@ -107,7 +126,7 @@ export async function emitCiaDecisionMadePercept(
     logger.warn(
       `CIA decision percept emit failed (workspaceId=${params.workspaceId}, ` +
         `runId=${params.runId}); the autonomy write succeeded and is ` +
-        `unaffected: ${err instanceof Error ? err.message : String(err)}`,
+        `unaffected: ${formatUnknownError(err)}`,
     );
   }
 
@@ -166,7 +185,7 @@ export async function emitCiaActionExecutedPercept(
     logger.warn(
       `CIA action percept emit failed (workspaceId=${params.workspaceId}, ` +
         `runId=${params.runId}); the autonomy dispatch succeeded and is ` +
-        `unaffected: ${err instanceof Error ? err.message : String(err)}`,
+        `unaffected: ${formatUnknownError(err)}`,
     );
   }
 

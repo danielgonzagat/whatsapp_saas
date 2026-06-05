@@ -21,10 +21,7 @@ import {
   findConflictingProductCouponInWorkspace,
   syncWorkspaceCheckoutCouponForProduct,
 } from '../product-coupon-sync.util';
-import {
-  LooseObject,
-  ensureWorkspaceProductAccess
-} from './helpers/common.helpers';
+import { LooseObject, ensureWorkspaceProductAccess } from './helpers/common.helpers';
 import { buildCouponData, serializeCoupon } from './helpers/plan.helpers';
 import { RouteClass } from '../../common/throttler/route-class.decorator';
 import { ProductCouponDomainService } from '../product-coupon-domain.service';
@@ -61,7 +58,11 @@ export class ProductCouponController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: AuthenticatedRequest,
   ) {
-    const product = await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
+    const product = await ensureWorkspaceProductAccess(
+      this.prisma,
+      productId,
+      resolveWorkspaceId(req),
+    );
 
     const payload = buildCouponData(body);
     const conflict = await findConflictingProductCouponInWorkspace(

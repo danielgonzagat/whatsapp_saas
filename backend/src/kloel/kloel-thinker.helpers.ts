@@ -257,6 +257,31 @@ export async function regenerateThreadAssistantResponseImpl(
       auditLog: { create: (args: unknown) => Promise<unknown> };
       $transaction: (ops: unknown) => Promise<unknown[]>;
     };
+    // Canonical Mind surface for the SEPARATE RAC_ChatMessage table. The caller
+    // (KloelThinkerService) passes `mindChatMessage?.items ?? this.prisma.chatMessage`
+    // — same delegate, byte-identical. When absent we fall back to `prisma.chatMessage`.
+    chatMessageItems?: {
+      findFirst: (args: unknown) => Promise<{
+        id: string;
+        threadId: string;
+        role: string;
+        content: string;
+        metadata: Prisma.JsonValue | null;
+        createdAt: Date;
+      } | null>;
+      findMany: (args: unknown) => Promise<
+        Array<{
+          id: string;
+          threadId: string;
+          role: string;
+          content: string;
+          metadata: Prisma.JsonValue | null;
+          createdAt: Date;
+        }>
+      >;
+      updateMany: (args: unknown) => Promise<unknown>;
+      deleteMany: (args: unknown) => Promise<unknown>;
+    };
     replyEngine: KloelReplyEngineService;
     threadService: KloelThreadService;
   },
@@ -271,6 +296,8 @@ export async function regenerateThreadAssistantResponseImpl(
 }> {
   const { workspaceId, conversationId, assistantMessageId, userId, userName } = params;
   const { prisma, replyEngine, threadService } = deps;
+  // Canonical Mind accessor for RAC_ChatMessage (documented fallback idiom).
+  const chatMessageItems = deps.chatMessageItems ?? prisma.chatMessage;
 
   const thread = await prisma.chatThread.findFirst({
     where: { id: conversationId, workspaceId },
@@ -281,7 +308,7 @@ export async function regenerateThreadAssistantResponseImpl(
   }
 
   const messages = (
-    await prisma.chatMessage.findMany({
+    await chatMessageItems.findMany({
       where: { threadId: conversationId, workspaceId },
       orderBy: { createdAt: 'desc' },
       take: 500,
@@ -379,7 +406,7 @@ export async function regenerateThreadAssistantResponseImpl(
   );
 
   const operations: Prisma.PrismaPromise<unknown>[] = [
-    prisma.chatMessage.updateMany({
+    chatMessageItems.updateMany({
       where: { id: assistantMessageId, workspaceId },
       data: {
         content: regeneratedContent,
@@ -389,7 +416,7 @@ export async function regenerateThreadAssistantResponseImpl(
   ];
   if (deletedMessageIds.length > 0) {
     operations.push(
-      prisma.chatMessage.deleteMany({
+      chatMessageItems.deleteMany({
         where: { id: { in: deletedMessageIds }, workspaceId },
       }) as Prisma.PrismaPromise<unknown>,
       prisma.auditLog.create({
@@ -410,7 +437,7 @@ export async function regenerateThreadAssistantResponseImpl(
   operations.push(threadService.touchThread(conversationId, workspaceId));
 
   await prisma.$transaction(operations);
-  const updatedMessage = await prisma.chatMessage.findFirst({
+  const updatedMessage = await chatMessageItems.findFirst({
     where: { id: assistantMessageId, workspaceId },
     select: {
       id: true,

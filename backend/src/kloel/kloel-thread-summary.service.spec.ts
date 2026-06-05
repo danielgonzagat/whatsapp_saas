@@ -338,7 +338,9 @@ describe('KloelThreadSummaryService', () => {
       expect(chatCompletionWithFallbackMock).not.toHaveBeenCalled();
       expect(opsAlert.alertOnCriticalError).not.toHaveBeenCalled();
       const [[refreshUpdateArg]] = prisma.chatThread.updateMany.mock.calls as [[UpdateManyArg]];
-      expect(String(refreshUpdateArg.data.summary)).toContain('Fallback message');
+      const refreshedSummary = refreshUpdateArg.data.summary;
+      expect(typeof refreshedSummary).toBe('string');
+      expect(refreshedSummary).toContain('Fallback message');
       expect(refreshUpdateArg.data.summaryUpdatedAt).toBeInstanceOf(Date);
     });
   });

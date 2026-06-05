@@ -8,10 +8,7 @@ import {
   normalizeProductAiConfigInput,
   serializeProductAiConfig,
 } from './helpers/ai-config.helpers';
-import {
-  LooseObject,
-  ensureWorkspaceProductAccess
-} from './helpers/common.helpers';
+import { LooseObject, ensureWorkspaceProductAccess } from './helpers/common.helpers';
 
 /** Product ai config controller. */
 import { RouteClass } from '../../common/throttler/route-class.decorator';

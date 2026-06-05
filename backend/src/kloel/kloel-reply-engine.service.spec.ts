@@ -368,7 +368,7 @@ describe('KloelReplyEngineService', () => {
         content: 'artifact body',
         value: {},
         category: 'tool_artifact',
-        updatedAt: expect.any(Date),
+        updatedAt: expect.any(Date) as unknown,
       },
       create: {
         workspaceId: 'ws-1',

@@ -39,6 +39,24 @@ export class KloelMemoryEngineService {
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
   ) {}
+  private formatUnknownError(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    if (typeof error === 'string') {
+      return error;
+    }
+    try {
+      const serialized: unknown = JSON.stringify(error);
+      if (typeof serialized === 'string') {
+        return serialized;
+      }
+    } catch {
+      // fall through to Object.prototype.toString
+    }
+    const fallback: unknown = Object.prototype.toString.call(error);
+    return typeof fallback === 'string' ? fallback : 'unknown error';
+  }
 
   private namespaceFor(userId: string): string {
     return `${KloelMemoryEngineService.NAMESPACE_PREFIX}${userId}`;
@@ -73,7 +91,7 @@ export class KloelMemoryEngineService {
     } catch (error: unknown) {
       this.logger.warn('memory LLM call failed', {
         context: 'KloelMemoryEngineService.completeJson',
-        error: error instanceof Error ? error.message : String(error),
+        error: this.formatUnknownError(error),
       });
       return null;
     }
@@ -197,7 +215,7 @@ export class KloelMemoryEngineService {
     } catch (error: unknown) {
       this.logger.warn('remember failed', {
         context: 'KloelMemoryEngineService.remember',
-        error: error instanceof Error ? error.message : String(error),
+        error: this.formatUnknownError(error),
       });
     }
     return result;
@@ -243,7 +261,7 @@ export class KloelMemoryEngineService {
     } catch (error: unknown) {
       this.logger.warn('recall failed', {
         context: 'KloelMemoryEngineService.recall',
-        error: error instanceof Error ? error.message : String(error),
+        error: this.formatUnknownError(error),
       });
       return [];
     }

@@ -167,7 +167,18 @@ describe('cognitive-state cache — canonical MindMemoryItemService surface', ()
   });
 
   it('writeAbiSnapshotCache routes the upsert through mindMemory.items with byte-identical args', async () => {
-    const canonicalUpsert = jest.fn().mockResolvedValue({});
+    type CanonicalUpsertArg = {
+      where: { workspaceId_key: { workspaceId: string; key: string } };
+      update: { content: string; category: string; value: unknown };
+      create: {
+        workspaceId: string;
+        key: string;
+        content: string;
+        category: string;
+        value: unknown;
+      };
+    };
+    const canonicalUpsert = jest.fn<Promise<unknown>, [CanonicalUpsertArg]>().mockResolvedValue({});
     const fallbackUpsert = jest.fn().mockResolvedValue({});
     const prisma = {
       kloelMemory: { upsert: fallbackUpsert },

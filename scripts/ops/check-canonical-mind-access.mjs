@@ -115,39 +115,26 @@ const GRANDFATHERED_FILES = new Set([
 // exact statement so a NEW direct access in the same file still fails.
 // ---------------------------------------------------------------------------
 const GRANDFATHERED_DIRECT = new Map([
-  // Mind policy writer: persists policy outcomes through the canonical table.
-  [
-    'backend/src/kloel/mind/policy/mind-policy.helpers.ts',
-    [`await ${PRISMA}.${KLOEL_MEMORY}.upsert(`],
-  ],
-  // Pure-fn helpers receiving prisma as a parameter (`ctx.prisma` / `deps.prisma`
-  // / bare `prisma`). They have NO DI ctor to inject MindChatMessageService into,
-  // so canonical convergence happens caller-side (deferred — tracked as a
-  // partial in the chatmessage-converge task). Each statement is pinned with its
-  // receiver prefix so a NEW direct chatMessage access in these files still fails.
-  [
-    'backend/src/gdpr/gdpr-processing.helpers.ts',
-    [`ctx.${PRISMA}.${CHAT_MESSAGE}.findMany(`],
-  ],
-  [
-    'backend/src/kloel/kloel-thread.controller-helpers.ts',
-    [
-      `deps.${PRISMA}.${CHAT_MESSAGE}.findMany(`,
-      `deps.${PRISMA}.${CHAT_MESSAGE}.create(`,
-      `deps.${PRISMA}.${CHAT_MESSAGE}.findFirst(`,
-      `deps.${PRISMA}.${CHAT_MESSAGE}.updateMany(`,
-      `deps.${PRISMA}.${CHAT_MESSAGE}.findFirstOrThrow(`,
-    ],
-  ],
-  [
-    'backend/src/kloel/kloel-thinker.helpers.ts',
-    [
-      `${PRISMA}.${CHAT_MESSAGE}.findMany(`,
-      `${PRISMA}.${CHAT_MESSAGE}.updateMany(`,
-      `${PRISMA}.${CHAT_MESSAGE}.deleteMany(`,
-      `${PRISMA}.${CHAT_MESSAGE}.findFirst(`,
-    ],
-  ],
+  // NOTE: mind-policy.helpers.ts#persistResolvedPolicyMemories was previously
+  // deferred here (it took a `prisma` wrapper and wrote via
+  // `prisma.kloelMemory.upsert`). It is now CONVERGED caller-side: the helper
+  // accepts a `kloelMemory` delegate param and `MindPolicyService` passes the
+  // canonical `this.mindMemoryItems` accessor (`mindMemory?.items ??
+  // this.prisma.kloelMemory`) — or `tx.kloelMemory` inside a `$transaction`.
+  // Byte-identical (same RAC_KloelMemory row), so the grandfather entry is gone
+  // and the gate scans this file like any other.
+  // NOTE: gdpr-processing.helpers.ts, kloel-thread.controller-helpers.ts, and
+  // kloel-thinker.helpers.ts were previously deferred here (pure-fn helpers
+  // receiving prisma as a `ctx.prisma` / `deps.prisma` / bare-`prisma` param).
+  // They are now CONVERGED caller-side: each caller
+  // (GdprService / KloelController / KloelThinkerService) injects
+  // MindChatMessageService `@Optional()`, exposes a `chatMessageItems` getter
+  // (`mindChatMessage?.items ?? this.prisma.chatMessage`), and threads that
+  // canonical accessor through the helper's ctx/deps so the helper reads
+  // `chatMessageItems` (with a `?? …prisma.chatMessage` fallback — the documented
+  // fallback idiom, exempt via FALLBACK_RE). Byte-identical (same RAC_ChatMessage
+  // table), so the grandfather entries are removed and the gate scans these files
+  // like any other.
 ]);
 
 // ---------------------------------------------------------------------------

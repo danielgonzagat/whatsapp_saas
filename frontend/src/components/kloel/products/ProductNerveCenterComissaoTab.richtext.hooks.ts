@@ -6,8 +6,12 @@ import { apiFetch } from '@/lib/api';
 import { useId, useRef, useState } from 'react';
 import { unwrapApiPayload, type JsonRecord } from './product-nerve-center.shared';
 import {
+  applyInlineFormatToEditable,
+  applyLinkToEditable,
+  cloneEditableSelection,
   normalizeLinkUrl,
   readEditableHtml,
+  type RichTextInlineTag,
 } from './ProductNerveCenterComissaoTab.helpers';
 import type { RichTextSaveField } from './ProductNerveCenterComissaoTab.types';
 
@@ -29,6 +33,13 @@ export function useRichTextContent(
   const [linkError, setLinkError] = useState<string | null>(null);
   const linkInputId = useId();
   const editorRef = useRef<HTMLDivElement | null>(null);
+  const pendingLinkRangeRef = useRef<Range | null>(null);
+
+  const syncContentFromEditor = (nextContent: string | null) => {
+    if (nextContent !== null) {
+      setContent(nextContent);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -52,7 +63,12 @@ export function useRichTextContent(
     }
   };
 
+  const handleFormatInline = (tag: RichTextInlineTag) => {
+    syncContentFromEditor(applyInlineFormatToEditable(editorRef.current, tag));
+  };
+
   const handleOpenLinkDialog = () => {
+    pendingLinkRangeRef.current = cloneEditableSelection(editorRef.current);
     setLinkValue('');
     setLinkError(null);
     setLinkDialogOpen(true);
@@ -65,8 +81,10 @@ export function useRichTextContent(
       return;
     }
 
-    document.execCommand('createLink', false, normalizedUrl);
-    setContent(readEditableHtml(editorRef.current, content));
+    syncContentFromEditor(
+      applyLinkToEditable(editorRef.current, normalizedUrl, pendingLinkRangeRef.current),
+    );
+    pendingLinkRangeRef.current = null;
     setLinkDialogOpen(false);
   };
 
@@ -84,6 +102,7 @@ export function useRichTextContent(
     linkInputId,
     editorRef,
     handleSave,
+    handleFormatInline,
     handleOpenLinkDialog,
     handleInsertLink,
   };

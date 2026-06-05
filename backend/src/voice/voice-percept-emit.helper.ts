@@ -39,6 +39,25 @@ export interface VoiceActionExecutedPerceptParams {
   readonly textLength: number;
 }
 
+function formatUnknownError(err: unknown): string {
+  if (err instanceof Error) {
+    return err.message;
+  }
+  if (typeof err === 'string') {
+    return err;
+  }
+  try {
+    const serialized: unknown = JSON.stringify(err);
+    if (typeof serialized === 'string') {
+      return serialized;
+    }
+  } catch {
+    // fall through to Object.prototype.toString
+  }
+  const fallback: unknown = Object.prototype.toString.call(err);
+  return typeof fallback === 'string' ? fallback : 'unknown error';
+}
+
 /**
  * Emit ONE canonical `cognition.voice.clone_created` percept into the durable
  * spine outbox (`RAC_MindOutboxEvent`) when a workspace creates a voice
@@ -100,7 +119,7 @@ export async function emitVoiceCloneCreatedPercept(
     logger.warn(
       `Voice clone percept emit failed (workspaceId=${params.workspaceId}, ` +
         `profileId=${params.profileId}); the voice-profile write succeeded and ` +
-        `is unaffected: ${err instanceof Error ? err.message : String(err)}`,
+        `is unaffected: ${formatUnknownError(err)}`,
     );
   }
 
@@ -159,7 +178,7 @@ export async function emitVoiceActionExecutedPercept(
     logger.warn(
       `Voice action percept emit failed (workspaceId=${params.workspaceId}, ` +
         `jobId=${params.jobId}); the voice-job dispatch succeeded and is ` +
-        `unaffected: ${err instanceof Error ? err.message : String(err)}`,
+        `unaffected: ${formatUnknownError(err)}`,
     );
   }
 

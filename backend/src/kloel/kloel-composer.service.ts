@@ -74,6 +74,25 @@ export class KloelComposerService {
     this.textLlm = createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 });
   }
 
+  private formatUnknownError(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    if (typeof error === 'string') {
+      return error;
+    }
+    try {
+      const serialized: unknown = JSON.stringify(error);
+      if (typeof serialized === 'string') {
+        return serialized;
+      }
+    } catch {
+      // fall through to Object.prototype.toString
+    }
+    const fallback: unknown = Object.prototype.toString.call(error);
+    return typeof fallback === 'string' ? fallback : 'unknown error';
+  }
+
   buildCapabilityPrompt(message: string, composerContext?: string): string {
     return buildCapabilityPrompt(message, composerContext);
   }
@@ -175,7 +194,7 @@ export class KloelComposerService {
     try {
       await this.planLimits.trackAiUsage(workspaceId, usageTokens);
     } catch (error: unknown) {
-      const reason = error instanceof Error ? error.message : String(error);
+      const reason = this.formatUnknownError(error);
       this.logger.warn(
         `Falha ao registrar uso de IA do composer capability=${capability} ws=${workspaceId} tokens=${usageTokens}: ${reason}`,
       );
@@ -373,7 +392,7 @@ export class KloelComposerService {
             try {
               errorText = await response.text();
             } catch (error: unknown) {
-              this.logger.warn(`Falha ao ler erro da Anthropic: ${String(error)}`);
+              this.logger.warn(`Falha ao ler erro da Anthropic: ${this.formatUnknownError(error)}`);
             }
             const status = response.status;
             if (shouldRetryAnthropicStatus(status)) {

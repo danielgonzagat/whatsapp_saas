@@ -95,16 +95,27 @@ export function DialogFrame({
   );
 }
 
-function RichTextToolbar({ onInsertLink }: { onInsertLink: () => void }) {
+function RichTextToolbar({
+  onFormatInline,
+  onInsertLink,
+}: {
+  onFormatInline: (tag: 'b' | 'i' | 'u') => void;
+  onInsertLink: () => void;
+}) {
+  const formatByToken = {
+    B: 'b',
+    I: 'i',
+    U: 'u',
+  } as const;
+
   return (
     <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
-      {['B', 'I', 'U'].map((token) => (
+      {(Object.keys(formatByToken) as Array<keyof typeof formatByToken>).map((token) => (
         <button
           type="button"
           key={token}
-          onClick={() =>
-            document.execCommand(token === 'B' ? 'bold' : token === 'I' ? 'italic' : 'underline')
-          }
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => onFormatInline(formatByToken[token])}
           style={{
             width: 28,
             height: 28,
@@ -124,6 +135,7 @@ function RichTextToolbar({ onInsertLink }: { onInsertLink: () => void }) {
       ))}
       <button
         type="button"
+        onMouseDown={(event) => event.preventDefault()}
         onClick={onInsertLink}
         style={{
           width: 28,
@@ -153,6 +165,7 @@ function RichTextToolbar({ onInsertLink }: { onInsertLink: () => void }) {
     </div>
   );
 }
+
 
 function RichTextEditor({
   editorRef,
@@ -219,6 +232,7 @@ export function RichTextContentSubTab({
     linkInputId,
     editorRef,
     handleSave,
+    handleFormatInline,
     handleOpenLinkDialog,
     handleInsertLink,
   } = useRichTextContent(
@@ -239,7 +253,10 @@ export function RichTextContentSubTab({
           <p style={{ fontSize: 12, color: V.t2, marginBottom: 16 }}>{description}</p>
         ) : null}
         <div style={{ background: V.e, border: `1px solid ${V.b}`, borderRadius: 6, padding: 12 }}>
-          <RichTextToolbar onInsertLink={handleOpenLinkDialog} />
+          <RichTextToolbar
+            onFormatInline={handleFormatInline}
+            onInsertLink={handleOpenLinkDialog}
+          />
           <RichTextEditor
             editorRef={editorRef}
             html={content}

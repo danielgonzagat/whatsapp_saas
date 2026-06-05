@@ -23,10 +23,7 @@ import {
   buildCommissionPayload,
   ensureNoDuplicateCommission,
 } from './helpers/affiliate.helpers';
-import {
-  LooseObject,
-  ensureWorkspaceProductAccess
-} from './helpers/common.helpers';
+import { LooseObject, ensureWorkspaceProductAccess } from './helpers/common.helpers';
 
 /** Product commission controller. */
 import { RouteClass } from '../../common/throttler/route-class.decorator';

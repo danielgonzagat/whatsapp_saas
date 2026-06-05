@@ -203,12 +203,6 @@ export function KloelGraphLiteralCanvas({
     return result;
   }, [activeNodeId, hoveredId, visibleEdges]);
 
-  useEffect(() => {
-    if (!activeNodeId) {
-      setHoveredId(null);
-    }
-  }, [activeNodeId]);
-
   const forceRender = useCallback(() => {
     setSnapshot(nodesRef.current.map((node) => ({ ...node })));
   }, []);
@@ -248,7 +242,9 @@ export function KloelGraphLiteralCanvas({
       }
       const count = (galaxyCount[node.area] || 0) + 1;
       galaxyCount[node.area] = count;
-      const parent = node.parentId ? nodesRef.current.find((live) => live.id === node.parentId) : null;
+      const parent = node.parentId
+        ? nodesRef.current.find((live) => live.id === node.parentId)
+        : null;
       const sun = anchors.get(SUN_OF_AREA[node.area]) || { x: 0, y: 0 };
       const cx = parent?.x ?? sun.x;
       const cy = parent?.y ?? sun.y;
@@ -402,7 +398,10 @@ export function KloelGraphLiteralCanvas({
       }
       const { w, h } = sizeRef.current;
       const galaxyRadius = GALAXY_RADIUS[focusedArea] || 200;
-      const targetZoom = Math.max(0.4, Math.min(1.6, Math.min(w, h) / (2 * (galaxyRadius + margin))));
+      const targetZoom = Math.max(
+        0.4,
+        Math.min(1.6, Math.min(w, h) / (2 * (galaxyRadius + margin))),
+      );
       const z0 = zoomRef.current;
       const z1 = z0 + (targetZoom - z0) * ease;
       const targetPanX = -sun.x * z1;
@@ -582,7 +581,15 @@ export function KloelGraphLiteralCanvas({
         }}
       >
         <defs>
-          <marker id="kloel-graph-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <marker
+            id="kloel-graph-arrow"
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="6"
+            markerHeight="6"
+            orient="auto"
+          >
             <path d="M 0 0 L 10 5 L 0 10 z" fill={C.ember} />
           </marker>
         </defs>
@@ -623,7 +630,9 @@ export function KloelGraphLiteralCanvas({
                 opacity={highlighted ? 0.9 : dimmed ? 0.04 : 0.3}
                 strokeLinecap="round"
                 markerEnd={useArrows && highlighted ? 'url(#kloel-graph-arrow)' : undefined}
-                style={{ transition: 'opacity .28s ease, stroke .28s ease, stroke-width .28s ease' }}
+                style={{
+                  transition: 'opacity .28s ease, stroke .28s ease, stroke-width .28s ease',
+                }}
               />
             );
           })}
@@ -788,7 +797,11 @@ function applyFilters(
   const visible = new Set(nodes.map((node) => node.id));
   if (!filters.showAttachments) {
     for (const node of nodes) {
-      if (node.type === 'entity' && node.parentId && !Object.values(SUN_OF_AREA).includes(node.parentId)) {
+      if (
+        node.type === 'entity' &&
+        node.parentId &&
+        !Object.values(SUN_OF_AREA).includes(node.parentId)
+      ) {
         visible.delete(node.id);
       }
     }

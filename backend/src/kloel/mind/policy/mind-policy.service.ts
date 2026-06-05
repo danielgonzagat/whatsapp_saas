@@ -1,6 +1,5 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
-import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { WisdomRelevanceFilter } from '../../wisdom/wisdom-relevance-filter.service';
 import { WisdomPatternStore } from '../../wisdom/wisdom-pattern-store.service';
@@ -45,6 +44,7 @@ import {
   toResolvedPolicyRows,
 } from './mind-policy.service.helpers';
 import { MindGlobalPriorService } from '../memory/mind-global-prior.service';
+import { MindMemoryItemService } from '../aliases/mind-memory-item.service';
 
 @Injectable()
 export class MindPolicyService {
@@ -56,8 +56,20 @@ export class MindPolicyService {
     @Optional() private readonly globalPrior?: MindGlobalPriorService,
     @Optional() private readonly wisdomFilter?: WisdomRelevanceFilter,
     @Optional() private readonly wisdomStore?: WisdomPatternStore,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {
     this.logger.debug?.(`MindPolicyService initialized`);
+  }
+
+  /**
+   * Canonical Mind surface for the `RAC_KloelMemory` table. Policy-outcome
+   * memories are persisted through `MindMemoryItemService.items` (a fully-typed
+   * `kloelMemory` Prisma delegate) when DI provides it, falling back to the raw
+   * `prisma.kloelMemory` delegate when the optional service is absent (e.g.
+   * legacy test harnesses). Both surfaces hit the SAME row — no behaviour drift.
+   */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
   }
 
   async choose(input: MindPolicyInput): Promise<{ chosen: string; decision: MindPolicyDecision }> {
@@ -189,7 +201,7 @@ export class MindPolicyService {
         await this.persistResolvedMemories(
           toResolvedPolicyRows(rows, outcome),
           baselineOutcome,
-          tx,
+          tx.kloelMemory,
         );
       }
     });
@@ -463,8 +475,8 @@ export class MindPolicyService {
   private persistResolvedMemories(
     rows: Parameters<typeof persistResolvedPolicyMemories>[1],
     baselineOutcome?: number,
-    prisma: Pick<PrismaService, 'kloelMemory'> | Prisma.TransactionClient = this.prisma,
+    memoryItems: PrismaService['kloelMemory'] = this.mindMemoryItems,
   ): Promise<void> {
-    return persistResolvedPolicyMemories(prisma, rows, baselineOutcome);
+    return persistResolvedPolicyMemories(memoryItems, rows, baselineOutcome);
   }
 }

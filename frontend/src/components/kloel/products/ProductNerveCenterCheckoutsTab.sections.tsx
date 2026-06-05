@@ -67,8 +67,6 @@ function normalizeColorTextValue(value: string, fallback = V.t) {
   return normalizeColorPickerValue(trimmed, fallback);
 }
 
-
-
 export function CheckoutConfigLoading() {
   return (
     <PanelLoadingState

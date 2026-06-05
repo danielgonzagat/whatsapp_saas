@@ -36,6 +36,25 @@ export class KloelThreadSummaryService {
     return this.mindChatMessage?.items ?? this.prisma.chatMessage;
   }
 
+  private formatUnknownError(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    if (typeof error === 'string') {
+      return error;
+    }
+    try {
+      const serialized: unknown = JSON.stringify(error);
+      if (typeof serialized === 'string') {
+        return serialized;
+      }
+    } catch {
+      // fall through to Object.prototype.toString
+    }
+    const fallback: unknown = Object.prototype.toString.call(error);
+    return typeof fallback === 'string' ? fallback : 'unknown error';
+  }
+
   private buildFallbackThreadTitle(message: string): string {
     const cleaned = String(message || '')
       .replace(WHITESPACE_G_RE, ' ')
@@ -94,7 +113,7 @@ export class KloelThreadSummaryService {
       await this.planLimits.trackAiUsage(workspaceId, tokens);
     } catch (error: unknown) {
       this.logger.warn(
-        `Falha ao registrar uso de IA ${source} ws=${workspaceId} tokens=${tokens}: ${String(error)}`,
+        `Falha ao registrar uso de IA ${source} ws=${workspaceId} tokens=${tokens}: ${this.formatUnknownError(error)}`,
       );
     }
   }
@@ -144,7 +163,7 @@ export class KloelThreadSummaryService {
         error,
         'KloelThreadSummaryService.sanitizeGeneratedThreadTitle',
       );
-      this.logger.warn(`Falha ao gerar título da conversa: ${String(error)}`);
+      this.logger.warn(`Falha ao gerar título da conversa: ${this.formatUnknownError(error)}`);
       return fallbackTitle;
     }
   }
@@ -234,7 +253,7 @@ export class KloelThreadSummaryService {
       } catch (error: unknown) {
         budgetAvailable = false;
         this.logger.warn(
-          `Resumo da thread ${threadId} usou fallback local por limite de IA: ${String(error)}`,
+          `Resumo da thread ${threadId} usou fallback local por limite de IA: ${this.formatUnknownError(error)}`,
         );
       }
 
@@ -274,7 +293,7 @@ export class KloelThreadSummaryService {
           }
         } catch (error: unknown) {
           this.logger.warn(
-            `Falha ao atualizar resumo da thread ${threadId}; usando fallback local: ${String(error)}`,
+            `Falha ao atualizar resumo da thread ${threadId}; usando fallback local: ${this.formatUnknownError(error)}`,
           ); // Intencional: thread summary update is best-effort.
         }
       }

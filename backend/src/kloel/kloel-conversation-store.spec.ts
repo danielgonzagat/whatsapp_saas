@@ -89,7 +89,9 @@ describe('KloelConversationStore — Brain→Mind delegation (Claude-K66)', () =
       const prisma = { kloelMessage: prismaItems } as unknown as PrismaService;
       const store = new KloelConversationStore(prisma, logger);
 
-      expect((store as unknown as { mindMessageItems: unknown }).mindMessageItems).toBe(prismaItems);
+      expect((store as unknown as { mindMessageItems: unknown }).mindMessageItems).toBe(
+        prismaItems,
+      );
     });
   });
 

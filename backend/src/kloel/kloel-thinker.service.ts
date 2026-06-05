@@ -61,6 +61,7 @@ import { MindEventProcessorService } from './mind/runtime/mind-event-processor.s
 import { MindGlobalPriorService } from './mind/memory/mind-global-prior.service';
 import { MindPredictorService } from './mind/inference/mind-predictor.service';
 import { ValenceTaggerService } from './mind/valence-tagger.service';
+import { MindChatMessageService } from './mind/aliases/mind-chat-message.service';
 import { extractComposerMetadata } from './kloel.service.composer.helpers';
 
 export type { LocalToolExecutor } from './kloel-reply-engine.service';
@@ -100,8 +101,18 @@ export class KloelThinkerService {
     @Optional() private readonly mindPredictorService?: MindPredictorService,
     @Optional() private readonly valenceTagger?: ValenceTaggerService,
     @Optional() private readonly memoryEngine?: KloelMemoryEngineService,
+    @Optional() private readonly mindChatMessage?: MindChatMessageService,
   ) {
     this.conversationStore = new KloelConversationStore(prisma, this.logger);
+  }
+
+  /**
+   * Canonical Mind surface for the SEPARATE RAC_ChatMessage table. Returns the
+   * SAME delegate legacy code used (`prisma.chatMessage`) when the alias service
+   * is not provided — byte-identical, documented fallback idiom.
+   */
+  private get chatMessageItems() {
+    return this.mindChatMessage?.items ?? this.prisma.chatMessage;
   }
 
   /** Bundle the optional cognition services for the think-loop helpers. */
@@ -185,9 +196,7 @@ export class KloelThinkerService {
       // sensitive tool (e.g. request_anticipation/request_withdrawal — money moves)
       // from this path. Fall through to the LLM path, which enforces confirmation.
       const deterministicAction =
-        detectedAction && isMutationSensitiveTool(detectedAction.tool)
-          ? null
-          : detectedAction;
+        detectedAction && isMutationSensitiveTool(detectedAction.tool) ? null : detectedAction;
       if (deterministicAction && deterministicWorkspaceId) {
         await runDeterministicActionBranch(
           deterministicAction,
@@ -613,6 +622,7 @@ export class KloelThinkerService {
   }> {
     return regenerateThreadAssistantResponseImpl(params, {
       prisma: this.prisma as Parameters<typeof regenerateThreadAssistantResponseImpl>[1]['prisma'],
+      chatMessageItems: this.chatMessageItems,
       replyEngine: this.replyEngine,
       threadService: this.threadService,
     });

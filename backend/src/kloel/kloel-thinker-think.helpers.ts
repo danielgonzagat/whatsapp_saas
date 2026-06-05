@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { KloelComposerService } from './kloel-composer.service';
+import { KloelComposerService, type CapabilityExecutionResult } from './kloel-composer.service';
 import { KloelConversationStore } from './kloel-conversation-store';
 import {
   createKloelContentEvent,
@@ -284,7 +284,7 @@ export async function runComposerCapabilityBranch(
   safeWrite(createKloelStatusEvent('thinking', createKloelPublicThinkingLabel(message)));
   safeWrite(createKloelStatusEvent('tool_calling', `Executando ${composerCapability}.`));
   safeWrite(createKloelToolCallEvent(callId, composerCapability, toolArgs));
-  let capResult;
+  let capResult: CapabilityExecutionResult;
   let capabilityFailed = false;
   try {
     capResult = await composerService.executeComposerCapability({

@@ -20,6 +20,10 @@ type GdprProcessingLogger = {
 
 type GdprProcessingContext = {
   prisma: PrismaService;
+  // Canonical Mind surface for the SEPARATE RAC_ChatMessage table. The caller
+  // (GdprService) passes `mindChatMessage?.items ?? this.prisma.chatMessage` —
+  // same delegate, byte-identical. When absent we fall back to `prisma.chatMessage`.
+  chatMessageItems?: PrismaService['chatMessage'];
   storage: StorageService;
   email: EmailService;
   logger: GdprProcessingLogger;
@@ -232,7 +236,8 @@ async function sweepUserData(
   data.messages = messages;
   writeJson(exportDir, 'messages.json', messages);
 
-  const chatMessages = await ctx.prisma.chatMessage.findMany({
+  const chatMessageItems = ctx.chatMessageItems ?? ctx.prisma.chatMessage;
+  const chatMessages = await chatMessageItems.findMany({
     where: { workspaceId, userId },
     select: {
       id: true,

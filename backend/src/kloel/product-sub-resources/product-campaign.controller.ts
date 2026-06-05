@@ -249,7 +249,11 @@ export class ProductCampaignController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: AuthenticatedRequest,
   ) {
-    const product = await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
+    const product = await ensureWorkspaceProductAccess(
+      this.prisma,
+      productId,
+      resolveWorkspaceId(req),
+    );
 
     const productCampaign = await this.prisma.productCampaign.findFirst({
       where: { id: campaignId, productId },

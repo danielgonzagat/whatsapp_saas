@@ -10,6 +10,11 @@ import {
 
 export interface ControllerDeps {
   prisma: PrismaService;
+  // Canonical Mind surface for the SEPARATE RAC_ChatMessage table. The caller
+  // (KloelController) passes `mindChatMessage?.items ?? this.prisma.chatMessage`
+  // — same delegate, byte-identical. When absent we fall back to
+  // `prisma.chatMessage` (documented fallback idiom).
+  chatMessageItems?: PrismaService['chatMessage'];
   kloelService: KloelService;
 }
 
@@ -178,7 +183,7 @@ function sanitizeThreadMessageForRead<
 }
 
 export async function getThreadMessages(
-  deps: Pick<ControllerDeps, 'prisma'>,
+  deps: Pick<ControllerDeps, 'prisma' | 'chatMessageItems'>,
   id: string,
   workspaceId: string,
 ) {
@@ -189,7 +194,8 @@ export async function getThreadMessages(
   if (!thread) {
     throw new NotFoundException('Conversa não encontrada');
   }
-  const messages = await deps.prisma.chatMessage.findMany({
+  const chatMessageItems = deps.chatMessageItems ?? deps.prisma.chatMessage;
+  const messages = await chatMessageItems.findMany({
     where: { threadId: id, workspaceId },
     select: {
       id: true,
@@ -208,7 +214,7 @@ export async function getThreadMessages(
 }
 
 export async function addThreadMessage(
-  deps: Pick<ControllerDeps, 'prisma'>,
+  deps: Pick<ControllerDeps, 'prisma' | 'chatMessageItems'>,
   id: string,
   dto: { role: string; content: string; metadata?: Record<string, unknown> },
   workspaceId: string,
@@ -218,7 +224,8 @@ export async function addThreadMessage(
       where: { id, workspaceId },
       select: { id: true },
     });
-    const msg = await deps.prisma.chatMessage.create({
+    const chatMessageItems = deps.chatMessageItems ?? deps.prisma.chatMessage;
+    const msg = await chatMessageItems.create({
       data: {
         thread: { connect: { id } },
         workspaceId,
@@ -245,7 +252,7 @@ function normalizeMessageMetadata(metadata: Prisma.JsonValue): Record<string, un
 }
 
 export async function updateThreadMessage(
-  deps: Pick<ControllerDeps, 'prisma'>,
+  deps: Pick<ControllerDeps, 'prisma' | 'chatMessageItems'>,
   id: string,
   dto: { content?: string },
   workspaceId: string,
@@ -254,7 +261,8 @@ export async function updateThreadMessage(
   if (!content) {
     throw new BadRequestException('Conteúdo da mensagem é obrigatório.');
   }
-  const existing = await deps.prisma.chatMessage.findFirst({
+  const chatMessageItems = deps.chatMessageItems ?? deps.prisma.chatMessage;
+  const existing = await chatMessageItems.findFirst({
     where: { id, thread: { workspaceId } },
     select: { id: true, threadId: true, role: true, metadata: true, createdAt: true },
   });
@@ -270,7 +278,7 @@ export async function updateThreadMessage(
   };
   await deps.prisma.$transaction(
     [
-      deps.prisma.chatMessage.updateMany({
+      chatMessageItems.updateMany({
         where: { id, workspaceId },
         data: { content, metadata: nextMetadata },
       }),
@@ -281,7 +289,7 @@ export async function updateThreadMessage(
     ],
     { isolationLevel: 'ReadCommitted' },
   );
-  const message = await deps.prisma.chatMessage.findFirstOrThrow({
+  const message = await chatMessageItems.findFirstOrThrow({
     where: { id, workspaceId },
   });
   return message;
