@@ -129,3 +129,59 @@ They MUST move under `kloel/mind/<sub-area>/` per ADR-0013 §1.
 | 47 | `admin/mind/admin-mind.service.ts` | Stays (admin domain) | N | N/A |
 
 **Final directory layout** (after M5):
+
+---
+
+## 3. Brain → Mind Data-Surface Aliases (`kloel/mind/aliases/`)
+
+> These canonical `@Injectable()` services are the single supported surface for
+> the three legacy "Brain" Postgres tables. New code reads/writes through them
+> (or the documented `?? …prisma.<delegate>` fallback idiom); the anti-regression
+> gate `check:canonical-mind` (`scripts/ops/check-canonical-mind-access.mjs`)
+> fails CI the moment a NEW raw `prisma.kloelMemory` / `prisma.kloelMessage` /
+> `prisma.chatMessage` access is introduced under `backend/src/**`. All three are
+> registered (providers + exports) in `backend/src/kloel/mind/mind.module.ts`
+> (`mind.module.ts:55-57`, `:76-78`).
+
+| # | Symbol | File | Wraps delegate | Physical table | Canonical sub-area | Notes |
+|---|--------|------|----------------|----------------|--------------------|-------|
+| 48 | `MindMemoryItemService` | `kloel/mind/aliases/mind-memory-item.service.ts` | `prisma.kloelMemory` | `RAC_KloelMemory` | **aliases** | `.items` getter + typed `findById`/`findByKey`/`listByWorkspace`/`upsert`. `upsert` does an ADDITIVE flag-gated (`KLOEL_MINDMEMORY_DUALWRITE`, DEFAULT OFF) best-effort dual-write into `RAC_MindMemory` (`mind-memory-item.service.ts:94-109`) |
+| 49 | `MindMessageService` | `kloel/mind/aliases/mind-message.service.ts` | `prisma.kloelMessage` | `RAC_KloelMessage` | **aliases** | `.items` getter + `findById`/`listByWorkspace`/`create`/`getHistory`/`appendToConversation` |
+| 50 | `MindChatMessageService` | `kloel/mind/aliases/mind-chat-message.service.ts` | `prisma.chatMessage` | `RAC_ChatMessage` | **aliases** | **NEW this session.** `.items` getter only. `RAC_ChatMessage` (dashboard/thread chat) is a SEPARATE physical table from `RAC_KloelMessage` (brain) — no table merge, each alias targets its own row |
+
+`MindChatMessageService` consumers already converged onto it (each injects it
+`@Optional()`, exposes a `chatMessageItems` getter with a `?? …prisma.chatMessage`
+fallback): `chat/chat.service.ts`, `gdpr/gdpr.service.ts`,
+`kloel/kloel.controller.ts`, `kloel/kloel-thinker.service.ts`,
+`kloel/kloel-thread.service.ts`, `kloel/kloel-thread-search.service.ts`,
+`kloel/kloel-thread-summary.service.ts`,
+`kloel/mind/memory/conversation-archive.service.ts`,
+`kloel/mind/memory/episode.service.ts`.
+
+> Note on the unified ledger: the canonical `RAC_MindMessage` ledger dual-writes
+> both message families behind a `source` discriminator; `RAC_ChatMessage` stays
+> a distinct table and keeps `MindChatMessageService` as its own alias surface
+> (it is NOT folded into `RAC_KloelMessage`).
+
+---
+
+## 4. Cognition Percept Emitters → `RAC_MindOutboxEvent`
+
+> Five surfaces emit ONE canonical `cognition.<domain>.<event>` percept into the
+> durable spine outbox `RAC_MindOutboxEvent` (Prisma delegate `mindOutboxEvent`).
+> Every emitter is ADDITIVE, flag-gated (DEFAULT OFF), best-effort (try/catch +
+> warn-log so it can never break the legacy path), and idempotent per
+> `(workspaceId, idempotencyKey)`. They are free functions (not `@Injectable()`),
+> so they live OUTSIDE the service inventory in §1–§3.
+
+| Domain | Event type(s) | Helper file (exported emit fn) | Flag predicate / env var |
+|---|---|---|---|
+| Flows | `cognition.flow.node_completed` | `backend/src/flows/flows-percept-emit.helper.ts` → `emitFlowNodeCompletedPercept` | `isFlowsPerceptEmitEnabled` / `KLOEL_FLOWS_PERCEPT_ENABLED` |
+| CIA | `cognition.cia.decision_made`, `cognition.cia.action_executed` | `backend/src/kloel/mind/cia/cia-percept-emit.helper.ts` → `emitCiaDecisionMadePercept`, `emitCiaActionExecutedPercept` | `isCiaPerceptEmitEnabled` / `KLOEL_CIA_PERCEPT_ENABLED` |
+| Autopilot (worker) | `cognition.autopilot.action_executed` | `worker/processors/autopilot/autopilot-percept-emit.helper.ts` → `emitAutopilotActionExecutedPercept` | `isAutopilotPerceptEmitEnabled` / `KLOEL_AUTOPILOT_PERCEPT_ENABLED` |
+| Voice | `cognition.voice.clone_created`, `cognition.voice.action_executed` | `backend/src/voice/voice-percept-emit.helper.ts` → `emitVoiceCloneCreatedPercept`, `emitVoiceActionExecutedPercept` | `isVoicePerceptEmitEnabled` / `KLOEL_VOICE_PERCEPT_ENABLED` |
+
+The event-type string constants for the backend Flows/CIA/Voice surfaces are
+also catalogued in the spine taxonomy comment at
+`backend/src/kloel/mind/coordination/mind-event-taxonomy.ts:112-121`, and the
+emitted events appear in `docs/architecture/EVENT_TAXONOMY.md`.

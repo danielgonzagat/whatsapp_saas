@@ -108,3 +108,22 @@ Total cross-file duplicates: 340. Sorted by severity (most-duplicated first).
 | `CreatePlanDto` | 2 | `backend/src/checkout/dto/create-plan.dto.ts`<br>`backend/src/plans/plan.service.helpers.ts` |
 | `CreateProductDto` | 2 | `backend/src/checkout/dto/create-product.dto.ts`<br>`backend/src/products/product.types.ts` |
 | `ValidateCouponDto` | 2 | `backend/src/checkout/dto/validate-coupon.dto.ts`<br>`backend/src/kloel/dto/product-sub-resources.dto.ts` |
+
+## Converged duplications (hand-maintained — outside the auto-table above)
+
+> Behavioural duplications collapsed onto a single canonical surface. These are
+> NOT necessarily duplicate EXPORT names (so the `scan.mjs` table above does not
+> always list them) — they were duplicate ACCESS PATHS / data surfaces. Each is
+> now gated or convention-locked so the duplication cannot re-grow.
+
+| Duplicated surface | Canonical surface (kept) | Resolution | Status |
+|---|---|---|---|
+| Raw `prisma.kloelMemory` access scattered across callers | `MindMemoryItemService.items` (`backend/src/kloel/mind/aliases/mind-memory-item.service.ts`) | Brain→Mind alias; new direct access blocked by `check:canonical-mind` | Converged (grandfathered + gate-locked) |
+| Raw `prisma.kloelMessage` access scattered across callers | `MindMessageService.items` (`backend/src/kloel/mind/aliases/mind-message.service.ts`) | Brain→Mind alias; gate-locked | Converged (grandfathered + gate-locked) |
+| Raw `prisma.chatMessage` access scattered across callers | `MindChatMessageService.items` (`backend/src/kloel/mind/aliases/mind-chat-message.service.ts`) — NEW this session; targets the SEPARATE `RAC_ChatMessage` table (no merge with `RAC_KloelMessage`) | Brain→Mind alias; gate-locked | Converged (grandfathered + gate-locked) |
+| Non-validating `getWorkspaceId(req)` vs validating `resolveWorkspaceId(req)` in the 9 product-sub-resource controllers | `resolveWorkspaceId` (`backend/src/auth/workspace-access.ts:119`) | All 9 controllers converged onto the validating resolver (commit `d8504661d`) | Converged (controllers); legacy helper still exported, no longer called there |
+| Channel send path: `ChannelTransportRegistry.send` vs canonical `ChannelMessageDispatchService.sendMessage` | `ChannelMessageDispatchService` (`backend/src/marketing/channel-message-dispatch.service.ts`) | `ChannelTransportRegistry` delegates to the canonical dispatch behind `KLOEL_TRANSPORT_CANONICAL_DELEGATE` (DEFAULT OFF) for whatsapp/instagram/messenger | Converged behind flag (default OFF; provider fallback preserved) |
+
+See `docs/architecture/SERVICE_CATALOG.md` (Appendices A–C),
+`docs/architecture/MIND_SERVICES_CANONICAL.md` (§3–§4), and
+`docs/architecture/DEPRECATION_MAP.md` for the full citations.

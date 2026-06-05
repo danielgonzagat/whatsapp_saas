@@ -221,6 +221,7 @@ Total services: 622. Sorted by domain.
 - `MindGlobalPriorService` — `backend/src/kloel/mind/memory/mind-global-prior.service.ts`
 - `MindGuardsService` — `backend/src/kloel/mind/policy/mind-guards.service.ts`
 - `MindLiftReportService` — `backend/src/kloel/mind/observability/mind-lift-report.service.ts`
+- `MindChatMessageService` — `backend/src/kloel/mind/aliases/mind-chat-message.service.ts`
 - `MindLongTermMemoryService` — `backend/src/kloel/mind/memory/mind-long-term-memory.service.ts`
 - `MindMemoryItemService` — `backend/src/kloel/mind/aliases/mind-memory-item.service.ts`
 - `MindMessageService` — `backend/src/kloel/mind/aliases/mind-message.service.ts`
@@ -817,3 +818,85 @@ Total services: 622. Sorted by domain.
 ## workspaces (1)
 
 - `WorkspaceService` — `backend/src/workspaces/workspace.service.ts`
+
+---
+
+## Appendix A — Canonical Brain → Mind data-surface aliases
+
+> Hand-maintained (not part of the `scan.mjs` auto-table above). These three
+> `@Injectable()` services are the canonical accessors for the three legacy
+> Postgres tables that backed the original "Brain" subsystem. New code MUST read
+> and write those tables through these services (or the documented
+> `?? …prisma.<delegate>` fallback idiom), not via raw `prisma.<delegate>`.
+> The anti-regression gate `check:canonical-mind`
+> (`scripts/ops/check-canonical-mind-access.mjs`) enforces this. All three are
+> registered (providers + exports) in `backend/src/kloel/mind/mind.module.ts`
+> (`mind.module.ts:55-57`, `:76-78`); `MindMessageService` + `MindMemoryItemService`
+> are additionally re-provided/exported by `backend/src/kloel/kloel.module.ts`
+> (`kloel.module.ts:481-482`, `:588-589`).
+
+| Canonical service | File | Wraps delegate | Physical table | Canonical accessor |
+|---|---|---|---|---|
+| `MindMemoryItemService` | `backend/src/kloel/mind/aliases/mind-memory-item.service.ts` | `prisma.kloelMemory` | `RAC_KloelMemory` | `.items` getter (+ typed `findById` / `findByKey` / `listByWorkspace` / `upsert` helpers) |
+| `MindMessageService` | `backend/src/kloel/mind/aliases/mind-message.service.ts` | `prisma.kloelMessage` | `RAC_KloelMessage` | `.items` getter (+ `findById` / `listByWorkspace` / `create` / `getHistory` / `appendToConversation` helpers) |
+| `MindChatMessageService` | `backend/src/kloel/mind/aliases/mind-chat-message.service.ts` | `prisma.chatMessage` | `RAC_ChatMessage` (dashboard/thread chat — a SEPARATE physical table from `RAC_KloelMessage`; no table merge) | `.items` getter only |
+
+`MindChatMessageService` is the newest of the three (added this session). It is a
+thin, typed wrapper exposing `get items(): PrismaService['chatMessage']` so callers
+migrate `prisma.chatMessage.X(args)` → `mindChatMessage.items.X(args)` byte-identically.
+Consumers that have already converged onto it (each injects it `@Optional()` and
+exposes a `chatMessageItems` getter with a `?? …prisma.chatMessage` fallback):
+`backend/src/chat/chat.service.ts`, `backend/src/gdpr/gdpr.service.ts`,
+`backend/src/kloel/kloel.controller.ts`, `backend/src/kloel/kloel-thinker.service.ts`,
+`backend/src/kloel/kloel-thread.service.ts`,
+`backend/src/kloel/kloel-thread-search.service.ts`,
+`backend/src/kloel/kloel-thread-summary.service.ts`,
+`backend/src/kloel/mind/memory/conversation-archive.service.ts`,
+`backend/src/kloel/mind/memory/episode.service.ts`.
+
+`MindMemoryItemService.upsert` additionally performs an ADDITIVE, flag-gated
+(`KLOEL_MINDMEMORY_DUALWRITE`, DEFAULT OFF), best-effort dual-write into the
+canonical `RAC_MindMemory` table (`mind-memory-item.service.ts:94-109`); any
+failure is swallowed with a warn-log so the legacy `RAC_KloelMemory` write is
+never affected.
+
+## Appendix B — Cognition percept emit helpers (Mind spine outbox)
+
+> Five surfaces emit ONE canonical `cognition.<domain>.<event>` percept into the
+> durable spine outbox table `RAC_MindOutboxEvent` (Prisma delegate
+> `mindOutboxEvent`). Each is ADDITIVE, flag-gated (DEFAULT OFF), best-effort
+> (wrapped in try/catch + warn-log so it can never break the legacy path), and
+> idempotent per `(workspaceId, idempotencyKey)`. These are free functions, not
+> `@Injectable()` services, so they do not appear in the auto-table above.
+
+| Domain | Event type(s) | Helper file (exported emit fn) | Flag (env var) |
+|---|---|---|---|
+| Flows | `cognition.flow.node_completed` | `backend/src/flows/flows-percept-emit.helper.ts` (`emitFlowNodeCompletedPercept`) | `KLOEL_FLOWS_PERCEPT_ENABLED` |
+| CIA | `cognition.cia.decision_made`, `cognition.cia.action_executed` | `backend/src/kloel/mind/cia/cia-percept-emit.helper.ts` (`emitCiaDecisionMadePercept`, `emitCiaActionExecutedPercept`) | `KLOEL_CIA_PERCEPT_ENABLED` |
+| Autopilot (worker) | `cognition.autopilot.action_executed` | `worker/processors/autopilot/autopilot-percept-emit.helper.ts` (`emitAutopilotActionExecutedPercept`) | `KLOEL_AUTOPILOT_PERCEPT_ENABLED` |
+| Voice | `cognition.voice.clone_created`, `cognition.voice.action_executed` | `backend/src/voice/voice-percept-emit.helper.ts` (`emitVoiceCloneCreatedPercept`, `emitVoiceActionExecutedPercept`) | `KLOEL_VOICE_PERCEPT_ENABLED` |
+
+Each flag has a sibling `*-percept-emit.flag.ts` predicate (e.g.
+`isFlowsPerceptEmitEnabled` / `isCiaPerceptEmitEnabled` /
+`isAutopilotPerceptEmitEnabled` / `isVoicePerceptEmitEnabled`) using the repo's
+`process.env.X === 'true'` idiom. The event-type string constants for the
+backend Flows/CIA/Voice surfaces are also catalogued in the spine taxonomy
+comment block at
+`backend/src/kloel/mind/coordination/mind-event-taxonomy.ts:112-121`.
+
+## Appendix C — Channel transport → canonical dispatch delegation
+
+> `ChannelTransportRegistry` (`backend/src/kloel/channel-transport.registry.ts`)
+> can delegate its `send()` to the canonical `ChannelMessageDispatchService`
+> (`backend/src/marketing/channel-message-dispatch.service.ts`) behind the flag
+> `KLOEL_TRANSPORT_CANONICAL_DELEGATE` (DEFAULT OFF —
+> `channel-transport-canonical-delegate.flag.ts:38`).
+
+When the flag is ON, `send()` (`channel-transport.registry.ts:147-154`) routes
+through `sendViaCanonical` → `ChannelMessageDispatchService.sendMessage` for the
+delegatable channels only — `whatsapp`, `instagram`, `messenger`
+(`canDelegate`, `channel-transport.registry.ts:169-171`). `email` and `tiktok`
+are intentionally EXCLUDED (email's canonical adapter is a different delivery
+mechanism; tiktok has no canonical outbound builder). On any non-delegatable
+channel, a null/unbuildable canonical input, or the flag being OFF, `send()`
+falls back to the existing provider path with identical behavior.
