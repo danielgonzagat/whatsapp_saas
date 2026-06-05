@@ -15,6 +15,7 @@ export function useCampanhasTab(productId: string) {
   const [campMessage, setCampMessage] = useState('');
   const [campError, setCampError] = useState('');
   const [campBusyId, setCampBusyId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const loadCampaigns = useCallback(() => {
     setCampsLoading(true);
@@ -70,7 +71,6 @@ export function useCampanhasTab(productId: string) {
     }
   };
 
-
   const handleLaunchCamp = async (id: string, smartTime = false) => {
     setCampBusyId(`launch-${id}`);
     try {
@@ -106,15 +106,27 @@ export function useCampanhasTab(productId: string) {
     }
   };
 
-  const handleDeleteCamp = async (id: string) => {
+  const requestDeleteCamp = useCallback((id: string) => {
+    setDeleteConfirmId(id);
+  }, []);
+
+  const cancelDeleteCamp = useCallback(() => {
+    setDeleteConfirmId(null);
+  }, []);
+
+  const confirmDeleteCamp = async (id: string) => {
+    setCampBusyId(`delete-${id}`);
     try {
       await unwrapApiPayload(
         await apiFetch(`/products/${productId}/campaigns/${id}`, { method: 'DELETE' }),
       );
       setCamps((prev) => prev.filter((c: JsonRecord) => c.id !== id));
+      setDeleteConfirmId((current) => (current === id ? null : current));
       showToast('Campanha removida', 'success');
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Erro ao remover campanha', 'error');
+    } finally {
+      setCampBusyId(null);
     }
   };
 
@@ -132,10 +144,13 @@ export function useCampanhasTab(productId: string) {
     campError,
     setCampError,
     campBusyId,
+    deleteConfirmId,
     loadCampaigns,
     handleCreateCamp,
     handleLaunchCamp,
     handlePauseCamp,
-    handleDeleteCamp,
+    requestDeleteCamp,
+    cancelDeleteCamp,
+    confirmDeleteCamp,
   };
 }

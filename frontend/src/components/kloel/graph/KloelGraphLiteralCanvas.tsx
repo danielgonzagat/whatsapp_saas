@@ -151,7 +151,13 @@ export function KloelGraphLiteralCanvas({
   }, []);
 
   const [snapshot, setSnapshot] = useState<LiveNode[]>([]);
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [hoveredNode, setHoveredNode] = useState<{
+    id: string;
+    hasActiveSelection: boolean;
+  } | null>(null);
+  const hasActiveSelection = Boolean(activeNodeId);
+  const hoveredId =
+    hoveredNode && hoveredNode.hasActiveSelection === hasActiveSelection ? hoveredNode.id : null;
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [isPanning, setIsPanning] = useState(false);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -165,11 +171,6 @@ export function KloelGraphLiteralCanvas({
   useEffect(() => {
     panRef.current = pan;
   }, [pan]);
-  useEffect(() => {
-    if (!activeNodeId) {
-      setHoveredId(null);
-    }
-  }, [activeNodeId]);
   useEffect(() => {
     zoomRef.current = zoom;
   }, [zoom]);
@@ -662,8 +663,10 @@ export function KloelGraphLiteralCanvas({
                 transform={`translate(${live.x}, ${live.y})`}
                 onPointerDown={(event) => onNodePointerDown(node.id, event)}
                 onPointerUp={(event) => onNodePointerUp(node, event)}
-                onPointerEnter={() => setHoveredId(node.id)}
-                onPointerLeave={() => setHoveredId(null)}
+                onPointerEnter={() =>
+                  setHoveredNode({ id: node.id, hasActiveSelection: Boolean(activeNodeId) })
+                }
+                onPointerLeave={() => setHoveredNode(null)}
                 onKeyDown={(event) => onNodeKeyDown(node, event)}
                 style={{
                   cursor: draggingId === node.id ? 'grabbing' : 'grab',

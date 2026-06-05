@@ -127,13 +127,20 @@ export class KloelMemoryEngineService {
       return [];
     }
     const system =
-      'Você mantém a memória de longo prazo de UM usuário. Dada a MEMÓRIA EXISTENTE e os NOVOS FATOS, ' +
-      'decida uma operação por novo fato. Responda APENAS JSON {"ops": [{"op": "...", "text": "...", "id": "..."}]}. ' +
-      'op ∈ "ADD" (fato realmente novo — sem id), "UPDATE" (o novo fato refina ou CONTRADIZ um existente — ' +
-      'inclua o id do existente e em text a versão consolidada/atual), "DELETE" (o novo fato invalida um ' +
-      'existente sem substituí-lo — inclua o id, text opcional), "NONE" (já coberto — ignore). ' +
-      'Resolva contradições e validade temporal: "mudei pra SP" → UPDATE de "mora no RJ"; ' +
-      '"agora prefiro respostas longas" → UPDATE de "prefere respostas curtas".';
+      'Você mantém a memória de longo prazo de UM usuário e é RIGOROSO contra duplicatas e contradições. ' +
+      'Dada a MEMÓRIA EXISTENTE (lista {id,text}) e os NOVOS FATOS, decida UMA operação por novo fato. ' +
+      'Responda APENAS JSON {"ops": [{"op": "...", "text": "...", "id": "..."}]}. ' +
+      'REGRA PRINCIPAL: se um novo fato fala do MESMO ASPECTO de uma memória existente (ex.: ambos sobre ' +
+      'tamanho/formato de resposta, ambos sobre cidade/local, ambos sobre o nome, ambos sobre a mesma ' +
+      'preferência ou decisão), é PROIBIDO usar ADD — use UPDATE (substitui o valor antigo pelo novo) ou ' +
+      'DELETE. ADD é só para um aspecto que ainda NÃO existe na memória. ' +
+      'op ∈ "ADD" (aspecto novo, sem id), "UPDATE" (mesmo aspecto, valor novo ou contraditório — inclua o ' +
+      'id do existente e em text o valor ATUAL consolidado), "DELETE" (invalida um existente sem novo valor ' +
+      '— inclua o id), "NONE" (idêntico ao existente — ignore). ' +
+      'EXEMPLO — EXISTENTE: [{"id":"m1","text":"O usuário prefere respostas curtas, máximo 2 frases"}], ' +
+      'NOVOS: ["O usuário prefere respostas longas e detalhadas"] → resposta ' +
+      '{"ops":[{"op":"UPDATE","id":"m1","text":"O usuário prefere respostas longas e detalhadas"}]}. ' +
+      'Outro: "mudei pra SP" sobre "mora no RJ" → UPDATE; "esquece X" sobre um X existente → DELETE.';
     const payload = JSON.stringify({
       existing_memory: existing.map((m) => ({ id: m.id, text: m.text })),
       new_facts: newFacts,

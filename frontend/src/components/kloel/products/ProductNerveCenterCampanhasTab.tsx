@@ -41,10 +41,13 @@ export function ProductNerveCenterCampanhasTab({
     campError,
     setCampError,
     campBusyId,
+    deleteConfirmId,
     handleCreateCamp,
     handleLaunchCamp,
     handlePauseCamp,
-    handleDeleteCamp,
+    requestDeleteCamp,
+    cancelDeleteCamp,
+    confirmDeleteCamp,
   } = useCampanhasTab(productId);
   return (
     <>
@@ -384,12 +387,27 @@ export function ProductNerveCenterCampanhasTab({
                     </Bt>
                   </>
                 )}
-                <Bt
-                  onClick={() => handleDeleteCamp(String(c.id))}
-                  style={{ padding: '4px 8px', color: V.r }}
-                >
-                  {kloelT(`Excluir`)}
-                </Bt>
+                {deleteConfirmId === String(c.id) ? (
+                  <>
+                    <Bt
+                      primary
+                      onClick={() => confirmDeleteCamp(String(c.id))}
+                      style={{ padding: '4px 8px', color: V.r }}
+                    >
+                      {campBusyId === `delete-${c.id}` ? 'Excluindo...' : 'Confirmar exclusão'}
+                    </Bt>
+                    <Bt onClick={cancelDeleteCamp} style={{ padding: '4px 8px' }}>
+                      {kloelT(`Cancelar`)}
+                    </Bt>
+                  </>
+                ) : (
+                  <Bt
+                    onClick={() => requestDeleteCamp(String(c.id))}
+                    style={{ padding: '4px 8px', color: V.r }}
+                  >
+                    {kloelT(`Excluir`)}
+                  </Bt>
+                )}
               </div>
             </div>
           ))}

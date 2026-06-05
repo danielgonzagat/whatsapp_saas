@@ -88,4 +88,44 @@ describe('useCampanhasTab', () => {
     expect(result.current.campMessage).toBe('');
     expect(showToast).toHaveBeenLastCalledWith('Campanha criada', 'success');
   });
+
+  it('requires explicit confirmation before deleting a campaign', async () => {
+    apiFetch
+      .mockResolvedValueOnce({
+        data: [{ id: 'camp-1', name: 'Auditoria Campanha', status: 'DRAFT' }],
+        status: 200,
+      })
+      .mockResolvedValueOnce({ data: { ok: true }, status: 200 });
+
+    const { result } = renderHook(() => useCampanhasTab('prod-1'));
+
+    await waitFor(() => {
+      expect(result.current.campsLoading).toBe(false);
+    });
+    act(() => {
+      result.current.requestDeleteCamp('camp-1');
+    });
+
+    expect(result.current.deleteConfirmId).toBe('camp-1');
+    expect(apiFetch).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      result.current.cancelDeleteCamp();
+    });
+    expect(result.current.deleteConfirmId).toBeNull();
+
+    act(() => {
+      result.current.requestDeleteCamp('camp-1');
+    });
+    await act(async () => {
+      await result.current.confirmDeleteCamp('camp-1');
+    });
+
+    expect(apiFetch).toHaveBeenLastCalledWith('/products/prod-1/campaigns/camp-1', {
+      method: 'DELETE',
+    });
+    expect(result.current.camps).toEqual([]);
+    expect(result.current.deleteConfirmId).toBeNull();
+    expect(showToast).toHaveBeenLastCalledWith('Campanha removida', 'success');
+  });
 });
