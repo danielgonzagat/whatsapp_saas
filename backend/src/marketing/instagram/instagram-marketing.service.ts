@@ -1,8 +1,10 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, forwardRef, Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { InstagramService } from '../channels/instagram/instagram.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { decryptMetaToken } from '../../meta/meta-token-crypto';
+import { ChannelMessageDispatchService } from '../channel-message-dispatch.service';
+import { isInstagramCanonicalDispatchEnabled } from './instagram-canonical-dispatch.flag';
 
 type InstagramConnection = {
   accessToken: string;
@@ -38,6 +40,9 @@ export class InstagramMarketingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly instagramService: InstagramService,
+    @Optional()
+    @Inject(forwardRef(() => ChannelMessageDispatchService))
+    private readonly canonicalDispatch?: ChannelMessageDispatchService,
   ) {}
 
   async listAccounts(workspaceId: string) {
@@ -273,6 +278,20 @@ export class InstagramMarketingService {
     const igAccountId = channelSession.instagramAccountId;
     const accessToken = channelSession.pageAccessToken;
 
+    if (isInstagramCanonicalDispatchEnabled()) {
+      const delegated = await this.sendViaCanonical(
+        workspaceId,
+        igAccountId,
+        trimmedRecipient,
+        trimmed,
+        accessToken,
+      );
+      if (delegated) {
+        return delegated;
+      }
+      // Fall through to the existing raw path on any build/DI failure.
+    }
+
     const result = await this.instagramService.sendMessage(
       igAccountId,
       trimmedRecipient,
@@ -293,6 +312,59 @@ export class InstagramMarketingService {
     );
 
     return { messageId, metaResponse: result };
+  }
+
+  /**
+   * Delegate an Instagram DM through the canonical
+   * {@link ChannelMessageDispatchService.dispatch} (census P2-3) — the single
+   * cross-channel send front door, which routes via the pure
+   * {@link ChannelDispatchRegistry} → {@link InstagramDispatchAdapter} →
+   * {@link InstagramService.sendMessage}. The already-resolved `igAccountId` and
+   * page `accessToken` are passed as explicit credential overrides so the
+   * canonical path uses the EXACT same credentials this service resolved (no
+   * double Meta-connection resolution, no behavior drift).
+   *
+   * The canonical `ChannelSendResult` is mapped back to this service's existing
+   * `{ messageId, metaResponse }` return shape. Returns `null` on any failure
+   * (canonical service not injected, build/dispatch throw) so the caller falls
+   * back to the existing raw `instagramService.sendMessage` path unchanged.
+   */
+  private async sendViaCanonical(
+    workspaceId: string,
+    igAccountId: string,
+    recipientId: string,
+    text: string,
+    accessToken: string,
+  ): Promise<{ messageId: string | null; metaResponse: unknown } | null> {
+    if (!this.canonicalDispatch) {
+      return null;
+    }
+    try {
+      const result = await this.canonicalDispatch.dispatch(
+        workspaceId,
+        'instagram',
+        recipientId,
+        text,
+        { igAccountId, accessToken },
+      );
+      const messageId =
+        typeof result.messageId === 'string'
+          ? result.messageId
+          : typeof result.externalId === 'string'
+            ? result.externalId
+            : null;
+      this.logger.log(
+        `Instagram DM dispatched (canonical) for workspace ${workspaceId} to ${recipientId}: ${messageId ?? 'no_id'}`,
+      );
+      return { messageId, metaResponse: result };
+    } catch (error) {
+      this.logger.warn(
+        `Instagram canonical dispatch failed for workspace ${workspaceId}; falling back to raw path: ${
+          error instanceof Error ? error.message : 'unknown_error'
+        }`,
+      );
+      return null;
+    }
   }
 
   /**
