@@ -28,6 +28,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MindChatMessageService } from './mind/aliases/mind-chat-message.service';
 import { ConversationalOnboardingService } from './conversational-onboarding.service';
 import { KloelService } from './kloel.service';
+import { KloelMemoryEngineService } from './kloel-memory-engine.service';
 import { KloelThreadSearchService } from './kloel-thread-search.service';
 import { KloelGlobalSearchService } from './kloel-global-search.service';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
@@ -86,7 +87,24 @@ export class KloelController {
     private readonly globalSearchService: KloelGlobalSearchService,
     private readonly toolDispatcher: KloelToolDispatcherService,
     @Optional() private readonly mindChatMessage?: MindChatMessageService,
+    @Optional() private readonly memoryEngine?: KloelMemoryEngineService,
   ) {}
+
+  /**
+   * Per-user memory GRAPH for the immutable Kloel Sigma renderer — the "Memória"
+   * node's data source. Derived read-time from the user's MindMemory slots; never
+   * leaks other users' memory (scoped by JWT workspaceId + userId).
+   */
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @Get('memory/graph')
+  async getMemoryGraph(@Request() req: AuthenticatedRequest) {
+    const workspaceId = req.workspaceId || req.user?.workspaceId || '';
+    const userId = readUserId(req.user) || '';
+    if (!this.memoryEngine || !workspaceId || !userId) {
+      return { nodes: [], edges: [] };
+    }
+    return this.memoryEngine.recallGraph(workspaceId, userId);
+  }
 
   /**
    * Canonical Mind surface for the SEPARATE RAC_ChatMessage table. Returns the

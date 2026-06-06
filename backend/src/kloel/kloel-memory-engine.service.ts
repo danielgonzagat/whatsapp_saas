@@ -55,6 +55,15 @@ export class KloelMemoryEngineService {
     return `${KloelMemoryEngineService.NAMESPACE_PREFIX}${userId}`;
   }
 
+  /** Coarse semantic group for a slot, so the Sigma renderer can colour aspects. */
+  private static slotGroup(slot: string): string {
+    if (/pref/.test(slot)) return 'preference';
+    if (/objetiv|meta|goal/.test(slot)) return 'goal';
+    if (/projet|project/.test(slot)) return 'project';
+    if (/decis|decision/.test(slot)) return 'decision';
+    return 'fact';
+  }
+
   private model(): string {
     return readConfig('KLOEL_MEMORY_LLM_MODEL', this.config) || 'deepseek-chat';
   }
@@ -238,6 +247,73 @@ export class KloelMemoryEngineService {
         error: KloelMemoryEngineService.formatError(error),
       });
       return [];
+    }
+  }
+
+  /**
+   * Derive a per-user memory GRAPH (nodes + edges) for the immutable Kloel Sigma
+   * renderer. Read-time projection over the slot rows — the source of truth stays
+   * `MindMemory`, so the graph is always fresh with no dual-write or migration. A
+   * central "Você" node links to one node per remembered aspect, grouped so the
+   * renderer can colour preference/goal/project/decision/fact distinctly. Empty
+   * (no nodes) when the user has no memories, so the UI shows an honest empty state.
+   */
+  async recallGraph(
+    workspaceId: string,
+    userId: string,
+  ): Promise<{
+    nodes: Array<{ id: string; label: string; group: string; slot: string; updatedAt: string }>;
+    edges: Array<{ from: string; to: string; relation: string }>;
+  }> {
+    const empty = { nodes: [], edges: [] };
+    if (!workspaceId || !userId) {
+      return empty;
+    }
+    const namespace = this.namespaceFor(userId);
+    try {
+      const rows = await this.prisma.mindMemory.findMany({
+        where: { workspaceId, namespace, category: KloelMemoryEngineService.CATEGORY },
+        orderBy: { updatedAt: 'desc' },
+        take: KloelMemoryEngineService.MAX_TRACKED,
+        select: { id: true, key: true, content: true, updatedAt: true },
+      });
+      const nodes: Array<{
+        id: string;
+        label: string;
+        group: string;
+        slot: string;
+        updatedAt: string;
+      }> = [];
+      const edges: Array<{ from: string; to: string; relation: string }> = [];
+      for (const row of rows) {
+        if (typeof row.content !== 'string' || !row.content) {
+          continue;
+        }
+        const slot = typeof row.key === 'string' ? row.key.replace(/^slot:/, '') : row.id;
+        const group = KloelMemoryEngineService.slotGroup(slot);
+        const nodeId = `mem:${slot}`;
+        nodes.push({
+          id: nodeId,
+          label: row.content,
+          group,
+          slot,
+          updatedAt: row.updatedAt instanceof Date ? row.updatedAt.toISOString() : '',
+        });
+        edges.push({ from: 'you', to: nodeId, relation: group });
+      }
+      if (nodes.length === 0) {
+        return empty;
+      }
+      return {
+        nodes: [{ id: 'you', label: 'Você', group: 'user', slot: '', updatedAt: '' }, ...nodes],
+        edges,
+      };
+    } catch (error: unknown) {
+      this.logger.warn('recallGraph failed', {
+        context: 'KloelMemoryEngineService.recallGraph',
+        error: KloelMemoryEngineService.formatError(error),
+      });
+      return empty;
     }
   }
 
