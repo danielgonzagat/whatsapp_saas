@@ -188,6 +188,7 @@ const CORE_ROUTE_SEEDS: readonly NodeSeed[] = [
   ['kloel-search', 'Buscar', 'kloel', 'route', '/chat?graphAction=search', 'kloel', 'Buscar'],
   ['kloel-recents', 'Recentes', 'kloel', 'route', '/chat?graphAction=recents', 'kloel', 'Recentes'],
   ['kloel-tools', 'Ferramentas', 'kloel', 'route', '/ferramentas', 'kloel', 'Ferramentas'],
+  ['kloel-memoria', 'Memória', 'kloel', 'route', '/memoria', 'kloel', 'Memória'],
   ['kloel-cia', 'CIA', 'kloel', 'route', '/cia', 'kloel', 'CIA'],
   ['kloel-motor', 'Motor', 'kloel', 'route', '/admin/kloel-motor', 'kloel', 'Motor Kloel'],
   ['criar-products', 'Meus produtos', 'criar', 'route', '/products', 'criar', 'Produtos'],
