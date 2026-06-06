@@ -204,9 +204,18 @@ export function sanitizeAssistantVisibleContent(value: string): string {
 
 function sanitizeAssistantTraceLabel(value: string): string {
   return sanitizeAssistantVisibleContent(value)
-    .replace(/\bAção enviada para [^.]+\.?/gi, 'Consultei contexto operacional relevante antes de responder.')
-    .replace(/\bObservação recebida de [^.]+\.?/gi, 'Incorporei as observações encontradas antes de responder.')
-    .replace(/\bFalha observada em [^.]+\.?/gi, 'Registrei uma limitação operacional antes de responder.')
+    .replace(
+      /\bAção enviada para [^.]+\.?/gi,
+      'Consultei contexto operacional relevante antes de responder.',
+    )
+    .replace(
+      /\bObservação recebida de [^.]+\.?/gi,
+      'Incorporei as observações encontradas antes de responder.',
+    )
+    .replace(
+      /\bFalha observada em [^.]+\.?/gi,
+      'Registrei uma limitação operacional antes de responder.',
+    )
     .replace(/[ \t]{2,}/g, ' ')
     .trim();
 }
@@ -391,8 +400,7 @@ export function getAssistantReasoning(metadata: unknown): AssistantReasoning {
         name: candidate.name,
         meta: typeof candidate.meta === 'string' ? candidate.meta : undefined,
         url: typeof candidate.url === 'string' ? candidate.url : undefined,
-        downloadUrl:
-          typeof candidate.downloadUrl === 'string' ? candidate.downloadUrl : undefined,
+        downloadUrl: typeof candidate.downloadUrl === 'string' ? candidate.downloadUrl : undefined,
       };
     })
     .filter((entry): entry is AssistantReasoningFile => !!entry);
@@ -405,8 +413,8 @@ function applyReasoningStreamEventToMetadata(
   event: KloelStreamEvent,
 ): Record<string, unknown> | null {
   if (event.type === 'reasoning_delta') {
-    const current = typeof metadata.reasoningText === 'string' ? metadata.reasoningText : '';
-    return { ...metadata, reasoningText: current + event.text };
+    const prior = typeof metadata.reasoningText === 'string' ? metadata.reasoningText : '';
+    return { ...metadata, reasoningText: prior + event.text };
   }
   if (event.type === 'reasoning_summary') {
     return { ...metadata, reasoningSummary: event.text };
@@ -685,7 +693,9 @@ function createAssistantTraceEntryFromStreamEvent(
       id: event.callId ? `${event.callId}:call` : `trace_tool_call_${Date.now()}`,
       kind: 'tool_call',
       phase: 'tool_calling',
-      label: sanitizeAssistantTraceLabel('Consultei contexto operacional relevante antes de responder.'),
+      label: sanitizeAssistantTraceLabel(
+        'Consultei contexto operacional relevante antes de responder.',
+      ),
       createdAt: new Date().toISOString(),
       tool: formatLiveTraceToolLabel(event.tool),
       ...(spanId ? { spanId } : {}),
@@ -780,7 +790,6 @@ function normalizeProcessingTraceEntry(value: unknown): AssistantProcessingTrace
     success,
   };
 }
-
 
 function lowercaseLeadingCharacter(value: string) {
   if (!value) {

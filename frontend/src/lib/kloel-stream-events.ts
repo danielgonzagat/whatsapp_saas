@@ -252,10 +252,7 @@ function tryAppendReasoningSummary(
   events.push({ type: 'reasoning_summary', text: event.text });
 }
 
-function tryAppendReasoningDelta(
-  event: Record<string, unknown>,
-  events: KloelStreamEvent[],
-): void {
+function tryAppendReasoningDelta(event: Record<string, unknown>, events: KloelStreamEvent[]): void {
   if (
     event.type !== 'reasoning_delta' ||
     typeof event.text !== 'string' ||
@@ -263,13 +260,12 @@ function tryAppendReasoningDelta(
   ) {
     return;
   }
+
+  // Real DeepSeek reasoning_content, forwarded token-by-token to the timeline.
   events.push({ type: 'reasoning_delta', text: event.text });
 }
 
-function tryAppendReasoningDone(
-  event: Record<string, unknown>,
-  events: KloelStreamEvent[],
-): void {
+function tryAppendReasoningDone(event: Record<string, unknown>, events: KloelStreamEvent[]): void {
   if (event.type !== 'reasoning_done' || typeof event.durationMs !== 'number') {
     return;
   }
