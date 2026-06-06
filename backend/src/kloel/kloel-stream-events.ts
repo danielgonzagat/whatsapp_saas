@@ -109,7 +109,7 @@ interface KloelReasoningSummaryEvent {
   done: false;
 }
 
-/** Kloel reasoning delta event shape (a token of the model's real reasoning_content). */
+/** Kloel reasoning delta event shape. Text is never provider chain-of-thought. */
 interface KloelReasoningDeltaEvent {
   /** Type property. */
   type: 'reasoning_delta';
@@ -406,7 +406,7 @@ export function createKloelReasoningSummaryEvent(text: string): KloelReasoningSu
   };
 }
 
-/** Create kloel reasoning delta event (a token of the model's real reasoning_content). */
+/** Create kloel reasoning delta event carrying the model's REAL reasoning_content. */
 export function createKloelReasoningDeltaEvent(text: string): KloelReasoningDeltaEvent {
   return {
     type: 'reasoning_delta',
