@@ -72,6 +72,7 @@ const APP_PATH_PREFIXES = [
   '/integrations',
   '/video',
   '/cia',
+  '/memoria',
   '/scrapers',
   '/settings',
   '/chat',
@@ -121,7 +122,8 @@ function localRootHost(hostname: string): string {
 
 function localSubdomainHost(target: KloelHostTarget, hostname: string, port: string): string {
   const rootHost = localRootHost(hostname);
-  const sharedRootHost = rootHost === 'localhost' && target !== 'marketing' ? 'root.localhost' : rootHost;
+  const sharedRootHost =
+    rootHost === 'localhost' && target !== 'marketing' ? 'root.localhost' : rootHost;
   const prefix = target === 'marketing' ? '' : `${target}.`;
   return `${prefix}${sharedRootHost}${port ? `:${port}` : ''}`;
 }
