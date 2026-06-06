@@ -66,6 +66,11 @@ import {
   logPostReplySentiment,
 } from './kloel-reply-engine.emotional-tone.helpers';
 import { buildRecallDirective } from './kloel-reply-engine.recall.helpers';
+import {
+  chooseReplyStyleArm,
+  recordReplyStyleOutcome,
+  isAdequateReplyForBandit,
+} from './kloel-reply-engine.bandit.helpers';
 import { LongTermMemoryService } from './mind/memory/long-term-memory.service';
 import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 
@@ -420,6 +425,20 @@ export class KloelReplyEngineService {
           factCount: recallDirective.factCount,
         });
       }
+      // Brain->Mind: route the reply-STYLE decision through the canonical
+      // bandit (MindBanditService, decisionType 'reply_style'), flag-gated
+      // (KLOEL_REPLY_STYLE_BANDIT_ENABLED, default OFF) + fail-open. Null when
+      // disabled -> no directive, byte-identical hardcoded behavior.
+      const replyStyle = await chooseReplyStyleArm(this.mindBanditService, {
+        workspaceId: params.workspaceId,
+        logger: this.logger,
+      });
+      if (replyStyle) {
+        this.logger.log('kloel_reply_style_bandit_selected', {
+          workspaceId: params.workspaceId,
+          arm: replyStyle.arm,
+        });
+      }
       let assistantMessage: string;
       try {
         assistantMessage = await buildAssistantReplyImpl(params, {
@@ -441,7 +460,10 @@ export class KloelReplyEngineService {
           buildDynamicRuntimeContext: async (p) => {
             const base = await this.buildDynamicRuntimeContext(p);
             const withTone = toneDirective ? `${base}\n\n${toneDirective.directive}` : base;
-            return recallDirective ? `${withTone}\n\n${recallDirective.directive}` : withTone;
+            const withRecall = recallDirective
+              ? `${withTone}\n\n${recallDirective.directive}`
+              : withTone;
+            return replyStyle?.directive ? `${withRecall}\n\n${replyStyle.directive}` : withRecall;
           },
           ...(this.spine !== undefined ? { spine: this.spine } : {}),
           ...(this.mindPredictor !== undefined ? { mindPredictorService: this.mindPredictor } : {}),
@@ -452,12 +474,28 @@ export class KloelReplyEngineService {
           outcomeName: 'chat.replied',
           wonVsBaseline: true,
         });
+        if (replyStyle) {
+          await recordReplyStyleOutcome(this.mindBanditService, {
+            workspaceId: params.workspaceId,
+            arm: replyStyle.arm,
+            won: isAdequateReplyForBandit(assistantMessage),
+            logger: this.logger,
+          });
+        }
       } catch (error: unknown) {
         closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
           outcomeKey,
           outcomeName: 'chat.error',
           wonVsBaseline: false,
         });
+        if (replyStyle) {
+          await recordReplyStyleOutcome(this.mindBanditService, {
+            workspaceId: params.workspaceId,
+            arm: replyStyle.arm,
+            won: false,
+            logger: this.logger,
+          });
+        }
         throw error;
       }
       if (params.workspaceId) {
