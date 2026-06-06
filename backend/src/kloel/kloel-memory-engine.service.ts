@@ -1,29 +1,26 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { StructuredLogger } from '../logging/structured-logger';
 import { createTextLlmClient, readConfig } from '../lib/llm-provider';
 
 /**
- * KloelMemoryEngineService — per-user memory brain, native port of the Mem0
- * (Apache-2.0) algorithm onto Kloel's existing stack: DeepSeek for the LLM
- * judge, the canonical `MindMemory` table for storage (no migration), scoped
- * per-user via `namespace = umem:<userId>`.
+ * KloelMemoryEngineService — per-user memory brain, a native port of the Mem0
+ * (Apache-2.0) idea onto Kloel's stack: DeepSeek for extraction, the canonical
+ * `MindMemory` table for storage (no migration), scoped per-user via
+ * `namespace = umem:<userId>`.
  *
- * Two phases, both LLM-judged (no hardcoded heuristics):
- *  - REMEMBER: extract atomic durable facts/preferences from a turn, then
- *    judge each against the user's existing memories → ADD / UPDATE / DELETE /
- *    NONE (this is where contradiction resolution lives — "mudei pra SP"
- *    UPDATEs "mora no RJ"; a reversed preference DELETEs the stale one).
- *  - RECALL: return the user's relevant memories for injection into the model
- *    context before a reply.
+ * Contradiction resolution is DETERMINISTIC via SLOTS (the reliable Memobase
+ * approach, not a flaky batch LLM judge): every extracted fact carries a short
+ * `slot` key for its aspect (nome, cidade, preferencia_formato, profissao, ...).
+ * Memory rows are keyed `slot:<slot>` and UPSERTed, so a new fact about the same
+ * aspect OVERWRITES the old value — "mudei pra SP" replaces "mora no RJ" with no
+ * LLM judgement needed. A `forget` flag DELETEs the slot, so a forgotten fact can
+ * never be recalled again.
  *
- * Vector/semantic ranking is a graceful enhancement: when an embedder is
- * configured it can be layered on; without one (DeepSeek has no embeddings
- * endpoint), recall degrades honestly to recency + keyword over the small
- * per-user set. The brain (extraction + contradiction) is fully functional on
- * DeepSeek alone.
+ * The LLM is used only for extraction+slotting (one call); without an embedder
+ * (DeepSeek has no embeddings endpoint) recall degrades honestly to recency over
+ * the small per-user set — the brain is fully functional on DeepSeek alone.
  *
  * @cluster Mind/Knowledge
  */
@@ -39,7 +36,8 @@ export class KloelMemoryEngineService {
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
   ) {}
-  private formatUnknownError(error: unknown): string {
+
+  private static formatError(error: unknown): string {
     if (error instanceof Error) {
       return error.message;
     }
@@ -47,15 +45,10 @@ export class KloelMemoryEngineService {
       return error;
     }
     try {
-      const serialized: unknown = JSON.stringify(error);
-      if (typeof serialized === 'string') {
-        return serialized;
-      }
+      return JSON.stringify(error) ?? 'unknown error';
     } catch {
-      // fall through to Object.prototype.toString
+      return 'unknown error';
     }
-    const fallback: unknown = Object.prototype.toString.call(error);
-    return typeof fallback === 'string' ? fallback : 'unknown error';
   }
 
   private namespaceFor(userId: string): string {
@@ -64,6 +57,16 @@ export class KloelMemoryEngineService {
 
   private model(): string {
     return readConfig('KLOEL_MEMORY_LLM_MODEL', this.config) || 'deepseek-chat';
+  }
+
+  private static slugifySlot(raw: string): string {
+    return raw
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 40);
   }
 
   /** Single non-streaming JSON completion against the primary text LLM (DeepSeek). */
@@ -91,138 +94,103 @@ export class KloelMemoryEngineService {
     } catch (error: unknown) {
       this.logger.warn('memory LLM call failed', {
         context: 'KloelMemoryEngineService.completeJson',
-        error: this.formatUnknownError(error),
+        error: KloelMemoryEngineService.formatError(error),
       });
       return null;
     }
   }
 
-  /** Extract atomic, durable facts/preferences about the user from a turn. */
-  private async extractUserFacts(turnText: string): Promise<string[]> {
+  /**
+   * Extract durable facts/preferences about the user from a turn, each tagged
+   * with a SLOT (the aspect key that drives deterministic dedup) and an optional
+   * `forget` flag.
+   */
+  private async extractUserFacts(
+    turnText: string,
+  ): Promise<Array<{ slot: string; fact: string; forget: boolean }>> {
     const system =
       'Você extrai FATOS DURÁVEIS e PREFERÊNCIAS sobre o USUÁRIO a partir da mensagem dele. ' +
-      'Responda APENAS JSON no formato {"facts": string[]}. Cada fato é curto, atômico, em 3ª pessoa ' +
-      '("O usuário ..."). Capture: nome, papel, empresa, stack, projetos recorrentes, objetivos, decisões, ' +
-      'restrições, e preferências de formato/idioma/estilo/nível de detalhe. NÃO inclua: perguntas, conteúdo ' +
-      'efêmero de uma tarefa pontual, nem dados sensíveis (senha, cartão, token, documento). ' +
-      'Se não houver nada durável, responda {"facts": []}.';
-    const parsed = await this.completeJson(system, turnText.slice(0, 6000), 400);
+      'Responda APENAS JSON {"facts": [{"slot": "...", "fact": "...", "forget": false}]}. ' +
+      'Cada item tem: "slot" = chave curta em snake_case do ASPECTO (ex.: nome, cidade, profissao, ' +
+      'empresa, stack, preferencia_formato_resposta, preferencia_idioma, objetivo, projeto, decisao); ' +
+      'fatos do MESMO aspecto DEVEM usar o MESMO slot (ex.: "mora no RJ" e depois "mora em SP" usam o ' +
+      'slot "cidade"). "fact" = frase curta e atômica em 3a pessoa ("O usuário ..."). "forget" = true ' +
+      'SOMENTE quando o usuário pede explicitamente para esquecer/remover aquele aspecto (fact pode ser ""). ' +
+      'Capture só o que é durável e útil; NÃO inclua perguntas, conteúdo efêmero de tarefa pontual, nem ' +
+      'dados sensíveis (senha, cartão, token). Se não houver nada durável, responda {"facts": []}.';
+    const parsed = await this.completeJson(system, turnText.slice(0, 6000), 500);
     const facts = (parsed as { facts?: unknown })?.facts;
     if (!Array.isArray(facts)) {
       return [];
     }
-    return facts
-      .filter((f): f is string => typeof f === 'string')
-      .map((f) => f.trim())
-      .filter((f) => f.length > 0 && f.length <= 280)
-      .slice(0, 8);
-  }
-
-  /** Judge each new fact against existing memories → ADD / UPDATE / DELETE / NONE. */
-  private async planMemoryOps(
-    existing: Array<{ id: string; text: string }>,
-    newFacts: string[],
-  ): Promise<Array<{ op: string; text?: string; id?: string }>> {
-    if (newFacts.length === 0) {
-      return [];
+    const out: Array<{ slot: string; fact: string; forget: boolean }> = [];
+    for (const item of facts) {
+      if (!item || typeof item !== 'object') {
+        continue;
+      }
+      const rec = item as { slot?: unknown; fact?: unknown; forget?: unknown };
+      const slot = KloelMemoryEngineService.slugifySlot(
+        typeof rec.slot === 'string' ? rec.slot : '',
+      );
+      const fact = typeof rec.fact === 'string' ? rec.fact.trim() : '';
+      const forget = rec.forget === true;
+      if (!slot) {
+        continue;
+      }
+      if (!forget && (fact.length === 0 || fact.length > 280)) {
+        continue;
+      }
+      out.push({ slot, fact, forget });
+      if (out.length >= 8) {
+        break;
+      }
     }
-    const system =
-      'Você mantém a memória de longo prazo de UM usuário e é RIGOROSO contra duplicatas e contradições. ' +
-      'Dada a MEMÓRIA EXISTENTE (lista {id,text}) e os NOVOS FATOS, decida UMA operação por novo fato. ' +
-      'Responda APENAS JSON {"ops": [{"op": "...", "text": "...", "id": "..."}]}. ' +
-      'REGRA PRINCIPAL: se um novo fato fala do MESMO ASPECTO de uma memória existente (ex.: ambos sobre ' +
-      'tamanho/formato de resposta, ambos sobre cidade/local, ambos sobre o nome, ambos sobre a mesma ' +
-      'preferência ou decisão), é PROIBIDO usar ADD — use UPDATE (substitui o valor antigo pelo novo) ou ' +
-      'DELETE. ADD é só para um aspecto que ainda NÃO existe na memória. ' +
-      'op ∈ "ADD" (aspecto novo, sem id), "UPDATE" (mesmo aspecto, valor novo ou contraditório — inclua o ' +
-      'id do existente e em text o valor ATUAL consolidado), "DELETE" (invalida um existente sem novo valor ' +
-      '— inclua o id), "NONE" (idêntico ao existente — ignore). ' +
-      'EXEMPLO — EXISTENTE: [{"id":"m1","text":"O usuário prefere respostas curtas, máximo 2 frases"}], ' +
-      'NOVOS: ["O usuário prefere respostas longas e detalhadas"] → resposta ' +
-      '{"ops":[{"op":"UPDATE","id":"m1","text":"O usuário prefere respostas longas e detalhadas"}]}. ' +
-      'Outro: "mudei pra SP" sobre "mora no RJ" → UPDATE; "esquece X" sobre um X existente → DELETE.';
-    const payload = JSON.stringify({
-      existing_memory: existing.map((m) => ({ id: m.id, text: m.text })),
-      new_facts: newFacts,
-    });
-    const parsed = await this.completeJson(system, payload, 700);
-    const ops = (parsed as { ops?: unknown })?.ops;
-    if (!Array.isArray(ops)) {
-      return [];
-    }
-    return ops
-      .filter((o): o is { op: string; text?: string; id?: string } => {
-        return !!o && typeof o === 'object' && typeof (o as { op?: unknown }).op === 'string';
-      })
-      .map((o) => ({
-        op: String(o.op).toUpperCase(),
-        ...(typeof o.text === 'string' ? { text: o.text.trim() } : {}),
-        ...(typeof o.id === 'string' ? { id: o.id } : {}),
-      }));
+    return out;
   }
 
   /**
-   * Extract → judge → apply. Idempotent-ish: contradictions UPDATE/DELETE the
-   * prior memory instead of accumulating duplicates. Best-effort and swallows
-   * errors — memory must never break a chat turn. Returns a small summary for
-   * the caller's trace.
+   * Extract then upsert/delete by slot. Deterministic: same slot overwrites (so
+   * contradictions replace the prior value), `forget` deletes the slot. Best-effort
+   * and swallows errors — memory must never break a chat turn.
    */
   async remember(
     workspaceId: string,
     userId: string,
     turnText: string,
-  ): Promise<{ added: number; updated: number; deleted: number }> {
-    const result = { added: 0, updated: 0, deleted: 0 };
+  ): Promise<{ written: number; forgotten: number }> {
+    const result = { written: 0, forgotten: 0 };
     if (!workspaceId || !userId || !turnText.trim()) {
       return result;
     }
     const namespace = this.namespaceFor(userId);
     try {
       const facts = await this.extractUserFacts(turnText);
-      if (facts.length === 0) {
-        return result;
-      }
-      const existingRows = await this.prisma.mindMemory.findMany({
-        where: { workspaceId, namespace, category: KloelMemoryEngineService.CATEGORY },
-        orderBy: { updatedAt: 'desc' },
-        take: KloelMemoryEngineService.MAX_TRACKED,
-        select: { id: true, content: true },
-      });
-      const existing = existingRows
-        .filter((r): r is { id: string; content: string } => typeof r.content === 'string')
-        .map((r) => ({ id: r.id, text: r.content }));
-      const validIds = new Set(existing.map((e) => e.id));
-
-      const ops = await this.planMemoryOps(existing, facts);
-      for (const op of ops) {
-        if (op.op === 'ADD' && op.text) {
-          await this.prisma.mindMemory.create({
-            data: {
-              workspaceId,
-              namespace,
-              key: `fact:${randomUUID()}`,
-              value: { fact: op.text },
-              category: KloelMemoryEngineService.CATEGORY,
-              type: 'user_fact',
-              content: op.text,
-            },
-          });
-          result.added += 1;
-        } else if (op.op === 'UPDATE' && op.id && op.text && validIds.has(op.id)) {
-          await this.prisma.mindMemory.update({
-            where: { id: op.id },
-            data: { content: op.text, value: { fact: op.text } },
-          });
-          result.updated += 1;
-        } else if (op.op === 'DELETE' && op.id && validIds.has(op.id)) {
-          await this.prisma.mindMemory.delete({ where: { id: op.id } });
-          result.deleted += 1;
+      for (const { slot, fact, forget } of facts) {
+        const key = `slot:${slot}`;
+        if (forget) {
+          await this.prisma.mindMemory.deleteMany({ where: { workspaceId, namespace, key } });
+          result.forgotten += 1;
+          continue;
         }
+        await this.prisma.mindMemory.upsert({
+          where: { workspaceId_namespace_key: { workspaceId, namespace, key } },
+          create: {
+            workspaceId,
+            namespace,
+            key,
+            value: { fact, slot },
+            category: KloelMemoryEngineService.CATEGORY,
+            type: 'user_fact',
+            content: fact,
+          },
+          update: { content: fact, value: { fact, slot } },
+        });
+        result.written += 1;
       }
     } catch (error: unknown) {
       this.logger.warn('remember failed', {
         context: 'KloelMemoryEngineService.remember',
-        error: this.formatUnknownError(error),
+        error: KloelMemoryEngineService.formatError(error),
       });
     }
     return result;
@@ -237,7 +205,7 @@ export class KloelMemoryEngineService {
     workspaceId: string,
     userId: string,
     query: string,
-    k = 6,
+    k = 8,
   ): Promise<Array<{ id: string; content: string }>> {
     if (!workspaceId || !userId) {
       return [];
@@ -248,10 +216,10 @@ export class KloelMemoryEngineService {
         where: { workspaceId, namespace, category: KloelMemoryEngineService.CATEGORY },
         orderBy: { updatedAt: 'desc' },
         take: KloelMemoryEngineService.MAX_TRACKED,
-        select: { id: true, content: true, updatedAt: true },
+        select: { id: true, content: true },
       });
       const memories = rows.filter(
-        (r): r is { id: string; content: string; updatedAt: Date } => typeof r.content === 'string',
+        (r): r is { id: string; content: string } => typeof r.content === 'string' && !!r.content,
       );
       const terms = query
         .toLowerCase()
@@ -260,7 +228,6 @@ export class KloelMemoryEngineService {
       const scored = memories.map((m, index) => {
         const lower = m.content.toLowerCase();
         const overlap = terms.reduce((acc, t) => (lower.includes(t) ? acc + 1 : acc), 0);
-        // recency rank (newer first) lightly broken by keyword overlap
         return { id: m.id, content: m.content, score: overlap * 100 - index };
       });
       scored.sort((a, b) => b.score - a.score);
@@ -268,7 +235,7 @@ export class KloelMemoryEngineService {
     } catch (error: unknown) {
       this.logger.warn('recall failed', {
         context: 'KloelMemoryEngineService.recall',
-        error: this.formatUnknownError(error),
+        error: KloelMemoryEngineService.formatError(error),
       });
       return [];
     }

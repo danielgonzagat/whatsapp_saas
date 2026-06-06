@@ -1,4 +1,11 @@
-import { BadRequestException, forwardRef, Inject, Injectable, Logger, Optional } from '@nestjs/common';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+  Logger,
+  Optional,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { InstagramService } from '../channels/instagram/instagram.service';
 import { PrismaService } from '../../prisma/prisma.service';
