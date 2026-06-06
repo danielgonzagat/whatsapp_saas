@@ -81,7 +81,7 @@ export class KloelLeadProcessorService {
         workspaceId,
         normalizedPhone || senderPhone,
       );
-      await saveLeadMessage(this.prisma, this.logger, lead.id, 'user', message);
+      await saveLeadMessage(this.prisma, this.logger, lead.id, 'user', message, workspaceId);
 
       let contactId: string | null = null;
       try {
@@ -136,7 +136,14 @@ export class KloelLeadProcessorService {
           });
           const agentResponse =
             unifiedResult?.reply || unifiedResult?.response || 'Olá! Como posso ajudar?';
-          await saveLeadMessage(this.prisma, this.logger, lead.id, 'assistant', agentResponse);
+          await saveLeadMessage(
+            this.prisma,
+            this.logger,
+            lead.id,
+            'assistant',
+            agentResponse,
+            workspaceId,
+          );
           await updateLeadFromConversation(this.prisma, this.logger, workspaceId, lead.id, message);
           return agentResponse;
         } catch (agentErr: unknown) {
@@ -233,7 +240,14 @@ export class KloelLeadProcessorService {
       if (!rawResponse || rawResponse.trim().length < 5) {
         this.logger.warn(`lead-processor short output ws=${workspaceId} len=${rawResponse.length}`);
       }
-      await saveLeadMessage(this.prisma, this.logger, lead.id, 'assistant', kloelResponse);
+      await saveLeadMessage(
+        this.prisma,
+        this.logger,
+        lead.id,
+        'assistant',
+        kloelResponse,
+        workspaceId,
+      );
       await updateLeadFromConversation(this.prisma, this.logger, workspaceId, lead.id, message);
       return kloelResponse;
     } catch (error: unknown) {
