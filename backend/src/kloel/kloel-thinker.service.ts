@@ -585,6 +585,12 @@ export class KloelThinkerService {
     _executeLocalTool?: LocalToolExecutor,
   ): Promise<ThinkSyncResult> {
     try {
+      // Per-user memory: learn durable facts/preferences from this turn on the
+      // sync path too (mirrors the streaming think() path). Fire-and-forget so it
+      // never adds latency to or breaks the reply.
+      if (request.mode === 'chat' && request.workspaceId && request.userId) {
+        void this.memoryEngine?.remember(request.workspaceId, request.userId, request.message);
+      }
       return await thinkSyncImpl(request, composerCapability, effectiveCompanyContext, {
         replyEngine: this.replyEngine,
         prisma: this.prisma,
