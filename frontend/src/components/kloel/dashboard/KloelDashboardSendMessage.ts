@@ -48,7 +48,8 @@ export interface SendMessageContext {
 export function createSendMessageHandler(ctx: SendMessageContext) {
   return async (rawText: string, requestMetadata?: KloelChatRequestMetadata) => {
     const readyAttachments = ctx.attachments.filter((attachment) => attachment.status === 'ready');
-    const text = rawText.trim() || (readyAttachments.length > 0 ? 'Analise os anexos enviados.' : '');
+    const text =
+      rawText.trim() || (readyAttachments.length > 0 ? 'Analise os anexos enviados.' : '');
     if (!text || ctx.isReplyInFlight) {
       return;
     }
@@ -57,13 +58,13 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
       clientRequestId: cid,
       source: 'kloel_dashboard',
       attachments: readyAttachments.map((a) => ({
-          id: a.id,
-          name: a.name,
-          size: a.size,
-          mimeType: a.mimeType,
-          kind: a.kind,
-          url: a.url || a.previewUrl || null,
-        })),
+        id: a.id,
+        name: a.name,
+        size: a.size,
+        mimeType: a.mimeType,
+        kind: a.kind,
+        url: a.url || a.previewUrl || null,
+      })),
       linkedProduct: ctx.linkedProduct,
       capability: ctx.activeCapability,
     });
@@ -129,6 +130,40 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
         clearTimeout(playbackTimerRef.current);
         playbackTimerRef.current = null;
       }
+    };
+    // Real reasoning arrives as many small reasoning_delta events (DeepSeek can
+    // emit hundreds per turn). Coalesce them onto a throttled flush — exactly like
+    // the content render buffer below — so we never call setMessages per token,
+    // which overflowed React's update depth. The timeline still updates live (~40ms).
+    let reasoningBuffer = '';
+    let reasoningFlushTimer: ReturnType<typeof setTimeout> | null = null;
+    const flushReasoning = () => {
+      reasoningFlushTimer = null;
+      if (!reasoningBuffer) {
+        return;
+      }
+      const delta = reasoningBuffer;
+      reasoningBuffer = '';
+      ctx.setMessages((current) =>
+        current.map((message) =>
+          message.id === assistantId
+            ? {
+                ...message,
+                metadata:
+                  appendAssistantTraceFromEvent(message.metadata, {
+                    type: 'reasoning_delta',
+                    text: delta,
+                  }) || null,
+              }
+            : message,
+        ),
+      );
+    };
+    const scheduleReasoningFlush = () => {
+      if (reasoningFlushTimer) {
+        return;
+      }
+      reasoningFlushTimer = setTimeout(flushReasoning, 40);
     };
 
     const finalizeStream = () => {
@@ -256,6 +291,13 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
               ctx.setIsThinking(true);
             }
 
+            if (event.type === 'reasoning_delta') {
+              ctx.setIsThinking(true);
+              reasoningBuffer += event.text;
+              scheduleReasoningFlush();
+              return;
+            }
+
             ctx.setMessages((current) =>
               current.map((message) =>
                 message.id === assistantId
@@ -285,7 +327,6 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
             ctx.setConversationTitle(nextTitle || 'Nova conversa');
             ctx.loadedConversationIdRef.current = thread.conversationId;
             ctx.setActiveConversation(thread.conversationId);
-
           },
           onDone: () => {
             streamEnded = true;
