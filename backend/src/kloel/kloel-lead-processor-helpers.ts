@@ -8,7 +8,7 @@ export type { ChatMessage };
 import { NON_DIGIT_RE } from '../common/phone';
 import { safeStr } from '../common/string';
 export { NON_DIGIT_RE, safeStr };
-import { isMindMessageDualWriteEnabled } from './mind/aliases/mindmessage-dualwrite.flag';
+import { mirrorMindMessage } from './mind/aliases/mindmessage-dualwrite.mirror';
 
 export function asUnknownRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -151,19 +151,14 @@ export async function dualWriteLeadConversationMindMessage(
   role: string,
   content: string,
 ): Promise<void> {
-  if (!isMindMessageDualWriteEnabled()) {
-    return;
-  }
   if (!workspaceId || !content) {
     return;
   }
-  try {
-    await prisma.mindMessage.create({
-      data: { workspaceId, source: 'lead_conversation', role, content },
-    });
-  } catch (error: unknown) {
-    logger.warn('Falha ao espelhar mensagem do lead em MindMessage:', error);
-  }
+  await mirrorMindMessage(
+    prisma,
+    { workspaceId, source: 'lead_conversation', role, content },
+    (error) => logger.warn('Falha ao espelhar mensagem do lead em MindMessage:', error),
+  );
 }
 
 export async function updateLeadFromConversation(

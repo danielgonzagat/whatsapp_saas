@@ -3,7 +3,7 @@ import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MindChatMessageService } from './mind/aliases/mind-chat-message.service';
-import { isMindMessageDualWriteEnabled } from './mind/aliases/mindmessage-dualwrite.flag';
+import { mirrorMindMessage } from './mind/aliases/mindmessage-dualwrite.mirror';
 import { type KloelStreamEvent } from './kloel-stream-events';
 import { normalizeRefinementMarkdown } from './kloel-composer.service.helpers';
 import { KloelThreadSummaryService } from './kloel-thread-summary.service';
@@ -69,24 +69,20 @@ export class KloelThreadService {
     role: string,
     content: string,
   ): Promise<void> {
-    if (!isMindMessageDualWriteEnabled()) {
-      return;
-    }
     if (!workspaceId || !role || !content) {
       return;
     }
-    try {
-      await this.prisma.mindMessage.create({
-        data: { workspaceId, source: 'thread', role, content },
-      });
-    } catch (error) {
-      this.logger.warn(
-        `MindMessage dual-write failed (workspaceId=${workspaceId}, role=${role}, ` +
-          `source=thread); legacy ChatMessage write succeeded and is unaffected: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-      );
-    }
+    await mirrorMindMessage(
+      this.prisma,
+      { workspaceId, source: 'thread', role, content },
+      (error) =>
+        this.logger.warn(
+          `MindMessage dual-write failed (workspaceId=${workspaceId}, role=${role}, ` +
+            `source=thread); legacy ChatMessage write succeeded and is unaffected: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+        ),
+    );
   }
 
   async resolveThread(
