@@ -82,6 +82,24 @@ describe('DadosPessoaisSection', () => {
     expect(mocks.mutate).toHaveBeenCalled();
   });
 
+  it('exposes browser form names for the personal text fields', async () => {
+    render(
+      <DadosPessoaisSection
+        profile={{
+          name: 'Codex Audit',
+          email: 'codex.audit@example.test',
+          phone: '(11) 97777-0001',
+          birthDate: '1988-08-09',
+        }}
+        mutate={mocks.mutate}
+      />,
+    );
+
+    expect((await screen.findByRole('textbox', { name: 'Nome completo' })).getAttribute('name')).toBeTruthy();
+    expect(screen.getByRole('textbox', { name: 'E-mail' }).getAttribute('name')).toBeTruthy();
+    expect(screen.getByRole('textbox', { name: 'Celular' }).getAttribute('name')).toBeTruthy();
+  });
+
   it('blocks saving when required personal fields are empty', async () => {
     render(
       <DadosPessoaisSection
