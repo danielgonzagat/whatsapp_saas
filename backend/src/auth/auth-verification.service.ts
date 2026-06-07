@@ -1,4 +1,5 @@
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
+import { generateOpaqueToken, hashOpaqueToken } from '../common/auth-core/opaque-token';
 import { StructuredLogger } from '../logging/structured-logger';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { BadRequestException, Injectable, Optional, UnauthorizedException } from '@nestjs/common';
@@ -39,11 +40,11 @@ export class AuthVerificationService {
   }
 
   private generateOpaqueToken(): string {
-    return randomBytes(32).toString('base64url');
+    return generateOpaqueToken();
   }
 
   private hashOpaqueToken(token: string): string {
-    return createHash('sha256').update(token).digest('hex');
+    return hashOpaqueToken(token);
   }
 
   // =========================================

@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { hashOpaqueToken } from '../common/auth-core/opaque-token';
 import {
   BadRequestException,
   ConflictException,
@@ -45,7 +45,7 @@ export class AuthPartnerService {
   ) {}
 
   private hashOpaqueToken(token: string) {
-    return createHash('sha256').update(token).digest('hex');
+    return hashOpaqueToken(token);
   }
 
   resolvePartnerInviteAccountType(type: string): import('@prisma/client').ConnectAccountType {
