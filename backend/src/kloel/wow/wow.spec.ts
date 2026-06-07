@@ -267,8 +267,8 @@ describe('UTP-WOW-004 — Evidence Builder', () => {
     const insight = makeRanked({ evidence: ['a', 'b', 'c'] });
     const bundle = buildEvidence(insight);
     const weights = bundle.evidenceItems.map((e) => e.weight);
-    expect(weights[0]).toBeGreaterThan(weights[1]!);
-    expect(weights[1]).toBeGreaterThan(weights[2]!);
+    expect(weights[0]).toBeGreaterThan(weights[1]);
+    expect(weights[1]).toBeGreaterThan(weights[2]);
   });
 
   it('buildEvidenceBundles returns same number of bundles as insights', () => {

@@ -11,13 +11,17 @@ import {
   type BrazilianBank,
 } from '@/hooks/useBrazilianBanks';
 import Icons from './ContaIcons';
-import { SORA, MONO, EMBER, U0300__U036F_RE } from './ContaConstants';
+import { SORA, MONO, EMBER, U0300__U036F_RE, D_RE } from './ContaConstants';
 import { cleanPayload, getErrorMessage, bankAccountToFormState } from './ContaHelpers';
 import { Field, SaveActions, SectionCard } from './ContaShared';
 import type { KycBankAccount, KycFiscal, KycProfile } from './ContaTypes';
 import AccountTypeSelector from './ContaAccountTypeSelector';
 import PixFields from './ContaPixFields';
 import ContaBankSelectorField from './ContaBankSelectorField';
+
+const BANK_SEARCH_ALIASES_BY_CODE: Record<string, string[]> = {
+  '260': ['nubank', 'nu bank'],
+};
 
 export default function DadosBancariosSection({
   bankAccount,
@@ -71,12 +75,11 @@ export default function DadosBancariosSection({
     ? searchTerm
       ? banks.filter((b) => {
           const q = normalize(searchTerm);
-          return (
-            normalize(b.fullName).includes(q) ||
-            normalize(b.name).includes(q) ||
-            formatBankCode(b.code).includes(searchTerm) ||
-            String(b.code) === searchTerm
-          );
+          const code = formatBankCode(b.code);
+          const aliases = BANK_SEARCH_ALIASES_BY_CODE[code] ?? [];
+          const searchable = normalize([b.fullName, b.name, code, String(b.code), ...aliases].join(' '));
+
+          return searchable.includes(q);
         })
       : showAllBanks
         ? banks
@@ -125,16 +128,55 @@ export default function DadosBancariosSection({
 
   const set = (k: string, v: string) => setForm((prev) => ({ ...prev, [k]: v }));
 
+  const showValidationError = (message: string) => {
+    setError(message);
+    setSaveStatus('error');
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+    }
+    saveTimer.current = setTimeout(() => setSaveStatus('idle'), 4000);
+    showToast(message, 'error');
+  };
+
+  const validateBankForm = (): string | null => {
+    if (!form.bankName || !form.bankCode) {
+      return 'Selecione um banco da lista.';
+    }
+    if (!form.agency.trim()) {
+      return 'Informe a agencia.';
+    }
+    if (!form.account.trim()) {
+      return 'Informe a conta.';
+    }
+    if (!form.holderName.trim()) {
+      return 'Complete o nome do titular nos dados pessoais.';
+    }
+    const holderDocumentDigits = form.holderDocument.replace(D_RE, '');
+    if (holderDocumentDigits.length !== 11 && holderDocumentDigits.length !== 14) {
+      return 'Complete o CPF/CNPJ do titular nos dados fiscais.';
+    }
+    return null;
+  };
+
   const handleSave = async () => {
     setError('');
     setSaveStatus('idle');
-    if (!form.bankName || !form.bankCode) {
-      setError('Selecione um banco da lista.');
+    const validationError = validateBankForm();
+    if (validationError) {
+      showValidationError(validationError);
       return;
     }
     setSaving(true);
     try {
-      await updateBank(cleanPayload(form));
+      await updateBank(
+        cleanPayload({
+          ...form,
+          agency: form.agency.trim(),
+          account: form.account.trim(),
+          holderName: form.holderName.trim(),
+          holderDocument: form.holderDocument.trim(),
+        }),
+      );
       setSaveStatus('success');
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);

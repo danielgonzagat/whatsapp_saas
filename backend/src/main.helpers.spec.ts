@@ -136,7 +136,7 @@ describe('main.helpers', () => {
     it('returns a working matcher for valid wildcard patterns', () => {
       const matcher = compileCorsOriginMatcher('^https://.*\\.kloel\\.com$');
       expect(matcher).not.toBeNull();
-      const fn = matcher as (origin: string) => boolean;
+      const fn = matcher;
       expect(fn('https://a.kloel.com')).toBe(true);
       expect(fn('https://x.y.kloel.com')).toBe(true);
       expect(fn('https://kloel.com')).toBe(false);
@@ -146,7 +146,7 @@ describe('main.helpers', () => {
     it('returns a matcher that handles plain (non-wildcard) origins', () => {
       const matcher = compileCorsOriginMatcher('https://kloel.com');
       expect(matcher).not.toBeNull();
-      const fn = matcher as (origin: string) => boolean;
+      const fn = matcher;
       expect(fn('https://kloel.com')).toBe(true);
       expect(fn('https://kloel.com.evil')).toBe(false);
     });

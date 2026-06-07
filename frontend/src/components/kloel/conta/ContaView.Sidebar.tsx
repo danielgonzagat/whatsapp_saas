@@ -41,6 +41,7 @@ export function ContaSidebar({ section, sectionStatus, onSelectSection }: ContaS
             type="button"
             key={sec.key}
             onClick={() => onSelectSection(sec.key)}
+            aria-pressed={active}
             style={{
               display: 'flex',
               alignItems: 'center',

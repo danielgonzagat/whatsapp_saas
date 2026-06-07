@@ -62,6 +62,7 @@ export default function MarketplaceFilters({
         <button
           type="button"
           onClick={() => setCatFilter(null)}
+          aria-pressed={!catFilter}
           style={{
             padding: '6px 14px',
             borderRadius: 16,
@@ -81,6 +82,7 @@ export default function MarketplaceFilters({
             type="button"
             key={cat}
             onClick={() => setCatFilter(catFilter === cat ? null : cat)}
+            aria-pressed={catFilter === cat}
             style={{
               padding: '6px 14px',
               borderRadius: 16,

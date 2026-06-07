@@ -13,13 +13,15 @@ export function MonitorStepper({
   visibleSteps: number[];
 }) {
   const filtered = STEPS.filter((s) => visibleSteps.includes(s.id));
+  const visibleCurrentIndex = filtered.findIndex((s) => s.id === currentStep);
 
   return (
     <div style={{ marginBottom: 32 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0 }}>
         {filtered.map((step, idx) => {
+          const visibleStepNumber = idx + 1;
           const isActive = step.id === currentStep;
-          const isCompleted = step.id < currentStep;
+          const isCompleted = visibleCurrentIndex >= 0 && idx < visibleCurrentIndex;
 
           return (
             <div key={step.id} style={{ display: 'flex', alignItems: 'center' }}>
@@ -32,6 +34,12 @@ export function MonitorStepper({
                 }}
               >
                 <div
+                  aria-label={kloelT(
+                    `Etapa ${visibleStepNumber} de ${filtered.length}: ${step.label}`,
+                  )}
+                  title={kloelT(
+                    `Etapa ${visibleStepNumber} de ${filtered.length}: ${step.label}`,
+                  )}
                   style={{
                     width: 32,
                     height: 32,
@@ -56,7 +64,11 @@ export function MonitorStepper({
                     transition: 'all 150ms ease',
                   }}
                 >
-                  {isCompleted ? <Check className="h-4 w-4" aria-hidden="true" /> : step.id}
+                  {isCompleted ? (
+                    <Check className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    visibleStepNumber
+                  )}
                 </div>
                 <span
                   style={{
@@ -81,8 +93,7 @@ export function MonitorStepper({
                   style={{
                     width: 40,
                     height: 2,
-                    backgroundColor:
-                      step.id < currentStep ? colors.state.success : colors.border.space,
+                    backgroundColor: isCompleted ? colors.state.success : colors.border.space,
                     marginBottom: 18,
                     transition: 'background-color 150ms ease',
                   }}

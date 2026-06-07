@@ -319,6 +319,14 @@ describe('AuthController', () => {
   });
 
   describe('getMe', () => {
+    it('uses a read-sized auth throttle budget for UI bootstrap reads', () => {
+      const getMeHandler = Object.getOwnPropertyDescriptor(AuthController.prototype, 'getMe')
+        ?.value as AuthController['getMe'];
+
+      expect(Reflect.getMetadata('THROTTLER:LIMITauth', getMeHandler)).toBe(300);
+      expect(Reflect.getMetadata('THROTTLER:TTLauth', getMeHandler)).toBe(60000);
+    });
+
     it('delegates to auth.getMe with agent sub', async () => {
       auth.getMe.mockResolvedValue({ id: 'agent-1', email: 'a@b.com' });
       const result = await controller.getMe(mockReq({ sub: 'agent-1' }));

@@ -115,7 +115,7 @@ export function refuse(goal: GoalCandidate, verdict: MaturityVerdict): GuardVerd
   const currentIdx = STAGE_ORDERED.indexOf(verdict.stage);
 
   for (let i = STAGE_ORDERED.length - 1; i > currentIdx; i--) {
-    const laterStage = STAGE_ORDERED[i] as MaturityStage;
+    const laterStage = STAGE_ORDERED[i];
     const keywords = STAGE_KEYWORDS[laterStage];
 
     if (keywords.some((kw) => summaryLower.includes(kw))) {

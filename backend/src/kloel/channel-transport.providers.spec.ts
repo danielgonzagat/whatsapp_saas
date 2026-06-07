@@ -234,7 +234,7 @@ describe('ChannelCapability shapes', () => {
 
       if (!cap.sendAvailable) {
         expect(cap.sendBlockedReason).toBeTruthy();
-        expect(cap.sendBlockedReason!.length).toBeGreaterThan(0);
+        expect(cap.sendBlockedReason.length).toBeGreaterThan(0);
       }
     },
   );

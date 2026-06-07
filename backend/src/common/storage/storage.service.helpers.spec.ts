@@ -135,7 +135,7 @@ describe('storage.service.helpers', () => {
       const before = Date.now();
       const payload = buildAccessTokenPayload('folder/file.png', { expiresInSeconds: 60 });
       expect(payload.exp).toBeDefined();
-      expect(payload.exp!).toBeGreaterThanOrEqual(before + 60_000 - 50);
+      expect(payload.exp).toBeGreaterThanOrEqual(before + 60_000 - 50);
     });
 
     it('records downloadName only when provided', () => {

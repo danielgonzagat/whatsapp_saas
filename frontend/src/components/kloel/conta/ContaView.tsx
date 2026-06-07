@@ -309,13 +309,15 @@ export default function ContaView() {
           </div>
         )}
 
-        <ConnectAccountStatusCard
-          isMobile={isMobile}
-          sellerAccount={sellerAccount}
-          kycStatus={kycStatus}
-          isLoading={connectAccountLoading}
-          error={connectAccountError}
-        />
+        <div id="conta-recebimento">
+          <ConnectAccountStatusCard
+            isMobile={isMobile}
+            sellerAccount={sellerAccount}
+            kycStatus={kycStatus}
+            isLoading={connectAccountLoading}
+            error={connectAccountError}
+          />
+        </div>
 
         <div
           style={{
@@ -346,6 +348,7 @@ export default function ContaView() {
                   type="button"
                   key={sec.key}
                   onClick={() => handleSelectSection(sec.key)}
+                  aria-pressed={active}
                   style={{
                     display: 'flex',
                     alignItems: 'center',

@@ -129,7 +129,7 @@ describe('PaymentWebhookGenericController — auth + idempotency contract', () =
     const signature = createHmac('sha256', 'hmac-secret').update(rawBody).digest('hex');
 
     const result = await controller.handlePayment(
-      undefined as never,
+      undefined,
       signature,
       undefined,
       'evt-3',
@@ -166,7 +166,7 @@ describe('PaymentWebhookGenericController — auth + idempotency contract', () =
     const body = { status: 'paid', workspaceId: 'ws-1', orderId: 'order-5' };
 
     const result = await controller.handlePayment(
-      undefined as never,
+      undefined,
       undefined,
       undefined,
       'evt-5',
@@ -185,7 +185,7 @@ describe('PaymentWebhookGenericController — auth + idempotency contract', () =
     const body = { status: 'pending', workspaceId: 'ws-1', orderId: 'order-6' };
 
     const result = await controller.handlePayment(
-      undefined as never,
+      undefined,
       undefined,
       undefined,
       'evt-6',

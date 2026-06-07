@@ -136,6 +136,8 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
 
   const metaConnected = statuses.find((s) => s.platform === 'meta')?.connected ?? false;
   const metaTokenProp = metaConnected ? 'connected' : '';
+  const [connectError, setConnectError] = useState<string | null>(null);
+  const [connectingPlatform, setConnectingPlatform] = useState<PlatformKey | null>(null);
 
   const navigateTo = useCallback(
     (nextRoute: string) => {
@@ -180,13 +182,20 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
     [metaConnected],
   );
 
-  const handleConnectPlatform = useCallback((platformKey: PlatformKey) => {
-    const routeMap: Record<PlatformKey, string> = {
-      meta: '/conta',
-      google: `/anuncios/google`,
-      tiktok: `/anuncios/tiktok`,
-    };
-    window.location.href = routeMap[platformKey];
+  const handleConnectPlatform = useCallback(async (platformKey: PlatformKey) => {
+    setConnectingPlatform(platformKey);
+    setConnectError(null);
+    try {
+      const { buildAdPlatformConnectRequest, readOfficialConnectUrl } = await import(
+        './AnunciosConnect.helpers'
+      );
+      const request = buildAdPlatformConnectRequest(platformKey);
+      const response = await apiFetch<{ url?: string }>(request.endpoint);
+      window.location.assign(readOfficialConnectUrl(response, request));
+    } catch (error) {
+      setConnectError(error instanceof Error ? error.message : 'Falha ao abrir conexão oficial.');
+      setConnectingPlatform(null);
+    }
   }, []);
 
   return (
@@ -211,6 +220,22 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
       <AnunciosTabBar tab={tab} isMobile={isMobile} onSelect={goToTab} />
 
       <div style={{ padding: isMobile ? 16 : 24, maxWidth: 1240, margin: '0 auto' }}>
+        {connectError ? (
+          <div
+            role="status"
+            style={{
+              marginBottom: 16,
+              padding: '10px 14px',
+              border: '1px solid rgba(232,93,48,.28)',
+              borderRadius: 6,
+              background: 'rgba(232,93,48,.08)',
+              color: 'var(--app-text-secondary)',
+              fontSize: 12,
+            }}
+          >
+            {connectError}
+          </div>
+        ) : null}
         {!metaConnected && tab === 'visao' ? (
           <div
             style={{
@@ -225,9 +250,11 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
             </div>
             <button
               type="button"
+              disabled={connectingPlatform === 'meta'}
               onClick={() => handleConnectPlatform('meta')}
               style={{
-                cursor: 'pointer',
+                cursor: connectingPlatform === 'meta' ? 'wait' : 'pointer',
+                opacity: connectingPlatform === 'meta' ? 0.72 : 1,
                 padding: '10px 28px',
                 fontSize: 13,
                 fontWeight: 600,
@@ -238,7 +265,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
                 fontFamily: SORA,
               }}
             >
-              {kloelT('Conectar Meta Ads')}
+              {connectingPlatform === 'meta' ? kloelT('Abrindo Meta Ads...') : kloelT('Conectar Meta Ads')}
             </button>
           </div>
         ) : lastSyncAt ? (
@@ -270,6 +297,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
             campaigns={campaigns.filter((c) => c.platform === 'meta')}
             metaAccessToken={metaTokenProp}
             onCampaignsChange={setCampaigns}
+            onConnectPlatform={handleConnectPlatform}
           />
         )}
         {tab === 'google' && (
@@ -278,6 +306,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
             platform={platforms.google}
             campaigns={campaigns.filter((c) => c.platform === 'google')}
             onCampaignsChange={setCampaigns}
+            onConnectPlatform={handleConnectPlatform}
           />
         )}
         {tab === 'tiktok' && (
@@ -286,6 +315,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
             platform={platforms.tiktok}
             campaigns={campaigns.filter((c) => c.platform === 'tiktok')}
             onCampaignsChange={setCampaigns}
+            onConnectPlatform={handleConnectPlatform}
           />
         )}
         {tab === 'track' && <TrackingDashboard focus={requestedFocus ?? ''} />}

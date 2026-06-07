@@ -23,12 +23,17 @@ export default function ParceriasShell({ defaultTab = 'colaboradores' }: { defau
   const router = useRouter();
   const pathname = usePathname();
 
-  const [tab, setTab] = useState(defaultTab);
+  const activeTab = pathname?.startsWith('/parcerias/chat')
+    ? 'chat'
+    : pathname?.startsWith('/parcerias/afiliados')
+      ? 'afiliados'
+      : pathname?.startsWith('/parcerias/colaboradores')
+        ? 'colaboradores'
+        : defaultTab;
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showAffiliateInviteModal, setShowAffiliateInviteModal] = useState(false);
 
   const handleTabChange = (t: string) => {
-    setTab(t);
     const routes: Record<string, string> = {
       colaboradores: '/parcerias/colaboradores',
       afiliados: '/parcerias/afiliados',
@@ -110,12 +115,13 @@ export default function ParceriasShell({ defaultTab = 'colaboradores' }: { defau
           }}
         >
           {TABS.map((t) => {
-            const isActive = tab === t.key;
+            const isActive = activeTab === t.key;
             return (
               <button
                 type="button"
                 key={t.key}
                 onClick={() => handleTabChange(t.key)}
+                aria-pressed={isActive}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -148,14 +154,14 @@ export default function ParceriasShell({ defaultTab = 'colaboradores' }: { defau
           margin: '0 auto',
         }}
       >
-        {tab === 'colaboradores' && <ColaboratorRoster setShowInviteModal={setShowInviteModal} />}
-        {tab === 'afiliados' && (
+        {activeTab === 'colaboradores' && <ColaboratorRoster setShowInviteModal={setShowInviteModal} />}
+        {activeTab === 'afiliados' && (
           <AffiliateDirectory
             setShowAffiliateInviteModal={setShowAffiliateInviteModal}
-            onOpenChat={() => setTab('chat')}
+            onOpenChat={() => handleTabChange('chat')}
           />
         )}
-        {tab === 'chat' && <PartnerChatRoom />}
+        {activeTab === 'chat' && <PartnerChatRoom />}
       </div>
 
       {showInviteModal && <ColaboratorInvitationForm onClose={() => setShowInviteModal(false)} />}

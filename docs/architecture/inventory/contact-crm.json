@@ -1,0 +1,383 @@
+{
+  "cluster": "Contact, CRM & Lead identity",
+  "generatedAt": "2026-06-07",
+  "groundedInCommit": "b8bc7494a73c373e5600bc2c39949a5177b010ec",
+  "targetPaths": ["backend/src/contacts", "backend/src/crm"],
+  "adjacentPathsTraversed": [
+    "backend/src/kloel (lead processor, mind coordinators, leads service, crm-emitter)",
+    "backend/src/checkout (checkout-social-lead)",
+    "backend/src/scrapers (scraped-lead import)",
+    "backend/src/omnichannel (contact-resolution)",
+    "backend/src/common/phone* (phone normalization)",
+    "backend/src/prisma/backfills (person KloelLead -> Contact backfill)",
+    "frontend/src/lib/api/leads.ts"
+  ],
+  "domainsCovered": [
+    "Person/contact identity (canonical Contact)",
+    "Cross-channel identity resolution (ChannelIdentifier, ContactIdentityLink)",
+    "Lead funnel & lead lifecycle (KloelLead, KloelConversation)",
+    "Scraped/imported leads (ScrapedLead)",
+    "Checkout social leads / lead capture & enrichment (CheckoutSocialLead)",
+    "CRM contacts CRUD + tagging (Contact, Tag)",
+    "Sales pipeline / Kanban (Pipeline, Stage, Deal)",
+    "AI lead scoring / NeuroCRM (ContactInsight, Contact.leadScore/sentiment)",
+    "Phone normalization & identity keying",
+    "CRM domain events (Spine commerce.crm.* / commerce.lead.*)"
+  ],
+  "canonicalEntities": [
+    {
+      "name": "Contact",
+      "table": "RAC_Contact",
+      "file": "backend/prisma/schema.prisma:399",
+      "role": "Canonical person/identity. Unique key (workspaceId, phone). Holds CRM fields (leadScore, sentiment, purchaseProbability, aiSummary), a denormalized lead-funnel snapshot mirrored from KloelLead (leadStatus, leadStage, lastMessage, lastIntent, totalMessages), and provenance pointers to its lead sources (scrapingJobId, scrapedFrom, kloelLeadId, checkoutSocialLeadId). The intended single source of truth for the person."
+    },
+    {
+      "name": "ContactInsight",
+      "table": "RAC_ContactInsight",
+      "file": "backend/prisma/schema.prisma:471",
+      "role": "Append-only AI insight log per Contact (SENTIMENT_CHANGE, OBJECTION_RAISED, etc.) with scoreChange. Written by NeuroCrmService.createInsight."
+    },
+    {
+      "name": "ContactIdentityLink",
+      "table": "RAC_ContactIdentityLink",
+      "file": "backend/prisma/schema.prisma:485",
+      "role": "Directed merge/link edge between two Contacts (contactId=target, linkedContactId=source) with confidence, matchReason, merged flag. Written ONLY by ContactIdentityMergeService.mergeContacts — which currently has no production caller (orphan)."
+    },
+    {
+      "name": "ChannelIdentifier",
+      "table": "RAC_ChannelIdentifier",
+      "file": "backend/prisma/schema.prisma:507",
+      "role": "Per-channel external identifier (WHATSAPP/INSTAGRAM/MESSENGER/EMAIL/TIKTOK -> value) pointing at a Contact. Unique key (workspaceId, channel, value). verifiedAt gates cross-channel match eligibility. Managed by ChannelIdentifierService + ContactIdentityResolverService."
+    },
+    {
+      "name": "KloelLead",
+      "table": "RAC_KloelLead",
+      "file": "backend/prisma/schema.prisma:1834",
+      "role": "Legacy/parallel lead funnel entity. Unique key (workspaceId, phone). Holds status/stage/score/lastMessage/lastIntent/totalMessages + KloelConversation history. Overlaps Contact almost entirely; bridged to Contact via Contact.kloelLeadId. Still the live backing store for the WhatsApp lead-processing path and the /kloel/leads list endpoint."
+    },
+    {
+      "name": "KloelConversation",
+      "table": "RAC_KloelConversation",
+      "file": "backend/prisma/schema.prisma:1865",
+      "role": "Per-KloelLead message history (role/content/intent/sentiment). Legacy message surface; flag-gated dual-write mirrors into MindMessage (source='lead_conversation')."
+    },
+    {
+      "name": "ScrapedLead",
+      "table": "RAC_ScrapedLead",
+      "file": "backend/prisma/schema.prisma:779",
+      "role": "Raw scraper output (phone/name/category/address/metadata) tied to a ScrapingJob. isImported flag tracks promotion to Contact via ScrapersService.importLeads. NOT workspace-scoped directly (scoped via ScrapingJob)."
+    },
+    {
+      "name": "CheckoutSocialLead",
+      "table": "RAC_CheckoutSocialLead",
+      "file": "backend/prisma/schema.prisma:3273",
+      "role": "Social-login checkout lead capture (provider/providerId, email/phone/cpf, UTM/fbclid/gclid, enrichment, abandonment/recovery, conversion). Linked to Contact via contactId; Contact.checkoutSocialLeadId records reverse provenance. Has its own status/stage machine (CheckoutSocialLeadStatus)."
+    },
+    {
+      "name": "Tag",
+      "table": "RAC_Tag",
+      "file": "backend/prisma/schema.prisma:544",
+      "role": "Workspace-scoped label, many-to-many with Contact. Unique key (workspaceId, name). Upserted by CrmService.addTag and the inline addTagInline in crm.deals.helpers."
+    },
+    {
+      "name": "Pipeline / Stage / Deal",
+      "table": "RAC_Pipeline / RAC_Stage / RAC_Deal",
+      "file": "backend/prisma/schema.prisma:1051 / 1068 / 1086",
+      "role": "Sales Kanban. Deal -> Contact (contactId) + Stage. Managed by CrmService via crm.deals.helpers. Note: CRM read surface aliases Deal as 'lead' (getPipeline returns stage.leads = deals) — a naming overload distinct from KloelLead/ScrapedLead."
+    }
+  ],
+  "services": [
+    {
+      "name": "ChannelIdentifierService",
+      "file": "backend/src/contacts/channel-identifier.service.ts:72",
+      "responsibility": "Resolve/create a Contact from a (channel,value) pair; link/find/setPrimary/markVerified channel identifiers. Synthesizes Contact.phone as `<channel>:<value>` when creating a contact with no real phone.",
+      "capability": "cross-channel-identity-resolution"
+    },
+    {
+      "name": "ContactIdentityResolverService",
+      "file": "backend/src/contacts/contact-identity-resolver.service.ts:24",
+      "responsibility": "Higher-level identity resolution: exact channel-identifier lookup, then cross-channel match by phone/email/socialHandle (only against verifiedAt!=null identifiers), else create. Used by commercial-decision-orchestrator.service.ts.",
+      "capability": "cross-channel-identity-resolution"
+    },
+    {
+      "name": "ContactIdentityMergeService",
+      "file": "backend/src/contacts/contact-identity-merge.service.ts:19",
+      "responsibility": "Merge two Contacts: create ContactIdentityLink + re-point channelIdentifier/message/conversation/followUp/deal/flowExecution/autopilotEvent/checkoutSocialLead from source to target. ORPHAN: no production caller invokes mergeContacts.",
+      "capability": "identity-merge"
+    },
+    {
+      "name": "CrmService",
+      "file": "backend/src/crm/crm.service.ts:18",
+      "responsibility": "CRM basics (create/upsert/get/list Contact, add/remove Tag) + pipeline/deal delegation to crm.deals.helpers + canonical Kloel-resolver methods (moveLead, openSupportTicket, listSupportTickets). upsertContact is the only Contact write that uses canonical structured normalizePhone.",
+      "capability": "contact-crud, tagging, pipeline-deals, support-ticket"
+    },
+    {
+      "name": "NeuroCrmService",
+      "file": "backend/src/crm/neuro-crm.service.ts:22",
+      "responsibility": "AI lead analysis: analyzeContact (LLM -> leadScore/sentiment/purchaseProbability/summary/nextBestAction persisted to Contact + ContactInsight), nextBestAction, clusterLeads, simulateConversation, listInsights/createInsight.",
+      "capability": "ai-lead-scoring, lead-clustering, insight-logging"
+    },
+    {
+      "name": "CrmEventEmitterService",
+      "file": "backend/src/kloel/crm-emitter/crm-event-emitter.service.ts:6",
+      "responsibility": "Emits CRM/lead domain events to the Spine (commerce.crm.* and commerce.lead.objection_raised). Fail-open wrapper safeEmit.",
+      "capability": "crm-domain-events"
+    },
+    {
+      "name": "OmnichannelContactResolutionService",
+      "file": "backend/src/omnichannel/contact-resolution.service.ts:12",
+      "responsibility": "Thin adapter over ChannelIdentifierService: resolveFromMessage/findExisting/linkChannelToContact from a NormalizedMessage. Channel-value extraction heuristic (WHATSAPP/EMAIL use `from`, IG/MESSENGER use externalId).",
+      "capability": "cross-channel-identity-resolution"
+    },
+    {
+      "name": "KloelLeadProcessorService",
+      "file": "backend/src/kloel/kloel-lead-processor.service.ts:35",
+      "responsibility": "WhatsApp message -> KloelLead lifecycle + LLM reply + Contact dual-write mirror + payment generation. Owns getOrCreateLead-based lead path and the PERSON PHASE-1 Contact upsert.",
+      "capability": "lead-lifecycle, lead-funnel-update, contact-dualwrite"
+    },
+    {
+      "name": "LeadMindCoordinator",
+      "file": "backend/src/kloel/mind/coordination/lead-mind-coordinator.service.ts:67",
+      "responsibility": "Canonical per-lead cognitive coordinator: getOrCreateLead + syncCanonicalContact (KloelLead -> Contact dual-write) + funnel update. Wired in kloel.module.ts, used by kloel.service.ts. A near-duplicate of KloelLeadProcessorService.",
+      "capability": "lead-lifecycle, contact-dualwrite"
+    },
+    {
+      "name": "WhatsAppMindCoordinator",
+      "file": "backend/src/kloel/mind/coordination/whatsapp-mind-coordinator.service.ts:47",
+      "responsibility": "Per-channel WhatsApp coordinator: processWebhook/handleIncomingMessage -> getOrCreateLead(msg.from RAW) + syncCanonicalContact. Wired in kloel.module.ts and called by whatsapp-brain.controller.ts. THIRD getOrCreateLead implementation.",
+      "capability": "lead-lifecycle, contact-dualwrite"
+    },
+    {
+      "name": "LeadsService",
+      "file": "backend/src/kloel/leads.service.ts:86",
+      "responsibility": "Reads KloelLead rows and maps to a lead view-model with a heuristic commercialScore. Backs GET /kloel/leads/:workspaceId (the frontend 'leads' list). Reads from KloelLead, NOT Contact, despite the frontend type docstring claiming Contact-backing.",
+      "capability": "list-people"
+    },
+    {
+      "name": "CheckoutSocialLeadService",
+      "file": "backend/src/checkout/checkout-social-lead.service.ts:48",
+      "responsibility": "Capture/update/enrich/convert CheckoutSocialLead via social providers; syncs to Contact (upsertContact). Uses digitsOrNull (digits-only, NO BR promotion) for phone keying -> divergent Contact identity.",
+      "capability": "lead-capture, lead-enrichment, contact-sync"
+    },
+    {
+      "name": "ScrapersService",
+      "file": "backend/src/scrapers/scrapers.service.ts (importLeads:116)",
+      "responsibility": "Promotes ScrapedLead rows into Contact via upsert on (workspaceId, raw phone). Sets customFields.source but does NOT set scrapingJobId/scrapedFrom provenance and does NOT normalize phone.",
+      "capability": "lead-import, contact-promotion"
+    }
+  ],
+  "events": [
+    "commerce.crm.stage_changed (Spine; CrmEventEmitterService.emitStageChanged; entity=deal)",
+    "commerce.crm.owner_assigned (Spine; emitOwnerAssigned; entity=deal)",
+    "commerce.crm.next_step_defined (Spine; emitNextStepDefined; entity=deal)",
+    "commerce.crm.deal_won (Spine; emitDealWon; entity=deal)",
+    "commerce.crm.deal_lost (Spine; emitDealLost; entity=deal)",
+    "commerce.lead.objection_raised (Spine; emitObjectionRaised; entity=lead; truthMode=inferred)",
+    "queue 'checkout-social-lead-enrich' on crmQueue (CheckoutSocialLeadService.enqueueEnrichment) — async enrichment job",
+    "autopilotEvent rows DEAL_WON / DEAL_WON_STAGE written by crm.deals.helpers.updateDeal/moveDeal (intent=REVENUE) + revenue webhook notifyRevenue"
+  ],
+  "capabilities": [
+    {
+      "name": "Person/Contact identity keyed by phone",
+      "canonicalHome": "Contact model (RAC_Contact, unique workspaceId_phone)",
+      "duplicatedIn": [
+        "KloelLead (RAC_KloelLead, unique workspaceId_phone) — parallel person record",
+        "CheckoutSocialLead.phone — distinct identity surface until synced",
+        "ScrapedLead.phone — distinct until imported"
+      ]
+    },
+    {
+      "name": "Phone normalization / identity keying",
+      "canonicalHome": "normalizePhone() (structured, BR-promoting) in backend/src/common/phone/phone-normalization.util.ts:150",
+      "duplicatedIn": [
+        "digitsOnly/digitsOrNull/digitsOrUndefined/whatsappDigits in backend/src/common/phone.ts (digits-only facets, NO BR promotion)",
+        "checkout-social-lead.service.helpers.ts:10 imports digitsOrNull AS normalizePhone (semantically NOT the canonical normalizePhone)",
+        "crm.deals.helpers.ts createDeal:80 — raw String(phone).trim(), no normalization",
+        "scrapers.service.ts importLeads — raw lead.phone, no normalization",
+        "whatsapp-mind-coordinator.service.ts handleIncomingMessage:135 — raw msg.from passed to getOrCreateLead"
+      ]
+    },
+    {
+      "name": "Contact upsert by (workspace, phone)",
+      "canonicalHome": "CrmService.upsertContact (crm.service.ts:39, uses normalizePhone().digits)",
+      "duplicatedIn": [
+        "KloelLeadProcessorService.processWhatsAppMessage contact.upsert (kloel-lead-processor.service.ts:105)",
+        "LeadMindCoordinator.syncCanonicalContact / WhatsAppMindCoordinator.syncCanonicalContact",
+        "CheckoutSocialLeadService.upsertContact (checkout-social-lead.service.ts:395 + buildContactUpsertArgs)",
+        "crm.deals.helpers.ts createDeal contact.upsert (line 82)",
+        "scrapers.service.ts importLeads contact.upsert (line 141)",
+        "CrmService.openSupportTicket contact.upsert (crm.service.ts:372)"
+      ]
+    },
+    {
+      "name": "get-or-create KloelLead by (workspace, phone)",
+      "canonicalHome": "kloel-lead-processor-helpers.ts getOrCreateLead (line 76)",
+      "duplicatedIn": [
+        "LeadMindCoordinator.getOrCreateLead (lead-mind-coordinator.service.ts:92)",
+        "WhatsAppMindCoordinator.getOrCreateLead (whatsapp-mind-coordinator.service.ts:175)"
+      ]
+    },
+    {
+      "name": "List people for a workspace",
+      "canonicalHome": "CrmService.listContacts (Contact-backed)",
+      "duplicatedIn": [
+        "LeadsService.listLeads (KloelLead-backed, GET /kloel/leads/:workspaceId)",
+        "NeuroCrmService.clusterLeads (Contact-backed projection)"
+      ]
+    },
+    {
+      "name": "Cross-channel identity resolution",
+      "canonicalHome": "ContactIdentityResolverService.resolve (contact-identity-resolver.service.ts:29)",
+      "duplicatedIn": [
+        "ChannelIdentifierService.resolve / findContactByChannel (overlapping lower-level resolve+create)",
+        "OmnichannelContactResolutionService.resolveFromMessage (adapter wrapping ChannelIdentifierService, not the Resolver)"
+      ]
+    },
+    {
+      "name": "Identity merge / dedupe",
+      "canonicalHome": "ContactIdentityMergeService.mergeContacts (contact-identity-merge.service.ts:24)",
+      "duplicatedIn": [
+        "person-kloel-lead-to-contact.backfill.core.ts (an implicit merge: collapses KloelLead onto Contact by phone, counts collisions, but does not write ContactIdentityLink)"
+      ]
+    },
+    {
+      "name": "Lead funnel state (status/stage/lastMessage/lastIntent/totalMessages/score)",
+      "canonicalHome": "KloelLead columns (RAC_KloelLead)",
+      "duplicatedIn": [
+        "Contact.leadStatus/leadStage/lastMessage/lastIntent/totalMessages (denormalized mirror, schema.prisma:426-430)",
+        "CheckoutSocialLead.status/stepReached (separate status machine)"
+      ]
+    },
+    {
+      "name": "Tag upsert + connect to contact",
+      "canonicalHome": "CrmService.addTag (crm.service.ts:86)",
+      "duplicatedIn": [
+        "crm.deals.helpers.ts addTagInline (line 258) — same tag upsert + contact connect, duplicated to auto-tag 'cliente' on deal won"
+      ]
+    },
+    {
+      "name": "AI lead scoring / next-best-action",
+      "canonicalHome": "NeuroCrmService.analyzeContact / nextBestAction (Contact)",
+      "duplicatedIn": [
+        "LeadsService.computeCommercialScore (heuristic score over KloelLead, leads.service.ts:44)",
+        "kloel-lead-processor-helpers.ts updateLeadFromConversation (rule-based score increment on KloelLead)"
+      ]
+    }
+  ],
+  "duplications": [
+    {
+      "concept": "Phone normalization semantics diverge across Contact-keying paths (BR-promotion vs digits-only vs raw)",
+      "implementations": [
+        "CrmService.upsertContact -> normalizePhone().digits (BR-promotes 10/11-digit -> 55... ) crm.service.ts:47",
+        "KloelLeadProcessorService -> normalizePhone().digits kloel-lead-processor.service.ts:92",
+        "CheckoutSocialLeadService.buildContactUpsertArgs -> digitsOrNull (digits-only, NO 55 promotion) checkout-social-lead.service.helpers.ts:185",
+        "crm.deals.helpers.createDeal -> String(phone).trim() (raw) crm.deals.helpers.ts:80",
+        "scrapers.service.importLeads -> lead.phone (raw) scrapers.service.ts:145"
+      ],
+      "severity": "P0",
+      "canonicalChoice": "normalizePhone() from backend/src/common/phone/phone-normalization.util.ts (structured, BR-promoting). All Contact (workspaceId, phone) writes MUST route through it.",
+      "note": "A single BR person typing 11987654321 in WhatsApp lands as Contact.phone='5511987654321' (BR-promoted), but the SAME person via social checkout (digitsOrNull) lands as '11987654321', and via createDeal/scraper as the raw string. These produce DISTINCT Contact rows for one human -> identity fragmentation in production. checkout-social-lead aliases digitsOrNull AS the local name `normalizePhone`, which masks the divergence at the import site."
+    },
+    {
+      "concept": "KloelLead get-or-create passes un-normalized phone in the live WhatsApp coordinator path",
+      "implementations": [
+        "WhatsAppMindCoordinator.handleIncomingMessage:135 -> getOrCreateLead(msg.workspaceId, msg.from) with RAW msg.from (whatsapp-mind-coordinator.service.ts)",
+        "kloel-lead-processor-helpers.getOrCreateLead:82 keyed on caller-supplied phone (processWhatsAppMessage passes normalizedPhone || senderPhone)",
+        "LeadMindCoordinator.getOrCreateLead:92 keyed on caller-supplied phone (line 319 passes normalizedPhone || senderPhone)"
+      ],
+      "severity": "P0",
+      "canonicalChoice": "Normalize at the channel boundary before getOrCreateLead; consolidate the three getOrCreateLead bodies into one.",
+      "note": "Because msg.from from WAHA may be a JID like 5511...@c.us or contain punctuation, WhatsAppMindCoordinator can create a KloelLead under a non-canonical phone while the lead-processor path creates another under the normalized phone -> two KloelLead rows + two Contact mirrors for one person. The unique (workspaceId, phone) constraint does NOT save this because the stored strings differ."
+    },
+    {
+      "concept": "processWhatsAppMessageWithPayment looks up KloelLead by RAW senderPhone while the lead was created under normalized phone",
+      "implementations": [
+        "KloelLeadProcessorService.processWhatsAppMessage created/updated lead via normalizedPhone (kloel-lead-processor.service.ts:78-83)",
+        "KloelLeadProcessorService.processWhatsAppMessageWithPayment lead lookup: prisma.kloelLead.findFirst({ where: { workspaceId, phone: senderPhone } }) RAW (line 285)"
+      ],
+      "severity": "P0",
+      "canonicalChoice": "Use normalizePhone(senderPhone).digits for the lookup, matching getOrCreateLead.",
+      "note": "When senderPhone is not already canonical (e.g. '(11) 98765-4321' or '11987654321'), the lead was stored as '5511987654321' but the payment-intent lookup queries the raw string -> findFirst returns null -> the high-buy-intent payment link is silently NOT generated. Lost-revenue bug."
+    },
+    {
+      "concept": "Two person/lead entities (Contact vs KloelLead) modeling the same human with overlapping funnel columns",
+      "implementations": [
+        "Contact (RAC_Contact) with leadStatus/leadStage/lastMessage/lastIntent/totalMessages mirror (schema.prisma:399)",
+        "KloelLead (RAC_KloelLead) with status/stage/lastMessage/lastIntent/totalMessages/score (schema.prisma:1834)"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "Contact is the declared canonical person (PERSON migration). KloelLead funnel state is mirrored onto Contact via PHASE-1 dual-write + the historical backfill; KloelLead should become read-through/derived.",
+      "note": "Dual-write is best-effort fail-open in 3 separate services, so the Contact mirror can silently drift from KloelLead. The list-leads UI reads KloelLead (LeadsService) while CRM reads Contact (CrmService) -> the two screens can show different funnel state for the same person. Migration is mid-flight (additive columns + backfill landed) but the cut-over is not complete."
+    },
+    {
+      "concept": "Three near-identical lead-lifecycle services (WhatsApp message -> KloelLead + Contact dual-write)",
+      "implementations": [
+        "KloelLeadProcessorService.processWhatsAppMessage (kloel-lead-processor.service.ts:56)",
+        "LeadMindCoordinator.processWhatsAppMessage + syncCanonicalContact (lead-mind-coordinator.service.ts)",
+        "WhatsAppMindCoordinator.handleIncomingMessage + syncCanonicalContact (whatsapp-mind-coordinator.service.ts)"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "LeadMindCoordinator is annotated 'canonical per-lead cognitive coordinator'. Collapse the other two into it (or extract the shared getOrCreateLead + syncCanonicalContact into one helper).",
+      "note": "All three implement getOrCreateLead + a PERSON-PHASE-1 syncCanonicalContact dual-write with the same docstring boilerplate but subtly different phone handling and lead-create payloads (name format, metadata.source, score seed). Maintenance hazard: a fix to dual-write logic must be applied in 3 places; they have already drifted (raw vs normalized phone, see P0 above)."
+    },
+    {
+      "concept": "Two distinct contact-by-phone DTOs that are byte-identical",
+      "implementations": [
+        "CreateContactDto (backend/src/crm/dto/create-contact.dto.ts)",
+        "UpsertContactDto (backend/src/crm/dto/upsert-contact.dto.ts)"
+      ],
+      "severity": "P3",
+      "canonicalChoice": "Keep one DTO (UpsertContactDto) and re-export/extend it; or make Create extend Upsert.",
+      "note": "Same fields, same validators, same MaxLength. Pure copy. Low risk but they will drift."
+    },
+    {
+      "concept": "Tag upsert + connect duplicated outside CrmService",
+      "implementations": [
+        "CrmService.addTag (crm.service.ts:86)",
+        "crm.deals.helpers.ts addTagInline (line 258, auto-tags 'cliente' on deal won)"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "CrmService.addTag (or a shared tagging helper).",
+      "note": "addTagInline re-implements the tag upsert + contact.update connect inside a transaction. addTagInline keys the contact by (workspaceId, phone) using contact.phone read from the deal, inheriting whatever (possibly non-canonical) phone the Contact was stored under."
+    },
+    {
+      "concept": "Overlapping cross-channel identity resolution surfaces",
+      "implementations": [
+        "ContactIdentityResolverService.resolve (contacts/contact-identity-resolver.service.ts:29)",
+        "ChannelIdentifierService.resolve / findContactByChannel (contacts/channel-identifier.service.ts:79/189)",
+        "OmnichannelContactResolutionService.resolveFromMessage (omnichannel/contact-resolution.service.ts:19)"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "ContactIdentityResolverService for full resolution (it does cross-channel match); ChannelIdentifierService as its persistence primitive; OmnichannelContactResolutionService should delegate to the Resolver, not directly to ChannelIdentifierService.",
+      "note": "OmnichannelContactResolutionService.resolveFromMessage calls ChannelIdentifierService.resolve directly, BYPASSING the cross-channel phone/email/socialHandle match in ContactIdentityResolverService. So an inbound message that should merge into an existing verified contact instead creates a new contact with a synthetic phone `<channel>:<value>` -> duplicate identities that only the (unused) merge service could later reconcile."
+    },
+    {
+      "concept": "Contact provenance bridge columns unwired in the scraped-lead import path",
+      "implementations": [
+        "Contact.scrapingJobId/scrapedFrom (schema.prisma:441-443) — provenance pointers",
+        "ScrapersService.importLeads contact.upsert (scrapers.service.ts:141) — sets customFields.source but never scrapingJobId/scrapedFrom"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "Set scrapingJobId + scrapedFrom on the upsert so the typed provenance bridge is populated (mirrors how kloelLeadId/checkoutSocialLeadId are wired elsewhere).",
+      "note": "The schema added typed provenance pointers but the only ScrapedLead->Contact promoter writes lineage only into the untyped customFields.source JSON, leaving the indexed scrapingJobId column null -> the @@index([scrapingJobId]) and the ScrapingJobContacts relation are dead for imported contacts."
+    },
+    {
+      "concept": "Two 'next-best-action' / lead-score computations on different stores",
+      "implementations": [
+        "NeuroCrmService.nextBestAction + analyzeContact (Contact-backed, LLM+fallback)",
+        "LeadsService.computeCommercialScore (KloelLead-backed heuristic, leads.service.ts:44)",
+        "kloel-lead-processor-helpers.updateLeadFromConversation (rule-based KloelLead score increment)"
+      ],
+      "severity": "P3",
+      "canonicalChoice": "NeuroCrmService scoring on Contact once KloelLead is subsumed by Contact.",
+      "note": "Three independent scoring heuristics over two stores; a Contact and its KloelLead can report different scores for the same person."
+    }
+  ],
+  "legacyOrDead": [
+    "ContactIdentityMergeService.mergeContacts (contacts/contact-identity-merge.service.ts:24) — declared, exported from ContactsModule, fully unit-tested, but ZERO production callers (grep for .mergeContacts / injected ContactIdentityMergeService finds only the module wiring + spec). The codebase has identity-duplication paths (see P0/P2) but no live merge to reconcile them. ORPHAN.",
+    "Contact.identityLinksAsSource / identityLinksAsLinked relations — only ever populated by the orphan merge service; effectively dead until a caller exists.",
+    "Contact funnel-mirror columns (leadStatus/leadStage/lastMessage/lastIntent/totalMessages) and KloelLead — KloelLead is the LEGACY half of an in-flight PERSON migration (additive columns + backfill landed, cut-over incomplete). Long-term it should be removed/derived, but it is still live and read by LeadsService, so not yet removable.",
+    "KloelWallet.availableBalance/pendingBalance/blockedBalance Float columns (schema.prisma:1953-1955) — DEPRECATED, adjacent (not in cluster) but flagged in schema for drop in P6-3; noted because the lead/checkout flow touches wallet split.",
+    "Frontend leads.ts type docstring claims the leads list is 'backed by the backend Contact model', but the actual GET /kloel/leads/:workspaceId endpoint (LeadsController -> LeadsService) reads KloelLead. Stale/misleading provenance comment (frontend/src/lib/api/leads.ts:4-12)."
+  ]
+}

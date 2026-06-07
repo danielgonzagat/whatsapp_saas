@@ -155,6 +155,7 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
           sub={copy.sub}
           verb={copy.verb}
           busy={busy}
+          disabled={data.setupUnavailable}
           onConnect={handleConnect}
         />
       );
@@ -297,6 +298,12 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
                 ? 'Confirmar desconexão'
                 : 'Desconectar Meta'}
           </CTA>
+        ) : null}
+
+        {data.setupUnavailable && !data.message ? (
+          <Chip C={C} dim>
+            Canal nao configurado neste ambiente.
+          </Chip>
         ) : null}
 
         {data.message ? (

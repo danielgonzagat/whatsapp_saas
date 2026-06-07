@@ -46,6 +46,8 @@ export function AnalyticsHeader({
         }}
       >
         <input
+          id="analytics-start-date"
+          name="analyticsStartDate"
           aria-label="Data inicio"
           type="date"
           value={filters.startDate ?? ''}
@@ -54,6 +56,8 @@ export function AnalyticsHeader({
         />
         <span style={{ color: V.t3, fontSize: 10 }}>{kloelT(`ate`)}</span>
         <input
+          id="analytics-end-date"
+          name="analyticsEndDate"
           aria-label="Data fim"
           type="date"
           value={filters.endDate ?? ''}

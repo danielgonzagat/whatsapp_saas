@@ -134,7 +134,7 @@ const TACTICS: Readonly<Record<string, readonly TacticTemplate[]>> = {
 };
 
 function selectTactic(error: DetectedError): TacticTemplate {
-  const options = TACTICS[error.category] ?? TACTICS['unknown']!;
+  const options = TACTICS[error.category] ?? TACTICS['unknown'];
   if (error.severity === 'high') {
     return (
       options[0] ?? {
@@ -145,9 +145,9 @@ function selectTactic(error: DetectedError): TacticTemplate {
     );
   }
   if (error.severity === 'medium' && options.length > 1) {
-    return options[1] ?? options[0]!;
+    return options[1] ?? options[0];
   }
-  return options[options.length - 1] ?? options[0]!;
+  return options[options.length - 1] ?? options[0];
 }
 
 function safetyContractFor(error: DetectedError, tactic: TacticTemplate): RecoverySafetyContract {

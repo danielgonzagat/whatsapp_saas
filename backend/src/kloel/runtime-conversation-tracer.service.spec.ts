@@ -79,8 +79,8 @@ describe('RuntimeConversationTracerService', () => {
       const json = tracer.toJSON();
       const parsed: Array<{ kind: string }> = JSON.parse(json) as Array<{ kind: string }>;
       expect(parsed).toHaveLength(2);
-      expect(parsed[0]!.kind).toBe('step1_inbox_recorded');
-      expect(parsed[1]!.kind).toBe('step4_concept_classified');
+      expect(parsed[0].kind).toBe('step1_inbox_recorded');
+      expect(parsed[1].kind).toBe('step4_concept_classified');
     });
 
     it('events getter returns reference to unscoped trace', () => {

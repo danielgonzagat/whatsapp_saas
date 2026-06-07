@@ -137,7 +137,7 @@ function finalizeArm(
     emitter: deps.eventEmitter,
     postPaymentEffects: deps.postPaymentEffects,
     logger: deps.logger,
-    order: order as unknown as Parameters<typeof finalizeApprovedCheckoutPayment>[0]['order'],
+    order: order,
     workspaceId: params.workspaceId,
     orderId: params.orderId,
     paymentIntentId,
@@ -172,7 +172,7 @@ export async function runCheckoutPixArm(input: {
   const { deps, params, order, amount, chargedTotalInCents, persist } = input;
   try {
     addPaymentBreadcrumb(params, amount, 'Mercado Pago');
-    const productName = extractProductName(order.plan as Parameters<typeof extractProductName>[0]);
+    const productName = extractProductName(order.plan);
     const payerDocument =
       params.customerCPF != null
         ? sanitizeDocumentDigits(params.customerCPF) || undefined
@@ -260,7 +260,7 @@ export async function runCheckoutBoletoArm(input: {
 
   try {
     addPaymentBreadcrumb(params, amount, 'Mercado Pago', 'boleto ');
-    const productName = extractProductName(order.plan as Parameters<typeof extractProductName>[0]);
+    const productName = extractProductName(order.plan);
     const charge = await deps.mercadoPagoBoleto.create(
       buildMercadoPagoBoletoChargeInput({
         idempotencyKey: params.idempotencyKey || params.orderId,

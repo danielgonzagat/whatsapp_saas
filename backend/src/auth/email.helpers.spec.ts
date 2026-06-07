@@ -194,7 +194,7 @@ describe('email.helpers', () => {
       expect(headers).toMatchObject({
         'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
       });
-      expect(headers!['List-Unsubscribe']).toMatch(/^<https?:\/\//);
+      expect(headers['List-Unsubscribe']).toMatch(/^<https?:\/\//);
     });
 
     it('propagates the underlying token signer error when JWT secret is missing', () => {
@@ -213,7 +213,7 @@ describe('email.helpers', () => {
       const { html, headers } = buildUnsubscribeBundle('<p>body</p>', { email: 'u@example.com' });
       expect(html.startsWith('<p>body</p>')).toBe(true);
       expect(headers).toBeDefined();
-      expect(headers!['List-Unsubscribe-Post']).toBe('List-Unsubscribe=One-Click');
+      expect(headers['List-Unsubscribe-Post']).toBe('List-Unsubscribe=One-Click');
     });
   });
 

@@ -60,7 +60,7 @@ describe('UnsubscribeController', () => {
 
       expect(processUnsubscribeToken).toHaveBeenCalledWith('valid-token');
       expect(mockRedirect).toHaveBeenCalledWith(expect.stringContaining('/unsubscribed'));
-      const [redirectUrl] = mockRedirect.mock.calls[0]!;
+      const [redirectUrl] = mockRedirect.mock.calls[0];
       expect(redirectUrl).not.toContain('error');
     });
 
@@ -86,7 +86,7 @@ describe('UnsubscribeController', () => {
     });
 
     it('redirects to error page on null/undefined token', async () => {
-      await controller.unsubscribe(undefined as string, mockResponse as never);
+      await controller.unsubscribe(undefined, mockResponse as never);
 
       expect(mockRedirect).toHaveBeenCalledWith(
         expect.stringContaining('/unsubscribed?error=missing_token'),

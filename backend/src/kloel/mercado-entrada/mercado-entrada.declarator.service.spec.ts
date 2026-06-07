@@ -42,14 +42,14 @@ describe('MercadoEntradaDeclaratorService', () => {
   it('getCandidates returns all ranked candidates', () => {
     const candidates = service.getCandidates();
     expect(candidates.length).toBe(5);
-    expect(candidates[0]!.rank).toBe(1);
-    expect(candidates[4]!.rank).toBe(5);
+    expect(candidates[0].rank).toBe(1);
+    expect(candidates[4].rank).toBe(5);
   });
 
   it('getDeclarationHistory tracks declarations', () => {
     const history = service.getDeclarationHistory();
     expect(history.length).toBe(1);
-    expect(history[0]!.active.marketId).toBe(ACTIVE_ENTRY_MARKET.marketId);
+    expect(history[0].active.marketId).toBe(ACTIVE_ENTRY_MARKET.marketId);
   });
 
   it('declareMarket returns error for unknown marketId', () => {
@@ -59,7 +59,7 @@ describe('MercadoEntradaDeclaratorService', () => {
   });
 
   it('declareMarket succeeds for a valid candidate', () => {
-    const secondId = ENTRY_MARKET_CANDIDATES[1]!.marketId;
+    const secondId = ENTRY_MARKET_CANDIDATES[1].marketId;
     const result = service.declareMarket(secondId, 'admin-test');
 
     expect(result.ok).toBe(true);
@@ -83,11 +83,11 @@ describe('MercadoEntradaDeclaratorService', () => {
   });
 
   it('history grows after declareMarket', () => {
-    const thirdId = ENTRY_MARKET_CANDIDATES[2]!.marketId;
+    const thirdId = ENTRY_MARKET_CANDIDATES[2].marketId;
     service.declareMarket(thirdId, 'admin');
     const history = service.getDeclarationHistory();
     expect(history.length).toBe(2);
-    expect(history[1]!.active.marketId).toBe(thirdId);
+    expect(history[1].active.marketId).toBe(thirdId);
   });
 });
 
@@ -105,9 +105,9 @@ describe('computeCompositeScore (pure function)', () => {
 
 describe('findCandidateById (pure function)', () => {
   it('finds candidate by id', () => {
-    const c = findCandidateById(ENTRY_MARKET_CANDIDATES[0]!.marketId);
+    const c = findCandidateById(ENTRY_MARKET_CANDIDATES[0].marketId);
     expect(c).toBeDefined();
-    expect(c!.rank).toBe(1);
+    expect(c.rank).toBe(1);
   });
 
   it('returns undefined for unknown id', () => {
@@ -117,7 +117,7 @@ describe('findCandidateById (pure function)', () => {
 
 describe('entryMarketFromCandidate (pure function)', () => {
   it('strips scoring fields from candidate', () => {
-    const candidate = ENTRY_MARKET_CANDIDATES[0]!;
+    const candidate = ENTRY_MARKET_CANDIDATES[0];
     const market = entryMarketFromCandidate(candidate);
     const marketRecord = market as Record<string, unknown>;
     expect(market.marketId).toBe(candidate.marketId);

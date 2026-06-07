@@ -37,8 +37,8 @@ export function detectTransitions(
   };
 
   for (let i = 1; i < sorted.length; i++) {
-    const prev = sorted[i - 1] as MaturityVerdict;
-    const curr = sorted[i] as MaturityVerdict;
+    const prev = sorted[i - 1];
+    const curr = sorted[i];
 
     if (prev.stage === curr.stage) {
       continue;

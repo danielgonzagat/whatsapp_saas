@@ -138,9 +138,9 @@ describe('AttentionRankerService (UTP-CLARITY-001)', () => {
     ];
     const result = svc.rank(items);
     expect(result.ranked).toHaveLength(3);
-    expect(result.ranked[0]!.id).toBe('high');
-    expect(result.ranked[1]!.id).toBe('mid');
-    expect(result.ranked[2]!.id).toBe('low');
+    expect(result.ranked[0].id).toBe('high');
+    expect(result.ranked[1].id).toBe('mid');
+    expect(result.ranked[2].id).toBe('low');
   });
 
   it('maintains stable order for equal scores via id sort', () => {
@@ -149,8 +149,8 @@ describe('AttentionRankerService (UTP-CLARITY-001)', () => {
       { id: 'a', urgency: 1.0, impact: 0.5, reversibility: 0.0, evidenceLevel: 0.5 },
     ];
     const result = svc.rank(items);
-    expect(result.ranked[0]!.id).toBe('a');
-    expect(result.ranked[1]!.id).toBe('b');
+    expect(result.ranked[0].id).toBe('a');
+    expect(result.ranked[1].id).toBe('b');
   });
 
   /** ── dominatedTier ── */
@@ -162,7 +162,7 @@ describe('AttentionRankerService (UTP-CLARITY-001)', () => {
       { id: '3', urgency: 0.2, impact: 0.2, reversibility: 0.0, evidenceLevel: 0.3 },
     ];
     const result = svc.rank(items);
-    expect(result.ranked[0]!.tier).toBe('ESTA_SEMANA');
+    expect(result.ranked[0].tier).toBe('ESTA_SEMANA');
     expect(result.dominatedTier).toBe('ESTA_SEMANA');
   });
 
@@ -180,7 +180,7 @@ describe('AttentionRankerService (UTP-CLARITY-001)', () => {
     const frozen = Object.freeze([...items]);
     const result = svc.rank(frozen);
     expect(result.ranked).toHaveLength(1);
-    expect(items[0]!.urgency).toBe(0.9);
+    expect(items[0].urgency).toBe(0.9);
   });
 
   /** ── clamp behavior ── */
@@ -212,10 +212,10 @@ describe('AttentionRankerService (UTP-CLARITY-001)', () => {
     ];
     const result = svc.rank(items);
     expect(result.ranked).toHaveLength(4);
-    expect(result.ranked[0]!.tier).toBe('AGORA');
-    expect(result.ranked[1]!.tier).toBe('ESTA_SEMANA');
-    expect(result.ranked[2]!.tier).toBe('PARA_SABER');
-    expect(result.ranked[3]!.tier).toBe('ARQUIVO');
+    expect(result.ranked[0].tier).toBe('AGORA');
+    expect(result.ranked[1].tier).toBe('ESTA_SEMANA');
+    expect(result.ranked[2].tier).toBe('PARA_SABER');
+    expect(result.ranked[3].tier).toBe('ARQUIVO');
   });
 
   /** ── evidenceLevel is preserved but does not affect score ── */
@@ -229,8 +229,8 @@ describe('AttentionRankerService (UTP-CLARITY-001)', () => {
     ];
     const r1 = svc.rank(high);
     const r2 = svc.rank(low);
-    expect(r1.ranked[0]!.score).toBe(r2.ranked[0]!.score);
-    expect(r1.ranked[0]!.evidenceLevel).toBe(1.0);
-    expect(r2.ranked[0]!.evidenceLevel).toBe(0.1);
+    expect(r1.ranked[0].score).toBe(r2.ranked[0].score);
+    expect(r1.ranked[0].evidenceLevel).toBe(1.0);
+    expect(r2.ranked[0].evidenceLevel).toBe(0.1);
   });
 });

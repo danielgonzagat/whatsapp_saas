@@ -105,7 +105,7 @@ export class SalesService {
     arg4?: BuyerData,
   ): Promise<CreatePixOrderResult | CreatePixOrderV2Result> {
     if (typeof arg2 === 'string') {
-      return createPixOrderLegacyV1(this.v1Deps(), workspaceId, arg2, arg3!, arg4!);
+      return createPixOrderLegacyV1(this.v1Deps(), workspaceId, arg2, arg3, arg4);
     }
     return this.createPixOrderV2(workspaceId, arg2);
   }

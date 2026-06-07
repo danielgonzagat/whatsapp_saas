@@ -57,10 +57,18 @@ export class KloelMemoryEngineService {
 
   /** Coarse semantic group for a slot, so the Sigma renderer can colour aspects. */
   private static slotGroup(slot: string): string {
-    if (/pref/.test(slot)) return 'preference';
-    if (/objetiv|meta|goal/.test(slot)) return 'goal';
-    if (/projet|project/.test(slot)) return 'project';
-    if (/decis|decision/.test(slot)) return 'decision';
+    if (/pref/.test(slot)) {
+      return 'preference';
+    }
+    if (/objetiv|meta|goal/.test(slot)) {
+      return 'goal';
+    }
+    if (/projet|project/.test(slot)) {
+      return 'project';
+    }
+    if (/decis|decision/.test(slot)) {
+      return 'decision';
+    }
     return 'fact';
   }
 

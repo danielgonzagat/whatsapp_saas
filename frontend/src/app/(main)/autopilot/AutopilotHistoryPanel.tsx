@@ -72,6 +72,7 @@ export function AutopilotHistoryPanel({
             <input
               value={askQuestion}
               onChange={(e) => setAskQuestion(e.target.value)}
+              aria-label={kloelT('Perguntar ao Autopilot')}
               placeholder={kloelT(
                 `Pergunte algo sobre o Autopilot... (ex: Quais leads estao mais propensos a comprar?)`,
               )}

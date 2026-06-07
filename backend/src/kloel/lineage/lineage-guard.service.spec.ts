@@ -67,9 +67,9 @@ describe('LineageGuardService', () => {
     // Direct write via private internals — simulating storage tamper.
     const internalEntries = (repo as { entries: LineageEntry[] }).entries;
     const tampered: LineageEntry = {
-      ...all[0]!,
+      ...all[0],
       payload: {
-        ...all[0]!.payload,
+        ...all[0].payload,
         canonicalName: 'NotKloel',
       } as never,
     };
@@ -95,7 +95,7 @@ describe('LineageGuardService', () => {
       },
     });
     const internal = (repo as { entries: LineageEntry[] }).entries;
-    internal[1] = { ...internal[1]!, prevEntryHash: 'b'.repeat(64) };
+    internal[1] = { ...internal[1], prevEntryHash: 'b'.repeat(64) };
     const v = await guard.verify();
     expect(v.status).toBe('compromised');
     expect(v.reason).toMatch(/broken chain/i);
@@ -118,7 +118,7 @@ describe('LineageGuardService', () => {
       },
     });
     const internal = (repo as { entries: LineageEntry[] }).entries;
-    internal[1] = { ...internal[1]!, sequenceNumber: 99 };
+    internal[1] = { ...internal[1], sequenceNumber: 99 };
     const v = await guard.verify();
     expect(v.status).toBe('compromised');
     expect(v.reason).toMatch(/sequenceNumber gap/i);
@@ -140,7 +140,7 @@ describe('LineageGuardService', () => {
       },
     });
     const internal = (repo as { entries: LineageEntry[] }).entries;
-    internal[1] = { ...internal[1]!, hash: 'a'.repeat(64) };
+    internal[1] = { ...internal[1], hash: 'a'.repeat(64) };
     const v = await guard.verify();
     expect(v.status).toBe('compromised');
     expect(v.reason).toMatch(/hash mismatch/i);
@@ -151,7 +151,7 @@ describe('LineageGuardService', () => {
     await service.bootstrapGenesis();
     const internal = (repo as { entries: LineageEntry[] }).entries;
     internal[0] = {
-      ...internal[0]!,
+      ...internal[0],
       eventName: 'lineage.capability_acquired',
     };
     const v = await guard.verify();
@@ -163,7 +163,7 @@ describe('LineageGuardService', () => {
     const { service, repo, guard } = build();
     await service.bootstrapGenesis();
     const internal = (repo as { entries: LineageEntry[] }).entries;
-    internal[0] = { ...internal[0]!, prevEntryHash: 'a'.repeat(64) };
+    internal[0] = { ...internal[0], prevEntryHash: 'a'.repeat(64) };
     const v = await guard.verify();
     expect(v.status).toBe('compromised');
     expect(v.reason).toMatch(/ZERO_HASH/);

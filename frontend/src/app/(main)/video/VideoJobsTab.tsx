@@ -10,11 +10,13 @@ export function VideoJobsTab({
   isLoading,
   error,
   onRefresh,
+  onCreate,
 }: {
   jobs: VideoJob[];
   isLoading: boolean;
   error: unknown;
   onRefresh: (id: string) => void;
+  onCreate?: () => void;
 }) {
   if (isLoading) {
     return (
@@ -56,6 +58,7 @@ export function VideoJobsTab({
         context="generic"
         title={kloelT(`Nenhum job de video`)}
         description={kloelT(`Crie um job para gerar ou processar videos com IA.`)}
+        {...(onCreate ? { onAction: onCreate } : {})}
       />
     );
   }

@@ -14,12 +14,14 @@ export function StepConnect({
   sub,
   verb,
   busy,
+  disabled = false,
   onConnect,
   C,
 }: {
   sub: string;
   verb: string;
   busy: boolean;
+  disabled?: boolean;
   onConnect: () => void;
   C: OnboardingPalette;
 }) {
@@ -34,7 +36,7 @@ export function StepConnect({
       }
       sub={sub}
       action={
-        <CTA C={C} variant="ember" disabled={busy} onClick={onConnect}>
+        <CTA C={C} variant="ember" disabled={busy || disabled} onClick={onConnect}>
           {verb} <Arrow />
         </CTA>
       }

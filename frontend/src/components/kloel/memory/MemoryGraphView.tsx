@@ -33,16 +33,54 @@ function toGraphEdges(payload: MemoryGraphPayload): readonly GraphEdge[] {
   return payload.edges.map((e) => ({ from: e.from, to: e.to, directed: true }));
 }
 
+function MemoryGraphState({
+  role,
+  children,
+}: {
+  readonly role: 'status' | 'alert';
+  readonly children: string;
+}) {
+  return (
+    <div
+      role={role}
+      aria-live={role === 'alert' ? 'assertive' : 'polite'}
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        padding: 32,
+        fontSize: 15,
+        lineHeight: 1.6,
+        color: 'rgb(107,107,112)',
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export function MemoryGraphView() {
   const [payload, setPayload] = useState<MemoryGraphPayload | null>(null);
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
 
   useEffect(() => {
     let active = true;
-    void getMemoryGraph().then((p) => {
-      if (active) {
-        setPayload(p);
-      }
-    });
+    void getMemoryGraph()
+      .then((p) => {
+        if (active) {
+          setPayload(p);
+          setStatus('ready');
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setPayload(null);
+          setStatus('error');
+        }
+      });
     return () => {
       active = false;
     };
@@ -50,25 +88,22 @@ export function MemoryGraphView() {
 
   const settings = createDefaultKloelGraphSettings();
 
+  if (status === 'loading') {
+    return <MemoryGraphState role="status">Carregando memória</MemoryGraphState>;
+  }
+
+  if (status === 'error') {
+    return (
+      <MemoryGraphState role="alert">Não foi possível carregar a memória do Kloel.</MemoryGraphState>
+    );
+  }
+
   if (payload && payload.nodes.length === 0) {
     return (
-      <div
-        style={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          textAlign: 'center',
-          padding: 32,
-          fontSize: 15,
-          lineHeight: 1.6,
-          color: 'rgb(107,107,112)',
-        }}
-      >
+      <MemoryGraphState role="status">
         O Kloel ainda não aprendeu nada sobre você. Conforme você conversa, fatos e preferências que
         importam viram nós aqui.
-      </div>
+      </MemoryGraphState>
     );
   }
 

@@ -88,9 +88,9 @@ describe('plan.service.helpers', () => {
         null,
       );
       expect(result).not.toBeNull();
-      expect(result!.updates.price).toBe(12.5);
-      expect(result!.updates.maxInstallments).toBe(3);
-      expect(result!.updates.itemsPerPlan).toBe(2);
+      expect(result.updates.price).toBe(12.5);
+      expect(result.updates.maxInstallments).toBe(3);
+      expect(result.updates.itemsPerPlan).toBe(2);
     });
 
     it('coerces active and visibleToAffiliates to Boolean', () => {
@@ -102,17 +102,17 @@ describe('plan.service.helpers', () => {
         null,
       );
       expect(result).not.toBeNull();
-      expect(result!.updates.active).toBe(true);
-      expect(result!.updates.visibleToAffiliates).toBe(false);
+      expect(result.updates.active).toBe(true);
+      expect(result.updates.visibleToAffiliates).toBe(false);
     });
 
     it('lists the changed field names', () => {
       const result = buildPlanUpdatePatch({ name: 'X', price: 10 }, null);
       expect(result).not.toBeNull();
       // A price change additively dual-writes priceInCents (PRODUCT-PLAN PHASE A).
-      expect(result!.changes.sort()).toEqual(['name', 'price', 'priceInCents']);
-      expect(result!.updates.price).toBe(10);
-      expect(result!.updates.priceInCents).toBe(1000);
+      expect(result.changes.sort()).toEqual(['name', 'price', 'priceInCents']);
+      expect(result.updates.price).toBe(10);
+      expect(result.updates.priceInCents).toBe(1000);
     });
 
     it('merges acceptCoupons / imageUrl into checkoutImages on top of existing', () => {
@@ -121,18 +121,18 @@ describe('plan.service.helpers', () => {
         { existing: 'kept' },
       );
       expect(result).not.toBeNull();
-      expect(result!.updates.checkoutImages).toEqual({
+      expect(result.updates.checkoutImages).toEqual({
         existing: 'kept',
         acceptCoupons: true,
         imageUrl: 'https://x.png',
       });
-      expect(result!.changes).toEqual(['checkoutImages']);
+      expect(result.changes).toEqual(['checkoutImages']);
     });
 
     it('does not write to checkoutImages when neither acceptCoupons nor imageUrl was set', () => {
       const result = buildPlanUpdatePatch({ name: 'X' }, { keep: 'me' });
       expect(result).not.toBeNull();
-      expect('checkoutImages' in result!.updates).toBe(false);
+      expect('checkoutImages' in result.updates).toBe(false);
     });
   });
 

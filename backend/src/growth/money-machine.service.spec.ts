@@ -63,7 +63,7 @@ describe('MoneyMachineService', () => {
       expect(result.status).toBe('ACTIVE');
       expect(result.found).toEqual({ inactiveLeads: 42 });
       expect(result.actions).toHaveLength(1);
-      expect(result.actions![0]).toContain('Created Campaign');
+      expect(result.actions[0]).toContain('Created Campaign');
 
       expect(prisma.flow.create).toHaveBeenCalledTimes(1);
       expect(campaigns.create).toHaveBeenCalledTimes(1);

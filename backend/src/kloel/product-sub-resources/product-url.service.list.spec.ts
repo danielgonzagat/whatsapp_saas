@@ -38,7 +38,7 @@ describe('ProductUrlService.list', () => {
 
     expect(result.success).toBe(true);
     expect(Array.isArray(result.data)).toBe(true);
-    const findManyArg = urlFindMany.mock.calls[0]![0] as {
+    const findManyArg = urlFindMany.mock.calls[0][0] as {
       where: { productId: string; product: { workspaceId: string } };
     };
     expect(findManyArg.where.productId).toBe(PRODUCT_ID);

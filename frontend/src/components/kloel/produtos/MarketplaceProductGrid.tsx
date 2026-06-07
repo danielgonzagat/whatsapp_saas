@@ -67,6 +67,9 @@ export default function MarketplaceProductGrid({
       {filteredMarket.map((m) => (
         <div
           key={m.id}
+          role="button"
+          tabIndex={0}
+          aria-label={`Abrir ${m.name || 'produto'}`}
           onClick={() => onSelectItem(m)}
           style={{
             position: 'relative',
@@ -174,6 +177,8 @@ export default function MarketplaceProductGrid({
           </div>
           <button
             type="button"
+            aria-label={`${m.isSaved ? 'Remover dos salvos' : 'Salvar produto'}: ${m.name || 'produto'}`}
+            aria-pressed={Boolean(m.isSaved)}
             onClick={(e) => {
               e.stopPropagation();
               onToggleSave(m.id, !!m.isSaved);

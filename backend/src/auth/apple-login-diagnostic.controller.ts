@@ -44,7 +44,7 @@ function resolveArtifactsDir(): string {
       return c;
     }
   }
-  return candidates[0]!;
+  return candidates[0];
 }
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 

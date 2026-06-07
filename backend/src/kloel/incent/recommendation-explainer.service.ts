@@ -60,7 +60,7 @@ export class RecommendationExplainerService {
       recommendationId: input.recommendationId,
       summary: input.summary,
       reason: input.reason,
-      preferredFormat: formats[level]!,
+      preferredFormat: formats[level],
       ...(input.evidence ? { evidence: input.evidence } : {}),
       ...(input.preferredTone ? { preferredTone: input.preferredTone } : {}),
       ...(input.confidence !== undefined ? { confidence: input.confidence } : {}),

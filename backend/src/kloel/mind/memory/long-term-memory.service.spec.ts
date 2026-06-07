@@ -123,10 +123,10 @@ describe('LongTermMemoryService', () => {
       await svc.handle(makeEvent({ eventName: 'commerce.payment.approved', valence: 'positive' }));
 
       expect(rows).toHaveLength(1);
-      expect(rows[0]!.kind).toBe(LongTermMemoryService.FACT_KIND);
-      expect(rows[0]!.label).toBe('commerce.payment.approved');
-      expect(rows[0]!.metadata['valence']).toBe('positive');
-      expect(rows[0]!.metadata['occurrences']).toBe(1);
+      expect(rows[0].kind).toBe(LongTermMemoryService.FACT_KIND);
+      expect(rows[0].label).toBe('commerce.payment.approved');
+      expect(rows[0].metadata['valence']).toBe('positive');
+      expect(rows[0].metadata['occurrences']).toBe(1);
     });
 
     it('reinforces weight and bumps occurrences when the same outcome recurs', async () => {
@@ -136,14 +136,14 @@ describe('LongTermMemoryService', () => {
       await svc.handle(
         makeEvent({ eventId: 'e1', eventName: 'commerce.crm.deal_won', valence: 'positive' }),
       );
-      const w1 = rows[0]!.weight;
+      const w1 = rows[0].weight;
       await svc.handle(
         makeEvent({ eventId: 'e2', eventName: 'commerce.crm.deal_won', valence: 'positive' }),
       );
 
       expect(rows).toHaveLength(1); // collides on unique key, not duplicated
-      expect(rows[0]!.weight).toBeGreaterThan(w1); // reinforced
-      expect(rows[0]!.metadata['occurrences']).toBe(2);
+      expect(rows[0].weight).toBeGreaterThan(w1); // reinforced
+      expect(rows[0].metadata['occurrences']).toBe(2);
     });
 
     it('is idempotent — a replayed eventId does not double-reinforce', async () => {
@@ -153,13 +153,13 @@ describe('LongTermMemoryService', () => {
       await svc.handle(
         makeEvent({ eventId: 'dup', eventName: 'commerce.lead.converted', valence: 'positive' }),
       );
-      const w1 = rows[0]!.weight;
+      const w1 = rows[0].weight;
       await svc.handle(
         makeEvent({ eventId: 'dup', eventName: 'commerce.lead.converted', valence: 'positive' }),
       );
 
-      expect(rows[0]!.weight).toBe(w1);
-      expect(rows[0]!.metadata['occurrences']).toBe(1);
+      expect(rows[0].weight).toBe(w1);
+      expect(rows[0].metadata['occurrences']).toBe(1);
     });
 
     it('decays a stale fact before reinforcing it', async () => {
@@ -182,8 +182,8 @@ describe('LongTermMemoryService', () => {
       await svc.handle(makeEvent({ eventName: 'commerce.payment.approved', valence: 'positive' }));
 
       // 20 decayed over ~4 half-lives (≈1.25) + 1 reinforce ≈ ~2.25, far below 20.
-      expect(rows[0]!.weight).toBeLessThan(20);
-      expect(rows[0]!.metadata['occurrences']).toBe(6);
+      expect(rows[0].weight).toBeLessThan(20);
+      expect(rows[0].metadata['occurrences']).toBe(6);
     });
 
     it('ignores non-terminal events', async () => {
@@ -247,10 +247,10 @@ describe('LongTermMemoryService', () => {
       const recalled = await svc.recallRelevant('ws-1');
 
       expect(recalled).toHaveLength(2);
-      expect(recalled[0]!.fact).toBe('commerce.payment.approved');
-      expect(recalled[0]!.valence).toBe('positive');
-      expect(recalled[0]!.strength).toBeGreaterThan(recalled[1]!.strength);
-      expect(recalled[0]!.occurrences).toBe(8);
+      expect(recalled[0].fact).toBe('commerce.payment.approved');
+      expect(recalled[0].valence).toBe('positive');
+      expect(recalled[0].strength).toBeGreaterThan(recalled[1].strength);
+      expect(recalled[0].occurrences).toBe(8);
     });
 
     it('filters by valence when requested', async () => {
@@ -278,7 +278,7 @@ describe('LongTermMemoryService', () => {
       const negatives = await svc.recallRelevant('ws-1', { valence: 'negative' });
 
       expect(negatives).toHaveLength(1);
-      expect(negatives[0]!.fact).toBe('commerce.payment.declined');
+      expect(negatives[0].fact).toBe('commerce.payment.declined');
     });
 
     it('returns an empty list (never throws) when the store fails', async () => {
@@ -305,7 +305,7 @@ describe('LongTermMemoryService', () => {
       const svc = new LongTermMemoryService(prisma, spine);
       expect(handler).toBeDefined();
 
-      handler!(makeEvent({ eventName: 'commerce.payment.approved', valence: 'positive' }));
+      handler(makeEvent({ eventName: 'commerce.payment.approved', valence: 'positive' }));
       await new Promise((r) => setImmediate(r)); // let the detached promise settle
       void svc;
 

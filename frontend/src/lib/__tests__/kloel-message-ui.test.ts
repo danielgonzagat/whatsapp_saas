@@ -3,6 +3,7 @@ import {
   appendAssistantTraceFromEvent,
   detectDeliverableAnswerFiles,
   getAssistantProcessingTrace,
+  getAssistantReasoning,
   getAssistantResponseVersions,
   sanitizeAssistantVisibleContent,
   summarizeAssistantProcessingTrace,
@@ -610,6 +611,23 @@ describe('kloel-message-ui', () => {
         label: 'Consultei contexto operacional relevante antes de responder.',
       }),
     ]);
+  });
+
+  it('drops streamed reasoning deltas before they become assistant-visible metadata', () => {
+    const metadata = appendAssistantTraceFromEvent(
+      { clientRequestId: 'req-private-reasoning' },
+      {
+        type: 'reasoning_delta',
+        text: 'We are in a chat conversation with the user and should not expose this.',
+      },
+    );
+
+    expect(metadata).toEqual({ clientRequestId: 'req-private-reasoning' });
+    expect(getAssistantReasoning(metadata).text).toBe('');
+    expect(getAssistantReasoning({
+      reasoningText: 'We are in a chat conversation with the user and should not expose this.',
+    }).text).toBe('');
+    expect(JSON.stringify(metadata)).not.toContain('We are in a chat conversation');
   });
 
   it('merges live capability metadata from terminal stream events', () => {

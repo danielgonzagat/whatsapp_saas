@@ -1,6 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { authApi } from './auth';
 
+function createTestJwt(payload: Record<string, unknown>) {
+  const encoded = btoa(JSON.stringify(payload))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+
+  return `header.${encoded}.signature`;
+}
+
 beforeEach(() => {
   document.cookie = 'kloel_access_token=test-token; path=/';
   vi.spyOn(globalThis, 'fetch').mockResolvedValue({
@@ -88,6 +97,43 @@ describe('authApi', () => {
       expect(headers.authorization).toBe('Bearer test-token');
       expect(headers['x-kloel-access-token']).toBe('test-token');
       expect(headers['x-workspace-id']).toBe('workspace-1');
+    });
+
+    it('refreshes expired access before requesting the workspace proxy', async () => {
+      const expiredToken = createTestJwt({ exp: Math.floor(Date.now() / 1000) - 60 });
+      const freshToken = createTestJwt({ exp: Math.floor(Date.now() / 1000) + 3600 });
+      document.cookie = `kloel_access_token=${expiredToken}; path=/`;
+      document.cookie = 'kloel_refresh_token=refresh-token; path=/';
+
+      vi.mocked(globalThis.fetch).mockImplementation(async (input) => {
+        const url = input instanceof Request ? input.url : String(input ?? '');
+        if (url === 'http://localhost:3001/auth/refresh') {
+          return {
+            ok: true,
+            status: 201,
+            json: async () => ({ access_token: freshToken, refresh_token: 'fresh-refresh' }),
+            text: async () => JSON.stringify({ access_token: freshToken, refresh_token: 'fresh-refresh' }),
+          } as Response;
+        }
+
+        return {
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ user: { id: 'u1', email: 'a@b.com' } }),
+        } as Response;
+      });
+
+      const res = await authApi.getMe();
+
+      expect(res.error).toBeUndefined();
+      expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(2);
+      expect(vi.mocked(globalThis.fetch).mock.calls[0]?.[0]).toBe('http://localhost:3001/auth/refresh');
+      expect(vi.mocked(globalThis.fetch).mock.calls[1]?.[0]).toBe('/api/workspace/me');
+      const workspaceHeaders = collectHeaders(
+        vi.mocked(globalThis.fetch).mock.calls[1]?.[1]?.headers,
+      );
+      expect(workspaceHeaders.authorization).toBe(`Bearer ${freshToken}`);
+      expect(workspaceHeaders['x-kloel-access-token']).toBe(freshToken);
     });
 
     it('returns the auth payload', async () => {

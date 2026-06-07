@@ -22,7 +22,7 @@ import { GuestChatService } from './guest-chat.service';
 import { ForbiddenException } from '@nestjs/common';
 import { castMock } from '../../test/helpers/cast-mock';
 
-const serviceMock = new GuestChatService(null as never, null as never, null as never);
+const serviceMock = new GuestChatService(null as never, null, null as never);
 const chatMock = (serviceMock as { chat: jest.Mock }).chat;
 const chatSyncMock = (serviceMock as { chatSync: jest.Mock }).chatSync;
 

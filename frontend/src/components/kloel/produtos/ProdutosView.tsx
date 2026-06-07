@@ -249,6 +249,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
               <button
                 type="button"
                 key={tab.key}
+                aria-pressed={isActive}
                 onClick={() => handleTabChange(tab.key)}
                 style={getSubinterfacePillStyle(isActive, isMobile)}
               >

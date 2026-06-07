@@ -120,6 +120,8 @@ export function DealCreateInlineForm({
         <button
           type="button"
           onClick={handleCancel}
+          aria-label={kloelT('Cancelar novo deal')}
+          title={kloelT('Cancelar novo deal')}
           style={{
             ...btnStyle,
             background: 'var(--app-bg-secondary)',

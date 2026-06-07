@@ -123,9 +123,9 @@ export class TimeToValueService {
         entries.push({
           workspaceId,
           leadCreatedAt: state.leadCreatedAt.toISOString(),
-          valueConfirmedAt: state.valueConfirmedAt!.toISOString(),
-          valueEventName: state.valueEventName!,
-          durationMs: this.getTimeToValueMs(workspaceId)!,
+          valueConfirmedAt: state.valueConfirmedAt.toISOString(),
+          valueEventName: state.valueEventName,
+          durationMs: this.getTimeToValueMs(workspaceId),
         });
       }
     }

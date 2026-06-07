@@ -90,6 +90,12 @@ function describeConnectSyncError(error: unknown): string {
   }
   return typeof error === 'string' ? error : 'Unknown Connect sync error';
 }
+function rethrowMfaFormError(error: unknown): never {
+  if (error instanceof UnauthorizedException) {
+    throw new BadRequestException(error.message);
+  }
+  throw error;
+}
 
 /** Kyc service. */
 @Injectable()
@@ -321,7 +327,7 @@ export class KycService {
         }
         const valid = await bcryptCompare(dto.currentPassword, agent.password);
         if (!valid) {
-          throw new UnauthorizedException('Current password is incorrect');
+          throw new BadRequestException('Current password is incorrect');
         }
         const hashedPassword = await bcryptHash(dto.newPassword, BCRYPT_ROUNDS);
         const updated = await tx.agent.update({
@@ -432,7 +438,11 @@ export class KycService {
       if (!agent.mfaSecret || !agent.mfaPendingSetup) {
         throw new BadRequestException('Inicie a configuracao 2FA antes de confirmar.');
       }
-      this.accountMfaService.verifyCode(agent.mfaSecret, dto.code);
+      try {
+        this.accountMfaService.verifyCode(agent.mfaSecret, dto.code);
+      } catch (error) {
+        rethrowMfaFormError(error);
+      }
       await tx.agent.update({
         where: { id: agent.id, workspaceId: agent.workspaceId },
         data: { mfaEnabled: true, mfaPendingSetup: false },
@@ -460,7 +470,11 @@ export class KycService {
         if (!dto.code) {
           throw new BadRequestException('Informe o codigo 2FA para desativar.');
         }
-        this.accountMfaService.verifyCode(agent.mfaSecret, dto.code);
+        try {
+          this.accountMfaService.verifyCode(agent.mfaSecret, dto.code);
+        } catch (error) {
+          rethrowMfaFormError(error);
+        }
       }
       await tx.agent.update({
         where: { id: agent.id, workspaceId: agent.workspaceId },

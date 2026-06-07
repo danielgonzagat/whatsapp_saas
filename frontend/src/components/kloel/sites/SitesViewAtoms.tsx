@@ -58,12 +58,14 @@ export function Btn({
   onClick,
   disabled,
   small,
+  ariaLabel,
 }: {
   children: React.ReactNode;
   variant?: 'primary' | 'ghost' | 'danger';
   onClick?: () => void;
   disabled?: boolean;
   small?: boolean;
+  ariaLabel?: string;
 }) {
   const styles: Record<string, React.CSSProperties> = {
     primary: { background: EMBER, color: colors.text.silver, border: 'none' },
@@ -77,6 +79,7 @@ export function Btn({
   return (
     <button
       type="button"
+      aria-label={ariaLabel}
       onClick={onClick}
       disabled={disabled}
       style={{

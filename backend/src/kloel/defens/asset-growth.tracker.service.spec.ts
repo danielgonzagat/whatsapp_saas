@@ -109,7 +109,7 @@ describe('AssetGrowthTrackerService', () => {
       valueIndicator: 0.5,
     });
 
-    const snap = service.recordSnapshot('wks_a', asset!.assetId, 100, 'not-a-date');
+    const snap = service.recordSnapshot('wks_a', asset.assetId, 100, 'not-a-date');
 
     expect(snap).toBeUndefined();
   });
@@ -123,9 +123,9 @@ describe('AssetGrowthTrackerService', () => {
       valueIndicator: 1000,
     });
 
-    service.recordSnapshot('wks_a', asset!.assetId, 1000, iso(5));
+    service.recordSnapshot('wks_a', asset.assetId, 1000, iso(5));
 
-    const growth = service.computeGrowth('wks_a', asset!.assetId, 30);
+    const growth = service.computeGrowth('wks_a', asset.assetId, 30);
 
     expect(growth.currentSize).toBe(1000);
     expect(growth.sizeXDaysAgo).toBe(1000);
@@ -156,10 +156,10 @@ describe('AssetGrowthTrackerService', () => {
       valueIndicator: 5,
     });
 
-    service.recordSnapshot('wks_a', asset!.assetId, 100, isoFromBase(base, -40));
-    service.recordSnapshot('wks_a', asset!.assetId, 200, isoFromBase(base, -10));
+    service.recordSnapshot('wks_a', asset.assetId, 100, isoFromBase(base, -40));
+    service.recordSnapshot('wks_a', asset.assetId, 200, isoFromBase(base, -10));
 
-    const growth = service.computeGrowth('wks_a', asset!.assetId, 30);
+    const growth = service.computeGrowth('wks_a', asset.assetId, 30);
 
     expect(growth.currentSize).toBe(200);
     expect(growth.sizeXDaysAgo).toBe(100);
@@ -178,10 +178,10 @@ describe('AssetGrowthTrackerService', () => {
       valueIndicator: 500,
     });
 
-    service.recordSnapshot('wks_a', asset!.assetId, 1000, isoFromBase(base, -40));
-    service.recordSnapshot('wks_a', asset!.assetId, 600, isoFromBase(base, -5));
+    service.recordSnapshot('wks_a', asset.assetId, 1000, isoFromBase(base, -40));
+    service.recordSnapshot('wks_a', asset.assetId, 600, isoFromBase(base, -5));
 
-    const growth = service.computeGrowth('wks_a', asset!.assetId, 30);
+    const growth = service.computeGrowth('wks_a', asset.assetId, 30);
 
     expect(growth.currentSize).toBe(600);
     expect(growth.sizeXDaysAgo).toBe(1000);
@@ -200,10 +200,10 @@ describe('AssetGrowthTrackerService', () => {
       valueIndicator: 0,
     });
 
-    service.recordSnapshot('wks_a', asset!.assetId, 0, isoFromBase(base, -40));
-    service.recordSnapshot('wks_a', asset!.assetId, 500, isoFromBase(base, -5));
+    service.recordSnapshot('wks_a', asset.assetId, 0, isoFromBase(base, -40));
+    service.recordSnapshot('wks_a', asset.assetId, 500, isoFromBase(base, -5));
 
-    const growth = service.computeGrowth('wks_a', asset!.assetId, 30);
+    const growth = service.computeGrowth('wks_a', asset.assetId, 30);
 
     expect(growth.currentSize).toBe(500);
     expect(growth.growthRate).toBe(0);
@@ -221,11 +221,11 @@ describe('AssetGrowthTrackerService', () => {
       valueIndicator: 20,
     });
 
-    service.recordSnapshot('wks_a', asset!.assetId, 50, isoFromBase(base, -55));
-    service.recordSnapshot('wks_a', asset!.assetId, 80, isoFromBase(base, -35));
-    service.recordSnapshot('wks_a', asset!.assetId, 100, isoFromBase(base, -5));
+    service.recordSnapshot('wks_a', asset.assetId, 50, isoFromBase(base, -55));
+    service.recordSnapshot('wks_a', asset.assetId, 80, isoFromBase(base, -35));
+    service.recordSnapshot('wks_a', asset.assetId, 100, isoFromBase(base, -5));
 
-    const growth = service.computeGrowth('wks_a', asset!.assetId, 30);
+    const growth = service.computeGrowth('wks_a', asset.assetId, 30);
 
     expect(growth.currentSize).toBe(100);
     expect(growth.sizeXDaysAgo).toBe(80);
@@ -254,11 +254,11 @@ describe('AssetGrowthTrackerService', () => {
       valueIndicator: 10,
     });
 
-    service.recordSnapshot('wks_a', a1!.assetId, 100, isoFromBase(base, -40));
-    service.recordSnapshot('wks_a', a1!.assetId, 300, isoFromBase(base, -5));
+    service.recordSnapshot('wks_a', a1.assetId, 100, isoFromBase(base, -40));
+    service.recordSnapshot('wks_a', a1.assetId, 300, isoFromBase(base, -5));
 
-    service.recordSnapshot('wks_a', a2!.assetId, 50, isoFromBase(base, -40));
-    service.recordSnapshot('wks_a', a2!.assetId, 80, isoFromBase(base, -5));
+    service.recordSnapshot('wks_a', a2.assetId, 50, isoFromBase(base, -40));
+    service.recordSnapshot('wks_a', a2.assetId, 80, isoFromBase(base, -5));
 
     const score = service.computePortfolioDefensibilityScore('wks_a');
 
@@ -281,11 +281,11 @@ describe('AssetGrowthTrackerService', () => {
       valueIndicator: 500,
     });
 
-    service.recordSnapshot('wks_a', a1!.assetId, 1000, isoFromBase(base, -40));
-    service.recordSnapshot('wks_a', a1!.assetId, 300, isoFromBase(base, -5));
+    service.recordSnapshot('wks_a', a1.assetId, 1000, isoFromBase(base, -40));
+    service.recordSnapshot('wks_a', a1.assetId, 300, isoFromBase(base, -5));
 
-    service.recordSnapshot('wks_a', a2!.assetId, 100, isoFromBase(base, -40));
-    service.recordSnapshot('wks_a', a2!.assetId, 150, isoFromBase(base, -5));
+    service.recordSnapshot('wks_a', a2.assetId, 100, isoFromBase(base, -40));
+    service.recordSnapshot('wks_a', a2.assetId, 150, isoFromBase(base, -5));
 
     const score = service.computePortfolioDefensibilityScore('wks_a');
 
@@ -329,7 +329,7 @@ describe('AssetGrowthTrackerService', () => {
       valueIndicator: 0.8,
     });
 
-    const found = service.getAsset('wks_a', record!.assetId);
+    const found = service.getAsset('wks_a', record.assetId);
 
     expect(found?.name).toBe('Brand Trust');
   });

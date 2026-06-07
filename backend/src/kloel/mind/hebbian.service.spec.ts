@@ -67,13 +67,13 @@ describe('HebbianService', () => {
         makeEvent({ eventId: 'evt_1', eventName: 'A', occurredAt: iso(0) }),
         makeEvent({ eventId: 'evt_2', eventName: 'B', occurredAt: iso(10_000) }),
       ]);
-      const weightAfterFirst = service.associationsFor('A')[0]!.weight;
+      const weightAfterFirst = service.associationsFor('A')[0].weight;
 
       service.ingest([
         makeEvent({ eventId: 'evt_3', eventName: 'A', occurredAt: iso(100_000) }),
         makeEvent({ eventId: 'evt_4', eventName: 'B', occurredAt: iso(110_000) }),
       ]);
-      const weightAfterSecond = service.associationsFor('A')[0]!.weight;
+      const weightAfterSecond = service.associationsFor('A')[0].weight;
 
       expect(weightAfterSecond).toBeGreaterThan(weightAfterFirst);
     });
@@ -88,7 +88,7 @@ describe('HebbianService', () => {
         ]);
       }
       const assoc = service.associationsFor('A');
-      expect(assoc[0]!.weight).toBeLessThanOrEqual(1);
+      expect(assoc[0].weight).toBeLessThanOrEqual(1);
     });
 
     it('increments coOccurrenceCount', () => {
@@ -96,14 +96,14 @@ describe('HebbianService', () => {
         makeEvent({ eventId: 'evt_1', eventName: 'A', occurredAt: iso(0) }),
         makeEvent({ eventId: 'evt_2', eventName: 'B', occurredAt: iso(10_000) }),
       ]);
-      const assoc = service.associationsFor('A')[0]!;
+      const assoc = service.associationsFor('A')[0];
       expect(assoc.coOccurrenceCount).toBe(1);
 
       service.ingest([
         makeEvent({ eventId: 'evt_3', eventName: 'A', occurredAt: iso(100_000) }),
         makeEvent({ eventId: 'evt_4', eventName: 'B', occurredAt: iso(110_000) }),
       ]);
-      const assoc2 = service.associationsFor('A')[0]!;
+      const assoc2 = service.associationsFor('A')[0];
       expect(assoc2.coOccurrenceCount).toBe(2);
     });
 
@@ -112,13 +112,13 @@ describe('HebbianService', () => {
         makeEvent({ eventId: 'evt_1', eventName: 'A', occurredAt: iso(0) }),
         makeEvent({ eventId: 'evt_2', eventName: 'B', occurredAt: iso(10_000) }),
       ]);
-      const firstSeen = service.associationsFor('A')[0]!.lastSeenAt;
+      const firstSeen = service.associationsFor('A')[0].lastSeenAt;
 
       service.ingest([
         makeEvent({ eventId: 'evt_3', eventName: 'A', occurredAt: iso(100_000) }),
         makeEvent({ eventId: 'evt_4', eventName: 'B', occurredAt: iso(110_000) }),
       ]);
-      const secondSeen = service.associationsFor('A')[0]!.lastSeenAt;
+      const secondSeen = service.associationsFor('A')[0].lastSeenAt;
 
       expect(secondSeen).not.toBe(firstSeen);
     });
@@ -154,7 +154,7 @@ describe('HebbianService', () => {
         makeEvent({ eventId: 'evt_1', eventName: 'A', occurredAt: iso(0) }),
         makeEvent({ eventId: 'evt_2', eventName: 'B', occurredAt: iso(10_000) }),
       ]);
-      const initialWeight = service.associationsFor('A')[0]!.weight;
+      const initialWeight = service.associationsFor('A')[0].weight;
 
       const since = new Date(Date.now());
       const now = new Date(Date.now() + 10 * 60 * 60 * 1000); // +10 hours
@@ -162,7 +162,7 @@ describe('HebbianService', () => {
 
       const decayed = service.associationsFor('A');
       if (decayed.length > 0) {
-        expect(decayed[0]!.weight).toBeLessThan(initialWeight);
+        expect(decayed[0].weight).toBeLessThan(initialWeight);
       }
     });
 
@@ -207,8 +207,8 @@ describe('HebbianService', () => {
       const forB = service.associationsFor('B');
       expect(forA.length).toBeGreaterThanOrEqual(1);
       expect(forB.length).toBeGreaterThanOrEqual(1);
-      expect(forA[0]!.b).toBe('B');
-      expect(forB[0]!.b).toBe('A');
+      expect(forA[0].b).toBe('B');
+      expect(forB[0].b).toBe('A');
     });
 
     it('caps results at the specified limit', () => {
@@ -239,7 +239,7 @@ describe('HebbianService', () => {
         makeEvent({ eventId: 'evt_6', eventName: 'Z', occurredAt: iso(210_000) }),
       ]);
       const result = service.associationsFor('X');
-      expect(result[0]!.b).toBe('Z'); // Higher weight should be first
+      expect(result[0].b).toBe('Z'); // Higher weight should be first
     });
   });
 
@@ -255,9 +255,9 @@ describe('HebbianService', () => {
       ]);
       const result = service.top();
       expect(result.length).toBeGreaterThanOrEqual(1);
-      expect(result[0]!.a).toBeDefined();
-      expect(result[0]!.b).toBeDefined();
-      expect(result[0]!.weight).toBeGreaterThan(0);
+      expect(result[0].a).toBeDefined();
+      expect(result[0].b).toBeDefined();
+      expect(result[0].weight).toBeGreaterThan(0);
     });
 
     it('caps results at the specified limit', () => {

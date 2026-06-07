@@ -32,6 +32,7 @@ export function InboxConversationFilters({
             type="button"
             key={value}
             onClick={() => setChannelFilter(value)}
+            aria-pressed={channelFilter === value}
             className={`rounded-[calc(var(--inbox-radius)-10px)] px-[var(--inbox-chip-x)] py-[var(--inbox-chip-y)] text-[length:var(--inbox-body-xs)] font-semibold transition-colors ${
               channelFilter === value
                 ? 'bg-[var(--ember-primary)] text-[var(--bg-void)]'
@@ -55,6 +56,7 @@ export function InboxConversationFilters({
             type="button"
             key={value}
             onClick={() => setStatusFilter(value)}
+            aria-pressed={statusFilter === value}
             className={`rounded-[calc(var(--inbox-radius)-10px)] px-[var(--inbox-chip-x)] py-[var(--inbox-chip-y)] text-[length:var(--inbox-body-xs)] font-semibold transition-colors ${
               statusFilter === value
                 ? 'bg-[var(--ember-primary)] text-[var(--bg-void)]'

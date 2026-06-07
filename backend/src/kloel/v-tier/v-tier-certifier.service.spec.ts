@@ -66,7 +66,7 @@ describe('VtierCertifierService', () => {
           kloelPromptsPath: file,
           kloelPromptsHelpersPath: file,
         });
-        const v1 = result.verdicts.find((v) => v.criterionId === 'V1')!;
+        const v1 = result.verdicts.find((v) => v.criterionId === 'V1');
         expectStatus(v1, 'PASS');
       } finally {
         rmSync(dir, { recursive: true, force: true });
@@ -84,7 +84,7 @@ describe('VtierCertifierService', () => {
           kloelPromptsPath: file,
           kloelPromptsHelpersPath: file,
         });
-        const v1 = result.verdicts.find((v) => v.criterionId === 'V1')!;
+        const v1 = result.verdicts.find((v) => v.criterionId === 'V1');
         expectStatus(v1, 'FAIL');
       } finally {
         rmSync(dir, { recursive: true, force: true });
@@ -99,7 +99,7 @@ describe('VtierCertifierService', () => {
       await ledger.bootstrapGenesis();
       const c = makeCertifier();
       const certResult = await c.certify();
-      const v2 = certResult.verdicts.find((v) => v.criterionId === 'V2')!;
+      const v2 = certResult.verdicts.find((v) => v.criterionId === 'V2');
       // With lineage bootstrapped, ABI should build ok
       expect(['PASS', 'FAIL']).toContain(v2.status);
     });
@@ -110,7 +110,7 @@ describe('VtierCertifierService', () => {
       const spine = new SpineEmitterService();
       const c = makeCertifier({ spine });
       const result = await c.certify();
-      const v3 = result.verdicts.find((v) => v.criterionId === 'V3')!;
+      const v3 = result.verdicts.find((v) => v.criterionId === 'V3');
       expectStatus(v3, 'INSUFFICIENT_EVIDENCE');
     });
 
@@ -134,7 +134,7 @@ describe('VtierCertifierService', () => {
       }
       const c = makeCertifier({ spine });
       const result = await c.certify();
-      const v3 = result.verdicts.find((v) => v.criterionId === 'V3')!;
+      const v3 = result.verdicts.find((v) => v.criterionId === 'V3');
       expectStatus(v3, 'PASS');
     });
   });
@@ -143,7 +143,7 @@ describe('VtierCertifierService', () => {
     it('PASS when MindBackgroundProcessor is registered', async () => {
       const c = makeCertifier();
       const result = await c.certify();
-      const v4 = result.verdicts.find((v) => v.criterionId === 'V4')!;
+      const v4 = result.verdicts.find((v) => v.criterionId === 'V4');
       expectStatus(v4, 'PASS');
     });
   });
@@ -153,7 +153,7 @@ describe('VtierCertifierService', () => {
       const spine = new SpineEmitterService();
       const c = makeCertifier({ spine });
       const result = await c.certify();
-      const v5 = result.verdicts.find((v) => v.criterionId === 'V5')!;
+      const v5 = result.verdicts.find((v) => v.criterionId === 'V5');
       expectStatus(v5, 'INSUFFICIENT_EVIDENCE');
     });
 
@@ -177,7 +177,7 @@ describe('VtierCertifierService', () => {
       }
       const c = makeCertifier({ spine });
       const result = await c.certify();
-      const v5 = result.verdicts.find((v) => v.criterionId === 'V5')!;
+      const v5 = result.verdicts.find((v) => v.criterionId === 'V5');
       expectStatus(v5, 'PASS');
     });
   });
@@ -186,7 +186,7 @@ describe('VtierCertifierService', () => {
     it('INSUFFICIENT_EVIDENCE when no associations', async () => {
       const c = makeCertifier();
       const result = await c.certify();
-      const v6 = result.verdicts.find((v) => v.criterionId === 'V6')!;
+      const v6 = result.verdicts.find((v) => v.criterionId === 'V6');
       expectStatus(v6, 'INSUFFICIENT_EVIDENCE');
     });
   });
@@ -197,7 +197,7 @@ describe('VtierCertifierService', () => {
       await new LineageLedgerService(repo).bootstrapGenesis();
       const c = makeCertifier();
       const result = await c.certify();
-      const v7 = result.verdicts.find((v) => v.criterionId === 'V7')!;
+      const v7 = result.verdicts.find((v) => v.criterionId === 'V7');
       expect(['PASS', 'FAIL']).toContain(v7.status);
     });
   });
@@ -206,7 +206,7 @@ describe('VtierCertifierService', () => {
     it('always PASS', async () => {
       const c = makeCertifier();
       const result = await c.certify();
-      const v8 = result.verdicts.find((v) => v.criterionId === 'V8')!;
+      const v8 = result.verdicts.find((v) => v.criterionId === 'V8');
       expectStatus(v8, 'PASS');
     });
   });
@@ -215,7 +215,7 @@ describe('VtierCertifierService', () => {
     it('PASS when Genesis Event self-verifies', async () => {
       const c = makeCertifier();
       const result = await c.certify();
-      const v9 = result.verdicts.find((v) => v.criterionId === 'V9')!;
+      const v9 = result.verdicts.find((v) => v.criterionId === 'V9');
       expectStatus(v9, 'PASS');
     });
   });
@@ -226,7 +226,7 @@ describe('VtierCertifierService', () => {
       await new LineageLedgerService(repo).bootstrapGenesis();
       const c = makeCertifier();
       const result = await c.certify();
-      const v10 = result.verdicts.find((v) => v.criterionId === 'V10')!;
+      const v10 = result.verdicts.find((v) => v.criterionId === 'V10');
       expectStatus(v10, 'PASS');
     });
   });
@@ -235,7 +235,7 @@ describe('VtierCertifierService', () => {
     it('PASS when >=29 detectors registered', async () => {
       const c = makeCertifier();
       const result = await c.certify();
-      const v11 = result.verdicts.find((v) => v.criterionId === 'V11')!;
+      const v11 = result.verdicts.find((v) => v.criterionId === 'V11');
       expectStatus(v11, 'PASS');
     });
   });
@@ -244,7 +244,7 @@ describe('VtierCertifierService', () => {
     it('always PASS', async () => {
       const c = makeCertifier();
       const result = await c.certify();
-      const v12 = result.verdicts.find((v) => v.criterionId === 'V12')!;
+      const v12 = result.verdicts.find((v) => v.criterionId === 'V12');
       expectStatus(v12, 'PASS');
     });
   });
@@ -253,14 +253,14 @@ describe('VtierCertifierService', () => {
     it('INSUFFICIENT_EVIDENCE when workspaceCount is 0', async () => {
       const c = makeCertifier();
       const result = await c.certify({ workspaceCount: 0 });
-      const v13 = result.verdicts.find((v) => v.criterionId === 'V13')!;
+      const v13 = result.verdicts.find((v) => v.criterionId === 'V13');
       expectStatus(v13, 'INSUFFICIENT_EVIDENCE');
     });
 
     it('PASS when workspaceCount > 0', async () => {
       const c = makeCertifier();
       const result = await c.certify({ workspaceCount: 3 });
-      const v13 = result.verdicts.find((v) => v.criterionId === 'V13')!;
+      const v13 = result.verdicts.find((v) => v.criterionId === 'V13');
       expectStatus(v13, 'PASS');
     });
   });
@@ -269,7 +269,7 @@ describe('VtierCertifierService', () => {
     it('INSUFFICIENT_EVIDENCE when < 20 cycles', async () => {
       const c = makeCertifier();
       const result = await c.certify();
-      const v14 = result.verdicts.find((v) => v.criterionId === 'V14')!;
+      const v14 = result.verdicts.find((v) => v.criterionId === 'V14');
       expectStatus(v14, 'INSUFFICIENT_EVIDENCE');
     });
 
@@ -279,7 +279,7 @@ describe('VtierCertifierService', () => {
         await c.certify();
       }
       const result = await c.certify();
-      const v14 = result.verdicts.find((v) => v.criterionId === 'V14')!;
+      const v14 = result.verdicts.find((v) => v.criterionId === 'V14');
       expect(['PASS', 'FAIL', 'INSUFFICIENT_EVIDENCE']).toContain(v14.status);
     });
   });
@@ -288,7 +288,7 @@ describe('VtierCertifierService', () => {
     it('INSUFFICIENT_EVIDENCE when no B17 events in spine', async () => {
       const c = makeCertifier();
       const result = await c.certify();
-      const v15 = result.verdicts.find((v) => v.criterionId === 'V15')!;
+      const v15 = result.verdicts.find((v) => v.criterionId === 'V15');
       expectStatus(v15, 'INSUFFICIENT_EVIDENCE');
     });
 
@@ -322,7 +322,7 @@ describe('VtierCertifierService', () => {
       }
       const c = makeCertifier({ spine });
       const result = await c.certify();
-      const v15 = result.verdicts.find((v) => v.criterionId === 'V15')!;
+      const v15 = result.verdicts.find((v) => v.criterionId === 'V15');
       expectStatus(v15, 'PASS');
     });
   });

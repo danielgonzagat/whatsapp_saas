@@ -24,6 +24,7 @@ function isEphemeralAtomicFixture(rel: string): boolean {
     base.startsWith('.atomic-edit.') ||
     rel.includes('/.smoke-') ||
     rel.includes('/.audit-') ||
+    rel.includes('/.positive-byte-sessions/') ||
     rel.includes('/dist/')
   );
 }

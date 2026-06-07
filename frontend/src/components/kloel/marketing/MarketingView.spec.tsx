@@ -87,6 +87,13 @@ describe('MarketingView — six-channel PreviewBar (canonical anexo contract)', 
     expect((bar as HTMLElement).style.transform).toBe('translateX(-50%)');
   });
 
+  it('keeps the channel selector below the global Graph navigation hitbox', () => {
+    render(<MarketingView defaultTab="whatsapp" />);
+    const bar = screen.getByText('whatsapp').parentElement;
+    expect(bar).toBeInstanceOf(HTMLElement);
+    expect((bar as HTMLElement).style.top).toBe('72px');
+  });
+
   it('redirects /marketing/conversas to /inbox and /marketing to /marketing/whatsapp', () => {
     mockPathname = '/marketing/conversas';
     render(<MarketingView defaultTab="whatsapp" />);

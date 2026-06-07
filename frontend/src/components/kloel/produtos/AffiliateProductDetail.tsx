@@ -1,4 +1,5 @@
 'use client';
+import { useRouter } from 'next/navigation';
 import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import type { MarketplaceItem } from './ProdutosView.types';
@@ -15,6 +16,7 @@ import {
 } from './ProdutosView.shared';
 import { IC } from './ProdutosView.icons';
 import AffiliateApplyDialog from './AffiliateApplyDialog';
+import { sanitizeHtml } from '../products/ProductNerveCenterComissaoTab.helpers';
 
 const card = { background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6 };
 const cGreen = { ...card, borderLeft: `3px solid ${GREEN}` };
@@ -42,11 +44,25 @@ const mono = (s: number, w = 400) => ({ fontFamily: MONO, fontSize: s, fontWeigh
 const mt = (t: number) => ({ marginTop: t });
 const mb = (b: number) => ({ marginBottom: b });
 
+function formatAffiliateMaterialLabel(material: string) {
+  const sanitized = sanitizeHtml(String(material || ''));
+  if (!sanitized.trim()) {
+    return '';
+  }
+  if (typeof document === 'undefined') {
+    return sanitized.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+  const template = document.createElement('template');
+  template.innerHTML = sanitized;
+  return (template.content.textContent || '').replace(/\s+/g, ' ').trim();
+}
+
 export default function AffiliateProductDetail({
   item,
   onBack,
   requestingId,
   copiedAffiliate,
+  actionError,
   onRequestAffiliation,
   onCopyLink,
 }: {
@@ -54,12 +70,17 @@ export default function AffiliateProductDetail({
   onBack: () => void;
   requestingId: string | null;
   copiedAffiliate: boolean;
+  actionError?: string | null;
   onRequestAffiliation: (productId: string) => void;
   onCopyLink: (link: string) => void;
 }) {
   const cps = ((item.price || 0) * (item.commission || 0)) / 100;
   const p30 = cps * 15;
   const p90 = cps * 50;
+
+  const router = useRouter();
+  const shouldShowProfileCompletionAction =
+    actionError?.toLowerCase().includes('complete seu cadastro') ?? false;
 
   return (
     <div style={{ opacity: 1 }}>
@@ -217,22 +238,28 @@ export default function AffiliateProductDetail({
         <div style={{ ...card, padding: 20, ...mb(16) }}>
           <div style={hdr(12)}>{kloelT('Materiais de Divulgacao')}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {item.materials.map((mat: string) => (
-              <span
-                key={mat}
-                style={{
-                  fontFamily: MONO,
-                  fontSize: 11,
-                  padding: '6px 12px',
-                  background: `${GREEN}15`,
-                  color: GREEN,
-                  borderRadius: 6,
-                  border: `1px solid ${GREEN}30`,
-                }}
-              >
-                {mat}
-              </span>
-            ))}
+            {item.materials.map((mat: string) => {
+              const materialLabel = formatAffiliateMaterialLabel(mat);
+              if (!materialLabel) {
+                return null;
+              }
+              return (
+                <span
+                  key={mat}
+                  style={{
+                    fontFamily: MONO,
+                    fontSize: 11,
+                    padding: '6px 12px',
+                    background: `${GREEN}15`,
+                    color: GREEN,
+                    borderRadius: 6,
+                    border: `1px solid ${GREEN}30`,
+                  }}
+                >
+                  {materialLabel}
+                </span>
+              );
+            })}
           </div>
         </div>
       )}
@@ -300,6 +327,46 @@ export default function AffiliateProductDetail({
             Instagram com copy focada em transformacao.`)}
         </div>
       </div>
+
+      {actionError && (
+        <div
+          role="alert"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            ...card,
+            padding: 12,
+            color: colors.semantic.error,
+            background: 'rgba(255, 80, 80, 0.08)',
+            border: '1px solid rgba(255, 80, 80, 0.24)',
+            ...mb(16),
+          }}
+        >
+          <div style={{ fontFamily: MONO, fontSize: 11, lineHeight: 1.5 }}>{actionError}</div>
+          {shouldShowProfileCompletionAction && (
+            <button
+              type="button"
+              onClick={() => router.push('/settings')}
+              style={{
+                border: `1px solid ${BORDER}`,
+                borderRadius: 6,
+                background: 'rgba(255,255,255,0.04)',
+                color: 'var(--app-text-primary)',
+                fontFamily: SORA,
+                fontSize: 12,
+                fontWeight: 700,
+                padding: '8px 10px',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {kloelT('Ir para Perfil')}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* ── apply dialog ── */}
       <AffiliateApplyDialog

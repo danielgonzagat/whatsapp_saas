@@ -103,7 +103,7 @@ export class FirstHourOrchestratorService {
     const decisions: FirstHourDeliveryDecision[] = [];
 
     for (let i = 0; i < passed.length; i++) {
-      const insight = passed[i] as RankedWOWInsight;
+      const insight = passed[i];
       if (i < max) {
         decisions.push({
           insight,

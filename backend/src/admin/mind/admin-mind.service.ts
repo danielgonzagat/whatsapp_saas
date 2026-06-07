@@ -123,7 +123,7 @@ export class AdminMindService {
       predictedMean: item.predictedMean,
       actual: item.actual,
       surprise: item.surprise,
-      severity: severityLabel(item.surprise!),
+      severity: severityLabel(item.surprise),
       horizonSec: item.horizonSec,
       resolvedAt: item.resolvedAt,
       createdAt: item.createdAt,

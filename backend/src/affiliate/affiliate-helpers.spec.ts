@@ -31,14 +31,14 @@ describe('affiliate-helpers', () => {
       const product = { thumbnailUrl: null };
       const result = serializeAffiliateProductForResponse(mockReq(), product);
       expect(result).not.toBeNull();
-      expect(result!.thumbnailUrl).toBeNull();
+      expect(result.thumbnailUrl).toBeNull();
     });
 
     it('preserves other product fields', () => {
       const product = { thumbnailUrl: null, id: 'p-1', name: 'Test' };
       const result = serializeAffiliateProductForResponse(mockReq(), product);
-      expect(result!.id).toBe('p-1');
-      expect(result!.name).toBe('Test');
+      expect(result.id).toBe('p-1');
+      expect(result.name).toBe('Test');
     });
   });
 

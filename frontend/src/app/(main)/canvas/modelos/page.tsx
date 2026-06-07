@@ -84,6 +84,7 @@ export default function CanvasModelos() {
             value={aiPrompt}
             onChange={(e) => setAiPrompt(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
+            aria-label={kloelT(`Descrever modelo para gerar com IA`)}
             placeholder={kloelT(`Descreva o modelo que voce precisa... A IA cria pra voce`)}
             style={{
               flex: 1,

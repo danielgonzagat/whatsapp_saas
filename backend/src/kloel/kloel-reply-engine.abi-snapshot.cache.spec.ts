@@ -133,7 +133,7 @@ describe('KloelReplyEngineService ABI snapshot cache (cache hit/miss) (PI-k5)', 
           },
         ]
       >;
-      const upsertArgs = upsertCalls[0]![0];
+      const upsertArgs = upsertCalls[0][0];
       expect(upsertArgs.where.workspaceId_key.key).toBe('abi_snapshot_cache');
       expect(upsertArgs.update.category).toBe('abi_snapshot');
       expect(upsertArgs.create.category).toBe('abi_snapshot');

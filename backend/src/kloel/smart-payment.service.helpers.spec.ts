@@ -96,7 +96,7 @@ describe('smart-payment.service.helpers', () => {
     });
 
     it('coerces null to empty string', () => {
-      expect(truncateConversationHistory(null as unknown as string)).toBe('');
+      expect(truncateConversationHistory(null)).toBe('');
     });
   });
   describe('buildSmartPaymentAiPrompt', () => {

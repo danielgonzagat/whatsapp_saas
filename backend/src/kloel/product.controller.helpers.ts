@@ -178,6 +178,10 @@ export interface CreateProductDtoLike {
   supportEmail?: string;
   warrantyDays?: number;
   guaranteeDays?: number;
+  affiliatesEnabled?: boolean;
+  affiliateCommission?: number;
+  affiliateCommissionPercent?: number;
+  affiliateApprovalMode?: string;
   isSample?: boolean;
   shippingType?: string;
   shippingValue?: number;
@@ -195,6 +199,8 @@ export function buildCreateProductData(
   workspaceId: string,
   dto: CreateProductDtoLike,
 ): Record<string, unknown> {
+  const commissionPercent = dto.affiliateCommissionPercent ?? dto.affiliateCommission;
+
   return {
     workspaceId,
     name: dto.name,
@@ -215,6 +221,11 @@ export function buildCreateProductData(
     ...(dto.reclameAquiUrl !== undefined ? { reclameAquiUrl: dto.reclameAquiUrl } : {}),
     supportEmail: dto.supportEmail || null,
     warrantyDays: dto.warrantyDays ?? dto.guaranteeDays ?? null,
+    ...(dto.affiliatesEnabled !== undefined ? { affiliateEnabled: dto.affiliatesEnabled } : {}),
+    ...(commissionPercent !== undefined ? { commissionPercent } : {}),
+    ...(dto.affiliateApprovalMode !== undefined
+      ? { affiliateAutoApprove: dto.affiliateApprovalMode.toLowerCase() !== 'manual' }
+      : {}),
     isSample: dto.isSample || false,
     shippingType: dto.shippingType || null,
     shippingValue: dto.shippingValue || null,

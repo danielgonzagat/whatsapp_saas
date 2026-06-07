@@ -47,6 +47,7 @@ import { registerToolsExec } from './server-tools-exec.js';
 import { registerToolsConverge } from './server-tools-converge.js';
 import { registerToolsLens } from './server-tools-lens.js';
 import { registerToolsSession } from './server-tools-session.js';
+import { registerToolsPositiveBytes } from './server-tools-positive-bytes.js';
 import { registerToolsY } from './server-tools-y.js';
 import { registerToolsSelf } from './server-tools-self.js';
 
@@ -169,6 +170,7 @@ registerToolsExec(server);
 registerToolsConverge(server);
 registerToolsLens(server);
 registerToolsSession(server);
+registerToolsPositiveBytes(server);
 registerToolsY(server);
 registerToolsSelf(server);
 installCodexSafeToolList(server);

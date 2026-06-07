@@ -52,7 +52,10 @@ describe('DadosPessoaisSection', () => {
     const birthDateLabel = screen.getByText(/data de nascimento/i).closest('label');
 
     expect(birthDateLabel?.control).toBe(pickerButton);
-    expect(pickerButton.textContent).toContain('14/05/1990');
+    expect(pickerButton.textContent?.trim()).toBe('14/05/1990');
+    expect(
+      screen.getByRole('button', { name: 'Data de nascimento: 14/05/1990' }),
+    ).toBe(pickerButton);
 
     fireEvent.click(pickerButton);
     expect(screen.getByRole('dialog', { name: /selecionar data de nascimento/i })).toBeTruthy();
@@ -63,6 +66,9 @@ describe('DadosPessoaisSection', () => {
     fireEvent.click(screen.getByRole('button', { name: /aplicar data/i }));
 
     expect(pickerButton.textContent).toContain('09/08/1988');
+    expect(
+      screen.getByRole('button', { name: 'Data de nascimento: 09/08/1988' }),
+    ).toBe(pickerButton);
 
     fireEvent.click(screen.getByRole('button', { name: /salvar/i }));
 
@@ -74,5 +80,26 @@ describe('DadosPessoaisSection', () => {
       });
     });
     expect(mocks.mutate).toHaveBeenCalled();
+  });
+
+  it('blocks saving when required personal fields are empty', async () => {
+    render(
+      <DadosPessoaisSection
+        profile={{
+          name: 'Codex Audit',
+          email: 'codex.audit@example.test',
+          phone: '',
+          birthDate: '',
+        }}
+        mutate={mocks.mutate}
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: /salvar/i }));
+
+    expect(await screen.findByText('Informe um celular valido com DDD.')).toBeTruthy();
+    expect(mocks.showToast).toHaveBeenCalledWith('Informe um celular valido com DDD.', 'error');
+    expect(mocks.updateProfile).not.toHaveBeenCalled();
+    expect(mocks.mutate).not.toHaveBeenCalled();
   });
 });

@@ -114,7 +114,11 @@ describe('CampaignsService — compliant WhatsApp bulk send flag', () => {
     await service.processCampaignJob({ data: { campaignId: 'camp-1', workspaceId: 'ws-1' } });
 
     expect(mockMetaWhatsApp.sendTextMessage).toHaveBeenCalledTimes(1);
-    expect(mockMetaWhatsApp.sendTextMessage).toHaveBeenCalledWith('ws-1', '+5511988887777', 'Oi Ana');
+    expect(mockMetaWhatsApp.sendTextMessage).toHaveBeenCalledWith(
+      'ws-1',
+      '+5511988887777',
+      'Oi Ana',
+    );
     expect(mockDispatcher.sendMessage).not.toHaveBeenCalled();
 
     // stats reflect a successful send

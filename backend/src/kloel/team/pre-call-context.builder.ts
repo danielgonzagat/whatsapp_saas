@@ -145,7 +145,7 @@ function findCurrentStage(events: readonly SpineEventRef[]): string | undefined 
     .sort((a, b) => parseTimestampMs(b.occurredAt) - parseTimestampMs(a.occurredAt));
 
   if (stageEvents.length > 0) {
-    const last = stageEvents[0]!;
+    const last = stageEvents[0];
     const payload = last.payload as Record<string, unknown> | undefined;
     return (payload?.['toStage'] as string) ?? (payload?.['stage'] as string) ?? undefined;
   }
@@ -197,8 +197,8 @@ export function buildPreCallContext(input: PreCallContextInput): PreCallContext 
     .map(
       (e): ValenceTraceEntry => ({
         eventId: e.eventId,
-        valence: normalizeValence(e.valence)!,
-        weight: valenceWeight(normalizeValence(e.valence)!),
+        valence: normalizeValence(e.valence),
+        weight: valenceWeight(normalizeValence(e.valence)),
         occurredAt: e.occurredAt,
       }),
     );

@@ -215,7 +215,7 @@ describe('DecisionOutcomeService', () => {
       const lastCall = castMock<[{ data: { contextSnapshot: Record<string, unknown> } }][]>(
         (prisma.decisionOutcome.create as jest.Mock).mock.calls,
       ).at(-1);
-      const ctx = lastCall![0].data.contextSnapshot;
+      const ctx = lastCall[0].data.contextSnapshot;
       expect(ctx.token).toBeUndefined();
       expect(ctx.channel).toBe('instagram');
     });
@@ -230,7 +230,7 @@ describe('DecisionOutcomeService', () => {
       });
       const data = castMock<[{ data: { outcomeValue?: { amount: number } } }][]>(
         (prisma.decisionOutcome.updateMany as jest.Mock).mock.calls,
-      ).at(-1)![0].data;
+      ).at(-1)[0].data;
       expect(data.outcomeValue).toEqual({ amount: 99.9, currency: 'BRL' });
     });
 
@@ -238,7 +238,7 @@ describe('DecisionOutcomeService', () => {
       await service.closeOutcome({ outcomeKey: 'k1', outcomeName: 'inbound.received' });
       const data = castMock<
         [{ data: { economicValue: number | null; wonVsBaseline: boolean | null } }][]
-      >((prisma.decisionOutcome.updateMany as jest.Mock).mock.calls).at(-1)![0].data;
+      >((prisma.decisionOutcome.updateMany as jest.Mock).mock.calls).at(-1)[0].data;
       expect(data.economicValue).toBeNull();
       expect(data.wonVsBaseline).toBeNull();
     });
@@ -251,7 +251,7 @@ describe('DecisionOutcomeService', () => {
       const call = castMock<[{ where: Record<string, unknown> }][]>(
         (prisma.decisionOutcome.updateMany as jest.Mock).mock.calls,
       ).at(-1);
-      expect(call![0].where).toEqual({
+      expect(call[0].where).toEqual({
         outcomeKey: 'k-already-closed',
         workspaceId: { not: '' },
         outcomeAt: null,

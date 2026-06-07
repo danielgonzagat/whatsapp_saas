@@ -39,7 +39,7 @@ function buildProductGraphNodeSet(product: KloelGraphProductLike): KloelGraphNod
     route: `/products/${encodedProductId}`,
     parentId: 'criar',
     subtitle: [product.category, product.status].filter(Boolean).join(' - ') || 'Produto',
-    overlayLabel: 'ProductNerveCenter',
+    overlayLabel: label,
   };
   return [
     productNode,
@@ -51,7 +51,7 @@ function buildProductGraphNodeSet(product: KloelGraphProductLike): KloelGraphNod
       route: `/products/${encodedProductId}?tab=${tab.id}`,
       parentId: productNodeId,
       subtitle: `${label} - ${tab.label}`,
-      overlayLabel: 'ProductNerveCenter',
+      overlayLabel: `${label} - ${tab.label}`,
     })),
     ...buildPlanGraphNodes(product, productNodeId, productId, label, encodedProductId),
     ...buildCheckoutGraphNodes(product, productNodeId, productId, label),

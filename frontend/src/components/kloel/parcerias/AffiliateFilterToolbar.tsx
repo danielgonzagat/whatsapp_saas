@@ -28,7 +28,11 @@ export default function AffiliateFilterToolbar({
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, gap: 12, flexWrap: 'wrap' as const }}>
       <div style={{ display: 'flex', gap: 6 }}>
         {FILTER_OPTIONS.map((opt) => (
-          <button type="button" key={opt.value} onClick={() => setFilterType(opt.value)}
+          <button
+            type="button"
+            key={opt.value}
+            onClick={() => setFilterType(opt.value)}
+            aria-pressed={filterType === opt.value}
             style={{
               padding: '7px 14px', background: filterType === opt.value ? C.ember : C.card,
               border: `1px solid ${filterType === opt.value ? C.ember : C.border}`, borderRadius: 6,

@@ -30,9 +30,9 @@ describe('buildMindSignals — selfModel + combined services', () => {
 
       const sm = result.selfModel as Record<string, unknown> | undefined;
       expect(sm).toBeDefined();
-      expect(sm!.readinessHealth).toEqual(mockOkHealth);
-      expect(sm!.knownGapsCount).toBe(0);
-      expect(sm!.lastFailureKind).toBeNull();
+      expect(sm.readinessHealth).toEqual(mockOkHealth);
+      expect(sm.knownGapsCount).toBe(0);
+      expect(sm.lastFailureKind).toBeNull();
     });
 
     it('populates selfModel when selfGapsService is injected', async () => {
@@ -53,9 +53,9 @@ describe('buildMindSignals — selfModel + combined services', () => {
 
       const sm = result.selfModel as Record<string, unknown> | undefined;
       expect(sm).toBeDefined();
-      expect(sm!.readinessHealth).toBeNull();
-      expect(sm!.knownGapsCount).toBe(2);
-      expect(sm!.lastFailureKind).toBeNull();
+      expect(sm.readinessHealth).toBeNull();
+      expect(sm.knownGapsCount).toBe(2);
+      expect(sm.lastFailureKind).toBeNull();
     });
 
     it('sets lastFailureKind db when db is down', async () => {
@@ -220,8 +220,8 @@ describe('buildMindSignals — selfModel + combined services', () => {
 
       const sm = result.selfModel as Record<string, unknown> | undefined;
       expect(sm).toBeDefined();
-      expect(sm!.readinessHealth).toEqual(mockOkHealth);
-      expect(sm!.knownGapsCount).toBe(0);
+      expect(sm.readinessHealth).toEqual(mockOkHealth);
+      expect(sm.knownGapsCount).toBe(0);
     });
   });
 

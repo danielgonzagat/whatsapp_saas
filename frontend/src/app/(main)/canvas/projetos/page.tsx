@@ -99,6 +99,7 @@ export default function CanvasProjetos() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            aria-label={kloelT(`Buscar projetos do Canvas`)}
             placeholder={kloelT(`Buscar entre todos os projetos...`)}
             style={{
               flex: 1,

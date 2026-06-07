@@ -85,7 +85,7 @@ const COMMUNITY_MODULES: ModuleTemplate[] = [
 
 const HYBRID_MODULES: ModuleTemplate[] = [
   ...COURSE_MODULES,
-  { ...COMMUNITY_MODULES[0]!, position: 3 },
+  { ...COMMUNITY_MODULES[0], position: 3 },
 ];
 
 const MEMBERSHIP_MODULES: ModuleTemplate[] = [

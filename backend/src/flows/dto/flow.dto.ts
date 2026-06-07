@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import { IsArray, IsOptional, IsString, MaxLength } from 'class-validator';
 
 /** Create flow dto. */
@@ -16,10 +17,12 @@ export class CreateFlowDto {
 
   /** Nodes property. */
   @IsArray()
+  @Type(() => Object)
   nodes!: unknown[];
 
   /** Edges property. */
   @IsArray()
+  @Type(() => Object)
   edges!: unknown[];
 }
 
@@ -40,10 +43,12 @@ export class UpdateFlowDto {
   /** Nodes property. */
   @IsOptional()
   @IsArray()
+  @Type(() => Object)
   nodes?: unknown[];
 
   /** Edges property. */
   @IsOptional()
   @IsArray()
+  @Type(() => Object)
   edges?: unknown[];
 }

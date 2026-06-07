@@ -79,7 +79,7 @@ export class MindLongTermMemoryService {
           .sort((a, b) => b.sim - a.sim);
 
         if (similarRecent.length > 0) {
-          const bestSim = similarRecent[0]!.sim;
+          const bestSim = similarRecent[0].sim;
           const concept = oldCase.caseType;
           const evidence = oldCase.text.slice(0, 500);
 

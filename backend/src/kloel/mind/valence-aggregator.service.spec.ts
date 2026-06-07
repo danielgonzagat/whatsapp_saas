@@ -160,11 +160,11 @@ describe('ValenceAggregatorService', () => {
       const result = service.toRecentTrace(events);
       expect(result).toHaveLength(2);
       // Most recent first
-      expect(result[0]!.eventId).toBe('evt_3');
-      expect(result[0]!.valence).toBe('negative');
-      expect(result[0]!.weight).toBe(1);
-      expect(result[1]!.eventId).toBe('evt_1');
-      expect(result[1]!.valence).toBe('positive');
+      expect(result[0].eventId).toBe('evt_3');
+      expect(result[0].valence).toBe('negative');
+      expect(result[0].weight).toBe(1);
+      expect(result[1].eventId).toBe('evt_1');
+      expect(result[1].valence).toBe('positive');
     });
 
     it('caps results at the specified limit', () => {

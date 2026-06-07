@@ -10,8 +10,8 @@ function parseVersion(v: PromptVersion): { major: number; minor: number } {
   if (parts.length !== 2) {
     throw new Error(`Invalid semver string: "${v}"`);
   }
-  const major = parseInt(parts[0]!, 10);
-  const minor = parseInt(parts[1]!, 10);
+  const major = parseInt(parts[0], 10);
+  const minor = parseInt(parts[1], 10);
   if (isNaN(major) || isNaN(minor)) {
     throw new Error(`Invalid semver string: "${v}"`);
   }

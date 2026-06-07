@@ -38,35 +38,35 @@ describe('ChannelPolicyRegistry', () => {
       const registry = build();
       const policy = registry.get('whatsapp');
       expect(policy).toBeDefined();
-      expect(policy!.channelName).toBe('whatsapp');
+      expect(policy.channelName).toBe('whatsapp');
     });
 
     it('has a policy for web', () => {
       const registry = build();
       const policy = registry.get('web');
       expect(policy).toBeDefined();
-      expect(policy!.channelName).toBe('web');
+      expect(policy.channelName).toBe('web');
     });
 
     it('has a policy for email', () => {
       const registry = build();
       const policy = registry.get('email');
       expect(policy).toBeDefined();
-      expect(policy!.channelName).toBe('email');
+      expect(policy.channelName).toBe('email');
     });
 
     it('has a policy for ads', () => {
       const registry = build();
       const policy = registry.get('ads');
       expect(policy).toBeDefined();
-      expect(policy!.channelName).toBe('ads');
+      expect(policy.channelName).toBe('ads');
     });
 
     it('has a policy for post_sale', () => {
       const registry = build();
       const policy = registry.get('post_sale');
       expect(policy).toBeDefined();
-      expect(policy!.channelName).toBe('post_sale');
+      expect(policy.channelName).toBe('post_sale');
     });
   });
 
@@ -78,7 +78,7 @@ describe('ChannelPolicyRegistry', () => {
 
     it('whatsapp policy declares expected terminal events', () => {
       const registry = build();
-      const policy = registry.get('whatsapp')!;
+      const policy = registry.get('whatsapp');
       expect(policy.terminalEventNames).toHaveLength(6);
       expect(policy.terminalEventNames).toContain(WHATSAPP_MESSAGE_RECEIVED);
       expect(policy.terminalEventNames).toContain(WHATSAPP_HANDOFF);
@@ -90,47 +90,47 @@ describe('ChannelPolicyRegistry', () => {
 
     it('whatsapp policy has default valence for message_received', () => {
       const registry = build();
-      const policy = registry.get('whatsapp')!;
+      const policy = registry.get('whatsapp');
       expect(policy.defaultValenceByName[WHATSAPP_MESSAGE_RECEIVED]).toBe('neutral');
     });
 
     it('whatsapp policy has default valence for handoff_to_human', () => {
       const registry = build();
-      const policy = registry.get('whatsapp')!;
+      const policy = registry.get('whatsapp');
       expect(policy.defaultValenceByName[WHATSAPP_HANDOFF]).toBe('negative');
     });
 
     it('whatsapp policy has default truthMode for terminal events', () => {
       const registry = build();
-      const policy = registry.get('whatsapp')!;
+      const policy = registry.get('whatsapp');
       expect(policy.defaultTruthModeByName[WHATSAPP_MESSAGE_RECEIVED]).toBe('observed');
       expect(policy.defaultTruthModeByName[WHATSAPP_HANDOFF]).toBe('observed');
     });
 
     it('whatsapp policy defaults objection_raised as negative/inferred', () => {
       const registry = build();
-      const policy = registry.get('whatsapp')!;
+      const policy = registry.get('whatsapp');
       expect(policy.defaultValenceByName[OBJECTION_RAISED]).toBe('negative');
       expect(policy.defaultTruthModeByName[OBJECTION_RAISED]).toBe('inferred');
     });
 
     it('whatsapp policy defaults went_silent as negative/inferred', () => {
       const registry = build();
-      const policy = registry.get('whatsapp')!;
+      const policy = registry.get('whatsapp');
       expect(policy.defaultValenceByName[WENT_SILENT]).toBe('negative');
       expect(policy.defaultTruthModeByName[WENT_SILENT]).toBe('inferred');
     });
 
     it('whatsapp policy defaults conversation_resumed as positive/observed', () => {
       const registry = build();
-      const policy = registry.get('whatsapp')!;
+      const policy = registry.get('whatsapp');
       expect(policy.defaultValenceByName[CONVERSATION_RESUMED]).toBe('positive');
       expect(policy.defaultTruthModeByName[CONVERSATION_RESUMED]).toBe('observed');
     });
 
     it('post_sale policy declares expected journey terminal events', () => {
       const registry = build();
-      const policy = registry.get('post_sale')!;
+      const policy = registry.get('post_sale');
       expect(policy.terminalEventNames).toContain(FIRST_VALUE_OBTAINED);
       expect(policy.terminalEventNames).toContain(SATISFACTION_SIGNAL);
       expect(policy.terminalEventNames).toContain(CHURN_RISK_DETECTED);
@@ -140,7 +140,7 @@ describe('ChannelPolicyRegistry', () => {
 
     it('post_sale policy defaults first value and churn with honest valence', () => {
       const registry = build();
-      const policy = registry.get('post_sale')!;
+      const policy = registry.get('post_sale');
       expect(policy.defaultValenceByName[FIRST_VALUE_OBTAINED]).toBe('positive');
       expect(policy.defaultTruthModeByName[FIRST_VALUE_OBTAINED]).toBe('inferred');
       expect(policy.defaultValenceByName[CHURN_RISK_DETECTED]).toBe('negative');
@@ -149,7 +149,7 @@ describe('ChannelPolicyRegistry', () => {
 
     it('post_sale policy keeps repurchase window neutral because it still requires judgment', () => {
       const registry = build();
-      const policy = registry.get('post_sale')!;
+      const policy = registry.get('post_sale');
       expect(policy.defaultValenceByName[REPURCHASE_WINDOW_OPENED]).toBe('neutral');
       expect(policy.defaultTruthModeByName[REPURCHASE_WINDOW_OPENED]).toBe('inferred');
     });

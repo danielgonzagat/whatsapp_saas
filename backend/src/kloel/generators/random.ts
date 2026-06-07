@@ -22,7 +22,7 @@ export function createSeededRandom(seed: string | number): SeededRandom {
       if (items.length === 0) {
         throw new Error('Cannot pick from empty array');
       }
-      return items[this.int(0, items.length - 1)]!;
+      return items[Math.floor(next() * items.length)];
     },
     value: next,
   };

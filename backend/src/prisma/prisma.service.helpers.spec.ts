@@ -159,7 +159,7 @@ describe('prisma.service.helpers', () => {
       expect(
         hasCheckoutPaymentLookupKey({
           status: 'APPROVED',
-        } as unknown as Prisma.CheckoutPaymentWhereInput),
+        } as unknown),
       ).toBe(false);
     });
   });

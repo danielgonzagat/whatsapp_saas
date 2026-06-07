@@ -50,18 +50,18 @@ describe('kloel-reply-engine recall helpers', () => {
       const out = await buildRecallDirective(service, { workspaceId: 'ws-1' });
 
       expect(out).not.toBeNull();
-      expect(out!.factCount).toBe(2);
+      expect(out.factCount).toBe(2);
       // recallRelevant was queried with the workspace + a bounded limit.
       expect(calls).toHaveLength(1);
-      expect(calls[0]![0]).toBe('ws-1');
-      expect(calls[0]![1]).toEqual(expect.objectContaining({ limit: matchInstance(Number) }));
+      expect(calls[0][0]).toBe('ws-1');
+      expect(calls[0][1]).toEqual(expect.objectContaining({ limit: matchInstance(Number) }));
       // The directive carries both the positive and the negative tendency.
-      expect(out!.directive).toContain('MEMÓRIA DURÁVEL');
-      expect(out!.directive).toContain('checkout.paid');
-      expect(out!.directive).toContain('tende a dar certo');
-      expect(out!.directive).toContain('checkout.abandoned');
-      expect(out!.directive).toContain('tende a não dar certo');
-      expect(out!.directive).toContain('reforçado 4x');
+      expect(out.directive).toContain('MEMÓRIA DURÁVEL');
+      expect(out.directive).toContain('checkout.paid');
+      expect(out.directive).toContain('tende a dar certo');
+      expect(out.directive).toContain('checkout.abandoned');
+      expect(out.directive).toContain('tende a não dar certo');
+      expect(out.directive).toContain('reforçado 4x');
     });
 
     it('honors an explicit recall limit', async () => {
@@ -69,7 +69,7 @@ describe('kloel-reply-engine recall helpers', () => {
         { fact: 'a', valence: 'positive', strength: 1, occurrences: 1 },
       ]);
       await buildRecallDirective(service, { workspaceId: 'ws-1', limit: 3 });
-      expect(calls[0]![1]).toEqual(expect.objectContaining({ limit: 3 }));
+      expect(calls[0][1]).toEqual(expect.objectContaining({ limit: 3 }));
     });
 
     it('is fail-open: returns null and logs when recallRelevant throws', async () => {

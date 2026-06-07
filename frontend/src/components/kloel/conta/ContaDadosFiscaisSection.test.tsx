@@ -55,7 +55,20 @@ describe('DadosFiscaisSection', () => {
 
     render(<DadosFiscaisSection fiscal={null} mutate={mocks.mutate} />);
 
+    expect(screen.getByRole('button', { name: /Pessoa Fisica/i }).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+    expect(screen.getByRole('button', { name: /Pessoa Juridica/i }).getAttribute('aria-pressed')).toBe(
+      'false',
+    );
+
     fireEvent.click(screen.getByRole('button', { name: /Pessoa Juridica/i }));
+    expect(screen.getByRole('button', { name: /Pessoa Fisica/i }).getAttribute('aria-pressed')).toBe(
+      'false',
+    );
+    expect(screen.getByRole('button', { name: /Pessoa Juridica/i }).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
     fireEvent.change(screen.getByLabelText('CNPJ'), { target: { value: '12345678000190' } });
 
     await waitFor(() => {
@@ -99,5 +112,16 @@ describe('DadosFiscaisSection', () => {
       );
     });
     expect(mocks.mutate).toHaveBeenCalled();
+  });
+
+  it('blocks saving empty required fiscal data', async () => {
+    render(<DadosFiscaisSection fiscal={null} mutate={mocks.mutate} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /salvar/i }));
+
+    expect(await screen.findByText('Informe um CPF valido.')).toBeTruthy();
+    expect(mocks.showToast).toHaveBeenCalledWith('Informe um CPF valido.', 'error');
+    expect(mocks.updateFiscal).not.toHaveBeenCalled();
+    expect(mocks.mutate).not.toHaveBeenCalled();
   });
 });

@@ -361,7 +361,7 @@ export async function regenerateThreadAssistantResponseImpl(
     mode: 'chat',
     conversationState: {
       ...(typeof (thread as { summary?: string | null }).summary === 'string'
-        ? { summary: (thread as { summary?: string | null }).summary as string }
+        ? { summary: (thread as { summary?: string | null }).summary }
         : {}),
       recentMessages: historyBeforeUser,
       totalMessages: sourceUserIndex,

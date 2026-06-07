@@ -51,7 +51,7 @@ describe('LocalIdentityService', () => {
 
     const profile = service.deriveProfile('wks_test_001', events);
     expect(profile).toBeDefined();
-    const cp = profile!.customer.typicalProfile as Record<string, unknown>;
+    const cp = profile.customer.typicalProfile as Record<string, unknown>;
     expect(cp.conversionRatio).toBe(0.25); // 5/20 = 0.25
   });
 
@@ -60,9 +60,9 @@ describe('LocalIdentityService', () => {
     const profile = service.deriveProfile('wks_test_001', events);
 
     expect(profile).toBeDefined();
-    expect(profile!.decisionPatterns.typicalNextSteps.length).toBeGreaterThan(0);
-    expect(profile!.decisionPatterns.typicalNextSteps).toContain('send_proposal');
-    expect(profile!.decisionPatterns.typicalEscalations).toContain('complex_pricing');
+    expect(profile.decisionPatterns.typicalNextSteps.length).toBeGreaterThan(0);
+    expect(profile.decisionPatterns.typicalNextSteps).toContain('send_proposal');
+    expect(profile.decisionPatterns.typicalEscalations).toContain('complex_pricing');
   });
 
   describe('operator feedback bridge (R1/N3)', () => {
@@ -102,7 +102,7 @@ describe('LocalIdentityService', () => {
 
       const profile = service.deriveProfile('wks_test_001', events);
       expect(profile).toBeDefined();
-      const notes = profile!.decisionPatterns.typicalNextSteps.filter((s) =>
+      const notes = profile.decisionPatterns.typicalNextSteps.filter((s) =>
         s.startsWith('learn_from_operator_feedback:'),
       );
       expect(notes).toHaveLength(0);
@@ -126,7 +126,7 @@ describe('LocalIdentityService', () => {
 
       const profile = service.deriveProfile('wks_test_001', events);
       expect(profile).toBeDefined();
-      expect(profile!.decisionPatterns.typicalNextSteps).toContain(
+      expect(profile.decisionPatterns.typicalNextSteps).toContain(
         `learn_from_operator_feedback: ${note}`,
       );
     });
@@ -142,7 +142,7 @@ describe('LocalIdentityService', () => {
 
       const profile = service.deriveProfile('wks_test_001', events);
       expect(profile).toBeDefined();
-      const reflections = profile!.decisionPatterns.typicalNextSteps.filter((s) =>
+      const reflections = profile.decisionPatterns.typicalNextSteps.filter((s) =>
         s.startsWith('learn_from_operator_feedback:'),
       );
       expect(reflections).toHaveLength(0);
@@ -158,7 +158,7 @@ describe('LocalIdentityService', () => {
 
       const profile = service.deriveProfile('wks_test_001', events);
       expect(profile).toBeDefined();
-      const reflections = profile!.decisionPatterns.typicalNextSteps.filter((s) =>
+      const reflections = profile.decisionPatterns.typicalNextSteps.filter((s) =>
         s.startsWith('learn_from_operator_feedback:'),
       );
       expect(reflections).toHaveLength(0);
@@ -174,7 +174,7 @@ describe('LocalIdentityService', () => {
 
       const profile = service.deriveProfile('wks_test_001', events);
       expect(profile).toBeDefined();
-      const reflections = profile!.decisionPatterns.typicalNextSteps.filter((s) =>
+      const reflections = profile.decisionPatterns.typicalNextSteps.filter((s) =>
         s.startsWith('learn_from_operator_feedback:'),
       );
       expect(reflections).toHaveLength(0);
@@ -189,7 +189,7 @@ describe('LocalIdentityService', () => {
 
       const profile = service.deriveProfile('wks_test_001', events);
       expect(profile).toBeDefined();
-      const reflections = profile!.decisionPatterns.typicalNextSteps.filter((s) =>
+      const reflections = profile.decisionPatterns.typicalNextSteps.filter((s) =>
         s.startsWith('learn_from_operator_feedback:'),
       );
       expect(reflections).toHaveLength(0);
@@ -209,7 +209,7 @@ describe('LocalIdentityService', () => {
 
       const profile = service.deriveProfile('wks_test_001', events);
       expect(profile).toBeDefined();
-      const reflections = profile!.decisionPatterns.typicalNextSteps.filter((s) =>
+      const reflections = profile.decisionPatterns.typicalNextSteps.filter((s) =>
         s.startsWith('learn_from_operator_feedback:'),
       );
       expect(reflections).toHaveLength(0);
@@ -252,7 +252,7 @@ describe('LocalIdentityService', () => {
 
       const profile = service.deriveProfile('wks_test_001', events);
       expect(profile).toBeDefined();
-      const steps = profile!.decisionPatterns.typicalNextSteps;
+      const steps = profile.decisionPatterns.typicalNextSteps;
       expect(steps).toContain('send_proposal');
       expect(steps).toContain(`learn_from_operator_feedback: ${note}`);
       expect(steps.length).toBeLessThanOrEqual(5);

@@ -131,6 +131,31 @@ describe('ProductService', () => {
       expect(result.product?.active).toBe(true);
     });
 
+    it('maps rich affiliate wizard fields before writing the product', async () => {
+      await service.create(
+        ws,
+        {
+          name: 'Widget afiliado',
+          price: 49.99,
+          affiliateApprovalMode: 'manual',
+          affiliateCommissionPercent: 35.5,
+          affiliatesEnabled: true,
+        } as never,
+        actor,
+      );
+
+      const [createCall] = prisma.product.create.mock.calls as [ProductCreateArgs][];
+      const createData = createCall[0].data;
+      expect(createData).toMatchObject({
+        affiliateAutoApprove: false,
+        affiliateEnabled: true,
+        commissionPercent: 35.5,
+      });
+      expect(createData).not.toHaveProperty('affiliateApprovalMode');
+      expect(createData).not.toHaveProperty('affiliateCommissionPercent');
+      expect(createData).not.toHaveProperty('affiliatesEnabled');
+    });
+
     it('throws ForbiddenException when workspaceId is empty', async () => {
       await expect(service.create('', { name: 'X', price: 10 }, actor)).rejects.toThrow(
         ForbiddenException,

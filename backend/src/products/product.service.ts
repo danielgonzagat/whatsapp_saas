@@ -75,6 +75,10 @@ export class ProductService {
     if (cleanDto.affiliatesEnabled != null) {
       cleanDto.affiliateEnabled = Boolean(cleanDto.affiliatesEnabled);
     }
+    const affiliateApprovalMode = cleanDto.affiliateApprovalMode;
+    if (typeof affiliateApprovalMode === 'string') {
+      cleanDto.affiliateAutoApprove = affiliateApprovalMode.toLowerCase() !== 'manual';
+    }
     const commissionPct = cleanDto.affiliateCommissionPercent ?? cleanDto.affiliateCommission;
     if (commissionPct != null) {
       cleanDto.commissionPercent = Number(commissionPct);
@@ -162,7 +166,7 @@ export class ProductService {
       // Direct path: traditional 4-arg call
       productId = productIdOrArgs;
       dto = (dtoOrActor as UpdateProductDto) ?? {};
-      actor = (actorOpt as { id: string; email?: string }) ?? { id: 'kloel-resolver' };
+      actor = actorOpt ?? { id: 'kloel-resolver' };
     }
 
     assertWorkspaceId(workspaceId);

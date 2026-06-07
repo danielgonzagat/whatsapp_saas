@@ -77,8 +77,8 @@ describe('UTP-ROLE-005 — Recommendation Guard', () => {
     ];
     const results = guardRecommendations(checks);
     expect(results).toHaveLength(2);
-    expect(results[0]!.allowed).toBe(true);
-    expect(results[1]!.allowed).toBe(false);
+    expect(results[0].allowed).toBe(true);
+    expect(results[1].allowed).toBe(false);
   });
 
   it('countBlocked counts blocked suggestions', () => {
@@ -114,7 +114,7 @@ describe('UTP-ROLE-005 — Recommendation Guard', () => {
     const results = guardRecommendations(checks);
     const allowed = allowedOnly(checks, results);
     expect(allowed).toHaveLength(1);
-    expect(allowed[0]!.suggestedLever).toBe('adjust_price');
+    expect(allowed[0].suggestedLever).toBe('adjust_price');
   });
 });
 
@@ -228,8 +228,8 @@ describe('UTP-ROLE-007 — Role-Aware Hierarchy Extender', () => {
       role: 'closer',
     });
     expect(weights).toHaveLength(2);
-    expect(weights[0]!.roleApplied).toBe('closer');
-    expect(weights[1]!.roleApplied).toBe('closer');
+    expect(weights[0].roleApplied).toBe('closer');
+    expect(weights[1].roleApplied).toBe('closer');
   });
 
   it('roleAwareReTier re-assigns tiers based on adjusted scores', () => {
@@ -249,7 +249,7 @@ describe('UTP-ROLE-007 — Role-Aware Hierarchy Extender', () => {
     });
     const reTiered = roleAwareReTier(weights);
     expect(reTiered).toHaveLength(1);
-    expect(reTiered[0]!.adjustedTier).toBeDefined();
+    expect(reTiered[0].adjustedTier).toBeDefined();
   });
 
   it('countTierChanges detects tier shifts', () => {

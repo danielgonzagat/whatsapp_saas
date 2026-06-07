@@ -207,10 +207,10 @@ describe('AGENCY-003 — rankPriorities', () => {
     const { rankings } = rankPriorities(input);
 
     expect(rankings).toHaveLength(2);
-    expect(rankings[0]!.clientId).toBe('high');
-    expect(rankings[0]!.rank).toBe(1);
-    expect(rankings[1]!.clientId).toBe('low');
-    expect(rankings[1]!.rank).toBe(2);
+    expect(rankings[0].clientId).toBe('high');
+    expect(rankings[0].rank).toBe(1);
+    expect(rankings[1].clientId).toBe('low');
+    expect(rankings[1].rank).toBe(2);
   });
 
   it('assigns higher tier to high-scoring clients', () => {
@@ -222,7 +222,7 @@ describe('AGENCY-003 — rankPriorities', () => {
     });
     const input: PriorityInput = { bundles: [high], workspaceId: WKS, nowMs: NOW };
     const { rankings } = rankPriorities(input);
-    expect(rankings[0]!.tier).toBe('agora');
+    expect(rankings[0].tier).toBe('agora');
   });
 });
 

@@ -222,6 +222,7 @@ function selfExpansionHostProofEnv(socket: string, cwd: string): NodeJS.ProcessE
     ATOMIC_HOST_SANDBOX: process.env.ATOMIC_HOST_SANDBOX ?? 'macos-sandbox-exec',
     ATOMIC_HOST_WRITE_ROOT: hostRoot,
     ATOMIC_EXEC_BROKER_SOCKET: socket,
+    ATOMIC_EXEC_BROKER_ROOT: hostRoot,
     CODEX_HOME: process.env.CODEX_HOME ?? path.join(hostRoot, '.codex'),
     CODEX_PROJECT_DIR: hostRoot,
     TMPDIR: hostRoot,
@@ -281,7 +282,7 @@ function proofFailureStdoutSummary(value: string): string {
           .map((domain) => ({
             domain: domain.domain,
             status: domain.status,
-            evidence: proofFailureSnippet(String(domain.evidence ?? ''), 400),
+            evidence: proofFailureSnippet(String(domain.evidence ?? ''), 4000),
             requiredChange: proofFailureSnippet(String(domain.requiredChange ?? ''), 300),
             detail: proofFailureSnippet(JSON.stringify(domain.detail ?? null), 500),
           }))

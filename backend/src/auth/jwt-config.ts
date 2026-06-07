@@ -55,8 +55,8 @@ export function getJwtCookieMaxAgeMs(): number {
   }
   const match = /^(\d+)([smhd])$/.exec(String(raw ?? ''));
   if (match) {
-    const value = parseInt(match[1]!, 10);
-    const unit = match[2]!;
+    const value = parseInt(match[1], 10);
+    const unit = match[2];
     return value * (MS_DURATION_MAP[unit] ?? 60 * 1000);
   }
   return 30 * 60 * 1000; // fallback 30 min

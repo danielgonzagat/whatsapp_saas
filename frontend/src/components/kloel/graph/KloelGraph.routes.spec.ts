@@ -54,6 +54,20 @@ describe('KloelGraph route contract', () => {
     ]);
   });
 
+  it('opens the Consultar primary galaxy on real analytics reports instead of wallet balance', () => {
+    const consultar = KLOEL_GRAPH_PRIMARY_NODES.find((node) => node.id === 'consultar');
+
+    expect(consultar?.route).toBe('/analytics?tab=vendas');
+    expect(resolveKloelGraphRoute('consultar')).toBe('/analytics?tab=vendas');
+    expect(resolveKloelGraphNodeForPath('/analytics', new URLSearchParams('tab=vendas'))?.area).toBe(
+      'consultar',
+    );
+    expect(resolveKloelGraphRoute('consultar-payments')).toBe('/carteira');
+    expect(resolveKloelGraphNodeForPath('/carteira', new URLSearchParams())?.id).toBe(
+      'consultar-payments',
+    );
+  });
+
   it('keeps split graph modules under the architecture guard line budget', () => {
     const graphModules = [
       'KloelGraph.routes.ts',
@@ -97,6 +111,25 @@ describe('KloelGraph route contract', () => {
     expect(resolveKloelGraphRoute('criar')).toBe('/products');
   });
 
+  it('opens Conta on the canonical settings route without the legacy account redirect', () => {
+    expect(resolveKloelGraphRoute('perfil-account')).toBe('/settings');
+    expect(resolveKloelGraphRoute('perfil-account')).not.toBe('/account');
+    expect(resolveKloelGraphNodeForPath('/settings', new URLSearchParams())?.area).toBe('perfil');
+  });
+
+  it('keeps Sites subroutes attached to the Sites graph overlay label', () => {
+    expect(resolveKloelGraphNodeForPath('/sites/criar', new URLSearchParams())?.id).toBe(
+      'criar-sites',
+    );
+    expect(
+      resolveKloelGraphNodeForPathFromNodes(
+        '/sites/editar',
+        new URLSearchParams(),
+        KLOEL_GRAPH_NODES,
+      )?.id,
+    ).toBe('criar-sites');
+  });
+
   it('maps affiliate, member area, channel, inbox, wallet, and reports routes', () => {
     expect(resolveKloelGraphNodeForPath('/produtos/afiliar-se', new URLSearchParams())?.id).toBe(
       'afiliar-marketplace',
@@ -114,9 +147,28 @@ describe('KloelGraph route contract', () => {
     expect(resolveKloelGraphNodeForPath('/carteira/saques', new URLSearchParams())?.id).toBe(
       'consultar-wallet-saques',
     );
+    expect(getKloelGraphNodeById('consultar-wallet-movimentacoes')).toBeUndefined();
     expect(
       resolveKloelGraphNodeForPath('/analytics', new URLSearchParams('tab=abandonos'))?.id,
     ).toBe('consultar-report-abandonos');
+  });
+
+  it('uses contextual Conversar labels for duplicated channel surfaces', () => {
+    expect(getKloelGraphNodeById('conectar-whatsapp')?.label).toBe('WhatsApp');
+    expect(getKloelGraphNodeById('conectar-channel-whatsapp')?.label).toBe('Marketing WhatsApp');
+    expect(getKloelGraphNodeById('conectar-channel-google-ads')?.label).toBe(
+      'Marketing Google Ads',
+    );
+    expect(getKloelGraphNodeById('conectar-channel-tiktok')?.label).toBe('Marketing TikTok');
+    expect(getKloelGraphNodeById('conectar-anuncios-tiktok')?.label).toBe('TikTok Ads');
+
+    const conversarLabels = KLOEL_GRAPH_NODES.filter((node) => node.area === 'conectar').map(
+      (node) => node.label,
+    );
+
+    expect(conversarLabels.filter((label) => label === 'Whatsapp')).toHaveLength(0);
+    expect(conversarLabels.filter((label) => label === 'Tiktok')).toHaveLength(0);
+    expect(conversarLabels.filter((label) => label === 'Google Ads')).toHaveLength(1);
   });
 
   it('exposes dashboard metric nodes that open real report and wallet screens', () => {
@@ -196,6 +248,12 @@ describe('KloelGraph route contract', () => {
     );
     expect(productNodes.find((node) => node.id === 'criar-product-prod_123-cupons')?.route).toBe(
       '/products/prod_123?tab=cupons',
+    );
+    expect(productNodes.find((node) => node.id === 'criar-product-prod_123')?.overlayLabel).toBe(
+      'Produto real',
+    );
+    expect(productNodes.find((node) => node.id === 'criar-product-prod_123-cupons')?.overlayLabel).toBe(
+      'Produto real - Cupons',
     );
     expect(
       productNodes.find((node) => node.id === 'criar-product-prod_123-plan-plan_1')?.route,

@@ -31,7 +31,22 @@ type NodeSeed = readonly [
 ];
 
 const CHANNELS = ['whatsapp', 'instagram', 'tiktok', 'facebook', 'email'] as const;
-const WALLET_TABS = ['saldo', 'extrato', 'saques', 'antecipacoes', 'movimentacoes'] as const;
+const ANUNCIOS_TABS = ['meta', 'google', 'tiktok', 'rastreamento', 'regras'] as const;
+const CHANNEL_GRAPH_LABELS: Record<(typeof CHANNELS)[number], string> = {
+  whatsapp: 'Marketing WhatsApp',
+  instagram: 'Marketing Instagram',
+  tiktok: 'Marketing TikTok',
+  facebook: 'Marketing Facebook',
+  email: 'Marketing Email',
+};
+const ANUNCIOS_GRAPH_LABELS: Record<(typeof ANUNCIOS_TABS)[number], string> = {
+  meta: 'Meta Ads',
+  google: 'Google Ads',
+  tiktok: 'TikTok Ads',
+  rastreamento: 'Rastreamento',
+  regras: 'Regras',
+};
+const WALLET_TABS = ['saldo', 'extrato', 'saques', 'antecipacoes'] as const;
 const REPORT_TABS = [
   'vendas',
   'afterpay',
@@ -85,7 +100,7 @@ const PRIMARY_NODE_SEEDS: readonly NodeSeed[] = [
   ['afiliar', 'Afiliar', 'afiliar', 'sun', '/produtos/afiliar-se', undefined, 'Afiliar-se'],
   ['educar', 'Educar', 'educar', 'sun', '/produtos/area-membros', undefined, 'Area de membros'],
   ['conectar', 'Conversar', 'conectar', 'sun', '/inbox', undefined, 'Conversar'],
-  ['consultar', 'Consultar', 'consultar', 'sun', '/carteira/saldo', undefined, 'Consultar'],
+  ['consultar', 'Consultar', 'consultar', 'sun', '/analytics?tab=vendas', undefined, 'Relatorios'],
 ];
 
 export const KLOEL_GRAPH_PRIMARY_NODES = PRIMARY_NODE_SEEDS.map(toNode);
@@ -183,7 +198,7 @@ const CORE_ROUTE_SEEDS: readonly NodeSeed[] = [
     'perfil-settings',
     'Privacidade',
   ],
-  ['perfil-account', 'Conta', 'perfil', 'route', '/account', 'perfil', 'Conta'],
+  ['perfil-account', 'Conta', 'perfil', 'route', '/settings', 'perfil', 'Conta'],
   ['kloel-chat', 'Novo Chat', 'kloel', 'route', '/chat', 'kloel', 'Kloel'],
   ['kloel-search', 'Buscar', 'kloel', 'route', '/chat?graphAction=search', 'kloel', 'Buscar'],
   ['kloel-recents', 'Recentes', 'kloel', 'route', '/chat?graphAction=recents', 'kloel', 'Recentes'],
@@ -267,12 +282,12 @@ const CORE_ROUTE_SEEDS: readonly NodeSeed[] = [
   ['conectar-sales', 'Sales', 'conectar', 'route', '/sales', 'conectar-crm', 'Vendas'],
   [
     'conectar-channel-google-ads',
-    'Google Ads',
+    'Marketing Google Ads',
     'conectar',
     'route',
     '/marketing/google-ads',
     'conectar-marketing',
-    'Google Ads',
+    'Marketing Google Ads',
   ],
   [
     'consultar-analytics',
@@ -283,7 +298,7 @@ const CORE_ROUTE_SEEDS: readonly NodeSeed[] = [
     'consultar',
     'Analytics',
   ],
-  ['consultar-payments', 'Payments', 'consultar', 'route', '/payments', 'consultar', 'Pagamentos'],
+  ['consultar-payments', 'Payments', 'consultar', 'route', '/carteira', 'consultar', 'Pagamentos'],
   ['consultar-billing', 'Billing', 'consultar', 'route', '/billing', 'consultar', 'Billing'],
   ['consultar-pricing', 'Planos', 'consultar', 'route', '/pricing', 'consultar-billing', 'Planos'],
 ];
@@ -292,18 +307,18 @@ const dynamicRouteSeeds = [
   ...CHANNELS.map(
     (channel): NodeSeed => [
       `conectar-channel-${channel}`,
-      channel[0].toUpperCase() + channel.slice(1),
+      CHANNEL_GRAPH_LABELS[channel],
       'conectar',
       'route',
       `/marketing/${channel}`,
       'conectar-marketing',
-      channel[0].toUpperCase() + channel.slice(1),
+      CHANNEL_GRAPH_LABELS[channel],
     ],
   ),
-  ...['meta', 'google', 'tiktok', 'rastreamento', 'regras'].map(
+  ...ANUNCIOS_TABS.map(
     (tab): NodeSeed => [
       `conectar-anuncios-${tab}`,
-      tab[0].toUpperCase() + tab.slice(1),
+      ANUNCIOS_GRAPH_LABELS[tab],
       'conectar',
       'route',
       `/anuncios/${tab}`,

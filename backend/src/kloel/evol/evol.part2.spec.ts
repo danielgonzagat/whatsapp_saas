@@ -99,8 +99,8 @@ describe('Evol module (UTP-EVOL-001..010)', () => {
       };
       const rollback = svc.evaluateDelta(proposal, delta);
       expect(rollback).not.toBeNull();
-      expect(rollback!.status).toBe('pending');
-      expect(rollback!.wasAutomatic).toBe(true);
+      expect(rollback.status).toBe('pending');
+      expect(rollback.wasAutomatic).toBe(true);
     });
 
     it('does not trigger rollback on upgrade', () => {
@@ -122,7 +122,7 @@ describe('Evol module (UTP-EVOL-001..010)', () => {
       const proposal = makeProposal();
       const rollback = svc.evaluateExperiment(proposal, 'refuted');
       expect(rollback).not.toBeNull();
-      expect(rollback!.status).toBe('pending');
+      expect(rollback.status).toBe('pending');
     });
 
     it('does not trigger rollback on confirmed verdict', () => {
@@ -142,11 +142,11 @@ describe('Evol module (UTP-EVOL-001..010)', () => {
         direction: 'downgraded' as const,
         reason: 'degraded',
       };
-      const rb = svc.evaluateDelta(proposal, delta)!;
+      const rb = svc.evaluateDelta(proposal, delta);
       const executed = svc.execute(rb.id);
       expect(executed).not.toBeNull();
-      expect(executed!.status).toBe('executed');
-      expect(executed!.rollbackDurationMs).toBeGreaterThanOrEqual(0);
+      expect(executed.status).toBe('executed');
+      expect(executed.rollbackDurationMs).toBeGreaterThanOrEqual(0);
     });
 
     it('fails rollback execution', () => {
@@ -161,10 +161,10 @@ describe('Evol module (UTP-EVOL-001..010)', () => {
         direction: 'downgraded' as const,
         reason: 'degraded',
       };
-      const rb = svc.evaluateDelta(proposal, delta)!;
+      const rb = svc.evaluateDelta(proposal, delta);
       const failed = svc.fail(rb.id, 'disk full');
       expect(failed).not.toBeNull();
-      expect(failed!.status).toBe('failed');
+      expect(failed.status).toBe('failed');
     });
 
     it('lists pending rollbacks', () => {
@@ -192,8 +192,8 @@ describe('Evol module (UTP-EVOL-001..010)', () => {
     it('blocks access to protected governance file', () => {
       const violation = svc.check('CLAUDE.md', 'test-agent');
       expect(violation).not.toBeNull();
-      expect(violation!.violationKind).toBe('governance_breach');
-      expect(violation!.escalationRequired).toBe(true);
+      expect(violation.violationKind).toBe('governance_breach');
+      expect(violation.escalationRequired).toBe(true);
     });
 
     it('isProtected returns true for protected file', () => {
@@ -209,13 +209,13 @@ describe('Evol module (UTP-EVOL-001..010)', () => {
     it('classifies eslint config as codacy_weakening', () => {
       const violation = svc.check('backend/eslint.config.mjs', 'test-agent');
       expect(violation).not.toBeNull();
-      expect(violation!.violationKind).toBe('codacy_weakening');
+      expect(violation.violationKind).toBe('codacy_weakening');
     });
 
     it('classifies husky pre-push as bypass_suppression', () => {
       const violation = svc.check('.husky/pre-push', 'test-agent');
       expect(violation).not.toBeNull();
-      expect(violation!.violationKind).toBe('bypass_suppression');
+      expect(violation.violationKind).toBe('bypass_suppression');
     });
 
     it('tracks violation count', () => {

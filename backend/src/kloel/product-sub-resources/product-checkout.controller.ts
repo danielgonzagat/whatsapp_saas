@@ -16,11 +16,7 @@ import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../../common/interfaces';
 import { PrismaService } from '../../prisma/prisma.service';
-import {
-  LooseObject,
-  ensureWorkspaceProductAccess,
-  safeStr,
-} from './helpers/common.helpers';
+import { LooseObject, ensureWorkspaceProductAccess, safeStr } from './helpers/common.helpers';
 import { buildCheckoutData, serializeCheckout } from './helpers/plan.helpers';
 import { RouteClass } from '../../common/throttler/route-class.decorator';
 import { resolveWorkspaceId } from '../../auth/workspace-access';

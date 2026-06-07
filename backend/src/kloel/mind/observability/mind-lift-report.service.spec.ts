@@ -108,14 +108,14 @@ describe('MindLiftReportService', () => {
         (r) => r.decisionType === 'followup_timing' && r.channel === 'whatsapp',
       );
       expect(whatsappRow).toBeDefined();
-      expect(whatsappRow!.total).toBe(2);
-      expect(whatsappRow!.closed).toBe(2);
+      expect(whatsappRow.total).toBe(2);
+      expect(whatsappRow.closed).toBe(2);
 
       const emailRow = report.rows.find(
         (r) => r.decisionType === 'coupon_offer' && r.channel === 'email',
       );
       expect(emailRow).toBeDefined();
-      expect(emailRow!.total).toBe(1);
+      expect(emailRow.total).toBe(1);
 
       // Sort invariant: emailRow (1/1 = 100%) comes before whatsappRow (1/2 = 50%)
       const emailIdx = report.rows.findIndex(
@@ -148,7 +148,7 @@ describe('MindLiftReportService', () => {
       jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([row({})]);
 
       const report = await service.aggregate();
-      const r = report.rows[0]!;
+      const r = report.rows[0];
       expect(r.successRate).toBe(1);
       // For 1/1 trial, Wilson lower bound must be > 0 but < 1 (not arrogant 100% claim)
       expect(r.lowerCI).toBeGreaterThan(0);
@@ -180,7 +180,7 @@ describe('MindLiftReportService', () => {
         .mockResolvedValue([row({}), row({ id: 'do-2', outcomeKey: 'k2' })]);
 
       const report = await service.aggregate();
-      const r = report.rows[0]!;
+      const r = report.rows[0];
       expect(r.successCount).toBe(0);
       expect(r.successRate).toBe(0);
       expect(r.lowerCI).toBe(0);
@@ -207,7 +207,7 @@ describe('MindLiftReportService', () => {
       });
       jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([row({})]);
       const report = await service.aggregate();
-      expect(report.rows[0]!.channel).toBe('inbound');
+      expect(report.rows[0].channel).toBe('inbound');
     });
 
     it('extractChannel: returns "unknown" when both channel and source are missing', async () => {
@@ -229,7 +229,7 @@ describe('MindLiftReportService', () => {
       };
       jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([row]);
       const report = await service.aggregate();
-      expect(report.rows[0]!.channel).toBe('unknown');
+      expect(report.rows[0].channel).toBe('unknown');
     });
 
     it('distinguishes successCount (outcome weight ≥ 0.3) from wonCount (wonVsBaseline=true)', async () => {
@@ -252,7 +252,7 @@ describe('MindLiftReportService', () => {
       });
       jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([row({})]);
       const report = await service.aggregate();
-      const r = report.rows[0]!;
+      const r = report.rows[0];
       expect(r.successCount).toBe(1);
       expect(r.wonCount).toBe(0);
       expect(r.wonRate).toBe(0);
@@ -285,16 +285,16 @@ describe('MindLiftReportService', () => {
       ]);
 
       const report = await service.aggregate();
-      const r = report.rows[0]!;
+      const r = report.rows[0];
 
       expect(r.successCount).toBe(0);
       expect(r.successRate).toBe(0);
       expect(r.failureReasonCounts).toHaveLength(1);
-      expect(r.failureReasonCounts[0]!.reason).toBe('expired_without_reply');
-      expect(r.failureReasonCounts[0]!.chosenAction).toBe('send_now');
-      expect(r.failureReasonCounts[0]!.baselineAction).toBe('delay_24h');
-      expect(r.failureReasonCounts[0]!.count).toBe(2);
-      expect(r.failureReasonCounts[0]!.totalOutcomeKeys).toBe(4);
+      expect(r.failureReasonCounts[0].reason).toBe('expired_without_reply');
+      expect(r.failureReasonCounts[0].chosenAction).toBe('send_now');
+      expect(r.failureReasonCounts[0].baselineAction).toBe('delay_24h');
+      expect(r.failureReasonCounts[0].count).toBe(2);
+      expect(r.failureReasonCounts[0].totalOutcomeKeys).toBe(4);
     });
 
     it('does not merge the same failure reason across different chosen actions', async () => {
@@ -326,7 +326,7 @@ describe('MindLiftReportService', () => {
       ]);
 
       const report = await service.aggregate();
-      const reasons = report.rows[0]!.failureReasonCounts;
+      const reasons = report.rows[0].failureReasonCounts;
 
       expect(reasons).toHaveLength(2);
       expect(reasons).toEqual(
@@ -363,7 +363,7 @@ describe('MindLiftReportService', () => {
       ]);
 
       const report = await service.aggregate();
-      const failure = report.rows[0]!.failureReasonCounts[0]!;
+      const failure = report.rows[0].failureReasonCounts[0];
 
       expect(failure.chosenAction).toBe('unknown_action');
       expect(failure.baselineAction).toBe('unknown_baseline');
@@ -375,14 +375,14 @@ describe('MindLiftReportService', () => {
         .mockResolvedValue([outcomeRow({ outcomeValue: { total: 100, currency: 'BRL' } })]);
 
       const report = await service.aggregate();
-      expect(report.rows[0]!.failureReasonCounts).toEqual([]);
+      expect(report.rows[0].failureReasonCounts).toEqual([]);
     });
 
     it('builds empty failureReasonCounts when outcomeValue is null', async () => {
       jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([outcomeRow()]);
 
       const report = await service.aggregate();
-      expect(report.rows[0]!.failureReasonCounts).toEqual([]);
+      expect(report.rows[0].failureReasonCounts).toEqual([]);
     });
 
     it('does not expose arbitrary failure reason text in reports', async () => {
@@ -397,8 +397,8 @@ describe('MindLiftReportService', () => {
       ]);
 
       const report = await service.aggregate();
-      expect(report.rows[0]!.failureReasonCounts[0]!.reason).toBe('unclassified_reason');
-      expect(report.rows[0]!.failureReasonCounts[0]!.chosenAction).toBe('send_now');
+      expect(report.rows[0].failureReasonCounts[0].reason).toBe('unclassified_reason');
+      expect(report.rows[0].failureReasonCounts[0].chosenAction).toBe('send_now');
     });
   });
 

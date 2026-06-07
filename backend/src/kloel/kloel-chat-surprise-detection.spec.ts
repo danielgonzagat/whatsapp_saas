@@ -201,7 +201,7 @@ describe('kloel_chat_surprise_detection (PI-k9)', () => {
     const skipped = warnCalls.filter(([msg]) => msg === 'kloel_surprise_skipped');
     expect(skipped.length).toBeGreaterThan(0);
     if (reason) {
-      expect(skipped[0]![1].reason).toContain(reason);
+      expect(skipped[0][1].reason).toContain(reason);
     }
   }
 

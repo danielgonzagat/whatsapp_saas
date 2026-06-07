@@ -31,7 +31,7 @@ export class CommissionComparatorService {
       (a, b) => b.expectedMonthlyEarnings - a.expectedMonthlyEarnings,
     );
 
-    const best = sorted[0]!;
+    const best = sorted[0];
 
     this.logger.debug(
       `Commission comparison: best offer ${best.offerId} with effective rate ${best.effectiveRate}`,
@@ -48,7 +48,7 @@ export class CommissionComparatorService {
 
   findBestByRate(comparison: CommissionComparison): CommissionEntry {
     const sorted = [...comparison.comparisons].sort((a, b) => b.effectiveRate - a.effectiveRate);
-    return sorted[0]!;
+    return sorted[0];
   }
 
   improvementFromSwitch(

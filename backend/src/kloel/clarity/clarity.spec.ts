@@ -57,8 +57,8 @@ describe('CLARITY-001 — rankAttention', () => {
     ];
     const result = rankAttention(items, NOW);
     expect(result.rankings).toHaveLength(3);
-    expect(result.rankings[0]!.itemId).toBe('a');
-    expect(result.rankings[2]!.itemId).toBe('c');
+    expect(result.rankings[0].itemId).toBe('a');
+    expect(result.rankings[2].itemId).toBe('c');
     expect(result.topItem?.itemId).toBe('a');
   });
 
@@ -66,8 +66,8 @@ describe('CLARITY-001 — rankAttention', () => {
     const irreversible = makeItemFull('irr', 'Irreversible', 0.9, 0.9, 0);
     const reversible = makeItemFull('rev', 'Reversible', 0.9, 0.9, 1);
     const result = rankAttention([irreversible, reversible], NOW);
-    expect(result.rankings[0]!.itemId).toBe('irr');
-    expect(result.rankings[0]!.score).toBeGreaterThan(result.rankings[1]!.score);
+    expect(result.rankings[0].itemId).toBe('irr');
+    expect(result.rankings[0].score).toBeGreaterThan(result.rankings[1].score);
   });
 
   it('returns null topItem for empty input', () => {
@@ -79,15 +79,15 @@ describe('CLARITY-001 — rankAttention', () => {
   it('assigns AGORA tier for score >= 0.75', () => {
     const items = [makeItemFull('x', 'Urgent', 1, 1, 0)];
     const result = rankAttention(items, NOW);
-    expect(result.rankings[0]!.tier).toBe('AGORA');
-    expect(result.rankings[0]!.score).toBeGreaterThanOrEqual(0.75);
+    expect(result.rankings[0].tier).toBe('AGORA');
+    expect(result.rankings[0].score).toBeGreaterThanOrEqual(0.75);
   });
 
   it('assigns ARQUIVO tier for score < 0.25', () => {
     const items = [makeItemFull('y', 'Trivial', 0.05, 0.05, 1)];
     const result = rankAttention(items, NOW);
-    expect(result.rankings[0]!.tier).toBe('ARQUIVO');
-    expect(result.rankings[0]!.score).toBeLessThan(0.25);
+    expect(result.rankings[0].tier).toBe('ARQUIVO');
+    expect(result.rankings[0].score).toBeLessThan(0.25);
   });
 });
 
@@ -183,7 +183,7 @@ describe('CLARITY-003 — applyNoiseFilter', () => {
       nowMs: NOW,
     });
     expect(result.kept).toHaveLength(1);
-    expect(result.kept[0]!.itemId).toBe('a');
+    expect(result.kept[0].itemId).toBe('a');
     expect(result.filtered).toHaveLength(1);
     expect(result.filter.silent).toBe(true);
     expect(result.filter.filteredCount).toBe(1);
@@ -342,7 +342,7 @@ describe('CLARITY-005 — applyFeedback', () => {
     ];
     const feedback = makeFeedback({ rating: 1, itemId: 'it_a' });
     const result = applyFeedback({ feedback, rankings, nowMs: NOW });
-    expect(result.rankings[0]!.score).toBeGreaterThan(0.5);
+    expect(result.rankings[0].score).toBeGreaterThan(0.5);
     expect(result.scoreDelta).toBeGreaterThan(0);
     expect(result.feedback.appliedToRanking).toBe(true);
   });
@@ -363,7 +363,7 @@ describe('CLARITY-005 — applyFeedback', () => {
     ];
     const feedback = makeFeedback({ rating: -1, itemId: 'it_a' });
     const result = applyFeedback({ feedback, rankings, nowMs: NOW });
-    expect(result.rankings[0]!.score).toBeLessThan(0.5);
+    expect(result.rankings[0].score).toBeLessThan(0.5);
     expect(result.scoreDelta).toBeLessThan(0);
   });
 
@@ -383,7 +383,7 @@ describe('CLARITY-005 — applyFeedback', () => {
     ];
     const feedback = makeFeedback({ rating: 0, itemId: 'it_a' });
     const result = applyFeedback({ feedback, rankings, nowMs: NOW });
-    expect(result.rankings[0]!.score).toBe(0.5);
+    expect(result.rankings[0].score).toBe(0.5);
     expect(result.scoreDelta).toBe(0);
   });
 
@@ -414,7 +414,7 @@ describe('CLARITY-005 — applyFeedback', () => {
     ];
     const feedback = makeFeedback({ rating: 1, itemId: 'it_a' });
     const result = applyFeedback({ feedback, rankings, nowMs: NOW });
-    expect(result.rankings[1]!.score).toBe(0.5);
+    expect(result.rankings[1].score).toBe(0.5);
   });
 });
 

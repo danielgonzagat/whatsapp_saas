@@ -56,17 +56,35 @@ export function CarteiraWithdrawModal({
     agency: a.agency,
     account: a.account,
   }));
+  const withdrawAmountNumber = Number.parseFloat(withdrawAmount.replace(',', '.'));
+  const hasPositiveAvailableBalance = available > 0;
+  const hasValidWithdrawAmount =
+    Number.isFinite(withdrawAmountNumber) &&
+    withdrawAmountNumber > 0 &&
+    withdrawAmountNumber <= available;
+  const hasBankAccount = bankAccounts.length > 0;
+  const canSubmitWithdraw =
+    !withdrawLoading && hasPositiveAvailableBalance && hasValidWithdrawAmount && hasBankAccount;
+
 
   const handleWithdraw = async () => {
-    const amount = Number.parseFloat(withdrawAmount.replace(',', '.'));
-    if (!amount || amount <= 0) {
+    if (!hasPositiveAvailableBalance) {
+      setWithdrawError('Nao ha saldo disponivel para saque.');
+      return;
+    }
+    if (!hasBankAccount) {
+      setWithdrawError('Cadastre uma conta bancaria antes de solicitar saque.');
+      return;
+    }
+    if (!Number.isFinite(withdrawAmountNumber) || withdrawAmountNumber <= 0) {
       setWithdrawError('Informe um valor valido');
       return;
     }
-    if (amount > available) {
+    if (withdrawAmountNumber > available) {
       setWithdrawError('Saldo insuficiente');
       return;
     }
+    const amount = withdrawAmountNumber;
     setWithdrawLoading(true);
     setWithdrawError('');
     try {
@@ -122,6 +140,9 @@ export function CarteiraWithdrawModal({
   }
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="wallet-withdraw-title"
       style={{
         position: 'fixed',
         inset: 0,
@@ -159,11 +180,16 @@ export function CarteiraWithdrawModal({
             alignItems: 'center',
           }}
         >
-          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--app-text-primary)' }}>
+          <span
+            id="wallet-withdraw-title"
+            style={{ fontSize: 14, fontWeight: 600, color: 'var(--app-text-primary)' }}
+          >
             {kloelT(`Solicitar saque`)}
           </span>
           <button
             type="button"
+            aria-label={kloelT(`Fechar modal de saque`)}
+            title={kloelT(`Fechar modal de saque`)}
             onClick={onClose}
             style={{
               background: 'none',
@@ -237,9 +263,14 @@ export function CarteiraWithdrawModal({
                 {kloelT(`R$`)}
               </span>
               <input
+                id="wallet-withdraw-amount"
+                name="walletWithdrawAmount"
                 aria-label="Valor do saque"
                 value={withdrawAmount}
-                onChange={(e) => onWithdrawAmountChange(e.target.value)}
+                onChange={(e) => {
+                  setWithdrawError('');
+                  onWithdrawAmountChange(e.target.value);
+                }}
                 placeholder="0,00"
                 ref={withdrawInputRef}
                 style={{
@@ -254,6 +285,18 @@ export function CarteiraWithdrawModal({
                 }}
               />
             </div>
+            {available <= 0 && (
+              <span
+                style={{
+                  display: 'block',
+                  marginTop: 8,
+                  fontSize: 11,
+                  color: 'var(--app-text-tertiary)',
+                }}
+              >
+                {kloelT(`Nao ha saldo disponivel para saque.`)}
+              </span>
+            )}
           </div>
           <div style={{ marginBottom: 16 }}>
             <span
@@ -371,17 +414,18 @@ export function CarteiraWithdrawModal({
           <button
             type="button"
             onClick={handleWithdraw}
-            disabled={withdrawLoading}
+            disabled={!canSubmitWithdraw}
+            aria-disabled={!canSubmitWithdraw}
             style={{
               width: '100%',
               padding: '14px 24px',
-              background: withdrawLoading ? 'var(--app-bg-secondary)' : colors.ember.primary,
-              color: withdrawLoading ? 'var(--app-text-secondary)' : 'var(--app-text-on-accent)',
+              background: canSubmitWithdraw ? colors.ember.primary : 'var(--app-bg-secondary)',
+              color: canSubmitWithdraw ? 'var(--app-text-on-accent)' : 'var(--app-text-secondary)',
               border: 'none',
               borderRadius: 6,
               fontSize: 14,
               fontWeight: 700,
-              cursor: withdrawLoading ? 'default' : 'pointer',
+              cursor: canSubmitWithdraw ? 'pointer' : 'default',
               fontFamily: "'Sora',sans-serif",
             }}
           >

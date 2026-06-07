@@ -89,7 +89,7 @@ export class LedgerService {
         this.logger.debug(
           `creditPending idempotent skip: ref=${input.reference.type}:${input.reference.id} entry=${existing.id}`,
         );
-        return { entry: existing, isNew: false, workspaceId: undefined as string | undefined };
+        return { entry: existing, isNew: false, workspaceId: undefined };
       }
 
       const balance = await tx.connectAccountBalance.findUnique({
@@ -367,7 +367,7 @@ export class LedgerService {
         this.logger.debug(
           `debitForChargeback idempotent skip: ref=${input.reference.type}:${input.reference.id}`,
         );
-        return { entry: existing, isNew: false, workspaceId: undefined as string | undefined };
+        return { entry: existing, isNew: false, workspaceId: undefined };
       }
 
       const balance = await tx.connectAccountBalance.findUnique({
@@ -466,7 +466,7 @@ export class LedgerService {
         this.logger.debug(
           `debitForRefund idempotent skip: ref=${input.reference.type}:${input.reference.id}`,
         );
-        return { entry: existing, isNew: false, workspaceId: undefined as string | undefined };
+        return { entry: existing, isNew: false, workspaceId: undefined };
       }
 
       const balance = await tx.connectAccountBalance.findUnique({

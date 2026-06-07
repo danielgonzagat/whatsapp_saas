@@ -43,7 +43,7 @@ interface KloelChatComposerProps {
   popoverPlacement?: ComposerPopoverPlacement;
   inputRef: RefObject<HTMLTextAreaElement | null>;
   onInputChange: (value: string) => void;
-  onSend: () => void;
+  onSend: (value?: string) => void;
   onOpenFilePicker: () => void;
   onRemoveAttachment: (attachmentId: string) => void;
   onRetryAttachment: (attachmentId: string) => void;
@@ -95,6 +95,26 @@ export function KloelChatComposer({
   const [hasVerticalOverflow, setHasVerticalOverflow] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
+  const [draftInput, setDraftInput] = useState(input);
+  const draftInputRef = useRef(input);
+  const pendingInputEmitTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (input === draftInputRef.current) {
+      return;
+    }
+    draftInputRef.current = input;
+    setDraftInput(input);
+  }, [input]);
+
+  useEffect(() => {
+    return () => {
+      if (pendingInputEmitTimerRef.current !== null) {
+        window.clearTimeout(pendingInputEmitTimerRef.current);
+        pendingInputEmitTimerRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const textarea = inputRef.current;
@@ -105,8 +125,14 @@ export function KloelChatComposer({
     textarea.style.height = `${MIN_HEIGHT}px`;
     const nextHeight = Math.min(textarea.scrollHeight, MAX_HEIGHT);
     textarea.style.height = `${Math.max(MIN_HEIGHT, nextHeight)}px`;
-    setHasVerticalOverflow(textarea.scrollHeight > MAX_HEIGHT + 1);
-  }, [input, inputRef]);
+    // Guard the state write: this effect can run on every render (inputRef is a
+    // prop ref whose identity may not be stable), and an unconditional setState
+    // here overflows React's update depth ("Maximum update depth exceeded"),
+    // which saturates React and starves other live updates (e.g. the reasoning
+    // stream). A functional no-op when the value is unchanged breaks the loop.
+    const nextOverflow = textarea.scrollHeight > MAX_HEIGHT + 1;
+    setHasVerticalOverflow((prev) => (prev === nextOverflow ? prev : nextOverflow));
+  }, [draftInput, inputRef]);
 
   useEffect(() => {
     if (!isPopoverOpen) {
@@ -145,9 +171,34 @@ export function KloelChatComposer({
   }, [isPopoverOpen]);
 
   const hasReadyAttachments = attachments.some((attachment) => attachment.status === 'ready');
-  const canSend = (input.trim().length > 0 || hasReadyAttachments) && !disabled;
+  const canSend = (draftInput.trim().length > 0 || hasReadyAttachments) && !disabled;
   const hasPendingUploads = attachments.some((attachment) => attachment.status === 'uploading');
   const hasTopRail = attachments.length > 0 || Boolean(linkedProduct);
+
+  const clearPendingInputEmit = () => {
+    if (pendingInputEmitTimerRef.current === null) {
+      return;
+    }
+    window.clearTimeout(pendingInputEmitTimerRef.current);
+    pendingInputEmitTimerRef.current = null;
+  };
+
+  const emitInputChange = (nextValue: string) => {
+    clearPendingInputEmit();
+    pendingInputEmitTimerRef.current = window.setTimeout(() => {
+      pendingInputEmitTimerRef.current = null;
+      onInputChange(nextValue);
+    }, 0);
+  };
+
+  const submitCurrentDraft = () => {
+    clearPendingInputEmit();
+    const submittedDraft = draftInputRef.current;
+    onSend(submittedDraft);
+    draftInputRef.current = '';
+    setDraftInput('');
+    onInputChange('');
+  };
 
   const closeMenus = () => {
     setIsPopoverOpen(false);
@@ -200,12 +251,15 @@ export function KloelChatComposer({
           name="message"
           aria-label="Mensagem para o Kloel"
           ref={inputRef}
-          value={input}
+          value={draftInput}
           onChange={(event) => {
-            const nextValue = event.target.value;
-            if (nextValue !== input) {
-              onInputChange(nextValue);
+            const nextValue = event.currentTarget.value;
+            if (nextValue === draftInputRef.current) {
+              return;
             }
+            draftInputRef.current = nextValue;
+            setDraftInput(nextValue);
+            emitInputChange(nextValue);
           }}
           onKeyDown={(event) => {
             if (event.nativeEvent.isComposing) {
@@ -214,7 +268,7 @@ export function KloelChatComposer({
             if (event.key === 'Enter' && !event.shiftKey) {
               event.preventDefault();
               if (canSend && !hasPendingUploads) {
-                onSend();
+                submitCurrentDraft();
               }
             }
           }}
@@ -278,6 +332,9 @@ export function KloelChatComposer({
             {activeCapability ? (
               <button
                 type="button"
+                aria-label={`Remover capacidade ${capabilityLabel(activeCapability)}`}
+                aria-pressed="true"
+                title={`Remover capacidade ${capabilityLabel(activeCapability)}`}
                 onClick={() => onCapabilityChange(null)}
                 style={{
                   display: 'inline-flex',
@@ -304,7 +361,7 @@ export function KloelChatComposer({
 
           <button
             type="button"
-            onClick={onSend}
+            onClick={submitCurrentDraft}
             disabled={!canSend || hasPendingUploads}
             aria-label="Enviar mensagem"
             style={{

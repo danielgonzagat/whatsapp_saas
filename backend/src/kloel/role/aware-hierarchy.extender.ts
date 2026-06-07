@@ -167,7 +167,7 @@ export function countTierChanges(
   }
   let changes = 0;
   for (let i = 0; i < original.length; i++) {
-    if (original[i]!.tier !== reTiered[i]!.adjustedTier) {
+    if (original[i].tier !== reTiered[i].adjustedTier) {
       changes++;
     }
   }

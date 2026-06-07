@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { check, type PartBCtx } from "./smoke-state.js";
+import { check, jsonBody, type PartBCtx } from "./smoke-state.js";
 
 
 export async function partBMultiTx(ctx: PartBCtx): Promise<void> {
@@ -29,7 +29,7 @@ export async function partBMultiTx(ctx: PartBCtx): Promise<void> {
         proofOfIncorrectness: 'smoke transaction fixture digits are stale negative data and may be replaced',
       },
     })) as { content: { text: string }[] };
-    const txb = JSON.parse(txOk.content.at(-1)?.text ?? '{}');
+    const txb = jsonBody(txOk);
     check(
       'transaction returns human summary first',
       txOk.content.length >= 2 && /Atomic transaction applied/.test(txOk.content[0]?.text ?? ''),
@@ -87,7 +87,7 @@ export async function partBMultiTx(ctx: PartBCtx): Promise<void> {
           allowedPaths: [path.join(repoRoot, 'worker')],
         },
       })) as { content: { text: string }[]; isError?: boolean };
-      const eslintBody = JSON.parse(eslintTx.content.at(-1)?.text ?? '{}') as {
+      const eslintBody = jsonBody(eslintTx) as {
         ok?: boolean;
         filesWritten?: number;
         traceRefs?: string[];
@@ -185,7 +185,7 @@ export async function partBMultiTx(ctx: PartBCtx): Promise<void> {
         const residueSummary = residueTx.content[0]?.text ?? '';
         const residueBody =
           residueTx.content.length > 1
-            ? (JSON.parse(residueTx.content.at(-1)?.text ?? '{}') as {
+            ? (jsonBody(residueTx) as {
                 ok?: boolean;
                 knownResidueFixesAppliedTotal?: number;
               })

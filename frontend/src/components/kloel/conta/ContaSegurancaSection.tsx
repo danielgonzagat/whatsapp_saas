@@ -9,6 +9,18 @@ import { SORA } from './ContaConstants';
 import { getErrorMessage } from './ContaHelpers';
 import { Field, SaveButton, SectionCard } from './ContaShared';
 
+const SECURITY_ERROR_TRANSLATIONS: Record<string, string> = {
+  'current password is incorrect': 'Senha atual incorreta.',
+};
+
+function getSecurityErrorMessage(error: unknown, fallback: string) {
+  const message = getErrorMessage(error);
+  if (!message) {
+    return fallback;
+  }
+  return SECURITY_ERROR_TRANSLATIONS[message.trim().toLowerCase()] ?? message;
+}
+
 export default function SegurancaSection() {
   const { security, isLoading: loadingSecurity, error: securityError, mutate } = useSecurityState();
   const { changePassword, startMfaSetup, verifyMfaSetup, disableMfa, revokeSession } = useSecurityMutations();
@@ -67,7 +79,7 @@ export default function SegurancaSection() {
       setPwSuccess(true);
       setTimeout(() => setPwSuccess(false), 3000);
     } catch (e) {
-      setPwError(getErrorMessage(e) || 'Erro ao alterar senha. Verifique a senha atual.');
+      setPwError(getSecurityErrorMessage(e, 'Erro ao alterar senha. Verifique a senha atual.'));
     }
     setSaving(false);
   };

@@ -30,7 +30,7 @@ function buildLegacyBaseline(concept: string, _channel: string): Record<string, 
     fatigue_risk: { action: 'pause', tone: 'NEUTRAL' },
     audio_preference: { action: 'send_audio', tone: 'NEUTRAL' },
   };
-  return (baselines[concept] ?? baselines.general) as Record<string, unknown>;
+  return baselines[concept] ?? baselines.general;
 }
 
 function toInputJson(value: unknown): Prisma.InputJsonValue {

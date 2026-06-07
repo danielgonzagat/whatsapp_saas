@@ -104,7 +104,7 @@ export class WhatsAppApiController {
   @InternalEndpoint('whatsapp session diagnostics')
   @Get('session/diagnostics')
   async getDiagnostics(@Req() req: AuthenticatedRequest) {
-    return this.getSessionDiagnostics(req.workspaceId!);
+    return this.getSessionDiagnostics(req.workspaceId);
   }
   /** Force check. */
   @InternalEndpoint('whatsapp session force-check')
@@ -128,7 +128,7 @@ export class WhatsAppApiController {
   @InternalEndpoint('whatsapp session bootstrap')
   @Post('session/bootstrap')
   async bootstrapSession(@Req() req: AuthenticatedRequest) {
-    return this.ciaRuntime.bootstrap(req.workspaceId!);
+    return this.ciaRuntime.bootstrap(req.workspaceId);
   }
   /** Start backlog. */
   @InternalEndpoint('whatsapp session backlog start')
@@ -138,10 +138,10 @@ export class WhatsAppApiController {
     @Body() body: { mode?: string; limit?: number },
   ) {
     if (body?.mode === 'pause_autonomy') {
-      return this.ciaRuntime.pauseAutonomy(req.workspaceId!);
+      return this.ciaRuntime.pauseAutonomy(req.workspaceId);
     }
     return this.ciaRuntime.startBacklogRun(
-      req.workspaceId!,
+      req.workspaceId,
       readBacklogMode(body?.mode),
       body?.limit,
     );
@@ -150,12 +150,12 @@ export class WhatsAppApiController {
   @InternalEndpoint('whatsapp CIA intelligence')
   @Get('cia/intelligence')
   async getOperationalIntelligence(@Req() req: AuthenticatedRequest) {
-    return this.ciaRuntime.getOperationalIntelligence(req.workspaceId!);
+    return this.ciaRuntime.getOperationalIntelligence(req.workspaceId);
   }
   /** Stream agent. */
   @Get('agent/stream')
   streamAgent(@Req() req: AuthenticatedRequest, @Res() res: Response) {
-    const workspaceId = req.workspaceId!;
+    const workspaceId = req.workspaceId;
     const safeWrite = (data: unknown) => {
       try {
         res.write(`data: ${JSON.stringify(data)}\n\n`);
@@ -212,7 +212,7 @@ export class WhatsAppApiController {
   /** Stream live. */
   @Get('live')
   async streamLive(@Req() req: AuthenticatedRequest, @Res() res: Response) {
-    const workspaceId = req.workspaceId!;
+    const workspaceId = req.workspaceId;
     const safeWrite = (data: unknown) => {
       try {
         res.write(`data: ${JSON.stringify(data)}\n\n`);
@@ -300,7 +300,7 @@ export class WhatsAppApiController {
   @InternalEndpoint('whatsapp phone check')
   @Get('check/:phone')
   async checkRegistration(@Req() req: AuthenticatedRequest, @Param('phone') phone: string) {
-    const workspaceId = req.workspaceId!;
+    const workspaceId = req.workspaceId;
     await this.providerRegistry.getProviderType(workspaceId);
     const isRegistered = await this.whatsappApi.isRegisteredUser(workspaceId, phone);
     return { phone, registered: isRegistered };
@@ -321,7 +321,7 @@ export class WhatsAppApiController {
   @InternalEndpoint('whatsapp provider status')
   @Get('provider-status')
   async getProviderStatus(@Req() req: AuthenticatedRequest) {
-    const workspaceId = req.workspaceId!;
+    const workspaceId = req.workspaceId;
     const workspace = await this.workspaces.getWorkspace(workspaceId).catch(() => null);
     const sessionMeta = readSessionSnapshot(workspace?.providerSettings);
     const sessionName =

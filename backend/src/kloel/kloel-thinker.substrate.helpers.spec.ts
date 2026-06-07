@@ -136,7 +136,7 @@ describe('kloel-thinker.substrate.helpers', () => {
       );
       const { beliefs } = computeSubstrateBeliefs(events);
       expect(beliefs).toHaveLength(1);
-      const belief = beliefs[0]!;
+      const belief = beliefs[0];
       expect(belief.predicate).toBe('autopilot.kloel_chat_turn.executed');
       expect(belief.n).toBe(SUBSTRATE_BELIEF_MIN_OBSERVATIONS);
       // (n+1)/(n+2) rounded to 2 decimals.
@@ -153,7 +153,7 @@ describe('kloel-thinker.substrate.helpers', () => {
         makeEvent('autopilot.flow.executed', `summary-${i}`),
       );
       const { beliefs } = computeSubstrateBeliefs(events);
-      expect(beliefs[0]!.examples).toEqual(['summary-0', 'summary-1', 'summary-2']);
+      expect(beliefs[0].examples).toEqual(['summary-0', 'summary-1', 'summary-2']);
     });
 
     it('produces one valence trace point per event', () => {

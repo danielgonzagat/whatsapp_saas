@@ -1,5 +1,12 @@
 import { colors } from '@/lib/design-tokens';
-import type { ReactNode } from 'react';
+import {
+  Children,
+  cloneElement,
+  isValidElement,
+  useId,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import { V, FONT_MONO, FONT_SORA, chartCardStyle, labelStyle } from '../analytics.design-tokens';
 import { NeuroPulse } from './NeuroPulse';
 export { NeuroPulse };
@@ -318,10 +325,42 @@ export function FilterField({
   children: ReactNode;
   flex?: number;
 }) {
+  const reactId = useId();
+  const fieldToken = reactId.replace(/[^a-zA-Z0-9_-]/g, '');
+  const fieldId = `analytics-filter-${fieldToken}`;
+  const fieldName = `analytics_filter_${fieldToken}`;
+  const labelledChildren = Children.map(children, (child) => {
+    if (!isValidElement(child) || typeof child.type !== 'string') {
+      return child;
+    }
+    if (!['input', 'select', 'textarea'].includes(child.type)) {
+      return child;
+    }
+
+    const props = child.props as {
+      id?: string;
+      name?: string;
+      'aria-label'?: string;
+      'aria-labelledby'?: string;
+    };
+    const nextProps: Record<string, string> = {};
+    if (!props.id) {
+      nextProps.id = fieldId;
+    }
+    if (!props.name) {
+      nextProps.name = fieldName;
+    }
+    if (!props['aria-label'] && !props['aria-labelledby']) {
+      nextProps['aria-label'] = label;
+    }
+
+    return cloneElement(child as ReactElement<Record<string, unknown>>, nextProps);
+  });
+
   return (
     <div style={{ flex, minWidth: 160 }}>
       <span style={labelStyle}>{label}</span>
-      {children}
+      {labelledChildren}
     </div>
   );
 }

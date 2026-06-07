@@ -114,7 +114,7 @@ describe('CLARITY-006 — buildShortNarrative', () => {
       nowMs: NOW,
     });
     expect(narrative.topItems).toHaveLength(1);
-    expect(narrative.topItems[0]!.itemId).toBe('x');
+    expect(narrative.topItems[0].itemId).toBe('x');
   });
 
   it('returns default message for empty rankings', () => {

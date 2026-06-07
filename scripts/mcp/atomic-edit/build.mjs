@@ -42,6 +42,7 @@ const ENTRY = [
   'server-helpers-self-expansion.ts',
   'server-helpers-negative-proof.ts',
   'server-tools-self.ts',
+  'server-tools-positive-bytes.ts',
   'engine.ts',
   'engine-rename.ts',
   'engine-ops.ts',

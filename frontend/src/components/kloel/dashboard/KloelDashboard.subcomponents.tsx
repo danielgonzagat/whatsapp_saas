@@ -6,7 +6,7 @@ import { openCookiePreferences } from '@/components/kloel/cookies/CookieProvider
 import { KLOEL_CHAT_QUICK_ACTIONS } from '@/lib/kloel-chat';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { motion } from 'framer-motion';
-import { BarChart3, LayoutTemplate, Megaphone, PenLine, Search } from 'lucide-react';
+import { BarChart3, LayoutTemplate, Megaphone, PenLine, Plus, Search } from 'lucide-react';
 import { useState, useRef, useCallback } from 'react';
 
 export const S_RE = /\s+/;
@@ -198,7 +198,13 @@ export function ChatDisclaimer() {
   );
 }
 
-export function ConversationHeaderBar({ title, onTitle }: { title: string; onTitle?: (title: string) => void }) {
+type ConversationHeaderBarProps = {
+  title: string;
+  onTitle?: (title: string) => void;
+  onNewChat?: () => void;
+};
+
+export function ConversationHeaderBar({ title, onTitle, onNewChat }: ConversationHeaderBarProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(title);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -234,52 +240,81 @@ export function ConversationHeaderBar({ title, onTitle }: { title: string; onTit
           minHeight: 54,
           display: 'flex',
           alignItems: 'center',
+          gap: 12,
           borderBottom: '1px solid var(--app-border-subtle)',
         }}
       >
-        {editing ? (
-          <input
-            ref={inputRef}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={commitTitle}
-            onKeyDown={handleKeyDown}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {editing ? (
+            <input
+              ref={inputRef}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={commitTitle}
+              onKeyDown={handleKeyDown}
+              style={{
+                fontSize: 14,
+                fontWeight: 600,
+                color: TEXT,
+                letterSpacing: '-0.01em',
+                background: 'transparent',
+                border: `1px solid ${EMBER}`,
+                borderRadius: 4,
+                padding: '2px 6px',
+                outline: 'none',
+                width: '100%',
+              }}
+            />
+          ) : (
+            <span
+              onClick={() => {
+                if (onTitle) {
+                  setDraft(title);
+                  setEditing(true);
+                  setTimeout(() => inputRef.current?.focus(), 0);
+                }
+              }}
+              style={{
+                display: 'block',
+                fontSize: 14,
+                fontWeight: 600,
+                color: TEXT,
+                letterSpacing: '-0.01em',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                cursor: onTitle ? 'pointer' : 'default',
+              }}
+            >
+              {title}
+            </span>
+          )}
+        </div>
+
+        {onNewChat ? (
+          <button
+            type="button"
+            aria-label="Iniciar nova conversa"
+            title="Nova conversa"
+            onClick={onNewChat}
             style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: TEXT,
-              letterSpacing: '-0.01em',
-              background: 'transparent',
-              border: `1px solid ${EMBER}`,
-              borderRadius: 4,
-              padding: '2px 6px',
-              outline: 'none',
-              width: '100%',
-            }}
-          />
-        ) : (
-          <span
-            onClick={() => {
-              if (onTitle) {
-                setDraft(title);
-                setEditing(true);
-                setTimeout(() => inputRef.current?.focus(), 0);
-              }
-            }}
-            style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: TEXT,
-              letterSpacing: '-0.01em',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              cursor: onTitle ? 'pointer' : 'default',
+              width: 34,
+              height: 34,
+              flexShrink: 0,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: `1px solid ${DIVIDER}`,
+              borderRadius: 6,
+              background: SURFACE,
+              color: MUTED_2,
+              cursor: 'pointer',
+              transition: 'color 140ms ease, border-color 140ms ease, background 140ms ease',
             }}
           >
-            {title}
-          </span>
-        )}
+            <Plus size={16} strokeWidth={2.2} aria-hidden="true" />
+          </button>
+        ) : null}
       </div>
     </div>
   );

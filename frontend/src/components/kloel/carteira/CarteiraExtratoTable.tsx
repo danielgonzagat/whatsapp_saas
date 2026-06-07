@@ -56,6 +56,8 @@ export default function CarteiraExtratoTable({
         >
           <span style={{ color: 'var(--app-text-tertiary)' }}>{IC.search(14)}</span>
           <input
+            id="wallet-transaction-search"
+            name="walletTransactionSearch"
             aria-label="Buscar transacao"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}

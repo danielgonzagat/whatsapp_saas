@@ -31,11 +31,25 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SOURCE_EXTENSIONS = new Set(['.ts', '.mjs', '.json', '.sh']);
 const DIST_EXTENSIONS = new Set(['.js', '.mjs', '.json']);
-const SKIP_DIRS = new Set(['dist', 'node_modules', '.atomic', '.git', 'node-compile-cache']);
+const SKIP_DIRS = new Set([
+  'dist',
+  'node_modules',
+  '.atomic',
+  '.git',
+  'node-compile-cache',
+  '.claude',
+  '.mcp-cache',
+  '.turbo',
+  '.cache',
+  'build',
+  '.positive-byte-sessions',
+]);
 
 function skipGeneratedName(name) {
   return (
     name.startsWith('.proof-') ||
+    name.startsWith('.smoke-') ||
+    name.startsWith('.self-expansion-') ||
     name.startsWith('.security-mono-proof-') ||
     name.startsWith('.atomic-exec-sandbox') ||
     name.startsWith('.property-proof-') ||

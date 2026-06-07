@@ -19,13 +19,19 @@ function makeLogger() {
   return { warn: jest.fn(), log: jest.fn() };
 }
 
-function makeBandit(overrides: Partial<MindBanditService> = {}): MindBanditService {
+type MindBanditMock = {
+  choose: jest.Mock;
+  register: jest.Mock;
+  recordOutcome: jest.Mock;
+};
+
+function makeBandit(overrides: Partial<MindBanditMock> = {}): MindBanditService & MindBanditMock {
   return {
     choose: jest.fn(),
     register: jest.fn().mockResolvedValue({}),
     recordOutcome: jest.fn().mockResolvedValue({}),
     ...overrides,
-  } as unknown as MindBanditService;
+  } as unknown as MindBanditService & MindBanditMock;
 }
 
 const WS = 'ws-1';

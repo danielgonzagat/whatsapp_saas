@@ -72,4 +72,21 @@ describe('Sites Dominios', () => {
     );
     expect(mutateDomains).toHaveBeenCalled();
   });
+
+  it('does not request public-domain data for draft-only Kloel sites', () => {
+    const draftSite: Site = {
+      ...site,
+      id: 'draft-1',
+      slug: '',
+      status: 'DRAFT',
+      publishedAt: null,
+    };
+
+    render(<Dominios workspaceId="ws-1" sites={[draftSite]} loading={false} />);
+
+    expect(useSiteDomains).toHaveBeenCalledWith('ws-1', null);
+    expect(screen.getByText('Publique um site antes de conectar dominio proprio.')).toBeTruthy();
+    expect((screen.getByLabelText('Dominio proprio') as HTMLInputElement).disabled).toBe(true);
+    expect(screen.queryByText('loja.example.com')).toBeNull();
+  });
 });

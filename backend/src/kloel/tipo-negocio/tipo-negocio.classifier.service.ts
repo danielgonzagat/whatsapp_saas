@@ -197,7 +197,7 @@ export function classifyOferta(
     return { label: 'infoproduct', confidence: 0.25 };
   }
 
-  const topEntry = entries[0] as [Oferta, number];
+  const topEntry = entries[0];
   const topRatio = topEntry[1] / approved.length;
   const conf = clampConfidence(0.3 + topRatio * 0.65);
 

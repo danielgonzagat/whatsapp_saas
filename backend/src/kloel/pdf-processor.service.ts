@@ -113,7 +113,7 @@ export class PdfProcessorService {
       }
       return {
         analysis,
-        usage: (response.usage ?? null) as PdfProcessorUsage,
+        usage: response.usage ?? null,
       };
     } catch (error: unknown) {
       this.logger.error(

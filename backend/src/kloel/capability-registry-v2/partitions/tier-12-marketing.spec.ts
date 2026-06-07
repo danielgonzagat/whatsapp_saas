@@ -37,7 +37,7 @@ describe('Tier-12 marketing capabilities — registration', () => {
 
   it('marks every send as MUTATION_SENSITIVE with confirmation required', () => {
     for (const id of SEND_CAPS) {
-      const cap = byId.get(id)!;
+      const cap = byId.get(id);
       expect(cap.category).toBe('MUTATION_SENSITIVE');
       expect(cap.requiresConfirmation).toBe(true);
       expect(cap.tier).toBe(12);
@@ -45,27 +45,27 @@ describe('Tier-12 marketing capabilities — registration', () => {
   });
 
   it('keeps get_chat_status as a read-only QUERY without confirmation', () => {
-    const cap = byId.get('whatsapp.get_chat_status')!;
+    const cap = byId.get('whatsapp.get_chat_status');
     expect(cap.category).toBe('QUERY');
     expect(cap.requiresConfirmation).toBe(false);
   });
 
   it('routes message/dm/email sends through the canonical dispatch façade', () => {
     for (const id of ['whatsapp.send_message', 'instagram.send_dm', 'email.send']) {
-      expect(byId.get(id)!.domainService).toBe('ChannelMessageDispatch.dispatchTool');
-      expect(byId.get(id)!.emits).toContain('channel.message_sent');
+      expect(byId.get(id).domainService).toBe('ChannelMessageDispatch.dispatchTool');
+      expect(byId.get(id).emits).toContain('channel.message_sent');
     }
   });
 
   it('routes campaigns through the canonical campaign launch alias', () => {
     for (const id of ['whatsapp.send_campaign', 'email.send_campaign']) {
-      expect(byId.get(id)!.domainService).toBe('CampaignService.launchTool');
+      expect(byId.get(id).domainService).toBe('CampaignService.launchTool');
     }
   });
 
   it('routes ad drafts to the honest setup-required surface and marks blocked', () => {
     for (const id of ['facebook.create_ad_draft', 'tiktok.create_ad_draft']) {
-      const cap = byId.get(id)!;
+      const cap = byId.get(id);
       expect(cap.domainService).toBe('ChannelMessageDispatch.createAdDraftTool');
       expect(cap.maturity).toBe('blocked');
       expect(cap.emits).toEqual([]);
@@ -74,7 +74,7 @@ describe('Tier-12 marketing capabilities — registration', () => {
 
   it('declares required permissions for every send', () => {
     for (const id of SEND_CAPS) {
-      expect(byId.get(id)!.requiredPermissions.length).toBeGreaterThan(0);
+      expect(byId.get(id).requiredPermissions.length).toBeGreaterThan(0);
     }
   });
 });

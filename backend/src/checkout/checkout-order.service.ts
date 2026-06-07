@@ -225,7 +225,7 @@ export class CheckoutOrderService {
             workspaceId: orderData.workspaceId,
             customerName: orderData.customerName,
             customerEmail: orderData.customerEmail,
-            paymentMethod: orderData.paymentMethod as 'CREDIT_CARD' | 'PIX' | 'BOLETO',
+            paymentMethod: orderData.paymentMethod,
             shippingAddress: orderData.shippingAddress,
             ...(orderData.shippingMethod !== undefined
               ? { shippingMethod: orderData.shippingMethod }
@@ -317,7 +317,7 @@ export class CheckoutOrderService {
           shippingAddress: data.shippingAddress,
         },
         orderData: {
-          paymentMethod: orderData.paymentMethod as 'CREDIT_CARD' | 'PIX' | 'BOLETO',
+          paymentMethod: orderData.paymentMethod,
         },
         qualityGate,
         normalizedBaseTotalInCents,
@@ -366,7 +366,7 @@ export class CheckoutOrderService {
         shippingAddress: data.shippingAddress,
       },
       orderData: {
-        paymentMethod: orderData.paymentMethod as 'CREDIT_CARD' | 'PIX' | 'BOLETO',
+        paymentMethod: orderData.paymentMethod,
       },
       qualityGate,
       normalizedBaseTotalInCents,

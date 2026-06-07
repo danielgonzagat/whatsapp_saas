@@ -109,8 +109,8 @@ describe('MindCausalModelService', () => {
       const result = await svc.inferCausality('ws-1', 'offered_discount');
 
       expect(result.likelyEffects.length).toBeGreaterThan(0);
-      expect(result.likelyEffects[0]!.effect).toBe('sale_closed');
-      expect(result.likelyEffects[0]!.confidence).toBeGreaterThan(0);
+      expect(result.likelyEffects[0].effect).toBe('sale_closed');
+      expect(result.likelyEffects[0].confidence).toBeGreaterThan(0);
       expect(result.basis).toBe('moderate_historical_pattern');
     });
 
@@ -173,7 +173,7 @@ describe('MindCausalModelService', () => {
 
       // Only ws-1 case should be considered
       expect(result.likelyEffects).toHaveLength(1);
-      expect(result.likelyEffects[0]!.effect).toBe('sale_closed');
+      expect(result.likelyEffects[0].effect).toBe('sale_closed');
     });
 
     it('returns zero effects on prisma failure (never throws)', async () => {

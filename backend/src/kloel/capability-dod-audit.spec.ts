@@ -132,7 +132,7 @@ describe('Capability DoD audit (Y-2) — every registered capability', () => {
 
         const receipt = result.receipt;
         expect(receipt).toBeDefined();
-        const rec = receipt as Record<string, unknown>;
+        const rec = receipt;
         for (const field of REQUIRED_RECEIPT_FIELDS) {
           expect(rec[field]).toBeDefined();
         }

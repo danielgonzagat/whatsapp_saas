@@ -228,9 +228,7 @@ describe('AdminPipelineService', () => {
       const upsertCalls = prisma.pipelineState.upsert.mock.calls as Array<
         [{ update: { state: string; transitionedBy: string } }]
       >;
-      const setStateCall = upsertCalls[0]?.[0] as {
-        update: { state: string; transitionedBy: string };
-      };
+      const setStateCall = upsertCalls[0]?.[0];
       expect(setStateCall.update.state).toBe('shadow');
       expect(setStateCall.update.transitionedBy).toBe('system');
 

@@ -45,7 +45,7 @@ const ACKNOWLEDGMENT_TEMPLATES: Readonly<Record<string, string>> = {
 };
 
 function templateFor(category: string): string {
-  return ACKNOWLEDGMENT_TEMPLATES[category] ?? ACKNOWLEDGMENT_TEMPLATES['unknown']!;
+  return ACKNOWLEDGMENT_TEMPLATES[category] ?? ACKNOWLEDGMENT_TEMPLATES['unknown'];
 }
 
 function channelFor(category: string): Acknowledgment['channel'] {

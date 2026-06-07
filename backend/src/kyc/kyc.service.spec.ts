@@ -1,4 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { expectValueOf } from '../../test/expect-value-of';
 import { buildService } from './kyc.service.spec.helpers';
 
@@ -350,6 +351,25 @@ describe('KycService.submitKyc', () => {
     });
   });
 
+  it('returns a validation error when MFA setup code is invalid', async () => {
+    const { service, prisma, accountMfaService } = buildService();
+    prisma.agent.findUnique.mockResolvedValueOnce({
+      id: 'agent_1',
+      workspaceId: 'ws_1',
+      mfaSecret: 'encrypted-secret',
+      mfaPendingSetup: true,
+    });
+    accountMfaService.verifyCode.mockImplementationOnce(() => {
+      throw new UnauthorizedException('Codigo 2FA invalido.');
+    });
+
+    await expect(service.verifyMfaSetup('agent_1', { code: '123456' })).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+
+    expect(prisma.agent.update).not.toHaveBeenCalled();
+  });
+
   it('cancels a pending MFA setup without requiring a code', async () => {
     const { service, prisma, accountMfaService } = buildService();
     prisma.agent.findUnique.mockResolvedValueOnce({
@@ -386,6 +406,26 @@ describe('KycService.submitKyc', () => {
     );
 
     expect(accountMfaService.verifyCode).not.toHaveBeenCalled();
+    expect(prisma.agent.update).not.toHaveBeenCalled();
+  });
+
+  it('returns a validation error when active MFA disable code is invalid', async () => {
+    const { service, prisma, accountMfaService } = buildService();
+    prisma.agent.findUnique.mockResolvedValueOnce({
+      id: 'agent_1',
+      workspaceId: 'ws_1',
+      mfaSecret: 'encrypted-secret',
+      mfaEnabled: true,
+      mfaPendingSetup: false,
+    });
+    accountMfaService.verifyCode.mockImplementationOnce(() => {
+      throw new UnauthorizedException('Codigo 2FA invalido.');
+    });
+
+    await expect(service.disableMfa('agent_1', { code: '123456' })).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+
     expect(prisma.agent.update).not.toHaveBeenCalled();
   });
 
@@ -601,7 +641,7 @@ describe('KycService.submitKyc', () => {
         currentPassword: 'wrong',
         newPassword: 'newpass123',
       }),
-    ).rejects.toThrow('Current password is incorrect');
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('changePassword rejects OAuth users without password', async () => {

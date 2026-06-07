@@ -168,7 +168,7 @@ describe('MailboxImapSmtpService', () => {
         password: 'plain-smtp-password',
       }),
     );
-    const [call] = upsert.mock.calls[0]!;
+    const [call] = upsert.mock.calls[0];
     expect(call.where.workspaceId_provider_email).toEqual({
       workspaceId: 'ws-1',
       provider: MailboxProvider.IMAP_SMTP,
@@ -290,7 +290,7 @@ describe('MailboxImapSmtpService', () => {
         auth: { user: 'owner@example.com', pass: 'plain-smtp-password' },
       }),
     );
-    const [sendMailArgs] = sendMailMock.mock.calls[0]!;
+    const [sendMailArgs] = sendMailMock.mock.calls[0];
     expect(sendMailArgs.from).toBe('owner@example.com');
     expect(sendMailArgs.to).toBe('lead@example.com');
     expect(sendMailArgs.subject).toBe('Oferta especial');
@@ -332,7 +332,7 @@ describe('MailboxImapSmtpService', () => {
       proactive: false,
     });
 
-    const [sendCall] = sendMailMock.mock.calls[0]!;
+    const [sendCall] = sendMailMock.mock.calls[0];
     expect(sendCall.html).not.toContain('cancelar');
     expect(sendCall.headers).toEqual({});
     expect(result.sent).toBe(true);
@@ -385,7 +385,7 @@ describe('MailboxImapSmtpService', () => {
       }),
     ).rejects.toThrow('imap_smtp_send_failed');
 
-    const [updateCall] = update.mock.calls[0]!;
+    const [updateCall] = update.mock.calls[0];
     expect(updateCall.where).toEqual({ id: 'mailbox-1', workspaceId: 'ws-1' });
     expect(updateCall.data.lastError).toBe('SMTP connection refused');
     expect(mailboxMetrics.sendFailed.mock.calls).toContainEqual([

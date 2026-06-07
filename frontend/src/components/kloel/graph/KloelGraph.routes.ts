@@ -86,7 +86,7 @@ export function resolveKloelGraphNodeForPathFromNodes(
   if (parts[0] === 'checkout' && parts[1]) {
     return resolveCheckoutNode(parts[1], searchParams, path, nodes);
   }
-  return findStaticRouteNode(path, searchParams, nodes);
+  return findStaticRouteNode(path, searchParams, nodes) ?? findFallbackRouteNode(path, nodes);
 }
 
 export function resolveKloelGraphNodeForPath(
@@ -183,6 +183,18 @@ const FALLBACK_PREFIXES = [
   ['/canvas', 'criar-canvas'],
   ['/ferramentas', 'kloel-tools'],
 ] as const;
+
+function findFallbackRouteNode(
+  path: string,
+  nodes: readonly KloelGraphNode[],
+): KloelGraphNode | undefined {
+  for (const [prefix, nodeId] of FALLBACK_PREFIXES) {
+    if (path.startsWith(prefix)) {
+      return nodes.find((node) => node.id === nodeId) ?? getKloelGraphNodeById(nodeId);
+    }
+  }
+  return undefined;
+}
 
 function findStaticRouteNode(
   path: string,

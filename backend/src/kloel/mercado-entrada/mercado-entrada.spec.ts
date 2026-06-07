@@ -107,12 +107,12 @@ describe('MercadoEntradaDeclarator — candidates', () => {
 
   it('4. candidates are ranked 1..5 in descending compositeScore', () => {
     for (let i = 1; i < ENTRY_MARKET_CANDIDATES.length; i++) {
-      const prev = ENTRY_MARKET_CANDIDATES[i - 1]!;
-      const curr = ENTRY_MARKET_CANDIDATES[i]!;
+      const prev = ENTRY_MARKET_CANDIDATES[i - 1];
+      const curr = ENTRY_MARKET_CANDIDATES[i];
       expect(prev.compositeScore).toBeGreaterThanOrEqual(curr.compositeScore);
       expect(curr.rank).toBe(i + 1);
     }
-    expect(ENTRY_MARKET_CANDIDATES[0]!.rank).toBe(1);
+    expect(ENTRY_MARKET_CANDIDATES[0].rank).toBe(1);
   });
 
   it('5. every candidate marketId is unique', () => {
@@ -250,7 +250,7 @@ describe('MercadoEntradaDeclaratorService — spine emission', () => {
     const mercadoEvents = spineEventsOfKind(spine, 'commerce.onboarding.declared');
     expect(mercadoEvents.length).toBeGreaterThanOrEqual(2);
 
-    const latest = mercadoEvents[mercadoEvents.length - 1]!;
+    const latest = mercadoEvents[mercadoEvents.length - 1];
     const payload = latest.payload ?? {};
     expect(payload['marketId']).toBe('closer-tracao-whatsapp');
     expect(payload['role']).toBe('closer');
@@ -270,7 +270,7 @@ describe('MercadoEntradaDeclaratorService — spine emission', () => {
     const events = spineEventsOfKind(spine, 'commerce.onboarding.declared');
     expect(events.length).toBeGreaterThanOrEqual(2);
 
-    const second = events[events.length - 1]!;
+    const second = events[events.length - 1];
     const payload = second.payload ?? {};
     expect(payload['marketId']).toBe('afiliado-tracao-afiliacao');
     expect(payload['previousMarketId']).toBe('closer-tracao-whatsapp');
@@ -291,7 +291,7 @@ describe('MercadoEntradaDeclaratorService — history', () => {
     const svc = makeService();
     const history = svc.getDeclarationHistory();
     expect(history.length).toBeGreaterThanOrEqual(1);
-    expect(history[0]!.active.marketId).toBe('produtor-infoproduto-validacao-checkout');
+    expect(history[0].active.marketId).toBe('produtor-infoproduto-validacao-checkout');
   });
 
   it('20. getDeclarationHistory grows after each unique declaration', () => {
@@ -322,13 +322,13 @@ describe('MercadoEntradaDeclarator — pure helpers', () => {
   it('23. findCandidateById returns correct candidate', () => {
     const c = findCandidateById('closer-tracao-whatsapp');
     expect(c).toBeDefined();
-    expect(c!.role).toBe('closer');
-    expect(c!.stage).toBe('tracao');
-    expect(c!.compositeScore).toBeGreaterThan(0.7);
+    expect(c.role).toBe('closer');
+    expect(c.stage).toBe('tracao');
+    expect(c.compositeScore).toBeGreaterThan(0.7);
   });
 
   it('24. entryMarketFromCandidate strips score fields', () => {
-    const candidate = ENTRY_MARKET_CANDIDATES[0]!;
+    const candidate = ENTRY_MARKET_CANDIDATES[0];
     const market = entryMarketFromCandidate(candidate);
     expect(market.marketId).toBe(candidate.marketId);
     expect(market.label).toBe(candidate.label);
@@ -364,7 +364,7 @@ describe('MercadoEntradaDeclaratorService — full cycle', () => {
       expect(result.ok).toBe(true);
     }
 
-    expect(svc.getActiveMarket().marketId).toBe(ids[ids.length - 1]!);
+    expect(svc.getActiveMarket().marketId).toBe(ids[ids.length - 1]);
 
     const final = svc.declareMarket('produtor-infoproduto-validacao-checkout', 'cycle-test');
     expect(final.ok).toBe(true);

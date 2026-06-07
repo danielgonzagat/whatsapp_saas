@@ -10,7 +10,6 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../../common/interfaces';
@@ -189,7 +188,7 @@ export class ProductAffiliateController {
     const workspaceId = resolveWorkspaceId(req);
     await this.prisma.product.updateMany({
       where: { id: productId, workspaceId },
-      data: productPayload as Prisma.ProductUncheckedUpdateInput,
+      data: productPayload,
     });
     const updatedProduct = await this.prisma.product.findFirstOrThrow({
       where: { id: productId, workspaceId },

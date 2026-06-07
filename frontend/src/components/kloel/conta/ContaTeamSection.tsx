@@ -19,6 +19,9 @@ import { getErrorMessage } from './ContaHelpers';
 import { SectionCard } from './ContaShared';
 import { TeamMember, TeamInvite } from './ContaTypes';
 
+const INVITE_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const INVALID_INVITE_EMAIL_MESSAGE = 'Informe um email valido.';
+
 export function TeamSection() {
   const fid = useId();
   const wsId = useWorkspaceId();
@@ -31,15 +34,14 @@ export function TeamSection() {
     keepPreviousData: true,
     revalidateOnFocus: false,
   });
-  // Backend returns { agents, invitations }. Map agents->members (deriving an
-  // honest status from isOnline) and treat every returned invitation as pending
-  // (the backend does not send a status field).
+  // Backend returns { agents, invitations }. Agents are active workspace members;
+  // pending status belongs to invitations that have not been accepted yet.
   const members: TeamMember[] = (data?.agents ?? []).map((agent) => ({
     id: agent.id,
     name: agent.name,
     email: agent.email,
     role: agent.role,
-    status: agent.isOnline ? 'active' : 'pending',
+    status: 'active',
   }));
   const invites: TeamInvite[] = (data?.invitations ?? []).map((inv) => ({
     id: inv.id,
@@ -58,8 +60,18 @@ export function TeamSection() {
   const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
 
+  const trimmedInviteEmail = inviteEmail.trim();
+  const inviteEmailInvalid = !!trimmedInviteEmail && !INVITE_EMAIL_RE.test(trimmedInviteEmail);
+  const inviteValidationError = inviteEmailInvalid ? INVALID_INVITE_EMAIL_MESSAGE : '';
+  const inviteButtonDisabled = inviting || !trimmedInviteEmail || inviteEmailInvalid;
+
   const handleInvite = async () => {
-    if (!inviteEmail.trim()) {
+    if (!trimmedInviteEmail) {
+      return;
+    }
+    if (inviteEmailInvalid) {
+      setInviteError(INVALID_INVITE_EMAIL_MESSAGE);
+      setInviteSuccess('');
       return;
     }
     setInviting(true);
@@ -67,9 +79,9 @@ export function TeamSection() {
     setInviteSuccess('');
     setTeamActionError('');
     try {
-      await inviteTeamMember(inviteEmail.trim(), inviteRole);
+      await inviteTeamMember(trimmedInviteEmail, inviteRole);
       setInviteEmail('');
-      setInviteSuccess(`Convite enviado para ${inviteEmail.trim()}`);
+      setInviteSuccess(`Convite enviado para ${trimmedInviteEmail}`);
       await mutate();
     } catch (e) {
       setInviteError(getErrorMessage(e) || 'Erro ao enviar convite');
@@ -78,11 +90,15 @@ export function TeamSection() {
     }
   };
 
+
   const handleRevoke = async (id: string) => {
     setRevokingId(id);
     setTeamActionError('');
+    setInviteError('');
+    setInviteSuccess('');
     try {
       await revokeTeamInvite(id);
+      setInviteSuccess('Convite cancelado.');
       await mutate();
     } catch (e) {
       setTeamActionError(getErrorMessage(e) || 'Erro ao cancelar convite');
@@ -194,11 +210,17 @@ export function TeamSection() {
             </label>
             <input
               aria-label="Email do convidado"
+              aria-invalid={inviteEmailInvalid}
               type="email"
               value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
+              onChange={(e) => {
+                setInviteEmail(e.target.value);
+                setInviteError('');
+                setInviteSuccess('');
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
+                  e.preventDefault();
                   handleInvite();
                 }
               }}
@@ -237,16 +259,16 @@ export function TeamSection() {
           <button
             type="button"
             onClick={handleInvite}
-            disabled={inviting || !inviteEmail.trim()}
+            disabled={inviteButtonDisabled}
             style={{
               padding: '11px 20px',
-              background: inviting || !inviteEmail.trim() ? 'var(--app-text-placeholder)' : EMBER,
+              background: inviteButtonDisabled ? 'var(--app-text-placeholder)' : EMBER,
               border: 'none',
               borderRadius: 6,
               color: colors.text.silver,
               fontSize: 12,
               fontWeight: 600,
-              cursor: inviting || !inviteEmail.trim() ? 'not-allowed' : 'pointer',
+              cursor: inviteButtonDisabled ? 'not-allowed' : 'pointer',
               fontFamily: SORA,
               display: 'flex',
               alignItems: 'center',
@@ -256,9 +278,9 @@ export function TeamSection() {
             {Icons.plus(12)} {inviting ? 'Enviando...' : 'Convidar'}
           </button>
         </div>
-        {inviteError && (
+        {(inviteError || inviteValidationError) && (
           <p style={{ fontSize: 11, color: colors.semantic.error, margin: '8px 0 0', fontFamily: SORA }}>
-            {inviteError}
+            {inviteError || inviteValidationError}
           </p>
         )}
         {inviteSuccess && (

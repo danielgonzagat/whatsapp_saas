@@ -7,7 +7,7 @@ import { useProducts } from '@/hooks/useProducts';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
 import type { ReactNode } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { KloelGraphChromeButtons } from './KloelGraphChromeButtons';
 import { KloelGraphFloatingNav } from './KloelGraphFloatingNav';
@@ -20,6 +20,7 @@ import { KloelGraphSettingsPanel } from './KloelGraphSettingsPanel';
 import {
   KLOEL_GRAPH_NODES,
   buildKloelGraphProductNodes,
+  getKloelGraphOverlayLabel,
   resolveKloelGraphNodeForPathFromNodes,
 } from './KloelGraph.routes';
 import type { KloelGraphArea, KloelGraphNode } from './KloelGraph.routes';
@@ -29,17 +30,88 @@ import {
   loadCheckoutGraphProducts,
   mergeGraphProducts,
 } from './KloelGraphShell.helpers';
-import { GRAPH_FONT, GraphThemeProvider, useGraphTheme } from './KloelGraphTheme';
+import { GRAPH_FONT, GRAPH_MONO, GraphThemeProvider, useGraphTheme } from './KloelGraphTheme';
+function KloelGraphPendingOverlay({ node }: { readonly node: KloelGraphNode }) {
+  const { C } = useGraphTheme();
+  const label = getKloelGraphOverlayLabel(node);
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      style={{
+        minHeight: '100%',
+        display: 'grid',
+        placeItems: 'center',
+        padding: 32,
+        color: C.text,
+      }}
+    >
+      <div
+        style={{
+          display: 'grid',
+          justifyItems: 'center',
+          gap: 10,
+          textAlign: 'center',
+        }}
+      >
+        <span
+          aria-hidden="true"
+          style={{
+            width: 34,
+            height: 2,
+            borderRadius: 6,
+            background: C.ember,
+          }}
+        />
+        <p
+          style={{
+            margin: 0,
+            fontFamily: GRAPH_MONO,
+            fontSize: 12,
+            fontWeight: 700,
+            letterSpacing: 1.1,
+            textTransform: 'uppercase',
+            color: C.text,
+          }}
+        >
+          Carregando {label}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 
 function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
   const { C } = useGraphTheme();
-  const { products } = useProducts();
-  const { areas: memberAreas } = useMemberAreas();
+  const params = useMemo(() => new URLSearchParams(searchParams.toString()), [searchParams]);
+  const staticActiveNode = resolveKloelGraphNodeForPathFromNodes(
+    pathname,
+    params,
+    KLOEL_GRAPH_NODES,
+  );
+  const routeAreaHint: KloelGraphArea | null =
+    pathname.startsWith('/products') ||
+    pathname.startsWith('/checkout') ||
+    pathname.startsWith('/sites') ||
+    pathname.startsWith('/video') ||
+    pathname.startsWith('/funnels') ||
+    pathname.startsWith('/canvas')
+      ? 'criar'
+      : pathname.startsWith('/produtos/area-membros') || pathname.startsWith('/member-areas')
+        ? 'educar'
+        : null;
+  const dynamicDataArea = staticActiveNode?.area ?? routeAreaHint;
+  const shouldLoadProductGraphData = dynamicDataArea === 'criar';
+  const shouldLoadMemberAreaGraphData = dynamicDataArea === 'educar';
+  const { products } = useProducts({ enabled: shouldLoadProductGraphData });
+  const { areas: memberAreas } = useMemberAreas({ enabled: shouldLoadMemberAreaGraphData });
   const { data: checkoutProducts = [] } = useSWR(
-    'kloel-graph-checkout-products',
+    shouldLoadProductGraphData ? 'kloel-graph-checkout-products' : null,
     loadCheckoutGraphProducts,
     { keepPreviousData: true },
   );
@@ -55,7 +127,10 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
   const [pendingNode, setPendingNode] = useState<{
     readonly id: string;
     readonly routeSignature: string;
+    readonly sequence: number;
   } | null>(null);
+  const pendingNodeSequenceRef = useRef(0);
+  const [consumedPendingNodeSequence, setConsumedPendingNodeSequence] = useState<number | null>(null);
 
   const pushGraphOnlyRoute = useCallback(
     (url: string) => {
@@ -68,7 +143,22 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
     [router],
   );
 
-  const params = useMemo(() => new URLSearchParams(searchParams.toString()), [searchParams]);
+  const resolveNodeRoute = useCallback(
+    (node: KloelGraphNode) => {
+      const [nodePath, nodeQueryString = ''] = node.route.split('?');
+      if (nodePath !== pathname || nodeQueryString) {
+        return node.route;
+      }
+
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.delete('graph');
+      nextParams.delete('graphAction');
+      const query = nextParams.toString();
+      return query ? `${nodePath}?${query}` : nodePath;
+    },
+    [pathname, searchParams],
+  );
+
   const graphProducts = useMemo(
     () => mergeGraphProducts(products, checkoutProducts),
     [products, checkoutProducts],
@@ -81,7 +171,11 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
   );
   const activeNode = resolveKloelGraphNodeForPathFromNodes(pathname, params, graphNodes);
   const routeSignature = `${pathname}?${params.toString()}`;
-  const pendingNodeId = pendingNode?.routeSignature === routeSignature ? pendingNode.id : null;
+  const pendingNodeConsumed = pendingNode ? consumedPendingNodeSequence === pendingNode.sequence : false;
+  const pendingNodeId =
+    pendingNode && !pendingNodeConsumed && pendingNode.routeSignature === routeSignature
+      ? pendingNode.id
+      : null;
   const activeRouteKey = activeNode?.id ?? routeSignature;
   const graphOnly = params.get('graph') === '1';
   const graphAction = params.get('graphAction');
@@ -93,6 +187,24 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
   const activeGraphNodeId = graphOnly
     ? (pendingNodeId ?? undefined)
     : (pendingNodeId ?? activeNode?.id);
+  const pendingOverlayNode = graphOnly && pendingNodeId
+    ? graphNodes.find((node) => node.id === pendingNodeId)
+    : undefined;
+  const hasRouteOverlay = !graphOnly || Boolean(pendingOverlayNode);
+  const overlayNode = graphOnly ? pendingOverlayNode : activeNode;
+
+  useEffect(() => {
+    if (!pendingNode || pendingNode.routeSignature === routeSignature) {
+      return undefined;
+    }
+    const pendingSequence = pendingNode.sequence;
+    const timeoutId = window.setTimeout(() => {
+      setConsumedPendingNodeSequence((current) =>
+        current === pendingSequence ? current : pendingSequence,
+      );
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [pendingNode, routeSignature]);
 
   useEffect(() => {
     for (const node of KLOEL_GRAPH_NODES) {
@@ -140,18 +252,40 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
         openPalette({ initialQuery: '' });
         return;
       }
-      setPendingNode({ id: node.id, routeSignature });
-      router.push(node.route);
+      if (node.id === 'kloel-chat') {
+        setPendingNode({
+          id: node.id,
+          routeSignature,
+          sequence: (pendingNodeSequenceRef.current += 1),
+        });
+        router.push(node.route);
+        if (typeof window !== 'undefined') {
+          if (pathname === node.route) {
+            window.dispatchEvent(new Event('kloel:new-chat'));
+          } else {
+            window.setTimeout(() => window.dispatchEvent(new Event('kloel:new-chat')), 0);
+          }
+        }
+        return;
+      }
+      setPendingNode({
+        id: node.id,
+        routeSignature,
+        sequence: (pendingNodeSequenceRef.current += 1),
+      });
+      router.push(resolveNodeRoute(node));
     },
-    [openPalette, routeSignature, router],
+    [openPalette, pathname, resolveNodeRoute, routeSignature, router],
   );
 
   const focusGalaxy = useCallback(
     (area: KloelGraphArea) => {
       const primaryNode = KLOEL_GRAPH_NODES.find((node) => node.area === area && !node.parentId);
 
-      setManualFocus({ area, routeKey: activeRouteKey });
-      setRecenterNonce((value) => value + 1);
+      startTransition(() => {
+        setManualFocus({ area, routeKey: activeRouteKey });
+        setRecenterNonce((value) => value + 1);
+      });
 
       if (!primaryNode) {
         return;
@@ -201,6 +335,7 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
         focusedArea={displayArea}
         recenterNonce={recenterNonce}
         settings={graphSettings}
+        ariaHidden={hasRouteOverlay || paletteProps.open}
         onOpenNode={openNode}
         onClearSelection={() => setPendingNode(null)}
       />
@@ -213,9 +348,9 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
       )}
       <KloelGraphChromeButtons settingsActive={settingsOpen} onOpenSettings={toggleSettings} />
       <KloelGraphFloatingNav focusedArea={displayArea} onFocusGalaxy={focusGalaxy} />
-      {!graphOnly && (
-        <KloelGraphOverlay activeNode={activeNode} onClose={closeOverlay}>
-          {children}
+      {hasRouteOverlay && (
+        <KloelGraphOverlay activeNode={overlayNode} onClose={closeOverlay}>
+          {pendingOverlayNode ? <KloelGraphPendingOverlay node={pendingOverlayNode} /> : children}
         </KloelGraphOverlay>
       )}
     </div>

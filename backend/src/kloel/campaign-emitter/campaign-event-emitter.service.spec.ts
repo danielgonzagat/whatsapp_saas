@@ -33,7 +33,7 @@ describe('CampaignEventEmitterService', () => {
       emitter.emitClicked(input);
       const events = spine.recentEvents();
       expect(events).toHaveLength(1);
-      const e = events[0]!;
+      const e = events[0];
       expect(e.eventName).toBe('commerce.campaign.clicked');
       expect(e.workspaceId).toBe(baseWorkspaceId);
       expect(e.entityRef).toEqual({ entityType: 'campaign', entityId: 'camp_01' });
@@ -61,7 +61,7 @@ describe('CampaignEventEmitterService', () => {
       emitter.emitConversionAssociated(input);
       const events = spine.recentEvents();
       expect(events).toHaveLength(1);
-      const e = events[0]!;
+      const e = events[0];
       expect(e.eventName).toBe('commerce.campaign.conversion_associated');
       expect(e.workspaceId).toBe(baseWorkspaceId);
       expect(e.truthMode).toBe('observed');
@@ -87,7 +87,7 @@ describe('CampaignEventEmitterService', () => {
       emitter.emitAudienceReached(input);
       const events = spine.recentEvents();
       expect(events).toHaveLength(1);
-      const e = events[0]!;
+      const e = events[0];
       expect(e.eventName).toBe('commerce.campaign.audience_reached');
       expect(e.workspaceId).toBe(baseWorkspaceId);
       expect(e.truthMode).toBe('observed');
@@ -114,7 +114,7 @@ describe('CampaignEventEmitterService', () => {
       emitter.emitCreativeSwapped(input);
       const events = spine.recentEvents();
       expect(events).toHaveLength(1);
-      const e = events[0]!;
+      const e = events[0];
       expect(e.eventName).toBe('commerce.campaign.creative_swapped');
       expect(e.workspaceId).toBe(baseWorkspaceId);
       expect(e.truthMode).toBe('observed');
@@ -141,7 +141,7 @@ describe('CampaignEventEmitterService', () => {
       emitter.emitPerformanceDropDetected(input);
       const events = spine.recentEvents();
       expect(events).toHaveLength(1);
-      const e = events[0]!;
+      const e = events[0];
       expect(e.eventName).toBe('commerce.campaign.performance_drop_detected');
       expect(e.workspaceId).toBe(baseWorkspaceId);
       expect(e.truthMode).toBe('inferred');

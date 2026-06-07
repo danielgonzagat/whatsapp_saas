@@ -62,6 +62,36 @@ describe('DocumentosSection', () => {
     expect(mocks.mutate).toHaveBeenCalled();
   });
 
+  it('lets pending documents be replaced without deleting first', async () => {
+    mocks.uploadDocument.mockResolvedValueOnce({ id: 'doc-2' });
+    const file = new File(['novo documento'], 'rg-novo.pdf', { type: 'application/pdf' });
+
+    render(
+      <DocumentosSection
+        documents={[
+          {
+            id: 'doc-1',
+            type: 'DOCUMENT_FRONT',
+            status: 'pending',
+            fileName: 'rg.pdf',
+          },
+        ]}
+        fiscal={{ type: 'PF' }}
+        mutate={mocks.mutate}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: /Substituir rg\.pdf/i })).toBeTruthy();
+
+    const input = screen.getByLabelText('Documento de identidade - substituir rg.pdf') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(mocks.uploadDocument).toHaveBeenCalledWith('DOCUMENT_FRONT', file);
+    });
+    expect(mocks.mutate).toHaveBeenCalled();
+  });
+
   it('switches the second upload slot to company documents for PJ fiscal accounts', () => {
     render(<DocumentosSection documents={[]} fiscal={{ type: 'PJ', cnpj: '12345678000190' }} mutate={mocks.mutate} />);
 

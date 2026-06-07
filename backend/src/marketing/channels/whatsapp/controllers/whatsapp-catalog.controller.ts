@@ -45,7 +45,7 @@ export class WhatsAppCatalogController {
   /** Get contacts. */
   @Get('contacts')
   async getContacts(@Req() req: AuthenticatedRequest) {
-    return this.whatsappService.listContacts(req.workspaceId!);
+    return this.whatsappService.listContacts(req.workspaceId);
   }
 
   /** Create contact. */
@@ -54,13 +54,13 @@ export class WhatsAppCatalogController {
     @Req() req: AuthenticatedRequest,
     @Body() body: { phone: string; name?: string; email?: string },
   ) {
-    return this.whatsappService.createContact(req.workspaceId!, body);
+    return this.whatsappService.createContact(req.workspaceId, body);
   }
 
   /** Get chats. */
   @Get('chats')
   async getChats(@Req() req: AuthenticatedRequest) {
-    return this.whatsappService.listChats(req.workspaceId!);
+    return this.whatsappService.listChats(req.workspaceId);
   }
 
   /** Get chat messages. */
@@ -70,7 +70,7 @@ export class WhatsAppCatalogController {
     const limit = Number(req.query?.limit || body.limit || 100) || 100;
     const offset = Number(req.query?.offset || body.offset || 0) || 0;
     const downloadMedia = this.readBooleanQuery(req.query?.downloadMedia, false);
-    return this.whatsappService.getChatMessages(req.workspaceId!, decodeURIComponent(chatId), {
+    return this.whatsappService.getChatMessages(req.workspaceId, decodeURIComponent(chatId), {
       limit,
       offset,
       downloadMedia,
@@ -89,7 +89,7 @@ export class WhatsAppCatalogController {
       return { success: false, reason: 'presence is required' };
     }
     return this.whatsappService.setPresence(
-      req.workspaceId!,
+      req.workspaceId,
       decodeURIComponent(chatId),
       body.presence,
     );
@@ -98,7 +98,7 @@ export class WhatsAppCatalogController {
   /** Get operational backlog report. */
   @Get('backlog/report')
   async getOperationalBacklogReport(@Req() req: AuthenticatedRequest) {
-    return this.whatsappService.getOperationalBacklogReport(req.workspaceId!, {
+    return this.whatsappService.getOperationalBacklogReport(req.workspaceId, {
       limit: this.readNumberQuery(req.query?.limit, 100, 1, 500),
       includeResolved: this.readBooleanQuery(req.query?.includeResolved, false),
     });
@@ -107,14 +107,14 @@ export class WhatsAppCatalogController {
   /** Get backlog. */
   @Get('backlog')
   async getBacklog(@Req() req: AuthenticatedRequest) {
-    return this.whatsappService.getBacklog(req.workspaceId!);
+    return this.whatsappService.getBacklog(req.workspaceId);
   }
 
   /** Get catalog contacts. */
   @InternalEndpoint('whatsapp catalog contacts')
   @Get('catalog/contacts')
   async getCatalogContacts(@Req() req: AuthenticatedRequest) {
-    return this.whatsappService.listCatalogContacts(req.workspaceId!, {
+    return this.whatsappService.listCatalogContacts(req.workspaceId, {
       days: this.readNumberQuery(req.query?.days, 30, 1, 365),
       page: this.readNumberQuery(req.query?.page, 1, 1, 10000),
       limit: this.readNumberQuery(req.query?.limit, 50, 1, 200),
@@ -126,7 +126,7 @@ export class WhatsAppCatalogController {
   @InternalEndpoint('whatsapp catalog ranking')
   @Get('catalog/ranking')
   async getCatalogRanking(@Req() req: AuthenticatedRequest) {
-    return this.whatsappService.listPurchaseProbabilityRanking(req.workspaceId!, {
+    return this.whatsappService.listPurchaseProbabilityRanking(req.workspaceId, {
       days: this.readNumberQuery(req.query?.days, 30, 1, 365),
       limit: this.readNumberQuery(req.query?.limit, 50, 1, 200),
       minLeadScore: this.readNumberQuery(req.query?.minLeadScore, 0, 0, 100),
@@ -143,7 +143,7 @@ export class WhatsAppCatalogController {
     @Req() req: AuthenticatedRequest,
     @Body() body: { days?: number; reason?: string },
   ) {
-    return this.whatsappService.triggerCatalogRefresh(req.workspaceId!, {
+    return this.whatsappService.triggerCatalogRefresh(req.workspaceId, {
       days: this.readNumberQuery(body?.days, 30, 1, 365),
       reason: this.readText(body?.reason, 'manual_catalog_refresh'),
     });
@@ -163,7 +163,7 @@ export class WhatsAppCatalogController {
     },
   ) {
     const contactId = this.readText(body?.contactId).trim() || undefined;
-    return this.whatsappService.triggerCatalogRescore(req.workspaceId!, {
+    return this.whatsappService.triggerCatalogRescore(req.workspaceId, {
       ...(contactId !== undefined ? { contactId } : {}),
       days: this.readNumberQuery(body?.days, 30, 1, 365),
       limit: this.readNumberQuery(body?.limit, 100, 1, 500),
@@ -177,7 +177,7 @@ export class WhatsAppCatalogController {
     @Req() req: AuthenticatedRequest,
     @Body() body: { limit?: number; reason?: string },
   ) {
-    return this.whatsappService.triggerBacklogRebuild(req.workspaceId!, {
+    return this.whatsappService.triggerBacklogRebuild(req.workspaceId, {
       limit: this.readNumberQuery(body?.limit, 500, 1, 2000),
       reason: this.readText(body?.reason, 'manual_backlog_rebuild'),
     });
@@ -201,7 +201,7 @@ export class WhatsAppCatalogController {
   @Post('sync')
   async sync(@Req() req: AuthenticatedRequest, @Body() body: { reason?: string }) {
     return this.whatsappService.triggerSync(
-      req.workspaceId!,
+      req.workspaceId,
       this.readText(body?.reason, 'manual_sync'),
     );
   }

@@ -105,12 +105,12 @@ function ensureInitialized() {
 // Getters para acesso lazy
 function getConnection() {
   ensureInitialized();
-  return _connection!;
+  return _connection;
 }
 
 function getQueueOptions() {
   ensureInitialized();
-  return _queueOptions!;
+  return _queueOptions;
 }
 
 // Aliases para compatibilidade

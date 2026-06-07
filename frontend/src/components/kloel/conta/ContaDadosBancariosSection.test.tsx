@@ -41,6 +41,37 @@ describe('DadosBancariosSection', () => {
     vi.unstubAllGlobals();
   });
 
+  it('matches common bank aliases when the registry only exposes the official name', async () => {
+    mocks.banks = [
+      {
+        code: 260,
+        fullName: 'NU PAGAMENTOS S.A. - INSTITUICAO DE PAGAMENTO',
+        ispb: '18236120',
+        name: 'NU PAGAMENTOS S.A.',
+      },
+    ];
+
+    render(
+      <DadosBancariosSection
+        bankAccount={null}
+        fiscal={{ cpf: '12345678900', type: 'PF' }}
+        profile={{ name: 'Daniel Penin' }}
+        mutate={mocks.mutate}
+      />,
+    );
+
+    await waitFor(() => {
+      expect((screen.getByLabelText('Titular da conta') as HTMLInputElement).value).toBe('Daniel Penin');
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /selecionar banco/i }));
+    fireEvent.change(screen.getByLabelText(/buscar banco ou codigo/i), {
+      target: { value: 'nubank' },
+    });
+
+    expect(screen.getByRole('button', { name: /260NU PAGAMENTOS/i })).toBeTruthy();
+  });
+
   it('selects a Brazilian bank from the registry and persists account data', async () => {
     render(
       <DadosBancariosSection
@@ -84,5 +115,65 @@ describe('DadosBancariosSection', () => {
       );
     });
     expect(mocks.mutate).toHaveBeenCalled();
+  });
+
+  it('blocks saving a selected bank without agency and account data', async () => {
+    render(
+      <DadosBancariosSection
+        bankAccount={null}
+        fiscal={{ cpf: '12345678900', type: 'PF' }}
+        profile={{ name: 'Daniel Penin' }}
+        mutate={mocks.mutate}
+      />,
+    );
+
+    await waitFor(() => {
+      expect((screen.getByLabelText('Titular da conta') as HTMLInputElement).value).toBe('Daniel Penin');
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /selecionar banco/i }));
+    fireEvent.click(screen.getByRole('button', { name: /001Banco do Brasil/i }));
+    fireEvent.click(screen.getByRole('button', { name: /salvar/i }));
+
+    expect(await screen.findByText('Informe a agencia.')).toBeTruthy();
+    expect(mocks.showToast).toHaveBeenCalledWith('Informe a agencia.', 'error');
+    expect(mocks.updateBank).not.toHaveBeenCalled();
+    expect(mocks.mutate).not.toHaveBeenCalled();
+  });
+
+  it('infers a missing PIX key type from an existing email key before saving', async () => {
+    render(
+      <DadosBancariosSection
+        bankAccount={{
+          bankName: 'Banco do Brasil S.A.',
+          bankCode: '001',
+          agency: '0001',
+          account: '1234567-8',
+          accountType: 'CHECKING',
+          pixKey: 'codex.audit.pix@example.com',
+          pixKeyType: null,
+          holderName: 'Codex Audit QA',
+          holderDocument: '93541134780',
+        }}
+        fiscal={{ cpf: '93541134780', type: 'PF' }}
+        profile={{ name: 'Codex Audit QA' }}
+        mutate={mocks.mutate}
+      />,
+    );
+
+    await waitFor(() => {
+      expect((screen.getByLabelText('Tipo da chave') as HTMLSelectElement).value).toBe('EMAIL');
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /salvar/i }));
+
+    await waitFor(() => {
+      expect(mocks.updateBank).toHaveBeenCalledWith(
+        expect.objectContaining({
+          pixKey: 'codex.audit.pix@example.com',
+          pixKeyType: 'EMAIL',
+        }),
+      );
+    });
   });
 });

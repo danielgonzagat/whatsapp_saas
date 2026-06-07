@@ -84,17 +84,17 @@ describe('Evol module (UTP-EVOL-001..010)', () => {
     it('detects payment gap with revenue risk', () => {
       const gaps = svc.detect([makePaymentSignal()]);
       expect(gaps).toHaveLength(1);
-      expect(gaps[0]!.domain).toBe('payments');
-      expect(gaps[0]!.severity).toBe('critical');
-      expect(gaps[0]!.commercialImpact).toBe('revenue_blocking');
-      expect(gaps[0]!.estimatedRevenueRiskCents).toBeGreaterThan(0);
+      expect(gaps[0].domain).toBe('payments');
+      expect(gaps[0].severity).toBe('critical');
+      expect(gaps[0].commercialImpact).toBe('revenue_blocking');
+      expect(gaps[0].estimatedRevenueRiskCents).toBeGreaterThan(0);
     });
 
     it('detects auth gap with trust impact', () => {
       const gaps = svc.detect([makeAuthSignal()]);
       expect(gaps).toHaveLength(1);
-      expect(gaps[0]!.domain).toBe('auth');
-      expect(gaps[0]!.commercialImpact).toBe('trust_eroding');
+      expect(gaps[0].domain).toBe('auth');
+      expect(gaps[0].commercialImpact).toBe('trust_eroding');
     });
 
     it('ignores signals with confidence below 0.3', () => {
@@ -123,8 +123,8 @@ describe('Evol module (UTP-EVOL-001..010)', () => {
       const signals: GapSignal[] = [makeAuthSignal(), makePaymentSignal()];
       const gaps = svc.detect(signals);
       expect(gaps.length).toBeGreaterThanOrEqual(1);
-      expect(gaps[0]!.estimatedRevenueRiskCents).toBeGreaterThanOrEqual(
-        gaps[gaps.length - 1]!.estimatedRevenueRiskCents,
+      expect(gaps[0].estimatedRevenueRiskCents).toBeGreaterThanOrEqual(
+        gaps[gaps.length - 1].estimatedRevenueRiskCents,
       );
     });
 
@@ -153,8 +153,8 @@ describe('Evol module (UTP-EVOL-001..010)', () => {
       const gaps = [makeGap('ws-1', 'payments'), makeGap('ws-2', 'auth')];
       const proposals = svc.buildAll(gaps, []);
       expect(proposals).toHaveLength(2);
-      expect(proposals[0]!.workspaceId).toBe('ws-1');
-      expect(proposals[1]!.workspaceId).toBe('ws-2');
+      expect(proposals[0].workspaceId).toBe('ws-1');
+      expect(proposals[1].workspaceId).toBe('ws-2');
     });
 
     it('submits draft proposal', () => {
@@ -186,8 +186,8 @@ describe('Evol module (UTP-EVOL-001..010)', () => {
       const auth = svc.requestAuthorization(proposal, 'human-admin');
       const approved = svc.approve(auth.id, 'human-admin', 'looks good');
       expect(approved).not.toBeNull();
-      expect(approved!.status).toBe('approved');
-      expect(approved!.authorizedAt).not.toBeNull();
+      expect(approved.status).toBe('approved');
+      expect(approved.authorizedAt).not.toBeNull();
     });
 
     it('rejects pending authorization', () => {
@@ -195,7 +195,7 @@ describe('Evol module (UTP-EVOL-001..010)', () => {
       const auth = svc.requestAuthorization(proposal, 'human-admin');
       const rejected = svc.reject(auth.id, 'human-admin', 'not safe');
       expect(rejected).not.toBeNull();
-      expect(rejected!.status).toBe('rejected');
+      expect(rejected.status).toBe('rejected');
     });
 
     it('isAuthorized returns true for approved auth', () => {
@@ -244,8 +244,8 @@ describe('Evol module (UTP-EVOL-001..010)', () => {
       const auth = makeApprovedAuth();
       const bridge = svc.dispatch(auth, 'coding-agent-1');
       expect(bridge).not.toBeNull();
-      expect(bridge!.status).toBe('dispatched');
-      expect(bridge!.targetAgent).toBe('coding-agent-1');
+      expect(bridge.status).toBe('dispatched');
+      expect(bridge.targetAgent).toBe('coding-agent-1');
     });
 
     it('rejects dispatch for non-approved authorization', () => {
@@ -255,20 +255,20 @@ describe('Evol module (UTP-EVOL-001..010)', () => {
 
     it('completes dispatched bridge', () => {
       const auth = makeApprovedAuth();
-      const bridge = svc.dispatch(auth, 'coding-agent-1')!;
+      const bridge = svc.dispatch(auth, 'coding-agent-1');
       const completed = svc.complete(bridge.id, 'abc123hash');
       expect(completed).not.toBeNull();
-      expect(completed!.status).toBe('completed');
-      expect(completed!.resultHash).toBe('abc123hash');
+      expect(completed.status).toBe('completed');
+      expect(completed.resultHash).toBe('abc123hash');
     });
 
     it('fails dispatched bridge', () => {
       const auth = makeApprovedAuth();
-      const bridge = svc.dispatch(auth, 'coding-agent-1')!;
+      const bridge = svc.dispatch(auth, 'coding-agent-1');
       const failed = svc.fail(bridge.id, 'build error');
       expect(failed).not.toBeNull();
-      expect(failed!.status).toBe('failed');
-      expect(failed!.errorMessage).toBe('build error');
+      expect(failed.status).toBe('failed');
+      expect(failed.errorMessage).toBe('build error');
     });
 
     it('lists bridges by authorization', () => {
@@ -300,7 +300,7 @@ describe('Evol module (UTP-EVOL-001..010)', () => {
     it('starts experiment for approved authorization', () => {
       const run = svc.start(makeProposal(), makeApprovedAuth());
       expect(run).not.toBeNull();
-      expect(run!.status).toBe('running');
+      expect(run.status).toBe('running');
     });
 
     it('rejects experiment for non-approved authorization', () => {
@@ -309,19 +309,19 @@ describe('Evol module (UTP-EVOL-001..010)', () => {
     });
 
     it('completes running experiment', () => {
-      const run = svc.start(makeProposal(), makeApprovedAuth())!;
+      const run = svc.start(makeProposal(), makeApprovedAuth());
       const completed = svc.complete(run.id, 3, 'confirmed');
       expect(completed).not.toBeNull();
-      expect(completed!.status).toBe('completed');
-      expect(completed!.verdict).toBe('confirmed');
-      expect(completed!.evidenceCount).toBe(3);
+      expect(completed.status).toBe('completed');
+      expect(completed.verdict).toBe('confirmed');
+      expect(completed.evidenceCount).toBe(3);
     });
 
     it('fails running experiment', () => {
-      const run = svc.start(makeProposal(), makeApprovedAuth())!;
+      const run = svc.start(makeProposal(), makeApprovedAuth());
       const failed = svc.fail(run.id, 'timeout');
       expect(failed).not.toBeNull();
-      expect(failed!.status).toBe('failed');
+      expect(failed.status).toBe('failed');
     });
   });
 });

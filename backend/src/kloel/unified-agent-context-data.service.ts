@@ -258,8 +258,7 @@ export class UnifiedAgentContextDataService {
         (m) =>
           !dbProducts.some(
             (d) =>
-              (((m.value as ProductMemoryEntry)?.name as string) || '').toLowerCase() ===
-              d.name.toLowerCase(),
+              ((m.value as ProductMemoryEntry)?.name || '').toLowerCase() === d.name.toLowerCase(),
           ),
       ),
     ];

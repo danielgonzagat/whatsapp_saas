@@ -1,8 +1,12 @@
-import { render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ComponentProps, SetStateAction } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { streamAuthenticatedKloelMessage } from '@/lib/kloel-conversations';
+import {
+  loadKloelThreadMessages,
+  streamAuthenticatedKloelMessage,
+} from '@/lib/kloel-conversations';
+import KloelDashboard from './KloelDashboard';
 import { KloelDashboardView } from './KloelDashboard/KloelDashboardView';
 import {
   formatBrainOperatorErrorMessage,
@@ -11,9 +15,56 @@ import {
 import { createSendMessageHandler } from './KloelDashboardSendMessage';
 import type { DashboardMessage } from './KloelDashboard.message';
 
+const dashboardRoute = vi.hoisted(() => ({
+  searchParams: new URLSearchParams(),
+  replace: vi.fn(),
+}));
+
+const dashboardConversationHistory = vi.hoisted(() => ({
+  conversations: [{ id: 'thread-old', title: 'Conversa antiga' }],
+  setActiveConversation: vi.fn(),
+  upsertConversation: vi.fn(),
+  refreshConversations: vi.fn().mockResolvedValue(undefined),
+  updateConversationTitle: vi.fn(),
+}));
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ replace: dashboardRoute.replace }),
+  useSearchParams: () => dashboardRoute.searchParams,
+}));
+
+vi.mock('@/components/kloel/auth/auth-provider', () => ({
+  useAuth: () => ({ userName: 'Codex' }),
+}));
+
+vi.mock('@/components/kloel/ToastProvider', () => ({
+  useToast: () => ({ showToast: vi.fn() }),
+}));
+
+vi.mock('@/hooks/useConversationHistory', () => ({
+  useConversationHistory: () => dashboardConversationHistory,
+}));
+
+vi.mock('swr', () => ({
+  default: () => ({
+    data: [],
+    isLoading: false,
+    mutate: vi.fn().mockResolvedValue(undefined),
+  }),
+}));
+
 vi.mock('@/lib/kloel-conversations', () => ({
+  loadKloelThreadMessages: vi.fn(),
   streamAuthenticatedKloelMessage: vi.fn(() => ({ abort: vi.fn() })),
 }));
+
+afterEach(() => {
+  vi.clearAllMocks();
+  dashboardRoute.searchParams = new URLSearchParams();
+  dashboardConversationHistory.conversations = [
+    { id: 'thread-old', title: 'Conversa antiga' },
+  ];
+});
 
 
 function renderDashboardView(overrides?: Partial<ComponentProps<typeof KloelDashboardView>>) {
@@ -26,6 +77,7 @@ function renderDashboardView(overrides?: Partial<ComponentProps<typeof KloelDash
     messages: [],
     conversationTitle: 'Nova conversa',
     onTitle: vi.fn(),
+    onNewChat: vi.fn(),
     streamingMessageId: null,
     isThinking: false,
     isReplyInFlight: false,
@@ -73,6 +125,118 @@ function renderDashboardView(overrides?: Partial<ComponentProps<typeof KloelDash
   };
 }
 
+describe('KloelDashboardView upload input', () => {
+  it('exposes stable browser form metadata for the hidden attachment control', () => {
+    renderDashboardView();
+
+    const fileInput = screen.getByTestId('kloel-chat-file-input');
+
+    expect(fileInput.getAttribute('id')).toBe('kloel-chat-file-input');
+    expect(fileInput.getAttribute('name')).toBe('kloelChatFileInput');
+  });
+});
+
+describe('KloelDashboardView new chat', () => {
+  it('renders a reachable header action that starts a new conversation', () => {
+    const { props } = renderDashboardView({
+      hasMessages: true,
+      messages: [{ id: 'message_1', role: 'user', text: 'Oi' }],
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Iniciar nova conversa' }));
+
+    expect(props.onNewChat).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('KloelDashboard route reset', () => {
+  it('clears loaded conversation messages when the chat route drops conversationId', async () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    dashboardRoute.searchParams = new URLSearchParams('conversationId=thread-old');
+    vi.mocked(loadKloelThreadMessages).mockResolvedValue([
+      {
+        id: 'message-old',
+        role: 'user',
+        content: 'Mensagem antiga que precisa sumir',
+        metadata: null,
+        createdAt: '2026-06-06T12:00:00.000Z',
+      },
+    ]);
+
+    const { rerender } = render(<KloelDashboard />);
+
+    expect(await screen.findByText('Mensagem antiga que precisa sumir')).toBeTruthy();
+
+    dashboardRoute.searchParams = new URLSearchParams();
+    rerender(<KloelDashboard />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Mensagem antiga que precisa sumir')).toBeNull();
+    });
+    expect(dashboardConversationHistory.setActiveConversation).toHaveBeenLastCalledWith(null);
+  });
+
+  it('does not refetch the previous thread while replacing it with a new chat', async () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    dashboardRoute.searchParams = new URLSearchParams('conversationId=thread-old');
+    vi.mocked(loadKloelThreadMessages).mockResolvedValue([
+      {
+        id: 'message-old',
+        role: 'user',
+        content: 'Mensagem antiga antes do novo chat',
+        metadata: null,
+        createdAt: '2026-06-06T12:00:00.000Z',
+      },
+    ]);
+
+    render(<KloelDashboard />);
+
+    expect(await screen.findByText('Mensagem antiga antes do novo chat')).toBeTruthy();
+    vi.mocked(loadKloelThreadMessages).mockClear();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Iniciar nova conversa' }));
+    await act(async () => {
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+
+    expect(dashboardRoute.replace).toHaveBeenCalledWith('/chat', { scroll: false });
+    expect(loadKloelThreadMessages).not.toHaveBeenCalled();
+  });
+
+  it('keeps the first new-chat send visible while the route has no conversationId', async () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    dashboardRoute.searchParams = new URLSearchParams();
+    const abort = vi.fn();
+    vi.mocked(streamAuthenticatedKloelMessage).mockReturnValue({ abort });
+
+    render(<KloelDashboard />);
+
+    const textbox = screen.getByRole('textbox', { name: 'Mensagem para o Kloel' });
+    fireEvent.change(textbox, {
+      target: { value: 'Primeira mensagem sem conversa persistida' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar mensagem' }));
+
+    await waitFor(() => {
+      const renderedMessages = screen
+        .getAllByText('Primeira mensagem sem conversa persistida')
+        .filter((element) => element.tagName !== 'TEXTAREA');
+      expect(renderedMessages.length).toBeGreaterThan(0);
+    });
+
+    await act(async () => {
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+
+    const renderedMessages = screen
+      .getAllByText('Primeira mensagem sem conversa persistida')
+      .filter((element) => element.tagName !== 'TEXTAREA');
+    expect(renderedMessages.length).toBeGreaterThan(0);
+    expect((textbox as HTMLTextAreaElement).value).toBe('');
+    expect(abort).not.toHaveBeenCalled();
+  });
+});
+
 describe('KloelDashboardView approvals', () => {
   it('keeps pending approval notifications out of the chat composition surface', () => {
     renderDashboardView({
@@ -100,7 +264,7 @@ describe('KloelDashboardView approvals', () => {
 });
 
 describe('KloelDashboardView trace', () => {
-  it('renders the real reasoning timeline (model reasoning + tools) without the fabricated facade', () => {
+  it('renders public processing context without exposing private provider reasoning', () => {
     renderDashboardView({
       hasMessages: true,
       messages: [
@@ -110,7 +274,7 @@ describe('KloelDashboardView trace', () => {
           text: '',
           metadata: {
             reasoningText:
-              'Vou separar o que é público do que é privado e então consultar o catálogo real.',
+              'We are in a chat conversation with the user and must decide what answer to show.',
             reasoningDurationMs: 1200,
             processingTrace: [
               {
@@ -143,21 +307,18 @@ describe('KloelDashboardView trace', () => {
       isReplyInFlight: true,
     });
 
-    // Real reasoning: the model's streamed reasoning text + a real summary render.
     expect(
       screen.getByText('Analisei a pergunta e consultei contexto real antes da resposta final.'),
     ).toBeTruthy();
-    expect(screen.getByText(/Vou separar o que é público do que é privado/)).toBeTruthy();
-    // Real tool steps surface the actual tool name, not a generic template sentence.
+    expect(screen.queryByText(/We are in a chat conversation/)).toBeNull();
+    expect(screen.queryByText(/must decide what answer to show/)).toBeNull();
     expect(screen.getAllByText('list_products').length).toBeGreaterThan(0);
-    // The fabricated concept-label taxonomy and eyebrow are GONE.
     expect(screen.queryByText('Pré-resposta executável')).toBeNull();
     expect(screen.queryByText('Reasoning summary')).toBeNull();
     expect(screen.queryByText('Agent trace')).toBeNull();
     expect(screen.queryByText('ReAct trajectory')).toBeNull();
     expect(screen.queryByText('Tool/function calling')).toBeNull();
     expect(screen.queryByText('Traces + spans')).toBeNull();
-    // The generic per-event template sentences are no longer shown as "reasoning".
     expect(
       screen.queryByText('Consultei contexto operacional relevante antes de responder.'),
     ).toBeNull();

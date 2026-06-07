@@ -30,16 +30,20 @@ describe('media API mutation truthfulness', () => {
     );
   });
 
-  it('rejects voice generation responses without an audio URL', async () => {
+  it('rejects voice generation responses without a confirmed job id', async () => {
     apiFetchMock.mockResolvedValue({ data: { duration: 3 }, status: 200 });
 
-    await expect(voiceApi.generate({ text: 'Oi' })).rejects.toThrow('Audio gerado sem URL confirmado.');
+    await expect(voiceApi.generate({ text: 'Oi' })).rejects.toThrow(
+      'Job de audio nao foi confirmado.',
+    );
   });
 
   it('returns confirmed media processing jobs unchanged', async () => {
     apiFetchMock.mockResolvedValue({ data: { id: 'job-1', status: 'PENDING' }, status: 201 });
 
-    await expect(mediaApi.processVideo({ prompt: 'Criar corte' })).resolves.toEqual({
+    await expect(
+      mediaApi.processVideo({ imageUrl: 'https://cdn.kloel.com/input.png', prompt: 'Criar corte' }),
+    ).resolves.toEqual({
       data: { id: 'job-1', status: 'PENDING' },
       status: 201,
     });

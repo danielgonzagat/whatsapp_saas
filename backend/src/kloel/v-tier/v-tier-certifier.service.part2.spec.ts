@@ -55,7 +55,7 @@ describe('VtierCertifierService', () => {
     it('always PASS', async () => {
       const c = makeCertifier();
       const result = await c.certify();
-      const v16 = result.verdicts.find((v) => v.criterionId === 'V16')!;
+      const v16 = result.verdicts.find((v) => v.criterionId === 'V16');
       expectStatus(v16, 'PASS');
     });
   });

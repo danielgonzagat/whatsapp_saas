@@ -200,7 +200,7 @@ describe('createTextLlmClientPool', () => {
     const pool = createTextLlmClientPool();
     expect(pool).toHaveLength(1);
     const openaiCalls = (OpenAI as unknown as jest.Mock).mock.calls as Array<[{ apiKey: string }]>;
-    const callArg = openaiCalls[0]?.[0] as { apiKey: string };
+    const callArg = openaiCalls[0]?.[0];
     expect(callArg).not.toHaveProperty('baseURL');
   });
 });

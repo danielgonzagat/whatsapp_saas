@@ -82,6 +82,19 @@ function normalizeFallbackPrompt(prompt: string): string {
   return trimmed ? trimmed.slice(0, 180) : 'sua oferta';
 }
 
+const FALLBACK_TITLE_RE = /<title[^>]*>([\s\S]*?)<\/title>/i;
+const FALLBACK_H1_RE = /<h1[^>]*>([\s\S]*?)<\/h1>/i;
+const FALLBACK_TAG_RE = /<[^>]+>/g;
+
+function extractFallbackCurrentOffer(currentHtml: string | undefined): string {
+  if (!currentHtml?.trim()) {
+    return '';
+  }
+  const match = currentHtml.match(FALLBACK_TITLE_RE) ?? currentHtml.match(FALLBACK_H1_RE);
+  const text = match?.[1]?.replace(FALLBACK_TAG_RE, ' ') ?? '';
+  return normalizeFallbackPrompt(text);
+}
+
 /**
  * Build a complete deterministic landing page when no LLM provider is configured.
  * This keeps the product flow functional without pretending an AI provider ran.
@@ -90,9 +103,12 @@ export function buildDeterministicFallbackSiteHtml(input: {
   prompt: string;
   currentHtml?: string | undefined;
 }): string {
-  const offer = escapeSiteHtml(normalizeFallbackPrompt(input.prompt));
+  const fallbackOffer =
+    extractFallbackCurrentOffer(input.currentHtml) || normalizeFallbackPrompt(input.prompt);
+  const offer = escapeSiteHtml(fallbackOffer);
+  const requestedEdit = escapeSiteHtml(normalizeFallbackPrompt(input.prompt));
   const editContext = input.currentHtml?.trim()
-    ? '<p class="notice">Modo fallback: a edicao foi gerada sem provedor IA configurado. Revise o HTML antes de publicar.</p>'
+    ? `<p class="notice"><strong>Alteracao solicitada:</strong> ${requestedEdit}. Modo fallback: o provedor IA nao esta configurado, entao a identidade da pagina foi preservada para revisao manual antes de publicar.</p>`
     : '';
 
   return `<!doctype html>
@@ -204,12 +220,12 @@ export function quoteSiteActualCostCents(input: {
   if (input.providerPreference === 'openai') {
     return quoteOpenAiChatActualCostCents({
       model: input.model,
-      usage: input.usage as OpenAiSiteUsage,
+      usage: input.usage,
     });
   }
   return quoteAnthropicMessageActualCostCents({
     model: input.model,
-    usage: input.usage as AnthropicSiteUsage,
+    usage: input.usage,
   });
 }
 

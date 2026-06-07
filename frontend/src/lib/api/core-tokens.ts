@@ -135,7 +135,7 @@ export const tokenStorage = {
     if (!token) {
       return;
     }
-    if (isAnonymousKloelToken(token)) {
+    if (!hasAuthenticatedKloelToken(token)) {
       return;
     }
 

@@ -206,6 +206,22 @@ describe('product.controller.helpers', () => {
       expect(data.warrantyDays).toBe(30);
     });
 
+    it('maps rich affiliate wizard fields into persisted product columns', () => {
+      const data = buildCreateProductData('ws_1', {
+        name: 'Curso afiliado',
+        affiliateCommission: 30.5,
+        affiliateCommissionPercent: 35.5,
+        affiliateApprovalMode: 'manual',
+        affiliatesEnabled: true,
+      });
+
+      expect(data).toMatchObject({
+        affiliateAutoApprove: false,
+        affiliateEnabled: true,
+        commissionPercent: 35.5,
+      });
+    });
+
     it('omits optional keys when not supplied', () => {
       const data = buildCreateProductData('ws_1', { name: 'X' });
       expect(data).not.toHaveProperty('sku');

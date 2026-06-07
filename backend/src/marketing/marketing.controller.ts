@@ -28,7 +28,6 @@ import {
   minInboundCreatedAt,
   normalizeApprovalRequestId,
   validateDirectEmailSendBody,
-  type DirectEmailRecipient,
   type DirectEmailSendBody,
 } from './marketing.controller.helpers';
 import { MindMemoryItemService } from '../kloel/mind/aliases/mind-memory-item.service';
@@ -317,9 +316,9 @@ export class MarketingController {
     if (missing.length > 0) {
       throw new BadRequestException('Missing required fields: subject, html, recipients');
     }
-    const subject = sendBody.subject as string;
-    const htmlTemplate = sendBody.html as string;
-    const recipients = sendBody.recipients as DirectEmailRecipient[];
+    const subject = sendBody.subject;
+    const htmlTemplate = sendBody.html;
+    const recipients = sendBody.recipients;
 
     if (!approvalRequestId) {
       const payload = {

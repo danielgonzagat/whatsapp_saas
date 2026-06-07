@@ -206,7 +206,7 @@ export function minInboundCreatedAt(inbound: InboundSampleMessage[]): Date | nul
   if (inbound.length === 0) {
     return null;
   }
-  let min: Date = inbound[0]!.createdAt;
+  let min: Date = inbound[0].createdAt;
   for (const message of inbound) {
     if (message.createdAt < min) {
       min = message.createdAt;

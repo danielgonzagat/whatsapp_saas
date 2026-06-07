@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { Fd, Tg } from './product-nerve-center.shared';
+import { Fd, Modal, Tg } from './product-nerve-center.shared';
 
 function expectIdentifiableField(field: HTMLElement, expectedName: string) {
   expect(field.getAttribute('id')).toMatch(/^product-nerve-/);
@@ -76,5 +76,17 @@ describe('Tg', () => {
 
     expect(onChange).toHaveBeenCalledWith(true);
     expect(onChange).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('Modal', () => {
+  it('labels both close targets', () => {
+    render(
+      <Modal title="Criar novo plano" onClose={vi.fn()}>
+        <span>Conteudo</span>
+      </Modal>,
+    );
+
+    expect(screen.getAllByRole('button', { name: 'Fechar Criar novo plano' })).toHaveLength(2);
   });
 });

@@ -158,7 +158,7 @@ export function extractConversionDecayPatterns(
     }
     perWsStageCounts.set(s.workspaceId, stageStats);
   }
-  for (const [transition, _counts] of [...withTransitions[0]!.stageTransitions.entries()]) {
+  for (const [transition, _counts] of [...withTransitions[0].stageTransitions.entries()]) {
     const [fromStage, toStage] = transition.split('->');
     if (!fromStage || !toStage) {
       continue;

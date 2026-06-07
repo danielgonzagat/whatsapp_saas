@@ -169,8 +169,8 @@ describe('AnalyticsService', () => {
       const todayKey = today.toISOString().split('T')[0];
       const todayEntry = result.find((d) => d.date === todayKey);
       expect(todayEntry).toBeDefined();
-      expect(todayEntry!.inbound).toBe(2);
-      expect(todayEntry!.outbound).toBe(1);
+      expect(todayEntry.inbound).toBe(2);
+      expect(todayEntry.outbound).toBe(1);
     });
   });
 

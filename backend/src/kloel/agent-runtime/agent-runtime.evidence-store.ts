@@ -301,7 +301,7 @@ export class AgentRuntimeEvidenceStoreService {
     if (rows.length === 0) {
       return null;
     }
-    return this.rowToRecord(rows[0] as EvidenceRow);
+    return this.rowToRecord(rows[0]);
   }
 
   private rowToRecord(row: EvidenceRow): AgentEvidenceRecord {

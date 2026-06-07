@@ -50,6 +50,23 @@ describe('SegurancaSection', () => {
     expect(screen.getByLabelText('Confirmar nova senha').closest('form')).toBeTruthy();
   });
 
+  it('translates backend current-password errors before rendering them', async () => {
+    mocks.changePassword.mockRejectedValueOnce(new Error('Current password is incorrect'));
+
+    render(<SegurancaSection />);
+
+    fireEvent.change(screen.getByLabelText('Senha atual'), { target: { value: 'senha-incorreta' } });
+    fireEvent.change(screen.getByLabelText('Nova senha'), { target: { value: 'CodexAudit!178077' } });
+    fireEvent.change(screen.getByLabelText('Confirmar nova senha'), { target: { value: 'CodexAudit!178077' } });
+    fireEvent.click(screen.getByRole('button', { name: /alterar senha/i }));
+
+    await waitFor(() => {
+      expect(mocks.changePassword).toHaveBeenCalledWith('senha-incorreta', 'CodexAudit!178077');
+    });
+    expect(await screen.findByText('Senha atual incorreta.')).toBeTruthy();
+    expect(screen.queryByText('Current password is incorrect')).toBeNull();
+  });
+
   it('starts MFA setup, renders QR code, and verifies the six-digit code', async () => {
     mocks.startMfaSetup.mockResolvedValueOnce({ qrDataUrl: 'data:image/png;base64,ZmFrZQ==' });
     mocks.verifyMfaSetup.mockResolvedValueOnce({ mfa: { enabled: true, pendingSetup: false } });

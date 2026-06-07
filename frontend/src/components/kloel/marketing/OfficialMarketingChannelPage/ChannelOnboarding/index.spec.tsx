@@ -55,6 +55,7 @@ interface ScenarioOverrides {
   completed?: boolean;
   connectionConnected?: boolean;
   loadError?: string | null;
+  setupUnavailable?: boolean;
   toggleEmailResult?: boolean;
 }
 
@@ -87,6 +88,7 @@ function makeData(overrides: ScenarioOverrides = {}) {
     isLoading: false,
     busy: null as string | null,
     loadError: overrides.loadError ?? null,
+    setupUnavailable: overrides.setupUnavailable ?? false,
     get setup() {
       return setup;
     },
@@ -124,6 +126,20 @@ describe('handleConnect by channel', () => {
     fireEvent.click(screen.getByRole('button', { name: /Vincular número/ }));
     expect(data.openMeta).toHaveBeenCalledTimes(1);
     expect(data.openTikTok).not.toHaveBeenCalled();
+  });
+
+  it('disables the connect CTA when channel setup is unavailable', () => {
+    const data = makeData({ setupUnavailable: true });
+    hookMock.mockReturnValue(data);
+    render(<ChannelOnboarding channel="instagram" />);
+
+    const button = screen.getByRole('button', { name: /Vincular conta/ });
+    expect((button as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText('Canal nao configurado neste ambiente.')).toBeTruthy();
+
+    fireEvent.click(button);
+
+    expect(data.openMeta).not.toHaveBeenCalled();
   });
 
   it('calls openMeta for instagram and facebook', () => {

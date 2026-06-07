@@ -45,7 +45,13 @@ export default function CarteiraSaque({
     setAddLoading(true);
     setAddError('');
     try {
-      await addBankAccount({ ...addForm });
+      await addBankAccount({
+        bankName: addForm.bankName,
+        pixKey: addForm.pixKey,
+        bankCode: addForm.bankCode,
+        agency: addForm.agency,
+        account: addForm.account,
+      });
       setShowAddAccount(false);
       setAddForm({
         bankName: '',

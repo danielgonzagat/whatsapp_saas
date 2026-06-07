@@ -87,7 +87,7 @@ describe('buildCapabilityPrompt', () => {
   });
 
   it('coerces non-string message safely', () => {
-    expect(buildCapabilityPrompt(null as unknown as string)).toBe('');
+    expect(buildCapabilityPrompt(null)).toBe('');
     expect(buildCapabilityPrompt(undefined as unknown as string)).toBe('');
   });
 });

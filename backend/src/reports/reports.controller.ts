@@ -149,18 +149,33 @@ export class ReportsController {
   @Post('send-email')
   async sendReportEmail(
     @Request() req: AuthenticatedRequest,
-    @Body() body: { period?: string; email?: string },
+    @Body() body: { period?: string; email?: string; reportType?: string; filters?: ReportFiltersDto },
   ) {
     const workspaceId = this.ws(req);
-    const targetEmail = body.email || req.user?.email;
+    const targetEmail = (body.email || req.user?.email)?.trim();
     if (!targetEmail) {
       return { error: 'No email provided' };
     }
 
-    const periodParts = body.period?.split(',');
+    const submittedFilters = body.filters ?? {};
+    const periodParts = body.period
+      ?.split(/\s*(?:,|\u2192|->)\s*/)
+      .map((part) => part.trim())
+      .filter(Boolean);
+    const firstPeriodPart = periodParts?.[0];
+    const secondPeriodPart = periodParts?.[1];
+    const isoDate = /^\d{4}-\d{2}-\d{2}$/;
+    const periodFilters: ReportFiltersDto = firstPeriodPart && isoDate.test(firstPeriodPart)
+      ? {
+          startDate: firstPeriodPart,
+          ...(secondPeriodPart && isoDate.test(secondPeriodPart)
+            ? { endDate: secondPeriodPart }
+            : {}),
+        }
+      : {};
     const summary = await this.reportsService.getVendasSummary(workspaceId, {
-      ...(periodParts?.[0] !== undefined ? { startDate: periodParts[0] } : {}),
-      ...(periodParts?.[1] !== undefined ? { endDate: periodParts[1] } : {}),
+      ...periodFilters,
+      ...submittedFilters,
     });
 
     await this.emailService.sendEmail({

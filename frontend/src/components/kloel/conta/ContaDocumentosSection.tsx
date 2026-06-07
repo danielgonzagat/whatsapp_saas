@@ -32,7 +32,8 @@ function UploadZone({
 }) {
   const [hover, setHover] = useState(false);
   const isUploading = uploading === type;
-  const canReplace = doc?.status === 'rejected';
+  const documentName = doc?.fileName || doc?.originalName || label;
+  const canReplace = !!doc && doc.status !== 'approved';
 
   if (doc) {
     return (
@@ -58,7 +59,7 @@ function UploadZone({
               fontFamily: SORA,
             }}
           >
-            {doc.fileName || doc.originalName || label}
+            {documentName}
           </span>
           <span style={{ fontSize: 10, color: 'var(--app-text-tertiary)', fontFamily: SORA }}>
             {kloelT(`Enviado em`)}{' '}
@@ -82,7 +83,7 @@ function UploadZone({
         {canReplace && (
           <>
             <input
-              aria-label={`${label} - substituir`}
+              aria-label={`${label} - substituir ${documentName}`}
               ref={inputRef}
               type="file"
               accept="image/*,.pdf"
@@ -96,6 +97,7 @@ function UploadZone({
             />
             <button
               type="button"
+              aria-label={`Substituir ${documentName}`}
               onClick={() => inputRef.current?.click()}
               disabled={isUploading}
               style={{
@@ -118,7 +120,7 @@ function UploadZone({
         {(doc.status === 'pending' || !doc.status) && (
           <button
             type="button"
-            aria-label={`Excluir ${doc.fileName || doc.originalName || label}`}
+            aria-label={`Excluir ${documentName}`}
             onClick={() => onDelete(doc.id)}
             style={{
               background: 'none',

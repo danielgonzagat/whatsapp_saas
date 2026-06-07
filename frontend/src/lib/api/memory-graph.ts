@@ -24,13 +24,14 @@ export interface MemoryGraphPayload {
   readonly edges: readonly MemoryGraphEdge[];
 }
 
-const EMPTY: MemoryGraphPayload = { nodes: [], edges: [] };
-
-/** Fetch the authenticated user's memory graph. Honest empty graph on error. */
+/** Fetch the authenticated user's memory graph. */
 export async function getMemoryGraph(): Promise<MemoryGraphPayload> {
-  const res = await apiFetch<MemoryGraphPayload>('/kloel/memory/graph');
-  if (res.error || !res.data) {
-    return EMPTY;
+  const res = await apiFetch<MemoryGraphPayload>('/kloel/memory/graph', { cache: 'no-store' });
+  if (res.error) {
+    throw new Error(res.error);
+  }
+  if (!res.data || !Array.isArray(res.data.nodes) || !Array.isArray(res.data.edges)) {
+    throw new Error('Memory graph did not return a confirmed payload');
   }
   return res.data;
 }

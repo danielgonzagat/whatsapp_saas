@@ -27,13 +27,28 @@ describe('ScrapersController', () => {
   describe('create', () => {
     it('calls scrapersService.createJob with resolved workspaceId and payload', async () => {
       const req = { user: { sub: 'u-1', workspaceId: 'ws-1' }, headers: {} } as never;
-      const body = { workspaceId: 'ws-1', type: 'MAPS', query: 'restaurants' };
-      const expectedJob = { id: 'job-1', workspaceId: 'ws-1', type: 'MAPS', query: 'restaurants' };
+      const body = {
+        workspaceId: 'ws-1',
+        type: 'MAPS',
+        query: 'restaurants',
+        location: 'Sao Paulo, SP',
+      };
+      const expectedJob = {
+        id: 'job-1',
+        workspaceId: 'ws-1',
+        type: 'MAPS',
+        query: 'restaurants',
+        filters: { location: 'Sao Paulo, SP' },
+      };
       createJob.mockResolvedValueOnce(expectedJob);
 
       const result = await controller.create(req, body);
 
-      expect(createJob).toHaveBeenCalledWith('ws-1', { type: 'MAPS', query: 'restaurants' });
+      expect(createJob).toHaveBeenCalledWith('ws-1', {
+        type: 'MAPS',
+        query: 'restaurants',
+        location: 'Sao Paulo, SP',
+      });
       expect(result).toBe(expectedJob);
     });
   });

@@ -40,7 +40,7 @@ interface ComposerSectionProps {
   inputRef: MutableRefObject<HTMLTextAreaElement | null>;
   onQuickAction: (action: KloelDashboardQuickAction) => void;
   onInputChange: (value: string) => void;
-  onSend: () => void;
+  onSend: (value?: string) => void;
   onRemoveAttachment: (attachmentId: string) => void;
   onRetryAttachment: (attachmentId: string) => void;
   onSelectProduct: (product: KloelLinkedProduct) => void;

@@ -608,6 +608,7 @@ export function Modal({
           </h3>
           <button
             type="button"
+            aria-label={`Fechar ${title}`}
             onClick={onClose}
             style={{
               background: 'none',

@@ -73,6 +73,13 @@ export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppC
     : tokenExpired
       ? 'authorization_expired'
       : readString(whatsapp?.status) || 'connection_incomplete';
+  const metaOAuthConfigurationMissing = status === 'meta_oauth_configuration_missing';
+  const degraded = tokenExpired || metaOAuthConfigurationMissing;
+  const degradedReason = tokenExpired
+    ? 'meta_token_expired'
+    : metaOAuthConfigurationMissing
+      ? 'meta_oauth_configuration_missing'
+      : null;
 
   return {
     connected,
@@ -83,10 +90,10 @@ export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppC
     whatsappBusinessId,
     provider: 'meta-cloud',
     workerAvailable: true,
-    workerHealthy: connected || !tokenExpired,
-    workerError: tokenExpired ? 'meta_token_expired' : null,
-    degraded: tokenExpired,
-    degradedReason: tokenExpired ? 'meta_token_expired' : null,
+    workerHealthy: connected || !degraded,
+    workerError: degradedReason,
+    degraded,
+    degradedReason,
     takeoverActive: false,
     agentPaused: false,
     proofCount: 0,

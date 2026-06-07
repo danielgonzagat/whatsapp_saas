@@ -97,7 +97,9 @@ export class WorkerRuntimeService {
       return false;
     }
 
-    const fetchFn = globalThis.fetch ? globalThis.fetch.bind(globalThis) : undefined;
+    const fetchFn: typeof fetch | undefined = globalThis.fetch
+      ? globalThis.fetch.bind(globalThis)
+      : undefined;
     if (!fetchFn) {
       return false;
     }
@@ -110,7 +112,7 @@ export class WorkerRuntimeService {
         method: 'GET',
         headers: this.buildWorkerHealthHeaders(),
         signal: controller.signal,
-      } as RequestInit);
+      });
       return await this.readWorkerHealthResponse(response);
     } catch (error: unknown) {
       this.logWorkerHealthError(error);

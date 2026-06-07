@@ -1,10 +1,11 @@
 'use client';
 import { colors } from '@/lib/design-tokens';
 
+import { useClientMounted } from '@/hooks/useClientMounted';
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { secureRandomFloat } from '@/lib/secure-random';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import type React from 'react';
 import type { LiveFeedEvent } from './ProdutosView.types';
 import { formatBRL } from '@/lib/common/money';
@@ -77,18 +78,22 @@ export const timeAgo = (value?: string | null) => {
 export function getProductPlanPriceSummary(product: {
   minPlanPriceInCents?: unknown;
   maxPlanPriceInCents?: unknown;
+  price?: unknown;
 }) {
   const rawMin = Number(product.minPlanPriceInCents);
   const rawMax = Number(product.maxPlanPriceInCents);
-  const hasMin = Number.isFinite(rawMin);
-  const hasMax = Number.isFinite(rawMax);
+  const hasMin = product.minPlanPriceInCents != null && Number.isFinite(rawMin);
+  const hasMax = product.maxPlanPriceInCents != null && Number.isFinite(rawMax);
 
   if (!hasMin || !hasMax) {
+    const rawProductPrice = Number(product.price);
+    const hasProductPrice = Number.isFinite(rawProductPrice) && rawProductPrice > 0;
+
     return {
       hasPlanPricing: false,
       minPlanPriceInCents: null,
       maxPlanPriceInCents: null,
-      priceLabel: 'Sem planos',
+      priceLabel: hasProductPrice ? fmtBRL(Math.max(0, rawProductPrice)) : 'Sem planos',
     };
   }
 
@@ -169,10 +174,7 @@ export function NP({
 }) {
   const prefersReducedMotion = usePrefersReducedMotion({ defaultValue: true });
   const ref = useRef<HTMLCanvasElement>(null);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useClientMounted();
 
   const staticWave = Array.from({ length: Math.max(2, Math.floor(w / 2)) }, (_, index) => {
     const x = (index / (Math.max(2, Math.floor(w / 2)) - 1)) * w;
@@ -278,10 +280,7 @@ export function Ticker({
   duration?: string;
 }) {
   const prefersReducedMotion = usePrefersReducedMotion({ defaultValue: true });
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useClientMounted();
   const reduced = !mounted || prefersReducedMotion;
   const text = items.join('  ///  ');
   return (

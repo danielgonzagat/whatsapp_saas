@@ -6,11 +6,11 @@ describe('MindObservabilityService — observeReply / getSnapshot', () => {
   beforeEach(() => {
     service = new MindObservabilityService(
       undefined as never,
-      undefined as never,
-      undefined as never,
-      undefined as never,
-      undefined as never,
-      undefined as never,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
     );
   });
 
@@ -80,8 +80,8 @@ describe('MindObservabilityService — observeReply / getSnapshot', () => {
 
       const snapshot = service.getSnapshot('ws-1');
       expect(snapshot.lastReplyAt).toBeTruthy();
-      expect(snapshot.lastReplyAt! >= before).toBe(true);
-      expect(snapshot.lastReplyAt! <= after).toBe(true);
+      expect(snapshot.lastReplyAt >= before).toBe(true);
+      expect(snapshot.lastReplyAt <= after).toBe(true);
     });
   });
 

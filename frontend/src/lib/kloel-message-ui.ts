@@ -381,7 +381,7 @@ export interface AssistantReasoning {
 /** Get the real reasoning accumulated for an assistant message. */
 export function getAssistantReasoning(metadata: unknown): AssistantReasoning {
   const normalized = normalizeAssistantMessageMetadata(metadata);
-  const text = typeof normalized?.reasoningText === 'string' ? normalized.reasoningText : '';
+  const text = '';
   const summary =
     typeof normalized?.reasoningSummary === 'string' ? normalized.reasoningSummary : '';
   const durationMs =
@@ -413,8 +413,7 @@ function applyReasoningStreamEventToMetadata(
   event: KloelStreamEvent,
 ): Record<string, unknown> | null {
   if (event.type === 'reasoning_delta') {
-    const prior = typeof metadata.reasoningText === 'string' ? metadata.reasoningText : '';
-    return { ...metadata, reasoningText: prior + event.text };
+    return null;
   }
   if (event.type === 'reasoning_summary') {
     return { ...metadata, reasoningSummary: event.text };

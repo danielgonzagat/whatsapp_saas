@@ -118,7 +118,7 @@ export class ConsolidationService {
       out.push({
         episodeId: `ep_${item.itemId}_${cycleAt}`,
         summary: item.content,
-        occurredAt: relatedEvents[0]!.occurredAt,
+        occurredAt: relatedEvents[0].occurredAt,
         relatedEventIds: item.relatedEventIds,
         valenceMix,
       });

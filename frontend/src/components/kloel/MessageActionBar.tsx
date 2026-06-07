@@ -120,6 +120,7 @@ export function MessageActionBar({
               <button
                 type="button"
                 aria-label={action.label}
+                aria-pressed={action.active === undefined ? undefined : isActive}
                 tabIndex={0}
                 disabled={isDisabled}
                 onMouseEnter={() => {

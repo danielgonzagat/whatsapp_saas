@@ -157,9 +157,9 @@ describe('WalletService.requestWithdrawalCents (E2E flow)', () => {
     expect(result.id).toBe('wd-1');
     expect(result.status).toBe('pending');
     expect(stateful.ledger).toHaveLength(1);
-    expect(stateful.ledger[0]!.amountInCents).toBe(50_000n);
-    expect(typeof stateful.ledger[0]!.amountInCents).toBe('bigint');
-    expect(stateful.ledger[0]!.metadata).toMatchObject({
+    expect(stateful.ledger[0].amountInCents).toBe(50_000n);
+    expect(typeof stateful.ledger[0].amountInCents).toBe('bigint');
+    expect(stateful.ledger[0].metadata).toMatchObject({
       workspaceId: 'ws-1',
       method: 'pix',
       pixKey: 'merchant@example.com',
@@ -299,8 +299,8 @@ describe('WalletService.requestWithdrawalCents (E2E flow)', () => {
     });
 
     expect(result.id).toBe('wd-1');
-    expect(stateful.ledger[0]!.metadata).not.toHaveProperty('pixKey');
-    expect(stateful.ledger[0]!.metadata).toMatchObject({
+    expect(stateful.ledger[0].metadata).not.toHaveProperty('pixKey');
+    expect(stateful.ledger[0].metadata).toMatchObject({
       method: 'transfer',
       workspaceId: 'ws-1',
     });

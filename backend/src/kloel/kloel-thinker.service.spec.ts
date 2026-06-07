@@ -1200,9 +1200,7 @@ describe('KloelThinkerService', () => {
 
       expect(capabilityExecutor.buildCognitiveSubstrate).toHaveBeenCalledWith(wsId);
       const buildMock = abiBuilder.build as jest.MockedFunction<AbiBuilderService['build']>;
-      const [abiBuildParams] = buildMock.mock.calls[0] as [
-        Parameters<AbiBuilderService['build']>[0],
-      ];
+      const [abiBuildParams] = buildMock.mock.calls[0];
       expect(abiBuildParams.cognitiveSubstrate).toEqual(
         expect.objectContaining({ workingMemory: ['memória operacional'] }),
       );

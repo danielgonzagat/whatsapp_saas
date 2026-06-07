@@ -143,6 +143,56 @@ describe('apiFetch', () => {
     expect(request.headers.get('Authorization')).toBe('Bearer test-token-123');
   });
 
+  it('bypasses browser HTTP cache for authenticated API reads by default', async () => {
+    tokenStorage.setToken('test-token-123');
+
+    const mockResponse = {
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ products: [] }),
+    };
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse as Response);
+
+    await apiFetch('/products');
+
+    const request = getFetchRequest(fetchSpy);
+    expect(request.cache).toBe('no-store');
+  });
+
+  it('refreshes an expired access token before the protected request', async () => {
+    const expiredToken = createTestJwt({ exp: Math.floor(Date.now() / 1000) - 60 });
+    const freshToken = createTestJwt({ exp: Math.floor(Date.now() / 1000) + 3600 });
+    tokenStorage.setToken(expiredToken);
+    tokenStorage.setRefreshToken('refresh-token');
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = typeof input === 'string' ? input : input instanceof Request ? input.url : String(input);
+      if (url.endsWith('/auth/refresh')) {
+        return {
+          ok: true,
+          status: 201,
+          json: () =>
+            Promise.resolve({ access_token: freshToken, refresh_token: 'fresh-refresh-token' }),
+        } as Response;
+      }
+
+      return {
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ success: true }),
+      } as Response;
+    });
+
+    await apiFetch('/test');
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(fetchSpy.mock.calls[0]?.[0]).toBe('http://localhost:3001/auth/refresh');
+    const request = fetchSpy.mock.calls[1]?.[0] as Request;
+    expect(request.url).toBe('http://localhost:3001/test');
+    expect(request.headers.get('Authorization')).toBe(`Bearer ${freshToken}`);
+    expect(tokenStorage.getToken()).toBe(freshToken);
+  });
+
   it('adds x-workspace-id header when workspace is set', async () => {
     tokenStorage.setToken('tok');
     tokenStorage.setWorkspaceId('ws-456');
@@ -339,9 +389,23 @@ describe('auth identity helpers', () => {
       email: 'danielgonzagatj@gmail.com',
       workspaceId: 'ws-real',
       name: 'Daniel',
+      exp: Math.floor(Date.now() / 1000) + 3600,
     });
 
     expect(isAnonymousKloelToken(realToken)).toBe(false);
     expect(hasAuthenticatedKloelToken(realToken)).toBe(true);
+  });
+
+  it('rejects expired authenticated tokens', () => {
+    const expiredToken = createTestJwt({
+      sub: 'agent-1',
+      email: 'danielgonzagatj@gmail.com',
+      workspaceId: 'ws-real',
+      name: 'Daniel',
+      exp: Math.floor(Date.now() / 1000) - 60,
+    });
+
+    expect(isAnonymousKloelToken(expiredToken)).toBe(false);
+    expect(hasAuthenticatedKloelToken(expiredToken)).toBe(false);
   });
 });

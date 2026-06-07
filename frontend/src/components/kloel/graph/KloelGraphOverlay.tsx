@@ -31,7 +31,7 @@ export function KloelGraphOverlay({
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 40,
+        zIndex: 60,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

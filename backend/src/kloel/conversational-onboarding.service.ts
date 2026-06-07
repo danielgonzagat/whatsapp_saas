@@ -261,7 +261,7 @@ export class ConversationalOnboardingService {
     const onboardingStateMessage = await this.buildOnboardingStateMessage(workspaceId, userMessage);
 
     // PI-k8: record decision outcome at start of every onboarding chat reply
-    const outcomeKey = buildChatOutcomeKey(workspaceId) as string;
+    const outcomeKey = buildChatOutcomeKey(workspaceId);
     recordChatReplyDecision(this.decisionOutcomeService, this.logger, {
       workspaceId,
       outcomeKey,

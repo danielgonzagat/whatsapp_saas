@@ -71,7 +71,7 @@ describe('ReportService canonical-name aliases (capability resolver wiring)', ()
       const calls = delegate.mock.calls as Array<[string, { since?: Date; limit?: number }]>;
       const forwarded = calls[0]?.[1]?.since;
       expect(forwarded).toBeInstanceOf(Date);
-      expect((forwarded as Date).toISOString()).toBe('2025-02-15T12:00:00.000Z');
+      expect(forwarded.toISOString()).toBe('2025-02-15T12:00:00.000Z');
     });
 
     it('forwards a numeric limit', async () => {
@@ -108,7 +108,7 @@ describe('ReportService canonical-name aliases (capability resolver wiring)', ()
       const forwarded = calls[0]?.[1];
       expect(forwarded?.limit).toBe(10);
       expect(forwarded?.since).toBeInstanceOf(Date);
-      expect((forwarded?.since as Date).toISOString()).toBe('2024-12-01T00:00:00.000Z');
+      expect(forwarded?.since?.toISOString()).toBe('2024-12-01T00:00:00.000Z');
     });
 
     it('forwards rejections from the underlying report query', async () => {

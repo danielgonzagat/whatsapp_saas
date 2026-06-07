@@ -14,12 +14,14 @@ export function PlatformDetailTab({
   campaigns,
   metaAccessToken,
   onCampaignsChange,
+  onConnectPlatform,
 }: {
   platformKey: PlatformKey;
   platform: PlatformData;
   campaigns: Campaign[];
   metaAccessToken?: string;
   onCampaignsChange: (campaigns: Campaign[]) => void;
+  onConnectPlatform: (platformKey: PlatformKey) => void;
 }) {
   const isConnected = platform.connected;
   const profit = platform.revenue - platform.spend;
@@ -71,9 +73,7 @@ export function PlatformDetailTab({
           </div>
           <button
             type="button"
-            onClick={() => {
-              if (platformKey === 'meta') {window.location.href = '/conta';}
-            }}
+            onClick={() => onConnectPlatform(platformKey)}
             style={{
               padding: '10px 24px', background: platform.color, border: 'none', borderRadius: 6,
               color: colors.text.silver, fontSize: 13, fontFamily: SORA, fontWeight: 600, cursor: 'pointer',

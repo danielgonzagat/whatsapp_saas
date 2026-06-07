@@ -1,5 +1,6 @@
 import { mutate } from 'swr';
 import { API_BASE } from '../http';
+import { isKloelJwtExpired } from '../auth-identity';
 import { tokenStorage, resolveWorkspaceFromAuthPayload } from './core-tokens';
 import { REFRESH_TOKEN_ERROR_CODES } from './auth-errors';
 import {
@@ -166,6 +167,16 @@ async function refreshAccessToken(): Promise<boolean> {
   } finally {
     refreshPromise = null;
   }
+}
+
+export async function ensureFreshAccessToken(): Promise<boolean> {
+  const token = tokenStorage.getToken();
+  const refreshToken = tokenStorage.getRefreshToken();
+  if (!isKloelJwtExpired(token) || !refreshToken) {
+    return false;
+  }
+
+  return refreshAccessToken();
 }
 
 async function doRefreshAccessToken(): Promise<boolean> {
@@ -341,11 +352,14 @@ export async function apiFetch<T = unknown>(
   } = {},
 ): Promise<ApiResponse<T>> {
   const resolvedEndpoint = resolveApiEndpoint(endpoint);
+  await ensureFreshAccessToken();
+
   const headers = buildApiHeaders(options);
   const url = appendQueryParams(`${API_URL}${resolvedEndpoint}`, options.params);
   const body = serializeApiBody(options.body);
   const baseInit: RequestInit = {
     ...options,
+    cache: options.cache ?? 'no-store',
     credentials: 'include',
     body: body ?? null,
     headers,

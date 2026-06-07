@@ -125,7 +125,7 @@ describe('compliance.helpers', () => {
 
     it('coerces nullish input to empty string instead of throwing', () => {
       expect(normalizeUnsubscribeEmail(undefined as unknown as string)).toBe('');
-      expect(normalizeUnsubscribeEmail(null as unknown as string)).toBe('');
+      expect(normalizeUnsubscribeEmail(null)).toBe('');
     });
   });
 

@@ -1,0 +1,253 @@
+{
+  "cluster": "Checkout, Payment & Wallet",
+  "generatedAt": "2026-06-07",
+  "groundedIn": "backend/prisma/schema.prisma + backend/src/{checkout,payments,billing,wallet,marketplace,marketplace-treasury,sales,webhooks,kloel} AST/grep",
+  "domainsCovered": [
+    "Product checkout configuration (two parallel systems: legacy ProductCheckout JSON-blob vs canonical CheckoutProductPlan/CheckoutConfig graph)",
+    "Checkout order lifecycle + payment capture (CheckoutOrder/CheckoutPayment)",
+    "Chat-driven direct sales (KloelSale via SalesService/PaymentService/SmartPaymentService)",
+    "Generic external/raw payment ingestion (Payment model, webhook-only)",
+    "External platform sale links (ExternalPaymentLink: hotmart/kiwify/eduzz)",
+    "Physical-product order fulfillment (PhysicalOrder)",
+    "Payment provider charge adapters (Stripe / Mercado Pago PIX / Mercado Pago Boleto)",
+    "Provider routing + fraud gating (PaymentProviderRouterService, FraudEngine)",
+    "Stripe Connect per-account dual-balance ledger (ConnectAccountBalance/ConnectLedgerEntry/LedgerService)",
+    "Marketplace treasury (Kloel's own house balance: MarketplaceTreasury/MarketplaceTreasuryLedger)",
+    "Seller earnings wallet / split (KloelWallet/KloelWalletTransaction/KloelWalletLedger + kloel/WalletService)",
+    "Prepaid usage wallet (PrepaidWallet/PrepaidWalletTransaction + wallet/WalletService)",
+    "Coupons (two parallel systems: workspace-scoped CheckoutCoupon vs product-scoped ProductCoupon)",
+    "Order bumps + upsells (OrderBump/Upsell/UpsellOrder)",
+    "Tracking pixels / Facebook CAPI (CheckoutPixel/FacebookCAPIService)",
+    "Cart / social-lead abandonment recovery (two owners: kloel/CartRecoveryService vs checkout/CheckoutSocialRecoveryService)",
+    "Payout to seller bank accounts (BankAccount, ConnectPayoutService, MarketplaceTreasuryPayoutService)",
+    "Kloel SaaS subscription billing of merchants (billing/* — Stripe subscriptions, adjacent/separate domain)",
+    "Template marketplace (marketplace/MarketplaceService — NOTE: flow-template store, NOT money; mis-namespaced into this cluster)"
+  ],
+  "canonicalEntities": [
+    { "name": "CheckoutProductPlan", "table": "RAC_CheckoutProductPlan", "file": "backend/prisma/schema.prisma:2969", "role": "Canonical checkout/plan resource (kind=PLAN|CHECKOUT). Parent of CheckoutConfig, OrderBump, Upsell, CheckoutOrder, CheckoutPlanLink, CheckoutSocialLead. priceInCents/currency live here." },
+    { "name": "CheckoutPlanLink", "table": "RAC_CheckoutPlanLink", "file": "backend/prisma/schema.prisma:3005", "role": "Self-join linking a CheckoutProductPlan(checkout) to a CheckoutProductPlan(plan); models 'this checkout sells these plans' (primary/active flags, slug, referenceCode)." },
+    { "name": "CheckoutConfig", "table": "RAC_CheckoutConfig", "file": "backend/prisma/schema.prisma:3025", "role": "1:1 visual+behavioral config for a plan (theme, payment-method toggles, coupon popup, timer, shipping, affiliate commission, pixels). ~70 typed columns." },
+    { "name": "OrderBump", "table": "RAC_OrderBump", "file": "backend/prisma/schema.prisma:3132", "role": "Pre-payment add-on offer attached to a plan." },
+    { "name": "Upsell", "table": "RAC_Upsell", "file": "backend/prisma/schema.prisma:3154", "role": "Post-purchase one-click/new-payment upsell offer attached to a plan." },
+    { "name": "CheckoutCoupon", "table": "RAC_CheckoutCoupon", "file": "backend/prisma/schema.prisma:3178", "role": "Canonical workspace-scoped discount coupon (DiscountType, cents, appliesTo[]). Used by the CheckoutOrder pricing path." },
+    { "name": "CheckoutPixel", "table": "RAC_CheckoutPixel", "file": "backend/prisma/schema.prisma:3201", "role": "Tracking pixel (Meta/GA) bound to a CheckoutConfig; event toggles." },
+    { "name": "CheckoutOrder", "table": "RAC_CheckoutOrder", "file": "backend/prisma/schema.prisma:3220", "role": "Canonical checkout order: customer, totals in cents, coupon, bumps, status (OrderStatus), UTM, 1:1 CheckoutPayment, UpsellOrder[]. THE source of truth for checkout GMV." },
+    { "name": "CheckoutPayment", "table": "RAC_CheckoutPayment", "file": "backend/prisma/schema.prisma:3330", "role": "1:1 payment artifact for a CheckoutOrder: gateway, externalId, PIX/boleto/card detail, PaymentStatus, webhookData. NOT workspace-scoped (reached via order)." },
+    { "name": "UpsellOrder", "table": "RAC_UpsellOrder", "file": "backend/prisma/schema.prisma:3353", "role": "Accepted upsell line attached to a CheckoutOrder." },
+    { "name": "ProductCheckout", "table": "RAC_ProductCheckout", "file": "backend/prisma/schema.prisma:2273", "role": "LEGACY checkout: single row per product with a 14-section JSON `config` blob + metrics. Superseded by CheckoutProductPlan+CheckoutConfig but still has live consumers (kloel chat tools, product-checkout.controller)." },
+    { "name": "ProductCoupon", "table": "RAC_ProductCoupon", "file": "backend/prisma/schema.prisma:2297", "role": "LEGACY/parallel product-scoped coupon (PERCENT/FIXED, Float). Managed by kloel/CouponService; synced into CheckoutCoupon via product-coupon-sync.util." },
+    { "name": "Payment", "table": "RAC_Payment", "file": "backend/prisma/schema.prisma:2744", "role": "Generic raw payment record (provider, externalId, status, amount Float). Written ONLY by generic/Stripe webhook helpers; has no service of its own. Parallel to CheckoutPayment and KloelSale." },
+    { "name": "KloelSale", "table": "RAC_KloelSale", "file": "backend/prisma/schema.prisma:1917", "role": "Chat-driven direct sale (lead/phone, amount Float, paymentLink, externalPaymentId). Source of truth for in-chat conversions. Parallel revenue silo NOT counted in CheckoutOrder GMV." },
+    { "name": "ExternalPaymentLink", "table": "RAC_ExternalPaymentLink", "file": "backend/prisma/schema.prisma:957", "role": "Link to a sale on an external platform (hotmart/kiwify/eduzz/monetizze/braip) with totalSales/totalRevenue counters updated via webhook." },
+    { "name": "PhysicalOrder", "table": "RAC_PhysicalOrder", "file": "backend/prisma/schema.prisma:2706", "role": "Physical-goods fulfillment record (address, tracking, shipping). Loosely tied to a sale via saleId String? (no FK). Parallel to CheckoutOrder's own shipping/tracking columns." },
+    { "name": "KloelWallet", "table": "RAC_KloelWallet", "file": "backend/prisma/schema.prisma:1949", "role": "Per-workspace SELLER EARNINGS wallet (available/pending/blocked buckets, *InCents canonical + deprecated Float dual-write). Credited on paid checkout. Owned by kloel/WalletService." },
+    { "name": "KloelWalletTransaction", "table": "RAC_KloelWalletTransaction", "file": "backend/prisma/schema.prisma:1969", "role": "Mutable transaction rows for KloelWallet (type/amount/status/reference)." },
+    { "name": "KloelWalletLedger", "table": "RAC_KloelWalletLedger", "file": "backend/prisma/schema.prisma:2006", "role": "Append-only audit ledger for KloelWallet (direction/bucket/amountInCents/reason). Written via kloel/WalletLedgerService.appendWithinTx inside the same $transaction." },
+    { "name": "PrepaidWallet", "table": "prepaid_wallets", "file": "backend/prisma/schema.prisma:4472", "role": "Per-workspace PREPAID USAGE wallet (single balanceCents, autoRecharge, stripeCustomerId). Funds AI/WhatsApp/API usage. Owned by wallet/WalletService — a DIFFERENT class than KloelWallet's owner." },
+    { "name": "PrepaidWalletTransaction", "table": "prepaid_wallet_transactions", "file": "backend/prisma/schema.prisma:4490", "role": "Append-only TOPUP/USAGE/REFUND/ADJUSTMENT rows carrying balanceAfterCents (self-contained ledger; no separate ledger table)." },
+    { "name": "BankAccount", "table": "RAC_BankAccount", "file": "backend/prisma/schema.prisma:2834", "role": "Seller bank/PIX destination account for payouts (isDefault). Read by payout services." },
+    { "name": "WalletAnticipation", "table": "RAC_WalletAnticipation", "file": "backend/prisma/schema.prisma:2855", "role": "Receivable-anticipation record (fee%, net amount) against seller earnings. Float-based; adjacent to KloelWallet." },
+    { "name": "MarketplaceTreasury", "table": "marketplace_treasuries", "file": "backend/prisma/schema.prisma:4255", "role": "Kloel's OWN house treasury per currency (available/pending/reserved cents). Distinct from per-seller KloelWallet/Connect balances. Owned by MarketplaceTreasuryService." },
+    { "name": "MarketplaceTreasuryLedger", "table": "marketplace_treasury_ledger", "file": "backend/prisma/schema.prisma:4269", "role": "Append-only ledger for the house treasury (direction/bucket/kind/orderId/feeSnapshotId)." },
+    { "name": "MarketplaceFee", "table": "marketplace_fees", "file": "backend/prisma/schema.prisma:4290", "role": "Versioned fee schedule (feeBps, fixed fee, volume tiers, activeFrom/To) feeding split/treasury math." },
+    { "name": "ConnectAccountBalance", "table": "connect_account_balances", "file": "backend/prisma/schema.prisma:4397", "role": "Per-Stripe-Connect-account dual-balance (pending/available cents + lifetime counters) in Kloel's view. Materialized from ConnectLedgerEntry. Owned by LedgerService." },
+    { "name": "ConnectLedgerEntry", "table": "connect_ledger_entries", "file": "backend/prisma/schema.prisma:4417", "role": "Append-only Connect ledger (CREDIT_PENDING/MATURE/DEBIT_PAYOUT/CHARGEBACK/REFUND/ADJUSTMENT) with balanceAfter snapshots + maturation schedule." },
+    { "name": "ConnectMaturationRule", "table": "connect_maturation_rules", "file": "backend/prisma/schema.prisma:4438", "role": "Per-product/account-type delayDays controlling when pending Connect balance matures to available." }
+  ],
+  "services": [
+    { "name": "CheckoutService", "file": "backend/src/checkout/checkout.service.ts:43", "responsibility": "Top-level checkout facade: create/update checkouts, delegate coupon validation to CheckoutCatalogService, emit checkout.created/updated via CheckoutEventEmitterService.", "capability": "checkout-config-management" },
+    { "name": "CheckoutCatalogService", "file": "backend/src/checkout/checkout-catalog.service.ts:17", "responsibility": "Catalog ops over CheckoutProductPlan/CheckoutConfig/CheckoutCoupon/CheckoutPixel; validateCoupon (canonical CheckoutCoupon path).", "capability": "coupon-validation" },
+    { "name": "CheckoutCatalogConfigService", "file": "backend/src/checkout/checkout-catalog-config.service.ts:8", "responsibility": "CRUD for CheckoutConfig sections.", "capability": "checkout-config-management" },
+    { "name": "CheckoutProductService", "file": "backend/src/checkout/checkout-product.service.ts:23", "responsibility": "Plan/product resource creation for the canonical checkout graph.", "capability": "checkout-plan-management" },
+    { "name": "CheckoutProductConfigService", "file": "backend/src/checkout/checkout-product-config.service.ts:13", "responsibility": "Resolve/merge product+config for the public checkout payload.", "capability": "checkout-config-management" },
+    { "name": "CheckoutOrderService", "file": "backend/src/checkout/checkout-order.service.ts:32", "responsibility": "Create CheckoutOrder, compute pricing (coupon+bumps), emit checkoutInitiated/cartCreated lifecycle events.", "capability": "order-creation" },
+    { "name": "CheckoutOrderQueryService", "file": "backend/src/checkout/checkout-order-query.service.ts:14", "responsibility": "Read-side queries over CheckoutOrder (lists/detail).", "capability": "order-query" },
+    { "name": "CheckoutPaymentService", "file": "backend/src/checkout/checkout-payment.service.ts:52", "responsibility": "Capture payment for a CheckoutOrder across Stripe/MP-PIX/MP-boleto arms (checkout-payment.arms.ts), persist CheckoutPayment, transition order to PAID, run post-payment effects. CANONICAL checkout payment capture.", "capability": "payment-capture" },
+    { "name": "CheckoutPostPaymentEffectsService", "file": "backend/src/checkout/checkout-post-payment-effects.service.ts:42", "responsibility": "Post-paid side effects: markLeadConverted, sendPurchaseSignals, emit spine commerce.payment.* via SpineEmitterService.", "capability": "post-payment-effects" },
+    { "name": "CheckoutSocialLeadService", "file": "backend/src/checkout/checkout-social-lead.service.ts:48", "responsibility": "Capture/enrich CheckoutSocialLead (social checkout pre-fill leads).", "capability": "lead-capture" },
+    { "name": "CheckoutSocialRecoveryService", "file": "backend/src/checkout/checkout-social-recovery.service.ts:46", "responsibility": "@Cron(EVERY_10_MINUTES) recover abandoned CheckoutSocialLead via email/follow-up. One of TWO recovery owners.", "capability": "abandonment-recovery" },
+    { "name": "MercadoPagoPixService", "file": "backend/src/checkout/mercado-pago-pix.service.ts:146", "responsibility": "ORPHAN. Creates a raw MP PIX payment; not registered in any module, only its own specs import it. Superseded by payments/mercadopago/MercadoPagoPixChargeService.", "capability": "pix-charge" },
+    { "name": "FacebookCAPIService", "file": "backend/src/checkout/facebook-capi.service.ts:22", "responsibility": "Server-side Meta Conversions API purchase signals.", "capability": "conversion-signals" },
+    { "name": "SalesService", "file": "backend/src/sales/sales.service.ts:64", "responsibility": "Chat-driven sale creation (PIX/card/boleto) writing KloelSale, via MP/Stripe charge services + audit + spine. PARALLEL payment-capture path to CheckoutPaymentService for in-chat conversion.", "capability": "payment-capture" },
+    { "name": "PaymentService (kloel)", "file": "backend/src/kloel/payment.service.ts:?", "responsibility": "Create/confirm KloelSale PIX charges via MercadoPagoPixChargeService + FraudEngine; emits SaleEventPayload on MindEventSpine. Third PIX-creation path.", "capability": "pix-charge" },
+    { "name": "SmartPaymentService (kloel)", "file": "backend/src/kloel/smart-payment.service.ts:?", "responsibility": "AI-mediated negotiated payment wrapper delegating to kloel PaymentService; builds PIX/boleto/card with discount negotiation.", "capability": "payment-capture" },
+    { "name": "StripeChargeService", "file": "backend/src/payments/stripe/stripe-charge.service.ts:27", "responsibility": "stripe.paymentIntents.create for product-sale card charges (consumed by checkout + sales arms).", "capability": "card-charge" },
+    { "name": "StripeWebhookProcessor", "file": "backend/src/payments/stripe/stripe-webhook.processor.ts:162", "responsibility": "Process Stripe charge webhooks for product sales.", "capability": "webhook-ingestion" },
+    { "name": "MercadoPagoPixChargeService", "file": "backend/src/payments/mercadopago/mercadopago-pix-charge.service.ts:27", "responsibility": "CANONICAL MP PIX charge adapter; consumed by checkout, sales, kloel/payment, wallet.", "capability": "pix-charge" },
+    { "name": "MercadoPagoBoletoChargeService", "file": "backend/src/payments/mercadopago/mercadopago-boleto-charge.service.ts:14", "responsibility": "Canonical MP boleto charge adapter.", "capability": "boleto-charge" },
+    { "name": "MercadoPagoWebhookSignatureVerifier", "file": "backend/src/payments/mercadopago/mercadopago-webhook-signature.verifier.ts:25", "responsibility": "Canonical MP webhook HMAC verification.", "capability": "webhook-signature-verification" },
+    { "name": "PaymentProviderRouterService", "file": "backend/src/payments/provider-router/provider-router.service.ts:22", "responsibility": "Route a charge to Stripe vs Mercado Pago by method/policy.", "capability": "provider-routing" },
+    { "name": "FraudEngine", "file": "backend/src/payments/fraud/fraud.engine.ts:43", "responsibility": "Score a charge (velocity/thresholds) → allow/review/require_3ds/block. Used by checkout, wallet, kloel payment.", "capability": "fraud-scoring" },
+    { "name": "SplitEngine", "file": "backend/src/payments/split/split.engine.ts:?", "responsibility": "Compute marketplace split (seller/affiliate/coproducer/platform) using MarketplaceFee.", "capability": "split-computation" },
+    { "name": "LedgerService", "file": "backend/src/payments/ledger/ledger.service.ts:59", "responsibility": "Append-only Connect ledger: creditPending/mature/debitForPayout/chargeback/refund over ConnectAccountBalance+ConnectLedgerEntry; emits commerce.payment.* spine events.", "capability": "connect-ledger" },
+    { "name": "ConnectLedgerMaturationService", "file": "backend/src/payments/ledger/connect-ledger-maturation.service.ts:31", "responsibility": "Mature scheduled pending Connect entries to available per ConnectMaturationRule.", "capability": "balance-maturation" },
+    { "name": "ConnectLedgerReconciliationService", "file": "backend/src/payments/ledger/connect-ledger-reconciliation.service.ts:85", "responsibility": "Replay ledger and assert materialized ConnectAccountBalance matches; raise drift alerts.", "capability": "ledger-reconciliation" },
+    { "name": "ConnectService", "file": "backend/src/payments/connect/connect.service.ts:35", "responsibility": "Create/manage Stripe Connect accounts + onboarding.", "capability": "connect-account-management" },
+    { "name": "ConnectPayoutService", "file": "backend/src/payments/connect/connect-payout.service.ts:78", "responsibility": "stripe.payouts.create to seller bank accounts; debit Connect available balance.", "capability": "payout" },
+    { "name": "ConnectPayoutApprovalService", "file": "backend/src/payments/connect/connect-payout-approval.service.ts:26", "responsibility": "Two-step manual payout approval workflow.", "capability": "payout-approval" },
+    { "name": "ConnectReversalService", "file": "backend/src/payments/connect/connect-reversal.service.ts:53", "responsibility": "Refund/chargeback reversals; updates CheckoutPayment + Connect ledger.", "capability": "reversal" },
+    { "name": "MarketplaceTreasuryService", "file": "backend/src/marketplace-treasury/marketplace-treasury.service.ts:103", "responsibility": "Read/append the house treasury ledger; debitAvailableForPayout, creditAvailableByAdjustment.", "capability": "house-treasury-ledger" },
+    { "name": "MarketplaceTreasuryMaturationService", "file": "backend/src/marketplace-treasury/marketplace-treasury-maturation.service.ts:43", "responsibility": "Mature house treasury pending→available.", "capability": "balance-maturation" },
+    { "name": "MarketplaceTreasuryReconcileService", "file": "backend/src/marketplace-treasury/marketplace-treasury-reconcile.service.ts:51", "responsibility": "Reconcile house treasury ledger vs materialized buckets.", "capability": "ledger-reconciliation" },
+    { "name": "MarketplaceTreasuryPayoutService", "file": "backend/src/marketplace-treasury/marketplace-treasury-payout.service.ts:44", "responsibility": "Payout from house treasury.", "capability": "payout" },
+    { "name": "WalletService (kloel)", "file": "backend/src/kloel/wallet.service.ts:49", "responsibility": "SELLER EARNINGS wallet: confirmPayment (pending→available), withdraw, reconcilePendingPayments over KloelWallet + KloelWalletLedger. NAME COLLIDES with wallet/WalletService.", "capability": "seller-wallet-ledger" },
+    { "name": "WalletLedgerService (kloel)", "file": "backend/src/kloel/wallet-ledger.service.ts:49", "responsibility": "appendWithinTx-only append-only writer for KloelWalletLedger.", "capability": "wallet-ledger-append" },
+    { "name": "WalletService (prepaid)", "file": "backend/src/wallet/wallet.service.ts:73", "responsibility": "PREPAID USAGE wallet: createTopupIntent (MP PIX / Stripe card), usage debits inside $transaction, webhook reconcile over PrepaidWallet. NAME COLLIDES with kloel/WalletService.", "capability": "prepaid-wallet-ledger" },
+    { "name": "CouponService (kloel)", "file": "backend/src/kloel/coupon.service.ts:11", "responsibility": "CRUD ProductCoupon (legacy product-scoped coupons) from chat tools; values as Float.", "capability": "coupon-management" },
+    { "name": "ProductCouponDomainService (kloel)", "file": "backend/src/kloel/product-coupon-domain.service.ts:?", "responsibility": "Domain logic for ProductCoupon + sync into CheckoutCoupon via product-coupon-sync.util.", "capability": "coupon-management" },
+    { "name": "CartRecoveryService (kloel)", "file": "backend/src/kloel/cart-recovery.service.ts:?", "responsibility": "@Cron('0 */30 * * * *') find abandoned CheckoutOrder (status PENDING), run MIND-chosen recovery email, stamp recoveryEmailSentAt. SECOND recovery owner (operates on CheckoutOrder, not social leads).", "capability": "abandonment-recovery" },
+    { "name": "BillingService", "file": "backend/src/billing/billing.service.ts:18", "responsibility": "Kloel SaaS subscription billing of merchants (plan change, status). Adjacent/separate domain from product sales.", "capability": "saas-subscription-billing" },
+    { "name": "BillingWebhookService", "file": "backend/src/billing/billing-webhook.service.ts:37", "responsibility": "Process Stripe subscription webhooks for merchant SaaS plans (Subscription/Invoice).", "capability": "webhook-ingestion" },
+    { "name": "PaymentMethodService", "file": "backend/src/billing/payment-method.service.ts:26", "responsibility": "Manage merchant's Stripe customer + card on file for SaaS billing.", "capability": "payment-method-management" },
+    { "name": "PlanLimitsService", "file": "backend/src/billing/plan-limits.service.ts:67", "responsibility": "Enforce per-plan usage limits/quotas.", "capability": "plan-limit-enforcement" },
+    { "name": "StripeService (billing)", "file": "backend/src/billing/stripe.service.ts:20", "responsibility": "Stripe SDK client factory shared across billing/sales/wallet (one of several Stripe entry points).", "capability": "stripe-client" },
+    { "name": "MarketplaceService", "file": "backend/src/marketplace/marketplace.service.ts:15", "responsibility": "FLOW-TEMPLATE marketplace (listTemplates over FlowTemplate). NOT money/checkout despite the 'marketplace' name — mis-clustered.", "capability": "template-catalog" }
+  ],
+  "events": [
+    "CheckoutEventEmitterService.checkoutCreated / checkoutUpdated (backend/src/kloel/checkout-emitter/checkout-event-emitter.service.ts) — emitted by CheckoutService",
+    "CheckoutEventEmitterService.checkoutInitiated / cartCreated — emitted by CheckoutOrderService on order create",
+    "CheckoutEventEmitterService.paymentInitiated / paymentApproved / paymentDeclined — emitted by checkout-payment.lifecycle.ts arms",
+    "SpineEmitterService spine events: commerce.payment.approved / commerce.payment.declined / commerce.payment.initiated / commerce.payment.refunded — emitted by LedgerService (payments/ledger/ledger.spine-events.helpers.ts) and CheckoutPostPaymentEffectsService",
+    "SpineEmitterService: commerce.cart.created / commerce.cart.abandoned / commerce.checkout.created/updated/completed/deleted",
+    "MindEventSpine SaleEventPayload — emitted by kloel/PaymentService on KloelSale create/confirm (separate spine than payments LedgerService)",
+    "Stripe subscription webhook fan-out (billing-webhook.service) — Subscription/Invoice sync, distinct event stream from product-sale webhooks"
+  ],
+  "capabilities": [
+    { "name": "checkout-config-management", "canonicalHome": "CheckoutCatalogConfigService + CheckoutConfig model (checkout-catalog-config.service.ts:8)", "duplicatedIn": ["Legacy ProductCheckout JSON config blob (schema:2273) managed via kloel/product-sub-resources/product-checkout.controller.ts + kloel-product-sub-resource-tools.service.ts"] },
+    { "name": "order-creation", "canonicalHome": "CheckoutOrderService → CheckoutOrder (checkout-order.service.ts:32)", "duplicatedIn": ["SalesService → KloelSale (sales/sales.service.ts:64)", "kloel/PaymentService → KloelSale", "PhysicalOrder created independently for physical fulfillment (schema:2706)"] },
+    { "name": "payment-capture", "canonicalHome": "CheckoutPaymentService → CheckoutPayment+CheckoutOrder (checkout-payment.service.ts:52, arms in checkout-payment.arms.ts)", "duplicatedIn": ["SalesService → KloelSale (sales.service.ts)", "kloel/PaymentService + SmartPaymentService → KloelSale (kloel/payment.service.ts, kloel/smart-payment.service.ts)", "wallet/WalletService.createTopupIntent → PrepaidWalletTransaction"] },
+    { "name": "pix-charge", "canonicalHome": "MercadoPagoPixChargeService (payments/mercadopago/mercadopago-pix-charge.service.ts:27)", "duplicatedIn": ["ORPHAN MercadoPagoPixService (checkout/mercado-pago-pix.service.ts:146) — dead, unregistered"] },
+    { "name": "coupon-validation", "canonicalHome": "CheckoutCatalogService.validateCoupon → CheckoutCoupon (checkout-catalog.service.ts:301, checkout-catalog.helpers.ts:79)", "duplicatedIn": ["ProductCoupon path via kloel/CouponService + ProductCouponDomainService, synced one-way into CheckoutCoupon by product-coupon-sync.util.ts"] },
+    { "name": "webhook-payment-reconciliation", "canonicalHome": "webhooks/payment-webhook-stripe.handlers2.ts (fan-out updater)", "duplicatedIn": ["Same Stripe webhook updates checkoutPayment + checkoutOrder + kloelSale in parallel (payment-webhook-stripe.handlers.ts:44/54)", "Generic webhook updates kloelSale + payment (payment-webhook-generic.helpers.ts:79/111)", "billing-webhook.service.ts reconciles Subscription/Invoice separately", "wallet/WalletService webhook reconcile for PrepaidWallet"] },
+    { "name": "append-only-money-ledger", "canonicalHome": "(no single owner — 3 independent implementations)", "duplicatedIn": ["LedgerService over ConnectLedgerEntry (payments/ledger/ledger.service.ts:59)", "MarketplaceTreasuryService.append over MarketplaceTreasuryLedger (marketplace-treasury.service.ts:193)", "kloel/WalletLedgerService.appendWithinTx over KloelWalletLedger (kloel/wallet-ledger.service.ts:49)", "PrepaidWalletTransaction self-ledger inside wallet/WalletService"] },
+    { "name": "ledger-reconciliation", "canonicalHome": "(duplicated pattern)", "duplicatedIn": ["ConnectLedgerReconciliationService (payments/ledger/connect-ledger-reconciliation.service.ts:85)", "MarketplaceTreasuryReconcileService (marketplace-treasury-reconcile.service.ts:51)", "common/ledger-reconciliation.service.ts (KloelWallet drift)"] },
+    { "name": "balance-maturation", "canonicalHome": "(duplicated pattern)", "duplicatedIn": ["ConnectLedgerMaturationService (payments/ledger/connect-ledger-maturation.service.ts:31)", "MarketplaceTreasuryMaturationService (marketplace-treasury-maturation.service.ts:43)"] },
+    { "name": "payout", "canonicalHome": "ConnectPayoutService → stripe.payouts.create (payments/connect/connect-payout.service.ts:78)", "duplicatedIn": ["MarketplaceTreasuryPayoutService (marketplace-treasury-payout.service.ts:44)", "kloel/WalletService.withdraw (KloelWallet)"] },
+    { "name": "abandonment-recovery", "canonicalHome": "(two co-equal owners, different entities)", "duplicatedIn": ["kloel/CartRecoveryService over CheckoutOrder status=PENDING, @Cron 30min (kloel/cart-recovery.service.ts)", "CheckoutSocialRecoveryService over CheckoutSocialLead, @Cron 10min (checkout/checkout-social-recovery.service.ts:46)"] },
+    { "name": "fraud-scoring", "canonicalHome": "FraudEngine (payments/fraud/fraud.engine.ts:43)", "duplicatedIn": [] },
+    { "name": "stripe-client", "canonicalHome": "billing/StripeService (billing/stripe.service.ts:20) + payments/stripe-runtime", "duplicatedIn": ["billing/stripe-runtime.ts", "payments/stripe/stripe-charge.service.ts builds its own", "wallet/WalletService calls stripe.paymentIntents.create directly"] },
+    { "name": "saas-subscription-billing", "canonicalHome": "BillingService + BillingWebhookService (billing/*)", "duplicatedIn": [] },
+    { "name": "revenue-aggregation", "canonicalHome": "dashboard.service + admin gmv.query → CheckoutOrder.totalInCents only", "duplicatedIn": ["KloelSale revenue (chat sales) aggregated separately in analytics.service / report.service and NOT included in CheckoutOrder GMV", "ExternalPaymentLink.totalRevenue counters", "Payment.amount never aggregated into GMV"] }
+  ],
+  "duplications": [
+    {
+      "concept": "Sale/Order/Payment record (the focal concern): Payment vs CheckoutPayment vs CheckoutOrder vs KloelSale",
+      "implementations": [
+        "CheckoutOrder + CheckoutPayment (schema:3220/3330) — checkout pipeline source of truth",
+        "KloelSale (schema:1917) — chat-driven sales source of truth",
+        "Payment (schema:2744) — generic webhook-only raw payment, no owning service",
+        "PhysicalOrder (schema:2706) — physical fulfillment, saleId String? with no FK"
+      ],
+      "severity": "P0",
+      "canonicalChoice": "CheckoutOrder+CheckoutPayment for product sales; KloelSale should become a thin originator that ALWAYS materializes a CheckoutOrder. Payment model should be retired (no service owns it).",
+      "note": "DIVERGENT BEHAVIOR IN PROD: webhooks/payment-webhook-stripe.handlers.ts:44-54 fans a single Stripe event out to checkoutPayment + checkoutOrder + kloelSale via three separate updateMany() calls keyed on shared externalId. If any one row is missing/has a different externalId, that record silently never flips to PAID (see resolveExistingCheckoutPaymentForIdempotency divergence warn in checkout-payment.lifecycle.ts:170). The generic webhook (payment-webhook-generic.helpers.ts:79/111) updates kloelSale + payment but NOT checkoutOrder. Net effect: a sale can be PAID in one ledger and PENDING in another. Compounded by GMV double-source: admin gmv.query.ts:17 sums ONLY CheckoutOrder, so KloelSale chat revenue is invisible to platform GMV while merchant dashboard.service also reads only CheckoutOrder — KloelSale revenue is double-orphaned."
+    },
+    {
+      "concept": "Two distinct WalletService classes with the SAME name on DIFFERENT tables",
+      "implementations": [
+        "kloel/wallet.service.ts:49 WalletService → KloelWallet/KloelWalletLedger (seller earnings, pending→available, withdraw)",
+        "wallet/wallet.service.ts:73 WalletService → PrepaidWallet/PrepaidWalletTransaction (usage credits, topup, debit)"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "Rename to SellerWalletService and PrepaidWalletService (or UsageWalletService). They are legitimately different domains but the identical class name is a maintenance trap and DI/import hazard.",
+      "note": "Both are @Injectable, both named WalletService, both have confirm/credit/debit-style methods, both call MercadoPagoPixChargeService/StripeService. Easy to import the wrong one. KloelWallet still dual-writes deprecated Float columns (schema:1953) alongside *InCents per the P6-3 cutover comment — a live drift risk."
+    },
+    {
+      "concept": "Five parallel money balance+ledger systems",
+      "implementations": [
+        "KloelWallet/KloelWalletTransaction/KloelWalletLedger (seller earnings) — kloel/WalletService + WalletLedgerService",
+        "PrepaidWallet/PrepaidWalletTransaction (usage prepaid) — wallet/WalletService",
+        "ConnectAccountBalance/ConnectLedgerEntry (Stripe Connect per-account) — payments/ledger/LedgerService",
+        "MarketplaceTreasury/MarketplaceTreasuryLedger (Kloel house balance) — MarketplaceTreasuryService",
+        "WalletAnticipation (Float receivable anticipation) — no dedicated service"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "Each represents a genuinely different actor's money (seller earnings vs prepaid usage vs connected-account vs house). Keep separate but extract ONE shared append-only ledger abstraction (direction/bucket/amountInCents/balanceAfter/reason + reconcile + maturation) instead of 3 near-identical hand-rolled implementations.",
+      "note": "The append/reconcile/mature logic is re-implemented 3x with near-identical invariant comments (schema:1998-2005 vs 4375 vs 4459). ConnectLedgerEntry and PrepaidWalletTransaction carry balanceAfter snapshots; KloelWalletLedger and MarketplaceTreasuryLedger do not — inconsistent ledger contracts. WalletAnticipation is still Float-based while the others moved to BigInt cents."
+    },
+    {
+      "concept": "PIX charge creation against Mercado Pago",
+      "implementations": [
+        "payments/mercadopago/mercadopago-pix-charge.service.ts:27 MercadoPagoPixChargeService (canonical, 10+ consumers)",
+        "checkout/mercado-pago-pix.service.ts:146 MercadoPagoPixService (ORPHAN — unregistered, only own specs import it)"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "MercadoPagoPixChargeService. Delete checkout/mercado-pago-pix.service.ts (+ its 2 spec files).",
+      "note": "Both build the same MP /v1/payments PIX payload. The checkout/ one is not in checkout.module.ts and has no DI consumer — pure dead code carrying ~12KB of payload-building logic that can drift from the live one."
+    },
+    {
+      "concept": "Coupon / discount: workspace-scoped CheckoutCoupon vs product-scoped ProductCoupon",
+      "implementations": [
+        "CheckoutCoupon (schema:3178, DiscountType enum, Int cents) — CheckoutCatalogService.validateCoupon, canonical for CheckoutOrder pricing",
+        "ProductCoupon (schema:2297, PERCENT/FIXED string, Float) — kloel/CouponService + ProductCouponDomainService",
+        "CheckoutConfig.autoCouponCode + couponPopup* fields (schema:3061) — a third coupon surface"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "CheckoutCoupon. ProductCoupon should be a write-through view that always upserts a CheckoutCoupon (the sync already exists one-way in product-coupon-sync.util.ts) — or be retired.",
+      "note": "Two coupon tables with different scopes, value types (Int cents vs Float), and discount-type encodings ('FIXED'/'PERCENT' string vs DiscountType enum). product-coupon-sync.util.ts:mapProductCouponValueToCheckoutValue converts Float→cents on sync, so the same logical coupon exists twice with rounding-conversion between them — divergence risk if one is edited and sync doesn't fire."
+    },
+    {
+      "concept": "Cart/abandonment recovery ownership",
+      "implementations": [
+        "kloel/cart-recovery.service.ts CartRecoveryService — @Cron 30min over CheckoutOrder status=PENDING, MIND-chosen email, stamps recoveryEmailSentAt",
+        "checkout/checkout-social-recovery.service.ts:46 CheckoutSocialRecoveryService — @Cron 10min over CheckoutSocialLead (CAPTURED/ENRICHED/ABANDONED)"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "Define a single Recovery domain that owns 'a buyer started but did not pay' regardless of whether they reached order-creation (CheckoutOrder PENDING) or only lead-capture (CheckoutSocialLead). Today the same human can be a PENDING CheckoutOrder AND a CheckoutSocialLead and get recovered twice by two crons on different cadences.",
+      "note": "Two independent @Cron jobs, two channel-decision engines (MIND bandit/policy in cart-recovery vs deterministic workspaceChannels gate in social-recovery), two recovery-email templates (auth/email-templates/cart-recovery.html vs social-recovery.html), two sent-at stamps (CheckoutOrder.recoveryEmailSentAt vs CheckoutSocialLead.recoveryEmailSentAt/recoveryWhatsAppSentAt). No cross-dedup between them."
+    },
+    {
+      "concept": "Legacy ProductCheckout vs canonical CheckoutProductPlan/CheckoutConfig",
+      "implementations": [
+        "ProductCheckout (schema:2273) — single row, 14-section JSON config blob, own metrics; consumed by kloel chat tools + product-checkout.controller.ts",
+        "CheckoutProductPlan+CheckoutConfig+CheckoutPlanLink (schema:2969/3025/3005) — typed-column canonical graph"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "CheckoutProductPlan/CheckoutConfig graph.",
+      "note": "ProductCheckout's `config Json` duplicates ~70 typed CheckoutConfig columns as an untyped blob. Both still have live writers (kloel-product-sub-resource-tools.service.ts writes ProductCheckout; checkout-catalog-config.service.ts writes CheckoutConfig). Same conceptual 'how this product's checkout looks/behaves' stored two ways."
+    },
+    {
+      "concept": "Stripe SDK client instantiation",
+      "implementations": [
+        "billing/stripe.service.ts:20 StripeService (+ billing/stripe-runtime.ts)",
+        "payments/stripe/stripe-charge.service.ts builds its own paymentIntents path",
+        "wallet/wallet.service.ts calls stripe.paymentIntents.create directly via injected StripeService",
+        "payments/connect/connect-payout.service.ts stripe.payouts.create"
+      ],
+      "severity": "P3",
+      "canonicalChoice": "billing/StripeService as the single Stripe client factory; charge/payout/connect services should consume it, not re-derive config.",
+      "note": "Multiple entry points to the Stripe SDK with separate config/runtime handling (billing/stripe-runtime.ts vs inline). Light redundancy, not behaviorally divergent today, but key/version drift surface."
+    },
+    {
+      "concept": "Payout execution",
+      "implementations": [
+        "ConnectPayoutService (payments/connect/connect-payout.service.ts:78) — stripe.payouts.create from Connect available balance",
+        "MarketplaceTreasuryPayoutService (marketplace-treasury-payout.service.ts:44) — payout from house treasury",
+        "kloel/WalletService.withdraw — withdraw from KloelWallet"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "Per-actor payout is legitimately distinct, but the debit-balance + append-ledger + create-payout sequence is reimplemented 3x and should share the ledger abstraction noted above.",
+      "note": "Three withdrawal/payout flows with separate approval models (ConnectPayoutApprovalService two-step vs WalletAnticipation auto-complete vs treasury direct)."
+    },
+    {
+      "concept": "'marketplace' namespace overload",
+      "implementations": [
+        "backend/src/marketplace/MarketplaceService — FlowTemplate catalog (NOT money)",
+        "backend/src/marketplace-treasury/* — house money treasury",
+        "split/marketplace fee math + MarketplaceFee model"
+      ],
+      "severity": "P3",
+      "canonicalChoice": "Rename the FlowTemplate one to template-marketplace/TemplateMarketplaceService to stop colliding with the financial 'marketplace' (treasury/fees/split).",
+      "note": "Pure naming entropy: 'marketplace' means both the flow-template store and the payments marketplace. Mis-leads cluster mapping and DI discovery."
+    }
+  ],
+  "legacyOrDead": [
+    "checkout/mercado-pago-pix.service.ts:146 MercadoPagoPixService — ORPHAN: not registered in checkout.module.ts, only its own .spec files import it; superseded by payments/mercadopago/MercadoPagoPixChargeService.",
+    "Payment model (schema:2744 RAC_Payment) — no @Injectable owns it; written only by webhook helpers (payment-webhook-generic.helpers.ts:111, kloel-workspace-context-data.service.ts) and never aggregated into GMV. Effectively a vestigial raw-payment sink superseded by CheckoutPayment/KloelSale.",
+    "ProductCheckout model (schema:2273) — legacy JSON-blob checkout superseded by CheckoutProductPlan+CheckoutConfig; retains live writers via kloel chat tools, so 'transitional' rather than fully dead.",
+    "ProductCoupon model (schema:2297) — legacy product-scoped Float coupon superseded by CheckoutCoupon; kept alive only by one-way sync (product-coupon-sync.util.ts) and chat CouponService.",
+    "KloelWallet/KloelWalletTransaction Float columns (schema:1953-1955, 1973) — explicitly DEPRECATED per the P6-3 cutover comment; dual-written alongside *InCents pending a drop migration that has not landed.",
+    "WalletAnticipation (schema:2855) — Float-based receivable anticipation with no dedicated service; orphaned relative to the BigInt-cents ledger migration.",
+    "PhysicalOrder.saleId (schema:2733) — String? with no FK relation; dangling soft-link to a sale record that may live in CheckoutOrder OR KloelSale, with no integrity guarantee."
+  ]
+}

@@ -151,7 +151,7 @@ describe('OmnichannelContactResolutionService', () => {
       const result = await service.findExisting('WHATSAPP', '5511999999999', 'wamid-123', 'ws-1');
 
       expect(result).not.toBeNull();
-      expect(result!.id).toBe('contact-1');
+      expect(result.id).toBe('contact-1');
     });
 
     it('returns null when no contact found', async () => {

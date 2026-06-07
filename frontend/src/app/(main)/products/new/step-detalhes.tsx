@@ -54,6 +54,9 @@ export function StepDetalhes({
       <MonitorInputField label={kloelT('Nome do produto *')}>
         <input
           {...inputProps}
+          id="product-name"
+          name="productName"
+          aria-label={kloelT('Nome do produto')}
           value={form.name}
           onChange={(e) => updateForm({ name: e.target.value })}
           placeholder={kloelT('Nome do produto')}
@@ -66,6 +69,9 @@ export function StepDetalhes({
 
       <MonitorInputField label={kloelT('Descricao *')}>
         <textarea
+          id="product-description"
+          name="productDescription"
+          aria-label={kloelT('Descricao')}
           style={{ ...monitorInput, resize: 'vertical' as const, minHeight: 100 }}
           onFocus={inputProps.onFocus}
           onBlur={inputProps.onBlur}
@@ -82,6 +88,8 @@ export function StepDetalhes({
 
       <MonitorInputField label={kloelT('Categoria *')}>
         <select
+          id="product-category"
+          name="productCategory"
           aria-label={kloelT('Categoria')}
           style={selectStyle}
           onFocus={inputProps.onFocus}
@@ -117,6 +125,9 @@ export function StepDetalhes({
         <div style={{ display: 'flex', gap: 8 }}>
           <input
             {...inputProps}
+            id="product-tags"
+            name="productTags"
+            aria-label={kloelT('Tags')}
             value={tagInput}
             onChange={(e) => setTagInput(e.target.value)}
             onKeyDown={(e) => {
@@ -154,6 +165,7 @@ export function StepDetalhes({
                 {tag}
                 <button
                   type="button"
+                  aria-label={kloelT(`Remover tag ${tag}`)}
                   onClick={() => onTagRemove(tag)}
                   style={{
                     background: 'none',
@@ -181,6 +193,7 @@ export function StepDetalhes({
               <button
                 type="button"
                 key={opt.value}
+                aria-pressed={selected}
                 onClick={() => updateForm({ format: opt.value })}
                 style={{
                   background: selected ? 'rgba(232, 93, 48, 0.08)' : colors.background.nebula,

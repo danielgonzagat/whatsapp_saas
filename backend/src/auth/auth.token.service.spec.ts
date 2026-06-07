@@ -83,7 +83,7 @@ describe('AuthTokenService', () => {
         workspaceId: null,
       };
 
-      await expect(service.issueTokens(agentWithoutWorkspace as never as Agent)).rejects.toThrow(
+      await expect(service.issueTokens(agentWithoutWorkspace)).rejects.toThrow(
         ServiceUnavailableException,
       );
     });
@@ -94,9 +94,7 @@ describe('AuthTokenService', () => {
         deletedAt: new Date(),
       };
 
-      await expect(service.issueTokens(deletedAgent as never as Agent)).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(service.issueTokens(deletedAgent)).rejects.toThrow(UnauthorizedException);
     });
 
     it('should throw when agent is disabled', async () => {
@@ -105,9 +103,7 @@ describe('AuthTokenService', () => {
         disabledAt: new Date(),
       };
 
-      await expect(service.issueTokens(disabledAgent as never as Agent)).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(service.issueTokens(disabledAgent)).rejects.toThrow(UnauthorizedException);
     });
 
     it('should rotate refresh tokens correctly', async () => {
@@ -408,7 +404,7 @@ describe('AuthTokenService', () => {
       // First $transaction call rejects with P2034. Subsequent calls run the
       // callback against the mock client (rotateRefreshToken also uses
       // $transaction, so we have to keep the default behaviour for those).
-      const defaultTx = prismaMock.$transaction.getMockImplementation()!;
+      const defaultTx = prismaMock.$transaction.getMockImplementation();
       prismaMock.$transaction
         .mockImplementationOnce(() => Promise.reject(p2034))
         .mockImplementation(defaultTx);
@@ -460,7 +456,7 @@ describe('AuthTokenService', () => {
         clientVersion: 'test',
       });
 
-      const defaultTx = prismaMock.$transaction.getMockImplementation()!;
+      const defaultTx = prismaMock.$transaction.getMockImplementation();
       // 1st $transaction = claim (passes through, wins the claim).
       // 2nd $transaction = rotateRefreshToken first attempt → P2034 reject.
       // 3rd $transaction = rotateRefreshToken retry → passes through, succeeds.
@@ -497,7 +493,7 @@ describe('AuthTokenService', () => {
         clientVersion: 'test',
       });
 
-      const defaultTx = prismaMock.$transaction.getMockImplementation()!;
+      const defaultTx = prismaMock.$transaction.getMockImplementation();
       prismaMock.$transaction
         .mockImplementationOnce(defaultTx) // claim succeeds
         .mockImplementationOnce(() => Promise.reject(p2034)) // rotation attempt 1

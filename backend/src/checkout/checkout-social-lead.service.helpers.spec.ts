@@ -219,10 +219,10 @@ describe('buildContactUpsertArgs', () => {
       phone: '+55 (11) 99999-8888',
     });
     expect(args).not.toBeNull();
-    expect(args!.where.workspaceId_phone.phone).toBe('5511999998888');
-    expect(args!.create.name).toBe('Daniel');
-    expect(args!.create.email).toBe('d@test.com');
-    expect(args!.create.customFields).toEqual({ checkoutSocialLead: true });
+    expect(args.where.workspaceId_phone.phone).toBe('5511999998888');
+    expect(args.create.name).toBe('Daniel');
+    expect(args.create.email).toBe('d@test.com');
+    expect(args.create.customFields).toEqual({ checkoutSocialLead: true });
   });
 
   it('omits name from update payload when name is blank', () => {
@@ -233,7 +233,7 @@ describe('buildContactUpsertArgs', () => {
       phone: '11999998888',
     });
     expect(args).not.toBeNull();
-    expect('name' in args!.update).toBe(false);
+    expect('name' in args.update).toBe(false);
   });
 });
 

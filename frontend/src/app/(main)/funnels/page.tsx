@@ -237,6 +237,9 @@ export default function FunnelsPage() {
                     aria-hidden="true"
                   />
                   <input
+                    id="funnels-conversation-search"
+                    name="funnels-conversation-search"
+                    aria-label={kloelT('Buscar conversas por nome ou telefone')}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder={kloelT(`Buscar por nome/telefone`)}
@@ -247,6 +250,9 @@ export default function FunnelsPage() {
 
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <select
+                  id="funnels-status-filter"
+                  name="funnels-status-filter"
+                  aria-label={kloelT('Filtrar conversas por status')}
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
                   className="rounded-xl border border-border bg-muted px-3 py-2 text-sm text-foreground"
@@ -258,6 +264,9 @@ export default function FunnelsPage() {
                   <option value="CLOSED">{kloelT(`Status: Closed`)}</option>
                 </select>
                 <select
+                  id="funnels-assigned-filter"
+                  name="funnels-assigned-filter"
+                  aria-label={kloelT('Filtrar conversas por atribuicao')}
                   value={assignedFilter}
                   onChange={(e) => setAssignedFilter(e.target.value as AssignedFilter)}
                   className="rounded-xl border border-border bg-muted px-3 py-2 text-sm text-foreground"

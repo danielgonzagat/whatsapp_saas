@@ -120,7 +120,7 @@ describe('GmailSyncService', () => {
             },
           ]
         >
-      )[0]!;
+      )[0];
       expect(updateCall.where).toEqual({ id: 'mb-1', workspaceId: 'ws-1' });
       expect(updateCall.data.lastSyncAt).toBeInstanceOf(Date);
       expect(updateCall.data.metadata?.syncedMessageIds).toEqual(
@@ -185,7 +185,7 @@ describe('GmailSyncService', () => {
         prismaMock.mailboxConnection.update.mock.calls as Array<
           [{ where: unknown; data: { metadata?: { syncedMessageIds?: string[] } } }]
         >
-      )[0]!;
+      )[0];
       expect(updateCall.where).toEqual({ id: 'mb-1', workspaceId: 'ws-1' });
       expect(updateCall.data.metadata?.syncedMessageIds).toEqual(
         expect.arrayContaining(['msg-1', 'msg-2']),
@@ -199,7 +199,7 @@ describe('GmailSyncService', () => {
       // connection is non-null, so caller gets a TypeError instead of the
       // upstream error. This test documents the current behavior; service
       // should null-check connection before referencing workspaceId.
-      await expect(service.syncLatestInbox(null as GmailMailboxRecord)).rejects.toThrow(TypeError);
+      await expect(service.syncLatestInbox(null)).rejects.toThrow(TypeError);
 
       expect(gmailClientMock.listMessages).not.toHaveBeenCalled();
       expect(omnichannelMock.handleIncomingMessage).not.toHaveBeenCalled();

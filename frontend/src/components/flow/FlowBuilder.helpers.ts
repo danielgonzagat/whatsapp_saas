@@ -52,8 +52,36 @@ export function buildSeedStartNode(): Node {
 }
 
 /** Build the seed node list given the current nodes, returning them unchanged when non-empty. */
+function isRenderableFlowNode(node: unknown): boolean {
+  if (!node || typeof node !== 'object' || Array.isArray(node)) {
+    return false;
+  }
+
+  const candidate = node as Partial<Node>;
+  const position = candidate.position as { x?: unknown; y?: unknown } | undefined;
+
+  return (
+    typeof candidate.id === 'string' &&
+    candidate.id.length > 0 &&
+    Boolean(position) &&
+    typeof position?.x === 'number' &&
+    typeof position.y === 'number' &&
+    Boolean(candidate.data) &&
+    typeof candidate.data === 'object'
+  );
+}
+
 export function ensureSeedNodes(currentNodes: Node[]): Node[] {
-  return currentNodes.length === 0 ? [buildSeedStartNode()] : currentNodes;
+  if (currentNodes.length === 0) {
+    return [buildSeedStartNode()];
+  }
+
+  if (currentNodes.every(isRenderableFlowNode)) {
+    return currentNodes;
+  }
+
+  const renderableNodes = currentNodes.filter(isRenderableFlowNode);
+  return renderableNodes.length === 0 ? [buildSeedStartNode()] : renderableNodes;
 }
 
 /** Build a deterministic node id for a given type and timestamp. */

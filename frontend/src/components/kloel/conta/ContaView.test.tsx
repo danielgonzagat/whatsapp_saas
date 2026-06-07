@@ -102,4 +102,21 @@ describe('ContaView', () => {
       expect(screen.getByRole('button', { name: new RegExp(name, 'i') })).toBeTruthy();
     }
   });
+
+  it('exposes the receiving-account card as a billing link anchor', () => {
+    render(<ContaView />);
+
+    expect(document.getElementById('conta-recebimento')).toBeTruthy();
+  });
+
+  it('announces the active profile section in the sidebar', () => {
+    render(<ContaView />);
+
+    expect(screen.getByRole('button', { name: /dados pessoais/i }).getAttribute('aria-pressed')).toBe(
+      'true',
+    );
+    expect(screen.getByRole('button', { name: /dados fiscais/i }).getAttribute('aria-pressed')).toBe(
+      'false',
+    );
+  });
 });

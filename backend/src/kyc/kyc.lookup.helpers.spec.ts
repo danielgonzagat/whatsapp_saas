@@ -19,7 +19,7 @@ function fetchResult(status: number, body: unknown): Response {
 
 function mockFetch(impl: (url: string, init?: RequestInit) => Promise<Response>) {
   const fn = jest.fn(impl);
-  global.fetch = fn as unknown as typeof fetch;
+  global.fetch = fn;
   return fn;
 }
 

@@ -325,10 +325,10 @@ export class MercadoEntradaDeclaratorService implements OnModuleInit {
       return {
         ok: true,
         declaration: {
-          active: this.activeDeclaration!.active,
-          declaredAt: this.activeDeclaration!.declaredAt,
-          declaredBy: this.activeDeclaration!.declaredBy,
-          eventId: this.activeDeclaration!.eventId,
+          active: this.activeDeclaration.active,
+          declaredAt: this.activeDeclaration.declaredAt,
+          declaredBy: this.activeDeclaration.declaredBy,
+          eventId: this.activeDeclaration.eventId,
         },
       };
     }

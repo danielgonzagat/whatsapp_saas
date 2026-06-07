@@ -96,7 +96,32 @@ function statusText({
     return 'Conectado';
   }
 
-  return status ? status.replaceAll('_', ' ') : 'Desconectado';
+  const normalizedStatus = String(status || '')
+    .trim()
+    .toLowerCase()
+    .replaceAll('_', ' ')
+    .replace(/\s+/g, ' ');
+
+  const humanLabels: Record<string, string> = {
+    connected: 'Conectado',
+    disconnected: 'Desconectado',
+    'meta auth required': 'Login Meta necessario',
+    'config missing': 'Configuracao ausente',
+    'not configured': 'Configuracao ausente',
+    'server not configured': 'Servidor nao configurado',
+    unavailable: 'Indisponivel',
+    'scanned refreshing': 'Sincronizando sessao',
+  };
+
+  if (normalizedStatus in humanLabels) {
+    return humanLabels[normalizedStatus];
+  }
+
+  if (!normalizedStatus) {
+    return 'Desconectado';
+  }
+
+  return normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1);
 }
 
 function connectionTone({

@@ -54,4 +54,21 @@ describe('Sites Protecao', () => {
     expect(screen.getByText('DNS VERIFIED')).toBeTruthy();
     expect(screen.getByText('SSL ACTIVE')).toBeTruthy();
   });
+
+  it('does not request DNS and SSL status for draft-only Kloel sites', () => {
+    const draftSite: Site = {
+      ...site,
+      id: 'draft-1',
+      slug: '',
+      status: 'DRAFT',
+      publishedAt: null,
+    };
+
+    render(<Protecao workspaceId="ws-1" sites={[draftSite]} loading={false} />);
+
+    expect(useSiteDomains).toHaveBeenCalledWith('ws-1', null);
+    expect(screen.getByText('Publique um site antes de acompanhar DNS e SSL.')).toBeTruthy();
+    expect((screen.getByLabelText('Site para seguranca') as HTMLSelectElement).disabled).toBe(true);
+    expect(screen.queryByText('loja.example.com')).toBeNull();
+  });
 });

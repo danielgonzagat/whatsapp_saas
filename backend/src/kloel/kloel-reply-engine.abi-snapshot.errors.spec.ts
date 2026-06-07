@@ -90,7 +90,7 @@ describe('KloelReplyEngineService ABI snapshot cache (errors) (PI-k5)', () => {
           },
         ]
       >;
-      const upsertArgs = upsertCalls[0]![0];
+      const upsertArgs = upsertCalls[0][0];
       expect(upsertArgs.where.workspaceId_key.key).toBe('abi_snapshot_cache');
       expect(upsertArgs.create.workspaceId).toBe('ws-1');
     });

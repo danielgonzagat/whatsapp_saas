@@ -32,7 +32,7 @@ describe('oauth-state', () => {
     it('returns future date for positive seconds', () => {
       const result = expiresAtFromSeconds(3600);
       expect(result).toBeInstanceOf(Date);
-      expect(result!.getTime()).toBeGreaterThan(Date.now());
+      expect(result.getTime()).toBeGreaterThan(Date.now());
     });
 
     it('returns null for zero', () => {
@@ -55,8 +55,8 @@ describe('oauth-state', () => {
       const verified = verifyState(signed, stateSigningKey);
 
       expect(verified).not.toBeNull();
-      expect(verified!.workspaceId).toBe('ws-1');
-      expect(verified!.returnTo).toBe('/dashboard');
+      expect(verified.workspaceId).toBe('ws-1');
+      expect(verified.returnTo).toBe('/dashboard');
     });
 
     it('rejects tampered state', () => {

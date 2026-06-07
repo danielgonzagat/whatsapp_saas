@@ -128,7 +128,7 @@ const NON_REPEAT_TEMPLATES: Readonly<Record<string, NonRepeatTemplate>> = {
 };
 
 function nonRepeatTemplateFor(category: string): NonRepeatTemplate {
-  return NON_REPEAT_TEMPLATES[category] ?? NON_REPEAT_TEMPLATES['unknown']!;
+  return NON_REPEAT_TEMPLATES[category] ?? NON_REPEAT_TEMPLATES['unknown'];
 }
 
 function buildNonRepeatCommitment(

@@ -14,14 +14,25 @@ type TestProduct = {
 };
 
 const testState = vi.hoisted(
-  (): { product: TestProduct | null; searchParams: URLSearchParams } => ({
+  (): {
+    product: TestProduct | null;
+    searchParams: URLSearchParams;
+    checkoutPlans: Record<string, unknown>[];
+    checkoutTemplates: Record<string, unknown>[];
+    createPlan: ReturnType<typeof vi.fn>;
+    routerPush: ReturnType<typeof vi.fn>;
+  } => ({
     product: null,
     searchParams: new URLSearchParams(),
+    checkoutPlans: [],
+    checkoutTemplates: [],
+    createPlan: vi.fn(),
+    routerPush: vi.fn(),
   }),
 );
 
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: testState.routerPush }),
   useSearchParams: () => testState.searchParams,
 }));
 
@@ -63,10 +74,10 @@ vi.mock('@/hooks/useProducts', () => ({
 
 vi.mock('@/hooks/useCheckoutPlans', () => ({
   useCheckoutPlans: () => ({
-    plans: [],
-    checkouts: [],
+    plans: testState.checkoutPlans,
+    checkouts: testState.checkoutTemplates,
     isLoading: false,
-    createPlan: vi.fn(),
+    createPlan: testState.createPlan,
     deletePlan: vi.fn(),
     duplicatePlan: vi.fn(),
     updatePlan: vi.fn(),
@@ -82,6 +93,10 @@ vi.mock('@/hooks/useCheckoutPlans', () => ({
 beforeEach(() => {
   testState.product = null;
   testState.searchParams = new URLSearchParams();
+  testState.checkoutPlans = [];
+  testState.checkoutTemplates = [];
+  testState.createPlan.mockReset();
+  testState.routerPush.mockClear();
 });
 
 describe('ProductNerveCenter missing product state', () => {
@@ -106,6 +121,39 @@ describe('ProductNerveCenter missing product state', () => {
     fireEvent.click(screen.getByRole('button', { name: '← Produtos' }));
 
     expect(onBack).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('ProductNerveCenter plan creation', () => {
+  it('shows validation feedback instead of silently ignoring an empty plan name', async () => {
+    testState.product = {
+      id: 'prod-1',
+      name: 'Produto QA',
+      description: 'Produto para teste',
+      category: 'E-books',
+      active: true,
+      warrantyDays: 30,
+      format: 'DIGITAL',
+    };
+    testState.searchParams = new URLSearchParams('tab=planos');
+
+    render(
+      <ProductNerveCenter
+        productId="prod-1"
+        onBack={vi.fn()}
+        initialTab={undefined}
+        initialPlanSub={undefined}
+        initialComSub={undefined}
+        initialModal={undefined}
+        initialFocus={undefined}
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: '+ Novo plano' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Criar' }));
+
+    expect(await screen.findByText('Informe o nome do plano.')).toBeTruthy();
+    expect(testState.createPlan).not.toHaveBeenCalled();
   });
 });
 
@@ -142,5 +190,63 @@ describe('ProductNerveCenter route query sync', () => {
     rerender(node());
 
     expect(await screen.findByRole('heading', { name: 'Campanhas Registradas' })).toBeTruthy();
+  });
+
+  it('updates the route when a coupon shortcut opens the checkout editor', async () => {
+    testState.product = {
+      id: 'prod-1',
+      name: 'Produto QA',
+      description: 'Produto para teste',
+      category: 'E-books',
+      active: true,
+      warrantyDays: 30,
+      format: 'DIGITAL',
+    };
+    testState.searchParams = new URLSearchParams('tab=cupons');
+    testState.checkoutPlans = [
+      {
+        id: 'plan-1',
+        kind: 'PLAN',
+        name: 'Plano QA',
+        priceInCents: 9700,
+        quantity: 1,
+        maxInstallments: 12,
+        isActive: true,
+        checkoutConfig: { enableCoupon: true },
+      },
+    ];
+    testState.checkoutTemplates = [
+      {
+        id: 'checkout-1',
+        kind: 'CHECKOUT',
+        name: 'Checkout QA',
+        referenceCode: 'CHK001',
+        checkoutConfig: {
+          enableCoupon: true,
+          enablePix: true,
+          enableCreditCard: true,
+          autoCouponCode: 'AUDITORIA10',
+        },
+        checkoutLinks: [{ planId: 'plan-1', isActive: true }],
+      },
+    ];
+
+    render(
+      <ProductNerveCenter
+        productId="prod-1"
+        onBack={vi.fn()}
+        initialTab={undefined}
+        initialPlanSub={undefined}
+        initialComSub={undefined}
+        initialModal={undefined}
+        initialFocus={undefined}
+      />,
+    );
+
+    expect(await screen.findByText(/Cupom automático atual: AUDITORIA10/)).toBeTruthy();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Abrir checkout' }));
+
+    expect(testState.routerPush).toHaveBeenCalledWith('/products/prod-1?tab=checkouts');
   });
 });

@@ -181,8 +181,8 @@ describe('KloelDomainServiceResolver', () => {
       });
 
       expect(setImage).not.toHaveBeenCalled();
-      expect(result!.success).toBe(false);
-      expect(result!.error).toBe('image_upload_no_url');
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('image_upload_no_url');
     });
 
     it('returns entity_id_required when the entity id is missing for setImage', async () => {
@@ -204,9 +204,9 @@ describe('KloelDomainServiceResolver', () => {
       });
 
       expect(setImage).not.toHaveBeenCalled();
-      expect(result!.success).toBe(false);
-      expect(result!.error).toBe('entity_id_required');
-      expect(result!.detail).toContain('productId');
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('entity_id_required');
+      expect(result.detail).toContain('productId');
     });
 
     it('propagates a setImage failure (e.g. workspace ownership rejection)', async () => {
@@ -229,9 +229,9 @@ describe('KloelDomainServiceResolver', () => {
       });
 
       expect(attach).toHaveBeenCalledTimes(1);
-      expect(result!.success).toBe(false);
-      expect(result!.error).toBe('service_call_failed');
-      expect(result!.detail).toBe('Product not found');
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('service_call_failed');
+      expect(result.detail).toBe('Product not found');
     });
 
     it('returns invalid_compound_capability for a malformed compound (3 parts)', async () => {
@@ -239,8 +239,8 @@ describe('KloelDomainServiceResolver', () => {
 
       const result = await resolver.tryExecute('bad_compound', 'ws-1', {});
 
-      expect(result!.success).toBe(false);
-      expect(result!.error).toBe('invalid_compound_capability');
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('invalid_compound_capability');
       expect(refGet()).not.toHaveBeenCalled();
     });
 
@@ -249,8 +249,8 @@ describe('KloelDomainServiceResolver', () => {
 
       const result = await resolver.tryExecute('bad_compound2', 'ws-1', {});
 
-      expect(result!.success).toBe(false);
-      expect(result!.error).toBe('invalid_compound_capability');
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('invalid_compound_capability');
     });
 
     it('returns unknown_service when the attach service is not in the token map', async () => {
@@ -261,9 +261,9 @@ describe('KloelDomainServiceResolver', () => {
 
       const result = await resolver.tryExecute('ghost_compound', 'ws-1', { productId: 'p-1' });
 
-      expect(result!.success).toBe(false);
-      expect(result!.error).toBe('unknown_service');
-      expect(result!.detail).toContain('GhostService');
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('unknown_service');
+      expect(result.detail).toContain('GhostService');
     });
   });
 });

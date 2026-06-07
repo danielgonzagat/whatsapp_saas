@@ -8,18 +8,14 @@ import {
 import Redis from 'ioredis';
 import { Server, Socket } from 'socket.io';
 import { createRedisClient } from '../common/redis/redis.util';
+import { SOCKET_CORS_OPTIONS } from '../common/socket-cors';
 
 /**
  * Gateway para alertas operacionais (rate-limit, provider down, fallback fail).
  * Consumido pelo front para exibir toasts/banners em tempo real.
  */
 @WebSocketGateway({
-  cors: {
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || [
-      process.env.FRONTEND_URL || 'http://localhost:3000',
-    ],
-    credentials: true,
-  },
+  cors: SOCKET_CORS_OPTIONS,
 })
 export class AlertsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   /** Server property. */

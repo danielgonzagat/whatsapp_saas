@@ -284,7 +284,7 @@ export class AuthVerificationService {
         }
 
         if (a.emailVerified) {
-          return { agent: a, token: '', expiry: null as Date | null };
+          return { agent: a, token: '', expiry: null };
         }
 
         const t = randomUUID();

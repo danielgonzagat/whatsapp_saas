@@ -34,7 +34,9 @@ function AvatarUploader({
   const [isHovered, setIsHovered] = useState(false);
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
-      <div
+      <button
+        type="button"
+        aria-label={kloelT(`Alterar foto de perfil`)}
         onClick={() => fileRef.current?.click()}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -50,12 +52,6 @@ function AvatarUploader({
           position: 'relative' as const,
           cursor: 'pointer',
           padding: 8,
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            (e.currentTarget as HTMLElement).click();
-          }
         }}
       >
         {imgSrc ? (
@@ -99,7 +95,7 @@ function AvatarUploader({
         >
           <span style={{ color: 'var(--app-text-primary)' }}>{Icons.camera(18)}</span>
         </div>
-      </div>
+      </button>
       <div>
         <span
           style={{
@@ -117,6 +113,8 @@ function AvatarUploader({
         </span>
       </div>
       <input
+        id="conta-avatar-file"
+        name="contaAvatarFile"
         aria-label="Foto de perfil"
         ref={fileRef}
         type="file"
@@ -192,6 +190,10 @@ function BirthDatePickerField({
   const draftMonth = Math.min(12, Math.max(1, Number(draft.month) || 1));
   const maxDay = daysInMonth(draftYear, draftMonth);
   const draftDay = Math.min(maxDay, Math.max(1, Number(draft.day) || 1));
+  const birthDateLabel = formatBirthDate(value);
+  const birthDateAriaLabel = value
+    ? `Data de nascimento: ${birthDateLabel}`
+    : 'Data de nascimento: selecionar data';
   const selectStyle: React.CSSProperties = {
     width: '100%',
     padding: '9px 10px',
@@ -224,7 +226,7 @@ function BirthDatePickerField({
       <button
         id={fieldId}
         type="button"
-        aria-label="Data de nascimento"
+        aria-label={birthDateAriaLabel}
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => {
@@ -250,8 +252,19 @@ function BirthDatePickerField({
           textAlign: 'left' as const,
         }}
       >
-        <span>{formatBirthDate(value)}</span>
-        <span style={{ color: 'var(--app-text-tertiary)', fontSize: 12 }}>v</span>
+        <span>{birthDateLabel}</span>
+        <span
+          aria-hidden="true"
+          style={{
+            width: 7,
+            height: 7,
+            borderRight: '1.5px solid var(--app-text-tertiary)',
+            borderBottom: '1.5px solid var(--app-text-tertiary)',
+            transform: open ? 'rotate(225deg)' : 'rotate(45deg)',
+            transition: 'transform 150ms ease',
+            flexShrink: 0,
+          }}
+        />
       </button>
       {open && (
         <div
@@ -431,14 +444,40 @@ export default function DadosPessoaisSection({
 
   const set = (k: string, v: string) => setForm((prev) => ({ ...prev, [k]: v }));
 
+  const showValidationError = (message: string) => {
+    setError(message);
+    showToast(message, 'error');
+    setSaveStatus('error');
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+    }
+    saveTimer.current = setTimeout(() => setSaveStatus('idle'), 4000);
+  };
+
   const handleSave = async () => {
     setError('');
     setSaveStatus('idle');
+
+    const trimmedName = form.name.trim();
+    const phoneDigits = form.phone.replace(/\D/g, '');
+    if (!trimmedName) {
+      showValidationError('Informe seu nome completo.');
+      return;
+    }
+    if (phoneDigits.length < 10) {
+      showValidationError('Informe um celular valido com DDD.');
+      return;
+    }
+    if (!form.birthDate) {
+      showValidationError('Informe sua data de nascimento.');
+      return;
+    }
+
     setSaving(true);
     try {
       await updateProfile(
         cleanPayload({
-          name: form.name,
+          name: trimmedName,
           phone: form.phone,
           birthDate: form.birthDate,
         }),

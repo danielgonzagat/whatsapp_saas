@@ -150,7 +150,7 @@ describe('OperatorFeedbackLoop (UTP-TEAM-007)', () => {
 
     const entries = extractFeedbackFromEvents(events);
     expect(entries).toHaveLength(1);
-    expect(entries[0]!.accepted).toBe(true);
-    expect(entries[0]!.suggestionId).toBe('sugg_001');
+    expect(entries[0].accepted).toBe(true);
+    expect(entries[0].suggestionId).toBe('sugg_001');
   });
 });

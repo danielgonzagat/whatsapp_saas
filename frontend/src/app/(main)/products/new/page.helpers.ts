@@ -1,8 +1,46 @@
 import type { FormState } from './types';
 
+function normalizeLocalizedNumberInput(input: string): string {
+  const compact = input.trim().replace(/\s/g, '');
+  const commaIndex = compact.lastIndexOf(',');
+  const dotIndex = compact.lastIndexOf('.');
+
+  if (commaIndex >= 0 && dotIndex >= 0) {
+    const decimalSeparator = commaIndex > dotIndex ? ',' : '.';
+    const thousandsSeparator = decimalSeparator === ',' ? '.' : ',';
+
+    return compact.split(thousandsSeparator).join('').replace(decimalSeparator, '.');
+  }
+
+  if (commaIndex >= 0) {
+    return compact.replace(',', '.');
+  }
+
+  return compact;
+}
+
 function parseNumberOrFallback(input: string, fallback: number): number {
-  const value = Number.parseFloat(input);
+  const value = Number.parseFloat(normalizeLocalizedNumberInput(input));
   return Number.isFinite(value) ? value : fallback;
+}
+
+export function formatLocalizedCurrency(input: string): string {
+  const value = parseNumberOrFallback(input, 0);
+
+  return `R$ ${new Intl.NumberFormat('pt-BR', {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+  }).format(value)}`;
+}
+
+export function formatLocalizedPercent(input: string): string {
+  const value = parseNumberOrFallback(input, Number.NaN);
+
+  if (!Number.isFinite(value)) {
+    return '';
+  }
+
+  return `${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 }).format(value)}%`;
 }
 
 function parseIntOrFallback(input: string, fallback: number): number {
@@ -11,8 +49,27 @@ function parseIntOrFallback(input: string, fallback: number): number {
 }
 
 function parseOptionalFloat(input: string): number | undefined {
-  const value = Number.parseFloat(input);
+  const value = parseNumberOrFallback(input, Number.NaN);
   return Number.isFinite(value) ? value : undefined;
+}
+
+export function mergeProductTags(existingTags: string[], input: string, maxTags = 5): string[] {
+  const tags = [...existingTags];
+  const seen = new Set(tags.map((tag) => tag.trim().toLocaleLowerCase()).filter(Boolean));
+
+  for (const candidate of input.split(',')) {
+    const tag = candidate.trim();
+    const key = tag.toLocaleLowerCase();
+
+    if (!tag || seen.has(key) || tags.length >= maxTags) {
+      continue;
+    }
+
+    tags.push(tag);
+    seen.add(key);
+  }
+
+  return tags;
 }
 
 export type ProductCreateStepValidation =
@@ -44,7 +101,7 @@ export function validateProductCreateStep(
       return { ok: false, step: 2, message: 'Informe o preco do produto antes de continuar.' };
     }
 
-    const price = Number.parseFloat(priceText.replace(',', '.'));
+    const price = parseNumberOrFallback(priceText, Number.NaN);
 
     if (!Number.isFinite(price) || price < 0) {
       return { ok: false, step: 2, message: 'Informe um preco valido antes de continuar.' };
@@ -58,7 +115,7 @@ export function validateProductCreateStep(
       return { ok: false, step: 5, message: 'Informe a comissao do afiliado antes de continuar.' };
     }
 
-    const commission = Number.parseFloat(commissionText.replace(',', '.'));
+    const commission = parseNumberOrFallback(commissionText, Number.NaN);
 
     if (!Number.isFinite(commission) || commission < 1 || commission > 100) {
       return {

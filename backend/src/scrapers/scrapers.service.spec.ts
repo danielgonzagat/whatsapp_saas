@@ -41,20 +41,33 @@ describe('ScrapersService', () => {
   });
 
   describe('createJob', () => {
-    it('creates job with workspace scoping and dispatches to worker queue', async () => {
+    it('creates job with workspace scoping and dispatches location as scraper filters', async () => {
       await service.createJob('ws-1', {
-        type: 'google-maps',
-        query: 'restaurant',
+        type: 'MAPS',
+        query: 'academias',
+        location: 'Sao Paulo, SP',
       });
-      expect(prisma.scrapingJob.create).toHaveBeenCalledWith({
-        data: partialMatch({
+
+      const [createCall] = prisma.scrapingJob.create.mock.calls as [{ data: unknown }][];
+      const createData = createCall[0].data;
+      expect(createData).toEqual(
+        partialMatch({
+          type: 'MAPS',
+          query: 'academias',
           workspaceId: 'ws-1',
+          filters: { location: 'Sao Paulo, SP' },
           stats: { status: 'pending', found: 0, valid: 0, imported: 0 },
         }),
-      });
+      );
+      expect(createData).not.toHaveProperty('location');
       expect(queueAddMock).toHaveBeenCalledWith(
         'run-scraper',
-        expect.objectContaining({ workspaceId: 'ws-1', type: 'google-maps' }),
+        expect.objectContaining({
+          workspaceId: 'ws-1',
+          type: 'MAPS',
+          query: 'academias',
+          filters: { location: 'Sao Paulo, SP' },
+        }),
       );
     });
   });

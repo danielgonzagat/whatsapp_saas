@@ -50,7 +50,7 @@ describe('ProductAIConfigService.update', () => {
     });
 
     expect(result.success).toBe(true);
-    const upsertArg = configUpsert.mock.calls[0]![0] as {
+    const upsertArg = configUpsert.mock.calls[0][0] as {
       where: { productId: string };
       create: { productId: string; customerProfile: Record<string, unknown> };
     };
@@ -70,7 +70,7 @@ describe('ProductAIConfigService.update', () => {
 
     await service.update(WS, { productId: PRODUCT_ID, persona: 'new' });
 
-    const upsertArg = configUpsert.mock.calls[0]![0] as {
+    const upsertArg = configUpsert.mock.calls[0][0] as {
       update: { customerProfile: Record<string, unknown> };
     };
     expect(upsertArg.update.customerProfile).toEqual({

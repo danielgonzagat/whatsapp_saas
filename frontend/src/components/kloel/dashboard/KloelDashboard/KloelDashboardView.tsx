@@ -36,6 +36,7 @@ interface KloelDashboardViewProps {
   messages: DashboardMessage[];
   conversationTitle: string;
   onTitle: (title: string) => void;
+  onNewChat: () => void;
   streamingMessageId: string | null;
   isThinking: boolean;
   isReplyInFlight: boolean;
@@ -67,7 +68,7 @@ interface KloelDashboardViewProps {
   onAssistantRegenerate: (messageId: string) => Promise<void>;
   onCancelActiveReply: () => void;
   onInputChange: (value: string) => void;
-  onSend: () => void;
+  onSend: (value?: string) => void;
   onRemoveAttachment: (attachmentId: string) => void;
   onRetryAttachment: (attachmentId: string) => void;
   onSelectProduct: (product: KloelLinkedProduct) => void;
@@ -82,6 +83,7 @@ export function KloelDashboardView({
   messages,
   conversationTitle,
   onTitle,
+  onNewChat,
   streamingMessageId,
   isThinking,
   isReplyInFlight,
@@ -142,6 +144,8 @@ export function KloelDashboardView({
       <DashboardGlobalStyles />
       <input
         ref={fileInputRef}
+        id="kloel-chat-file-input"
+        name="kloelChatFileInput"
         data-testid="kloel-chat-file-input"
         type="file"
         hidden
@@ -167,7 +171,7 @@ export function KloelDashboardView({
       >
         {hasMessages ? (
           <>
-            <ConversationHeaderBar title={conversationTitle} onTitle={onTitle} />
+            <ConversationHeaderBar title={conversationTitle} onTitle={onTitle} onNewChat={onNewChat} />
             <div
               style={{
                 flex: 1,

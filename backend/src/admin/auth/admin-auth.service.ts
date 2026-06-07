@@ -108,7 +108,7 @@ export class AdminAuthService {
     }
 
     if (isAccountLocked(user.lockedUntil)) {
-      throw adminErrors.accountLocked(user.lockedUntil as Date);
+      throw adminErrors.accountLocked(user.lockedUntil);
     }
 
     const ok = await bcryptCompare(password, user.passwordHash);

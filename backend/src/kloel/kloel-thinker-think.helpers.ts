@@ -178,6 +178,9 @@ export async function finalizeSuccessfulReply(
   if (workspaceId) {
     await planLimits.trackAiUsage(workspaceId, estimatedTokens).catch(() => {});
   }
+  // Capture the streamed reasoning so it is PERSISTED with the assistant message
+  // and survives the post-stream conversation reload — reasoning is never erased.
+  const lastReasoning = streamWriter.getLastReasoning();
   if (thread?.id && workspaceId) {
     await threadService.persistAssistantThreadMessage(
       thread.id,
@@ -193,6 +196,8 @@ export async function finalizeSuccessfulReply(
         activeResponseVersionIndex: Math.max(responseVersions.length - 1, 0),
         processingTrace: persistedProcessingTrace,
         processingSummary: persistedProcessingSummary,
+        reasoningText: lastReasoning.text || undefined,
+        reasoningDurationMs: lastReasoning.durationMs ?? undefined,
       }),
     );
     await threadService.maybeRefreshThreadSummary(
@@ -426,7 +431,7 @@ export async function runToolPlanningBranch(
           return typeof name === 'string' && requestedAllowedTools.includes(name);
         });
   const initialResponse = await chatCompletionWithFallback(
-    replyEngine.openai!,
+    replyEngine.openai,
     {
       model: resolveBackendOpenAIModel('brain'),
       messages,

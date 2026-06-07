@@ -119,7 +119,7 @@ describe('MindProcessorService', () => {
       expect(capturedSchedulerProcessor).toBeDefined();
 
       queueAddMock.mockClear();
-      const result = await capturedSchedulerProcessor!();
+      const result = await capturedSchedulerProcessor();
 
       expect(prisma.$queryRaw).toHaveBeenCalled();
       expect(queueAddMock).toHaveBeenCalledTimes(2);
@@ -133,7 +133,7 @@ describe('MindProcessorService', () => {
       await service.onModuleInit();
       expect(capturedTickProcessor).toBeDefined();
 
-      await capturedTickProcessor!({ data: { workspaceId: 'ws-snap' } });
+      await capturedTickProcessor({ data: { workspaceId: 'ws-snap' } });
 
       expect(mind.tick).toHaveBeenCalledWith('ws-snap');
       expect(selfModel.snapshot).toHaveBeenCalledWith('ws-snap');
@@ -145,7 +145,7 @@ describe('MindProcessorService', () => {
       await service.onModuleInit();
       expect(capturedTickProcessor).toBeDefined();
 
-      const result = await capturedTickProcessor!({ data: { workspaceId: 'ws-snap' } });
+      const result = await capturedTickProcessor({ data: { workspaceId: 'ws-snap' } });
 
       // tick still resolved with the mind.tick result despite the snapshot throw.
       expect(result).toEqual({});

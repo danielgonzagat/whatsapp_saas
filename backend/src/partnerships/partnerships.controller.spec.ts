@@ -59,7 +59,7 @@ describe('PartnershipsController workspace resolution (cross-tenant safe)', () =
 
   it('ignores a forged x-workspace-id header (no cross-tenant leak via header)', async () => {
     const req = makeReq({
-      headers: { 'x-workspace-id': 'ws-victim' } as AuthenticatedRequest['headers'],
+      headers: { 'x-workspace-id': 'ws-victim' },
     });
 
     await controller.listCollaborators(req);
@@ -82,7 +82,7 @@ describe('PartnershipsController workspace resolution (cross-tenant safe)', () =
 
   it('rejects a query workspaceId that mismatches the token (Forbidden)', () => {
     const req = makeReq({
-      query: { workspaceId: 'ws-victim' } as AuthenticatedRequest['query'],
+      query: { workspaceId: 'ws-victim' },
     });
 
     expect(() => controller.listCollaborators(req)).toThrow(ForbiddenException);

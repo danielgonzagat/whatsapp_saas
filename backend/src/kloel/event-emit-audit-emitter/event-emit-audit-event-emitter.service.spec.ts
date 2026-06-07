@@ -46,7 +46,7 @@ describe('EventEmitAuditEventEmitterService', () => {
         e.payload['gateName'] === 'b17-surface-coverage',
     );
     expect(gateEvent).toBeDefined();
-    expect(gateEvent!.valence).toBe('negative');
+    expect(gateEvent.valence).toBe('negative');
     expect(report.surfaces).toHaveLength(7);
   });
 
@@ -76,7 +76,7 @@ describe('EventEmitAuditEventEmitterService', () => {
         e.payload['gateName'] === 'b17-surface-coverage',
     );
     expect(gateEvent).toBeDefined();
-    expect(gateEvent!.valence).toBe('positive');
+    expect(gateEvent.valence).toBe('positive');
     expect(report.surfaces.every((s) => s.coverageRatio > 0)).toBe(true);
   });
 
@@ -95,7 +95,7 @@ describe('EventEmitAuditEventEmitterService', () => {
         e.payload['gateName'] === 'b17-surface-coverage',
     );
     expect(gateEvent).toBeDefined();
-    const payload = gateEvent!.payload as Record<string, unknown>;
+    const payload = gateEvent.payload as Record<string, unknown>;
     expect(payload['scannedEventCount']).toBeGreaterThan(0);
     expect(Array.isArray(payload['surfaces'])).toBe(true);
     expect(Array.isArray(payload['zeroCoverageSurfaces'])).toBe(true);

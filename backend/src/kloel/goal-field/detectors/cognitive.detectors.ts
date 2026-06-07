@@ -133,7 +133,7 @@ const repeatedAgentFailureDetector: Detector = {
       if (list.length < 2) {
         continue;
       }
-      const last = list[list.length - 1]!;
+      const last = list[list.length - 1];
       out.push(
         tensionFor(
           'cognitive.repeated_agent_failure',

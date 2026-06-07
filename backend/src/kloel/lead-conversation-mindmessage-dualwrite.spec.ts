@@ -21,8 +21,14 @@ function makePrismaMock() {
   };
 }
 
-function makeLogger(): Logger {
-  return { warn: jest.fn(), log: jest.fn(), error: jest.fn() } as unknown as Logger;
+type LoggerMock = Logger & {
+  warn: jest.Mock;
+  log: jest.Mock;
+  error: jest.Mock;
+};
+
+function makeLogger(): LoggerMock {
+  return { warn: jest.fn(), log: jest.fn(), error: jest.fn() } as unknown as LoggerMock;
 }
 
 const WS = 'ws-1';

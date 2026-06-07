@@ -92,7 +92,7 @@ export function extractBearerToken(header: string | undefined): string | null {
   if (parts.length !== 2) {
     return null;
   }
-  if (parts[0]!.toLowerCase() !== 'bearer') {
+  if (parts[0].toLowerCase() !== 'bearer') {
     return null;
   }
   return parts[1] || null;
@@ -126,7 +126,7 @@ export function readForwardedForIp(header: string | string[] | undefined): strin
   if (typeof header !== 'string' || header.length === 0) {
     return null;
   }
-  const first = header.split(',')[0]!.trim();
+  const first = header.split(',')[0].trim();
   return first.length > 0 ? first : null;
 }
 

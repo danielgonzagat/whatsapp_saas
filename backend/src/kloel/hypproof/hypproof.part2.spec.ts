@@ -43,7 +43,7 @@ describe('Hypproof module (UTP-HYPPROOF-001..009)', () => {
       ];
       const result = svc.evaluate(observations, 'hyp-1', 'exp-1', 'ws-1', 'corr-1');
       expect(result).not.toBeNull();
-      expect(result!.verdict).toBe('confirmed');
+      expect(result.verdict).toBe('confirmed');
     });
 
     it('returns refuted for negative delta', () => {
@@ -66,7 +66,7 @@ describe('Hypproof module (UTP-HYPPROOF-001..009)', () => {
       ];
       const result = svc.evaluate(observations, 'hyp-1', 'exp-1', 'ws-1', 'corr-1');
       expect(result).not.toBeNull();
-      expect(result!.verdict).toBe('refuted');
+      expect(result.verdict).toBe('refuted');
     });
 
     it('returns null for empty observations', () => {
@@ -93,7 +93,7 @@ describe('Hypproof module (UTP-HYPPROOF-001..009)', () => {
       ];
       const result = svc.evaluate(observations, 'hyp-1', 'exp-1', 'ws-1', 'corr-1');
       expect(result).not.toBeNull();
-      expect(result!.verdict).toBe('inconclusive');
+      expect(result.verdict).toBe('inconclusive');
     });
   });
 
@@ -119,7 +119,7 @@ describe('Hypproof module (UTP-HYPPROOF-001..009)', () => {
 
       const result = await svc.update(evaluation);
       expect(result).not.toBeNull();
-      expect(result!.verdict).toBe('confirmed');
+      expect(result.verdict).toBe('confirmed');
       expect((mockSpine as { emit: jest.Mock }).emit).toHaveBeenCalledWith(
         expect.objectContaining({
           eventName: 'cognition.belief_updated',
@@ -158,8 +158,8 @@ describe('Hypproof module (UTP-HYPPROOF-001..009)', () => {
       };
       const result = svc.build(hypothesis, evaluation);
       expect(result).not.toBeNull();
-      expect(result!.headline).toContain('confirmed');
-      expect(result!.verdict).toBe('confirmed');
+      expect(result.headline).toContain('confirmed');
+      expect(result.verdict).toBe('confirmed');
     });
 
     it('builds refuted narrative', () => {
@@ -188,8 +188,8 @@ describe('Hypproof module (UTP-HYPPROOF-001..009)', () => {
       };
       const result = svc.build(hypothesis, evaluation);
       expect(result).not.toBeNull();
-      expect(result!.headline).toContain('not supported');
-      expect(result!.verdict).toBe('refuted');
+      expect(result.headline).toContain('not supported');
+      expect(result.verdict).toBe('refuted');
     });
   });
 });

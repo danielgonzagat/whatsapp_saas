@@ -187,7 +187,7 @@ export class AdRulesEngineService {
     if (!this.bandit || !this.pendingBanditOutcomes.has(rule.id)) {
       return;
     }
-    const pending = this.pendingBanditOutcomes.get(rule.id)!;
+    const pending = this.pendingBanditOutcomes.get(rule.id);
     try {
       if (metrics) {
         const improved = metrics.convertedCount >= pending.previousConvertedCount;

@@ -46,7 +46,7 @@ describe('LEGIT-001 — assessPrivacyCompliance', () => {
     const result = assessPrivacyCompliance(input);
     expect(result.compliant).toBe(false);
     expect(result.violations).toHaveLength(1);
-    expect(result.violations[0]!.severity).toBe('critical');
+    expect(result.violations[0].severity).toBe('critical');
     expect(result.requiredActions).toContain('obtain_explicit_consent');
   });
 
@@ -64,7 +64,7 @@ describe('LEGIT-001 — assessPrivacyCompliance', () => {
     };
     const result = assessPrivacyCompliance(input);
     expect(result.compliant).toBe(false);
-    expect(result.violations[0]!.severity).toBe('moderate');
+    expect(result.violations[0].severity).toBe('moderate');
   });
 
   it('passes CCPA without consent requirement', () => {

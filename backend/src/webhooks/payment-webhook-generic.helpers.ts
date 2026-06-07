@@ -82,7 +82,7 @@ export async function updateSaleAndPaymentHelper(
           OR: [
             body.orderId ? { externalPaymentId: String(body.orderId) } : undefined,
             body.orderId ? { id: String(body.orderId) } : undefined,
-          ].filter(Boolean) as Array<{ externalPaymentId: string } | { id: string }>,
+          ].filter(Boolean),
         },
         data: { status: 'paid', paidAt: new Date() },
       });

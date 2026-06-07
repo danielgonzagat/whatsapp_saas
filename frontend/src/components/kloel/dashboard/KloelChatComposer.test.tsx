@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import type { ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -44,6 +44,18 @@ describe('KloelChatComposer', () => {
     expect(textbox.getAttribute('name')).toBe('message');
   });
 
+  it('labels the active capability as a removable pressed context', () => {
+    const { props } = renderComposer({ activeCapability: 'create_image' });
+
+    const activeCapability = screen.getByRole('button', {
+      name: 'Remover capacidade Criar imagem',
+    });
+
+    expect(activeCapability.getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(activeCapability);
+    expect(props.onCapabilityChange).toHaveBeenCalledWith(null);
+  });
+
   it('opens the popover and activates a mutually exclusive capability', () => {
     const { props } = renderComposer();
 
@@ -59,15 +71,39 @@ describe('KloelChatComposer', () => {
     expect(props.onCapabilityChange).toHaveBeenCalledWith('refine_response');
   });
 
-  it('does not re-emit input changes when the controlled textarea value did not change', () => {
-    const { props } = renderComposer({ input: 'texto atual' });
+  it('coalesces burst input changes before notifying the dashboard', () => {
+    vi.useFakeTimers();
+    try {
+      const { props } = renderComposer({ input: 'texto atual' });
+      const textarea = screen.getByPlaceholderText('Como posso ajudar você hoje?');
+
+      fireEvent.change(textarea, { target: { value: 'texto atual' } });
+      expect(props.onInputChange).not.toHaveBeenCalled();
+
+      fireEvent.change(textarea, { target: { value: 'texto novo' } });
+      fireEvent.change(textarea, { target: { value: 'texto novo' } });
+      fireEvent.change(textarea, { target: { value: 'texto final' } });
+      expect(props.onInputChange).not.toHaveBeenCalled();
+
+      act(() => {
+        vi.runOnlyPendingTimers();
+      });
+
+      expect(props.onInputChange).toHaveBeenCalledTimes(1);
+      expect(props.onInputChange).toHaveBeenCalledWith('texto final');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('sends the current local draft before the dashboard echoes it back', () => {
+    const { props } = renderComposer();
     const textarea = screen.getByPlaceholderText('Como posso ajudar você hoje?');
 
-    fireEvent.change(textarea, { target: { value: 'texto atual' } });
-    expect(props.onInputChange).not.toHaveBeenCalled();
+    fireEvent.change(textarea, { target: { value: 'valor local' } });
+    fireEvent.click(screen.getByLabelText('Enviar mensagem'));
 
-    fireEvent.change(textarea, { target: { value: 'texto novo' } });
-    expect(props.onInputChange).toHaveBeenCalledWith('texto novo');
+    expect(props.onSend).toHaveBeenCalledWith('valor local');
   });
 
   it('opens the capability popover above the composer by default', () => {

@@ -75,6 +75,9 @@ export default function KloelDashboard() {
   const [approvalActionInFlight, setApprovalActionInFlight] = useState<string | null>(null);
 
   const loadedConversationIdRef = useRef<string | null>(null);
+  const conversationLoadTokenRef = useRef(0);
+  const suppressedConversationLoadIdRef = useRef<string | null>(null);
+  const previousRequestedConversationIdRef = useRef<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const activeStreamRef = useRef<{ abort: () => void } | null>(null);
@@ -138,8 +141,11 @@ export default function KloelDashboard() {
   const loadConversation = useCallback(
     async (conversationId: string) => {
       if (!conversationId) {return;}
+      const loadToken = conversationLoadTokenRef.current + 1;
+      conversationLoadTokenRef.current = loadToken;
       try {
         const payload = await loadKloelThreadMessages(conversationId);
+        if (conversationLoadTokenRef.current !== loadToken) {return;}
         setMessages(
           payload
             .filter((message) => String(message?.content || '').trim())
@@ -175,6 +181,7 @@ export default function KloelDashboard() {
         clearTimeout(playbackTimerRef.current);
         playbackTimerRef.current = null;
       }
+      conversationLoadTokenRef.current += 1;
       loadedConversationIdRef.current = null;
       setActiveConversationId(null);
       setConversationTitle('Nova conversa');
@@ -185,10 +192,11 @@ export default function KloelDashboard() {
       clearComposerContext();
       setActiveConversation(null);
       if (replaceUrl) {
+        suppressedConversationLoadIdRef.current = requestedConversationId;
         router.replace(KLOEL_CHAT_ROUTE, { scroll: false });
       }
     },
-    [clearComposerContext, router, setActiveConversation],
+    [clearComposerContext, requestedConversationId, router, setActiveConversation],
   );
 
   const onTitle = useCallback(
@@ -304,38 +312,42 @@ export default function KloelDashboard() {
     clearAllAttachments,
   });
 
-  const handleSend = useCallback(() => {
-    if (attachments.some((a) => a.status === 'uploading')) {
-      setComposerNotice('Aguarde o envio dos anexos terminar antes de continuar.');
-      return;
-    }
-
-    const hasReadyAttachments = attachments.some((a) => a.status === 'ready');
-    const detected =
-      !linkedProduct && !activeCapability && !hasReadyAttachments
-        ? detectOperatorIntent(input)
-        : null;
-    if (detected) {
-      if (isUnsupportedFallback(detected)) {
-        void handleUnsupportedFallback(input);
+  const handleSend = useCallback(
+    (draftOverride?: string) => {
+      const currentInput = typeof draftOverride === 'string' ? draftOverride : input;
+      if (attachments.some((a) => a.status === 'uploading')) {
+        setComposerNotice('Aguarde o envio dos anexos terminar antes de continuar.');
         return;
       }
-      void handleOperatorDispatch(input, detected);
-      return;
-    }
 
-    void handleSendMessage(input);
-    setInput('');
-  }, [
-    activeCapability,
-    attachments,
-    handleSendMessage,
-    input,
-    linkedProduct,
-    setComposerNotice,
-    handleOperatorDispatch,
-    handleUnsupportedFallback,
-  ]);
+      const hasReadyAttachments = attachments.some((a) => a.status === 'ready');
+      const detected =
+        !linkedProduct && !activeCapability && !hasReadyAttachments
+          ? detectOperatorIntent(currentInput)
+          : null;
+      if (detected) {
+        if (isUnsupportedFallback(detected)) {
+          void handleUnsupportedFallback(currentInput);
+          return;
+        }
+        void handleOperatorDispatch(currentInput, detected);
+        return;
+      }
+
+      void handleSendMessage(currentInput);
+      setInput('');
+    },
+    [
+      activeCapability,
+      attachments,
+      handleSendMessage,
+      input,
+      linkedProduct,
+      setComposerNotice,
+      handleOperatorDispatch,
+      handleUnsupportedFallback,
+    ],
+  );
 
   const handleQuickAction = useCallback(
     (action: KloelDashboardQuickAction) => {
@@ -371,10 +383,16 @@ export default function KloelDashboard() {
 
   useEffect(() => {
     if (!requestedConversationId) {
-      if (messages.length > 0 || isThinking || activeConversationId) {return;}
+      const droppedConversationId = previousRequestedConversationIdRef.current;
+      previousRequestedConversationIdRef.current = null;
+      suppressedConversationLoadIdRef.current = null;
+      if (!droppedConversationId) {return undefined;}
       const timeoutId = window.setTimeout(() => resetToNewChat(false), 0);
       return () => window.clearTimeout(timeoutId);
     }
+    previousRequestedConversationIdRef.current = requestedConversationId;
+    if (suppressedConversationLoadIdRef.current === requestedConversationId) {return undefined;}
+    suppressedConversationLoadIdRef.current = null;
     if (loadedConversationIdRef.current === requestedConversationId) {return;}
     void loadConversation(requestedConversationId);
     return undefined;
@@ -453,6 +471,7 @@ export default function KloelDashboard() {
       messages={messages}
       conversationTitle={conversationTitle}
       onTitle={onTitle}
+      onNewChat={() => resetToNewChat(true)}
       streamingMessageId={streamingMessageId}
       isThinking={isThinking}
       isReplyInFlight={isReplyInFlight}

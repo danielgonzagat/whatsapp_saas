@@ -13,6 +13,7 @@ import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
 import {
   buildProductCreatePayload,
   extractCreatedProductId,
+  mergeProductTags,
   validateProductCreateFlow,
   validateProductCreateStep,
 } from './page.helpers';
@@ -56,8 +57,30 @@ export default function NewProductPage() {
   const isLastStep = currentVisibleIndex === visibleSteps.length - 1;
   const isFirstStep = currentVisibleIndex === 0;
 
+  const commitPendingTags = () => {
+    const pendingTags = tagInput.trim();
+
+    if (!pendingTags) {
+      return form;
+    }
+
+    const nextTags = mergeProductTags(form.tags, pendingTags);
+    const tagsChanged =
+      nextTags.length !== form.tags.length ||
+      nextTags.some((tag, index) => tag !== form.tags[index]);
+    const nextForm = tagsChanged ? { ...form, tags: nextTags } : form;
+
+    if (tagsChanged) {
+      setForm(nextForm);
+    }
+
+    setTagInput('');
+    return nextForm;
+  };
+
   const goNext = () => {
-    const validation = validateProductCreateStep(form, step);
+    const nextForm = commitPendingTags();
+    const validation = validateProductCreateStep(nextForm, step);
 
     if (!validation.ok) {
       setStep(validation.step);
@@ -83,11 +106,7 @@ export default function NewProductPage() {
   };
 
   const handleTagAdd = () => {
-    const t = tagInput.trim();
-    if (t && form.tags.length < 5 && !form.tags.includes(t)) {
-      updateForm({ tags: [...form.tags, t] });
-      setTagInput('');
-    }
+    commitPendingTags();
   };
 
   const handleTagRemove = (tag: string) => {
@@ -120,7 +139,8 @@ export default function NewProductPage() {
   };
 
   const handleSave = async () => {
-    const validation = validateProductCreateFlow(form, visibleSteps);
+    const nextForm = commitPendingTags();
+    const validation = validateProductCreateFlow(nextForm, visibleSteps);
 
     if (!validation.ok) {
       setStep(validation.step);
@@ -130,7 +150,7 @@ export default function NewProductPage() {
 
     setSaving(true);
     try {
-      const body = buildProductCreatePayload(form, workspaceId, needsPhysical);
+      const body = buildProductCreatePayload(nextForm, workspaceId, needsPhysical);
 
       const res = await apiFetch<Record<string, unknown>>('/products', { method: 'POST', body });
 

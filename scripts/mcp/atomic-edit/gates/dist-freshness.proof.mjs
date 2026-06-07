@@ -6,7 +6,7 @@
  *   3. mutating source after the manifest -> fresh=false (STALE detected)
  *   4. mutating dist after the manifest -> fresh=false (STALE detected)
  *   5. no manifest -> fresh=false (never green-by-absence)
- *   6. generated .proof-* fixture dirs do not affect source freshness
+ *   6. generated proof/smoke/self-expansion/cache fixtures do not affect source freshness
  *   7. a process boot dist hash detects the already-running stale runtime case
  * Uses an isolated temp root so the real dist manifest is never touched.
  */
@@ -90,16 +90,30 @@ function makeRoot() {
     fs.rmSync(root, { recursive: true, force: true });
   }
 }
-// 6. generated proof fixture dirs are ignored
+// 6. generated proof/smoke/self-expansion/cache fixtures are ignored
 {
   const root = makeRoot();
   try {
+    const beforeFiles = sourceFiles(root);
     writeManifest(root);
     fs.mkdirSync(path.join(root, '.proof-generated', 'src'), { recursive: true });
-    fs.writeFileSync(path.join(root, '.proof-generated', 'src', 'temp.ts'), 'export const temp = 1;\n');
+    fs.mkdirSync(path.join(root, '.positive-byte-sessions', 'session'), { recursive: true });
+    for (const dir of ['.mcp-cache', '.claude', '.turbo', '.cache', 'build']) {
+      fs.mkdirSync(path.join(root, dir), { recursive: true });
+      fs.writeFileSync(path.join(root, dir, 'temp.ts'), 'export const cacheTemp = 1;\n');
+    }
+    fs.writeFileSync(path.join(root, '.proof-generated', 'src', 'temp.ts'), 'export const proofTemp = 1;\n');
+    fs.writeFileSync(path.join(root, '.positive-byte-sessions', 'session', 'temp.ts'), 'export const positiveTemp = 1;\n');
+    fs.writeFileSync(path.join(root, '.smoke-anchor.123.ts'), 'export const smokeTemp = 1;\n');
+    fs.writeFileSync(path.join(root, '.self-expansion-denied.123.ts'), 'export const expansionTemp = 1;\n');
     const files = sourceFiles(root);
+    const leaked = files.filter((file) => /(^|\/)(\.proof-|\.smoke-|\.self-expansion-|\.positive-byte-sessions|\.mcp-cache|\.claude|\.turbo|\.cache|build)(\/|$)/.test(file));
     const r = isDistFresh(root);
-    rec('generated .proof-* fixture dirs do not affect source freshness', r.fresh === true && !files.some((file) => file.includes('.proof-generated')), { files, freshness: r });
+    rec(
+      'generated proof/smoke/self-expansion/cache fixtures do not affect source freshness',
+      r.fresh === true && JSON.stringify(files) === JSON.stringify(beforeFiles) && leaked.length === 0,
+      { beforeFiles, files, leaked, freshness: r },
+    );
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

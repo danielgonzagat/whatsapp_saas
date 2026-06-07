@@ -25,7 +25,7 @@ describe('runCreatePaymentLink (workspace.helpers honest state)', () => {
         throw new Error('prisma must not be touched by the stale payment-link helper');
       },
     },
-  ) as unknown as PrismaService;
+  ) as PrismaService;
 
   const baseArgs = { amount: 99.9, description: 'Produto Teste', customerName: 'Joao' };
 

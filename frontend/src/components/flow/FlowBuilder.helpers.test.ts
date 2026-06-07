@@ -87,6 +87,18 @@ describe('ensureSeedNodes', () => {
     const existing = [makeNode({ id: 'keep' })];
     expect(ensureSeedNodes(existing)).toBe(existing);
   });
+
+  it('replaces corrupted persisted node payloads with a start node', () => {
+    const next = ensureSeedNodes([[] as unknown as Node]);
+    expect(next).toHaveLength(1);
+    expect(next[0].id).toBe('start-1');
+  });
+
+  it('drops corrupted persisted entries while preserving valid nodes', () => {
+    const valid = makeNode({ id: 'keep' });
+    const next = ensureSeedNodes([[] as unknown as Node, valid]);
+    expect(next).toEqual([valid]);
+  });
 });
 
 describe('buildNodeId', () => {

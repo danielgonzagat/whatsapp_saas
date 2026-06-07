@@ -50,6 +50,19 @@ describe('useProducts', () => {
     expect(result.current.total).toBe(0);
   });
 
+  it('does not start the products request when disabled', () => {
+    const disabledParams = { enabled: false } as Parameters<typeof useProducts>[0] & {
+      enabled: boolean;
+    };
+
+    const { result } = renderHook(() => useProducts(disabledParams));
+
+    expect(vi.mocked(useSWR)).toHaveBeenCalledWith(null, expect.any(Function));
+    expect(result.current.products).toEqual([]);
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.total).toBe(0);
+  });
+
   it('returns products from data.products when loaded', () => {
     const items = [{ id: '1', name: 'Produto A' }];
     vi.mocked(useSWR).mockReturnValue({

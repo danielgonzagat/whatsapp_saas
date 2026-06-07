@@ -439,7 +439,7 @@ export class KloelThinkerService {
         temperature: number,
       ) =>
         streamWriter.streamModelResponse({
-          openai: this.replyEngine.openai!,
+          openai: this.replyEngine.openai,
           writerMessages,
           temperature,
           responseMaxTokens,
@@ -627,7 +627,7 @@ export class KloelThinkerService {
     deletedMessageIds: string[];
   }> {
     return regenerateThreadAssistantResponseImpl(params, {
-      prisma: this.prisma as Parameters<typeof regenerateThreadAssistantResponseImpl>[1]['prisma'],
+      prisma: this.prisma,
       chatMessageItems: this.chatMessageItems,
       replyEngine: this.replyEngine,
       threadService: this.threadService,

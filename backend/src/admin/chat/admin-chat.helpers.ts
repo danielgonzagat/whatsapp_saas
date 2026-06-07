@@ -46,7 +46,7 @@ export function parseToolInvocation(
   if (!match) {
     return null;
   }
-  const name = match[1]!;
+  const name = match[1];
   let args: Record<string, unknown> = {};
   if (match[2]) {
     try {

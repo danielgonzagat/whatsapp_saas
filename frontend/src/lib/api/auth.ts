@@ -1,6 +1,11 @@
 // Auth API object
 import { mutate } from 'swr';
-import { apiFetch, resolveWorkspaceFromAuthPayload, tokenStorage } from './core';
+import {
+  apiFetch,
+  ensureFreshAccessToken,
+  resolveWorkspaceFromAuthPayload,
+  tokenStorage,
+} from './core';
 
 /** Auth user shape. */
 export interface AuthUser {
@@ -111,6 +116,8 @@ async function readOptionalJsonPayload(response: Response): Promise<unknown> {
 }
 
 async function fetchWorkspaceMe(): Promise<AuthApiResponse> {
+  await ensureFreshAccessToken();
+
   const headers: Record<string, string> = { Accept: 'application/json' };
   const token = tokenStorage.getToken();
   if (token) {

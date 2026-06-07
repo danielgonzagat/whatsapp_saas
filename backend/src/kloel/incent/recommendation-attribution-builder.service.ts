@@ -104,7 +104,7 @@ export class RecommendationAttributionBuilderService {
     if (entries.length === 0) {
       return 'business_rule';
     }
-    let best = entries[0]!;
+    let best = entries[0];
     for (const e of entries) {
       if (e.weight > best.weight) {
         best = e;

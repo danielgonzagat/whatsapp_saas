@@ -171,11 +171,22 @@ export class KloelStreamWriter {
   // ("Perdi acesso ao motor de conversa"). close() uses this to guarantee a
   // terminal `done` is always emitted before the socket is ended.
   private terminalSent = false;
+  // The model's real reasoning_content from the LAST streamModelResponse call,
+  // captured so finalizeSuccessfulReply can PERSIST it into the assistant message
+  // metadata — otherwise the post-stream conversation reload (which returns
+  // backend-persisted metadata without reasoning) would wipe the live reasoning.
+  private lastReasoningText = '';
+  private lastReasoningDurationMs: number | null = null;
 
   constructor(
     private readonly res: Response,
     private readonly options: KloelStreamWriterOptions,
   ) {}
+
+  /** Reasoning captured during the last streamModelResponse (for persistence). */
+  getLastReasoning(): { text: string; durationMs: number | null } {
+    return { text: this.lastReasoningText, durationMs: this.lastReasoningDurationMs };
+  }
 
   /** Init. */
   init() {
@@ -361,10 +372,16 @@ export class KloelStreamWriter {
     let reasoningStartedAt = 0;
     let reasoningEmitted = false;
     let reasoningDoneEmitted = false;
+    // NB: lastReasoning* are NOT reset here. The writer is created once per turn
+    // (think()), and a turn may call streamModelResponse more than once (tool
+    // router + final answer). Accumulate across calls so the WHOLE turn's reasoning
+    // is captured for persistence — resetting per-call dropped earlier reasoning.
     const emitReasoningDone = () => {
       if (reasoningEmitted && !reasoningDoneEmitted) {
         reasoningDoneEmitted = true;
-        this.write(createKloelReasoningDoneEvent(Date.now() - reasoningStartedAt));
+        const elapsedMs = Date.now() - reasoningStartedAt;
+        this.lastReasoningDurationMs = (this.lastReasoningDurationMs ?? 0) + elapsedMs;
+        this.write(createKloelReasoningDoneEvent(elapsedMs));
       }
     };
 
@@ -404,6 +421,7 @@ export class KloelStreamWriter {
           reasoningEmitted = true;
           reasoningStartedAt = Date.now();
         }
+        this.lastReasoningText += reasoningPiece;
         this.write(createKloelReasoningDeltaEvent(reasoningPiece));
       }
       const content = delta?.content || '';

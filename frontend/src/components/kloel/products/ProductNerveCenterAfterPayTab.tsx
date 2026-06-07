@@ -26,6 +26,24 @@ export type AfterPayDraftResult =
 
 export const AFTER_PAY_CHARGE_VALUE_ERROR = 'Informe um valor de cobrança maior que zero.';
 
+export function formatAfterPayChargeValue(value: unknown): string {
+  const parsedValue =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string' && value.trim()
+        ? Number(value.trim().replace(',', '.'))
+        : null;
+
+  if (parsedValue === null || !Number.isFinite(parsedValue) || parsedValue <= 0) {
+    return '';
+  }
+
+  return parsedValue.toLocaleString('pt-BR', {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+  });
+}
+
 export function buildAfterPayPayload(draft: AfterPayDraft): AfterPayDraftResult {
   const normalizedProvider = draft.shippingProvider.trim();
   const normalizedChargeValue = draft.chargeValue.trim().replace(',', '.');
@@ -56,8 +74,8 @@ export function ProductNerveCenterAfterPayTab() {
 
   const [apDup, setApDup] = useState<boolean>(Boolean(p.afterPayDuplicateAddress));
   const [apCharge, setApCharge] = useState<boolean>(Boolean(p.afterPayAffiliateCharge));
-  const [apChargeVal, setApChargeVal] = useState(
-    p.afterPayChargeValue ? String(p.afterPayChargeValue) : '',
+  const [apChargeVal, setApChargeVal] = useState(() =>
+    formatAfterPayChargeValue(p.afterPayChargeValue),
   );
   const [apProvider, setApProvider] = useState<string>(
     typeof p.afterPayShippingProvider === 'string' ? p.afterPayShippingProvider : '',

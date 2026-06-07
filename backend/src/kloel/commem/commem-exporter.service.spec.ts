@@ -250,7 +250,7 @@ describe('CommemExporterService', () => {
     const totalItems = result.projections.reduce((s, p) => s + p.itemCount, 0);
     expect(totalItems).toBeGreaterThan(0);
     expect(result.capsule).not.toBeNull();
-    expect(result.capsule!.workspaceId).toBe('ws_alpha');
-    expect(result.capsule!.isAuditable).toBe(true);
+    expect(result.capsule.workspaceId).toBe('ws_alpha');
+    expect(result.capsule.isAuditable).toBe(true);
   });
 });

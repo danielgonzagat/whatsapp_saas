@@ -120,6 +120,14 @@ describe('MetaAuthController', () => {
         'meta-config-id-missing-for-channel',
       );
     });
+
+    it('throws BadRequestException when OAuth URL builder returns an empty URL', () => {
+      mockMetaWhatsApp.buildEmbeddedSignupUrl.mockReturnValue('');
+
+      expect(() => controller.getAuthUrl(authReq as never, 'whatsapp')).toThrow(
+        'meta-oauth-url-unavailable',
+      );
+    });
   });
 
   describe('sanitizeReturnTo', () => {
@@ -188,6 +196,23 @@ describe('MetaAuthController', () => {
       const result = await controller.getStatus(missingAuthReq as never);
 
       expect(result.connected).toBe(false);
+    });
+
+    it('marks OAuth configuration missing when no MetaConnection can start auth', async () => {
+      mockPrisma.metaConnection.findMany.mockResolvedValue([]);
+      mockMetaWhatsApp.buildEmbeddedSignupUrl.mockReturnValue('');
+
+      const result = await controller.getStatus(missingAuthReq as never);
+
+      expect(result).toMatchObject({
+        connected: false,
+        channels: {
+          whatsapp: {
+            connected: false,
+            status: 'meta_oauth_configuration_missing',
+          },
+        },
+      });
     });
   });
 

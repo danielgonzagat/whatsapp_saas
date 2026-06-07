@@ -37,6 +37,15 @@ export class MetaConnectService {
   }
 
   async getStatus(workspaceId: string) {
+    const loadWhatsAppStatus = async (): Promise<WhatsAppStatusValue | null> => {
+      try {
+        const value: unknown = await this.whatsappProviders.getSessionStatus(workspaceId);
+        return value && typeof value === 'object' ? (value as WhatsAppStatusValue) : null;
+      } catch {
+        return null;
+      }
+    };
+
     const [workspace, metaConnection, metaState, providerType, whatsappStatus] = await Promise.all([
       this.prisma.workspace.findUnique({
         where: { id: workspaceId },
@@ -59,11 +68,11 @@ export class MetaConnectService {
       }),
       this.metaConnectionState.forWorkspace(workspaceId),
       this.whatsappProviders.getProviderType(workspaceId).catch(() => 'meta-cloud' as const),
-      this.whatsappProviders.getSessionStatus(workspaceId).catch(() => null),
+      loadWhatsAppStatus(),
     ]);
 
     const providerSettings = asProviderSettings(workspace?.providerSettings);
-    const safeWhatsApp = whatsappStatus ?? ({} as WhatsAppStatusValue);
+    const safeWhatsApp: WhatsAppStatusValue = whatsappStatus ?? {};
     const { snapshot, snapshotStatus, snapshotConnected } =
       this.getWhatsAppSessionSnapshot(providerSettings);
     const rawLiveStatus =
@@ -77,6 +86,36 @@ export class MetaConnectService {
       : liveStatus === 'connection_incomplete'
         ? 'connection_incomplete'
         : liveStatus || snapshotStatus || 'disconnected';
+    const whatsappAuthUrl =
+      providerType === 'meta-cloud'
+        ? safeWhatsApp.authUrl ||
+          snapshot.authUrl ||
+          this.metaWhatsApp.safeBuildEmbeddedSignupUrl(workspaceId, {
+            channel: 'whatsapp',
+            returnTo: '/marketing/whatsapp',
+          })
+        : null;
+    const instagramAuthUrl = this.metaWhatsApp.safeBuildEmbeddedSignupUrl(workspaceId, {
+      channel: 'instagram',
+      returnTo: '/marketing/instagram',
+    });
+    const facebookAuthUrl = this.metaWhatsApp.safeBuildEmbeddedSignupUrl(workspaceId, {
+      channel: 'facebook',
+      returnTo: '/marketing/facebook',
+    });
+    const missingMetaOAuthStatus = 'meta_oauth_configuration_missing';
+    const whatsappOAuthMissing =
+      providerType === 'meta-cloud' && !whatsappConnected && !readOptionalText(whatsappAuthUrl);
+    const instagramStatus = metaState.instagram.connected
+      ? 'connected'
+      : readOptionalText(instagramAuthUrl)
+        ? 'disconnected'
+        : missingMetaOAuthStatus;
+    const facebookStatus = metaState.facebook.connected
+      ? 'connected'
+      : readOptionalText(facebookAuthUrl)
+        ? 'disconnected'
+        : missingMetaOAuthStatus;
 
     return {
       meta: {
@@ -93,16 +132,8 @@ export class MetaConnectService {
       whatsapp: {
         provider: providerType,
         connected: whatsappConnected,
-        status: whatsappStatusValue,
-        authUrl:
-          providerType === 'meta-cloud'
-            ? safeWhatsApp.authUrl ||
-              snapshot.authUrl ||
-              this.metaWhatsApp.safeBuildEmbeddedSignupUrl(workspaceId, {
-                channel: 'whatsapp',
-                returnTo: '/marketing/whatsapp',
-              })
-            : null,
+        status: whatsappOAuthMissing ? missingMetaOAuthStatus : whatsappStatusValue,
+        authUrl: whatsappAuthUrl,
         phoneNumberId:
           providerType === 'meta-cloud'
             ? safeWhatsApp.phoneNumberId || snapshot.phoneNumberId || null
@@ -119,28 +150,24 @@ export class MetaConnectService {
         degradedReason:
           whatsappConnected || whatsappStatusValue === 'connecting'
             ? null
-            : readOptionalText(safeWhatsApp.degradedReason) ||
-              readOptionalText((safeWhatsApp as Record<string, unknown>).message) ||
-              readOptionalText(snapshot.disconnectReason),
+            : whatsappOAuthMissing
+              ? missingMetaOAuthStatus
+              : readOptionalText(safeWhatsApp.degradedReason) ||
+                readOptionalText((safeWhatsApp as Record<string, unknown>).message) ||
+                readOptionalText(snapshot.disconnectReason),
       },
       instagram: {
         connected: metaState.instagram.connected,
-        status: metaState.instagram.connected ? 'connected' : 'disconnected',
-        authUrl: this.metaWhatsApp.safeBuildEmbeddedSignupUrl(workspaceId, {
-          channel: 'instagram',
-          returnTo: '/marketing/instagram',
-        }),
+        status: instagramStatus,
+        authUrl: instagramAuthUrl,
         instagramAccountId: metaConnection?.instagramAccountId || null,
         username: metaConnection?.instagramUsername || null,
         pageName: metaConnection?.pageName || null,
       },
       facebook: {
         connected: metaState.facebook.connected,
-        status: metaState.facebook.connected ? 'connected' : 'disconnected',
-        authUrl: this.metaWhatsApp.safeBuildEmbeddedSignupUrl(workspaceId, {
-          channel: 'facebook',
-          returnTo: '/marketing/facebook',
-        }),
+        status: facebookStatus,
+        authUrl: facebookAuthUrl,
         pageId: metaConnection?.pageId || null,
         pageName: metaConnection?.pageName || null,
       },

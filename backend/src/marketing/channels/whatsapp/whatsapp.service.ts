@@ -94,7 +94,7 @@ export class WhatsappService {
       resolveTrustedContactName: (p: string, ...cs: unknown[]) =>
         this.resolveTrustedContactName(p, ...cs),
       listOperationalConversations: (ws: string, o?: unknown) =>
-        this.listOperationalConversations(ws, o as { limit?: number; pendingOnly?: boolean }),
+        this.listOperationalConversations(ws, o),
     };
   }
   async listChats(ws: string) {

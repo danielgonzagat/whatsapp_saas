@@ -24,7 +24,7 @@ export function KloelGraphFloatingNav({
         position: 'fixed',
         left: '50%',
         top: 16,
-        zIndex: 50,
+        zIndex: 70,
         width: 'min(440px, calc(100vw - 120px))',
         overflow: 'hidden',
         transform: 'translateX(-50%)',
@@ -54,6 +54,7 @@ export function KloelGraphFloatingNav({
             <button
               key={`nav-${node.id}`}
               type="button"
+              aria-pressed={focused}
               onClick={() => onFocusGalaxy(node.area)}
               style={{
                 flex: '0 0 auto',

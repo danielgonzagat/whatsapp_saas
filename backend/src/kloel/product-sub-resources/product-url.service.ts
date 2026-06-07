@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { AuditService } from '../../audit/audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { coerceString, removeUndefined } from './helpers/common.helpers';
@@ -139,7 +138,7 @@ export class ProductUrlService {
         active: optionalBool(args.active),
         aiLearning: optionalBool(args.aiLearning),
         chatEnabled: optionalBool(args.chatEnabled),
-      }) as Prisma.ProductUrlUncheckedUpdateInput,
+      }),
     });
 
     return { success: true, data: updated };

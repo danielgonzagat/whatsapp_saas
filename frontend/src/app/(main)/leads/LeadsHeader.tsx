@@ -37,7 +37,7 @@ export function LeadsHeader({ loadingLeads, onRefresh }: LeadsHeaderProps) {
           {kloelT(`Inbox`)}
         </Link>
         <Link
-          href="/"
+          href="/chat"
           className="text-sm font-medium text-muted-foreground hover:text-foreground"
         >
           {kloelT(`Voltar ao chat`)}

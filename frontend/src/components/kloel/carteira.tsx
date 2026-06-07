@@ -13,8 +13,8 @@ import {
   useWalletTransactions,
   useWalletWithdrawals,
 } from '@/hooks/useWallet';
-import { usePathname, useRouter } from 'next/navigation';
-import { startTransition, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 import {
   renderWalletPulseKeyframes,
   WALLET_SELECTION_STYLE,
@@ -39,9 +39,15 @@ import { CarteiraTabAntecipacoes } from './carteira/CarteiraTabAntecipacoes';
 
 export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: string }) {
   const { isMobile } = useResponsiveViewport();
-  const resolvedDefaultTab = defaultTab === 'movimentacoes' ? 'saldo' : defaultTab;
-  const router = useRouter();
   const pathname = usePathname();
+  const routes: Record<string, string> = {
+    saldo: '/carteira/saldo',
+    extrato: '/carteira/extrato',
+    saques: '/carteira/saques',
+    antecipacoes: '/carteira/antecipacoes',
+  };
+  const pathTab = Object.entries(routes).find(([, route]) => pathname === route)?.[0];
+  const resolvedDefaultTab = pathTab ?? (defaultTab === 'movimentacoes' ? 'extrato' : defaultTab);
 
   const {
     balance: realBalance,
@@ -86,9 +92,8 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
 
   const [tab, setTab] = useState(resolvedDefaultTab);
   const [lastDefaultTab, setLastDefaultTab] = useState(resolvedDefaultTab);
-  // Follow the `defaultTab` prop when it changes, while still allowing the user
-  // to switch tabs locally. Adjusting state during render (instead of in an
-  // effect) avoids an extra render pass and cascading-render lint violations.
+  // Follow the `defaultTab` prop and canonical wallet tab paths while still allowing
+  // local tab switches. Render-time sync avoids an extra effect/render cascade.
   if (resolvedDefaultTab !== lastDefaultTab) {
     setLastDefaultTab(resolvedDefaultTab);
     setTab(resolvedDefaultTab);
@@ -103,19 +108,11 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
     setTab(newTab);
     setFilterType('todos');
     setSearch('');
-    const routes: Record<string, string> = {
-      saldo: '/carteira/saldo',
-      extrato: '/carteira/extrato',
-      saques: '/carteira/saques',
-      antecipacoes: '/carteira/antecipacoes',
-    };
     const nextRoute = routes[newTab] || '/carteira';
     if (pathname === nextRoute) {
       return;
     }
-    startTransition(() => {
-      router.push(nextRoute);
-    });
+    window.history.pushState(null, '', nextRoute);
   }
 
   const TABS = [
@@ -138,23 +135,27 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
     >
       <style>{WALLET_SELECTION_STYLE}</style>
 
-      <CarteiraWithdrawModal
-        open={showWithdrawModal}
-        onClose={() => setShowWithdrawModal(false)}
-        available={bal.available}
-        withdrawAmount={withdrawAmount}
-        onWithdrawAmountChange={setWithdrawAmount}
-        onSuccess={() => {
-          mutateBalance();
-          mutateTransactions();
-          mutateWithdrawals();
-        }}
-      />
-      <CarteiraAntecipateModal
-        open={showAntecipateModal}
-        onClose={() => setShowAntecipateModal(false)}
-        pending={bal.pending}
-      />
+      {showWithdrawModal && (
+        <CarteiraWithdrawModal
+          open
+          onClose={() => setShowWithdrawModal(false)}
+          available={bal.available}
+          withdrawAmount={withdrawAmount}
+          onWithdrawAmountChange={setWithdrawAmount}
+          onSuccess={() => {
+            mutateBalance();
+            mutateTransactions();
+            mutateWithdrawals();
+          }}
+        />
+      )}
+      {showAntecipateModal && (
+        <CarteiraAntecipateModal
+          open
+          onClose={() => setShowAntecipateModal(false)}
+          pending={bal.pending}
+        />
+      )}
 
       <style>{renderWalletPulseKeyframes()}</style>
 

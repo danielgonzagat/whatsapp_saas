@@ -20,13 +20,24 @@ export function EnvioRelatoriosTab({ filters, isMobile }: { filters: ReportFilte
     ? `${filters.startDate} \u2192 ${filters.endDate}`
     : kloelT(`Ultimos 30 dias`);
 
+  const showLocalError = (message: string) => {
+    setResult({ success: false, message });
+  };
+
   const handleSend = async () => {
-    if (!email) {return;}
+    if (sending) {return;}
+    const normalizedEmail = email.trim();
+    const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail);
+    if (!validEmail) {
+      showLocalError(kloelT(`Informe um email de destino valido.`));
+      return;
+    }
+
     setSending(true);
     setResult(null);
     try {
       const res = await sendReportEmail({
-        email,
+        email: normalizedEmail,
         reportType,
         period: periodDisplay,
         filters: filters as Record<string, string>,
@@ -53,17 +64,29 @@ export function EnvioRelatoriosTab({ filters, isMobile }: { filters: ReportFilte
           </span>
         </div>
 
-        <label style={labelStyle}>{kloelT(`Email de destino`)}</label>
+        <label htmlFor="analytics-report-email" style={labelStyle}>{kloelT(`Email de destino`)}</label>
         <input
+          id="analytics-report-email"
+          name="analyticsReportEmail"
           type="email"
+          required
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (result && !result.success) {
+              setResult(null);
+            }
+          }}
           placeholder={kloelT(`financeiro@empresa.com`)}
+          aria-invalid={result?.success === false ? true : undefined}
+          aria-describedby={result?.success === false ? 'analytics-report-feedback' : undefined}
           style={{ ...inputStyle, marginBottom: 16 }}
         />
 
-        <label style={labelStyle}>{kloelT(`Tipo de relatorio`)}</label>
+        <label htmlFor="analytics-report-type" style={labelStyle}>{kloelT(`Tipo de relatorio`)}</label>
         <select
+          id="analytics-report-type"
+          name="analyticsReportType"
           value={reportType}
           onChange={(e) => setReportType(e.target.value)}
           style={{ ...inputStyle, marginBottom: 16 }}
@@ -97,13 +120,17 @@ export function EnvioRelatoriosTab({ filters, isMobile }: { filters: ReportFilte
         </Button>
 
         {result && (
-          <div style={{
-            marginTop: 14,
-            padding: '10px 14px',
-            borderRadius: 6,
-            background: result.success ? `${V.g2}10` : `${V.r}10`,
-            border: `1px solid ${result.success ? V.g2 : V.r}`,
-          }}>
+          <div
+            id="analytics-report-feedback"
+            role="alert"
+            style={{
+              marginTop: 14,
+              padding: '10px 14px',
+              borderRadius: 6,
+              background: result.success ? `${V.g2}10` : `${V.r}10`,
+              border: `1px solid ${result.success ? V.g2 : V.r}`,
+            }}
+          >
             <span style={{ fontSize: 11, color: result.success ? V.g2 : V.r, fontFamily: FONT_MONO }}>
               {result.message}
             </span>

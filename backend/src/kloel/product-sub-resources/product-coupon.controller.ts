@@ -136,7 +136,7 @@ export class ProductCouponController {
 
       const result = await tx.productCoupon.update({
         where: { id: couponId },
-        data: payload as Prisma.ProductCouponUncheckedUpdateInput,
+        data: payload,
       });
 
       if (prevCode !== result.code) {

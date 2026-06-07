@@ -1,0 +1,376 @@
+{
+  "cluster": "Conversation, Message & Thread",
+  "generatedFrom": "static analysis of backend/prisma/schema.prisma + backend/src/{inbox,kloel,marketing/channels,chat,admin,partnerships} on branch codex/kloel-production-recovery-pr-20260604",
+  "domainsCovered": [
+    "Omnichannel inbox (WhatsApp/Instagram/Facebook/Messenger/Web) message + conversation persistence",
+    "Kloel brain conversation history (per-workspace AI dialog)",
+    "Dashboard chat threads (UI-facing assistant chat with thread/summary)",
+    "Lead-funnel conversation log (per-lead sales dialog)",
+    "Mind unification canonical message layer (RAC_MindMessage source-discriminated)",
+    "Affiliate/partner internal chat",
+    "Admin copilot chat (internal-admin)",
+    "Outbound channel dispatch (canonical ChannelDispatchPort + per-channel adapters)"
+  ],
+  "canonicalEntities": [
+    {
+      "name": "Conversation",
+      "table": "RAC_Conversation",
+      "file": "backend/prisma/schema.prisma:682",
+      "role": "CANONICAL omnichannel conversation thread (status/priority/channel/mode AI|HUMAN|PAUSED, unreadCount, assignedAgent, queue). Singleton-open per (workspaceId,contactId,channel) via raw partial unique index. Owns Message[]. This is the customer-facing inbox conversation."
+    },
+    {
+      "name": "Message",
+      "table": "RAC_Message",
+      "file": "backend/prisma/schema.prisma:721",
+      "role": "CANONICAL omnichannel message (direction INBOUND/OUTBOUND, type, content, mediaUrl, status SENT/DELIVERED/READ/FAILED, externalId for provider idempotency via @@unique([workspaceId,externalId])). The real customer-message store written by InboxService.saveMessage inside a $transaction."
+    },
+    {
+      "name": "KloelMessage",
+      "table": "RAC_KloelMessage",
+      "file": "backend/prisma/schema.prisma:1691",
+      "role": "LEGACY brain conversation message (role/content/metadata per workspace). De-facto canonical for brain dialog history. Aliased by MindMessageService; raw table still the read/write target behind the Mind facade. NOT yet migrated to RAC_MindMessage."
+    },
+    {
+      "name": "ChatMessage",
+      "table": "RAC_ChatMessage",
+      "file": "backend/prisma/schema.prisma:1899",
+      "role": "CANONICAL dashboard/thread chat message (threadId FK -> ChatThread, role/content/metadata, soft-delete deletedAt). Written by KloelThreadService.persist{User,Assistant}ThreadMessage and chat.service. Aliased by MindChatMessageService."
+    },
+    {
+      "name": "ChatThread",
+      "table": "RAC_ChatThread",
+      "file": "backend/prisma/schema.prisma:1885",
+      "role": "CANONICAL dashboard chat thread container (title/summary/summaryUpdatedAt, owns ChatMessage[]). The UI-facing assistant-conversation grouping. Distinct from Conversation (inbox) — different surface entirely."
+    },
+    {
+      "name": "KloelConversation",
+      "table": "RAC_KloelConversation",
+      "file": "backend/prisma/schema.prisma:1865",
+      "role": "LEGACY lead-funnel conversation log (leadId FK -> KloelLead, role/content/intent/sentiment/metadata). Per-lead sales dialog. Written by saveLeadMessage in kloel-lead-processor-helpers + lead-mind-coordinator. The one legacy message surface most recently bridged to MindMessage (source:'lead_conversation')."
+    },
+    {
+      "name": "MindMessage",
+      "table": "RAC_MindMessage",
+      "file": "backend/prisma/schema.prisma:3849",
+      "role": "INTENDED-CANONICAL unified message table with source discriminator ('brain'|'dashboard'|'lead_conversation', also 'thread'|'channel' written by code). DESIGNED to subsume KloelMessage+ChatMessage+KloelConversation+Message. CURRENTLY CANONICAL-BUT-DEAD: only flag-gated (KLOEL_MINDMESSAGE_DUALWRITE, default OFF) writers, ZERO readers (state-builder reads .items which resolves to prisma.kloelMessage, NOT mindMessage)."
+    },
+    {
+      "name": "FbMessage",
+      "table": "RAC_FbMessage",
+      "file": "backend/prisma/schema.prisma:3911",
+      "role": "Facebook/Messenger-specific message (mid, senderPsid/recipientPsid, pageId, deliveryStatus, raw webhook metadata, @@unique([workspaceId,mid])). Channel-native ledger written ONLY by FacebookMessengerService (backend/src/marketing/facebook-messenger.service.ts). Parallel to the canonical Message table for the same physical FB messages."
+    },
+    {
+      "name": "PartnerMessage",
+      "table": "RAC_PartnerMessage",
+      "file": "backend/prisma/schema.prisma:2819",
+      "role": "Affiliate/partner internal chat message (partnerId FK -> AffiliatePartner, senderId/senderType/senderName, readAt). Internal-partnership surface. Written by PartnershipsService + internal-partnership-dispatch.adapter."
+    },
+    {
+      "name": "AdminChatMessage",
+      "table": "admin_chat_messages",
+      "file": "backend/prisma/schema.prisma:4346",
+      "role": "Admin copilot chat message (sessionId FK -> AdminChatSession, AdminChatRole enum, toolName/toolArgs/toolResult for tool-call trace). Internal-admin surface. Written by AdminChatService. Note: only model in cluster NOT using RAC_ prefix and using @map snake_case."
+    },
+    {
+      "name": "AdminChatSession",
+      "table": "(see schema.prisma:4329)",
+      "file": "backend/prisma/schema.prisma:4329",
+      "role": "Container/thread for AdminChatMessage (admin copilot). The admin-surface analogue of ChatThread."
+    }
+  ],
+  "services": [
+    {
+      "name": "InboxService",
+      "file": "backend/src/inbox/inbox.service.ts:21",
+      "responsibility": "CANONICAL omnichannel message+conversation persistence. saveMessage (l.207) runs getOrCreateConversation + message.create + conversation.update in one $transaction; saveMessageByPhone (l.126) resolves Contact then delegates. Emits ws projections + webhook post-commit. dualWriteChannelMindMessage (l.47) mirrors to MindMessage source:'channel' (flag-gated).",
+      "capability": "persist-inbound-outbound-message, manage-conversation, list-conversations, list-agents"
+    },
+    {
+      "name": "OmnichannelService",
+      "file": "backend/src/inbox/omnichannel.service.ts:42",
+      "responsibility": "Unified entry point for ALL channels (handleIncomingMessage). Normalizes message, processes attachments, calls InboxService.saveMessageByPhone, triggers CIA, optionally routes. The funnel that converts NormalizedMessage -> canonical Message.",
+      "capability": "ingest-normalized-channel-message, route-to-inbox"
+    },
+    {
+      "name": "SmartRoutingService",
+      "file": "backend/src/inbox/smart-routing.service.ts:8",
+      "responsibility": "Conversation routing/assignment to queues + agents (routeConversation, assignToQueue, distributeToAgent, checkRoutingRules). Operates on Conversation.",
+      "capability": "route-conversation, assign-conversation"
+    },
+    {
+      "name": "InboxEventsService",
+      "file": "backend/src/inbox/inbox-events.service.ts",
+      "responsibility": "Inbox websocket/event emission helper (message:new, conversation:update, message:status).",
+      "capability": "emit-inbox-realtime-events"
+    },
+    {
+      "name": "KloelThreadService",
+      "file": "backend/src/kloel/kloel-thread.service.ts:37",
+      "responsibility": "Dashboard chat-thread persistence + conversation state. persistUserThreadMessage (l.203) / persistAssistantThreadMessage (l.227) write ChatMessage via chatMessageItems (MindChatMessageService.items|prisma.chatMessage). touchThread bumps ChatThread. dualWriteThreadMindMessage (l.67) mirrors to MindMessage source:'thread' (flag-gated). Summary/title delegated to KloelThreadSummaryService.",
+      "capability": "persist-thread-message, manage-chat-thread"
+    },
+    {
+      "name": "KloelThreadSummaryService",
+      "file": "backend/src/kloel/kloel-thread-summary.service.ts",
+      "responsibility": "Thread title + rolling summary generation for ChatThread.summary/summaryUpdatedAt.",
+      "capability": "summarize-thread"
+    },
+    {
+      "name": "KloelThreadSearchService",
+      "file": "backend/src/kloel/kloel-thread-search.service.ts",
+      "responsibility": "Search/list ChatThread + ChatMessage for the dashboard.",
+      "capability": "search-threads"
+    },
+    {
+      "name": "KloelConversationStore",
+      "file": "backend/src/kloel/kloel-conversation-store.ts:21",
+      "responsibility": "Brain conversation history store. getConversationHistory (l.46) prefers MindCanonicalService -> MindMessageService -> raw prisma.kloelMessage; saveMessage (l.97) appends to KloelMessage; saveMemory upserts KloelMemory. NOT a NestJS @Injectable (plain class, constructed manually).",
+      "capability": "read-brain-history, append-brain-message, persist-memory"
+    },
+    {
+      "name": "MindMessageService",
+      "file": "backend/src/kloel/mind/aliases/mind-message.service.ts:22",
+      "responsibility": "ALIAS facade over RAC_KloelMessage (type MindMessage = KloelMessage). getHistory/appendToConversation/listByWorkspace/create/findById + .items raw delegate. Hits the SAME RAC_KloelMessage rows — NO dual table.",
+      "capability": "read-brain-history, append-brain-message"
+    },
+    {
+      "name": "MindChatMessageService",
+      "file": "backend/src/kloel/mind/aliases/mind-chat-message.service.ts:23",
+      "responsibility": "ALIAS facade over RAC_ChatMessage (type MindChatMessage = ChatMessage). Exposes only .items raw delegate (no typed methods). Sibling of MindMessageService but targets the DIFFERENT physical RAC_ChatMessage table.",
+      "capability": "read-thread-message"
+    },
+    {
+      "name": "MindCanonicalService",
+      "file": "backend/src/kloel/mind/mind-canonical.service.ts:31",
+      "responsibility": "Phase-1 canonical Mind facade. getConversationHistory/appendMessage delegate to MindMessageService (-> RAC_KloelMessage). recordCase/recordPolicy/addGraphNode hit RAC_MindCase/MindPolicy/MindGraphNode. Composes alias services; NO RAC_MindMessage usage.",
+      "capability": "read-brain-history, append-brain-message, record-case, record-policy"
+    },
+    {
+      "name": "FacebookMessengerService",
+      "file": "backend/src/marketing/facebook-messenger.service.ts:33",
+      "responsibility": "Facebook/Messenger send + PERSIST. Writes RAC_FbMessage via fbMessage.create (l.64,88), fbMessage.upsert (l.119,193), reads fbMessage.findMany (l.251). Channel-native message ledger parallel to canonical Message.",
+      "capability": "send-fb-message, persist-fb-message, list-fb-messages"
+    },
+    {
+      "name": "MessengerService",
+      "file": "backend/src/marketing/channels/messenger/messenger.service.ts:6",
+      "responsibility": "PURE Messenger Graph-API transport (sendTextMessage/sendMediaMessage/getUserProfile/getConversations). NO persistence. Wraps MetaSdkService. Overlaps FacebookMessengerService's send path.",
+      "capability": "send-fb-message"
+    },
+    {
+      "name": "InstagramService",
+      "file": "backend/src/marketing/channels/instagram/instagram.service.ts",
+      "responsibility": "Instagram channel transport (send/list). One of two Instagram surfaces alongside InstagramMarketingService.",
+      "capability": "send-instagram-message"
+    },
+    {
+      "name": "InstagramMarketingService",
+      "file": "backend/src/marketing/instagram/instagram-marketing.service.ts:43",
+      "responsibility": "Instagram DM marketing service (flag-gated delegation to canonical dispatch per recent commit a38949d94).",
+      "capability": "send-instagram-message"
+    },
+    {
+      "name": "PartnershipsService",
+      "file": "backend/src/partnerships/partnerships.service.ts:36",
+      "responsibility": "Affiliate/partner domain incl. PartnerMessage chat persistence (via partnerships.chat.helpers).",
+      "capability": "persist-partner-message"
+    },
+    {
+      "name": "AdminChatService",
+      "file": "backend/src/admin/chat/admin-chat.service.ts",
+      "responsibility": "Admin copilot chat — persists AdminChatMessage (admin_chat_messages) under AdminChatSession with tool-call trace columns.",
+      "capability": "persist-admin-chat-message"
+    },
+    {
+      "name": "StateBuilderService",
+      "file": "backend/src/kloel/state/state-builder.service.ts",
+      "responsibility": "Builds conversation state for prompt assembly. resolveShortTermMemory (l.206) reads mindMessage.items.findMany — RESOLVES TO prisma.kloelMessage, NOT RAC_MindMessage. Confirms RAC_MindMessage has zero readers.",
+      "capability": "read-brain-history"
+    },
+    {
+      "name": "ChannelDispatchPort (+ per-channel adapters)",
+      "file": "backend/src/common/channel-dispatch/channel-dispatch.port.ts:186",
+      "responsibility": "CANONICAL outbound-dispatch contract (Wave 21). ChannelKind enum (whatsapp/instagram/messenger/facebook/email/email_transactional/tiktok/internal-partnership/internal-admin), discriminated ChannelSendInput, send()/sendMessage() alias. Adapters: whatsapp/instagram/facebook/messenger/email/transactional-email/tiktok/internal-partnership-dispatch.adapter.ts.",
+      "capability": "dispatch-outbound-message"
+    }
+  ],
+  "events": [
+    "ws 'message:new' (InboxService.saveMessage -> gateway.emitToWorkspace)",
+    "ws 'conversation:update' (InboxService.saveMessage)",
+    "ws 'message:status' (inbox gateway/events)",
+    "webhook 'message.received' (InboxService -> webhookDispatcher.dispatch, post-commit)",
+    "CIA trigger from OmnichannelService.handleIncomingMessage (post-save percept)",
+    "Mind percept/event-spine emission downstream of channel ingest (cia-percept-emit, mind-event-ingestor) — adjacent, not in-cluster persistence"
+  ],
+  "capabilities": [
+    {
+      "name": "persist-customer-channel-message",
+      "canonicalHome": "InboxService.saveMessage -> RAC_Message (backend/src/inbox/inbox.service.ts:207)",
+      "duplicatedIn": [
+        "FacebookMessengerService.fbMessage.create/upsert -> RAC_FbMessage (backend/src/marketing/facebook-messenger.service.ts:64,88,119,193)",
+        "InboxService.dualWriteChannelMindMessage -> RAC_MindMessage source:'channel' (flag-gated, inbox.service.ts:47)"
+      ]
+    },
+    {
+      "name": "read-conversation-history (AI/brain)",
+      "canonicalHome": "MindCanonicalService.getConversationHistory -> MindMessageService.getHistory -> RAC_KloelMessage (mind-canonical.service.ts:45)",
+      "duplicatedIn": [
+        "KloelConversationStore.getConversationHistory (kloel-conversation-store.ts:46 — 3-tier fallback canonical|alias|raw)",
+        "MindMessageService.getHistory (mind-message.service.ts:70)",
+        "MindMessageService.listByWorkspace (mind-message.service.ts:44)",
+        "StateBuilderService.resolveShortTermMemory (state-builder.service.ts:206 — independent findMany on same table)",
+        "kloel.service.ts:313 this.mindMessage.getHistory",
+        "kloel-lead-processor-helpers.ts:~95 KloelConversation findMany lead history"
+      ]
+    },
+    {
+      "name": "append-conversation-message (AI/brain)",
+      "canonicalHome": "MindCanonicalService.appendMessage -> MindMessageService.appendToConversation -> RAC_KloelMessage (mind-canonical.service.ts:57)",
+      "duplicatedIn": [
+        "KloelConversationStore.saveMessage (kloel-conversation-store.ts:97)",
+        "MindMessageService.appendToConversation (mind-message.service.ts:99)",
+        "MindMessageService.create (mind-message.service.ts:58)"
+      ]
+    },
+    {
+      "name": "persist-thread/dashboard-chat-message",
+      "canonicalHome": "KloelThreadService.persist{User,Assistant}ThreadMessage -> RAC_ChatMessage (kloel-thread.service.ts:203,227)",
+      "duplicatedIn": [
+        "chat.service.ts addMessage (RAC_ChatMessage write + dualWrite mindMessage source:'dashboard', chat.service.ts:86)",
+        "KloelThreadService.dualWriteThreadMindMessage -> RAC_MindMessage source:'thread' (kloel-thread.service.ts:67)"
+      ]
+    },
+    {
+      "name": "persist-lead-conversation-message",
+      "canonicalHome": "saveLeadMessage -> RAC_KloelConversation (kloel-lead-processor-helpers.ts:109)",
+      "duplicatedIn": [
+        "dualWriteLeadConversationMindMessage -> RAC_MindMessage source:'lead_conversation' (kloel-lead-processor-helpers.ts:147, flag-gated)",
+        "lead-mind-coordinator.service.ts:202 canonical mirror (flag-gated)"
+      ]
+    },
+    {
+      "name": "send-outbound-message",
+      "canonicalHome": "ChannelDispatchPort.send + per-channel adapter (channel-dispatch.port.ts:186)",
+      "duplicatedIn": [
+        "MessengerService.sendTextMessage/sendMediaMessage (channels/messenger/messenger.service.ts:12,31)",
+        "FacebookMessengerService send path (marketing/facebook-messenger.service.ts)",
+        "InstagramService vs InstagramMarketingService (two IG send surfaces)",
+        "WhatsAppMessageDispatcherService + whatsapp.service send paths"
+      ]
+    },
+    {
+      "name": "raw-prisma-delegate-escape-hatch (.items)",
+      "canonicalHome": "MindMessageService.items / MindChatMessageService.items / MindMemoryItemService.items",
+      "duplicatedIn": [
+        "KloelConversationStore.mindMessageItems getter (kloel-conversation-store.ts:40)",
+        "KloelThreadService.chatMessageItems getter (kloel-thread.service.ts:50)",
+        "StateBuilderService direct .items access (state-builder.service.ts:206)"
+      ]
+    }
+  ],
+  "duplications": [
+    {
+      "concept": "Unified message table (RAC_MindMessage) vs the 4 live source tables it claims to canonicalize",
+      "implementations": [
+        "RAC_MindMessage (schema:3849) source discriminator brain|dashboard|lead_conversation|thread|channel",
+        "RAC_KloelMessage (schema:1691) — brain, REAL read/write target",
+        "RAC_ChatMessage (schema:1899) — dashboard thread, REAL read/write target",
+        "RAC_KloelConversation (schema:1865) — lead funnel, REAL read/write target",
+        "RAC_Message (schema:721) — omnichannel, REAL read/write target"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "RAC_MindMessage is the DECLARED canonical, but it is canonical-but-DEAD: every writer is gated behind KLOEL_MINDMESSAGE_DUALWRITE (default OFF) and there are ZERO readers (StateBuilder/KloelConversationStore read .items = prisma.kloelMessage). Until a backfill + read cut-over lands, the 4 legacy tables remain de-facto canonical per surface.",
+      "note": "The intended end-state (one table, source discriminator) is sound and the dual-write scaffolding is consistent across all 4 surfaces. Risk: a half-migrated state where dual-write is ON but no read path consumes it => silent divergence + 2x write cost with no benefit. Treat as architectural-entropy until the read cut-over + KloelConversation/Message inclusion are real."
+    },
+    {
+      "concept": "Facebook/Messenger message persistence in TWO tables for the same physical message",
+      "implementations": [
+        "FacebookMessengerService -> RAC_FbMessage (marketing/facebook-messenger.service.ts:64,88,119,193)",
+        "InboxService.saveMessage -> RAC_Message (when FB routed through omnichannel)",
+        "channels/facebook/facebook-dispatch.adapter.ts (persists outbound per header comment)"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "RAC_Message (omnichannel canonical) should be the single conversation/message store; RAC_FbMessage should be a provider-native delivery ledger ONLY (mid/psid/deliveryStatus), not a parallel conversation history.",
+      "note": "Two writers, two unique keys (Message @@unique[workspaceId,externalId] vs FbMessage @@unique[workspaceId,mid]). If both fire for the same FB DM the inbox UI (reads RAC_Message) and any FB-native consumer (reads RAC_FbMessage) can diverge on delivery status. Verify whether FB inbound is double-persisted."
+    },
+    {
+      "concept": "Messenger send transport implemented twice",
+      "implementations": [
+        "MessengerService (channels/messenger/messenger.service.ts:6) — pure Graph-API send, no persist",
+        "FacebookMessengerService (marketing/facebook-messenger.service.ts:33) — send + persist FbMessage",
+        "channels/messenger/messenger-dispatch.adapter.ts + channels/facebook/facebook-dispatch.adapter.ts (both reference MessengerService)"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "ChannelDispatchPort adapter (channels/messenger/messenger-dispatch.adapter.ts) calling the thin MessengerService transport; FacebookMessengerService's send half should collapse into the adapter, leaving FacebookMessengerService persistence-only or retiring it.",
+      "note": "Two NestJS services with overlapping send responsibility both registered in marketing.module.ts. Adapter layer (Wave 21) was built to unify this but legacy FacebookMessengerService still owns its own send."
+    },
+    {
+      "concept": "Instagram messaging service split",
+      "implementations": [
+        "InstagramService (channels/instagram/instagram.service.ts)",
+        "InstagramMarketingService (marketing/instagram/instagram-marketing.service.ts:43)",
+        "channels/instagram/instagram-dispatch.adapter.ts"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "channels/instagram/instagram-dispatch.adapter.ts (canonical dispatch). Recent commit a38949d94 already added flag-gated delegation from InstagramMarketingService to canonical dispatch — convergence in progress.",
+      "note": "Mid-migration: marketing/instagram service delegates to dispatch behind a flag. Track to completion to avoid two live IG send paths."
+    },
+    {
+      "concept": "Conversation-history read implemented across 6 call sites with subtly different take/order/projection",
+      "implementations": [
+        "MindCanonicalService.getConversationHistory (take=50, asc) (mind-canonical.service.ts:45)",
+        "MindMessageService.getHistory (take=50, asc, {id,role,content,timestamp}) (mind-message.service.ts:70)",
+        "KloelConversationStore.getConversationHistory (take=20, asc, {role,content}) (kloel-conversation-store.ts:46)",
+        "StateBuilderService.resolveShortTermMemory (take=limit, desc then reverse, {role,content,createdAt}) (state-builder.service.ts:206)",
+        "kloel-lead-processor-helpers history read (take=30, KloelConversation)",
+        "kloel.service.ts:313 (take=50)"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "MindCanonicalService.getConversationHistory should be the single read; the others are pre-facade reads that the Mind unification was meant to absorb but has not fully replaced.",
+      "note": "Divergent take limits (20 vs 30 vs 50) and ordering across surfaces mean 'conversation history' means different windows depending on caller. Same physical RAC_KloelMessage / RAC_KloelConversation rows, different slices — a behavior inconsistency, not just code dup."
+    },
+    {
+      "concept": "Per-surface MindMessage dual-write helper duplicated 4x",
+      "implementations": [
+        "InboxService.dualWriteChannelMindMessage source:'channel' (inbox.service.ts:47)",
+        "KloelThreadService.dualWriteThreadMindMessage source:'thread' (kloel-thread.service.ts:67)",
+        "chat.service.ts addMessage dual-write source:'dashboard' (chat.service.ts:86)",
+        "dualWriteLeadConversationMindMessage source:'lead_conversation' (kloel-lead-processor-helpers.ts:147)"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "A single MindMessageDualWriteService.mirror(source, {workspaceId,role,content}) reading the one flag, instead of four hand-rolled try/catch+flag-check copies.",
+      "note": "Four near-identical fail-open writers all gated on isMindMessageDualWriteEnabled(). Consistent today, but four copies of the same flag/try-catch/source-string contract will drift (e.g. one forgets the !content guard). Light functional dup, real maintenance risk."
+    },
+    {
+      "concept": "Two thread/session container abstractions",
+      "implementations": [
+        "ChatThread + ChatMessage (schema:1885/1899) — user dashboard assistant chat",
+        "AdminChatSession + AdminChatMessage (schema:4329/4346) — admin copilot chat"
+      ],
+      "severity": "P3",
+      "canonicalChoice": "Acceptable separation (different audience, different auth, AdminChatMessage carries tool-call trace columns). Keep distinct.",
+      "note": "Genuinely different surfaces; flagged only because they implement the same thread+message shape. AdminChatMessage breaks the RAC_ naming convention (admin_chat_messages) — cosmetic inconsistency."
+    },
+    {
+      "concept": "Raw-prisma '.items' escape-hatch pattern repeated",
+      "implementations": [
+        "MindMessageService.items / MindChatMessageService.items / MindMemoryItemService.items",
+        "KloelConversationStore.mindMessageItems / mindMemoryItems getters (kloel-conversation-store.ts:35,40)",
+        "KloelThreadService.chatMessageItems getter (kloel-thread.service.ts:50)"
+      ],
+      "severity": "P3",
+      "canonicalChoice": "The alias-service .items getter is the canonical escape hatch; the consumer-side fallback getters (?? this.prisma.x) are defensive duplication kept for optional-DI safety.",
+      "note": "Pattern is intentional (optional-injection fallback) but multiplies the number of places that know the underlying table name, undermining the facade."
+    }
+  ],
+  "legacyOrDead": [
+    "RAC_MindMessage (schema:3849) — CANONICAL-BUT-DEAD: zero readers, only KLOEL_MINDMESSAGE_DUALWRITE-gated (default OFF) writers across inbox/thread/chat/lead. Confirmed by mindMessage having no findMany/findFirst/findUnique/count/aggregate anywhere in backend/src (non-spec).",
+    "KloelMemory (schema:1711) — @deprecated in schema; superseded by MindMemory via MindMemoryItemService dual-write (Brain->Mind PI-K23/Claude-K50). Still the live read/write table in Phase 1.",
+    "KloelGlobalPrior (schema:3897) — @deprecated in schema; superseded by MindGlobalPrior/MindGlobalPriorService. Retained for data safety.",
+    "MindMemory (schema:3872) — canonical target but ADDITIVE/no live read path yet (parallel to RAC_MindMessage's dead-canonical status for memory).",
+    "MessengerService vs FacebookMessengerService — overlapping send transport; FacebookMessengerService is the older surface the Wave-21 dispatch adapter was meant to supersede (not yet retired; both registered in marketing.module.ts).",
+    "MindChatMessageService (mind-chat-message.service.ts:23) — alias exposing ONLY .items (no typed methods); near-empty wrapper, value-add is marginal vs direct prisma.chatMessage until typed methods land.",
+    "KloelConversation (schema:1865) — legacy lead-funnel store now mirrored into MindMessage; candidate for retirement once the unified read cut-over lands."
+  ]
+}

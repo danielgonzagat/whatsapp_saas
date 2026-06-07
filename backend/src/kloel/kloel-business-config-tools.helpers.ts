@@ -291,7 +291,7 @@ export interface SocialChannelsWorkspace {
 }
 
 export function buildSocialChannelsView(workspace: SocialChannelsWorkspace) {
-  const settings = (workspace.providerSettings as Record<string, unknown>) || {};
+  const settings = workspace.providerSettings || {};
   const channels = (settings.channels as Record<string, unknown>) || {};
   const hasMetaConnection = !!(workspace.metaConnections && workspace.metaConnections.length > 0);
   return {

@@ -51,6 +51,7 @@ export default function AfiliarSe({
   const [copiedAffiliate, setCopiedAffiliate] = useState(false);
   const [requestingId, setRequestingId] = useState<string | null>(null);
   const [_savingId, setSavingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
@@ -84,16 +85,28 @@ export default function AfiliarSe({
 
   const handleRequestAffiliation = async (productId: string) => {
     setRequestingId(productId);
-    try { await affiliateApi.requestAffiliation(productId); await onRefresh(); }
-    catch (e) { console.error(e); }
-    finally { setRequestingId(null); }
+    setActionError(null);
+    try {
+      await affiliateApi.requestAffiliation(productId);
+      await onRefresh();
+    } catch (e: unknown) {
+      setActionError(e instanceof Error ? e.message : 'Nao foi possivel solicitar afiliacao.');
+    } finally {
+      setRequestingId(null);
+    }
   };
 
   const handleToggleSave = async (productId: string, isSaved: boolean) => {
     setSavingId(productId);
-    try { await (isSaved ? affiliateApi.unsaveProduct(productId) : affiliateApi.saveProduct(productId)); await onRefresh(); }
-    catch (e) { console.error(e); }
-    finally { setSavingId(null); }
+    setActionError(null);
+    try {
+      await (isSaved ? affiliateApi.unsaveProduct(productId) : affiliateApi.saveProduct(productId));
+      await onRefresh();
+    } catch (e: unknown) {
+      setActionError(e instanceof Error ? e.message : 'Nao foi possivel atualizar produto salvo.');
+    } finally {
+      setSavingId(null);
+    }
   };
 
   const handleCopyLink = (link: string) => {
@@ -108,9 +121,13 @@ export default function AfiliarSe({
     return (
       <AffiliateProductDetail
         item={selectedMarketItem}
-        onBack={() => setSelectedMarketItem(null)}
+        onBack={() => {
+          setActionError(null);
+          setSelectedMarketItem(null);
+        }}
         requestingId={requestingId}
         copiedAffiliate={copiedAffiliate}
+        actionError={actionError}
         onRequestAffiliation={handleRequestAffiliation}
         onCopyLink={handleCopyLink}
       />
@@ -180,6 +197,24 @@ export default function AfiliarSe({
           >
             {affiliateLoading ? kloelT('Atualizando...') : kloelT('Atualizar')}
           </button>
+        </div>
+      )}
+
+      {actionError && (
+        <div
+          role="alert"
+          style={{
+            background: 'rgba(255, 80, 80, 0.08)',
+            border: '1px solid rgba(255, 80, 80, 0.24)',
+            borderRadius: 6,
+            padding: 12,
+            marginBottom: 20,
+            fontFamily: MONO,
+            fontSize: 11,
+            color: 'var(--app-text-primary)',
+          }}
+        >
+          {actionError}
         </div>
       )}
 

@@ -127,6 +127,9 @@ export default function CanvasInicio() {
         >
           <span style={{ color: colors.ember.primary }}>{IC.spark(18)}</span>
           <input
+            id="canvas-ai-prompt"
+            name="canvas-ai-prompt"
+            aria-label={kloelT('Descreva o criativo que voce quer criar')}
             value={ai}
             onChange={(e) => setAi(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAiSubmit()}
@@ -259,6 +262,7 @@ function DesignCard({
 }) {
   const date = new Date(design.updatedAt);
   const dateStr = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+  const designLabel = design.name.trim() || kloelT('design');
 
   return (
     <div
@@ -278,7 +282,8 @@ function DesignCard({
           e.stopPropagation();
           onDelete();
         }}
-        title={kloelT(`Excluir design`)}
+        aria-label={kloelT(`Excluir ${designLabel}`)}
+        title={kloelT(`Excluir ${designLabel}`)}
         style={{
           position: 'absolute',
           top: 6,
@@ -289,8 +294,7 @@ function DesignCard({
           borderRadius: 4,
           background: 'var(--app-bg-primary)',
           border: `1px solid ${colors.canvas.hover}`,
-          color:
-            colors.checkout.danger,
+          color: colors.checkout.danger,
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
@@ -315,7 +319,7 @@ function DesignCard({
       <button
         type="button"
         onClick={onClick}
-        aria-label="Abrir template"
+        aria-label={kloelT(`Abrir ${designLabel}`)}
         style={{
           all: 'unset',
           display: 'block',
@@ -337,7 +341,7 @@ function DesignCard({
           {design.thumbnailUrl ? (
             <NextImage
               src={design.thumbnailUrl}
-              alt="Design thumbnail"
+              alt={kloelT(`Miniatura de ${designLabel}`)}
               width={80}
               height={80}
               style={{ maxHeight: 80, maxWidth: '90%', objectFit: 'contain' }}

@@ -76,7 +76,7 @@ export class AttentionService {
     if (ranked.length === 0) {
       return [];
     }
-    const max = ranked[0]!.weight;
+    const max = ranked[0].weight;
     return ranked.map((r) => ({
       targetType: r.targetType,
       targetId: r.targetId,

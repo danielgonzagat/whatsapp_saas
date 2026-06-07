@@ -95,15 +95,15 @@ export class EmailDispatchAdapter implements ChannelDispatchPort {
     return [
       {
         label: 'gmail',
-        send: this.gmail ? (ws, p) => this.gmail!.sendMessageFromMailbox(ws, p) : null,
+        send: this.gmail ? (ws, p) => this.gmail.sendMessageFromMailbox(ws, p) : null,
       },
       {
         label: 'microsoft',
-        send: this.microsoft ? (ws, p) => this.microsoft!.sendMessageFromMailbox(ws, p) : null,
+        send: this.microsoft ? (ws, p) => this.microsoft.sendMessageFromMailbox(ws, p) : null,
       },
       {
         label: 'imap-smtp',
-        send: this.imapSmtp ? (ws, p) => this.imapSmtp!.sendMessageFromMailbox(ws, p) : null,
+        send: this.imapSmtp ? (ws, p) => this.imapSmtp.sendMessageFromMailbox(ws, p) : null,
       },
     ];
   }

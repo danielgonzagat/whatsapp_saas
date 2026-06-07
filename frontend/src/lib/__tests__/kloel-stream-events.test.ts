@@ -60,6 +60,15 @@ describe('parseKloelStreamPayload', () => {
     ]);
   });
 
+  it('drops provider reasoning deltas because they are private implementation detail', () => {
+    expect(
+      parseKloelStreamPayload({
+        type: 'reasoning_delta',
+        text: 'We are in a chat conversation and this must never render publicly.',
+      }),
+    ).toEqual([]);
+  });
+
   it('keeps legacy compatibility for mixed payloads with content and error', () => {
     expect(
       parseKloelStreamPayload({

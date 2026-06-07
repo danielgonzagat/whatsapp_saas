@@ -143,11 +143,7 @@ export async function settleAiUsageIfNeeded(args: SettleAiUsageArgs): Promise<vo
       requestId,
       actualCostCents: quoteOpenAiChatActualCostCents({
         model,
-        usage: usage as {
-          completion_tokens?: number | null;
-          prompt_tokens?: number | null;
-          prompt_tokens_details?: { cached_tokens?: number | null } | null;
-        },
+        usage: usage,
       }),
       reason: 'ai_assistant_provider_usage',
       metadata: {

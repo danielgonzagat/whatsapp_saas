@@ -46,8 +46,8 @@ describe('SpineCoverageAuditorService', () => {
     const report = auditor.audit();
     const checkout = report.surfaces.find((s) => s.surfaceId === 'checkout_wallet_billing');
     expect(checkout).toBeDefined();
-    expect(checkout!.coverageRatio).toBeGreaterThan(0);
-    expect(checkout!.observedCanonicalEventNames).toContain('commerce.cart.created');
+    expect(checkout.coverageRatio).toBeGreaterThan(0);
+    expect(checkout.observedCanonicalEventNames).toContain('commerce.cart.created');
   });
 
   it('leaves other surface ratios at zero when only one surface has events', () => {
@@ -55,7 +55,7 @@ describe('SpineCoverageAuditorService', () => {
     void emitter.emit(input({ eventName: 'commerce.cart.created' }));
     const report = auditor.audit();
     const crm = report.surfaces.find((s) => s.surfaceId === 'crm');
-    expect(crm!.coverageRatio).toBe(0);
+    expect(crm.coverageRatio).toBe(0);
   });
 
   it('reaches coverageRatio 1.0 when every canonical transition for a surface is observed', () => {
@@ -70,8 +70,8 @@ describe('SpineCoverageAuditorService', () => {
     }
     const report = auditor.audit();
     const kyc = report.surfaces.find((s) => s.surfaceId === 'kyc_auth');
-    expect(kyc!.coverageRatio).toBe(1);
-    expect(kyc!.observedCanonicalEventNames).toHaveLength(3);
+    expect(kyc.coverageRatio).toBe(1);
+    expect(kyc.observedCanonicalEventNames).toHaveLength(3);
   });
 
   it('computes partial coverage ratio correctly', () => {
@@ -80,7 +80,7 @@ describe('SpineCoverageAuditorService', () => {
     const report = auditor.audit();
     const crm = report.surfaces.find((s) => s.surfaceId === 'crm');
     const expectedRatio = 1 / 6;
-    expect(crm!.coverageRatio).toBeCloseTo(expectedRatio, 4);
+    expect(crm.coverageRatio).toBeCloseTo(expectedRatio, 4);
   });
 
   it('does not count non-PCI.6 events toward a surface coverage', () => {
@@ -98,7 +98,7 @@ describe('SpineCoverageAuditorService', () => {
     void emitter.emit(input({ eventName: 'commerce.payment.approved' }));
     const report = auditor.audit();
     const checkout = report.surfaces.find((s) => s.surfaceId === 'checkout_wallet_billing');
-    expect(checkout!.transitionsObserved).toContain('payment_approved');
+    expect(checkout.transitionsObserved).toContain('payment_approved');
   });
 
   it('respects windowN parameter', () => {
@@ -119,8 +119,8 @@ describe('SpineCoverageAuditorService', () => {
     void emitter.emit(input({ eventName: 'commerce.cart.created' }));
     const report = auditor.audit();
     const checkout = report.surfaces.find((s) => s.surfaceId === 'checkout_wallet_billing');
-    expect(checkout!.observedCanonicalEventNames).toEqual(['commerce.cart.created']);
-    expect(checkout!.observedTransitionCount).toBe(1);
+    expect(checkout.observedCanonicalEventNames).toEqual(['commerce.cart.created']);
+    expect(checkout.observedTransitionCount).toBe(1);
   });
 
   it('surfaces report correct totalCanonicalTransitions from PCI.6', () => {
@@ -128,6 +128,6 @@ describe('SpineCoverageAuditorService', () => {
     const report = auditor.audit();
     expect(report.surfaces).toHaveLength(7);
     const kyc = report.surfaces.find((s) => s.surfaceId === 'kyc_auth');
-    expect(kyc!.totalCanonicalTransitions).toBe(3);
+    expect(kyc.totalCanonicalTransitions).toBe(3);
   });
 });

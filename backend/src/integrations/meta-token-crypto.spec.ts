@@ -91,7 +91,7 @@ describe('meta-token-crypto (AES-256-GCM)', () => {
 
   it('isEncryptedMetaToken identifies versioned tokens', () => {
     const encrypted = encryptMetaToken('a-token');
-    expect(isEncryptedMetaToken(encrypted as string)).toBe(true);
+    expect(isEncryptedMetaToken(encrypted)).toBe(true);
   });
 
   it('isEncryptedMetaToken rejects plaintext', () => {
@@ -113,10 +113,7 @@ describe('meta-token-crypto (AES-256-GCM)', () => {
 
   it('fails decryption gracefully with corrupted ciphertext', () => {
     const encrypted = encryptMetaToken('valid-token');
-    const corrupted = (encrypted as string).replace(
-      (encrypted as string).substring(10, 14),
-      'XXXX',
-    );
+    const corrupted = encrypted.replace(encrypted.substring(10, 14), 'XXXX');
 
     const result = decryptMetaToken(corrupted);
     expect(result).toBe(corrupted);

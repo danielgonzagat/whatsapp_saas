@@ -80,7 +80,7 @@ describe('kloel-thread.helpers', () => {
         content: 'hello world',
         source: 'initial',
       });
-      expect(typeof out[0]!.createdAt).toBe('string');
+      expect(typeof out[0].createdAt).toBe('string');
     });
 
     it('synthesizes an id when fallback id is omitted', () => {
@@ -88,8 +88,8 @@ describe('kloel-thread.helpers', () => {
       const out = buildStoredResponseVersions(null, 'content');
       const after = Date.now();
       expect(out).toHaveLength(1);
-      expect(out[0]!.id.startsWith('resp_')).toBe(true);
-      const ts = Number(out[0]!.id.slice('resp_'.length));
+      expect(out[0].id.startsWith('resp_')).toBe(true);
+      const ts = Number(out[0].id.slice('resp_'.length));
       expect(ts).toBeGreaterThanOrEqual(before);
       expect(ts).toBeLessThanOrEqual(after);
     });
@@ -118,7 +118,7 @@ describe('kloel-thread.helpers', () => {
         responseVersions: [{ content: 'hi', createdAt: '2025-06-01T00:00:00Z' }],
       } as unknown as Prisma.JsonValue;
       const out = buildStoredResponseVersions(metadata);
-      expect(out[0]!.id).toBe('resp_2025-06-01T00:00:00Z');
+      expect(out[0].id).toBe('resp_2025-06-01T00:00:00Z');
     });
   });
 
@@ -343,10 +343,10 @@ ${final}: final limpo.`);
       } as unknown as KloelStreamEvent;
       const out = buildStoredProcessingTraceEntry(event);
       expect(out).not.toBeNull();
-      expect(out!.kind).toBe('status');
-      expect(out!.phase).toBe('streaming');
-      expect(out!.label).toBe('Pensando...');
-      expect(out!.id.startsWith('trace_streaming_')).toBe(true);
+      expect(out.kind).toBe('status');
+      expect(out.phase).toBe('streaming');
+      expect(out.label).toBe('Pensando...');
+      expect(out.id.startsWith('trace_streaming_')).toBe(true);
     });
 
     it('builds a tool_call entry with formatted label and stable call-specific id', () => {
@@ -457,8 +457,8 @@ ${final}: final limpo.`);
         appendStoredProcessingTraceEntry(entries, statusEvent(`msg-${i}`));
       }
       expect(entries).toHaveLength(16);
-      expect(entries[0]!.label).toBe('msg-4');
-      expect(entries[15]!.label).toBe('msg-19');
+      expect(entries[0].label).toBe('msg-4');
+      expect(entries[15].label).toBe('msg-19');
     });
   });
 
@@ -541,9 +541,9 @@ ${final}: final limpo.`);
     it('wraps the summary in the conversation_memory system frame', () => {
       const out = buildThreadSummarySystemMessage('lead chamado João');
       expect(out).not.toBeNull();
-      expect(out!.role).toBe('system');
-      expect(typeof out!.content).toBe('string');
-      const content = out!.content as string;
+      expect(out.role).toBe('system');
+      expect(typeof out.content).toBe('string');
+      const content = out.content as string;
       expect(content).toContain('<conversation_memory>');
       expect(content).toContain('lead chamado João');
       expect(content).toContain('</conversation_memory>');

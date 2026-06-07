@@ -79,7 +79,7 @@ export default function ChatContactList({
         </div>
         <div style={{ position: 'relative' }}>
           <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: C.muted }}>{IC.search(13)}</div>
-          <input aria-label="Buscar conversa" type="text" placeholder={kloelT(`Buscar conversa...`)} value={search}
+          <input id="partner-chat-search" name="partnerChatSearch" aria-label="Buscar conversa" type="text" placeholder={kloelT(`Buscar conversa...`)} value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{ width: '100%', padding: '8px 12px 8px 30px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: 6, color: C.text, fontFamily: FONT.sans, fontSize: 16, outline: 'none', boxSizing: 'border-box' as const }}
           />
@@ -90,11 +90,14 @@ export default function ChatContactList({
         {filteredContacts.map((contact) => {
           const isSelected = selectedChat?.id === contact.id;
           return (
-            <div key={contact.id} onClick={() => handleSelectContact(contact)}
-              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', cursor: 'pointer', background: isSelected ? C.emberBg : 'transparent', borderLeft: isSelected ? `2px solid ${C.ember}` : '2px solid transparent', transition: 'background 150ms ease' }}
+            <button
+              type="button"
+              key={contact.id}
+              aria-label={`Abrir conversa com ${contact.name || 'parceiro'}`}
+              onClick={() => handleSelectContact(contact)}
+              style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', padding: '12px 16px', cursor: 'pointer', background: isSelected ? C.emberBg : 'transparent', border: 'none', borderLeft: isSelected ? `2px solid ${C.ember}` : '2px solid transparent', transition: 'background 150ms ease', textAlign: 'left' as const }}
               onMouseEnter={(e) => { if (!isSelected) {(e.currentTarget as HTMLElement).style.background = C.elevated;} }}
-              onMouseLeave={(e) => { if (!isSelected) {(e.currentTarget as HTMLElement).style.background = 'transparent';} }}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (e.currentTarget as HTMLElement).click(); } }}>
+              onMouseLeave={(e) => { if (!isSelected) {(e.currentTarget as HTMLElement).style.background = 'transparent';} }}>
               <div style={{ position: 'relative', flexShrink: 0 }}>
                 <div style={{ width: 38, height: 38, borderRadius: '16%', background: contact.type === 'producer' ? 'rgba(139,92,246,0.12)' : C.elevated, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FONT.sans, fontSize: 16, fontWeight: 600, color: contact.type === 'producer' ? colors.semantic.purple : C.text }}>
                   {(contact.name || '?')[0].toUpperCase()}
@@ -113,7 +116,7 @@ export default function ChatContactList({
                   )}
                 </div>
               </div>
-            </div>
+            </button>
           );
         })}
 

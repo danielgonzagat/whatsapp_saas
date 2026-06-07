@@ -36,6 +36,11 @@ class CreateJobDto {
   @IsOptional()
   @IsString()
   @MaxLength(2048)
+  location?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
   flowId?: string;
 }
 

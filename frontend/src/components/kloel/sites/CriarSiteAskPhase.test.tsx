@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CriarSite } from './CriarSite';
 import { CriarSiteAskPhase } from './CriarSiteAskPhase';
+import { EditarSiteList } from './EditarSiteList';
 import type { SiteItem } from './SitesViewIcons';
 
 const { apiFetch, mutate, useProducts, getSearchParam } = vi.hoisted(() => ({
@@ -87,6 +88,21 @@ describe('CriarSite', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Voltar' }));
 
     expect(await screen.findByRole('button', { name: 'Site real' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Excluir Site real' })).toBeTruthy();
+  });
+});
+
+describe('EditarSiteList', () => {
+  it('names the destructive delete action with the site name', () => {
+    render(
+      <EditarSiteList
+        savedSites={[savedSite]}
+        loading={false}
+        onSelectSite={vi.fn()}
+        onDeleteSite={vi.fn()}
+      />,
+    );
+
     expect(screen.getByRole('button', { name: 'Excluir Site real' })).toBeTruthy();
   });
 });

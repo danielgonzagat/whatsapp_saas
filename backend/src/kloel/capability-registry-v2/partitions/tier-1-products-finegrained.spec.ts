@@ -37,17 +37,17 @@ describe('tier-1 fine-grained product capabilities (Wave7 L1)', () => {
       for (const id of FINE_GRAINED) {
         const cap = TIER_1_PRODUCTS_CAPABILITIES.find((c) => c.id === id);
         expect(cap).toBeDefined();
-        expect(cap!.domainService.startsWith('ProductService.')).toBe(true);
-        expect(cap!.requiredPermissions).toContain('product:write');
-        expect(cap!.tier).toBe(1);
-        expect(cap!.evidenceUrlBuilder).toBe('/produtos/${productId}');
+        expect(cap.domainService.startsWith('ProductService.')).toBe(true);
+        expect(cap.requiredPermissions).toContain('product:write');
+        expect(cap.tier).toBe(1);
+        expect(cap.evidenceUrlBuilder).toBe('/produtos/${productId}');
       }
     });
 
     it('flags review_and_publish as MUTATION_SENSITIVE requiring confirmation', () => {
       const cap = TIER_1_PRODUCTS_CAPABILITIES.find((c) => c.id === 'products.review_and_publish');
-      expect(cap!.category).toBe('MUTATION_SENSITIVE');
-      expect(cap!.requiresConfirmation).toBe(true);
+      expect(cap.category).toBe('MUTATION_SENSITIVE');
+      expect(cap.requiresConfirmation).toBe(true);
     });
 
     it('exposes the caps through the global CAPABILITY_MAP', () => {
@@ -136,8 +136,8 @@ describe('tier-1 fine-grained product capabilities (Wave7 L1)', () => {
         pixels: [{ type: 'FACEBOOK', pixelId: 'fb-1' }],
       });
       expect(result).not.toBeNull();
-      expect(result!.success).toBe(true);
-      const data = prisma.product.update.mock.calls[0]![0].data as {
+      expect(result.success).toBe(true);
+      const data = prisma.product.update.mock.calls[0][0].data as {
         metadata: { pixels: unknown };
       };
       expect(data.metadata.pixels).toEqual([{ type: 'FACEBOOK', pixelId: 'fb-1' }]);
@@ -150,8 +150,8 @@ describe('tier-1 fine-grained product capabilities (Wave7 L1)', () => {
         shippingValue: 25,
         warrantyDays: 7,
       });
-      expect(result!.success).toBe(true);
-      const data = prisma.product.update.mock.calls[0]![0].data;
+      expect(result.success).toBe(true);
+      const data = prisma.product.update.mock.calls[0][0].data;
       expect(data.shippingType).toBe('FIXED');
       expect(data.shippingValue).toBe(25);
       expect(data.warrantyDays).toBe(7);
@@ -162,8 +162,8 @@ describe('tier-1 fine-grained product capabilities (Wave7 L1)', () => {
         productId,
         provider: 'correios',
       });
-      expect(result!.success).toBe(true);
-      const data = prisma.product.update.mock.calls[0]![0].data;
+      expect(result.success).toBe(true);
+      const data = prisma.product.update.mock.calls[0][0].data;
       expect(data.afterPayShippingProvider).toBe('correios');
     });
 
@@ -172,8 +172,8 @@ describe('tier-1 fine-grained product capabilities (Wave7 L1)', () => {
         productId,
         salesPageUrl: 'https://vendas.exemplo.com',
       });
-      expect(result!.success).toBe(true);
-      const data = prisma.product.update.mock.calls[0]![0].data;
+      expect(result.success).toBe(true);
+      const data = prisma.product.update.mock.calls[0][0].data;
       expect(data.salesPageUrl).toBe('https://vendas.exemplo.com');
     });
 
@@ -183,8 +183,8 @@ describe('tier-1 fine-grained product capabilities (Wave7 L1)', () => {
         thankyouUrl: 'https://obrigado.exemplo.com',
         supportEmail: 'suporte@exemplo.com',
       });
-      expect(result!.success).toBe(true);
-      const data = prisma.product.update.mock.calls[0]![0].data;
+      expect(result.success).toBe(true);
+      const data = prisma.product.update.mock.calls[0][0].data;
       expect(data.thankyouUrl).toBe('https://obrigado.exemplo.com');
       expect(data.supportEmail).toBe('suporte@exemplo.com');
     });
@@ -194,15 +194,15 @@ describe('tier-1 fine-grained product capabilities (Wave7 L1)', () => {
         productId,
         available: true,
       });
-      expect(result!.success).toBe(true);
-      const data = prisma.product.update.mock.calls[0]![0].data;
+      expect(result.success).toBe(true);
+      const data = prisma.product.update.mock.calls[0][0].data;
       expect(data.active).toBe(true);
     });
 
     it('products.review_and_publish → ProductService.reviewAndPublish marks APPROVED+active', async () => {
       const result = await resolver.tryExecute('products.review_and_publish', ws, { productId });
-      expect(result!.success).toBe(true);
-      const data = prisma.product.update.mock.calls[0]![0].data;
+      expect(result.success).toBe(true);
+      const data = prisma.product.update.mock.calls[0][0].data;
       expect(data.status).toBe('APPROVED');
       expect(data.active).toBe(true);
     });
@@ -218,8 +218,8 @@ describe('tier-1 fine-grained product capabilities (Wave7 L1)', () => {
         salesPageUrl: 'https://x.com',
       });
       // resolver wraps thrown ForbiddenException into service_call_failed
-      expect(result!.success).toBe(false);
-      expect(result!.error).toBe('service_call_failed');
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('service_call_failed');
     });
   });
 });

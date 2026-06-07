@@ -26,9 +26,7 @@ async function buildWithSpine(
   stub: ReturnType<typeof makePrismaStub>,
 ): Promise<{ service: LedgerService; spine: SpineSpy }> {
   const spine: SpineSpy = {
-    emit: jest
-      .fn<Promise<SpineEventEnvelope>, [SpineEventInput]>()
-      .mockResolvedValue(undefined as unknown as SpineEventEnvelope),
+    emit: jest.fn<Promise<SpineEventEnvelope>, [SpineEventInput]>().mockResolvedValue(undefined),
   };
   const moduleRef: TestingModule = await Test.createTestingModule({
     providers: [

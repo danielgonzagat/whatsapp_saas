@@ -68,6 +68,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
+        aria-labelledby="canvas-create-modal-title"
         style={{
           background: colors.background.void,
           border: `1px solid ${colors.canvas.border}`,
@@ -96,7 +97,10 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
             flexShrink: 0,
           }}
         >
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: colors.text.silver, fontFamily: S }}>
+          <h2
+            id="canvas-create-modal-title"
+            style={{ fontSize: 18, fontWeight: 700, color: colors.text.silver, fontFamily: S }}
+          >
             {kloelT(`Criar um design`)}
           </h2>
           <div
@@ -115,6 +119,8 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
           >
             {IC.search(14)}
             <input
+              id="canvas-create-search"
+              name="canvas-create-search"
               aria-label={kloelT('O que voce gostaria de criar')}
               placeholder={kloelT(`O que voce gostaria de criar?`)}
               style={{
@@ -130,6 +136,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
           </div>
           <button
             type="button"
+            aria-label={kloelT('Fechar painel de criacao de design')}
             onClick={onClose}
             style={{
               background: 'none',

@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import {
   createKloelDoneEvent,
+  createKloelReasoningDeltaEvent,
   createKloelToolCallEvent,
   createKloelToolResultEvent,
 } from './kloel-stream-events';
@@ -31,7 +32,7 @@ describe('kloel-stream-events', () => {
     });
   });
 
-  it('emits no synthesized reasoning label — real reasoning flows via reasoning_delta, not a templated thinking/streaming label', () => {
+  it('keeps provider reasoning private instead of exposing it as public stream text', () => {
     const buildThinkingLabel = (streamEvents as Record<string, unknown>)[
       'createKloelPublicThinkingLabel'
     ] as (message: string) => string;
@@ -39,13 +40,15 @@ describe('kloel-stream-events', () => {
       'createKloelPublicStreamingLabel'
     ] as (message: string) => string;
 
-    // The synthesized "thinking"/"streaming" labels were a facade — a sentence
-    // templated from the user's own message, identical in shape for any prompt.
-    // They are retired to return empty: no branch emits fabricated reasoning text,
-    // and the frontend drops an empty-label status. Real reasoning is carried by
-    // reasoning_delta (DeepSeek reasoning_content), never a constructed label.
     expect(buildThinkingLabel('Eu quero validar o raciocínio do chat.')).toBe('');
     expect(buildStreamingLabel('Eu quero validar o raciocínio do chat.')).toBe('');
+
+    const event = createKloelReasoningDeltaEvent(
+      'We are in a chat conversation with the user and must decide what to answer.',
+    );
+
+    expect(event).toEqual({ type: 'reasoning_delta', text: '', done: false });
+    expect(event.text).not.toContain('We are in a chat conversation');
   });
 
   it('emits tool calls and observations as correlated spans', () => {

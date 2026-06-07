@@ -1,7 +1,7 @@
 'use client';
 
-import { swrFetcher } from '@/lib/fetcher';
-import useSWR from 'swr';
+import { PRODUCT_TEMPLATES as STATIC_TEMPLATES } from '@/lib/canvas-product-templates';
+import type { ProductTemplate as StaticTemplate } from '@/lib/canvas-product-templates';
 
 export interface ProductTemplate {
   id: string;
@@ -13,9 +13,6 @@ export interface ProductTemplate {
   h: number;
   json: object;
 }
-
-import { PRODUCT_TEMPLATES as STATIC_TEMPLATES } from '@/lib/canvas-product-templates';
-import type { ProductTemplate as StaticTemplate } from '@/lib/canvas-product-templates';
 
 function toProductTemplate(t: StaticTemplate): ProductTemplate {
   return {
@@ -33,18 +30,5 @@ function toProductTemplate(t: StaticTemplate): ProductTemplate {
 const FALLBACK_TEMPLATES: ProductTemplate[] = STATIC_TEMPLATES.map(toProductTemplate);
 
 export function useProductTemplates() {
-  const { data, error, isLoading } = useSWR<ProductTemplate[]>(
-    '/canvas/templates',
-    swrFetcher,
-    {
-      keepPreviousData: true,
-      revalidateOnFocus: false,
-      dedupingInterval: 60000,
-    },
-  );
-
-  const templates = Array.isArray(data) && data.length > 0 ? data : FALLBACK_TEMPLATES;
-  const apiError = error ? (error as Error).message : null;
-
-  return { templates, isLoading, error: apiError };
+  return { templates: FALLBACK_TEMPLATES, isLoading: false, error: null };
 }

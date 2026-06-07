@@ -95,15 +95,16 @@ export function Apps({ workspaceId, sites, loading, error }: AppsProps) {
   const [savedKey, setSavedKey] = useState<string | null>(null);
   const [actionError, setActionError] = useState('');
 
+  const publishedSites = useMemo(() => sites.filter((site) => site.status === 'PUBLISHED' && site.slug), [sites]);
   const effectiveSelectedSiteId = useMemo(() => {
-    if (sites.some((site) => site.id === selectedSiteId)) {
+    if (publishedSites.some((site) => site.id === selectedSiteId)) {
       return selectedSiteId;
     }
-    return sites[0]?.id ?? '';
-  }, [selectedSiteId, sites]);
+    return publishedSites[0]?.id ?? '';
+  }, [selectedSiteId, publishedSites]);
   const selectedSite = useMemo(
-    () => sites.find((site) => site.id === effectiveSelectedSiteId) ?? null,
-    [effectiveSelectedSiteId, sites],
+    () => publishedSites.find((site) => site.id === effectiveSelectedSiteId) ?? null,
+    [effectiveSelectedSiteId, publishedSites],
   );
   const {
     apps,
@@ -176,13 +177,16 @@ export function Apps({ workspaceId, sites, loading, error }: AppsProps) {
                   {kloelT(`Site alvo`)}
                 </div>
                 <div style={{ fontFamily: SORA, fontSize: 12, color: TEXT_MUTED }}>
-                  {kloelT(`Os apps salvos aqui persistem em /sites/:id/apps/:appKey.`)}
+                  {selectedSite
+                    ? kloelT(`Os apps salvos aqui persistem em /sites/:id/apps/:appKey.`)
+                    : kloelT(`Publique um site antes de instalar scripts e aplicativos.`)}
                 </div>
               </div>
               <select
                 aria-label="Selecionar site para apps"
                 value={effectiveSelectedSiteId}
                 onChange={(event) => setSelectedSiteId(event.target.value)}
+                disabled={publishedSites.length === 0}
                 style={{
                   minWidth: 220,
                   padding: '9px 12px',
@@ -194,18 +198,26 @@ export function Apps({ workspaceId, sites, loading, error }: AppsProps) {
                   fontSize: 12,
                 }}
               >
-                {sites.map((site) => (
-                  <option key={site.id} value={site.id}>
-                    {site.name || site.slug || site.id}
-                  </option>
-                ))}
+                {publishedSites.length === 0 ? (
+                  <option value="">{kloelT(`Nenhum site publicado`)}</option>
+                ) : (
+                  publishedSites.map((site) => (
+                    <option key={site.id} value={site.id}>
+                      {site.name || site.slug || site.id}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
           </Card>
 
           <div>
             <SectionLabel>{kloelT(`Apps instalaveis`)}</SectionLabel>
-            {appsError ? (
+            {!selectedSite ? (
+              <Card style={{ color: TEXT_DIM, fontFamily: SORA, fontSize: 13, lineHeight: 1.6 }}>
+                {kloelT(`Publique um site antes de instalar apps, pixels ou scripts de publicacao.`)}
+              </Card>
+            ) : appsError ? (
               <Card style={{ color: TEXT_DIM, fontFamily: SORA, fontSize: 13 }}>
                 {kloelT(`Erro ao carregar apps deste site.`)}
               </Card>

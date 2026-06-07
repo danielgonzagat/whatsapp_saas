@@ -288,7 +288,7 @@ describe('CheckoutOrderQueryService', () => {
       expect(result.accepted).toBe(true);
       expect(result.chargeType).toBe('ONE_CLICK');
       const createArgs = prisma.upsellOrder.create.mock.calls[0] as Array<Record<string, unknown>>;
-      const callData = createArgs[0] as Record<string, unknown>;
+      const callData = createArgs[0];
       expect(callData.data).toEqual(
         expect.objectContaining({
           orderId: 'order_1',
@@ -316,7 +316,7 @@ describe('CheckoutOrderQueryService', () => {
       const createArgsNew = prisma.upsellOrder.create.mock.calls[0] as Array<
         Record<string, unknown>
       >;
-      const callDataNew = createArgsNew[0] as Record<string, unknown>;
+      const callDataNew = createArgsNew[0];
       expect(callDataNew.data).toEqual(
         expect.objectContaining({
           status: 'PENDING',

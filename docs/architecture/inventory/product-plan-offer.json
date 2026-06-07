@@ -1,0 +1,186 @@
+{
+  "cluster": "product-plan-offer-member-area",
+  "generatedAt": "2026-06-07",
+  "groundedIn": "Real code only — backend/prisma/schema.prisma + backend/src/{products,plans,product-categories,member-area,checkout,affiliate,kloel}. No .md facts used.",
+  "domainsCovered": [
+    "Product catalog (Product + satellites)",
+    "Plans / pricing tiers (two parallel models: ProductPlan vs CheckoutProductPlan)",
+    "Offer & checkout config (CheckoutConfig, OrderBump, Upsell, CheckoutPixel)",
+    "Coupons / discounts (two parallel models: ProductCoupon vs CheckoutCoupon)",
+    "Affiliate program (Product.affiliate* columns vs AffiliateProduct vs AffiliatePartner vs ProductCommission)",
+    "Member area / courses (MemberArea, MemberModule, MemberLesson, MemberEnrollment)",
+    "Certification (flag-only — no issuance service; spec-only directory)",
+    "Channel inclusion (ChannelProduct)",
+    "Product AI / Marketing-Artificial config (ProductAIConfig vs ProductPlan.aiConfig JSON)"
+  ],
+  "canonicalEntities": [
+    { "name": "Product", "table": "RAC_Product", "file": "backend/prisma/schema.prisma:1734", "role": "Catalog source-of-truth. Holds price (Float), format, status, stock, AND a denormalized superset of affiliate/commission/after-pay/shipping/url columns. Shared base for BOTH plan stacks." },
+    { "name": "ProductPlan", "table": "RAC_ProductPlan", "file": "backend/prisma/schema.prisma:2213", "role": "Legacy/UI plan model. price Float (priceInCents Int nullable, mid-migration). Stores payment-methods/shipping/coupons/orderBump/aiConfig inside checkoutImages Json. NEVER read by paid checkout pricing." },
+    { "name": "CheckoutProductPlan", "table": "RAC_CheckoutProductPlan", "file": "backend/prisma/schema.prisma:2969", "role": "CANONICAL money/offer plan. priceInCents Int. kind=PLAN|CHECKOUT. The only plan model consumed by CheckoutOrder pricing (checkout-order-pricing.util.ts). Owns CheckoutConfig/OrderBump/Upsell/links." },
+    { "name": "CheckoutConfig", "table": "RAC_CheckoutConfig", "file": "backend/prisma/schema.prisma:3027", "role": "Typed 1:1 checkout customization for a CheckoutProductPlan (theme, coupon-popup, timer, shipping, testimonials, chat, pixels). Canonical offer-presentation store." },
+    { "name": "OrderBump", "table": "RAC_OrderBump", "file": "backend/prisma/schema.prisma:3132", "role": "Typed order-bump rows on a CheckoutProductPlan. Duplicated by ProductPlan.checkoutImages.orderBump JSON." },
+    { "name": "Upsell", "table": "RAC_Upsell", "file": "backend/prisma/schema.prisma:3154", "role": "Typed post-purchase upsell rows on a CheckoutProductPlan." },
+    { "name": "ProductCoupon", "table": "RAC_ProductCoupon", "file": "backend/prisma/schema.prisma:2297", "role": "Product-scoped coupon. discountValue Float, type PERCENT|FIXED. UI/management surface; mirrored into CheckoutCoupon via sync util. NOT consulted by real order pricing." },
+    { "name": "CheckoutCoupon", "table": "RAC_CheckoutCoupon", "file": "backend/prisma/schema.prisma:3178", "role": "CANONICAL workspace-scoped coupon for checkout. discountValue Int (cents/bps), type PERCENTAGE|FIXED. The only coupon validated/priced at order time (validateCouponHelper)." },
+    { "name": "CheckoutPixel", "table": "RAC_CheckoutPixel", "file": "backend/prisma/schema.prisma:3201", "role": "Tracking pixels bound to a CheckoutConfig. Overlaps Product metadata.pixels (set by ProductService.setPixels) and ProductCampaign.pixelId." },
+    { "name": "ProductReview", "table": "RAC_ProductReview", "file": "backend/prisma/schema.prisma:2316", "role": "Product reviews/ratings. Overlaps CheckoutConfig.testimonials JSON." },
+    { "name": "ProductCommission", "table": "RAC_ProductCommission", "file": "backend/prisma/schema.prisma:2332", "role": "Per-product commission split rows (COPRODUCER/MANAGER/AFFILIATE). Written by AffiliateService.manageCoproduction." },
+    { "name": "ProductUrl", "table": "RAC_ProductUrl", "file": "backend/prisma/schema.prisma:2348", "role": "Product knowledge/chat URLs with AI-learning + chat-widget config. Overlaps Product.salesPageUrl/thankyou*Url scalar columns." },
+    { "name": "ProductCampaign", "table": "RAC_ProductCampaign", "file": "backend/prisma/schema.prisma:2378", "role": "Per-product attribution campaign (code, pixelId, sales/paid counters)." },
+    { "name": "ProductAIConfig", "table": "RAC_ProductAIConfig", "file": "backend/prisma/schema.prisma:2394", "role": "Per-product Marketing-Artificial config (customerProfile/positioning/objections/salesArguments/upsell). Duplicated by ProductPlan.aiConfig JSON (per-plan)." },
+    { "name": "ProductCheckout", "table": "RAC_ProductCheckout", "file": "backend/prisma/schema.prisma:2273", "role": "Legacy checkout model: config Json (14 sections) + metrics. Parallel to CheckoutConfig + CheckoutProductPlan(kind=CHECKOUT). Largely superseded." },
+    { "name": "MemberArea", "table": "RAC_MemberArea", "file": "backend/prisma/schema.prisma:2434", "role": "Course/community/membership root. Optional productId links to Product for auto-enroll. Feature flags incl. certificates Boolean." },
+    { "name": "MemberModule", "table": "RAC_MemberModule", "file": "backend/prisma/schema.prisma:2492", "role": "Ordered module within a MemberArea, with drip/release config." },
+    { "name": "MemberLesson", "table": "RAC_MemberLesson", "file": "backend/prisma/schema.prisma:2511", "role": "Lesson within a module (video/text/quiz), with transcription + aiSummary." },
+    { "name": "MemberEnrollment", "table": "RAC_MemberEnrollment", "file": "backend/prisma/schema.prisma:2471", "role": "Student enrollment + progress. Created via 2 paths: manual (controller) and post-payment auto-enroll. Customer identity duplicated from CheckoutOrder by email." },
+    { "name": "AffiliateProduct", "table": "RAC_AffiliateProduct", "file": "backend/prisma/schema.prisma:2538", "role": "Marketplace affiliate listing with its OWN commissionPct/cookieDays/approvalMode — a second source of affiliate-config truth alongside Product.affiliate* columns." },
+    { "name": "AffiliateRequest", "table": "RAC_AffiliateRequest", "file": "backend/prisma/schema.prisma:2565", "role": "Affiliate join request per (AffiliateProduct, workspace)." },
+    { "name": "AffiliateLink", "table": "RAC_AffiliateLink", "file": "backend/prisma/schema.prisma:2581", "role": "Tracked affiliate link with clicks/sales/revenue counters." },
+    { "name": "ChannelProduct", "table": "RAC_ChannelProduct", "file": "backend/prisma/schema.prisma:3508", "role": "Join row: a Product included in a sales channel/arsenal. Written only by kloel/channel-setup.service.ts." },
+    { "name": "CheckoutProductPlan(kind=CHECKOUT)", "table": "RAC_CheckoutProductPlan", "file": "backend/prisma/schema.prisma:2969", "role": "Same table reused as a 'checkout template' grouping multiple plans via CheckoutPlanLink. Polymorphic kind discriminator." }
+  ],
+  "services": [
+    { "name": "ProductService", "file": "backend/src/products/product.service.ts:39", "responsibility": "Product CRUD + lifecycle (create/update/publish/toggle/delete) + resolver-shaped adapters (setPixels/setShipping/setSalesPage/updateUrls). Emits mind.product.observed + commerce aliases + brainSpine.", "capability": "product.crud" },
+    { "name": "PlanService", "file": "backend/src/plans/plan.service.ts:35", "responsibility": "ProductPlan (Float) CRUD + setters that stuff payment/shipping/coupons/orderBump into checkoutImages JSON. Dual-writes priceInCents. Many *FromArgs resolver adapters.", "capability": "plan.crud.legacy" },
+    { "name": "CheckoutProductService", "file": "backend/src/checkout/checkout-product.service.ts:23", "responsibility": "Product + CheckoutProductPlan (cents) CRUD + CheckoutConfig + checkout(kind=CHECKOUT) creation + plan-link sync. The CANONICAL offer/plan write stack used by paid checkout.", "capability": "plan.crud.canonical" },
+    { "name": "CheckoutCatalogService", "file": "backend/src/checkout/checkout-catalog.service.ts:17", "responsibility": "OrderBump/Upsell/CheckoutCoupon/CheckoutPixel CRUD + validateCoupon (canonical, priced) + shipping calc + config reset.", "capability": "offer.catalog" },
+    { "name": "CheckoutCatalogConfigService", "file": "backend/src/checkout/checkout-catalog-config.service.ts", "responsibility": "Resolves catalog/shipping config used by CheckoutCatalogService.calculateShipping / resetConfig.", "capability": "offer.catalog.config" },
+    { "name": "CheckoutProductConfigService", "file": "backend/src/checkout/checkout-product-config.service.ts", "responsibility": "Default CheckoutConfig builder, marketplace-fee resolution, legacy-checkout ensure, pricing preview.", "capability": "offer.config" },
+    { "name": "CheckoutPostPaymentEffectsService", "file": "backend/src/checkout/checkout-post-payment-effects.service.ts", "responsibility": "Post-payment side effects incl. autoEnrollInMemberAreas (3rd MemberEnrollment writer) + confirmation email + FB CAPI. Inlines stats update instead of MemberAreaStatsService.", "capability": "member.enroll.auto" },
+    { "name": "ProductCouponDomainService", "file": "backend/src/kloel/product-coupon-domain.service.ts:22", "responsibility": "Shared ProductCoupon delete (controller + chat) that also calls syncWorkspaceCheckoutCouponForProduct to keep CheckoutCoupon mirror consistent.", "capability": "coupon.product.delete" },
+    { "name": "AffiliateService", "file": "backend/src/affiliate/affiliate.service.ts:7", "responsibility": "Writes affiliate config onto Product.affiliate*/commission* columns (toggleProgram, setVisibility, setCommissionPct, etc.) + coproduction via ProductCommission. Does NOT touch AffiliateProduct.", "capability": "affiliate.config.product-columns" },
+    { "name": "ProductCategoriesService", "file": "backend/src/product-categories/product-categories.service.ts:5", "responsibility": "Read-only: distinct Product.category list per workspace. No category entity — categories are a free-text Product column.", "capability": "category.list" },
+    { "name": "MemberAreaStatsService", "file": "backend/src/member-area/member-area-stats.service.ts:13", "responsibility": "Recompute MemberArea aggregate counters (totalStudents/avgCompletion/totals) after enrollment/lesson changes.", "capability": "member.stats.recalc" },
+    { "name": "MemberAreasController", "file": "backend/src/member-area/member-areas.controller.ts:45", "responsibility": "MemberArea CRUD — inlines all Prisma writes directly (NO service layer). Auto-slug, P2002 handling.", "capability": "member.area.crud" },
+    { "name": "MemberModulesController", "file": "backend/src/member-area/member-modules.controller.ts:42", "responsibility": "MemberModule + MemberLesson CRUD inline.", "capability": "member.module.crud" },
+    { "name": "MemberEnrollmentsController", "file": "backend/src/member-area/member-enrollments.controller.ts:36", "responsibility": "Manual enrollment CRUD + completeLesson progress; delegates counter recompute to MemberAreaStatsService and emits MemberAreaEventEmitterService events.", "capability": "member.enroll.manual" },
+    { "name": "MemberStructureController", "file": "backend/src/member-area/member-structure.controller.ts:162", "responsibility": "generate-structure: builds template modules/lessons for an area type in one transaction.", "capability": "member.structure.generate" },
+    { "name": "MemberAreaPublicController", "file": "backend/src/member-area/member-area-public.controller.ts:109", "responsibility": "Public (student-facing) member-area read + enrollment-by-email surface.", "capability": "member.area.public" },
+    { "name": "ProductPlanController", "file": "backend/src/kloel/product-sub-resources/product-plan.controller.ts:29", "responsibility": "REST /products/:id/plans CRUD writing ProductPlan (Float) directly — a 3rd plan write path, bypassing PlanService.", "capability": "plan.crud.legacy" },
+    { "name": "ProductCouponController", "file": "backend/src/kloel/product-sub-resources/product-coupon.controller.ts:34", "responsibility": "REST /products/:id/coupons CRUD on ProductCoupon + its OWN validate endpoint (divergent from checkout validate) + sync into CheckoutCoupon.", "capability": "coupon.product.crud" },
+    { "name": "ProductUrlService", "file": "backend/src/kloel/product-sub-resources/product-url.service.ts", "responsibility": "ProductUrl CRUD (knowledge/chat URLs).", "capability": "product.url.crud" },
+    { "name": "KloelProductSubResourceToolsService", "file": "backend/src/kloel/kloel-product-sub-resource-tools.service.ts", "responsibility": "Kloel chat tools that create/update/delete ProductPlan (Float) directly — a 4th plan write path.", "capability": "plan.crud.legacy.chat" },
+    { "name": "ProductAIConfigService (services-v2)", "file": "backend/src/kloel/services-v2/product-ai-config.service.ts", "responsibility": "Per-product ProductAIConfig read/write for chat capability layer.", "capability": "product.aiconfig.crud" }
+  ],
+  "events": [
+    "mind.product.observed (ProductService.create — product.service.ts:110)",
+    "product.activated / product.deactivated (ProductService.toggleAvailability — product.service.ts:354)",
+    "product.updated / product.published / product.deleted / product.created (via emitCommerceAlias — kloel/event-taxonomy.canonical-aliases)",
+    "mind.plan.observed (PlanService.create — plan.service.ts:73)",
+    "plan.updated / plan.deleted (via emitCommerceAlias — plan.service.ts:151,211)",
+    "member.enrolled / member.droppedOut / member.progressed (MemberAreaEventEmitterService.emitEnrolled/emitDroppedOut/emitProgressed — kloel/member-area-emitter)",
+    "checkout.* lifecycle (created/paid/abandoned/canceled/expired/viewed — kloel/checkout-emitter/checkout-event-emitter.service.ts)",
+    "brainSpine.recordCommercial cognitive-spine writes (product:* and plan:* subjects — MindEventSpine)"
+  ],
+  "capabilities": [
+    { "name": "Create/update/delete a Product", "canonicalHome": "ProductService (backend/src/products/product.service.ts:53)", "duplicatedIn": ["CheckoutProductService.createProduct/updateProduct/deleteProduct (checkout-product.service.ts:63)", "CheckoutProductService.createProduct skips event emission + audit + brainSpine that ProductService performs"] },
+    { "name": "Create/update/delete a Plan (pricing tier)", "canonicalHome": "CheckoutProductService.createPlan (checkout-product.service.ts:162) writing CheckoutProductPlan.priceInCents — the only plan read by order pricing", "duplicatedIn": ["PlanService.create (plans/plan.service.ts:53) → ProductPlan.price Float", "ProductPlanController.createPlan (kloel/product-sub-resources/product-plan.controller.ts:83)", "KloelProductSubResourceToolsService (kloel-product-sub-resource-tools.service.ts:107)"] },
+    { "name": "Configure offer add-ons (order bump / upsell)", "canonicalHome": "CheckoutCatalogService.createBump/createUpsell (checkout-catalog.service.ts:30,117) → typed OrderBump/Upsell tables on CheckoutProductPlan", "duplicatedIn": ["PlanService.setOrderBump (plan.service.ts:419) → ProductPlan.checkoutImages.orderBump JSON"] },
+    { "name": "Create coupon", "canonicalHome": "CheckoutCatalogService.createCoupon (checkout-catalog.service.ts:209) → CheckoutCoupon (cents)", "duplicatedIn": ["ProductCouponController.create (product-coupon.controller.ts:79) → ProductCoupon (Float) + sync util mirrors it into CheckoutCoupon"] },
+    { "name": "Validate a coupon for an order", "canonicalHome": "validateCouponHelper / CheckoutCatalogService.validateCoupon (checkout-catalog.helpers.ts:79) — checks isActive/startsAt/expiresAt/maxUses/minOrderValue/appliesTo AND computes discountAmount", "duplicatedIn": ["ProductCouponController.validate (product-coupon.controller.ts:154) — checks only active/maxUses/expiresAt, NO minOrderValue, NO appliesTo, NO discount amount → DIVERGENT"] },
+    { "name": "Configure checkout presentation (theme/timer/popup/badges)", "canonicalHome": "CheckoutProductService.updateConfig / CheckoutConfig table (checkout-product.service.ts:245)", "duplicatedIn": ["ProductCheckout.config Json 14-section blob (legacy)", "ProductPlan.checkoutImages JSON (payment/shipping/coupon-accept flags)"] },
+    { "name": "Configure tracking pixels", "canonicalHome": "CheckoutCatalogService.createPixel / CheckoutPixel table (checkout-catalog.service.ts:309)", "duplicatedIn": ["ProductService.setPixels → Product.metadata.pixels (product.service.ts:427)", "ProductCampaign.pixelId scalar"] },
+    { "name": "Configure affiliate program for a product", "canonicalHome": "AffiliateService → Product.affiliate*/commission* columns (affiliate.service.ts)", "duplicatedIn": ["AffiliateProduct model own commissionPct/cookieDays/approvalMode (schema 2538)", "ProductPlan affiliate fields via PlanService.setAffiliateConfig (plan.service.ts:383)"] },
+    { "name": "Per-product AI / Marketing-Artificial config", "canonicalHome": "ProductAIConfig table + services-v2/product-ai-config.service.ts", "duplicatedIn": ["ProductPlan.aiConfig JSON (per-plan, schema 2261)"] },
+    { "name": "Set product post-purchase URLs", "canonicalHome": "ProductService.updateUrls → Product.thankyou*Url columns (product.service.ts:523)", "duplicatedIn": ["ProductPlan.thankyouUrl/thankyouBoletoUrl/thankyouPixUrl plan-level override (schema 2257)", "ProductUrl model (general URLs)"] },
+    { "name": "Enroll a buyer into a member area", "canonicalHome": "MemberEnrollmentsController.enrollStudent (member-enrollments.controller.ts:77) — uses MemberAreaStatsService.recalculate + emits member.enrolled", "duplicatedIn": ["CheckoutPostPaymentEffectsService.autoEnrollInMemberAreas (checkout-post-payment-effects.service.ts:228) — inlines stats update, emits NO event", "MemberAreaPublicController enroll-by-email surface"] },
+    { "name": "List product categories", "canonicalHome": "ProductCategoriesService.listByWorkspace (distinct Product.category)", "duplicatedIn": ["AffiliateProduct.category own column (no FK/shared taxonomy)"] },
+    { "name": "Reviews / social proof", "canonicalHome": "ProductReview table", "duplicatedIn": ["CheckoutConfig.testimonials JSON + socialProofAlerts JSON"] }
+  ],
+  "duplications": [
+    {
+      "concept": "Plan / pricing source-of-truth split across two tables",
+      "implementations": ["ProductPlan (RAC_ProductPlan, price Float) — backend/src/plans/plan.service.ts + kloel/product-sub-resources/product-plan.controller.ts + kloel-product-sub-resource-tools.service.ts", "CheckoutProductPlan (RAC_CheckoutProductPlan, priceInCents Int) — backend/src/checkout/checkout-product.service.ts"],
+      "severity": "P0",
+      "canonicalChoice": "CheckoutProductPlan.priceInCents — it is the ONLY plan model read by paid pricing (checkout-order-pricing.util.ts reads planPriceInCents). ProductPlan.price is never consulted at order time, so any price edited via PlanService/ProductPlanController/chat tools silently does NOT affect what the buyer is charged.",
+      "note": "Money lives in two unsynced tables with different units (Float reais vs Int cents). ProductPlan.priceInCents is an additive nullable column mid-migration (PHASE A) and is only populated on NEW writes via PlanService.create, not by ProductPlanController or chat tools. Three of four ProductPlan writers don't even dual-write cents. High risk of merchant editing a price that has no commercial effect."
+    },
+    {
+      "concept": "Coupon model + validation divergence (ProductCoupon vs CheckoutCoupon)",
+      "implementations": ["ProductCoupon (RAC_ProductCoupon, Float, PERCENT/FIXED) + ProductCouponController.validate (product-coupon.controller.ts:154)", "CheckoutCoupon (RAC_CheckoutCoupon, Int cents, PERCENTAGE/FIXED) + validateCouponHelper (checkout-catalog.helpers.ts:79)", "Bridge: syncWorkspaceCheckoutCouponForProduct (kloel/product-coupon-sync.util.ts:54)"],
+      "severity": "P0",
+      "canonicalChoice": "CheckoutCoupon + validateCouponHelper is the only coupon actually applied to an order. ProductCoupon is a UI-management mirror.",
+      "note": "Two divergent validate paths: ProductCoupon.validate omits minOrderValue, appliesTo and discount-amount computation that CheckoutCoupon enforces, and uses different enum spellings (PERCENT vs PERCENTAGE) reconciled only inside the sync util. The sync is one-directional (ProductCoupon→CheckoutCoupon) and only fires on product-coupon controller writes; a coupon created directly via CheckoutCatalogService.createCoupon has no ProductCoupon row. Unit mismatch (Float reais vs Int cents) handled by mapProductCouponValueToCheckoutValue — silent rounding."
+    },
+    {
+      "concept": "Three+ parallel product/plan CRUD write stacks",
+      "implementations": ["ProductService + PlanService (products/, plans/)", "CheckoutProductService (checkout/)", "Product*Controller family (kloel/product-sub-resources/*) writing Prisma directly", "KloelProductSubResourceToolsService (chat tools)"],
+      "severity": "P1",
+      "canonicalChoice": "Consolidate Product writes on ProductService (it alone emits events + audit + brainSpine) and plan writes on CheckoutProductService (canonical money).",
+      "note": "CheckoutProductService.createProduct/updateProduct bypass the mind.product.observed event, AuditService and MindEventSpine that ProductService performs — so products created via the checkout stack are invisible to the cognition/audit layers. Sub-resource controllers write Prisma directly with no service abstraction."
+    },
+    {
+      "concept": "Order bump / upsell stored both typed and as JSON",
+      "implementations": ["OrderBump + Upsell typed tables via CheckoutCatalogService (checkout-catalog.service.ts:30,117)", "ProductPlan.checkoutImages.orderBump JSON via PlanService.setOrderBump (plan.service.ts:419)"],
+      "severity": "P1",
+      "canonicalChoice": "Typed OrderBump/Upsell tables (priced at checkout).",
+      "note": "JSON variant on ProductPlan is not read by checkout pricing; merchant edits via PlanService.setOrderBump never surface on the actual checkout."
+    },
+    {
+      "concept": "Affiliate config has three sources of truth",
+      "implementations": ["Product.affiliate*/commission* columns (AffiliateService — affiliate.service.ts)", "AffiliateProduct own commissionPct/cookieDays/approvalMode (schema 2538)", "ProductPlan affiliate fields (PlanService.setAffiliateConfig — plan.service.ts:383)"],
+      "severity": "P1",
+      "canonicalChoice": "Product.affiliate* columns (what AffiliateService.getConfig reads).",
+      "note": "AffiliateProduct duplicates commission/cookie/approval semantics with no synchronization to the Product columns AffiliateService writes. Plan-level affiliate config (visibleToAffiliates / customCommission) overlaps both. AffiliatePartner (workspace partners) and ProductCommission (per-product splits) are a 4th/5th overlapping commission surface."
+    },
+    {
+      "concept": "Per-product AI config split (table vs JSON)",
+      "implementations": ["ProductAIConfig table + services-v2/product-ai-config.service.ts", "ProductPlan.aiConfig JSON (schema 2261)"],
+      "severity": "P2",
+      "canonicalChoice": "ProductAIConfig table (typed, per-product, dedicated controller).",
+      "note": "Plan-level aiConfig JSON has no reader-consistency guarantee with the product-level table; 'the secret weapon — Marketing Artificial' comment appears on both."
+    },
+    {
+      "concept": "Legacy checkout model vs typed checkout config",
+      "implementations": ["ProductCheckout (RAC_ProductCheckout, config Json 14 sections) — schema 2273", "CheckoutConfig + CheckoutProductPlan(kind=CHECKOUT) — schema 3027/2969"],
+      "severity": "P2",
+      "canonicalChoice": "CheckoutConfig + CheckoutProductPlan.",
+      "note": "ProductCheckout is the old JSON-blob checkout; ProductCheckoutController still exposes it but no order-time logic reads its config. Superseded by the typed checkout stack."
+    },
+    {
+      "concept": "Member enrollment created by divergent paths",
+      "implementations": ["MemberEnrollmentsController.enrollStudent (uses MemberAreaStatsService + emits member.enrolled) — member-enrollments.controller.ts:77", "CheckoutPostPaymentEffectsService.autoEnrollInMemberAreas (inlines stats, emits nothing) — checkout-post-payment-effects.service.ts:228", "MemberAreaPublicController enroll-by-email"],
+      "severity": "P1",
+      "canonicalChoice": "MemberEnrollmentsController path (event + shared stats service).",
+      "note": "Auto-enroll on payment recomputes totalStudents/avgCompletion inline (different aggregation than MemberAreaStatsService.recalculate, e.g. omits totalLessons/totalModules) and emits no member.enrolled event, so cognition + downstream listeners never see paid enrollments. Buyer identity is re-keyed by email with no link back to CheckoutOrder.customerEmail."
+    },
+    {
+      "concept": "Pixels stored in three places",
+      "implementations": ["CheckoutPixel table (CheckoutCatalogService.createPixel)", "Product.metadata.pixels (ProductService.setPixels — product.service.ts:427)", "ProductCampaign.pixelId scalar"],
+      "severity": "P2",
+      "canonicalChoice": "CheckoutPixel table (the one fired by checkout/facebook-capi.service.ts).",
+      "note": "Product.metadata.pixels and ProductCampaign.pixelId are not consulted by the checkout pixel-firing path."
+    },
+    {
+      "concept": "Reviews vs testimonials",
+      "implementations": ["ProductReview table", "CheckoutConfig.testimonials JSON + socialProofAlerts JSON"],
+      "severity": "P3",
+      "canonicalChoice": "ProductReview for owned/verified reviews; testimonials JSON is checkout-presentation only.",
+      "note": "Two stores of essentially the same 'social proof' concept with no shared source; the checkout page reads testimonials JSON, not ProductReview rows."
+    },
+    {
+      "concept": "Post-purchase / thank-you URLs at product and plan level",
+      "implementations": ["Product.thankyouUrl/thankyouBoletoUrl/thankyouPixUrl (ProductService.updateUrls)", "ProductPlan.thankyouUrl/... plan-level override (schema 2257)"],
+      "severity": "P3",
+      "canonicalChoice": "Plan-level override falling back to product-level — but precedence is undocumented and the ProductPlan variant is rarely read.",
+      "note": "Light redundancy; precedence between product and plan thank-you URLs is not enforced anywhere central."
+    },
+    {
+      "concept": "Product categories: free-text column, no entity, duplicated taxonomy",
+      "implementations": ["Product.category String (ProductCategoriesService.listByWorkspace distinct)", "AffiliateProduct.category String"],
+      "severity": "P3",
+      "canonicalChoice": "Product.category (there is no ProductCategory table despite the product-categories module name).",
+      "note": "The product-categories module is read-only over a free-text column; AffiliateProduct keeps its own parallel category string."
+    }
+  ],
+  "legacyOrDead": [
+    "backend/src/certification/ — directory contains ONLY certification-e2e-scenarios.spec.ts (a meta-test asserting other modules exist). No certification service, no certificate issuance: MemberArea.certificates is a Boolean flag with NO generator anywhere in backend/src/member-area. The capability is declared but not implemented.",
+    "ProductCheckout (RAC_ProductCheckout) — legacy JSON-blob checkout model superseded by CheckoutConfig + CheckoutProductPlan(kind=CHECKOUT); no order-time pricing reads its config.",
+    "ProductPlan.priceInCents — additive nullable column (PHASE A migration) populated only by PlanService.create; ProductPlanController and chat tools do NOT dual-write it, leaving the canonicalization migration half-done.",
+    "ProductPlan.checkoutImages.{orderBump,paymentMethods,shipping,acceptCoupons} JSON slots — written by PlanService setters but not read by the canonical checkout pricing/offer path; effectively dead config.",
+    "Product.metadata.pixels (ProductService.setPixels) and ProductCampaign.pixelId — not consumed by the checkout pixel-firing path (CheckoutPixel table is).",
+    "AffiliateProduct.commissionPct/cookieDays/approvalMode — duplicate affiliate config not synchronized with the Product.affiliate* columns AffiliateService.getConfig actually reads.",
+    "ProductService.findById vs ProductService.get vs assertOwnedProduct — three overlapping single-product lookups (get wraps findById; assertOwnedProduct re-queries) — minor internal redundancy, not dead but consolidatable.",
+    "PlanService large *FromArgs adapter surface (setPaymentMethodsFromArgs, setShippingFromArgs, etc.) — exists only to feed KloelDomainServiceResolver and writes the dead checkoutImages JSON slots."
+  ]
+}

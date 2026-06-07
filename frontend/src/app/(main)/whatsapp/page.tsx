@@ -73,6 +73,9 @@ function formatOperatorReason(value?: string | null): string {
   if (raw.includes('expired') || raw.includes('token')) {
     return 'A autorização expirou. Conecte novamente.';
   }
+  if (raw.includes('oauth') || raw.includes('configuration') || raw.includes('config')) {
+    return 'A autorizacao Meta ainda nao esta configurada no backend.';
+  }
   if (raw.includes('permission') || raw.includes('scope')) {
     return 'A autorização precisa ser renovada com as permissões corretas.';
   }
@@ -155,7 +158,16 @@ export default function WhatsAppPage() {
     queueMicrotask(load);
   }, [load]);
 
+  const metaOAuthUnavailable =
+    whatsAppStatus?.status === 'meta_oauth_configuration_missing' ||
+    whatsAppStatus?.degradedReason === 'meta_oauth_configuration_missing';
+
   const handleConnect = useCallback(async () => {
+    if (metaOAuthUnavailable) {
+      setActionMessage(formatOperatorReason('meta_oauth_configuration_missing'));
+      return;
+    }
+
     setActionMessage('Gerando fluxo oficial da Meta...');
     try {
       const res = await apiFetch<{ url?: string }>(
@@ -169,7 +181,7 @@ export default function WhatsAppPage() {
     } catch (error: unknown) {
       setActionMessage(readErrorMessage(error, 'Falha ao iniciar a conexao Meta.'));
     }
-  }, []);
+  }, [metaOAuthUnavailable]);
 
   const handleDisconnect = useCallback(async () => {
     setActionMessage('Desconectando Meta...');
@@ -242,7 +254,16 @@ export default function WhatsAppPage() {
                 <button
                   type="button"
                   onClick={() => void handleConnect()}
-                  className="rounded-full px-5 py-2 text-sm font-semibold"
+                  disabled={loading || metaOAuthUnavailable}
+                  aria-disabled={loading || metaOAuthUnavailable}
+                  title={
+                    metaOAuthUnavailable
+                      ? formatOperatorReason('meta_oauth_configuration_missing')
+                      : undefined
+                  }
+                  className={`rounded-full px-5 py-2 text-sm font-semibold transition-opacity ${
+                    loading || metaOAuthUnavailable ? 'cursor-not-allowed opacity-60' : ''
+                  }`}
                   style={{
                     backgroundColor: colors.text.silver,
                     color: colors.background.surface,

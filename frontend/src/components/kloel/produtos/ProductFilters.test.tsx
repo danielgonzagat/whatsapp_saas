@@ -1,15 +1,32 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ProductFilters from './ProductFilters';
 import ProductsListing from './ProductsListing';
 import AfiliarSe from './ProdutosAfiliarSeTab';
+import MarketplaceProductGrid from './MarketplaceProductGrid';
 import { normalizeDisplayProduct } from './ProdutosView.helpers';
 import type { DisplayProduct } from './ProdutosView.types';
 
+const pushMock = vi.hoisted(() => vi.fn());
+const requestAffiliationMock = vi.hoisted(() => vi.fn());
+
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  useRouter: () => ({ push: pushMock, replace: vi.fn() }),
 }));
+
+vi.mock('@/lib/api/affiliate', () => ({
+  affiliateApi: {
+    requestAffiliation: requestAffiliationMock,
+    saveProduct: vi.fn(),
+    unsaveProduct: vi.fn(),
+  },
+}));
+
+beforeEach(() => {
+  pushMock.mockReset();
+  requestAffiliationMock.mockReset();
+});
 
 const catalogProduct: DisplayProduct = {
   id: 'product-1',
@@ -78,7 +95,70 @@ describe('ProductsListing search empty state', () => {
     expect(screen.getByText('Limpe o filtro ou tente outro termo.')).toBeTruthy();
     expect(screen.queryByText('Nenhum produto cadastrado.')).toBeNull();
   });
+
+  it('does not claim inactive pending products are ready for traffic', () => {
+    render(
+      <ProductsListing
+        activeProducts={0}
+        displayProducts={[{ ...catalogProduct, activePlansCount: 1, hasPlanPricing: true }]}
+        totalRevenue={0}
+        totalSales={0}
+      />,
+    );
+
+    expect(screen.queryByText(/esta pronto para receber trafego e checkout/i)).toBeNull();
+    expect(
+      screen.getByText('Mentoria Kloel tem checkout configurado, mas ainda precisa ser ativado.'),
+    ).toBeTruthy();
+  });
+
+  it('does not claim the AI engine is operating when no product is active', () => {
+    render(
+      <ProductsListing
+        activeProducts={0}
+        displayProducts={[{ ...catalogProduct, activePlansCount: 1, hasPlanPricing: true }]}
+        totalRevenue={0}
+        totalSales={0}
+      />,
+    );
+
+    expect(screen.queryByText(/IA operando na jornada de compra/i)).toBeNull();
+    expect(
+      screen.getByText(
+        '1 produto configurado no motor, 1 checkout e 0 afiliados — ative um produto para liberar a IA na jornada de compra.',
+      ),
+    ).toBeTruthy();
+  });
 });
+describe('MarketplaceProductGrid accessibility', () => {
+  it('opens a marketplace product card by keyboard role', () => {
+    const onSelectItem = vi.fn();
+
+    render(
+      <MarketplaceProductGrid
+        filteredMarket={[
+          {
+            id: 'market-1',
+            name: 'Produto acessivel',
+            category: 'E-books',
+            producer: 'Kloel',
+            price: 3990,
+            commission: 30,
+          },
+        ]}
+        onSelectItem={onSelectItem}
+        onToggleSave={vi.fn()}
+      />,
+    );
+
+    const productCard = screen.getByRole('button', { name: 'Abrir Produto acessivel' });
+
+    expect(productCard.getAttribute('tabindex')).toBe('0');
+    fireEvent.keyDown(productCard, { key: 'Enter' });
+    expect(onSelectItem).toHaveBeenCalledWith(expect.objectContaining({ id: 'market-1' }));
+  });
+});
+
 
 describe('AfiliarSe marketplace search', () => {
   it('explains an empty marketplace result when search is active', () => {
@@ -99,6 +179,40 @@ describe('AfiliarSe marketplace search', () => {
 
     expect(screen.getByText('Nenhum produto encontrado para esta busca.')).toBeTruthy();
     expect(screen.getByText('Limpe a busca ou tente outro termo.')).toBeTruthy();
+  });
+
+  it('guides users to profile completion when affiliation is blocked', async () => {
+    requestAffiliationMock.mockRejectedValueOnce(
+      new Error('Complete seu cadastro para usar esta funcionalidade'),
+    );
+
+    render(
+      <AfiliarSe
+        marketplace={[
+          {
+            id: 'blocked-product',
+            name: 'Produto bloqueado',
+            category: 'Cursos Online',
+            producer: 'Kloel',
+            price: 19700,
+            commission: 35,
+          },
+        ]}
+        earnings={0}
+        marketplaceStats={{}}
+        affiliateLinks={[]}
+        affiliateProducts={[]}
+        onRefresh={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByText('Produto bloqueado'));
+    fireEvent.click(screen.getByRole('button', { name: 'Solicitar afiliacao' }));
+
+    expect(await screen.findByText('Complete seu cadastro para usar esta funcionalidade')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ir para Perfil' }));
+    expect(pushMock).toHaveBeenCalledWith('/settings');
   });
 });
 

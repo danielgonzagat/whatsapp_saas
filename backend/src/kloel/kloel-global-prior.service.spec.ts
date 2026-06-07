@@ -30,8 +30,8 @@ describe('KloelGlobalPriorService', () => {
       const result = await service.getPrior('whatsapp', 'tom', 'FRIENDLY');
 
       expect(result).not.toBeNull();
-      expect(result!.observations).toBe(100);
-      expect(result!.mean).toBeCloseTo(71 / 102);
+      expect(result.observations).toBe(100);
+      expect(result.mean).toBeCloseTo(71 / 102);
     });
 
     it('returns mean=0.5 for zero observations with zero successes', async () => {
@@ -48,7 +48,7 @@ describe('KloelGlobalPriorService', () => {
       const result = await service.getPrior('email', 'message_format', 'html_rich');
 
       expect(result).not.toBeNull();
-      expect(result!.mean).toBeCloseTo(0.5);
+      expect(result.mean).toBeCloseTo(0.5);
     });
   });
 

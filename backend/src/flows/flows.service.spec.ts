@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { CreateFlowDto } from './dto/flow.dto';
+import { SaveFlowVersionDto } from './dto/save-flow-version.dto';
 import { FlowsService } from './flows.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -35,6 +38,34 @@ describe('FlowsService', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('preserves React Flow nodes and edges through the app validation pipe', async () => {
+    const pipe = new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transformOptions: { enableImplicitConversion: true },
+    });
+    const payload = {
+      name: 'Flow Codex Audit',
+      nodes: [{ id: 'n1', type: 'start', position: { x: 1, y: 2 }, data: { label: 'Start' } }],
+      edges: [{ id: 'e1', source: 'n1', target: 'n2', type: 'smoothstep' }],
+    };
+
+    const createDto = (await pipe.transform(payload, {
+      type: 'body',
+      metatype: CreateFlowDto,
+    })) as CreateFlowDto;
+    const versionDto = (await pipe.transform(
+      { nodes: payload.nodes, edges: payload.edges, label: 'v1' },
+      { type: 'body', metatype: SaveFlowVersionDto },
+    )) as SaveFlowVersionDto;
+
+    expect(createDto.nodes).toEqual(payload.nodes);
+    expect(createDto.edges).toEqual(payload.edges);
+    expect(versionDto.nodes).toEqual(payload.nodes);
+    expect(versionDto.edges).toEqual(payload.edges);
   });
 
   it('save() upserts flow and logs audit', async () => {

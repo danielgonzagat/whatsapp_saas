@@ -64,7 +64,7 @@ export function Dominios({ workspaceId = '', sites = [], loading = false }: Domi
   const [addingDomain, setAddingDomain] = useState(false);
 
   const published = useMemo(() => sites.filter((s) => s.status === 'PUBLISHED' && s.slug), [sites]);
-  const selectableSites = useMemo(() => (published.length > 0 ? published : sites), [published, sites]);
+  const selectableSites = published;
   const effectiveSelectedSiteId = useMemo(() => {
     if (selectableSites.some((site) => site.id === selectedSiteId)) {
       return selectedSiteId;
@@ -277,7 +277,8 @@ export function Dominios({ workspaceId = '', sites = [], loading = false }: Domi
                   void handleAddDomain();
                 }
               }}
-              placeholder="loja.seudominio.com.br"
+              placeholder={selectedSite ? "loja.seudominio.com.br" : kloelT(`Publique um site antes de conectar dominio`)}
+              disabled={!workspaceId || !selectedSite}
               style={fieldStyle}
             />
           </label>
@@ -298,6 +299,10 @@ export function Dominios({ workspaceId = '', sites = [], loading = false }: Domi
           {domainsLoading ? (
             <div style={{ fontFamily: SORA, fontSize: 12, color: TEXT_DIM }}>
               {kloelT(`Carregando dominios cadastrados...`)}
+            </div>
+          ) : !selectedSite ? (
+            <div style={{ fontFamily: SORA, fontSize: 12, color: TEXT_DIM, lineHeight: 1.6 }}>
+              {kloelT(`Publique um site antes de conectar dominio proprio.`)}
             </div>
           ) : domains.length === 0 ? (
             <div style={{ fontFamily: SORA, fontSize: 12, color: TEXT_DIM, lineHeight: 1.6 }}>

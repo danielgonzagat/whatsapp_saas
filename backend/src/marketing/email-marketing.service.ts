@@ -237,7 +237,7 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
     let sentCount = 0;
     let failedCount = 0;
     for (let i = 0; i < campaign.recipients.length; i += 1) {
-      const recipient = campaign.recipients[i]!;
+      const recipient = campaign.recipients[i];
       if (recipient.status === 'UNSUBSCRIBED') {
         continue;
       }

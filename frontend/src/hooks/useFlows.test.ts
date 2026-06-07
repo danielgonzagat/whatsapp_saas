@@ -61,6 +61,46 @@ describe('useFlows', () => {
     expect(result.current.error).toBe('Network error');
   });
 
+  it('keeps a stale fetchFlow failure from overwriting a newer successful fetch', async () => {
+    let rejectStaleFetch: (reason?: unknown) => void = () => undefined;
+    let resolveLatestFetch: (value: { data: { id: string; name: string } }) => void = () => undefined;
+    mockGet
+      .mockImplementationOnce(
+        () => new Promise((_resolve, reject) => {
+          rejectStaleFetch = reject;
+        }),
+      )
+      .mockImplementationOnce(
+        () => new Promise((resolve) => {
+          resolveLatestFetch = resolve;
+        }),
+      );
+    const { result } = renderHook(() => useFlows('ws-1'));
+
+    let staleFetch: Promise<unknown> = Promise.resolve();
+    let latestFetch: Promise<unknown> = Promise.resolve();
+    act(() => {
+      staleFetch = result.current.fetchFlow('stale-flow');
+    });
+    act(() => {
+      latestFetch = result.current.fetchFlow('latest-flow');
+    });
+
+    await act(async () => {
+      resolveLatestFetch({ data: { id: 'latest-flow', name: 'Latest flow' } });
+      await latestFetch;
+    });
+    expect(result.current.error).toBeNull();
+
+    await act(async () => {
+      rejectStaleFetch(new Error('workspace_mismatch'));
+      await staleFetch;
+    });
+
+    expect(result.current.error).toBeNull();
+    expect(result.current.loading).toBe(false);
+  });
+
   it('does nothing when workspaceId is not provided', async () => {
     mockGet.mockResolvedValueOnce({ data: [] });
     const { result } = renderHook(() => useFlows());

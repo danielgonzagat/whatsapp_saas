@@ -1,11 +1,39 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+const graphCanvasSource = readFileSync(
+  'src/components/kloel/graph/KloelGraphLiteralCanvas.tsx',
+  'utf8',
+);
 let pathname = '/products';
 let searchParams = new URLSearchParams();
 const push = vi.fn();
 const openPalette = vi.fn();
+const useProductsMock = vi.hoisted(() =>
+  vi.fn(() => ({
+    products: [
+      {
+        id: 'prod_1',
+        name: 'Produto real',
+        category: 'Dermocosmeticos',
+        status: 'active',
+        plans: [{ id: 'plan_1', name: 'Plano principal', active: true }],
+        checkouts: [{ id: 'checkout_1', name: 'Checkout principal', active: true }],
+      },
+    ],
+  })),
+);
+const useMemberAreasMock = vi.hoisted(() =>
+  vi.fn(() => ({
+    areas: memberAreas,
+    isLoading: false,
+    error: null,
+    mutate: vi.fn(),
+  })),
+);
+const useSWRMock = vi.hoisted(() => vi.fn(() => ({ data: [] })));
 let memberAreas = [
   {
     id: 'area_1',
@@ -22,31 +50,15 @@ vi.mock('next/navigation', () => ({
 }));
 
 vi.mock('@/hooks/useProducts', () => ({
-  useProducts: () => ({
-    products: [
-      {
-        id: 'prod_1',
-        name: 'Produto real',
-        category: 'Dermocosmeticos',
-        status: 'active',
-        plans: [{ id: 'plan_1', name: 'Plano principal', active: true }],
-        checkouts: [{ id: 'checkout_1', name: 'Checkout principal', active: true }],
-      },
-    ],
-  }),
+  useProducts: useProductsMock,
 }));
 
 vi.mock('@/hooks/useMemberAreas', () => ({
-  useMemberAreas: () => ({
-    areas: memberAreas,
-    isLoading: false,
-    error: null,
-    mutate: vi.fn(),
-  }),
+  useMemberAreas: useMemberAreasMock,
 }));
 
 vi.mock('swr', () => ({
-  default: () => ({ data: [] }),
+  default: useSWRMock,
 }));
 
 vi.mock('@/hooks/useCommandPalette', () => ({
@@ -82,6 +94,9 @@ afterEach(() => {
   ];
   push.mockClear();
   openPalette.mockClear();
+  useProductsMock.mockClear();
+  useMemberAreasMock.mockClear();
+  useSWRMock.mockClear();
 });
 
 function renderShell(children: ReactNode = <div>Real screen</div>) {
@@ -89,6 +104,29 @@ function renderShell(children: ReactNode = <div>Real screen</div>) {
 }
 
 describe('KloelGraphShell', () => {
+  it('does not fetch Criar or Educar dynamic graph data while Conversar is active', () => {
+    pathname = '/inbox';
+
+    renderShell(<main>Inbox real</main>);
+
+    expect(useProductsMock).toHaveBeenCalledWith({ enabled: false });
+    expect(useMemberAreasMock).toHaveBeenCalledWith({ enabled: false });
+    expect(useSWRMock).toHaveBeenCalledWith(null, expect.any(Function), {
+      keepPreviousData: true,
+    });
+  });
+
+  it('does not allow graph motion loops to run for hundreds of React-rendered frames', () => {
+    expect(graphCanvasSource).not.toContain('frames > 240');
+    expect(graphCanvasSource).not.toContain('0.0228');
+    expect(graphCanvasSource).not.toContain('setZoom(z1)');
+    expect(graphCanvasSource).not.toContain('setPan({ x: px1, y: py1 })');
+    expect(graphCanvasSource).not.toContain('const alphaDecay = 0.08;');
+    expect(graphCanvasSource).toContain('const maxSettlingFrames = 14;');
+    expect(graphCanvasSource).toContain('Math.max(alphaRef.current, 0.55)');
+    expect(graphCanvasSource).toContain('[ariaHidden, focusedArea, visibleEdges, visibleNodes]');
+  });
+
   it('defaults the graph chrome to dark mode so the constellation matches the near-black app shell', () => {
     renderShell(<main>ProdutosView real</main>);
 
@@ -99,14 +137,55 @@ describe('KloelGraphShell', () => {
     expect(shell.style.background).not.toBe('rgb(250, 250, 247)');
   });
 
+  it('extends each graph node hit target across its visible label', () => {
+    pathname = '/chat';
+    searchParams = new URLSearchParams('graph=1');
+
+    renderShell(<main>Chat real</main>);
+
+    const newChatNode = screen.getByRole('button', { name: 'Abrir Novo Chat' });
+    const labelHitTarget = newChatNode.querySelector('[data-node-hitbox="kloel-chat"]');
+
+    expect(labelHitTarget).toBeTruthy();
+    expect(Number(labelHitTarget?.getAttribute('width'))).toBeGreaterThan(44);
+  });
+
   it('renders the graph canvas behind an 80 percent overlay containing the real route children', () => {
-    renderShell(<main>ProdutosView real</main>);
+    const { container } = renderShell(<main>ProdutosView real</main>);
 
     expect(screen.getByTestId('kloel-graph-shell')).toBeTruthy();
     expect(screen.getByRole('dialog', { name: /Produtos/i })).toHaveTextContent(
       'ProdutosView real',
     );
-    expect(screen.getByRole('button', { name: 'Abrir Criar' })).toBeTruthy();
+    expect(screen.getByTestId('kloel-graph-canvas').getAttribute('aria-hidden')).toBe('true');
+    expect(screen.queryByRole('button', { name: 'Abrir Criar' })).toBeNull();
+    expect(container.querySelector('[aria-label="Abrir Criar"]')).toBeTruthy();
+  });
+
+  it('does not animate hidden graph focus while a route overlay covers the canvas', () => {
+    const requestAnimationFrameSpy = vi.spyOn(window, 'requestAnimationFrame');
+
+    renderShell(<main>ProdutosView real</main>);
+
+    expect(screen.getByTestId('kloel-graph-canvas').getAttribute('aria-hidden')).toBe('true');
+    expect(requestAnimationFrameSpy).not.toHaveBeenCalled();
+  });
+
+  it('layers route overlays above graph chrome controls so nested panels receive clicks', () => {
+    renderShell(<main>ProdutosView real</main>);
+
+    const dialog = screen.getByRole('dialog', { name: /Produtos/i });
+
+    expect((dialog.parentElement as HTMLElement).style.zIndex).toBe('60');
+  });
+
+  it('keeps primary galaxy navigation above the overlay backdrop so route changes stay clickable', () => {
+    renderShell(<main>ProdutosView real</main>);
+
+    const overlayLayer = screen.getByRole('dialog', { name: /Produtos/i }).parentElement as HTMLElement;
+    const floatingNav = screen.getByRole('navigation', { name: 'KloelGraph' });
+
+    expect(Number(floatingNav.style.zIndex)).toBeGreaterThan(Number(overlayLayer.style.zIndex));
   });
 
   it('keeps the graph-only state when the graph query flag is present', () => {
@@ -116,6 +195,49 @@ describe('KloelGraphShell', () => {
 
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(screen.getByTestId('kloel-graph-shell')).toBeTruthy();
+  });
+
+  it('opens pending overlay feedback immediately while a graph-only route transition resolves', () => {
+    pathname = '/chat';
+    searchParams = new URLSearchParams('graph=1');
+
+    renderShell(<main>Chat hidden while graph is open</main>);
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Abrir Ferramentas' }), {
+      clientX: 10,
+      clientY: 10,
+    });
+    fireEvent.pointerUp(screen.getByRole('button', { name: 'Abrir Ferramentas' }), {
+      clientX: 11,
+      clientY: 11,
+    });
+
+    expect(push).toHaveBeenCalledWith('/ferramentas');
+    expect(screen.getByRole('dialog', { name: 'Ferramentas' })).toHaveTextContent(
+      'Carregando Ferramentas',
+    );
+    expect(screen.getByTestId('kloel-graph-canvas').getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('keeps off-galaxy graph nodes out of the tab order and accessibility tree', () => {
+    pathname = '/analytics';
+    searchParams = new URLSearchParams('tab=vendas&graph=1');
+
+    const { container } = renderShell(<main>Analytics hidden</main>);
+
+    expect(screen.getByRole('button', { name: 'Abrir Consultar' }).getAttribute('tabindex')).toBe(
+      '0',
+    );
+    expect(screen.queryByRole('button', { name: 'Abrir Criar' })).toBeNull();
+    const offGalaxyNode = container.querySelector('[aria-label="Abrir Criar"]');
+    expect(offGalaxyNode).toBeTruthy();
+    expect(offGalaxyNode?.getAttribute('tabindex')).toBe('-1');
+    expect(offGalaxyNode?.getAttribute('aria-hidden')).toBe('true');
+    expect(container.querySelector('[aria-label="Abrir Novo produto"]')).toBeNull();
+    expect(container.querySelector('[aria-label="Abrir Novo Chat"]')).toBeNull();
+    const visualLabels = Array.from(container.querySelectorAll('text'));
+    expect(visualLabels.length).toBeGreaterThan(0);
+    expect(visualLabels.every((label) => label.getAttribute('aria-hidden') === 'true')).toBe(true);
   });
 
   it('keeps the graph canvas mounted when closing an overlay into graph-only mode', () => {
@@ -178,11 +300,15 @@ describe('KloelGraphShell', () => {
 
     // Dark-mode silver: the active nav pill is the light-on-near-black rgb(232,230,225).
     await waitFor(() => expect(kloelNav.style.background).toBe('rgb(232, 230, 225)'));
+    expect(kloelNav.getAttribute('aria-pressed')).toBe('true');
+    expect(educarNav.getAttribute('aria-pressed')).toBe('false');
 
     fireEvent.click(educarNav);
 
     expect(educarNav.style.background).toBe('rgb(232, 230, 225)');
     expect(kloelNav.style.background).toBe('transparent');
+    expect(educarNav.getAttribute('aria-pressed')).toBe('true');
+    expect(kloelNav.getAttribute('aria-pressed')).toBe('false');
     expect(pushState).toHaveBeenCalledWith(null, '', '/produtos/area-membros?graph=1');
     expect(push).not.toHaveBeenCalled();
   });
@@ -201,104 +327,157 @@ describe('KloelGraphShell', () => {
   });
 
   it('navigates by node clicks without opening on drag movement', () => {
+    searchParams = new URLSearchParams('graph=1');
     const { container } = renderShell();
 
-    fireEvent.pointerDown(screen.getByRole('button', { name: 'Abrir Afiliar' }), {
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Abrir Canvas' }), {
       clientX: 10,
       clientY: 10,
     });
-    fireEvent.pointerUp(screen.getByRole('button', { name: 'Abrir Afiliar' }), {
-      clientX: 11,
-      clientY: 11,
-    });
-    expect(push).toHaveBeenCalledWith('/produtos/afiliar-se');
-    expect(container.querySelector('circle[data-node-id="afiliar"]')?.getAttribute('stroke')).toBe(
-      'rgb(232,93,48)',
-    );
-
-    push.mockClear();
-    fireEvent.pointerDown(screen.getByRole('button', { name: 'Abrir Educar' }), {
-      clientX: 10,
-      clientY: 10,
-    });
-    fireEvent.pointerUp(screen.getByRole('button', { name: 'Abrir Educar' }), {
+    fireEvent.pointerUp(screen.getByRole('button', { name: 'Abrir Canvas' }), {
       clientX: 15,
       clientY: 10,
     });
     expect(push).not.toHaveBeenCalled();
 
-    push.mockClear();
-    fireEvent.pointerDown(screen.getByRole('button', { name: 'Abrir Educar' }), {
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Abrir Canvas' }), {
       clientX: 10,
       clientY: 10,
     });
-    fireEvent.pointerUp(screen.getByRole('button', { name: 'Abrir Educar' }), {
+    fireEvent.pointerUp(screen.getByRole('button', { name: 'Abrir Canvas' }), {
       clientX: 50,
       clientY: 50,
     });
     expect(push).not.toHaveBeenCalled();
-  });
 
-  it('drops pending node feedback when the route signature changes', () => {
-    const { container, rerender } = renderShell();
-
-    fireEvent.pointerDown(screen.getByRole('button', { name: 'Abrir Afiliar' }), {
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Abrir Sites' }), {
       clientX: 10,
       clientY: 10,
     });
-    fireEvent.pointerUp(screen.getByRole('button', { name: 'Abrir Afiliar' }), {
+    fireEvent.pointerUp(screen.getByRole('button', { name: 'Abrir Sites' }), {
       clientX: 11,
       clientY: 11,
     });
-    expect(container.querySelector('circle[data-node-id="afiliar"]')?.getAttribute('stroke')).toBe(
+    expect(push).toHaveBeenCalledWith('/sites');
+    expect(container.querySelector('circle[data-node-id="criar-sites"]')?.getAttribute('stroke')).toBe(
+      'rgb(232,93,48)',
+    );
+  });
+
+  it('preserves same-route query params when reopening a graph node', () => {
+    pathname = '/flow';
+    searchParams = new URLSearchParams('id=flow_1&audit=123&graph=1');
+    renderShell();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir Flow' }));
+
+    expect(push).toHaveBeenCalledWith('/flow?id=flow_1&audit=123');
+  });
+
+  it('drops pending node feedback when the route signature changes', () => {
+    searchParams = new URLSearchParams('graph=1');
+    const { container, rerender } = renderShell();
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Abrir Sites' }), {
+      clientX: 10,
+      clientY: 10,
+    });
+    fireEvent.pointerUp(screen.getByRole('button', { name: 'Abrir Sites' }), {
+      clientX: 11,
+      clientY: 11,
+    });
+    expect(container.querySelector('circle[data-node-id="criar-sites"]')?.getAttribute('stroke')).toBe(
       'rgb(232,93,48)',
     );
 
-    pathname = '/produtos/afiliar-se';
+    pathname = '/canvas';
     searchParams = new URLSearchParams();
     rerender(
       <KloelGraphShell>
-        <div>Affiliate screen</div>
+        <div>Canvas screen</div>
       </KloelGraphShell>,
     );
 
-    expect(container.querySelector('circle[data-node-id="afiliar"]')?.getAttribute('stroke')).toBe(
+    expect(container.querySelector('circle[data-node-id="criar-sites"]')?.getAttribute('stroke')).toBe(
       'none',
     );
   });
 
+  it('does not resurrect stale pending overlays when history returns to the origin route', async () => {
+    pathname = '/settings';
+    searchParams = new URLSearchParams('section=bancario&graph=1');
+    const { rerender } = renderShell(<main>Banco hidden</main>);
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Abrir Apps' }), {
+      clientX: 10,
+      clientY: 10,
+    });
+    fireEvent.pointerUp(screen.getByRole('button', { name: 'Abrir Apps' }), {
+      clientX: 11,
+      clientY: 11,
+    });
+
+    expect(screen.getByRole('dialog', { name: 'Apps' }).textContent).toContain('Carregando Apps');
+
+    pathname = '/settings';
+    searchParams = new URLSearchParams('section=apps');
+    rerender(
+      <KloelGraphShell>
+        <main>Apps screen</main>
+      </KloelGraphShell>,
+    );
+    expect(screen.getByRole('dialog', { name: 'Apps' }).textContent).toContain('Apps screen');
+
+    await act(async () => {
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+
+    pathname = '/settings';
+    searchParams = new URLSearchParams('section=bancario&graph=1');
+    rerender(
+      <KloelGraphShell>
+        <main>Banco hidden again</main>
+      </KloelGraphShell>,
+    );
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByText(/Carregando Apps/i)).toBeNull();
+  });
+
   it('clears residual hover ember when a node overlay closes into graph-only mode', async () => {
+    searchParams = new URLSearchParams('graph=1');
     const { container, rerender } = renderShell();
-    const afiliarCircle = () =>
-      container.querySelector('circle[data-node-id="afiliar"]') as SVGCircleElement | null;
-    const afiliarNode = screen.getByRole('button', { name: 'Abrir Afiliar' });
+    const sitesCircle = () =>
+      container.querySelector('circle[data-node-id="criar-sites"]') as SVGCircleElement | null;
+    const sitesNode = screen.getByRole('button', { name: 'Abrir Sites' });
 
-    fireEvent.pointerEnter(afiliarNode);
-    expect(afiliarCircle()?.getAttribute('stroke')).toBe('rgb(232,93,48)');
+    fireEvent.pointerEnter(sitesNode);
+    expect(sitesCircle()?.getAttribute('stroke')).toBe('rgb(232,93,48)');
 
-    fireEvent.pointerDown(afiliarNode, { clientX: 10, clientY: 10 });
-    fireEvent.pointerUp(afiliarNode, { clientX: 11, clientY: 11 });
+    fireEvent.pointerDown(sitesNode, { clientX: 10, clientY: 10 });
+    fireEvent.pointerUp(sitesNode, { clientX: 11, clientY: 11 });
 
-    pathname = '/produtos/afiliar-se';
+    pathname = '/sites';
     searchParams = new URLSearchParams();
     rerender(
       <KloelGraphShell>
-        <div>Affiliate screen</div>
+        <div>Sites screen</div>
       </KloelGraphShell>,
     );
-    expect(afiliarCircle()?.getAttribute('stroke')).toBe('rgb(232,93,48)');
+    expect(sitesCircle()?.getAttribute('stroke')).toBe('rgb(232,93,48)');
 
     searchParams = new URLSearchParams('graph=1');
     rerender(
       <KloelGraphShell>
-        <div>Affiliate screen hidden</div>
+        <div>Sites screen hidden</div>
       </KloelGraphShell>,
     );
 
-    await waitFor(() => expect(afiliarCircle()?.getAttribute('stroke')).toBe('none'));
+    await waitFor(() => expect(sitesCircle()?.getAttribute('stroke')).toBe('none'));
   });
 
   it('opens dynamic product nodes and product tab subnodes from real product data', () => {
+    searchParams = new URLSearchParams('graph=1');
     renderShell();
 
     fireEvent.pointerDown(screen.getByRole('button', { name: 'Abrir Produto real' }), {
@@ -310,6 +489,9 @@ describe('KloelGraphShell', () => {
       clientY: 11,
     });
     expect(push).toHaveBeenCalledWith('/products/prod_1');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar overlay do grafo' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
 
     push.mockClear();
     fireEvent.pointerDown(screen.getByRole('button', { name: 'Abrir Cupons' }), {
@@ -324,6 +506,9 @@ describe('KloelGraphShell', () => {
   });
 
   it('opens dynamic member area nodes from real member area data', () => {
+    pathname = '/produtos/area-membros';
+    searchParams = new URLSearchParams('graph=1');
+
     renderShell();
 
     fireEvent.pointerDown(screen.getByRole('button', { name: 'Abrir Curso real' }), {
@@ -337,6 +522,28 @@ describe('KloelGraphShell', () => {
     expect(push).toHaveBeenCalledWith('/produtos/area-membros?areaId=area_1');
   });
 
+  it('resets the current Kloel conversation when Novo Chat is opened from an existing thread', () => {
+    pathname = '/chat';
+    searchParams = new URLSearchParams('conversationId=thread_1&graph=1');
+    const dispatchEvent = vi.spyOn(window, 'dispatchEvent');
+
+    renderShell();
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Abrir Novo Chat' }), {
+      clientX: 10,
+      clientY: 10,
+    });
+    fireEvent.pointerUp(screen.getByRole('button', { name: 'Abrir Novo Chat' }), {
+      clientX: 11,
+      clientY: 11,
+    });
+
+    expect(push).toHaveBeenCalledWith('/chat');
+    expect(
+      dispatchEvent.mock.calls.some(([event]) => event instanceof Event && event.type === 'kloel:new-chat'),
+    ).toBe(true);
+  });
+
   it('opens Kloel search deep-links through the existing command palette', () => {
     pathname = '/chat';
     searchParams = new URLSearchParams('graphAction=search');
@@ -347,6 +554,9 @@ describe('KloelGraphShell', () => {
   });
 
   it('uses the existing command palette for Kloel search and recent nodes', () => {
+    pathname = '/chat';
+    searchParams = new URLSearchParams('graph=1');
+
     renderShell();
 
     fireEvent.pointerDown(screen.getByRole('button', { name: 'Abrir Buscar' }), {
@@ -368,6 +578,20 @@ describe('KloelGraphShell', () => {
       clientX: 11,
       clientY: 11,
     });
+    expect(openPalette).toHaveBeenCalledWith({ initialQuery: '' });
+  });
+
+  it('activates Kloel search and recent nodes through click events', () => {
+    pathname = '/chat';
+    searchParams = new URLSearchParams('graph=1');
+
+    renderShell();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir Buscar' }));
+    expect(openPalette).toHaveBeenCalledWith({ initialQuery: '' });
+
+    openPalette.mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir Recentes' }));
     expect(openPalette).toHaveBeenCalledWith({ initialQuery: '' });
   });
 

@@ -14,6 +14,7 @@ import {
   is,
 } from './product-nerve-center.shared';
 import { useProductReviews } from './ProductNerveCenterAvalTab.hooks';
+import { useState } from 'react';
 
 /** Product nerve center aval tab. */
 export function ProductNerveCenterAvalTab() {
@@ -46,6 +47,14 @@ export function ProductNerveCenterAvalTab() {
     name: (r.name as string) || (r.authorName as string) || 'Anônimo',
     ver: r.verified === true,
   }));
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const cancelDeleteReview = () => setDeleteConfirmId(null);
+  const confirmDeleteReview = async (reviewId: string) => {
+    await handleDeleteReview(reviewId);
+    setDeleteConfirmId((current) => (current === reviewId ? null : current));
+  };
+
 
   return (
     <>
@@ -285,12 +294,30 @@ export function ProductNerveCenterAvalTab() {
                       </svg>
                     </span>
                   ))}
-                  <Bt
-                    onClick={() => handleDeleteReview(r.id)}
-                    style={{ padding: '2px 6px', color: V.r, fontSize: 10 }}
-                  >
-                    {kloelT(`Excluir`)}
-                  </Bt>
+                  {deleteConfirmId === r.id ? (
+                    <>
+                      <Bt
+                        primary
+                        onClick={() => void confirmDeleteReview(r.id)}
+                        style={{ padding: '2px 6px', color: V.r, fontSize: 10 }}
+                      >
+                        {kloelT(`Confirmar exclusão`)}
+                      </Bt>
+                      <Bt
+                        onClick={cancelDeleteReview}
+                        style={{ padding: '2px 6px', fontSize: 10 }}
+                      >
+                        {kloelT(`Cancelar`)}
+                      </Bt>
+                    </>
+                  ) : (
+                    <Bt
+                      onClick={() => setDeleteConfirmId(r.id)}
+                      style={{ padding: '2px 6px', color: V.r, fontSize: 10 }}
+                    >
+                      {kloelT(`Excluir`)}
+                    </Bt>
+                  )}
                 </div>
               </div>
               <p style={{ fontSize: 12, color: V.t2, margin: 0 }}>{r.text}</p>

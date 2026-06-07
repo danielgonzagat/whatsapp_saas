@@ -1,6 +1,6 @@
 'use client';
 import { kloelT } from '@/lib/i18n/t';
-import { type DragEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { type DragEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -12,21 +12,16 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   type ReactFlowInstance,
+  type OnError,
+  ReactFlowProvider,
+  useStoreApi,
   Panel,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
 import { FlowSidebar } from './FlowSidebar';
 import { NodeProperties } from './NodeProperties';
-import { AINode } from './nodes/AINode';
-import { ActionNode } from './nodes/ActionNode';
-import { ConditionNode } from './nodes/ConditionNode';
-import { DelayNode } from './nodes/DelayNode';
-import { EndNode } from './nodes/EndNode';
-import { InputNode } from './nodes/InputNode';
-import { MessageNode } from './nodes/MessageNode';
-import { StartNode } from './nodes/StartNode';
-import { WaitForReplyNode } from './nodes/WaitForReplyNode';
+import { nodeTypes } from './nodes';
 
 import { Maximize, Play, Redo, Save, Trash2, Undo, ZoomIn, ZoomOut } from 'lucide-react';
 import { colors } from '@/lib/design-tokens';
@@ -45,26 +40,37 @@ import {
   resolveNodeMinimapColor,
 } from './FlowBuilder.helpers';
 
-// Node type registry
-const nodeTypes = {
-  message: MessageNode,
-  condition: ConditionNode,
-  action: ActionNode,
-  input: InputNode,
-  delay: DelayNode,
-  ai: AINode,
-  start: StartNode,
-  end: EndNode,
-  waitForReply: WaitForReplyNode,
+const FLOW_PRO_OPTIONS = { hideAttribution: true };
+const FLOW_EDGE_TYPES = Object.freeze({});
+const handleReactFlowError: OnError = (id, message) => {
+  if (id === '002') {
+    return;
+  }
+
+  if (process.env.NODE_ENV === 'development') {
+    console.warn(`[React Flow]: ${message} Help: https://reactflow.dev/error#${id}`);
+  }
 };
+
+function ReactFlowErrorBootstrap({ children }: { children: ReactNode }) {
+  const store = useStoreApi();
+
+  if (store.getState().onError !== handleReactFlowError) {
+    store.setState({ onError: handleReactFlowError });
+  }
+
+  return <>{children}</>;
+}
+
 
 interface FlowBuilderProps {
   flowId?: string;
   workspaceId?: string;
   onSave?: (flow: { nodes: Node[]; edges: Edge[]; name: string }) => Promise<void>;
-  onTest?: (flow: { nodes: Node[]; edges: Edge[]; name: string }) => void;
+  onTest?: (flow: { nodes: Node[]; edges: Edge[]; name: string }) => void | Promise<void>;
   initialNodes?: Node[];
   initialEdges?: Edge[];
+  initialName?: string;
   readOnly?: boolean;
 }
 
@@ -76,15 +82,20 @@ export default function FlowBuilder({
   onTest,
   initialNodes = [],
   initialEdges = [],
+  initialName,
   readOnly = false,
 }: FlowBuilderProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const seededInitialNodes = useMemo(() => ensureSeedNodes(initialNodes), [initialNodes]);
+  const [nodes, setNodes, onNodesChange] = useNodesState(seededInitialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
-  const [flowName, setFlowName] = useState('Novo Fluxo');
+  const [flowName, setFlowName] = useState(initialName || 'Novo Fluxo');
   const [isSaving, setIsSaving] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [history, setHistory] = useState<FlowHistorySnapshot[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
 
@@ -175,14 +186,39 @@ export default function FlowBuilder({
       return;
     }
     setIsSaving(true);
+    setSaveError(null);
+    setSaveMessage(null);
     try {
       await onSave({ nodes, edges, name: flowName });
+      setSaveMessage(kloelT('Fluxo salvo'));
     } catch (error) {
-      console.error('Error saving flow:', error);
+      const message = error instanceof Error && error.message ? error.message : kloelT('Erro ao salvar fluxo');
+      setSaveError(message);
+      setSaveMessage(null);
     } finally {
       setIsSaving(false);
     }
   }, [nodes, edges, flowName, onSave]);
+  const handleTest = useCallback(async () => {
+    if (!onTest) {
+      return;
+    }
+    setIsTesting(true);
+    setSaveError(null);
+    setSaveMessage(null);
+    try {
+      await onTest({ nodes, edges, name: flowName });
+      setSaveMessage(kloelT('Teste executado'));
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : kloelT('Erro ao testar fluxo');
+      setSaveMessage(null);
+      setSaveError(message);
+    } finally {
+      setIsTesting(false);
+    }
+  }, [nodes, edges, flowName, onTest]);
+
+
 
   // Undo
   const handleUndo = useCallback(() => {
@@ -217,7 +253,9 @@ export default function FlowBuilder({
       {!readOnly && <FlowSidebar />}
 
       <div className="flex-1 relative" ref={reactFlowWrapper}>
-        <ReactFlow
+        <ReactFlowProvider>
+          <ReactFlowErrorBootstrap>
+            <ReactFlow
           nodes={nodes}
           edges={edges}
           onNodesChange={onNodesChange}
@@ -228,11 +266,13 @@ export default function FlowBuilder({
           onDragOver={onDragOver}
           onNodeClick={onNodeClick}
           nodeTypes={nodeTypes}
+          edgeTypes={FLOW_EDGE_TYPES}
+          onError={handleReactFlowError}
           fitView
           snapToGrid
           snapGrid={FLOW_SNAP_GRID}
           defaultEdgeOptions={FLOW_DEFAULT_EDGE_OPTIONS}
-          proOptions={{ hideAttribution: true }}
+          proOptions={FLOW_PRO_OPTIONS}
         >
           <Background color={colors.text.dim} gap={15} />
           <Controls showInteractive={!readOnly} />
@@ -244,9 +284,16 @@ export default function FlowBuilder({
             className="bg-white rounded-lg shadow-lg border border-gray-200 p-2 flex items-center gap-2"
           >
             <input
+              id="flow-name"
+              name="flow-name"
+              aria-label={kloelT(`Nome do fluxo`)}
               type="text"
               value={flowName}
-              onChange={(e) => setFlowName(e.target.value)}
+              onChange={(e) => {
+                setFlowName(e.target.value);
+                setSaveError(null);
+                setSaveMessage(null);
+              }}
               className="px-3 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-48"
               placeholder={kloelT(`Nome do fluxo`)}
               readOnly={readOnly}
@@ -327,13 +374,24 @@ export default function FlowBuilder({
                 </button>
                 <button
                   type="button"
-                  onClick={() => onTest?.({ nodes, edges, name: flowName })}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-green-500 text-white text-sm rounded-md hover:bg-green-600"
+                  onClick={handleTest}
+                  disabled={isTesting}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-green-500 text-white text-sm rounded-md hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Play className="w-4 h-4" aria-hidden="true" />
 
-                  {kloelT(`Testar`)}
+                  {isTesting ? kloelT('Testando...') : kloelT('Testar')}
                 </button>
+                {saveMessage ? (
+                  <span role="status" className="max-w-[180px] truncate rounded-md border border-green-200 bg-green-50 px-2 py-1 text-xs text-green-700" title={saveMessage}>
+                    {saveMessage}
+                  </span>
+                ) : null}
+                {saveError ? (
+                  <span role="alert" className="max-w-[260px] truncate rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-700" title={saveError}>
+                    {saveError}
+                  </span>
+                ) : null}
               </>
             )}
           </Panel>
@@ -352,7 +410,9 @@ export default function FlowBuilder({
               </span>
             </div>
           </Panel>
-        </ReactFlow>
+            </ReactFlow>
+          </ReactFlowErrorBootstrap>
+        </ReactFlowProvider>
       </div>
 
       {selectedNode && !readOnly && (

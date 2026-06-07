@@ -248,11 +248,7 @@ export async function buildKloelAbiCognitiveState(
   }
 
   // Mind signals — wire attention, valence, beliefs, concepts via shared helper (PI-k4/K5-A).
-  const mindDeps = buildKloelMindSignalsDeps(
-    deps.prisma,
-    deps.logger as { warn: (...args: unknown[]) => void },
-    deps.services,
-  );
+  const mindDeps = buildKloelMindSignalsDeps(deps.prisma, deps.logger, deps.services);
   cognitiveState.mindSignals = await buildMindSignals(
     mindDeps,
     params.workspaceId ?? '',

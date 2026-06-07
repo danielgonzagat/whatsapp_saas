@@ -17,7 +17,7 @@ export function SuggestionChips({
   onSelectSuggestion,
 }: SuggestionChipsProps) {
   const { suggestions, isLoading, error, mutate } = useCopilotSuggestions(workspaceId, contactId);
-  const { isConnected, subscribe } = useSocket();
+  const { isConnected, subscribe } = useSocket({ enabled: Boolean(contactId) });
 
   useEffect(() => {
     if (!isConnected || !workspaceId || !contactId) {

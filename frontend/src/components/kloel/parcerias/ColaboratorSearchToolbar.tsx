@@ -19,6 +19,8 @@ export default function ColaboratorSearchToolbar({
       <div style={{ position: 'relative', flex: 1, maxWidth: 360 }}>
         <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: C.muted }}>{IC.search(14)}</div>
         <input
+          id="collaborator-search"
+          name="collaboratorSearch"
           aria-label="Buscar colaborador" type="text"
           placeholder={kloelT(`Buscar colaborador...`)} value={search}
           onChange={(e) => setSearch(e.target.value)}

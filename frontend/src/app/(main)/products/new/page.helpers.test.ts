@@ -1,7 +1,70 @@
 import { describe, expect, it } from 'vitest';
 
-import { validateProductCreateFlow, validateProductCreateStep } from './page.helpers';
+import {
+  buildProductCreatePayload,
+  mergeProductTags,
+  validateProductCreateFlow,
+  validateProductCreateStep,
+} from './page.helpers';
 import { initialForm } from './types';
+
+describe('mergeProductTags', () => {
+  it('promotes comma-separated pending input into unique tags without exceeding the limit', () => {
+    expect(mergeProductTags(['qa'], ' auditoria, QA, produto , ,extra,final', 4)).toEqual([
+      'qa',
+      'auditoria',
+      'produto',
+      'extra',
+    ]);
+  });
+});
+
+describe('buildProductCreatePayload', () => {
+  it('preserves cents from localized decimal inputs', () => {
+    const payload = buildProductCreatePayload(
+      {
+        ...initialForm,
+        name: 'Produto decimal',
+        description: 'Descricao completa',
+        category: 'Software e SaaS',
+        price: '197,90',
+        affiliateCommission: '30,5',
+        affiliatesEnabled: true,
+        affiliateCommissionPercent: '35,5',
+      },
+      'workspace-qa',
+      false,
+    );
+
+    expect(payload.price).toBe(197.9);
+    expect(payload.affiliateCommission).toBe(30.5);
+    expect(payload.affiliateCommissionPercent).toBe(35.5);
+  });
+
+  it('preserves localized physical package decimals', () => {
+    const payload = buildProductCreatePayload(
+      {
+        ...initialForm,
+        name: 'Produto fisico decimal',
+        description: 'Descricao completa',
+        category: 'Software e SaaS',
+        price: '197,90',
+        packageType: 'Caixa',
+        width: '10,5',
+        height: '5,25',
+        depth: '12,75',
+        weight: '0,3',
+      },
+      'workspace-qa',
+      true,
+    );
+
+    expect(payload.width).toBe(10.5);
+    expect(payload.height).toBe(5.25);
+    expect(payload.depth).toBe(12.75);
+    expect(payload.weight).toBe(0.3);
+  });
+});
 
 describe('validateProductCreateStep', () => {
   it('blocks details step when required fields are missing', () => {

@@ -8,16 +8,12 @@ import {
 import Redis from 'ioredis';
 import { Server, Socket } from 'socket.io';
 import { createRedisClient } from '../common/redis/redis.util';
+import { SOCKET_CORS_OPTIONS } from '../common/socket-cors';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
 /** Copilot gateway. */
 @WebSocketGateway({
-  cors: {
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || [
-      process.env.FRONTEND_URL || 'http://localhost:3000',
-    ],
-    credentials: true,
-  },
+  cors: SOCKET_CORS_OPTIONS,
 })
 export class CopilotGateway implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit {
   /** Server property. */

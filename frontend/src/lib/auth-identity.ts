@@ -42,6 +42,19 @@ export function decodeKloelJwtPayload(token?: string | null): KloelTokenPayload 
   return payload ? (payload as KloelTokenPayload) : null;
 }
 
+export function isKloelJwtExpired(
+  token?: string | null,
+  nowMs = Date.now(),
+  skewSeconds = 30,
+): boolean {
+  const exp = decodeKloelJwtPayload(token)?.exp;
+  if (typeof exp !== 'number') {
+    return false;
+  }
+
+  return exp * 1000 <= nowMs + skewSeconds * 1000;
+}
+
 /** Is anonymous kloel payload. */
 export function isAnonymousKloelPayload(payload?: KloelTokenPayload | null): boolean {
   if (!payload) {
@@ -71,7 +84,7 @@ export function isAnonymousKloelToken(token?: string | null): boolean {
 /** Has authenticated kloel token. */
 export function hasAuthenticatedKloelToken(token?: string | null): boolean {
   const payload = decodeKloelJwtPayload(token);
-  if (!payload) {
+  if (!payload || isKloelJwtExpired(token)) {
     return false;
   }
 

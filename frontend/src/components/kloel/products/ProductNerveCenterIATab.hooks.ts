@@ -141,22 +141,40 @@ export function useAIConfig(productId: string) {
   const { showToast } = useToast();
 
   const [aiCfg, setAiCfg] = useState<AiConfigShape | null>(null);
-  const [aiLoading, setAiLoading] = useState(true);
+  const [aiLoadState, setAiLoadState] = useState({ productId, pending: true });
   const [_aiSaving, setAiSaving] = useState(false);
   const [aiSaved, setAiSaved] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const aiLoading = aiLoadState.productId !== productId || aiLoadState.pending;
   useEffect(() => {
-    setAiLoading(true);
-    setAiError(null);
+    let active = true;
+
     apiFetch(`/products/${productId}/ai-config`)
-      .then((r) => setAiCfg(unwrapApiPayload<AiConfigShape>(r) || {}))
+      .then((r) => {
+        if (!active) {
+          return;
+        }
+        setAiError(null);
+        setAiCfg(unwrapApiPayload<AiConfigShape>(r) || {});
+      })
       .catch((error) => {
+        if (!active) {
+          return;
+        }
         const message = error instanceof Error ? error.message : 'Erro ao carregar configuração de IA';
         setAiCfg(null);
         setAiError(message);
         showToast(message, 'error');
       })
-      .finally(() => setAiLoading(false));
+      .finally(() => {
+        if (active) {
+          setAiLoadState({ productId, pending: false });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
   }, [productId, showToast]);
   const [whobuys, setWhobuys] = useState('');
   const [pains, setPains] = useState('');
@@ -206,7 +224,7 @@ export function useAIConfig(productId: string) {
     setUseUrg((sa.useUrgency ?? fc.useUrgency) !== false);
   }
   const clearAiError = () => setAiError(null);
-  const handleSaveAI = async () => {
+  const handleSaveAI = async (draftOverride: Partial<AiConfigDraftInput> = {}) => {
     const payloadResult = buildAIConfigPayload({
       whobuys,
       pains,
@@ -219,6 +237,7 @@ export function useAIConfig(productId: string) {
       autoLink,
       offerDisc,
       useUrg,
+      ...draftOverride,
     });
 
     if (!payloadResult.ok) {

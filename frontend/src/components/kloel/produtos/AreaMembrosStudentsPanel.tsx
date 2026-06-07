@@ -48,12 +48,19 @@ export default function AreaMembrosStudentsPanel({
   const avatarCircle = { width: 32, height: 32, borderRadius: '16%', background: BG_ELEVATED, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, color: colors.ember.primary, fontFamily: SORA, flexShrink: 0 };
   const studentRow = { display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: `1px solid ${BG_ELEVATED}` };
   const statusDot = (s: string) => s === 'active' ? colors.semantic.success : colors.semantic.error;
+  const studentEmailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const newStudentName = newStudent.name.trim();
+  const newStudentEmail = newStudent.email.trim();
+  const isNewStudentEmailValid = !newStudentEmail || studentEmailPattern.test(newStudentEmail);
+  const canEnrollStudent = Boolean(newStudentName && newStudentEmail && isNewStudentEmailValid && !saving);
+  const editStudentName = editStudentData.name.trim();
+  const editStudentEmail = editStudentData.email.trim();
+  const isEditStudentEmailValid = !editStudentEmail || studentEmailPattern.test(editStudentEmail);
+  const canUpdateStudent = Boolean(editStudentName && editStudentEmail && isEditStudentEmailValid && !saving);
 
   return (
-    <div style={glassOverlay} onClick={onClose}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (e.currentTarget as HTMLElement).click(); } }}>
-      <div onClick={(e: React.MouseEvent) => e.stopPropagation()} style={drawerStyle}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (e.currentTarget as HTMLElement).click(); } }}>
+    <div style={glassOverlay} onClick={onClose}>
+      <div onClick={(e: React.MouseEvent) => e.stopPropagation()} style={drawerStyle}>
         <div style={headerStyle}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--app-text-primary)', fontFamily: SORA }}>{kloelT('Alunos')}</div>
@@ -68,7 +75,7 @@ export default function AreaMembrosStudentsPanel({
         </div>
 
         <div style={searchRow}>
-          <input aria-label={kloelT('Buscar aluno')} value={studentSearch}
+          <input name="student-search" aria-label={kloelT('Buscar aluno')} value={studentSearch}
             onChange={(e) => handleSearchStudents(e.target.value)}
             placeholder={kloelT('Buscar aluno...')} style={{ ...inputStyle, flex: 1 }} />
           <button type="button" onClick={() => setShowAddStudent(!showAddStudent)}
@@ -79,18 +86,24 @@ export default function AreaMembrosStudentsPanel({
 
         {showAddStudent && (
           <div style={addFormStyle}>
-            <input aria-label={kloelT('Nome do aluno')} value={newStudent.name}
+            <input name="new-student-name" aria-label={kloelT('Nome do aluno')} value={newStudent.name}
               onChange={(e) => setNewStudent((s) => ({ ...s, name: e.target.value }))}
               placeholder={kloelT('Nome do aluno *')} style={inputStyle} />
-            <input aria-label={kloelT('Email do aluno')} value={newStudent.email}
+            <input name="new-student-email" aria-label={kloelT('Email do aluno')} aria-invalid={!isNewStudentEmailValid || undefined} value={newStudent.email}
               onChange={(e) => setNewStudent((s) => ({ ...s, email: e.target.value }))}
-              placeholder={kloelT('Email *')} type="email" style={inputStyle} />
-            <input aria-label={kloelT('Telefone do aluno')} value={newStudent.phone}
+              placeholder={kloelT('Email *')} type="email"
+              style={{ ...inputStyle, border: `1px solid ${isNewStudentEmailValid ? BORDER : colors.semantic.error}` }} />
+            {!isNewStudentEmailValid ? (
+              <div style={{ fontFamily: SORA, fontSize: 10, color: colors.semantic.error }}>
+                {kloelT('Informe um email valido para matricular aluno.')}
+              </div>
+            ) : null}
+            <input name="new-student-phone" aria-label={kloelT('Telefone do aluno')} value={newStudent.phone}
               onChange={(e) => setNewStudent((s) => ({ ...s, phone: e.target.value }))}
               placeholder={kloelT('Telefone (opcional)')} style={inputStyle} />
             <button type="button" onClick={handleAddStudent}
-              disabled={saving || !newStudent.name || !newStudent.email}
-              style={{ ...btnPrimary(PURPLE), opacity: saving || !newStudent.name || !newStudent.email ? 0.5 : 1 }}>
+              disabled={!canEnrollStudent}
+              style={{ ...btnPrimary(PURPLE), opacity: canEnrollStudent ? 1 : 0.5, cursor: canEnrollStudent ? 'pointer' : 'not-allowed' }}>
               {saving ? 'Salvando...' : 'Matricular aluno'}
             </button>
           </div>
@@ -111,9 +124,9 @@ export default function AreaMembrosStudentsPanel({
             </div>
           ) : students.length === 0 ? (
             <div style={{ padding: 48, textAlign: 'center' as const }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: colors.ember.primary, letterSpacing: '.25em', textTransform: 'uppercase' as const, marginBottom: 8 }}>{kloelT('SEM ALUNOS')}</div>
-              <div style={{ fontSize: 14, color: 'var(--app-text-primary)', fontFamily: SORA }}>{kloelT('Nenhum aluno matriculado')}</div>
-              <div style={{ fontSize: 12, color: 'var(--app-text-tertiary)', fontFamily: SORA, marginTop: 4 }}>{kloelT('Clique em "+ Aluno" para adicionar')}</div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: colors.ember.primary, letterSpacing: '.25em', textTransform: 'uppercase' as const, marginBottom: 8 }}>{kloelT(studentSearch.trim() ? 'SEM RESULTADOS' : 'SEM ALUNOS')}</div>
+              <div style={{ fontSize: 14, color: 'var(--app-text-primary)', fontFamily: SORA }}>{kloelT(studentSearch.trim() ? 'Nenhum aluno encontrado' : 'Nenhum aluno matriculado')}</div>
+              <div style={{ fontSize: 12, color: 'var(--app-text-tertiary)', fontFamily: SORA, marginTop: 4 }}>{kloelT(studentSearch.trim() ? 'Tente outro termo de busca.' : 'Clique em "+ Aluno" para adicionar')}</div>
             </div>
           ) : (
             students.map((s) => (
@@ -121,28 +134,34 @@ export default function AreaMembrosStudentsPanel({
                 {editingStudentId === s.id ? (
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                      <input aria-label={kloelT('Nome do aluno')} value={editStudentData.name}
+                      <input name="edit-student-name" aria-label={kloelT('Nome do aluno')} value={editStudentData.name}
                         onChange={(e) => setEditStudentData((prev) => ({ ...prev, name: e.target.value }))} style={inputStyle} />
-                      <input aria-label={kloelT('Email do aluno')} value={editStudentData.email}
-                        onChange={(e) => setEditStudentData((prev) => ({ ...prev, email: e.target.value }))} style={inputStyle} />
+                      <input name="edit-student-email" aria-label={kloelT('Email do aluno')} aria-invalid={!isEditStudentEmailValid || undefined} value={editStudentData.email}
+                        onChange={(e) => setEditStudentData((prev) => ({ ...prev, email: e.target.value }))} type="email"
+                        style={{ ...inputStyle, border: `1px solid ${isEditStudentEmailValid ? BORDER : colors.semantic.error}` }} />
                     </div>
+                    {!isEditStudentEmailValid ? (
+                      <div style={{ fontFamily: SORA, fontSize: 10, color: colors.semantic.error }}>
+                        {kloelT('Informe um email valido para atualizar aluno.')}
+                      </div>
+                    ) : null}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 110px 90px', gap: 8 }}>
-                      <input aria-label={kloelT('Telefone do aluno')} value={editStudentData.phone}
+                      <input name="edit-student-phone" aria-label={kloelT('Telefone do aluno')} value={editStudentData.phone}
                         onChange={(e) => setEditStudentData((prev) => ({ ...prev, phone: e.target.value }))}
                         style={inputStyle} placeholder={kloelT('Telefone')} />
-                      <select aria-label={kloelT('Status do aluno')} value={editStudentData.status}
+                      <select name="edit-student-status" aria-label={kloelT('Status do aluno')} value={editStudentData.status}
                         onChange={(e) => setEditStudentData((prev) => ({ ...prev, status: e.target.value }))} style={selectStyle}>
                         <option value="active">{kloelT('Ativo')}</option>
                         <option value="suspended">{kloelT('Suspenso')}</option>
                       </select>
-                      <input aria-label={kloelT('Progresso do aluno')} type="number" min="0" max="100"
+                      <input name="edit-student-progress" aria-label={kloelT('Progresso do aluno')} type="number" min="0" max="100"
                         value={editStudentData.progress}
                         onChange={(e) => setEditStudentData((prev) => ({ ...prev, progress: e.target.value }))}
                         style={inputStyle} placeholder="0-100" />
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      <button type="button" onClick={handleUpdateStudent} disabled={saving}
-                        style={{ ...btnPrimary(PURPLE), padding: '8px 12px', opacity: saving ? 0.6 : 1 }}>{kloelT('Salvar aluno')}</button>
+                      <button type="button" onClick={handleUpdateStudent} disabled={!canUpdateStudent}
+                        style={{ ...btnPrimary(PURPLE), padding: '8px 12px', opacity: canUpdateStudent ? 1 : 0.5, cursor: canUpdateStudent ? 'pointer' : 'not-allowed' }}>{kloelT('Salvar aluno')}</button>
                       <button type="button" onClick={() => setEditingStudentId(null)}
                         style={{ ...btnGhost, padding: '8px 12px' }}>{kloelT('Cancelar')}</button>
                     </div>
@@ -175,8 +194,18 @@ export default function AreaMembrosStudentsPanel({
                       title={s.status === 'active' ? kloelT('Suspender aluno') : kloelT('Reativar aluno')}>
                       {s.status === 'active' ? IC.chevDown(14) : IC.trend(14)}
                     </button>
-                    <button type="button" aria-label={kloelT('Remover aluno')} onClick={() => handleRemoveStudent(s.id)}
-                      disabled={saving} style={{ ...iconBtn, color: colors.semantic.error }} title={kloelT('Remover aluno')}>
+                    <button
+                      type="button"
+                      aria-label={kloelT('Remover aluno')}
+                      onClick={() => {
+                        if (window.confirm('Remover este aluno da area?')) {
+                          handleRemoveStudent(s.id);
+                        }
+                      }}
+                      disabled={saving}
+                      style={{ ...iconBtn, color: colors.semantic.error }}
+                      title={kloelT('Remover aluno')}
+                    >
                       <svg aria-hidden="true" width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
                         <polyline points="3 6 5 6 21 6" />
                         <path d={kloelT('M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2')} />

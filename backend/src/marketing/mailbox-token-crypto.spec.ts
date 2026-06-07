@@ -88,7 +88,7 @@ describe('mailbox-token-crypto', () => {
 
       it('returns tampered ciphertext as-is without throwing', () => {
         withEnv(MOCK_KEY, () => {
-          const encrypted = encryptMailboxToken('secret')!;
+          const encrypted = encryptMailboxToken('secret');
           const tampered = encrypted.slice(0, -4) + 'AAAA';
           expect(decryptMailboxToken(tampered)).toBe(tampered);
         });
@@ -104,7 +104,7 @@ describe('mailbox-token-crypto', () => {
     describe('isEncryptedMailboxToken', () => {
       it('returns true for versioned tokens', () => {
         withEnv(MOCK_KEY, () => {
-          const encrypted = encryptMailboxToken('token')!;
+          const encrypted = encryptMailboxToken('token');
           expect(isEncryptedMailboxToken(encrypted)).toBe(true);
         });
       });

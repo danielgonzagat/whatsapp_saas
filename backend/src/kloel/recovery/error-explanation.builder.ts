@@ -81,7 +81,7 @@ const EXPLANATIONS: Readonly<
 };
 
 function explanationFor(category: string): { readonly whatHappened: string; readonly why: string } {
-  return EXPLANATIONS[category] ?? EXPLANATIONS['unknown']!;
+  return EXPLANATIONS[category] ?? EXPLANATIONS['unknown'];
 }
 
 function summaryFor(error: DetectedError): string {

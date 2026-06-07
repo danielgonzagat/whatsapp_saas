@@ -1,6 +1,5 @@
 'use client';
 
-import { useId } from 'react';
 import { kloelT } from '@/lib/i18n/t';
 import { colors, typography } from '@/lib/design-tokens';
 import { MonitorInputField } from './monitor-input-field';
@@ -8,8 +7,6 @@ import { inputProps, monitorCard, selectStyle } from './shared-styles';
 import { PACKAGE_TYPES, type StepCommonProps } from './types';
 
 export function StepEmbalagem({ form, updateForm }: StepCommonProps) {
-  const uid = useId();
-
   return (
     <div style={monitorCard}>
       <h2
@@ -26,6 +23,8 @@ export function StepEmbalagem({ form, updateForm }: StepCommonProps) {
 
       <MonitorInputField label={kloelT('Tipo de embalagem')}>
         <select
+          id="product-package-type"
+          name="productPackageType"
           aria-label={kloelT('Tipo de embalagem')}
           style={selectStyle}
           onFocus={inputProps.onFocus}
@@ -46,7 +45,7 @@ export function StepEmbalagem({ form, updateForm }: StepCommonProps) {
         <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg3)', gap: 12 }}>
           <div>
             <label
-              htmlFor={`${uid}-width`}
+              htmlFor="product-package-width"
               style={{
                 fontSize: 11,
                 color: colors.text.dust,
@@ -57,11 +56,11 @@ export function StepEmbalagem({ form, updateForm }: StepCommonProps) {
               {kloelT('Largura')}
             </label>
             <input
-              id={`${uid}-width`}
+              id="product-package-width"
+              name="productPackageWidth"
               {...inputProps}
-              type="number"
-              min="0"
-              step="0.1"
+              type="text"
+              inputMode="decimal"
               value={form.width}
               onChange={(e) => updateForm({ width: e.target.value })}
               placeholder="0"
@@ -69,7 +68,7 @@ export function StepEmbalagem({ form, updateForm }: StepCommonProps) {
           </div>
           <div>
             <label
-              htmlFor={`${uid}-height`}
+              htmlFor="product-package-height"
               style={{
                 fontSize: 11,
                 color: colors.text.dust,
@@ -80,12 +79,12 @@ export function StepEmbalagem({ form, updateForm }: StepCommonProps) {
               {kloelT('Altura')}
             </label>
             <input
-              id={`${uid}-height`}
+              id="product-package-height"
+              name="productPackageHeight"
               aria-label="Altura em cm"
               {...inputProps}
-              type="number"
-              min="0"
-              step="0.1"
+              type="text"
+              inputMode="decimal"
               value={form.height}
               onChange={(e) => updateForm({ height: e.target.value })}
               placeholder="0"
@@ -93,7 +92,7 @@ export function StepEmbalagem({ form, updateForm }: StepCommonProps) {
           </div>
           <div>
             <label
-              htmlFor={`${uid}-depth`}
+              htmlFor="product-package-depth"
               style={{
                 fontSize: 11,
                 color: colors.text.dust,
@@ -104,12 +103,12 @@ export function StepEmbalagem({ form, updateForm }: StepCommonProps) {
               {kloelT('Profundidade')}
             </label>
             <input
-              id={`${uid}-depth`}
+              id="product-package-depth"
+              name="productPackageDepth"
               aria-label="Profundidade em cm"
               {...inputProps}
-              type="number"
-              min="0"
-              step="0.1"
+              type="text"
+              inputMode="decimal"
               value={form.depth}
               onChange={(e) => updateForm({ depth: e.target.value })}
               placeholder="0"
@@ -120,11 +119,12 @@ export function StepEmbalagem({ form, updateForm }: StepCommonProps) {
 
       <MonitorInputField label={kloelT('Peso (kg)')}>
         <input
+          id="product-package-weight"
+          name="productPackageWeight"
           aria-label={kloelT('Peso em kg')}
           {...inputProps}
-          type="number"
-          min="0"
-          step="0.01"
+          type="text"
+          inputMode="decimal"
           value={form.weight}
           onChange={(e) => updateForm({ weight: e.target.value })}
           placeholder="0,00"

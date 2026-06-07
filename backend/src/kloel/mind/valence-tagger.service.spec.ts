@@ -100,9 +100,9 @@ describe('ValenceTaggerService', () => {
         makeEvent({ eventId: 'evt_3', eventName: 'commerce.lead.contacted', valence: undefined }),
       ];
       const result = service.tagBatch(events);
-      expect(result[0]!.valence).toBe('positive');
-      expect(result[1]!.valence).toBe('negative');
-      expect(result[2]!.valence).toBeUndefined();
+      expect(result[0].valence).toBe('positive');
+      expect(result[1].valence).toBe('negative');
+      expect(result[2].valence).toBeUndefined();
       expect(result.length).toBe(3);
     });
 

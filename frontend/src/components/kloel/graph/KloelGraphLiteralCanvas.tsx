@@ -2,6 +2,7 @@
 
 import type {
   KeyboardEvent as ReactKeyboardEvent,
+  MouseEvent as ReactMouseEvent,
   PointerEvent as ReactPointerEvent,
   WheelEvent as ReactWheelEvent,
 } from 'react';
@@ -125,6 +126,7 @@ export function KloelGraphLiteralCanvas({
   focusedArea,
   recenterNonce,
   settings = DEFAULT_SETTINGS,
+  ariaHidden = false,
   onOpenNode,
   onClearSelection,
 }: {
@@ -134,11 +136,13 @@ export function KloelGraphLiteralCanvas({
   readonly focusedArea: KloelGraphArea;
   readonly recenterNonce: number;
   readonly settings?: KloelGraphSettings;
+  readonly ariaHidden?: boolean;
   readonly onOpenNode: (node: KloelGraphNode) => void;
   readonly onClearSelection: () => void;
 }) {
   const { C } = useGraphTheme();
   const svgRef = useRef<SVGSVGElement>(null);
+  const viewportRef = useRef<SVGGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const nodesRef = useRef<LiveNode[]>([]);
   const targetsRef = useRef(new Map<string, GraphPoint>());
@@ -146,6 +150,7 @@ export function KloelGraphLiteralCanvas({
   const focusAnimRef = useRef(0);
   const movedRef = useRef(false);
   const downPosRef = useRef({ x: 0, y: 0 });
+  const lastPointerActivationRef = useRef<{ id: string; at: number } | null>(null);
   const reheat = useCallback((value = 1) => {
     alphaRef.current = Math.max(alphaRef.current, value);
   }, []);
@@ -157,7 +162,9 @@ export function KloelGraphLiteralCanvas({
   } | null>(null);
   const hasActiveSelection = Boolean(activeNodeId);
   const hoveredId =
-    hoveredNode && hoveredNode.hasActiveSelection === hasActiveSelection ? hoveredNode.id : null;
+    !ariaHidden && hoveredNode && hoveredNode.hasActiveSelection === hasActiveSelection
+      ? hoveredNode.id
+      : null;
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [isPanning, setIsPanning] = useState(false);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -167,6 +174,14 @@ export function KloelGraphLiteralCanvas({
   const zoomRef = useRef(zoom);
   const sizeRef = useRef(size);
   const panStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
+  const applyViewportTransform = useCallback((nextPan: GraphPoint, nextZoom: number) => {
+    const { w, h } = sizeRef.current;
+    viewportRef.current?.setAttribute(
+      'transform',
+      `translate(${w / 2 + nextPan.x}, ${h / 2 + nextPan.y}) scale(${nextZoom})`,
+    );
+  }, []);
+
 
   useEffect(() => {
     panRef.current = pan;
@@ -179,8 +194,8 @@ export function KloelGraphLiteralCanvas({
   }, [size]);
 
   const { nodes: visibleNodes, edges: visibleEdges } = useMemo(
-    () => applyFilters(nodes, edges, settings.filters),
-    [edges, nodes, settings.filters],
+    () => applyFilters(nodes, edges, settings.filters, focusedArea),
+    [edges, focusedArea, nodes, settings.filters],
   );
   const snapshotById = useMemo(() => new Map(snapshot.map((node) => [node.id, node])), [snapshot]);
   const degreeMap = useMemo(() => {
@@ -191,6 +206,17 @@ export function KloelGraphLiteralCanvas({
     }
     return counts;
   }, [visibleEdges]);
+
+  useEffect(() => {
+    if (!ariaHidden) {
+      return;
+    }
+    const activeElement = document.activeElement;
+    if (activeElement && containerRef.current?.contains(activeElement)) {
+      const blur = (activeElement as { blur?: () => void }).blur;
+      blur?.call(activeElement);
+    }
+  }, [ariaHidden]);
 
   const focusSet = useMemo(() => {
     const target = hoveredId || activeNodeId;
@@ -280,15 +306,31 @@ export function KloelGraphLiteralCanvas({
   }, [nodes, forceRender]);
 
   useEffect(() => {
+    if (ariaHidden) {
+      return;
+    }
+    alphaRef.current = Math.max(alphaRef.current, 0.55);
+  }, [ariaHidden, focusedArea, visibleEdges, visibleNodes]);
+
+  useEffect(() => {
     let raf = 0;
     let cancelled = false;
+    let settlingFrames = 0;
+    const isDragging = Boolean(draggingId);
+    if (ariaHidden && !isDragging) {
+      alphaRef.current = 0;
+      return undefined;
+    }
     const visibleIds = new Set(visibleNodes.map((node) => node.id));
+    const alphaStop = 0.01;
+    const maxSettlingFrames = 14;
+    const alphaDecay = isDragging ? 0.12 : 0.22;
     const loop = () => {
       if (cancelled) {
         return;
       }
       const alpha = alphaRef.current;
-      const shouldTick = alpha > 0.004 || Boolean(draggingId);
+      const shouldTick = alpha > alphaStop || isDragging;
       if (!shouldTick) {
         alphaRef.current = 0;
         raf = 0;
@@ -299,12 +341,13 @@ export function KloelGraphLiteralCanvas({
         visibleLiveNodes,
         visibleEdges,
         settings.forces,
-        draggingId ? Math.max(alpha, 0.3) : alpha,
+        isDragging ? Math.max(alpha, 0.3) : alpha,
         degreeMap,
       );
-      alphaRef.current = alpha + (0 - alpha) * 0.0228;
+      settlingFrames += 1;
+      alphaRef.current = alpha + (0 - alpha) * alphaDecay;
       forceRender();
-      if (alphaRef.current > 0.004 || draggingId) {
+      if ((isDragging || settlingFrames < maxSettlingFrames) && alphaRef.current > alphaStop) {
         raf = requestAnimationFrame(loop);
         return;
       }
@@ -318,7 +361,7 @@ export function KloelGraphLiteralCanvas({
         cancelAnimationFrame(raf);
       }
     };
-  }, [degreeMap, draggingId, forceRender, settings.forces, visibleEdges, visibleNodes]);
+  }, [ariaHidden, degreeMap, draggingId, forceRender, settings.forces, visibleEdges, visibleNodes]);
 
   useEffect(() => {
     alphaRef.current = 0.6;
@@ -385,18 +428,25 @@ export function KloelGraphLiteralCanvas({
   }, []);
 
   useEffect(() => {
+    if (ariaHidden) {
+      cancelAnimationFrame(focusAnimRef.current);
+      return undefined;
+    }
+
     let raf = 0;
-    let tries = 0;
+    let anchorTries = 0;
     let frames = 0;
     const sunId = SUN_OF_AREA[focusedArea];
     const margin = 110;
-    const ease = 0.18;
+    const maxAnchorTries = 30;
+    const maxFrames = 18;
+    const ease = 0.42;
     const animate = () => {
       const live = nodesRef.current.find((node) => node.id === sunId);
       const sun = live ? { x: live.x, y: live.y } : targetsRef.current.get(sunId);
       if (!sun) {
-        if (tries < 90) {
-          tries += 1;
+        if (anchorTries < maxAnchorTries) {
+          anchorTries += 1;
           raf = requestAnimationFrame(animate);
           focusAnimRef.current = raf;
         }
@@ -418,19 +468,20 @@ export function KloelGraphLiteralCanvas({
         Math.abs(z1 - targetZoom) < 0.0015 &&
         Math.abs(px1 - targetPanX) < 0.2 &&
         Math.abs(py1 - targetPanY) < 0.2;
-      if (done || frames > 240) {
+      if (done || frames >= maxFrames) {
         const finalPan = { x: -sun.x * targetZoom, y: -sun.y * targetZoom };
         zoomRef.current = targetZoom;
         panRef.current = finalPan;
+        applyViewportTransform(finalPan, targetZoom);
         setZoom(targetZoom);
         setPan(finalPan);
         return;
       }
       frames += 1;
+      const nextPan = { x: px1, y: py1 };
       zoomRef.current = z1;
-      panRef.current = { x: px1, y: py1 };
-      setZoom(z1);
-      setPan({ x: px1, y: py1 });
+      panRef.current = nextPan;
+      applyViewportTransform(nextPan, z1);
       raf = requestAnimationFrame(animate);
       focusAnimRef.current = raf;
     };
@@ -438,7 +489,7 @@ export function KloelGraphLiteralCanvas({
     raf = requestAnimationFrame(animate);
     focusAnimRef.current = raf;
     return () => cancelAnimationFrame(raf);
-  }, [focusedArea, recenterNonce, size.h, size.w]);
+  }, [applyViewportTransform, ariaHidden, focusedArea, recenterNonce, size.h, size.w]);
 
   const screenToWorld = useCallback(
     (sx: number, sy: number) => {
@@ -448,9 +499,14 @@ export function KloelGraphLiteralCanvas({
       }
       const cx = rect.width / 2;
       const cy = rect.height / 2;
-      return { x: (sx - rect.left - cx - pan.x) / zoom, y: (sy - rect.top - cy - pan.y) / zoom };
+      const currentPan = panRef.current;
+      const currentZoom = zoomRef.current;
+      return {
+        x: (sx - rect.left - cx - currentPan.x) / currentZoom,
+        y: (sy - rect.top - cy - currentPan.y) / currentZoom,
+      };
     },
-    [pan, zoom],
+    [],
   );
 
   const onSvgPointerDown = (event: ReactPointerEvent<SVGSVGElement>) => {
@@ -459,7 +515,8 @@ export function KloelGraphLiteralCanvas({
     }
     cancelAnimationFrame(focusAnimRef.current);
     setIsPanning(true);
-    panStartRef.current = { x: event.clientX, y: event.clientY, panX: pan.x, panY: pan.y };
+    const currentPan = panRef.current;
+    panStartRef.current = { x: event.clientX, y: event.clientY, panX: currentPan.x, panY: currentPan.y };
   };
 
   const onSvgPointerMove = (event: ReactPointerEvent<SVGSVGElement>) => {
@@ -527,11 +584,30 @@ export function KloelGraphLiteralCanvas({
       live.dragging = false;
     }
     setDraggingId(null);
+    setHoveredNode(null);
     reheat(0.5);
     if (movedRef.current) {
       movedRef.current = false;
       return;
     }
+    lastPointerActivationRef.current = { id: node.id, at: event.timeStamp };
+    const blur = (event.currentTarget as { blur?: () => void }).blur;
+    blur?.call(event.currentTarget);
+    onOpenNode(node);
+  };
+
+  const onNodeClick = (node: KloelGraphNode, event: ReactMouseEvent<SVGGElement>) => {
+    event.stopPropagation();
+    const lastPointerActivation = lastPointerActivationRef.current;
+    if (
+      lastPointerActivation?.id === node.id &&
+      event.timeStamp - lastPointerActivation.at < 750
+    ) {
+      return;
+    }
+    const blur = (event.currentTarget as { blur?: () => void }).blur;
+    blur?.call(event.currentTarget);
+    setHoveredNode(null);
     onOpenNode(node);
   };
 
@@ -540,6 +616,9 @@ export function KloelGraphLiteralCanvas({
       return;
     }
     event.preventDefault();
+    const blur = (event.currentTarget as { blur?: () => void }).blur;
+    blur?.call(event.currentTarget);
+    setHoveredNode(null);
     onOpenNode(node);
   };
 
@@ -561,6 +640,7 @@ export function KloelGraphLiteralCanvas({
     <div
       ref={containerRef}
       data-testid="kloel-graph-canvas"
+      aria-hidden={ariaHidden ? true : undefined}
       style={{
         position: 'relative',
         width: '100%',
@@ -599,7 +679,10 @@ export function KloelGraphLiteralCanvas({
             <path d="M 0 0 L 10 5 L 0 10 z" fill={C.ember} />
           </marker>
         </defs>
-        <g transform={`translate(${cx + pan.x}, ${cy + pan.y}) scale(${zoom})`}>
+        <g
+          ref={viewportRef}
+          transform={`translate(${cx + pan.x}, ${cy + pan.y}) scale(${zoom})`}
+        >
           {visibleEdges.map((edge, index) => {
             const a = snapshotById.get(edge.from);
             const b = snapshotById.get(edge.to);
@@ -652,17 +735,28 @@ export function KloelGraphLiteralCanvas({
             const selected = activeNodeId === node.id;
             const inFocus = focusSet?.has(node.id);
             const dimmed = focusSet && !inFocus;
+            const keyboardReachable = !ariaHidden && node.area === focusedArea;
             const radius = nodeRadius(node, degreeMap, settings.display.nodeSize);
             const fill = colorForNode(node, settings.groups, C, focusedArea, focusSet);
+            const mass = node.type === 'sun' || node.type === 'core';
+            const principal = node.parentId === SUN_OF_AREA[focusedArea];
+            const labelFontSize = (mass ? 12 : principal ? 11 : 9.5) / zoom;
+            const labelHitWidth = Math.max(
+              radius * 2 + 18 / zoom,
+              node.label.length * labelFontSize * 0.62 + 24 / zoom,
+            );
+            const labelHitHeight = radius * 2 + 32 / zoom;
             return (
               <g
                 key={node.id}
                 role="button"
-                tabIndex={0}
+                tabIndex={keyboardReachable ? 0 : -1}
+                aria-hidden={keyboardReachable ? undefined : true}
                 aria-label={`Abrir ${node.label}`}
                 transform={`translate(${live.x}, ${live.y})`}
                 onPointerDown={(event) => onNodePointerDown(node.id, event)}
                 onPointerUp={(event) => onNodePointerUp(node, event)}
+                onClick={(event) => onNodeClick(node, event)}
                 onPointerEnter={() =>
                   setHoveredNode({ id: node.id, hasActiveSelection: Boolean(activeNodeId) })
                 }
@@ -675,6 +769,17 @@ export function KloelGraphLiteralCanvas({
                   transition: 'opacity .28s ease',
                 }}
               >
+                <rect
+                  x={-labelHitWidth / 2}
+                  y={-radius - 6 / zoom}
+                  width={labelHitWidth}
+                  height={labelHitHeight}
+                  rx={Math.max(6 / zoom, radius)}
+                  fill="transparent"
+                  data-node-id={node.id}
+                  data-node-hitbox={node.id}
+                  pointerEvents="all"
+                />
                 <circle
                   cx="0"
                   cy="0"
@@ -717,6 +822,7 @@ export function KloelGraphLiteralCanvas({
             return (
               <text
                 key={`label-${node.id}`}
+                aria-hidden="true"
                 x={live.x}
                 y={live.y + radius + 11 / zoom}
                 textAnchor="middle"
@@ -801,8 +907,15 @@ function applyFilters(
   nodes: readonly KloelGraphNode[],
   edges: readonly GraphEdge[],
   filters: KloelGraphFilterSettings,
+  focusedArea: KloelGraphArea = 'criar',
 ) {
-  const visible = new Set(nodes.map((node) => node.id));
+  const primaryIds = new Set<string>(Object.values(SUN_OF_AREA));
+  const hasSearch = Boolean(filters.search.trim());
+  const visible = new Set(
+    nodes
+      .filter((node) => hasSearch || node.area === focusedArea || primaryIds.has(node.id))
+      .map((node) => node.id),
+  );
   if (!filters.showAttachments) {
     for (const node of nodes) {
       if (
@@ -821,7 +934,7 @@ function applyFilters(
       }
     }
   }
-  if (filters.search.trim()) {
+  if (hasSearch) {
     const matching = new Set<string>();
     for (const node of nodes) {
       if (matchQuery(node, filters.search)) {
@@ -829,7 +942,7 @@ function applyFilters(
       }
     }
     for (const node of nodes) {
-      if (!matching.has(node.id) && node.type !== 'sun') {
+      if (!matching.has(node.id) && node.type !== 'sun' && !primaryIds.has(node.id)) {
         visible.delete(node.id);
       }
     }
@@ -845,7 +958,7 @@ function applyFilters(
       connected.add(edge.to);
     }
     for (const node of nodes) {
-      if (!connected.has(node.id) && node.type !== 'sun') {
+      if (!connected.has(node.id) && node.type !== 'sun' && !primaryIds.has(node.id)) {
         visible.delete(node.id);
       }
     }

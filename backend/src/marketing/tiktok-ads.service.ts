@@ -167,7 +167,7 @@ export class TikTokAdsService {
       );
     }
 
-    return body.data as T;
+    return body.data;
   }
 
   async getCampaignsForAdvertiser(

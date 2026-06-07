@@ -107,7 +107,7 @@ export function ProductUrlForm({
       </h3>
       <div className="grid gap-4 md:grid-cols-2">
         <div>
-          <label className="mb-1 block" style={labelStyle} htmlFor={`${fid}-desc`}>
+          <label className="mb-1 block" style={labelStyle} htmlFor="product-url-description">
             {kloelT(`Descrição *`)}
           </label>
           <input
@@ -118,14 +118,15 @@ export function ProductUrlForm({
             placeholder={kloelT(`Página de vendas principal`)}
             className={selectClass}
             style={inputStyle}
-            id={`${fid}-desc`}
+            id="product-url-description"
+            name="productUrlDescription"
           />
           <p className="mt-1 text-right text-xs" style={{ color: colors.text.dust }}>
             {form.description.length}/255
           </p>
         </div>
         <div>
-          <label className="mb-1 block" style={labelStyle} htmlFor={`${fid}-url`}>
+          <label className="mb-1 block" style={labelStyle} htmlFor="product-url-page-url">
             {kloelT(`URL *`)}
           </label>
           <input
@@ -136,7 +137,8 @@ export function ProductUrlForm({
             placeholder={PRODUCT_URLS_COPY.urlPlaceholder}
             className={selectClass}
             style={inputStyle}
-            id={`${fid}-url`}
+            id="product-url-page-url"
+            name="productUrlPageUrl"
           />
           <p className="mt-1 text-right text-xs" style={{ color: colors.text.dust }}>
             {form.url.length}/255
@@ -149,6 +151,8 @@ export function ProductUrlForm({
           style={{ color: colors.text.starlight }}
         >
           <input
+            id="product-url-private"
+            name="productUrlIsPrivate"
             type="checkbox"
             checked={form.isPrivate}
             onChange={(e) => setForm({ ...form, isPrivate: e.target.checked })}
@@ -162,6 +166,8 @@ export function ProductUrlForm({
         >
           <Sparkles className="h-4 w-4" style={{ color: colors.accent.webb }} aria-hidden="true" />
           <input
+            id="product-url-ai-learning"
+            name="productUrlAiLearning"
             type="checkbox"
             checked={form.aiLearning}
             onChange={(e) => setForm({ ...form, aiLearning: e.target.checked })}
@@ -175,6 +181,8 @@ export function ProductUrlForm({
         >
           <MessageCircle className="h-4 w-4" style={{ color: colors.accent.webb }} aria-hidden="true" />
           <input
+            id="product-url-chat-enabled"
+            name="productUrlChatEnabled"
             type="checkbox"
             checked={form.chatEnabled}
             onChange={(e) => setForm({ ...form, chatEnabled: e.target.checked })}

@@ -206,7 +206,7 @@ describe('ProofLevelService', () => {
           makeEvidence({
             origin: 'commercial_outcome',
             sampleSize: 10,
-            commercialMetric: metric!,
+            commercialMetric: metric,
           }),
         );
         expect(result.level).toBe('N6');

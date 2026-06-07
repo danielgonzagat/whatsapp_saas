@@ -137,11 +137,7 @@ export class PdfProcessorController {
         requestId: input.requestId,
         actualCostCents: quoteOpenAiChatActualCostCents({
           model: resolveBackendOpenAIModel('brain'),
-          usage: input.usage as {
-            prompt_tokens?: number | null;
-            completion_tokens?: number | null;
-            prompt_tokens_details?: { cached_tokens?: number | null } | null;
-          },
+          usage: input.usage,
         }),
         reason: 'pdf_analysis_provider_usage',
         metadata: {

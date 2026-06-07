@@ -179,7 +179,7 @@ describe('AbiAbHarnessService', () => {
       const { baseline } = await service.runParallel('ws_8', 'test');
 
       expect(baseline.commercialOutcome).not.toBeNull();
-      expect(baseline.commercialOutcome!.conversionSignal).toBe(true);
+      expect(baseline.commercialOutcome.conversionSignal).toBe(true);
     });
 
     it('scenario 9: detects satisfaction signal from response text', async () => {
@@ -194,7 +194,7 @@ describe('AbiAbHarnessService', () => {
       const { baseline } = await service.runParallel('ws_9', 'test');
 
       expect(baseline.commercialOutcome).not.toBeNull();
-      expect(baseline.commercialOutcome!.satisfactionSignal).toBe(true);
+      expect(baseline.commercialOutcome.satisfactionSignal).toBe(true);
     });
 
     it('scenario 10: returns null commercial outcome when no signal detected', async () => {

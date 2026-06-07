@@ -31,9 +31,9 @@ describe('partnerships.service.helpers', () => {
     it('coerces missing fields to the empty string', () => {
       expect(
         normalizeCreatePartnerInput({
-          partnerName: undefined as unknown as string,
-          partnerEmail: undefined as unknown as string,
-          type: undefined as unknown as string,
+          partnerName: undefined,
+          partnerEmail: undefined,
+          type: undefined,
         }),
       ).toEqual({
         partnerName: '',
@@ -58,19 +58,24 @@ describe('partnerships.service.helpers', () => {
   });
 
   describe('buildListAffiliatesWhere', () => {
-    it('returns only workspaceId when no params are provided', () => {
-      expect(buildListAffiliatesWhere('ws-1')).toEqual({ workspaceId: 'ws-1' });
+    it('returns active and pending partners by default, excluding revoked rows', () => {
+      expect(buildListAffiliatesWhere('ws-1')).toEqual({
+        workspaceId: 'ws-1',
+        status: { not: 'REVOKED' },
+      });
     });
 
     it('omits the type filter when the sentinel value "todos" is supplied', () => {
       expect(buildListAffiliatesWhere('ws-1', { type: 'todos' })).toEqual({
         workspaceId: 'ws-1',
+        status: { not: 'REVOKED' },
       });
     });
 
     it('trims and uppercases the type filter', () => {
       expect(buildListAffiliatesWhere('ws-1', { type: '  affiliate  ' })).toEqual({
         workspaceId: 'ws-1',
+        status: { not: 'REVOKED' },
         type: 'AFFILIATE',
       });
     });
@@ -85,6 +90,7 @@ describe('partnerships.service.helpers', () => {
     it('emits a case-insensitive contains filter for search', () => {
       expect(buildListAffiliatesWhere('ws-1', { search: 'Alice' })).toEqual({
         workspaceId: 'ws-1',
+        status: { not: 'REVOKED' },
         partnerName: { contains: 'Alice', mode: 'insensitive' },
       });
     });
@@ -139,19 +145,26 @@ describe('partnerships.service.helpers', () => {
           totalCommission: 1,
           partnerName: 'Carol',
         },
+        {
+          type: 'AFFILIATE',
+          status: 'REVOKED',
+          totalRevenue: 5000,
+          totalCommission: 500,
+          partnerName: 'Revogado QA',
+        },
       ];
 
       const stats = computeAffiliateStats(partners);
 
       // only AFFILIATE+ACTIVE counts as active affiliate
       expect(stats.activeAffiliates).toBe(1);
-      // PRODUCER count is type-only, status irrelevant
+      // PRODUCER count ignores revoked partners
       expect(stats.producers).toBe(1);
-      // totalRevenue sums AFFILIATE rows only (PRODUCER excluded)
+      // totalRevenue sums non-revoked AFFILIATE rows only (PRODUCER and REVOKED excluded)
       expect(stats.totalRevenue).toBe(150);
-      // totalCommissions sums all rows
+      // totalCommissions ignores revoked partners
       expect(stats.totalCommissions).toBe(16);
-      // top partner is highest revenue across all types
+      // top partner ignores revoked rows even when they have higher revenue
       expect(stats.topPartner).toEqual({ name: 'Carol', revenue: 999 });
     });
 

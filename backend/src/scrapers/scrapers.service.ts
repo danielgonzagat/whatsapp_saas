@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { Queue } from 'bullmq';
 import { forEachSequential } from '../common/async-sequence';
 import { createBullMqConnectionOptions } from '../common/redis/redis.util';
@@ -6,6 +7,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { QUEUE_NAMES } from '../queue/queue-names.const';
 
 type ScraperStats = { status?: string; found?: number; [key: string]: unknown };
+type CreateScraperJobPayload = {
+  type: string;
+  query: string;
+  targetUrl?: string;
+  flowId?: string;
+  location?: string;
+  filters?: unknown;
+};
 
 /** Scrapers service. */
 @Injectable()
@@ -21,17 +30,27 @@ export class ScrapersService {
   }
 
   /** Create job. */
-  async createJob(
-    workspaceId: string,
-    data: { type: string; query: string; [key: string]: unknown },
-  ) {
-    const job = await this.prisma.scrapingJob.create({
-      data: {
-        ...data,
-        workspaceId,
-        stats: { status: 'pending', found: 0, valid: 0, imported: 0 },
-      },
-    });
+  async createJob(workspaceId: string, data: CreateScraperJobPayload) {
+    const filters: Record<string, Prisma.InputJsonValue> =
+      data.filters && typeof data.filters === 'object' && !Array.isArray(data.filters)
+        ? { ...(data.filters as Record<string, Prisma.InputJsonValue>) }
+        : {};
+    const normalizedLocation = typeof data.location === 'string' ? data.location.trim() : '';
+
+    if (normalizedLocation) {
+      filters.location = normalizedLocation;
+    }
+
+    const hasFilters = Object.keys(filters).length > 0;
+    const createData: Prisma.ScrapingJobUncheckedCreateInput = {
+      type: data.type,
+      query: data.query,
+      ...(data.targetUrl ? { targetUrl: data.targetUrl } : {}),
+      ...(hasFilters ? { filters } : {}),
+      workspaceId,
+      stats: { status: 'pending', found: 0, valid: 0, imported: 0 },
+    };
+    const job = await this.prisma.scrapingJob.create({ data: createData });
 
     // Dispatch to worker
     await this.scraperQueue.add('run-scraper', {
@@ -40,6 +59,8 @@ export class ScrapersService {
       type: data.type,
       query: data.query,
       targetUrl: data.targetUrl,
+      flowId: data.flowId,
+      ...(hasFilters ? { filters } : {}),
     });
 
     return job;

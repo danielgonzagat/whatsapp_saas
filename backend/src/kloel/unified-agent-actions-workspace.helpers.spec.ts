@@ -144,7 +144,7 @@ describe('resolveBroadcastScheduleAt', () => {
     past8pm.setHours(23, 0, 0, 0);
     const result = resolveBroadcastScheduleAt('tonight_20h', past8pm);
     expect(result).not.toBeNull();
-    expect(new Date(result as string).getTime()).toBeGreaterThan(past8pm.getTime());
+    expect(new Date(result).getTime()).toBeGreaterThan(past8pm.getTime());
   });
 
   it('schedules tonight_20h for the same day when before 8pm local', () => {
@@ -152,7 +152,7 @@ describe('resolveBroadcastScheduleAt', () => {
     before8pm.setHours(10, 0, 0, 0);
     const result = resolveBroadcastScheduleAt('tonight_20h', before8pm);
     expect(result).not.toBeNull();
-    const scheduled = new Date(result as string);
+    const scheduled = new Date(result);
     expect(scheduled.getHours()).toBe(20);
     expect(scheduled.getDate()).toBe(before8pm.getDate());
   });

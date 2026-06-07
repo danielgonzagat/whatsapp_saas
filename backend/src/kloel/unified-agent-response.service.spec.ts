@@ -168,7 +168,7 @@ describe('UnifiedAgentResponseService', () => {
       );
 
       expect(result).toContain('Frase um.');
-      expect(result!.length).toBeLessThan(longReply.length);
+      expect(result.length).toBeLessThan(longReply.length);
     });
   });
 

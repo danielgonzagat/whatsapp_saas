@@ -329,7 +329,11 @@ export class CampaignsService {
           return;
         }
 
-        if (delivery.whatsappReady && contact.phone && (this.metaWhatsApp || this.whatsappDispatcher)) {
+        if (
+          delivery.whatsappReady &&
+          contact.phone &&
+          (this.metaWhatsApp || this.whatsappDispatcher)
+        ) {
           const bodyText = (campaign.messageTemplate || '').replace(
             NAME_RE,
             contact.name || 'Cliente',
@@ -452,7 +456,7 @@ export class CampaignsService {
             name: `${base.name} - Var ${i + 1}`,
             status: 'DRAFT',
             messageTemplate: mutatedMessage,
-            filters: base.filters as Prisma.InputJsonValue,
+            filters: base.filters,
             stats: { sent: 0, replied: 0 },
             aiStrategy: base.aiStrategy,
             parentId: base.id,

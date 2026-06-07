@@ -118,8 +118,8 @@ describe('GapDetectorService (wired evol provider)', () => {
     );
     expect(gaps.length).toBeGreaterThanOrEqual(2);
     for (let i = 1; i < gaps.length; i++) {
-      expect(gaps[i - 1]!.estimatedRevenueRiskCents).toBeGreaterThanOrEqual(
-        gaps[i]!.estimatedRevenueRiskCents,
+      expect(gaps[i - 1].estimatedRevenueRiskCents).toBeGreaterThanOrEqual(
+        gaps[i].estimatedRevenueRiskCents,
       );
     }
   });
