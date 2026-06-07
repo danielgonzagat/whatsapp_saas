@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildAdPlatformConnectRequest, readOfficialConnectUrl } from './AnunciosConnect.helpers';
+import {
+  buildAdPlatformConnectRequest,
+  getAdPlatformConnectUnavailableMessage,
+  readOfficialConnectUrl,
+} from './AnunciosConnect.helpers';
 
 describe('Anuncios connect helpers', () => {
   it('routes ad platform CTAs to official OAuth URL endpoints', () => {
@@ -33,5 +37,12 @@ describe('Anuncios connect helpers', () => {
     expect(() => readOfficialConnectUrl(errorEnvelope, request)).toThrow(
       'TikTok Ads nao configurado neste ambiente.',
     );
+  });
+
+  it('does not request OAuth when platform status says provider client is not configured', () => {
+    expect(getAdPlatformConnectUnavailableMessage('meta', { clientConfigured: false })).toBe(
+      'Meta Ads nao configurado neste ambiente.',
+    );
+    expect(getAdPlatformConnectUnavailableMessage('google', { clientConfigured: true })).toBeNull();
   });
 });

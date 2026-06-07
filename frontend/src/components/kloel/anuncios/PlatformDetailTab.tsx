@@ -73,6 +73,8 @@ export function PlatformDetailTab({
           </div>
           <button
             type="button"
+            aria-label={`Conectar ${platform.name}`}
+            title={`Conectar ${platform.name}`}
             onClick={() => onConnectPlatform(platformKey)}
             style={{
               padding: '10px 24px', background: platform.color, border: 'none', borderRadius: 6,

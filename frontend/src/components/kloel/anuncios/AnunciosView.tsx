@@ -43,6 +43,7 @@ function buildPlatformsFromStatuses(
       result[s.platform] = {
         ...result[s.platform],
         connected: s.connected,
+        clientConfigured: s.clientConfigured,
       };
     }
   }
@@ -186,17 +187,28 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
     setConnectingPlatform(platformKey);
     setConnectError(null);
     try {
-      const { buildAdPlatformConnectRequest, readOfficialConnectUrl } = await import(
-        './AnunciosConnect.helpers'
-      );
+      const {
+        buildAdPlatformConnectRequest,
+        getAdPlatformConnectUnavailableMessage,
+        readOfficialConnectUrl,
+      } = await import('./AnunciosConnect.helpers');
       const request = buildAdPlatformConnectRequest(platformKey);
+      const unavailableMessage = getAdPlatformConnectUnavailableMessage(
+        platformKey,
+        platforms[platformKey],
+      );
+      if (unavailableMessage) {
+        setConnectError(unavailableMessage);
+        setConnectingPlatform(null);
+        return;
+      }
       const response = await apiFetch<{ url?: string }>(request.endpoint);
       window.location.assign(readOfficialConnectUrl(response, request));
     } catch (error) {
       setConnectError(error instanceof Error ? error.message : 'Falha ao abrir conexão oficial.');
       setConnectingPlatform(null);
     }
-  }, []);
+  }, [platforms]);
 
   return (
     <div style={{ fontFamily: SORA, color: 'var(--app-text-primary)', minHeight: '100vh' }}>

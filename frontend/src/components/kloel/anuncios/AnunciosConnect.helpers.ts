@@ -1,5 +1,5 @@
 import { trustedExternalUrl } from '../marketing/OfficialMarketingChannelPage.helpers';
-import type { PlatformKey } from './anuncios-types';
+import type { PlatformData, PlatformKey } from './anuncios-types';
 
 export interface AdPlatformConnectRequest {
   endpoint: string;
@@ -37,6 +37,16 @@ export function buildAdPlatformConnectRequest(platformKey: PlatformKey): AdPlatf
     unavailableMessage: 'URL oficial do TikTok Ads indisponivel.',
     notConfiguredMessage: 'TikTok Ads nao configurado neste ambiente.',
   };
+}
+
+export function getAdPlatformConnectUnavailableMessage(
+  platformKey: PlatformKey,
+  platform: Pick<PlatformData, 'clientConfigured'> | null | undefined,
+): string | null {
+  if (platform?.clientConfigured === false) {
+    return buildAdPlatformConnectRequest(platformKey).notConfiguredMessage;
+  }
+  return null;
 }
 
 export function readOfficialConnectUrl(
