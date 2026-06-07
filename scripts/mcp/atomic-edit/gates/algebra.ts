@@ -324,6 +324,16 @@ function importBindings(
     const target = resolveImport(repoRoot, rel, m[1]);
     if (target) sideEffects.add(target);
   }
+  // FASE-2 (T3 external-corpus finding): re-exports `export ... from './x'` are part of the file's
+  // surface regardless of which symbol is edited — they MUST always couple. closureOf catches them
+  // via the bare `from`; per-symbol missed them, causing FALSE INDEPENDENCE on re-export hubs (e.g.
+  // zustand index.ts = `export * from './react'`). Retain re-export targets like side-effect imports
+  // so per-symbol stays a sound subset of per-file (never under-approximates the read-set).
+  const REEXPORT_RE = /export\s+(?:type\s+)?(?:\*(?:\s+as\s+[A-Za-z_$][\w$]*)?|\{[^}]*\})\s+from\s*['"]([^'"]+)['"]/g;
+  for (const m of txt.matchAll(REEXPORT_RE)) {
+    const target = resolveImport(repoRoot, rel, m[1]);
+    if (target) sideEffects.add(target);
+  }
   return { byName, sideEffects };
 }
 

@@ -1,0 +1,30 @@
+{
+  "summary": [
+    {
+      "repo": "zod",
+      "files": 401,
+      "pairs": 80200,
+      "commuteRate": 89.78,
+      "falseIndependence": 0,
+      "byteConfluentIndependentPairs": 72007
+    },
+    {
+      "repo": "type-fest",
+      "files": 421,
+      "pairs": 88410,
+      "commuteRate": 56.31,
+      "falseIndependence": 0,
+      "byteConfluentIndependentPairs": 49784
+    },
+    {
+      "repo": "zustand",
+      "files": 34,
+      "pairs": 561,
+      "commuteRate": 95.72,
+      "falseIndependence": 0,
+      "byteConfluentIndependentPairs": 537
+    }
+  ],
+  "totalPairs": 169171,
+  "totalFalse": 0
+}

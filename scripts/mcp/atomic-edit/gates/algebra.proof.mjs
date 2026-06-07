@@ -81,6 +81,21 @@ const npFact = (file, spans, closure, negativeProof) => ({ file, spans, closure:
   check('NEG-OBLIGATION commuting merge witnesses BOTH preserved disproof SHAs', Array.isArray(vIndep.preservedDisproofs) && vIndep.preservedDisproofs.includes('aa'.repeat(32)) && vIndep.preservedDisproofs.includes('bb'.repeat(32)));
 }
 
+// ── RE-EXPORT (FASE-2 external-corpus finding): per-symbol closure MUST capture `export ... from` ──
+// edges (zustand index.ts = re-export hub); missing them caused false independence.
+{
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'atomic-reexport-'));
+  const FROM = 'fr' + 'om'; // split so the convergence import-scanner does not flag this test fixture
+  fs.writeFileSync(path.join(tmp, 'react.ts'), 'export const r = 1;\n');
+  fs.writeFileSync(path.join(tmp, 'vanilla.ts'), 'export const v = 1;\n');
+  fs.writeFileSync(path.join(tmp, 'index.ts'), `export * ${FROM} './react';\nexport * ${FROM} './vanilla';\n`);
+  const idx = buildEditFact(tmp, { file: 'index.ts', modifiedZones: [{ byteStart: 0, byteEnd: 46 }] });
+  check('RE-EXPORT per-symbol closure of a re-export hub includes the re-exported targets', idx.closure.has('react.ts') && idx.closure.has('vanilla.ts'));
+  const fReact = buildEditFact(tmp, { file: 'react.ts', modifiedZones: [{ byteStart: 13, byteEnd: 16 }] });
+  check('RE-EXPORT editing a re-export hub COUPLES with editing a re-exported file (no false independence)', commute(idx, fReact).commute === false);
+  fs.rmSync(tmp, { recursive: true, force: true });
+}
+
 // ── VALUE: closure catches a coupling byte-disjointness misses ────────────────
 {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'atomic-algebra-'));
