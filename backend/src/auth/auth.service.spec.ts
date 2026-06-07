@@ -540,13 +540,13 @@ describe('AuthService', () => {
         mockConnectService as never,
         {} as never,
         mockAuthTokenService as never,
-        undefined as never,
+        undefined,
         { set } as never,
       );
       const exp = Math.floor(Date.now() / 1000) + 900;
       await svc.logout('agent-1', 'jti-1', exp);
       expect(set).toHaveBeenCalledTimes(1);
-      const [key, value, mode] = set.mock.calls[0] as [string, string, string];
+      const [key, value, mode] = set.mock.calls[0];
       expect(key).toBe('jti:revoked:jti-1');
       expect(key).not.toContain('access-token-revoked');
       expect(value).toBe('1');
