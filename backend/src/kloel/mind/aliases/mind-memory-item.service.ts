@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import type { KloelMemory, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { isMindMemoryDualWriteEnabled } from './mindmemory-dualwrite.flag';
+import { isMindMemoryReadCanonicalEnabled } from './mindmemory-read-canonical.flag';
 
 /**
  * Canonical Brain → Mind alias surface for `KloelMemory`.
@@ -54,6 +55,27 @@ export class MindMemoryItemService {
 
   /** Find a mind memory item by its (workspaceId, key) unique pair. */
   async findByKey(workspaceId: string, key: string): Promise<MindMemoryItem | null> {
+    // Flag-gated canonical READER cut-over (message-memory-cutover), scoped to
+    // `namespace='default'` ONLY (never the live `umem:` per-user plane). When
+    // `KLOEL_MINDMEMORY_READ_CANONICAL` is ON, read the canonical
+    // `RAC_MindMemory` row first; on a MISSING row or ANY error, fall back to
+    // the legacy `RAC_KloelMemory` read below. Flag OFF (default) is
+    // byte-identical to the legacy-only path.
+    if (isMindMemoryReadCanonicalEnabled()) {
+      try {
+        const canonical = await this.prisma.mindMemory.findUnique({
+          where: { workspaceId_namespace_key: { workspaceId, namespace: 'default', key } },
+        });
+        if (canonical) {
+          const { namespace: _namespace, ...item } = canonical;
+          return item;
+        }
+        // No canonical row → fall through to legacy (not yet backfilled).
+      } catch {
+        // Any canonical-read failure → fall through to the legacy read.
+      }
+    }
+
     return this.prisma.kloelMemory.findUnique({
       where: { workspaceId_key: { workspaceId, key } },
     });
@@ -65,6 +87,29 @@ export class MindMemoryItemService {
     options: { category?: string; take?: number } = {},
   ): Promise<MindMemoryItem[]> {
     const { category, take = 50 } = options;
+
+    // Flag-gated canonical READER cut-over (message-memory-cutover), scoped to
+    // `namespace='default'` ONLY (never the live `umem:` per-user plane). When
+    // `KLOEL_MINDMEMORY_READ_CANONICAL` is ON, read the canonical
+    // `RAC_MindMemory` rows first; on an EMPTY result or ANY error, fall back
+    // to the legacy `RAC_KloelMemory` read below. Flag OFF (default) is
+    // byte-identical to the legacy-only path.
+    if (isMindMemoryReadCanonicalEnabled()) {
+      try {
+        const canonical = await this.prisma.mindMemory.findMany({
+          where: { workspaceId, namespace: 'default', ...(category ? { category } : {}) },
+          orderBy: { updatedAt: 'desc' },
+          take,
+        });
+        if (canonical.length > 0) {
+          return canonical.map(({ namespace: _namespace, ...item }) => item);
+        }
+        // Empty canonical window → fall through to legacy (not yet backfilled).
+      } catch {
+        // Any canonical-read failure → fall through to the legacy read.
+      }
+    }
+
     return this.prisma.kloelMemory.findMany({
       where: { workspaceId, ...(category ? { category } : {}) },
       orderBy: { updatedAt: 'desc' },

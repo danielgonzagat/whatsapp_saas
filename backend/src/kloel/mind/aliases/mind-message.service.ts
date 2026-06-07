@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { KloelMessage, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { isMindMessageReadCanonicalEnabled } from './mindmessage-read-canonical.flag';
 
 /**
  * Canonical Brain → Mind alias surface for `KloelMessage`.
@@ -74,6 +75,34 @@ export class MindMessageService {
     if (!workspaceId) {
       return [];
     }
+
+    // Flag-gated canonical READER cut-over (message-memory-cutover). When
+    // `KLOEL_MINDMESSAGE_READ_CANONICAL` is ON, read the canonical
+    // `RAC_MindMessage` window first; on an EMPTY result or ANY error, fall
+    // back to the legacy `RAC_KloelMessage` read below. Flag OFF (default) is
+    // byte-identical to the legacy-only path.
+    if (isMindMessageReadCanonicalEnabled()) {
+      try {
+        const canonical = await this.prisma.mindMessage.findMany({
+          where: { workspaceId },
+          orderBy: { createdAt: 'asc' },
+          take,
+          select: { id: true, role: true, content: true, createdAt: true },
+        });
+        if (canonical.length > 0) {
+          return canonical.map((row) => ({
+            id: row.id,
+            role: row.role,
+            content: row.content,
+            timestamp: row.createdAt,
+          }));
+        }
+        // Empty canonical window → fall through to legacy (not yet backfilled).
+      } catch {
+        // Any canonical-read failure → fall through to the legacy read.
+      }
+    }
+
     const rows = await this.prisma.kloelMessage.findMany({
       where: { workspaceId },
       orderBy: { createdAt: 'asc' },
