@@ -205,6 +205,7 @@ import { MindService } from './mind.service';
 import { AttentionService } from './mind/attention.service';
 import { ValenceAggregatorService } from './mind/valence-aggregator.service';
 import { DecisionOutcomeService } from './decision-outcome.service';
+import { DecisionSweepScheduler } from './decision-sweep.scheduler';
 import { DriftModule } from './drift/drift.module';
 import { MindLiftReportService } from './mind/observability/mind-lift-report.service';
 import { MindSurpriseService } from './mind/inference/mind-surprise.service';
@@ -462,6 +463,7 @@ import { CrmModule } from '../crm/crm.module';
     MindService,
     MindSurpriseService,
     DecisionOutcomeService,
+    DecisionSweepScheduler,
     MindLiftReportService,
     MindVerbalizerService,
     MindWorkspaceStateService,
