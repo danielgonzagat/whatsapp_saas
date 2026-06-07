@@ -3,6 +3,7 @@ import { prisma } from '../db';
 import { WorkerLogger } from '../logger';
 import { buildQueueOptions } from '../queue';
 import { checkIdempotent, endJob, logError, markCompleted, startJob } from '../processor-base';
+import { randomUUID } from 'node:crypto';
 
 const log = new WorkerLogger('silent-24h-resolver');
 
@@ -164,6 +165,49 @@ export const silent24hResolverWorker = new Worker(
               error: err instanceof Error ? err.message : String(err),
             });
           }
+        }
+
+        // Symmetric bandit learning in the prod silent-24h path: feed the chosen
+        // arm's win/loss into the per-workspace MindBanditArm, mirroring the
+        // kloelGlobalPrior update above. Was missing -> the bandit learned only
+        // from synchronous closeOutcome, never from the worker's silent-24h
+        // resolutions. Best-effort + fail-open. (Converge the inline mindBanditArm
+        // upserts here / self-improvement.ts / MindBanditService onto one shared
+        // helper once a backend<->worker shared module exists.)
+        try {
+          const won = updateData.wonVsBaseline ? 1 : 0;
+          await prisma.mindBanditArm.upsert({
+            where: {
+              workspaceId_decisionType_arm: {
+                workspaceId: decision.workspaceId,
+                decisionType: decision.decisionType,
+                arm: decision.chosenAction,
+              },
+            },
+            update: {
+              alpha: { increment: won },
+              beta: { increment: 1 - won },
+              wins: { increment: won },
+            },
+            create: {
+              id: randomUUID(),
+              workspaceId: decision.workspaceId,
+              decisionType: decision.decisionType,
+              arm: decision.chosenAction,
+              isActive: true,
+              context: {},
+              alpha: 1 + won,
+              beta: 1 + (1 - won),
+              wins: won,
+            },
+          });
+        } catch (err: unknown) {
+          ctxLog.warn('bandit_outcome_upsert_failed', {
+            outcomeKey: decision.outcomeKey,
+            decisionType: decision.decisionType,
+            chosenAction: decision.chosenAction,
+            error: err instanceof Error ? err.message : 'unknown',
+          });
         }
 
         await prisma.autopilotEvent.create({
