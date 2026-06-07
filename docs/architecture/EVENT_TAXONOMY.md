@@ -417,3 +417,116 @@ When you need to emit a new event:
 4. Choose the sink deliberately: `recordCommercial` (idempotent outbox) for anything a
    downstream system consumes; `record` (legacy log) only for fire-and-forget telemetry that
    the perception/ingestor path already reads.
+
+---
+
+> Machine-readable registry parsed by `scripts/ops/check-canonical-events.mjs` — every `.emit()` name in code must appear as a `- name` bullet below.
+
+## All events (alphabetical)
+
+- `Purchase` — 2 emit / 0 listen
+- `SIGINT` — 0 emit / 2 listen
+- `SIGTERM` — 0 emit / 2 listen
+- `active` — 0 emit / 1 listen
+- `alert` — 1 emit / 0 listen
+- `alert:event` — 2 emit / 0 listen
+- `chat.replied` — 4 emit / 0 listen
+- `close` — 0 emit / 5 listen
+- `cognition.autonomy.goal_proposed` — 1 emit / 0 listen
+- `cognition.belief_updated` — 2 emit / 0 listen
+- `cognition.causal.edge_reinforced` — 1 emit / 0 listen
+- `cognition.causal.inferred` — 1 emit / 0 listen
+- `cognition.causal.simulated` — 1 emit / 0 listen
+- `cognition.cia.action_executed` — 1 emit / 0 listen
+- `cognition.cia.decision_made` — 1 emit / 0 listen
+- `cognition.cia_backlog_action` — 1 emit / 0 listen
+- `cognition.consciousness.experience_recorded` — 1 emit / 0 listen
+- `cognition.curiosity.gap_identified` — 2 emit / 0 listen
+- `cognition.decision_made` — 4 emit / 0 listen
+- `cognition.emotional.inferred` — 1 emit / 0 listen
+- `cognition.flow.node_completed` — 1 emit / 0 listen
+- `cognition.memory.consolidated` — 1 emit / 0 listen
+- `cognition.perception.multimodal_observed` — 1 emit / 0 listen
+- `cognition.prediction_made` — 1 emit / 0 listen
+- `cognition.self.modification_proposed` — 1 emit / 0 listen
+- `cognition.surprise_observed` — 1 emit / 0 listen
+- `cognition.valence_assigned` — 1 emit / 0 listen
+- `cognition.voice.action_executed` — 1 emit / 0 listen
+- `cognition.voice.clone_created` — 1 emit / 0 listen
+- `commerce.affiliate.commission_calculated` — 1 emit / 0 listen / 1 catalog
+- `commerce.affiliate.performance_measured` — 1 emit / 0 listen / 1 catalog
+- `commerce.campaign.audience_reached` — 1 emit / 0 listen / 1 catalog
+- `commerce.campaign.clicked` — 1 emit / 0 listen / 1 catalog
+- `commerce.campaign.conversion_associated` — 1 emit / 0 listen / 1 catalog
+- `commerce.campaign.creative_swapped` — 1 emit / 0 listen / 1 catalog
+- `commerce.campaign.performance_drop_detected` — 1 emit / 0 listen / 1 catalog
+- `commerce.cart.abandoned` — 1 emit / 0 listen / 1 catalog
+- `commerce.cart.checkout_initiated` — 1 emit / 0 listen / 1 catalog
+- `commerce.cart.created` — 1 emit / 0 listen / 1 catalog
+- `commerce.checkout.created` — 1 emit / 0 listen
+- `commerce.checkout.updated` — 1 emit / 0 listen
+- `commerce.crm.deal_lost` — 1 emit / 0 listen / 1 catalog
+- `commerce.crm.deal_won` — 2 emit / 0 listen / 1 catalog
+- `commerce.crm.next_step_defined` — 1 emit / 0 listen / 1 catalog
+- `commerce.crm.owner_assigned` — 1 emit / 0 listen / 1 catalog
+- `commerce.crm.stage_changed` — 1 emit / 0 listen / 1 catalog
+- `commerce.kyc.approved` — 1 emit / 0 listen / 1 catalog
+- `commerce.kyc.document_submitted` — 1 emit / 0 listen / 1 catalog
+- `commerce.kyc.rejected` — 1 emit / 0 listen / 1 catalog
+- `commerce.lead.converted` — 2 emit / 0 listen
+- `commerce.lead.objection_raised` — 1 emit / 0 listen / 1 catalog
+- `commerce.member_area.dropped_out` — 1 emit / 0 listen / 1 catalog
+- `commerce.member_area.enrolled` — 1 emit / 0 listen / 1 catalog
+- `commerce.member_area.progressed` — 1 emit / 0 listen / 1 catalog
+- `commerce.onboarding.declared` — 2 emit / 0 listen
+- `commerce.payment.approved` — 2 emit / 0 listen / 1 catalog
+- `commerce.payment.charged_back` — 1 emit / 0 listen / 1 catalog
+- `commerce.payment.declined` — 1 emit / 0 listen / 1 catalog
+- `commerce.payment.initiated` — 1 emit / 0 listen / 1 catalog
+- `commerce.payment.refunded` — 1 emit / 0 listen / 1 catalog
+- `commerce.post_sale.activation_started` — 1 emit / 0 listen / 1 catalog
+- `commerce.post_sale.churn_risk_detected` — 2 emit / 0 listen / 1 catalog
+- `commerce.post_sale.delivery_completed` — 1 emit / 0 listen / 1 catalog
+- `commerce.post_sale.first_value_obtained` — 2 emit / 0 listen / 1 catalog
+- `commerce.post_sale.no_regret_confirmed` — 1 emit / 0 listen
+- `commerce.post_sale.repurchase_window_opened` — 2 emit / 0 listen / 1 catalog
+- `commerce.post_sale.satisfaction_signal_observed` — 2 emit / 0 listen / 1 catalog
+- `commerce.post_sale.testimonial_requested` — 0 emit / 0 listen / 1 catalog
+- `commerce.post_sale.win_back_window_opened` — 2 emit / 0 listen / 1 catalog
+- `commerce.whatsapp.conversation_resumed` — 0 emit / 0 listen / 1 catalog
+- `commerce.whatsapp.handoff_to_human` — 0 emit / 0 listen / 1 catalog
+- `commerce.whatsapp.message_read` — 0 emit / 0 listen / 1 catalog
+- `commerce.whatsapp.message_received` — 0 emit / 0 listen / 1 catalog
+- `commerce.whatsapp.message_replied` — 0 emit / 0 listen / 1 catalog
+- `commerce.whatsapp.session_lifecycle` — 0 emit / 0 listen / 1 catalog
+- `completed` — 0 emit / 5 listen
+- `connect` — 0 emit / 2 listen
+- `connect_error` — 0 emit / 1 listen
+- `copilot:suggestion` — 2 emit / 0 listen
+- `data` — 0 emit / 1 listen
+- `disconnect` — 0 emit / 1 listen
+- `error` — 0 emit / 13 listen
+- `failed` — 0 emit / 9 listen
+- `finish` — 0 emit / 1 listen
+- `flow:log` — 1 emit / 0 listen
+- `join` — 1 emit / 0 listen
+- `lineage.genesis` — 3 emit / 0 listen
+- `message` — 0 emit / 3 listen
+- `mind.plan.observed` — 2 emit / 0 listen
+- `mind.product.observed` — 2 emit / 0 listen
+- `mouse:down` — 0 emit / 2 listen
+- `mouse:move` — 0 emit / 1 listen
+- `mouse:up` — 0 emit / 1 listen
+- `mouse:wheel` — 0 emit / 2 listen
+- `object:added` — 0 emit / 1 listen
+- `object:modified` — 0 emit / 2 listen
+- `object:moving` — 0 emit / 1 listen
+- `object:removed` — 0 emit / 1 listen
+- `payment.pending` — 1 emit / 0 listen
+- `pmessage` — 0 emit / 2 listen
+- `ready` — 0 emit / 3 listen
+- `sale.created` — 1 emit / 0 listen
+- `selection:cleared` — 0 emit / 1 listen
+- `selection:created` — 0 emit / 1 listen
+- `selection:updated` — 0 emit / 1 listen
+- `unhandledRejection` — 0 emit / 2 listen

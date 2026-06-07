@@ -143,3 +143,17 @@ Use the **`from`** model in production code paths until the cut-over lands; the 
 2. Pick the canonical name (domain-clear, no abbreviation). Verify it is a real `model`/service via `grep` before committing — do NOT invent names (this is how `ChannelSession` slipped into v1).
 3. List the forbidden aliases AND the allowed narrow uses; if it's a mid-flight migration, record the flag + state in §4 rather than declaring the target name canonical.
 4. A migration codemod can read the §1 table to perform safe renames via `mcp__atomic-edit__atomic_rename_symbol_cross_file`.
+
+---
+
+## Machine-enforced forbidden aliases
+
+> Parsed by `scripts/ops/check-canonical-vocabulary.mjs` (column 1 = canonical term in backticks, column 2 = forbidden aliases in backticks). The rich table above is the human reference; this is the machine contract. Vocab/deprecation docs and `*.spec`/`*.test` files are exempt; `--strict` fails on alias usage.
+
+| Canonical | Forbidden aliases | Allowed narrow use |
+|---|---|---|
+| `ChannelSetup` | `ChannelSession`, `whatsappSession`, `waSession`, `connection`, `instance`, `botSession` | `ChannelSession` is FICTIONAL (zero grep matches) — real surface is `WhatsappSessionService` over `ChannelSetup` + `MetaConnection` |
+| `Contact` | `Lead`, `Client`, `Customer`, `Prospect`, `User` | `Lead`/`Customer` allowed only as funnel-stage labels, never a separate person model |
+| `ChannelMessageDispatchService` | `WhatsappApiService.sendText`, `MessageWorker.process` | single backend send entrypoint routing through `ChannelDispatchRegistry.send` |
+| `Webhook` | `Hook`, `Callback`, `Notification`, `IncomingEvent` | external provider to internal event boundary |
+| `Workspace` | `Tenant`, `Org`, `Account` | the multi-tenant unit, resolved via the secure `resolveWorkspaceId` |
