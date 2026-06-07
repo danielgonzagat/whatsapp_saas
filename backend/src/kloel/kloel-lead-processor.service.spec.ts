@@ -9,6 +9,8 @@ import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import { partialMatch, stringContains } from '../../test/helpers/match-instance';
 import { castMock } from '../../test/helpers/cast-mock';
+import { DecisionOutcomeService } from './decision-outcome.service';
+import { WHATSAPP_REPLY_DECISION_TYPE } from './whatsapp-inbound-learn.flag';
 
 jest.mock('./openai-wrapper', () => ({
   chatCompletionWithFallback: jest.fn().mockResolvedValue({
@@ -535,6 +537,116 @@ describe('KloelLeadProcessorService', () => {
         Promise.resolve('c'),
       );
       expect(result).toContain('problema técnico');
+    });
+  });
+
+  describe('WhatsApp-inbound learning loop (KLOEL_WHATSAPP_INBOUND_LEARN)', () => {
+    const ORIGINAL_FLAG = process.env.KLOEL_WHATSAPP_INBOUND_LEARN;
+    let decisionOutcome: { recordDecision: jest.Mock; closeOutcome: jest.Mock };
+
+    /** Flush the fire-and-forget async closure inside recordWhatsAppInboundOutcome. */
+    async function flush(): Promise<void> {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    }
+
+    async function buildService(): Promise<KloelLeadProcessorService> {
+      decisionOutcome = {
+        recordDecision: jest.fn().mockResolvedValue(undefined),
+        closeOutcome: jest.fn().mockResolvedValue(undefined),
+      };
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          KloelLeadProcessorService,
+          { provide: PrismaService, useValue: prisma },
+          { provide: UnifiedAgentService, useValue: unifiedAgent },
+          { provide: SmartPaymentService, useValue: smartPayment },
+          { provide: PlanLimitsService, useValue: planLimits },
+          { provide: AbiBuilderService, useValue: abiBuilder },
+          { provide: DecisionOutcomeService, useValue: decisionOutcome },
+        ],
+      }).compile();
+      return module.get<KloelLeadProcessorService>(KloelLeadProcessorService);
+    }
+
+    afterEach(() => {
+      if (ORIGINAL_FLAG === undefined) {
+        delete process.env.KLOEL_WHATSAPP_INBOUND_LEARN;
+      } else {
+        process.env.KLOEL_WHATSAPP_INBOUND_LEARN = ORIGINAL_FLAG;
+      }
+    });
+
+    it('flag OFF: reply path NEVER records or closes a decision (byte-identical)', async () => {
+      delete process.env.KLOEL_WHATSAPP_INBOUND_LEARN;
+      const svc = await buildService();
+      const result = await svc.processWhatsAppMessage(wsId, '5511999999999', 'Quero comprar', () =>
+        Promise.resolve('contexto'),
+      );
+      await flush();
+      expect(result).toContain('Resposta');
+      expect(decisionOutcome.recordDecision).not.toHaveBeenCalled();
+      expect(decisionOutcome.closeOutcome).not.toHaveBeenCalled();
+    });
+
+    it('flag ON: the lead-processor reply seam closes the whatsapp_reply loop', async () => {
+      process.env.KLOEL_WHATSAPP_INBOUND_LEARN = 'true';
+      const svc = await buildService();
+      await svc.processWhatsAppMessage(wsId, '5511999999999', 'Quero comprar', () =>
+        Promise.resolve('contexto'),
+      );
+      await flush();
+
+      expect(decisionOutcome.recordDecision).toHaveBeenCalledTimes(1);
+      expect(decisionOutcome.recordDecision).toHaveBeenCalledWith(
+        expect.objectContaining({
+          workspaceId: wsId,
+          decisionType: WHATSAPP_REPLY_DECISION_TYPE,
+          chosenAction: 'engage',
+          baselineAction: 'silence',
+        }),
+      );
+      // The SAME outcomeKey that was recorded is the one that gets closed.
+      const recordedKey = castMock<[{ outcomeKey: string }]>(
+        decisionOutcome.recordDecision.mock.calls[0],
+      )[0].outcomeKey;
+      expect(decisionOutcome.closeOutcome).toHaveBeenCalledTimes(1);
+      expect(decisionOutcome.closeOutcome).toHaveBeenCalledWith(
+        expect.objectContaining({ outcomeKey: recordedKey }),
+      );
+    });
+
+    it('flag ON: the autopilot reply seam also closes the loop', async () => {
+      process.env.KLOEL_WHATSAPP_INBOUND_LEARN = 'true';
+      prisma.workspace.findUnique.mockResolvedValue({
+        providerSettings: { autopilot: { enabled: true } },
+        name: 'Workspace Teste',
+      });
+      const svc = await buildService();
+      const result = await svc.processWhatsAppMessage(wsId, '5511999999999', 'Oi', () =>
+        Promise.resolve('contexto'),
+      );
+      await flush();
+      expect(result).toEqual('Resposta do agente');
+      expect(decisionOutcome.recordDecision).toHaveBeenCalledWith(
+        expect.objectContaining({
+          decisionType: WHATSAPP_REPLY_DECISION_TYPE,
+          contextSnapshot: partialMatch({ surface: 'whatsapp-autopilot' }),
+        }),
+      );
+      expect(decisionOutcome.closeOutcome).toHaveBeenCalledTimes(1);
+    });
+
+    it('flag ON: a learning failure is fail-open and still returns the reply', async () => {
+      process.env.KLOEL_WHATSAPP_INBOUND_LEARN = 'true';
+      const svc = await buildService();
+      decisionOutcome.recordDecision.mockRejectedValue(new Error('decision DB down'));
+      const result = await svc.processWhatsAppMessage(wsId, '5511999999999', 'Oi', () =>
+        Promise.resolve('contexto'),
+      );
+      await flush();
+      expect(result).toContain('Resposta');
     });
   });
 });

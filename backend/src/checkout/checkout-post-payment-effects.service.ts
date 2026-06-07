@@ -12,6 +12,7 @@ import { CheckoutSocialLeadService } from './checkout-social-lead.service';
 import { FacebookCAPIService } from './facebook-capi.service';
 import { DecisionOutcomeService } from '../kloel/decision-outcome.service';
 import { isCartRecoveryLearnEnabled } from '../kloel/cart-recovery-learn.flag';
+import { closeCommerceDecisionLink } from '../kloel/commerce-decision-link.flag';
 
 type CheckoutPixelConfig = {
   type?: string | null;
@@ -131,6 +132,19 @@ export class CheckoutPostPaymentEffectsService {
           });
       }
     }
+
+    // ADDITIVE, flag-gated chat→commerce correlation closure
+    // (KLOEL_COMMERCE_DECISION_LINK, default OFF). When a paid order carries a
+    // capturedLeadId, recompute the deterministic lead-stable outcomeKey and
+    // close the originating `commerce_decision_link` chat decision (opened by
+    // KloelLeadProcessorService at chat time) as a WIN, so the bandit learns
+    // that engaging this lead in chat led to a real sale. Fire-and-forget,
+    // fail-open, idempotent via closeOutcome's outcomeAt:null filter. Flag-OFF =
+    // byte-identical to today: no key recompute, no closeOutcome.
+    closeCommerceDecisionLink(this.decisionOutcome, this.logger, {
+      workspaceId,
+      capturedLeadId,
+    });
   }
 
   /** Send purchase signals. */
