@@ -174,3 +174,5 @@ intents/
 # Separate atomic-os public-repo working clone — never commit into Kloel
 .atomic-os-workdir/
 .atomic-os-workdir
+.tmp-kloel-graph-nav-trace.json
+.tmp-kloel-graph-nav-clean-trace.json

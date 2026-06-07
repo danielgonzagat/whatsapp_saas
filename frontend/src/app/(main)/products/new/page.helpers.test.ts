@@ -39,6 +39,7 @@ describe('buildProductCreatePayload', () => {
     expect(payload.price).toBe(197.9);
     expect(payload.affiliateCommission).toBe(30.5);
     expect(payload.affiliateCommissionPercent).toBe(35.5);
+    expect(payload.status).toBe('PENDING');
   });
 
   it('preserves localized physical package decimals', () => {

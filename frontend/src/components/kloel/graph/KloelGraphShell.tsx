@@ -32,6 +32,15 @@ import {
   mergeGraphProducts,
 } from './KloelGraphShell.helpers';
 import { GRAPH_FONT, GRAPH_MONO, GraphThemeProvider, useGraphTheme } from './KloelGraphTheme';
+
+const GRAPH_ONLY_DYNAMIC_DATA_DELAY_MS = 160;
+
+function shouldHydrateDynamicGraphDataArea(
+  area: KloelGraphArea | null,
+): area is 'criar' | 'educar' {
+  return area === 'criar' || area === 'educar';
+}
+
 function KloelGraphPendingOverlay({ node }: { readonly node: KloelGraphNode }) {
   const { C } = useGraphTheme();
   const label = getKloelGraphOverlayLabel(node);
@@ -89,6 +98,7 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
   const router = useRouter();
   const { C } = useGraphTheme();
   const params = useMemo(() => new URLSearchParams(searchParams.toString()), [searchParams]);
+  const graphOnly = params.get('graph') === '1';
   const staticActiveNode = resolveKloelGraphNodeForPathFromNodes(
     pathname,
     params,
@@ -106,8 +116,13 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
         ? 'educar'
         : null;
   const dynamicDataArea = staticActiveNode?.area ?? routeAreaHint;
-  const shouldLoadProductGraphData = dynamicDataArea === 'criar';
-  const shouldLoadMemberAreaGraphData = dynamicDataArea === 'educar';
+  const [deferredDynamicDataArea, setDeferredDynamicDataArea] = useState<KloelGraphArea | null>(
+    () => (shouldHydrateDynamicGraphDataArea(dynamicDataArea) ? dynamicDataArea : null),
+  );
+  const hydratedDynamicDataArea =
+    deferredDynamicDataArea === dynamicDataArea ? deferredDynamicDataArea : null;
+  const shouldLoadProductGraphData = hydratedDynamicDataArea === 'criar';
+  const shouldLoadMemberAreaGraphData = hydratedDynamicDataArea === 'educar';
   const { products } = useProducts({ enabled: shouldLoadProductGraphData });
   const { areas: memberAreas } = useMemberAreas({ enabled: shouldLoadMemberAreaGraphData });
   const { data: checkoutProducts = [] } = useSWR(
@@ -133,6 +148,19 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
   const [consumedPendingNodeSequence, setConsumedPendingNodeSequence] = useState<number | null>(
     null,
   );
+
+  useEffect(() => {
+    if (!shouldHydrateDynamicGraphDataArea(dynamicDataArea)) {
+      setDeferredDynamicDataArea(null);
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(
+      () => setDeferredDynamicDataArea(dynamicDataArea),
+      graphOnly ? GRAPH_ONLY_DYNAMIC_DATA_DELAY_MS : 0,
+    );
+    return () => window.clearTimeout(timeoutId);
+  }, [dynamicDataArea, graphOnly]);
 
   const pushGraphOnlyRoute = useCallback(
     (url: string) => {
@@ -181,7 +209,6 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
       ? pendingNode.id
       : null;
   const activeRouteKey = activeNode?.id ?? routeSignature;
-  const graphOnly = params.get('graph') === '1';
   const graphAction = params.get('graphAction');
   const isCommandPaletteGraphAction = graphAction === 'search' || graphAction === 'recents';
   const commandPaletteMode: 'full' | 'conversations' =

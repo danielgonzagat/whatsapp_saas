@@ -45,9 +45,16 @@ describe('SegurancaSection', () => {
   it('renders password fields inside a semantic form', () => {
     render(<SegurancaSection />);
 
-    expect(screen.getByLabelText('Senha atual').closest('form')).toBeTruthy();
-    expect(screen.getByLabelText('Nova senha').closest('form')).toBeTruthy();
-    expect(screen.getByLabelText('Confirmar nova senha').closest('form')).toBeTruthy();
+    const currentPassword = screen.getByLabelText('Senha atual');
+    const newPassword = screen.getByLabelText('Nova senha');
+    const confirmPassword = screen.getByLabelText('Confirmar nova senha');
+
+    expect(currentPassword.closest('form')).toBeTruthy();
+    expect(newPassword.closest('form')).toBeTruthy();
+    expect(confirmPassword.closest('form')).toBeTruthy();
+    expect(currentPassword.getAttribute('autocomplete')).toBe('current-password');
+    expect(newPassword.getAttribute('autocomplete')).toBe('new-password');
+    expect(confirmPassword.getAttribute('autocomplete')).toBe('new-password');
   });
 
   it('translates backend current-password errors before rendering them', async () => {
@@ -65,6 +72,20 @@ describe('SegurancaSection', () => {
     });
     expect(await screen.findByText('Senha atual incorreta.')).toBeTruthy();
     expect(screen.queryByText('Current password is incorrect')).toBeNull();
+  });
+
+  it('clears stale password feedback when the user edits the form again', async () => {
+    render(<SegurancaSection />);
+
+    fireEvent.click(screen.getByRole('button', { name: /alterar senha/i }));
+
+    expect(screen.getByText('A nova senha deve ter pelo menos 8 caracteres.')).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText('Nova senha'), { target: { value: 'CodexAudit!178077' } });
+
+    await waitFor(() => {
+      expect(screen.queryByText('A nova senha deve ter pelo menos 8 caracteres.')).toBeNull();
+    });
   });
 
   it('starts MFA setup, renders QR code, and verifies the six-digit code', async () => {

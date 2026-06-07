@@ -37,7 +37,11 @@ export default function SegurancaSection() {
   const [sessionError, setSessionError] = useState('');
   const [sessionSuccess, setSessionSuccess] = useState('');
 
-  const setPw = (k: string, v: string) => setPwForm((prev) => ({ ...prev, [k]: v }));
+  const setPw = (k: 'current' | 'newPw' | 'confirm', v: string) => {
+    setPwForm((prev) => ({ ...prev, [k]: v }));
+    setPwError('');
+    setPwSuccess(false);
+  };
   const mfaEnabled = security?.mfa.enabled === true;
   const mfaPendingSetup = security?.mfa.pendingSetup === true;
   const mfaStatusColor = mfaEnabled
@@ -206,6 +210,7 @@ export default function SegurancaSection() {
               value={pwForm.current}
               onChange={(v) => setPw('current', v)}
               type="password"
+              autoComplete="current-password"
             />
             <Field
               label={kloelT(`Nova senha`)}
@@ -213,6 +218,7 @@ export default function SegurancaSection() {
               value={pwForm.newPw}
               onChange={(v) => setPw('newPw', v)}
               type="password"
+              autoComplete="new-password"
             />
             <Field
               label={kloelT(`Confirmar nova senha`)}
@@ -220,6 +226,7 @@ export default function SegurancaSection() {
               value={pwForm.confirm}
               onChange={(v) => setPw('confirm', v)}
               type="password"
+              autoComplete="new-password"
             />
           </div>
           {pwError && (

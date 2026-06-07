@@ -110,4 +110,49 @@ describe('ContaAppsSection', () => {
     });
     expect(metaStatusCalls()).toHaveLength(0);
   });
+
+  it('blocks the Meta card CTA when Meta OAuth is not configured', () => {
+    useSWRMock.mockImplementation((key: string) => {
+      if (key === '/marketing/connect/status') {
+        return {
+          data: {
+            meta: {
+              connected: false,
+              providerAvailable: false,
+              status: 'Meta oauth configuration missing',
+            },
+            channels: {},
+          },
+          isLoading: false,
+          error: null,
+        };
+      }
+      if (key === '/marketing/connect/google-ads/status') {
+        return {
+          data: {
+            connected: false,
+            status: 'not_configured',
+            clientConfigured: false,
+            secretConfigured: false,
+            developerTokenConfigured: false,
+          },
+          isLoading: false,
+          error: null,
+        };
+      }
+      return { data: null, isLoading: false, error: null };
+    });
+    const push = vi.fn();
+
+    render(<ContaAppsSection handleSelectSection={vi.fn()} router={{ push }} />);
+
+    expect(screen.queryByText('Meta oauth configuration missing')).toBeNull();
+    expect(screen.getAllByText('Credenciais ausentes').length).toBeGreaterThan(0);
+    expect(screen.getByText('Configure as credenciais Meta para conectar.')).toBeTruthy();
+
+    const button = screen.getByRole('button', { name: 'Meta indisponivel' }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    button.click();
+    expect(push).not.toHaveBeenCalled();
+  });
 });

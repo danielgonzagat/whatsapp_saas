@@ -113,7 +113,10 @@ export default function VerTodasPage() {
       <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
         <div style={{ flex: 1, position: 'relative' }}>
           <input
+            id="tool-search"
+            name="toolSearch"
             type="text"
+            aria-label={kloelT(`Buscar ferramenta`)}
             placeholder={kloelT(`Buscar ferramenta...`)}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -143,6 +146,9 @@ export default function VerTodasPage() {
           </span>
         </div>
         <select
+          id="tool-role-filter"
+          name="toolRole"
+          aria-label={kloelT(`Filtrar ferramentas por perfil`)}
           value={role}
           onChange={(e) => setRole(e.target.value as Role)}
           style={{
@@ -234,11 +240,15 @@ export default function VerTodasPage() {
           marginBottom: 16,
         }}
       >
-        {liveTools.length} ferramenta{liveTools.length !== 1 ? 's' : ''} operacional
-        {liveTools.length !== 1 ? 'is' : ''} encontrada{liveTools.length !== 1 ? 's' : ''}
+        {liveTools.length}{' '}
+        {liveTools.length === 1
+          ? 'ferramenta operacional encontrada'
+          : 'ferramentas operacionais encontradas'}
         {category !== 'all' && ` em ${CATEGORY_CARDS.find((c) => c.key === category)?.title}`}
         {role !== 'all' && ` para ${role === 'produtor' ? 'Produtor' : 'Afiliado'}`}
-        {roadmapTools.length ? ` • ${roadmapTools.length} item(ns) seguem no roadmap` : ''}
+        {roadmapTools.length
+          ? ` • ${roadmapTools.length} ${roadmapTools.length === 1 ? 'item segue' : 'itens seguem'} no roadmap`
+          : ''}
       </div>
 
       {/* Tools Grid */}

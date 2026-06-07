@@ -393,7 +393,7 @@ export default function NewProductPage() {
               ) : (
                 <Check style={{ width: 16, height: 16 }} aria-hidden="true" />
               )}
-              {saving ? 'Salvando...' : 'Publicar Produto'}
+              {saving ? 'Salvando...' : 'Salvar produto'}
             </button>
           )}
         </div>

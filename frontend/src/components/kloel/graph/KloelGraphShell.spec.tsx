@@ -84,6 +84,7 @@ import { KloelGraphShell } from './KloelGraphShell';
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  vi.useRealTimers();
   pathname = '/products';
   searchParams = new URLSearchParams();
   memberAreas = [
@@ -372,6 +373,48 @@ describe('KloelGraphShell', () => {
     fireEvent.pointerLeave(productsNode);
     await waitFor(() =>
       expect(getProductsCircle()?.getAttribute('fill')).not.toBe('rgb(232,93,48)'),
+    );
+  });
+
+  it('defers Criar dynamic graph data while graph-only galaxy navigation settles', async () => {
+    vi.useFakeTimers();
+    pathname = '/analytics';
+    searchParams = new URLSearchParams('tab=vendas&graph=1');
+
+    const { rerender } = renderShell(<main>Analytics hidden</main>);
+    useProductsMock.mockClear();
+    useMemberAreasMock.mockClear();
+    useSWRMock.mockClear();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Criar' }));
+    pathname = '/products';
+    searchParams = new URLSearchParams('graph=1');
+    rerender(
+      <KloelGraphShell>
+        <main>Produtos hidden</main>
+      </KloelGraphShell>,
+    );
+
+    expect(useProductsMock).toHaveBeenLastCalledWith({ enabled: false });
+    expect(useMemberAreasMock).toHaveBeenLastCalledWith({ enabled: false });
+    expect(useSWRMock).toHaveBeenLastCalledWith(null, expect.any(Function), {
+      keepPreviousData: true,
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(159);
+    });
+    expect(useProductsMock).toHaveBeenLastCalledWith({ enabled: false });
+
+    await act(async () => {
+      vi.advanceTimersByTime(1);
+    });
+
+    expect(useProductsMock).toHaveBeenLastCalledWith({ enabled: true });
+    expect(useSWRMock).toHaveBeenLastCalledWith(
+      'kloel-graph-checkout-products',
+      expect.any(Function),
+      { keepPreviousData: true },
     );
   });
 

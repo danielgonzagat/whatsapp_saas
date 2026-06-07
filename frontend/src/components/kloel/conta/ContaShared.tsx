@@ -42,6 +42,7 @@ export function Field({
   onChange,
   onBlur: onBlurProp,
   type = 'text',
+  autoComplete,
   mono = false,
   half = false,
   required = true,
@@ -56,6 +57,7 @@ export function Field({
   onChange: (v: string) => void;
   onBlur?: () => void;
   type?: string;
+  autoComplete?: string;
   mono?: boolean;
   half?: boolean;
   required?: boolean;
@@ -132,6 +134,7 @@ export function Field({
             name={fieldName}
             aria-label={label}
             type={type}
+            autoComplete={autoComplete}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}

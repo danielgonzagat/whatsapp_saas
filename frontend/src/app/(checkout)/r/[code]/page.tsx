@@ -1,6 +1,7 @@
 import type { PublicCheckoutResponse } from '@/lib/public-checkout-contract';
 import type { Metadata } from 'next';
 import CheckoutShell from '../../components/CheckoutShell';
+import { loadPublicCheckoutFromServer } from '../../public-checkout-server';
 import { getServerApiBase } from '../../server-api-base';
 
 /** Generate metadata. */
@@ -63,5 +64,9 @@ export default async function CheckoutByCodePage({
   params: Promise<{ code: string }>;
 }) {
   const { code } = await params;
-  return <CheckoutShell slug={code} mode="code" />;
+  const serverResult = await loadPublicCheckoutFromServer(
+    `${getServerApiBase()}/checkout/public/r/${code}`,
+  );
+
+  return <CheckoutShell slug={code} mode="code" {...serverResult} />;
 }

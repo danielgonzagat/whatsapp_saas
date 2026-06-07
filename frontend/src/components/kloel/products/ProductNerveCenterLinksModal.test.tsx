@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import type { ReactElement } from 'react';
 
 import { ProductNerveCenterLinksModal } from './ProductNerveCenterLinksModal';
 import type { ProductEditorPlanView } from './product-nerve-center.view-models';
@@ -7,6 +8,12 @@ import type { ProductEditorPlanView } from './product-nerve-center.view-models';
 vi.mock('@/hooks/useResponsiveViewport', () => ({
   useResponsiveViewport: () => ({ isMobile: false }),
 }));
+
+const ProductNerveCenterLinksModalWithProductState = ProductNerveCenterLinksModal as unknown as (
+  props: Parameters<typeof ProductNerveCenterLinksModal>[0] & {
+    productPubliclySellable?: boolean;
+  },
+) => ReactElement;
 
 const plan: ProductEditorPlanView = {
   id: 'plan-1',
@@ -76,5 +83,30 @@ describe('ProductNerveCenterLinksModal', () => {
       expect.stringContaining('/PX12AB34'),
       'link-plan-1-link-1',
     );
+  });
+
+  it('does not offer a copy action while the backing product is unpublished', () => {
+    const onCopyLink = vi.fn();
+
+    render(
+      <ProductNerveCenterLinksModalWithProductState
+        planId="plan-1"
+        plans={[plan]}
+        copied={null}
+        onCopyLink={onCopyLink}
+        onClose={vi.fn()}
+        productPubliclySellable={false}
+      />,
+    );
+
+    expect(
+      screen.getByText('Produto inativo ou não aprovado. Publique o produto para liberar este checkout.'),
+    ).toBeTruthy();
+    const disabledButton = screen.getByRole('button', { name: 'Indisponível' });
+    expect(disabledButton).toHaveProperty('disabled', true);
+
+    fireEvent.click(disabledButton);
+
+    expect(onCopyLink).not.toHaveBeenCalled();
   });
 });

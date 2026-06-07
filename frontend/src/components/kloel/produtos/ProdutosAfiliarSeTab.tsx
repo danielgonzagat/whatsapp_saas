@@ -63,6 +63,17 @@ export default function AfiliarSe({
     [],
   );
 
+  useEffect(() => {
+    setSelectedMarketItem((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const refreshed = marketplace.find((item) => item.id === current.id);
+      return refreshed && refreshed !== current ? refreshed : current;
+    });
+  }, [marketplace]);
+
   const categories: string[] = [
     ...new Set(
       marketplace
@@ -82,6 +93,11 @@ export default function AfiliarSe({
   const savedProducts = affiliateProducts.filter(
     (item) => item.status === 'SAVED' || item.affiliateProduct?.isSaved,
   );
+  const requestedProducts = affiliateProducts.filter(
+    (item) => !(item.status === 'SAVED' || item.affiliateProduct?.isSaved),
+  );
+  const activeLinksLabel = `${approvedLinks.length} ${approvedLinks.length === 1 ? 'link ativo' : 'links ativos'}`;
+  const savedProductsLabel = `${savedProducts.length} ${savedProducts.length === 1 ? 'salvo' : 'salvos'}`;
 
   const handleRequestAffiliation = async (productId: string) => {
     setRequestingId(productId);
@@ -220,9 +236,9 @@ export default function AfiliarSe({
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
         {[
-          { icon: IC.box, label: 'Ganhos', value: fmtBRL(earnings), sub: approvedLinks.length > 0 ? `${approvedLinks.length} links ativos` : 'sem ganhos' },
+          { icon: IC.box, label: 'Ganhos', value: fmtBRL(earnings), sub: approvedLinks.length > 0 ? activeLinksLabel : 'sem ganhos' },
           { icon: IC.trend, label: 'Marketplace', value: String(marketplaceStats?.totalProducts || marketplace.length), sub: 'produtos disponiveis' },
-          { icon: IC.heart, label: 'Solicitacoes', value: String(affiliateProducts.length), sub: `${savedProducts.length} salvos` },
+          { icon: IC.heart, label: 'Solicitacoes', value: String(requestedProducts.length), sub: savedProductsLabel },
         ].map((s) => (
           <div key={s.label} style={{ flex: 1, background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>

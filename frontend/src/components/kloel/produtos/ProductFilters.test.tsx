@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ProductFilters from './ProductFilters';
@@ -181,6 +181,31 @@ describe('AfiliarSe marketplace search', () => {
     expect(screen.getByText('Limpe a busca ou tente outro termo.')).toBeTruthy();
   });
 
+
+  it('does not count saved marketplace products as affiliation requests', () => {
+    render(
+      <AfiliarSe
+        marketplace={[]}
+        earnings={0}
+        marketplaceStats={{}}
+        affiliateLinks={[]}
+        affiliateProducts={[
+          { id: 'approved-affiliation', status: 'APPROVED' },
+          {
+            id: 'saved-affiliation',
+            status: 'SAVED',
+            affiliateProduct: { name: 'Produto salvo', isSaved: true },
+          },
+        ]}
+        onRefresh={vi.fn()}
+      />,
+    );
+
+    const solicitationsCard = screen.getByText('Solicitacoes').parentElement?.parentElement;
+
+    expect(solicitationsCard?.textContent).toContain('Solicitacoes1');
+    expect(solicitationsCard?.textContent).toContain('1 salvo');
+  });
   it('guides users to profile completion when affiliation is blocked', async () => {
     requestAffiliationMock.mockRejectedValueOnce(
       new Error('Complete seu cadastro para usar esta funcionalidade'),
@@ -213,6 +238,54 @@ describe('AfiliarSe marketplace search', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Ir para Perfil' }));
     expect(pushMock).toHaveBeenCalledWith('/settings');
+  });
+
+  it('refreshes the open detail after an affiliation request resolves', async () => {
+    requestAffiliationMock.mockResolvedValueOnce(undefined);
+    const onRefresh = vi.fn();
+    const marketProduct = {
+      id: 'pending-product',
+      name: 'Produto pendente',
+      category: 'Cursos Online',
+      producer: 'Kloel',
+      price: 19700,
+      commission: 35,
+    };
+
+    const { rerender } = render(
+      <AfiliarSe
+        marketplace={[marketProduct]}
+        earnings={0}
+        marketplaceStats={{}}
+        affiliateLinks={[]}
+        affiliateProducts={[]}
+        onRefresh={onRefresh}
+      />,
+    );
+
+    fireEvent.click(screen.getByText('Produto pendente'));
+    expect(screen.getByText('Nao iniciada')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Solicitar afiliacao' }));
+
+    await waitFor(() => expect(onRefresh).toHaveBeenCalledTimes(1));
+
+    rerender(
+      <AfiliarSe
+        marketplace={[{ ...marketProduct, requestStatus: 'PENDING' }]}
+        earnings={0}
+        marketplaceStats={{}}
+        affiliateLinks={[]}
+        affiliateProducts={[]}
+        onRefresh={onRefresh}
+      />,
+    );
+
+    expect(screen.getByText('Pendente')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Solicitacao enviada' }).hasAttribute('disabled')).toBe(
+      true,
+    );
+    expect(screen.queryByRole('button', { name: 'Solicitar afiliacao' })).toBeNull();
   });
 });
 
