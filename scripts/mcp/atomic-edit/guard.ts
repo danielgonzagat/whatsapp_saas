@@ -177,7 +177,6 @@ const PROTECTED_PREFIXES = [
   "docs/codacy/",
   "docs/design/",
   "ops/",
-  "scripts/ops/",
 ];
 
 /** Repo-relative prefixes/globs that are protected directory-wide. */
