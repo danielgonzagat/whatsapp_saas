@@ -144,6 +144,14 @@ describe('ScrapersService', () => {
       expect(prisma.contact.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { workspaceId_phone: { workspaceId: 'ws-1', phone: '+5511' } },
+          update: expect.objectContaining({
+            scrapingJobId: 'j-1',
+            scrapedFrom: 'SCRAPER:google-maps',
+          }),
+          create: expect.objectContaining({
+            scrapingJobId: 'j-1',
+            scrapedFrom: 'SCRAPER:google-maps',
+          }),
         }),
       );
       expect(prisma.scrapedLead.update).toHaveBeenCalledWith({

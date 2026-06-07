@@ -43,8 +43,8 @@ interface MarketingWebhookChange {
 
 @Controller('webhooks/meta-marketing')
 @RouteClass('webhook')
-export class MetaWebhookController {
-  private readonly logger = new Logger(MetaWebhookController.name);
+export class MetaCoreWebhookController {
+  private readonly logger = new Logger(MetaCoreWebhookController.name);
 
   constructor(
     private readonly webhooksService: WebhooksService,

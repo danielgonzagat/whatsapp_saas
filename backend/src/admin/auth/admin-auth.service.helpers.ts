@@ -19,7 +19,7 @@ export interface HttpRequestLike {
   readonly socket?: { readonly remoteAddress?: string };
   readonly headers: Record<string, string | string[] | undefined>;
 } /** Bcrypt work factor used for hashing admin passwords. */
-export const BCRYPT_WORK_FACTOR = 12;
+export { BCRYPT_ROUNDS as BCRYPT_WORK_FACTOR } from '../../common/constants';
 
 /** Env var that toggles the MFA-bypass code path. */
 export const ADMIN_MFA_BYPASS_ENV = 'ADMIN_MFA_BYPASS_ENABLED';

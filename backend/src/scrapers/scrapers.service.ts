@@ -147,6 +147,8 @@ export class ScrapersService {
         },
         update: {
           ...(lead.name !== undefined ? { name: lead.name } : {}),
+          scrapingJobId: lead.jobId,
+          scrapedFrom: `SCRAPER:${job.type}`,
           customFields: {
             category: lead.category,
             address: lead.address,
@@ -157,6 +159,8 @@ export class ScrapersService {
           workspaceId,
           phone: lead.phone,
           name: lead.name,
+          scrapingJobId: lead.jobId,
+          scrapedFrom: `SCRAPER:${job.type}`,
           customFields: {
             category: lead.category,
             address: lead.address,

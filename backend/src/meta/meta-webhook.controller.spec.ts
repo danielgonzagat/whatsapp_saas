@@ -1,6 +1,6 @@
 import { createHmac } from 'node:crypto';
 import type { WebhooksService } from '../webhooks/webhooks.service';
-import { MetaWebhookController } from './meta-webhook.controller';
+import { MetaCoreWebhookController } from './meta-webhook.controller';
 
 function signWebhookBody(body: unknown, secret = 'test-secret') {
   const rawBody = Buffer.from(JSON.stringify(body));
@@ -9,7 +9,7 @@ function signWebhookBody(body: unknown, secret = 'test-secret') {
 }
 
 describe('MetaWebhookController', () => {
-  let controller: MetaWebhookController;
+  let controller: MetaCoreWebhookController;
   let mockWebhooksService: {
     logWebhookEvent: jest.Mock;
     markWebhookProcessed: jest.Mock;
@@ -21,7 +21,7 @@ describe('MetaWebhookController', () => {
       markWebhookProcessed: jest.fn().mockResolvedValue(undefined),
     };
 
-    controller = new MetaWebhookController(mockWebhooksService as never as WebhooksService);
+    controller = new MetaCoreWebhookController(mockWebhooksService as never as WebhooksService);
   });
 
   afterEach(() => {
