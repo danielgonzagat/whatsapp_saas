@@ -523,4 +523,34 @@ describe('AuthService', () => {
       }
     });
   });
+
+  describe('logout — access-token revocation (P0 security fix)', () => {
+    it('writes the canonical jti:revoked: key the JWT guard reads (not the dead access-token-revoked: prefix)', async () => {
+      const set = jest.fn().mockResolvedValue('OK');
+      mockPrismaService.refreshToken.updateMany = jest.fn().mockResolvedValue({ count: 1 });
+      const svc = new AuthService(
+        mockPrismaService as never,
+        mockJwtService as never,
+        mockEmailService as never,
+        mockConfigService as never,
+        mockGoogleAuthService as never,
+        mockAppleAuthService as never,
+        mockFacebookAuthService as never,
+        mockTikTokAuthService as never,
+        mockConnectService as never,
+        {} as never,
+        mockAuthTokenService as never,
+        undefined as never,
+        { set } as never,
+      );
+      const exp = Math.floor(Date.now() / 1000) + 900;
+      await svc.logout('agent-1', 'jti-1', exp);
+      expect(set).toHaveBeenCalledTimes(1);
+      const [key, value, mode] = set.mock.calls[0] as [string, string, string];
+      expect(key).toBe('jti:revoked:jti-1');
+      expect(key).not.toContain('access-token-revoked');
+      expect(value).toBe('1');
+      expect(mode).toBe('EX');
+    });
+  });
 });
