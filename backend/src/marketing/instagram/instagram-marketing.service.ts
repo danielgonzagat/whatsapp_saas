@@ -12,6 +12,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { decryptMetaToken } from '../../meta/meta-token-crypto';
 import { ChannelMessageDispatchService } from '../channel-message-dispatch.service';
 import { isInstagramCanonicalDispatchEnabled } from './instagram-canonical-dispatch.flag';
+import { isInstagramResolverUnifyEnabled } from './instagram-resolver-unify.flag';
+import { MetaWhatsAppService } from '../../meta/meta-whatsapp.service';
 
 type InstagramConnection = {
   accessToken: string;
@@ -50,7 +52,47 @@ export class InstagramMarketingService {
     @Optional()
     @Inject(forwardRef(() => ChannelMessageDispatchService))
     private readonly canonicalDispatch?: ChannelMessageDispatchService,
+    @Optional()
+    @Inject(forwardRef(() => MetaWhatsAppService))
+    private readonly metaResolver?: MetaWhatsAppService,
   ) {}
+
+  /**
+   * Resolve the Instagram credentials (`accessToken` + `instagramAccountId`)
+   * consumed by the read-only Graph callers below.
+   *
+   * Flag-OFF (default) or resolver-not-injected: runs the EXISTING raw
+   * `prisma.metaConnection.findFirst({ channel: 'instagram' })` +
+   * {@link resolveInstagramConnection} path byte-for-byte unchanged.
+   *
+   * Flag-ON (`KLOEL_INSTAGRAM_RESOLVER_UNIFY='true'`) with the canonical
+   * {@link MetaWhatsAppService} injected: sources the same two fields from
+   * {@link MetaWhatsAppService.resolveConnection}(`workspaceId`, 'instagram').
+   * The `accessToken` derivation
+   * (`decryptMetaToken(row.accessToken) || env.META_ACCESS_TOKEN`, trimmed) and
+   * the `instagramAccountId` derivation (`row.instagramAccountId || null`) are
+   * byte-equivalent between the two resolvers, so this is a behavior-preserving
+   * delegation for these two callers (no `pageAccessToken`, no expiry change).
+   */
+  private async resolveInstagramCredentials(
+    workspaceId: string,
+  ): Promise<{ accessToken: string; instagramAccountId: string | null }> {
+    if (isInstagramResolverUnifyEnabled() && this.metaResolver) {
+      const resolved = await this.metaResolver.resolveConnection(workspaceId, 'instagram');
+      return {
+        accessToken: resolved.accessToken,
+        instagramAccountId: resolved.instagramAccountId,
+      };
+    }
+    const row = await this.prisma.metaConnection.findFirst({
+      where: { workspaceId, channel: 'instagram' },
+    });
+    const channelSession = resolveInstagramConnection(row);
+    return {
+      accessToken: channelSession.accessToken,
+      instagramAccountId: channelSession.instagramAccountId,
+    };
+  }
 
   async listAccounts(workspaceId: string) {
     const channelSession = await this.prisma.metaConnection.findFirst({
@@ -80,10 +122,7 @@ export class InstagramMarketingService {
   }
 
   async publishPost(workspaceId: string, imageUrl: string, caption?: string) {
-    const row = await this.prisma.metaConnection.findFirst({
-      where: { workspaceId, channel: 'instagram' },
-    });
-    const channelSession = resolveInstagramConnection(row);
+    const channelSession = await this.resolveInstagramCredentials(workspaceId);
 
     if (!channelSession.instagramAccountId) {
       throw new BadRequestException('instagram_account_not_connected');
@@ -121,10 +160,7 @@ export class InstagramMarketingService {
   }
 
   async getInsights(workspaceId: string, metrics: string[], period: string) {
-    const row = await this.prisma.metaConnection.findFirst({
-      where: { workspaceId, channel: 'instagram' },
-    });
-    const channelSession = resolveInstagramConnection(row);
+    const channelSession = await this.resolveInstagramCredentials(workspaceId);
 
     if (!channelSession.instagramAccountId) {
       throw new BadRequestException('instagram_account_not_connected');
