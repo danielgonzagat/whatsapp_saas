@@ -2015,6 +2015,14 @@ model KloelWalletLedger {
   bucket        String // 'available' | 'pending' | 'blocked'
   amountInCents BigInt
   reason        String // 'sale_credit' | 'confirm_payment_credit' | 'confirm_payment_debit' | 'withdrawal_debit' | 'reconcile_settle_credit' | 'reconcile_settle_debit'
+  // Money-ledgers migration (Stage 1): additive, nullable post-mutation
+  // bucket balance snapshots mirroring the Connect ledger contract
+  // (ConnectLedgerEntry.balanceAfter*Cents). Populated only on NEW writes
+  // when KLOEL_LEDGER_BALANCE_SNAPSHOT is enabled; NULL on historical rows
+  // and when the flag is OFF (byte-identical legacy behaviour).
+  balanceAfterAvailableCents BigInt?
+  balanceAfterPendingCents   BigInt?
+  balanceAfterBlockedCents   BigInt?
   metadata      Json?
   createdAt     DateTime    @default(now())
 
@@ -4289,6 +4297,13 @@ model MarketplaceTreasuryLedger {
   orderId       String?                       @map("order_id")
   feeSnapshotId String?                       @map("fee_snapshot_id")
   reason        String
+  // Money-ledgers migration (Stage 1): additive, nullable post-mutation
+  // bucket balance snapshots mirroring the Connect ledger contract.
+  // Populated only on NEW writes when KLOEL_LEDGER_BALANCE_SNAPSHOT is
+  // enabled; NULL on historical rows and when the flag is OFF.
+  balanceAfterAvailableCents BigInt?          @map("balance_after_available_cents")
+  balanceAfterPendingCents   BigInt?          @map("balance_after_pending_cents")
+  balanceAfterReservedCents  BigInt?          @map("balance_after_reserved_cents")
   metadata      Json?
   createdAt     DateTime                      @default(now()) @map("created_at")
 
