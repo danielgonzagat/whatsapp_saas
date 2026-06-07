@@ -44,6 +44,21 @@ check('UNIT same-file disjoint spans → commute',
 check('UNIT same-file overlapping spans → no commute',
   commute(fact('x.ts', [[0, 10]], ['x.ts']), fact('x.ts', [[5, 15]], ['x.ts'])).commute === false);
 
+// ── CAP-GUARD (FASE-0.3): a capped closure is a LOWER bound ⇒ independence cannot be ──
+// soundly claimed ⇒ UNJUDGED (commute:false), never a false-green. The real soundness fix.
+const capFact = (file, spans, closure) => ({ file, spans, closure: new Set(closure), closureCapped: true });
+{
+  const v = commute(capFact('p.ts', [[0, 5]], ['p.ts']), capFact('q.ts', [[0, 5]], ['q.ts']));
+  check('CAP-GUARD capped + closure-independent ⇒ commute:false (no false independence)', v.commute === false);
+  check('CAP-GUARD capped + closure-independent ⇒ unjudged:true (honest refusal, not a proven conflict)', v.unjudged === true);
+  // a REAL coupling found under a cap is still a real conflict (a cap only DROPS edges, never adds):
+  const vCoupled = commute(capFact('p.ts', [[0, 5]], ['p.ts']), capFact('q.ts', [[0, 5]], ['q.ts', 'p.ts']));
+  check('CAP-GUARD capped + real closure coupling ⇒ commute:false, NOT unjudged (real edge survives the cap)', vCoupled.commute === false && vCoupled.unjudged !== true);
+  // the guard does NOT over-fire: an UNcapped independent pair still commutes (regression lock).
+  const vClean = commute(fact('p.ts', [[0, 5]], ['p.ts']), fact('q.ts', [[0, 5]], ['q.ts']));
+  check('CAP-GUARD uncapped independent still commutes (guard does not over-fire)', vClean.commute === true && vClean.unjudged !== true);
+}
+
 // ── VALUE: closure catches a coupling byte-disjointness misses ────────────────
 {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'atomic-algebra-'));

@@ -53,6 +53,8 @@ export interface CommuteVerdict {
   reason: string;
   /** the file/span at which the two edits couple, when they do not commute */
   sharedLocus?: string;
+  /** FASE-0.3 honest third verdict: the resolution closure was CAPPED (a lower bound), so independence cannot be soundly claimed — it is REFUSED, not asserted. Consumers treat unjudged as non-commuting (commute:false), the conservative direction the soundness theorem requires. */
+  unjudged?: boolean;
 }
 
 // ── CANONICAL SHARED CONTRACT (additive — the algebra of verified edits) ─────
@@ -456,6 +458,17 @@ export function commute(a: EditFact, b: EditFact): CommuteVerdict {
   }
   if (a.closure.has(b.file)) {
     return { commute: false, reason: `${a.file} reads ${b.file} (resolution-closure coupling)`, sharedLocus: b.file };
+  }
+  // FASE-0.3 SOUNDNESS GUARD: a capped closure is a LOWER bound, so reaching here under a
+  // cap does NOT prove independence — the true (uncapped) closure may contain the coupling
+  // edge we stopped before. Claiming commute:true would be a false-green. Refuse: UNJUDGED,
+  // surfaced as commute:false so every consumer treats it conservatively (no merge / own batch).
+  if (a.closureCapped || b.closureCapped) {
+    return {
+      commute: false,
+      unjudged: true,
+      reason: 'closure capped (lower bound) — independence not soundly decidable; refused (UNJUDGED)',
+    };
   }
   return { commute: true, reason: 'disjoint files; neither lies in the other resolution closure' };
 }
