@@ -467,7 +467,7 @@
     "ChannelDispatchPort.sendMessage? optional alias + every adapter's sendMessage() one-liner (Wave-21) — redundant once callers standardize on one of send/sendMessage; currently both exist on all 8 adapters.",
     "MessengerService vs FacebookMessengerService — one of the two page-send services is redundant; MessengerService is the thinner, persistence-less candidate for removal.",
     "InstagramMarketingService.sendDirectMessage raw fallback (instagram-marketing.service.ts:302) — dead once isInstagramCanonicalDispatchEnabled is permanently ON.",
-    "lead-contact-dualwrite.flag.ts / channel-transport-canonical-delegate.flag.ts / instagram-canonical-dispatch.flag.ts — migration flags; each gates a legacy path that should be deleted at end-of-rollout.",
+    "channel-transport-canonical-delegate.flag.ts / instagram-canonical-dispatch.flag.ts — real migration flags, each gates a legacy path that should be deleted at end-of-rollout. (NB: there is NO lead-contact-dualwrite.flag.ts file — the Lead->Contact dual-write is implemented directly in the 3 lead services + person-kloel-lead-to-contact.backfill.*.)",
     "ChannelMessageDispatchService.createAdDraftTool (channel-message-dispatch.service.ts:218) — honest setup-required stub (no real Ads outbound integration); not dead but a placeholder surface.",
     "meta/meta-webhook.controller.ts ('webhooks/meta-marketing') — log-only; verify whether Meta is actually subscribed to this path or whether it is an unreached endpoint (no internal references found besides module registration)."
   ]
