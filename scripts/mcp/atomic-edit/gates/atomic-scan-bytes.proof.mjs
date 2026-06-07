@@ -54,7 +54,7 @@ async function main() {
   const baseAbs = path.join(repoRoot, baseRel);
   const positiveRel = path.join('scripts', 'mcp', 'atomic-edit', 'server.ts');
   const badRel = path.join(baseRel, 'scan-bad.ts');
-  const mdRel = path.join(baseRel, 'scan-notes.md');
+  const mdRel = path.join(baseRel, 'scan-notes.opaque');
   const positiveSource = fs.readFileSync(path.join(repoRoot, positiveRel), 'utf8');
   const missingSpecifier = './missing-scan-target';
   const badSource = [
@@ -66,7 +66,7 @@ async function main() {
     "';\n",
     'export const SCAN_BAD = MissingScanTarget;\n',
   ].join('');
-  const mdSource = '# Atomic scan proof\nThis file is outside the TS/JS lens battery.\n';
+  const mdSource = 'Atomic scan proof\nThis file is outside every declared direct-file battery.\n';
 
   try {
     fs.mkdirSync(baseAbs, { recursive: true });

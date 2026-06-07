@@ -14,6 +14,49 @@ export { EMPTY_ZONES, computeZones } from './engine.js';
 
 // ─────────────────────────── helpers ───────────────────────────
 
+/**
+ * Map a file extension to its tree-sitter grammar tag (the keys of the
+ * native-bridge GRAMMARS registry). Shared by every universal multi-language
+ * op so each one resolves the grammar the same way instead of re-deriving it.
+ * Returns null for extensions with no first-class grammar — the caller decides
+ * whether to refuse (a construct that needs structure) or fall back to text.
+ */
+const EXT_TO_GRAMMAR: Record<string, string> = {
+  '.py': 'python', '.pyi': 'python',
+  '.js': 'javascript', '.mjs': 'javascript', '.cjs': 'javascript', '.jsx': 'javascript',
+  '.ts': 'typescript', '.mts': 'typescript', '.cts': 'typescript',
+  '.tsx': 'tsx',
+  '.go': 'go',
+  '.rb': 'ruby',
+  '.rs': 'rust',
+  '.java': 'java',
+  '.c': 'c', '.h': 'c',
+  '.cc': 'cpp', '.cpp': 'cpp', '.cxx': 'cpp', '.hpp': 'cpp', '.hh': 'cpp',
+  '.sh': 'bash', '.bash': 'bash', '.zsh': 'bash',
+  '.json': 'json',
+};
+
+/** Resolve a tree-sitter grammar tag for a file extension (e.g. '.py' -> 'python'), or null. */
+export function extToGrammar(ext: string): string | null {
+  return EXT_TO_GRAMMAR[ext.toLowerCase()] ?? null;
+}
+
+/**
+ * The provenance of a universal edit's correctness, surfaced on every universal
+ * result so callers/agents never over-trust a scope-only edit:
+ *  - 'cst-correct'         edit anchored to a real CST node span (token-correct by construction)
+ *  - 'scope-correct'       a binder/scope pass disambiguated the symbol
+ *  - 'textual-single-file' word-boundary text match within one file (no scope/types)
+ *  - 'requires-LSP'        cross-file / overload / type resolution needed — not decided here
+ *  - 'unjudged'            dynamic dispatch / reflection — undecidable by any static tool
+ */
+export type UniversalMethod =
+  | 'cst-correct'
+  | 'scope-correct'
+  | 'textual-single-file'
+  | 'requires-LSP'
+  | 'unjudged';
+
 function posToOffset(text: string, pos: Position): number {
   let offset = 0;
   for (let line = 1; line < pos.line; line++) {

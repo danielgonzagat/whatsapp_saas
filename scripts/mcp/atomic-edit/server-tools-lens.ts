@@ -23,6 +23,7 @@ import { ok, fail } from './server-helpers-result.js';
 import { runLens } from './gates/lens.js';
 import { repairScope } from './gates/repair.js';
 import { calls } from './gates/perception.js';
+import { structuralErrors } from './engine-structural.js';
 
 const SKIP = new Set(['node_modules', '.git', '.atomic', '.claude', '.mcp-cache', '.next', '.turbo', '.cache', 'build', 'coverage', 'dist', 'vendor']);
 const SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
@@ -75,7 +76,7 @@ function enumerateDirectNonSourceFiles(repoRoot: string, scopeRel: string, cap =
     if (out.size >= cap) return;
     const rel = path.relative(repoRoot, abs).replaceAll('\\', '/');
     if (rel.startsWith('..') || path.isAbsolute(rel)) return;
-    if (SOURCE_RE.test(abs) && !abs.endsWith('.proof.ts')) return;
+    if (SOURCE_RE.test(abs)) return;
     out.add(rel);
   };
   const walk = (absDir: string): void => {
@@ -185,6 +186,31 @@ function truncateUtf8(text: string, maxBytes: number): { text: string; truncated
     used += next;
   }
   return { text: out, truncated: true };
+}
+
+function directNonSourcePositiveReason(relPath: string, content: string): string | null {
+  if (content.includes('\0')) return null;
+  const ext = path.extname(relPath).toLowerCase();
+  if (ext === '.json') {
+    try {
+      JSON.parse(content);
+    } catch {
+      return null;
+    }
+    return 'JSON parsed successfully under Atomic direct-file battery; no source-language gate claim is made.';
+  }
+  if (ext === '.py') {
+    const errors = structuralErrors(ext, content);
+    if (errors.length > 0) return null;
+    return 'Python text passed Atomic structural balance battery; no type/runtime claim is made.';
+  }
+  if (ext === '.md') {
+    return 'Markdown text is UTF-8 readable and contains no NUL bytes under Atomic direct-file text battery; no prose correctness claim is made.';
+  }
+  if (path.basename(relPath) === '.gitignore') {
+    return 'Gitignore text is UTF-8 readable and contains no NUL bytes under Atomic direct-file text battery.';
+  }
+  return null;
 }
 
 function positiveReadZone(start: number, end: number, ran: string[]): AtomicReadZone {
@@ -499,28 +525,38 @@ export function registerToolsLens(server: McpServer): void {
           } catch {
             continue;
           }
-          unjudgedFilesRead += 1;
           const bytes = byteLength(content);
           const lineCount = atomicReadLineRanges(content).length;
-          const proofDebt = ['file readable, but no declared source-language battery could classify these bytes as positive'];
+          const directPositiveReason = directNonSourcePositiveReason(rel, content);
+          const proofDebt = directPositiveReason
+            ? []
+            : ['file readable, but no declared source-language battery could classify these bytes as positive'];
+          const verdict: ScanVerdict = directPositiveReason ? 'POSITIVE_WITHIN_DECLARED_BATTERY' : 'UNJUDGED';
           totalBytes += bytes;
           totalLines += lineCount;
-          proofDebtFiles += 1;
+          if (directPositiveReason) {
+            positiveFiles += 1;
+          } else {
+            unjudgedFilesRead += 1;
+            proofDebtFiles += 1;
+          }
           summaries.push({
             file: rel,
             sha256: sha256(content),
             bytes,
             lineCount,
-            verdict: 'UNJUDGED',
+            verdict,
             sourceLensApplied: false,
             zoneCount: 1,
             zones: [
               {
-                classification: 'unjudged',
+                classification: directPositiveReason ? 'positive-within-declared-battery' : 'unjudged',
                 byteStart: 0,
                 byteEnd: bytes,
                 byteLength: bytes,
-                reason: 'No source-language lens battery applied to this file; bytes are readable but not proven positive.',
+                reason:
+                  directPositiveReason ??
+                  'No source-language lens battery applied to this file; bytes are readable but not proven positive.',
               },
             ],
             negativeByteEvidenceCount: 0,
@@ -528,7 +564,7 @@ export function registerToolsLens(server: McpServer): void {
             containedEvidenceCount: 0,
             containedEvidence: [],
             proofDebt,
-            recommendedAction: 'extend-declared-battery',
+            recommendedAction: directPositiveReason ? 'preserve-positive-byte' : 'extend-declared-battery',
           });
         }
 

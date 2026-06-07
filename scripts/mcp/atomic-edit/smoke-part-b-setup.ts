@@ -106,9 +106,9 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
       scanFiltered.content[0]?.text ?? '',
     );
 
-    const scanMdRel = path.join('scripts', 'mcp', 'atomic-edit', `.smoke-scan-notes.${process.pid}.md`);
+    const scanMdRel = path.join('scripts', 'mcp', 'atomic-edit', `.smoke-scan-notes.${process.pid}.opaque`);
     const scanMdAbs = path.join(repoRoot, scanMdRel);
-    const scanMdSource = '# Atomic scan smoke\nOutside the declared source-language battery.\n';
+    const scanMdSource = 'Atomic scan smoke\nOutside every declared direct-file battery.\n';
     fs.writeFileSync(scanMdAbs, scanMdSource);
     try {
       const scanUnjudged = (await client.callTool({

@@ -1,14 +1,13 @@
 import * as ts from 'typescript';
 import { validate, type ValidationResult } from './engine.js';
 import { resolveSymbol } from './symbols.js';
-import { universalAddImport, universalRemoveImport, universalAddAwait } from './engine-universal-imports.js';
-
-// ── v3: import + object-property semantic ops (adopted from Codex's
-//        semantic-edit, but routed through validate()+atomic write so they
-//        cannot persist broken code, unlike the original). ───────────────────
 
 const TS_EXT = new Set(['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs']);
-const RESERVED_IDENTIFIER_KEYS = new Set('await break case catch class const continue debugger default delete do else enum export extends false finally for function if import in instanceof new null return super switch this throw true try typeof var void while with yield'.split(' '));
+const RESERVED_IDENTIFIER_KEYS = new Set(
+  'await break case catch class const continue debugger default delete do else enum export extends false finally for function if import in instanceof new null return super switch this throw true try typeof var void while with yield'.split(
+    ' ',
+  ),
+);
 
 function assertTs(file: string, op: string): void {
   const i = file.lastIndexOf('.');
@@ -130,11 +129,7 @@ export async function addNamedImport(
   alias?: string,
   typeOnly = false,
 ): Promise<SemanticEditResult> {
-  const importExt = (() => {
-    const i = file.lastIndexOf('.');
-    return i < 0 ? '' : file.slice(i).toLowerCase();
-  })();
-  if (!TS_EXT.has(importExt)) return universalAddImport(file, original, moduleSpecifier, name, alias, importExt);
+  assertTs(file, 'add_import');
   const sf = await tsmProject(file, original);
   const decls = sf
     .getImportDeclarations()
@@ -195,11 +190,7 @@ export async function removeNamedImport(
   moduleSpecifier: string,
   name: string,
 ): Promise<SemanticEditResult> {
-  const removeExt = (() => {
-    const i = file.lastIndexOf('.');
-    return i < 0 ? '' : file.slice(i).toLowerCase();
-  })();
-  if (!TS_EXT.has(removeExt)) return universalRemoveImport(file, original, moduleSpecifier, name, removeExt);
+  assertTs(file, 'remove_import');
   const sf = await tsmProject(file, original);
   const decls = sf
     .getImportDeclarations()
@@ -248,7 +239,7 @@ export async function replacePropertyValue(
       k === SyntaxKind.Identifier ||
       k === SyntaxKind.StringLiteral ||
       k === SyntaxKind.NumericLiteral
-        ? n.getText().replace(/^['"]|['"]$/g, '')
+        ? n.getText().replace(/^[\'"]|[\'"]$/g, '')
         : null;
     return nm === property;
   });
@@ -294,7 +285,7 @@ export async function renamePropertyKey(
       kind === SyntaxKind.Identifier ||
       kind === SyntaxKind.StringLiteral ||
       kind === SyntaxKind.NumericLiteral
-        ? nameNode.getText().replace(/^['"]|['"]$/g, '')
+        ? nameNode.getText().replace(/^[\'"]|[\'"]$/g, '')
         : null;
     return name === property;
   });
@@ -335,11 +326,7 @@ export async function addAwaitToCall(
   callee: string,
   selector?: string,
 ): Promise<SemanticEditResult> {
-  const awaitExt = (() => {
-    const i = file.lastIndexOf('.');
-    return i < 0 ? '' : file.slice(i).toLowerCase();
-  })();
-  if (!TS_EXT.has(awaitExt)) return universalAddAwait(file, original, callee, awaitExt);
+  assertTs(file, 'add_await_to_call');
   const { SyntaxKind, Node } = await import('ts-morph');
   const sf = await tsmProject(file, original);
   const scopeNode = selector ? resolveSymbol(sf, selector).node : sf;

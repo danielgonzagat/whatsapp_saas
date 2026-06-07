@@ -18,6 +18,14 @@ import iacReferenceGate from './gates/iac-reference-gate.js';
 import securityGate from './gates/security-gate.js';
 import { makeContext, type GateModule } from './gates/contract.js';
 import { assertSelfExpansionAdmission } from './server-helpers-self-expansion.js';
+// ── self-improving Gate Lattice (GAP #2) — the ADMITTED registry gates, run additively at the byte floor ──
+// The frozen SYNC_WRITE_GATES above are atomic's BUILT-IN floor. The lattice lets
+// the system self-extend that floor: a gate detected from the "all-gates-passed vs
+// prod-broke" delta, proven monotonic against the known-good corpus, lands in
+// .atomic/gates/registry.json and is consulted HERE — so an admitted gate actually
+// BLOCKS a violating write, not merely advises. Loaded synchronously (vm-isolated)
+// to honour atomicWrite's sync contract; an empty/absent registry is a no-op.
+import { runRegistryGatesOverEditSync } from './engine-gate-registry.js';
 
 export const sha256 = (s: string): string => crypto.createHash('sha256').update(s).digest('hex');
 
@@ -199,6 +207,37 @@ export function atomicWrite(absPath: string, content: string): void {
     throw new Error(
       `refused (convergence): ${r.gate} was UNJUDGED for ${relPath} — ${r.fact}. ` +
         `Unjudged is not green approval under Y admission. NOT written.`,
+    );
+  }
+
+  // ── self-improving Gate Lattice (GAP #2): consult the ADMITTED registry gates ──
+  // After the frozen built-in floor (above) passes, run the gates the lattice has
+  // SELF-ADMITTED into .atomic/gates/registry.json. Each was proven monotonic
+  // against the known-good corpus at admission (engine-gate-registry.admitGateModule
+  // → verifyMonotonicAdmission), so it cannot retroactively red a previously-green
+  // edit — but it DOES block a NEW write that violates the fact it learned from a
+  // green-but-broken incident. NEW-only delta: a registry gate sees the file's prior
+  // disk bytes as `before`, so it judges only the wire/scheme/contract THIS write
+  // introduces. Additive: an empty/absent registry runs zero gates (a transparent
+  // no-op); a red here is a real BLOCK, identical in force to the built-in floor.
+  let priorBytes = '';
+  try {
+    priorBytes = fs.existsSync(absPath) && fs.statSync(absPath).isFile() ? fs.readFileSync(absPath, 'utf8') : '';
+  } catch {
+    priorBytes = ''; // unreadable prior → treat as new file (every fact is this write's claim)
+  }
+  const registryVerdict = runRegistryGatesOverEditSync({
+    file: relPath,
+    before: priorBytes,
+    after: content,
+    repoRoot: REPO_ROOT,
+  });
+  for (const r of registryVerdict.reds) {
+    throw new Error(
+      `refused (convergence — admitted lattice gate "${r.id}"): ` +
+        `${relPath}${r.locus && r.locus !== relPath ? `:${r.locus}` : ''} — ${r.fact}. ` +
+        `This gate was self-admitted from a green-but-broken incident and proven monotonic ` +
+        `against the known-good corpus, so it blocks the defect class the built-in floor missed. NOT written.`,
     );
   }
 

@@ -16,6 +16,8 @@ import crypto from "crypto";
 import * as path from "node:path";
 import * as ts from "typescript";
 import { listSignatures, resolveSymbol, resolveNodeAtPosition, type SymbolInfo } from "./symbols.js";
+import { universalOutline, universalReadSymbol } from "./engine-universal-nav.js";
+import { extToGrammar } from "./engine-universal.js";
 
 const TS_EXT = new Set([".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"]);
 
@@ -69,7 +71,7 @@ export function browse(absDir: string): BrowseEntry[] {
 }
 
 export interface Outline {
-  language: "ts" | "text";
+  language: string;
   lineCount: number;
   charCount: number;
   symbols: SymbolInfo[];
@@ -78,11 +80,12 @@ export interface Outline {
 export async function outline(file: string, text: string): Promise<Outline> {
   const lineCount = text.split("\n").length;
   if (!TS_EXT.has(extOf(file))) {
+    const uni = await universalOutline(text, extOf(file));
     return {
-      language: "text",
+      language: uni ? (extToGrammar(extOf(file)) ?? "text") : "text",
       lineCount,
       charCount: text.length,
-      symbols: [],
+      symbols: uni ?? [],
     };
   }
   const sf = await sourceFileOf(file, text);
@@ -112,7 +115,8 @@ export async function readSymbol(
   position?: { line: number; column: number },
 ): Promise<ReadSymbolResult> {
   if (!TS_EXT.has(extOf(file))) {
-    throw new Error(`read_symbol only supports TS/JS files, got ${extOf(file) || "(none)"}`);
+    const u = await universalReadSymbol(text, selector, extOf(file));
+    return { ...u, fileSha256: crypto.createHash("sha256").update(text).digest("hex") };
   }
   const sf = await sourceFileOf(file, text);
   if (position) {

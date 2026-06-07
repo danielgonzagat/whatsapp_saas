@@ -29,6 +29,9 @@ import { REPO_ROOT } from './guard.js';
 import { buildFounderBlock, type FounderBlock } from './founder.js';
 import { type RegistryRun } from './gates/registry.js';
 import { removedByteCountBetween, type NegativeActionProof } from './server-helpers-negative-proof.js';
+// #1 Proof-Carrying Edits: the RE-EXEC core. Type-only import of the decision-tree
+// node shape + the snapshot builder used to persist before/after content for re-exec.
+import { buildSnapshot, decisionTreeOf, gateRunIdOf, type GateDecisionNode } from './engine-proof-reexec.js';
 
 export type Verbosity = 'L0' | 'L1' | 'L2' | 'L3';
 
@@ -178,10 +181,58 @@ export interface AtomicEditTrace {
   gateVerdict?: RegistryRun;
   /** sha256(parentSha256 ‖ afterSha256 ‖ canonicalJSON(gateVerdict)). The tamper-evident link; becomes the next .atomic/HEAD. */
   chainHash: string;
+  /**
+   * #3 Causal-blame linkage (additive): a STABLE per-process session id stamped on
+   * every trace so a defect can be mapped to the atomic SESSION that produced it —
+   * not merely file+timestamp. Resolved once per process from ATOMIC_SESSION_ID (so
+   * a host launcher can pin a session) or generated; identical across every trace of
+   * one server/CLI run. Optional so legacy traces (written before this field existed)
+   * still parse — those degrade to the file+timestamp mapping, never throw.
+   */
+  sessionId?: string;
+}
+
+/**
+ * #1 Proof-Carrying Edits — RE-EXEC linkage (additive, all optional).
+ *
+ * The chain hash proves "these bytes hash to that". The strong claim — "re-run the
+ * construction and the recorded verdict reproduces" — needs the gate run cryptographically
+ * identified, its decision tree captured (the gate-by-gate reasoning), and a pointer to the
+ * before/after CONTENT snapshot a verifier re-runs engine.validate over. Stamped onto the
+ * trace shape so `atomic prove` can mint a re-executable artifact. Optional so legacy traces
+ * and previews (no content written) still parse + degrade to the hash-only verifier.
+ */
+export interface AtomicEditTrace {
+  /** Dedicated cryptographic id of THIS gated op's gate run (grun_<sha256>); see engine-proof-reexec.gateRunIdOf. */
+  gateRunId?: string;
+  /** Full per-gate decision tree (name + ran/red/unjudged/notApplicable + fact) extracted from the gate verdict. */
+  decisionTree?: GateDecisionNode[];
+  /** repo-relative path to the before/after content snapshot (.atomic/snapshots/<op>.snap.json) the re-exec verifier reads. */
+  snapshotPath?: string;
 }
 
 export function newOperationId(): string {
   return `op_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+}
+
+/**
+ * The STABLE per-process session id (#3 causal-blame linkage). Resolved ONCE and
+ * memoized so every trace written by one server/CLI run carries the identical id:
+ *   1. ATOMIC_SESSION_ID env — a host launcher (or the MCP launcher script) pins it,
+ *      so the session id survives across the trace writer AND the blame reader.
+ *   2. else a generated `sess_<ms>_<rand>` — stable for the lifetime of this process.
+ * Exported so the blame engine groups traces by the SAME id the writer stamped, and
+ * so a launcher can read back the id it pinned. Additive: never throws, never blocks.
+ */
+let MEMOIZED_SESSION_ID: string | null = null;
+export function currentSessionId(): string {
+  if (MEMOIZED_SESSION_ID !== null) return MEMOIZED_SESSION_ID;
+  const pinned =
+    typeof process !== 'undefined' && process.env && typeof process.env.ATOMIC_SESSION_ID === 'string'
+      ? process.env.ATOMIC_SESSION_ID.trim()
+      : '';
+  MEMOIZED_SESSION_ID = pinned !== '' ? pinned : `sess_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
+  return MEMOIZED_SESSION_ID;
 }
 
 const sha256 = (s: string): string => crypto.createHash('sha256').update(s).digest('hex');
@@ -346,6 +397,10 @@ export function buildTrace(args: {
     parentSha256: '',
     gateVerdict: args.gateVerdict,
     chainHash: '',
+    // #1 Proof-Carrying Edits: the per-gate decision tree is derivable from the verdict
+    // NOW (no parent/head needed), so stamp it here. gateRunId + snapshotPath depend on
+    // parentSha256 / I/O and are finalized in writeTrace. Empty tree when no verdict.
+    decisionTree: decisionTreeOf(args.gateVerdict),
   };
 }
 
@@ -361,10 +416,20 @@ function traceDirFor(trace: AtomicEditTrace): string {
  * Persist the trace. Fail-closed: returns the selected repo-relative path on success,
  * or an error string on failure — never throws, never blocks the edit.
  */
-export function writeTrace(trace: AtomicEditTrace): {
+export function writeTrace(
+  trace: AtomicEditTrace,
+  /**
+   * #1 Proof-Carrying Edits (additive, optional): when a caller passes the before/after
+   * CONTENT, writeTrace also persists a `.atomic/snapshots/<op>.snap.json` sidecar that a
+   * re-exec verifier replays engine.validate over, and stamps `snapshotPath` + `gateRunId`
+   * on the trace. Existing single-arg callers are unaffected (no snapshot → hash-only proof).
+   */
+  content?: { before: string; after: string },
+): {
   tracePath?: string;
   traceWriteError?: string;
   chainHash?: string;
+  snapshotPath?: string;
 } {
   try {
     const repoRoot = traceRepoRoot(trace);
@@ -382,6 +447,40 @@ export function writeTrace(trace: AtomicEditTrace): {
     trace.parentSha256 = parent;
     trace.chainHash = chainHashOf(parent, trace.afterSha256, trace.gateVerdict);
 
+    // #1 Proof-Carrying Edits: now that parent + afterSha256 are known, mint the dedicated
+    // cryptographic gateRunId for this gated op (verdict ‖ after ‖ parent). Distinct runs
+    // never collide; the same logical run is reproducible by the verifier. Additive stamp.
+    trace.gateRunId = gateRunIdOf(trace.gateVerdict, trace.afterSha256, parent);
+
+    // #1 Proof-Carrying Edits: when the caller passed before/after content, persist the
+    // content snapshot the re-exec verifier replays engine.validate over. Written under
+    // .atomic/snapshots/ (the opt-in content layer the replay/undo note already reserves),
+    // via the same temp+rename atomic idiom. Fail-soft: a snapshot write failure degrades
+    // to a hash-only proof — it MUST NOT block or corrupt the already-persisted trace.
+    let snapshotPath: string | undefined;
+    if (content) {
+      try {
+        const snapDir = path.join(repoRoot, '.atomic', 'snapshots');
+        fs.mkdirSync(snapDir, { recursive: true });
+        const snap = buildSnapshot(trace.file, content.before, content.after);
+        const snapAbs = path.join(snapDir, `${trace.operationId}.snap.json`);
+        const snapTmp = `${snapAbs}.tmp`;
+        fs.writeFileSync(snapTmp, JSON.stringify(snap, null, 2));
+        fs.renameSync(snapTmp, snapAbs);
+        snapshotPath = path.relative(repoRoot, snapAbs);
+        trace.snapshotPath = snapshotPath;
+      } catch {
+        // Snapshot is an ENHANCEMENT to the proof; its failure never blocks the edit.
+        snapshotPath = undefined;
+      }
+    }
+
+    // #3 causal-blame linkage: stamp the stable per-process session id additively at
+    // persist time, so every trace this run writes is groupable to ONE atomic session
+    // (the blame reader links git commits → sessions by op afterSha256 / commit
+    // trailer). Respect a sessionId already set on the trace (a caller may pin one).
+    if (trace.sessionId === undefined) trace.sessionId = currentSessionId();
+
     const abs = path.join(traceDir, `${trace.operationId}.json`);
     const tmp = `${abs}.tmp`;
     fs.writeFileSync(tmp, JSON.stringify(trace, null, 2));
@@ -394,7 +493,7 @@ export function writeTrace(trace: AtomicEditTrace): {
     fs.writeFileSync(headTmp, trace.chainHash);
     fs.renameSync(headTmp, headPath);
 
-    return { tracePath: path.relative(repoRoot, abs), chainHash: trace.chainHash };
+    return { tracePath: path.relative(repoRoot, abs), chainHash: trace.chainHash, snapshotPath };
   } catch (e) {
     return { traceWriteError: e instanceof Error ? e.message : String(e) };
   }

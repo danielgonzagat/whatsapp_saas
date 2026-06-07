@@ -48,6 +48,7 @@ const ENTRY = [
   'engine-rename.ts',
   'engine-ops.ts',
   'engine-universal.ts',
+  'engine-causal-blame.ts',
   'engine-complete.ts',
   'lang-bridge.ts',
   'guard.ts',
