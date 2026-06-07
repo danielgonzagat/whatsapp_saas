@@ -10,6 +10,7 @@ const graphCanvasSource = readFileSync(
 let pathname = '/products';
 let searchParams = new URLSearchParams();
 const push = vi.fn();
+const prefetch = vi.fn();
 const openPalette = vi.fn();
 const useProductsMock = vi.hoisted(() =>
   vi.fn(() => ({
@@ -45,7 +46,7 @@ let memberAreas = [
 
 vi.mock('next/navigation', () => ({
   usePathname: () => pathname,
-  useRouter: () => ({ push, prefetch: vi.fn() }),
+  useRouter: () => ({ push, prefetch }),
   useSearchParams: () => searchParams,
 }));
 
@@ -77,6 +78,7 @@ vi.mock('@/components/kloel/ErrorBoundary', () => ({
   ErrorBoundary: ({ children }: { children: ReactNode }) => <>{children}</>,
 }));
 
+import { KLOEL_GRAPH_PRIMARY_NODES } from './KloelGraph.routes';
 import { KloelGraphShell } from './KloelGraphShell';
 
 afterEach(() => {
@@ -93,6 +95,7 @@ afterEach(() => {
     },
   ];
   push.mockClear();
+  prefetch.mockClear();
   openPalette.mockClear();
   useProductsMock.mockClear();
   useMemberAreasMock.mockClear();
@@ -114,6 +117,15 @@ describe('KloelGraphShell', () => {
     expect(useSWRMock).toHaveBeenCalledWith(null, expect.any(Function), {
       keepPreviousData: true,
     });
+  });
+
+  it('prefetches only primary galaxy routes instead of every graph node', async () => {
+    renderShell(<main>ProdutosView real</main>);
+
+    await waitFor(() => expect(prefetch).toHaveBeenCalledTimes(KLOEL_GRAPH_PRIMARY_NODES.length));
+    expect(prefetch.mock.calls.map(([route]) => route)).toEqual(
+      KLOEL_GRAPH_PRIMARY_NODES.map((node) => node.route.split('?')[0]),
+    );
   });
 
   it('does not allow graph motion loops to run for hundreds of React-rendered frames', () => {

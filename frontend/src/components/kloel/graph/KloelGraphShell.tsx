@@ -19,6 +19,7 @@ import { KloelGraphOverlay } from './KloelGraphOverlay';
 import { KloelGraphSettingsPanel } from './KloelGraphSettingsPanel';
 import {
   KLOEL_GRAPH_NODES,
+  KLOEL_GRAPH_PRIMARY_NODES,
   buildKloelGraphProductNodes,
   getKloelGraphOverlayLabel,
   resolveKloelGraphNodeForPathFromNodes,
@@ -209,7 +210,7 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
   }, [pendingNode, routeSignature]);
 
   useEffect(() => {
-    for (const node of KLOEL_GRAPH_NODES) {
+    for (const node of KLOEL_GRAPH_PRIMARY_NODES) {
       try {
         void router.prefetch(node.route.split('?')[0]);
       } catch {}
