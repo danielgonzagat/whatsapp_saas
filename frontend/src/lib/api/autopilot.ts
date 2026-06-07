@@ -30,6 +30,26 @@ export interface AutopilotConfig {
   [key: string]: unknown;
 }
 
+interface AutopilotConfigEnvelope {
+  autopilot?: AutopilotConfig | null;
+  config?: AutopilotConfig | null;
+  [key: string]: unknown;
+}
+
+function normalizeAutopilotConfig(
+  payload: AutopilotConfig | AutopilotConfigEnvelope | null | undefined,
+): AutopilotConfig {
+  if (!payload || typeof payload !== 'object') {
+    return {};
+  }
+  const envelope = payload as AutopilotConfigEnvelope;
+  const nested = envelope.autopilot ?? envelope.config;
+  if (nested && typeof nested === 'object') {
+    return nested;
+  }
+  return payload as AutopilotConfig;
+}
+
 /** Autopilot action shape. */
 export interface AutopilotAction {
   /** Created at property. */
@@ -71,7 +91,10 @@ export async function toggleAutopilot(
     body: { workspaceId, enabled },
   });
   if (res.error || res.status >= 400) {
-    throw new Error('Failed to toggle autopilot');
+    const message = typeof res.error === 'string' && res.error.trim()
+      ? res.error
+      : 'Failed to toggle autopilot';
+    throw new Error(message);
   }
   if (!res.data) {
     throw new Error('Autopilot toggle did not return a confirmed payload');
@@ -85,11 +108,11 @@ export async function getAutopilotConfig(
   workspaceId: string,
   _token?: string,
 ): Promise<AutopilotConfig> {
-  const res = await apiFetch<AutopilotConfig>('/autopilot/config' + buildQuery({ workspaceId }));
+  const res = await apiFetch<AutopilotConfig | AutopilotConfigEnvelope>('/autopilot/config' + buildQuery({ workspaceId }));
   if (res.error) {
     throw new Error('Failed to fetch autopilot config');
   }
-  return res.data as AutopilotConfig;
+  return normalizeAutopilotConfig(res.data);
 }
 
 /** Update autopilot config. */
@@ -98,7 +121,7 @@ export async function updateAutopilotConfig(
   config: AutopilotConfig,
   _token?: string,
 ): Promise<AutopilotConfig> {
-  const res = await apiFetch<AutopilotConfig>(`/autopilot/config`, {
+  const res = await apiFetch<AutopilotConfig | AutopilotConfigEnvelope>(`/autopilot/config`, {
     method: 'POST',
     body: { workspaceId, ...config },
   });
@@ -109,7 +132,7 @@ export async function updateAutopilotConfig(
     throw new Error('Autopilot config update did not return a confirmed payload');
   }
   invalidateAutopilot();
-  return res.data;
+  return normalizeAutopilotConfig(res.data);
 }
 
 /** Get autopilot stats. */

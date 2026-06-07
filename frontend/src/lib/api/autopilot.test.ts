@@ -78,9 +78,9 @@ describe('toggleAutopilot', () => {
     });
   });
 
-  it('throws on failure', async () => {
+  it('throws the API failure reason when available', async () => {
     apiFetch.mockResolvedValueOnce({ error: 'Forbidden', status: 403 });
-    await expect(toggleAutopilot('ws1', false)).rejects.toThrow('Failed to toggle autopilot');
+    await expect(toggleAutopilot('ws1', false)).rejects.toThrow('Forbidden');
   });
 
   it('rejects failed HTTP status without invalidating cache', async () => {
@@ -100,6 +100,18 @@ describe('getAutopilotConfig', () => {
     expect(result).toEqual(configMock);
   });
 
+  it('unwraps config returned inside the backend autopilot envelope', async () => {
+    const envelopedConfig = { ...configMock, recoveryTemplateName: 'codex_recovery_audit' };
+    apiFetch.mockResolvedValueOnce({
+      data: { workspaceId: 'ws1', autopilot: envelopedConfig },
+      status: 200,
+    });
+
+    const result = await getAutopilotConfig('ws1');
+
+    expect(result).toEqual(envelopedConfig);
+  });
+
   it('throws on failure', async () => {
     apiFetch.mockResolvedValueOnce({ error: 'Error', status: 500 });
     await expect(getAutopilotConfig('ws1')).rejects.toThrow('Failed to fetch autopilot config');
@@ -117,6 +129,18 @@ describe('updateAutopilotConfig', () => {
       method: 'POST',
       body: { workspaceId: 'ws1', ...configMock },
     });
+  });
+
+  it('returns normalized config after an enveloped update response', async () => {
+    const envelopedConfig = { ...configMock, recoveryTemplateName: 'codex_recovery_audit' };
+    apiFetch.mockResolvedValueOnce({
+      data: { workspaceId: 'ws1', autopilot: envelopedConfig },
+      status: 201,
+    });
+
+    const result = await updateAutopilotConfig('ws1', configMock);
+
+    expect(result).toEqual(envelopedConfig);
   });
 
   it('throws on failure', async () => {

@@ -65,6 +65,8 @@ export default function AutopilotSafetyBrakesConfigPanel({
           <label className="flex flex-col gap-1.5 text-sm">
             <span style={{ color: colors.text.secondary }}>{kloelT('Flow de Conversão (ID)')}</span>
             <input
+              id="autopilot-conversion-flow-id"
+              name="conversionFlowId"
               value={configDraft.conversionFlowId || ''}
               onChange={(e) =>
                 onConfigDraftChange((prev) => ({
@@ -88,6 +90,8 @@ export default function AutopilotSafetyBrakesConfigPanel({
           <label className="flex flex-col gap-1.5 text-sm">
             <span style={{ color: colors.text.secondary }}>{kloelT('Moeda Padrão')}</span>
             <input
+              id="autopilot-currency-default"
+              name="currencyDefault"
               value={configDraft.currencyDefault || ''}
               onChange={(e) =>
                 onConfigDraftChange((prev) => ({
@@ -113,6 +117,8 @@ export default function AutopilotSafetyBrakesConfigPanel({
               {kloelT('Template de Recuperação')}
             </span>
             <input
+              id="autopilot-recovery-template"
+              name="recoveryTemplateName"
               value={configDraft.recoveryTemplateName || ''}
               onChange={(e) =>
                 onConfigDraftChange((prev) => ({
