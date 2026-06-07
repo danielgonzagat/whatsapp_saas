@@ -147,6 +147,44 @@ describe('KloelDashboardView new chat', () => {
 });
 
 describe('KloelDashboard route reset', () => {
+  it('deduplicates pending thread message loads for the same conversation in StrictMode', async () => {
+    const { StrictMode } = await import('react');
+    type ThreadMessages = Awaited<ReturnType<typeof loadKloelThreadMessages>>;
+    const resolveMessages: Array<(messages: ThreadMessages) => void> = [];
+    Element.prototype.scrollIntoView = vi.fn();
+    dashboardRoute.searchParams = new URLSearchParams('conversationId=thread-old');
+    vi.mocked(loadKloelThreadMessages).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveMessages.push(resolve);
+        }),
+    );
+
+    render(
+      <StrictMode>
+        <KloelDashboard />
+      </StrictMode>,
+    );
+
+    await act(async () => {
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+
+    expect(loadKloelThreadMessages).toHaveBeenCalledTimes(1);
+
+    resolveMessages[0]?.([
+      {
+        id: 'message-old',
+        role: 'user',
+        content: 'Mensagem carregada uma vez',
+        metadata: null,
+        createdAt: '2026-06-06T12:00:00.000Z',
+      },
+    ]);
+
+    expect(await screen.findByText('Mensagem carregada uma vez')).toBeTruthy();
+  });
+
   it('clears loaded conversation messages when the chat route drops conversationId', async () => {
     Element.prototype.scrollIntoView = vi.fn();
     dashboardRoute.searchParams = new URLSearchParams('conversationId=thread-old');
@@ -307,8 +345,8 @@ describe('KloelDashboardView trace', () => {
     expect(
       screen.getByText('Analisei a pergunta e consultei contexto real antes da resposta final.'),
     ).toBeTruthy();
-    expect(screen.getByText(/We are in a chat conversation/)).toBeTruthy();
-    expect(screen.getByText(/must decide what answer to show/)).toBeTruthy();
+    expect(screen.queryByText(/We are in a chat conversation/)).toBeNull();
+    expect(screen.queryByText(/must decide what answer to show/)).toBeNull();
     expect(screen.getAllByText('list_products').length).toBeGreaterThan(0);
     expect(screen.queryByText('Pré-resposta executável')).toBeNull();
     expect(screen.queryByText('Reasoning summary')).toBeNull();

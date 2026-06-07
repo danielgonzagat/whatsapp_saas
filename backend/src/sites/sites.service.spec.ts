@@ -28,6 +28,9 @@ describe('SitesService', () => {
       create: jest.Mock;
       update: jest.Mock;
     };
+    kloelSite: {
+      findFirst: jest.Mock;
+    };
     siteDomain: {
       findMany: jest.Mock;
       findUnique: jest.Mock;
@@ -95,6 +98,9 @@ describe('SitesService', () => {
             publishedAt: data.publishedAt ?? null,
           }),
         ),
+      },
+      kloelSite: {
+        findFirst: jest.fn().mockResolvedValue(null),
       },
       siteDomain: {
         findMany: jest.fn().mockResolvedValue([]),
@@ -286,6 +292,32 @@ describe('SitesService', () => {
   // ── Domains ─────────────────────────────────────────────
 
   describe('domains', () => {
+    it('bridges KloelSite ids before listing domains', async () => {
+      prisma.site.findUnique.mockResolvedValue(null);
+      prisma.site.findFirst.mockResolvedValue(null);
+      prisma.kloelSite.findFirst.mockResolvedValue({
+        id: 'kloel-site-1',
+        workspaceId: ws,
+        name: 'Published Kloel Site',
+        slug: 'published-kloel-site',
+        published: true,
+      });
+
+      await service.listDomains(ws, 'kloel-site-1');
+
+      expect(prisma.site.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            legacyKloelSiteId: 'kloel-site-1',
+            status: 'PUBLISHED',
+          }),
+        }),
+      );
+      expect(prisma.siteDomain.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { siteId: 'site-1' } }),
+      );
+    });
+
     it('adds a custom domain', async () => {
       prisma.site.findUnique.mockResolvedValue(makeSite());
       prisma.siteDomain.findUnique.mockResolvedValue(null);

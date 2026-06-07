@@ -12,6 +12,7 @@
 import { createRequire } from 'node:module';
 import * as childProcess from 'node:child_process';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { writeManifest } from './dist-freshness.mjs';
@@ -65,6 +66,7 @@ const ENTRY = [
   'gates/security-gate.ts',
   'gates/test-execution-gate.ts',
   'gates/lint-fix-gate.ts',
+  'gates/temporal-session-gate.ts',
   'gates/lens.ts',
   'gates/repair.ts',
   'gates/algebra.ts',
@@ -81,6 +83,62 @@ const ENTRY = [
   'gates/probe-convergence-gate.proof.ts',
 ].map((f) => path.join(dir, f));
 const OUT = path.join(dir, 'dist');
+const BUILD_OUT = fs.mkdtempSync(path.join(os.tmpdir(), `atomic-edit-dist-${process.pid}-`));
+const REQUIRED_DIST_ARTIFACTS = [
+  'server.js',
+  'server-helpers-hot-reload.js',
+  'server-helpers-io.js',
+  'server-helpers-effect.js',
+  'server-tools-exec.js',
+  'server-tools-self.js',
+  'server-tools-y.js',
+  'engine.js',
+  'trace.js',
+  'gates/contract.js',
+  'gates/algebra.js',
+  'gates/converge-operator.js',
+  'gates/reachability-gate.proof.js',
+  'gates/binding-gate.proof.js',
+  'gates/probe-convergence-gate.proof.js',
+  'gates/formal-gate.proof.js',
+  'gates/property-gate.proof.js',
+  'gates/findings-delta-gate.proof.js',
+  'gates/contract-edge-gate.proof.js',
+];
+
+function assertRequiredBuildArtifacts(outDir) {
+  const missing = REQUIRED_DIST_ARTIFACTS.filter((rel) => !fs.existsSync(path.join(outDir, rel)));
+  if (missing.length > 0) {
+    throw new Error('missing required dist artifact(s): ' + missing.join(', '));
+  }
+}
+
+function copyTree(srcRoot, destRoot, options = {}) {
+  const skipRel = options.skipRel;
+  const walk = (srcDir) => {
+    for (const entry of fs.readdirSync(srcDir, { withFileTypes: true })) {
+      const src = path.join(srcDir, entry.name);
+      const rel = path.relative(srcRoot, src).split(path.sep).join('/');
+      if (rel === skipRel) continue;
+      const dest = path.join(destRoot, rel);
+      if (entry.isDirectory()) {
+        fs.mkdirSync(dest, { recursive: true });
+        walk(src);
+      } else if (entry.isFile()) {
+        fs.mkdirSync(path.dirname(dest), { recursive: true });
+        fs.copyFileSync(src, dest);
+      }
+    }
+  };
+  walk(srcRoot);
+}
+
+function publishBuildOutput(stagingOutDir, outDir) {
+  const entrypointRel = 'server.js';
+  fs.mkdirSync(outDir, { recursive: true });
+  copyTree(stagingOutDir, outDir, { skipRel: entrypointRel });
+  fs.copyFileSync(path.join(stagingOutDir, entrypointRel), path.join(outDir, entrypointRel));
+}
 
 function brokerSocketPath() {
   const value = process.env.ATOMIC_EXEC_BROKER_SOCKET;
@@ -153,7 +211,7 @@ const options = {
   target: ts.ScriptTarget.ES2022,
   lib: ['lib.es2022.d.ts'],
   types: ['node'],
-  outDir: OUT,
+  outDir: BUILD_OUT,
   rootDir: dir,
   strict: true,
   skipLibCheck: true,
@@ -162,35 +220,67 @@ const options = {
   sourceMap: false,
 };
 
-// Clean the output dir first so every build is deterministic — a stale or
-// anomalous dist entry (e.g. a leftover directory where a .js should be) can
-// otherwise leave a new module unregistered. Full recompile is cheap here.
-fs.rmSync(OUT, { recursive: true, force: true });
+// Compile into a private staging dir first. The live dist directory is an
+// agent runtime surface: deleting it before emit creates a window where a
+// concurrent MCP process can load server.js without its imported helpers.
+function main() {
+  fs.rmSync(BUILD_OUT, { recursive: true, force: true });
+  fs.mkdirSync(BUILD_OUT, { recursive: true });
 
-const program = ts.createProgram(ENTRY, options);
-const emit = program.emit();
-const diagnostics = ts.getPreEmitDiagnostics(program).concat(emit.diagnostics);
-const errors = diagnostics.filter((d) => d.category === ts.DiagnosticCategory.Error);
-if (errors.length > 0) {
-  const fmt = ts.formatDiagnosticsWithColorAndContext(errors, {
-    getCurrentDirectory: () => dir,
-    getCanonicalFileName: (f) => f,
-    getNewLine: () => '\n',
-  });
-  process.stderr.write(fmt + `\natomic-edit build FAILED (${errors.length} error(s))\n`);
-  process.exit(1);
+  const program = ts.createProgram(ENTRY, options);
+  const emit = program.emit();
+  const diagnostics = ts.getPreEmitDiagnostics(program).concat(emit.diagnostics);
+  const errors = diagnostics.filter((d) => d.category === ts.DiagnosticCategory.Error);
+  if (errors.length > 0) {
+    const fmt = ts.formatDiagnosticsWithColorAndContext(errors, {
+      getCurrentDirectory: () => dir,
+      getCanonicalFileName: (f) => f,
+      getNewLine: () => '\n',
+    });
+    process.stderr.write(fmt + `
+atomic-edit build FAILED (${errors.length} error(s))
+`);
+    return 1;
+  }
+
+  fs.writeFileSync(path.join(BUILD_OUT, 'package.json'), JSON.stringify({ type: 'module' }) + '\n');
+  for (const asset of ['worker-scope-check.mjs']) {
+    fs.copyFileSync(path.join(dir, asset), path.join(BUILD_OUT, asset));
+  }
+
+  try {
+    assertRequiredBuildArtifacts(BUILD_OUT);
+  } catch (error) {
+    process.stderr.write(`atomic-edit build FAILED: ${error instanceof Error ? error.message : String(error)}
+`);
+    return 1;
+  }
+
+  publishBuildOutput(BUILD_OUT, OUT);
+
+  // Emit the build manifest (a sha256 over all engine .ts source) so the running
+  // server / cert can detect when this dist is STALE vs current source — closing
+  // the false-green-from-stale-dist hole. Best-effort: a manifest failure must not
+  // fail an otherwise-successful build.
+  try {
+    writeManifest(dir);
+  } catch (e) {
+    process.stderr.write(`build: manifest write skipped: ${e instanceof Error ? e.message : String(e)}
+`);
+  }
+  process.stderr.write(`atomic-edit build OK -> ${OUT}
+`);
+  return 0;
 }
-fs.writeFileSync(path.join(OUT, 'package.json'), JSON.stringify({ type: 'module' }) + '\n');
-for (const asset of ['worker-scope-check.mjs']) {
-  fs.copyFileSync(path.join(dir, asset), path.join(OUT, asset));
-}
-// Emit the build manifest (a sha256 over all engine .ts source) so the running
-// server / cert can detect when this dist is STALE vs current source — closing
-// the false-green-from-stale-dist hole. Best-effort: a manifest failure must not
-// fail an otherwise-successful build.
+
+let exitCode = 1;
 try {
-  writeManifest(dir);
-} catch (e) {
-  process.stderr.write(`build: manifest write skipped: ${e instanceof Error ? e.message : String(e)}\n`);
+  exitCode = main();
+} catch (error) {
+  process.stderr.write(`atomic-edit build FAILED: ${error instanceof Error ? error.stack ?? error.message : String(error)}
+`);
+  exitCode = 1;
+} finally {
+  fs.rmSync(BUILD_OUT, { recursive: true, force: true });
 }
-process.stderr.write(`atomic-edit build OK -> ${OUT}\n`);
+process.exitCode = exitCode;

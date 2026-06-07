@@ -10,15 +10,14 @@ import type { AssistantProcessingTraceEntry, AssistantReasoning } from '@/lib/kl
 /**
  * Real pre-response execution timeline for the Kloel chat.
  *
- * Every visible reasoning value comes from props (the live model/agent stream):
- * - reasoning.text     — the model's real reasoning_content, token by token
- * - reasoning.summary  — a real header summary (only when the provider/derivation produced one)
- * - reasoning.durationMs — measured reasoning time (reasoning_done event)
- * - steps              — real tool_call/tool_result events (entry.tool + durationMs)
- * - reasoning.files    — real delivered artifacts
+ * Visible values are public-safe execution context only:
+ * - reasoning.summary    — optional public summary
+ * - reasoning.durationMs — measured private thinking time
+ * - steps                — real tool_call/tool_result events (entry.tool + durationMs)
+ * - reasoning.files      — real delivered artifacts
  *
- * There is NO hardcoded reasoning text and NO array of pre-written phrases here. When the
- * model emits no reasoning and runs no tools, the reasoning block does not render at all.
+ * Raw provider reasoning text is intentionally ignored. When there is no public
+ * context, tool activity, file, duration or active processing, the block does not render.
  */
 interface ReasoningTimelineProps {
   reasoning: AssistantReasoning;
@@ -105,9 +104,16 @@ export function ReasoningTimeline({
   const toolSteps = steps.filter(
     (step) => step.kind === 'tool_call' || step.kind === 'tool_result',
   );
-  const hasReasoningText = reasoning.text.trim().length > 0;
+  const safeReasoningSummary = reasoning.summary.trim();
+  const visibleFallbackSummary = fallbackSummary.trim();
+  const publicReasoningText = safeReasoningSummary || visibleFallbackSummary;
+  const hasPublicReasoningText = publicReasoningText.length > 0;
+  const hasReasoningDuration = Boolean(reasoning.durationMs && reasoning.durationMs > 0);
   const hasContent =
-    hasReasoningText || toolSteps.length > 0 || reasoning.files.length > 0;
+    hasPublicReasoningText ||
+    hasReasoningDuration ||
+    toolSteps.length > 0 ||
+    reasoning.files.length > 0;
 
   const [collapseOverride, setCollapseOverride] = useState<boolean | null>(null);
   const collapsed = collapseOverride ?? isComplete;
@@ -118,19 +124,12 @@ export function ReasoningTimeline({
     return null;
   }
 
-  const reasoningGist =
-    reasoning.text.trim().split(/(?<=[.!?])\s/)[0]?.trim().slice(0, 96) || '';
-  const visibleFallbackSummary = fallbackSummary.trim();
-  const headerSummary = reasoning.summary.trim() || visibleFallbackSummary || reasoningGist;
+  const headerSummary = publicReasoningText;
   const durationLabel =
     reasoning.durationMs && reasoning.durationMs > 0
       ? `${kloelT(`Pensou por`)} ${formatDuration(reasoning.durationMs)}`
       : '';
-  const shouldShowFallbackSummary =
-    visibleFallbackSummary.length > 0 &&
-    visibleFallbackSummary !== reasoning.text.trim() &&
-    visibleFallbackSummary !== reasoning.summary.trim() &&
-    visibleFallbackSummary !== headerSummary;
+  const shouldRenderThinkingStep = isProcessing;
 
 
   return (
@@ -199,7 +198,7 @@ export function ReasoningTimeline({
               }}
             />
 
-            {hasReasoningText || isProcessing ? (
+            {shouldRenderThinkingStep ? (
               <div style={{ position: 'relative', padding: '3px 0 14px 34px', minHeight: 21 }}>
                 <StepDot kind="thinking" />
                 <div
@@ -210,7 +209,6 @@ export function ReasoningTimeline({
                     whiteSpace: 'pre-wrap',
                   }}
                 >
-                  {reasoning.text}
                   {isProcessing ? (
                     <span
                       aria-hidden
@@ -224,11 +222,6 @@ export function ReasoningTimeline({
                         animation: 'rtl-blink 1.05s steps(1) infinite',
                       }}
                     />
-                  ) : null}
-                  {shouldShowFallbackSummary ? (
-                    <div style={{ marginTop: 8, fontSize: 13.5, lineHeight: 1.6, color: MUTED }}>
-                      {visibleFallbackSummary}
-                    </div>
                   ) : null}
                 </div>
               </div>

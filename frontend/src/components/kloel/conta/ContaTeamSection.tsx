@@ -1,5 +1,6 @@
 'use client';
 import { colors } from '@/lib/design-tokens';
+import { useAuth } from '@/components/kloel/auth/auth-provider';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useState, useId } from 'react';
@@ -25,6 +26,8 @@ const INVALID_INVITE_EMAIL_MESSAGE = 'Informe um email valido.';
 export function TeamSection() {
   const fid = useId();
   const wsId = useWorkspaceId();
+  const { userEmail } = useAuth();
+  const currentUserEmail = userEmail?.trim().toLowerCase() || '';
   const {
     data,
     error: listError,
@@ -311,106 +314,133 @@ export function TeamSection() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 2 }}>
-            {members.map((m) => (
-              <div
-                key={m.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: '10px 0',
-                  borderBottom: '1px solid var(--app-border-subtle)',
-                }}
-              >
+            {members.map((m) => {
+              const memberEmail = m.email.trim().toLowerCase();
+              const isCurrentUser = !!currentUserEmail && memberEmail === currentUserEmail;
+              const roleSelectDisabled = updatingRoleId === m.id || isCurrentUser;
+
+              return (
                 <div
+                  key={m.id}
                   style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: '16%',
-                    background: 'var(--app-bg-secondary)',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'var(--app-text-secondary)',
+                    gap: 12,
+                    padding: '10px 0',
+                    borderBottom: '1px solid var(--app-border-subtle)',
                   }}
                 >
-                  {Icons.user(14)}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <span
+                  <div
                     style={{
-                      fontSize: 13,
-                      fontWeight: 500,
-                      color: 'var(--app-text-primary)',
-                      display: 'block',
-                      fontFamily: SORA,
+                      width: 32,
+                      height: 32,
+                      borderRadius: '16%',
+                      background: 'var(--app-bg-secondary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'var(--app-text-secondary)',
                     }}
                   >
-                    {m.name || m.email}
-                  </span>
-                  <span
-                    style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}
+                    {Icons.user(14)}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: 'var(--app-text-primary)',
+                        display: 'block',
+                        fontFamily: SORA,
+                      }}
+                    >
+                      {m.name || m.email}
+                    </span>
+                    <span
+                      style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}
+                    >
+                      {m.email}
+                    </span>
+                  </div>
+                  <select
+                    id={`${fid}-team-role-${m.id}`}
+                    name={`team-role-${m.id}`}
+                    aria-label={kloelT(`Funcao de ${m.name || m.email}`)}
+                    value={m.role}
+                    onChange={(e) => handleRoleChange(m.id, m.role, e.target.value)}
+                    disabled={roleSelectDisabled}
+                    style={{
+                      ...selectStyle,
+                      width: 132,
+                      padding: '6px 8px',
+                      fontSize: 11,
+                      opacity: roleSelectDisabled ? 0.58 : 1,
+                    }}
+                    title={
+                      isCurrentUser
+                        ? kloelT(`Seu cargo precisa ser alterado por outro administrador`)
+                        : kloelT(`Alterar cargo de ${m.name || m.email}`)
+                    }
                   >
-                    {m.email}
+                    {Object.entries(ROLES).map(([k, v]) => (
+                      <option key={k} value={k}>
+                        {v}
+                      </option>
+                    ))}
+                  </select>
+                  <span
+                    style={{
+                      fontSize: 9,
+                      fontWeight: 600,
+                      padding: '2px 8px',
+                      borderRadius: 4,
+                      fontFamily: SORA,
+                      color: m.status === 'active' ? colors.semantic.success : colors.semantic.warning,
+                      background:
+                        m.status === 'active' ? 'rgba(16,185,129,.08)' : 'rgba(245,158,11,.08)',
+                    }}
+                  >
+                    {m.status === 'active' ? 'Ativo' : 'Pendente'}
                   </span>
+                  {isCurrentUser ? (
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 600,
+                        padding: '5px 8px',
+                        borderRadius: 4,
+                        color: 'var(--app-text-tertiary)',
+                        border: '1px solid var(--app-border-primary)',
+                        fontFamily: SORA,
+                      }}
+                      title={kloelT(`Voce nao pode remover a si mesmo da equipe`)}
+                    >
+                      {kloelT(`Voce`)}
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleRemove(m.id)}
+                      disabled={removingId === m.id}
+                      style={{
+                        padding: '5px 8px',
+                        background: 'none',
+                        border: '1px solid var(--app-border-primary)',
+                        borderRadius: 4,
+                        color: colors.semantic.error,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        opacity: removingId === m.id ? 0.5 : 1,
+                      }}
+                      aria-label={kloelT(`Remover ${m.name || m.email}`)}
+                      title={kloelT(`Remover ${m.name || m.email}`)}
+                    >
+                      {Icons.trash(12)}
+                    </button>
+                  )}
                 </div>
-                <select
-                  id={`${fid}-team-role-${m.id}`}
-                  name={`team-role-${m.id}`}
-                  aria-label={kloelT(`Funcao de ${m.name || m.email}`)}
-                  value={m.role}
-                  onChange={(e) => handleRoleChange(m.id, m.role, e.target.value)}
-                  disabled={updatingRoleId === m.id}
-                  style={{
-                    ...selectStyle,
-                    width: 132,
-                    padding: '6px 8px',
-                    fontSize: 11,
-                    opacity: updatingRoleId === m.id ? 0.58 : 1,
-                  }}
-                  title={kloelT(`Alterar cargo de ${m.name || m.email}`)}
-                >
-                  {Object.entries(ROLES).map(([k, v]) => (
-                    <option key={k} value={k}>
-                      {v}
-                    </option>
-                  ))}
-                </select>
-                <span
-                  style={{
-                    fontSize: 9,
-                    fontWeight: 600,
-                    padding: '2px 8px',
-                    borderRadius: 4,
-                    fontFamily: SORA,
-                    color: m.status === 'active' ? colors.semantic.success : colors.semantic.warning,
-                    background:
-                      m.status === 'active' ? 'rgba(16,185,129,.08)' : 'rgba(245,158,11,.08)',
-                  }}
-                >
-                  {m.status === 'active' ? 'Ativo' : 'Pendente'}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleRemove(m.id)}
-                  disabled={removingId === m.id}
-                  style={{
-                    padding: '5px 8px',
-                    background: 'none',
-                    border: '1px solid var(--app-border-primary)',
-                    borderRadius: 4,
-                    color: colors.semantic.error,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    opacity: removingId === m.id ? 0.5 : 1,
-                  }}
-                  aria-label={kloelT(`Remover ${m.name || m.email}`)}
-                  title={kloelT(`Remover ${m.name || m.email}`)}
-                >
-                  {Icons.trash(12)}
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </SectionCard>

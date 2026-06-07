@@ -64,6 +64,7 @@ import CarteiraExtratoTable from './CarteiraExtratoTable';
 import CarteiraSaque from './CarteiraSaque';
 import { CarteiraWithdrawModal } from './CarteiraWithdrawModal';
 import CarteiraSaldoCard from './CarteiraSaldoCard';
+import { CarteiraTabAntecipacoes } from './CarteiraTabAntecipacoes';
 
 describe('CarteiraExtratoTable', () => {
   it('gives the transaction search field a stable form identity', () => {
@@ -263,6 +264,27 @@ describe('CarteiraAntecipateModal', () => {
   });
 });
 
+
+describe('CarteiraTabAntecipacoes', () => {
+  it('does not expose anticipation as available when pending balance is zero', () => {
+    const onOpenAntecipate = vi.fn();
+
+    render(
+      <CarteiraTabAntecipacoes
+        pending={0}
+        onOpenAntecipate={onOpenAntecipate}
+        anticipations={[]}
+        antTotals={{}}
+      />,
+    );
+
+    const anticipate = screen.getByRole('button', { name: /Antecipar agora/ }) as HTMLButtonElement;
+    expect(anticipate.disabled).toBe(true);
+    expect(anticipate.title).toBe('Sem saldo a receber para antecipar');
+    fireEvent.click(anticipate);
+    expect(onOpenAntecipate).not.toHaveBeenCalled();
+  });
+});
 describe('CarteiraSaldoCard', () => {
   it('does not expose zero-balance wallet actions as available', () => {
     const onOpenWithdraw = vi.fn();

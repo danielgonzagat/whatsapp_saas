@@ -39,8 +39,8 @@ function decodeHtmlEntities(value: string): string {
     return value;
   }
 
-  const doc = new DOMParser().parseFromString(value, 'text/html');
-  return doc.body.textContent || '';
+  const doc = new DOMParser().parseFromString(`<span>${value}</span>`, 'text/html');
+  return doc.body.textContent ?? value;
 }
 
 function renderMarkedMarkup(markup: string): ReactNode[] {
@@ -69,6 +69,16 @@ export const CommandPaletteItem = forwardRef<HTMLButtonElement, CommandPaletteIt
   ) {
     const titleMarkup = buildTitleMarkup(item, hasQuery, query);
     const previewMarkup = buildPreviewMarkup(item, hasQuery, query);
+    const metaLabel = formatConversationSearchTime(item.updatedAt) || groupLabel;
+    const accessibilityLabel = [
+      item.title,
+      item.matchedContent,
+      ...(hasQuery ? (item.tags || []) : []),
+      metaLabel,
+    ]
+      .map((part) => String(part || '').replace(/\s+/g, ' ').trim())
+      .filter(Boolean)
+      .join(' ');
 
     return (
       <button
@@ -78,6 +88,7 @@ export const CommandPaletteItem = forwardRef<HTMLButtonElement, CommandPaletteIt
         data-selected={isSelected}
         onMouseEnter={onHover}
         onClick={onSelect}
+        aria-label={accessibilityLabel}
       >
         <div className="kloel-search-result-icon" aria-hidden="true">
           <ConversationsIcon size={16} color="currentColor" />
@@ -98,7 +109,7 @@ export const CommandPaletteItem = forwardRef<HTMLButtonElement, CommandPaletteIt
         </div>
 
         <div className="kloel-search-meta">
-          <span>{formatConversationSearchTime(item.updatedAt) || groupLabel}</span>
+          <span>{metaLabel}</span>
           <ArrowRight size={14} className="kloel-search-arrow" aria-hidden="true" />
         </div>
       </button>

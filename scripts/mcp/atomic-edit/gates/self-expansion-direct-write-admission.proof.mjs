@@ -1,7 +1,8 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = process.cwd();
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ioSource = fs.readFileSync(path.join(root, 'server-helpers-io.ts'), 'utf8');
 const selfSource = fs.readFileSync(path.join(root, 'server-helpers-self-expansion.ts'), 'utf8');
 

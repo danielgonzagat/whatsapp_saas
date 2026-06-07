@@ -161,9 +161,8 @@ export type KloelStreamEvent =
 
 export function createKloelPublicThinkingLabel(_message: string): string {
   // Retired facade: the synthesized "thinking" label was a constant-shaped sentence
-  // templated from the user's own message. Real reasoning now flows as reasoning_delta
-  // (DeepSeek reasoning_content); the thinking status carries no fabricated text and
-  // the frontend drops an empty label.
+  // templated from the user's own message. Thinking status now carries no fabricated
+  // text, and provider chain-of-thought stays private.
   return '';
 }
 
@@ -406,11 +405,11 @@ export function createKloelReasoningSummaryEvent(text: string): KloelReasoningSu
   };
 }
 
-/** Create kloel reasoning delta event carrying the model's REAL reasoning_content. */
-export function createKloelReasoningDeltaEvent(text: string): KloelReasoningDeltaEvent {
+/** Create private reasoning delta event; text is intentionally blank for public SSE. */
+export function createKloelReasoningDeltaEvent(_text: string): KloelReasoningDeltaEvent {
   return {
     type: 'reasoning_delta',
-    text,
+    text: '',
     done: false,
   };
 }

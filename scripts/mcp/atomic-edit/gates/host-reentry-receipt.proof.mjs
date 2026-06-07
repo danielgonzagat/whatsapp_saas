@@ -55,9 +55,12 @@ async function main() {
     });
     const launcherProofGreen = payload.launcher?.proof?.ok === true;
     const launcherProofNestedDenied = nestedSandboxApplyDenied(payload.launcher?.proof);
-    record(results, 'receipt embeds launcher proof or nested sandbox refusal', launcherProofGreen || launcherProofNestedDenied, {
+    const launcherProofRedRequiresReentry =
+      payload.hostAdmission?.status === 'HOST_REENTRY_REQUIRED' && payload.launcher?.proof?.ok === false;
+    record(results, 'receipt embeds launcher proof, nested sandbox refusal, or red proof requiring re-entry', launcherProofGreen || launcherProofNestedDenied || launcherProofRedRequiresReentry, {
       launcherProofGreen,
       launcherProofNestedDenied,
+      launcherProofRedRequiresReentry,
       launcherProof: payload.launcher?.proof,
     });
     record(results, 'receipt embeds strict Codex hook wiring status', payload.codexHookWiring?.hooksEnabled === true && payload.codexHookWiring?.strictProjectHook === true, {

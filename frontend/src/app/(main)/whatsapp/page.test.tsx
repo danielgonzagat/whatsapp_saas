@@ -13,6 +13,16 @@ vi.mock('@/lib/api/core', () => ({
 
 vi.mock('@/lib/api/whatsapp', () => ({
   getWhatsAppStatus: getWhatsAppStatusMock,
+  mapMetaAuthStatusToWhatsAppStatus: (data: { channels?: { whatsapp?: { status?: string } } }) => {
+    const status = data.channels?.whatsapp?.status || 'connection_incomplete';
+    return {
+      connected: status === 'connected',
+      status,
+      degraded: status === 'meta_oauth_configuration_missing',
+      degradedReason: status === 'meta_oauth_configuration_missing' ? status : null,
+      workerHealthy: status !== 'meta_oauth_configuration_missing',
+    };
+  },
 }));
 
 vi.mock('swr', () => ({
@@ -68,6 +78,7 @@ describe('WhatsAppPage', () => {
     fireEvent.click(connectButton);
 
     expect(apiFetchMock).toHaveBeenCalledTimes(1);
+    expect(getWhatsAppStatusMock).not.toHaveBeenCalled();
     expect(apiFetchMock).not.toHaveBeenCalledWith(
       '/meta/auth/url?channel=whatsapp&returnTo=/whatsapp',
     );

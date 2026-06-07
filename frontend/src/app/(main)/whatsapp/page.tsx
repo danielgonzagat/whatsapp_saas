@@ -10,7 +10,10 @@ export const dynamic = 'force-dynamic';
 // Monitor palette. Remaining hexes are custom Meta channel UI surface colors.
 
 import { apiFetch } from '@/lib/api/core';
-import { getWhatsAppStatus, type WhatsAppConnectionStatus } from '@/lib/api/whatsapp';
+import {
+  mapMetaAuthStatusToWhatsAppStatus,
+  type WhatsAppConnectionStatus,
+} from '@/lib/api/whatsapp';
 import { useCallback, useEffect, useState } from 'react';
 import { mutate } from 'swr';
 
@@ -142,13 +145,18 @@ export default function WhatsAppPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [metaRes, whatsappRes] = await Promise.all([
-        apiFetch<MetaStatusResponse>('/meta/auth/status'),
-        getWhatsAppStatus(''),
-      ]);
+      const metaRes = await apiFetch<MetaStatusResponse>('/meta/auth/status');
+      if (
+        metaRes.error ||
+        (typeof metaRes.status === 'number' && metaRes.status >= 400) ||
+        !metaRes.data
+      ) {
+        throw kloelError(metaRes.error || 'Falha ao consultar status oficial da Meta.');
+      }
 
-      setMetaStatus(metaRes.data ?? null);
-      setWhatsAppStatus(whatsappRes || null);
+      const metaData = metaRes.data;
+      setMetaStatus(metaData);
+      setWhatsAppStatus(mapMetaAuthStatusToWhatsAppStatus(metaData));
     } finally {
       setLoading(false);
     }

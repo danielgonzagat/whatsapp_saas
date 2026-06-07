@@ -253,16 +253,13 @@ function tryAppendReasoningSummary(
 }
 
 function tryAppendReasoningDelta(event: Record<string, unknown>, events: KloelStreamEvent[]): void {
-  if (
-    event.type !== 'reasoning_delta' ||
-    typeof event.text !== 'string' ||
-    event.text.length === 0
-  ) {
+  if (event.type !== 'reasoning_delta') {
     return;
   }
 
-  // Real DeepSeek reasoning_content, forwarded token-by-token to the timeline.
-  events.push({ type: 'reasoning_delta', text: event.text });
+  void events;
+  // Provider reasoning content is private. Public chat surfaces must rely on
+  // status, tool spans, summaries, duration and final answer text instead.
 }
 
 function tryAppendReasoningDone(event: Record<string, unknown>, events: KloelStreamEvent[]): void {

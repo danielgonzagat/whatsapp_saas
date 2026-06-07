@@ -37,6 +37,14 @@ export function CheckoutSocialIdentitySection({
   loadingProvider,
   error,
 }: Props) {
+  const facebookReady = facebookAvailable && facebookSdkReady;
+  const facebookLabel =
+    loadingProvider === 'facebook'
+      ? 'Entrando com Facebook'
+      : facebookReady
+        ? 'Continuar com Facebook'
+        : 'Facebook indisponível';
+
   return (
     <div style={{ marginBottom: 20 }}>
       <div
@@ -56,8 +64,8 @@ export function CheckoutSocialIdentitySection({
           />
           <ActionSocialButton
             icon={<MetaIdentityIcon />}
-            label={facebookSdkReady ? 'Continuar com Facebook' : 'Carregando Facebook'}
-            available={facebookAvailable}
+            label={facebookLabel}
+            available={facebookReady}
             loading={loadingProvider === 'facebook'}
             onClick={onFacebookClick}
           />

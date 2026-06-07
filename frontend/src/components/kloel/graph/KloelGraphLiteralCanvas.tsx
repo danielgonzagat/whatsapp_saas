@@ -343,6 +343,9 @@ export function KloelGraphLiteralCanvas({
         settings.forces,
         isDragging ? Math.max(alpha, 0.3) : alpha,
         degreeMap,
+        focusedArea,
+        settings.display.nodeSize,
+        zoomRef.current,
       );
       settlingFrames += 1;
       alphaRef.current = alpha + (0 - alpha) * alphaDecay;
@@ -361,7 +364,7 @@ export function KloelGraphLiteralCanvas({
         cancelAnimationFrame(raf);
       }
     };
-  }, [ariaHidden, degreeMap, draggingId, forceRender, settings.forces, visibleEdges, visibleNodes]);
+  }, [ariaHidden, degreeMap, draggingId, focusedArea, forceRender, settings.display.nodeSize, settings.forces, visibleEdges, visibleNodes]);
 
   useEffect(() => {
     alphaRef.current = 0.6;
@@ -736,16 +739,14 @@ export function KloelGraphLiteralCanvas({
             const inFocus = focusSet?.has(node.id);
             const dimmed = focusSet && !inFocus;
             const keyboardReachable = !ariaHidden && node.area === focusedArea;
-            const radius = nodeRadius(node, degreeMap, settings.display.nodeSize);
-            const fill = colorForNode(node, settings.groups, C, focusedArea, focusSet);
-            const mass = node.type === 'sun' || node.type === 'core';
-            const principal = node.parentId === SUN_OF_AREA[focusedArea];
-            const labelFontSize = (mass ? 12 : principal ? 11 : 9.5) / zoom;
-            const labelHitWidth = Math.max(
-              radius * 2 + 18 / zoom,
-              node.label.length * labelFontSize * 0.62 + 24 / zoom,
+            const { height: labelHitHeight, radius, width: labelHitWidth } = nodeHitboxMetrics(
+              node,
+              degreeMap,
+              focusedArea,
+              settings.display.nodeSize,
+              zoom,
             );
-            const labelHitHeight = radius * 2 + 32 / zoom;
+            const fill = colorForNode(node, settings.groups, C, focusedArea, focusSet);
             return (
               <g
                 key={node.id}
@@ -887,6 +888,37 @@ function nodeRadius(node: KloelGraphNode, degreeMap: Map<string, number>, nodeSi
   return ((NODE_BASE_SIZE[node.type] || 4) + Math.sqrt(degree) * 0.8) * nodeSize;
 }
 
+function nodeHitboxMetrics(
+  node: KloelGraphNode,
+  degreeMap: Map<string, number>,
+  focusedArea: KloelGraphArea,
+  nodeSize = 1,
+  zoom = 1,
+) {
+  const radius = nodeRadius(node, degreeMap, nodeSize);
+  const safeZoom = Math.max(0.1, zoom);
+  const mass = node.type === 'sun' || node.type === 'core';
+  const principal = node.parentId === SUN_OF_AREA[focusedArea];
+  const labelFontSize = (mass ? 12 : principal ? 11 : 9.5) / safeZoom;
+  const width = Math.max(
+    radius * 2 + 18 / safeZoom,
+    node.label.length * labelFontSize * 0.62 + 24 / safeZoom,
+  );
+  const height = radius * 2 + 32 / safeZoom;
+  return { height, radius, width };
+}
+
+function nodeHitboxCollisionRadius(
+  node: KloelGraphNode,
+  degreeMap: Map<string, number>,
+  focusedArea: KloelGraphArea,
+  nodeSize = 1,
+  zoom = 1,
+) {
+  const { height, width } = nodeHitboxMetrics(node, degreeMap, focusedArea, nodeSize, zoom);
+  return Math.sqrt((width / 2) ** 2 + (height / 2) ** 2);
+}
+
 function matchQuery(node: KloelGraphNode, query: string) {
   const normalized = query.trim().toLowerCase();
   if (!normalized) {
@@ -997,6 +1029,9 @@ function physicsTick(
   forces: KloelGraphForceSettings,
   alpha: number,
   degreeMap: Map<string, number>,
+  focusedArea: KloelGraphArea,
+  nodeSize = 1,
+  zoom = 1,
 ) {
   const idMap = new Map(nodes.map((node) => [node.id, node]));
   const degree = (id: string) => degreeMap.get(id) || 1;
@@ -1068,10 +1103,10 @@ function physicsTick(
   for (let pass = 0; pass < 2; pass += 1) {
     for (let i = 0; i < nodes.length; i += 1) {
       const a = nodes[i];
-      const ra = nodeRadius(a, degreeMap);
+      const ra = nodeHitboxCollisionRadius(a, degreeMap, focusedArea, nodeSize, zoom);
       for (let j = i + 1; j < nodes.length; j += 1) {
         const b = nodes[j];
-        const rb = nodeRadius(b, degreeMap);
+        const rb = nodeHitboxCollisionRadius(b, degreeMap, focusedArea, nodeSize, zoom);
         const minDistance = ra + rb + 8;
         const dx = b.x - a.x;
         const dy = b.y - a.y;

@@ -114,6 +114,58 @@ describe('DadosFiscaisSection', () => {
     expect(mocks.mutate).toHaveBeenCalled();
   });
 
+  it('does not repeat CEP lookup when blur follows a completed CEP input', async () => {
+    mocks.lookupCep.mockResolvedValue({
+      bairro: 'Se',
+      complemento: '',
+      localidade: 'Sao Paulo',
+      logradouro: 'Praca da Se',
+      uf: 'SP',
+    });
+
+    render(<DadosFiscaisSection fiscal={null} mutate={mocks.mutate} />);
+
+    const cepInput = screen.getByLabelText('CEP');
+    fireEvent.change(cepInput, { target: { value: '02002000' } });
+
+    await waitFor(() => {
+      expect(mocks.lookupCep).toHaveBeenCalledTimes(1);
+    });
+
+    fireEvent.blur(cepInput);
+
+    expect(mocks.lookupCep).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not repeat CNPJ lookup when blur follows a completed CNPJ input', async () => {
+    mocks.lookupCnpj.mockResolvedValue({
+      bairro: 'Centro',
+      cep: '01001000',
+      complemento: '',
+      logradouro: 'Praca da Se',
+      municipio: 'Sao Paulo',
+      nome_fantasia: 'ACME',
+      numero: '100',
+      qsa: [],
+      razao_social: 'ACME LTDA',
+      uf: 'SP',
+    });
+
+    render(<DadosFiscaisSection fiscal={null} mutate={mocks.mutate} />);
+    fireEvent.click(screen.getByRole('button', { name: /Pessoa Juridica/i }));
+
+    const cnpjInput = screen.getByLabelText('CNPJ');
+    fireEvent.change(cnpjInput, { target: { value: '12345678000190' } });
+
+    await waitFor(() => {
+      expect(mocks.lookupCnpj).toHaveBeenCalledTimes(1);
+    });
+
+    fireEvent.blur(cnpjInput);
+
+    expect(mocks.lookupCnpj).toHaveBeenCalledTimes(1);
+  });
+
   it('blocks saving empty required fiscal data', async () => {
     render(<DadosFiscaisSection fiscal={null} mutate={mocks.mutate} />);
 

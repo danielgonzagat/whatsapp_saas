@@ -1,9 +1,8 @@
 'use client';
 
 import { t } from '@/lib/i18n/t';
-import { useId, type Dispatch, type SetStateAction } from 'react';
+import { Suspense, lazy, useId, type Dispatch, type SetStateAction } from 'react';
 import type { PublicCheckoutConfig } from '@/lib/public-checkout-contract';
-import { StripePaymentElement } from './StripePaymentElement';
 import { Bc, Cc, Px, ValidationInput } from './checkout-theme-shared';
 import type { CheckoutVisualTheme } from './checkout-theme-tokens';
 import {
@@ -20,6 +19,12 @@ import {
   shouldShowSubmitError,
   usesStripePaymentElement,
 } from './CheckoutPaymentSection.helpers';
+
+const StripePaymentElement = lazy(async () => {
+  const module = await import('./StripePaymentElement');
+  return { default: module.StripePaymentElement };
+});
+
 
 type FormState = {
   cpf: string;
@@ -51,10 +56,13 @@ type Props = {
   submitError: string;
   isSubmitting: boolean;
   finalizeOrder: () => void | Promise<void>;
+  checkoutUnavailableReason?: string | undefined;
   stripeClientSecret?: string | null;
   stripeReturnUrl?: string | undefined;
   onStripeSuccess?: (() => void) | undefined;
   onStripeError?: ((message: string) => void) | undefined;
+  stepNumber?: number | undefined;
+  lockedMessage?: string | undefined;
 };
 
 /** Checkout payment section. */
@@ -81,6 +89,8 @@ export function CheckoutPaymentSection(props: Props) {
     stripeReturnUrl,
     onStripeSuccess,
     onStripeError,
+    stepNumber = 3,
+    lockedMessage = 'Preencha suas informações de entrega para continuar',
   } = props;
   const labelStyle = buildLabelStyle(theme);
   const activeCard = buildActiveCardStyle(theme);
@@ -91,10 +101,8 @@ export function CheckoutPaymentSection(props: Props) {
     return (
       <div className="ck-col" style={{ flex: '0 0 34%', minWidth: 280 }}>
         <div style={buildLockedCardStyle(theme)}>
-          <SectionHeader theme={theme} title={t(`Pagamento`)} number={3} locked />
-          <p style={{ fontSize: 13, color: theme.mutedText, marginTop: 4 }}>
-            {t(`Preencha suas informações de entrega para continuar`)}
-          </p>
+          <SectionHeader theme={theme} title={t(`Pagamento`)} number={stepNumber} locked />
+          <p style={{ fontSize: 13, color: theme.mutedText, marginTop: 4 }}>{t(lockedMessage)}</p>
         </div>
       </div>
     );
@@ -103,10 +111,26 @@ export function CheckoutPaymentSection(props: Props) {
   return (
     <div className="ck-col" style={{ flex: '0 0 34%', minWidth: 280 }}>
       <div style={activeCard}>
-        <SectionHeader theme={theme} title={t(`Pagamento`)} number={3} />
+        <SectionHeader theme={theme} title={t(`Pagamento`)} number={stepNumber} />
         <p style={{ fontSize: 13, color: theme.mutedText, marginBottom: 16 }}>
           {t(`Escolha uma forma de pagamento`)}
         </p>
+        {props.checkoutUnavailableReason ? (
+          <div
+            role="status"
+            style={{
+              border: `1px solid ${theme.cardBorder}`,
+              borderRadius: theme.input.radius,
+              color: theme.errorText,
+              fontSize: 13,
+              lineHeight: 1.5,
+              marginBottom: 16,
+              padding: '12px 14px',
+            }}
+          >
+            {props.checkoutUnavailableReason}
+          </div>
+        ) : null}
         {supportsCard ? (
           <PaymentOption
             theme={theme}
@@ -116,12 +140,20 @@ export function CheckoutPaymentSection(props: Props) {
             onClick={() => setPayMethod('card')}
           >
             {payMethod === 'card' && stripeClientSecret && stripeReturnUrl ? (
-              <StripePaymentElement
-                clientSecret={stripeClientSecret}
-                returnUrl={stripeReturnUrl}
-                {...(onStripeSuccess ? { onSuccess: onStripeSuccess } : {})}
-                {...(onStripeError ? { onError: onStripeError } : {})}
-              />
+              <Suspense
+                fallback={
+                  <div role="status" style={{ fontSize: 13, color: theme.mutedText }}>
+                    {t(`Carregando pagamento seguro`)}
+                  </div>
+                }
+              >
+                <StripePaymentElement
+                  clientSecret={stripeClientSecret}
+                  returnUrl={stripeReturnUrl}
+                  {...(onStripeSuccess ? { onSuccess: onStripeSuccess } : {})}
+                  {...(onStripeError ? { onError: onStripeError } : {})}
+                />
+              </Suspense>
             ) : (
               renderCardForm(
                 theme,
@@ -171,7 +203,7 @@ export function CheckoutPaymentSection(props: Props) {
         {shouldShowSubmitError(submitError, step) ? (
           <div style={{ marginTop: 14, fontSize: 13, color: theme.errorText }}>{submitError}</div>
         ) : null}
-        {!stripeFlowActive ? (
+        {!props.checkoutUnavailableReason && !stripeFlowActive ? (
           <button
             type={resolveSubmitButtonType(payMethod)}
             form={resolveSubmitButtonFormId(payMethod, manualCardFormId)}

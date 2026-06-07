@@ -366,9 +366,9 @@ export interface AssistantReasoningFile {
   downloadUrl?: string | undefined;
 }
 
-/** Assistant reasoning shape (real model reasoning accumulated from the stream). */
+/** Public-safe reasoning UI shape. Raw provider reasoning is never exposed. */
 export interface AssistantReasoning {
-  /** Text property. */
+  /** Always public-safe text; currently blank to avoid chain-of-thought leakage. */
   text: string;
   /** Summary property. */
   summary: string;
@@ -378,10 +378,10 @@ export interface AssistantReasoning {
   files: AssistantReasoningFile[];
 }
 
-/** Get the real reasoning accumulated for an assistant message. */
+/** Get public-safe reasoning metadata for an assistant message. */
 export function getAssistantReasoning(metadata: unknown): AssistantReasoning {
   const normalized = normalizeAssistantMessageMetadata(metadata);
-  const text = typeof normalized?.reasoningText === 'string' ? normalized.reasoningText : '';
+  const text = '';
   const summary =
     typeof normalized?.reasoningSummary === 'string' ? normalized.reasoningSummary : '';
   const durationMs =
@@ -407,14 +407,13 @@ export function getAssistantReasoning(metadata: unknown): AssistantReasoning {
   return { text, summary, durationMs, files };
 }
 
-/** Accumulate a reasoning/file stream event into assistant message metadata. */
+/** Apply public-safe reasoning/file stream events into assistant message metadata. */
 function applyReasoningStreamEventToMetadata(
   metadata: Record<string, unknown>,
   event: KloelStreamEvent,
 ): Record<string, unknown> | null {
   if (event.type === 'reasoning_delta') {
-    const prior = typeof metadata.reasoningText === 'string' ? metadata.reasoningText : '';
-    return { ...metadata, reasoningText: prior + event.text };
+    return metadata;
   }
   if (event.type === 'reasoning_summary') {
     return { ...metadata, reasoningSummary: event.text };

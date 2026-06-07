@@ -8,7 +8,6 @@ import {
   createKloelAssistantVisibleTextStreamFilter,
   createKloelContentEvent,
   createKloelStatusEvent,
-  createKloelReasoningDeltaEvent,
   createKloelReasoningDoneEvent,
   createKloelDoneEvent,
 } from './kloel-stream-events';
@@ -171,11 +170,8 @@ export class KloelStreamWriter {
   // ("Perdi acesso ao motor de conversa"). close() uses this to guarantee a
   // terminal `done` is always emitted before the socket is ended.
   private terminalSent = false;
-  // The model's real reasoning_content from the LAST streamModelResponse call,
-  // captured so finalizeSuccessfulReply can PERSIST it into the assistant message
-  // metadata — otherwise the post-stream conversation reload (which returns
-  // backend-persisted metadata without reasoning) would wipe the live reasoning.
-  private lastReasoningText = '';
+  // Tracks private reasoning duration only. Provider reasoning text must never be
+  // serialized to SSE or persisted into public assistant metadata.
   private lastReasoningDurationMs: number | null = null;
 
   constructor(
@@ -183,9 +179,9 @@ export class KloelStreamWriter {
     private readonly options: KloelStreamWriterOptions,
   ) {}
 
-  /** Reasoning captured during the last streamModelResponse (for persistence). */
+  /** Public-safe reasoning metadata captured during the current response. */
   getLastReasoning(): { text: string; durationMs: number | null } {
-    return { text: this.lastReasoningText, durationMs: this.lastReasoningDurationMs };
+    return { text: '', durationMs: this.lastReasoningDurationMs };
   }
 
   /** Init. */
@@ -365,10 +361,8 @@ export class KloelStreamWriter {
     let hasStreamedContent = false;
     const visibleTextFilter = createKloelAssistantVisibleTextStreamFilter();
 
-    // Real reasoning passthrough: DeepSeek emits its chain-of-thought as
-    // delta.reasoning_content (thinking is enabled via normalizeChatCompletionParams).
-    // Forward it token-by-token as reasoning_delta and measure the real duration.
-    // Honest by construction: when the provider sends no reasoning, nothing is emitted.
+    // DeepSeek can emit private reasoning_content before the public answer.
+    // Measure that phase, but never stream or persist the text.
     let reasoningStartedAt = 0;
     let reasoningEmitted = false;
     let reasoningDoneEmitted = false;
@@ -421,8 +415,6 @@ export class KloelStreamWriter {
           reasoningEmitted = true;
           reasoningStartedAt = Date.now();
         }
-        this.lastReasoningText += reasoningPiece;
-        this.write(createKloelReasoningDeltaEvent(reasoningPiece));
       }
       const content = delta?.content || '';
       if (!content) {

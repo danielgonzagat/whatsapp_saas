@@ -92,6 +92,24 @@ describe('AreaMembros student navigation', () => {
     expect(screen.getByText('Area Teste')).toBeTruthy();
   });
 
+  it('exposes the member area preview link with a usable accessible name', () => {
+    render(
+      <AreaMembros
+        totalStudents={0}
+        displayAreas={[makeArea()]}
+        avgCompletion={0}
+        mutateAreas={vi.fn()}
+        productOptions={[]}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Areas' }));
+
+    const previewLink = screen.getByRole('link', { name: 'Pre-visualizar area Area Teste' });
+
+    expect(previewLink.getAttribute('href')).toBe('/produtos/area-membros/preview/area-1');
+  });
+
   it('debounces student search requests instead of fetching on every keystroke', async () => {
     render(
       <AreaMembros

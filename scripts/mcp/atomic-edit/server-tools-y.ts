@@ -213,6 +213,7 @@ function jsonScriptMustRunHostDirect(name: string): boolean {
     'gates/external-runtime-denial.proof.mjs',
     'gates/mcp-launcher-host-boundary.proof.mjs',
     'gates/codex-entrypoint-contract.proof.mjs',
+    'gates/whole-host-sandbox-launcher.proof.mjs',
   ]).has(name);
 }
 
@@ -320,6 +321,66 @@ function runJsonScript(
   return runJsonScriptDirect(name, args, timeoutMs);
 }
 
+function hostSandboxMarkersActive(): boolean {
+  return process.env.ATOMIC_HOST_SANDBOX === 'macos-sandbox-exec' && process.env.ATOMIC_HOST_ATOMIC_ONLY === '1';
+}
+
+function hostProofMode(hostProof: { ok: true; value: Record<string, unknown> } | { ok: false; error: string }): string | null {
+  if (hostProof.ok) return typeof hostProof.value.mode === 'string' ? hostProof.value.mode : null;
+  const match = hostProof.error.match(/\"mode\"\s*:\s*\"([^\"]+)\"/);
+  return match ? match[1] : null;
+}
+
+function currentHostSandboxAdmitted(hostProof: { ok: true; value: Record<string, unknown> } | { ok: false; error: string }): boolean {
+  return hostSandboxMarkersActive() && hostProof.ok && hostProof.value.ok === true && hostProofMode(hostProof) === 'inherited-host';
+}
+
+function shellArgForReceipt(value: string): string {
+  return /^[A-Za-z0-9_./:=@+-]+$/.test(value) ? value : shellPath(value);
+}
+
+function hostLauncherReceiptCommand(command: string[]): string {
+  return [process.execPath, scriptPath('codex-atomic-host-launcher.mjs'), '--', ...command].map(shellArgForReceipt).join(' ');
+}
+
+function codexHookWiringStatus(): Record<string, unknown> & {
+  hooksEnabled: boolean;
+  strictProjectHook: boolean;
+  userConfigPath: string;
+  projectHooksPath: string;
+} {
+  const userConfigPath = path.join(process.env.HOME ?? '', '.codex/config.toml');
+  const projectHooksPath = path.join(REPO_ROOT, '.codex/hooks.json');
+  const hooksEnabled = fs.existsSync(userConfigPath)
+    ? /^hooks\s*=\s*true\b/m.test(fs.readFileSync(userConfigPath, 'utf8'))
+    : false;
+  let strictProjectHook = false;
+  try {
+    const hookConfig = JSON.parse(fs.readFileSync(projectHooksPath, 'utf8')) as {
+      hooks?: {
+        PreToolUse?: {
+          matcher?: unknown;
+          hooks?: { command?: unknown }[];
+        }[];
+      };
+    };
+    const preToolUse = Array.isArray(hookConfig.hooks?.PreToolUse)
+      ? hookConfig.hooks.PreToolUse
+      : [];
+    strictProjectHook = preToolUse.some(
+      (entry) =>
+        String(entry.matcher ?? '') === '.*' &&
+        Array.isArray(entry.hooks) &&
+        entry.hooks.some((hook) =>
+          String(hook.command ?? '').includes('codex-atomic-only-hook.mjs'),
+        ),
+    );
+  } catch {
+    strictProjectHook = false;
+  }
+  return { userConfigPath, projectHooksPath, hooksEnabled, strictProjectHook };
+}
+
 function blockers(domains: YDomain[]): YDomain[] {
   return domains.filter((d) => d.status !== 'GREEN');
 }
@@ -352,6 +413,65 @@ function annotateDelegatedCertificateResult(
 }
 
 export function registerToolsY(server: McpServer): void {
+  server.registerTool(
+    'atomic_host_reentry_receipt',
+    {
+      title: 'Host re-entry receipt - exact Atomic host relaunch command',
+      description:
+        'Issues an audit-friendly receipt for entering or verifying the Atomic whole-host boundary. ' +
+        'It does not claim whole-host Y by itself: it reports whether the current process is already admitted, ' +
+        'embeds the guarded codex-atomic-host-launcher command to re-enter when needed, includes launcher proof status, ' +
+        'and points reviewers back to atomic_y_certificate scope=whole-host for final verification.',
+      inputSchema: {
+        command: z.array(z.string()).optional().describe('Host command to run through codex-atomic-host-launcher.mjs; defaults to codex'),
+      },
+    },
+    async (a) => {
+      try {
+        const command = Array.isArray(a.command) && a.command.length > 0 ? a.command.map(String) : ['codex'];
+        const launcherProof = runJsonScript('gates/whole-host-sandbox-launcher.proof.mjs', ['--json'], 120000);
+        const hostMarkersActive = hostSandboxMarkersActive();
+        const active = currentHostSandboxAdmitted(launcherProof);
+        const launcherMode = hostProofMode(launcherProof);
+        return ok({
+          ok: true,
+          currentProcess: {
+            pid: process.pid,
+            activeHostSandbox: active,
+            hostMarkersActive,
+            hostProofMode: launcherMode,
+            atomicHostSandbox: process.env.ATOMIC_HOST_SANDBOX ?? null,
+            atomicHostAtomicOnly: process.env.ATOMIC_HOST_ATOMIC_ONLY ?? null,
+            atomicHostWriteRoot: process.env.ATOMIC_HOST_WRITE_ROOT ?? null,
+          },
+          hostAdmission: {
+            status: active ? 'HOST_ADMITTED' : 'HOST_REENTRY_REQUIRED',
+            evidence: active
+              ? 'current process has host markers and inherited whole-host sandbox proof is green'
+              : hostMarkersActive
+                ? 'current process carries host markers, but inherited whole-host proof is not green; re-entry is required before claiming literal whole-host no-bypass'
+                : 'current process is not marked as running inside the Atomic host boundary; re-entry is required before claiming literal whole-host no-bypass',
+            requiredChange: active
+              ? undefined
+              : 'Relaunch through the provided codex-atomic-host-launcher.mjs command, then rerun atomic_y_certificate with scope=whole-host.',
+          },
+          launcher: {
+            command: hostLauncherReceiptCommand(command),
+            commandArgs: command,
+            proof: launcherProof.ok ? launcherProof.value : { ok: false, error: launcherProof.error },
+          },
+          codexHookWiring: codexHookWiringStatus(),
+          nextVerification: {
+            tool: 'atomic_y_certificate',
+            arguments: { scope: 'whole-host', includeAudits: true },
+          },
+        });
+      } catch (e) {
+        return fail(e instanceof Error ? e.message : String(e));
+      }
+    },
+  );
+
   server.registerTool(
     'atomic_y_certificate',
     {
@@ -754,25 +874,27 @@ export function registerToolsY(server: McpServer): void {
         });
         if (scope === 'whole-host') {
           const hostProof = runJsonScript('gates/whole-host-sandbox-launcher.proof.mjs', ['--json']);
-          const activeHostSandbox =
-            process.env.ATOMIC_HOST_SANDBOX === 'macos-sandbox-exec' &&
-            process.env.ATOMIC_HOST_ATOMIC_ONLY === '1';
+          const hostMarkersActive = hostSandboxMarkersActive();
           const hostProofGreen = hostProof.ok && hostProof.value.ok === true;
-          const wholeHostGreen = activeHostSandbox && hostProofGreen;
+          const currentHostAdmitted = currentHostSandboxAdmitted(hostProof);
+          const launcherMode = hostProofMode(hostProof);
           domains.push({
             domain: 'wholeHostActionSpace',
-            status: wholeHostGreen ? 'GREEN' : 'RED',
-            evidence: wholeHostGreen
-              ? 'current host process is marked as launched inside the atomic host sandbox and launcher proof is green.'
+            status: currentHostAdmitted ? 'GREEN' : 'RED',
+            evidence: currentHostAdmitted
+              ? 'current host process has host markers and inherited whole-host sandbox proof is green.'
               : hostProof.ok
-                ? `host sandbox launcher proof ok=${String(hostProof.value.ok)} activeHostSandbox=${String(activeHostSandbox)}; current process is not yet proven to be inside the mandatory host boundary.`
+                ? `host sandbox launcher proof ok=${String(hostProof.value.ok)} mode=${String(launcherMode)} hostMarkersActive=${String(hostMarkersActive)} hostProofGreen=${String(hostProofGreen)}; current process is not yet proven to be inside the mandatory host boundary.`
                 : `host sandbox launcher proof could not run: ${hostProof.error}` +
-                  ` activeHostSandbox=${String(activeHostSandbox)}; MCP cannot by itself prevent bytes/effects produced outside its tool surface.`,
-            requiredChange: wholeHostGreen
+                  ` hostMarkersActive=${String(hostMarkersActive)}; MCP cannot by itself prevent bytes/effects produced outside its tool surface.`,
+            requiredChange: currentHostAdmitted
               ? undefined
               : 'Relaunch the agent through scripts/mcp/atomic-edit/claude-atomic-host-launcher.mjs (or codex-atomic-host-launcher.mjs), keep the catch-all atomic-only PreToolUse hook active, and install an equivalent mandatory host policy for any other writer process before claiming literal whole-host Y.',
             detail: {
-              activeHostSandbox,
+              activeHostSandbox: currentHostAdmitted,
+              hostMarkersActive,
+              hostProofGreen,
+              hostProofMode: launcherMode,
               launcherProof: hostProof.ok ? hostProof.value : undefined,
             },
           });

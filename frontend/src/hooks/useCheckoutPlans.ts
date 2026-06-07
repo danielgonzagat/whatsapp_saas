@@ -149,6 +149,31 @@ async function ensureCheckoutProduct(product: DashboardProduct): Promise<string 
   }
 }
 
+const CHECKOUT_PRODUCT_ENSURE_CACHE_MS = 30000;
+const checkoutProductEnsurePromises = new Map<string, Promise<string | null>>();
+
+function getCheckoutProductEnsureKey(product: DashboardProduct): string {
+  return [product.id, product.slug || '', product.name].join(':');
+}
+
+function ensureCheckoutProductOnce(product: DashboardProduct): Promise<string | null> {
+  const key = getCheckoutProductEnsureKey(product);
+  const existing = checkoutProductEnsurePromises.get(key);
+  if (existing) {
+    return existing;
+  }
+
+  const promise = ensureCheckoutProduct(product).finally(() => {
+    setTimeout(() => {
+      if (checkoutProductEnsurePromises.get(key) === promise) {
+        checkoutProductEnsurePromises.delete(key);
+      }
+    }, CHECKOUT_PRODUCT_ENSURE_CACHE_MS);
+  });
+  checkoutProductEnsurePromises.set(key, promise);
+  return promise;
+}
+
 /* ── Plans for a product ── */
 export function useCheckoutPlans(product: DashboardProductInput | null | undefined) {
   const [checkoutProductId, setCheckoutProductId] = useState<string | null>(null);
@@ -158,11 +183,22 @@ export function useCheckoutPlans(product: DashboardProductInput | null | undefin
   );
 
   useEffect(() => {
-    if (checkoutSeedProduct) {
-      ensureCheckoutProduct(checkoutSeedProduct)
-        .then(setCheckoutProductId)
-        .catch(() => {});
+    if (!checkoutSeedProduct) {
+      return undefined;
     }
+
+    let cancelled = false;
+    void ensureCheckoutProductOnce(checkoutSeedProduct)
+      .then((id) => {
+        if (!cancelled) {
+          setCheckoutProductId(id);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
   }, [checkoutSeedProduct]);
 
   const { data, isLoading, mutate } = useSWR<CheckoutProductDetail>(

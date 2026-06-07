@@ -183,6 +183,8 @@ export function Apps({ workspaceId, sites, loading, error }: AppsProps) {
                 </div>
               </div>
               <select
+                id="site-app-target"
+                name="siteAppTarget"
                 aria-label="Selecionar site para apps"
                 value={effectiveSelectedSiteId}
                 onChange={(event) => setSelectedSiteId(event.target.value)}
@@ -267,6 +269,8 @@ export function Apps({ workspaceId, sites, loading, error }: AppsProps) {
                             <label key={field.key} style={{ fontFamily: SORA, fontSize: 11, color: TEXT_MUTED }}>
                               {field.label}
                               <input
+                                id={`site-app-${definition.key}-${field.key}`}
+                                name={`siteApp.${definition.key}.${field.key}`}
                                 aria-label={`${definition.label} ${field.label}`}
                                 value={drafts[draftKey]?.[field.key] ?? readSiteAppConfigValue(app?.config, field.key)}
                                 placeholder={field.placeholder}

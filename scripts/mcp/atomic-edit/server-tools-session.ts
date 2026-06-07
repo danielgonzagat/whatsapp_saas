@@ -23,6 +23,8 @@
  * byte-truth, decoupled from the index exactly like the effect primitives.
  */
 import { randomUUID } from 'node:crypto';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { REPO_ROOT } from './guard.js';
@@ -35,20 +37,25 @@ import {
   type EffectSnapshot,
   type FileEffect,
 } from './server-helpers-effect.js';
+import { judgeTemporalSession, type TemporalSessionSnapshot } from './gates/temporal-session-gate.js';
 
 /** A named rollback marker: the file-set touched at savepoint time. */
 interface Savepoint {
   name: string;
   /** files changed against the ORIGINAL snapshot when this savepoint was taken */
   effects: FileEffect[];
+  /** current bytes for those files at the savepoint, for temporal gates only */
+  contents: Record<string, string | null>;
   at: number;
 }
 
-/** An open multi-tool window over REPO_ROOT. */
+/** An open multi-tool window over REPO_ROOT or declared scoped paths. */
 interface Session {
   id: string;
-  /** byte-exact snapshot of REPO_ROOT at begin — the immutable rollback truth */
+  /** byte-exact snapshot at begin — the immutable rollback truth */
   snap: EffectSnapshot;
+  /** Optional repo-relative roots that bound this session's effect surface. */
+  scopePaths?: string[];
   savepoints: Savepoint[];
   startedAt: number;
 }
@@ -73,36 +80,98 @@ function receipt(effects: FileEffect[]): {
   };
 }
 
+function readCurrentContents(effects: FileEffect[]): Record<string, string | null> {
+  const out: Record<string, string | null> = {};
+  for (const effect of effects) {
+    const rel = effect.file.replaceAll('\\', '/');
+    try {
+      out[rel] = fs.readFileSync(path.join(REPO_ROOT, rel), 'utf8');
+    } catch {
+      out[rel] = null;
+    }
+  }
+  return out;
+}
+
+function temporalSnapshots(sess: Session, commitEffects: FileEffect[], committedAt: number): TemporalSessionSnapshot[] {
+  const commitContents = readCurrentContents(commitEffects);
+  const files = new Set<string>();
+  for (const savepoint of sess.savepoints) {
+    for (const file of Object.keys(savepoint.contents)) files.add(file.replaceAll('\\', '/'));
+  }
+  for (const file of Object.keys(commitContents)) files.add(file.replaceAll('\\', '/'));
+
+  const beginFiles: Record<string, string | null> = {};
+  for (const file of files) beginFiles[file] = sess.snap.files.get(file) ?? null;
+
+  return [
+    { name: 'begin', at: sess.startedAt, files: beginFiles },
+    ...sess.savepoints.map((savepoint) => ({
+      name: `savepoint:${savepoint.name}`,
+      at: savepoint.at,
+      files: savepoint.contents,
+    })),
+    { name: 'commit', at: committedAt, files: commitContents },
+  ];
+}
+
+function normalizeSessionScope(paths: string[] | undefined): string[] | undefined {
+  if (!paths || paths.length === 0) return undefined;
+  const scoped = new Set<string>();
+  for (const raw of paths) {
+    const trimmed = raw.trim();
+    if (!trimmed) throw new Error('atomic_session_begin paths cannot contain empty entries');
+    const abs = path.resolve(REPO_ROOT, trimmed);
+    const rel = path.relative(REPO_ROOT, abs);
+    if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) {
+      throw new Error(`atomic_session_begin refused out-of-repo scope path: ${raw}`);
+    }
+    scoped.add(rel.split(path.sep).join('/'));
+  }
+  return [...scoped].sort();
+}
+
 export function registerToolsSession(server: McpServer): void {
   server.registerTool(
     'atomic_session_begin',
     {
-      title: 'Open a multi-tool atomic window over the repo',
+      title: 'Open a multi-tool atomic window over the repo or declared scoped paths',
       description:
-        'Captures one byte-exact, git-decoupled snapshot of the entire repo root (the same EffectSnapshot ' +
-        'substrate that backs atomic_exec proveEffect — caps + skips node_modules/.git/dist; sets ' +
-        'limitReached on a cap) and returns a sessionId. Every edit/exec tool you run afterwards writes ' +
-        'through atomicWrite as normal — no change to those tools — but the whole sequence is now reversible ' +
-        'as ONE unit: atomic_session_rollback restores the repo byte-exact (untracked-inclusive) to this ' +
+        'Captures one byte-exact, git-decoupled snapshot over either the full repo root or the optional ' +
+        'repo-relative paths[] scope (the same EffectSnapshot substrate that backs atomic_exec proveEffect — ' +
+        'caps + skips node_modules/.git/dist unless a scoped root is explicitly inside a skipped parent; sets ' +
+        'limitReached on a cap) and returns a sessionId. Scoped sessions preserve repo-relative receipts while ' +
+        'avoiding whole-repo snapshot caps in large workspaces. Every edit/exec tool you run afterwards writes ' +
+        'through atomicWrite as normal — no change to those tools — but the declared window is now reversible ' +
+        'as ONE unit: atomic_session_rollback restores the scoped bytes byte-exact (untracked-inclusive) to this ' +
         'instant, atomic_session_savepoint marks a named undo point, atomic_session_commit emits the merged ' +
         'receipt and closes the window. The snapshot is the immutable rollback truth — it never moves.',
-      inputSchema: {},
+      inputSchema: {
+        paths: z
+          .array(z.string().min(1))
+          .min(1)
+          .max(200)
+          .optional()
+          .describe('optional repo-relative or in-repo absolute paths that bound this session; omit for whole repo'),
+      },
     },
-    async () => {
+    async (a) => {
       try {
-        const snap = captureEffectSnapshot(REPO_ROOT);
+        const scopePaths = normalizeSessionScope(a.paths);
+        const snap = captureEffectSnapshot(REPO_ROOT, scopePaths ? { includeRel: scopePaths } : {});
         assertCompleteEffectSnapshot(snap, 'open atomic session');
         const id = randomUUID();
         const startedAt = Date.now();
-        SESSIONS.set(id, { id, snap, savepoints: [], startedAt });
+        SESSIONS.set(id, { id, snap, scopePaths, savepoints: [], startedAt });
         return ok({
           ok: true,
           sessionId: id,
           rootAbs: snap.rootAbs,
+          scopePaths,
           filesSnapshotted: snap.files.size,
           limitReached: snap.limitReached,
           startedAt,
-          summary: `atomic session ${id} opened over ${snap.files.size} files${snap.limitReached ? ' (snapshot cap reached — rollback is bounded to captured files)' : ''}`,
+          summary: `atomic session ${id} opened over ${scopePaths ? `${scopePaths.length} scoped path(s)` : `${snap.files.size} files`}${snap.limitReached ? ' (snapshot cap reached — rollback is bounded to captured files)' : ''}`,
         });
       } catch (e) {
         return fail(`atomic_session_begin failed: ${e instanceof Error ? e.message : String(e)}`);
@@ -132,7 +201,7 @@ export function registerToolsSession(server: McpServer): void {
         const at = Date.now();
         // re-using a name overwrites the marker (latest file-set under that label)
         const existing = sess.savepoints.findIndex((s) => s.name === a.name);
-        const marker: Savepoint = { name: a.name, effects, at };
+        const marker: Savepoint = { name: a.name, effects, contents: readCurrentContents(effects), at };
         if (existing >= 0) sess.savepoints[existing] = marker;
         else sess.savepoints.push(marker);
         return ok({
@@ -217,7 +286,9 @@ export function registerToolsSession(server: McpServer): void {
         const sess = SESSIONS.get(a.sessionId);
         if (!sess) return fail(`atomic_session_commit: unknown sessionId ${a.sessionId}`);
         const effects = diffEffect(sess.snap);
-        const durationMs = Date.now() - sess.startedAt;
+        const committedAt = Date.now();
+        const durationMs = committedAt - sess.startedAt;
+        const temporalGate = judgeTemporalSession(temporalSnapshots(sess, effects, committedAt), { followingSnapshots: 2 });
         SESSIONS.delete(sess.id);
         return ok({
           ok: true,
@@ -225,6 +296,7 @@ export function registerToolsSession(server: McpServer): void {
           committed: true,
           durationMs,
           savepoints: sess.savepoints.map((s) => s.name),
+          temporalGate,
           ...receipt(effects),
           summary: `committed session ${sess.id}: ${effects.length} file(s) touched, window closed`,
         });

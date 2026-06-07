@@ -89,4 +89,32 @@ describe('Modal', () => {
 
     expect(screen.getAllByRole('button', { name: 'Fechar Criar novo plano' })).toHaveLength(2);
   });
+
+  it('moves focus into the dialog when opened', () => {
+    render(
+      <Modal title="Criar novo plano" onClose={vi.fn()}>
+        <span>Conteudo</span>
+      </Modal>,
+    );
+
+    expect(document.activeElement).toBe(screen.getByRole('dialog', { name: 'Criar novo plano' }));
+  });
+
+  it('closes on Escape without leaking the key event to parent handlers', () => {
+    const onClose = vi.fn();
+    const onOuterKeyDown = vi.fn();
+
+    render(
+      <div onKeyDown={onOuterKeyDown}>
+        <Modal title="Links disponíveis" onClose={onClose}>
+          <button type="button">Copiar</button>
+        </Modal>
+      </div>,
+    );
+
+    fireEvent.keyDown(screen.getByRole('dialog', { name: 'Links disponíveis' }), { key: 'Escape' });
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onOuterKeyDown).not.toHaveBeenCalled();
+  });
 });

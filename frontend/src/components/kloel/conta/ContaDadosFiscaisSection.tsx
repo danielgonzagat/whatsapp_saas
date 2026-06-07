@@ -151,6 +151,8 @@ export default function DadosFiscaisSection({
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [cnpjLoading, setCnpjLoading] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
+  const lastCnpjLookupRef = useRef<string | null>(null);
+  const lastCepLookupRef = useRef<string | null>(null);
   useEffect(
     () => () => {
       if (saveTimer.current) {
@@ -165,12 +167,17 @@ export default function DadosFiscaisSection({
     if (clean.length !== 14) {
       return;
     }
+    if (lastCnpjLookupRef.current === clean) {
+      return;
+    }
+    lastCnpjLookupRef.current = clean;
     setCnpjLoading(true);
     setError('');
     try {
       const data: BrasilApiCnpjResponse = await kycApi.lookupCnpj(clean);
       setForm((prev: FiscalFormState) => mergeCnpjIntoForm(prev, data));
     } catch (e) {
+      lastCnpjLookupRef.current = null;
       const message = getErrorMessage(e) || 'Nao foi possivel consultar o CNPJ.';
       setError(message);
       showToast(message, 'error');
@@ -183,6 +190,10 @@ export default function DadosFiscaisSection({
     if (clean.length !== 8) {
       return;
     }
+    if (lastCepLookupRef.current === clean) {
+      return;
+    }
+    lastCepLookupRef.current = clean;
     setCepLoading(true);
     setError('');
     try {
@@ -195,6 +206,7 @@ export default function DadosFiscaisSection({
       }
       setForm((prev: FiscalFormState) => mergeCepIntoForm(prev, data));
     } catch (e) {
+      lastCepLookupRef.current = null;
       const message = getErrorMessage(e) || 'Nao foi possivel consultar o CEP.';
       setError(message);
       showToast(message, 'error');

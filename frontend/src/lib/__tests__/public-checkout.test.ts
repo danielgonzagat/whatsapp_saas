@@ -77,6 +77,14 @@ describe('normalizePublicCheckoutResponse', () => {
     expect(payload.product.images).toEqual(['https://cdn.kloel.com/a.png']);
   });
 
+  it('preserves product format so digital checkouts do not ask for delivery', () => {
+    const payload = normalize({
+      product: { id: 'prod_1', name: 'Produto 1', format: 'digital' },
+    });
+
+    expect((payload.product as { format?: string }).format).toBe('DIGITAL');
+  });
+
   it('never publishes fake stock counters from checkout urgency config', () => {
     const config = normalizeConfig({
       enableTimer: true,

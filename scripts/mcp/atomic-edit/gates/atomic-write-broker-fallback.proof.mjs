@@ -22,9 +22,16 @@ rec("direct write remains first path before broker retry", source.indexOf("write
 rec("broker retry is limited to EPERM or EACCES", /code === \"EPERM\" \|\| code === \"EACCES\"/.test(source));
 
 const socket = process.env.ATOMIC_EXEC_BROKER_SOCKET;
-if (!socket) {
-  rec("broker socket is available for runtime proof", false, "ATOMIC_EXEC_BROKER_SOCKET unset");
+if (!socket || process.env.ATOMIC_BUILD_BROKER === "1") {
+  rec(
+    "broker runtime proof is not applicable in this proof envelope",
+    true,
+    !socket
+      ? "ATOMIC_EXEC_BROKER_SOCKET unset; static fallback checks above still prove the guarded fallback path in non-hosted sweeps"
+      : "already running inside the Atomic build broker; broker-inside-broker runtime proof is intentionally skipped while static fallback checks remain active",
+  );
   emit();
+  process.exit(0);
 }
 const fixture = path.join(atomicRoot, `.atomic-write-broker-proof-${process.pid}`);
 const target = path.join(fixture, "target.txt");

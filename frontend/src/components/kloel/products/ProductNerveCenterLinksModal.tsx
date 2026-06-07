@@ -86,8 +86,8 @@ export function ProductNerveCenterLinksModal({
               }}
             >
               {link.paymentMethods.length
-                ? `Métodos liberados: ${link.paymentMethods.join(' · ')}`
-                : 'Checkout sem meios de pagamento ativos.'}
+                ? `Métodos configurados: ${link.paymentMethods.join(' · ')}`
+                : 'Checkout sem meios de pagamento configurados.'}
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <Bt

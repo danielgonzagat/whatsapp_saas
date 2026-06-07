@@ -80,6 +80,8 @@ export default function AreaMembrosListPanel({
               <button
                 type="button"
                 onClick={() => toggleArea(a.id)}
+                aria-label={kloelT(`${isExpanded ? 'Recolher' : 'Expandir'} area ${a.name}`)}
+                title={kloelT(`${isExpanded ? 'Recolher' : 'Expandir'} area ${a.name}`)}
                 style={{
                   ...iconBtn,
                   color: areaAccent,
@@ -203,6 +205,8 @@ export default function AreaMembrosListPanel({
                   }
                 }}
                 aria-disabled={!previewHref}
+                aria-label={kloelT(`Pre-visualizar area ${a.name}`)}
+                title={kloelT(`Pre-visualizar area ${a.name}`)}
                 style={{
                   ...iconBtn,
                   color: colors.ember.primary,

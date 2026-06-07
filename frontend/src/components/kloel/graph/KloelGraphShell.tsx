@@ -183,6 +183,7 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
   const activeRouteKey = activeNode?.id ?? routeSignature;
   const graphOnly = params.get('graph') === '1';
   const graphAction = params.get('graphAction');
+  const isCommandPaletteGraphAction = graphAction === 'search' || graphAction === 'recents';
   const commandPaletteMode: 'full' | 'conversations' =
     graphAction === 'recents' ? 'conversations' : paletteMode;
   const displayArea =
@@ -193,7 +194,8 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
     : (pendingNodeId ?? activeNode?.id);
   const pendingOverlayNode =
     graphOnly && pendingNodeId ? graphNodes.find((node) => node.id === pendingNodeId) : undefined;
-  const hasRouteOverlay = !graphOnly || Boolean(pendingOverlayNode);
+  const hasRouteOverlay =
+    (!graphOnly && !isCommandPaletteGraphAction) || Boolean(pendingOverlayNode);
   const overlayNode = graphOnly ? pendingOverlayNode : activeNode;
 
   useEffect(() => {

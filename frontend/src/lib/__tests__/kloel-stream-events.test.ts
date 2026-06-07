@@ -60,18 +60,13 @@ describe('parseKloelStreamPayload', () => {
     ]);
   });
 
-  it('keeps provider reasoning deltas for the live reasoning timeline', () => {
+  it('keeps provider reasoning deltas private instead of adding public events', () => {
     expect(
       parseKloelStreamPayload({
         type: 'reasoning_delta',
-        text: 'We are in a chat conversation and this renders in the reasoning timeline.',
+        text: 'We are in a chat conversation and this must stay private.',
       }),
-    ).toEqual([
-      {
-        type: 'reasoning_delta',
-        text: 'We are in a chat conversation and this renders in the reasoning timeline.',
-      },
-    ]);
+    ).toEqual([]);
   });
 
   it('keeps legacy compatibility for mixed payloads with content and error', () => {

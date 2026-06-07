@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TeamSection } from './ContaTeamSection';
 
 const mocks = vi.hoisted(() => ({
+  currentUserEmail: 'owner@kloel.com',
   inviteTeamMember: vi.fn(),
   listTeam: vi.fn(),
   mutate: vi.fn(),
@@ -38,6 +39,10 @@ vi.mock('@/hooks/useWorkspaceId', () => ({
   useWorkspaceId: () => 'ws-1',
 }));
 
+vi.mock('@/components/kloel/auth/auth-provider', () => ({
+  useAuth: () => ({ userEmail: mocks.currentUserEmail }),
+}));
+
 vi.mock('@/lib/api/team', () => ({
   inviteTeamMember: mocks.inviteTeamMember,
   listTeam: mocks.listTeam,
@@ -48,6 +53,7 @@ vi.mock('@/lib/api/team', () => ({
 
 describe('TeamSection', () => {
   beforeEach(() => {
+    mocks.currentUserEmail = 'owner@kloel.com';
     mocks.teamData = {
       agents: [
         {
@@ -81,6 +87,18 @@ describe('TeamSection', () => {
 
     expect(screen.getByText('Ativo')).toBeTruthy();
     expect(screen.queryByText('Pendente')).toBeNull();
+  });
+
+  it('does not expose destructive member actions for the current user', () => {
+    mocks.currentUserEmail = 'ana@kloel.com';
+
+    render(<TeamSection />);
+
+    expect(screen.getByRole('combobox', { name: /funcao de ana suporte/i }).hasAttribute('disabled')).toBe(
+      true,
+    );
+    expect(screen.queryByRole('button', { name: /remover ana suporte/i })).toBeNull();
+    expect(screen.getByText('Voce')).toBeTruthy();
   });
 
   it('blocks invalid invite emails before calling the backend', () => {

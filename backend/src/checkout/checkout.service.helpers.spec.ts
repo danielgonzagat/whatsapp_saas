@@ -245,12 +245,13 @@ describe('PLAN_INCLUDE', () => {
 }); // ─── isLegacyPlanEligibleForMigration ───────────────────────────────────
 
 describe('isLegacyPlanEligibleForMigration', () => {
-  it('returns true for active PLAN with legacyCheckoutEnabled', () => {
+  it('returns true for active PLAN with legacyCheckoutEnabled and a published product', () => {
     expect(
       isLegacyPlanEligibleForMigration({
         isActive: true,
         kind: 'PLAN',
         legacyCheckoutEnabled: true,
+        product: { active: true, status: 'APPROVED' },
       }),
     ).toBe(true);
   });
@@ -261,6 +262,17 @@ describe('isLegacyPlanEligibleForMigration', () => {
         isActive: true,
         kind: 'PLAN',
         legacyCheckoutEnabled: false,
+      }),
+    ).toBe(false);
+  });
+
+  it('returns false when the legacy plan product is not published', () => {
+    expect(
+      isLegacyPlanEligibleForMigration({
+        isActive: true,
+        kind: 'PLAN',
+        legacyCheckoutEnabled: true,
+        product: { active: true, status: 'DRAFT' },
       }),
     ).toBe(false);
   });
@@ -303,8 +315,24 @@ describe('isLegacyPlanEligibleForMigration', () => {
 }); // ─── isActivePlanKind ────────────────────────────────────────────────────
 
 describe('isActivePlanKind', () => {
-  it('returns true for active PLAN', () => {
-    expect(isActivePlanKind({ isActive: true, kind: 'PLAN' })).toBe(true);
+  it('returns true for active PLAN backed by a published product', () => {
+    expect(
+      isActivePlanKind({
+        isActive: true,
+        kind: 'PLAN',
+        product: { active: true, status: 'APPROVED' },
+      }),
+    ).toBe(true);
+  });
+
+  it('returns false when the backing product is not published', () => {
+    expect(
+      isActivePlanKind({
+        isActive: true,
+        kind: 'PLAN',
+        product: { active: false, status: 'DRAFT' },
+      }),
+    ).toBe(false);
   });
 
   it('returns false when isActive is false', () => {

@@ -106,6 +106,38 @@ function renderShell(children: ReactNode = <div>Real screen</div>) {
   return render(<KloelGraphShell>{children}</KloelGraphShell>);
 }
 
+async function settleGraphAnimationFrames(count = 24) {
+  for (let index = 0; index < count; index += 1) {
+    await act(async () => {
+      await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+    });
+  }
+}
+
+function readGraphHitbox(container: HTMLElement, nodeId: string) {
+  const rect = container.querySelector(`[data-node-hitbox="${nodeId}"]`) as SVGRectElement | null;
+  expect(rect, nodeId).toBeTruthy();
+  const group = rect?.closest('g');
+  const transform = group?.getAttribute('transform') || '';
+  const match = /translate\(([-0-9.]+), ([-0-9.]+)\)/.exec(transform);
+  expect(match, nodeId).toBeTruthy();
+
+  const left = Number(match?.[1]) + Number(rect?.getAttribute('x'));
+  const top = Number(match?.[2]) + Number(rect?.getAttribute('y'));
+  const width = Number(rect?.getAttribute('width'));
+  const height = Number(rect?.getAttribute('height'));
+  return {
+    bottom: top + height,
+    left,
+    right: left + width,
+    top,
+  };
+}
+
+function graphHitboxesOverlap(a: ReturnType<typeof readGraphHitbox>, b: ReturnType<typeof readGraphHitbox>) {
+  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+}
+
 describe('KloelGraphShell', () => {
   it('does not fetch Criar or Educar dynamic graph data while Conversar is active', () => {
     pathname = '/inbox';
@@ -160,6 +192,21 @@ describe('KloelGraphShell', () => {
 
     expect(labelHitTarget).toBeTruthy();
     expect(Number(labelHitTarget?.getAttribute('width'))).toBeGreaterThan(44);
+  });
+
+  it('separates Consultar wallet and report hitboxes so Saldo cannot click Satisfacao', async () => {
+    pathname = '/analytics';
+    searchParams = new URLSearchParams('tab=vendas&graph=1');
+
+    const { container } = renderShell(<main>Analytics hidden</main>);
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Abrir Saldo' })).toBeTruthy());
+    await settleGraphAnimationFrames();
+
+    const saldo = readGraphHitbox(container, 'consultar-wallet-saldo');
+    const satisfacao = readGraphHitbox(container, 'consultar-report-satisfacao');
+
+    expect(graphHitboxesOverlap(saldo, satisfacao)).toBe(false);
   });
 
   it('renders the graph canvas behind an 80 percent overlay containing the real route children', () => {
@@ -593,6 +640,16 @@ describe('KloelGraphShell', () => {
     renderShell();
 
     expect(openPalette).toHaveBeenCalledWith({ initialQuery: '' });
+  });
+
+  it('does not stack a Graph overlay behind Kloel command palette deep-links', () => {
+    pathname = '/chat';
+    searchParams = new URLSearchParams('graphAction=recents');
+
+    renderShell();
+
+    expect(openPalette).toHaveBeenCalledWith({ initialQuery: '' });
+    expect(screen.queryByRole('dialog', { name: 'Recentes' })).toBeNull();
   });
 
   it('uses the existing command palette for Kloel search and recent nodes', () => {

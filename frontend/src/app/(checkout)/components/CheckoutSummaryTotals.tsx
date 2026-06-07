@@ -10,6 +10,7 @@ export function CheckoutSummaryTotals({
   discount,
   subtotal,
   shippingInCents,
+  requiresShipping,
   totalWithInterest,
   fmtBrl,
 }: {
@@ -18,9 +19,17 @@ export function CheckoutSummaryTotals({
   discount: number;
   subtotal: number;
   shippingInCents: number;
+  requiresShipping?: boolean;
   totalWithInterest: number;
   fmtBrl: (value: number) => string;
 }) {
+  const deliveryLabel = requiresShipping === false ? kloelT('Entrega') : kloelT('Frete');
+  const deliveryValue = requiresShipping === false
+    ? kloelT('Digital')
+    : shippingInCents === 0
+      ? 'Grátis'
+      : fmtBrl(shippingInCents);
+
   return (
     <div
       style={{
@@ -36,8 +45,8 @@ export function CheckoutSummaryTotals({
         <span>{fmtBrl(subtotal)}</span>
       </div>
       <div style={summaryLine(theme)}>
-        <span>{kloelT(`Frete`)}</span>
-        <span>{shippingInCents === 0 ? 'Grátis' : fmtBrl(shippingInCents)}</span>
+        <span>{deliveryLabel}</span>
+        <span>{deliveryValue}</span>
       </div>
       {couponApplied ? (
         <div style={{ ...summaryLine(theme), color: theme.successText }}>

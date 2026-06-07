@@ -29,6 +29,7 @@ interface SelfExpansionValidator {
 
 const MANDATORY_SELF_EXPANSION_VALIDATORS: readonly SelfExpansionValidator[] = [
   { phase: 'build', command: 'node build.mjs' },
+  { phase: 'runtime-integrity', command: 'node gates/dist-live-integrity.proof.mjs --json' },
   { phase: 'runtime-freshness', command: 'node gates/dist-freshness.proof.mjs --json' },
   { phase: 'type', command: 'node gates/type-soundness-gate.proof.mjs --json' },
   { phase: 'semantic', command: 'node gates/structural-lint-gate.proof.mjs --json' },
@@ -104,8 +105,9 @@ function proofTimeoutMs(command: string): number {
 }
 
 function selfExpansionBrokerSocketPath(): string | null {
-  const value = process.env.ATOMIC_EXEC_BROKER_SOCKET;
-  return value && value.trim() ? value : null;
+  const value = process.env.ATOMIC_EXEC_BROKER_SOCKET?.trim();
+  if (!value) return null;
+  return fs.existsSync(value) ? value : null;
 }
 
 function shellPath(value: string): string {
@@ -237,12 +239,15 @@ function selfExpansionProofCwd(): string {
 
 function selfExpansionProofMustRunHostDirect(command: string): boolean {
   return [
+    'build.mjs',
     'atomic-exec-readonly-usability.proof.mjs',
     'atomic-exec-sandbox.proof.mjs',
     'external-runtime-denial.proof.mjs',
     'mcp-launcher-host-boundary.proof.mjs',
     'codex-entrypoint-contract.proof.mjs',
     'compiled-mcp-y-certificate.proof.mjs',
+    'whole-host-sandbox-launcher.proof.mjs',
+    'whole-host-y-certificate.proof.mjs',
   ].some((name) => command.includes(name));
 }
 

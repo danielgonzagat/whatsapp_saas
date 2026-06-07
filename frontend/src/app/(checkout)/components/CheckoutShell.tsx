@@ -18,16 +18,33 @@ type CheckoutData = PublicCheckoutResponse;
 interface CheckoutShellProps {
   slug: string;
   mode?: 'slug' | 'code';
+  initialData?: CheckoutData | null;
+  initialError?: string | null;
 }
 
 /* ─── Component ────────────────────────────────────────────────────────────── */
 
-export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProps) {
-  const [data, setData] = useState<CheckoutData | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+export default function CheckoutShell({
+  slug,
+  mode = 'slug',
+  initialData,
+  initialError,
+}: CheckoutShellProps) {
+  const hasServerResult = initialData !== undefined || initialError !== undefined;
+  const [data, setData] = useState<CheckoutData | null>(() =>
+    initialData ? normalizePublicCheckoutResponse(initialData) : null,
+  );
+  const [error, setError] = useState<string | null>(() => initialError ?? null);
+  const [loading, setLoading] = useState(() => !hasServerResult);
 
   useEffect(() => {
+    if (hasServerResult) {
+      setData(initialData ? normalizePublicCheckoutResponse(initialData) : null);
+      setError(initialError ?? null);
+      setLoading(false);
+      return;
+    }
+
     const controller = new AbortController();
     const endpoint =
       mode === 'code'
@@ -59,7 +76,7 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
       });
 
     return () => controller.abort();
-  }, [slug, mode]);
+  }, [slug, mode, hasServerResult, initialData, initialError]);
 
   /* ── Loading state ─────────────────────────────────────────────────────── */
 

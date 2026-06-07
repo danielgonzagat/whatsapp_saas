@@ -117,6 +117,17 @@ describe('KloelGraph route contract', () => {
     expect(resolveKloelGraphNodeForPath('/settings', new URLSearchParams())?.area).toBe('perfil');
   });
 
+  it('resolves Perfil language settings to the dedicated Idiomas graph node', () => {
+    const idiomasNode = resolveKloelGraphNodeForPath(
+      '/settings',
+      new URLSearchParams('section=idiomas'),
+    );
+
+    expect(idiomasNode?.id).toBe('perfil-settings-idiomas');
+    expect(idiomasNode?.overlayLabel).toBe('Idiomas');
+    expect(resolveKloelGraphRoute('perfil-settings-idiomas')).toBe('/settings?section=idiomas');
+  });
+
   it('keeps Sites subroutes attached to the Sites graph overlay label', () => {
     expect(resolveKloelGraphNodeForPath('/sites/criar', new URLSearchParams())?.id).toBe(
       'criar-sites',

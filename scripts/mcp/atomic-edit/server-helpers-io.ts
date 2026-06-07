@@ -203,6 +203,7 @@ export function atomicWrite(absPath: string, content: string): void {
   }
 
   const dir = path.dirname(absPath);
+  fs.mkdirSync(dir, { recursive: true });
   const tmp = path.join(dir, `.atomic-edit.${process.pid}.${Date.now()}.tmp`);
   // Preserve the original file's mode: a temp-file + rename replaces the inode,
   // so without this an existing executable file (e.g. 755) silently drops to the

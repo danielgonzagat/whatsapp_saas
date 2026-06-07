@@ -21,6 +21,7 @@ export function CheckoutDesktopSidebar(props: SummaryProps) {
     discount,
     subtotal,
     shippingInCents,
+    requiresShipping,
     totalWithInterest,
     productName,
     productImage,
@@ -56,6 +57,7 @@ export function CheckoutDesktopSidebar(props: SummaryProps) {
           discount={discount}
           subtotal={subtotal}
           shippingInCents={shippingInCents}
+          {...(requiresShipping !== undefined ? { requiresShipping } : {})}
           totalWithInterest={totalWithInterest}
           fmtBrl={fmtBrl}
         />

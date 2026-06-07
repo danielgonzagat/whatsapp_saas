@@ -81,6 +81,8 @@ export default function CanvasModelos() {
         >
           <span style={{ color: colors.ember.primary }}>{IC.spark(18)}</span>
           <input
+            id="canvas-modelos-ai-prompt"
+            name="canvas-modelos-ai-prompt"
             value={aiPrompt}
             onChange={(e) => setAiPrompt(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}

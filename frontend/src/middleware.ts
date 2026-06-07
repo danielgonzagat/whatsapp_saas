@@ -179,6 +179,9 @@ function handleAuthHost(request: NextRequest, host: string, isAuthenticated: boo
 function handleAppHost(request: NextRequest, host: string, isAuthenticated: boolean) {
   const targetPath = currentPath(request);
   const { pathname } = request.nextUrl;
+  const [, section, slug, ...rest] = pathname.split('/');
+  const isPublishedSitePath =
+    section === 's' && rest.length === 0 && Boolean(slug) && isValidCheckoutEntrySegment(slug);
 
   if (pathname === '/') {
     if (!isAuthenticated) {
@@ -195,7 +198,7 @@ function handleAppHost(request: NextRequest, host: string, isAuthenticated: bool
     return NextResponse.next();
   }
 
-  if (pathname === '/dashboard') {
+  if (pathname === '/dashboard' || isPublishedSitePath) {
     return NextResponse.next();
   }
 

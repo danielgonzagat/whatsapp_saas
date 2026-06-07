@@ -22,6 +22,7 @@ import {
   isLegacyPlanEligibleForMigration,
   mapPixelsForDuplicate,
   PLAN_INCLUDE,
+  PUBLIC_CHECKOUT_PRODUCT_WHERE,
   stripCheckoutId,
   stripConfigMetadata,
 } from './checkout.service.helpers';
@@ -242,7 +243,7 @@ export class CheckoutService {
         slug,
         isActive: true,
         checkout: { isActive: true, kind: 'CHECKOUT' },
-        plan: { isActive: true, kind: 'PLAN' },
+        plan: { isActive: true, kind: 'PLAN', product: PUBLIC_CHECKOUT_PRODUCT_WHERE },
       },
       include: CHECKOUT_PLAN_LINK_INCLUDE,
     });
@@ -275,7 +276,7 @@ export class CheckoutService {
           slug,
           isActive: true,
           checkout: { isActive: true, kind: 'CHECKOUT' },
-          plan: { isActive: true, kind: 'PLAN' },
+          plan: { isActive: true, kind: 'PLAN', product: PUBLIC_CHECKOUT_PRODUCT_WHERE },
         },
         include: CHECKOUT_PLAN_LINK_INCLUDE,
       });

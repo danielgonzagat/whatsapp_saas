@@ -131,10 +131,8 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
         playbackTimerRef.current = null;
       }
     };
-    // Real reasoning arrives as many small reasoning_delta events (DeepSeek can
-    // emit hundreds per turn). Coalesce them onto a throttled flush — exactly like
-    // the content render buffer below — so we never call setMessages per token,
-    // which overflowed React's update depth. The timeline still updates live (~40ms).
+    // Defensive legacy path: if a stale backend still emits reasoning_delta, coalesce
+    // before metadata handling drops the private text so it never renders per token.
     let reasoningBuffer = '';
     let reasoningFlushTimer: ReturnType<typeof setTimeout> | null = null;
     const flushReasoning = () => {

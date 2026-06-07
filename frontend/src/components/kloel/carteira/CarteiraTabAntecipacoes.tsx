@@ -20,6 +20,8 @@ export function CarteiraTabAntecipacoes({
   const antList = anticipations;
   const totalAnticipated = antTotals.totalAnticipated || 0;
   const totalFees = antTotals.totalFees || 0;
+  const canAnticipate = pending > 0;
+  const disabledReason = kloelT(`Sem saldo a receber para antecipar`);
   return (
     <>
       <div
@@ -140,20 +142,23 @@ export function CarteiraTabAntecipacoes({
         >
           <button
             type="button"
+            disabled={!canAnticipate}
+            title={canAnticipate ? undefined : disabledReason}
             onClick={onOpenAntecipate}
             style={{
               padding: '10px 24px',
-              background: colors.ember.primary,
-              color: 'var(--app-text-on-accent)',
-              border: 'none',
+              background: canAnticipate ? colors.ember.primary : 'var(--app-bg-muted)',
+              color: canAnticipate ? 'var(--app-text-on-accent)' : 'var(--app-text-tertiary)',
+              border: canAnticipate ? 'none' : '1px solid var(--app-border-primary)',
               borderRadius: 6,
               fontSize: 12,
               fontWeight: 700,
-              cursor: 'pointer',
+              cursor: canAnticipate ? 'pointer' : 'not-allowed',
               fontFamily: "'Sora',sans-serif",
               display: 'flex',
               alignItems: 'center',
               gap: 6,
+              opacity: canAnticipate ? 1 : 0.68,
             }}
           >
             {IC.spark(14)} {kloelT(`Antecipar agora`)}

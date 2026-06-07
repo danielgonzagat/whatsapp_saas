@@ -1,12 +1,19 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { StrictMode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { useSWRMock } = vi.hoisted(() => ({
+const { apiFetchMock, useSWRMock } = vi.hoisted(() => ({
+  apiFetchMock: vi.fn(),
   useSWRMock: vi.fn(),
 }));
 
 vi.mock('swr', () => ({
   default: useSWRMock,
+  mutate: vi.fn(),
+}));
+
+vi.mock('@/lib/api', () => ({
+  apiFetch: apiFetchMock,
 }));
 
 vi.mock('./ContaMetaConnectSection', () => ({
@@ -15,8 +22,12 @@ vi.mock('./ContaMetaConnectSection', () => ({
 
 import { ContaAppsSection } from './ContaAppsSection';
 
+const metaStatusCalls = () =>
+  apiFetchMock.mock.calls.filter(([url]) => url === '/meta/auth/status');
+
 describe('ContaAppsSection', () => {
   beforeEach(() => {
+    apiFetchMock.mockResolvedValue({ data: { connected: false }, status: 200 });
     useSWRMock.mockImplementation((key: string) => {
       if (key === '/marketing/connect/status') {
         return {
@@ -57,6 +68,13 @@ describe('ContaAppsSection', () => {
           error: null,
         };
       }
+      if (key === '/meta/auth/status') {
+        return {
+          data: { connected: false },
+          isLoading: false,
+          error: null,
+        };
+      }
       return { data: null, isLoading: false, error: null };
     });
   });
@@ -74,5 +92,22 @@ describe('ContaAppsSection', () => {
     expect(screen.getByText('Login Meta necessario')).toBeTruthy();
     expect(screen.getByText('Configuracao ausente')).toBeTruthy();
     expect(screen.getAllByText('Credenciais ausentes').length).toBeGreaterThan(0);
+  });
+
+  it('does not load Meta auth status through a StrictMode effect', async () => {
+    const { MetaConnectSection } = await vi.importActual<typeof import('./ContaMetaConnectSection')>(
+      './ContaMetaConnectSection',
+    );
+
+    render(
+      <StrictMode>
+        <MetaConnectSection />
+      </StrictMode>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /conectar com meta/i })).toBeTruthy();
+    });
+    expect(metaStatusCalls()).toHaveLength(0);
   });
 });

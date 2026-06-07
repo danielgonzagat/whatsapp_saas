@@ -76,6 +76,7 @@ const PERFIL_SECTION_TABS = [
   ['documentos', 'Docs', 'Documentos'],
   ['bancario', 'Banco', 'Dados bancarios'],
   ['perfil', 'Publico', 'Perfil publico'],
+  ['idiomas', 'Idiomas', 'Idiomas'],
   ['equipe', 'Equipe', 'Equipe'],
   ['apps', 'Apps', 'Apps'],
   ['seguranca', 'Seguranca', 'Seguranca'],

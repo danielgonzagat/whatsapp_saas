@@ -170,3 +170,7 @@ intents/
 .claude/
 .agents/
 .codex-traces/
+
+# Separate atomic-os public-repo working clone — never commit into Kloel
+.atomic-os-workdir/
+.atomic-os-workdir

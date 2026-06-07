@@ -22,7 +22,7 @@ const checks = [
   },
   {
     name: 'tool description advertises full byte-effect diff',
-    ok: /full byte-effect diff from that snapshot/.test(source),
+    ok: /receipt includes the full byte-effect diff/.test(source),
   },
 ];
 

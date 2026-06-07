@@ -159,6 +159,68 @@ describe('apiFetch', () => {
     expect(request.cache).toBe('no-store');
   });
 
+  it('deduplicates identical concurrent GET requests', async () => {
+    tokenStorage.setToken('test-token-123');
+    tokenStorage.setWorkspaceId('ws-123');
+
+    let resolveFetch: (response: Response) => void = () => {};
+    const pendingFetch = new Promise<Response>((resolve) => {
+      resolveFetch = resolve;
+    });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockReturnValue(pendingFetch);
+
+    const first = apiFetch('/checkout/products');
+    const second = apiFetch('/checkout/products');
+
+    await Promise.resolve();
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    resolveFetch({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ products: [] }),
+    } as Response);
+
+    await expect(Promise.all([first, second])).resolves.toEqual([
+      { products: [], data: { products: [] }, status: 200 },
+      { products: [], data: { products: [] }, status: 200 },
+    ]);
+  });
+
+  it('reuses identical GET responses resolved in the same render burst', async () => {
+    tokenStorage.setToken('test-token-123');
+    tokenStorage.setWorkspaceId('ws-123');
+
+    const mockResponse = {
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ products: [] }),
+    };
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse as Response);
+
+    await apiFetch('/checkout/products/render-burst');
+    await apiFetch('/checkout/products/render-burst');
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not deduplicate concurrent mutating requests', async () => {
+    const mockResponse = {
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ ok: true }),
+    };
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse as Response);
+
+    await Promise.all([
+      apiFetch('/checkout/products', { method: 'POST', body: { name: 'A' } }),
+      apiFetch('/checkout/products', { method: 'POST', body: { name: 'A' } }),
+    ]);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
+
   it('refreshes an expired access token before the protected request', async () => {
     const expiredToken = createTestJwt({ exp: Math.floor(Date.now() / 1000) - 60 });
     const freshToken = createTestJwt({ exp: Math.floor(Date.now() / 1000) + 3600 });

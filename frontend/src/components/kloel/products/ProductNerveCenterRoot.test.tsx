@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ProductNerveCenter from './ProductNerveCenterRoot';
+import { apiFetch } from '@/lib/api';
 
 type TestProduct = {
   id: string;
@@ -20,6 +21,7 @@ const testState = vi.hoisted(
     checkoutPlans: Record<string, unknown>[];
     checkoutTemplates: Record<string, unknown>[];
     createPlan: ReturnType<typeof vi.fn>;
+    productMutate: ReturnType<typeof vi.fn>;
     routerPush: ReturnType<typeof vi.fn>;
   } => ({
     product: null,
@@ -27,6 +29,7 @@ const testState = vi.hoisted(
     checkoutPlans: [],
     checkoutTemplates: [],
     createPlan: vi.fn(),
+    productMutate: vi.fn(),
     routerPush: vi.fn(),
   }),
 );
@@ -66,7 +69,7 @@ vi.mock('@/hooks/useProducts', () => ({
     product: testState.product,
     isLoading: false,
     error: testState.product ? undefined : new Error('Not found'),
-    mutate: vi.fn(),
+    mutate: testState.productMutate,
   }),
   useProducts: () => ({ products: [], total: 0, isLoading: false, error: undefined, mutate: vi.fn() }),
   useProductMutations: () => ({ updateProduct: vi.fn() }),
@@ -96,7 +99,10 @@ beforeEach(() => {
   testState.checkoutPlans = [];
   testState.checkoutTemplates = [];
   testState.createPlan.mockReset();
+  testState.productMutate.mockReset();
   testState.routerPush.mockClear();
+  vi.mocked(apiFetch).mockReset();
+  vi.mocked(apiFetch).mockImplementation(() => new Promise(() => {}));
 });
 
 describe('ProductNerveCenter missing product state', () => {
@@ -154,6 +160,127 @@ describe('ProductNerveCenter plan creation', () => {
 
     expect(await screen.findByText('Informe o nome do plano.')).toBeTruthy();
     expect(testState.createPlan).not.toHaveBeenCalled();
+  });
+});
+
+describe('ProductNerveCenter commission config', () => {
+  it('releases saving state after affiliate PUT resolves even if product refresh is slow', async () => {
+    testState.product = {
+      id: 'prod-1',
+      name: 'Produto QA',
+      description: 'Produto para teste',
+      category: 'E-books',
+      active: true,
+      warrantyDays: 30,
+      format: 'DIGITAL',
+    };
+    testState.searchParams = new URLSearchParams('tab=comissao');
+    vi.mocked(apiFetch).mockImplementation((url, options) => {
+      const method = options?.method;
+      if (url === '/products/prod-1/affiliates' && method === 'PUT') {
+        return Promise.resolve({ data: { affiliateEnabled: true }, status: 200 });
+      }
+      return new Promise(() => {});
+    });
+    testState.productMutate.mockImplementationOnce(() => new Promise(() => {}));
+
+    render(
+      <ProductNerveCenter
+        productId="prod-1"
+        onBack={vi.fn()}
+        initialTab={undefined}
+        initialPlanSub={undefined}
+        initialComSub={undefined}
+        initialModal={undefined}
+        initialFocus={undefined}
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Salvar' }));
+
+    expect(await screen.findByRole('button', { name: 'Salvo!' })).toBeTruthy();
+    expect(vi.mocked(apiFetch)).toHaveBeenCalledWith(
+      '/products/prod-1/affiliates',
+      expect.objectContaining({ method: 'PUT' }),
+    );
+  });
+});
+
+describe('ProductNerveCenter checkout coupons', () => {
+  it('loads coupons for the checkout editor when the user enters through checkouts directly', async () => {
+    testState.product = {
+      id: 'prod-1',
+      name: 'Produto QA',
+      description: 'Produto para teste',
+      category: 'E-books',
+      active: true,
+      warrantyDays: 30,
+      format: 'DIGITAL',
+    };
+    testState.searchParams = new URLSearchParams('tab=checkouts');
+    testState.checkoutPlans = [
+      {
+        id: 'plan-1',
+        kind: 'PLAN',
+        name: 'Plano QA',
+        priceInCents: 9700,
+        quantity: 1,
+        maxInstallments: 12,
+        isActive: true,
+        checkoutConfig: { enableCoupon: true },
+      },
+    ];
+    testState.checkoutTemplates = [
+      {
+        id: 'checkout-1',
+        kind: 'CHECKOUT',
+        name: 'Checkout QA',
+        referenceCode: 'CHK001',
+        checkoutConfig: {
+          enableCoupon: true,
+          enablePix: true,
+          enableCreditCard: true,
+          autoCouponCode: 'AUDIT20',
+        },
+        checkoutLinks: [{ planId: 'plan-1', isActive: true }],
+      },
+    ];
+    vi.mocked(apiFetch).mockImplementation((url) => {
+      if (url === '/products/prod-1/coupons') {
+        return Promise.resolve({
+          data: [
+            {
+              id: 'coupon-1',
+              code: 'AUDIT20',
+              discountType: 'PERCENT',
+              discountValue: 20,
+              usedCount: 0,
+              maxUses: 50,
+              active: true,
+            },
+          ],
+          status: 200,
+        });
+      }
+      return Promise.resolve({ data: [], status: 200 });
+    });
+
+    render(
+      <ProductNerveCenter
+        productId="prod-1"
+        onBack={vi.fn()}
+        initialTab={undefined}
+        initialPlanSub={undefined}
+        initialComSub={undefined}
+        initialModal={undefined}
+        initialFocus={undefined}
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Editar' }));
+
+    expect(await screen.findByRole('option', { name: /AUDIT20/ })).toBeTruthy();
+    expect(vi.mocked(apiFetch)).toHaveBeenCalledWith('/products/prod-1/coupons');
   });
 });
 

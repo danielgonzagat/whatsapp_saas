@@ -178,8 +178,8 @@ export async function finalizeSuccessfulReply(
   if (workspaceId) {
     await planLimits.trackAiUsage(workspaceId, estimatedTokens).catch(() => {});
   }
-  // Capture the streamed reasoning so it is PERSISTED with the assistant message
-  // and survives the post-stream conversation reload — reasoning is never erased.
+  // Persist only public-safe reasoning metadata. Provider chain-of-thought text is
+  // intentionally blank here; duration can survive reloads without leaking content.
   const lastReasoning = streamWriter.getLastReasoning();
   if (thread?.id && workspaceId) {
     await threadService.persistAssistantThreadMessage(

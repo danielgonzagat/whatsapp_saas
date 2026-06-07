@@ -146,6 +146,30 @@ function writeTypesPkg(d, name, body) {
   fs.rmSync(d, { recursive: true, force: true });
 }
 
+// 4b) OVERLAY-CONFIG — a new TS project can bring its governing tsconfig in the
+//      same transaction and be judged before either file touches disk.
+{
+  const d = mkTmp();
+  const cfg = JSON.stringify({ compilerOptions: { strict: true, noEmit: true, skipLibCheck: true }, include: ['*.ts'] });
+  const good = await judge(d, {
+    'generated/tsconfig.json': cfg,
+    'generated/a.ts': 'export const x: number = 1;\n',
+  }, ['generated/a.ts']);
+  check(
+    'OVERLAY-CONFIG: same-transaction tsconfig makes generated TS judgeable and GREEN',
+    good.green === true && good.reds.length === 0 && !good.unjudged,
+  );
+  const bad = await judge(d, {
+    'generated/tsconfig.json': cfg,
+    'generated/a.ts': 'export const x: number = "oops";\n',
+  }, ['generated/a.ts']);
+  check(
+    'OVERLAY-CONFIG: same-transaction tsconfig still reddens genuine TS2322',
+    bad.green === false && bad.reds.some((r) => r.fact.includes('TS2322')),
+  );
+  fs.rmSync(d, { recursive: true, force: true });
+}
+
 // 5) WIDE — a lens-shaped change set above the old 8-file ceiling is judged.
 {
   const d = mkTmp();

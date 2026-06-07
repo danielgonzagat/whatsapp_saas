@@ -566,6 +566,29 @@ export function Modal({
   children: React.ReactNode;
 }) {
   const { isMobile } = useResponsiveViewport();
+  const titleId = useId();
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const previousActiveElement =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    dialogRef.current?.focus({ preventScroll: true });
+
+    return () => {
+      if (previousActiveElement && document.contains(previousActiveElement)) {
+        previousActiveElement.focus({ preventScroll: true });
+      }
+    };
+  }, []);
+
+  const handleKeyDownCapture = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'Escape') {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    onClose();
+  };
 
   return (
     <div
@@ -588,6 +611,12 @@ export function Modal({
         style={{ position: 'absolute', inset: 0, background: 'transparent', border: 'none' }}
       />
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        onKeyDownCapture={handleKeyDownCapture}
         onClick={(event) => event.stopPropagation()}
         style={{
           background: V.s,
@@ -603,7 +632,7 @@ export function Modal({
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-          <h3 style={{ fontSize: 16, fontWeight: 700, color: V.t, margin: 0, fontFamily: S }}>
+          <h3 id={titleId} style={{ fontSize: 16, fontWeight: 700, color: V.t, margin: 0, fontFamily: S }}>
             {title}
           </h3>
           <button

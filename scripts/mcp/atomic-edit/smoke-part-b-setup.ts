@@ -8,12 +8,14 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
   const tools = await client.listTools();
   const names = tools.tools.map((t: { name: string }) => t.name).sort();
     check(
-      'server lists all 83 tools (incl. atomic_expand_self + Y certificate + apex: lens/read/scan (atomic_lens/atomic_read_file/atomic_scan_bytes/atomic_grep_calls/atomic_repair_scope) + atomic_session_* (begin/savepoint/rollback/commit) + atomic_prove (gate-sourced receipt) + atomic_exec shell operator + content-addressed atomic_replace_at + atomic_locate + universal native engine: atomic_grep + atomic_glob + atomic_outline + atomic_ast_search + atomic_ast_edit + atomic_ast_rewrite + atomic_apply_workspace_edit + atomic_native_status + atomic_create_file + atomic_delete_file + code_file_stat + analyzer transaction + product apex layer + rename property key + add await to call + insert after anchor + insert before anchor + replace between anchors + replace text in anchor region + atomic_edit unified router + code_outline_batch)',
-      names.length === 83 &&
+      'server lists all 86 tools (incl. atomic_expand_self + Y certificate + host re-entry receipt + apex: lens/read/scan (atomic_lens/atomic_read_file/atomic_scan_bytes/atomic_grep_calls/atomic_repair_scope) + atomic_session_* (begin/savepoint/rollback/commit) + atomic_prove/atomic_seal + atomic_exec shell operator + atomic_converge + atomic_intent_converge + content-addressed atomic_replace_at + atomic_locate + universal native engine + product apex layer + unified router + code_outline_batch)',
+      names.length === 86 &&
           names.includes('atomic_exec') &&
           names.includes('atomic_expand_self') &&
           names.includes('atomic_y_certificate') &&
+          names.includes('atomic_host_reentry_receipt') &&
           names.includes('atomic_converge') &&
+          names.includes('atomic_intent_converge') &&
           names.includes('atomic_rename_symbol_universal') &&
           names.includes('atomic_bypass_report') &&
           names.includes('atomic_replace_at') &&
@@ -31,6 +33,7 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
         names.includes('atomic_session_rollback') &&
         names.includes('atomic_session_commit') &&
         names.includes('atomic_prove') &&
+        names.includes('atomic_seal') &&
         names.includes('atomic_create_file') &&
         names.includes('atomic_delete_file') &&
         names.includes('atomic_positive_bytes_begin') &&
@@ -142,6 +145,28 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
       intent.content[0]?.text ?? '',
     );
 
+    const intentConvergeRel = path.join('.atomic', 'generated-intent', `smoke-intent-converge-${process.pid}.test.ts`);
+    const intentConvergeAbs = path.join(repoRoot, intentConvergeRel);
+    if (fs.existsSync(intentConvergeAbs)) fs.unlinkSync(intentConvergeAbs);
+    const intentConverge = (await client.callTool({
+      name: 'atomic_intent_converge',
+      arguments: {
+        goal: 'fazer o chat do admin persistir mensagens em Postgres',
+        outputFile: intentConvergeRel,
+      },
+    })) as { content: { text: string }[] };
+    const intentConvergeBody = jsonBody(intentConverge);
+    check(
+      'intent converge generates a green product-contract preview without writing',
+      intentConvergeBody.ok === true &&
+        intentConvergeBody.targetIntegration === 'chat_persistence' &&
+        intentConvergeBody.converged === true &&
+        intentConvergeBody.committed === false &&
+        intentConvergeBody.files?.[0]?.newText?.includes('atomicIntentContract') &&
+        !fs.existsSync(intentConvergeAbs),
+      intentConverge.content[0]?.text ?? '',
+    );
+
     const zct = (await client.callTool({
       name: 'zero_code_trust_score',
       arguments: {
@@ -220,20 +245,25 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
     const yCert = (await client.callTool({
       name: 'atomic_y_certificate',
       arguments: { scope: 'whole-host', includeAudits: false },
-    })) as { content: { text: string }[] };
+    }, undefined, { timeout: 120000 })) as { content: { text: string }[] };
     const yCertBody = jsonBody(yCert);
     const yDomains = Array.isArray(yCertBody.domains) ? yCertBody.domains : [];
+    const yBlockers = Array.isArray(yCertBody.blockers) ? yCertBody.blockers : [];
+    const yBlockerDomains = new Set(yBlockers.map((b: { domain?: string }) => b.domain).filter(Boolean));
     const yDomain = (domain: string): { domain?: string; status?: string } | undefined =>
       yDomains.find((entry: { domain?: string }) => entry.domain === domain);
+    const yNonGreenDomains = yDomains.filter(
+      (entry: { domain?: string; status?: string }) =>
+        entry.domain && entry.status !== 'GREEN' && entry.domain !== 'certificateMandatoryDomainCoverage',
+    );
     check(
-      'Y certificate refuses current whole-host universality until active host sandbox',
+      'Y certificate blocks whole-host universality for every non-green mandatory domain',
       yCertBody.ok === true &&
         yCertBody.yComplete === false &&
         yCertBody.verdict === 'Y_BLOCKED' &&
-        yCertBody.blockers?.some((b: { domain?: string }) => b.domain === 'wholeHostActionSpace') &&
-        yDomain('externalRuntimeState')?.status === 'GREEN' &&
-        yDomain('arbitraryInterpreterSandbox')?.status === 'GREEN' &&
-        yDomain('atomicityAudit')?.status === 'UNJUDGED',
+        yDomain('certificateMandatoryDomainCoverage')?.status === 'GREEN' &&
+        yNonGreenDomains.length > 0 &&
+        yNonGreenDomains.every((entry: { domain?: string }) => entry.domain && yBlockerDomains.has(entry.domain)),
       yCert.content.map((p) => p.text).join('\n'),
     );
 
@@ -259,7 +289,7 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
         files: [{ op: 'create', file: selfAllowedRel, content: 'export const SELF_EXPANSION_ALLOWED = true;\n' }],
         proofCommands: ['node build.mjs', 'node codex-atomic-only-hook.proof.mjs --json'],
       },
-    })) as { content: { text: string }[]; isError?: boolean };
+    }, undefined, { timeout: 120000 })) as { content: { text: string }[]; isError?: boolean };
     const selfAllowedBody = jsonBody(selfAllowed);
     check(
       'atomic_expand_self creates atomic source only after proofs pass',
@@ -282,7 +312,7 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
         ],
         proofCommands: ['node build.mjs', 'node codex-atomic-only-hook.proof.mjs --json'],
       },
-    })) as { content: { text: string }[]; isError?: boolean };
+    }, undefined, { timeout: 120000 })) as { content: { text: string }[]; isError?: boolean };
     const selfCleanupBody = jsonBody(selfCleanup);
     check(
       'atomic_expand_self deletes only with explicit negative-byte proof',

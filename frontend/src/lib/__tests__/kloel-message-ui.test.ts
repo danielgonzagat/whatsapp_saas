@@ -615,22 +615,20 @@ describe('kloel-message-ui', () => {
     ]);
   });
 
-  it('stores streamed reasoning deltas as assistant reasoning metadata', () => {
+  it('keeps streamed reasoning deltas out of assistant public metadata', () => {
     const metadata = appendAssistantTraceFromEvent(
       { clientRequestId: 'req-live-reasoning' },
       {
         type: 'reasoning_delta',
-        text: 'We are in a chat conversation with the user and should show live reasoning.',
+        text: 'We are in a chat conversation with the user and this must stay private.',
       },
     );
 
     expect(metadata).toEqual({
       clientRequestId: 'req-live-reasoning',
-      reasoningText: 'We are in a chat conversation with the user and should show live reasoning.',
     });
-    expect(getAssistantReasoning(metadata).text).toBe(
-      'We are in a chat conversation with the user and should show live reasoning.',
-    );
+    expect(getAssistantReasoning(metadata).text).toBe('');
+    expect(getAssistantReasoning({ reasoningText: 'legacy private reasoning' }).text).toBe('');
   });
 
   it('merges live capability metadata from terminal stream events', () => {

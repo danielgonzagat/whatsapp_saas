@@ -13,6 +13,7 @@ import {
   isActivePlanKind,
   isLegacyPlanEligibleForMigration,
   PLAN_INCLUDE,
+  PUBLIC_CHECKOUT_PRODUCT_WHERE,
 } from './checkout.service.helpers';
 
 interface LookupDeps {
@@ -57,7 +58,7 @@ export async function getCheckoutByCode(
     where: {
       isActive: true,
       checkout: { isActive: true, kind: 'CHECKOUT' },
-      plan: { isActive: true, kind: 'PLAN' },
+      plan: { isActive: true, kind: 'PLAN', product: PUBLIC_CHECKOUT_PRODUCT_WHERE },
       OR: codeOrConditions,
     },
     include: CHECKOUT_PLAN_LINK_INCLUDE,
@@ -92,7 +93,7 @@ export async function getCheckoutByCode(
       where: {
         isActive: true,
         checkout: { isActive: true, kind: 'CHECKOUT' },
-        plan: { isActive: true, kind: 'PLAN' },
+        plan: { isActive: true, kind: 'PLAN', product: PUBLIC_CHECKOUT_PRODUCT_WHERE },
         OR: codeOrConditions,
       },
       include: CHECKOUT_PLAN_LINK_INCLUDE,
@@ -152,7 +153,12 @@ export async function getCheckoutByCode(
   }
 
   const affiliatePlanRecord = await deps.prisma.checkoutProductPlan.findFirst({
-    where: { productId: affiliateLink.affiliateProduct.productId, isActive: true, kind: 'PLAN' },
+    where: {
+      productId: affiliateLink.affiliateProduct.productId,
+      isActive: true,
+      kind: 'PLAN',
+      product: PUBLIC_CHECKOUT_PRODUCT_WHERE,
+    },
     include: PLAN_INCLUDE,
     orderBy: { createdAt: 'asc' },
   });

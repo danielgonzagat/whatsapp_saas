@@ -75,6 +75,7 @@ export default function KloelDashboard() {
   const [approvalActionInFlight, setApprovalActionInFlight] = useState<string | null>(null);
 
   const loadedConversationIdRef = useRef<string | null>(null);
+  const loadingConversationIdRef = useRef<string | null>(null);
   const conversationLoadTokenRef = useRef(0);
   const suppressedConversationLoadIdRef = useRef<string | null>(null);
   const previousRequestedConversationIdRef = useRef<string | null>(null);
@@ -141,8 +142,15 @@ export default function KloelDashboard() {
   const loadConversation = useCallback(
     async (conversationId: string) => {
       if (!conversationId) {return;}
+      if (
+        loadedConversationIdRef.current === conversationId ||
+        loadingConversationIdRef.current === conversationId
+      ) {
+        return;
+      }
       const loadToken = conversationLoadTokenRef.current + 1;
       conversationLoadTokenRef.current = loadToken;
+      loadingConversationIdRef.current = conversationId;
       try {
         const payload = await loadKloelThreadMessages(conversationId);
         if (conversationLoadTokenRef.current !== loadToken) {return;}
@@ -162,6 +170,13 @@ export default function KloelDashboard() {
         setActiveConversation(conversationId);
       } catch (error) {
         console.error('Failed to load conversation in dashboard:', error);
+      } finally {
+        if (
+          loadingConversationIdRef.current === conversationId &&
+          conversationLoadTokenRef.current === loadToken
+        ) {
+          loadingConversationIdRef.current = null;
+        }
       }
     },
     [conversationTitleMap, setActiveConversation],
@@ -183,6 +198,7 @@ export default function KloelDashboard() {
       }
       conversationLoadTokenRef.current += 1;
       loadedConversationIdRef.current = null;
+      loadingConversationIdRef.current = null;
       setActiveConversationId(null);
       setConversationTitle('Nova conversa');
       setMessages([]);

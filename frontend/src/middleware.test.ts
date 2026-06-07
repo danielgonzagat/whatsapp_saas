@@ -254,6 +254,11 @@ describe('app host routing', () => {
     expectNext(response);
   });
 
+  it('allows published site routes on app host without auth', () => {
+    const response = middleware(buildUnauthenticatedRequest('https://app.kloel.com/s/site-real'));
+    expectNext(response);
+  });
+
   it('redirects unauthenticated users on app host known paths to login', () => {
     const response = middleware(buildUnauthenticatedRequest('https://app.kloel.com/products'));
     const location = response.headers.get('location')!;

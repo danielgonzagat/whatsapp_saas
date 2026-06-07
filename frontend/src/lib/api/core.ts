@@ -154,6 +154,12 @@ const API_ORIGIN = API_URL ? new URL(API_URL).origin : '';
 
 // Mutex to prevent concurrent refresh attempts (race condition on polling pages)
 let refreshPromise: Promise<boolean> | null = null;
+const API_READ_DEDUPLICATION_TTL_MS = 1000;
+const inFlightApiReads = new Map<string, Promise<ApiResponse<unknown>>>();
+const recentApiReadResponses = new Map<
+  string,
+  { response: ApiResponse<unknown>; expiresAt: number }
+>();
 
 async function refreshAccessToken(): Promise<boolean> {
   // If a refresh is already in-flight, wait for its result instead of starting a new one
@@ -343,6 +349,115 @@ async function retryAfterBackoff<T>(
   return last;
 }
 
+function resolveApiMethod(init: RequestInit): string {
+  return String(init.method || 'GET').toUpperCase();
+}
+
+function shouldDeduplicateApiRead(init: RequestInit): boolean {
+  const method = resolveApiMethod(init);
+  return (method === 'GET' || method === 'HEAD') && !init.body && !init.signal;
+}
+
+function isMutatingApiRequest(init: RequestInit): boolean {
+  const method = resolveApiMethod(init);
+  return !['GET', 'HEAD', 'OPTIONS'].includes(method);
+}
+
+function buildApiReadDeduplicationKey(url: string, headers: Record<string, string>): string {
+  const normalizedHeaders = Array.from(new Headers(headers).entries()).sort(([left], [right]) =>
+    left.localeCompare(right),
+  );
+  return JSON.stringify([url, normalizedHeaders]);
+}
+
+function getRecentApiReadResponse<T>(key: string): ApiResponse<T> | null {
+  const entry = recentApiReadResponses.get(key);
+  if (!entry) {
+    return null;
+  }
+
+  if (entry.expiresAt <= Date.now()) {
+    recentApiReadResponses.delete(key);
+    return null;
+  }
+
+  return entry.response as ApiResponse<T>;
+}
+
+function rememberApiReadResponse<T>(key: string, response: ApiResponse<T>): void {
+  if (response.error || response.status < 200 || response.status >= 400) {
+    return;
+  }
+
+  recentApiReadResponses.set(key, {
+    response: response as ApiResponse<unknown>,
+    expiresAt: Date.now() + API_READ_DEDUPLICATION_TTL_MS,
+  });
+}
+
+function clearApiReadDeduplicationMemory(): void {
+  inFlightApiReads.clear();
+  recentApiReadResponses.clear();
+}
+
+async function executeApiFetchRequest<T>(
+  url: string,
+  baseInit: RequestInit,
+  headers: Record<string, string>,
+): Promise<ApiResponse<T>> {
+  try {
+    const response = await performApiRequest<T>(url, baseInit);
+
+    if (response.status === 401 && tokenStorage.getRefreshToken()) {
+      const retryResponse = await retryApiRequestWithRefreshedToken<T>(url, baseInit, headers);
+      if (retryResponse) {
+        return retryResponse;
+      }
+    }
+
+    if (response.status === 429) {
+      return retryAfterBackoff<T>(url, baseInit, response);
+    }
+
+    return response;
+  } catch (err: unknown) {
+    return {
+      error: err instanceof Error ? err.message : 'Network error',
+      status: 0,
+    };
+  }
+}
+
+function performDeduplicatedApiRead<T>(
+  url: string,
+  baseInit: RequestInit,
+  headers: Record<string, string>,
+): Promise<ApiResponse<T>> {
+  const key = buildApiReadDeduplicationKey(url, headers);
+  const recent = getRecentApiReadResponse<T>(key);
+  if (recent) {
+    return Promise.resolve(recent);
+  }
+
+  const existing = inFlightApiReads.get(key);
+  if (existing) {
+    return existing as Promise<ApiResponse<T>>;
+  }
+
+  const promise = executeApiFetchRequest<T>(url, baseInit, headers)
+    .then((response) => {
+      rememberApiReadResponse(key, response);
+      return response;
+    })
+    .finally(() => {
+      if (inFlightApiReads.get(key) === promise) {
+        inFlightApiReads.delete(key);
+      }
+    });
+  inFlightApiReads.set(key, promise as Promise<ApiResponse<unknown>>);
+  return promise;
+}
+
 /** Api fetch. */
 export async function apiFetch<T = unknown>(
   endpoint: string,
@@ -365,27 +480,15 @@ export async function apiFetch<T = unknown>(
     headers,
   };
 
-  try {
-    const response = await performApiRequest<T>(url, baseInit);
-
-    if (response.status === 401 && tokenStorage.getRefreshToken()) {
-      const retryResponse = await retryApiRequestWithRefreshedToken<T>(url, baseInit, headers);
-      if (retryResponse) {
-        return retryResponse;
-      }
-    }
-
-    if (response.status === 429) {
-      return retryAfterBackoff<T>(url, baseInit, response);
-    }
-
-    return response;
-  } catch (err: unknown) {
-    return {
-      error: err instanceof Error ? err.message : 'Network error',
-      status: 0,
-    };
+  if (shouldDeduplicateApiRead(baseInit)) {
+    return performDeduplicatedApiRead<T>(url, baseInit, headers);
   }
+
+  if (isMutatingApiRequest(baseInit)) {
+    clearApiReadDeduplicationMemory();
+  }
+
+  return executeApiFetchRequest<T>(url, baseInit, headers);
 }
 
 // ============================================

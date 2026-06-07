@@ -206,18 +206,25 @@ export function CheckoutThemePage({
           label={kloelT('Informações pessoais')}
           theme={theme.step}
         />
-        <StepLine active={checkout.step > 1} theme={theme.step} />
+        {checkout.requiresShipping ? (
+          <>
+            <StepLine active={checkout.step > 1} theme={theme.step} />
+            <StepBubble
+              n={2}
+              state={checkout.step === 2 ? 'active' : checkout.step > 2 ? 'done' : 'locked'}
+              {...(checkout.mobileCanOpenStep2 ? { onClick: () => checkout.setStep(2) } : {})}
+              label={kloelT('Entrega')}
+              theme={theme.step}
+            />
+            <StepLine active={checkout.step > 2} theme={theme.step} />
+          </>
+        ) : (
+          <StepLine active={checkout.step > 1} theme={theme.step} />
+        )}
         <StepBubble
-          n={2}
-          state={checkout.step === 2 ? 'active' : checkout.step > 2 ? 'done' : 'locked'}
-          {...(checkout.mobileCanOpenStep2 ? { onClick: () => checkout.setStep(2) } : {})}
-          label={kloelT('Entrega')}
-          theme={theme.step}
-        />
-        <StepLine active={checkout.step > 2} theme={theme.step} />
-        <StepBubble
-          n={3}
+          n={checkout.requiresShipping ? 3 : 2}
           state={checkout.step >= 3 ? 'active' : 'locked'}
+          {...(checkout.step >= 3 ? { onClick: () => checkout.setStep(3) } : {})}
           label={kloelT('Pagamento')}
           theme={theme.step}
         />
@@ -235,6 +242,7 @@ export function CheckoutThemePage({
         discount={checkout.discount}
         subtotal={checkout.subtotal}
         shippingInCents={checkout.shippingInCents}
+        requiresShipping={checkout.requiresShipping}
         totalWithInterest={checkout.totalWithInterest}
         productName={checkout.productName}
         productImage={checkout.productImage}
@@ -265,6 +273,7 @@ export function CheckoutThemePage({
           updateField={checkout.updateField}
           loadingStep={checkout.loadingStep}
           goStep={checkout.goStep}
+          requiresShipping={checkout.requiresShipping}
           socialIdentity={checkout.socialIdentity}
           socialLoadingProvider={checkout.socialLoadingProvider}
           socialError={checkout.socialError}
@@ -311,10 +320,17 @@ export function CheckoutThemePage({
           submitError={checkout.submitError}
           isSubmitting={checkout.isSubmitting}
           finalizeOrder={checkout.finalizeOrder}
+          checkoutUnavailableReason={checkout.checkoutUnavailableReason}
           stripeClientSecret={checkout.stripeClientSecret}
           stripeReturnUrl={checkout.stripeReturnUrl}
           onStripeSuccess={checkout.handleStripePaymentSuccess}
           onStripeError={checkout.handleStripePaymentError}
+          stepNumber={checkout.requiresShipping ? 3 : 2}
+          lockedMessage={
+            checkout.requiresShipping
+              ? undefined
+              : 'Preencha suas informações pessoais para continuar'
+          }
         />
         <CheckoutDesktopSidebar
           theme={theme}
@@ -328,6 +344,7 @@ export function CheckoutThemePage({
           discount={checkout.discount}
           subtotal={checkout.subtotal}
           shippingInCents={checkout.shippingInCents}
+          requiresShipping={checkout.requiresShipping}
           totalWithInterest={checkout.totalWithInterest}
           productName={checkout.productName}
           productImage={checkout.productImage}
@@ -344,6 +361,7 @@ export function CheckoutThemePage({
         footerPrimary={checkout.footerPrimary}
         footerSecondary={checkout.footerSecondary}
         footerLegal={checkout.footerLegal}
+        checkoutUnavailableReason={checkout.checkoutUnavailableReason}
       />
       <CheckoutSuccessModal
         theme={theme}
