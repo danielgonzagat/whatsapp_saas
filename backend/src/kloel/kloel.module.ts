@@ -120,6 +120,7 @@ import { KloelAudioModule } from './kloel-audio.module';
 import { KloelRulesModule } from './rules/kloel-rules.module';
 import { LeadsController } from './leads.controller';
 import { LeadsService } from './leads.service';
+import { LeadContactBackfillService } from './lead-contact-backfill.service';
 import { OrderAlertsService } from './order-alerts.service';
 import {
   ProductAIConfigController,
@@ -403,6 +404,7 @@ import { CrmModule } from '../crm/crm.module';
     SmartPaymentService,
     WorkspaceGuard,
     LeadsService,
+    LeadContactBackfillService,
     OrderAlertsService,
     AdRulesEngineService,
     EmailCampaignService,
@@ -516,6 +518,7 @@ import { CrmModule } from '../crm/crm.module';
     KloelBusinessConfigToolsService,
     KloelWhatsAppToolsService,
     LeadMindCoordinator,
+    LeadContactBackfillService,
     KloelToolDispatcherService,
     KloelToolExecutorService,
     KloelComposerService,
