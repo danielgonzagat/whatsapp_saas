@@ -11,6 +11,7 @@ import { WebhookDispatcherService } from './webhook-dispatcher.service';
 import { WebhookSettingsController } from './webhook-settings.controller';
 import { TikTokWebhookController } from './tiktok-webhook.controller';
 import { WhatsAppApiWebhookController } from './whatsapp-api-webhook.controller';
+import { SaleLedgerReconcileScheduler } from './sale-ledger-reconcile.scheduler';
 
 // Webhook ordering: Controllers use WebhookEvent externalId unique constraint
 // and checkIdempotencyOrThrow to prevent out-of-order/duplicate event processing.
@@ -22,7 +23,7 @@ import { WhatsAppApiWebhookController } from './whatsapp-api-webhook.controller'
     WhatsAppApiWebhookController,
     TikTokWebhookController,
   ],
-  providers: [WebhooksService, PrismaService, WorkspaceService, WebhookDispatcherService],
+  providers: [WebhooksService, PrismaService, WorkspaceService, WebhookDispatcherService, SaleLedgerReconcileScheduler],
   exports: [WebhooksService, WebhookDispatcherService],
 })
 export class WebhooksModule {}

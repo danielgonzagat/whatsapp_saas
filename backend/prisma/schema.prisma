@@ -3841,9 +3841,12 @@ model MindSelfModel {
 
 /// Canonical message store (Brain → Mind unification PR-1, see
 /// docs/architecture/BRAIN_MIND_UNIFICATION_PLAN.md §5). Mirrors the column
-/// shape of `KloelMessage` (`RAC_KloelMessage`) so `MindCanonicalService` can
-/// dual-write here later. The extra `source` discriminator lets the three
-/// legacy message tables (`KloelMessage`=`brain`, `ChatMessage`=`dashboard`,
+/// shape of `KloelMessage` (`RAC_KloelMessage`). NOW DUAL-WRITTEN behind
+/// `KLOEL_MINDMESSAGE_DUALWRITE` (default OFF) — best-effort writers in
+/// inbox/chat/kloel-thread services and the lead-processor helper mirror legacy
+/// message writes here. Still canonical-but-dead-on-READ: no read path consumes
+/// this table yet. The extra `source` discriminator lets the three legacy
+/// message tables (`KloelMessage`=`brain`, `ChatMessage`=`dashboard`,
 /// `KloelConversation`=`lead_conversation`) converge into this one table.
 /// ADDITIVE — no legacy table is renamed or dropped in PR-1.
 model MindMessage {
@@ -3865,9 +3868,17 @@ model MindMessage {
 
 /// Canonical memory store (Brain → Mind unification PR-1, see
 /// docs/architecture/BRAIN_MIND_UNIFICATION_PLAN.md §2.5 / §5). Mirrors the
-/// column shape of `KloelMemory` (`RAC_KloelMemory`) so `MindCanonicalService`
-/// can dual-write here later. Adds the `namespace` column called for in §2.5 so
-/// the agent-runtime KV usages can be partitioned during the migration.
+/// column shape of `KloelMemory` (`RAC_KloelMemory`). NOW HAS WRITERS:
+/// `KloelMemoryEngineService` writes per-user facts here directly (namespace
+/// `umem:<userId>`), and `MindMemoryItemService` mirrors legacy KloelMemory
+/// upserts here behind `KLOEL_MINDMEMORY_DUALWRITE` (default OFF). LIVE ON READ
+/// for the `umem:` namespace only: `KloelMemoryEngineService.recall()` /
+/// `recallGraph()` read these rows back (consumed by
+/// `KloelWorkspaceContextService` context injection and the `kloel` controller).
+/// The dual-write (`source`-tagged) rows mirrored from legacy tables are still
+/// dead-on-READ — no read path consumes those yet. Adds the `namespace` column
+/// called for in §2.5 so the agent-runtime KV usages can be partitioned during
+/// the migration.
 /// ADDITIVE — no legacy table is renamed or dropped in PR-1.
 model MindMemory {
   id          String                       @id @default(uuid())
