@@ -17,6 +17,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { StructuredLogger } from '../logging/structured-logger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import {
   estimateOpenAiChatQuoteCostCents,
@@ -48,7 +49,7 @@ function countAnalysisItems(value: unknown): number {
 /** Pdf processor controller. */
 @ApiTags('KLOEL PDF Processor')
 @Controller('kloel/pdf')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('ai')
 export class PdfProcessorController {
   private readonly logger = StructuredLogger.from(PdfProcessorController.name);

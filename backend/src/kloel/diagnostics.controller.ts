@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { ObservabilityQueriesService } from '../metrics/observability-queries.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { asProviderSettings } from '../marketing/channels/whatsapp/provider-settings.types';
@@ -60,7 +61,7 @@ interface WorkspaceDiagnosticsSettings {
 
 /** Diagnostics controller. */
 @ApiTags('diagnostics')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 @Controller('diag')
 @RouteClass('ai')
 export class DiagnosticsController {
