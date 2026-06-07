@@ -69,12 +69,12 @@ describe('kloel-message-ui', () => {
     expect(sanitizeAssistantVisibleContent('camada interna teste recebido e confirmado.')).toBe(
       'Arquivo de teste recebido e confirmado.',
     );
-    expect(sanitizeAssistantVisibleContent('Ele está no arquivo backend/src/kloel/x.ts.')).not.toContain(
-      'backend/src',
-    );
-    expect(sanitizeAssistantVisibleContent('Respondo sem expor código interno ou nomes de ferramentas.')).toBe(
-      'Respondo sem expor processo privado ou nomes internos de capacidades.',
-    );
+    expect(
+      sanitizeAssistantVisibleContent('Ele está no arquivo backend/src/kloel/x.ts.'),
+    ).not.toContain('backend/src');
+    expect(
+      sanitizeAssistantVisibleContent('Respondo sem expor código interno ou nomes de ferramentas.'),
+    ).toBe('Respondo sem expor processo privado ou nomes internos de capacidades.');
     expect(
       sanitizeAssistantVisibleContent(
         'Agent trace: registro operacional completo dos passos e ferramentas acionados.',
@@ -91,7 +91,9 @@ describe('kloel-message-ui', () => {
       ),
     ).toBe('Tool/function calling — capacidade de invocar ferramentas ou funções externas.');
     expect(
-      sanitizeAssistantVisibleContent('Intermediate steps — alegação acima do observadoos intermediários.'),
+      sanitizeAssistantVisibleContent(
+        'Intermediate steps — alegação acima do observadoos intermediários.',
+      ),
     ).toBe('Intermediate steps — passos intermediários.');
     expect(sanitizeAssistantVisibleContent('Intermediate steps — pass-os intermediários.')).toBe(
       'Intermediate steps — pass-os intermediários.',
@@ -613,21 +615,22 @@ describe('kloel-message-ui', () => {
     ]);
   });
 
-  it('drops streamed reasoning deltas before they become assistant-visible metadata', () => {
+  it('stores streamed reasoning deltas as assistant reasoning metadata', () => {
     const metadata = appendAssistantTraceFromEvent(
-      { clientRequestId: 'req-private-reasoning' },
+      { clientRequestId: 'req-live-reasoning' },
       {
         type: 'reasoning_delta',
-        text: 'We are in a chat conversation with the user and should not expose this.',
+        text: 'We are in a chat conversation with the user and should show live reasoning.',
       },
     );
 
-    expect(metadata).toEqual({ clientRequestId: 'req-private-reasoning' });
-    expect(getAssistantReasoning(metadata).text).toBe('');
-    expect(getAssistantReasoning({
-      reasoningText: 'We are in a chat conversation with the user and should not expose this.',
-    }).text).toBe('');
-    expect(JSON.stringify(metadata)).not.toContain('We are in a chat conversation');
+    expect(metadata).toEqual({
+      clientRequestId: 'req-live-reasoning',
+      reasoningText: 'We are in a chat conversation with the user and should show live reasoning.',
+    });
+    expect(getAssistantReasoning(metadata).text).toBe(
+      'We are in a chat conversation with the user and should show live reasoning.',
+    );
   });
 
   it('merges live capability metadata from terminal stream events', () => {
@@ -677,7 +680,6 @@ describe('kloel-message-ui', () => {
     expect(downloadUrl).toMatch(/^data:text\/markdown;charset=utf-8;base64,/);
     expect(atob(downloadUrl.split(',')[1] ?? '')).toBe(body);
   });
-
 
   it('derives downloadable files from a trailing unclosed fenced answer block', () => {
     const fence = '```';

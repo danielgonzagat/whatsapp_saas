@@ -61,11 +61,8 @@ vi.mock('@/lib/kloel-conversations', () => ({
 afterEach(() => {
   vi.clearAllMocks();
   dashboardRoute.searchParams = new URLSearchParams();
-  dashboardConversationHistory.conversations = [
-    { id: 'thread-old', title: 'Conversa antiga' },
-  ];
+  dashboardConversationHistory.conversations = [{ id: 'thread-old', title: 'Conversa antiga' }];
 });
-
 
 function renderDashboardView(overrides?: Partial<ComponentProps<typeof KloelDashboardView>>) {
   const inputRef = { current: null };
@@ -310,8 +307,8 @@ describe('KloelDashboardView trace', () => {
     expect(
       screen.getByText('Analisei a pergunta e consultei contexto real antes da resposta final.'),
     ).toBeTruthy();
-    expect(screen.queryByText(/We are in a chat conversation/)).toBeNull();
-    expect(screen.queryByText(/must decide what answer to show/)).toBeNull();
+    expect(screen.getByText(/We are in a chat conversation/)).toBeTruthy();
+    expect(screen.getByText(/must decide what answer to show/)).toBeTruthy();
     expect(screen.getAllByText('list_products').length).toBeGreaterThan(0);
     expect(screen.queryByText('Pré-resposta executável')).toBeNull();
     expect(screen.queryByText('Reasoning summary')).toBeNull();

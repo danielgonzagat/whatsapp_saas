@@ -82,7 +82,6 @@ function KloelGraphPendingOverlay({ node }: { readonly node: KloelGraphNode }) {
   );
 }
 
-
 function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -130,7 +129,9 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
     readonly sequence: number;
   } | null>(null);
   const pendingNodeSequenceRef = useRef(0);
-  const [consumedPendingNodeSequence, setConsumedPendingNodeSequence] = useState<number | null>(null);
+  const [consumedPendingNodeSequence, setConsumedPendingNodeSequence] = useState<number | null>(
+    null,
+  );
 
   const pushGraphOnlyRoute = useCallback(
     (url: string) => {
@@ -171,7 +172,9 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
   );
   const activeNode = resolveKloelGraphNodeForPathFromNodes(pathname, params, graphNodes);
   const routeSignature = `${pathname}?${params.toString()}`;
-  const pendingNodeConsumed = pendingNode ? consumedPendingNodeSequence === pendingNode.sequence : false;
+  const pendingNodeConsumed = pendingNode
+    ? consumedPendingNodeSequence === pendingNode.sequence
+    : false;
   const pendingNodeId =
     pendingNode && !pendingNodeConsumed && pendingNode.routeSignature === routeSignature
       ? pendingNode.id
@@ -187,9 +190,8 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
   const activeGraphNodeId = graphOnly
     ? (pendingNodeId ?? undefined)
     : (pendingNodeId ?? activeNode?.id);
-  const pendingOverlayNode = graphOnly && pendingNodeId
-    ? graphNodes.find((node) => node.id === pendingNodeId)
-    : undefined;
+  const pendingOverlayNode =
+    graphOnly && pendingNodeId ? graphNodes.find((node) => node.id === pendingNodeId) : undefined;
   const hasRouteOverlay = !graphOnly || Boolean(pendingOverlayNode);
   const overlayNode = graphOnly ? pendingOverlayNode : activeNode;
 

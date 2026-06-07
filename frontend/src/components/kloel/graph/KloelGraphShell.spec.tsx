@@ -182,7 +182,8 @@ describe('KloelGraphShell', () => {
   it('keeps primary galaxy navigation above the overlay backdrop so route changes stay clickable', () => {
     renderShell(<main>ProdutosView real</main>);
 
-    const overlayLayer = screen.getByRole('dialog', { name: /Produtos/i }).parentElement as HTMLElement;
+    const overlayLayer = screen.getByRole('dialog', { name: /Produtos/i })
+      .parentElement as HTMLElement;
     const floatingNav = screen.getByRole('navigation', { name: 'KloelGraph' });
 
     expect(Number(floatingNav.style.zIndex)).toBeGreaterThan(Number(overlayLayer.style.zIndex));
@@ -264,9 +265,9 @@ describe('KloelGraphShell', () => {
     await waitFor(() => {
       expect(container.querySelector('circle[data-node-id="criar-products"]')).toBeTruthy();
     });
-    expect(container.querySelector('circle[data-node-id="criar-products"]')?.getAttribute('stroke')).toBe(
-      'none',
-    );
+    expect(
+      container.querySelector('circle[data-node-id="criar-products"]')?.getAttribute('stroke'),
+    ).toBe('none');
   });
 
   it('keeps ember node emphasis transient instead of tinting the focused galaxy permanently', async () => {
@@ -285,7 +286,9 @@ describe('KloelGraphShell', () => {
     expect(getProductsCircle()?.getAttribute('fill')).toBe('rgb(232,93,48)');
 
     fireEvent.pointerLeave(productsNode);
-    await waitFor(() => expect(getProductsCircle()?.getAttribute('fill')).not.toBe('rgb(232,93,48)'));
+    await waitFor(() =>
+      expect(getProductsCircle()?.getAttribute('fill')).not.toBe('rgb(232,93,48)'),
+    );
   });
 
   it('uses shallow floating navigation in graph-only mode', async () => {
@@ -359,9 +362,9 @@ describe('KloelGraphShell', () => {
       clientY: 11,
     });
     expect(push).toHaveBeenCalledWith('/sites');
-    expect(container.querySelector('circle[data-node-id="criar-sites"]')?.getAttribute('stroke')).toBe(
-      'rgb(232,93,48)',
-    );
+    expect(
+      container.querySelector('circle[data-node-id="criar-sites"]')?.getAttribute('stroke'),
+    ).toBe('rgb(232,93,48)');
   });
 
   it('preserves same-route query params when reopening a graph node', () => {
@@ -386,9 +389,9 @@ describe('KloelGraphShell', () => {
       clientX: 11,
       clientY: 11,
     });
-    expect(container.querySelector('circle[data-node-id="criar-sites"]')?.getAttribute('stroke')).toBe(
-      'rgb(232,93,48)',
-    );
+    expect(
+      container.querySelector('circle[data-node-id="criar-sites"]')?.getAttribute('stroke'),
+    ).toBe('rgb(232,93,48)');
 
     pathname = '/canvas';
     searchParams = new URLSearchParams();
@@ -398,9 +401,9 @@ describe('KloelGraphShell', () => {
       </KloelGraphShell>,
     );
 
-    expect(container.querySelector('circle[data-node-id="criar-sites"]')?.getAttribute('stroke')).toBe(
-      'none',
-    );
+    expect(
+      container.querySelector('circle[data-node-id="criar-sites"]')?.getAttribute('stroke'),
+    ).toBe('none');
   });
 
   it('does not resurrect stale pending overlays when history returns to the origin route', async () => {
@@ -540,7 +543,9 @@ describe('KloelGraphShell', () => {
 
     expect(push).toHaveBeenCalledWith('/chat');
     expect(
-      dispatchEvent.mock.calls.some(([event]) => event instanceof Event && event.type === 'kloel:new-chat'),
+      dispatchEvent.mock.calls.some(
+        ([event]) => event instanceof Event && event.type === 'kloel:new-chat',
+      ),
     ).toBe(true);
   });
 
