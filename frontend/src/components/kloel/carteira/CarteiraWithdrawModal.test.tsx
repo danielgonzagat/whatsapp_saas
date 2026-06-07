@@ -148,6 +148,17 @@ describe('CarteiraSaque', () => {
     });
     expect('accountType' in payload).toBe(false);
   });
+
+  it('requires confirmation before removing a bank account', () => {
+    render(<CarteiraSaque available={0} onOpenWithdraw={() => {}} withdrawals={[]} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remover conta' }));
+
+    expect(removeBankAccountMock).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar remocao da conta Banco Teste' }));
+
+    expect(removeBankAccountMock).toHaveBeenCalledWith('bank-1');
+  });
 });
 
 describe('CarteiraWithdrawModal', () => {

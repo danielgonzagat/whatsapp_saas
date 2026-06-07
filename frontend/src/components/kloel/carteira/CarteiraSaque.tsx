@@ -32,6 +32,7 @@ export default function CarteiraSaque({
   });
   const [addLoading, setAddLoading] = useState(false);
   const [addError, setAddError] = useState('');
+  const [confirmingRemoveAccountId, setConfirmingRemoveAccountId] = useState<string | null>(null);
 
   const handleAddAccount = async () => {
     if (!addForm.bankName) {
@@ -246,19 +247,39 @@ export default function CarteiraSaque({
                 )}
                 <button
                   type="button"
-                  onClick={() => removeBankAccount(a.id)}
+                  onClick={() => {
+                    if (confirmingRemoveAccountId !== a.id) {
+                      setConfirmingRemoveAccountId(a.id);
+                      return;
+                    }
+                    setConfirmingRemoveAccountId(null);
+                    void removeBankAccount(a.id);
+                  }}
                   style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--app-text-tertiary)',
+                    background: confirmingRemoveAccountId === a.id ? 'rgba(232,93,48,0.12)' : 'none',
+                    border: confirmingRemoveAccountId === a.id ? '1px solid rgba(232,93,48,0.42)' : '1px solid transparent',
+                    borderRadius: 4,
+                    color: confirmingRemoveAccountId === a.id ? colors.ember.primary : 'var(--app-text-tertiary)',
                     cursor: 'pointer',
-                    padding: 4,
+                    padding: confirmingRemoveAccountId === a.id ? '4px 8px' : 4,
                     display: 'flex',
                     alignItems: 'center',
+                    fontFamily: "'Sora',sans-serif",
+                    fontSize: 10,
+                    fontWeight: 600,
                   }}
-                  title={kloelT(`Remover conta`)}
+                  title={
+                    confirmingRemoveAccountId === a.id
+                      ? kloelT(`Confirmar remocao da conta ${a.bankName || a.bank || 'Conta'}`)
+                      : kloelT(`Remover conta`)
+                  }
+                  aria-label={
+                    confirmingRemoveAccountId === a.id
+                      ? kloelT(`Confirmar remocao da conta ${a.bankName || a.bank || 'Conta'}`)
+                      : kloelT(`Remover conta`)
+                  }
                 >
-                  {IC.x(12)}
+                  {confirmingRemoveAccountId === a.id ? kloelT(`Confirmar`) : IC.x(12)}
                 </button>
               </div>
             ))}
