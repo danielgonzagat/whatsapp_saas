@@ -1069,3 +1069,20 @@ These are *intentional* transitional states — not bugs to "fix" by deleting on
 |---|---|
 | `ChannelSession` (model or service) | **FICTIONAL** — zero grep matches in `backend/src/**` and `schema.prisma`. Channel-session state lives in `ChannelSetup` (schema:3492, wizard progress) + `MetaConnection` (schema:3467, credentials), resolved by `WhatsappSessionService` (`marketing/channels/whatsapp/whatsapp-session.service.ts:19`) and `MetaWhatsAppService.resolveConnection`. `SessionStatus` is a provider-registry type, not a model. |
 | `campaign-jobs`/`voice-jobs`/`media-jobs` as "dead queues" | **LIVE** — workers in the separate `worker/` deployable (`campaign-processor.ts:147`, `voice-processor.ts:253`, `media-processor.ts:16`). |
+
+---
+
+## P0 verification log — 2026-06-07 (Opus, code-grounded)
+
+> The recon swarm rated severities from static signals; this log records the **verified** status after reading the real code. Several recon P0s were over-claimed. Every "FIXED" is a shipped, tested commit.
+
+| Recon P0 | Verified verdict | Status |
+|---|---|---|
+| Logout blacklist key mismatch (`access-token-revoked:` vs `jti:revoked:`) | CONFIRMED — guard read a key logout never wrote | **FIXED** `01ddb274c` + regression test `5b8586b81` |
+| Affiliate report always `[]` (`status:'active'` vs stored `'ACTIVE'`) | CONFIRMED | **FIXED** `d533b699a` |
+| WhatsApp payment-intent lead lookup by raw phone | CONFIRMED — lookup key ≠ creation key (normalized) → lost revenue | **FIXED** `e59e8ac3b` |
+| Decision-outcome learning leak (`sweepExpired` / worker resolver skip the bandit) | CONFIRMED — bandit learned only from successes, never timeout losses | **FIXED** `095c8ff19` (backend) + `941a6ca2c` (worker) |
+| Plan-price split — "editing `ProductPlan.price` has no commercial effect" | **OVER-CLAIMED** — schema comment: *reads/checkout still consume `price`*; `priceInCents` is an additive in-flight migration (PHASE A) and price-update paths already dual-write cents via `plan.service.helpers.ts:140` | Not a bug; in-flight migration |
+| Cognitive-loop-3x — "one persists nothing, lost on restart" | **OVER-CLAIMED** — `MindPredictionService.runCycle` reads/writes `autopilotEvent` (DB-backed) and is wired via `mind-bg.processor.ts:69`; the in-memory Maps are per-cycle compute. Real residue = divergent surprise math across the 3 loops | Design cleanup, not a learning-loss bug |
+| workspaceId IDOR (guard `getWorkspaceId` reads client params/body) | **NEEDS THREAT-MODEL** — the guard's local `getWorkspaceId` (`kloel-security.guard.ts:45`) reads client `params`/`body` for rate-limit + billing-context + sets `request.workspace`; the service-layer helper (`common.helpers.ts:20`) uses `req.user.workspaceId` (JWT) for data scoping. Exploitability depends on which controllers consume `request.workspace` vs the JWT helper — not a verified one-line fix | Open — security design |
+| Sale/Order/Payment ledger split · Coupon validate split | not yet code-verified | Open — design |
