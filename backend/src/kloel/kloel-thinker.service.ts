@@ -603,6 +603,14 @@ export class KloelThinkerService {
           ? { capabilityExecutor: this.capabilityExecutor }
           : {}),
         ...(_executeLocalTool !== undefined ? { executeLocalTool: _executeLocalTool } : {}),
+        // Capability-turn observability (KLOEL_CAPABILITY_TURN_LEARN): pass the
+        // SAME @Optional DecisionOutcomeService the streaming loop uses so a
+        // capability-driven sync turn can be recorded as a `capability_reply`
+        // decision. Undefined when not provided → the gated helper short-circuits
+        // and the reply path is byte-identical.
+        ...(this.decisionOutcomeService !== undefined
+          ? { decisionOutcomeService: this.decisionOutcomeService }
+          : {}),
       });
     } catch (error: unknown) {
       this.logger.error('Erro no KLOEL Thinker Sync:', error);

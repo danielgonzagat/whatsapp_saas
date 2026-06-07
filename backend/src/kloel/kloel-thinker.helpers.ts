@@ -24,6 +24,11 @@ import {
   isAiProviderConfigured,
 } from './kloel-thinker.substrate.helpers';
 import { emitCognitionAlias } from './event-taxonomy.canonical-aliases';
+import { StructuredLogger } from '../logging/structured-logger';
+import { recordCapabilityTurnDecision } from './capability-turn-learn.flag';
+import { type DecisionOutcomeService } from './decision-outcome.service';
+
+const capabilityTurnLogger = StructuredLogger.from('KloelThinkerSync');
 
 const ERR_THREAD_NOT_FOUND = 'Conversa não encontrada.';
 const ERR_ASSISTANT_MSG_NOT_FOUND = 'Mensagem do assistente não encontrada.';
@@ -51,6 +56,12 @@ export async function thinkSyncImpl(
     abiBuilder?: AbiBuilderService;
     capabilityExecutor?: MindCapabilityExecutor;
     executeLocalTool?: LocalToolExecutor;
+    // P0-C sibling: optional cognition producer for the capability-turn
+    // observability closure (KLOEL_CAPABILITY_TURN_LEARN). Same service the
+    // reply engine injects for plain chat turns. @Optional — flag-OFF (and DI
+    // contexts that don't provide it) leave it undefined and the gated helper
+    // short-circuits, so the capability reply path is byte-identical.
+    decisionOutcomeService?: DecisionOutcomeService;
   },
 ): Promise<ThinkSyncResult> {
   const {
@@ -183,6 +194,23 @@ export async function thinkSyncImpl(
     // Dual-emit: legacy `kloel.chat.turn` + canonical `cognition.chat.turn`
     // per docs/architecture/EVENT_TAXONOMY_MIGRATION.md. Both rows are
     // persisted so SQL aggregators can be migrated independently.
+    // Capability/tool-driven replies BYPASS the reply engine: when
+    // `capabilityResult?.content` was used above, `buildAssistantReply` never
+    // ran, so NONE of its learning hooks fired for this turn. Behind
+    // KLOEL_CAPABILITY_TURN_LEARN (default OFF), record the turn as a
+    // `capability_reply` decision so capability turns become OBSERVABLE to the
+    // Mind. The reply itself is UNCHANGED — `assistantMessage` already holds
+    // the verbatim `capabilityResult.content`. Fire-and-forget / flag-OFF =
+    // byte-identical. Only fires when a capability actually produced the reply.
+    if (capabilityResult?.content) {
+      recordCapabilityTurnDecision(deps.decisionOutcomeService, capabilityTurnLogger, {
+        workspaceId,
+        capability: composerCapability ?? 'unknown',
+        mode,
+        messageLength: message.length,
+        replyLength: assistantMessage.length,
+      });
+    }
     const chatTurnMeta: Prisma.InputJsonValue = {
       userPreview: message.slice(0, 280),
       replyPreview: assistantMessage.slice(0, 280),
