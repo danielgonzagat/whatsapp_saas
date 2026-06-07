@@ -172,8 +172,16 @@ function main() {
       if (lines.length === 0) continue;
       for (const line of lines) {
         const v = { file: rel, line, alias, canonical: canon };
-        if (NOISY_TOKENS.has(alias)) soft.push(v);
-        else soft.push(v);
+        // ADVISORY by design: identifier-substring matching of vocabulary
+        // aliases is too noisy to hard-block — e.g. `connection` matches
+        // `dbConnection`/`getConnection`, `Lead` matches `LeadProcessor`.
+        // Every hit is a warning (soft); `hard` is intentionally never
+        // populated, so `--strict` is a no-op for this gate. Real, blocking
+        // vocabulary enforcement requires AST/type-position matching (a
+        // separate effort). See docs/architecture/ANTI_REGRESSION_GATES.md.
+        // `NOISY_TOKENS` is retained for the --report grouping below.
+        void NOISY_TOKENS;
+        soft.push(v);
       }
     }
   }
