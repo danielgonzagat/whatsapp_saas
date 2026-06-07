@@ -55,6 +55,10 @@ import {
   closeChatReplyOutcome,
 } from './kloel-reply-engine.decision-outcome.helpers';
 import {
+  closeOpenChatRepliesAsContinued,
+  isRealRewardSignalEnabled,
+} from './real-reward-signal.flag';
+import {
   applyReplyEngineDegradedPath,
   applyReplyEnginePostReply,
 } from './kloel-reply-engine.degraded-path.helper';
@@ -352,6 +356,13 @@ export class KloelReplyEngineService {
         messageLength: params.message.length,
       });
     }
+    // KLOEL_REAL_REWARD_SIGNAL (default OFF): the arrival of THIS inbound
+    // message is the real consequence that the PRIOR reply kept the conversation
+    // alive. Close any still-open chat_reply decision for this workspace as a
+    // WON (chat.continued). No-op + byte-identical when the flag is OFF.
+    closeOpenChatRepliesAsContinued(this.decisionOutcomeService, this.logger, {
+      workspaceId: params.workspaceId,
+    });
 
     // PI-K16-B: tick lease coordination – prevent concurrent reply storms
     let tickLeaseOwner: string | undefined;
@@ -483,11 +494,19 @@ export class KloelReplyEngineService {
           ...(this.mindPredictor !== undefined ? { mindPredictorService: this.mindPredictor } : {}),
           ...(params.abiStateJson !== undefined ? { abiStateJson: params.abiStateJson } : {}),
         });
-        closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
-          outcomeKey,
-          outcomeName: 'chat.replied',
-          wonVsBaseline: true,
-        });
+        // KLOEL_REAL_REWARD_SIGNAL (default OFF): defer the chat_reply reward.
+        // Flag-OFF = today: close the decision as a WIN immediately (degenerate
+        // always-win). Flag-ON: LEAVE the decision OPEN so the REAL consequence
+        // closes it later — WON when the conversation continues (next-reply
+        // closeOpenChatReplies) or a sale is attributed (KLOEL_COMMERCE_DECISION_LINK),
+        // LOST when it times out into silence (KLOEL_DECISION_SWEEP_ENABLED sweep).
+        if (!isRealRewardSignalEnabled()) {
+          closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
+            outcomeKey,
+            outcomeName: 'chat.replied',
+            wonVsBaseline: true,
+          });
+        }
         if (replyStyle) {
           await recordReplyStyleOutcome(this.mindBanditService, {
             workspaceId: params.workspaceId,

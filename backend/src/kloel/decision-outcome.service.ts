@@ -278,4 +278,72 @@ export class DecisionOutcomeService {
 
     return expired.length;
   }
+
+  /**
+   * WON — conversation continued: close every still-OPEN `chat_reply` decision
+   * for a workspace as a real WIN. Mirrors `sweepExpired`'s structure (an
+   * `updateMany` over the OPEN rows + a symmetric per-row bandit feed) but with
+   * the WIN polarity: a new inbound message arriving for this workspace IS the
+   * observed consequence that the prior reply kept the conversation alive.
+   *
+   * Only the deferred-reward chat_reply rows are touched; commerce-link / sweep
+   * decisions are not in scope here (different `decisionType`), so this composes
+   * cleanly with the commerce-win and timeout-loss paths instead of duplicating
+   * them. Idempotent: the `outcomeAt: null` filter means a row is closed at most
+   * once. Best-effort + fail-open per bandit row, matching `sweepExpired`.
+   *
+   * Returns the number of decisions closed.
+   */
+  async closeOpenChatReplies(
+    workspaceId: string,
+    opts: { outcomeName: string; wonVsBaseline: boolean },
+  ): Promise<number> {
+    const open = await this.prisma.decisionOutcome.findMany({
+      where: {
+        workspaceId,
+        decisionType: 'chat_reply',
+        outcomeAt: null,
+      },
+      select: { id: true, outcomeKey: true, decisionType: true, chosenAction: true },
+    });
+
+    if (open.length === 0) {
+      return 0;
+    }
+
+    const outcomeKeys = open.map((o) => o.outcomeKey);
+    await this.prisma.decisionOutcome.updateMany({
+      where: { id: { in: open.map((o) => o.id) }, workspaceId },
+      data: {
+        outcomeAt: new Date(),
+        outcomeName: opts.outcomeName,
+        wonVsBaseline: opts.wonVsBaseline,
+        outcomeValue: inputJson({
+          reason: 'conversation_continued',
+          outcomeKeys,
+        }),
+      },
+    });
+
+    if (this.mindBandit) {
+      const reward = opts.wonVsBaseline ? 1 : 0;
+      for (const o of open) {
+        try {
+          await this.mindBandit.recordOutcome({
+            workspaceId,
+            decisionType: o.decisionType,
+            arm: o.chosenAction,
+            outcome: reward,
+          });
+        } catch (err: unknown) {
+          this.logger.warn('Failed to record bandit outcome from closeOpenChatReplies', {
+            outcomeKey: o.outcomeKey,
+            error: err instanceof Error ? err.message : 'unknown error',
+          });
+        }
+      }
+    }
+
+    return open.length;
+  }
 }
