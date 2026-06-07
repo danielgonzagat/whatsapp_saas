@@ -1,9 +1,17 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { apiFetchMock, getChannelSetupMock, useProductsMock } = vi.hoisted(() => ({
+const {
+  apiFetchMock,
+  completeChannelSetupMock,
+  getChannelSetupMock,
+  saveChannelConfigMock,
+  useProductsMock,
+} = vi.hoisted(() => ({
   apiFetchMock: vi.fn(),
+  completeChannelSetupMock: vi.fn(),
   getChannelSetupMock: vi.fn(),
+  saveChannelConfigMock: vi.fn(),
   useProductsMock: vi.fn(),
 }));
 
@@ -17,9 +25,9 @@ vi.mock('@/lib/api', () => ({
 
 vi.mock('@/lib/api/channel-setup', () => ({
   addChannelArsenal: vi.fn(),
-  completeChannelSetup: vi.fn(),
+  completeChannelSetup: completeChannelSetupMock,
   getChannelSetup: getChannelSetupMock,
-  saveChannelConfig: vi.fn(),
+  saveChannelConfig: saveChannelConfigMock,
   saveChannelProducts: vi.fn(),
 }));
 
@@ -239,5 +247,52 @@ describe('useOfficialMarketingChannel', () => {
       '/meta/auth/url?channel=instagram&returnTo=%2Fmarketing%2Finstagram',
     );
     expect(result.current.message).toBe('Meta nao configurado neste ambiente.');
+  });
+
+  it('does not complete setup when provider configuration is unavailable', async () => {
+    getChannelSetupMock.mockResolvedValue({ ...emptySetup, channel: 'whatsapp', completed: true });
+    apiFetchMock.mockImplementation(async (url: string) => {
+      if (url === '/marketing/connect/status') {
+        return {
+          data: {
+            channels: {
+              whatsapp: {
+                connected: false,
+                status: 'meta_oauth_configuration_missing',
+              },
+            },
+          },
+        };
+      }
+      if (url === '/marketing/connect/channel-setup?channel=whatsapp') {
+        return { data: { setup: null, completedAt: '2026-06-07T00:00:00.000Z' } };
+      }
+      return { error: `unexpected request: ${url}` };
+    });
+
+    const { result } = renderHook(() =>
+      useOfficialMarketingChannel({ channel: 'whatsapp', initialStep: undefined }),
+    );
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.setupUnavailable).toBe(true);
+
+    apiFetchMock.mockClear();
+    completeChannelSetupMock.mockClear();
+    saveChannelConfigMock.mockClear();
+
+    let completed = true;
+    await act(async () => {
+      completed = await result.current.handleComplete();
+    });
+
+    expect(completed).toBe(false);
+    expect(apiFetchMock).not.toHaveBeenCalled();
+    expect(saveChannelConfigMock).not.toHaveBeenCalled();
+    expect(completeChannelSetupMock).not.toHaveBeenCalled();
+    expect(result.current.completed).toBe(false);
+    expect(result.current.completeMessage).toBe(
+      'Canal nao configurado neste ambiente. Conecte o provedor antes de concluir.',
+    );
   });
 });

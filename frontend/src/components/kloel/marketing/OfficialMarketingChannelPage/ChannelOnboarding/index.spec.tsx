@@ -53,6 +53,7 @@ interface ScenarioOverrides {
   setup?: Partial<MutableState>;
   productOptions?: Array<{ id: string; name: string; price?: number | null }>;
   completed?: boolean;
+  completeMessage?: string | null;
   connectionConnected?: boolean;
   loadError?: string | null;
   setupUnavailable?: boolean;
@@ -85,6 +86,7 @@ function makeData(overrides: ScenarioOverrides = {}) {
     channelSession: { connected: overrides.connectionConnected ?? false },
     completed: overrides.completed ?? false,
     completeBusy: false,
+    completeMessage: overrides.completeMessage ?? null,
     isLoading: false,
     busy: null as string | null,
     loadError: overrides.loadError ?? null,
@@ -272,6 +274,25 @@ describe('awakened state', () => {
     expect(screen.getByText(/Vincular conta/)).toBeTruthy();
     // Recomeçar must NOT call setCurrentStep on the backend (it is UI-only).
     expect(data.setCurrentStep).not.toHaveBeenCalled();
+  });
+
+  it('does not render Done when a completed setup has no provider configuration', () => {
+    const data = makeData({
+      completed: true,
+      completeMessage: 'Setup concluido. O canal esta liberado para operacao.',
+      setupUnavailable: true,
+      setup: { currentStep: 3 },
+    });
+    hookMock.mockReturnValue(data);
+    const { container } = render(<ChannelOnboarding channel="whatsapp" />);
+
+    expect(container.textContent).not.toContain('acordou');
+    expect(container.textContent).not.toContain('Setup concluido');
+    expect(screen.getByText('Canal nao configurado neste ambiente.')).toBeTruthy();
+    const button = screen.getByRole('button', { name: /Despertar/ }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    fireEvent.click(button);
+    expect(data.handleComplete).not.toHaveBeenCalled();
   });
 
   it('surfaces loadError below the vignette', () => {

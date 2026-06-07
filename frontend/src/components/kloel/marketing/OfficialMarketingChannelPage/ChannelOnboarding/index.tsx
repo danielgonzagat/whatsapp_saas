@@ -63,9 +63,14 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
 
   const backendStep = data.setup.currentStep;
   const effectiveStep = optimisticStep ?? backendStep;
-  const awakened = data.completed && !restarted;
+  const awakened = data.completed && !data.setupUnavailable && !restarted;
   const viewStep = restarted ? 0 : effectiveStep;
   const busy = data.busy !== null || data.isLoading;
+  const completeMessage =
+    data.setupUnavailable &&
+    data.completeMessage === 'Setup concluido. O canal esta liberado para operacao.'
+      ? null
+      : data.completeMessage;
   const isMetaChannel = channel === 'whatsapp' || channel === 'instagram' || channel === 'facebook';
   const canDisconnectMeta = isMetaChannel && data.channelSession?.connected === true;
 
@@ -199,7 +204,7 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
         onEdgeChange={(next) => setVoice({ edge: next })}
         onBack={() => goToStep(2)}
         onActivate={handleActivate}
-        activating={data.completeBusy}
+        activating={data.completeBusy || data.setupUnavailable}
       />
     );
   }, [
@@ -300,7 +305,7 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
           </CTA>
         ) : null}
 
-        {data.setupUnavailable && !data.message ? (
+        {data.setupUnavailable ? (
           <Chip C={C} dim>
             Canal nao configurado neste ambiente.
           </Chip>
@@ -312,9 +317,9 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
           </Chip>
         ) : null}
 
-        {data.completeMessage ? (
+        {completeMessage ? (
           <Chip C={C} dim>
-            {data.completeMessage}
+            {completeMessage}
           </Chip>
         ) : null}
 

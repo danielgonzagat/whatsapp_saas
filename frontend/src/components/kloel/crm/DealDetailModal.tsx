@@ -84,6 +84,8 @@ export function DealDetailModal({ deal, stages, onClose }: DealDetailModalProps)
           </span>
           <button
             type="button"
+            aria-label={kloelT('Fechar detalhes do deal')}
+            title={kloelT('Fechar detalhes do deal')}
             onClick={onClose}
             style={{
               background: 'none',

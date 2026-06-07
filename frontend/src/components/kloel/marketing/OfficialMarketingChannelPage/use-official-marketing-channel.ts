@@ -532,10 +532,35 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
     }
   }, [googleAdsStatus]);
 
+  const details = channel === 'tiktok' ? tiktokStatus : channelSession;
+  const metaOAuthUnavailable =
+    channelSession?.status === 'meta_oauth_configuration_missing' ||
+    channelSession?.status === 'server_not_configured' ||
+    channelSession?.status === 'unavailable';
+  const tiktokSetupUnavailable =
+    channel === 'tiktok' &&
+    (tiktokStatus?.configReady === false ||
+      tiktokStatus?.clientConfigured === false ||
+      tiktokStatus?.secretConfigured === false ||
+      tiktokMode?.details.clientConfigured === false ||
+      tiktokMode?.details.secretConfigured === false);
+  const googleAdsSetupUnavailable =
+    channel === 'google-ads' &&
+    (googleAdsStatus?.clientConfigured === false ||
+      googleAdsStatus?.secretConfigured === false ||
+      googleAdsStatus?.developerTokenConfigured === false);
+  const setupUnavailable =
+    metaOAuthUnavailable || tiktokSetupUnavailable || googleAdsSetupUnavailable;
+
   const handleComplete = useCallback(async (): Promise<boolean> => {
-    setCompleteBusy(true);
     setCompleteMessage(null);
     setMessage(null);
+    if (setupUnavailable) {
+      setCompleted(false);
+      setCompleteMessage('Canal nao configurado neste ambiente. Conecte o provedor antes de concluir.');
+      return false;
+    }
+    setCompleteBusy(true);
     try {
       const configuredState = await saveChannelConfig(channel, toRealChannelConfig(setup.config));
       setSetup((current) =>
@@ -556,26 +581,7 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
     } finally {
       setCompleteBusy(false);
     }
-  }, [channel, refresh, setup.config]);
-  const details = channel === 'tiktok' ? tiktokStatus : channelSession;
-  const metaOAuthUnavailable =
-    channelSession?.status === 'meta_oauth_configuration_missing' ||
-    channelSession?.status === 'server_not_configured' ||
-    channelSession?.status === 'unavailable';
-  const tiktokSetupUnavailable =
-    channel === 'tiktok' &&
-    (tiktokStatus?.configReady === false ||
-      tiktokStatus?.clientConfigured === false ||
-      tiktokStatus?.secretConfigured === false ||
-      tiktokMode?.details.clientConfigured === false ||
-      tiktokMode?.details.secretConfigured === false);
-  const googleAdsSetupUnavailable =
-    channel === 'google-ads' &&
-    (googleAdsStatus?.clientConfigured === false ||
-      googleAdsStatus?.secretConfigured === false ||
-      googleAdsStatus?.developerTokenConfigured === false);
-  const setupUnavailable =
-    metaOAuthUnavailable || tiktokSetupUnavailable || googleAdsSetupUnavailable;
+  }, [channel, refresh, setup.config, setupUnavailable]);
   const badgeStatus = isLoading
     ? 'Carregando'
     : statusText(channelSession?.connected, channelSession?.status);
