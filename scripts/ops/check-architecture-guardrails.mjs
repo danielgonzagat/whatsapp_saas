@@ -29,6 +29,10 @@ const ADDED_LINE_RULES = [
     // Match `any` only as a real token, NOT inside a string literal such as the
     // HTML attribute `step="any"` (which is a valid value, not a TS type).
     pattern: new RegExp(`(?<!["'\`])\\b${unsafeTypeToken}\\b(?!["'\`])`),
+    // Test/spec/e2e/fixture/mock files legitimately use `expect.any()`,
+    // `as any` mocks, and the word "any" in prose descriptions — exempt them
+    // from the no-new-any rule (other rules below still apply to tests).
+    skipPath: (p) => /\.(?:spec|test|e2e|fixture|mock)\.[mc]?[jt]sx?$/.test(p),
     skip(line) {
       return /^\s*(?:\/\/|\/\*|\*|\*\/)/.test(line);
     },
@@ -253,6 +257,7 @@ function main() {
     const addedLines = getAddedLines(relPath, status, diffBase, ciMode);
     for (const added of addedLines) {
       for (const rule of ADDED_LINE_RULES) {
+        if (rule.skipPath?.(relPath)) {continue;}
         if (rule.skip?.(added.content)) {continue;}
         if (!rule.pattern.test(added.content)) {continue;}
 
