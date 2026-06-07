@@ -26,7 +26,9 @@ const ADDED_LINE_RULES = [
   {
     rule: 'no_new_any',
     label: `new explicit ${unsafeTypeToken}`,
-    pattern: new RegExp(`\\b${unsafeTypeToken}\\b`),
+    // Match `any` only as a real token, NOT inside a string literal such as the
+    // HTML attribute `step="any"` (which is a valid value, not a TS type).
+    pattern: new RegExp(`(?<!["'\`])\\b${unsafeTypeToken}\\b(?!["'\`])`),
     skip(line) {
       return /^\s*(?:\/\/|\/\*|\*|\*\/)/.test(line);
     },
