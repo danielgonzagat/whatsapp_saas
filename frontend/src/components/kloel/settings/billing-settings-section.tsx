@@ -114,12 +114,12 @@ export function BillingSettingsSection({
     try {
       const returnUrl = typeof window !== 'undefined' ? window.location.href : undefined;
       const response = await billingApi.createSetupIntent(returnUrl);
-      const url = (response.data as { url?: string } | undefined)?.url;
-      if (url) {
-        window.location.href = url;
+      const data = response.data as { message?: string; unavailable?: boolean; url?: string | null } | undefined;
+      if (data?.url) {
+        window.location.href = data.url;
         return;
       }
-      setBillingError('Nao foi possivel abrir o fluxo de cartao agora.');
+      setBillingError(data?.message || 'Nao foi possivel abrir o fluxo de cartao agora.');
     } catch {
       setBillingError('Nao foi possivel abrir o fluxo de cartao agora.');
     } finally {

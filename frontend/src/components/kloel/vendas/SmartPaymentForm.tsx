@@ -46,6 +46,8 @@ export function SmartPaymentFormView({
         <div key={key}>
           <FieldLabel>{label}</FieldLabel>
           <input
+            id={`smart-payment-${key}`}
+            name={key}
             aria-label={label}
             value={form[key]}
             onChange={(e) => onChange((f) => ({ ...f, [key]: e.target.value }))}
@@ -68,13 +70,21 @@ export function SmartPaymentFormView({
       <div style={{ display: 'flex', gap: 8 }}>
         <div style={{ flex: 1 }}>
           <FieldLabel>{kloelT('Metodo')}</FieldLabel>
-          <select value="pix" disabled style={selectStyle}>
+          <select
+            id="smart-payment-method"
+            name="method"
+            value="pix"
+            disabled
+            style={selectStyle}
+          >
             <option value="pix">PIX</option>
           </select>
         </div>
         <div style={{ flex: 1 }}>
           <FieldLabel>{kloelT('Vencimento')}</FieldLabel>
           <input
+            id="smart-payment-due-date"
+            name="dueDate"
             aria-label="Data de vencimento"
             type="date"
             value={form.dueDate}
