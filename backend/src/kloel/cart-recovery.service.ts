@@ -12,6 +12,8 @@ import { MindCaseMemoryService } from './mind/memory/mind-case-memory.service';
 import { MindGuardsService } from './mind/policy/mind-guards.service';
 import { MindPolicyService } from './mind/policy/mind-policy.service';
 import { resolveCartRecoveryDecision } from './mind/policy/mind-recovery-decision-resolvers';
+import { DecisionOutcomeService } from './decision-outcome.service';
+import { isCartRecoveryLearnEnabled } from './cart-recovery-learn.flag';
 import { renderEmailTemplate } from '../common/utils/email-template-renderer.util';
 import { escapeHtml } from '../common/utils/html-escape.util';
 import {
@@ -111,6 +113,7 @@ export class CartRecoveryService {
     @Optional() private readonly transportRegistry?: ChannelTransportRegistry,
     @Optional() private readonly bandit?: MindBanditService,
     @Optional() private readonly checkoutEvents?: CheckoutEventEmitterService,
+    @Optional() private readonly decisionOutcome?: DecisionOutcomeService,
   ) {}
 
   /** Check abandoned carts and dispatch MIND-chosen recovery actions. */
@@ -197,6 +200,39 @@ export class CartRecoveryService {
                 mindRecoveryAction: recoveryResult.action,
                 mindReason: recoveryResult.reasonInternal,
               };
+
+              // ADDITIVE, flag-gated win-loop closure (KLOEL_CART_RECOVERY_LEARN,
+              // default OFF). Record the cart_recovery decision into the canonical
+              // ledger so the matching bandit arms exist + a closable row is
+              // present, and persist the decision's outcomeKey on the order so the
+              // payment-approved effect can close it as a WIN. Flag-OFF =
+              // byte-identical to today: no recordDecision, no extra metadata key.
+              // The choose() decision logic above is untouched in both states.
+              if (isCartRecoveryLearnEnabled() && this.decisionOutcome) {
+                mindDecisionMeta = {
+                  ...mindDecisionMeta,
+                  cartRecoveryOutcomeKey: recoveryResult.outcomeKey,
+                };
+                await this.decisionOutcome
+                  .recordDecision({
+                    workspaceId: wsId,
+                    decisionType: 'cart_recovery',
+                    chosenAction: recoveryResult.action,
+                    baselineAction: recoveryResult.baseline,
+                    outcomeKey: recoveryResult.outcomeKey,
+                    expectedWindow: 1,
+                    contextSnapshot: {
+                      channel: 'email',
+                      price_band: priceBand,
+                      age_minutes: ageMinutes,
+                    },
+                  })
+                  .catch((recordErr: unknown) => {
+                    this.logger.warn(
+                      `Cart recovery decision record skipped for order ${order.id}: ${String(recordErr)}`,
+                    );
+                  });
+              }
             } catch (mindErr: unknown) {
               this.logger.warn(
                 `MIND cart_recovery fallback for order ${order.id}: ${String(mindErr)}`,

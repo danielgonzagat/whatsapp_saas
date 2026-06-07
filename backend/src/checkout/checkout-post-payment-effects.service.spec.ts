@@ -541,4 +541,100 @@ describe('CheckoutPostPaymentEffectsService', () => {
       expect(checkoutSocialLeadService.markConvertedFromOrder).not.toHaveBeenCalled();
     });
   });
+
+  describe('cart recovery win-close (KLOEL_CART_RECOVERY_LEARN)', () => {
+    const ORIGINAL_FLAG = process.env.KLOEL_CART_RECOVERY_LEARN;
+    let decisionOutcome: { closeOutcome: jest.Mock };
+
+    const makeServiceWithDecisionOutcome = () =>
+      new CheckoutPostPaymentEffectsService(
+        prisma as unknown as PrismaService,
+        facebookCAPI as never,
+        checkoutSocialLeadService as never,
+        checkoutEventEmitter as never,
+        spineEmitter as never,
+        decisionOutcome as never,
+      );
+
+    beforeEach(() => {
+      decisionOutcome = { closeOutcome: jest.fn().mockResolvedValue(undefined) };
+    });
+
+    afterEach(() => {
+      if (ORIGINAL_FLAG === undefined) {
+        delete process.env.KLOEL_CART_RECOVERY_LEARN;
+      } else {
+        process.env.KLOEL_CART_RECOVERY_LEARN = ORIGINAL_FLAG;
+      }
+    });
+
+    it('flag OFF: never closes the cart_recovery outcome even when the key is present', async () => {
+      delete process.env.KLOEL_CART_RECOVERY_LEARN;
+      const service = makeServiceWithDecisionOutcome();
+      const order = makeOrder({
+        metadata: { cartRecoveryOutcomeKey: 'cart_recovery:ws_1:order_1:1762000000000' },
+      });
+
+      await service.markLeadConverted(order, 'ws_1');
+
+      expect(decisionOutcome.closeOutcome).not.toHaveBeenCalled();
+    });
+
+    it('flag ON: closes the cart_recovery outcome as a WIN when the paid order carries the key', async () => {
+      process.env.KLOEL_CART_RECOVERY_LEARN = 'true';
+      const service = makeServiceWithDecisionOutcome();
+      const order = makeOrder({
+        metadata: { cartRecoveryOutcomeKey: 'cart_recovery:ws_1:order_1:1762000000000' },
+      });
+
+      await service.markLeadConverted(order, 'ws_1');
+
+      expect(decisionOutcome.closeOutcome).toHaveBeenCalledTimes(1);
+      expect(decisionOutcome.closeOutcome).toHaveBeenCalledWith({
+        outcomeKey: 'cart_recovery:ws_1:order_1:1762000000000',
+        outcomeName: 'commerce.payment.approved',
+        wonVsBaseline: true,
+      });
+    });
+
+    it('flag ON: does not close when the paid order has no cart_recovery key', async () => {
+      process.env.KLOEL_CART_RECOVERY_LEARN = 'true';
+      const service = makeServiceWithDecisionOutcome();
+      const order = makeOrder({ metadata: { correlationId: 'corr_1' } });
+
+      await service.markLeadConverted(order, 'ws_1');
+
+      expect(decisionOutcome.closeOutcome).not.toHaveBeenCalled();
+    });
+
+    it('flag ON: swallows a closeOutcome failure without breaking the payment effect', async () => {
+      process.env.KLOEL_CART_RECOVERY_LEARN = 'true';
+      decisionOutcome.closeOutcome.mockRejectedValue(new Error('ledger down'));
+      const service = makeServiceWithDecisionOutcome();
+      const order = makeOrder({
+        metadata: { cartRecoveryOutcomeKey: 'cart_recovery:ws_1:order_1:1762000000000' },
+      });
+
+      await expect(service.markLeadConverted(order, 'ws_1')).resolves.toBeUndefined();
+      expect(decisionOutcome.closeOutcome).toHaveBeenCalledTimes(1);
+    });
+
+    it('flag ON but DecisionOutcomeService not injected: no-op, no throw', async () => {
+      process.env.KLOEL_CART_RECOVERY_LEARN = 'true';
+      const serviceWithoutDecisionOutcome = new CheckoutPostPaymentEffectsService(
+        prisma as unknown as PrismaService,
+        facebookCAPI as never,
+        checkoutSocialLeadService as never,
+        checkoutEventEmitter as never,
+        spineEmitter as never,
+      );
+      const order = makeOrder({
+        metadata: { cartRecoveryOutcomeKey: 'cart_recovery:ws_1:order_1:1762000000000' },
+      });
+
+      await expect(
+        serviceWithoutDecisionOutcome.markLeadConverted(order, 'ws_1'),
+      ).resolves.toBeUndefined();
+    });
+  });
 });

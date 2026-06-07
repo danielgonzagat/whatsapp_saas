@@ -58,4 +58,38 @@ describe('mind recovery decision resolvers', () => {
       castMock<[{ outcomeKey: unknown }]>(policy.choose.mock.calls[1])[0].outcomeKey,
     );
   });
+
+  it('surfaces the chosen baseline and the decision outcomeKey to the caller', async () => {
+    jest.spyOn(Date, 'now').mockReturnValue(1_762_000_000_003);
+    const policy = {
+      choose: jest.fn().mockResolvedValue({
+        chosen: 'discount',
+        decision: {
+          candidates: [{ action: 'discount', beliefMean: 0.6 }],
+          fallbackActive: false,
+          reasonInternal: 'test',
+        },
+      }),
+    };
+
+    const result = await resolveCartRecoveryDecision(
+      policy,
+      undefined,
+      undefined,
+      'ws-1',
+      'order-1',
+      'Produto',
+      'under_100',
+      45,
+    );
+
+    // The outcomeKey returned is byte-identical to the one passed into choose,
+    // so the caller can persist it and later close the same decision row.
+    expect(result.outcomeKey).toBe('cart_recovery:ws-1:order-1:1762000000003');
+    expect(castMock<[{ outcomeKey: unknown }]>(policy.choose.mock.calls[0])[0].outcomeKey).toBe(
+      result.outcomeKey,
+    );
+    // With no memory/bandit input the baseline is the 'help' default.
+    expect(result.baseline).toBe('help');
+  });
 });

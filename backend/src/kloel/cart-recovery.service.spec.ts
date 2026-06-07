@@ -600,4 +600,97 @@ describe('CartRecoveryService', () => {
       expect(sendEmail).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('win-loop decision recording (KLOEL_CART_RECOVERY_LEARN)', () => {
+    const ORIGINAL_FLAG = process.env.KLOEL_CART_RECOVERY_LEARN;
+
+    function makeStubDecisionOutcome() {
+      return { recordDecision: jest.fn().mockResolvedValue(undefined) };
+    }
+
+    function makeService(decisionOutcome: ReturnType<typeof makeStubDecisionOutcome>) {
+      return new CartRecoveryService(
+        prisma as never,
+        undefined,
+        makeStubMindPolicy('discount') as never,
+        undefined,
+        undefined,
+        undefined,
+        makeStubBandit({ arm: 'discount' }) as never,
+        undefined,
+        decisionOutcome as never,
+      );
+    }
+
+    afterEach(() => {
+      if (ORIGINAL_FLAG === undefined) {
+        delete process.env.KLOEL_CART_RECOVERY_LEARN;
+      } else {
+        process.env.KLOEL_CART_RECOVERY_LEARN = ORIGINAL_FLAG;
+      }
+    });
+
+    it('flag OFF: never records the decision and never persists the outcomeKey', async () => {
+      delete process.env.KLOEL_CART_RECOVERY_LEARN;
+      prisma.checkoutOrder.findMany.mockResolvedValue([pendingOrder()]);
+      const decisionOutcome = makeStubDecisionOutcome();
+      service = makeService(decisionOutcome);
+
+      await service.checkAbandonedCarts();
+
+      expect(decisionOutcome.recordDecision).not.toHaveBeenCalled();
+      const updatePayload = castMock<{ data: { metadata: Record<string, unknown> } }>(
+        prisma.checkoutOrder.updateMany.mock.calls[0]?.[0],
+      ).data.metadata;
+      expect(updatePayload.cartRecoveryOutcomeKey).toBeUndefined();
+    });
+
+    it('flag ON: records the cart_recovery decision and persists the outcomeKey on the order', async () => {
+      process.env.KLOEL_CART_RECOVERY_LEARN = 'true';
+      prisma.checkoutOrder.findMany.mockResolvedValue([pendingOrder()]);
+      const decisionOutcome = makeStubDecisionOutcome();
+      service = makeService(decisionOutcome);
+
+      await service.checkAbandonedCarts();
+
+      expect(decisionOutcome.recordDecision).toHaveBeenCalledTimes(1);
+      expect(decisionOutcome.recordDecision).toHaveBeenCalledWith(
+        partialMatch({
+          workspaceId: 'ws-1',
+          decisionType: 'cart_recovery',
+          chosenAction: 'discount',
+          outcomeKey: stringMatch(/^cart_recovery:ws-1:order-1:\d+$/),
+          expectedWindow: 1,
+        }),
+      );
+
+      const recordedKey = castMock<[{ outcomeKey: string }]>(
+        decisionOutcome.recordDecision.mock.calls[0],
+      )[0].outcomeKey;
+      const updatePayload = castMock<{ data: { metadata: Record<string, unknown> } }>(
+        prisma.checkoutOrder.updateMany.mock.calls[0]?.[0],
+      ).data.metadata;
+      // The persisted key is the SAME key the decision was recorded under, so the
+      // payment-approved effect can close exactly this decision row as a WIN.
+      expect(updatePayload.cartRecoveryOutcomeKey).toBe(recordedKey);
+    });
+
+    it('flag ON but DecisionOutcomeService not injected: no record, no key, recovery still sends', async () => {
+      process.env.KLOEL_CART_RECOVERY_LEARN = 'true';
+      prisma.checkoutOrder.findMany.mockResolvedValue([pendingOrder()]);
+      service = new CartRecoveryService(
+        prisma as never,
+        undefined,
+        makeStubMindPolicy('discount') as never,
+      );
+
+      await service.checkAbandonedCarts();
+
+      expect(sendEmail).toHaveBeenCalledTimes(1);
+      const updatePayload = castMock<{ data: { metadata: Record<string, unknown> } }>(
+        prisma.checkoutOrder.updateMany.mock.calls[0]?.[0],
+      ).data.metadata;
+      expect(updatePayload.cartRecoveryOutcomeKey).toBeUndefined();
+    });
+  });
 });

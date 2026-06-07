@@ -10,6 +10,8 @@ import { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
 import { FacebookCAPIService } from './facebook-capi.service';
+import { DecisionOutcomeService } from '../kloel/decision-outcome.service';
+import { isCartRecoveryLearnEnabled } from '../kloel/cart-recovery-learn.flag';
 
 type CheckoutPixelConfig = {
   type?: string | null;
@@ -48,6 +50,7 @@ export class CheckoutPostPaymentEffectsService {
     private readonly checkoutSocialLeadService: CheckoutSocialLeadService,
     private readonly checkoutEventEmitter: CheckoutEventEmitterService,
     @Optional() private readonly spine?: SpineEmitterService,
+    @Optional() private readonly decisionOutcome?: DecisionOutcomeService,
   ) {}
 
   /** Mark lead converted + auto-enroll in linked member areas. */
@@ -98,6 +101,36 @@ export class CheckoutPostPaymentEffectsService {
       order.customerName ?? null,
       order.customerPhone ?? null,
     );
+
+    // ADDITIVE, flag-gated win-loop closure (KLOEL_CART_RECOVERY_LEARN, default
+    // OFF). When a recovered order is PAID, close the cart_recovery decision
+    // opened at recovery-send time so the recovery bandit/policy learns from the
+    // real conversion. The outcomeKey was threaded onto the order metadata by
+    // CartRecoveryService at decision time. closeOutcome is idempotent — its
+    // updateMany only fills rows whose outcomeAt is still null — so the win is
+    // recorded at most once per order across payment-webhook retries. Flag-OFF =
+    // byte-identical to today: no read of the key, no closeOutcome.
+    if (isCartRecoveryLearnEnabled() && this.decisionOutcome) {
+      const cartRecoveryOutcomeKey =
+        typeof orderMetadata.cartRecoveryOutcomeKey === 'string'
+          ? orderMetadata.cartRecoveryOutcomeKey
+          : undefined;
+      if (cartRecoveryOutcomeKey) {
+        await this.decisionOutcome
+          .closeOutcome({
+            outcomeKey: cartRecoveryOutcomeKey,
+            outcomeName: 'commerce.payment.approved',
+            wonVsBaseline: true,
+          })
+          .catch((closeErr: unknown) => {
+            this.logger.warn(
+              `Cart recovery win-close skipped for order ${order.id}: ${
+                closeErr instanceof Error ? closeErr.message : String(closeErr)
+              }`,
+            );
+          });
+      }
+    }
   }
 
   /** Send purchase signals. */

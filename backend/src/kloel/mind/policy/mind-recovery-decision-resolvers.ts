@@ -73,9 +73,11 @@ export async function resolveCartRecoveryDecision(
 ): Promise<{
   action: string;
   banditAction?: string;
+  baseline: string;
   confidence: number;
   fallback: boolean;
   memoryAction?: string;
+  outcomeKey: string;
   reasonInternal?: string;
 }> {
   const actions = ['proof', 'urgency', 'help', 'faq', 'discount', 'pause'];
@@ -107,6 +109,9 @@ export async function resolveCartRecoveryDecision(
   }
 
   const baseline = memoryAction ?? banditAction ?? 'help';
+  // Stable per-attempt key: surfaced so the caller can persist it on the order
+  // and close the win on the payment-approved path (flag-gated learning loop).
+  const outcomeKey = `cart_recovery:${workspaceId}:${orderId}:${Date.now()}`;
   const result = await policy.choose({
     workspaceId,
     subject: `order:${orderId}`,
@@ -123,7 +128,7 @@ export async function resolveCartRecoveryDecision(
       context: { action, channel: 'email', price_band: priceBand },
     })),
     baseline,
-    outcomeKey: `cart_recovery:${workspaceId}:${orderId}:${Date.now()}`,
+    outcomeKey,
     utilitySuccess: 1,
     utilityFail: -0.1,
   });
@@ -131,9 +136,11 @@ export async function resolveCartRecoveryDecision(
   return {
     action: result.chosen,
     ...(banditAction ? { banditAction } : {}),
+    baseline,
     confidence: decisionConfidence(result),
     fallback: result.decision.fallbackActive,
     ...(memoryAction ? { memoryAction } : {}),
+    outcomeKey,
     reasonInternal: result.decision.reasonInternal,
   };
 }
