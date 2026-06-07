@@ -253,25 +253,34 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
       ]);
       ctx.setStreamingMessageId(assistantId);
 
-      hardWatchdogRef.current = setTimeout(() => {
-        if (finalized) {
-          return;
-        }
-        try {
-          ctx.activeStreamRef.current?.abort();
-        } catch {
-          // best-effort: aborting a wedged stream must not throw here
-        }
-        const watchdogMessage =
-          'O Kloel não respondeu a tempo. Sua mensagem foi preservada — tente enviar novamente.';
-        finalError = finalError || watchdogMessage;
-        if (!streamedReply.trim()) {
-          streamedReply = watchdogMessage;
-          syncAssistantText(streamedReply);
-        }
-        streamEnded = true;
-        finalizeStream();
-      }, HARD_STREAM_WATCHDOG_MS);
+      // IDLE watchdog: reasoning is UNLIMITED in time. As long as the stream is
+      // actively delivering events/tokens (reasoning_delta included) the timer is
+      // re-armed (see armWatchdog() calls in onEvent/onChunk), so an arbitrarily
+      // long think never trips it. It fires ONLY on true silence — no event for
+      // the idle window — to release a genuinely wedged stream.
+      const armWatchdog = () => {
+        clearHardWatchdog();
+        hardWatchdogRef.current = setTimeout(() => {
+          if (finalized) {
+            return;
+          }
+          try {
+            ctx.activeStreamRef.current?.abort();
+          } catch {
+            // best-effort: aborting a wedged stream must not throw here
+          }
+          const watchdogMessage =
+            'O Kloel não respondeu a tempo. Sua mensagem foi preservada — tente enviar novamente.';
+          finalError = finalError || watchdogMessage;
+          if (!streamedReply.trim()) {
+            streamedReply = watchdogMessage;
+            syncAssistantText(streamedReply);
+          }
+          streamEnded = true;
+          finalizeStream();
+        }, HARD_STREAM_WATCHDOG_MS);
+      };
+      armWatchdog();
 
       ctx.activeStreamRef.current = streamAuthenticatedKloelMessage(
         {
@@ -282,6 +291,7 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
         },
         {
           onEvent: (event) => {
+            armWatchdog();
             if (
               event.type === 'status' &&
               (event.phase === 'thinking' ||
@@ -310,6 +320,7 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
             );
           },
           onChunk: (chunk) => {
+            armWatchdog();
             renderBuffer += chunk;
             scheduleDrain();
           },
