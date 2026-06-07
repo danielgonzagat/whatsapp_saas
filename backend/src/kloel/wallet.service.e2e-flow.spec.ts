@@ -5,10 +5,10 @@ import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { WalletLedgerService } from './wallet-ledger.service';
-import { WalletService } from './wallet.service';
+import { SellerWalletService } from './wallet.service';
 
 /**
- * Integration-style flow spec for {@link WalletService.requestWithdrawalCents}.
+ * Integration-style flow spec for {@link SellerWalletService.requestWithdrawalCents}.
  *
  * Scope (production-grade contract — see CLAUDE.md "REGRA DE PAGAMENTOS"):
  *  - workspaceId isolation: wallet lookup must filter by workspaceId; another
@@ -100,7 +100,7 @@ function buildStatefulTxClient(wallets: FakeWalletRow[]) {
 }
 
 describe('WalletService.requestWithdrawalCents (E2E flow)', () => {
-  let service: WalletService;
+  let service: SellerWalletService;
   let prisma: {
     $transaction: jest.Mock;
     kloelWallet: { findUnique: jest.Mock };
@@ -116,7 +116,7 @@ describe('WalletService.requestWithdrawalCents (E2E flow)', () => {
 
     const moduleRef: TestingModule = await Test.createTestingModule({
       providers: [
-        WalletService,
+        SellerWalletService,
         { provide: PrismaService, useValue: prisma },
         {
           provide: FinancialAlertService,
@@ -134,7 +134,7 @@ describe('WalletService.requestWithdrawalCents (E2E flow)', () => {
       ],
     }).compile();
 
-    service = moduleRef.get(WalletService);
+    service = moduleRef.get(SellerWalletService);
   });
 
   afterEach(() => jest.clearAllMocks());

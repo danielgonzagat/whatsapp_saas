@@ -8,7 +8,7 @@ import { Metrics } from '../observability/metrics';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
-import { WalletService } from './wallet.service';
+import { PrepaidWalletService } from './wallet.service';
 import { InsufficientWalletBalanceError } from './wallet.types';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 
@@ -17,7 +17,7 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 @RouteClass('mutate')
 export class PrepaidWalletController {
   constructor(
-    private readonly walletService: WalletService,
+    private readonly walletService: PrepaidWalletService,
     private readonly prisma: PrismaService,
   ) {}
 

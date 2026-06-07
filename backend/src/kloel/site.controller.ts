@@ -24,7 +24,7 @@ import { getTraceHeaders } from '../common/trace-headers';
 import { resolveKloelCapabilityModel } from '../lib/ai-models';
 import { PrismaService } from '../prisma/prisma.service';
 import { UnknownProviderPricingModelError } from '../wallet/provider-pricing';
-import { WalletService } from '../wallet/wallet.service';
+import { PrepaidWalletService } from '../wallet/wallet.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import {
   InsufficientWalletBalanceError,
@@ -59,7 +59,7 @@ export class SiteController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
-    private readonly prepaidWalletService: WalletService,
+    private readonly prepaidWalletService: PrepaidWalletService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 

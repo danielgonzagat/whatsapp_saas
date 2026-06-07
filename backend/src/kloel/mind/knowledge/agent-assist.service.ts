@@ -22,7 +22,7 @@ import { chatCompletionWithRetry } from '../../openai-wrapper';
 import { resolveBackendOpenAIModel } from '../../../lib/openai-models';
 import { OpsAlertService } from '../../../observability/ops-alert.service';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { WalletService } from '../../../wallet/wallet.service';
+import { PrepaidWalletService } from '../../../wallet/wallet.service';
 import {
   AGENT_ASSIST_MAX_TOKENS,
   AgentAssistWalletAccessError,
@@ -63,7 +63,7 @@ export class AgentAssistService {
     private config: ConfigService,
     private prisma: PrismaService,
     private readonly planLimits: PlanLimitsService,
-    private readonly prepaidWalletService: WalletService,
+    private readonly prepaidWalletService: PrepaidWalletService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
     const apiKey = this.config.get<string>('OPENAI_API_KEY');

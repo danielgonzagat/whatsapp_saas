@@ -11,7 +11,7 @@ import { MercadoPagoPixChargeService } from '../../payments/mercadopago/mercadop
 import { PrismaService } from '../../prisma/prisma.service';
 
 import { PrepaidWalletController } from '../prepaid-wallet.controller';
-import { WalletService } from '../wallet.service';
+import { PrepaidWalletService } from '../wallet.service';
 
 /** Stripe stub shape used by prepaid wallet specs. */
 export type StripeStub = {
@@ -210,7 +210,7 @@ export async function buildModule(
     imports: [ThrottlerModule.forRoot([{ ttl: 60_000, limit: 1_000 }])],
     controllers: [PrepaidWalletController],
     providers: [
-      WalletService,
+      PrepaidWalletService,
       { provide: StripeService, useValue: stripe },
       { provide: PrismaService, useValue: factory.prisma },
       { provide: FraudEngine, useValue: fraudEngine },
@@ -219,7 +219,7 @@ export async function buildModule(
   }).compile();
   return {
     controller: moduleRef.get<PrepaidWalletController>(PrepaidWalletController),
-    service: moduleRef.get<WalletService>(WalletService),
+    service: moduleRef.get<PrepaidWalletService>(PrepaidWalletService),
     factory,
   };
 }
@@ -227,6 +227,6 @@ export async function buildModule(
 /** Standard deps shape used across prepaid wallet specs. */
 export type PrepaidWalletSpecDeps = {
   controller: PrepaidWalletController;
-  service: WalletService;
+  service: PrepaidWalletService;
   factory: ReturnType<typeof makePrismaStub>;
 };

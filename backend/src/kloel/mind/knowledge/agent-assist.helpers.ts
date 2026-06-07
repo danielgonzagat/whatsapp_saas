@@ -3,7 +3,7 @@ import {
   quoteOpenAiChatActualCostCents,
 } from '../../../wallet/provider-llm-billing';
 import { UnknownProviderPricingModelError } from '../../../wallet/provider-pricing';
-import { WalletService } from '../../../wallet/wallet.service';
+import { PrepaidWalletService } from '../../../wallet/wallet.service';
 import {
   InsufficientWalletBalanceError,
   UsagePriceNotFoundError,
@@ -71,7 +71,7 @@ export function estimateOpenAiQuote(model: string, messages: unknown): bigint | 
 }
 
 interface ChargeAiUsageArgs {
-  walletService: WalletService;
+  walletService: PrepaidWalletService;
   workspaceId: string | undefined | null;
   requestId: string;
   assistantAction: AssistantAction;
@@ -122,7 +122,7 @@ function handleChargeError(error: unknown): boolean {
 }
 
 interface SettleAiUsageArgs {
-  walletService: WalletService;
+  walletService: PrepaidWalletService;
   workspaceId: string | undefined | null;
   requestId: string;
   assistantAction: AssistantAction;
@@ -160,7 +160,7 @@ export async function settleAiUsageIfNeeded(args: SettleAiUsageArgs): Promise<vo
 }
 
 interface RefundAiUsageArgs {
-  walletService: WalletService;
+  walletService: PrepaidWalletService;
   workspaceId: string | undefined | null;
   requestId: string;
   assistantAction: AssistantAction;

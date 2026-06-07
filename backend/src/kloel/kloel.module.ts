@@ -92,7 +92,7 @@ import { PdfProcessorController } from './pdf-processor.controller';
 import { PdfProcessorService } from './pdf-processor.service';
 import { WalletLedgerService } from './wallet-ledger.service';
 import { WalletController } from './wallet.controller';
-import { WalletService } from './wallet.service';
+import { SellerWalletService } from './wallet.service';
 
 import { AuditModule } from '../audit/audit.module';
 import { BillingModule } from '../billing/billing.module';
@@ -384,7 +384,7 @@ import { CrmModule } from '../crm/crm.module';
     MarketingSkillContextBuilder,
     MarketingSkillService,
     PdfProcessorService,
-    WalletService,
+    SellerWalletService,
     WalletLedgerService,
     ReportService,
     LLMBudgetService,
@@ -534,7 +534,7 @@ import { CrmModule } from '../crm/crm.module';
     MemoryService,
     MemoryManagementService,
     PdfProcessorService,
-    WalletService,
+    SellerWalletService,
     WalletLedgerService,
     ReportService,
     LLMBudgetService,

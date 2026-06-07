@@ -6,7 +6,7 @@ import { MercadoPagoModule } from '../payments/mercadopago/mercadopago.module';
 import { PrismaModule } from '../prisma/prisma.module';
 
 import { PrepaidWalletController } from './prepaid-wallet.controller';
-import { WalletService } from './wallet.service';
+import { PrepaidWalletService } from './wallet.service';
 
 /**
  * Prepaid wallet module (FASE 4). Tied to BillingModule for the shared
@@ -22,7 +22,7 @@ import { WalletService } from './wallet.service';
     forwardRef(() => MercadoPagoModule),
   ],
   controllers: [PrepaidWalletController],
-  providers: [WalletService],
-  exports: [WalletService],
+  providers: [PrepaidWalletService],
+  exports: [PrepaidWalletService],
 })
 export class WalletModule {}

@@ -3,7 +3,7 @@ import { AccountService } from './account.service';
 import { CouponService } from './coupon.service';
 import { MemoryService } from './memory.service';
 import { ReportService } from './report.service';
-import { WalletService as KloelWalletService } from './wallet.service';
+import { SellerWalletService as KloelWalletService } from './wallet.service';
 import { PaymentService } from './payment.service';
 import { DepsCoverageService } from './self-awareness/deps-coverage.service';
 import { CodeAccessService } from './self-awareness/code-access.service';

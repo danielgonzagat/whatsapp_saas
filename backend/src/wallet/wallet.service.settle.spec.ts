@@ -11,7 +11,7 @@ import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
-import { WalletService } from './wallet.service';
+import { PrepaidWalletService } from './wallet.service';
 import { WalletNotFoundError } from './wallet.types';
 
 type StripeStub = {
@@ -174,7 +174,7 @@ async function buildService(
 ) {
   const moduleRef: TestingModule = await Test.createTestingModule({
     providers: [
-      WalletService,
+      PrepaidWalletService,
       { provide: StripeService, useValue: stripe },
       { provide: PrismaService, useValue: prisma.prisma },
       { provide: FraudEngine, useValue: fraudEngine },
@@ -187,7 +187,7 @@ async function buildService(
       },
     ],
   }).compile();
-  return moduleRef.get(WalletService);
+  return moduleRef.get(PrepaidWalletService);
 }
 
 const seedWallet = (overrides: Partial<PrepaidWallet> = {}): PrepaidWallet =>

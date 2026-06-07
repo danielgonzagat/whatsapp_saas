@@ -11,7 +11,7 @@ import {
 
 import { Public } from '../../auth/public.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
-import { WalletService } from '../../wallet/wallet.service';
+import { PrepaidWalletService } from '../../wallet/wallet.service';
 import { claimWebhookEvent } from '../../webhooks/webhook-event-dedup.helper';
 
 import { MercadoPagoConfigService } from './mercadopago.config';
@@ -45,7 +45,7 @@ export class MercadoPagoWebhookController {
     private readonly verifier: MercadoPagoWebhookSignatureVerifier,
     private readonly pixCharge: MercadoPagoPixChargeService,
     private readonly prisma: PrismaService,
-    private readonly walletService: WalletService,
+    private readonly walletService: PrepaidWalletService,
   ) {}
 
   @Post()

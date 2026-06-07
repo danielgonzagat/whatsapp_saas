@@ -46,8 +46,8 @@ import {
 // All dates stored as UTC via Prisma DateTime (toISOString)
 
 @Injectable()
-export class WalletService {
-  private readonly logger = StructuredLogger.from(WalletService.name);
+export class SellerWalletService {
+  private readonly logger = StructuredLogger.from(SellerWalletService.name);
 
   constructor(
     private readonly prisma: PrismaService,

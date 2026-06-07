@@ -25,7 +25,7 @@ import {
   quoteOpenAiChatActualCostCents,
 } from '../wallet/provider-llm-billing';
 import { UnknownProviderPricingModelError } from '../wallet/provider-pricing';
-import { WalletService } from '../wallet/wallet.service';
+import { PrepaidWalletService } from '../wallet/wallet.service';
 import {
   InsufficientWalletBalanceError,
   UsagePriceNotFoundError,
@@ -74,7 +74,7 @@ export class UploadController {
     private readonly pdfProcessor: PdfProcessorService,
     private readonly memoryService: MemoryService,
     private readonly storageService: StorageService,
-    private readonly prepaidWalletService: WalletService,
+    private readonly prepaidWalletService: PrepaidWalletService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 

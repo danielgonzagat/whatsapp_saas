@@ -70,8 +70,8 @@ import {
  * over-spend.
  */
 @Injectable()
-export class WalletService {
-  private readonly logger = StructuredLogger.from(WalletService.name);
+export class PrepaidWalletService {
+  private readonly logger = StructuredLogger.from(PrepaidWalletService.name);
 
   constructor(
     private readonly stripeService: StripeService,
