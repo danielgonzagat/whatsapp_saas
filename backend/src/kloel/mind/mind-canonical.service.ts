@@ -1,9 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MindMessageService, type MindMessage } from './aliases/mind-message.service';
 import { MindMemoryItemService, type MindMemoryItem } from './aliases/mind-memory-item.service';
+import { MindCaseMemoryService } from './memory/mind-case-memory.service';
+import { isMindCaseViaRecordCaseEnabled } from './memory/mindcase-via-recordcase.flag';
 
 /**
  * Brain → Mind unification — Phase 1 canonical facade (Wave5 L8, Y-6).
@@ -33,6 +35,7 @@ export class MindCanonicalService {
     private readonly prisma: PrismaService,
     private readonly messages: MindMessageService,
     private readonly memory: MindMemoryItemService,
+    @Optional() private readonly caseMemory?: MindCaseMemoryService,
   ) {}
 
   // ── Conversation (RAC_KloelMessage via MindMessageService) ──────────────
@@ -102,6 +105,18 @@ export class MindCanonicalService {
     occurredAt: Date;
     outcome?: number | null;
   }) {
+    if (isMindCaseViaRecordCaseEnabled() && this.caseMemory) {
+      return this.caseMemory.recordCase({
+        workspaceId: input.workspaceId,
+        subject: input.subject,
+        caseType: input.caseType,
+        text: input.text,
+        features: input.features as Record<string, unknown>,
+        action: input.action,
+        outcome: input.outcome ?? undefined,
+        occurredAt: input.occurredAt,
+      });
+    }
     return this.prisma.mindCase.create({
       data: {
         id: randomUUID(),

@@ -5,6 +5,8 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { AudioService } from '../../audio.service';
 import { MindPerceptionService } from './mind-perception.service';
 import { SpineEmitterService } from '../../spine/spine-emitter.service';
+import { MindCaseMemoryService } from '../memory/mind-case-memory.service';
+import { isMindCaseViaRecordCaseEnabled } from '../memory/mindcase-via-recordcase.flag';
 
 /**
  * MindMultiModalPerceptionService — pillar #6 "Corpo sensorial e interacao
@@ -68,6 +70,7 @@ export class MindMultiModalPerceptionService {
     @Optional() private readonly perception?: MindPerceptionService,
     @Optional() private readonly spine?: SpineEmitterService,
     @Optional() private readonly prisma?: PrismaService,
+    @Optional() private readonly caseMemory?: MindCaseMemoryService,
   ) {}
 
   /**
@@ -96,29 +99,44 @@ export class MindMultiModalPerceptionService {
       return { caseId: null };
     }
     try {
-      const caseId = randomUUID();
       const text = input.descriptor
         ? `[${input.modality} captured] ${input.descriptor}`
         : `[${input.modality} captured: no analysis available]`;
-      await this.prisma.mindCase.create({
-        data: {
-          id: caseId,
+      const features = {
+        modality: input.modality,
+        mimeType: input.mimeType,
+        sourceFingerprint: input.sourceFingerprint,
+        analyzed: Boolean(input.descriptor),
+      };
+      let caseId: string;
+      if (isMindCaseViaRecordCaseEnabled() && this.caseMemory) {
+        const recorded = await this.caseMemory.recordCase({
           workspaceId: input.workspaceId,
           subject: input.subject,
           caseType: 'perception_captured',
           text,
-          tokens: [],
-          features: {
-            modality: input.modality,
-            mimeType: input.mimeType,
-            sourceFingerprint: input.sourceFingerprint,
-            analyzed: Boolean(input.descriptor),
-          },
+          features,
           action: `perceive_${input.modality}`,
-          outcome: null,
           occurredAt: new Date(),
-        },
-      });
+        });
+        caseId = recorded.id;
+      } else {
+        caseId = randomUUID();
+        await this.prisma.mindCase.create({
+          data: {
+            id: caseId,
+            workspaceId: input.workspaceId,
+            subject: input.subject,
+            caseType: 'perception_captured',
+            text,
+            tokens: [],
+            features,
+            action: `perceive_${input.modality}`,
+            outcome: null,
+            occurredAt: new Date(),
+          },
+        });
+      }
       this.logger.log(
         `Perception captured workspace=${input.workspaceId} modality=${input.modality} caseId=${caseId}`,
       );

@@ -219,7 +219,17 @@ export class CrmService {
   }
 
   async moveDeal(workspaceId: string, dealId: string, newStageId: string) {
-    return moveDealHelper(this.prisma, workspaceId, dealId, newStageId, this.crmEmitter);
+    // Census P2-13: thread the canonical addTag surface as the optional
+    // tag-write callback. moveDealHelper only invokes it when KLOEL_TAG_VIA_CRM
+    // is ON; default OFF keeps the legacy inline tag transaction (byte-identical).
+    return moveDealHelper(
+      this.prisma,
+      workspaceId,
+      dealId,
+      newStageId,
+      this.crmEmitter,
+      (ws, phone, tagName) => this.addTag(ws, phone, tagName),
+    );
   }
 
   async listDeals(
