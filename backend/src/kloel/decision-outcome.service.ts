@@ -235,7 +235,7 @@ export class DecisionOutcomeService {
         outcomeAt: null,
         createdAt: { lt: cutoff },
       },
-      select: { id: true, outcomeKey: true },
+      select: { id: true, outcomeKey: true, decisionType: true, chosenAction: true },
     });
 
     if (expired.length > 0) {
@@ -253,6 +253,27 @@ export class DecisionOutcomeService {
           }),
         },
       });
+      // Symmetric learning: an expired (silent-24h) decision is a LOSS for the
+      // chosen arm. Feed it to the bandit so it learns from timeouts, not only
+      // from closeOutcome successes (this raw updateMany previously skipped the
+      // bandit, leaking the negative learning signal). Best-effort + fail-open.
+      if (this.mindBandit) {
+        for (const e of expired) {
+          try {
+            await this.mindBandit.recordOutcome({
+              workspaceId,
+              decisionType: e.decisionType,
+              arm: e.chosenAction,
+              outcome: 0,
+            });
+          } catch (err: unknown) {
+            this.logger.warn('Failed to record bandit outcome from sweepExpired', {
+              outcomeKey: e.outcomeKey,
+              error: err instanceof Error ? err.message : String(err),
+            });
+          }
+        }
+      }
     }
 
     return expired.length;

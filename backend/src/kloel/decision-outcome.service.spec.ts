@@ -370,5 +370,54 @@ describe('DecisionOutcomeService', () => {
         },
       );
     });
+
+    it('feeds each expired (silent-24h) decision into the bandit as a loss (outcome=0)', async () => {
+      const recordOutcome = jest.fn().mockResolvedValue(undefined);
+      const prismaMock = {
+        decisionOutcome: {
+          findMany: jest.fn().mockResolvedValue([
+            {
+              id: 'do-1',
+              outcomeKey: 'k1',
+              workspaceId: 'ws-1',
+              decisionType: 'followup_timing',
+              chosenAction: 'send_now',
+            },
+            {
+              id: 'do-2',
+              outcomeKey: 'k2',
+              workspaceId: 'ws-1',
+              decisionType: 'coupon_offer',
+              chosenAction: 'coupon_10',
+            },
+          ]),
+          updateMany: jest.fn().mockResolvedValue({ count: 2 }),
+        },
+      };
+      const mod = await Test.createTestingModule({
+        providers: [
+          DecisionOutcomeService,
+          { provide: PrismaService, useValue: prismaMock },
+          { provide: MindBanditService, useValue: { recordOutcome } },
+        ],
+      }).compile();
+      const svc = mod.get<DecisionOutcomeService>(DecisionOutcomeService);
+
+      await svc.sweepExpired('ws-1', 24);
+
+      expect(recordOutcome).toHaveBeenCalledTimes(2);
+      expect(recordOutcome).toHaveBeenCalledWith({
+        workspaceId: 'ws-1',
+        decisionType: 'followup_timing',
+        arm: 'send_now',
+        outcome: 0,
+      });
+      expect(recordOutcome).toHaveBeenCalledWith({
+        workspaceId: 'ws-1',
+        decisionType: 'coupon_offer',
+        arm: 'coupon_10',
+        outcome: 0,
+      });
+    });
   });
 });
