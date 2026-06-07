@@ -220,6 +220,31 @@ describe('KloelGraphShell', () => {
     expect(screen.getByTestId('kloel-graph-canvas').getAttribute('aria-hidden')).toBe('true');
   });
 
+  it('closes pending graph-only overlays with Escape', () => {
+    const pushState = vi.spyOn(window.history, 'pushState');
+    pathname = '/chat';
+    searchParams = new URLSearchParams('graph=1');
+
+    renderShell(<main>Chat hidden while graph is open</main>);
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Abrir Ferramentas' }), {
+      clientX: 10,
+      clientY: 10,
+    });
+    fireEvent.pointerUp(screen.getByRole('button', { name: 'Abrir Ferramentas' }), {
+      clientX: 11,
+      clientY: 11,
+    });
+
+    expect(screen.getByRole('dialog', { name: 'Ferramentas' })).toBeTruthy();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(screen.queryByRole('dialog', { name: 'Ferramentas' })).toBeNull();
+    expect(pushState).toHaveBeenCalledWith(null, '', '/chat?graph=1');
+    expect(push).toHaveBeenCalledWith('/ferramentas');
+  });
+
   it('keeps off-galaxy graph nodes out of the tab order and accessibility tree', () => {
     pathname = '/analytics';
     searchParams = new URLSearchParams('tab=vendas&graph=1');

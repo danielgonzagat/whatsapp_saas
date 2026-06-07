@@ -226,7 +226,7 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
   }, [pathname, pushGraphOnlyRoute, searchParams]);
 
   useEffect(() => {
-    if (graphOnly || paletteProps.open) {
+    if (paletteProps.open || !hasRouteOverlay) {
       return;
     }
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
@@ -238,7 +238,7 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [closeOverlay, graphOnly, paletteProps.open]);
+  }, [closeOverlay, hasRouteOverlay, paletteProps.open]);
 
   const openNode = useCallback(
     (node: KloelGraphNode) => {

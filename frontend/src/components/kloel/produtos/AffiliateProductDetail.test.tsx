@@ -4,6 +4,12 @@ import { describe, expect, it, vi } from 'vitest';
 import AffiliateProductDetail from './AffiliateProductDetail';
 import type { MarketplaceItem } from './ProdutosView.types';
 
+const routerPushMock = vi.hoisted(() => vi.fn());
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: routerPushMock }),
+}));
+
 const baseItem: MarketplaceItem = {
   id: 'product-affiliate-1',
   name: 'Produto Afiliado',
