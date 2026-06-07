@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "note": "Captured real (AST-position) canonical-vocabulary violations. RATCHET floor: --strict fails only on keys absent here or with a count above the recorded value. Regenerate with: node scripts/ops/check-canonical-vocabulary.mjs --bootstrap",
+  "key": "file::alias::canonical -> occurrence count",
+  "total": 13,
+  "violations": {
+    "backend/src/health/indicators/bullmq.health-indicator.ts::connection::ChannelSession": 1,
+    "backend/src/health/system-health-db-probe.ts::connection::ChannelSession": 1,
+    "frontend-admin/src/components/admin/admin-sidebar-user-menu.tsx::User::Contact": 1,
+    "frontend-admin/src/components/admin/admin-topbar.tsx::User::Contact": 1,
+    "frontend/src/app/(public)/onboarding-chat/OnboardingChatMessageList.tsx::User::Contact": 1,
+    "frontend/src/components/kloel/auth/auth-provider.helpers.ts::User::Contact": 2,
+    "frontend/src/components/kloel/inbox/InboxConversationListItem.tsx::User::Contact": 1,
+    "frontend/src/components/kloel/inbox/parts/InboxConversationHeader.tsx::User::Contact": 1,
+    "frontend/src/components/kloel/settings/settings-drawer.tsx::User::Contact": 1,
+    "frontend/src/lib/api/index.ts::Lead::Contact": 1,
+    "worker/metrics.ts::connection::ChannelSession": 1,
+    "worker/processors/autopilot/safeguard.ts::connection::ChannelSession": 1
+  }
+}

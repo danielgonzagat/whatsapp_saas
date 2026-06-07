@@ -8,7 +8,10 @@
  * (exit 1) only when a NEW non-canonical use is introduced.
  *
  * It enforces two independent capability invariants under `backend/src/**`
- * (excluding `*.spec.ts` / `*.test.ts`):
+ * AND `worker/**` (excluding `*.spec.ts` / `*.test.ts`). The BullMQ worker
+ * shares the same dispatch + tenant invariants, so it is scanned identically;
+ * zero worker violations exist on HEAD, so extending the scope is byte-identical
+ * (the gate stays exit 0) while any NEW worker-side bypass is now caught:
  *
  *  1. TENANT RESOLUTION
  *     The canonical way to resolve the effective workspace/tenant from a
@@ -214,8 +217,13 @@ function stripComments(src) {
     .join('\n');
 }
 
+// Scan roots. `worker` shares the same dispatch + tenant invariants as
+// `backend/src`; zero worker violations exist on HEAD so adding it is
+// byte-identical (gate stays exit 0) while any NEW worker bypass is caught.
+const SCAN_ROOTS = ['backend/src', 'worker'];
+
 function main() {
-  const files = listFiles(['backend/src'], {
+  const files = listFiles(SCAN_ROOTS, {
     extensions: ['.ts'],
     includeTests: false,
   });
@@ -256,7 +264,7 @@ function main() {
   }
 
   if (REPORT) {
-    console.log(`[check:canonical-capability] scanned ${files.length} backend file(s).`);
+    console.log(`[check:canonical-capability] scanned ${files.length} backend+worker file(s).`);
     console.log(
       `[check:canonical-capability] grandfathered legit-use sites: ${grandfathered.length}`,
     );

@@ -22,9 +22,18 @@
  * set of legitimate pre-existing direct uses.
  *
  * This gate FAILS (exit 1) the moment a NEW non-canonical direct access is
- * introduced anywhere under `backend/src/**` (excluding `*.spec.ts` /
- * `*.test.ts`). Every direct access that exists on the current HEAD is
- * grandfathered so the gate passes clean today.
+ * introduced anywhere under `backend/src/**` OR `worker/**` (excluding
+ * `*.spec.ts` / `*.test.ts`). Every direct access that exists on the current
+ * HEAD is grandfathered so the gate passes clean today.
+ *
+ * `worker/**` is scanned too (the BullMQ worker shares the same Prisma client
+ * and the same canonicalization invariant). Because the worker is a flat tree
+ * (no alias-service layer of its own), its pre-existing direct accesses are
+ * grandfathered with a per-file COUNT baseline (WORKER_GRANDFATHERED_COUNTS):
+ * a worker file passes while its non-exempt direct-access count stays <= its
+ * captured baseline, and a NEW worker file (baseline 0) or a GROWN count fails.
+ * This ratchets — it tolerates the existing worker debt but catches any new
+ * worker-side bypass — and is line-drift-proof (counts, not line numbers).
  *
  * Usage:
  *   node scripts/ops/check-canonical-mind-access.mjs           # scan all backend/src
@@ -138,6 +147,51 @@ const GRANDFATHERED_DIRECT = new Map([
 ]);
 
 // ---------------------------------------------------------------------------
+// Scan roots. `backend/src` keeps its whole-file / pinned-snippet grandfather
+// model (unchanged). `worker` is scanned with the per-file COUNT baseline
+// below, so adding it is byte-identical at HEAD (the captured counts make the
+// existing worker debt pass) while any NEW worker direct access fails.
+// ---------------------------------------------------------------------------
+const SCAN_ROOTS = ['backend/src', 'worker'];
+
+// Files under these roots use the worker count-baseline path. Everything else
+// uses the original backend grandfather logic.
+const COUNT_BASELINE_ROOTS = ['worker/'];
+
+function usesCountBaseline(posix) {
+  return COUNT_BASELINE_ROOTS.some((root) => posix.startsWith(root));
+}
+
+// ---------------------------------------------------------------------------
+// Worker grandfather — per-file COUNT baseline (ratchet).
+//
+// Each entry is the number of NON-EXEMPT direct `prisma.kloelMemory|kloelMessage|
+// chatMessage` accesses present on HEAD in that worker file. The gate tolerates
+// up to this many (existing debt) and FAILS the moment a worker file's count
+// GROWS beyond it, or a NEW worker file (implicit baseline 0) introduces any.
+// Counts (not line numbers) → immune to line drift from unrelated edits.
+//
+// Captured from HEAD via the gate's own FORBIDDEN_RE minus the FALLBACK / TX /
+// DI-default idiom exemptions. Regenerate with `--report` if worker code is
+// intentionally re-canonicalized (counts should only ever shrink).
+// ---------------------------------------------------------------------------
+const WORKER_GRANDFATHERED_COUNTS = new Map([
+  ['worker/processors/autopilot/autopilot-utils.ts', 1],
+  ['worker/processors/autopilot/cia-learn.ts', 1],
+  ['worker/processors/autopilot/cognition-context.ts', 1],
+  ['worker/processors/autopilot/score-contact.ts', 1],
+  ['worker/processors/autopilot/score-opportunity.ts', 3],
+  ['worker/processors/autopilot/score-proof.ts', 1],
+  ['worker/processors/cia/cia-decision-log.ts', 2],
+  ['worker/processors/cia/cognitive-state/cognitive-state-load.ts', 1],
+  ['worker/processors/cia/cognitive-state/cognitive-state-persist.ts', 3],
+  ['worker/processors/cia/cognitive-state/cognitive-state-record.ts', 1],
+  ['worker/providers/commercial-intelligence.persistence.ts', 2],
+  // Vitest mock-setup support file (mocks the delegate; not a real direct read).
+  ['worker/test/scan-contact.setup.ts', 5],
+]);
+
+// ---------------------------------------------------------------------------
 // Comment stripping — prose mentions of `prisma.kloelMemory` in JSDoc / `//`
 // comments must never trip the gate. We strip block comments (`/* … */`,
 // including JSDoc) and line comments (`// …`) before matching, while leaving
@@ -169,7 +223,7 @@ function isExempt(file, codeLine) {
 }
 
 function main() {
-  const files = listFiles(['backend/src'], {
+  const files = listFiles(SCAN_ROOTS, {
     extensions: ['.ts'],
     includeTests: false,
   });
@@ -180,6 +234,39 @@ function main() {
   for (const file of files) {
     const posix = toPosixPath(file);
     const codeLines = stripComments(readRepoFile(posix)).split('\n');
+
+    if (usesCountBaseline(posix)) {
+      // Worker file: count non-exempt (FALLBACK / TX / DI-default) direct
+      // accesses and compare against the captured per-file baseline. Passes
+      // while count <= baseline (existing debt); a NEW worker file defaults to
+      // baseline 0 so any direct access fails; a GROWN count fails with the
+      // exact offending lines listed.
+      const hitLines = [];
+      for (let i = 0; i < codeLines.length; i += 1) {
+        const codeLine = codeLines[i] || '';
+        if (!FORBIDDEN_RE.test(codeLine)) continue;
+        // The whole-file / pinned-snippet backend grandfather model does not
+        // apply to worker files; only the idiom exemptions (fallback / tx /
+        // DI-default) carry over.
+        if (FALLBACK_RE.test(codeLine) || TX_RE.test(codeLine) || DI_DEFAULT_RE.test(codeLine)) {
+          grandfathered.push(`${posix}:${i + 1} [worker:idiom]`);
+          continue;
+        }
+        hitLines.push({ line: i + 1, text: codeLine.trim() });
+      }
+
+      const baseline = WORKER_GRANDFATHERED_COUNTS.get(posix) ?? 0;
+      if (hitLines.length <= baseline) {
+        for (const h of hitLines) grandfathered.push(`${posix}:${h.line} [worker:baseline]`);
+      } else {
+        violations.push(
+          `${posix}: worker direct-access count ${hitLines.length} > baseline ${baseline} ` +
+            `(new non-canonical Mind access). Offending lines:`,
+        );
+        for (const h of hitLines) violations.push(`    ${posix}:${h.line}: ${h.text}`);
+      }
+      continue;
+    }
 
     for (let i = 0; i < codeLines.length; i += 1) {
       const codeLine = codeLines[i] || '';
@@ -194,7 +281,7 @@ function main() {
   }
 
   if (REPORT) {
-    console.log(`[check:canonical-mind] scanned ${files.length} backend file(s).`);
+    console.log(`[check:canonical-mind] scanned ${files.length} backend+worker file(s).`);
     console.log(`[check:canonical-mind] grandfathered direct-access sites: ${grandfathered.length}`);
     for (const site of grandfathered) {
       console.log(`  • ${site}`);
