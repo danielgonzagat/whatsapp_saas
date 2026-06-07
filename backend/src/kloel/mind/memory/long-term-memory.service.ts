@@ -12,7 +12,7 @@ import { defaultValenceFor, isTerminalEvent } from '../mind.types';
  * Per `docs/architecture/KLOEL_FRONTIER_COGNITION.md` §CAPABILITY 2, the Mind
  * should consolidate per-workspace LONG-TERM memory that self-updates from
  * outcomes, instead of every conversation starting from a blank slate. Today
- * `MindLongTermMemoryService.consolidate()` runs a periodic cases→concepts
+ * `CaseConsolidationService.consolidate()` runs a periodic cases→concepts
  * sweep, but nothing turns terminal OUTCOMES into durable, reinforceable facts
  * the reply path can recall, and there is no online (event-driven) update.
  *
@@ -48,8 +48,8 @@ import { defaultValenceFor, isTerminalEvent } from '../mind.types';
  *     or the business path.
  */
 @Injectable()
-export class LongTermMemoryService {
-  private readonly logger = StructuredLogger.from(LongTermMemoryService.name);
+export class GraphFactMemoryService {
+  private readonly logger = StructuredLogger.from(GraphFactMemoryService.name);
 
   /** Node kind under which durable outcome facts are stored in the graph. */
   public static readonly FACT_KIND = 'ltm:outcome-fact';
@@ -83,7 +83,7 @@ export class LongTermMemoryService {
         // Defensive: handle() already swallows; this guards the promise itself.
       });
     });
-    this.logger.debug?.('LongTermMemoryService initialized');
+    this.logger.debug?.('GraphFactMemoryService initialized');
   }
 
   /**
@@ -123,7 +123,7 @@ export class LongTermMemoryService {
     const limit = Math.max(1, Math.min(context?.limit ?? 10, 50));
     try {
       const rows = await this.prisma.mindGraphNode.findMany({
-        where: { workspaceId, kind: LongTermMemoryService.FACT_KIND },
+        where: { workspaceId, kind: GraphFactMemoryService.FACT_KIND },
         orderBy: { weight: 'desc' },
         take: 200,
       });
@@ -192,7 +192,7 @@ export class LongTermMemoryService {
       return true;
     }
     this.seenEventIds.add(eventId);
-    if (this.seenEventIds.size > LongTermMemoryService.DEDUP_CAPACITY) {
+    if (this.seenEventIds.size > GraphFactMemoryService.DEDUP_CAPACITY) {
       const oldest = this.seenEventIds.values().next().value;
       if (oldest !== undefined) {
         this.seenEventIds.delete(oldest);
@@ -219,7 +219,7 @@ export class LongTermMemoryService {
         where: {
           workspaceId_kind_label: {
             workspaceId,
-            kind: LongTermMemoryService.FACT_KIND,
+            kind: GraphFactMemoryService.FACT_KIND,
             label,
           },
         },
@@ -230,9 +230,9 @@ export class LongTermMemoryService {
           data: {
             id: randomUUID(),
             workspaceId,
-            kind: LongTermMemoryService.FACT_KIND,
+            kind: GraphFactMemoryService.FACT_KIND,
             label,
-            weight: LongTermMemoryService.BASE_WEIGHT,
+            weight: GraphFactMemoryService.BASE_WEIGHT,
             metadata: {
               valence,
               occurrences: 1,
@@ -250,8 +250,8 @@ export class LongTermMemoryService {
 
       const decayed = this.decayWeight(existing.weight, lastAt, now);
       const reinforced = Math.min(
-        LongTermMemoryService.MAX_WEIGHT,
-        decayed + LongTermMemoryService.REINFORCE_STEP,
+        GraphFactMemoryService.MAX_WEIGHT,
+        decayed + GraphFactMemoryService.REINFORCE_STEP,
       );
 
       await this.prisma.mindGraphNode.updateMany({
@@ -284,7 +284,7 @@ export class LongTermMemoryService {
    */
   private decayWeight(weight: number, lastAtMs: number, nowMs: number): number {
     const elapsed = Math.max(0, nowMs - lastAtMs);
-    const factor = Math.pow(0.5, elapsed / LongTermMemoryService.HALF_LIFE_MS);
-    return Math.max(LongTermMemoryService.MIN_WEIGHT, weight * factor);
+    const factor = Math.pow(0.5, elapsed / GraphFactMemoryService.HALF_LIFE_MS);
+    return Math.max(GraphFactMemoryService.MIN_WEIGHT, weight * factor);
   }
 }

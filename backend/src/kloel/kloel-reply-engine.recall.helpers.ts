@@ -1,10 +1,10 @@
 import type { StructuredLogger } from '../logging/structured-logger';
-import type { LongTermMemoryService } from './mind/memory/long-term-memory.service';
+import type { GraphFactMemoryService } from './mind/memory/long-term-memory.service';
 
 /**
  * Wave5 L6 — Y-8 frontier capability #2 wiring for the reply engine.
  *
- * {@link LongTermMemoryService.recallRelevant} already consolidates durable
+ * {@link GraphFactMemoryService.recallRelevant} already consolidates durable
  * per-workspace outcome facts (what tends to work / what tends to fail) but no
  * caller queried it before generating a reply — every conversation started
  * from a blank slate. This helper bridges that gap, mirroring the emotional-
@@ -56,7 +56,7 @@ function renderFactLine(fact: RecalledFact): string {
  * are no durable facts yet.
  */
 export async function buildRecallDirective(
-  ltm: LongTermMemoryService | undefined,
+  ltm: GraphFactMemoryService | undefined,
   params: {
     workspaceId?: string | null;
     limit?: number;

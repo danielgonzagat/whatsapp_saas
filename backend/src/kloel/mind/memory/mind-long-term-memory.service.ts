@@ -30,14 +30,14 @@ function jaccard(left: string[], right: string[]): number {
 }
 
 @Injectable()
-export class MindLongTermMemoryService {
-  private readonly logger = StructuredLogger.from(MindLongTermMemoryService.name);
+export class CaseConsolidationService {
+  private readonly logger = StructuredLogger.from(CaseConsolidationService.name);
 
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly spine?: SpineEmitterService,
   ) {
-    this.logger.debug?.('MindLongTermMemoryService initialized');
+    this.logger.debug?.('CaseConsolidationService initialized');
   }
 
   async consolidate(workspaceId: string): Promise<{ consolidated: number; pruned: number }> {

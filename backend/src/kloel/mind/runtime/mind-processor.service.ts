@@ -8,7 +8,7 @@ import { MindReportService } from '../observability/mind-report.service';
 import { MindService } from '../../mind.service';
 import { MindAutonomyService } from '../autonomy/mind-autonomy.service';
 import { MindCuriosityService } from '../curiosity/mind-curiosity.service';
-import { MindLongTermMemoryService } from '../memory/mind-long-term-memory.service';
+import { CaseConsolidationService } from '../memory/mind-long-term-memory.service';
 import { MindSelfModelService } from '../self-model/mind-self-model.service';
 
 const DEFAULT_SCHEDULER_INTERVAL_MS = 30_000;
@@ -43,7 +43,7 @@ export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
     private readonly reports: MindReportService,
     @Optional() private readonly autonomy?: MindAutonomyService,
     @Optional() private readonly curiosity?: MindCuriosityService,
-    @Optional() private readonly longTermMemory?: MindLongTermMemoryService,
+    @Optional() private readonly longTermMemory?: CaseConsolidationService,
     @Optional() private readonly selfModel?: MindSelfModelService,
   ) {}
 

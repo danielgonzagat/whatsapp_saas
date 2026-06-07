@@ -177,7 +177,7 @@ import { CommerceOutcomeLearnerService } from './mind/coordination/commerce-outc
 import { MindBanditService } from './mind/policy/mind-bandit.service';
 import { MindCaseMemoryService } from './mind/memory/mind-case-memory.service';
 import { MindConceptService } from './mind/memory/mind-concepts.service';
-import { MindLongTermMemoryService } from './mind/memory/mind-long-term-memory.service';
+import { CaseConsolidationService } from './mind/memory/mind-long-term-memory.service';
 import { MindSelfModificationService } from './mind/self-evolution/mind-self-modification.service';
 import { MindGlobalPriorService } from './mind/memory/mind-global-prior.service';
 import { MindController } from './mind/coordination/mind-controller';
@@ -246,7 +246,7 @@ import { ProductsModule } from '../products/products.module';
 import { PlansModule } from '../plans/plans.module';
 import { SalesModule } from '../sales/sales.module';
 import { WorkspaceModule } from '../workspaces/workspace.module';
-import { LongTermMemoryService } from './mind/memory/long-term-memory.service';
+import { GraphFactMemoryService } from './mind/memory/long-term-memory.service';
 import { ConversationArchiveService } from './mind/memory/conversation-archive.service';
 import { EpisodeService } from './mind/memory/episode.service';
 import { MindSelfModelService } from './mind/self-model/mind-self-model.service';
@@ -435,8 +435,8 @@ import { CrmModule } from '../crm/crm.module';
     MindBanditService,
     MindCaseMemoryService,
     MindConceptService,
-    MindLongTermMemoryService,
-    LongTermMemoryService,
+    CaseConsolidationService,
+    GraphFactMemoryService,
     ConversationArchiveService,
     EpisodeService,
     MindSelfModelService,

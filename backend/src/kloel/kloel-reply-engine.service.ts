@@ -71,7 +71,7 @@ import {
   recordReplyStyleOutcome,
   isAdequateReplyForBandit,
 } from './kloel-reply-engine.bandit.helpers';
-import { LongTermMemoryService } from './mind/memory/long-term-memory.service';
+import { GraphFactMemoryService } from './mind/memory/long-term-memory.service';
 import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 
 type ChatCompletionMessageParam = OpenAI.Chat.ChatCompletionMessageParam;
@@ -123,7 +123,7 @@ export class KloelReplyEngineService {
     @Optional() private readonly mindEventProcessorService?: MindEventProcessorService,
     @Optional()
     private readonly emotionalIntelligenceService?: MindEmotionalIntelligenceService,
-    @Optional() private readonly longTermMemoryService?: LongTermMemoryService,
+    @Optional() private readonly longTermMemoryService?: GraphFactMemoryService,
     @Optional() private readonly mindPredictor?: MindPredictorService,
     @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {

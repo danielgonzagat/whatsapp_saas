@@ -10,7 +10,7 @@ import { MindChatMessageService } from '../aliases/mind-chat-message.service';
  * `ConversationArchiveService.search(workspaceId, query)` is the read path that
  * lets the Mind recall RELEVANT FRAGMENTS of the user's PAST Kloel
  * conversations instead of re-deriving everything from the live thread. It is
- * the episodic-memory counterpart to `LongTermMemoryService.recallRelevant`
+ * the episodic-memory counterpart to `GraphFactMemoryService.recallRelevant`
  * (which recalls reinforced outcome FACTS) — here we recall the actual words
  * the user/assistant exchanged before.
  *

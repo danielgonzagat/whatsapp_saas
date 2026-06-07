@@ -1,11 +1,11 @@
 import { buildRecallDirective } from './kloel-reply-engine.recall.helpers';
-import type { LongTermMemoryService } from './mind/memory/long-term-memory.service';
+import type { GraphFactMemoryService } from './mind/memory/long-term-memory.service';
 import { matchInstance } from '../../test/helpers/match-instance';
 
-type RecalledFact = Awaited<ReturnType<LongTermMemoryService['recallRelevant']>>[number];
+type RecalledFact = Awaited<ReturnType<GraphFactMemoryService['recallRelevant']>>[number];
 
 function makeLtm(result: RecalledFact[] | Error): {
-  service: LongTermMemoryService;
+  service: GraphFactMemoryService;
   calls: unknown[][];
 } {
   const calls: unknown[][] = [];
@@ -17,7 +17,7 @@ function makeLtm(result: RecalledFact[] | Error): {
       }
       return result;
     }),
-  } as unknown as LongTermMemoryService;
+  } as unknown as GraphFactMemoryService;
   return { service, calls };
 }
 
