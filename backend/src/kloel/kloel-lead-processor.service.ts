@@ -283,7 +283,12 @@ export class KloelLeadProcessorService {
       );
       if (productMention) {
         const lead = await this.prisma.kloelLead.findFirst({
-          where: { workspaceId, phone: senderPhone },
+          // Look up by the SAME key the lead was created under
+          // (getOrCreateLead uses normalizedPhone || senderPhone). Looking up by
+          // raw senderPhone missed the lead whenever normalization changed the
+          // number (BR-promotion / '+' / spaces) → high-buy-intent payment link
+          // silently not generated (lost revenue).
+          where: { workspaceId, phone: normalizePhone(senderPhone)?.digits || senderPhone },
         });
         if (lead) {
           const paymentResult = await this.generatePaymentForLead(
