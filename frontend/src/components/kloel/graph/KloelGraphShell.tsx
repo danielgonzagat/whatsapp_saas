@@ -28,6 +28,7 @@ import type { KloelGraphArea, KloelGraphNode } from './KloelGraph.routes';
 import {
   buildKloelGraphMemberAreaNodes,
   buildKloelGraphEdges,
+  resolveKloelGraphNodeRoute,
   loadCheckoutGraphProducts,
   mergeGraphProducts,
 } from './KloelGraphShell.helpers';
@@ -173,22 +174,6 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
     [router],
   );
 
-  const resolveNodeRoute = useCallback(
-    (node: KloelGraphNode) => {
-      const [nodePath, nodeQueryString = ''] = node.route.split('?');
-      if (nodePath !== pathname || nodeQueryString) {
-        return node.route;
-      }
-
-      const nextParams = new URLSearchParams(searchParams.toString());
-      nextParams.delete('graph');
-      nextParams.delete('graphAction');
-      const query = nextParams.toString();
-      return query ? `${nodePath}?${query}` : nodePath;
-    },
-    [pathname, searchParams],
-  );
-
   const graphProducts = useMemo(
     () => mergeGraphProducts(products, checkoutProducts),
     [products, checkoutProducts],
@@ -198,6 +183,12 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
   const graphNodes = useMemo(
     () => [...KLOEL_GRAPH_NODES, ...productNodes, ...memberAreaNodes],
     [memberAreaNodes, productNodes],
+  );
+
+  const resolveNodeRoute = useCallback(
+    (node: KloelGraphNode) =>
+      resolveKloelGraphNodeRoute(node, pathname, searchParams.toString(), graphNodes),
+    [graphNodes, pathname, searchParams],
   );
   const activeNode = resolveKloelGraphNodeForPathFromNodes(pathname, params, graphNodes);
   const routeSignature = `${pathname}?${params.toString()}`;

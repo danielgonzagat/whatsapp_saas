@@ -2,8 +2,13 @@ import type { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { Prisma } from '@prisma/client';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { LLMBudgetService } from './llm-budget.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelComposerService, type CapabilityExecutionResult } from './kloel-composer.service';
+import {
+  ERR_IMAGE_API_KEY_MISSING,
+  ERR_SITE_API_KEY_MISSING,
+} from './kloel-composer.service.helpers';
 import { KloelConversationStore } from './kloel-conversation-store';
 import {
   createKloelContentEvent,
@@ -125,6 +130,14 @@ export interface ThinkBranchContext {
   conversationStore: KloelConversationStore;
   planLimits: PlanLimitsService;
   /**
+   * LLM cost ledger. When present, the composer-capability branch records the
+   * provider spend (`capResult.estimatedTokens`) after a successful call so
+   * paid create-image/site/search/refine turns are counted against the
+   * workspace budget, matching the normal chat path's `recordSpend`. Optional
+   * because branches that never call a paid provider don't need it.
+   */
+  llmBudget?: LLMBudgetService;
+  /**
    * Durable AuditLog sink (DB / `RAC_AuditLog`). When present, every executed
    * tool on the LLM tool_call path persists an OperationReceipt to the database,
    * not only to the local `WORLD_LEDGER.jsonl` trace. Injected from the service.
@@ -240,6 +253,27 @@ function buildComposerCapabilityTraceResult(
   };
 }
 
+/**
+ * True only for the known missing/incomplete-configuration errors thrown by
+ * {@link KloelComposerService.executeComposerCapability} — the absent
+ * `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` cases (thrown as `Error` /
+ * `NotFoundException` carrying {@link ERR_IMAGE_API_KEY_MISSING} /
+ * {@link ERR_SITE_API_KEY_MISSING}). These are the only failures that should be
+ * converted into the friendly "configuration not complete" reply. Real provider
+ * failures (5xx, timeout, abort, empty/invalid response) carry different
+ * messages and must propagate so the stream/client surfaces a real error
+ * instead of a fake successful turn.
+ */
+function isComposerConfigurationError(error: unknown): boolean {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === 'string'
+        ? error
+        : '';
+  return message === ERR_IMAGE_API_KEY_MISSING || message === ERR_SITE_API_KEY_MISSING;
+}
+
 function buildComposerCapabilityFailureContent(
   composerCapability: 'create_image' | 'create_site' | 'search_web' | 'refine_response',
 ): string {
@@ -278,6 +312,8 @@ export async function runComposerCapabilityBranch(
     replyEngine,
     threadService,
     conversationStore,
+    planLimits,
+    llmBudget,
   } = ctx;
   const callId = buildDeterministicCallId(clientRequestId);
   const toolArgs: Record<string, unknown> = {
@@ -302,7 +338,14 @@ export async function runComposerCapabilityBranch(
         : {}),
       ...(signal !== undefined ? { signal } : {}),
     });
-  } catch {
+  } catch (error: unknown) {
+    // Only known missing/incomplete-configuration errors map to the friendly
+    // "configuration not complete" fallback. Real provider failures (5xx,
+    // timeout, abort, empty/invalid response) must propagate so the stream/client
+    // surfaces a real error instead of a fake successful assistant turn.
+    if (!isComposerConfigurationError(error)) {
+      throw error;
+    }
     const failureContent = buildComposerCapabilityFailureContent(composerCapability);
     capabilityFailed = true;
     capResult = {
@@ -391,6 +434,19 @@ export async function runComposerCapabilityBranch(
   if (workspaceId) {
     await conversationStore.saveMessage(workspaceId, 'user', message);
     await conversationStore.saveMessage(workspaceId, 'assistant', capabilityContent);
+  }
+  // Usage accounting (mirrors the normal chat path's finalizeSuccessfulReply
+  // trackAiUsage + recordSpend). A paid create-image/site/search/refine turn
+  // must be counted against the workspace's token + cost ledgers so an
+  // over-budget workspace can't keep triggering paid provider calls for free.
+  // Skipped on the friendly configuration-error fallback (estimatedTokens 0,
+  // no provider call happened). Fire-and-forget — accounting must never wedge
+  // the SSE stream, matching the normal path's `.catch(() => {})` semantics.
+  if (workspaceId && !capabilityFailed) {
+    await planLimits.trackAiUsage(workspaceId, capResult.estimatedTokens).catch(() => {});
+    if (llmBudget) {
+      llmBudget.recordSpend(workspaceId, capResult.estimatedTokens).catch(() => {});
+    }
   }
   safeWrite(createKloelDoneEvent(doneMetadata));
   streamWriter.close();

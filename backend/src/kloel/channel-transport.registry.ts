@@ -179,6 +179,16 @@ export class ChannelTransportRegistry {
    * input cannot be built (e.g. canonical service not injected, or a Meta
    * channel without a resolvable connection) so the caller falls back to the
    * existing provider path with identical behavior.
+   *
+   * A thrown error from the canonical path (e.g. the WhatsApp dispatcher's
+   * subscription/opt-in checks, or an adapter failing at runtime) is caught and
+   * mapped to the transport soft-failure contract
+   * (`{ success: false, blocked: false, error }`) — mirroring how every
+   * non-delegate provider translates a throw, and preserving the documented
+   * `ChannelSendResult` contract the ~16 inbox/cart-recovery/agent callers rely
+   * on. Real opt-in/subscription BLOCKS are surfaced as a RETURNED
+   * `blocked: true` result by the canonical path (see {@link mapCanonicalResult})
+   * and therefore never reach this catch.
    */
   private async sendViaCanonical(
     workspaceId: string,
@@ -191,8 +201,16 @@ export class ChannelTransportRegistry {
     if (!input) {
       return null;
     }
-    const result = await this.canonicalDispatch.sendMessage(input);
-    return this.mapCanonicalResult(result);
+    try {
+      const result = await this.canonicalDispatch.sendMessage(input);
+      return this.mapCanonicalResult(result);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'unknown_error';
+      this.logger.error(
+        `Canonical delegate send erro workspace=${workspaceId} channel=${request.channel}: ${message}`,
+      );
+      return { success: false, blocked: false, error: message };
+    }
   }
 
   /** Map the transport request's media/threading fields onto DispatchOptions. */

@@ -504,6 +504,20 @@ describe('KloelGraphShell', () => {
     expect(push).toHaveBeenCalledWith('/flow?id=flow_1&audit=123');
   });
 
+  it('drops sibling view-discriminator params when reopening a base graph node', () => {
+    // From /settings?section=idiomas, clicking the base "Conta" node (route /settings,
+    // no query) must drop the inherited section so ContaView opens its default view
+    // instead of staying on Idiomas. `section` is a discriminator declared by the
+    // sibling perfil-settings-<section> nodes; non-discriminator params would survive.
+    pathname = '/settings';
+    searchParams = new URLSearchParams('section=idiomas&graph=1');
+    renderShell();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir Conta' }));
+
+    expect(push).toHaveBeenCalledWith('/settings');
+  });
+
   it('drops pending node feedback when the route signature changes', () => {
     searchParams = new URLSearchParams('graph=1');
     const { container, rerender } = renderShell();
@@ -649,7 +663,9 @@ describe('KloelGraphShell', () => {
       clientX: 11,
       clientY: 11,
     });
-    expect(push).toHaveBeenCalledWith('/produtos/area-membros?areaId=area_1');
+    // Routes to the handled member-area deep link (preview/[areaId] reads params.areaId)
+    // rather than ?areaId= on the list screen, which ContaView/AreaMembros never read.
+    expect(push).toHaveBeenCalledWith('/produtos/area-membros/preview/area_1');
   });
 
   it('resets the current Kloel conversation when Novo Chat is opened from an existing thread', () => {

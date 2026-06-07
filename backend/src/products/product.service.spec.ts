@@ -113,7 +113,10 @@ describe('ProductService', () => {
       expect(audit.log).toHaveBeenCalledWith(objectContaining({ action: 'product.create' }));
     });
 
-    it('preserves normalized workflow status and availability when the caller supplies them', async () => {
+    it('clamps an APPROVED/active create down to the pending-review state', async () => {
+      // Approval must flow through publish()/reviewAndPublish(), not a raw create.
+      // A caller that supplies status:'APPROVED'/active:true must NOT mint a live
+      // product — it is forced into the review queue instead.
       const dto = {
         name: 'Widget publicado',
         price: 49.99,
@@ -125,10 +128,63 @@ describe('ProductService', () => {
       const result = await service.create(ws, dto, actor);
 
       expect(prisma.product.create).toHaveBeenCalledWith({
-        data: objectContaining({ status: 'APPROVED', active: true }),
+        data: objectContaining({ status: 'PENDING', active: false }),
       });
-      expect(result.product?.status).toBe('APPROVED');
-      expect(result.product?.active).toBe(true);
+      expect(result.product?.status).toBe('PENDING');
+      expect(result.product?.active).toBe(false);
+    });
+
+    it('never activates a product on create even when active:true is supplied without APPROVED', async () => {
+      const dto = {
+        name: 'Widget rascunho ativo',
+        price: 19.99,
+        status: 'DRAFT',
+        active: true,
+      } as never;
+
+      const result = await service.create(ws, dto, actor);
+
+      expect(result.product?.status).toBe('DRAFT');
+      expect(result.product?.active).toBe(false);
+    });
+
+    it('strips physical/marketing wizard-only fields that are not Product columns', async () => {
+      await service.create(
+        ws,
+        {
+          name: 'Produto físico',
+          price: 99.9,
+          format: 'PHYSICAL',
+          packageType: 'box',
+          width: 10,
+          height: 20,
+          depth: 5,
+          weight: 1.2,
+          shippingResponsible: 'producer',
+          dispatchTime: 3,
+          carriers: ['correios'],
+          facebookPixelId: 'fb-123',
+          googleTagManagerId: 'gtm-456',
+        } as never,
+        actor,
+      );
+
+      const [createCall] = prisma.product.create.mock.calls as [ProductCreateArgs][];
+      const createData = createCall[0].data;
+      for (const wizardOnlyKey of [
+        'packageType',
+        'width',
+        'height',
+        'depth',
+        'weight',
+        'shippingResponsible',
+        'dispatchTime',
+        'carriers',
+        'facebookPixelId',
+        'googleTagManagerId',
+      ]) {
+        expect(createData).not.toHaveProperty(wizardOnlyKey);
+      }
     });
 
     it('maps rich affiliate wizard fields before writing the product', async () => {

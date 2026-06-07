@@ -140,6 +140,70 @@ describe('authApi', () => {
       const res = await authApi.getMe();
       expect(res.data).toBeDefined();
     });
+
+    it('refreshes and retries once when the workspace proxy answers 401 with a refresh token', async () => {
+      const freshToken = createTestJwt({ exp: Math.floor(Date.now() / 1000) + 3600 });
+      document.cookie = 'kloel_access_token=stale-token; path=/';
+      document.cookie = 'kloel_refresh_token=refresh-token; path=/';
+
+      let workspaceCalls = 0;
+      vi.mocked(globalThis.fetch).mockImplementation(async (input) => {
+        const url = input instanceof Request ? input.url : String(input ?? '');
+        if (url === 'http://localhost:3001/auth/refresh') {
+          return {
+            ok: true,
+            status: 201,
+            json: async () => ({ access_token: freshToken, refresh_token: 'fresh-refresh' }),
+            text: async () =>
+              JSON.stringify({ access_token: freshToken, refresh_token: 'fresh-refresh' }),
+          } as Response;
+        }
+
+        workspaceCalls += 1;
+        if (workspaceCalls === 1) {
+          return {
+            ok: false,
+            status: 401,
+            text: async () => JSON.stringify({ message: 'Unauthorized' }),
+          } as Response;
+        }
+        return {
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ user: { id: 'u1', email: 'a@b.com' } }),
+        } as Response;
+      });
+
+      const res = await authApi.getMe();
+
+      expect(res.status).toBe(200);
+      expect(res.error).toBeUndefined();
+      expect(workspaceCalls).toBe(2);
+      const retryHeaders = collectHeaders(
+        vi.mocked(globalThis.fetch).mock.calls.at(-1)?.[1]?.headers,
+      );
+      expect(retryHeaders.authorization).toBe(`Bearer ${freshToken}`);
+    });
+
+    it('does not retry on 401 when no refresh token is stored', async () => {
+      document.cookie = 'kloel_access_token=stale-token; path=/';
+      document.cookie = 'kloel_refresh_token=; path=/; max-age=0';
+
+      let workspaceCalls = 0;
+      vi.mocked(globalThis.fetch).mockImplementation(async () => {
+        workspaceCalls += 1;
+        return {
+          ok: false,
+          status: 401,
+          text: async () => JSON.stringify({ message: 'Unauthorized' }),
+        } as Response;
+      });
+
+      const res = await authApi.getMe();
+
+      expect(res.status).toBe(401);
+      expect(workspaceCalls).toBe(1);
+    });
   });
 
   describe('forgotPassword', () => {

@@ -35,7 +35,7 @@ describe('AnalyticsFilterDrawer', () => {
     expect((screen.getByLabelText('Data fim') as HTMLInputElement).value).toBe('2026-06-06');
     expect((screen.getByLabelText('Codigo da venda') as HTMLInputElement).value).toBe('');
     expect((screen.getByLabelText('Nome do comprador') as HTMLInputElement).value).toBe('');
-    expect((screen.getByLabelText('Primeira compra') as HTMLInputElement).checked).toBe(false);
+    expect(screen.queryByLabelText('Primeira compra')).toBeNull();
 
     expect(setFilters).toHaveBeenCalledTimes(1);
     const nextFilters = setFilters.mock.calls[0]?.[0];

@@ -121,6 +121,19 @@ export async function deleteThread(
   }
 }
 
+// Metadata keys whose values are generated artifact payloads, not assistant
+// prose. The frontend renders these verbatim (e.g. `generatedSiteHtml` via an
+// iframe `srcDoc`, image/source URLs as links), so the prose sanitizer must
+// leave them untouched — collapsing whitespace or rewriting tokens would
+// corrupt the generated HTML, URLs, or filenames on reload. Producers live in
+// KloelComposerService (runComposerCapabilityBranch persists `capResult.metadata`).
+const ARTIFACT_PAYLOAD_METADATA_KEYS = new Set([
+  'generatedSiteHtml',
+  'generatedImageUrl',
+  'generatedImageFilename',
+  'webSources',
+]);
+
 function sanitizeThreadResponseVersionForRead(value: unknown): unknown {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return value;
@@ -146,6 +159,10 @@ function sanitizeThreadMessageMetadataValueForRead(value: unknown): unknown {
   const record = value as Record<string, unknown>;
   const sanitized: Record<string, unknown> = {};
   for (const [key, item] of Object.entries(record)) {
+    if (ARTIFACT_PAYLOAD_METADATA_KEYS.has(key)) {
+      sanitized[key] = item;
+      continue;
+    }
     if ((key === 'tool' || key === 'brainIntent') && typeof item === 'string') {
       sanitized[key] = formatTraceToolLabel(item);
       continue;

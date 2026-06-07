@@ -186,6 +186,40 @@ describe('ChannelTransportRegistry — canonical delegate flag', () => {
       });
     });
 
+    it('maps a thrown canonical error to the soft-failure contract (blocked=false)', async () => {
+      process.env[FLAG] = 'true';
+      // The canonical path can throw at runtime — e.g. the WhatsApp dispatcher's
+      // subscription/opt-in checks or an adapter failing. The delegate must NOT
+      // let that reject `send`: it must preserve the soft `ChannelSendResult`
+      // contract the inbox/cart-recovery/agent callers depend on.
+      canonicalDispatch.sendMessage.mockRejectedValue(new Error('opt_in_required'));
+      const registry = buildRegistry();
+
+      const result = await registry.send('ws-1', makeRequest());
+
+      expect(result).toEqual({
+        success: false,
+        blocked: false,
+        error: 'opt_in_required',
+      });
+      // No fallback to the legacy provider path on a thrown delegate error.
+      expect(stubWhatsAppRegistry.sendMessage).not.toHaveBeenCalled();
+    });
+
+    it('maps a non-Error throw to error=unknown_error', async () => {
+      process.env[FLAG] = 'true';
+      canonicalDispatch.sendMessage.mockRejectedValue('boom');
+      const registry = buildRegistry();
+
+      const result = await registry.send('ws-1', makeRequest());
+
+      expect(result).toEqual({
+        success: false,
+        blocked: false,
+        error: 'unknown_error',
+      });
+    });
+
     it('keeps EMAIL on the current provider path even when ON', async () => {
       process.env[FLAG] = 'true';
       // Email provider is not registered here, so the registry blocks at the

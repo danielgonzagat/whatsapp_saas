@@ -278,6 +278,22 @@ export class KloelThinkerService {
       });
 
       if (mode === 'chat' && composerCapability) {
+        // Budget preflight BEFORE the composer provider runs — the same gate
+        // the normal chat/tool-planning turns apply (ensureTokenBudget +
+        // assertBudget). create-image/site/search/refine are paid provider
+        // calls, so an over-budget workspace must be blocked here too instead
+        // of bypassing accounting. A thrown ForbiddenException propagates to
+        // the outer catch, which surfaces a terminal error event — identical
+        // error behavior to the normal path's preflight.
+        if (workspaceId) {
+          await this.planLimits.ensureTokenBudget(workspaceId);
+          const estimatedCost = estimateChatCostCents({
+            inputChars: message.length,
+            maxOutputTokens: responseMaxTokens,
+          });
+          await this.llmBudget.assertBudget(workspaceId, estimatedCost);
+        }
+
         if (thread?.id) {
           safeWrite(createKloelThreadEvent(thread.id, thread.title));
         }
@@ -317,6 +333,7 @@ export class KloelThinkerService {
             threadService: this.threadService,
             conversationStore: this.conversationStore,
             planLimits: this.planLimits,
+            llmBudget: this.llmBudget,
           },
         );
         return;
@@ -409,6 +426,7 @@ export class KloelThinkerService {
         threadService: this.threadService,
         conversationStore: this.conversationStore,
         planLimits: this.planLimits,
+        llmBudget: this.llmBudget,
       };
 
       if (mode === 'chat' && composerCapability) {

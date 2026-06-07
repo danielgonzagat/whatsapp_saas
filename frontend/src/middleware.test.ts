@@ -378,3 +378,68 @@ describe('login redirect preserves next path', () => {
     expect(location).toContain('next=');
   });
 });
+
+/* ─── Expired access token + valid refresh session ─────────────────────── */
+
+function base64UrlJson(value: Record<string, unknown>): string {
+  return Buffer.from(JSON.stringify(value), 'utf8')
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+}
+
+function buildJwtCookie(payload: Record<string, unknown>): string {
+  const header = base64UrlJson({ alg: 'none', typ: 'JWT' });
+  return `${header}.${base64UrlJson(payload)}.`;
+}
+
+describe('refresh-aware route access', () => {
+  const expiredAccess = buildJwtCookie({
+    sub: 'user-1',
+    email: 'user@example.com',
+    exp: Math.floor(Date.now() / 1000) - 60,
+  });
+
+  function buildRequestWithCookies(url: string, cookie: string) {
+    return new NextRequest(url, { headers: { cookie } });
+  }
+
+  it('keeps a protected app route when access is expired but a refresh cookie exists', () => {
+    const response = middleware(
+      buildRequestWithCookies(
+        'https://app.kloel.com/products',
+        `kloel_access_token=${expiredAccess}; kloel_refresh_token=refresh-1`,
+      ),
+    );
+    expectNext(response);
+  });
+
+  it('redirects to login when access is expired and no refresh cookie exists', () => {
+    const response = middleware(
+      buildRequestWithCookies(
+        'https://app.kloel.com/products',
+        `kloel_access_token=${expiredAccess}`,
+      ),
+    );
+    const location = response.headers.get('location')!;
+    expect(location).toContain('auth.kloel.com/login');
+    expect(location).toContain('forceAuth=1');
+  });
+
+  it('does not treat an anonymous expired token as authenticated even with a refresh cookie', () => {
+    const anonymousExpired = buildJwtCookie({
+      guest: true,
+      email: 'guest@guest.kloel.local',
+      exp: Math.floor(Date.now() / 1000) - 60,
+    });
+    const response = middleware(
+      buildRequestWithCookies(
+        'https://app.kloel.com/products',
+        `kloel_access_token=${anonymousExpired}; kloel_refresh_token=refresh-1`,
+      ),
+    );
+    const location = response.headers.get('location')!;
+    expect(location).toContain('auth.kloel.com/login');
+  });
+});

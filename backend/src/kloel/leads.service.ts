@@ -178,13 +178,28 @@ export class LeadsService {
     const contacts = await this.prisma.contact.findMany({
       where: {
         workspaceId,
+        // Provenance/funnel predicate — only treat a Contact as a lead when it
+        // carries a canonical lead-origin pointer (promoted from KloelLead, a
+        // CheckoutSocialLead, or surfaced by a scraping job). Manually created
+        // contacts/customers have none of these and MUST NOT pollute the leads
+        // screen — nor suppress the legacy `RAC_KloelLead` fallback just because
+        // some unrelated contact exists in the workspace.
+        OR: [
+          { kloelLeadId: { not: null } },
+          { checkoutSocialLeadId: { not: null } },
+          { scrapingJobId: { not: null } },
+        ],
         ...statusFilter,
         ...(search
           ? {
-              OR: [
-                { name: { contains: search, mode: 'insensitive' } },
-                { email: { contains: search, mode: 'insensitive' } },
-                { phone: { contains: search, mode: 'insensitive' } },
+              AND: [
+                {
+                  OR: [
+                    { name: { contains: search, mode: 'insensitive' } },
+                    { email: { contains: search, mode: 'insensitive' } },
+                    { phone: { contains: search, mode: 'insensitive' } },
+                  ],
+                },
               ],
             }
           : {}),

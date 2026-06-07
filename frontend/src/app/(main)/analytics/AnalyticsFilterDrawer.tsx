@@ -141,7 +141,7 @@ export function AnalyticsFilterDrawer({ open, onClose, filters, setFilters }: Fi
             <input id="analytics-filter-affiliate-email" name="analyticsFilterAffiliateEmail" aria-label="Email do afiliado" placeholder={kloelT(`email@afiliado.com`)} value={draftFilters.affiliateEmail ?? ''} onChange={(e) => updateDraftFilters((f) => ({ ...f, affiliateEmail: e.target.value }))} style={inputStyle} />
           </div>
           <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
-            {([['Primeira compra', 'isFirstPurchase'], ['Recuperacao', 'isRecovery'], ['Upsell', 'isUpsell']] as const).map(([label, key]) => (
+            {([['Recuperacao', 'isRecovery'], ['Upsell', 'isUpsell']] as const).map(([label, key]) => (
               <label key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: V.t2, cursor: 'pointer' }}>
                 <input id={`analytics-filter-${key}`} name={key} type="checkbox" checked={draftFilters[key] === 'true'} onChange={(e) => updateDraftFilters((f) => ({ ...f, [key]: e.target.checked ? 'true' : '' }))} style={{ accentColor: V.em }} />{label}
               </label>

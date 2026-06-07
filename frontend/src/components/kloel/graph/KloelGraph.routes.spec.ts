@@ -313,7 +313,7 @@ describe('KloelGraph route contract', () => {
         label: 'Curso real',
         area: 'educar',
         type: 'entity',
-        route: '/produtos/area-membros?areaId=area_123',
+        route: '/produtos/area-membros/preview/area_123',
         parentId: 'educar-area-membros',
         subtitle: 'Area conectada - ativa',
         overlayLabel: 'Area de membros',
@@ -321,8 +321,8 @@ describe('KloelGraph route contract', () => {
     ]);
     expect(
       resolveKloelGraphNodeForPathFromNodes(
-        '/produtos/area-membros',
-        new URLSearchParams('areaId=area_123'),
+        '/produtos/area-membros/preview/area_123',
+        new URLSearchParams(),
         allNodes,
       )?.id,
     ).toBe('educar-member-area-area_123');

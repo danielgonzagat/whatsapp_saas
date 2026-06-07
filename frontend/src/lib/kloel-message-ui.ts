@@ -202,6 +202,47 @@ export function sanitizeAssistantVisibleContent(value: string): string {
     .trim();
 }
 
+// Markdown code spans that must be preserved verbatim. Fenced blocks (``` … ```
+// and ~~~ … ~~~) come first so an inline-code regex inside a fence is never
+// matched; inline code (`…`, ``…``) is matched after. The whole-string prose
+// rewrite must NOT touch these, otherwise paths like `frontend/src/...`,
+// language names like `TypeScript`, and tokens such as `runtime`/`backend`
+// would be rewritten inside the rendered/downloadable code artifact.
+const MARKDOWN_CODE_SEGMENT_RE = /(```[\s\S]*?```|~~~[\s\S]*?~~~|(`+)[\s\S]*?\2)/g;
+
+/**
+ * Apply the product-facing prose rewrite (`sanitizeAssistantVisibleContent`) to
+ * a Markdown string while leaving fenced and inline code segments untouched.
+ *
+ * The assistant's answer is also mined for downloadable file cards from the very
+ * same fenced blocks (see `detectDeliverableAnswerFiles`), so rewriting code in
+ * place would corrupt both the rendered artifact and its download. This splits
+ * the string on code segments, sanitizes only the prose between them, and
+ * reassembles — preserving multiple/sequential fences and inline code verbatim.
+ */
+export function sanitizeAssistantMarkdown(value: string): string {
+  const source = String(value || '');
+  let result = '';
+  let lastIndex = 0;
+  MARKDOWN_CODE_SEGMENT_RE.lastIndex = 0;
+  let match = MARKDOWN_CODE_SEGMENT_RE.exec(source);
+  while (match) {
+    const prose = source.slice(lastIndex, match.index);
+    if (prose) {
+      result += sanitizeAssistantVisibleContent(prose);
+    }
+    // Code segment is preserved byte-for-byte.
+    result += match[0];
+    lastIndex = match.index + match[0].length;
+    match = MARKDOWN_CODE_SEGMENT_RE.exec(source);
+  }
+  const trailingProse = source.slice(lastIndex);
+  if (trailingProse) {
+    result += sanitizeAssistantVisibleContent(trailingProse);
+  }
+  return result;
+}
+
 function sanitizeAssistantTraceLabel(value: string): string {
   return sanitizeAssistantVisibleContent(value)
     .replace(

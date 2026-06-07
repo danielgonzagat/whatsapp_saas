@@ -1,6 +1,6 @@
 'use client';
 
-import { sanitizeAssistantVisibleContent } from '@/lib/kloel-message-ui';
+import { sanitizeAssistantMarkdown } from '@/lib/kloel-message-ui';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import type { HTMLAttributes } from 'react';
 import ReactMarkdown from 'react-markdown';
@@ -63,7 +63,7 @@ function SvgArtifact({ source }: { source: string }) {
 
 /** Kloel markdown. */
 export function KloelMarkdown({ content }: { content: string }) {
-  const sanitizedContent = sanitizeAssistantVisibleContent(String(content || ''));
+  const sanitizedContent = sanitizeAssistantMarkdown(String(content || ''));
 
   return (
     <div

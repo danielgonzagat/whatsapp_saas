@@ -390,6 +390,21 @@ export class InstagramMarketingService {
         text,
         { igAccountId, accessToken },
       );
+      // The canonical adapter catches Meta send exceptions and reports them as
+      // `{ success: false, error }` rather than throwing. A failed send must NOT
+      // be returned as a success-looking `{ messageId: null, metaResponse }` —
+      // that would make the controller respond as if the DM completed. Return
+      // `null` so the caller falls back to the raw `instagramService.sendMessage`
+      // path, which rethrows the underlying Meta failure (the raw path's failure
+      // semantics), surfacing a real error to the caller.
+      if (!result.success) {
+        this.logger.warn(
+          `Instagram canonical dispatch reported failure for workspace ${workspaceId}; falling back to raw path: ${
+            result.error ?? 'unknown_error'
+          }`,
+        );
+        return null;
+      }
       const messageId =
         typeof result.messageId === 'string'
           ? result.messageId

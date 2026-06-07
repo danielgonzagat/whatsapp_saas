@@ -60,8 +60,13 @@ export function useCiaAdvanced(workspaceId: string): UseCiaAdvancedReturn {
     }
 
     try {
+      // getAccountRuntime owns the write side-effect (materializeAccountCapabilityGaps).
+      // getAccountWorkItems is now a pure read, so it must run AFTER runtime resolves —
+      // otherwise the listing can win the race and store an empty work-items list while
+      // runtime is still materializing the capability-gap rows. Everything else here is
+      // independent of materialization and stays parallel.
+      const runtimeRes = await ciaApi.getAccountRuntime(workspaceId);
       const [
-        runtimeRes,
         approvalsRes,
         inputSessionsRes,
         workItemsRes,
@@ -70,7 +75,6 @@ export function useCiaAdvanced(workspaceId: string): UseCiaAdvancedReturn {
         capabilityRes,
         actionRes,
       ] = await Promise.all([
-        ciaApi.getAccountRuntime(workspaceId),
         ciaApi.getAccountApprovals(workspaceId),
         ciaApi.getAccountInputSessions(workspaceId),
         ciaApi.getAccountWorkItems(workspaceId),

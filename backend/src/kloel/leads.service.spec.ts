@@ -180,7 +180,6 @@ describe('LeadsService', () => {
         metadata: {},
         createdAt: new Date('2026-01-01'),
         updatedAt: null,
-        commercialScore: null,
       });
     });
 
@@ -378,6 +377,62 @@ describe('LeadsService', () => {
             where: partialMatch({ workspaceId: wsId, leadStatus: 'hot' }),
           }),
         );
+      });
+
+      it('restricts the contact query to provenance-backed leads', async () => {
+        prisma.contact.findMany.mockResolvedValue([makeContactRow()]);
+
+        await service.listLeads(wsId);
+
+        expect(prisma.contact.findMany).toHaveBeenCalledWith(
+          partialMatch({
+            where: partialMatch({
+              workspaceId: wsId,
+              OR: arrayContains([
+                { kloelLeadId: { not: null } },
+                { checkoutSocialLeadId: { not: null } },
+                { scrapingJobId: { not: null } },
+              ]),
+            }),
+          }),
+        );
+      });
+
+      it('keeps the search filter alongside the provenance predicate', async () => {
+        prisma.contact.findMany.mockResolvedValue([makeContactRow()]);
+
+        await service.listLeads(wsId, { search: 'maria' });
+
+        const callArg = (prisma.contact.findMany.mock.calls as unknown[][])[0][0] as {
+          where: { OR?: unknown[]; AND?: unknown[] };
+        };
+        // Provenance disjunction stays on the top-level OR key.
+        expect(callArg.where.OR).toEqual(
+          expect.arrayContaining([{ kloelLeadId: { not: null } }]),
+        );
+        // Search disjunction is AND-nested so it does not clobber provenance.
+        expect(callArg.where.AND).toEqual([
+          {
+            OR: expect.arrayContaining([
+              { name: { contains: 'maria', mode: 'insensitive' } },
+              { email: { contains: 'maria', mode: 'insensitive' } },
+              { phone: { contains: 'maria', mode: 'insensitive' } },
+            ]),
+          },
+        ]);
+      });
+
+      it('falls back to kloelLead when only non-lead contacts exist', async () => {
+        // A workspace with only manually-created contacts (no provenance) yields
+        // an empty provenance-filtered result, so the legacy fallback still fires.
+        prisma.contact.findMany.mockResolvedValue([]);
+        prisma.kloelLead.findMany.mockResolvedValue([makeLead({ id: 'legacy-lead' })]);
+
+        const result = await service.listLeads(wsId);
+
+        expect(prisma.contact.findMany).toHaveBeenCalledTimes(1);
+        expect(prisma.kloelLead.findMany).toHaveBeenCalledTimes(1);
+        expect(result[0].id).toBe('legacy-lead');
       });
 
       it('falls back to kloelLead when the contact result is empty', async () => {

@@ -3,6 +3,7 @@ import { mutate } from 'swr';
 import {
   apiFetch,
   ensureFreshAccessToken,
+  refreshAccessToken,
   resolveWorkspaceFromAuthPayload,
   tokenStorage,
 } from './core';
@@ -115,9 +116,7 @@ async function readOptionalJsonPayload(response: Response): Promise<unknown> {
   return null;
 }
 
-async function fetchWorkspaceMe(): Promise<AuthApiResponse> {
-  await ensureFreshAccessToken();
-
+function buildWorkspaceMeHeaders(): Record<string, string> {
   const headers: Record<string, string> = { Accept: 'application/json' };
   const token = tokenStorage.getToken();
   if (token) {
@@ -128,13 +127,34 @@ async function fetchWorkspaceMe(): Promise<AuthApiResponse> {
   if (workspaceId) {
     headers['x-workspace-id'] = workspaceId;
   }
+  return headers;
+}
+
+function requestWorkspaceMe(): Promise<Response> {
+  return fetch('/api/workspace/me', {
+    method: 'GET',
+    credentials: 'include',
+    headers: buildWorkspaceMeHeaders(),
+  });
+}
+
+async function fetchWorkspaceMe(): Promise<AuthApiResponse> {
+  await ensureFreshAccessToken();
 
   try {
-    const response = await fetch('/api/workspace/me', {
-      method: 'GET',
-      credentials: 'include',
-      headers,
-    });
+    let response = await requestWorkspaceMe();
+
+    // The workspace proxy is a same-origin route and cannot go through the
+    // apiFetch 401-refresh interceptor, so replicate it here: a 401 while a
+    // refresh token is still stored should attempt a refresh and retry once
+    // rather than surfacing a logout-worthy status to the caller.
+    if (response.status === 401 && tokenStorage.getRefreshToken()) {
+      const refreshed = await refreshAccessToken();
+      if (refreshed) {
+        response = await requestWorkspaceMe();
+      }
+    }
+
     const payload = await readOptionalJsonPayload(response);
     if (!response.ok) {
       return {

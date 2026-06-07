@@ -815,10 +815,13 @@ describe('KloelThinkerService', () => {
         typeof import('./kloel-thinker-think.helpers')
       >('./kloel-thinker-think.helpers');
       const events: unknown[] = [];
+      const { ERR_SITE_API_KEY_MISSING } = jest.requireActual<
+        typeof import('./kloel-composer.service.helpers')
+      >('./kloel-composer.service.helpers');
       const localComposerService = {
         executeComposerCapability: jest
           .fn()
-          .mockRejectedValue(new Error('ANTHROPIC API_KEY missing')),
+          .mockRejectedValue(new Error(ERR_SITE_API_KEY_MISSING)),
       };
       const localThreadService = {
         persistAssistantThreadMessage: jest.fn().mockResolvedValue({ id: 'msg-assistant-1' }),
@@ -893,6 +896,62 @@ describe('KloelThinkerService', () => {
         'assistant',
         expect.stringContaining('A criação de site está conectada'),
       );
+    });
+
+    it('re-throws real composer provider failures instead of faking a successful turn', async () => {
+      const { runComposerCapabilityBranch } = jest.requireActual<
+        typeof import('./kloel-thinker-think.helpers')
+      >('./kloel-thinker-think.helpers');
+      const events: unknown[] = [];
+      const providerError = new Error('Anthropic API error 503: upstream unavailable');
+      const localComposerService = {
+        executeComposerCapability: jest.fn().mockRejectedValue(providerError),
+      };
+      const localThreadService = {
+        persistAssistantThreadMessage: jest.fn().mockResolvedValue({ id: 'msg-assistant-1' }),
+        buildThreadMessageMetadata: jest.fn((_metadata: unknown, meta: unknown): unknown => meta),
+        buildProcessingTraceSummary: jest
+          .fn()
+          .mockReturnValue('Resumo persistido da pré-resposta.'),
+        maybeRefreshThreadSummary: jest.fn().mockResolvedValue(undefined),
+        maybeGenerateThreadTitle: jest.fn().mockResolvedValue('Nova conversa'),
+      };
+      const localConversationStore = {
+        saveMessage: jest.fn().mockResolvedValue(undefined),
+      };
+      const localStreamWriter = { close: jest.fn() };
+
+      await expect(
+        runComposerCapabilityBranch(
+          'create_site',
+          undefined,
+          undefined,
+          localComposerService as unknown as KloelComposerService,
+          {
+            workspaceId: wsId,
+            message: 'Crie uma landing page',
+            mode: 'chat',
+            metadata: { capability: 'create_site' },
+            clientRequestId: 'req-site-provider-5xx',
+            thread: { id: 'thread-1', title: 'Nova conversa' },
+            persistedUserMessage: { id: 'msg-user-1' },
+            processingTraceEntries: [],
+            safeWrite: (event) => events.push(event),
+            streamWriter: localStreamWriter,
+            replyEngine: { openai: null },
+            threadService: localThreadService,
+            conversationStore: localConversationStore,
+            planLimits,
+          } as unknown as Parameters<typeof runComposerCapabilityBranch>[4],
+        ),
+      ).rejects.toBe(providerError);
+
+      // No fake successful turn: no content/done emitted, nothing persisted.
+      expect(events).not.toContainEqual(expect.objectContaining({ type: 'done' }));
+      expect(events).not.toContainEqual(expect.objectContaining({ type: 'content' }));
+      expect(localThreadService.persistAssistantThreadMessage).not.toHaveBeenCalled();
+      expect(localConversationStore.saveMessage).not.toHaveBeenCalled();
+      expect(localStreamWriter.close).not.toHaveBeenCalled();
     });
 
     it('keeps generated site HTML out of composer observation events', async () => {
@@ -1224,6 +1283,106 @@ describe('KloelThinkerService', () => {
           { signal },
         ),
       ).resolves.toBeUndefined();
+    });
+
+    it('blocks the composer capability branch for an over-budget workspace (budget preflight)', async () => {
+      // assertBudget rejects → the composer provider must NOT run, so an
+      // over-budget workspace can't keep triggering paid create-site calls.
+      (llmBudget.assertBudget as jest.Mock).mockRejectedValueOnce(
+        new ForbiddenException({ code: 'llm_budget_exceeded' }),
+      );
+      jest.mocked(runComposerCapabilityBranch).mockClear();
+
+      await service.think(
+        {
+          message: 'crie uma landing page curta',
+          workspaceId: wsId,
+          userId: 'agent-1',
+          metadata: { capability: 'create_site' },
+        },
+        {} as Response,
+        'create_site',
+        undefined,
+        undefined,
+        jest.fn() as LocalToolExecutor,
+      );
+
+      expect(llmBudget.assertBudget).toHaveBeenCalledTimes(1);
+      // The paid composer provider must never be reached when over budget.
+      expect(runComposerCapabilityBranch).not.toHaveBeenCalled();
+      // A terminal error event is surfaced (same behavior as the normal path).
+      const streamWriter = (KloelStreamWriter as jest.Mock).mock.results.at(-1)?.value as {
+        write: jest.Mock<void, [unknown]>;
+        close: jest.Mock;
+      };
+      expect(
+        streamWriter.write.mock.calls.some(([event]) => {
+          if (event === null || typeof event !== 'object' || Array.isArray(event)) {
+            return false;
+          }
+          const maybeEvent = event as { type?: unknown; done?: unknown };
+          return maybeEvent.type === 'error' && maybeEvent.done === true;
+        }),
+      ).toBe(true);
+    });
+
+    it('accounts estimatedTokens after a successful composer capability call', async () => {
+      const { runComposerCapabilityBranch } = jest.requireActual<
+        typeof import('./kloel-thinker-think.helpers')
+      >('./kloel-thinker-think.helpers');
+      const events: unknown[] = [];
+      const localComposerService = {
+        executeComposerCapability: jest.fn().mockResolvedValue({
+          content: 'Imagem gerada com sucesso.',
+          metadata: { capability: 'create_image' },
+          estimatedTokens: 512,
+        }),
+      };
+      const localThreadService = {
+        persistAssistantThreadMessage: jest.fn().mockResolvedValue({ id: 'msg-assistant-1' }),
+        buildThreadMessageMetadata: jest.fn((_metadata: unknown, meta: unknown): unknown => meta),
+        buildProcessingTraceSummary: jest.fn().mockReturnValue(undefined),
+        maybeRefreshThreadSummary: jest.fn().mockResolvedValue(undefined),
+        maybeGenerateThreadTitle: jest.fn().mockResolvedValue('Nova conversa'),
+      };
+      const localConversationStore = { saveMessage: jest.fn().mockResolvedValue(undefined) };
+      const localStreamWriter = { close: jest.fn() };
+      const localPlanLimits = {
+        ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
+        trackAiUsage: jest.fn().mockResolvedValue(undefined),
+      };
+      const localLlmBudget = {
+        assertBudget: jest.fn().mockResolvedValue(undefined),
+        recordSpend: jest.fn().mockResolvedValue(undefined),
+      };
+
+      await runComposerCapabilityBranch(
+        'create_image',
+        'Contexto operacional real',
+        undefined,
+        localComposerService as unknown as KloelComposerService,
+        {
+          workspaceId: wsId,
+          message: 'gere uma imagem do produto',
+          mode: 'chat',
+          metadata: { capability: 'create_image' },
+          clientRequestId: 'req-1',
+          thread: { id: 'thread-1', title: 'Nova conversa' },
+          persistedUserMessage: { id: 'msg-user-1' },
+          processingTraceEntries: [],
+          safeWrite: (event) => events.push(event),
+          streamWriter: localStreamWriter,
+          replyEngine: { openai: null },
+          threadService: localThreadService,
+          conversationStore: localConversationStore,
+          planLimits: localPlanLimits,
+          llmBudget: localLlmBudget,
+        } as unknown as Parameters<typeof runComposerCapabilityBranch>[4],
+      );
+
+      // estimatedTokens flow into the SAME ledgers the normal chat path uses.
+      expect(localPlanLimits.trackAiUsage).toHaveBeenCalledWith(wsId, 512);
+      expect(localLlmBudget.recordSpend).toHaveBeenCalledWith(wsId, 512);
     });
   });
 });

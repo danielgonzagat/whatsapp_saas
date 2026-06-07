@@ -511,6 +511,44 @@ describe('InstagramMarketingService', () => {
         expect(result.messageId).toBe('mid-after-fallback');
       });
 
+      it('treats a failed canonical result (success:false) as a failure and falls back to the raw path', async () => {
+        process.env[FLAG] = 'true';
+        connectedRow();
+        // The canonical adapter catches Meta send exceptions this way.
+        canonicalDispatch.mockResolvedValue({
+          success: false,
+          provider: 'meta-instagram',
+          error: 'meta_send_exception',
+        });
+        sendMessage.mockResolvedValue({ message_id: 'mid-after-fallback' });
+
+        const result = await flaggedService.sendDirectMessage('ws-1', 'igsid-1', 'hi');
+
+        expect(canonicalDispatch).toHaveBeenCalledTimes(1);
+        // Must not report the failed canonical send as a success with no id.
+        expect(sendMessage).toHaveBeenCalledWith('ig-123', 'igsid-1', 'hi', 'page-token');
+        expect(result.messageId).toBe('mid-after-fallback');
+      });
+
+      it('surfaces the raw Meta failure when the canonical result is success:false and the raw retry also fails', async () => {
+        process.env[FLAG] = 'true';
+        connectedRow();
+        canonicalDispatch.mockResolvedValue({
+          success: false,
+          provider: 'meta-instagram',
+          error: 'meta_send_exception',
+        });
+        // Raw path rethrows real Meta failures (graphApiPost re-throws) — the
+        // caller must see the error, not a success-looking { messageId: null }.
+        sendMessage.mockRejectedValue(new Error('meta_send_exception'));
+
+        await expect(
+          flaggedService.sendDirectMessage('ws-1', 'igsid-1', 'hi'),
+        ).rejects.toThrow('meta_send_exception');
+        expect(canonicalDispatch).toHaveBeenCalledTimes(1);
+        expect(sendMessage).toHaveBeenCalledTimes(1);
+      });
+
       it('still enforces the existing validation/connection guards before delegating', async () => {
         process.env[FLAG] = 'true';
         metaConnectionFindFirst.mockResolvedValue(null);

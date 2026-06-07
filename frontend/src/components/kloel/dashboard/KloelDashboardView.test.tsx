@@ -273,8 +273,8 @@ describe('KloelDashboard route reset', () => {
 });
 
 describe('KloelDashboardView approvals', () => {
-  it('keeps pending approval notifications out of the chat composition surface', () => {
-    renderDashboardView({
+  it('renders pending approvals before the composer and dispatches owner decisions', () => {
+    const { props } = renderDashboardView({
       pendingApprovals: [
         {
           id: 'approval-1',
@@ -292,9 +292,13 @@ describe('KloelDashboardView approvals', () => {
       ],
     });
 
-    expect(screen.queryByText('Aprovacoes pendentes')).toBeNull();
-    expect(screen.queryByText('Aprovar criacao de campanha pela CIA')).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Aprovar' })).toBeNull();
+    expect(screen.getByText('Aprovacoes pendentes')).toBeTruthy();
+    expect(screen.getByText('Aprovar criacao de campanha pela CIA')).toBeTruthy();
+    expect(screen.getByText('1 em aberto')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Aprovar' }));
+
+    expect(props.onApprovalDecision).toHaveBeenCalledWith('approval-1', 'approve');
   });
 });
 

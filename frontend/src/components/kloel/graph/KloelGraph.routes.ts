@@ -98,9 +98,6 @@ export function resolveKloelGraphNodeForPath(
   if (exact) {
     return exact;
   }
-  if (path === '/carteira') {
-    return getKloelGraphNodeById('consultar-wallet-saldo');
-  }
   if (path === '/analytics') {
     return (
       getKloelGraphNodeById(`consultar-report-${searchParams.get('tab') || 'vendas'}`) ??

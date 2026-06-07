@@ -161,7 +161,7 @@ const recentApiReadResponses = new Map<
   { response: ApiResponse<unknown>; expiresAt: number }
 >();
 
-async function refreshAccessToken(): Promise<boolean> {
+export async function refreshAccessToken(): Promise<boolean> {
   // If a refresh is already in-flight, wait for its result instead of starting a new one
   if (refreshPromise) {
     return refreshPromise;
@@ -256,7 +256,11 @@ async function doRefreshAccessToken(): Promise<boolean> {
 
     return false;
   } catch {
-    tokenStorage.clear();
+    // Transient failure (network down, timeout, /auth/refresh unreachable).
+    // Do NOT clear the session — the still-valid access token can finish the
+    // current request, and a later attempt can refresh once the network
+    // recovers. Only explicit auth rejections (handled in the !res.ok branch
+    // above) clear credentials.
     return false;
   }
 }

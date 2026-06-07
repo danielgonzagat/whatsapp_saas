@@ -133,6 +133,35 @@ export function mergeGraphProducts(
   return Array.from(merged.values());
 }
 
+// Resolve the URL a graph node click navigates to. A base node (same pathname, no
+// query) keeps context params but drops `graph`/`graphAction` and the view-selector
+// keys sibling nodes declare (e.g. `section`/`tab`) so it never opens a stale sub-view.
+export function resolveKloelGraphNodeRoute(
+  node: KloelGraphNode,
+  pathname: string,
+  currentQuery: string,
+  nodes: readonly KloelGraphNode[],
+): string {
+  const [nodePath, nodeQueryString = ''] = node.route.split('?');
+  if (nodePath !== pathname || nodeQueryString) {
+    return node.route;
+  }
+  const nextParams = new URLSearchParams(currentQuery);
+  nextParams.delete('graph');
+  nextParams.delete('graphAction');
+  for (const sibling of nodes) {
+    const [siblingPath, siblingQuery = ''] = sibling.route.split('?');
+    if (siblingPath !== nodePath || !siblingQuery) {
+      continue;
+    }
+    for (const key of new URLSearchParams(siblingQuery).keys()) {
+      nextParams.delete(key);
+    }
+  }
+  const query = nextParams.toString();
+  return query ? `${nodePath}?${query}` : nodePath;
+}
+
 export function buildKloelGraphEdges(nodes: readonly KloelGraphNode[]): GraphEdge[] {
   const ids = new Set(nodes.map((node) => node.id));
   return nodes
@@ -346,7 +375,7 @@ export function buildKloelGraphMemberAreaNodes(
         label,
         area: 'educar' as const,
         type: 'entity' as const,
-        route: `/produtos/area-membros?areaId=${encodeURIComponent(areaId)}`,
+        route: `/produtos/area-membros/preview/${encodeURIComponent(areaId)}`,
         parentId: 'educar-area-membros',
         subtitle: subtitle || 'Area de membros',
         overlayLabel: 'Area de membros',

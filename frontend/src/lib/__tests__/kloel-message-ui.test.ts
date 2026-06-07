@@ -5,6 +5,7 @@ import {
   getAssistantProcessingTrace,
   getAssistantReasoning,
   getAssistantResponseVersions,
+  sanitizeAssistantMarkdown,
   sanitizeAssistantVisibleContent,
   summarizeAssistantProcessingTrace,
   withDeliverableFiles,
@@ -300,6 +301,55 @@ describe('kloel-message-ui', () => {
     expect(content).not.toContain('é o camada interna na infraestrutura');
     expect(content).not.toContain('funções, classes, tipos');
     expect(content).not.toContain('arquitetura cognitiva cognitiva');
+  });
+
+  it('preserves fenced and inline code verbatim while still rewriting surrounding prose', () => {
+    const fence = '```';
+    const codeBody = [
+      'export const path = "frontend/src/components/Foo.tsx";',
+      '// language: TypeScript — runs at runtime, not in the backend',
+      'const score = 1;',
+    ].join('\n');
+    const input = [
+      'Este código está em backend/src/x.ts e usa runtime do frontend.',
+      '',
+      `${fence}tsx`,
+      codeBody,
+      fence,
+      '',
+      'O caminho inline `frontend/src/lib/kloel-message-ui.ts` e a linguagem `TypeScript` ficam intactos.',
+    ].join('\n');
+
+    const output = sanitizeAssistantMarkdown(input);
+
+    // Fenced code block survives byte-for-byte.
+    expect(output).toContain(`${fence}tsx\n${codeBody}\n${fence}`);
+    expect(output).toContain('frontend/src/components/Foo.tsx');
+    expect(output).toContain('// language: TypeScript — runs at runtime, not in the backend');
+    expect(output).toContain('const score = 1;');
+
+    // Inline code survives verbatim.
+    expect(output).toContain('`frontend/src/lib/kloel-message-ui.ts`');
+    expect(output).toContain('`TypeScript`');
+
+    // Prose outside code is still rewritten (paths/langs/tokens hidden).
+    const fenceStart = output.indexOf(`${fence}tsx`);
+    const leadingProse = output.slice(0, fenceStart);
+    expect(leadingProse).not.toContain('backend/src/x.ts');
+    expect(leadingProse).not.toContain('runtime');
+    expect(leadingProse).not.toContain('frontend');
+    // Prose was actually rewritten (not left as-is): the original prose tokens
+    // are gone and replaced with product-facing wording.
+    expect(leadingProse).not.toBe(
+      'Este código está em backend/src/x.ts e usa runtime do frontend.',
+    );
+    expect(leadingProse).toContain('processo privado');
+  });
+
+  it('leaves a code-free string identical to the plain prose sanitizer', () => {
+    const prose = 'Ele está no arquivo backend/src/kloel/x.ts em TypeScript.';
+
+    expect(sanitizeAssistantMarkdown(prose)).toBe(sanitizeAssistantVisibleContent(prose));
   });
 
   it('builds a durable processing trace and summary from stream events', () => {

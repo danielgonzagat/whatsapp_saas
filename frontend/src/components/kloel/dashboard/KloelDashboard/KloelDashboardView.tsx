@@ -27,6 +27,7 @@ import {
   DashboardGlobalStyles,
   DropOverlay,
 } from '../KloelDashboard.subcomponents';
+import { PendingApprovalsStrip } from './KloelDashboardView.ApprovalStrip';
 
 export type KloelDashboardQuickAction = (typeof KLOEL_CHAT_QUICK_ACTIONS)[number];
 
@@ -97,6 +98,9 @@ export function KloelDashboardView({
   selectableProducts,
   selectableProductsLoading,
   composerNotice,
+  pendingApprovals,
+  pendingApprovalsLoading,
+  approvalActionInFlight,
   fileInputRef,
   inputRef,
   messagesEndRef,
@@ -117,6 +121,7 @@ export function KloelDashboardView({
   onSelectProduct,
   onRemoveLinkedProduct,
   onCapabilityChange,
+  onApprovalDecision,
 }: KloelDashboardViewProps) {
   return (
     <section
@@ -218,6 +223,13 @@ export function KloelDashboardView({
             </div>
           </>
         ) : null}
+
+        <PendingApprovalsStrip
+          approvals={pendingApprovals}
+          loading={pendingApprovalsLoading}
+          inFlight={approvalActionInFlight}
+          onApprovalDecision={onApprovalDecision}
+        />
 
         <div
           style={{
