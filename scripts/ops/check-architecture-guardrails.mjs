@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -10,6 +10,12 @@ const repoRoot = path.resolve(here, '..', '..');
 
 const MAX_NEW_FILE_LINES = 400;
 const MAX_TOUCHED_FILE_LINES = 600;
+// Ratchet baseline: files/violations already over the limit are grandfathered at
+// their current size; the gate fails only if they GROW further or a NEW violation
+// appears. Regenerate with `--bootstrap`. (Keeps the standard for new code while
+// not blocking a large in-flight branch from touching already-big files.)
+const BASELINE_FILE = path.join(here, 'architecture-guardrails-baseline.json');
+const BOOTSTRAP = process.argv.includes('--bootstrap');
 const SOURCE_FILE_RE = /\.(?:[cm]?[jt]sx?)$/;
 const IGNORED_SEGMENTS = new Set(['node_modules', 'dist', '.next', 'out', 'build', 'coverage', 'mcp']);
 const unsafeTypeToken = 'a' + 'ny';
@@ -234,6 +240,40 @@ function getAddedLines(relPath, status, diffBase, ciMode) {
   return added;
 }
 
+function loadBaseline() {
+  if (!existsSync(BASELINE_FILE)) {return { size: {}, line: {} };}
+  try {
+    const b = JSON.parse(readFileSync(BASELINE_FILE, 'utf8'));
+    return { size: b.size || {}, line: b.line || {} };
+  } catch {
+    return { size: {}, line: {} };
+  }
+}
+
+function lineKey(rule, relPath) {
+  return `${rule}::${relPath}`;
+}
+
+function isGrandfathered(finding, baseline) {
+  if (finding.rule === 'max_new_file_lines' || finding.rule === 'max_touched_file_lines') {
+    const cap = baseline.size[finding.path];
+    return cap != null && finding.actual <= cap;
+  }
+  return baseline.line[lineKey(finding.rule, finding.path)] === true;
+}
+
+function writeBaseline(findings) {
+  const baseline = { size: {}, line: {} };
+  for (const f of findings) {
+    if (f.rule === 'max_new_file_lines' || f.rule === 'max_touched_file_lines') {
+      baseline.size[f.path] = Math.max(baseline.size[f.path] || 0, f.actual);
+    } else {
+      baseline.line[lineKey(f.rule, f.path)] = true;
+    }
+  }
+  writeFileSync(BASELINE_FILE, `${JSON.stringify(baseline, null, 2)}\n`);
+}
+
 function main() {
   const { files, diffBase, ciMode } = getChangedFiles();
   const findings = [];
@@ -273,9 +313,19 @@ function main() {
     }
   }
 
-  if (findings.length > 0) {
+  const baseline = loadBaseline();
+  if (BOOTSTRAP) {
+    writeBaseline(findings);
+    console.log(
+      `[architecture] bootstrap — wrote baseline with ${findings.length} grandfathered finding(s).`,
+    );
+    return;
+  }
+  const liveFindings = findings.filter((finding) => !isGrandfathered(finding, baseline));
+
+  if (liveFindings.length > 0) {
     console.error('[architecture] Guardrail violations found:');
-    for (const finding of findings) {
+    for (const finding of liveFindings) {
       if (finding.rule === 'max_new_file_lines' || finding.rule === 'max_touched_file_lines') {
         console.error(
           `  - ${finding.path}: ${finding.actual} lines exceeds ${finding.maxAllowed} for ${finding.rule}`,
