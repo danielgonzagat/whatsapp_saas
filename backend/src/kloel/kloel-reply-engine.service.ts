@@ -71,6 +71,10 @@ import {
   recordReplyStyleOutcome,
   isAdequateReplyForBandit,
 } from './kloel-reply-engine.bandit.helpers';
+import {
+  selectChatStrategyArm,
+  recordChatStrategyOutcome,
+} from './kloel-reply-engine.chat-strategy.helpers';
 import { GraphFactMemoryService } from './mind/memory/long-term-memory.service';
 import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 
@@ -439,6 +443,16 @@ export class KloelReplyEngineService {
           arm: replyStyle.arm,
         });
       }
+      // Brain->Mind: CLOSE the chat_strategy bandit loop. The mind signal
+      // builder DECIDES a chat_strategy arm via read-only selectArm but it never
+      // LEARNS. Re-derive the same selected arm here (deterministic) so the reply
+      // outcome below can reward it. Flag-gated (KLOEL_CHAT_STRATEGY_LEARN,
+      // default OFF) + fail-open: null when disabled -> no record, byte-identical
+      // bandit stats.
+      const chatStrategy = await selectChatStrategyArm(this.mindBanditService, {
+        workspaceId: params.workspaceId,
+        logger: this.logger,
+      });
       let assistantMessage: string;
       try {
         assistantMessage = await buildAssistantReplyImpl(params, {
@@ -482,6 +496,14 @@ export class KloelReplyEngineService {
             logger: this.logger,
           });
         }
+        if (chatStrategy) {
+          await recordChatStrategyOutcome(this.mindBanditService, {
+            workspaceId: params.workspaceId,
+            arm: chatStrategy.arm,
+            won: isAdequateReplyForBandit(assistantMessage),
+            logger: this.logger,
+          });
+        }
       } catch (error: unknown) {
         closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
           outcomeKey,
@@ -492,6 +514,14 @@ export class KloelReplyEngineService {
           await recordReplyStyleOutcome(this.mindBanditService, {
             workspaceId: params.workspaceId,
             arm: replyStyle.arm,
+            won: false,
+            logger: this.logger,
+          });
+        }
+        if (chatStrategy) {
+          await recordChatStrategyOutcome(this.mindBanditService, {
+            workspaceId: params.workspaceId,
+            arm: chatStrategy.arm,
             won: false,
             logger: this.logger,
           });
