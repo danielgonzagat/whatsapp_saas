@@ -128,6 +128,7 @@ export function buildPaymentWebhookController() {
   const webhooksService = {
     logWebhookEvent: jest.fn().mockResolvedValue({ id: 'we_1' }),
     markWebhookProcessed: jest.fn().mockResolvedValue(undefined),
+    markWebhookFailed: jest.fn().mockResolvedValue(undefined),
   };
   const connectReversalService = {
     processRefund: jest.fn(),

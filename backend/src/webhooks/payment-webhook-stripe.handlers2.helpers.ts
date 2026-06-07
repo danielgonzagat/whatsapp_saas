@@ -1,6 +1,8 @@
 import { validatePaymentTransition } from '../common/payment-state-machine';
 import type { StripeHandlerDeps } from './payment-webhook-stripe.handlers';
 import type { StripeCheckoutSessionLike, StripePaymentIntentLike } from './payment-webhook-types';
+import { FINANCIAL_TRANSACTION_OPTIONS } from './payment-webhook-types';
+import { isPaymentLedgerTxEnabled } from './payment-ledger-tx.flag';
 
 type KloelSaleStripeMatcher = { externalPaymentId: string } | { id: string };
 
@@ -56,6 +58,15 @@ export async function updatePaymentAndSaleForSessionHelper(
   workspaceId: string,
 ): Promise<void> {
   const stripePaymentExternalId = session.payment_intent || session.id;
+  if (isPaymentLedgerTxEnabled()) {
+    await updatePaymentAndSaleForSessionAtomicHelper(
+      deps,
+      session,
+      workspaceId,
+      stripePaymentExternalId,
+    );
+    return;
+  }
   try {
     if (deps.prisma.payment) {
       const existingPayment = await deps.prisma.payment.findFirst({
@@ -132,6 +143,96 @@ export async function updatePaymentAndSaleForSessionHelper(
     });
     deps.logger.error(
       `[STRIPE] Failed to update KloelSale for ${stripePaymentExternalId}: ${msg?.message}`,
+      {
+        workspaceId,
+        stripePaymentExternalId,
+        stack: msg?.stack,
+      },
+    );
+    throw msg;
+  }
+}
+
+/**
+ * Flag-ON (`KLOEL_PAYMENT_LEDGER_TX==='true'`) path for
+ * `updatePaymentAndSaleForSessionHelper`: the `Payment` RECEIVED flip and the
+ * `KloelSale` paid flip are folded into ONE `$transaction` with
+ * `FINANCIAL_TRANSACTION_OPTIONS`, so a partial failure rolls BOTH back. The
+ * `validatePaymentTransition` guard + the `buildKloelSaleStripeWhere` join are
+ * preserved verbatim from the legacy two-write path. Any transaction failure is
+ * re-thrown (via `financialAlert` + `throw`) so the outer
+ * `handleCheckoutSessionCompleted` catch surfaces it and Stripe retries —
+ * NEVER the silent swallow of the legacy path. Idempotency is unchanged: the
+ * Redis NX guard + `WebhookEvent` unique row still gate replays, and
+ * `updateMany` on already-paid rows is itself idempotent.
+ */
+export async function updatePaymentAndSaleForSessionAtomicHelper(
+  deps: StripeHandlerDeps,
+  session: StripeCheckoutSessionLike,
+  workspaceId: string,
+  stripePaymentExternalId: string | null | undefined,
+): Promise<void> {
+  try {
+    let canTransitionPayment = false;
+    if (deps.prisma.payment) {
+      const existingPayment = await deps.prisma.payment.findFirst({
+        where: {
+          workspaceId,
+          ...(stripePaymentExternalId ? { externalId: stripePaymentExternalId } : {}),
+        },
+      });
+      canTransitionPayment =
+        !existingPayment ||
+        validatePaymentTransition(existingPayment.status || 'PENDING', 'RECEIVED', {
+          paymentId: existingPayment?.id,
+          provider: 'stripe',
+          ...(stripePaymentExternalId ? { externalId: stripePaymentExternalId } : {}),
+        });
+      if (!canTransitionPayment) {
+        deps.logger.warn(
+          `Stripe webhook rejected by state machine: ${existingPayment?.status} -> RECEIVED for ${stripePaymentExternalId}`,
+        );
+      }
+    }
+
+    const saleId = readSaleIdFromStripeMetadata(session.metadata);
+    const saleWhere = deps.prisma.kloelSale
+      ? buildKloelSaleStripeWhere(workspaceId, stripePaymentExternalId, saleId)
+      : null;
+
+    await deps.prisma.$transaction(async (tx) => {
+      if (deps.prisma.payment && canTransitionPayment) {
+        await tx.payment.updateMany({
+          where: {
+            workspaceId,
+            ...(stripePaymentExternalId ? { externalId: stripePaymentExternalId } : {}),
+          },
+          data: { status: 'RECEIVED' },
+        });
+      }
+      if (deps.prisma.kloelSale && saleWhere) {
+        await tx.kloelSale.updateMany({
+          where: { workspaceId, ...saleWhere },
+          data: {
+            status: 'paid',
+            paidAt: new Date(),
+            ...(stripePaymentExternalId ? { externalPaymentId: stripePaymentExternalId } : {}),
+          },
+        });
+      }
+    }, FINANCIAL_TRANSACTION_OPTIONS);
+  } catch (txErr: unknown) {
+    const msg =
+      txErr instanceof Error
+        ? txErr
+        : new Error(typeof txErr === 'string' ? txErr : 'unknown error');
+    deps.financialAlert.webhookProcessingFailed(msg, {
+      provider: 'stripe',
+      externalId: stripePaymentExternalId ?? undefined,
+      eventType: 'checkout.session.completed',
+    });
+    deps.logger.error(
+      `[STRIPE] Failed atomic payment+sale update for ${stripePaymentExternalId}: ${msg?.message}`,
       {
         workspaceId,
         stripePaymentExternalId,

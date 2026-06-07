@@ -22,6 +22,7 @@ import {
   updatePaymentAndSaleForSessionHelper,
   sendCheckoutConfirmationHelper,
 } from './payment-webhook-stripe.handlers2.helpers';
+import { isPaymentLedgerTxEnabled } from './payment-ledger-tx.flag';
 
 export type { StripeHandlerDeps };
 
@@ -52,31 +53,31 @@ export async function handlePaymentIntentEvent(
     checkoutPaymentStatus === 'APPROVED' && intent.metadata?.type === 'sale';
 
   if (intent.id && !isApprovedSaleIntent) {
-    await deps.prisma.checkoutPayment
-      .updateMany({
-        where: { externalId: intent.id },
-        data: { status: checkoutPaymentStatus },
-      })
-      .catch(() => undefined);
+    const checkoutPaymentUpdate = deps.prisma.checkoutPayment.updateMany({
+      where: { externalId: intent.id },
+      data: { status: checkoutPaymentStatus },
+    });
+    await (isPaymentLedgerTxEnabled()
+      ? checkoutPaymentUpdate
+      : checkoutPaymentUpdate.catch(() => undefined));
   }
 
   if (workspaceId && intent.id && !isApprovedSaleIntent) {
     if (checkoutPaymentStatus === 'APPROVED') {
-      await deps.prisma
-        .$transaction(async (tx) => {
-          const saleWhere = buildKloelSaleStripeWhere(workspaceId, intent.id, orderId);
-          if (saleWhere) {
-            await tx.kloelSale.updateMany({
-              where: { workspaceId, ...saleWhere },
-              data: {
-                status: 'paid',
-                paidAt: new Date(),
-                ...(intent.id ? { externalPaymentId: intent.id } : {}),
-              },
-            });
-          }
-        }, FINANCIAL_TRANSACTION_OPTIONS)
-        .catch(() => undefined);
+      const saleTx = deps.prisma.$transaction(async (tx) => {
+        const saleWhere = buildKloelSaleStripeWhere(workspaceId, intent.id, orderId);
+        if (saleWhere) {
+          await tx.kloelSale.updateMany({
+            where: { workspaceId, ...saleWhere },
+            data: {
+              status: 'paid',
+              paidAt: new Date(),
+              ...(intent.id ? { externalPaymentId: intent.id } : {}),
+            },
+          });
+        }
+      }, FINANCIAL_TRANSACTION_OPTIONS);
+      await (isPaymentLedgerTxEnabled() ? saleTx : saleTx.catch(() => undefined));
     }
   }
 
@@ -94,27 +95,26 @@ export async function handlePaymentIntentEvent(
       if (intent.id) {
         await deps.ledger.persistConnectPostSaleSnapshot(intent.id, postSaleResult.connectPostSale);
         await deps.ledger.appendMarketplaceTreasurySaleCredit(intent.id);
-        await deps.prisma
-          .$transaction(async (tx) => {
-            await tx.checkoutPayment.updateMany({
-              where: { externalId: intent.id ?? null },
-              data: { status: 'APPROVED' },
-            });
-            if (workspaceId) {
-              const saleWhere = buildKloelSaleStripeWhere(workspaceId, intent.id, orderId);
-              if (saleWhere) {
-                await tx.kloelSale.updateMany({
-                  where: { workspaceId, ...saleWhere },
-                  data: {
-                    status: 'paid',
-                    paidAt: new Date(),
-                    ...(intent.id ? { externalPaymentId: intent.id } : {}),
-                  },
-                });
-              }
+        const approvedSaleTx = deps.prisma.$transaction(async (tx) => {
+          await tx.checkoutPayment.updateMany({
+            where: { externalId: intent.id ?? null },
+            data: { status: 'APPROVED' },
+          });
+          if (workspaceId) {
+            const saleWhere = buildKloelSaleStripeWhere(workspaceId, intent.id, orderId);
+            if (saleWhere) {
+              await tx.kloelSale.updateMany({
+                where: { workspaceId, ...saleWhere },
+                data: {
+                  status: 'paid',
+                  paidAt: new Date(),
+                  ...(intent.id ? { externalPaymentId: intent.id } : {}),
+                },
+              });
             }
-          }, FINANCIAL_TRANSACTION_OPTIONS)
-          .catch(() => undefined);
+          }
+        }, FINANCIAL_TRANSACTION_OPTIONS);
+        await (isPaymentLedgerTxEnabled() ? approvedSaleTx : approvedSaleTx.catch(() => undefined));
       }
     } catch (error: unknown) {
       deps.financialAlert.webhookProcessingFailed(error as Error, {
