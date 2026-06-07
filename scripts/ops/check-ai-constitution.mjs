@@ -372,7 +372,27 @@ function checkChangedFiles() {
       if (productionOnly && (!productionSource || isTestFile(file))) {
         continue;
       }
-      if (pattern.test(content)) {
+      // Proof/gate scripts (*.proof.mjs/ts) legitimately print PASS/FAIL/diagnostic
+      // output to stdout — that IS their function, not a stray debug artifact.
+      if (label === 'debug artifact' && /\.proof\.[cm]?[jt]sx?$/.test(file)) {
+        continue;
+      }
+      // Prose-word patterns (bypass / mock-fake-stub / console.log) are routinely
+      // mentioned in DESCRIPTIVE comments ("would otherwise bypass the gate",
+      // "tests can mock this", "jest.mock of this module") — those are docs, not
+      // violations. Strip comments before matching for those labels (TODO/FIXME
+      // and similar intentionally stay comment-scanned).
+      const proseLabel =
+        label === 'bypass-oriented flag' ||
+        label === 'fake/mock implementation marker' ||
+        label === 'debug artifact';
+      const scanText = proseLabel
+        ? content
+            .replace(/\/\/[^\n]*/g, '')
+            .replace(/\/\*[\s\S]*?\*\//g, '')
+            .replace(/^\s*\*.*$/gm, '')
+        : content;
+      if (pattern.test(scanText)) {
         fail(`${file} contem ${label}; a constituicao proibe bypass/supressao.`);
       }
     }

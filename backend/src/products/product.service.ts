@@ -61,8 +61,15 @@ export class ProductService {
       throw new BadRequestException('price is required and must be a non-negative number');
     }
 
-    const status = dto.status || 'DRAFT';
-    const active = dto.active ?? status === 'APPROVED';
+    // Approval is a privileged transition that must flow through `publish()` /
+    // `reviewAndPublish()` — never through a raw create. A client (or a cast dto)
+    // that supplies `status: 'APPROVED'` / `active: true` would otherwise mint an
+    // already-live product and skip past the admin review gate. Clamp any approved/
+    // active-on-create request down to the pending-review state; everything else
+    // keeps its requested draft/pending status but is never born active.
+    const requestedStatus = dto.status || 'DRAFT';
+    const status = requestedStatus === 'APPROVED' ? 'PENDING' : requestedStatus;
+    const active = false;
 
     // Defensive: some callers/casts pass rich create-wizard or checkout fields
     // that are not Product columns (a raw dto here previously 500'd the Prisma
@@ -94,6 +101,21 @@ export class ProductService {
       'affiliateCommission',
       'affiliateCommissionPercent',
       'guaranteeDays',
+      // Physical / shipping wizard fields — captured in the create-product
+      // wizard but not Product columns. Forwarding them makes prisma.create
+      // reject the whole physical-product save path.
+      'packageType',
+      'dimensions',
+      'width',
+      'height',
+      'depth',
+      'weight',
+      'shippingResponsible',
+      'dispatchTime',
+      'carriers',
+      // Marketing-pixel wizard fields — likewise not Product columns.
+      'facebookPixelId',
+      'googleTagManagerId',
     ]) {
       delete cleanDto[stripKey];
     }
