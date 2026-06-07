@@ -56,7 +56,7 @@ Each capability lists every implementation found across the codebase. A capabili
 
 ## CAPABILITY: `recover_cart` (1 implementations)
 
-- `CartRecoveryService` (class) — `backend/src/kloel/cart-recovery.service.ts:103`
+- `CartRecoveryService` (class) — `backend/src/kloel/cart-recovery.service.ts:105`
 
 ## CAPABILITY: `score_intent` (0 implementations ⚪ not implemented)
 
