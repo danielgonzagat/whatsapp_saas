@@ -172,7 +172,6 @@ import { ChannelSetupService } from './channel-setup.service';
 import { CommercialDecisionOrchestratorService } from './commercial-decision-orchestrator.service';
 import { RuntimeConversationTracerService } from './runtime-conversation-tracer.service';
 import { DailyLimitService } from './daily-limit.service';
-import { KloelGlobalPriorService } from './kloel-global-prior.service';
 import { MindBeliefService } from './mind/inference/mind-belief.service';
 import { CommerceOutcomeLearnerService } from './mind/coordination/commerce-outcome-learner.service';
 import { MindBanditService } from './mind/policy/mind-bandit.service';
@@ -442,7 +441,6 @@ import { CrmModule } from '../crm/crm.module';
     EpisodeService,
     MindSelfModelService,
     MindSelfModificationService,
-    KloelGlobalPriorService,
     MindGlobalPriorService,
     MindEventProcessorService,
     MindGuardContextBuilderService,
@@ -560,7 +558,6 @@ import { CrmModule } from '../crm/crm.module';
     RuntimeConversationTracerService,
     MindBeliefService,
     MindBanditService,
-    KloelGlobalPriorService,
     MindGlobalPriorService,
     MindPolicyService,
     MindService,
