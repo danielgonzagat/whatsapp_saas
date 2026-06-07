@@ -176,3 +176,7 @@ intents/
 .atomic-os-workdir
 .tmp-kloel-graph-nav-trace.json
 .tmp-kloel-graph-nav-clean-trace.json
+
+# FASE-1 formal-proof toolchain (Z3 venv) and scratch — not committed
+scripts/mcp/atomic-edit/.z3venv/
+.z3-scratch/
