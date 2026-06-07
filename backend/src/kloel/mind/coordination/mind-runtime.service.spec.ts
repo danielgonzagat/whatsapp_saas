@@ -1,4 +1,18 @@
+import * as mindRuntimeModule from './mind-runtime.service';
 import { MindRuntime } from './mind-runtime.service';
+
+describe('MindRuntime canonical export (P3-5 alias consolidation)', () => {
+  it('exports MindRuntime as the sole canonical runtime class', () => {
+    expect(mindRuntimeModule.MindRuntime).toBe(MindRuntime);
+    expect(typeof mindRuntimeModule.MindRuntime).toBe('function');
+  });
+
+  it('no longer exports the retired BrainRuntimeService alias', () => {
+    // The Wave M1 backwards-compat alias was removed (zero importers, dead
+    // re-export). Lock it so the alias cannot silently reappear.
+    expect('BrainRuntimeService' in mindRuntimeModule).toBe(false);
+  });
+});
 
 describe('MindRuntime', () => {
   let unifiedAgent: { processMessage: jest.Mock };
