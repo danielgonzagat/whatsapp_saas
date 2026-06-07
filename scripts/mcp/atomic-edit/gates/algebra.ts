@@ -37,6 +37,20 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+/**
+ * FASE-0.1 — the negative-action receipt an EditFact carries, so the verified-edit algebra
+ * (e) operates over edits that include their (a) inverted-default justification, not spans
+ * alone. proofSha256 binds to requireNegativeActionProof's receipt; removedByteCount is the
+ * net bytes deleted; readLoci (filled by FASE-0.2) are the loci the RED gate read to prove the
+ * removed bytes incorrect — a coupling surface BEYOND the static import closure.
+ */
+export interface NegativeProofRef {
+  proofSha256: string;
+  removedByteCount: number;
+  /** loci the disproof READ to justify the removal (FASE-0.2); empty/absent ⇒ not yet bound. */
+  readLoci?: string[];
+}
+
 export interface EditFact {
   /** repo-relative file the patch edited */
   file: string;
@@ -46,6 +60,8 @@ export interface EditFact {
   closure: Set<string>;
   /** true if the transitive closure hit the node cap (closure is a lower bound → commute is an upper bound for this fact) */
   closureCapped: boolean;
+  /** FASE-0.1: the SHA-bound proof-of-incorrectness for the bytes this patch REMOVED (the (a) inverted-default receipt), or null when the patch removed no bytes (purely additive). Binds (a) to (e) — the algebra now operates over edits that carry their negative justification, not spans alone. */
+  negativeProof?: NegativeProofRef | null;
 }
 
 export interface CommuteVerdict {
@@ -55,6 +71,8 @@ export interface CommuteVerdict {
   sharedLocus?: string;
   /** FASE-0.3 honest third verdict: the resolution closure was CAPPED (a lower bound), so independence cannot be soundly claimed — it is REFUSED, not asserted. Consumers treat unjudged as non-commuting (commute:false), the conservative direction the soundness theorem requires. */
   unjudged?: boolean;
+  /** FASE-0.1: the SHA-bound disproofs carried through a commuting (independent) merge — the witness that (a)'s negative obligations survive (e). Absent when neither edit removed bytes. */
+  preservedDisproofs?: string[];
 }
 
 // ── CANONICAL SHARED CONTRACT (additive — the algebra of verified edits) ─────
@@ -411,7 +429,7 @@ export function perSymbolClosureOf(
  */
 export function buildEditFact(
   repoRoot: string,
-  trace: { file?: string; modifiedZones?: Array<{ byteStart?: number; byteEnd?: number }> },
+  trace: { file?: string; modifiedZones?: Array<{ byteStart?: number; byteEnd?: number }>; negativeActionProof?: { proofSha256?: string; removedByteCount?: number; readLoci?: string[] } },
   cache: Map<string, Set<string>> = new Map(),
 ): EditFact {
   const file = String(trace.file ?? '').replaceAll('\\', '/');
@@ -419,7 +437,20 @@ export function buildEditFact(
     .filter((z) => typeof z.byteStart === 'number' && typeof z.byteEnd === 'number')
     .map((z) => [z.byteStart as number, z.byteEnd as number]);
   const { set, capped } = perSymbolClosureOf(repoRoot, file, spans, cache);
-  return { file, spans, closure: set, closureCapped: capped };
+  // FASE-0.1: carry the (a) inverted-default receipt INTO the (e) algebra. A trace whose
+  // negativeActionProof removed bytes contributes its proofSha256 + readLoci to the EditFact,
+  // so commute() keeps the disproof obligation sound across a merge. No receipt ⇒ additive
+  // edit ⇒ negativeProof: null (nothing to preserve).
+  const np = trace.negativeActionProof;
+  const negativeProof: NegativeProofRef | null =
+    np && typeof np.proofSha256 === 'string' && np.proofSha256.length > 0
+      ? {
+          proofSha256: np.proofSha256,
+          removedByteCount: typeof np.removedByteCount === 'number' ? np.removedByteCount : 0,
+          ...(Array.isArray(np.readLoci) && np.readLoci.length ? { readLoci: np.readLoci } : {}),
+        }
+      : null;
+  return { file, spans, closure: set, closureCapped: capped, negativeProof };
 }
 
 function spansOverlap(a: Array<[number, number]>, b: Array<[number, number]>): boolean {
@@ -459,6 +490,18 @@ export function commute(a: EditFact, b: EditFact): CommuteVerdict {
   if (a.closure.has(b.file)) {
     return { commute: false, reason: `${a.file} reads ${b.file} (resolution-closure coupling)`, sharedLocus: b.file };
   }
+  // FASE-0.1 NEGATIVE-OBLIGATION COUPLING: (a)'s disproof READ certain loci to justify the byte
+  // removal (negativeProof.readLoci). If the OTHER edit touches one of those loci it can invalidate
+  // the disproof even when the import closure is disjoint — a coupling (e) must see so the merge
+  // keeps (a)'s justification sound. Dormant until FASE-0.2 populates readLoci.
+  const aDisproofReads = a.negativeProof?.readLoci ?? [];
+  const bDisproofReads = b.negativeProof?.readLoci ?? [];
+  if (aDisproofReads.includes(b.file)) {
+    return { commute: false, reason: `${a.file} disproof read ${b.file} (negative-obligation coupling)`, sharedLocus: b.file };
+  }
+  if (bDisproofReads.includes(a.file)) {
+    return { commute: false, reason: `${b.file} disproof read ${a.file} (negative-obligation coupling)`, sharedLocus: a.file };
+  }
   // FASE-0.3 SOUNDNESS GUARD: a capped closure is a LOWER bound, so reaching here under a
   // cap does NOT prove independence — the true (uncapped) closure may contain the coupling
   // edge we stopped before. Claiming commute:true would be a false-green. Refuse: UNJUDGED,
@@ -470,7 +513,14 @@ export function commute(a: EditFact, b: EditFact): CommuteVerdict {
       reason: 'closure capped (lower bound) — independence not soundly decidable; refused (UNJUDGED)',
     };
   }
-  return { commute: true, reason: 'disjoint files; neither lies in the other resolution closure' };
+  const preservedDisproofs = [a.negativeProof?.proofSha256, b.negativeProof?.proofSha256].filter(
+    (s): s is string => typeof s === 'string' && s.length > 0,
+  );
+  return {
+    commute: true,
+    reason: 'disjoint files; neither lies in the other resolution closure',
+    ...(preservedDisproofs.length ? { preservedDisproofs } : {}),
+  };
 }
 
 /**

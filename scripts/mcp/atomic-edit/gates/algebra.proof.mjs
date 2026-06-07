@@ -59,6 +59,28 @@ const capFact = (file, spans, closure) => ({ file, spans, closure: new Set(closu
   check('CAP-GUARD uncapped independent still commutes (guard does not over-fire)', vClean.commute === true && vClean.unjudged !== true);
 }
 
+// ── NEG-OBLIGATION (FASE-0.1): EditFact carries the (a) negative-action receipt and commute() ──
+// reads it — disproof read-loci are a coupling surface BEYOND the import closure, and a commuting
+// merge witnesses which disproofs it preserves. Kills the fallacy of conjunction ((a)+(e) = ONE prop).
+const npFact = (file, spans, closure, negativeProof) => ({ file, spans, closure: new Set(closure), closureCapped: false, negativeProof });
+{
+  const built = buildEditFact(process.cwd(), { file: 'z.ts', negativeActionProof: { proofSha256: 'deadbeef'.repeat(8), removedByteCount: 12, readLoci: ['w.ts'] } });
+  check('NEG-OBLIGATION buildEditFact lifts negativeActionProof into EditFact.negativeProof', !!built.negativeProof && built.negativeProof.proofSha256 === 'deadbeef'.repeat(8) && built.negativeProof.removedByteCount === 12);
+  check('NEG-OBLIGATION additive trace (no receipt) ⇒ negativeProof null', buildEditFact(process.cwd(), { file: 'z.ts' }).negativeProof === null);
+  // import-closure-disjoint, but a's disproof READ b.file ⇒ negative-obligation coupling beyond closure.
+  const aNeg = npFact('a.ts', [[0, 5]], ['a.ts'], { proofSha256: 'aa'.repeat(32), removedByteCount: 4, readLoci: ['b.ts'] });
+  const bPlain = npFact('b.ts', [[0, 5]], ['b.ts'], null);
+  const vCoupled = commute(aNeg, bPlain);
+  check('NEG-OBLIGATION disproof read-locus couples beyond import closure (commute:false)', vCoupled.commute === false && vCoupled.sharedLocus === 'b.ts');
+  // two genuinely independent edits, each with a disproof, no read-locus overlap ⇒ commute, and
+  // the verdict WITNESSES both preserved disproof SHAs (the (a)↔(e) integration).
+  const a2 = npFact('a.ts', [[0, 5]], ['a.ts'], { proofSha256: 'aa'.repeat(32), removedByteCount: 4, readLoci: ['a.ts'] });
+  const b2 = npFact('b.ts', [[0, 5]], ['b.ts'], { proofSha256: 'bb'.repeat(32), removedByteCount: 6, readLoci: ['b.ts'] });
+  const vIndep = commute(a2, b2);
+  check('NEG-OBLIGATION independent edits with disproofs commute', vIndep.commute === true);
+  check('NEG-OBLIGATION commuting merge witnesses BOTH preserved disproof SHAs', Array.isArray(vIndep.preservedDisproofs) && vIndep.preservedDisproofs.includes('aa'.repeat(32)) && vIndep.preservedDisproofs.includes('bb'.repeat(32)));
+}
+
 // ── VALUE: closure catches a coupling byte-disjointness misses ────────────────
 {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'atomic-algebra-'));
