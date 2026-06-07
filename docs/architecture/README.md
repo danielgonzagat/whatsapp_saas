@@ -17,7 +17,7 @@
 | 3 | [CAPABILITY_MAP.md](./CAPABILITY_MAP.md) | Per capability (named by verb), the ONE canonical implementation to call + every duplicate that must migrate onto it + the migration state. |
 | 4 | [EVENT_TAXONOMY.md](./EVENT_TAXONOMY.md) | The dotted `<domain>.<entity>.<verb>` event catalog grounded in the two in-source registries (`mind-event-taxonomy.ts`, `event-taxonomy.canonical-aliases.ts`) + the 5 event sinks. |
 | 5 | [SERVICE_CATALOG.md](./SERVICE_CATALOG.md) | Which `@Injectable` service owns each capability (responsibility / must-not-do / backing models / deps) + the services that duplicate a responsibility and must converge. |
-| 6 | [DUPLICATION_REGISTER.md](./DUPLICATION_REGISTER.md) | The exhaustive, severity-tagged register of every structural duplication (**55 entries: 8 P0 · 25 P1 · 17 P2 · 5 P3**), each with file:line refs, canonical choice, and migration sketch. |
+| 6 | [DUPLICATION_REGISTER.md](./DUPLICATION_REGISTER.md) | The exhaustive, severity-tagged register of every structural duplication (**54 entries: 8 P0 · 24 P1 · 17 P2 · 5 P3**), each with file:line refs, canonical choice, and migration sketch. |
 | 7 | [DEPRECATION_MAP.md](./DEPRECATION_MAP.md) | Per canonical surface: KEPT / MIGRATED / DEPRECATED / MID-MIGRATION verdict, the evidence-of-non-use deletion bar, and the 9 in-flight migrations that are NOT yet converged. |
 
 ### Supporting catalogs (grounded, not part of the core 7)
@@ -71,8 +71,8 @@ facts most likely to be re-introduced by a careless edit:
 
 ## Canonicalization status (grounded snapshot)
 
-- **Scope:** 179 Prisma models, ~930K LOC backend + worker TypeScript, **55 catalogued
-  structural duplications** (8 P0 · 25 P1 · 17 P2 · 5 P3).
+- **Scope:** 179 Prisma models, ~930K LOC backend + worker TypeScript, **54 catalogued
+  structural duplications** (8 P0 · 24 P1 · 17 P2 · 5 P3).
 - **Converged + CI-gated (cannot re-grow):** `prisma.kloelMemory` / `prisma.kloelMessage` /
   `prisma.chatMessage` reaches are forbidden outside the Mind alias services by
   [`scripts/ops/check-canonical-mind-access.mjs`](../../scripts/ops/check-canonical-mind-access.mjs);
