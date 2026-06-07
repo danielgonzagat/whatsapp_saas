@@ -7,6 +7,39 @@ import { PrismaService } from '../prisma/prisma.service';
 import { asProviderSettings } from '../marketing/channels/whatsapp/provider-settings.types';
 import type { StripeClient, StripeSubscription } from './stripe-types';
 
+/**
+ * Resolve the REAL workspaceId for a Stripe subscription.
+ *
+ * Canonical mapping (single source of truth — previously copied verbatim across
+ * BillingWebhookService, BillingCheckoutHelperService, and
+ * BillingCheckoutWebhookService):
+ * 1. `subscription.metadata.workspaceId` when explicitly stamped.
+ * 2. Otherwise map the Stripe customer id to the owning workspace via
+ *    `workspace.stripeCustomerId === customer → workspace.id`.
+ *
+ * NEVER returns the raw Stripe customer id (`cus_...`) — that is a Stripe
+ * identifier, not a workspaceId, and leaking it cross-tenant would let one
+ * tenant's billing event mutate another's records.
+ */
+export async function resolveWorkspaceIdHelper(
+  prisma: PrismaService,
+  subscription: StripeSubscription,
+): Promise<string | null> {
+  const metaWs = subscription.metadata?.workspaceId;
+  if (metaWs) {
+    return metaWs;
+  }
+  const customerId = subscription.customer as string;
+  if (!customerId) {
+    return null;
+  }
+  const ws = await prisma.workspace.findFirst({
+    where: { stripeCustomerId: customerId },
+    select: { id: true },
+  });
+  return ws?.id || null;
+}
+
 export interface MarkSubscriptionStatusDeps {
   prisma: PrismaService;
   stripe: StripeClient | undefined;

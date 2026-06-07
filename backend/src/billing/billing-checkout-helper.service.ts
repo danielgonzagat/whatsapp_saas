@@ -6,6 +6,7 @@ import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import type { StripeClient, StripeSubscription } from './stripe-types';
 import type { WhatsappNotifier } from './billing-webhook.types';
+import { resolveWorkspaceIdHelper } from './billing-subscription-status.helper';
 
 /**
  * @cluster whatsapp_saas/backend/billing
@@ -251,18 +252,6 @@ export class BillingCheckoutHelperService {
    * tenant's billing event mutate another's records.
    */
   private async resolveWorkspaceId(subscription: StripeSubscription): Promise<string | null> {
-    const metaWs = subscription.metadata?.workspaceId;
-    if (metaWs) {
-      return metaWs;
-    }
-    const customerId = subscription.customer as string;
-    if (!customerId) {
-      return null;
-    }
-    const ws = await this.prisma.workspace.findFirst({
-      where: { stripeCustomerId: customerId },
-      select: { id: true },
-    });
-    return ws?.id || null;
+    return resolveWorkspaceIdHelper(this.prisma, subscription);
   }
 }

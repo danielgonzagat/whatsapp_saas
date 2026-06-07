@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { BillingCheckoutHelperService } from './billing-checkout-helper.service';
+import { resolveWorkspaceIdHelper } from './billing-subscription-status.helper';
 import type {
   StripeCheckoutSession,
   StripeClient,
@@ -286,19 +287,7 @@ export class BillingCheckoutWebhookService {
   }
 
   private async resolveWorkspaceId(subscription: StripeSubscription): Promise<string | null> {
-    const metaWs = subscription.metadata?.workspaceId;
-    if (metaWs) {
-      return metaWs;
-    }
-    const customerId = subscription.customer as string;
-    if (!customerId) {
-      return null;
-    }
-    const ws = await this.prisma.workspace.findFirst({
-      where: { stripeCustomerId: customerId },
-      select: { id: true },
-    });
-    return ws?.id || null;
+    return resolveWorkspaceIdHelper(this.prisma, subscription);
   }
 
   private readInvoiceSubscriptionId(invoice: unknown): string | null {
