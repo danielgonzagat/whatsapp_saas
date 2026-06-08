@@ -148,6 +148,29 @@ export interface CorpusTriple {
 }
 
 /**
+ * The N-WAY CERTIFICATE (idea #1). A SET of verified edits is globally mergeable in ANY application
+ * order with both byte-confluence AND every gate-obligation (positive AND negative) preserved, IFF
+ * every pair commutes. In the abstract model (read-set fixed per edit, frame + read-determinism),
+ * pairwise commute => for each edit i, the union of every other edit's mod-loci is disjoint from
+ * read_i (a finite conjunction of the pairwise facts proven in confluence_z3.py), so verdict_i
+ * survives every other edit — global obligation-preservation is a COROLLARY of the pairwise theorem,
+ * not a new axiom. Any UNJUDGED pair (capped closure / unknown intra-file idents) => NOT certified.
+ */
+export interface BatchCertificate {
+  /** true iff every pair commutes (no coupled, no unjudged) => global confluence + obligation preservation */
+  certified: boolean;
+  /** pairwise checks performed */
+  pairs: number;
+  /** pairs that did not commute (real coupling) */
+  coupled: number;
+  /** pairs refused UNJUDGED (capped closure / unknown idents) — certified is false if any */
+  unjudged: number;
+  /** greedy concurrent coloring (each batch pairwise-commutes) */
+  batches: number[][];
+  reason: string;
+}
+
+/**
  * Injectable resolution-closure provider, so `commute` can later be parameterised by
  * a per-symbol or universal closure instead of the file-level transitive import
  * closure baked into `closureOf`. Contract: given a repo root and a repo-relative
@@ -596,6 +619,41 @@ export function concurrentBatches(facts: EditFact[]): number[][] {
     (batches[c] ??= []).push(i);
   }
   return batches;
+}
+
+/**
+ * Idea #1 — produce the N-way certificate for a set of edits. `certified:true` is the machine-checked
+ * guarantee the concurrentBatches docstring used to ASSERT with no proof behind it: every pair
+ * commutes, so the whole set merges in any order with byte-confluence and all obligations (positive
+ * and negative) preserved. UNJUDGED on any pair (honest abstention: capped closure or unknown
+ * intra-file identifiers) makes certified:false — never green-by-assumption. The bounded N-way
+ * executable confluence is machine-checked in gates/algebra-nway.proof.mjs; the UNBOUNDED inductive
+ * metatheorem over a state-dependent read-set is future work (needs an external prover + a richer
+ * model) and is deliberately NOT claimed here.
+ */
+export function batchCertificate(facts: EditFact[]): BatchCertificate {
+  let pairs = 0;
+  let coupled = 0;
+  let unjudged = 0;
+  for (let i = 0; i < facts.length; i++) {
+    for (let j = i + 1; j < facts.length; j++) {
+      pairs += 1;
+      const v = commute(facts[i], facts[j]);
+      if (v.unjudged) unjudged += 1;
+      else if (!v.commute) coupled += 1;
+    }
+  }
+  const certified = coupled === 0 && unjudged === 0;
+  return {
+    certified,
+    pairs,
+    coupled,
+    unjudged,
+    batches: concurrentBatches(facts),
+    reason: certified
+      ? 'every pair commutes => globally confluent and all obligations (positive+negative) preserved in any order'
+      : `not certified: ${coupled} coupled pair(s), ${unjudged} unjudged pair(s)`,
+  };
 }
 
 // ── CLI: operate the algebra on the real trace corpus ────────────────────────
