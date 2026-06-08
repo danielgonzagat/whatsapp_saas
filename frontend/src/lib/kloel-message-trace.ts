@@ -5,41 +5,15 @@ import { applyReasoningStreamEventToMetadata } from './kloel-message-reasoning';
 import {
   type AssistantProcessingTraceEntry,
   createMessageUiId,
+  formatAssistantTraceToolLabel,
   getAssistantProcessingTrace,
   normalizeAssistantMessageMetadata,
   sanitizeAssistantTraceLabel,
   summarizeAssistantProcessingTrace,
 } from './kloel-message-metadata';
 
-const WHITESPACE_G_RE = /\s+/g;
-
-const LIVE_TOOL_DISPLAY_LABELS: Record<string, string> = {
-  'code outline': 'inspeção da arquitetura interna',
-  'search codebase': 'busca na arquitetura interna',
-  'code detect issues': 'auditoria da arquitetura interna',
-  'run backend tests': 'validação operacional',
-  'search web': 'pesquisa na web',
-  'refine response': 'mesa de refinamento',
-  'create site': 'criação de site',
-  'create image': 'criação de imagem',
-  'list products': 'catálogo de produtos',
-  'get settings': 'configurações da conta',
-  'get billing status': 'status da assinatura',
-  'request anticipation': 'antecipação de recebíveis',
-  'request withdrawal': 'solicitação de saque',
-  'list sales': 'consulta de vendas',
-  'create product': 'criação de produto',
-  'self.health': 'saúde operacional',
-};
-
 export function formatLiveTraceToolLabel(toolName?: string | null): string {
-  const raw = String(toolName || 'ferramenta').trim();
-  const normalized = raw.replace(/[_-]+/g, ' ').replace(WHITESPACE_G_RE, ' ').toLowerCase();
-  const mapped = LIVE_TOOL_DISPLAY_LABELS[normalized] ?? LIVE_TOOL_DISPLAY_LABELS[raw];
-  if (mapped) {
-    return mapped;
-  }
-  return normalized || 'a ferramenta';
+  return formatAssistantTraceToolLabel(toolName) || 'ação operacional';
 }
 export function appendAssistantTraceFromEvent(
   metadata: unknown,

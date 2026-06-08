@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { kloelT } from '@/lib/i18n/t';
+import { useKycCompletion, useKycStatus } from '@/hooks/useKyc';
 import { affiliateApi } from '@/lib/api/affiliate';
 import type {
   MarketplaceItem,
@@ -50,9 +51,11 @@ export default function AfiliarSe({
   const [selectedMarketItemId, setSelectedMarketItemId] = useState<string | null>(null);
   const [copiedAffiliate, setCopiedAffiliate] = useState(false);
   const [requestingId, setRequestingId] = useState<string | null>(null);
-  const [_savingId, setSavingId] = useState<string | null>(null);
+  const [savingId, setSavingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { status: kycStatus, isLoading: kycStatusLoading } = useKycStatus();
+  const { completion: kycCompletion, isLoading: kycCompletionLoading } = useKycCompletion();
 
   useEffect(
     () => () => {
@@ -90,8 +93,19 @@ export default function AfiliarSe({
     : null;
   const activeLinksLabel = `${approvedLinks.length} ${approvedLinks.length === 1 ? 'link ativo' : 'links ativos'}`;
   const savedProductsLabel = `${savedProducts.length} ${savedProducts.length === 1 ? 'salvo' : 'salvos'}`;
+  const kycStatusValue =
+    typeof kycStatus?.kycStatus === 'string' ? kycStatus.kycStatus.toLowerCase() : null;
+  const kycCompletionPercentage =
+    typeof kycCompletion?.percentage === 'number' ? kycCompletion.percentage : null;
+  const shouldBlockAffiliationRequest =
+    (!kycStatusLoading && kycStatusValue !== null && kycStatusValue !== 'approved') ||
+    (!kycCompletionLoading && kycCompletionPercentage !== null && kycCompletionPercentage < 100);
 
   const handleRequestAffiliation = async (productId: string) => {
+    if (shouldBlockAffiliationRequest) {
+      setActionError('Complete seu cadastro para usar esta funcionalidade');
+      return;
+    }
     setRequestingId(productId);
     setActionError(null);
     try {
@@ -105,6 +119,9 @@ export default function AfiliarSe({
   };
 
   const handleToggleSave = async (productId: string, isSaved: boolean) => {
+    if (savingId === productId) {
+      return;
+    }
     setSavingId(productId);
     setActionError(null);
     try {
@@ -354,6 +371,7 @@ export default function AfiliarSe({
       <AffiliateMyApplications
         approvedLinks={approvedLinks}
         savedProducts={savedProducts}
+        savingId={savingId}
         onToggleSave={handleToggleSave}
       />
 
@@ -376,6 +394,7 @@ export default function AfiliarSe({
         filteredMarket={filteredMarket}
         searchQuery={search.trim()}
         onSelectItem={(item) => setSelectedMarketItemId(item.id)}
+        savingId={savingId}
         onToggleSave={handleToggleSave}
       />
 

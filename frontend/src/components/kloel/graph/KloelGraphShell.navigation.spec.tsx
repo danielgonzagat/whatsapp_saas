@@ -222,11 +222,11 @@ describe('KloelGraphShell', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
 
     push.mockClear();
-    fireEvent.pointerDown(screen.getByRole('button', { name: 'Abrir Cupons' }), {
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Abrir Produto real - Cupons' }), {
       clientX: 10,
       clientY: 10,
     });
-    fireEvent.pointerUp(screen.getByRole('button', { name: 'Abrir Cupons' }), {
+    fireEvent.pointerUp(screen.getByRole('button', { name: 'Abrir Produto real - Cupons' }), {
       clientX: 11,
       clientY: 11,
     });

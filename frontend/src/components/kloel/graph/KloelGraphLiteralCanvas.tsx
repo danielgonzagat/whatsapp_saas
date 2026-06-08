@@ -165,6 +165,12 @@ export function KloelGraphLiteralCanvas({
     !ariaHidden && hoveredNode && hoveredNode.hasActiveSelection === hasActiveSelection
       ? hoveredNode.id
       : null;
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => setHoveredNode(null), 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [activeNodeId, ariaHidden, focusedArea]);
+
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [isPanning, setIsPanning] = useState(false);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -402,6 +408,15 @@ export function KloelGraphLiteralCanvas({
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      const target = event.target;
+      if (
+        ariaHidden ||
+        (target instanceof Element &&
+          Boolean(target.closest('input, textarea, select, [contenteditable="true"], [role="textbox"]')))
+      ) {
+        return;
+      }
+
       const step = event.shiftKey ? 40 : 16;
       if (event.key === 'ArrowLeft') {
         setPan((current) => ({ x: current.x + step, y: current.y }));
@@ -428,7 +443,7 @@ export function KloelGraphLiteralCanvas({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [ariaHidden]);
 
   useEffect(() => {
     if (ariaHidden) {

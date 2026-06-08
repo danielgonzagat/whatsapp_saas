@@ -38,6 +38,7 @@ export default function NewProductPage() {
   const { showToast } = useToast();
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [validationMessage, setValidationMessage] = useState('');
   const [form, setForm] = useState<FormState>(initialForm);
   const [tagInput, setTagInput] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -84,9 +85,12 @@ export default function NewProductPage() {
 
     if (!validation.ok) {
       setStep(validation.step);
+      setValidationMessage(validation.message);
       showToast(validation.message, 'error');
       return;
     }
+
+    setValidationMessage('');
 
     if (currentVisibleIndex < visibleSteps.length - 1) {
       setStep(visibleSteps[currentVisibleIndex + 1]);
@@ -102,6 +106,7 @@ export default function NewProductPage() {
   };
 
   const updateForm = (partial: Partial<FormState>) => {
+    setValidationMessage('');
     setForm((prev) => ({ ...prev, ...partial }));
   };
 
@@ -144,10 +149,12 @@ export default function NewProductPage() {
 
     if (!validation.ok) {
       setStep(validation.step);
+      setValidationMessage(validation.message);
       showToast(validation.message, 'error');
       return;
     }
 
+    setValidationMessage('');
     setSaving(true);
     try {
       const body = buildProductCreatePayload(nextForm, workspaceId, needsPhysical);
@@ -155,6 +162,7 @@ export default function NewProductPage() {
       const res = await apiFetch<Record<string, unknown>>('/products', { method: 'POST', body });
 
       if (res.error) {
+        setValidationMessage(res.error);
         showToast(res.error, 'error');
         return;
       }
@@ -174,10 +182,9 @@ export default function NewProductPage() {
       router.push('/products');
     } catch (error: unknown) {
       console.error('Erro ao salvar produto', error);
-      showToast(
-        error instanceof Error ? error.message : 'Nao foi possivel salvar o produto.',
-        'error',
-      );
+      const message = error instanceof Error ? error.message : 'Nao foi possivel salvar o produto.';
+      setValidationMessage(message);
+      showToast(message, 'error');
     } finally {
       setSaving(false);
     }
@@ -233,6 +240,26 @@ export default function NewProductPage() {
         </div>
 
         <MonitorStepper currentStep={step} visibleSteps={visibleSteps} />
+
+        {validationMessage ? (
+          <div
+            role="alert"
+            aria-live="assertive"
+            style={{
+              margin: '0 0 18px',
+              padding: '12px 14px',
+              borderRadius: 6,
+              border: `1px solid ${colors.accent.webb}`,
+              background: 'rgba(232, 93, 48, 0.10)',
+              color: colors.text.starlight,
+              fontSize: 13,
+              lineHeight: 1.6,
+              fontFamily: typography.fontFamily.sans,
+            }}
+          >
+            {validationMessage}
+          </div>
+        ) : null}
 
         {step === 1 && (
           <StepDetalhes

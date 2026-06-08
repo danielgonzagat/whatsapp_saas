@@ -10,6 +10,8 @@ import type { DisplayProduct } from './ProdutosView.types';
 
 const pushMock = vi.hoisted(() => vi.fn());
 const requestAffiliationMock = vi.hoisted(() => vi.fn());
+const saveProductMock = vi.hoisted(() => vi.fn());
+const unsaveProductMock = vi.hoisted(() => vi.fn());
 const useKycStatusMock = vi.hoisted(() =>
   vi.fn(() => ({ status: { kycStatus: 'approved' }, isLoading: false, error: null })),
 );
@@ -24,8 +26,8 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/lib/api/affiliate', () => ({
   affiliateApi: {
     requestAffiliation: requestAffiliationMock,
-    saveProduct: vi.fn(),
-    unsaveProduct: vi.fn(),
+    saveProduct: saveProductMock,
+    unsaveProduct: unsaveProductMock,
   },
 }));
 
@@ -37,6 +39,8 @@ vi.mock('@/hooks/useKyc', () => ({
 beforeEach(() => {
   pushMock.mockReset();
   requestAffiliationMock.mockReset();
+  saveProductMock.mockReset();
+  unsaveProductMock.mockReset();
   useKycStatusMock.mockReturnValue({ status: { kycStatus: 'approved' }, isLoading: false, error: null });
   useKycCompletionMock.mockReturnValue({
     completion: { percentage: 100, sections: [] },
@@ -259,6 +263,48 @@ describe('AfiliarSe marketplace search', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Ir para Perfil' }));
     expect(pushMock).toHaveBeenCalledWith('/settings');
+  });
+
+  it('disables marketplace save action while the save request is in flight', async () => {
+    let resolveSave!: () => void;
+    saveProductMock.mockReturnValueOnce(
+      new Promise<void>((resolve) => {
+        resolveSave = resolve;
+      }),
+    );
+    const onRefresh = vi.fn();
+
+    render(
+      <AfiliarSe
+        marketplace={[
+          {
+            id: 'save-product',
+            name: 'Produto para salvar',
+            category: 'Cursos Online',
+            producer: 'Kloel',
+            price: 19700,
+            commission: 35,
+          },
+        ]}
+        earnings={0}
+        marketplaceStats={{}}
+        affiliateLinks={[]}
+        affiliateProducts={[]}
+        onRefresh={onRefresh}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar produto: Produto para salvar' }));
+
+    expect(saveProductMock).toHaveBeenCalledWith('save-product');
+    expect(
+      screen
+        .getByRole('button', { name: 'Salvando produto: Produto para salvar' })
+        .hasAttribute('disabled'),
+    ).toBe(true);
+
+    resolveSave();
+    await waitFor(() => expect(onRefresh).toHaveBeenCalledTimes(1));
   });
 
   it('refreshes the open detail after an affiliation request resolves', async () => {

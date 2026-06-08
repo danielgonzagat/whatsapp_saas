@@ -8,11 +8,11 @@ export type KloelStreamToolRiskLevel = 'low' | 'medium' | 'high';
 export interface KloelStreamToolRisk {
   /** Public risk tier, safe for user-facing trace copy. */
   level: KloelStreamToolRiskLevel;
-  /** Product-facing label. Raw tool names are not accepted here. */
+  /** Product-facing label; may include public tool names, never private payloads. */
   label: string;
   /** Compact score produced by the backend risk classifier. */
   score: number;
-  /** Sanitized factors, never raw args or executable tool identifiers. */
+  /** Sanitized factors, never raw args or credentials. */
   factors: readonly string[];
 }
 
@@ -90,6 +90,10 @@ export interface KloelStreamToolResultEvent {
   durationMs?: number | undefined;
   /** Public risk metadata from backend execution classifier. */
   risk?: KloelStreamToolRisk | undefined;
+  /** Public-safe tool result payload, when the stream includes one. */
+  result?: unknown;
+  /** Public-safe tool error payload, when execution fails. */
+  error?: unknown;
 }
 
 /** Kloel stream done event shape. */
@@ -120,11 +124,11 @@ export interface KloelStreamReasoningSummaryEvent {
   text: string;
 }
 
-/** Kloel stream reasoning delta event shape. */
+/** Private provider reasoning delta parsed for downstream timing/safety handling. */
 export interface KloelStreamReasoningDeltaEvent {
   /** Type property. */
   type: 'reasoning_delta';
-  /** Text property. */
+  /** Raw provider reasoning text; do not persist or render directly in public UI. */
   text: string;
 }
 
@@ -261,68 +265,18 @@ function tryAppendMemoryLoaded(
   });
 }
 
-const PUBLIC_TOOL_LABELS: Record<string, string> = {
-  'code outline': 'inspeção da arquitetura interna',
-  'search codebase': 'busca na arquitetura interna',
-  'code detect issues': 'auditoria da arquitetura interna',
-  'run backend tests': 'validação operacional',
-  'search web': 'pesquisa na web',
-  'brave search': 'pesquisa na web',
-  'web search': 'pesquisa na web',
-  'local search': 'busca local',
-  'refine response': 'mesa de refinamento',
-  'search agent memory': 'consulta de memória',
-  'search agent sessions': 'consulta de histórico',
-  'get agent artifact': 'consulta de arquivo',
-  'upsert agent skill': 'atualização operacional',
-  'record agent skill outcome': 'registro operacional',
-  'remember user info': 'memória atualizada',
-  'mind.capability.extract structured text': 'extração estruturada',
-  'mind.capability.advise response depth': 'calibração de profundidade',
-  'mind.capability.refine prompt': 'refinamento de pedido',
-  'create site': 'criação de site',
-  'create image': 'criação de imagem',
-  'create document': 'criação de documento',
-  'create artifact': 'criação de artifact',
-  'list products': 'catálogo de produtos',
-  'get settings': 'configurações da conta',
-  'get billing status': 'status da assinatura',
-  'request anticipation': 'antecipação de recebíveis',
-  'request withdrawal': 'solicitação de saque',
-  'list sales': 'consulta de vendas',
-  'create product': 'criação de produto',
-  'send email': 'envio de mensagem',
-  'send message': 'envio de mensagem',
-  'self.health': 'saúde operacional',
-};
-
-const PUBLIC_TOOL_LABEL_SET = new Set(Object.values(PUBLIC_TOOL_LABELS));
-
-function normalizeToolName(tool: string): string {
-  return String(tool || '')
-    .replace(/[_-]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .toLowerCase();
-}
+const PRIVATE_CREDENTIAL_TOOL_RE =
+  /(?:sk-[a-z0-9_-]{16,}|AKIA[0-9A-Z]{16}|api[_ -]?key\s*[:=]|authorization\s*[:=]|bearer\s+[a-z0-9._-]{20,}|password\s*[:=]|secret\s*[:=])/i;
 
 function normalizePublicToolLabel(tool: string): string {
   const raw = String(tool || '').trim();
   if (!raw) {
     return 'ação operacional';
   }
-  if (PUBLIC_TOOL_LABEL_SET.has(raw)) {
-    return raw;
+  if (PRIVATE_CREDENTIAL_TOOL_RE.test(raw)) {
+    return 'ferramenta protegida';
   }
-
-  const normalized = normalizeToolName(raw);
-  const mapped = PUBLIC_TOOL_LABELS[normalized] ?? PUBLIC_TOOL_LABELS[raw];
-  if (mapped) {
-    return mapped;
-  }
-  if (/\b(?:search|query|lookup|get|list|find|memory|session|history)\b/.test(normalized)) {
-    return 'consulta operacional';
-  }
-  return 'ação operacional';
+  return raw.replace(/\s+/g, ' ').trim() || 'ação operacional';
 }
 
 export function normalizeToolRisk(value: unknown): KloelStreamToolRisk | undefined {
@@ -423,9 +377,8 @@ function tryAppendReasoningDelta(event: Record<string, unknown>, events: KloelSt
   if (event.type !== 'reasoning_delta' || typeof event.text !== 'string' || event.text.length === 0) {
     return;
   }
-  // Surface the streamed reasoning text token-by-token so the live thinking
-  // timeline can render the real model reasoning as it arrives (per the
-  // reasoning_delta contract). The text field carries the delta payload.
+  // Preserve the private delta payload for the metadata reducer to record
+  // timing only. Public UI layers must not persist or render this text.
   events.push({ type: 'reasoning_delta', text: event.text });
 }
 

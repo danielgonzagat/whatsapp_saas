@@ -13,10 +13,12 @@ import type { AffiliateLink, AffiliateProductItem } from './ProdutosView.types';
 export default function AffiliateMyApplications({
   approvedLinks,
   savedProducts,
+  savingId = null,
   onToggleSave,
 }: {
   approvedLinks: AffiliateLink[];
   savedProducts: AffiliateProductItem[];
+  savingId?: string | null;
   onToggleSave: (productId: string, isSaved: boolean) => void;
 }) {
   if (approvedLinks.length === 0 && savedProducts.length === 0) {
@@ -103,7 +105,12 @@ export default function AffiliateMyApplications({
           {kloelT('Produtos salvos')}
         </div>
         {savedProducts.length > 0 ? (
-          savedProducts.slice(0, 3).map((item) => (
+          savedProducts.slice(0, 3).map((item) => {
+            const savedProductId = item.affiliateProductId || item.id;
+            const productName = item.affiliateProduct?.name || 'Produto salvo';
+            const isSaving = savingId === savedProductId;
+
+            return (
             <div
               key={item.id}
               style={{
@@ -116,7 +123,7 @@ export default function AffiliateMyApplications({
             >
               <div>
                 <div style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-primary)' }}>
-                  {item.affiliateProduct?.name || 'Produto salvo'}
+                  {productName}
                 </div>
                 <div style={{ fontFamily: MONO, fontSize: 10, color: 'var(--app-text-secondary)' }}>
                   {item.status || 'SAVED'}
@@ -124,13 +131,26 @@ export default function AffiliateMyApplications({
               </div>
               <button
                 type="button"
-                onClick={() => onToggleSave(item.affiliateProductId || item.id, true)}
-                style={{ ...btnGhost, padding: '6px 10px' }}
+                aria-label={`${isSaving ? 'Removendo produto salvo' : 'Remover produto salvo'}: ${productName}`}
+                disabled={isSaving}
+                onClick={() => {
+                  if (isSaving) {
+                    return;
+                  }
+                  void onToggleSave(savedProductId, true);
+                }}
+                style={{
+                  ...btnGhost,
+                  padding: '6px 10px',
+                  cursor: isSaving ? 'wait' : 'pointer',
+                  opacity: isSaving ? 0.62 : 1,
+                }}
               >
-                {kloelT('Remover')}
+                {kloelT(isSaving ? 'Removendo...' : 'Remover')}
               </button>
             </div>
-          ))
+            );
+          })
         ) : (
           <div style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-secondary)' }}>
             {kloelT('Salve produtos do marketplace para analisar depois.')}

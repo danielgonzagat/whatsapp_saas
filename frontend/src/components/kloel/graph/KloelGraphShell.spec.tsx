@@ -379,6 +379,53 @@ describe('KloelGraphShell', () => {
     );
   });
 
+  it('clears ember hover when a route overlay hides and then reveals the graph', async () => {
+    pathname = '/products';
+    searchParams = new URLSearchParams('graph=1');
+
+    const { container, rerender } = renderShell(<main>ProdutosView hidden</main>);
+    const getProductsCircle = () =>
+      container.querySelector('circle[data-node-id="criar-products"]') as SVGCircleElement | null;
+
+    await waitFor(() => expect(getProductsCircle()).toBeTruthy());
+    fireEvent.pointerEnter(screen.getByRole('button', { name: 'Abrir Meus produtos' }));
+    expect(getProductsCircle()?.getAttribute('fill')).toBe('rgb(232,93,48)');
+
+    searchParams = new URLSearchParams();
+    rerender(
+      <KloelGraphShell>
+        <main>ProdutosView overlay</main>
+      </KloelGraphShell>,
+    );
+
+    searchParams = new URLSearchParams('graph=1');
+    rerender(
+      <KloelGraphShell>
+        <main>ProdutosView hidden again</main>
+      </KloelGraphShell>,
+    );
+
+    await waitFor(() =>
+      expect(getProductsCircle()?.getAttribute('fill')).not.toBe('rgb(232,93,48)'),
+    );
+  });
+
+  it('keeps hidden graph keyboard shortcuts from stealing overlay form input', () => {
+    const { container } = renderShell(
+      <main>
+        <label htmlFor="profile-name">Nome</label>
+        <input id="profile-name" defaultValue="Kloel" />
+      </main>,
+    );
+    const viewport = container.querySelector('svg > g') as SVGGElement | null;
+    expect(viewport).toBeTruthy();
+    const before = viewport?.getAttribute('transform');
+
+    fireEvent.keyDown(screen.getByLabelText('Nome'), { key: 'ArrowLeft' });
+
+    expect(viewport?.getAttribute('transform')).toBe(before);
+  });
+
   it('defers Criar dynamic graph data while graph-only galaxy navigation settles', async () => {
     vi.useFakeTimers();
     pathname = '/analytics';
@@ -446,10 +493,7 @@ describe('KloelGraphShell', () => {
     expect(push).not.toHaveBeenCalled();
   });
 
-  it('keeps an open screen mounted when the graph navigator pill is used', () => {
-    // An open route screen (the macOS-style window) is dismissed ONLY by its red
-    // control — interacting with the floating galaxy navigator behind it must keep
-    // the screen open so the user can rearrange the camera without losing context.
+  it('switches the open route screen when the graph navigator pill is used', () => {
     const pushState = vi.spyOn(window.history, 'pushState');
     pathname = '/chat';
     searchParams = new URLSearchParams();
@@ -460,9 +504,11 @@ describe('KloelGraphShell', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Criar' }));
 
+    expect(push).toHaveBeenCalledWith('/products');
     expect(pushState).not.toHaveBeenCalled();
-    expect(push).not.toHaveBeenCalled();
-    expect(screen.getByRole('dialog')).toHaveTextContent('Chat overlay');
+    expect(screen.getByRole('dialog', { name: /Produtos/i })).toHaveTextContent(
+      'Carregando Produtos',
+    );
   });
 
   it('navigates by node clicks without opening on drag movement', () => {

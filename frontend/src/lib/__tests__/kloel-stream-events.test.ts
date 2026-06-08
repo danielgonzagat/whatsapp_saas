@@ -60,7 +60,7 @@ describe('parseKloelStreamPayload', () => {
     ]);
   });
 
-  it('surfaces streamed reasoning delta text per the reasoning_delta contract', () => {
+  it('parses reasoning_delta text for downstream private handling', () => {
     expect(
       parseKloelStreamPayload({
         type: 'reasoning_delta',
@@ -235,7 +235,7 @@ describe('parseKloelStreamPayload', () => {
         type: 'tool_result',
         callId: 'call-1',
         spanId: 'span-1',
-        tool: 'pesquisa na web',
+        tool: 'search_web',
         success: true,
         artifactId: 'artifact-1',
         durationMs: 42,
@@ -243,7 +243,7 @@ describe('parseKloelStreamPayload', () => {
     ]);
     expect(JSON.stringify(parsedToolResult)).not.toContain('rawHtml');
     expect(JSON.stringify(parsedToolResult)).not.toContain('secret');
-    expect(JSON.stringify(parsedToolResult)).not.toContain('search_web');
+    expect(JSON.stringify(parsedToolResult)).toContain('search_web');
   });
 
   it('preserves sanitized public tool risk metadata and rejects malformed risk payloads', () => {
@@ -266,7 +266,7 @@ describe('parseKloelStreamPayload', () => {
         type: 'tool_call',
         callId: 'call-risk',
         spanId: 'call-risk',
-        tool: 'envio de mensagem',
+        tool: 'send_email',
         risk: {
           level: 'high',
           label: 'ação sensível controlada',
@@ -276,7 +276,7 @@ describe('parseKloelStreamPayload', () => {
       },
     ]);
     expect(JSON.stringify(parsedToolCall)).not.toContain('lead@example.test');
-    expect(JSON.stringify(parsedToolCall)).not.toContain('send_email');
+    expect(JSON.stringify(parsedToolCall)).toContain('send_email');
 
     const parsedMalformedRisk = parseKloelStreamPayload({
       type: 'tool_result',
@@ -292,7 +292,7 @@ describe('parseKloelStreamPayload', () => {
         type: 'tool_result',
         callId: 'call-risk',
         spanId: undefined,
-        tool: 'envio de mensagem',
+        tool: 'send_email',
         success: true,
         artifactId: undefined,
         durationMs: undefined,
@@ -300,7 +300,7 @@ describe('parseKloelStreamPayload', () => {
     ]);
     expect(JSON.stringify(parsedMalformedRisk)).not.toContain('token');
     expect(JSON.stringify(parsedMalformedRisk)).not.toContain('secret');
-    expect(JSON.stringify(parsedMalformedRisk)).not.toContain('send_email');
+    expect(JSON.stringify(parsedMalformedRisk)).toContain('send_email');
   });
 
   it('ignores unknown event types instead of inventing unsupported stream events', () => {

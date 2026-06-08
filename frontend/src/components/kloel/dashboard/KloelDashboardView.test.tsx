@@ -303,7 +303,7 @@ describe('KloelDashboardView approvals', () => {
 });
 
 describe('KloelDashboardView trace', () => {
-  it('renders public processing context without exposing private provider reasoning', () => {
+  it('renders public processing context with public reasoning and tool names', () => {
     renderDashboardView({
       hasMessages: true,
       messages: [
@@ -351,7 +351,8 @@ describe('KloelDashboardView trace', () => {
     ).toBeTruthy();
     expect(screen.queryByText(/We are in a chat conversation/)).toBeNull();
     expect(screen.queryByText(/must decide what answer to show/)).toBeNull();
-    expect(screen.queryByText('list_products')).toBeNull();
+    expect(screen.getAllByText('list_products').length).toBeGreaterThan(0);
+    expect(screen.queryByText('catálogo de produtos')).toBeNull();
     expect(screen.queryByText('Pré-resposta executável')).toBeNull();
     expect(screen.queryByText('Reasoning summary')).toBeNull();
     expect(screen.queryByText('Agent trace')).toBeNull();
@@ -376,7 +377,7 @@ describe('KloelDashboardView trace', () => {
           text: '',
           metadata: {
             processingSummary:
-              'O usuário quer avaliar a inteligência percebida do chat; estou separando resposta pública de raciocínio privado.',
+              'O usuário quer avaliar a inteligência percebida do chat; estou separando resposta final de raciocínio público.',
           },
         },
       ],
@@ -387,7 +388,7 @@ describe('KloelDashboardView trace', () => {
 
     expect(
       screen.queryByText(
-        'O usuário quer avaliar a inteligência percebida do chat; estou separando resposta pública de raciocínio privado.',
+        'O usuário quer avaliar a inteligência percebida do chat; estou separando resposta final de raciocínio público.',
       ),
     ).toBeNull();
     expect(screen.queryByText('Kloel está pensando')).toBeNull();

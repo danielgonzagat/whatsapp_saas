@@ -15,7 +15,7 @@ function makeReasoning(overrides: Partial<AssistantReasoning> = {}): AssistantRe
 }
 
 describe('ReasoningTimeline', () => {
-  it('renders the real streamed reasoning text inside the thinking step while processing', () => {
+  it('renders public processing detail inside the thinking step while processing', () => {
     render(
       <ReasoningTimeline
         reasoning={makeReasoning({ text: 'Analisando os dados da conta antes de responder.' })}
@@ -31,7 +31,7 @@ describe('ReasoningTimeline', () => {
     ).toBeTruthy();
   });
 
-  it('keeps the streamed reasoning text visible after completion', () => {
+  it('keeps public processing detail visible after completion', () => {
     render(
       <ReasoningTimeline
         reasoning={makeReasoning({
@@ -50,7 +50,7 @@ describe('ReasoningTimeline', () => {
     ).toBeTruthy();
   });
 
-  it('redacts internal reasoning markers from the public timeline', () => {
+  it('renders provider reasoning markers as public timeline text', () => {
     render(
       <ReasoningTimeline
         reasoning={makeReasoning({
@@ -65,10 +65,31 @@ describe('ReasoningTimeline', () => {
     );
 
     expect(
-      screen.getByText('Detalhes internos desta execução foram omitidos com segurança.'),
+      screen.getByText('Vou usar skill=artifact e tool_call interno para montar o arquivo.'),
     ).toBeTruthy();
-    expect(screen.queryByText(/skill=artifact/)).toBeNull();
-    expect(screen.queryByText(/tool_call/)).toBeNull();
+    expect(screen.getByText(/skill=artifact/)).toBeTruthy();
+    expect(screen.getByText(/tool_call/)).toBeTruthy();
+  });
+
+  it('renders runtime context and capability names from provider reasoning', () => {
+    render(
+      <ReasoningTimeline
+        reasoning={makeReasoning({
+          text: 'O runtime context indica que a capacidade inspect_self está disponível antes da resposta.',
+          durationMs: 2400,
+        })}
+        steps={[]}
+        fallbackSummary=""
+        isProcessing={false}
+        isComplete
+      />,
+    );
+
+    expect(
+      screen.getByText('O runtime context indica que a capacidade inspect_self está disponível antes da resposta.'),
+    ).toBeTruthy();
+    expect(screen.getByText(/runtime context/)).toBeTruthy();
+    expect(screen.getByText(/inspect_self/)).toBeTruthy();
   });
 
   it('renders nothing when there is no reasoning text, no tools and no processing (honest empty state)', () => {
@@ -83,6 +104,31 @@ describe('ReasoningTimeline', () => {
     );
 
     expect(container.firstChild).toBeNull();
+  });
+
+  it('labels operational traces as execution when the provider did not emit reasoning', () => {
+    const steps: AssistantProcessingTraceEntry[] = [
+      {
+        id: 'call-1:call',
+        kind: 'tool_call',
+        phase: 'tool_calling',
+        label: 'Consultei contexto operacional relevante antes de responder.',
+        tool: 'consulta operacional',
+      },
+    ];
+
+    render(
+      <ReasoningTimeline
+        reasoning={makeReasoning()}
+        steps={steps}
+        fallbackSummary=""
+        isProcessing={false}
+        isComplete
+      />,
+    );
+
+    expect(screen.getByText('Execução')).toBeTruthy();
+    expect(screen.queryByText('Raciocínio')).toBeNull();
   });
 
   it('renders tool steps with the real tool name and measured duration', () => {
@@ -120,14 +166,14 @@ describe('ReasoningTimeline', () => {
     expect(screen.getByText('Concluído')).toBeTruthy();
   });
 
-  it('renders public tool risk chips without exposing executable tool names', () => {
+  it('renders public tool risk chips with executable tool names', () => {
     const steps: AssistantProcessingTraceEntry[] = [
       {
         id: 'call-1:call',
         kind: 'tool_call',
         phase: 'tool_calling',
         label: 'Consultei contexto operacional relevante antes de responder.',
-        tool: 'ação operacional',
+        tool: 'send email',
         riskLabel: 'ação sensível controlada',
         riskLevel: 'high',
       },
@@ -144,7 +190,7 @@ describe('ReasoningTimeline', () => {
     );
 
     expect(screen.getByText('ação sensível controlada')).toBeTruthy();
-    expect(screen.queryByText('send_email')).toBeNull();
+    expect(screen.getByText('send email')).toBeTruthy();
   });
 
   it('renders real memory/context status steps without labeling them as tools', () => {

@@ -1,5 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { createElement } from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import NewProductPage from './page';
 import {
   buildProductCreatePayload,
   mergeProductTags,
@@ -7,6 +10,58 @@ import {
   validateProductCreateStep,
 } from './page.helpers';
 import { initialForm } from './types';
+
+const pageMocks = vi.hoisted(() => ({
+  apiFetch: vi.fn(),
+  clearPreview: vi.fn(),
+  mutate: vi.fn(),
+  push: vi.fn(),
+  readFileAsDataUrl: vi.fn(),
+  setPreviewUrl: vi.fn(),
+  showToast: vi.fn(),
+  uploadGenericMedia: vi.fn(),
+}));
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: pageMocks.push }),
+}));
+
+vi.mock('@/components/kloel/ToastProvider', () => ({
+  useToast: () => ({ showToast: pageMocks.showToast }),
+}));
+
+vi.mock('@/hooks/usePersistentImagePreview', () => ({
+  usePersistentImagePreview: () => ({
+    previewUrl: null,
+    clearPreview: pageMocks.clearPreview,
+    setPreviewUrl: pageMocks.setPreviewUrl,
+  }),
+}));
+
+vi.mock('@/hooks/useWorkspaceId', () => ({
+  useWorkspaceId: () => 'workspace-e2e',
+}));
+
+vi.mock('@/hooks/useProducts', () => ({
+  useProductCategories: () => ({
+    categories: ['Cursos Online'],
+    isLoading: false,
+    error: null,
+  }),
+}));
+
+vi.mock('@/lib/api', () => ({ apiFetch: pageMocks.apiFetch }));
+
+vi.mock('@/lib/media-upload', () => ({
+  readFileAsDataUrl: pageMocks.readFileAsDataUrl,
+  uploadGenericMedia: pageMocks.uploadGenericMedia,
+}));
+
+vi.mock('swr', () => ({ mutate: pageMocks.mutate }));
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe('mergeProductTags', () => {
   it('promotes comma-separated pending input into unique tags without exceeding the limit', () => {
@@ -211,5 +266,21 @@ describe('validateProductCreateStep', () => {
       step: 5,
       message: 'Informe a comissao do afiliado antes de continuar.',
     });
+  });
+});
+
+describe('NewProductPage validation feedback', () => {
+  it('keeps the validation failure visible inside the wizard when required details are missing', () => {
+    render(createElement(NewProductPage));
+
+    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+
+    expect(screen.getByRole('alert').textContent).toContain(
+      'Informe o nome do produto antes de continuar.',
+    );
+    expect(pageMocks.showToast).toHaveBeenCalledWith(
+      'Informe o nome do produto antes de continuar.',
+      'error',
+    );
   });
 });
