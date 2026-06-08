@@ -13,6 +13,7 @@ import {
 import { type Contact, type WebhookEvent } from '@prisma/client';
 import type { Redis } from 'ioredis';
 import { Public } from '../auth/public.decorator';
+import { safeCompareStrings } from '../common/utils/crypto-compare.util';
 import { AutopilotService } from '../autopilot/autopilot.service';
 import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
 import { PrismaService } from '../prisma/prisma.service';
@@ -215,7 +216,7 @@ export class PaymentWebhookGenericController {
     const raw: string | Buffer = req?.rawBody || JSON.stringify(body);
     const rawBuffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw, 'utf8');
     const digest = crypto.createHmac('sha256', secret).update(rawBuffer).digest('base64');
-    if (digest !== hmac) {
+    if (!safeCompareStrings(digest, hmac)) {
       throw new ForbiddenException('invalid_shopify_hmac');
     }
 
@@ -299,7 +300,7 @@ export class PaymentWebhookGenericController {
     if (process.env.NODE_ENV === 'production' && !expected) {
       throw new ForbiddenException('PAGHIPER_WEBHOOK_TOKEN not configured');
     }
-    if (expected && (!token || token !== expected)) {
+    if (expected && (!token || !safeCompareStrings(token, expected))) {
       throw new ForbiddenException('invalid_paghiper_token');
     }
 
@@ -400,7 +401,7 @@ export class PaymentWebhookGenericController {
     const raw: string | Buffer = req?.rawBody || JSON.stringify(body);
     const rawBuffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw, 'utf8');
     const digest = crypto.createHmac('sha256', secret).update(rawBuffer).digest('base64');
-    if (digest !== signature) {
+    if (!safeCompareStrings(digest, signature)) {
       throw new ForbiddenException('invalid_wc_signature');
     }
 
