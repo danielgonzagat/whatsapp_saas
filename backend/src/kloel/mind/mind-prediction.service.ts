@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { randomIdSegment } from '../../common/random-id';
+import { MindBeliefService } from './inference/mind-belief.service';
 
 /**
  * UTP-MIND-PREDICT — Predictive coding engine.
@@ -12,7 +13,10 @@ import { randomIdSegment } from '../../common/random-id';
  *   2. Generate predictions based on learned patterns
  *   3. On next cycle, evaluate predictions against new events
  *   4. Compute surprise (prediction error)
- *   5. Update belief confidence via Beta posterior
+ *   5. Update belief confidence via Beta posterior — locally on the in-memory
+ *      prediction AND, when MindBeliefService is available, durably on the
+ *      canonical Beta substrate keyed by (subject='mind:prediction:calibration',
+ *      predicate) so the Mind accrues per-predicate prediction-accuracy beliefs.
  *   6. Emit surprise events into the spine
  *
  * This CLOSES the cognitive loop: perception → prediction → surprise → update.
@@ -53,7 +57,10 @@ export class MindPredictionService {
   private activePredictions: GeneratedPrediction[] = [];
   private lastCycleAt?: string;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly belief?: MindBeliefService,
+  ) {}
 
   /**
    * Run a full prediction cycle: evaluate old predictions against new events,
@@ -119,6 +126,22 @@ export class MindPredictionService {
         correct++;
       }
       totalSurprise += pred.surprise;
+
+      // Step 5 (canonical): accrue the prediction's correctness as a durable
+      // Beta belief so the Mind learns which predicates it predicts well. Keyed
+      // by a distinct subject so it never collides with commerce:outcome.
+      // Fire-and-forget + @Optional: never blocks or breaks the cycle.
+      if (this.belief) {
+        void this.belief
+          .observeBinary(
+            workspaceId,
+            'mind:prediction:calibration',
+            pred.predicate,
+            { predicate: pred.predicate },
+            pred.wasCorrect ? 1 : 0,
+          )
+          .catch(() => {});
+      }
 
       // Emit surprise as event
       if (pred.surprise > 0.3) {
