@@ -1,0 +1,47 @@
+[
+  {
+    "file": "backend/src/kloel/wallet-ledger.service.ts",
+    "rule": "unsafeQuery",
+    "model": "kloelWallet",
+    "method": "findUnique",
+    "reason": "findUnique by globally-unique primary key (walletId); workspaceId cannot be part of a findUnique where and is redundant for a unique-key lookup.",
+    "issue": "PR#488 canonicalization cleanup (owner-approved)",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/marketing/channels/whatsapp/account-agent.work-item-upsert.ts",
+    "rule": "unsafeQuery",
+    "model": "agentWorkItem",
+    "method": "upsert",
+    "reason": "upsert by globally-unique primary key (id); workspaceId is redundant for a unique-key upsert.",
+    "issue": "PR#488 canonicalization cleanup (owner-approved)",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/marketing/instagram/instagram-marketing.service.ts",
+    "rule": "unsafeQuery",
+    "model": "metaConnection",
+    "method": "findFirst",
+    "reason": "Workspace-scoped Instagram marketing service; flagged occurrence is JSDoc comment text. The real read resolves the per-workspace connection via resolveInstagramConnection / MetaWhatsAppService.resolveConnection(workspaceId).",
+    "issue": "PR#488 channel-meta (owner-approved)",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/marketing/instagram/instagram-resolver-unify.flag.ts",
+    "rule": "unsafeQuery",
+    "model": "metaConnection",
+    "method": "findFirst",
+    "reason": "Flag module — flagged occurrences are JSDoc comment text describing the raw metaConnection.findFirst the flag gates, not executable queries.",
+    "issue": "PR#488 channel-meta (owner-approved)",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.helpers.ts",
+    "rule": "unsafeQuery",
+    "model": "kloelSale",
+    "method": "updateMany",
+    "reason": "updateMany keyed by buildKloelSaleStripeWhere (externalPaymentId = unique Stripe payment-intent) scoping to one sale; the primary KLOEL_PAYMENT_LEDGER_TX path also includes explicit workspaceId.",
+    "issue": "PR#488 sale-payment-tx (owner-approved)",
+    "expires": "2026-12-31"
+  }
+]

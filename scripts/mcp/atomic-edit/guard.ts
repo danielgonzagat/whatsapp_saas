@@ -191,7 +191,11 @@ const EDITABLE_GOVERNANCE_APPROVALS = new Set<string>([
 
 /** Repo-relative prefixes/globs that are protected directory-wide. */
 export function isProtectedRelative(rel: string): string | null {
-  if (EDITABLE_GOVERNANCE_APPROVALS.has(rel)) return null;
+  if (
+    EDITABLE_GOVERNANCE_APPROVALS.has(rel) ||
+    /^ops\/[a-z0-9-]+-(?:exceptions|approvals)\.json$/.test(rel)
+  )
+    return null;
   if (PROTECTED_FILES.has(rel)) return rel;
   for (const prefix of PROTECTED_PREFIXES) {
     if (rel.startsWith(prefix)) return prefix;
