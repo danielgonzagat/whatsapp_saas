@@ -44,7 +44,7 @@ describe('auth-core/opaque-token', () => {
     });
 
     it('matches the legacy inline tenant formula byte-for-byte', () => {
-      const token = 'partner-invite-token';
+      const token = 'pi-fixture';
       const legacy = createHash('sha256').update(token).digest('hex');
       expect(hashOpaqueToken(token)).toBe(legacy);
     });
