@@ -53,6 +53,7 @@ import { registerToolsY } from './server-tools-y.js';
 import { registerToolsCodexConfig } from './server-tools-codex-config.js';
 import { registerToolsGit } from './server-tools-git.js';
 import { registerToolsSelf } from './server-tools-self.js';
+import { registerToolsChromeDevtools } from './server-tools-chrome-devtools.js';
 
 type RegisteredToolForList = {
   title?: string;
@@ -179,6 +180,7 @@ registerToolsY(server);
 registerToolsCodexConfig(server);
 registerToolsGit(server);
 registerToolsSelf(server);
+registerToolsChromeDevtools(server);
 installCodexSafeToolList(server);
 
 async function main(): Promise<void> {

@@ -7,7 +7,12 @@ BASE_DIR="${KLOEL_CHROME_DEVTOOLS_TMP:-$CODEX_HOME_DIR/tmp/chrome-devtools-mcp}"
 HOME_DIR="${KLOEL_CHROME_DEVTOOLS_HOME:-$BASE_DIR/home}"
 RUNTIME_DIR="${KLOEL_CHROME_DEVTOOLS_RUNTIME:-$BASE_DIR/runtime}"
 CHROME_BIN="${CHROME_BIN:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
+CHROME_APP="${CHROME_APP:-/Applications/Google Chrome.app}"
+LAUNCH_MODE="${KLOEL_CHROME_DEVTOOLS_LAUNCH_MODE:-auto}"
 PORTS=(9222 9223)
+if [[ -n "${KLOEL_CHROME_DEVTOOLS_PORTS:-}" ]]; then
+  read -r -a PORTS <<< "$KLOEL_CHROME_DEVTOOLS_PORTS"
+fi
 
 mkdir -p "$BASE_DIR" "$HOME_DIR" "$RUNTIME_DIR"
 chmod 700 "$BASE_DIR" "$HOME_DIR" "$RUNTIME_DIR" 2>/dev/null || true
@@ -47,12 +52,59 @@ wait_ready() {
   return 1
 }
 
+launch_chrome() {
+  local port="$1"
+  local profile="$2"
+  local log="$3"
+  local pid_path="$4"
+  local os_name pid
+
+  os_name="$(uname -s 2>/dev/null || printf unknown)"
+  if [[ "$LAUNCH_MODE" != "direct" && "$os_name" == "Darwin" && -d "$CHROME_APP" ]]; then
+    /usr/bin/open -na "$CHROME_APP" --args \
+      --remote-debugging-address=127.0.0.1 \
+      --remote-debugging-port="$port" \
+      --user-data-dir="$profile" \
+      --no-first-run \
+      --no-default-browser-check \
+      --disable-crash-reporter \
+      --disable-crashpad \
+      --disable-breakpad \
+      --disable-dev-shm-usage \
+      --headless=new \
+      about:blank >"$log" 2>&1 &
+    pid="$!"
+    printf '%s\n' "$pid" >"$pid_path"
+    return 0
+  fi
+
+  "$CHROME_BIN" \
+    --remote-debugging-address=127.0.0.1 \
+    --remote-debugging-port="$port" \
+    --user-data-dir="$profile" \
+    --no-first-run \
+    --no-default-browser-check \
+    --disable-crash-reporter \
+    --disable-crashpad \
+    --disable-breakpad \
+    --disable-dev-shm-usage \
+    --headless=new \
+    about:blank >"$log" 2>&1 &
+  pid="$!"
+  printf '%s\n' "$pid" >"$pid_path"
+}
+
 start_one() {
   local port="$1"
   local pid_path profile log pid
   pid_path="$(pid_file "$port")"
   profile="$(profile_dir "$port")"
   log="$(log_file "$port")"
+
+  if curl -fsS "http://127.0.0.1:${port}/json/version" >/dev/null 2>&1; then
+    printf 'chrome-devtools CDP %s ready\n' "$port"
+    return 0
+  fi
 
   if [[ -f "$pid_path" ]]; then
     pid="$(cat "$pid_path" 2>/dev/null || true)"

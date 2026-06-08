@@ -8,6 +8,7 @@ RUNTIME_DIR="${KLOEL_CHROME_DEVTOOLS_RUNTIME:-$BASE_DIR/runtime}"
 DEFAULT_BROWSER_URL="${KLOEL_CHROME_DEVTOOLS_BROWSER_URL:-http://127.0.0.1:9222}"
 BROWSER_URL="$DEFAULT_BROWSER_URL"
 HAS_TARGET=0
+PASSTHROUGH_ONLY=0
 
 mkdir -p "$BASE_DIR" "$HOME_DIR" "$RUNTIME_DIR"
 chmod 700 "$BASE_DIR" "$HOME_DIR" "$RUNTIME_DIR" 2>/dev/null || true
@@ -22,6 +23,9 @@ args=("$@")
 for ((i = 0; i < ${#args[@]}; i++)); do
   arg="${args[$i]}"
   case "$arg" in
+    --help|--version)
+      PASSTHROUGH_ONLY=1
+      ;;
     --browserUrl=*|--browser-url=*)
       BROWSER_URL="${arg#*=}"
       HAS_TARGET=1
@@ -38,8 +42,19 @@ for ((i = 0; i < ${#args[@]}; i++)); do
   esac
 done
 
+if (( PASSTHROUGH_ONLY )); then
+  exec /opt/homebrew/bin/chrome-devtools-mcp \
+    --no-usage-statistics \
+    --no-performance-crux \
+    "${args[@]}"
+fi
+
 if (( ! HAS_TARGET )); then
-  args=(--browserUrl="$BROWSER_URL" "${args[@]}")
+  if (( ${#args[@]} )); then
+    args=(--browserUrl="$BROWSER_URL" "${args[@]}")
+  else
+    args=(--browserUrl="$BROWSER_URL")
+  fi
 fi
 
 # Do not spawn Chrome from the MCP server process. Codex can launch MCP servers

@@ -88,7 +88,7 @@ export function TrafficLight({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: '50%',
+        borderRadius: 8,
         background: fill,
         border: `0.5px solid ${border}`,
         cursor: 'pointer',
