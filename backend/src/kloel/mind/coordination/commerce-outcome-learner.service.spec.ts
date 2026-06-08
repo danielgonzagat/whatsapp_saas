@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { CommerceOutcomeLearnerService } from './commerce-outcome-learner.service';
 import type { SpineEventEnvelope } from '../../spine/spine-event.types';
 
@@ -157,5 +158,67 @@ describe('CommerceOutcomeLearnerService', () => {
       { eventName: 'commerce.payment.approved' },
       0,
     );
+  });
+
+  describe('durable dedup (L2)', () => {
+    function p2002(): Prisma.PrismaClientKnownRequestError {
+      return new Prisma.PrismaClientKnownRequestError('unique', {
+        code: 'P2002',
+        clientVersion: 'test',
+      });
+    }
+
+    it('writes a durable marker and learns on the first sighting', async () => {
+      const belief = mockBelief();
+      const create = jest.fn().mockResolvedValue({ id: 'mark-1' });
+      const prisma = { mindOutboxEvent: { create } };
+      const service = new CommerceOutcomeLearnerService(
+        belief as never,
+        undefined,
+        undefined,
+        prisma as never,
+      );
+
+      await service.handle(envelope());
+
+      expect(create).toHaveBeenCalledTimes(1);
+      expect(create.mock.calls[0][0].data.idempotencyKey).toBe('commerce-learn:evt-1');
+      expect(belief.observeBinary).toHaveBeenCalledTimes(1);
+    });
+
+    it('skips learning when the durable marker already exists (restart/replay-safe)', async () => {
+      const belief = mockBelief();
+      // A fresh instance (empty L1) but the durable marker is already present →
+      // create rejects with a unique violation → at-most-once holds.
+      const create = jest.fn().mockRejectedValue(p2002());
+      const prisma = { mindOutboxEvent: { create } };
+      const service = new CommerceOutcomeLearnerService(
+        belief as never,
+        undefined,
+        undefined,
+        prisma as never,
+      );
+
+      await service.handle(envelope());
+
+      expect(create).toHaveBeenCalledTimes(1);
+      expect(belief.observeBinary).not.toHaveBeenCalled();
+    });
+
+    it('still learns (best-effort) when the marker write fails with a non-unique error', async () => {
+      const belief = mockBelief();
+      const create = jest.fn().mockRejectedValue(new Error('db down'));
+      const prisma = { mindOutboxEvent: { create } };
+      const service = new CommerceOutcomeLearnerService(
+        belief as never,
+        undefined,
+        undefined,
+        prisma as never,
+      );
+
+      await service.handle(envelope());
+
+      expect(belief.observeBinary).toHaveBeenCalledTimes(1);
+    });
   });
 });
