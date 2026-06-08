@@ -31,17 +31,24 @@ const subsetsOf = (arr) => {
   return out;
 };
 const spansOverlap = (a, b) => a.some(([s1, e1]) => b.some(([s2, e2]) => s1 < e2 && s2 < e1));
-const fact = (file, spans, closureExtra, capped, readLoci) => ({
+const fact = (file, spans, closureExtra, capped, readLoci, spanIdents = []) => ({
   file,
   spans,
   closure: new Set([file, ...closureExtra]),
   closureCapped: capped,
   negativeProof: readLoci.length ? { proofSha256: 'x'.repeat(64), removedByteCount: 1, readLoci } : null,
+  spanIdents,
 });
 
 // The Z3-proven predicate, mirroring runtime commute()'s branch order EXACTLY.
 function modelCommute(a, b) {
-  if (a.file === b.file) return !spansOverlap(a.spans, b.spans);
+  if (a.file === b.file) {
+    if (spansOverlap(a.spans, b.spans)) return false;
+    const ai = a.spanIdents;
+    const bi = b.spanIdents;
+    if (ai && bi) return !ai.some((x) => bi.includes(x));
+    return false; // unknown identifiers => UNJUDGED => not commuting
+  }
   const readA = new Set([...a.closure, ...(a.negativeProof?.readLoci ?? [])]);
   const readB = new Set([...b.closure, ...(b.negativeProof?.readLoci ?? [])]);
   if (readB.has(a.file) || readA.has(b.file)) return false;
@@ -59,27 +66,34 @@ for (const f of FILES)
 let crossPairs = 0;
 let crossAgree = 0;
 let samePairs = 0;
-let sameTrue = 0;
+let sameAgree = 0;
 const mism = [];
 for (let i = 0; i < facts.length; i++)
   for (let j = 0; j < facts.length; j++) {
     const a = facts[i];
     const b = facts[j];
     const rt = commute(a, b).commute;
+    const ok = rt === modelCommute(a, b);
     if (a.file === b.file) {
       samePairs += 1;
-      if (rt) sameTrue += 1;
-      continue;
+      if (ok) sameAgree += 1;
+      else if (mism.length < 5) mism.push({ kind: 'same', a: a.file, rt });
+    } else {
+      crossPairs += 1;
+      if (ok) crossAgree += 1;
+      else if (mism.length < 5) mism.push({ kind: 'cross', a: a.file, b: b.file, rt });
     }
-    crossPairs += 1;
-    if (rt === modelCommute(a, b)) crossAgree += 1;
-    else if (mism.length < 5) mism.push({ a: a.file, b: b.file, rt });
   }
 
 check(
   `REFINEMENT cross-file: runtime commute() == Z3-proven predicate on all ${crossPairs} configs`,
-  crossPairs > 0 && crossAgree === crossPairs && mism.length === 0,
+  crossPairs > 0 && crossAgree === crossPairs,
 );
+check(
+  `REFINEMENT same-file: runtime commute() == Z3-proven predicate on all ${samePairs} configs (FASE-2b, residual closed)`,
+  samePairs > 0 && sameAgree === samePairs,
+);
+check('REFINEMENT no mismatches anywhere', mism.length === 0);
 {
   const a = fact('x.ts', [[0, 5]], [], true, []);
   const b = fact('y.ts', [[0, 5]], [], false, []);
@@ -88,8 +102,20 @@ check(
     commute(a, b).commute === false && modelCommute(a, b) === false,
   );
 }
+{
+  // explicit same-file identifier cases (the loop covers empty-idents; pin shared/disjoint/unknown).
+  const shA = fact('f.ts', [[0, 5]], [], false, [], ['X']);
+  const shB = fact('f.ts', [[10, 15]], [], false, [], ['X']);
+  const djA = fact('f.ts', [[0, 5]], [], false, [], ['X']);
+  const djB = fact('f.ts', [[10, 15]], [], false, [], ['Y']);
+  const ukA = { file: 'f.ts', spans: [[0, 5]], closure: new Set(['f.ts']), closureCapped: false };
+  const ukB = { file: 'f.ts', spans: [[10, 15]], closure: new Set(['f.ts']), closureCapped: false };
+  check('REFINEMENT same-file shared-ident: runtime==model AND both COUPLED', commute(shA, shB).commute === modelCommute(shA, shB) && commute(shA, shB).commute === false);
+  check('REFINEMENT same-file disjoint-ident: runtime==model AND both independent', commute(djA, djB).commute === modelCommute(djA, djB) && commute(djA, djB).commute === true);
+  check('REFINEMENT same-file unknown-ident: runtime==model AND both refused', commute(ukA, ukB).commute === modelCommute(ukA, ukB) && commute(ukA, ukB).commute === false);
+}
 console.log(
-  `        (same-file residual: ${samePairs} pairs, ${sameTrue} granted commute:true by the conservative unproven rule — outside the proven fragment; see formal/atomic-algebra/README.md)`,
+  `        (same-file fragment now PROVEN: ${samePairs} pairs, runtime == Z3-proven predicate; intra-file identifier coupling decided — FASE-2b residual closed)`,
 );
 for (const mm of mism) console.log('  MISMATCH', JSON.stringify(mm));
 console.log(`\n${pass} passed, ${fail} failed`);

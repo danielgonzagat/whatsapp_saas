@@ -62,6 +62,12 @@ export interface EditFact {
   closureCapped: boolean;
   /** FASE-0.1: the SHA-bound proof-of-incorrectness for the bytes this patch REMOVED (the (a) inverted-default receipt), or null when the patch removed no bytes (purely additive). Binds (a) to (e) — the algebra now operates over edits that carry their negative justification, not spans alone. */
   negativeProof?: NegativeProofRef | null;
+  /** FASE-2b: identifiers referenced in the edited spans (from identifiersInSpans). The same-file
+   * commute branch uses them to detect intra-file def-use coupling (a shared identifier across
+   * byte-disjoint spans = coupled). undefined ⇒ identifiers unknown (unreadable) ⇒ same-file
+   * independence is refused (UNJUDGED). An empty array ⇒ the spans touch no identifier (whitespace/
+   * comment/punctuation edit) ⇒ no identifier coupling. */
+  spanIdents?: string[];
 }
 
 export interface CommuteVerdict {
@@ -460,7 +466,13 @@ export function buildEditFact(
           ...(Array.isArray(np.readLoci) && np.readLoci.length ? { readLoci: np.readLoci } : {}),
         }
       : null;
-  return { file, spans, closure: set, closureCapped: capped, negativeProof };
+  // FASE-2b: carry the per-span identifier set so the same-file commute branch can decide intra-file
+  // def-use coupling. identifiersInSpans returns null only when the file is unreadable → undefined →
+  // same-file independence is refused (UNJUDGED). It was already computed inside perSymbolClosureOf;
+  // re-running it here is cheap (small files, OS-cached) and keeps buildEditFact the single source.
+  const touchedForIdents = identifiersInSpans(repoRoot, file, spans);
+  const spanIdents = touchedForIdents ? [...touchedForIdents.idents] : undefined;
+  return { file, spans, closure: set, closureCapped: capped, negativeProof, spanIdents };
 }
 
 function spansOverlap(a: Array<[number, number]>, b: Array<[number, number]>): boolean {
@@ -489,9 +501,32 @@ export function commute(a: EditFact, b: EditFact): CommuteVerdict {
     if (spansOverlap(a.spans, b.spans)) {
       return { commute: false, reason: 'same file, overlapping byte spans', sharedLocus: a.file };
     }
+    // FASE-2b intra-file soundness: byte-disjoint is NOT enough — a rename in one span and a use of
+    // that identifier in the other are byte-disjoint yet coupled. Use the per-span identifier sets:
+    // SHARE an identifier ⇒ intra-file def-use coupling (refuse); DISJOINT (incl. both empty ⇒ no
+    // identifier touched) ⇒ independent (sound modulo positional/non-identifier coupling, the
+    // analogue of the cross-file dynamic-import residual); identifiers UNKNOWN (unreadable file) ⇒
+    // UNJUDGED, never a guess.
+    const ai = a.spanIdents;
+    const bi = b.spanIdents;
+    if (ai && bi) {
+      if (ai.some((x) => bi.includes(x))) {
+        return {
+          commute: false,
+          reason: 'same file, disjoint spans but shared identifier (intra-file def-use coupling)',
+          sharedLocus: a.file,
+        };
+      }
+      return {
+        commute: true,
+        reason: 'same file, disjoint spans and disjoint span identifiers (intra-file independent)',
+      };
+    }
     return {
-      commute: true,
-      reason: 'same file, disjoint byte spans (intra-file binding coupling not modelled — conservative)',
+      commute: false,
+      unjudged: true,
+      reason:
+        'same file, disjoint spans but span identifiers unknown — intra-file independence not decidable; refused (UNJUDGED)',
     };
   }
   if (b.closure.has(a.file)) {

@@ -29,12 +29,14 @@ are total functions of the AST (brace/bracket balance, import presence, arity) s
 theorem says nothing about undecidable semantic gates — **Rice's theorem is not defeated, only
 side-stepped for the decidable fragment** (consistent with `gates/formal-gate.ts:80`).
 
-**Honest residual (T8).** The runtime `commute()` also grants commute for *same-file, byte-disjoint*
-edits with the caveat "intra-file binding coupling not modelled — conservative" (`algebra.ts`). That
-case is **outside** this proven fragment. The refinement test
-(`scripts/mcp/atomic-edit/gates/algebra-refinement.proof.mjs`) proves runtime `commute()` equals
-the predicate proven here on the **cross-file fragment** (exhaustively, every branch) and surfaces
-the same-file case as the documented unproven residual — it is not claimed as proven.
+**Honest residual (T8).** Same-file edits are now covered (FASE-2b): they are an instance of the same
+predicate with the per-span identifier sets as loci. The refinement test
+(`scripts/mcp/atomic-edit/gates/algebra-refinement.proof.mjs`) proves runtime `commute()` equals the
+predicate proven here on **all 73,728 cross-file AND all 73,728 same-file** configs (exhaustively,
+every branch): a shared identifier across byte-disjoint same-file spans is intra-file def-use coupling
+(refused, catches rename-above-use); unknown identifiers are `UNJUDGED`. The only remaining residual
+is positional/non-identifier coupling — the exact analogue of the cross-file dynamic-import residual,
+narrow and undecidable in general — named here, not hidden.
 
 **No spurious assumptions.** L2/L3 use guided ground instances to pin Z3's E-matching. Every hint is
 **audited**: `universals ⊨ hint` is checked UNSAT before the hint is trusted, so a hint can only be a

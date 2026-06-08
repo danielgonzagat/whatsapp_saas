@@ -62,9 +62,13 @@ by the model axioms (`universals ⊨ hint` checked UNSAT), so no spurious assump
 spurious result.
 
 **Refinement link.** `gates/algebra-refinement.proof.mjs` proves the runtime `commute()` *equals* the
-predicate the theorem is about, exhaustively over all **73,728** cross-file configurations (every
-branch). The runtime same-file/disjoint-spans case is **outside** the proven fragment (intra-file
-binding coupling is not modelled) and is surfaced as a documented residual, never claimed as proven.
+predicate the theorem is about, exhaustively over all **73,728 cross-file AND all 73,728 same-file**
+configurations (every branch). Same-file edits are an instance of the same predicate: the loci are
+the per-span identifiers, so the model's `mod ∩ read = ∅` becomes "the two spans' identifier sets are
+disjoint" — a shared identifier (e.g. a rename in one span and a use in the other) is intra-file
+def-use coupling and is refused; unknown identifiers (unreadable file) are `UNJUDGED`. The remaining
+residual is positional/non-identifier coupling, the exact analogue of the cross-file dynamic-import
+residual — narrow, undecidable in general, and named, not hidden.
 
 ## 3. External demonstration (FASE-2 T3)
 
@@ -98,9 +102,11 @@ them as contributions.
 - **Rice is not defeated.** The theorem is about the edit algebra's confluence over a *decidable*
   gate fragment, never "edits are correct for all computation." `UNJUDGED` remains a first-class
   verdict (`gates/formal-gate.ts:80` already concedes this).
-- **Open residuals (engineering):** the same-file/intra-file coupling fragment is unproven; the
-  no-bypass deny-hook is logic-real but has not yet fired on live traffic (`blockedByDenyHook` = 0);
-  the `DisproofWitness` is not yet wired through every MCP tool entry point.
+- **Open residuals (engineering):** the no-bypass deny-hook is logic-real but has not yet fired on
+  live traffic (`blockedByDenyHook` = 0 — a launch/harness condition, empirically confirmed dormant);
+  the `DisproofWitness` is not yet wired through every MCP tool entry point; same-file independence is
+  now proven for the identifier-coupling fragment, leaving only positional/non-identifier coupling
+  (the cross-file dynamic-import analogue) undecidable.
 - **Recognition is not correctness (and is not yet met).** "Unprecedented" is conferred by the
   field, not by code: a public priority record (this document), an independently re-runnable
   artifact, peer review that adjudicates novelty, **independent replication**, and external adoption.

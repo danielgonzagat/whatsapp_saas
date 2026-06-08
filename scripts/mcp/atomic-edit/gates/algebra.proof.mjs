@@ -32,7 +32,7 @@ const check = (name, cond) => {
   if (cond) { pass += 1; console.log('  PASS ', name); }
   else { fail += 1; console.log('  FAIL ', name); }
 };
-const fact = (file, spans, closure) => ({ file, spans, closure: new Set(closure), closureCapped: false });
+const fact = (file, spans, closure, spanIdents = []) => ({ file, spans, closure: new Set(closure), closureCapped: false, spanIdents });
 
 // ── UNIT ─────────────────────────────────────────────────────────────────────
 check('UNIT diff-file independent → commute',
@@ -94,6 +94,20 @@ const npFact = (file, spans, closure, negativeProof) => ({ file, spans, closure:
   const fReact = buildEditFact(tmp, { file: 'react.ts', modifiedZones: [{ byteStart: 13, byteEnd: 16 }] });
   check('RE-EXPORT editing a re-export hub COUPLES with editing a re-exported file (no false independence)', commute(idx, fReact).commute === false);
   fs.rmSync(tmp, { recursive: true, force: true });
+}
+
+// ── SAME-FILE-IDENT (FASE-2b): same-file commute checks intra-file identifier coupling, closing ──
+// the rename-above-use latent unsoundness — byte-disjoint spans are no longer enough on their own.
+{
+  const shared = commute(fact('f.ts', [[0, 5]], ['f.ts'], ['X']), fact('f.ts', [[10, 15]], ['f.ts'], ['X']));
+  check('SAME-FILE-IDENT shared identifier across disjoint spans => COUPLED (kills rename-above-use false independence)', shared.commute === false);
+  const disjoint = commute(fact('f.ts', [[0, 5]], ['f.ts'], ['X']), fact('f.ts', [[10, 15]], ['f.ts'], ['Y']));
+  check('SAME-FILE-IDENT disjoint identifiers across disjoint spans => independent', disjoint.commute === true);
+  const unknown = commute(
+    { file: 'f.ts', spans: [[0, 5]], closure: new Set(['f.ts']), closureCapped: false },
+    { file: 'f.ts', spans: [[10, 15]], closure: new Set(['f.ts']), closureCapped: false },
+  );
+  check('SAME-FILE-IDENT unknown identifiers => UNJUDGED (refuse, never guess)', unknown.commute === false && unknown.unjudged === true);
 }
 
 // ── VALUE: closure catches a coupling byte-disjointness misses ────────────────
