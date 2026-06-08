@@ -37,6 +37,11 @@ import { detectPromiseStrength } from '../offer/detectors/promise-strength.detec
 import type { OfferInsight } from '../offer/offer.types';
 import { PositioningUniquenessDetector } from '../defens/positioning-uniqueness.detector';
 import { SocialProofHarvester } from '../defens/social-proof.harvester';
+import { CommemExporterService } from '../commem/commem-exporter.service';
+import { CommemLedgerService } from '../commem/ledger.service';
+import { MemoryProjector } from '../commem/memory.projector';
+import { ExporterService } from '../commem/exporter.service';
+import { AttributionGuard } from '../commem/attribution.guard';
 
 const PROCESSOR = 'mind-cognitive-consolidation';
 const PROCESSOR_VERSION = '1.0.0';
@@ -102,6 +107,9 @@ export async function runCognitiveConsolidation(
   let topOffer: OfferInsight | undefined;
   let positioningSignals = 0;
   let socialProofSignals = 0;
+  let knowledgeLedgerEntries = 0;
+  let knowledgeProjections = 0;
+  let knowledgeAuditable = false;
 
   try {
     const errors = detectErrors({ events, workspaceId, nowMs, windowDays: ERROR_WINDOW_DAYS });
@@ -150,6 +158,23 @@ export async function runCognitiveConsolidation(
     logger?.warn(`cognitive consolidation: defens detectors failed: ${errMsg(err)}`);
   }
 
+  try {
+    // ComMem services are pure logic with only intra-module deps, so the
+    // exporter composes from freshly-newed sub-services — no Nest container.
+    const commem = new CommemExporterService(
+      new CommemLedgerService(),
+      new MemoryProjector(),
+      new ExporterService(),
+      new AttributionGuard(),
+    );
+    const knowledge = commem.exportAggregated(workspaceId, events);
+    knowledgeLedgerEntries = knowledge.ledger.length;
+    knowledgeProjections = knowledge.projections.length;
+    knowledgeAuditable = knowledge.attestation.isAuditable;
+  } catch (err: unknown) {
+    logger?.warn(`cognitive consolidation: commem exporter failed: ${errMsg(err)}`);
+  }
+
   // Mark the throttle even on a quiet workspace so deterministic detectors are
   // not re-run every tick when there is nothing to report.
   throttle.set(workspaceId, nowMs);
@@ -179,6 +204,9 @@ export async function runCognitiveConsolidation(
         : null,
     positioningSignals,
     socialProofSignals,
+    knowledgeLedgerEntries,
+    knowledgeProjections,
+    knowledgeAuditable,
     eventsScanned: events.length,
   };
 

@@ -67,6 +67,9 @@ describe('runCognitiveConsolidation', () => {
     // Defensibility detectors run and ride along as payload context.
     expect(event.payload).toHaveProperty('positioningSignals');
     expect(event.payload).toHaveProperty('socialProofSignals');
+    // ComMem knowledge-capital snapshot rides along too.
+    expect(event.payload).toHaveProperty('knowledgeProjections');
+    expect(event.payload).toHaveProperty('knowledgeAuditable');
     expect(out).not.toBeNull();
     expect(out?.['errorCount']).toBeGreaterThanOrEqual(1);
   });
