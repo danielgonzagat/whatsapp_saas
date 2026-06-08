@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ModulesContainer } from '@nestjs/core';
 import { IntentRouterService } from '../intent-router/intent-router.service';
 import { CapabilityRegistryV2Service } from '../capability-registry-v2/capability-registry-v2.service';
 import { ToolPlannerService } from '../toolplanner/toolplanner.service';
@@ -16,7 +17,7 @@ import { ToolPlannerService } from '../toolplanner/toolplanner.service';
   let planner: ToolPlannerService;
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [IntentRouterService, CapabilityRegistryV2Service, ToolPlannerService],
+      providers: [{ provide: ModulesContainer, useValue: new ModulesContainer() }, IntentRouterService, CapabilityRegistryV2Service, ToolPlannerService],
     }).compile();
     router = module.get(IntentRouterService);
     registry = module.get(CapabilityRegistryV2Service);
