@@ -21,6 +21,7 @@ import { MindPredictionService } from './mind-prediction.service';
 import { MindMessageService } from './aliases/mind-message.service';
 import { MindMessageBackfillService } from './aliases/mind-message-backfill.service';
 import { MindMemoryBackfillService } from './aliases/mind-memory-backfill.service';
+import { MindCutoverBootstrapService } from './aliases/mind-cutover-bootstrap.service';
 import { MindChatMessageService } from './aliases/mind-chat-message.service';
 import { MindMemoryItemService } from './aliases/mind-memory-item.service';
 import { MindCanonicalService } from './mind-canonical.service';
@@ -58,6 +59,7 @@ import { MemoryService } from './memory/memory.service';
     MindMessageService,
     MindMessageBackfillService,
     MindMemoryBackfillService,
+    MindCutoverBootstrapService,
     MindChatMessageService,
     MindMemoryItemService,
     MindCanonicalService,
@@ -82,6 +84,7 @@ import { MemoryService } from './memory/memory.service';
     MindMessageService,
     MindMessageBackfillService,
     MindMemoryBackfillService,
+    MindCutoverBootstrapService,
     MindChatMessageService,
     MindMemoryItemService,
     MindCanonicalService,
