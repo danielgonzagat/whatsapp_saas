@@ -51,13 +51,6 @@ export interface DecisionSweepSummary {
   byWorkspace: Array<{ workspaceId: string; swept: number }>;
 }
 
-/** Narrow read surface the scheduler needs to enumerate workspaces with open decisions. */
-type OpenDecisionWorkspaceReader = {
-  decisionOutcome: {
-    findMany: (args: unknown) => Promise<Array<{ workspaceId: string }>>;
-  };
-};
-
 @Injectable()
 export class DecisionSweepScheduler {
   private readonly logger = new Logger(DecisionSweepScheduler.name);
@@ -151,7 +144,7 @@ export class DecisionSweepScheduler {
    * timeout-loss to record.
    */
   private async listOpenDecisionWorkspaceIds(): Promise<string[]> {
-    const reader = this.prisma as unknown as OpenDecisionWorkspaceReader;
+    const reader: Pick<PrismaService, 'decisionOutcome'> = this.prisma;
     const rows = await reader.decisionOutcome.findMany({
       where: { outcomeAt: null },
       select: { workspaceId: true },

@@ -48,13 +48,6 @@ export interface SaleLedgerScanSummary {
   byWorkspace: Array<{ workspaceId: string; divergences: number }>;
 }
 
-/** Narrow read surface the scheduler needs to enumerate active workspaces. */
-type ActiveWorkspaceReader = {
-  payment: {
-    findMany: (args: unknown) => Promise<Array<{ workspaceId: string }>>;
-  };
-};
-
 @Injectable()
 export class SaleLedgerReconcileScheduler {
   private readonly logger = new Logger(SaleLedgerReconcileScheduler.name);
@@ -145,7 +138,7 @@ export class SaleLedgerReconcileScheduler {
    * `Payment → KloelSale` divergence.
    */
   private async listActiveWorkspaceIds(): Promise<string[]> {
-    const reader = this.prisma as unknown as ActiveWorkspaceReader;
+    const reader: Pick<PrismaService, 'payment'> = this.prisma;
     const rows = await reader.payment.findMany({
       where: { status: { in: [...PAYMENT_TERMINAL_PAID_STATUSES] } },
       select: { workspaceId: true },
