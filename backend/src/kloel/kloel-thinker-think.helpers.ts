@@ -195,8 +195,9 @@ export async function finalizeSuccessfulReply(
       /* best-effort: usage/budget tracking must never break the reply */
     });
   }
-  // Persist only public-safe reasoning metadata. Provider chain-of-thought text is
-  // intentionally blank here; duration can survive reloads without leaking content.
+  // Persist the real reasoning the model produced this turn (text + duration) so it
+  // survives reloads and renders in the reasoning panel. The writer accumulated the
+  // streamed reasoning_content; getLastReasoning() now carries the actual text.
   const lastReasoning = streamWriter.getLastReasoning();
   if (thread?.id && workspaceId) {
     await threadService.persistAssistantThreadMessage(

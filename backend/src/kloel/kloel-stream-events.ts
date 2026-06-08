@@ -109,7 +109,7 @@ interface KloelReasoningSummaryEvent {
   done: false;
 }
 
-/** Kloel reasoning delta event shape. Text is never provider chain-of-thought. */
+/** Kloel reasoning delta event shape. Carries the real provider reasoning text streamed to the UI. */
 interface KloelReasoningDeltaEvent {
   /** Type property. */
   type: 'reasoning_delta';
@@ -405,11 +405,11 @@ export function createKloelReasoningSummaryEvent(text: string): KloelReasoningSu
   };
 }
 
-/** Create private reasoning delta event; text is intentionally blank for public SSE. */
-export function createKloelReasoningDeltaEvent(_text: string): KloelReasoningDeltaEvent {
+/** Create reasoning delta event carrying the real provider reasoning text. */
+export function createKloelReasoningDeltaEvent(text: string): KloelReasoningDeltaEvent {
   return {
     type: 'reasoning_delta',
-    text: '',
+    text,
     done: false,
   };
 }

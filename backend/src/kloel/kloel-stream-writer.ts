@@ -8,6 +8,7 @@ import {
   createKloelAssistantVisibleTextStreamFilter,
   createKloelContentEvent,
   createKloelStatusEvent,
+  createKloelReasoningDeltaEvent,
   createKloelReasoningDoneEvent,
   createKloelDoneEvent,
 } from './kloel-stream-events';
@@ -170,18 +171,21 @@ export class KloelStreamWriter {
   // ("Perdi acesso ao motor de conversa"). close() uses this to guarantee a
   // terminal `done` is always emitted before the socket is ended.
   private terminalSent = false;
-  // Tracks private reasoning duration only. Provider reasoning text must never be
-  // serialized to SSE or persisted into public assistant metadata.
+  // Tracks the real provider reasoning streamed during the current turn. The
+  // product streams reasoning to the UI (reasoning_delta) and persists it into
+  // assistant metadata — it is no longer suppressed. Duration is tracked
+  // alongside the accumulated text.
   private lastReasoningDurationMs: number | null = null;
+  private lastReasoningText = '';
 
   constructor(
     private readonly res: Response,
     private readonly options: KloelStreamWriterOptions,
   ) {}
 
-  /** Public-safe reasoning metadata captured during the current response. */
+  /** Real reasoning text + duration captured during the current response. */
   getLastReasoning(): { text: string; durationMs: number | null } {
-    return { text: '', durationMs: this.lastReasoningDurationMs };
+    return { text: this.lastReasoningText, durationMs: this.lastReasoningDurationMs };
   }
 
   /** Init. */
@@ -361,8 +365,9 @@ export class KloelStreamWriter {
     let hasStreamedContent = false;
     const visibleTextFilter = createKloelAssistantVisibleTextStreamFilter();
 
-    // DeepSeek can emit private reasoning_content before the public answer.
-    // Measure that phase, but never stream or persist the text.
+    // DeepSeek can emit reasoning_content before the public answer. Measure that
+    // phase AND stream the real reasoning tokens (reasoning_delta) to the UI; the
+    // accumulated text is also persisted into assistant metadata downstream.
     let reasoningStartedAt = 0;
     let reasoningEmitted = false;
     let reasoningDoneEmitted = false;
@@ -415,6 +420,8 @@ export class KloelStreamWriter {
           reasoningEmitted = true;
           reasoningStartedAt = Date.now();
         }
+        this.lastReasoningText += reasoningPiece;
+        this.write(createKloelReasoningDeltaEvent(reasoningPiece));
       }
       const content = delta?.content || '';
       if (!content) {

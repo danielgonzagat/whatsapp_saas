@@ -270,6 +270,8 @@ model Workspace {
   mindDailyReports      MindDailyReport[]
   mindGlobalPriors      MindGlobalPrior[]
   mindSelfModels        MindSelfModel[]
+  memoryNodes           MemoryNode[]
+  memoryEdges           MemoryEdge[]
 
   // Facebook Messenger Messages
   fbMessages FbMessage[]
@@ -3728,6 +3730,70 @@ model MindGraphEdge {
   @@unique([workspaceId, fromNode, relation, toNode])
   @@index([workspaceId, relation, weight])
   @@map("RAC_MindGraphEdge")
+}
+
+/// Per-USER typed memory graph node (track m3-memory-graph).
+///
+/// Distinct from `MindGraphNode` (per-WORKSPACE Hebbian outcome facts): this is
+/// the per-user supermemory/Mem0-equivalent layer with a typed taxonomy, an
+/// optional pgvector embedding for semantic recall, and lifecycle columns
+/// (importance / recency / confidence / expiry / pinning / forgetting).
+///
+/// Per-user isolation is enforced by `(workspaceId, userId)` on every read/write.
+/// `type` is one of: fact | preference | project | goal | decision | entity |
+/// document | summary | contradiction. The `embedding` column uses
+/// `Unsupported("vector(1536)")` because Prisma cannot type pgvector natively —
+/// all vector reads go through `$queryRaw` (see MemoryService.retrieveRelevant).
+model MemoryNode {
+  id          String                       @id @default(uuid())
+  workspaceId String
+  workspace   Workspace                    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+  scope       String                       @default("user") // user | workspace | shared
+  type        String // fact|preference|project|goal|decision|entity|document|summary|contradiction
+  content     String
+  summary     String?
+  confidence  Float                        @default(0.5) // [0..1] extraction certainty
+  importance  Float                        @default(0.5) // [0..1] salience for ranking
+  recency     Float                        @default(1) // [0..1] decayed at read time
+  embedding   Unsupported("vector(1536)")? // semantic recall via pgvector
+  pinned      Boolean                      @default(false) // never auto-forgotten
+  forgotten   Boolean                      @default(false) // soft-deleted; excluded from recall
+  metadata    Json                         @default("{}") @db.JsonB
+  createdAt   DateTime                     @default(now())
+  expiresAt   DateTime? // hard TTL; expired rows excluded from recall
+
+  outgoingEdges MemoryEdge[] @relation("MemoryEdgeFrom")
+  incomingEdges MemoryEdge[] @relation("MemoryEdgeTo")
+
+  @@index([workspaceId, userId, type])
+  @@index([workspaceId, userId, importance])
+  @@map("RAC_MemoryNode")
+}
+
+/// Typed edge between two `MemoryNode`s (track m3-memory-graph).
+///
+/// `relation` is one of: supports | contradicts | updates | extends |
+/// belongs_to | references | replaces. Edges are per-user-scoped via
+/// `workspaceId` + the endpoints' own `(workspaceId, userId)` isolation, and
+/// cascade-delete with their `from` node so a forgotten/removed node never
+/// leaves dangling edges.
+model MemoryEdge {
+  id          String     @id @default(uuid())
+  workspaceId String
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  fromId      String
+  toId        String
+  from        MemoryNode @relation("MemoryEdgeFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to          MemoryNode @relation("MemoryEdgeTo", fields: [toId], references: [id], onDelete: Cascade)
+  relation    String // supports|contradicts|updates|extends|belongs_to|references|replaces
+  weight      Float      @default(1)
+  metadata    Json       @default("{}") @db.JsonB
+  createdAt   DateTime   @default(now())
+
+  @@unique([workspaceId, fromId, relation, toId])
+  @@index([workspaceId, relation])
+  @@map("RAC_MemoryEdge")
 }
 
 model MindOutboxEvent {

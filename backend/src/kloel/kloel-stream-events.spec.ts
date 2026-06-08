@@ -32,7 +32,7 @@ describe('kloel-stream-events', () => {
     });
   });
 
-  it('keeps provider reasoning private instead of exposing it as public stream text', () => {
+  it('streams the real provider reasoning as reasoning_delta text', () => {
     const buildThinkingLabel = (streamEvents as Record<string, unknown>)[
       'createKloelPublicThinkingLabel'
     ] as (message: string) => string;
@@ -43,12 +43,11 @@ describe('kloel-stream-events', () => {
     expect(buildThinkingLabel('Eu quero validar o raciocínio do chat.')).toBe('');
     expect(buildStreamingLabel('Eu quero validar o raciocínio do chat.')).toBe('');
 
-    const event = createKloelReasoningDeltaEvent(
-      'We are in a chat conversation with the user and must decide what to answer.',
-    );
+    const reasoning = 'We are in a chat conversation with the user and must decide what to answer.';
+    const event = createKloelReasoningDeltaEvent(reasoning);
 
-    expect(event).toEqual({ type: 'reasoning_delta', text: '', done: false });
-    expect(event.text).not.toContain('We are in a chat conversation');
+    expect(event).toEqual({ type: 'reasoning_delta', text: reasoning, done: false });
+    expect(event.text).toContain('We are in a chat conversation');
   });
 
   it('emits tool calls and observations as correlated spans', () => {

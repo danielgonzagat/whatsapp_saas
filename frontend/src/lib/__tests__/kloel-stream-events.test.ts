@@ -60,11 +60,32 @@ describe('parseKloelStreamPayload', () => {
     ]);
   });
 
-  it('keeps provider reasoning deltas private instead of adding public events', () => {
+  it('surfaces streamed reasoning delta text per the reasoning_delta contract', () => {
     expect(
       parseKloelStreamPayload({
         type: 'reasoning_delta',
-        text: 'We are in a chat conversation and this must stay private.',
+        text: 'Analisando os dados da conta antes de responder.',
+      }),
+    ).toEqual([
+      {
+        type: 'reasoning_delta',
+        text: 'Analisando os dados da conta antes de responder.',
+      },
+    ]);
+  });
+
+  it('ignores empty or non-string reasoning delta payloads', () => {
+    expect(
+      parseKloelStreamPayload({
+        type: 'reasoning_delta',
+        text: '',
+      }),
+    ).toEqual([]);
+
+    expect(
+      parseKloelStreamPayload({
+        type: 'reasoning_delta',
+        text: 42,
       }),
     ).toEqual([]);
   });

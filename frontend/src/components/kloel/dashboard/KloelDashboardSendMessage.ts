@@ -131,8 +131,12 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
         playbackTimerRef.current = null;
       }
     };
-    // Defensive legacy path: if a stale backend still emits reasoning_delta, coalesce
-    // before metadata handling drops the private text so it never renders per token.
+    // Streamed thinking buffer: coalesce reasoning_delta tokens over a short
+    // window before flushing into the assistant reasoning state. Each flush
+    // accumulates the real model reasoning text into metadata (streamedReasoning),
+    // which the live thinking timeline renders token-by-token. The first delta
+    // stamps t0 and reasoning_done computes the real durationMs (see
+    // applyReasoningStreamEventToMetadata in kloel-message-ui).
     let reasoningBuffer = '';
     let reasoningFlushTimer: ReturnType<typeof setTimeout> | null = null;
     const flushReasoning = () => {

@@ -443,17 +443,23 @@ describe('KloelGraphShell', () => {
     expect(push).not.toHaveBeenCalled();
   });
 
-  it('uses shallow floating navigation when an overlay is open', () => {
+  it('keeps an open screen mounted when the graph navigator pill is used', () => {
+    // An open route screen (the macOS-style window) is dismissed ONLY by its red
+    // control — interacting with the floating galaxy navigator behind it must keep
+    // the screen open so the user can rearrange the camera without losing context.
     const pushState = vi.spyOn(window.history, 'pushState');
     pathname = '/chat';
     searchParams = new URLSearchParams();
 
     renderShell(<main>Chat overlay</main>);
 
+    expect(screen.getByRole('dialog')).toHaveTextContent('Chat overlay');
+
     fireEvent.click(screen.getByRole('button', { name: 'Criar' }));
 
-    expect(pushState).toHaveBeenCalledWith(null, '', '/products?graph=1');
+    expect(pushState).not.toHaveBeenCalled();
     expect(push).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog')).toHaveTextContent('Chat overlay');
   });
 
   it('navigates by node clicks without opening on drag movement', () => {
@@ -774,5 +780,34 @@ describe('KloelGraphShell', () => {
 
     expect(pushState).toHaveBeenCalledWith(null, '', '/products?graph=1');
     expect(push).not.toHaveBeenCalled();
+  });
+
+  it('renders the macOS window controls: a red close and a green fullscreen control', () => {
+    renderShell(<main>ProdutosView real</main>);
+
+    const dialog = screen.getByRole('dialog', { name: /Produtos/i });
+
+    expect(dialog.querySelector('[aria-label="Fechar overlay do grafo"]')).toBeTruthy();
+    expect(dialog.querySelector('[aria-label="Expandir janela"]')).toBeTruthy();
+  });
+
+  it('toggles fullscreen from the green control without closing the open screen', () => {
+    const pushState = vi.spyOn(window.history, 'pushState');
+    renderShell(<main>ProdutosView real</main>);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Expandir janela' }));
+
+    // Fullscreen is a pure window-state toggle — it must not navigate or close.
+    expect(pushState).not.toHaveBeenCalled();
+    expect(push).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog', { name: /Produtos/i })).toHaveTextContent(
+      'ProdutosView real',
+    );
+    // After expanding, the control offers a restore action and the screen stays open.
+    expect(screen.getByRole('button', { name: 'Restaurar janela' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Restaurar janela' }));
+    expect(screen.getByRole('button', { name: 'Expandir janela' })).toBeTruthy();
+    expect(pushState).not.toHaveBeenCalled();
   });
 });

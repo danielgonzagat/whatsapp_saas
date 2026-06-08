@@ -310,7 +310,11 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
         setRecenterNonce((value) => value + 1);
       });
 
-      if (!primaryNode) {
+      // An open route screen (the macOS-style window) is dismissed ONLY by its red
+      // control / Escape — never by interacting with the graph navigator behind it.
+      // While a screen is open, the pill only teleports the camera (above), so the
+      // user can keep arranging screens over a live graph without losing their place.
+      if (!primaryNode || hasRouteOverlay) {
         return;
       }
 
@@ -322,7 +326,7 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
       const query = nextParams.toString();
       pushGraphOnlyRoute(`${path}${query ? `?${query}` : ''}`);
     },
-    [activeRouteKey, pushGraphOnlyRoute],
+    [activeRouteKey, hasRouteOverlay, pushGraphOnlyRoute],
   );
 
   const toggleSettings = useCallback(() => {

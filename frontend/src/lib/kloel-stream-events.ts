@@ -253,13 +253,13 @@ function tryAppendReasoningSummary(
 }
 
 function tryAppendReasoningDelta(event: Record<string, unknown>, events: KloelStreamEvent[]): void {
-  if (event.type !== 'reasoning_delta') {
+  if (event.type !== 'reasoning_delta' || typeof event.text !== 'string' || event.text.length === 0) {
     return;
   }
-
-  void events;
-  // Provider reasoning content is private. Public chat surfaces must rely on
-  // status, tool spans, summaries, duration and final answer text instead.
+  // Surface the streamed reasoning text token-by-token so the live thinking
+  // timeline can render the real model reasoning as it arrives (per the
+  // reasoning_delta contract). The text field carries the delta payload.
+  events.push({ type: 'reasoning_delta', text: event.text });
 }
 
 function tryAppendReasoningDone(event: Record<string, unknown>, events: KloelStreamEvent[]): void {

@@ -665,20 +665,54 @@ describe('kloel-message-ui', () => {
     ]);
   });
 
-  it('keeps streamed reasoning deltas out of assistant public metadata', () => {
-    const metadata = appendAssistantTraceFromEvent(
+  it('accumulates streamed reasoning deltas into the live thinking text', () => {
+    const first = appendAssistantTraceFromEvent(
       { clientRequestId: 'req-live-reasoning' },
       {
         type: 'reasoning_delta',
-        text: 'We are in a chat conversation with the user and this must stay private.',
+        text: 'Analisando ',
       },
     );
-
-    expect(metadata).toEqual({
-      clientRequestId: 'req-live-reasoning',
+    const second = appendAssistantTraceFromEvent(first, {
+      type: 'reasoning_delta',
+      text: 'os dados da conta.',
     });
-    expect(getAssistantReasoning(metadata).text).toBe('');
+
+    expect(second).toEqual(
+      expect.objectContaining({
+        clientRequestId: 'req-live-reasoning',
+        streamedReasoning: 'Analisando os dados da conta.',
+        reasoningStartedAt: expect.any(Number),
+      }),
+    );
+    expect(getAssistantReasoning(second).text).toBe('Analisando os dados da conta.');
+  });
+
+  it('keeps the legacy private reasoningText field out of the live thinking text', () => {
     expect(getAssistantReasoning({ reasoningText: 'legacy private reasoning' }).text).toBe('');
+  });
+
+  it('derives a real reasoning duration when the provider reports a non-positive value', () => {
+    const started = appendAssistantTraceFromEvent(
+      { clientRequestId: 'req-duration' },
+      { type: 'reasoning_delta', text: 'Pensando.' },
+    );
+    const done = appendAssistantTraceFromEvent(started, {
+      type: 'reasoning_done',
+      durationMs: 0,
+    });
+
+    expect(getAssistantReasoning(done).durationMs).not.toBeNull();
+    expect(getAssistantReasoning(done).durationMs ?? -1).toBeGreaterThanOrEqual(0);
+  });
+
+  it('prefers the provider-reported reasoning duration when it is positive', () => {
+    const done = appendAssistantTraceFromEvent(
+      { clientRequestId: 'req-duration-positive' },
+      { type: 'reasoning_done', durationMs: 1500 },
+    );
+
+    expect(getAssistantReasoning(done).durationMs).toBe(1500);
   });
 
   it('merges live capability metadata from terminal stream events', () => {

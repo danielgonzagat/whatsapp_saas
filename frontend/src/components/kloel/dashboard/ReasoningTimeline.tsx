@@ -10,14 +10,17 @@ import type { AssistantProcessingTraceEntry, AssistantReasoning } from '@/lib/kl
 /**
  * Real pre-response execution timeline for the Kloel chat.
  *
- * Visible values are public-safe execution context only:
- * - reasoning.summary    — optional public summary
- * - reasoning.durationMs — measured private thinking time
+ * Visible values are real model/agent execution context:
+ * - reasoning.text       — live streamed reasoning, rendered token-by-token
+ * - reasoning.summary    — optional public summary (collapses the header)
+ * - reasoning.durationMs — measured thinking time
  * - steps                — real tool_call/tool_result events (entry.tool + durationMs)
  * - reasoning.files      — real delivered artifacts
  *
- * Raw provider reasoning text is intentionally ignored. When there is no public
- * context, tool activity, file, duration or active processing, the block does not render.
+ * The streamed reasoning text is the real model reasoning surfaced from
+ * reasoning_delta events. When there is no reasoning text, public summary, tool
+ * activity, file, duration or active processing, the block does not render
+ * (honest empty state — never a fabricated thinking line).
  */
 interface ReasoningTimelineProps {
   reasoning: AssistantReasoning;
@@ -104,12 +107,15 @@ export function ReasoningTimeline({
   const toolSteps = steps.filter(
     (step) => step.kind === 'tool_call' || step.kind === 'tool_result',
   );
+  const streamedReasoningText = reasoning.text.replace(/\s+$/, '');
+  const hasStreamedReasoning = streamedReasoningText.trim().length > 0;
   const safeReasoningSummary = reasoning.summary.trim();
   const visibleFallbackSummary = fallbackSummary.trim();
   const publicReasoningText = safeReasoningSummary || visibleFallbackSummary;
   const hasPublicReasoningText = publicReasoningText.length > 0;
   const hasReasoningDuration = Boolean(reasoning.durationMs && reasoning.durationMs > 0);
   const hasContent =
+    hasStreamedReasoning ||
     hasPublicReasoningText ||
     hasReasoningDuration ||
     toolSteps.length > 0 ||
@@ -129,7 +135,10 @@ export function ReasoningTimeline({
     reasoning.durationMs && reasoning.durationMs > 0
       ? `${kloelT(`Pensou por`)} ${formatDuration(reasoning.durationMs)}`
       : '';
-  const shouldRenderThinkingStep = isProcessing;
+  // Render the thinking step while processing, or whenever there is real
+  // streamed reasoning text to show (so the reasoning stays visible inside the
+  // collapsible after completion).
+  const shouldRenderThinkingStep = isProcessing || hasStreamedReasoning;
 
 
   return (
@@ -207,8 +216,10 @@ export function ReasoningTimeline({
                     lineHeight: 1.7,
                     color: KLOEL_THEME.textSecondary,
                     whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
                   }}
                 >
+                  {hasStreamedReasoning ? streamedReasoningText : null}
                   {isProcessing ? (
                     <span
                       aria-hidden
@@ -216,7 +227,7 @@ export function ReasoningTimeline({
                         display: 'inline-block',
                         width: 2,
                         height: 15,
-                        marginLeft: 2,
+                        marginLeft: hasStreamedReasoning ? 1 : 2,
                         transform: 'translateY(2px)',
                         background: TERTIARY,
                         animation: 'rtl-blink 1.05s steps(1) infinite',

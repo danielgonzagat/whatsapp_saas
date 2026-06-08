@@ -22,6 +22,7 @@ import { MindMessageService } from './aliases/mind-message.service';
 import { MindChatMessageService } from './aliases/mind-chat-message.service';
 import { MindMemoryItemService } from './aliases/mind-memory-item.service';
 import { MindCanonicalService } from './mind-canonical.service';
+import { MemoryService } from './memory/memory.service';
 
 /**
  * MIND module — wires the cognitive substrate services into Nest DI.
@@ -56,6 +57,7 @@ import { MindCanonicalService } from './mind-canonical.service';
     MindChatMessageService,
     MindMemoryItemService,
     MindCanonicalService,
+    MemoryService,
   ],
   exports: [
     MindKnowledgeModule,
@@ -77,6 +79,7 @@ import { MindCanonicalService } from './mind-canonical.service';
     MindChatMessageService,
     MindMemoryItemService,
     MindCanonicalService,
+    MemoryService,
   ],
 })
 export class MindModule {}

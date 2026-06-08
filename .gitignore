@@ -180,3 +180,6 @@ intents/
 # FASE-1 formal-proof toolchain (Z3 venv) and scratch — not committed
 scripts/mcp/atomic-edit/.z3venv/
 .z3-scratch/
+
+# ECC capability-mining research clone — never commit into Kloel
+.ecc-research/

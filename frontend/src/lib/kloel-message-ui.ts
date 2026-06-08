@@ -409,7 +409,11 @@ export interface AssistantReasoningFile {
 
 /** Public-safe reasoning UI shape. Raw provider reasoning is never exposed. */
 export interface AssistantReasoning {
-  /** Always public-safe text; currently blank to avoid chain-of-thought leakage. */
+  /**
+   * Live streamed reasoning text accumulated from reasoning_delta events. This
+   * is the real model reasoning surfaced token-by-token in the thinking step.
+   * The legacy private `reasoningText` metadata field is never read here.
+   */
   text: string;
   /** Summary property. */
   summary: string;
@@ -422,7 +426,8 @@ export interface AssistantReasoning {
 /** Get public-safe reasoning metadata for an assistant message. */
 export function getAssistantReasoning(metadata: unknown): AssistantReasoning {
   const normalized = normalizeAssistantMessageMetadata(metadata);
-  const text = '';
+  const text =
+    typeof normalized?.streamedReasoning === 'string' ? normalized.streamedReasoning : '';
   const summary =
     typeof normalized?.reasoningSummary === 'string' ? normalized.reasoningSummary : '';
   const durationMs =
@@ -454,13 +459,26 @@ function applyReasoningStreamEventToMetadata(
   event: KloelStreamEvent,
 ): Record<string, unknown> | null {
   if (event.type === 'reasoning_delta') {
-    return metadata;
+    // Accumulate the real streamed reasoning text token-by-token so the live
+    // thinking timeline renders it. Stored under a dedicated key (never the
+    // legacy `reasoningText` field, which is kept private) and the first delta
+    // stamps the wall-clock start used to derive the real duration.
+    const previous = typeof metadata.streamedReasoning === 'string' ? metadata.streamedReasoning : '';
+    const startedAt =
+      typeof metadata.reasoningStartedAt === 'number' ? metadata.reasoningStartedAt : Date.now();
+    return { ...metadata, streamedReasoning: previous + event.text, reasoningStartedAt: startedAt };
   }
   if (event.type === 'reasoning_summary') {
     return { ...metadata, reasoningSummary: event.text };
   }
   if (event.type === 'reasoning_done') {
-    return { ...metadata, reasoningDurationMs: event.durationMs };
+    // Prefer the provider-supplied durationMs; if it is non-positive, derive the
+    // real elapsed time from the stamped start of the first streamed delta.
+    const startedAt =
+      typeof metadata.reasoningStartedAt === 'number' ? metadata.reasoningStartedAt : null;
+    const derivedMs = startedAt !== null ? Math.max(0, Date.now() - startedAt) : 0;
+    const durationMs = event.durationMs > 0 ? event.durationMs : derivedMs;
+    return { ...metadata, reasoningDurationMs: durationMs };
   }
   if (event.type === 'file') {
     const currentFiles = Array.isArray(metadata.files) ? metadata.files : [];
