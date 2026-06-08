@@ -13,10 +13,23 @@ export interface AtomicSealCreateArgs {
   exportPath?: string;
 }
 
+export interface AtomicSealArtifactHashMismatch {
+  path: string;
+  reason: string;
+  expectedSha256?: string;
+  actualSha256?: string | null;
+  expectedBytes?: number;
+  actualBytes?: number | null;
+}
+
 export interface AtomicSealVerification {
   sealValid: boolean;
   hashValid: boolean;
   signatureValid: boolean | null;
+  schemaValid: boolean;
+  schemaMismatches: string[];
+  artifactHashesValid: boolean | null;
+  artifactHashMismatches: AtomicSealArtifactHashMismatch[];
   expectedHash: string | null;
   actualHash: string | null;
   signatureAlg: string | null;
@@ -57,10 +70,73 @@ function artifactHashRecords(artifactPaths: readonly string[] | undefined): { pa
     const absPath = path.resolve(REPO_ROOT, artifactPath);
     const rel = repoRelativePath(absPath);
     if (!fs.existsSync(absPath)) throw new Error('artifact does not exist: ' + rel);
-    const stat = fs.statSync(absPath);
-    if (!stat.isFile() || stat.size <= 0) throw new Error('artifact is not a non-empty file: ' + rel);
+    const stat = fs.lstatSync(absPath);
+    if (!stat.isFile() || stat.size <= 0) throw new Error('artifact is not a non-empty regular file: ' + rel);
     return { path: rel, sha256: sha256Bytes(fs.readFileSync(absPath)), bytes: stat.size };
   });
+}
+function verifyPayloadArtifactHashes(payload: Record<string, unknown>): { valid: boolean | null; mismatches: AtomicSealArtifactHashMismatch[] } {
+  const artifactHashes = payload.artifactHashes;
+  if (artifactHashes === undefined) return { valid: null, mismatches: [] };
+  if (!Array.isArray(artifactHashes)) {
+    return { valid: false, mismatches: [{ path: '<payload.artifactHashes>', reason: 'artifactHashes is not an array' }] };
+  }
+
+  const mismatches: AtomicSealArtifactHashMismatch[] = [];
+  for (const [index, artifact] of artifactHashes.entries()) {
+    const pathLabel = '<payload.artifactHashes[' + index + ']>';
+    if (!isRecord(artifact)) {
+      mismatches.push({ path: pathLabel, reason: 'artifact hash record is not an object' });
+      continue;
+    }
+
+    const artifactPath = artifact.path;
+    const expectedSha256 = artifact.sha256;
+    const expectedBytes = artifact.bytes;
+    if (typeof artifactPath !== 'string' || artifactPath.length === 0) {
+      mismatches.push({ path: pathLabel, reason: 'artifact path is missing' });
+      continue;
+    }
+    if (typeof expectedSha256 !== 'string' || !/^[0-9a-f]{64}$/.test(expectedSha256)) {
+      mismatches.push({ path: artifactPath, reason: 'artifact sha256 is missing or malformed' });
+      continue;
+    }
+    if (typeof expectedBytes !== 'number' || !Number.isInteger(expectedBytes) || expectedBytes <= 0) {
+      mismatches.push({ path: artifactPath, reason: 'artifact byte count is missing or invalid', expectedSha256 });
+      continue;
+    }
+
+    const declaredRel = artifactPath.replace(/\\/g, '/');
+    let absPath: string;
+    let rel: string;
+    try {
+      absPath = path.resolve(REPO_ROOT, declaredRel);
+      rel = repoRelativePath(absPath);
+    } catch {
+      mismatches.push({ path: declaredRel, reason: 'artifact path escapes repo root', expectedSha256, expectedBytes });
+      continue;
+    }
+    if (rel !== declaredRel) {
+      mismatches.push({ path: declaredRel, reason: 'artifact path is not normalized repo-relative path', expectedSha256, expectedBytes });
+      continue;
+    }
+    if (!fs.existsSync(absPath)) {
+      mismatches.push({ path: rel, reason: 'artifact is missing', expectedSha256, actualSha256: null, expectedBytes, actualBytes: null });
+      continue;
+    }
+
+    const stat = fs.lstatSync(absPath);
+    if (!stat.isFile()) {
+      mismatches.push({ path: rel, reason: 'artifact is not a regular file', expectedSha256, actualSha256: null, expectedBytes, actualBytes: null });
+      continue;
+    }
+    const bytes = fs.readFileSync(absPath);
+    const actualSha256 = sha256Bytes(bytes);
+    if (actualSha256 !== expectedSha256 || stat.size !== expectedBytes) {
+      mismatches.push({ path: rel, reason: 'artifact hash or byte count changed', expectedSha256, actualSha256, expectedBytes, actualBytes: stat.size });
+    }
+  }
+  return { valid: mismatches.length === 0, mismatches };
 }
 function resolveSealExportPath(exportPath: string | undefined): { absPath: string; rel: string } | null {
   if (!exportPath) return null;
@@ -73,8 +149,24 @@ function resolveSealExportPath(exportPath: string | undefined): { absPath: strin
 
 export function verifyAtomicSealEnvelope(seal: unknown): AtomicSealVerification {
   if (!isRecord(seal) || !isRecord(seal.payload) || typeof seal.sealHash !== 'string') {
-    return { sealValid: false, hashValid: false, signatureValid: false, expectedHash: null, actualHash: null, signatureAlg: null, verificationLimit: 'seal envelope is malformed' };
+    return {
+      sealValid: false,
+      hashValid: false,
+      signatureValid: false,
+      schemaValid: false,
+      schemaMismatches: ['seal envelope is malformed'],
+      artifactHashesValid: null,
+      artifactHashMismatches: [],
+      expectedHash: null,
+      actualHash: null,
+      signatureAlg: null,
+      verificationLimit: 'seal envelope is malformed',
+    };
   }
+  const schemaMismatches: string[] = [];
+  if (seal.schema !== 'atomic.seal.envelope.v1') schemaMismatches.push('seal.schema must be atomic.seal.envelope.v1');
+  if (seal.payload.schema !== 'atomic.seal.payload.v1') schemaMismatches.push('payload.schema must be atomic.seal.payload.v1');
+  const schemaValid = schemaMismatches.length === 0;
   const actualHash = sha256Text(stableCanonicalJson(seal.payload));
   const hashValid = seal.sealHash === actualHash;
   const signatureAlg = typeof seal.signatureAlg === 'string' ? seal.signatureAlg : null;
@@ -85,19 +177,35 @@ export function verifyAtomicSealEnvelope(seal: unknown): AtomicSealVerification 
   } else if (signatureAlg !== 'none') {
     signatureValid = false;
   }
-  const sealValid = hashValid && (signatureAlg === 'none' || signatureValid === true);
+  const artifactCheck = verifyPayloadArtifactHashes(seal.payload);
+  const artifactHashesValid = artifactCheck.valid;
+  const artifactCustodyValid = artifactHashesValid !== false;
+  const sealValid = schemaValid && hashValid && artifactCustodyValid && (signatureAlg === 'none' || signatureValid === true);
+  const signatureLimit = signatureAlg === 'hmac-sha256'
+    ? signatureValid === null
+      ? 'ATOMIC_SEAL_KEY is not present; hash can be checked but issuer signature cannot be verified.'
+      : 'HMAC signature checked with ATOMIC_SEAL_KEY.'
+    : 'Unsigned content-addressed seal: tamper-evident hash is verified, issuer identity is not cryptographically proven.';
+  const artifactLimit = artifactHashesValid === null
+    ? ' No artifact hash custody was present in this seal.'
+    : artifactHashesValid
+      ? ' Referenced artifact hashes were re-read from the current repo root.'
+      : ' Referenced artifact hash custody failed against current repo bytes.';
+  const schemaLimit = schemaValid
+    ? ' Seal and payload schemas match atomic.seal.*.v1.'
+    : ' Seal schema contract failed: ' + schemaMismatches.join('; ') + '.';
   return {
     sealValid,
     hashValid,
     signatureValid,
+    schemaValid,
+    schemaMismatches,
+    artifactHashesValid,
+    artifactHashMismatches: artifactCheck.mismatches,
     expectedHash: seal.sealHash,
     actualHash,
     signatureAlg,
-    verificationLimit: signatureAlg === 'hmac-sha256'
-      ? signatureValid === null
-        ? 'ATOMIC_SEAL_KEY is not present; hash can be checked but issuer signature cannot be verified.'
-        : 'HMAC signature checked with ATOMIC_SEAL_KEY.'
-      : 'Unsigned content-addressed seal: tamper-evident hash is verified, issuer identity is not cryptographically proven.',
+    verificationLimit: signatureLimit + artifactLimit + schemaLimit,
   };
 }
 

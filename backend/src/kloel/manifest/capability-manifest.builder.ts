@@ -73,9 +73,7 @@ export class CapabilityManifestBuilderService {
    * in-memory array) or to memoize upstream.
    */
   build(): CapabilityManifest {
-    const capabilities = this.registry
-      .list()
-      .map((definition) => this.toEntry(definition));
+    const capabilities = this.registry.list().map((definition) => this.toEntry(definition));
     return {
       version: MANIFEST_VERSION,
       capabilities,
@@ -107,6 +105,7 @@ export class CapabilityManifestBuilderService {
       category: definition.category,
       maturity: definition.maturity ?? 'registry',
       surface: [...definition.surface],
+      dependsOn: [...(definition.dependsOn ?? [])],
     };
   }
 
@@ -141,9 +140,7 @@ export class CapabilityManifestBuilderService {
   }
 
   /** Map registry category + confirmation flag onto the manifest safety model. */
-  private deriveSafetyProfile(
-    definition: CapabilityDefinition,
-  ): CapabilitySafetyProfile {
+  private deriveSafetyProfile(definition: CapabilityDefinition): CapabilitySafetyProfile {
     return {
       level: this.deriveSafetyLevel(definition.category),
       requiresConfirmation: definition.requiresConfirmation,

@@ -335,7 +335,8 @@ export class AdminAuthService {
     if (!user) {
       throw adminErrors.invalidToken();
     }
-    this.mfa.verifyCode(user.mfaSecret, code);
+    await this.assertMfaNotLocked(user.email, ip, userAgent);
+    await this.verifyMfaCodeWithLockout(user.email, ip, user.mfaSecret, code);
 
     const updated = await this.prisma.$transaction(
       async (tx) => {
@@ -373,7 +374,8 @@ export class AdminAuthService {
     if (!user) {
       throw adminErrors.invalidToken();
     }
-    this.mfa.verifyCode(user.mfaSecret, code);
+    await this.assertMfaNotLocked(user.email, ip, userAgent);
+    await this.verifyMfaCodeWithLockout(user.email, ip, user.mfaSecret, code);
 
     const updated = await this.prisma.$transaction(
       async (tx) => {
@@ -397,6 +399,45 @@ export class AdminAuthService {
       context: 'AdminAuthService.verifyMfa',
     });
     return this.sessionFactory.createFullSession(updated, ip, userAgent);
+  }
+
+  /**
+   * Layer-level brute-force defense for the TOTP verify step. Without it an
+   * attacker holding a short-lived mfa_setup/mfa_verify token could hammer the
+   * 6-digit code (1e6 space) at full speed. Reuses AdminLoginAttemptsService —
+   * the same lockout that guards /admin/auth/login — so failed codes count
+   * toward the 5-failures-per-15min email/IP threshold (invariant I-ADMIN-5).
+   */
+  private async assertMfaNotLocked(email: string, ip: string, userAgent: string): Promise<void> {
+    const normalizedEmail = normalizeAdminEmail(email);
+    if (await this.attempts.isLocked(normalizedEmail, ip)) {
+      this.logger.warn('MFA verify rate limited', {
+        context: 'AdminAuthService.assertMfaNotLocked',
+      });
+      await this.audit.append({
+        action: 'admin.auth.mfa.rate_limited',
+        details: { email: normalizedEmail },
+        ip,
+        userAgent,
+      });
+      throw adminErrors.rateLimited();
+    }
+  }
+
+  private async verifyMfaCodeWithLockout(
+    email: string,
+    ip: string,
+    mfaSecret: string | null | undefined,
+    code: string,
+  ): Promise<void> {
+    const normalizedEmail = normalizeAdminEmail(email);
+    try {
+      this.mfa.verifyCode(mfaSecret, code);
+    } catch (err) {
+      await this.attempts.record(normalizedEmail, ip, false);
+      throw err;
+    }
+    await this.attempts.record(normalizedEmail, ip, true);
   }
 
   // ──────────────────────────────────────────────────────────

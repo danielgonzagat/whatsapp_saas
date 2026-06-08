@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from 'react';
 import {
   detectDeliverableAnswerFiles,
   getAssistantReasoning,
+  hasProfessionalAnswerFile,
   type AssistantReasoningFile,
 } from '@/lib/kloel-message-ui';
 import type { DashboardMessage } from '../KloelDashboard.message';
@@ -43,6 +44,47 @@ export interface ArtifactsStore {
   readonly updateArtifactContent: (artifactId: string, nextContent: string) => void;
 }
 
+function fileContentDedupeKey(file: AssistantReasoningFile): string | null {
+  const content = typeof file.content === 'string' ? file.content.trim() : '';
+  if (!content) {
+    return null;
+  }
+  return `content:${file.kind || ''}:${content.length}:${content.slice(0, 512)}`;
+}
+
+function fileDedupeKeys(file: AssistantReasoningFile): readonly string[] {
+  const keys = [`name:${file.name}`];
+  if (typeof file.artifactId === 'string' && file.artifactId.trim()) {
+    keys.push(`id:${file.artifactId.trim()}`);
+  }
+  const contentKey = fileContentDedupeKey(file);
+  if (contentKey) {
+    keys.push(contentKey);
+  }
+  return keys;
+}
+
+const GENERIC_DERIVED_ARTIFACT_NAME_RE = /^documento-\d+\.([a-z0-9]+)$/i;
+
+function fileExtension(file: AssistantReasoningFile): string | null {
+  const match = file.name.match(/\.([a-z0-9]+)$/i);
+  return match?.[1]?.toLowerCase() || null;
+}
+
+function isGenericDerivedArtifactDuplicate(
+  file: AssistantReasoningFile,
+  existingExtensions: ReadonlySet<string>,
+  hasExistingProfessionalDocument: boolean,
+): boolean {
+  const extension = fileExtension(file);
+  return Boolean(
+    extension &&
+      GENERIC_DERIVED_ARTIFACT_NAME_RE.test(file.name) &&
+      (existingExtensions.has(extension) ||
+        (hasExistingProfessionalDocument && extension === 'md')),
+  );
+}
+
 function collectFilesFromMessage(
   message: DashboardMessage,
 ): readonly AssistantReasoningFile[] {
@@ -52,11 +94,31 @@ function collectFilesFromMessage(
   const reasoning = getAssistantReasoning(message.metadata);
   const derived = detectDeliverableAnswerFiles(message.text);
   const merged: AssistantReasoningFile[] = [...reasoning.files];
-  const existingNames = new Set(reasoning.files.map((file) => file.name));
+  const existingKeys = new Set(reasoning.files.flatMap(fileDedupeKeys));
+  const existingExtensions = new Set(
+    reasoning.files
+      .map((file) => fileExtension(file))
+      .filter((extension): extension is string => extension !== null),
+  );
+  const hasExistingProfessionalDocument = hasProfessionalAnswerFile(reasoning.files);
   for (const file of derived) {
-    if (!existingNames.has(file.name)) {
-      merged.push(file);
-      existingNames.add(file.name);
+    const keys = fileDedupeKeys(file);
+    if (
+      hasExistingProfessionalDocument ||
+      isGenericDerivedArtifactDuplicate(
+        file,
+        existingExtensions,
+        hasExistingProfessionalDocument,
+      ) ||
+      keys.some((key) => existingKeys.has(key))
+    ) {
+      continue;
+    }
+    merged.push(file);
+    keys.forEach((key) => existingKeys.add(key));
+    const extension = fileExtension(file);
+    if (extension) {
+      existingExtensions.add(extension);
     }
   }
   return merged;

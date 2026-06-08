@@ -141,9 +141,7 @@ type OpenAiChatUsageShape = {
 
 /** Narrow an unknown provider-usage value to the billable usage shape, or undefined. */
 function readOpenAiChatUsage(value: unknown): OpenAiChatUsageShape | undefined {
-  return typeof value === 'object' && value !== null
-    ? (value as OpenAiChatUsageShape)
-    : undefined;
+  return typeof value === 'object' && value !== null ? value : undefined;
 }
 
 /** Reconcile a prior wallet hold against the provider's reported actual usage. */

@@ -87,6 +87,19 @@ export class AuthOAuthResolverService {
       return byProvider;
     }
 
+    // MULTI-TENANT INVARIANT: Agent.email is unique only per workspace
+    // (`@@unique([workspaceId, email])`), so the same verified email can exist
+    // in several workspaces. The OAuth callback has NO workspace context yet,
+    // so this email fallback is intentionally cross-workspace. To avoid one
+    // tenant's email polluting another's account, the fallback is only allowed
+    // to claim an existing agent when the match is UNAMBIGUOUS:
+    //   - an exact (provider, providerId) match, or
+    //   - a legacy null-providerId agent that is the SOLE candidate for the email.
+    // Any other shape (e.g. a null-providerId legacy agent that co-exists with
+    // other agents sharing the email across workspaces) is ambiguous and must
+    // fall through to the ConflictException so the user re-authenticates with
+    // the already-registered method instead of silently attaching to the wrong
+    // tenant's account.
     const candidates = await this.prisma.agent.findMany({
       where: { email: normalizedEmail },
       orderBy: { createdAt: 'asc' },
@@ -94,15 +107,23 @@ export class AuthOAuthResolverService {
       select: { ...AGENT_SELECT, workspaceId: true },
     });
 
-    const legacySameProviderCandidate =
+    const exactProviderMatch =
       candidates.find(
-        (c) =>
-          c.provider === normalizedProvider &&
-          (!c.providerId || c.providerId === normalizedProviderId),
+        (c) => c.provider === normalizedProvider && c.providerId === normalizedProviderId,
       ) || null;
 
-    if (legacySameProviderCandidate) {
-      return legacySameProviderCandidate;
+    if (exactProviderMatch) {
+      return exactProviderMatch;
+    }
+
+    const legacyNullProviderIdCandidate =
+      candidates.find((c) => c.provider === normalizedProvider && !c.providerId) || null;
+
+    // Only safe to adopt a legacy null-providerId agent when it is the single
+    // candidate for this email — otherwise the email collides across tenants
+    // and we cannot prove which workspace's agent this verified login belongs to.
+    if (legacyNullProviderIdCandidate && candidates.length === 1) {
+      return legacyNullProviderIdCandidate;
     }
 
     if (candidates.length > 0) {

@@ -82,6 +82,8 @@ export interface CapabilityManifestEntry {
   maturity: CapabilityMaturity;
   /** Surfaces the capability is available on (e.g. `dashboard-chat`). */
   surface: string[];
+  /** Other internal capabilities the model needs in the same hidden context. */
+  dependsOn: string[];
 }
 
 /**

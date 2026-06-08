@@ -137,7 +137,7 @@ describe('handleConnect by channel', () => {
 
     const button = screen.getByRole('button', { name: /Vincular conta/ });
     expect((button as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByText('Canal nao configurado neste ambiente.')).toBeTruthy();
+    expect(screen.getByText('Canal não configurado neste ambiente.')).toBeTruthy();
 
     fireEvent.click(button);
 
@@ -288,7 +288,7 @@ describe('awakened state', () => {
 
     expect(container.textContent).not.toContain('acordou');
     expect(container.textContent).not.toContain('Setup concluido');
-    expect(screen.getByText('Canal nao configurado neste ambiente.')).toBeTruthy();
+    expect(screen.getByText('Canal não configurado neste ambiente.')).toBeTruthy();
     const button = screen.getByRole('button', { name: /Despertar/ }) as HTMLButtonElement;
     expect(button.disabled).toBe(true);
     fireEvent.click(button);

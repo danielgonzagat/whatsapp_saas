@@ -283,6 +283,7 @@ export function Ticker({
   const mounted = useClientMounted();
   const reduced = !mounted || prefersReducedMotion;
   const text = items.join('  ///  ');
+  const visualText = reduced ? text : `${text}   ///   ${text}`;
   return (
     <div
       style={{
@@ -292,9 +293,26 @@ export function Ticker({
         borderTop: `1px solid ${BORDER}`,
         borderBottom: `1px solid ${BORDER}`,
         padding: '6px 0',
+        position: 'relative',
       }}
     >
+      <span
+        style={{
+          position: 'absolute',
+          width: 1,
+          height: 1,
+          padding: 0,
+          margin: -1,
+          overflow: 'hidden',
+          clip: 'rect(0 0 0 0)',
+          whiteSpace: 'nowrap',
+          border: 0,
+        }}
+      >
+        {text}
+      </span>
       <div
+        aria-hidden="true"
         style={{
           display: 'inline-block',
           whiteSpace: 'nowrap',
@@ -306,7 +324,7 @@ export function Ticker({
           transform: reduced ? 'translateX(0)' : undefined,
         }}
       >
-        {reduced ? text : `${text}   ///   ${text}`}
+        {visualText}
       </div>
     </div>
   );

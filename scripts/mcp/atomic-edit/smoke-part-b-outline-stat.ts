@@ -49,6 +49,14 @@ export async function partBOutlineStat(ctx: PartBCtx): Promise<void> {
         !('fullText' in fileStatBody),
       JSON.stringify(Object.keys(fileStatBody)),
     );
+    check(
+      'code_file_stat fixture file reports unproven byte classification',
+      fileStatBody.byteClassification?.scope === 'entire-file' &&
+        fileStatBody.byteClassification?.status === 'unproven' &&
+        fileStatBody.byteClassification?.materializationPolicy === 'unproven-is-negative' &&
+        fileStatBody.byteClassification?.bytes === fixtureBytes.byteLength,
+      JSON.stringify(fileStatBody.byteClassification),
+    );
 
     const missingStat = (await client.callTool({
       name: 'code_file_stat',

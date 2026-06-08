@@ -83,7 +83,7 @@ export function deriveProduct(events: readonly SpineEventRef[]): DerivedProduct 
 
   for (const event of events) {
     if (event.eventName === 'commerce.payment.approved') {
-      const payload = event.payload as Record<string, unknown> | undefined;
+      const payload = event.payload;
       const pid = payload?.['productId'];
       if (typeof pid === 'string' && !productIds.has(pid)) {
         productIds.set(pid, { role: 'purchased' });
@@ -110,7 +110,7 @@ export function deriveCustomer(events: readonly SpineEventRef[]): DerivedCustome
     } else if (event.eventName === 'commerce.lead.converted') {
       conversionCount++;
     } else if (event.eventName === 'commerce.crm.stage_changed') {
-      const payload = event.payload as Record<string, unknown> | undefined;
+      const payload = event.payload;
       const stage = payload?.['toStage'] ?? payload?.['stage'];
       if (typeof stage === 'string') {
         stageCounts.set(stage, (stageCounts.get(stage) ?? 0) + 1);
@@ -151,7 +151,7 @@ export function deriveTemporal(events: readonly SpineEventRef[]): DerivedTempora
         contactedTimestamps.set(ref, parseTimestamp(event.occurredAt));
       }
     } else if (event.eventName === 'commerce.payment.approved') {
-      const payload = event.payload as Record<string, unknown> | undefined;
+      const payload = event.payload;
       const leadRef = payload?.['leadId'] ?? payload?.['leadRef'];
       if (typeof leadRef === 'string') {
         const contactedAt = contactedTimestamps.get(leadRef);
@@ -178,13 +178,13 @@ export function deriveDecisionPatterns(events: readonly SpineEventRef[]): Derive
 
   for (const event of events) {
     if (event.eventName === 'commerce.crm.next_step_defined') {
-      const payload = event.payload as Record<string, unknown> | undefined;
+      const payload = event.payload;
       const step = payload?.['step'] ?? payload?.['nextStep'] ?? payload?.['action'];
       if (typeof step === 'string') {
         nextStepCounts.set(step, (nextStepCounts.get(step) ?? 0) + 1);
       }
     } else if (event.eventName === 'commerce.whatsapp.handoff_to_human') {
-      const payload = event.payload as Record<string, unknown> | undefined;
+      const payload = event.payload;
       const reason = payload?.['reason'] ?? payload?.['cause'];
       if (typeof reason === 'string') {
         escalationCounts.set(reason, (escalationCounts.get(reason) ?? 0) + 1);

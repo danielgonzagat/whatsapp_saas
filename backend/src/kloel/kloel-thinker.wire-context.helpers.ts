@@ -42,9 +42,21 @@ export interface WireContextBlock {
   readonly text: string;
   /** Manifest `internalName` values present in `text` — never shown to the user. */
   readonly internalNames: readonly string[];
+  /** True when memory recall completed for this turn. */
+  readonly memoryChecked: boolean;
+  /** Count of public-safe memory/profile/preference signals injected into context. */
+  readonly memorySignalCount: number;
+  /** Count of relevant capability-manifest entries injected into hidden context. */
+  readonly capabilitySignalCount: number;
 }
 
-const EMPTY_BLOCK: WireContextBlock = { text: '', internalNames: [] };
+const EMPTY_BLOCK: WireContextBlock = {
+  text: '',
+  internalNames: [],
+  memoryChecked: false,
+  memorySignalCount: 0,
+  capabilitySignalCount: 0,
+};
 
 function formatError(error: unknown): string {
   if (error instanceof Error) {
@@ -54,6 +66,10 @@ function formatError(error: unknown): string {
     return error;
   }
   return 'unknown error';
+}
+
+function resolveManifestSurface(surface: string): string {
+  return surface === 'chat' ? 'dashboard-chat' : surface;
 }
 
 /**
@@ -84,6 +100,9 @@ export async function buildWireContextBlock(
 
   const sections: string[] = [];
   const internalNames: string[] = [];
+  let memoryChecked = false;
+  let memorySignalCount = 0;
+  let capabilitySignalCount = 0;
 
   // ─── per-user memory block ───────────────────────────────────────────
   if (services.memoryService && workspaceId && userId) {
@@ -93,6 +112,14 @@ export async function buildWireContextBlock(
         userId,
         message,
       );
+      memoryChecked = true;
+      memorySignalCount = [
+        ...memory.userProfileStatic,
+        ...memory.userProfileDynamic,
+        ...memory.relevantMemories,
+        ...memory.preferences,
+        ...memory.constraints,
+      ].length;
       if (memory.text.trim().length > 0) {
         sections.push(memory.text);
       }
@@ -108,7 +135,7 @@ export async function buildWireContextBlock(
   if (services.manifestInjection) {
     try {
       const routerContext: CapabilityRouterContext = {
-        surface,
+        surface: resolveManifestSurface(surface),
         permissions: Array.isArray(permissions) ? permissions : [],
       };
       const injection = services.manifestInjection.assemble(message, routerContext);
@@ -116,6 +143,7 @@ export async function buildWireContextBlock(
         sections.push(injection.text);
       }
       internalNames.push(...injection.internalNames);
+      capabilitySignalCount = injection.internalNames.length;
     } catch (error: unknown) {
       logger.warn('wire-context manifest injection failed', {
         context: 'buildWireContextBlock.manifest',
@@ -125,9 +153,20 @@ export async function buildWireContextBlock(
   }
 
   if (sections.length === 0) {
-    return EMPTY_BLOCK;
+    return {
+      ...EMPTY_BLOCK,
+      memoryChecked,
+      memorySignalCount,
+      capabilitySignalCount,
+    };
   }
-  return { text: sections.join('\n\n'), internalNames };
+  return {
+    text: sections.join('\n\n'),
+    internalNames,
+    memoryChecked,
+    memorySignalCount,
+    capabilitySignalCount,
+  };
 }
 
 /**

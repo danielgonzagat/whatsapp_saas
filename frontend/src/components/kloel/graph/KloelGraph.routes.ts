@@ -20,6 +20,7 @@ export interface KloelGraphNode {
   readonly parentId?: string;
   readonly subtitle?: string;
   readonly overlayLabel?: string;
+  readonly actionLabel?: string;
 }
 
 export interface KloelGraphEntityLike {
@@ -71,6 +72,10 @@ export function resolveKloelGraphRoute(id: string): string {
 
 export function getKloelGraphOverlayLabel(node: KloelGraphNode | undefined): string {
   return node?.overlayLabel ?? node?.label ?? 'Kloel';
+}
+
+export function getKloelGraphNodeActionLabel(node: KloelGraphNode): string {
+  return node.actionLabel?.trim() || node.label;
 }
 
 export function resolveKloelGraphNodeForPathFromNodes(

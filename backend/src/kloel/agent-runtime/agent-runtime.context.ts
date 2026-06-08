@@ -42,8 +42,12 @@ export class AgentRuntimeContextService {
       memoryProviderPrefetch,
       compressedContext,
     ] = await Promise.all([
-      this.sessions.search(request.workspaceId, request.message, 6),
-      this.sessions.searchSessions(request.workspaceId, request.message, 3),
+      this.sessions.search(request.workspaceId, request.message, 6, {
+        ...(request.userId !== undefined ? { userId: request.userId } : {}),
+      }),
+      this.sessions.searchSessions(request.workspaceId, request.message, 3, {
+        ...(request.userId !== undefined ? { userId: request.userId } : {}),
+      }),
       this.skills.selectSkills(request.workspaceId, request.message, 4),
       this.memoryManager.buildSystemPrompt(request.workspaceId),
       this.memoryManager.prefetchAll(request.workspaceId, request.message, {

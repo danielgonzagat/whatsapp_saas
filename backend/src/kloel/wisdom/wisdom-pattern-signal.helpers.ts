@@ -124,7 +124,7 @@ export function aggregateSignals(
         leadIds.add(event.entityRef.entityId);
       }
     }
-    const payload = event.payload as Record<string, unknown> | undefined;
+    const payload = event.payload;
     if (payload) {
       const pid = payload['productId'];
       if (typeof pid === 'string') {
@@ -178,7 +178,7 @@ export function enrichSignal(
   let campaignLeads = 0;
   for (const event of events) {
     if (event.eventName === 'commerce.lead.objection_raised') {
-      const payload = event.payload as Record<string, unknown> | undefined;
+      const payload = event.payload;
       const reason = payload?.['reason'] ?? payload?.['objection'];
       const text = typeof reason === 'string' ? reason.toLowerCase() : '';
       for (const kw of COMMON_OBJECTION_KEYWORDS) {
@@ -188,7 +188,7 @@ export function enrichSignal(
       }
     }
     if (event.eventName === 'commerce.crm.stage_changed') {
-      const payload = event.payload as Record<string, unknown> | undefined;
+      const payload = event.payload;
       const from = payload?.['fromStage'];
       const to = payload?.['toStage'];
       if (typeof from === 'string' && typeof to === 'string') {
@@ -198,14 +198,14 @@ export function enrichSignal(
     }
     if (event.eventName === 'commerce.whatsapp.message_replied') {
       whatsappLeads++;
-      const payload = event.payload as Record<string, unknown> | undefined;
+      const payload = event.payload;
       if (payload?.['converted'] === true) {
         whatsappConversions++;
       }
     }
     if (event.eventName === 'commerce.campaign.clicked') {
       campaignLeads++;
-      const payload = event.payload as Record<string, unknown> | undefined;
+      const payload = event.payload;
       if (payload?.['converted'] === true) {
         campaignConversions++;
       }

@@ -49,6 +49,60 @@ type EditorPanelProps = {
 const cardBox = { background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 16 };
 const sectionLabel = { fontFamily: SORA, fontSize: 11, fontWeight: 600 as const, color: 'var(--app-text-tertiary)', letterSpacing: '0.15em', textTransform: 'uppercase' as const, marginBottom: 10 };
 const fieldLabel = { fontFamily: SORA, fontSize: 10, color: 'var(--app-text-secondary)', display: 'block' as const, marginBottom: 4 };
+const resourceToggles = [
+  { key: 'certificates', label: 'Certificados' },
+  { key: 'quizzes', label: 'Quizzes' },
+  { key: 'community', label: 'Comunidade' },
+  { key: 'gamification', label: 'Gamificacao' },
+  { key: 'progressTrack', label: 'Progresso' },
+  { key: 'downloads', label: 'Downloads' },
+  { key: 'comments', label: 'Comentarios' },
+  { key: 'active', label: 'Ativa' },
+] as const;
+
+function ResourceToggleGrid({
+  form,
+  setForm,
+}: {
+  form: Record<string, unknown>;
+  setForm: React.Dispatch<React.SetStateAction<Record<string, unknown>>>;
+}) {
+  return (
+    <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fit, minmax(128px, 1fr))', marginTop: 12 }}>
+      {resourceToggles.map((toggle) => {
+        const checked = form[toggle.key] === true;
+        return (
+          <label
+            key={toggle.key}
+            style={{
+              border: `1px solid ${checked ? `${PURPLE}88` : BORDER}`,
+              borderRadius: 6,
+              padding: '8px 10px',
+              background: checked ? 'rgba(139,92,246,0.12)' : BG_ELEVATED,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              cursor: 'pointer',
+              fontFamily: SORA,
+              fontSize: 11,
+              color: checked ? 'var(--app-text-primary)' : 'var(--app-text-secondary)',
+            }}
+          >
+            <input
+              type="checkbox"
+              aria-label={kloelT(toggle.label)}
+              checked={checked}
+              onChange={() => setForm((prev) => ({ ...prev, [toggle.key]: prev[toggle.key] !== true }))}
+              style={{ accentColor: PURPLE }}
+            />
+            <span>{kloelT(toggle.label)}</span>
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
 
 export default function AreaMembrosEditorPanel(props: EditorPanelProps) {
   const selectedArea = props.displayAreas.find((a) => a.id === props.editingArea);
@@ -122,6 +176,7 @@ export default function AreaMembrosEditorPanel(props: EditorPanelProps) {
               </select>
             </div>
           </div>
+          <ResourceToggleGrid form={props.newArea} setForm={props.setNewArea} />
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 12 }}>
             <button type="button" onClick={props.handleCreateArea} disabled={!canCreateArea}
               style={{ ...btnPrimary(PURPLE), opacity: canCreateArea ? 1 : 0.45, cursor: canCreateArea ? 'pointer' : 'not-allowed' }}>
@@ -175,6 +230,7 @@ export default function AreaMembrosEditorPanel(props: EditorPanelProps) {
                 onChange={(e) => props.setEditAreaData((p) => ({ ...p, description: e.target.value }))}
                 placeholder="Descricao" style={inputStyle} />
             </div>
+            <ResourceToggleGrid form={props.editAreaData} setForm={props.setEditAreaData} />
             <div style={{ display: 'flex', gap: 8 }}>
               <button type="button" onClick={() => props.handleUpdateArea(selectedArea.id)} disabled={props.saving}
                 style={{ ...btnPrimary(PURPLE), fontSize: 11, padding: '6px 12px', opacity: props.saving ? 0.6 : 1 }}>

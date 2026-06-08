@@ -23,7 +23,13 @@ import { SaleLedgerReconcileScheduler } from './sale-ledger-reconcile.scheduler'
     WhatsAppApiWebhookController,
     TikTokWebhookController,
   ],
-  providers: [WebhooksService, PrismaService, WorkspaceService, WebhookDispatcherService, SaleLedgerReconcileScheduler],
+  providers: [
+    WebhooksService,
+    PrismaService,
+    WorkspaceService,
+    WebhookDispatcherService,
+    SaleLedgerReconcileScheduler,
+  ],
   exports: [WebhooksService, WebhookDispatcherService],
 })
 export class WebhooksModule {}

@@ -83,6 +83,125 @@ describe('KloelController', () => {
     );
   });
 
+  it('prefers the typed memory graph over the legacy slot graph when typed nodes exist', async () => {
+    const legacyMemory = {
+      recallGraph: jest.fn().mockResolvedValue({
+        nodes: [{ id: 'legacy', label: 'Legado', group: 'fact', slot: 'legacy_slot' }],
+        edges: [],
+      }),
+    };
+    const typedMemory = {
+      recallGraph: jest.fn().mockResolvedValue({
+        nodes: [{ id: 'typed', label: 'Typed', group: 'preference', slot: 'preferencia_formato' }],
+        edges: [{ from: 'you', to: 'typed', relation: 'belongs_to' }],
+      }),
+    };
+    const graphController = new KloelController(
+      kloelService as never,
+      {} as never,
+      {} as never,
+      prisma as never as ConstructorParameters<typeof KloelController>[3],
+      {} as never,
+      {} as never,
+      toolDispatcher as never,
+      undefined,
+      legacyMemory as never,
+      typedMemory as never,
+    );
+
+    const result = await graphController.getMemoryGraph({
+      workspaceId: 'ws-1',
+      user: { sub: 'user-1', workspaceId: 'ws-1' },
+    } as never as Parameters<KloelController['getMemoryGraph']>[0]);
+
+    expect(typedMemory.recallGraph).toHaveBeenCalledWith('ws-1', 'user-1');
+    expect(legacyMemory.recallGraph).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      nodes: [{ id: 'typed', label: 'Typed', group: 'preference' }],
+      edges: [{ from: 'you', to: 'typed', relation: 'belongs_to' }],
+    });
+    expect(JSON.stringify(result)).not.toContain('preferencia_formato');
+  });
+
+  it('falls back to the legacy memory graph while typed memory is still empty', async () => {
+    const legacyMemory = {
+      recallGraph: jest.fn().mockResolvedValue({
+        nodes: [{ id: 'legacy', label: 'Legado', group: 'fact', slot: 'legacy_slot' }],
+        edges: [],
+      }),
+    };
+    const typedMemory = {
+      recallGraph: jest.fn().mockResolvedValue({ nodes: [], edges: [] }),
+    };
+    const graphController = new KloelController(
+      kloelService as never,
+      {} as never,
+      {} as never,
+      prisma as never as ConstructorParameters<typeof KloelController>[3],
+      {} as never,
+      {} as never,
+      toolDispatcher as never,
+      undefined,
+      legacyMemory as never,
+      typedMemory as never,
+    );
+
+    const result = await graphController.getMemoryGraph({
+      workspaceId: 'ws-1',
+      user: { sub: 'user-1', workspaceId: 'ws-1' },
+    } as never as Parameters<KloelController['getMemoryGraph']>[0]);
+
+    expect(typedMemory.recallGraph).toHaveBeenCalledWith('ws-1', 'user-1');
+    expect(legacyMemory.recallGraph).toHaveBeenCalledWith('ws-1', 'user-1');
+    expect(result).toEqual({
+      nodes: [{ id: 'legacy', label: 'Legado', group: 'fact' }],
+      edges: [],
+    });
+    expect(JSON.stringify(result)).not.toContain('legacy_slot');
+  });
+  it('updates typed memory graph nodes through the authenticated user scope', async () => {
+    const typedMemory = {
+      updateGraphNode: jest.fn().mockResolvedValue({
+        nodes: [
+          {
+            id: 'mem-1',
+            label: 'Memória',
+            group: 'preference',
+            state: 'blocked',
+            slot: 'preferencia_formato',
+          },
+        ],
+        edges: [],
+      }),
+    };
+    const graphController = new KloelController(
+      kloelService as never,
+      {} as never,
+      {} as never,
+      prisma as never as ConstructorParameters<typeof KloelController>[3],
+      {} as never,
+      {} as never,
+      toolDispatcher as never,
+      undefined,
+      undefined,
+      typedMemory as never,
+    );
+
+    const result = await graphController.updateMemoryGraphNode('mem-1', { blockedForAgent: true }, {
+      workspaceId: 'ws-1',
+      user: { sub: 'user-1', workspaceId: 'ws-1' },
+    } as never as Parameters<KloelController['updateMemoryGraphNode']>[2]);
+
+    expect(typedMemory.updateGraphNode).toHaveBeenCalledWith('ws-1', 'user-1', 'mem-1', {
+      blockedForAgent: true,
+    });
+    expect(result).toEqual({
+      nodes: [{ id: 'mem-1', label: 'Memória', group: 'preference', state: 'blocked' }],
+      edges: [],
+    });
+    expect(JSON.stringify(result)).not.toContain('preferencia_formato');
+  });
+
   it('accepts plain text chat uploads through the controller file validator', async () => {
     const validator = readUploadChatFileTypeValidator();
 

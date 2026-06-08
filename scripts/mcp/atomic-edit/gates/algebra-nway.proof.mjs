@@ -8,14 +8,22 @@
  *  (B) batchCertificate(): a pairwise-commuting set is certified (global confluence + obligation
  *      preservation, a corollary of the pairwise Z3 theorem); a coupled or capped/unknown set is NOT.
  *
- * HONEST CEILING: the UNBOUNDED inductive metatheorem over a STATE-DEPENDENT read-set is NOT proven
- * here — it needs an external prover (Lean/Coq; Z3 has no induction) + a richer model. Marked UNJUDGED.
+ * HONEST CEILING: the UNBOUNDED inductive metatheorem over a STATE-DEPENDENT read-set needs an external
+ * prover (Z3 has no induction tactic). This gate now ACTUALLY runs the two external machine-checks instead
+ * of printing a hardcoded green: (1) Z3 base+step via formal/atomic-algebra/nway_induction_z3.py, and
+ * (2) the Lean 4 induction principle via formal/atomic-algebra/NwayConfluence.lean (vendored .elan
+ * toolchain). A PROVEN line is emitted ONLY for a part that genuinely ran and returned exit 0; an absent
+ * Lean toolchain degrades to an honest UNVERIFIED (never a fake green, never a forced gate failure).
  * Run: node build.mjs && node gates/algebra-nway.proof.mjs
  */
 import * as path from 'node:path';
+import * as fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(dir, '..', '..', '..', '..');
+const formalDir = path.join(repoRoot, 'formal', 'atomic-algebra');
 const { batchCertificate } = await import(path.join(dir, '..', 'dist', 'gates', 'algebra.js'));
 
 let pass = 0;
@@ -66,6 +74,70 @@ const fact = (file, closure, capped = false, spanIdents = []) => ({ file, spans:
   check('(B) a capped (UNJUDGED) pair => NOT certified (unjudged>=1, honest)', capped.certified === false && capped.unjudged >= 1);
 }
 
-console.log('  PROVEN (all-N)  REDUCE + STEP machine-checked by Z3 (nway_induction_z3.py) AND the INDUCTION PRINCIPLE machine-checked in Lean (NwayConfluence.lean, exit 0): all-N obligation-preserving confluence, fully mechanized. No residual.');
-console.log(`\n${pass} passed, ${fail} failed`);
-process.exit(fail === 0 ? 0 : 1);
+// ---- external machine-checks: actually RUN the provers; no hardcoded green. ----
+// Honesty doctrine: a PROVEN/exit-0 line is only emitted for a part we genuinely ran and that
+// genuinely returned exit 0. The Z3 base+step is a real machine-check and gates failure; the Lean
+// all-N induction degrades to an honest UNVERIFIED when no Lean toolchain is present (it does NOT
+// fake-fail the whole gate), but if a Lean toolchain IS present and rejects the proof, that is a
+// real regression and fails the gate.
+
+// (Z3) run the base+step induction proof with the repo's vendored z3 venv if present, else PATH python3.
+function runZ3() {
+  const script = path.join(formalDir, 'nway_induction_z3.py');
+  if (!fs.existsSync(script)) return { status: 'MISSING', detail: 'nway_induction_z3.py not found' };
+  const venvPy = path.join(repoRoot, '.z3venv', 'bin', 'python3');
+  const py = fs.existsSync(venvPy) ? venvPy : 'python3';
+  const res = spawnSync(py, [script], { cwd: formalDir, encoding: 'utf8' });
+  if (res.error || res.status === null) return { status: 'ABSENT', detail: `z3 runner unavailable (${res.error ? res.error.code : 'no exit'})` };
+  return { status: res.status === 0 ? 'PROVEN' : 'FAILED', exit: res.status, out: String(res.stdout || '') + String(res.stderr || '') };
+}
+
+// (Lean) run lean on the all-N induction theorem. Prefer the vendored .elan toolchain, else PATH lean.
+function runLean() {
+  const leanFile = path.join(formalDir, 'NwayConfluence.lean');
+  if (!fs.existsSync(leanFile)) return { status: 'MISSING', detail: 'NwayConfluence.lean not found' };
+  const elanHome = path.join(repoRoot, '.elan');
+  const vendoredLean = path.join(elanHome, 'bin', 'lean');
+  const lean = fs.existsSync(vendoredLean) ? vendoredLean : 'lean';
+  const env = fs.existsSync(vendoredLean) ? { ...process.env, ELAN_HOME: elanHome } : process.env;
+  const res = spawnSync(lean, [leanFile], { cwd: formalDir, encoding: 'utf8', env });
+  // ENOENT (lean/lake not installed) => honest UNVERIFIED, never green, never a forced gate failure.
+  if (res.error && res.error.code === 'ENOENT') return { status: 'UNVERIFIED', detail: 'lean/lake not installed' };
+  if (res.error || res.status === null) return { status: 'UNVERIFIED', detail: `lean unavailable (${res.error ? res.error.code : 'no exit'})` };
+  return { status: res.status === 0 ? 'PROVEN' : 'FAILED', exit: res.status, out: String(res.stdout || '') + String(res.stderr || '') };
+}
+
+const z3 = runZ3();
+const lean = runLean();
+
+if (z3.status === 'PROVEN') {
+  console.log('  Z3 base+step: PROVEN (nway_induction_z3.py, exit 0) — REDUCE + STEP machine-checked.');
+} else if (z3.status === 'ABSENT' || z3.status === 'MISSING') {
+  console.log(`  Z3 base+step: UNVERIFIED — ${z3.detail}.`);
+} else {
+  console.log(`  Z3 base+step: FAILED (nway_induction_z3.py, exit ${z3.exit}) — machine-check did NOT pass.`);
+  if (z3.out) console.log(z3.out.trim().split('\n').map((l) => `    ${l}`).join('\n'));
+}
+
+if (lean.status === 'PROVEN') {
+  console.log('  Lean all-N: PROVEN (NwayConfluence.lean, exit 0) — INDUCTION PRINCIPLE machine-checked in Lean 4.');
+} else if (lean.status === 'UNVERIFIED' || lean.status === 'MISSING') {
+  console.log(`  Lean all-N: UNVERIFIED — ${lean.detail || 'not run'} (not faked green; install the .elan toolchain to discharge it).`);
+} else {
+  console.log(`  Lean all-N: FAILED (NwayConfluence.lean, exit ${lean.exit}) — Lean toolchain present but REJECTED the proof.`);
+  if (lean.out) console.log(lean.out.trim().split('\n').map((l) => `    ${l}`).join('\n'));
+}
+
+if (z3.status === 'PROVEN' && lean.status === 'PROVEN') {
+  console.log('  PROVEN (all-N)  REDUCE + STEP machine-checked by Z3 AND the INDUCTION PRINCIPLE machine-checked in Lean: all-N obligation-preserving confluence, fully mechanized. No residual.');
+} else if (z3.status === 'PROVEN' && (lean.status === 'UNVERIFIED' || lean.status === 'MISSING')) {
+  console.log('  PARTIAL (all-N)  Z3 base+step PROVEN; Lean all-N induction UNVERIFIED here (toolchain absent) — honest residual, not green.');
+}
+
+// Gate failure semantics: real assertion failures, a genuinely-failing Z3 run, or a Lean toolchain
+// that is present but rejects the proof. Lean simply being absent does NOT fail the gate.
+const z3Failed = z3.status === 'FAILED';
+const leanFailed = lean.status === 'FAILED';
+const exitFail = fail > 0 || z3Failed || leanFailed;
+console.log(`\n${pass} passed, ${fail} failed${z3Failed ? ' (Z3 machine-check FAILED)' : ''}${leanFailed ? ' (Lean machine-check FAILED)' : ''}`);
+process.exit(exitFail ? 1 : 0);

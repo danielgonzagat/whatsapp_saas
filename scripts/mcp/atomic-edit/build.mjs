@@ -44,6 +44,7 @@ const ENTRY = [
   'server-helpers-negative-proof.ts',
   'server-tools-self.ts',
   'server-tools-positive-bytes.ts',
+  'server-tools-codex-config.ts',
   'engine.ts',
   'engine-rename.ts',
   'engine-ops.ts',
@@ -83,6 +84,7 @@ const ENTRY = [
   'gates/contract-edge-gate.proof.ts',
   'gates/findings-delta-gate.proof.ts',
   'gates/probe-convergence-gate.proof.ts',
+  'gates/codex-config-edit-tool.proof.ts',
 ].map((f) => path.join(dir, f));
 const OUT = path.join(dir, 'dist');
 const BUILD_OUT = fs.mkdtempSync(path.join(os.tmpdir(), `atomic-edit-dist-${process.pid}-`));
@@ -94,6 +96,7 @@ const REQUIRED_DIST_ARTIFACTS = [
   'server-tools-exec.js',
   'server-tools-self.js',
   'server-tools-y.js',
+  'server-tools-codex-config.js',
   'engine.js',
   'trace.js',
   'gates/contract.js',
@@ -106,6 +109,7 @@ const REQUIRED_DIST_ARTIFACTS = [
   'gates/property-gate.proof.js',
   'gates/findings-delta-gate.proof.js',
   'gates/contract-edge-gate.proof.js',
+  'gates/codex-config-edit-tool.proof.js',
 ];
 
 function assertRequiredBuildArtifacts(outDir) {

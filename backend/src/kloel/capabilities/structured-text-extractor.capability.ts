@@ -35,7 +35,10 @@ export class StructuredTextExtractorCapability {
       .filter((entry) => entry.line.length > 0);
 
     const columns = this.normalizeColumns(input.columns);
-    const delimiter = this.detectDelimiter(nonEmptyLines.map((e) => e.line), columns.length);
+    const delimiter = this.detectDelimiter(
+      nonEmptyLines.map((e) => e.line),
+      columns.length,
+    );
 
     const rows: ExtractedRow[] = [];
     nonEmptyLines.forEach((entry, position) => {

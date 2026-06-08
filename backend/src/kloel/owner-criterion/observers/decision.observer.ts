@@ -57,7 +57,7 @@ function extractAutonomyGrants(events: readonly SpineEventRef[]): DecisionSignal
   return events
     .filter((e) => e.eventName === 'commerce.crm.owner_assigned')
     .filter((e) => {
-      const payload = e.payload as Record<string, unknown> | undefined;
+      const payload = e.payload;
       return payload?.['assignedTo'] === 'autopilot';
     })
     .map((e) => ({

@@ -290,7 +290,7 @@ export function classifyAudiencia(approved: readonly ApprovedPayment[]): {
 }
 
 function toApprovedPayment(event: SpineEventRef): ApprovedPayment | null {
-  const p = event.payload as Record<string, unknown> | undefined;
+  const p = event.payload;
   if (!p) {
     return null;
   }

@@ -26,6 +26,20 @@ describe('KloelMarkdown render parity', () => {
     expect(container.querySelectorAll('li')).toHaveLength(2);
   });
 
+  it('adds stable form identifiers to GFM task checkboxes', () => {
+    render(<KloelMarkdown content={'- [ ] revisar permissões\n- [x] confirmar isolamento'} />);
+
+    const checkboxes = screen.getAllByRole('checkbox');
+    expect(checkboxes).toHaveLength(2);
+    const ids = checkboxes.map((checkbox) => checkbox.getAttribute('id'));
+    const names = checkboxes.map((checkbox) => checkbox.getAttribute('name'));
+
+    expect(ids.every(Boolean)).toBe(true);
+    expect(names.every(Boolean)).toBe(true);
+    expect(new Set(ids).size).toBe(checkboxes.length);
+    expect(new Set(names).size).toBe(checkboxes.length);
+  });
+
   it('renders GFM tables', () => {
     render(
       <KloelMarkdown content={'| A | B |\n| - | - |\n| 1 | 2 |'} />,
@@ -103,19 +117,22 @@ describe('KloelMarkdown render parity', () => {
       expect(iframe?.getAttribute('srcdoc')).toContain('Olá');
     });
 
-    it('strips <script> from the html artifact before sandboxing', async () => {
+    it('preserves script-bearing HTML widgets inside the unique-origin sandbox', async () => {
       const content = [
         '```html',
-        '<div>safe</div><script>window.__pwned = 1</script>',
+        '<button id="calc">Somar</button><script>document.getElementById("calc").dataset.ready = "1";</script>',
         '```',
       ].join('\n');
       const { container } = render(<KloelMarkdown content={content} />);
       await waitFor(() => {
         expect(container.querySelector('iframe.kloel-artifact-html')).not.toBeNull();
       });
-      const srcdoc = container.querySelector('iframe.kloel-artifact-html')?.getAttribute('srcdoc');
-      expect(srcdoc).not.toContain('<script>');
-      expect(srcdoc).toContain('safe');
+      const iframe = container.querySelector('iframe.kloel-artifact-html');
+      const srcdoc = iframe?.getAttribute('srcdoc') || '';
+      expect(iframe?.getAttribute('sandbox')).toContain('allow-scripts');
+      expect(iframe?.getAttribute('sandbox')).not.toContain('allow-same-origin');
+      expect(srcdoc).toContain('<script>document.getElementById("calc").dataset.ready = "1";</script>');
+      expect(srcdoc).toContain('Somar');
     });
   });
 

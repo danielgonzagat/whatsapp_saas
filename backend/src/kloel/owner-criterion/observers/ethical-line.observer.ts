@@ -83,7 +83,7 @@ function detectPrivacyBoundaries(events: readonly SpineEventRef[]): BoundarySign
 
   for (const e of events) {
     if (e.eventName === 'commerce.lead.lost') {
-      const payload = e.payload as Record<string, unknown> | undefined;
+      const payload = e.payload;
       if (payload?.['reason'] === 'privacy_request') {
         signals.push({
           boundaryType: 'data_privacy',
@@ -112,7 +112,7 @@ function detectCustomerProtectionBoundaries(events: readonly SpineEventRef[]): B
     }
 
     if (e.eventName === 'commerce.whatsapp.handoff_to_human') {
-      const payload = e.payload as Record<string, unknown> | undefined;
+      const payload = e.payload;
       if (payload?.['reason'] === 'sensitive_topic') {
         signals.push({
           boundaryType: 'customer_protection',

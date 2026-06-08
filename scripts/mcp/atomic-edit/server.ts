@@ -50,6 +50,8 @@ import { registerToolsLens } from './server-tools-lens.js';
 import { registerToolsSession } from './server-tools-session.js';
 import { registerToolsPositiveBytes } from './server-tools-positive-bytes.js';
 import { registerToolsY } from './server-tools-y.js';
+import { registerToolsCodexConfig } from './server-tools-codex-config.js';
+import { registerToolsGit } from './server-tools-git.js';
 import { registerToolsSelf } from './server-tools-self.js';
 
 type RegisteredToolForList = {
@@ -174,6 +176,8 @@ registerToolsLens(server);
 registerToolsSession(server);
 registerToolsPositiveBytes(server);
 registerToolsY(server);
+registerToolsCodexConfig(server);
+registerToolsGit(server);
 registerToolsSelf(server);
 installCodexSafeToolList(server);
 

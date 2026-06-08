@@ -80,10 +80,7 @@ export async function updateSaleAndPaymentHelper(
         where: {
           workspaceId,
           OR: body.orderId
-            ? [
-                { externalPaymentId: String(body.orderId) },
-                { id: String(body.orderId) },
-              ]
+            ? [{ externalPaymentId: String(body.orderId) }, { id: String(body.orderId) }]
             : [],
         },
         data: { status: 'paid', paidAt: new Date() },

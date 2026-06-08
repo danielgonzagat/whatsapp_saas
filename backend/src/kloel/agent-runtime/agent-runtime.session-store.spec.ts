@@ -177,11 +177,11 @@ describe('AgentRuntimeSessionStore', () => {
       });
       const result = await store.search('ws_1', 'pricing enterprise discount', 6);
       expect(result.totalFound).toBe(3);
-      expect(result.memories[0].id).toBe('c');
-      expect(result.memories[1].id).toBe('b');
-      expect(result.memories[2].id).toBe('a');
-      expect(result.memories[0].source.confidence).toBeGreaterThan(
-        result.memories[1].source.confidence,
+      expect(result.memories[0]!.id).toBe('c');
+      expect(result.memories[1]!.id).toBe('b');
+      expect(result.memories[2]!.id).toBe('a');
+      expect(result.memories[0]!.source.confidence).toBeGreaterThan(
+        result.memories[1]!.source.confidence,
       );
     });
     it('filters out rows with zero token matches', async () => {
@@ -195,7 +195,7 @@ describe('AgentRuntimeSessionStore', () => {
       });
       const result = await store.search('ws_1', 'pricing', 6);
       expect(result.totalFound).toBe(1);
-      expect(result.memories[0].id).toBe('a');
+      expect(result.memories[0]!.id).toBe('a');
     });
     it('generates snippet around first matching token', async () => {
       const longContent = 'A'.repeat(200) + 'pricing' + 'B'.repeat(200);
@@ -203,9 +203,9 @@ describe('AgentRuntimeSessionStore', () => {
         findMany: jest.fn().mockResolvedValue([makeMemoryRow({ id: 'a', content: longContent })]),
       });
       const result = await store.search('ws_1', 'pricing', 1);
-      expect(result.memories[0].snippet).toContain('pricing');
-      expect(result.memories[0].snippet).toMatch(/^…/);
-      expect(result.memories[0].snippet).toMatch(/…$/);
+      expect(result.memories[0]!.snippet).toContain('pricing');
+      expect(result.memories[0]!.snippet).toMatch(/^…/);
+      expect(result.memories[0]!.snippet).toMatch(/…$/);
     });
     it('returns empty snippet for empty content', async () => {
       const { store } = makeStore({
@@ -214,7 +214,7 @@ describe('AgentRuntimeSessionStore', () => {
           .mockResolvedValue([makeMemoryRow({ id: 'a', content: '', key: 'pricing_skill' })]),
       });
       const result = await store.search('ws_1', 'pricing', 1);
-      expect(result.memories[0].snippet).toBe('');
+      expect(result.memories[0]!.snippet).toBe('');
     });
     it('assigns provenance-weighted confidence for full token match', async () => {
       const { store } = makeStore({
@@ -223,8 +223,8 @@ describe('AgentRuntimeSessionStore', () => {
           .mockResolvedValue([makeMemoryRow({ id: 'a', content: 'pricing enterprise discount' })]),
       });
       const result = await store.search('ws_1', 'pricing enterprise discount', 1);
-      expect(result.memories[0].source.confidence).toBeGreaterThan(0.8);
-      expect(result.memories[0].source.confidence).toBeLessThanOrEqual(1);
+      expect(result.memories[0]!.source.confidence).toBeGreaterThan(0.8);
+      expect(result.memories[0]!.source.confidence).toBeLessThanOrEqual(1);
     });
     it('assigns confidence weighted by provenance and freshness for single-token partial match', async () => {
       const { store } = makeStore({
@@ -233,7 +233,7 @@ describe('AgentRuntimeSessionStore', () => {
           .mockResolvedValue([makeMemoryRow({ id: 'a', content: 'pricing info' })]),
       });
       const result = await store.search('ws_1', 'pricing enterprise discount', 1);
-      expect(result.memories[0].source.confidence).toBeGreaterThan(0.5);
+      expect(result.memories[0]!.source.confidence).toBeGreaterThan(0.5);
     });
     it('assigns TTL-aware freshness based on age vs category TTL', async () => {
       const now = new Date();
@@ -256,8 +256,8 @@ describe('AgentRuntimeSessionStore', () => {
         ]),
       });
       const result = await store.search('ws_1', 'pricing', 3);
-      expect(result.memories[0].source.freshness).toBe('fresh');
-      expect(result.memories[1].source.freshness).toBe('stale');
+      expect(result.memories[0]!.source.freshness).toBe('fresh');
+      expect(result.memories[1]!.source.freshness).toBe('stale');
     });
     it('includes provenance field matching the memory category', async () => {
       const { store } = makeStore({
@@ -270,9 +270,9 @@ describe('AgentRuntimeSessionStore', () => {
           ]),
       });
       const result = await store.search('ws_1', 'pricing', 6);
-      expect(result.memories[0].source.provenance).toBe('agent_curated');
-      expect(result.memories[1].source.provenance).toBe('agent_event');
-      expect(result.memories[2].source.provenance).toBe('product');
+      expect(result.memories[0]!.source.provenance).toBe('agent_curated');
+      expect(result.memories[1]!.source.provenance).toBe('agent_event');
+      expect(result.memories[2]!.source.provenance).toBe('product');
     });
     it('ranks curated memories higher than events for the same match count', async () => {
       const { store } = makeStore({
@@ -285,7 +285,7 @@ describe('AgentRuntimeSessionStore', () => {
       });
       const result = await store.search('ws_1', 'pricing plans', 6);
       expect(result.totalFound).toBe(2);
-      expect(result.memories[0].id).toBe('b');
+      expect(result.memories[0]!.id).toBe('b');
     });
     it('sets expiresAt in source stamp as createdAt + TTL', async () => {
       const now = new Date();
@@ -301,9 +301,9 @@ describe('AgentRuntimeSessionStore', () => {
         ]),
       });
       const result = await store.search('ws_1', 'pricing', 1);
-      expect(result.memories[0].source.expiresAt).toBeDefined();
+      expect(result.memories[0]!.source.expiresAt).toBeDefined();
       const expectedExpiry = new Date(created.getTime() + 365 * MILLIS_PER_DAY);
-      expect(new Date(result.memories[0].source.expiresAt).getTime()).toBe(
+      expect(new Date(result.memories[0]!.source.expiresAt).getTime()).toBe(
         expectedExpiry.getTime(),
       );
     });
@@ -318,9 +318,9 @@ describe('AgentRuntimeSessionStore', () => {
         ]),
       });
       const result = await store.search('ws_1', 'pricing', 1);
-      expect(result.memories[0].source.retentionScore).toBeDefined();
-      expect(typeof result.memories[0].source.retentionScore).toBe('number');
-      expect(result.memories[0].source.retentionScore).toBeGreaterThan(0);
+      expect(result.memories[0]!.source.retentionScore).toBeDefined();
+      expect(typeof result.memories[0]!.source.retentionScore).toBe('number');
+      expect(result.memories[0]!.source.retentionScore).toBeGreaterThan(0);
     });
     it('includes ttlMs in source stamp', async () => {
       const { store } = makeStore({
@@ -331,7 +331,7 @@ describe('AgentRuntimeSessionStore', () => {
           ]),
       });
       const result = await store.search('ws_1', 'pricing', 1);
-      expect(result.memories[0].source.ttlMs).toBe(180 * MILLIS_PER_DAY);
+      expect(result.memories[0]!.source.ttlMs).toBe(180 * MILLIS_PER_DAY);
     });
     it('respects the limit parameter', async () => {
       const { store } = makeStore({
@@ -397,6 +397,67 @@ describe('AgentRuntimeSessionStore', () => {
       });
       const result = await store.search('ws_1', 'hello world', 6);
       expect(result.tokens).toEqual(['hello', 'world']);
+    });
+
+    it('excludes agent event recall without the authenticated user id', async () => {
+      const { store } = makeStore({
+        findMany: jest.fn().mockResolvedValue([
+          makeMemoryRow({
+            id: 'same-user',
+            content: 'pricing plans same user',
+            metadata: { kind: 'agent_turn', userId: 'user-1' },
+          }),
+          makeMemoryRow({
+            id: 'missing-user',
+            content: 'pricing plans missing user',
+            metadata: { kind: 'agent_turn' },
+          }),
+          makeMemoryRow({
+            id: 'other-user',
+            content: 'pricing plans other user',
+            metadata: { kind: 'agent_turn', userId: 'user-2' },
+          }),
+          makeMemoryRow({
+            id: 'workspace-product',
+            category: 'product',
+            content: 'pricing plans workspace product',
+          }),
+        ]),
+      });
+      const result = await store.search('ws_1', 'pricing plans', 6, { userId: 'user-1' });
+
+      expect(result.memories.map((memory) => memory.id).sort()).toEqual([
+        'same-user',
+        'workspace-product',
+      ]);
+    });
+  });
+
+  describe('searchSessions', () => {
+    it('excludes session recall without the authenticated user id', async () => {
+      const { store } = makeStore({
+        findMany: jest.fn().mockResolvedValue([
+          makeMemoryRow({
+            id: 'same-user',
+            content: 'pricing plans same user',
+            metadata: { kind: 'agent_turn', userId: 'user-1', threadId: 'thread-1' },
+          }),
+          makeMemoryRow({
+            id: 'missing-user',
+            content: 'pricing plans missing user',
+            metadata: { kind: 'agent_turn', threadId: 'thread-old' },
+          }),
+          makeMemoryRow({
+            id: 'other-user',
+            content: 'pricing plans other user',
+            metadata: { kind: 'agent_turn', userId: 'user-2', threadId: 'thread-2' },
+          }),
+        ]),
+      });
+      const result = await store.searchSessions('ws_1', 'pricing plans', 6, { userId: 'user-1' });
+
+      expect(result.sessions.map((session) => session.sessionId)).toEqual(['thread-1']);
+      expect(result.sessions[0]!.summary).toContain('same user');
     });
   });
 });

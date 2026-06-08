@@ -71,11 +71,15 @@ export class WhatsAppCatalogController {
     const limit = Number(req.query?.limit || body.limit || 100) || 100;
     const offset = Number(req.query?.offset || body.offset || 0) || 0;
     const downloadMedia = this.readBooleanQuery(req.query?.downloadMedia, false);
-    return this.whatsappService.getChatMessages(resolveWorkspaceId(req), decodeURIComponent(chatId), {
-      limit,
-      offset,
-      downloadMedia,
-    });
+    return this.whatsappService.getChatMessages(
+      resolveWorkspaceId(req),
+      decodeURIComponent(chatId),
+      {
+        limit,
+        offset,
+        downloadMedia,
+      },
+    );
   }
 
   /** Set presence. */

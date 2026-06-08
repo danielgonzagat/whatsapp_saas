@@ -407,9 +407,7 @@ describe('LeadsService', () => {
           where: { OR?: unknown[]; AND?: unknown[] };
         };
         // Provenance disjunction stays on the top-level OR key.
-        expect(callArg.where.OR).toEqual(
-          expect.arrayContaining([{ kloelLeadId: { not: null } }]),
-        );
+        expect(callArg.where.OR).toEqual(expect.arrayContaining([{ kloelLeadId: { not: null } }]));
         // Search disjunction is AND-nested so it does not clobber provenance.
         expect(callArg.where.AND).toEqual([
           {

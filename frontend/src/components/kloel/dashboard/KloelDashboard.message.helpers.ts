@@ -211,8 +211,8 @@ export function shouldShowAssistantActions(
   return !isThinking && hasVisibleAssistantText;
 }
 
-/** True when the transient public thinking placeholder should render. */
-export function shouldShowThinkingPlaceholder(
+/** True when the live processing timeline shell should render. */
+export function shouldShowLiveProcessingTimeline(
   isThinking: boolean,
   hasVisibleAssistantText: boolean,
 ): boolean {

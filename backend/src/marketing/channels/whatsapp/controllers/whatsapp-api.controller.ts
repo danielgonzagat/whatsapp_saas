@@ -141,11 +141,7 @@ export class WhatsAppApiController {
     if (body?.mode === 'pause_autonomy') {
       return this.ciaRuntime.pauseAutonomy(workspaceId);
     }
-    return this.ciaRuntime.startBacklogRun(
-      workspaceId,
-      readBacklogMode(body?.mode),
-      body?.limit,
-    );
+    return this.ciaRuntime.startBacklogRun(workspaceId, readBacklogMode(body?.mode), body?.limit);
   }
   /** Start backlog. */
   @InternalEndpoint('whatsapp CIA intelligence')

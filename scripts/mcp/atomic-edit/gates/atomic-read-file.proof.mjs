@@ -53,6 +53,8 @@ async function main() {
   const positiveRel = path.join('scripts', 'mcp', 'atomic-edit', 'server.ts');
   const badRel = path.join(baseRel, 'read-bad.ts');
   const mdRel = path.join(baseRel, 'read-notes.md');
+  const goRel = path.join(baseRel, 'read-main.go');
+  const badGoRel = path.join(baseRel, 'read-broken.go');
   const positiveSource = fs.readFileSync(path.join(repoRoot, positiveRel), 'utf8');
   const missingSpecifier = './missing-read-target';
   const badSource = [
@@ -65,11 +67,15 @@ async function main() {
     'export const READ_BAD = MissingReadTarget;\n',
   ].join('');
   const mdSource = '# Atomic read proof\nThis file is outside the TS/JS lens battery.\n';
+  const goSource = 'package main\nfunc main() { println("atomic") }\n';
+  const badGoSource = 'package main\nfunc main() { println("atomic" \n';
 
   try {
     fs.mkdirSync(baseAbs, { recursive: true });
     fs.writeFileSync(path.join(repoRoot, badRel), badSource);
     fs.writeFileSync(path.join(repoRoot, mdRel), mdSource);
+    fs.writeFileSync(path.join(repoRoot, goRel), goSource);
+    fs.writeFileSync(path.join(repoRoot, badGoRel), badGoSource);
 
     await client.connect(transport);
     const listed = await client.listTools();
@@ -114,22 +120,65 @@ async function main() {
     });
     const mdBody = lastJson(md);
     record(
-      'non-source read is explicit proof debt, not silently green',
+      'direct-file read applies declared text battery instead of unjudged proof debt',
       mdBody.ok === true &&
-        mdBody.verdict === 'UNJUDGED' &&
+        mdBody.verdict === 'POSITIVE_WITHIN_DECLARED_BATTERY' &&
         mdBody.sourceLensApplied === false &&
+        mdBody.directFileBatteryApplied === true &&
         mdBody.contentIncluded === false &&
         mdBody.content === undefined &&
-        mdBody.zones?.[0]?.classification === 'unjudged' &&
-        mdBody.proofDebt?.some((debt) => /no declared source-language battery/i.test(debt)),
+        mdBody.zones?.[0]?.classification === 'positive-within-declared-battery' &&
+        mdBody.proofDebt?.length === 0 &&
+        /Markdown text is UTF-8 readable/.test(mdBody.zones?.[0]?.reason ?? ''),
       mdBody,
+    );
+
+    const go = await client.callTool({
+      name: 'atomic_read_file',
+      arguments: { file: goRel, includeContent: false },
+    });
+    const goBody = lastJson(go);
+    record(
+      'direct-file read applies structural battery to Go bytes',
+      goBody.ok === true &&
+        goBody.verdict === 'POSITIVE_WITHIN_DECLARED_BATTERY' &&
+        goBody.sourceLensApplied === false &&
+        goBody.directFileBatteryApplied === true &&
+        goBody.contentIncluded === false &&
+        goBody.content === undefined &&
+        goBody.zones?.[0]?.classification === 'positive-within-declared-battery' &&
+        goBody.proofDebt?.length === 0 &&
+        /Go text passed Atomic structural balance battery/.test(goBody.zones?.[0]?.reason ?? ''),
+      goBody,
+    );
+
+    const badGo = await client.callTool({
+      name: 'atomic_read_file',
+      arguments: { file: badGoRel, includeContent: false },
+    });
+    const badGoBody = lastJson(badGo);
+    record(
+      'direct-file read marks structurally broken Go bytes as negative',
+      badGoBody.ok === true &&
+        badGoBody.verdict === 'HAS_NEGATIVE_BYTES' &&
+        badGoBody.sourceLensApplied === false &&
+        badGoBody.directFileBatteryApplied === true &&
+        badGoBody.contentIncluded === false &&
+        badGoBody.content === undefined &&
+        badGoBody.zones?.[0]?.classification === 'negative' &&
+        badGoBody.negativeByteEvidenceCount > 0 &&
+        badGoBody.proofDebt?.length === 0 &&
+        /unclosed/.test(badGoBody.zones?.[0]?.reason ?? ''),
+      badGoBody,
     );
 
     record(
       'atomic_read_file is read-only on disk fixtures',
       fs.readFileSync(path.join(repoRoot, positiveRel), 'utf8') === positiveSource &&
         fs.readFileSync(path.join(repoRoot, badRel), 'utf8') === badSource &&
-        fs.readFileSync(path.join(repoRoot, mdRel), 'utf8') === mdSource,
+        fs.readFileSync(path.join(repoRoot, mdRel), 'utf8') === mdSource &&
+        fs.readFileSync(path.join(repoRoot, goRel), 'utf8') === goSource &&
+        fs.readFileSync(path.join(repoRoot, badGoRel), 'utf8') === badGoSource,
       {},
     );
   } finally {

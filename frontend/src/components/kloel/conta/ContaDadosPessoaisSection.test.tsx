@@ -120,4 +120,26 @@ describe('DadosPessoaisSection', () => {
     expect(mocks.updateProfile).not.toHaveBeenCalled();
     expect(mocks.mutate).not.toHaveBeenCalled();
   });
+
+  it('does not label client-side validation as a save failure', async () => {
+    render(
+      <DadosPessoaisSection
+        profile={{
+          name: '',
+          email: 'codex.audit@example.test',
+          phone: '(11) 97777-0001',
+          birthDate: '1988-08-09',
+        }}
+        mutate={mocks.mutate}
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: /salvar/i }));
+
+    expect(await screen.findByText('Informe seu nome completo.')).toBeTruthy();
+    expect(screen.queryByText('Erro ao salvar')).toBeNull();
+    expect(mocks.showToast).toHaveBeenCalledWith('Informe seu nome completo.', 'error');
+    expect(mocks.updateProfile).not.toHaveBeenCalled();
+    expect(mocks.mutate).not.toHaveBeenCalled();
+  });
 });

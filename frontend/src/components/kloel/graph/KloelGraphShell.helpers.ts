@@ -69,6 +69,7 @@ export async function loadCheckoutGraphProducts(): Promise<KloelGraphProductLike
         label: product.name,
         slug: product.slug ?? null,
         plans: [],
+        checkoutPlans: [],
         checkouts: [],
       } satisfies KloelGraphProductLike;
 
@@ -78,7 +79,7 @@ export async function loadCheckoutGraphProducts(): Promise<KloelGraphProductLike
         );
         return {
           ...baseProduct,
-          plans: extractPlansFromDetail(detail),
+          checkoutPlans: extractPlansFromDetail(detail),
           checkouts: extractCheckoutsFromDetail(detail),
         } satisfies KloelGraphProductLike;
       } catch {
@@ -115,12 +116,8 @@ export function mergeGraphProducts(
       label: match?.label ?? checkoutProduct.label ?? null,
       category: match?.category ?? checkoutProduct.category ?? null,
       status: match?.status ?? checkoutProduct.status ?? null,
-      plans: mergeGraphEntityLists(
-        match?.plans,
-        match?.checkoutPlans,
-        checkoutProduct.plans,
-        checkoutProduct.checkoutPlans,
-      ),
+      plans: mergeGraphEntityLists(match?.plans, checkoutProduct.plans),
+      checkoutPlans: mergeGraphEntityLists(match?.checkoutPlans, checkoutProduct.checkoutPlans),
       checkouts: mergeGraphEntityLists(
         match?.checkouts,
         match?.checkoutTemplates,

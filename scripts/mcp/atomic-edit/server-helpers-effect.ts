@@ -19,8 +19,68 @@ import { characterDiff } from './advanced.js';
 import { REPO_ROOT } from './guard.js';
 
 const SKIP_DIRS = new Set([
-  'node_modules', '.git', 'dist', '.next', 'build', 'coverage', '.atomic', '.turbo', 'vendor', '.cache',
+  'node_modules', '.git', 'dist', '.next', 'build', 'coverage', '.atomic', '.codex-artifacts',
+  '.codex-hook-tmp', '.turbo', 'vendor', '.cache', 'node-compile-cache', 'jest_dx', 'test-results',
+  '.serena', '.codegraph', '.claude',
 ]);
+
+const SKIP_FILE_NAMES = new Set(['.DS_Store']);
+
+const REPO_SCRATCH_DIRS = new Set([
+  '.claude/worktrees',
+  '.mcp-cache',
+  '.elan',
+  'graphify-out',
+  'node-compile-cache',
+  'jest_dx',
+  '.ecc-research',
+  'artifacts',
+  'backend/artifacts',
+  '.z3venv',
+  '.tmp',
+  'screenshots',
+  '.codex-traces',
+  '.task-graph',
+  '.omx',
+  'typescript-language-server501',
+  '1d20c2d781c537a19aa2c26fca9c2b76',
+  'docs/architecture/proofs/screenshots',
+  'e2e/visual/critical-flows.spec.ts-snapshots',
+]);
+
+const REPO_SCRATCH_FILES = new Set([
+  '.tmp-kloel-graph-nav-clean-trace.json',
+  '.tmp-kloel-graph-nav-trace.json',
+  'backend/.dev-backend.log',
+]);
+
+const REPO_SCRATCH_PREFIXES = [
+  'atomic-proof-',
+  'atomic-type-gate-',
+  'atomic-edit-dist-',
+  '.atomic-exec-sandbox-',
+  '.external-runtime-denial-',
+  'v8-compile-cache-',
+];
+
+function repoRelativeEffectPath(full: string): string | null {
+  const repoRel = path.relative(REPO_ROOT, full).split(path.sep).join('/');
+  if (repoRel.startsWith('..') || path.isAbsolute(repoRel)) return null;
+  return repoRel;
+}
+
+function shouldSkipEffectDir(rootAbs: string, full: string, name: string): boolean {
+  if (SKIP_DIRS.has(name)) return true;
+  const repoRel = repoRelativeEffectPath(full);
+  if (repoRel !== null && REPO_SCRATCH_DIRS.has(repoRel)) return true;
+  return REPO_SCRATCH_PREFIXES.some((prefix) => name.startsWith(prefix));
+}
+
+function shouldSkipEffectFile(full: string, name: string): boolean {
+  if (SKIP_FILE_NAMES.has(name)) return true;
+  const repoRel = repoRelativeEffectPath(full);
+  return repoRel !== null && REPO_SCRATCH_FILES.has(repoRel);
+}
 
 export interface EffectSnapshot {
   rootAbs: string;
@@ -173,8 +233,8 @@ export function captureEffectSnapshot(
   rootAbs: string,
   opts: { maxFiles?: number; maxBytes?: number; maxFileBytes?: number; includeRel?: string[] } = {},
 ): EffectSnapshot {
-  const maxFiles = opts.maxFiles ?? 4000;
-  const maxBytes = opts.maxBytes ?? 64 * 1024 * 1024;
+  const maxFiles = opts.maxFiles ?? 20000;
+  const maxBytes = opts.maxBytes ?? 256 * 1024 * 1024;
   const maxFileBytes = opts.maxFileBytes ?? 2 * 1024 * 1024;
   const limits = { maxFiles, maxBytes, maxFileBytes };
   const files = new Map<string, string>();
@@ -256,10 +316,14 @@ export function captureEffectSnapshot(
         limitReached = true;
         return;
       }
-      if (SKIP_DIRS.has(e.name)) continue;
       const full = path.join(dir, e.name);
-      if (e.isDirectory()) walk(full);
-      else if (e.isFile()) snapshotFile(full);
+      if (e.isDirectory()) {
+        if (shouldSkipEffectDir(rootAbs, full, e.name)) continue;
+        walk(full);
+      } else if (e.isFile()) {
+        if (shouldSkipEffectFile(full, e.name)) continue;
+        snapshotFile(full);
+      }
     }
   };
 

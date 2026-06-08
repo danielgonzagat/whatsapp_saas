@@ -23,6 +23,11 @@ export type ArtifactKind =
   | 'mermaid'
   | 'react'
   | 'pdf'
+  | 'docx'
+  | 'pptx'
+  | 'xlsx'
+  | 'image'
+  | 'data'
   | 'code';
 
 /** A single rich artifact opened in the side panel. */
@@ -43,10 +48,14 @@ export interface Artifact {
   readonly content: string;
   /** Real download target (data: URL for inlined text, remote URL otherwise). */
   readonly downloadUrl?: string | undefined;
+  /** Server-side content reference, when the stream/event stores bytes elsewhere. */
+  readonly contentRef?: string | undefined;
   /** Optional secondary label from the source file ("Documento · MD"). */
   readonly meta?: string | undefined;
   /** Text kinds with recoverable inline content are editable in place. */
   readonly editable: boolean;
+  /** Whether the producing event marked this artifact as durable. */
+  readonly persistent?: boolean | undefined;
   /** Wall-clock creation time (ms epoch) for ordering. */
   readonly createdAt: number;
 }
@@ -63,6 +72,18 @@ const EXTENSION_TO_KIND: Readonly<Record<string, ArtifactKind>> = {
   tsx: 'react',
   jsx: 'react',
   pdf: 'pdf',
+  doc: 'docx',
+  docx: 'docx',
+  ppt: 'pptx',
+  pptx: 'pptx',
+  xls: 'xlsx',
+  xlsx: 'xlsx',
+  png: 'image',
+  jpg: 'image',
+  jpeg: 'image',
+  gif: 'image',
+  webp: 'image',
+  avif: 'image',
   ts: 'code',
   js: 'code',
   mjs: 'code',
@@ -79,12 +100,13 @@ const EXTENSION_TO_KIND: Readonly<Record<string, ArtifactKind>> = {
   sh: 'code',
   bash: 'code',
   sql: 'code',
-  json: 'code',
+  json: 'data',
   yaml: 'code',
   yml: 'code',
   toml: 'code',
   css: 'code',
-  csv: 'code',
+  csv: 'data',
+  tsv: 'data',
   txt: 'code',
 };
 
@@ -95,6 +117,7 @@ const EDITABLE_KINDS: ReadonlySet<ArtifactKind> = new Set<ArtifactKind>([
   'svg',
   'mermaid',
   'react',
+  'data',
   'code',
 ]);
 
@@ -167,6 +190,16 @@ export function downloadMimeForKind(kind: ArtifactKind): string {
       return 'image/svg+xml';
     case 'pdf':
       return 'application/pdf';
+    case 'docx':
+      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    case 'pptx':
+      return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+    case 'xlsx':
+      return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    case 'image':
+      return 'application/octet-stream';
+    case 'data':
+      return 'text/csv';
     case 'mermaid':
     case 'react':
     case 'code':
@@ -191,26 +224,37 @@ export function artifactFromReasoningFile(
   if (!title) {
     return null;
   }
-  const kind = artifactKindFromFileName(title);
-  const downloadUrl = file.downloadUrl || file.url || undefined;
-  const inlineText = decodeDataUrlText(file.downloadUrl);
+  const kind = file.kind || artifactKindFromFileName(title);
+  const inlineText =
+    typeof file.content === 'string' ? file.content : decodeDataUrlText(file.downloadUrl);
   const hasInlineText = inlineText !== null && inlineText.trim().length > 0;
-  const editable = hasInlineText && EDITABLE_KINDS.has(kind);
+  const downloadUrl =
+    file.downloadUrl ||
+    file.url ||
+    (hasInlineText ? encodeTextToDataUrl(inlineText as string, downloadMimeForKind(kind)) : undefined);
+  const editable = hasInlineText && (file.editable ?? EDITABLE_KINDS.has(kind));
 
-  // No inline text AND no remote target → nothing real to open as an artifact.
-  if (!hasInlineText && !downloadUrl) {
+  // No inline text, no remote target, and no server ref means nothing real can open.
+  if (!hasInlineText && !downloadUrl && !file.contentRef) {
     return null;
   }
 
+  const artifactKey =
+    typeof file.artifactId === 'string' && file.artifactId.trim()
+      ? file.artifactId.trim()
+      : `${index}:${title}`;
+
   return {
-    id: `${conversationId || 'draft'}:${index}:${title}`,
+    id: `${conversationId || 'draft'}:${artifactKey}`,
     conversationId,
     kind,
     title,
     content: hasInlineText ? (inlineText as string) : '',
     downloadUrl,
+    contentRef: file.contentRef,
     meta: file.meta,
     editable,
+    persistent: file.persistent,
     createdAt,
   };
 }

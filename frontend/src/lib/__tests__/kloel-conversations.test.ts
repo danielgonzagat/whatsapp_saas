@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mutateMock, tokenStorageMock } = vi.hoisted(() => ({
+const { ensureFreshAccessTokenMock, mutateMock, refreshAccessTokenMock, tokenStorageMock } = vi.hoisted(() => ({
+  ensureFreshAccessTokenMock: vi.fn<() => Promise<boolean>>(() => Promise.resolve(false)),
   mutateMock: vi.fn(),
+  refreshAccessTokenMock: vi.fn<() => Promise<boolean>>(() => Promise.resolve(false)),
   tokenStorageMock: {
     getToken: vi.fn(() => 'token-1'),
     getWorkspaceId: vi.fn(() => 'ws-1'),
@@ -24,6 +26,8 @@ vi.mock('../http', async (importOriginal) => {
 vi.mock('../api/core', () => ({
   tokenStorage: tokenStorageMock,
   apiFetch: vi.fn(),
+  ensureFreshAccessToken: ensureFreshAccessTokenMock,
+  refreshAccessToken: refreshAccessTokenMock,
 }));
 
 import { apiFetch } from '../api/core';
@@ -198,6 +202,10 @@ describe('searchKloelThreads', () => {
 describe('streamAuthenticatedKloelMessage', () => {
   beforeEach(() => {
     mutateMock.mockReset();
+    ensureFreshAccessTokenMock.mockReset();
+    ensureFreshAccessTokenMock.mockResolvedValue(false);
+    refreshAccessTokenMock.mockReset();
+    refreshAccessTokenMock.mockResolvedValue(false);
     tokenStorageMock.getToken.mockReturnValue('token-1');
     tokenStorageMock.getWorkspaceId.mockReturnValue('ws-1');
   });
@@ -264,6 +272,61 @@ describe('streamAuthenticatedKloelMessage', () => {
       'content',
       'done',
     ]);
+    expect(mutateMock).toHaveBeenCalled();
+  });
+
+  it('refreshes and retries the streaming request once after an auth rejection', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ message: 'Invalid token' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      )
+      .mockResolvedValueOnce(
+        buildSseResponse([
+          'data: {"type":"content","content":"Resumo em bullets."}\n\n',
+          'data: {"type":"done","done":true}\n\n',
+        ]),
+      );
+
+    tokenStorageMock.getToken.mockReturnValue('expired-token');
+    refreshAccessTokenMock.mockImplementation(async () => {
+      tokenStorageMock.getToken.mockReturnValue('fresh-token');
+      return true;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const chunks: string[] = [];
+    await new Promise<void>((resolve, reject) => {
+      streamAuthenticatedKloelMessage(
+        {
+          message: 'oi',
+          conversationId: null,
+          mode: 'chat',
+        },
+        {
+          onChunk: (chunk) => chunks.push(chunk),
+          onDone: resolve,
+          onError: (message) => reject(new Error(message)),
+        },
+      );
+    });
+
+    const firstInit = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined;
+    const secondInit = fetchMock.mock.calls[1]?.[1] as RequestInit | undefined;
+
+    expect(ensureFreshAccessTokenMock).toHaveBeenCalledOnce();
+    expect(refreshAccessTokenMock).toHaveBeenCalledOnce();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect((firstInit?.headers as Record<string, string> | undefined)?.Authorization).toBe(
+      'Bearer expired-token',
+    );
+    expect((secondInit?.headers as Record<string, string> | undefined)?.Authorization).toBe(
+      'Bearer fresh-token',
+    );
+    expect(chunks.join('')).toBe('Resumo em bullets.');
     expect(mutateMock).toHaveBeenCalled();
   });
 

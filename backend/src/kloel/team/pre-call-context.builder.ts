@@ -146,7 +146,7 @@ function findCurrentStage(events: readonly SpineEventRef[]): string | undefined 
 
   const last = stageEvents[0];
   if (last !== undefined) {
-    const payload = last.payload as Record<string, unknown> | undefined;
+    const payload = last.payload;
     return (payload?.['toStage'] as string) ?? (payload?.['stage'] as string) ?? undefined;
   }
   return undefined;

@@ -1,6 +1,6 @@
 'use client';
+import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
-import { API_BASE } from '@/lib/http';
 import type React from 'react';
 import { use, useEffect, useState } from 'react';
 import CheckoutBlancSocial from '../../components/CheckoutBlancSocial';
@@ -12,10 +12,17 @@ export default function CheckoutPreview({ params }: { params: Promise<{ planId: 
   const [config, setConfig] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
-    fetch(`${API_BASE}/checkout/plans/${planId}/config`)
-      .then((r) => r.json())
-      .then((data: Record<string, unknown>) => setConfig(data))
-      .catch(() => {});
+    let cancelled = false;
+
+    apiFetch<Record<string, unknown>>(`/checkout/plans/${planId}/config`).then((response) => {
+      if (!cancelled) {
+        setConfig(response.error ? null : (response.data ?? null));
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [planId]);
 
   if (!config) {

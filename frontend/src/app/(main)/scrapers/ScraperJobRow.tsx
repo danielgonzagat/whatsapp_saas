@@ -10,6 +10,13 @@ const STATUS_COLORS: Record<string, string> = {
   PENDING: colors.semantic.warning,
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  RUNNING: 'Executando',
+  COMPLETED: 'Concluído',
+  FAILED: 'Falhou',
+  PENDING: 'Pendente',
+};
+
 const TYPE_LABELS: Record<string, string> = {
   MAPS: 'Google Maps',
   INSTAGRAM: 'Instagram',
@@ -26,6 +33,7 @@ export function ScraperJobRow({
   importing: boolean;
 }) {
   const status = job.status?.toUpperCase() || 'PENDING';
+  const statusLabel = STATUS_LABELS[status] || status;
   const canImport = status === 'COMPLETED';
   return (
     <div
@@ -65,7 +73,7 @@ export function ScraperJobRow({
             fontFamily: "'Sora', sans-serif",
           }}
         >
-          {TYPE_LABELS[job.type] || job.type} {kloelT(`·`)} {status.toLowerCase()}
+          {TYPE_LABELS[job.type] || job.type} {kloelT(`·`)} {statusLabel}
           {job.resultsCount != null && ` \u00B7 ${job.resultsCount} resultados`}
         </div>
       </div>

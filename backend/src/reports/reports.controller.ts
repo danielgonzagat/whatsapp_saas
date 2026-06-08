@@ -1,4 +1,13 @@
-import { BadRequestException, Body, Controller, Get, Post, Query, Request, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { EmailService } from '../auth/email.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
@@ -157,7 +166,8 @@ export class ReportsController {
   @Post('send-email')
   async sendReportEmail(
     @Request() req: AuthenticatedRequest,
-    @Body() body: { period?: string; email?: string; reportType?: string; filters?: ReportFiltersDto },
+    @Body()
+    body: { period?: string; email?: string; reportType?: string; filters?: ReportFiltersDto },
   ) {
     const workspaceId = this.ws(req);
     const targetEmail = (body.email || req.user?.email)?.trim();
@@ -180,14 +190,15 @@ export class ReportsController {
     const firstPeriodPart = periodParts?.[0];
     const secondPeriodPart = periodParts?.[1];
     const isoDate = /^\d{4}-\d{2}-\d{2}$/;
-    const periodFilters: ReportFiltersDto = firstPeriodPart && isoDate.test(firstPeriodPart)
-      ? {
-          startDate: firstPeriodPart,
-          ...(secondPeriodPart && isoDate.test(secondPeriodPart)
-            ? { endDate: secondPeriodPart }
-            : {}),
-        }
-      : {};
+    const periodFilters: ReportFiltersDto =
+      firstPeriodPart && isoDate.test(firstPeriodPart)
+        ? {
+            startDate: firstPeriodPart,
+            ...(secondPeriodPart && isoDate.test(secondPeriodPart)
+              ? { endDate: secondPeriodPart }
+              : {}),
+          }
+        : {};
     const filters: ReportFiltersDto = { ...periodFilters, ...submittedFilters };
 
     const { subject, template, vars } = await this.buildReportEmail(
@@ -257,10 +268,7 @@ export class ReportsController {
       }
       case 'chargeback': {
         const report = await this.reportsService.getChargeback(workspaceId, filters);
-        const disputed = report.data.reduce(
-          (acc, p) => acc + (p.order?.totalInCents ?? 0),
-          0,
-        );
+        const disputed = report.data.reduce((acc, p) => acc + (p.order?.totalInCents ?? 0), 0);
         return {
           subject: 'Relatorio KLOEL — Chargebacks',
           template: 'report-chargeback',

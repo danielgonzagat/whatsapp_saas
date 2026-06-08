@@ -300,6 +300,30 @@ describe('KloelGraph route contract', () => {
     ).toBe('criar-product-prod_123-plan-plan_1-checkout-order-bump');
   });
 
+  it('routes checkout-backed plans to the checkout editor instead of the legacy product-plan endpoint', () => {
+    const productNodes = buildKloelGraphProductNodes([
+      {
+        id: 'prod_123',
+        name: 'Produto real',
+        checkoutPlans: [{ id: 'checkout_plan_1', name: 'Plano Checkout', active: true }],
+        plans: [],
+      },
+    ]);
+
+    expect(
+      productNodes.some((node) => node.route === '/products/prod_123/plans/checkout_plan_1'),
+    ).toBe(false);
+    expect(
+      productNodes.find((node) => node.id === 'criar-product-prod_123-checkout-checkout_plan_1')
+        ?.route,
+    ).toContain('/checkout/checkout_plan_1?');
+    expect(
+      productNodes.find(
+        (node) => node.id === 'criar-product-prod_123-checkout-checkout_plan_1-order-bump',
+      )?.route,
+    ).toContain('focus=order-bump');
+  });
+
   it('derives member area nodes from live member areas and resolves their deep-link focus', () => {
     const memberAreaNodes = buildKloelGraphMemberAreaNodes([
       { id: 'area_123', name: 'Curso real', description: 'Area conectada', active: true },
@@ -328,6 +352,27 @@ describe('KloelGraph route contract', () => {
     ).toBe('educar-member-area-area_123');
   });
 
+  it('keeps checkout detail plans out of legacy product-plan routes', async () => {
+    swrFetcherMock
+      .mockResolvedValueOnce([{ id: 'checkout_prod_real', name: 'Produto real' }])
+      .mockResolvedValueOnce({
+        plans: [{ id: 'checkout_plan_1', name: 'Plano Checkout', active: true }],
+        checkouts: [{ id: 'checkout_template_1', name: 'Checkout Principal', active: true }],
+      });
+
+    await expect(loadCheckoutGraphProducts()).resolves.toEqual([
+      {
+        id: 'checkout_prod_real',
+        name: 'Produto real',
+        label: 'Produto real',
+        slug: null,
+        plans: [],
+        checkoutPlans: [{ id: 'checkout_plan_1', name: 'Plano Checkout', active: true }],
+        checkouts: [{ id: 'checkout_template_1', name: 'Checkout Principal', active: true }],
+      },
+    ]);
+  });
+
   it('keeps real checkout products visible when detail payload fetch fails', async () => {
     swrFetcherMock
       .mockResolvedValueOnce([
@@ -342,6 +387,7 @@ describe('KloelGraph route contract', () => {
         label: 'Produto real',
         slug: 'produto-real',
         plans: [],
+        checkoutPlans: [],
         checkouts: [],
       },
     ]);

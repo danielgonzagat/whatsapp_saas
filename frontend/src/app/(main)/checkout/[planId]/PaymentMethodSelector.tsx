@@ -75,6 +75,8 @@ export function PaymentMethodSelector({
       </div>
       <textarea
         readOnly
+        name="checkoutEmbedCode"
+        aria-label={kloelT('Codigo do widget de pagamento')}
         value={[
           '<div style="width:100%;max-width:560px;margin:0 auto;">',
           '  <iframe src="' + checkoutPublicUrl + '"',

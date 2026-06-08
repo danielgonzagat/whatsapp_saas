@@ -42,6 +42,7 @@ describe('getThreadMessages metadata sanitization', () => {
         content: 'Site gerado.',
         metadata: {
           capability: 'create_site',
+          capabilityError: 'create_site failed internally',
           tool: 'create_site',
           generatedSiteHtml,
           generatedImageUrl,
@@ -62,6 +63,10 @@ describe('getThreadMessages metadata sanitization', () => {
     expect(metadata.generatedImageUrl).toBe(generatedImageUrl);
     expect(metadata.generatedImageFilename).toBe('kloel image.png');
     expect(metadata.webSources).toEqual(webSources);
+
+    // Internal capability routing markers must not cross the public read boundary.
+    expect(metadata).not.toHaveProperty('capability');
+    expect(metadata).not.toHaveProperty('capabilityError');
 
     // Trace label is still normalized, and prose is still rewritten.
     expect(metadata.tool).toBe('criação de site');

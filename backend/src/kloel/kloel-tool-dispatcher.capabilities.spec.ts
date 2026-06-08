@@ -174,11 +174,9 @@ describe('KloelToolDispatcherService — ECC capability dispatch', () => {
     }).compile();
     const bareService = module.get(KloelToolDispatcherService);
 
-    const result = await bareService.executeTool(
-      DEFAULT_WS_ID,
-      'mind.capability.refine_prompt',
-      { prompt: 'cria algo' },
-    );
+    const result = await bareService.executeTool(DEFAULT_WS_ID, 'mind.capability.refine_prompt', {
+      prompt: 'cria algo',
+    });
     expect(result.success).toBe(false);
     expect(result.error).toBe('capabilities_service_unavailable');
   });

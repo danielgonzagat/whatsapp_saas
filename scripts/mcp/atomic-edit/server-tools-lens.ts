@@ -27,6 +27,42 @@ import { structuralErrors } from './engine-structural.js';
 
 const SKIP = new Set(['node_modules', '.git', '.atomic', '.claude', '.mcp-cache', '.next', '.turbo', '.cache', 'build', 'coverage', 'dist', 'vendor']);
 const SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
+const DIRECT_STRUCTURAL_FILE_EXTS = new Set([
+  '.py', '.rb', '.sh', '.bash', '.zsh', '.yaml', '.yml', '.toml',
+  '.go', '.rs', '.java', '.kt', '.c', '.h', '.cc', '.cpp', '.hpp',
+  '.cs', '.php', '.swift', '.scala', '.css', '.scss', '.less', '.sql',
+]);
+const DIRECT_STRUCTURAL_LABELS: Record<string, string> = {
+  '.py': 'Python',
+  '.rb': 'Ruby',
+  '.sh': 'Shell',
+  '.bash': 'Bash',
+  '.zsh': 'Zsh',
+  '.yaml': 'YAML',
+  '.yml': 'YAML',
+  '.toml': 'TOML',
+  '.go': 'Go',
+  '.rs': 'Rust',
+  '.java': 'Java',
+  '.kt': 'Kotlin',
+  '.c': 'C',
+  '.h': 'C/C++ header',
+  '.cc': 'C++',
+  '.cpp': 'C++',
+  '.hpp': 'C++ header',
+  '.cs': 'C#',
+  '.php': 'PHP',
+  '.swift': 'Swift',
+  '.scala': 'Scala',
+  '.css': 'CSS',
+  '.scss': 'SCSS',
+  '.less': 'Less',
+  '.sql': 'SQL',
+};
+
+function directStructuralLanguageName(ext: string): string {
+  return DIRECT_STRUCTURAL_LABELS[ext] ?? ext.slice(1).toUpperCase();
+}
 
 /**
  * Enumerate the source files of a comma-separated scope (files or directories),
@@ -199,10 +235,10 @@ function directNonSourcePositiveReason(relPath: string, content: string): string
     }
     return 'JSON parsed successfully under Atomic direct-file battery; no source-language gate claim is made.';
   }
-  if (ext === '.py') {
+  if (DIRECT_STRUCTURAL_FILE_EXTS.has(ext)) {
     const errors = structuralErrors(ext, content);
     if (errors.length > 0) return null;
-    return 'Python text passed Atomic structural balance battery; no type/runtime claim is made.';
+    return `${directStructuralLanguageName(ext)} text passed Atomic structural balance battery; no type/runtime claim is made.`;
   }
   if (ext === '.md') {
     return 'Markdown text is UTF-8 readable and contains no NUL bytes under Atomic direct-file text battery; no prose correctness claim is made.';
@@ -347,7 +383,18 @@ export function registerToolsLens(server: McpServer): void {
         const content = readUtf8(absPath);
         const window = atomicReadWindow(content, a.startLine, a.endLine);
         const report = await runLens(repoRoot, relPath);
-        const zones = atomicReadZones(report, relPath, window.byteStart, window.byteEnd);
+        const directPositiveReason = report.scanned === 0 ? directNonSourcePositiveReason(relPath, content) : null;
+        const zones = directPositiveReason
+          ? [
+              {
+                classification: 'positive-within-declared-battery',
+                byteStart: window.byteStart,
+                byteEnd: window.byteEnd,
+                byteLength: window.byteEnd - window.byteStart,
+                reason: directPositiveReason,
+              },
+            ]
+          : atomicReadZones(report, relPath, window.byteStart, window.byteEnd);
         const negativeEvidence = report.negativeByteEvidence.filter(
           (entry) =>
             entry.file === relPath &&
@@ -356,11 +403,13 @@ export function registerToolsLens(server: McpServer): void {
             entry.byteStart < window.byteEnd,
         );
         const verdict =
-          report.scanned === 0
-            ? 'UNJUDGED'
-            : negativeEvidence.length > 0
-              ? 'HAS_NEGATIVE_BYTES'
-              : 'POSITIVE_WITHIN_DECLARED_BATTERY';
+          directPositiveReason
+            ? 'POSITIVE_WITHIN_DECLARED_BATTERY'
+            : report.scanned === 0
+              ? 'UNJUDGED'
+              : negativeEvidence.length > 0
+                ? 'HAS_NEGATIVE_BYTES'
+                : 'POSITIVE_WITHIN_DECLARED_BATTERY';
         const maxBytes = a.maxBytes ?? 50000;
         const emitted = truncateUtf8(window.text, maxBytes);
         const includeContent = a.includeContent ?? true;
@@ -383,15 +432,23 @@ export function registerToolsLens(server: McpServer): void {
           contentTruncated: includeContent ? emitted.truncated : false,
           verdict,
           sourceLensApplied: report.scanned > 0,
+          directFileBatteryApplied: Boolean(directPositiveReason),
           ran: report.ran,
-          unjudgedCount: report.unjudged.length + (report.scanned === 0 ? 1 : 0),
-          unjudgedDomains: report.scanned === 0 ? ['source-language-lens:not-applicable'] : report.unjudged.slice(0, 50),
+          unjudgedCount: report.unjudged.length + (report.scanned === 0 && !directPositiveReason ? 1 : 0),
+          unjudgedDomains:
+            report.scanned === 0
+              ? directPositiveReason
+                ? []
+                : ['source-language-lens:not-applicable']
+              : report.unjudged.slice(0, 50),
           zones,
           negativeByteEvidenceCount: negativeEvidence.length,
           negativeByteEvidence: negativeEvidence,
           proofDebt:
             report.scanned === 0
-              ? ['file readable, but no declared source-language battery could classify these bytes as positive']
+              ? directPositiveReason
+                ? []
+                : ['file readable, but no declared source-language battery could classify these bytes as positive']
               : report.unjudged.slice(0, 50),
           summaryForHuman:
             `Atomic read ${relPath} L${window.startLine}-L${window.endLine}: ${verdict}; ` +
@@ -448,6 +505,7 @@ export function registerToolsLens(server: McpServer): void {
           lineCount: number;
           verdict: ScanVerdict;
           sourceLensApplied: boolean;
+          directFileBatteryApplied: boolean;
           zoneCount: number;
           zones: AtomicReadZone[];
           negativeByteEvidenceCount: number;
@@ -463,6 +521,7 @@ export function registerToolsLens(server: McpServer): void {
         let positiveFiles = 0;
         let negativeFiles = 0;
         let proofDebtFiles = 0;
+        let directFileBatteryFiles = 0;
         let unjudgedFilesRead = 0;
         let omittedPositiveFiles = 0;
 
@@ -502,6 +561,7 @@ export function registerToolsLens(server: McpServer): void {
             lineCount,
             verdict,
             sourceLensApplied: true as const,
+            directFileBatteryApplied: false,
             zoneCount: zones.length,
             zones: zones.slice(0, maxEvidence),
             negativeByteEvidenceCount: negativeEvidence.length,
@@ -536,6 +596,7 @@ export function registerToolsLens(server: McpServer): void {
           totalLines += lineCount;
           if (directPositiveReason) {
             positiveFiles += 1;
+            directFileBatteryFiles += 1;
           } else {
             unjudgedFilesRead += 1;
             proofDebtFiles += 1;
@@ -547,6 +608,7 @@ export function registerToolsLens(server: McpServer): void {
             lineCount,
             verdict,
             sourceLensApplied: false,
+            directFileBatteryApplied: Boolean(directPositiveReason),
             zoneCount: 1,
             zones: [
               {
@@ -592,6 +654,7 @@ export function registerToolsLens(server: McpServer): void {
             positiveFiles,
             negativeFiles,
             proofDebtFiles,
+            directFileBatteryFiles,
             unjudgedFiles: unjudgedFilesRead,
             negativeByteEvidence: report.actionableNegativeByteEvidence.length,
             containedEvidence:

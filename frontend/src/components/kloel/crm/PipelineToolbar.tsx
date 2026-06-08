@@ -41,6 +41,8 @@ export function PipelineToolbar({
     >
       <div style={{ position: 'relative' }}>
         <select
+          id="crm-pipeline-select"
+          name="crmPipelineSelect"
           value={selectedPipelineId}
           onChange={(e) => onSelectPipeline(e.target.value)}
           aria-label={kloelT('Selecionar pipeline')}

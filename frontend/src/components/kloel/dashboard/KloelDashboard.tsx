@@ -130,7 +130,10 @@ export default function KloelDashboard() {
     isLoading: pendingApprovalsLoading,
     mutate: refreshPendingApprovals,
   } = useSWR('kloel:pending-approvals', listPendingKloelApprovals, {
-    refreshInterval: 30000,
+    dedupingInterval: 60_000,
+    errorRetryCount: 0,
+    refreshInterval: (approvals) => (approvals && approvals.length > 0 ? 30_000 : 0),
+    revalidateOnFocus: false,
   });
 
   const conversationTitleMap = useMemo(

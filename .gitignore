@@ -78,6 +78,14 @@ scripts/mcp/atomic-edit/dist/
 # scripts/mcp/atomic-edit/audit-atomicity.mjs, do not version individual ops)
 docs/ai/traces/
 scripts/mcp/atomic-edit/.smoke-fixture.*
+scripts/mcp/atomic-edit/.smoke-atomic-*-proof-*/
+scripts/mcp/atomic-edit/atomic-*-gate-*/
+.atomic/artifacts/
+.atomic/prove/
+.atomic/snapshots/
+.codex-artifacts/
+.codex-hook-tmp/
+backend/artifacts/
 # atomic-edit operation traces (per-call audit logs; aggregate via
 .atomic/traces/
 .atomic/macro-traces/
@@ -105,6 +113,7 @@ state/FINDINGS_AGGREGATE.json
 
 # Node 22+ compile cache (ephemeral; can land under cwd of sandboxed exec)
 node-compile-cache/
+**/node-compile-cache/
 
 # Jest cacheDirectory accidentally rooted under backend/scripts (haste-map + transform-cache)
 backend/scripts/jest_dx/
@@ -132,6 +141,7 @@ scripts/mcp/**/.red-*/
 PLANO-DE-LIMPEZA.md
 # Root-level jest cache (haste-map / transform-cache / perf-cache — regenerable)
 jest_dx/
+**/jest_dx/
 # node v8 compile cache (uid-suffixed, regenerable)
 v8-compile-cache-*/
 # Agent scratch / research dumps (never source of truth)

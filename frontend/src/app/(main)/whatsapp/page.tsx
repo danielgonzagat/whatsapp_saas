@@ -77,7 +77,7 @@ function formatOperatorReason(value?: string | null): string {
     return 'A autorização expirou. Conecte novamente.';
   }
   if (raw.includes('oauth') || raw.includes('configuration') || raw.includes('config')) {
-    return 'A autorizacao Meta ainda nao esta configurada no backend.';
+    return 'A autorização Meta ainda não está configurada no backend.';
   }
   if (raw.includes('permission') || raw.includes('scope')) {
     return 'A autorização precisa ser renovada com as permissões corretas.';
@@ -118,7 +118,7 @@ function ChannelCard({
             color: connected ? colors.semantic.successText : colors.semantic.errorText,
           }}
         >
-          {connected ? kloelT('Conectado') : kloelT('Nao conectado')}
+          {connected ? kloelT('Conectado') : kloelT('Não conectado')}
         </span>
       </div>
       <p className="text-sm" style={{ color: colors.text.faint }}>
@@ -183,11 +183,11 @@ export default function WhatsAppPage() {
       );
       const url = String(res.data?.url || '').trim();
       if (!url) {
-        throw kloelError('Nao foi possivel gerar a URL de conexao da Meta.');
+        throw kloelError('Não foi possível gerar a URL de conexão da Meta.');
       }
       window.location.href = url;
     } catch (error: unknown) {
-      setActionMessage(readErrorMessage(error, 'Falha ao iniciar a conexao Meta.'));
+      setActionMessage(readErrorMessage(error, 'Falha ao iniciar a conexão Meta.'));
     }
   }, [metaOAuthUnavailable]);
 
@@ -234,7 +234,7 @@ export default function WhatsAppPage() {
                 {kloelT(`WhatsApp oficial, sem QR, sem browser e sem WAHA`)}
               </h1>
               <p className="mt-3 text-sm leading-6" style={{ color: externalBrands.whatsappTextSecondary }}>
-                {kloelT(`Esta area valida o canal oficial da Meta que o Kloel usa para WhatsApp, Instagram,
+                {kloelT(`Esta área valida o canal oficial da Meta que o Kloel usa para WhatsApp, Instagram,
                 Messenger e Ads. O backend e o worker agora operam a partir da Meta API oficial e do
                 estado persistido do workspace.`)}
               </p>
@@ -301,45 +301,45 @@ export default function WhatsAppPage() {
           <ChannelCard
             title={kloelT(`WhatsApp`)}
             description={kloelT(
-              `Canal operacional do Kloel para envio, inbox e automacao via Cloud API.`,
+              `Canal operacional do Kloel para envio, inbox e automação via Cloud API.`,
             )}
             connected={whatsappConnected}
             meta={[
               `Status: ${formatConnectionState(whatsappConnected, whatsAppStatus?.status)}`,
-              `Numero: ${String(whatsAppStatus?.phone || 'nao resolvido')}`,
+              `Número: ${String(whatsAppStatus?.phone || 'não resolvido')}`,
             ]}
           />
           <ChannelCard
             title={kloelT(`Instagram`)}
             description={kloelT(
-              `Mensagens e eventos oficiais do Instagram pelo mesmo vinculo Meta.`,
+              `Mensagens e eventos oficiais do Instagram pelo mesmo vínculo Meta.`,
             )}
             connected={Boolean(metaStatus?.channels?.instagram?.connected)}
             meta={[
               `Conta: ${String(
                 metaStatus?.channels?.instagram?.username ||
                   metaStatus?.instagramUsername ||
-                  'nao conectada',
+                  'não conectada',
               )}`,
             ]}
           />
           <ChannelCard
             title={kloelT(`Messenger`)}
-            description={kloelT(`Recebimento e resposta por pagina oficial da Meta.`)}
+            description={kloelT(`Recebimento e resposta por página oficial da Meta.`)}
             connected={Boolean(metaStatus?.channels?.messenger?.connected)}
             meta={[
-              `Pagina: ${String(
-                metaStatus?.pageName || metaStatus?.channels?.messenger?.pageId || 'nao conectada',
+              `Página: ${String(
+                metaStatus?.pageName || metaStatus?.channels?.messenger?.pageId || 'não conectada',
               )}`,
             ]}
           />
           <ChannelCard
             title={kloelT(`Meta Ads`)}
-            description={kloelT(`Ads compartilha a mesma conexao autenticada do workspace.`)}
+            description={kloelT(`Ads compartilha a mesma conexão autenticada do workspace.`)}
             connected={Boolean(metaStatus?.channels?.ads?.connected)}
             meta={[
-              `Conta de anuncios: ${String(
-                metaStatus?.channels?.ads?.adAccountId || 'nao conectada',
+              `Conta de anúncios: ${String(
+                metaStatus?.channels?.ads?.adAccountId || 'não conectada',
               )}`,
             ]}
           />
@@ -360,7 +360,7 @@ export default function WhatsAppPage() {
           </h2>
           {loading ? (
             <p className="mt-4 text-sm" style={{ color: externalBrands.whatsappTextSecondary }}>
-              {kloelT(`Carregando integracao Meta...`)}
+              {kloelT(`Carregando integração Meta...`)}
             </p>
           ) : (
             <div className="mt-4 grid gap-3 text-sm md:grid-cols-2" style={{ color: externalBrands.whatsappCardTextBright }}>
@@ -401,7 +401,7 @@ export default function WhatsAppPage() {
                 >
                   {kloelT(`Runtime degradado`)}
                 </div>
-                <div className="mt-2">{whatsAppStatus?.degraded ? kloelT('Sim') : kloelT('Nao')}</div>
+                <div className="mt-2">{whatsAppStatus?.degraded ? kloelT('Sim') : kloelT('Não')}</div>
               </div>
               <div
                 className="rounded-2xl border px-4 py-3"

@@ -275,6 +275,38 @@ describe('KloelWorkspaceContextService', () => {
       expect(result).toContain('SCRIPT DE VENDA');
     });
 
+    it('does not inject agent events or user memories as workspace context text', async () => {
+      dataService.fetchAll.mockResolvedValue(
+        makeFetchAllResult({
+          memories: [
+            {
+              id: 'event-1',
+              key: 'agent_turn:dashboard:chat:old',
+              value: {},
+              category: 'agent_event',
+              type: 'turn',
+              content: 'Memorize uma preferência durável: responda em bullets curtos.',
+              createdAt: new Date(),
+            },
+            {
+              id: 'user-memory-1',
+              key: 'slot:preferencia_formato_resposta',
+              value: {},
+              category: 'user_memory',
+              type: 'user_fact',
+              content: 'O usuário prefere respostas em JSON',
+              createdAt: new Date(),
+            },
+          ],
+        }),
+      );
+
+      const result = await service.getWorkspaceContext(wsId);
+
+      expect(result).not.toContain('bullets curtos');
+      expect(result).not.toContain('respostas em JSON');
+    });
+
     it('skips legacy product memories', async () => {
       dataService.fetchAll.mockResolvedValue(
         makeFetchAllResult({

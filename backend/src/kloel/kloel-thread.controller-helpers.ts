@@ -159,6 +159,9 @@ function sanitizeThreadMessageMetadataValueForRead(value: unknown): unknown {
   const record = value as Record<string, unknown>;
   const sanitized: Record<string, unknown> = {};
   for (const [key, item] of Object.entries(record)) {
+    if (key === 'capability' || key === 'capabilityError') {
+      continue;
+    }
     if (ARTIFACT_PAYLOAD_METADATA_KEYS.has(key)) {
       sanitized[key] = item;
       continue;

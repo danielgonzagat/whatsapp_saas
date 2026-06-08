@@ -24,6 +24,33 @@ const args = process.argv.slice(2);
 const strict = args.includes('--strict');
 const strictHostBoundary = args.includes('--strict-host-boundary');
 const asJson = args.includes('--json');
+const codexStopJson = args.includes('--codex-stop-json');
+const STOP_HOOK_REPORT = path.join(REPO, '.atomic', 'trace-coverage-stop.latest.json');
+const stdinHookPayload = readHookPayloadFromStdin();
+
+function readHookPayloadFromStdin() {
+  try {
+    if (process.stdin.isTTY) return null;
+    const raw = fs.readFileSync(0, 'utf8').trim();
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (error) {
+    noteTraceCoverageParseFailure('hook stdin parse failed', error);
+    return null;
+  }
+}
+
+function hookEventName(payload) {
+  return String(payload?.hook_event_name ?? payload?.hookEventName ?? '').trim();
+}
+
+function noteTraceCoverageParseFailure(scope, error) {
+  if (process.env.ATOMIC_TRACE_COVERAGE_DIAGNOSTICS !== '1') {
+    return;
+  }
+  const detail = error instanceof Error ? error.message : String(error || 'unknown_error');
+  process.stderr.write(`[trace-coverage] ${scope}: ${detail}\n`);
+}
 
 const CODE =
   /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|ipynb|json|py|go|rs|java|kt|c|h|cc|cpp|hpp|cs|rb|php|swift|scala|sh|bash|zsh|css|scss|less|sql|ya?ml|toml|prisma)$/i;
@@ -116,7 +143,31 @@ const report = {
   pass: tracePass,
 };
 
-if (asJson) {
+function persistStopHookReport(payload) {
+  try {
+    fs.mkdirSync(path.dirname(STOP_HOOK_REPORT), { recursive: true });
+    fs.writeFileSync(
+      STOP_HOOK_REPORT,
+      `${JSON.stringify({ generatedAt: new Date().toISOString(), report: payload }, null, 2)}\n`,
+      'utf8',
+    );
+    return path.relative(REPO, STOP_HOOK_REPORT);
+  } catch (error) {
+    noteTraceCoverageParseFailure('Stop hook report persist failed', error);
+    return null;
+  }
+}
+
+function buildCodexStopHookOutput(payload) {
+  persistStopHookReport(payload);
+  return {};
+}
+
+const codexStopOutput = codexStopJson || (asJson && hookEventName(stdinHookPayload) === 'Stop');
+
+if (codexStopOutput) {
+  process.stdout.write(`${JSON.stringify(buildCodexStopHookOutput(report))}\n`);
+} else if (asJson) {
   console.log(JSON.stringify(report, null, 2));
 } else {
   if (uniqueChanged.length === 0) {
@@ -147,4 +198,4 @@ if (asJson) {
   }
 }
 
-process.exit((strict && !tracePass) || (strictHostBoundary && !hostBoundary.pass) ? 1 : 0);
+process.exit(codexStopOutput ? 0 : (strict && !tracePass) || (strictHostBoundary && !hostBoundary.pass) ? 1 : 0);

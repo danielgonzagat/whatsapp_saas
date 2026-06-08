@@ -18,7 +18,7 @@
  * to cwd, and byte-effect proof still required for mutations. Without the
  * broker, atomic_exec fails closed.
  */
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -48,6 +48,16 @@ function realpathIfPresent(value) {
   }
 }
 
+function darwinScratchDir(name) {
+  try {
+    const result = spawnSync('/usr/bin/getconf', [name], { encoding: 'utf8' });
+    const scratch = (result.stdout || '').trim().replace(/\/+$/, '');
+    return scratch || null;
+  } catch {
+    return null;
+  }
+}
+
 function codexHomePath() {
   return realpathIfPresent(process.env.CODEX_HOME ?? path.join(os.homedir(), '.codex'));
 }
@@ -58,6 +68,25 @@ function subpathWriteRule(value) {
 
 function codexRuntimeWriteRules(codexHome) {
   return [subpathWriteRule(codexHome)];
+}
+
+function browserRuntimeWriteRules() {
+  const writable = new Set();
+  for (const name of ['DARWIN_USER_TEMP_DIR', 'DARWIN_USER_CACHE_DIR']) {
+    const scratch = darwinScratchDir(name);
+    if (scratch) {
+      writable.add(scratch);
+      writable.add(realpathIfPresent(scratch));
+    }
+  }
+  for (const crashpadDir of [
+    path.join(os.homedir(), 'Library', 'Application Support', 'Google', 'Chrome', 'Crashpad'),
+    path.join(os.homedir(), 'Library', 'Application Support', 'Chromium', 'Crashpad'),
+  ]) {
+    writable.add(crashpadDir);
+    writable.add(realpathIfPresent(crashpadDir));
+  }
+  return [...writable].map(subpathWriteRule);
 }
 
 function codexRuntimeNetworkRules(codexHome) {
@@ -77,6 +106,7 @@ function sandboxProfile(writeRoot, brokerSocket, codexHome) {
     '(allow file-read*)',
     subpathWriteRule(realWriteRoot),
     ...codexRuntimeWriteRules(codexHome),
+    ...browserRuntimeWriteRules(),
     ...codexRuntimeNetworkRules(codexHome),
     // Codex's reasoning stream, DNS, and several MCPs are HTTP/remote.
     // atomic_exec remains network-denied by the out-of-sandbox broker.

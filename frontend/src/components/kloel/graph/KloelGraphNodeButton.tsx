@@ -2,7 +2,7 @@
 
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
 
-import type { KloelGraphNode } from './KloelGraph.routes';
+import { getKloelGraphNodeActionLabel, type KloelGraphNode } from './KloelGraph.routes';
 import type { LayoutNode } from './KloelGraphShell.helpers';
 import { GRAPH_FONT, GRAPH_RADIUS, useGraphTheme } from './KloelGraphTheme';
 
@@ -10,7 +10,7 @@ import { GRAPH_FONT, GRAPH_RADIUS, useGraphTheme } from './KloelGraphTheme';
  * A single graph node — faithful port of the prototype: a circular body in ember
  * (suns = silver core, active = ember) with the label rendered as text BELOW the
  * circle, not inside a box. The interaction contract is unchanged from the prototype
- * (pointer down/move/up + keyboard, aria-label "Abrir <label>") so the shell's
+ * (pointer down/move/up + keyboard, contextual aria-label) so the shell's
  * drag-vs-click engine and all specs keep passing.
  */
 export function KloelGraphNodeButton({
@@ -43,7 +43,7 @@ export function KloelGraphNodeButton({
   return (
     <button
       type="button"
-      aria-label={`Abrir ${node.label}`}
+      aria-label={`Abrir ${getKloelGraphNodeActionLabel(node)}`}
       title={node.subtitle ?? node.label}
       onPointerDown={(event) => onPointerDown(node.id, event)}
       onPointerMove={(event) => onPointerMove(node.id, event)}

@@ -502,6 +502,23 @@ function resolveCwd(input?: string): string {
   return candidate;
 }
 
+function resolveEffectRoot(cwd: string, input?: string): string {
+  if (!input) return cwd;
+  const candidate = path.isAbsolute(input) ? input : path.resolve(cwd, input);
+  if (!fs.existsSync(candidate) || !fs.statSync(candidate).isDirectory()) {
+    throw new Error(`atomic_exec refused: effectRoot does not exist or is not a directory: ${candidate}`);
+  }
+  const realCwd = fs.realpathSync(cwd);
+  const realCandidate = fs.realpathSync(candidate);
+  const rel = path.relative(realCwd, realCandidate);
+  if (rel.startsWith('..') || path.isAbsolute(rel)) {
+    throw new Error(
+      `atomic_exec refused: effectRoot must stay inside cwd (${realCandidate} escapes ${realCwd})`,
+    );
+  }
+  return realCandidate;
+}
+
 function tryGit(cwd: string, args: string[]): string | null {
   try {
     return childProcess
@@ -578,6 +595,12 @@ export function registerToolsExec(server: McpServer): void {
           .optional()
           .describe(
             'working directory (default: repo root); must resolve inside an allowed root / git worktree',
+          ),
+        effectRoot: z
+          .string()
+          .optional()
+          .describe(
+            'optional existing directory inside cwd that becomes the byte-effect snapshot root, sandbox write root, and TMPDIR for proveEffect commands; use for heavy validation outputs intentionally confined to a small writable root',
           ),
         timeoutMs: z
           .number()
@@ -679,12 +702,25 @@ export function registerToolsExec(server: McpServer): void {
           });
           return fail(`atomic_exec refused (effect proof required): ${reason}`);
         }
+        if (a.effectRoot && !a.proveEffect) {
+          const reason = 'effectRoot requires proveEffect:true so the declared write root is snapshotted and reversible.';
+          appendTrace({
+            ts: startedAt,
+            kind: 'refused',
+            reason,
+            commandClass,
+            command: redactSecrets(a.command),
+            cwd,
+          });
+          return fail(`atomic_exec refused (effectRoot without proof): ${reason}`);
+        }
 
         const snap = a.snapshot ? gitSnapshot(cwd) : null;
         // Effect proof is only for commands admitted to write. Trace-only read
-        // commands run under a no-write sandbox, so there is no cwd write surface
-        // to snapshot and no root-size cap to hide behind.
-        const effectRoot: string | null = a.proveEffect ? cwd : null;
+        // commands run under a no-write sandbox, so there is no write surface
+        // to snapshot and no root-size cap to hide behind. With effectRoot,
+        // the sandbox and byte snapshot share the same smaller writable root.
+        const effectRoot: string | null = a.proveEffect ? resolveEffectRoot(cwd, a.effectRoot) : null;
         const effectSnap: EffectSnapshot | null = effectRoot
           ? captureEffectSnapshot(effectRoot, {})
           : null;

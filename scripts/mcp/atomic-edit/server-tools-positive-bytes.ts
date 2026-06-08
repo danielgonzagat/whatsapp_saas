@@ -153,7 +153,76 @@ function wholeFileEdit(before: string, content: string): {
 }
 
 function sessionContent(session: PositiveByteSession): string {
-  return session.chunks.map((chunk) => fs.readFileSync(chunkPath(session.sessionId, chunk.index), 'utf8')).join('');
+  const parts: string[] = [];
+  let verifiedBytes = 0;
+
+  for (let expectedIndex = 0; expectedIndex < session.chunks.length; expectedIndex += 1) {
+    const chunk = session.chunks[expectedIndex];
+    if (!chunk || chunk.index !== expectedIndex) {
+      throw new Error(
+        `refused: positive-byte chunk manifest index mismatch for ${session.relPath}; ` +
+          `expected ${expectedIndex}, got ${chunk?.index ?? 'missing'}`,
+      );
+    }
+
+    const stagedPath = chunkPath(session.sessionId, chunk.index);
+    if (!fs.existsSync(stagedPath)) {
+      throw new Error(`refused: positive-byte chunk ${chunk.index} is missing for ${session.relPath}`);
+    }
+
+    const text = fs.readFileSync(stagedPath, 'utf8');
+    const actualSha256 = sha256(text);
+    const actualBytes = Buffer.byteLength(text, 'utf8');
+    if (actualSha256 !== chunk.sha256) {
+      throw new Error(
+        `refused: positive-byte chunk ${chunk.index} sha256 mismatch for ${session.relPath}; ` +
+          `expected ${chunk.sha256}, got ${actualSha256}`,
+      );
+    }
+    if (actualBytes !== chunk.bytes) {
+      throw new Error(
+        `refused: positive-byte chunk ${chunk.index} byte-count mismatch for ${session.relPath}; ` +
+          `expected ${chunk.bytes}, got ${actualBytes}`,
+      );
+    }
+
+    verifiedBytes += actualBytes;
+    parts.push(text);
+  }
+
+  if (verifiedBytes !== session.bytes) {
+    throw new Error(
+      `refused: positive-byte staged byte total mismatch for ${session.relPath}; ` +
+        `expected ${session.bytes}, got ${verifiedBytes}`,
+    );
+  }
+
+  return parts.join('');
+}
+
+function failCommitAndDropSession(
+  session: PositiveByteSession,
+  message: string,
+  options: { targetWrite?: 'not-attempted' | 'unknown' } = {},
+): ReturnType<typeof fail> {
+  const chunkCount = session.chunks.length;
+  const stagedBytes = session.bytes;
+  const targetState =
+    options.targetWrite === 'unknown'
+      ? 'target materialization state is unknown after the exception; verify the target by sha256 before retrying.'
+      : 'no target bytes were materialized.';
+  try {
+    removeSession(session.sessionId);
+  } catch (e) {
+    const cleanupError = e instanceof Error ? e.message : String(e);
+    return fail(
+      `${message} Additionally failed to drop positive-byte session ${session.sessionId}: ${cleanupError}.`,
+    );
+  }
+  return fail(
+    `${message} Staged positive-byte session ${session.sessionId} was dropped ` +
+      `(${chunkCount} chunk(s), ${stagedBytes} byte(s)); ${targetState}`,
+  );
 }
 
 function negativeProofForCommit(
@@ -170,6 +239,196 @@ function negativeProofForCommit(
     preview: session.preview,
     proofOfIncorrectness: session.proofOfIncorrectness,
   });
+}
+
+function buildPositiveByteProofReceipt(args: {
+  session: PositiveByteSession;
+  before: string;
+  content: string;
+  result: ReturnType<typeof applyEdits>;
+  contentSha256: string;
+  materialization: Record<string, unknown>;
+  finalTargetState: 'not-written-preview' | 'written';
+  targetExisted: boolean;
+}): Record<string, unknown> {
+  const body = {
+    kind: 'positive-byte-materialization-receipt',
+    schemaVersion: 1,
+    sessionId: args.session.sessionId,
+    file: args.session.relPath,
+    absPath: args.session.absPath,
+    intent: args.session.intent,
+    preview: args.session.preview,
+    targetExisted: args.targetExisted,
+    created: !args.targetExisted,
+    overwrite: args.session.overwrite,
+    expectedSha256: args.session.expectedSha256 ?? null,
+    expectedContentSha256: args.session.expectedContentSha256 ?? null,
+    beforeSha256: sha256(args.before),
+    contentSha256: args.contentSha256,
+    contentBytes: Buffer.byteLength(args.content, 'utf8'),
+    contentChars: args.content.length,
+    finalTargetState: args.finalTargetState,
+    chunks: args.session.chunks.map((chunk) => ({
+      index: chunk.index,
+      sha256: chunk.sha256,
+      bytes: chunk.bytes,
+    })),
+    chunkCount: args.session.chunks.length,
+    stagedBytes: args.session.bytes,
+    merkleRoot: merkleRoot(args.session.chunks.map((chunk) => chunk.sha256)),
+    validation: {
+      language: args.result.validation.language,
+      syntaxErrorsBefore: args.result.validation.before,
+      syntaxErrorsAfter: args.result.validation.after,
+      preDisk: true,
+    },
+    materialization: args.materialization,
+    positiveByteProof: {
+      chunkSequence: 'contiguous-zero-based-indexes',
+      chunkIntegrity: 'sha256-and-byte-count-reverified-before-target-materialization',
+      contentIntegrity: 'joined-content-sha256-verified-before-target-materialization',
+      targetGuard: args.session.expectedSha256 ? 'expectedSha256-checked-before-target-materialization' : 'no-expectedSha256-declared',
+      syntax: 'syntax-regression-checked-before-target-materialization',
+      traceIndependence: 'receipt-returned-in-band-even-when-external-trace-persistence-is-unavailable',
+    },
+    proofLimits: [
+      'Receipt proves chunk integrity, target hash assumptions, syntax non-regression, and exact generated content hash.',
+      'Receipt does not prove runtime/product behavior beyond the declared validation battery.',
+    ],
+  };
+  return { ...body, receiptSha256: positiveByteReceiptHash(body) };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function requireReceiptString(receipt: Record<string, unknown>, key: string): string {
+  const value = receipt[key];
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new Error(`invalid positive-byte receipt: ${key} must be a non-empty string`);
+  }
+  return value;
+}
+
+function positiveByteReceiptHash(receiptBody: Record<string, unknown>): string {
+  const { receiptSha256: _receiptSha256, ...body } = receiptBody;
+  return sha256(JSON.stringify(body));
+}
+
+function receiptChunks(receipt: Record<string, unknown>): PositiveByteChunk[] {
+  const chunks = receipt.chunks;
+  if (!Array.isArray(chunks)) throw new Error('invalid positive-byte receipt: chunks must be an array');
+  return chunks.map((chunk, index) => {
+    if (!isRecord(chunk)) throw new Error(`invalid positive-byte receipt: chunk ${index} must be an object`);
+    if (chunk.index !== index) throw new Error(`invalid positive-byte receipt: chunk ${index} index is not contiguous`);
+    if (typeof chunk.sha256 !== 'string' || !/^[0-9a-f]{64}$/.test(chunk.sha256)) {
+      throw new Error(`invalid positive-byte receipt: chunk ${index} sha256 is invalid`);
+    }
+    if (typeof chunk.bytes !== 'number' || !Number.isSafeInteger(chunk.bytes) || chunk.bytes < 0) {
+      throw new Error(`invalid positive-byte receipt: chunk ${index} byte count is invalid`);
+    }
+    return { index, sha256: chunk.sha256, bytes: chunk.bytes };
+  });
+}
+
+function requireReceiptSafeInteger(receipt: Record<string, unknown>, key: string): number {
+  const value = receipt[key];
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) {
+    throw new Error(`invalid positive-byte receipt: ${key} must be a non-negative safe integer`);
+  }
+  return value;
+}
+
+function validatePositiveByteReceiptDomainInvariants(
+  receipt: Record<string, unknown>,
+  chunks: PositiveByteChunk[],
+  declaredMerkleRoot: string,
+  contentSha256: string,
+): { stagedBytes: number } {
+  if (receipt.schemaVersion !== 1) throw new Error('invalid positive-byte receipt: schemaVersion must be 1');
+  if (!/^[0-9a-f]{64}$/.test(contentSha256)) {
+    throw new Error('invalid positive-byte receipt: contentSha256 must be a sha256 hex digest');
+  }
+
+  const declaredChunkCount = requireReceiptSafeInteger(receipt, 'chunkCount');
+  if (declaredChunkCount !== chunks.length) {
+    throw new Error(`invalid positive-byte receipt: chunkCount ${declaredChunkCount} does not match ${chunks.length} chunks`);
+  }
+
+  const stagedBytes = chunks.reduce((sum, chunk) => sum + chunk.bytes, 0);
+  const declaredStagedBytes = requireReceiptSafeInteger(receipt, 'stagedBytes');
+  if (declaredStagedBytes !== stagedBytes) {
+    throw new Error(`invalid positive-byte receipt: stagedBytes ${declaredStagedBytes} does not match chunk bytes ${stagedBytes}`);
+  }
+
+  const expectedContentSha256 = receipt.expectedContentSha256;
+  if (expectedContentSha256 !== null && expectedContentSha256 !== undefined) {
+    if (typeof expectedContentSha256 !== 'string' || !/^[0-9a-f]{64}$/.test(expectedContentSha256)) {
+      throw new Error('invalid positive-byte receipt: expectedContentSha256 must be null or a sha256 hex digest');
+    }
+    if (expectedContentSha256 !== contentSha256) {
+      throw new Error(
+        `invalid positive-byte receipt: expectedContentSha256 ${expectedContentSha256} does not match contentSha256 ${contentSha256}`,
+      );
+    }
+  }
+
+  if (typeof receipt.preview !== 'boolean') throw new Error('invalid positive-byte receipt: preview must be a boolean');
+  const finalTargetState = requireReceiptString(receipt, 'finalTargetState');
+  const expectedFinalTargetState = receipt.preview ? 'not-written-preview' : 'written';
+  if (finalTargetState !== expectedFinalTargetState) {
+    throw new Error(
+      `invalid positive-byte receipt: finalTargetState ${finalTargetState} contradicts preview ${receipt.preview}`,
+    );
+  }
+  const targetExisted = receipt.targetExisted;
+  const created = receipt.created;
+  const overwrite = receipt.overwrite;
+  if (typeof targetExisted !== 'boolean') {
+    throw new Error('invalid positive-byte receipt: targetExisted must be a boolean');
+  }
+  if (typeof created !== 'boolean') throw new Error('invalid positive-byte receipt: created must be a boolean');
+  if (typeof overwrite !== 'boolean') throw new Error('invalid positive-byte receipt: overwrite must be a boolean');
+  if (created !== !targetExisted) {
+    throw new Error(
+      `invalid positive-byte receipt: created ${created} contradicts targetExisted ${targetExisted}`,
+    );
+  }
+
+  const materialization = receipt.materialization;
+  if (!isRecord(materialization)) throw new Error('invalid positive-byte receipt: materialization must be an object');
+  if (materialization.kind !== 'chunked-positive-byte-materialization') {
+    throw new Error('invalid positive-byte receipt: materialization kind is invalid');
+  }
+  if (materialization.chunkCount !== chunks.length) {
+    throw new Error(`invalid positive-byte receipt: materialization chunkCount does not match ${chunks.length} chunks`);
+  }
+  if (materialization.stagedBytes !== stagedBytes) {
+    throw new Error(`invalid positive-byte receipt: materialization stagedBytes does not match chunk bytes ${stagedBytes}`);
+  }
+  if (materialization.contentSha256 !== contentSha256) {
+    throw new Error('invalid positive-byte receipt: materialization contentSha256 does not match receipt contentSha256');
+  }
+  if (materialization.merkleRoot !== declaredMerkleRoot) {
+    throw new Error('invalid positive-byte receipt: materialization merkleRoot does not match receipt merkleRoot');
+  }
+
+  const validation = receipt.validation;
+  if (!isRecord(validation)) throw new Error('invalid positive-byte receipt: validation must be an object');
+  if (validation.preDisk !== true) throw new Error('invalid positive-byte receipt: validation.preDisk must be true');
+  const before = validation.syntaxErrorsBefore;
+  const after = validation.syntaxErrorsAfter;
+  if (typeof before !== 'number' || !Number.isSafeInteger(before) || before < 0) {
+    throw new Error('invalid positive-byte receipt: validation.syntaxErrorsBefore must be a non-negative safe integer');
+  }
+  if (typeof after !== 'number' || !Number.isSafeInteger(after) || after < 0) {
+    throw new Error('invalid positive-byte receipt: validation.syntaxErrorsAfter must be a non-negative safe integer');
+  }
+  if (after > before) throw new Error('invalid positive-byte receipt: validation records a syntax regression');
+
+  return { stagedBytes };
 }
 
 export function registerToolsPositiveBytes(server: McpServer): void {
@@ -315,27 +574,44 @@ export function registerToolsPositiveBytes(server: McpServer): void {
         const session = readSession(a.sessionId);
         const exists = fs.existsSync(session.absPath);
         if (exists && fs.statSync(session.absPath).isDirectory()) {
-          return fail(`refused: ${session.relPath} is a directory, not a file`);
+          return failCommitAndDropSession(session, `refused: ${session.relPath} is a directory, not a file.`);
         }
         const before = exists ? readUtf8(session.absPath) : '';
         if (exists && before.trim() !== '' && !session.overwrite) {
-          return fail(
+          return failCommitAndDropSession(
+            session,
             `refused: ${session.relPath} already exists and is non-empty. ` +
               `Start the session with overwrite:true plus proofOfIncorrectness for wholesale replacement.`,
           );
         }
-        guardSha(before, session.expectedSha256);
-        const content = sessionContent(session);
+        try {
+          guardSha(before, session.expectedSha256);
+        } catch (e) {
+          return failCommitAndDropSession(session, e instanceof Error ? e.message : String(e));
+        }
+        let content: string;
+        try {
+          content = sessionContent(session);
+        } catch (e) {
+          return failCommitAndDropSession(session, e instanceof Error ? e.message : String(e));
+        }
         const contentSha256 = sha256(content);
         if (session.expectedContentSha256 && session.expectedContentSha256 !== contentSha256) {
-          return fail(
+          return failCommitAndDropSession(
+            session,
             `refused: positive-byte content sha256 mismatch for ${session.relPath}; ` +
-              `expected ${session.expectedContentSha256}, got ${contentSha256}`,
+              `expected ${session.expectedContentSha256}, got ${contentSha256}.`,
           );
         }
-        const r = applyEdits(session.relPath, before, [wholeFileEdit(before, content)]);
+        let r: ReturnType<typeof applyEdits>;
+        try {
+          r = applyEdits(session.relPath, before, [wholeFileEdit(before, content)]);
+        } catch (e) {
+          return failCommitAndDropSession(session, e instanceof Error ? e.message : String(e));
+        }
         if (!r.validation.ok) {
-          return fail(
+          return failCommitAndDropSession(
+            session,
             `rejected: positive-byte materialization would introduce a ${r.validation.language} syntax error ` +
               `(${r.validation.before} -> ${r.validation.after}). ${r.validation.introduced ?? ''} - file NOT modified.`,
           );
@@ -348,8 +624,19 @@ export function registerToolsPositiveBytes(server: McpServer): void {
           contentSha256,
           merkleRoot: merkleRoot(session.chunks.map((chunk) => chunk.sha256)),
           preDiskValidation: 'syntax-regression-checked-before-target-materialization',
+          chunkReceiptValidation: 'per-chunk-sha256-and-byte-count-reverified-before-target-materialization',
           staging: 'scripts/mcp/atomic-edit/.positive-byte-sessions',
         };
+        const proofReceipt = buildPositiveByteProofReceipt({
+          session,
+          before,
+          content,
+          result: r,
+          contentSha256,
+          materialization,
+          finalTargetState: session.preview ? 'not-written-preview' : 'written',
+          targetExisted: exists,
+        });
         if (session.preview) {
           removeSession(session.sessionId);
           return ok({
@@ -366,31 +653,133 @@ export function registerToolsPositiveBytes(server: McpServer): void {
               syntaxErrorsAfter: r.validation.after,
             },
             materialization,
+            proofReceipt,
             summaryForHuman:
               `Previewed positive-byte materialization for ${session.relPath} ` +
               `(${session.chunks.length} chunks, ${session.bytes} bytes). Target was not written.`,
           });
         }
         fs.mkdirSync(path.dirname(session.absPath), { recursive: true });
-        const negativeActionProof = negativeProofForCommit(session, before, content);
-        const result = commit(
-          session.relPath,
-          session.absPath,
-          before,
-          r,
-          {
-            op: 'atomic_positive_bytes_commit',
-            created: !exists,
-            contentSha256,
-            materialization,
-            ...(negativeActionProof ? { negativeActionProof } : {}),
-          },
-          false,
-          session.verify,
-          session.lock,
-        );
-        if (!result.isError) removeSession(session.sessionId);
+        let negativeActionProof: NegativeActionProof | undefined;
+        try {
+          negativeActionProof = negativeProofForCommit(session, before, content);
+        } catch (e) {
+          return failCommitAndDropSession(session, e instanceof Error ? e.message : String(e));
+        }
+        let result: ReturnType<typeof commit>;
+        try {
+          result = commit(
+            session.relPath,
+            session.absPath,
+            before,
+            r,
+            {
+              op: 'atomic_positive_bytes_commit',
+              created: !exists,
+              contentSha256,
+              materialization,
+              proofReceipt,
+              ...(negativeActionProof ? { negativeActionProof } : {}),
+            },
+            false,
+            session.verify,
+            session.lock,
+          );
+        } catch (e) {
+          return failCommitAndDropSession(
+            session,
+            `positive-byte commit failed during target materialization for ${session.relPath}: ` +
+              (e instanceof Error ? e.message : String(e)),
+            { targetWrite: 'unknown' },
+          );
+        }
+        removeSession(session.sessionId);
         return result;
+      } catch (e) {
+        return fail(e instanceof Error ? e.message : String(e));
+      }
+    },
+  );
+
+  server.registerTool(
+    'atomic_positive_bytes_verify_receipt',
+    {
+      title: 'Verify a positive-byte proof receipt',
+      description:
+        'Recomputes the receipt body hash, validates the chunk Merkle root, and optionally proves the current target bytes still match the receipt content hash.',
+      inputSchema: {
+        receipt: z.record(z.string(), z.unknown()).describe('proofReceipt returned by atomic_positive_bytes_commit'),
+        requireCurrentTarget: z.boolean().optional().describe('also require the current target file sha256 to match the receipt'),
+      },
+    },
+    async (a) => {
+      try {
+        const receipt = a.receipt;
+        if (!isRecord(receipt)) return fail('invalid positive-byte receipt: receipt must be an object');
+        if (receipt.kind !== 'positive-byte-materialization-receipt') {
+          return fail('invalid positive-byte receipt: kind must be positive-byte-materialization-receipt');
+        }
+        const declaredReceiptSha256 = requireReceiptString(receipt, 'receiptSha256');
+        const recomputedReceiptSha256 = positiveByteReceiptHash(receipt);
+        if (declaredReceiptSha256 !== recomputedReceiptSha256) {
+          return fail(
+            `refused: positive-byte receipt sha256 mismatch; ` +
+              `declared ${declaredReceiptSha256}, recomputed ${recomputedReceiptSha256}`,
+          );
+        }
+        const chunks = receiptChunks(receipt);
+        const declaredMerkleRoot = requireReceiptString(receipt, 'merkleRoot');
+        const recomputedMerkleRoot = merkleRoot(chunks.map((chunk) => chunk.sha256));
+        if (declaredMerkleRoot !== recomputedMerkleRoot) {
+          return fail(
+            `refused: positive-byte receipt Merkle root mismatch; ` +
+              `declared ${declaredMerkleRoot}, recomputed ${recomputedMerkleRoot}`,
+          );
+        }
+        const contentSha256 = requireReceiptString(receipt, 'contentSha256');
+        const domainInvariants = validatePositiveByteReceiptDomainInvariants(
+          receipt,
+          chunks,
+          declaredMerkleRoot,
+          contentSha256,
+        );
+        let currentTargetMatches: boolean | null = null;
+        let currentTargetSha256: string | null = null;
+        let relPath: string | null = null;
+        if (a.requireCurrentTarget) {
+          const finalTargetState = requireReceiptString(receipt, 'finalTargetState');
+          if (finalTargetState !== 'written') {
+            return fail(`refused: current target verification requires a written receipt, got ${finalTargetState}`);
+          }
+          const target = resolveSafeTarget(requireReceiptString(receipt, 'file'));
+          relPath = target.relPath;
+          if (!fs.existsSync(target.absPath) || fs.statSync(target.absPath).isDirectory()) {
+            return fail(`refused: receipt target ${target.relPath} is not a current file`);
+          }
+          currentTargetSha256 = sha256(readUtf8(target.absPath));
+          currentTargetMatches = currentTargetSha256 === contentSha256;
+          if (!currentTargetMatches) {
+            return fail(
+              `refused: current target sha256 mismatch for ${target.relPath}; ` +
+                `receipt ${contentSha256}, current ${currentTargetSha256}`,
+            );
+          }
+        }
+        return ok({
+          ok: true,
+          changed: false,
+          receiptHashValid: true,
+          receiptSha256: declaredReceiptSha256,
+          merkleRootValid: true,
+          merkleRoot: declaredMerkleRoot,
+          chunkCount: chunks.length,
+          stagedBytes: domainInvariants.stagedBytes,
+          contentSha256,
+          currentTargetMatches,
+          currentTargetSha256,
+          file: relPath ?? receipt.file,
+          summaryForHuman: 'Verified positive-byte receipt hash, chunk Merkle root, and requested current target state.',
+        });
       } catch (e) {
         return fail(e instanceof Error ? e.message : String(e));
       }

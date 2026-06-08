@@ -7,7 +7,19 @@
 import { extractProductName } from './guest-chat.action-intent.product-args.helpers';
 import type { ActionIntent } from './guest-chat.action-intent.self-awareness.match';
 
+const ARTIFACT_CREATION_VERB_RE = /\b(?:crie|criar|gera|gerar|monte|produza|elabore|faca|faz)\b/;
+const ARTIFACT_OUTPUT_RE =
+  /\b(?:arquivo|markdown|documento|pdf|docx|pptx|xlsx|html|svg|mermaid|artefato|artifact)\b|\.[a-z0-9]{2,5}\b/;
+
+function isArtifactCreationRequest(msg: string): boolean {
+  return ARTIFACT_CREATION_VERB_RE.test(msg) && ARTIFACT_OUTPUT_RE.test(msg);
+}
+
 export function detectCrmSalesIntent(msg: string): ActionIntent {
+  if (isArtifactCreationRequest(msg)) {
+    return null;
+  }
+
   // ── NPS / CHURN (antes de vendas para nao capturar) ──
   if (/nps|net\s+promoter/i.test(msg)) {
     return { tool: 'get_nps', args: {} };

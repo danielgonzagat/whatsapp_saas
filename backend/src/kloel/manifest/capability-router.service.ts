@@ -59,15 +59,52 @@ export class CapabilityRouterService {
       .sort((a, b) => b.score - a.score || a.entry.id.localeCompare(b.entry.id))
       .map((candidate) => candidate.entry);
 
-    const selected =
-      matched.length > 0
-        ? matched.slice(0, limit)
-        : this.fallback(scoped, limit);
+    const primarySelected =
+      matched.length > 0 ? matched.slice(0, limit) : this.fallback(scoped, limit);
+    const selected = this.expandDependencies(primarySelected, scoped);
 
     return {
       capabilities: selected,
       obligations: manifest.obligations,
     };
+  }
+
+  private expandDependencies(
+    primarySelected: CapabilityManifestEntry[],
+    scoped: CapabilityManifestEntry[],
+  ): CapabilityManifestEntry[] {
+    const byId = new Map(scoped.map((entry) => [entry.id, entry]));
+    const selected: CapabilityManifestEntry[] = [];
+    const seen = new Set<string>();
+
+    const append = (entry: CapabilityManifestEntry): boolean => {
+      if (seen.has(entry.id)) {
+        return false;
+      }
+      seen.add(entry.id);
+      selected.push(entry);
+      return true;
+    };
+
+    const appendDependencies = (entry: CapabilityManifestEntry): void => {
+      for (const dependencyId of entry.dependsOn) {
+        const dependency = byId.get(dependencyId);
+        if (!dependency) {
+          continue;
+        }
+        if (append(dependency)) {
+          appendDependencies(dependency);
+        }
+      }
+    };
+
+    for (const entry of primarySelected) {
+      if (append(entry)) {
+        appendDependencies(entry);
+      }
+    }
+
+    return selected;
   }
 
   /** Restrict to the live surface, actor permissions, and shippable maturity. */
@@ -124,10 +161,7 @@ export class CapabilityRouterService {
    * When nothing matched, keep a small floor of read-only capabilities so the
    * model is never blind. Deterministic: stable id order, read-only only.
    */
-  private fallback(
-    scoped: CapabilityManifestEntry[],
-    limit: number,
-  ): CapabilityManifestEntry[] {
+  private fallback(scoped: CapabilityManifestEntry[], limit: number): CapabilityManifestEntry[] {
     const floor = Math.min(FALLBACK_FLOOR, limit);
     return scoped
       .filter((entry) => entry.safetyProfile.level === 'read_only')

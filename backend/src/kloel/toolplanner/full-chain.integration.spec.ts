@@ -17,7 +17,12 @@ import { ToolPlannerService } from '../toolplanner/toolplanner.service';
   let planner: ToolPlannerService;
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [{ provide: ModulesContainer, useValue: new ModulesContainer() }, IntentRouterService, CapabilityRegistryV2Service, ToolPlannerService],
+      providers: [
+        { provide: ModulesContainer, useValue: new ModulesContainer() },
+        IntentRouterService,
+        CapabilityRegistryV2Service,
+        ToolPlannerService,
+      ],
     }).compile();
     router = module.get(IntentRouterService);
     registry = module.get(CapabilityRegistryV2Service);
