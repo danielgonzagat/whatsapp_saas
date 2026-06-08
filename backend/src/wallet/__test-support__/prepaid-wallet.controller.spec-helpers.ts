@@ -2,6 +2,7 @@
 // Extracted to keep individual spec files within architecture guardrail size limits.
 
 import { Test, type TestingModule } from '@nestjs/testing';
+import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { ThrottlerModule } from '@nestjs/throttler';
 import type { PrepaidWallet, PrepaidWalletTransaction, PrepaidWalletTxType } from '@prisma/client';
 
@@ -216,7 +217,10 @@ export async function buildModule(
       { provide: FraudEngine, useValue: fraudEngine },
       { provide: MercadoPagoPixChargeService, useValue: mercadoPagoPix },
     ],
-  }).compile();
+  })
+    .overrideGuard(JwtAuthGuard)
+    .useValue({ canActivate: () => true })
+    .compile();
   return {
     controller: moduleRef.get<PrepaidWalletController>(PrepaidWalletController),
     service: moduleRef.get<PrepaidWalletService>(PrepaidWalletService),
