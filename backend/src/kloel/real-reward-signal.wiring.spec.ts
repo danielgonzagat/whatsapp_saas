@@ -21,7 +21,7 @@ jest.mock('./openai-wrapper', () => ({
   }),
   chatCompletionWithRetry: jest.fn().mockResolvedValue({
     choices: [{ message: { content: 'Bem-vindo ao onboarding!' } }],
-    model: 'gpt-4o',
+    model: 'mock-llm',
     usage: { total_tokens: 100 },
   }),
 }));
