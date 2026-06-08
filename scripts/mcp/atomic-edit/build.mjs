@@ -56,6 +56,7 @@ const ENTRY = [
   'symbols.ts',
   'advanced.ts',
   'trace.ts',
+  'replay-admissible.ts',
   'textunit.ts',
   'founder.ts',
   'smoke.ts',
