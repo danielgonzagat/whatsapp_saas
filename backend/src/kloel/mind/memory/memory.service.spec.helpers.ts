@@ -106,7 +106,10 @@ export class FakePrisma {
 
   memoryNode = {
     findFirst: jest.fn(
-      (args: { where: Parameters<FakePrisma['matchesNode']>[1] }): Promise<NodeRow | null> => {
+      (args: {
+        where: Parameters<FakePrisma['matchesNode']>[1];
+        orderBy?: Record<string, string> | Array<Record<string, string>>;
+      }): Promise<NodeRow | null> => {
         const found = this.nodes
           .filter((n) => this.matchesNode(n, args.where))
           .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
@@ -118,6 +121,8 @@ export class FakePrisma {
         where: Parameters<FakePrisma['matchesNode']>[1] & {
           OR?: Array<{ expiresAt: null | { gt: Date } }>;
         };
+        orderBy?: Record<string, string> | Array<Record<string, string>>;
+        take?: number;
       }): Promise<NodeRow[]> => {
         return Promise.resolve(
           this.nodes
@@ -176,6 +181,22 @@ export class FakePrisma {
   };
 
   memoryEdge = {
+    findMany: jest.fn(
+      (args: {
+        where: { workspaceId?: string; fromId?: { in?: string[] }; toId?: { in?: string[] } };
+        orderBy?: Record<string, string> | Array<Record<string, string>>;
+        take?: number;
+      }): Promise<Array<{ fromId: string; toId: string; relation: string }>> => {
+        const fromIn = args.where.fromId?.in;
+        const toIn = args.where.toId?.in;
+        const filtered = this.edges
+          .filter((e) => args.where.workspaceId === undefined || e.workspaceId === args.where.workspaceId)
+          .filter((e) => fromIn === undefined || fromIn.includes(e.fromId))
+          .filter((e) => toIn === undefined || toIn.includes(e.toId))
+          .map((e) => ({ fromId: e.fromId, toId: e.toId, relation: e.relation }));
+        return Promise.resolve(filtered.slice(0, args.take ?? filtered.length));
+      },
+    ),
     upsert: jest.fn(
       (args: {
         where: {
@@ -261,8 +282,5 @@ export function buildServiceWithVectors(
   vectors: FakeVectors,
 ): MemoryService {
   const config = new ConfigService();
-  // Cast through unknown: FakeVectors implements only the surface the service uses.
-  return new MemoryService(config, prisma, vectors as unknown as ConstructorVectorArg);
+  return new MemoryService(config, prisma, vectors);
 }
-
-type ConstructorVectorArg = ConstructorParameters<typeof MemoryService>[2];
