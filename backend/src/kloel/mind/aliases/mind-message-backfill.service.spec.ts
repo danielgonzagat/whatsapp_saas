@@ -106,4 +106,41 @@ describe('MindMessageBackfillService', () => {
     expect(findMany.mock.calls[1][0].cursor).toEqual({ id: 'a' });
     expect(createMany).toHaveBeenCalledTimes(2);
   });
+
+  describe('parity', () => {
+    function parityPrisma(legacy: number, mirrored: number) {
+      const kloelCount = jest.fn().mockResolvedValue(legacy);
+      const mindCount = jest.fn().mockResolvedValue(mirrored);
+      return {
+        prisma: { kloelMessage: { count: kloelCount }, mindMessage: { count: mindCount } },
+        mindCount,
+      };
+    }
+
+    it('reports legacy/mirrored/missing/coverage (read-only, no flag needed)', async () => {
+      const { prisma, mindCount } = parityPrisma(100, 75);
+      const service = new MindMessageBackfillService(prisma as never);
+
+      const result = await service.parity({ workspaceId: 'ws-1' });
+
+      expect(result).toEqual({ legacy: 100, mirrored: 75, missing: 25, coverage: 0.75 });
+      // Only counts the backfilled rows (source=brain, sourceId set).
+      expect(mindCount.mock.calls[0][0].where).toMatchObject({
+        source: 'brain',
+        sourceId: { not: null },
+      });
+    });
+
+    it('reports full coverage when there is no legacy history', async () => {
+      const { prisma } = parityPrisma(0, 0);
+      const service = new MindMessageBackfillService(prisma as never);
+
+      expect(await service.parity()).toEqual({
+        legacy: 0,
+        mirrored: 0,
+        missing: 0,
+        coverage: 1,
+      });
+    });
+  });
 });

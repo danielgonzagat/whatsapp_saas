@@ -46,11 +46,48 @@ export interface MindMessageBackfillResult {
   readonly batches: number;
 }
 
+export interface MindMessageParityResult {
+  /** Legacy RAC_KloelMessage rows in scope. */
+  readonly legacy: number;
+  /** Backfilled RAC_MindMessage rows (source='brain', sourceId set) in scope. */
+  readonly mirrored: number;
+  /** legacy - mirrored — rows still missing from the canonical table. */
+  readonly missing: number;
+  /** mirrored / legacy in [0, 1] (1 when legacy is empty). */
+  readonly coverage: number;
+}
+
 @Injectable()
 export class MindMessageBackfillService {
   private readonly logger = StructuredLogger.from(MindMessageBackfillService.name);
 
   public constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * READ-ONLY parity report comparing legacy RAC_KloelMessage coverage against
+   * the backfilled canonical rows — the gate an operator checks BEFORE flipping
+   * the reader cut-over (KLOEL_MINDMESSAGE_READ_CANONICAL). Backfilled rows
+   * preserve the legacy createdAt, so the same `before`/`workspaceId` scope
+   * applies to both sides. Never writes.
+   */
+  public async parity(scope: {
+    readonly before?: Date;
+    readonly workspaceId?: string;
+  } = {}): Promise<MindMessageParityResult> {
+    const legacyWhere = {
+      ...(scope.before !== undefined ? { createdAt: { lt: scope.before } } : {}),
+      ...(scope.workspaceId !== undefined ? { workspaceId: scope.workspaceId } : {}),
+    };
+    const [legacy, mirrored] = await Promise.all([
+      this.prisma.kloelMessage.count({ where: legacyWhere }),
+      this.prisma.mindMessage.count({
+        where: { ...legacyWhere, source: 'brain', sourceId: { not: null } },
+      }),
+    ]);
+    const missing = Math.max(0, legacy - mirrored);
+    const coverage = legacy === 0 ? 1 : mirrored / legacy;
+    return { legacy, mirrored, missing, coverage };
+  }
 
   public async backfill(options: MindMessageBackfillOptions): Promise<MindMessageBackfillResult> {
     if (!isMindMessageBackfillEnabled()) {
