@@ -183,3 +183,5 @@ scripts/mcp/atomic-edit/.z3venv/
 
 # ECC capability-mining research clone — never commit into Kloel
 .ecc-research/
+
+.z3venv/

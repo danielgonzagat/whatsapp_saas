@@ -66,6 +66,6 @@ const fact = (file, closure, capped = false, spanIdents = []) => ({ file, spans:
   check('(B) a capped (UNJUDGED) pair => NOT certified (unjudged>=1, honest)', capped.certified === false && capped.unjudged >= 1);
 }
 
-console.log('  UNJUDGED  unbounded inductive N-way metatheorem (state-dependent read-set) — needs an external prover (Lean/Coq); NOT claimed here.');
+console.log('  Z3 (base+step)  unbounded N-way: REDUCE + STEP machine-checked by Z3 (formal/atomic-algebra/nway_induction_z3.py); all-N follows by nat-induction. UNJUDGED residual: only the induction PRINCIPLE mechanization (Lean/Coq).');
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);
