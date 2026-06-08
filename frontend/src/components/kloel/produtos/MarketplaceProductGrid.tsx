@@ -19,11 +19,13 @@ import type { MarketplaceItem } from './ProdutosView.types';
 export default function MarketplaceProductGrid({
   filteredMarket,
   searchQuery = '',
+  savingId = null,
   onSelectItem,
   onToggleSave,
 }: {
   filteredMarket: MarketplaceItem[];
   searchQuery?: string;
+  savingId?: string | null;
   onSelectItem: (item: MarketplaceItem) => void;
   onToggleSave: (productId: string, isSaved: boolean) => void;
 }) {
@@ -64,7 +66,13 @@ export default function MarketplaceProductGrid({
           </div>
         </div>
       )}
-      {filteredMarket.map((m) => (
+      {filteredMarket.map((m) => {
+        const isSaving = savingId === m.id;
+        const saveActionLabel = isSaving
+          ? `Salvando produto: ${m.name || 'produto'}`
+          : `${m.isSaved ? 'Remover dos salvos' : 'Salvar produto'}: ${m.name || 'produto'}`;
+
+        return (
         <div
           key={m.id}
           role="button"
@@ -177,17 +185,23 @@ export default function MarketplaceProductGrid({
           </div>
           <button
             type="button"
-            aria-label={`${m.isSaved ? 'Remover dos salvos' : 'Salvar produto'}: ${m.name || 'produto'}`}
+            aria-label={saveActionLabel}
+            disabled={isSaving}
             aria-pressed={Boolean(m.isSaved)}
             onClick={(e) => {
               e.stopPropagation();
-              onToggleSave(m.id, !!m.isSaved);
+              if (isSaving) {
+                return;
+              }
+              void onToggleSave(m.id, !!m.isSaved);
             }}
             style={{
               ...iconBtn,
+              cursor: isSaving ? 'wait' : 'pointer',
+              opacity: isSaving ? 0.62 : 1,
               color: m.isSaved ? GREEN : 'var(--app-text-secondary)',
             }}
-            title={m.isSaved ? 'Remover dos salvos' : 'Salvar produto'}
+            title={isSaving ? 'Salvando produto' : m.isSaved ? 'Remover dos salvos' : 'Salvar produto'}
           >
             {IC.heart(14)}
           </button>
@@ -195,7 +209,8 @@ export default function MarketplaceProductGrid({
             {kloelT('&rsaquo;')}
           </span>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

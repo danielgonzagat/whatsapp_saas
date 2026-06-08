@@ -32,11 +32,13 @@ import {
  *
  * Per-kind rendering (all real, all lightweight):
  *  - markdown → `KloelMarkdown` (the same renderer the chat answer uses).
- *  - svg / mermaid / code / react → fed to `KloelMarkdown` as a fenced block of
- *    the matching language; `KloelMarkdown` already renders sanitized SVG, a
- *    lightweight mermaid SVG, and syntax-styled code blocks.
- *  - html → rendered in a `sandbox` iframe (scripts disabled) so the page shows
- *    faithfully without executing untrusted JS.
+ *  - html → rendered in an origin-isolated `sandbox` iframe with scripts/forms
+ *    allowed inside the artifact, never in the Kloel app context.
+ *  - react → rendered in an origin-isolated artifact iframe with the approved
+ *    CDN library set injected for interactive UI previews.
+ *  - data → rendered as a compact table preview.
+ *  - svg / mermaid / code → fed to `KloelMarkdown` as a fenced block of the
+ *    matching language; `KloelMarkdown` preserves existing diagram/code support.
  *  - pdf → embedded via the real download URL when present; otherwise a
  *    download-only card (binary bytes are not inlined as editable text).
  */
@@ -48,7 +50,12 @@ const LANGUAGE_FENCE_BY_KIND: Readonly<Record<ArtifactKind, string>> = {
   mermaid: 'mermaid',
   react: 'tsx',
   code: '',
+  data: '',
   pdf: '',
+  docx: '',
+  pptx: '',
+  xlsx: '',
+  image: '',
 };
 
 const KIND_LABEL: Readonly<Record<ArtifactKind, string>> = {
@@ -58,7 +65,12 @@ const KIND_LABEL: Readonly<Record<ArtifactKind, string>> = {
   mermaid: 'Diagrama',
   react: 'Componente React',
   code: 'Código',
+  data: 'Dados',
   pdf: 'PDF',
+  docx: 'Documento Word',
+  pptx: 'Apresentação',
+  xlsx: 'Planilha',
+  image: 'Imagem',
 };
 
 /** Wrap raw artifact content into the markdown string `KloelMarkdown` renders. */
@@ -70,23 +82,145 @@ function toMarkdownSource(artifact: Artifact): string {
   return ['```' + fence, artifact.content, '```'].join('\n');
 }
 
+function iframePreviewStyle() {
+  return {
+    width: '100%',
+    height: '100%',
+    minHeight: 320,
+    border: 'none',
+    background: 'rgb(255,255,255)',
+    flex: 1,
+  } as const;
+}
+
 function HtmlArtifactView({ html }: { readonly html: string }) {
   return (
     <iframe
       title={kloelT(`Pré-visualização HTML`)}
-      // Scripts are disabled (sandbox without allow-scripts) so untrusted page
-      // JavaScript cannot execute — only the real HTML/CSS renders.
-      sandbox=""
+      sandbox="allow-scripts allow-forms allow-popups allow-modals"
       srcDoc={html}
-      style={{
-        width: '100%',
-        height: '100%',
-        minHeight: 320,
-        border: 'none',
-        background: 'rgb(255,255,255)',
-        flex: 1,
-      }}
+      style={iframePreviewStyle()}
     />
+  );
+}
+
+function normalizeReactArtifactSource(source: string): string {
+  return String(source || '')
+    .replace(/export\s+default\s+function\s+App\s*\(/, 'function App(')
+    .replace(/export\s+default\s+App\s*;?/, '')
+    .replace(/export\s+default\s+/, 'const App = ')
+    .trim();
+}
+
+function buildReactArtifactSrcDoc(source: string): string {
+  const normalizedSource = normalizeReactArtifactSource(source);
+  const sourceLiteral = JSON.stringify(normalizedSource);
+  return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+  <script src="https://unpkg.com/three@0.164.1/build/three.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/tone@14.8.49/build/Tone.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjs@12.4.2/lib/browser/math.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mammoth@1.7.2/mammoth.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+  <script src="https://unpkg.com/lucide-react@0.468.0/dist/umd/lucide-react.js"></script>
+  <style>html,body,#root{margin:0;min-height:100%;font-family:Inter,system-ui,sans-serif}body{background:#fff;color:#151515;padding:18px;box-sizing:border-box}</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    const { LineChart, Line, BarChart, Bar, XAxis, YAxis } = Recharts;
+    const LucideReact = window.LucideReact || {};
+    const { Search, Download, Save, X, Maximize2, MapPin } = LucideReact;
+    const artifactSource = ${sourceLiteral};
+    const compiled = Babel.transform(artifactSource, { presets: ['react'] }).code;
+    const module = { exports: {} };
+    const exports = module.exports;
+    const App = new Function('React','ReactDOM','Recharts','d3','THREE','Plotly','Chart','Tone','math','_','Papa','XLSX','mammoth','tf','LucideReact','module','exports', compiled + '; return typeof App !== "undefined" ? App : module.exports.default;')(React, ReactDOM, Recharts, d3, THREE, Plotly, Chart, Tone, math, _, Papa, XLSX, mammoth, tf, LucideReact, module, exports);
+    ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+  </script>
+</body>
+</html>`;
+}
+
+function ReactArtifactView({ source }: { readonly source: string }) {
+  return (
+    <iframe
+      title={kloelT(`Pré-visualização React`)}
+      sandbox="allow-scripts allow-forms allow-popups allow-modals"
+      srcDoc={buildReactArtifactSrcDoc(source)}
+      style={iframePreviewStyle()}
+    />
+  );
+}
+
+function splitDelimitedLine(line: string): string[] {
+  const cells: string[] = [];
+  let current = '';
+  let quoted = false;
+  for (const char of line) {
+    if (char === '"') {
+      quoted = !quoted;
+      continue;
+    }
+    if (char === ',' && !quoted) {
+      cells.push(current.trim());
+      current = '';
+      continue;
+    }
+    current += char;
+  }
+  cells.push(current.trim());
+  return cells;
+}
+
+function DataArtifactView({ source }: { readonly source: string }) {
+  const rows = String(source || '')
+    .trim()
+    .split(/\r?\n/)
+    .map(splitDelimitedLine)
+    .filter((row) => row.some((cell) => cell.length > 0));
+  if (rows.length === 0) {
+    return <div style={{ padding: CHAT_INLINE_PADDING, color: MUTED, fontSize: 14, fontFamily: F }}>{kloelT(`Sem dados para visualizar.`)}</div>;
+  }
+  const [header = [], ...body] = rows;
+  return (
+    <div style={{ padding: CHAT_INLINE_PADDING, overflow: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: F, fontSize: 13.5 }}>
+        <thead>
+          <tr>
+            {header.map((cell, index) => (
+              <th key={`${cell}-${index}`} style={{ textAlign: 'left', padding: '9px 10px', borderBottom: `1px solid ${DIVIDER}`, color: TEXT, background: KLOEL_THEME.bgSecondary }}>
+                {cell}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {body.map((row, rowIndex) => (
+            <tr key={rowIndex}>
+              {header.map((_, cellIndex) => (
+                <td key={cellIndex} style={{ padding: '9px 10px', borderBottom: `1px solid ${DIVIDER}`, color: TEXT }}>
+                  {row[cellIndex] ?? ''}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -261,10 +395,14 @@ export function ArtifactsPanel({
             boxSizing: 'border-box',
           }}
         />
-      ) : artifact.kind === 'html' ? (
+            ) : artifact.kind === 'html' ? (
         <HtmlArtifactView html={artifact.content} />
+      ) : artifact.kind === 'react' ? (
+        <ReactArtifactView source={artifact.content} />
       ) : artifact.kind === 'pdf' ? (
         <PdfArtifactView artifact={artifact} />
+      ) : artifact.kind === 'data' ? (
+        <DataArtifactView source={artifact.content} />
       ) : (
         <div
           style={{

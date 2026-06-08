@@ -6,6 +6,21 @@ import { sanitizeAssistantVisibleContent } from './kloel-message-sanitize';
 const WHITESPACE_G_RE = /\s+/g;
 const TRAILING_DOTS_RE = /[.]+$/;
 
+const PRIVATE_CREDENTIAL_TOOL_RE =
+  /(?:sk-[a-z0-9_-]{16,}|AKIA[0-9A-Z]{16}|api[_ -]?key\s*[:=]|authorization\s*[:=]|bearer\s+[a-z0-9._-]{20,}|password\s*[:=]|secret\s*[:=])/i;
+
+export function formatAssistantTraceToolLabel(toolName?: string | null): string | undefined {
+  const raw = String(toolName || '').trim();
+  if (!raw) {
+    return undefined;
+  }
+  if (PRIVATE_CREDENTIAL_TOOL_RE.test(raw)) {
+    return 'ferramenta protegida';
+  }
+
+  return raw.replace(WHITESPACE_G_RE, ' ').trim() || undefined;
+}
+
 export function sanitizeAssistantTraceLabel(value: string): string {
   return sanitizeAssistantVisibleContent(value)
     .replace(
@@ -62,6 +77,10 @@ export interface AssistantProcessingTraceEntry {
   durationMs?: number | undefined;
   /** Success property. */
   success?: boolean | undefined;
+  /** Public-facing risk label for controlled tool actions. */
+  riskLabel?: string | undefined;
+  /** Public risk tier for controlled tool actions. */
+  riskLevel?: 'low' | 'medium' | 'high' | undefined;
 }
 
 /** Normalize assistant message metadata. */
@@ -202,8 +221,17 @@ function normalizeProcessingTraceEntry(value: unknown): AssistantProcessingTrace
     candidate.kind === 'system'
       ? candidate.kind
       : 'status';
-  const tool = typeof candidate.tool === 'string' ? candidate.tool : undefined;
+  const tool =
+    typeof candidate.tool === 'string' ? formatAssistantTraceToolLabel(candidate.tool) : undefined;
   const success = typeof candidate.success === 'boolean' ? candidate.success : undefined;
+  const riskLabel =
+    typeof candidate.riskLabel === 'string'
+      ? sanitizeAssistantTraceLabel(candidate.riskLabel)
+      : undefined;
+  const riskLevel =
+    candidate.riskLevel === 'low' || candidate.riskLevel === 'medium' || candidate.riskLevel === 'high'
+      ? candidate.riskLevel
+      : undefined;
   const normalizedLabel = sanitizeAssistantTraceLabel(label);
 
   return {
@@ -220,6 +248,8 @@ function normalizeProcessingTraceEntry(value: unknown): AssistantProcessingTrace
     artifactId: typeof candidate.artifactId === 'string' ? candidate.artifactId : undefined,
     durationMs: typeof candidate.durationMs === 'number' ? candidate.durationMs : undefined,
     success,
+    riskLabel,
+    riskLevel,
   };
 }
 

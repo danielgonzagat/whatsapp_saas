@@ -3,6 +3,53 @@
 import type { KloelStreamEvent } from './kloel-stream-events';
 import { normalizeAssistantMessageMetadata } from './kloel-message-metadata';
 
+export const ASSISTANT_REASONING_REDACTED_TEXT =
+  'Detalhes internos desta execução foram omitidos com segurança.';
+
+const PRIVATE_CREDENTIAL_REASONING_RE =
+  /(?:sk-[a-z0-9_-]{16,}|AKIA[0-9A-Z]{16}|api[_ -]?key\s*[:=]|authorization\s*[:=]|bearer\s+[a-z0-9._-]{20,}|password\s*[:=]|secret\s*[:=])/i;
+
+export function sanitizeAssistantReasoningTextForDisplay(value: string): string {
+  const text = String(value || '');
+  if (!text) {
+    return '';
+  }
+  return PRIVATE_CREDENTIAL_REASONING_RE.test(text) ? ASSISTANT_REASONING_REDACTED_TEXT : text;
+}
+
+export type AssistantReasoningFileKind =
+  | 'markdown'
+  | 'html'
+  | 'svg'
+  | 'mermaid'
+  | 'react'
+  | 'pdf'
+  | 'docx'
+  | 'pptx'
+  | 'xlsx'
+  | 'image'
+  | 'data'
+  | 'code';
+
+const ASSISTANT_REASONING_FILE_KINDS: ReadonlySet<string> = new Set([
+  'markdown',
+  'html',
+  'svg',
+  'mermaid',
+  'react',
+  'pdf',
+  'docx',
+  'pptx',
+  'xlsx',
+  'image',
+  'data',
+  'code',
+]);
+
+function isAssistantReasoningFileKind(value: unknown): value is AssistantReasoningFileKind {
+  return typeof value === 'string' && ASSISTANT_REASONING_FILE_KINDS.has(value);
+}
+
 export interface AssistantReasoningFile {
   /** Name property. */
   name: string;
@@ -12,14 +59,25 @@ export interface AssistantReasoningFile {
   url?: string | undefined;
   /** Download url property. */
   downloadUrl?: string | undefined;
+  /** Render/edit strategy for artifact panels, when known by the stream source. */
+  kind?: AssistantReasoningFileKind | undefined;
+  /** Inline recovered text content for editable artifacts. */
+  content?: string | undefined;
+  /** Server-side content reference for durable artifacts. */
+  contentRef?: string | undefined;
+  /** Stable artifact id emitted by the backend or derived from the answer block. */
+  artifactId?: string | undefined;
+  /** Whether inline text can be edited in the artifact panel. */
+  editable?: boolean | undefined;
+  /** Whether the backend marked this artifact as durable. */
+  persistent?: boolean | undefined;
 }
 
 /** Public-safe reasoning UI shape. Raw provider reasoning is never exposed. */
 export interface AssistantReasoning {
   /**
-   * Live streamed reasoning text accumulated from reasoning_delta events. This
-   * is the real model reasoning surfaced token-by-token in the thinking step.
-   * The legacy private `reasoningText` metadata field is never read here.
+   * Public reasoning text. Raw provider reasoning from reasoning_delta and the
+   * legacy private `reasoningText` metadata field are never read here.
    */
   text: string;
   /** Summary property. */
@@ -33,8 +91,7 @@ export interface AssistantReasoning {
 /** Get public-safe reasoning metadata for an assistant message. */
 export function getAssistantReasoning(metadata: unknown): AssistantReasoning {
   const normalized = normalizeAssistantMessageMetadata(metadata);
-  const text =
-    typeof normalized?.streamedReasoning === 'string' ? normalized.streamedReasoning : '';
+  const text = '';
   const summary =
     typeof normalized?.reasoningSummary === 'string' ? normalized.reasoningSummary : '';
   const durationMs =
@@ -54,6 +111,12 @@ export function getAssistantReasoning(metadata: unknown): AssistantReasoning {
         meta: typeof candidate.meta === 'string' ? candidate.meta : undefined,
         url: typeof candidate.url === 'string' ? candidate.url : undefined,
         downloadUrl: typeof candidate.downloadUrl === 'string' ? candidate.downloadUrl : undefined,
+        kind: isAssistantReasoningFileKind(candidate.kind) ? candidate.kind : undefined,
+        content: typeof candidate.content === 'string' ? candidate.content : undefined,
+        contentRef: typeof candidate.contentRef === 'string' ? candidate.contentRef : undefined,
+        artifactId: typeof candidate.artifactId === 'string' ? candidate.artifactId : undefined,
+        editable: typeof candidate.editable === 'boolean' ? candidate.editable : undefined,
+        persistent: typeof candidate.persistent === 'boolean' ? candidate.persistent : undefined,
       };
     })
     .filter((entry): entry is AssistantReasoningFile => !!entry);
@@ -66,15 +129,14 @@ export function applyReasoningStreamEventToMetadata(
   event: KloelStreamEvent,
 ): Record<string, unknown> | null {
   if (event.type === 'reasoning_delta') {
-    // Accumulate the real streamed reasoning text token-by-token so the live
-    // thinking timeline renders it. Stored under a dedicated key (never the
-    // legacy `reasoningText` field, which is kept private) and the first delta
-    // stamps the wall-clock start used to derive the real duration.
-    const previous =
-      typeof metadata.streamedReasoning === 'string' ? metadata.streamedReasoning : '';
+    // Provider reasoning deltas are private provider internals. Keep timing only
+    // so live/reloaded UI can show real processing state without exposing text.
     const startedAt =
       typeof metadata.reasoningStartedAt === 'number' ? metadata.reasoningStartedAt : Date.now();
-    return { ...metadata, streamedReasoning: previous + event.text, reasoningStartedAt: startedAt };
+    const safeMetadata = { ...metadata };
+    delete safeMetadata.reasoningText;
+    delete safeMetadata.streamedReasoning;
+    return { ...safeMetadata, reasoningStartedAt: startedAt };
   }
   if (event.type === 'reasoning_summary') {
     return { ...metadata, reasoningSummary: event.text };
@@ -95,6 +157,12 @@ export function applyReasoningStreamEventToMetadata(
       meta: event.meta,
       url: event.url,
       downloadUrl: event.downloadUrl,
+      kind: event.kind,
+      content: event.content,
+      contentRef: event.contentRef,
+      artifactId: event.artifactId,
+      editable: event.editable,
+      persistent: event.persistent,
     };
     return { ...metadata, files: [...currentFiles, nextFile] };
   }
@@ -217,6 +285,39 @@ export function detectDeliverableAnswerFiles(answer: string): AssistantReasoning
     }
   }
   return files;
+}
+
+export function hasProfessionalAnswerFile(files: readonly AssistantReasoningFile[]): boolean {
+  return files.some((file) => {
+    const name = String(file.name || '').trim().toLowerCase();
+    if (!name) {
+      return false;
+    }
+    if (file.persistent === true || !!file.artifactId || !!file.contentRef) {
+      return true;
+    }
+    if (/^documento-\d+\.[a-z0-9]+$/i.test(name)) {
+      return false;
+    }
+    return /\.(md|markdown|html|pdf|docx|pptx|xlsx|csv|svg)$/i.test(name);
+  });
+}
+
+export function collapseDeliverableAnswerBlocks(
+  answer: string,
+  files: readonly AssistantReasoningFile[],
+): string {
+  const source = String(answer || '');
+  if (!source.trim() || !hasProfessionalAnswerFile(files)) {
+    return source;
+  }
+  ANSWER_FENCED_BLOCK_G_RE.lastIndex = 0;
+  return source
+    .replace(ANSWER_FENCED_BLOCK_G_RE, (full, _lang: string, content: string) =>
+      String(content || '').trim().length >= MIN_ANSWER_FILE_CHARS ? '' : full,
+    )
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 /** Merge answer-derived file cards into a reasoning object, deduped by name. */

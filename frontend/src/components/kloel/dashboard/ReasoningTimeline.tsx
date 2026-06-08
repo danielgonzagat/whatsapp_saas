@@ -6,22 +6,23 @@ import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { StepDot, ThinkingDots, formatDuration } from './ReasoningTimeline.parts';
 import { kloelT } from '@/lib/i18n/t';
 import { E, F, TEXT, MUTED, SURFACE, DIVIDER } from './KloelDashboard.subcomponents';
+import { sanitizeAssistantReasoningTextForDisplay } from '@/lib/kloel-message-ui';
 import type { AssistantProcessingTraceEntry, AssistantReasoning } from '@/lib/kloel-message-ui';
 
 /**
  * Real pre-response execution timeline for the Kloel chat.
  *
- * Visible values are real model/agent execution context:
- * - reasoning.text       — live streamed reasoning, rendered token-by-token
+ * Visible values are public, sanitized model/agent execution context:
+ * - reasoning.text       — public processing detail, never raw provider reasoning
  * - reasoning.summary    — optional public summary (collapses the header)
  * - reasoning.durationMs — measured thinking time
  * - steps                — real tool_call/tool_result events (entry.tool + durationMs)
  * - reasoning.files      — real delivered artifacts
  *
- * The streamed reasoning text is the real model reasoning surfaced from
- * reasoning_delta events. When there is no reasoning text, public summary, tool
- * activity, file, duration or active processing, the block does not render
- * (honest empty state — never a fabricated thinking line).
+ * Private reasoning_delta text is stripped before this component receives data.
+ * When there is no public reasoning text, summary, tool activity, file, duration
+ * or active processing, the block does not render (honest empty state — never a
+ * fabricated thinking line).
  */
 interface ReasoningTimelineProps {
   reasoning: AssistantReasoning;
@@ -46,22 +47,22 @@ export function ReasoningTimeline({
   showSlowHint = false,
   onCancel,
 }: ReasoningTimelineProps) {
-  const toolSteps = steps.filter(
-    (step) => step.kind === 'tool_call' || step.kind === 'tool_result',
-  );
-  const streamedReasoningText = reasoning.text.replace(/\s+$/, '');
-  const hasStreamedReasoning = streamedReasoningText.trim().length > 0;
+  const toolSteps = steps;
+  const publicReasoningDetail = sanitizeAssistantReasoningTextForDisplay(reasoning.text);
+  const hasPublicReasoningDetail = publicReasoningDetail.trim().length > 0;
   const safeReasoningSummary = reasoning.summary.trim();
   const visibleFallbackSummary = fallbackSummary.trim();
   const publicReasoningText = safeReasoningSummary || visibleFallbackSummary;
   const hasPublicReasoningText = publicReasoningText.length > 0;
   const hasReasoningDuration = Boolean(reasoning.durationMs && reasoning.durationMs > 0);
+  const hasRealReasoningSignal =
+    hasPublicReasoningDetail || safeReasoningSummary.length > 0 || hasReasoningDuration;
+  const hasOperationalTrace = toolSteps.length > 0 || reasoning.files.length > 0;
   const hasContent =
-    hasStreamedReasoning ||
+    hasPublicReasoningDetail ||
     hasPublicReasoningText ||
     hasReasoningDuration ||
-    toolSteps.length > 0 ||
-    reasoning.files.length > 0;
+    hasOperationalTrace;
 
   const [collapseOverride, setCollapseOverride] = useState<boolean | null>(null);
   const collapsed = collapseOverride ?? isComplete;
@@ -72,15 +73,20 @@ export function ReasoningTimeline({
     return null;
   }
 
-  const headerSummary = publicReasoningText;
+  const headerFallbackLabel = hasRealReasoningSignal
+    ? kloelT(`Raciocínio`)
+    : hasOperationalTrace
+      ? kloelT(`Execução`)
+      : '';
+  const headerSummary = publicReasoningText || headerFallbackLabel;
   const durationLabel =
     reasoning.durationMs && reasoning.durationMs > 0
       ? `${kloelT(`Pensou por`)} ${formatDuration(reasoning.durationMs)}`
       : '';
-  // Render the thinking step while processing, or whenever there is real
-  // streamed reasoning text to show (so the reasoning stays visible inside the
+  // Render the thinking step while processing, or whenever there is public
+  // processing detail to show (so the trace stays visible inside the
   // collapsible after completion).
-  const shouldRenderThinkingStep = isProcessing || hasStreamedReasoning;
+  const shouldRenderThinkingStep = isProcessing || hasPublicReasoningDetail;
 
   return (
     <div style={{ marginBottom: 14, fontFamily: F }}>
@@ -154,7 +160,7 @@ export function ReasoningTimeline({
                     wordBreak: 'break-word',
                   }}
                 >
-                  {hasStreamedReasoning ? streamedReasoningText : null}
+                  {hasPublicReasoningDetail ? publicReasoningDetail : null}
                   {isProcessing ? (
                     <span
                       aria-hidden
@@ -162,7 +168,7 @@ export function ReasoningTimeline({
                         display: 'inline-block',
                         width: 2,
                         height: 15,
-                        marginLeft: hasStreamedReasoning ? 1 : 2,
+                        marginLeft: hasPublicReasoningDetail ? 1 : 2,
                         transform: 'translateY(2px)',
                         background: TERTIARY,
                         animation: 'rtl-blink 1.05s steps(1) infinite',
@@ -180,7 +186,11 @@ export function ReasoningTimeline({
               >
                 <StepDot kind="tool" />
                 <div style={{ fontSize: 14, lineHeight: 1.55, color: TEXT }}>
-                  {step.kind === 'tool_result' ? kloelT(`Resultado`) : kloelT(`Ação`)}
+                  {step.kind === 'tool_result'
+                    ? kloelT(`Resultado`)
+                    : step.kind === 'tool_call'
+                      ? kloelT(`Ação`)
+                      : step.label}
                   {step.tool ? (
                     <span
                       style={{
@@ -198,6 +208,24 @@ export function ReasoningTimeline({
                     >
                       <FileText size={11} strokeWidth={1.9} aria-hidden="true" />
                       {step.tool}
+                    </span>
+                  ) : null}
+                  {step.riskLabel ? (
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        marginLeft: 8,
+                        background: NESTED,
+                        border: `1px solid ${DIVIDER}`,
+                        borderRadius: 999,
+                        padding: '2px 8px',
+                        fontSize: 12,
+                        color: step.riskLevel === 'high' ? E : MUTED,
+                      }}
+                    >
+                      {step.riskLabel}
                     </span>
                   ) : null}
                   {typeof step.durationMs === 'number' && step.durationMs > 0 ? (
@@ -324,29 +352,54 @@ export function ReasoningTimeline({
               ) : null}
             </div>
             {href ? (
-              <a
-                href={href}
-                download={file.name}
-                target="_blank"
-                rel="noreferrer"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 7,
-                  border: `1px solid color-mix(in srgb, ${E} 22%, ${DIVIDER})`,
-                  background: `color-mix(in srgb, ${E} 10%, ${SURFACE})`,
-                  color: E,
-                  borderRadius: 8,
-                  padding: '8px 14px',
-                  fontFamily: F,
-                  fontSize: 13,
-                  fontWeight: 700,
-                  textDecoration: 'none',
-                }}
-              >
-                <Download size={15} strokeWidth={1.9} aria-hidden="true" />
-                {kloelT(`Baixar`)}
-              </a>
+              <>
+                <a
+                  href={href}
+                  download={file.name}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Baixar ${file.name}`}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 7,
+                    border: `1px solid color-mix(in srgb, ${E} 22%, ${DIVIDER})`,
+                    background: `color-mix(in srgb, ${E} 10%, ${SURFACE})`,
+                    color: E,
+                    borderRadius: 8,
+                    padding: '8px 14px',
+                    fontFamily: F,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                  }}
+                >
+                  <Download size={15} strokeWidth={1.9} aria-hidden="true" />
+                  {kloelT(`Baixar`)}
+                </a>
+                <a
+                  href={`https://drive.google.com/save?url=${encodeURIComponent(href)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Salvar no Drive ${file.name}`}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 7,
+                    border: `1px solid ${DIVIDER}`,
+                    background: 'transparent',
+                    color: MUTED,
+                    borderRadius: 8,
+                    padding: '8px 10px',
+                    fontFamily: F,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                  }}
+                >
+                  Drive
+                </a>
+              </>
             ) : null}
           </div>
         );

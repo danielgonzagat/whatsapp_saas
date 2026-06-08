@@ -56,6 +56,37 @@ describe('kloel-message-ui trace', () => {
     );
   });
 
+  it('preserves rich file stream fields for editable artifacts', () => {
+    const withFile = appendAssistantTraceFromEvent(undefined, {
+      type: 'file',
+      name: 'contador.html',
+      meta: 'HTML interativo',
+      url: 'artifact://artifact-contador-1',
+      downloadUrl: 'data:text/html;base64,PGgxPk9rPC9oMT4=',
+      artifactId: 'artifact-contador-1',
+      kind: 'html',
+      content: '<h1>Ok</h1>',
+      contentRef: 'artifact://artifact-contador-1/content',
+      editable: true,
+      persistent: true,
+    });
+
+    expect(getAssistantReasoning(withFile).files).toEqual([
+      {
+        name: 'contador.html',
+        meta: 'HTML interativo',
+        url: 'artifact://artifact-contador-1',
+        downloadUrl: 'data:text/html;base64,PGgxPk9rPC9oMT4=',
+        artifactId: 'artifact-contador-1',
+        kind: 'html',
+        content: '<h1>Ok</h1>',
+        contentRef: 'artifact://artifact-contador-1/content',
+        editable: true,
+        persistent: true,
+      },
+    ]);
+  });
+
   it('ignores malformed metadata entries and still falls back safely', () => {
     expect(
       getAssistantResponseVersions(
@@ -138,7 +169,7 @@ describe('kloel-message-ui trace', () => {
     );
   });
 
-  it('renders backend validation tool traces without raw tool names', () => {
+  it('renders backend validation tool traces with mapped product labels', () => {
     const metadata = appendAssistantTraceFromEvent(undefined, {
       type: 'tool_call',
       tool: 'run_backend_tests',
@@ -244,7 +275,7 @@ describe('kloel-message-ui trace', () => {
     expect(trace[0]?.label).not.toContain('get billing status');
   });
 
-  it('sanitizes persisted sales trace tool names from legacy executable traces', () => {
+  it('normalizes persisted sales trace tool names from legacy executable traces', () => {
     const trace = getAssistantProcessingTrace({
       processingTrace: [
         {
@@ -306,7 +337,7 @@ describe('kloel-message-ui trace', () => {
     ]);
   });
 
-  it('labels refinement traces without exposing internal capability names', () => {
+  it('labels refinement traces with product-grade display names', () => {
     const metadata = appendAssistantTraceFromEvent(undefined, {
       type: 'tool_call',
       tool: 'refine_response',
@@ -321,7 +352,21 @@ describe('kloel-message-ui trace', () => {
     ]);
   });
 
-  it('accumulates streamed reasoning deltas into the live thinking text', () => {
+  it('formats unknown executable tool ids in live trace chips', () => {
+    const metadata = appendAssistantTraceFromEvent(undefined, {
+      type: 'tool_call',
+      tool: 'delete_user_secret_records',
+      callId: 'call-danger',
+    });
+
+    const [entry] = getAssistantProcessingTrace(metadata);
+
+    expect(entry?.tool).toBe('delete_user_secret_records');
+    expect(entry?.tool).toContain('delete');
+    expect(entry?.tool).toContain('secret');
+  });
+
+  it('tracks streamed reasoning deltas as private timing metadata only', () => {
     const first = appendAssistantTraceFromEvent(
       { clientRequestId: 'req-live-reasoning' },
       {
@@ -337,15 +382,32 @@ describe('kloel-message-ui trace', () => {
     expect(second).toEqual(
       expect.objectContaining({
         clientRequestId: 'req-live-reasoning',
-        streamedReasoning: 'Analisando os dados da conta.',
         reasoningStartedAt: expect.any(Number),
       }),
     );
-    expect(getAssistantReasoning(second).text).toBe('Analisando os dados da conta.');
+    expect(second).not.toHaveProperty('reasoningText');
+    expect(getAssistantReasoning(second).text).toBe('');
   });
 
-  it('keeps the legacy private reasoningText field out of the live thinking text', () => {
-    expect(getAssistantReasoning({ reasoningText: 'legacy private reasoning' }).text).toBe('');
+  it('does not expose streamed reasoning that mentions runtime or capability references', () => {
+    const metadata = appendAssistantTraceFromEvent(
+      { clientRequestId: 'req-live-reasoning-safe' },
+      {
+        type: 'reasoning_delta',
+        text: 'O runtime context indica que a capacidade inspect_self está disponível.',
+      },
+    );
+
+    const reasoning = getAssistantReasoning(metadata);
+
+    expect(metadata).not.toHaveProperty('reasoningText');
+    expect(reasoning.text).toBe('');
+    expect(reasoning.text).not.toContain('runtime context');
+    expect(reasoning.text).not.toContain('inspect_self');
+  });
+
+  it('does not render persisted reasoningText as public thinking text', () => {
+    expect(getAssistantReasoning({ reasoningText: 'legacy provider reasoning' }).text).toBe('');
   });
 
   it('derives a real reasoning duration when the provider reports a non-positive value', () => {

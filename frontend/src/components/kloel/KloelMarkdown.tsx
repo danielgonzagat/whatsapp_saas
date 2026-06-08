@@ -2,7 +2,8 @@
 
 import { sanitizeAssistantMarkdown } from '@/lib/kloel-message-ui';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
-import type { HTMLAttributes, ReactNode } from 'react';
+import { useId } from 'react';
+import type { ComponentPropsWithoutRef, HTMLAttributes, ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import remarkGfm from 'remark-gfm';
@@ -44,6 +45,21 @@ function nodeToText(node: ReactNode): string {
   }
   return '';
 }
+type KloelMarkdownInputProps = ComponentPropsWithoutRef<'input'> & { readonly node?: unknown };
+
+function KloelMarkdownInput(inputProps: KloelMarkdownInputProps) {
+  const { node: _node, ...props } = inputProps;
+  const generatedId = useId().replace(/:/g, '');
+  void _node;
+
+  if (props.type !== 'checkbox') {
+    return <input {...props} />;
+  }
+
+  const id = props.id || `kloel-markdown-task-${generatedId}`;
+  return <input {...props} id={id} name={props.name || id} readOnly />;
+}
+
 
 const MATH_INLINE_CLASS_RE = new RegExp(`(?:^|\\s)${MATH_INLINE_CLASS}(?:\\s|$)`);
 const MATH_DISPLAY_CLASS_RE = new RegExp(`(?:^|\\s)${MATH_DISPLAY_CLASS}(?:\\s|$)`);
@@ -51,6 +67,7 @@ const MATH_DISPLAY_CLASS_RE = new RegExp(`(?:^|\\s)${MATH_DISPLAY_CLASS}(?:\\s|$
 /** Kloel markdown. */
 export function KloelMarkdown({ content }: { content: string }) {
   const sanitizedContent = sanitizeAssistantMarkdown(String(content || ''));
+
 
   return (
     <div
@@ -273,6 +290,7 @@ export function KloelMarkdown({ content }: { content: string }) {
               {children}
             </td>
           ),
+          input: KloelMarkdownInput,
         }}
       >
         {sanitizedContent}

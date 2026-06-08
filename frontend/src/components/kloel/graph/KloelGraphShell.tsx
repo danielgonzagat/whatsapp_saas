@@ -210,11 +210,12 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
   const activeGraphNodeId = graphOnly
     ? (pendingNodeId ?? undefined)
     : (pendingNodeId ?? activeNode?.id);
-  const pendingOverlayNode =
-    graphOnly && pendingNodeId ? graphNodes.find((node) => node.id === pendingNodeId) : undefined;
+  const pendingOverlayNode = pendingNodeId
+    ? graphNodes.find((node) => node.id === pendingNodeId)
+    : undefined;
   const hasRouteOverlay =
     (!graphOnly && !isCommandPaletteGraphAction) || Boolean(pendingOverlayNode);
-  const overlayNode = graphOnly ? pendingOverlayNode : activeNode;
+  const overlayNode = pendingOverlayNode ?? (graphOnly ? undefined : activeNode);
 
   useEffect(() => {
     if (!pendingNode || pendingNode.routeSignature === routeSignature) {
@@ -310,11 +311,17 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
         setRecenterNonce((value) => value + 1);
       });
 
-      // An open route screen (the macOS-style window) is dismissed ONLY by its red
-      // control / Escape — never by interacting with the graph navigator behind it.
-      // While a screen is open, the pill only teleports the camera (above), so the
-      // user can keep arranging screens over a live graph without losing their place.
-      if (!primaryNode || hasRouteOverlay) {
+      if (!primaryNode) {
+        return;
+      }
+
+      if (hasRouteOverlay) {
+        setPendingNode({
+          id: primaryNode.id,
+          routeSignature,
+          sequence: (pendingNodeSequenceRef.current += 1),
+        });
+        router.push(resolveNodeRoute(primaryNode));
         return;
       }
 
@@ -326,7 +333,7 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
       const query = nextParams.toString();
       pushGraphOnlyRoute(`${path}${query ? `?${query}` : ''}`);
     },
-    [activeRouteKey, hasRouteOverlay, pushGraphOnlyRoute],
+    [activeRouteKey, hasRouteOverlay, pushGraphOnlyRoute, resolveNodeRoute, routeSignature, router],
   );
 
   const toggleSettings = useCallback(() => {
@@ -384,16 +391,6 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
   );
 }
 
-/**
- * KloelGraph shell — the graph is the primary navigation surface and each route's
- * real screen renders inside the 80% overlay with the live graph behind it. Wraps
- * the surface in the prototype's own light/dark theme so the canvas matches the
- * canonical KloelGraph look without touching the host app theme.
- */
 export function KloelGraphShell({ children }: { readonly children: ReactNode }) {
-  return (
-    <GraphThemeProvider initialMode="dark">
-      <KloelGraphShellSurface>{children}</KloelGraphShellSurface>
-    </GraphThemeProvider>
-  );
+  return <GraphThemeProvider initialMode="dark"><KloelGraphShellSurface>{children}</KloelGraphShellSurface></GraphThemeProvider>;
 }
