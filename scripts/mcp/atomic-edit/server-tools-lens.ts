@@ -177,6 +177,9 @@ interface AtomicReadZone {
   recommendedAction?: string;
 }
 
+type LensReport = Awaited<ReturnType<typeof runLens>>;
+type LensNegativeByteEvidence = LensReport['negativeByteEvidence'][number];
+
 function byteLength(value: string): number {
   return Buffer.byteLength(value, 'utf8');
 }
@@ -224,6 +227,18 @@ function truncateUtf8(text: string, maxBytes: number): { text: string; truncated
   return { text: out, truncated: true };
 }
 
+function directKnownFileBatteryApplies(relPath: string, ext: string): boolean {
+  return ext === '.json' || ext === '.md' || path.basename(relPath) === '.gitignore' || DIRECT_STRUCTURAL_FILE_EXTS.has(ext);
+}
+
+function directFileBatteryLabel(relPath: string, ext: string): string {
+  if (path.basename(relPath) === '.gitignore') return 'Gitignore';
+  if (ext === '.json') return 'JSON';
+  if (ext === '.md') return 'Markdown';
+  if (DIRECT_STRUCTURAL_FILE_EXTS.has(ext)) return directStructuralLanguageName(ext);
+  return 'direct file';
+}
+
 function directNonSourcePositiveReason(relPath: string, content: string): string | null {
   if (content.includes('\0')) return null;
   const ext = path.extname(relPath).toLowerCase();
@@ -247,6 +262,68 @@ function directNonSourcePositiveReason(relPath: string, content: string): string
     return 'Gitignore text is UTF-8 readable and contains no NUL bytes under Atomic direct-file text battery.';
   }
   return null;
+}
+
+function directNonSourceNegativeReason(relPath: string, content: string): string | null {
+  const ext = path.extname(relPath).toLowerCase();
+  if (!directKnownFileBatteryApplies(relPath, ext)) return null;
+  const label = directFileBatteryLabel(relPath, ext);
+  if (content.includes('\0')) return `${label} text failed Atomic direct-file battery: contains NUL byte.`;
+  if (ext === '.json') {
+    try {
+      JSON.parse(content);
+    } catch (error) {
+      return `JSON failed Atomic direct-file battery: ${error instanceof Error ? error.message : String(error)}.`;
+    }
+  }
+  if (DIRECT_STRUCTURAL_FILE_EXTS.has(ext)) {
+    const errors = structuralErrors(ext, content);
+    if (errors.length > 0) {
+      return `${label} text failed Atomic structural balance battery: ${errors.slice(0, 5).join('; ')}.`;
+    }
+  }
+  return null;
+}
+
+function directNegativeReadZone(start: number, end: number, reason: string): AtomicReadZone {
+  return {
+    classification: 'negative',
+    byteStart: start,
+    byteEnd: end,
+    byteLength: end - start,
+    reason,
+    gate: 'direct-file-battery',
+    locus: 'direct-file',
+    precision: 'file',
+    recommendedAction: 'repair-negative-byte',
+  };
+}
+
+function directNegativeByteEvidence(
+  relPath: string,
+  byteStart: number,
+  byteEnd: number,
+  reason: string,
+  snippet: string,
+): LensNegativeByteEvidence {
+  return {
+    redIndex: -1,
+    gate: 'direct-file-battery',
+    file: relPath,
+    locus: relPath,
+    classification: 'negative',
+    recommendedAction: 'repair-negative-byte',
+    containmentProof: null,
+    reason,
+    precision: 'file',
+    line: null,
+    column: null,
+    byteStart,
+    byteEnd,
+    byteLength: byteEnd - byteStart,
+    lineSha256: null,
+    snippet: snippet.slice(0, 500),
+  };
 }
 
 function positiveReadZone(start: number, end: number, ran: string[]): AtomicReadZone {
@@ -384,6 +461,8 @@ export function registerToolsLens(server: McpServer): void {
         const window = atomicReadWindow(content, a.startLine, a.endLine);
         const report = await runLens(repoRoot, relPath);
         const directPositiveReason = report.scanned === 0 ? directNonSourcePositiveReason(relPath, content) : null;
+        const directNegativeReason =
+          report.scanned === 0 && !directPositiveReason ? directNonSourceNegativeReason(relPath, content) : null;
         const zones = directPositiveReason
           ? [
               {
@@ -394,22 +473,30 @@ export function registerToolsLens(server: McpServer): void {
                 reason: directPositiveReason,
               },
             ]
-          : atomicReadZones(report, relPath, window.byteStart, window.byteEnd);
-        const negativeEvidence = report.negativeByteEvidence.filter(
+          : directNegativeReason
+            ? [directNegativeReadZone(window.byteStart, window.byteEnd, directNegativeReason)]
+            : atomicReadZones(report, relPath, window.byteStart, window.byteEnd);
+        const lensNegativeEvidence = report.negativeByteEvidence.filter(
           (entry) =>
             entry.file === relPath &&
             entry.classification === 'negative' &&
             entry.byteEnd > window.byteStart &&
             entry.byteStart < window.byteEnd,
         );
+        const directNegativeEvidence = directNegativeReason
+          ? [directNegativeByteEvidence(relPath, window.byteStart, window.byteEnd, directNegativeReason, window.text)]
+          : [];
+        const negativeEvidence = [...lensNegativeEvidence, ...directNegativeEvidence];
         const verdict =
           directPositiveReason
             ? 'POSITIVE_WITHIN_DECLARED_BATTERY'
-            : report.scanned === 0
-              ? 'UNJUDGED'
-              : negativeEvidence.length > 0
-                ? 'HAS_NEGATIVE_BYTES'
-                : 'POSITIVE_WITHIN_DECLARED_BATTERY';
+            : directNegativeReason
+              ? 'HAS_NEGATIVE_BYTES'
+              : report.scanned === 0
+                ? 'UNJUDGED'
+                : negativeEvidence.length > 0
+                  ? 'HAS_NEGATIVE_BYTES'
+                  : 'POSITIVE_WITHIN_DECLARED_BATTERY';
         const maxBytes = a.maxBytes ?? 50000;
         const emitted = truncateUtf8(window.text, maxBytes);
         const includeContent = a.includeContent ?? true;
@@ -432,12 +519,13 @@ export function registerToolsLens(server: McpServer): void {
           contentTruncated: includeContent ? emitted.truncated : false,
           verdict,
           sourceLensApplied: report.scanned > 0,
-          directFileBatteryApplied: Boolean(directPositiveReason),
+          directFileBatteryApplied: Boolean(directPositiveReason || directNegativeReason),
           ran: report.ran,
-          unjudgedCount: report.unjudged.length + (report.scanned === 0 && !directPositiveReason ? 1 : 0),
+          unjudgedCount:
+            report.unjudged.length + (report.scanned === 0 && !directPositiveReason && !directNegativeReason ? 1 : 0),
           unjudgedDomains:
             report.scanned === 0
-              ? directPositiveReason
+              ? directPositiveReason || directNegativeReason
                 ? []
                 : ['source-language-lens:not-applicable']
               : report.unjudged.slice(0, 50),
@@ -446,7 +534,7 @@ export function registerToolsLens(server: McpServer): void {
           negativeByteEvidence: negativeEvidence,
           proofDebt:
             report.scanned === 0
-              ? directPositiveReason
+              ? directPositiveReason || directNegativeReason
                 ? []
                 : ['file readable, but no declared source-language battery could classify these bytes as positive']
               : report.unjudged.slice(0, 50),
@@ -522,6 +610,7 @@ export function registerToolsLens(server: McpServer): void {
         let negativeFiles = 0;
         let proofDebtFiles = 0;
         let directFileBatteryFiles = 0;
+        let directNegativeByteEvidenceTotal = 0;
         let unjudgedFilesRead = 0;
         let omittedPositiveFiles = 0;
 
@@ -588,15 +677,27 @@ export function registerToolsLens(server: McpServer): void {
           const bytes = byteLength(content);
           const lineCount = atomicReadLineRanges(content).length;
           const directPositiveReason = directNonSourcePositiveReason(rel, content);
-          const proofDebt = directPositiveReason
+          const directNegativeReason = directPositiveReason ? null : directNonSourceNegativeReason(rel, content);
+          const directNegativeEvidence = directNegativeReason
+            ? [directNegativeByteEvidence(rel, 0, bytes, directNegativeReason, content)]
+            : [];
+          const proofDebt = directPositiveReason || directNegativeReason
             ? []
             : ['file readable, but no declared source-language battery could classify these bytes as positive'];
-          const verdict: ScanVerdict = directPositiveReason ? 'POSITIVE_WITHIN_DECLARED_BATTERY' : 'UNJUDGED';
+          const verdict: ScanVerdict = directPositiveReason
+            ? 'POSITIVE_WITHIN_DECLARED_BATTERY'
+            : directNegativeReason
+              ? 'HAS_NEGATIVE_BYTES'
+              : 'UNJUDGED';
           totalBytes += bytes;
           totalLines += lineCount;
           if (directPositiveReason) {
             positiveFiles += 1;
             directFileBatteryFiles += 1;
+          } else if (directNegativeReason) {
+            negativeFiles += 1;
+            directFileBatteryFiles += 1;
+            directNegativeByteEvidenceTotal += directNegativeEvidence.length;
           } else {
             unjudgedFilesRead += 1;
             proofDebtFiles += 1;
@@ -608,25 +709,37 @@ export function registerToolsLens(server: McpServer): void {
             lineCount,
             verdict,
             sourceLensApplied: false,
-            directFileBatteryApplied: Boolean(directPositiveReason),
+            directFileBatteryApplied: Boolean(directPositiveReason || directNegativeReason),
             zoneCount: 1,
             zones: [
-              {
-                classification: directPositiveReason ? 'positive-within-declared-battery' : 'unjudged',
-                byteStart: 0,
-                byteEnd: bytes,
-                byteLength: bytes,
-                reason:
-                  directPositiveReason ??
-                  'No source-language lens battery applied to this file; bytes are readable but not proven positive.',
-              },
+              directPositiveReason
+                ? {
+                    classification: 'positive-within-declared-battery',
+                    byteStart: 0,
+                    byteEnd: bytes,
+                    byteLength: bytes,
+                    reason: directPositiveReason,
+                  }
+                : directNegativeReason
+                  ? directNegativeReadZone(0, bytes, directNegativeReason)
+                  : {
+                      classification: 'unjudged',
+                      byteStart: 0,
+                      byteEnd: bytes,
+                      byteLength: bytes,
+                      reason: 'No source-language lens battery applied to this file; bytes are readable but not proven positive.',
+                    },
             ],
-            negativeByteEvidenceCount: 0,
-            negativeByteEvidence: [],
+            negativeByteEvidenceCount: directNegativeEvidence.length,
+            negativeByteEvidence: directNegativeEvidence,
             containedEvidenceCount: 0,
             containedEvidence: [],
             proofDebt,
-            recommendedAction: directPositiveReason ? 'preserve-positive-byte' : 'extend-declared-battery',
+            recommendedAction: directNegativeReason
+              ? 'repair-negative-byte'
+              : directPositiveReason
+                ? 'preserve-positive-byte'
+                : 'extend-declared-battery',
           });
         }
 
@@ -656,7 +769,7 @@ export function registerToolsLens(server: McpServer): void {
             proofDebtFiles,
             directFileBatteryFiles,
             unjudgedFiles: unjudgedFilesRead,
-            negativeByteEvidence: report.actionableNegativeByteEvidence.length,
+            negativeByteEvidence: report.actionableNegativeByteEvidence.length + directNegativeByteEvidenceTotal,
             containedEvidence:
               report.containedNegativeFixtureEvidence.length +
               report.containedGeneratedCodeEvidence.length +
