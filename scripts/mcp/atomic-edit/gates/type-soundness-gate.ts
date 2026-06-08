@@ -77,7 +77,15 @@ const TEST_CONFIG_NAMES = [
  * and a project's eslint tsconfig often globs specs too but with the wrong options —
  * so the test-config NAME is the faithful selector for how the file really compiles.
  */
-function selectConfig(repoRoot: string, fromRel: string): string | null {
+function relOf(repoRoot: string, absPath: string): string {
+  return path.relative(repoRoot, path.resolve(absPath)).replaceAll('\\', '/');
+}
+
+function existsInOverlayOrDisk(repoRoot: string, overlay: Map<string, string>, absPath: string): boolean {
+  return overlay.has(relOf(repoRoot, absPath)) || fs.existsSync(absPath);
+}
+
+function selectConfig(repoRoot: string, fromRel: string, overlay: Map<string, string> = new Map()): string | null {
   const rootAbs = path.resolve(repoRoot);
   const isTest = TEST_FILE_RE.test(fromRel);
   let dir = path.dirname(path.resolve(repoRoot, fromRel));
@@ -85,11 +93,11 @@ function selectConfig(repoRoot: string, fromRel: string): string | null {
     if (isTest) {
       for (const name of TEST_CONFIG_NAMES) {
         const cand = path.join(dir, name);
-        if (fs.existsSync(cand)) return cand;
+        if (existsInOverlayOrDisk(repoRoot, overlay, cand)) return cand;
       }
     }
     const primary = path.join(dir, 'tsconfig.json');
-    if (fs.existsSync(primary)) return primary;
+    if (existsInOverlayOrDisk(repoRoot, overlay, primary)) return primary;
     if (dir === rootAbs) return null;
     const parent = path.dirname(dir);
     if (parent === dir) return null; // hit fs root without finding repoRoot — stop
@@ -166,7 +174,12 @@ function diagnoseChanged(
   changed: string[],
   overrides: Map<string, string>,
 ): { counts: Map<string, number>; diags: Map<string, ts.Diagnostic[]> } {
-  const cfg = ts.readConfigFile(tsconfigPath, ts.sys.readFile);
+  const readOverlayOrDisk = (fileName: string): string | undefined => {
+    const rel = relOf(repoRoot, fileName);
+    const overlayText = overrides.get(rel);
+    return overlayText !== undefined ? overlayText : ts.sys.readFile(fileName);
+  };
+  const cfg = ts.readConfigFile(tsconfigPath, readOverlayOrDisk);
   const parsed = ts.parseJsonConfigFileContent(
     cfg.config ?? {},
     ts.sys,
@@ -269,7 +282,7 @@ function judgeGroup(
   tsconfigPath: string,
   files: string[],
 ): { reds: GateRed[] } | { unjudgedReason: string } {
-  const candOverrides = new Map<string, string>();
+  const candOverrides = new Map(ctx.overlay);
   for (const rel of files) {
     const content = ctx.readFile(rel);
     if (content === null) return { unjudgedReason: `cannot read candidate bytes for '${rel}'` };
@@ -285,7 +298,7 @@ function judgeGroup(
   // Fast path: a candidate clean in every file cannot be a regression → green.
   if ([...cand.counts.values()].every((c) => c === 0)) return { reds: [] };
 
-  const priorOverrides = new Map<string, string>();
+  const priorOverrides = new Map(ctx.overlay);
   for (const rel of files) priorOverrides.set(rel, ctx.priorOf(rel));
   const prior = diagnoseChanged(ctx.repoRoot, tsconfigPath, files, priorOverrides);
 
@@ -331,7 +344,7 @@ const gate: GateModule = {
     // each governing project is judged independently. No tsconfig at all → unjudged.
     const groups = new Map<string, string[]>();
     for (const rel of changed) {
-      const tc = selectConfig(ctx.repoRoot, rel);
+      const tc = selectConfig(ctx.repoRoot, rel, ctx.overlay);
       if (!tc) {
         return {
           gate: 'type-soundness',

@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConversationalOnboardingToolsService } from './conversational-onboarding-tools.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 
 type ToolsPrismaMock = {
   kloelMemory: {
@@ -235,6 +236,62 @@ describe('ConversationalOnboardingToolsService', () => {
       });
 
       expect(result.success).toBe(false);
+    });
+  });
+
+  describe('canonical Mind memory surface', () => {
+    it('routes memory writes through MindMemoryItemService.items when injected', async () => {
+      const mindItems = {
+        upsert: jest.fn().mockResolvedValue({}),
+        findUnique: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([]),
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      };
+      const mindMemory = { items: mindItems } as unknown as MindMemoryItemService;
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          ConversationalOnboardingToolsService,
+          { provide: PrismaService, useValue: prisma },
+          { provide: AuditService, useValue: auditService },
+          { provide: MindMemoryItemService, useValue: mindMemory },
+        ],
+      }).compile();
+
+      const canonicalService = module.get<ConversationalOnboardingToolsService>(
+        ConversationalOnboardingToolsService,
+      );
+
+      await canonicalService.saveMemory('ws-canon', 'businessName', 'KLOEL', 'business');
+
+      // The canonical Mind delegate receives the write; raw prisma.kloelMemory is bypassed.
+      expect(mindItems.upsert).toHaveBeenCalledWith({
+        where: { workspaceId_key: { workspaceId: 'ws-canon', key: 'businessName' } },
+        create: {
+          workspaceId: 'ws-canon',
+          key: 'businessName',
+          value: 'KLOEL',
+          category: 'business',
+        },
+        update: { value: 'KLOEL', category: 'business' },
+      });
+      expect(prisma.kloelMemory.upsert).not.toHaveBeenCalled();
+    });
+
+    it('falls back to raw prisma.kloelMemory when the Mind service is absent', async () => {
+      // The default `service` (no MindMemoryItemService provider) must keep working.
+      await service.saveMemory('ws-fallback', 'segment', 'ecommerce', 'business');
+
+      expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith({
+        where: { workspaceId_key: { workspaceId: 'ws-fallback', key: 'segment' } },
+        create: {
+          workspaceId: 'ws-fallback',
+          key: 'segment',
+          value: 'ecommerce',
+          category: 'business',
+        },
+        update: { value: 'ecommerce', category: 'business' },
+      });
     });
   });
 });

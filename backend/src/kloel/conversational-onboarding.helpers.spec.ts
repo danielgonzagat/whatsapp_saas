@@ -21,7 +21,7 @@ describe('conversational-onboarding.helpers (K74 proof)', () => {
       expect(reply).toContain('onboarding');
       expect(warn).toHaveBeenCalledTimes(1);
       const calls = warn.mock.calls as Array<[string, Record<string, unknown>]>;
-      const [message, meta] = calls[0]!;
+      const [message, meta] = calls[0];
       expect(message).toBe('Onboarding degraded');
       expect(meta.tag).toBe('kloel_onboarding_degraded');
       expect(meta.reason).toBe('thinker_failed');
@@ -44,7 +44,7 @@ describe('conversational-onboarding.helpers (K74 proof)', () => {
       );
 
       const calls = warn.mock.calls as Array<[string, Record<string, unknown>]>;
-      const [, meta] = calls[0]!;
+      const [, meta] = calls[0];
       expect(meta.errorMessage).toBe('{"code":"EPIPE"}');
       expect(meta.errorName).toBe('object');
     });
@@ -64,7 +64,7 @@ describe('conversational-onboarding.helpers (K74 proof)', () => {
       );
 
       const calls = warn.mock.calls as Array<[string, Record<string, unknown>]>;
-      const [, meta] = calls[0]!;
+      const [, meta] = calls[0];
       expect(meta.errorMessage).toBe('');
     });
   });

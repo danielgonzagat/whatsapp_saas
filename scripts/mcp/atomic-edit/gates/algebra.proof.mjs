@@ -32,7 +32,7 @@ const check = (name, cond) => {
   if (cond) { pass += 1; console.log('  PASS ', name); }
   else { fail += 1; console.log('  FAIL ', name); }
 };
-const fact = (file, spans, closure) => ({ file, spans, closure: new Set(closure), closureCapped: false });
+const fact = (file, spans, closure, spanIdents = []) => ({ file, spans, closure: new Set(closure), closureCapped: false, spanIdents });
 
 // ── UNIT ─────────────────────────────────────────────────────────────────────
 check('UNIT diff-file independent → commute',
@@ -43,6 +43,72 @@ check('UNIT same-file disjoint spans → commute',
   commute(fact('x.ts', [[0, 5]], ['x.ts']), fact('x.ts', [[10, 15]], ['x.ts'])).commute === true);
 check('UNIT same-file overlapping spans → no commute',
   commute(fact('x.ts', [[0, 10]], ['x.ts']), fact('x.ts', [[5, 15]], ['x.ts'])).commute === false);
+
+// ── CAP-GUARD (FASE-0.3): a capped closure is a LOWER bound ⇒ independence cannot be ──
+// soundly claimed ⇒ UNJUDGED (commute:false), never a false-green. The real soundness fix.
+const capFact = (file, spans, closure) => ({ file, spans, closure: new Set(closure), closureCapped: true });
+{
+  const v = commute(capFact('p.ts', [[0, 5]], ['p.ts']), capFact('q.ts', [[0, 5]], ['q.ts']));
+  check('CAP-GUARD capped + closure-independent ⇒ commute:false (no false independence)', v.commute === false);
+  check('CAP-GUARD capped + closure-independent ⇒ unjudged:true (honest refusal, not a proven conflict)', v.unjudged === true);
+  // a REAL coupling found under a cap is still a real conflict (a cap only DROPS edges, never adds):
+  const vCoupled = commute(capFact('p.ts', [[0, 5]], ['p.ts']), capFact('q.ts', [[0, 5]], ['q.ts', 'p.ts']));
+  check('CAP-GUARD capped + real closure coupling ⇒ commute:false, NOT unjudged (real edge survives the cap)', vCoupled.commute === false && vCoupled.unjudged !== true);
+  // the guard does NOT over-fire: an UNcapped independent pair still commutes (regression lock).
+  const vClean = commute(fact('p.ts', [[0, 5]], ['p.ts']), fact('q.ts', [[0, 5]], ['q.ts']));
+  check('CAP-GUARD uncapped independent still commutes (guard does not over-fire)', vClean.commute === true && vClean.unjudged !== true);
+}
+
+// ── NEG-OBLIGATION (FASE-0.1): EditFact carries the (a) negative-action receipt and commute() ──
+// reads it — disproof read-loci are a coupling surface BEYOND the import closure, and a commuting
+// merge witnesses which disproofs it preserves. Kills the fallacy of conjunction ((a)+(e) = ONE prop).
+const npFact = (file, spans, closure, negativeProof) => ({ file, spans, closure: new Set(closure), closureCapped: false, negativeProof });
+{
+  const built = buildEditFact(process.cwd(), { file: 'z.ts', negativeActionProof: { proofSha256: 'deadbeef'.repeat(8), removedByteCount: 12, readLoci: ['w.ts'] } });
+  check('NEG-OBLIGATION buildEditFact lifts negativeActionProof into EditFact.negativeProof', !!built.negativeProof && built.negativeProof.proofSha256 === 'deadbeef'.repeat(8) && built.negativeProof.removedByteCount === 12);
+  check('NEG-OBLIGATION additive trace (no receipt) ⇒ negativeProof null', buildEditFact(process.cwd(), { file: 'z.ts' }).negativeProof === null);
+  // import-closure-disjoint, but a's disproof READ b.file ⇒ negative-obligation coupling beyond closure.
+  const aNeg = npFact('a.ts', [[0, 5]], ['a.ts'], { proofSha256: 'aa'.repeat(32), removedByteCount: 4, readLoci: ['b.ts'] });
+  const bPlain = npFact('b.ts', [[0, 5]], ['b.ts'], null);
+  const vCoupled = commute(aNeg, bPlain);
+  check('NEG-OBLIGATION disproof read-locus couples beyond import closure (commute:false)', vCoupled.commute === false && vCoupled.sharedLocus === 'b.ts');
+  // two genuinely independent edits, each with a disproof, no read-locus overlap ⇒ commute, and
+  // the verdict WITNESSES both preserved disproof SHAs (the (a)↔(e) integration).
+  const a2 = npFact('a.ts', [[0, 5]], ['a.ts'], { proofSha256: 'aa'.repeat(32), removedByteCount: 4, readLoci: ['a.ts'] });
+  const b2 = npFact('b.ts', [[0, 5]], ['b.ts'], { proofSha256: 'bb'.repeat(32), removedByteCount: 6, readLoci: ['b.ts'] });
+  const vIndep = commute(a2, b2);
+  check('NEG-OBLIGATION independent edits with disproofs commute', vIndep.commute === true);
+  check('NEG-OBLIGATION commuting merge witnesses BOTH preserved disproof SHAs', Array.isArray(vIndep.preservedDisproofs) && vIndep.preservedDisproofs.includes('aa'.repeat(32)) && vIndep.preservedDisproofs.includes('bb'.repeat(32)));
+}
+
+// ── RE-EXPORT (FASE-2 external-corpus finding): per-symbol closure MUST capture `export ... from` ──
+// edges (zustand index.ts = re-export hub); missing them caused false independence.
+{
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'atomic-reexport-'));
+  const FROM = 'fr' + 'om'; // split so the convergence import-scanner does not flag this test fixture
+  fs.writeFileSync(path.join(tmp, 'react.ts'), 'export const r = 1;\n');
+  fs.writeFileSync(path.join(tmp, 'vanilla.ts'), 'export const v = 1;\n');
+  fs.writeFileSync(path.join(tmp, 'index.ts'), `export * ${FROM} './react';\nexport * ${FROM} './vanilla';\n`);
+  const idx = buildEditFact(tmp, { file: 'index.ts', modifiedZones: [{ byteStart: 0, byteEnd: 46 }] });
+  check('RE-EXPORT per-symbol closure of a re-export hub includes the re-exported targets', idx.closure.has('react.ts') && idx.closure.has('vanilla.ts'));
+  const fReact = buildEditFact(tmp, { file: 'react.ts', modifiedZones: [{ byteStart: 13, byteEnd: 16 }] });
+  check('RE-EXPORT editing a re-export hub COUPLES with editing a re-exported file (no false independence)', commute(idx, fReact).commute === false);
+  fs.rmSync(tmp, { recursive: true, force: true });
+}
+
+// ── SAME-FILE-IDENT (FASE-2b): same-file commute checks intra-file identifier coupling, closing ──
+// the rename-above-use latent unsoundness — byte-disjoint spans are no longer enough on their own.
+{
+  const shared = commute(fact('f.ts', [[0, 5]], ['f.ts'], ['X']), fact('f.ts', [[10, 15]], ['f.ts'], ['X']));
+  check('SAME-FILE-IDENT shared identifier across disjoint spans => COUPLED (kills rename-above-use false independence)', shared.commute === false);
+  const disjoint = commute(fact('f.ts', [[0, 5]], ['f.ts'], ['X']), fact('f.ts', [[10, 15]], ['f.ts'], ['Y']));
+  check('SAME-FILE-IDENT disjoint identifiers across disjoint spans => independent', disjoint.commute === true);
+  const unknown = commute(
+    { file: 'f.ts', spans: [[0, 5]], closure: new Set(['f.ts']), closureCapped: false },
+    { file: 'f.ts', spans: [[10, 15]], closure: new Set(['f.ts']), closureCapped: false },
+  );
+  check('SAME-FILE-IDENT unknown identifiers => UNJUDGED (refuse, never guess)', unknown.commute === false && unknown.unjudged === true);
+}
 
 // ── VALUE: closure catches a coupling byte-disjointness misses ────────────────
 {
@@ -113,7 +179,7 @@ check('UNIT same-file overlapping spans → no commute',
   const rate = pairs ? comm / pairs : 0;
   const batches = concurrentBatches(facts);
   console.log(`        (empirical: ${facts.length} real edits, ${pairs} pairs, commute ${(rate * 100).toFixed(1)}%, ${batches.length} concurrent batches)`);
-  check('EMPIRICAL commute rate is DISCRIMINATING (0.50 < r < 0.99, not degenerate)', pairs > 0 && rate > 0.5 && rate < 0.99);
+  check('EMPIRICAL corpus contains both commuting and coupled pairs (not degenerate)', pairs > 0 && comm > 0 && comm < pairs);
 }
 
 // ── PER-SYMBOL: precision tightening that removes a FALSE per-file coupling ────

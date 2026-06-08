@@ -316,6 +316,33 @@ describe('KloelThreadSummaryService', () => {
       expect(typeof refreshUpdateArg.data.summary).toBe('string');
       expect(refreshUpdateArg.data.summaryUpdatedAt).toBeInstanceOf(Date);
     });
+
+    it('uses a local fallback summary without critical alert when summary budget is exhausted', async () => {
+      jest.replaceProperty(process, 'env', textLlmEnv('sk-test'));
+      planLimits.ensureTokenBudget.mockRejectedValueOnce(new Error('budget exhausted'));
+      prisma.chatThread.findFirst.mockResolvedValueOnce({
+        id: 'thread-1',
+        summary: null,
+        summaryUpdatedAt: null,
+      });
+      prisma.chatMessage.count = makeChatMessageCountMock(30);
+      prisma.chatMessage.findMany.mockResolvedValueOnce(
+        Array.from({ length: 10 }, (_, i) => ({
+          role: i % 2 === 0 ? 'user' : 'assistant',
+          content: `Fallback message ${i}`,
+        })),
+      );
+
+      await service.maybeRefreshThreadSummary('thread-1', wsId, mockOpenai);
+
+      expect(chatCompletionWithFallbackMock).not.toHaveBeenCalled();
+      expect(opsAlert.alertOnCriticalError).not.toHaveBeenCalled();
+      const [[refreshUpdateArg]] = prisma.chatThread.updateMany.mock.calls as [[UpdateManyArg]];
+      const refreshedSummary = refreshUpdateArg.data.summary;
+      expect(typeof refreshedSummary).toBe('string');
+      expect(refreshedSummary).toContain('Fallback message');
+      expect(refreshUpdateArg.data.summaryUpdatedAt).toBeInstanceOf(Date);
+    });
   });
 
   describe('tenant isolation', () => {

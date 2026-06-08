@@ -119,7 +119,7 @@ export default function ExitIntentPopup({
           border: `1px solid ${accentColor}22`,
         }}
       >
-        <div style={{ fontSize: '36px', marginBottom: '16px' }}>{kloelT(`&rgb(18, 120, 115);`)}</div>
+        <div style={{ fontSize: '36px', marginBottom: '16px' }}>{kloelT(``)}</div>
         <div style={{ fontSize: '20px', fontWeight: 700, color: textColor, marginBottom: '8px' }}>
           {title}
         </div>

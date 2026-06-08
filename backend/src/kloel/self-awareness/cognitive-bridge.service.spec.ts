@@ -247,9 +247,7 @@ describe('CognitiveBridgeService', () => {
   it('caches OpenAPI reads within TTL', async () => {
     await service.getOpenApiRoute('products');
     await service.getOpenApiRoute('orders');
-    const openApiReads = readFileSpy.mock.calls.filter((c: string[]) =>
-      (c[0] as string).includes('openapi'),
-    );
+    const openApiReads = readFileSpy.mock.calls.filter((c: string[]) => c[0].includes('openapi'));
     expect(openApiReads.length).toBe(1);
   });
 });

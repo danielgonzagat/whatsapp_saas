@@ -1,21 +1,14 @@
-import { createHash, randomBytes } from 'node:crypto';
-
 /**
- * Generates an opaque base64url-encoded token suitable for partner invites.
+ * Opaque-token crypto helpers for partner invites.
  *
- * Pure crypto helper extracted from PartnershipsService to keep the service
- * thin and to enable direct unit-testing without instantiating the Nest module.
- */
-export function generateOpaqueToken(size = 32) {
-  return randomBytes(size).toString('base64url');
-}
-
-/**
- * Hashes an opaque token with SHA-256 (hex) for at-rest storage.
+ * These delegate to the shared auth-core primitive so the hashing/generation
+ * surface stays byte-identical across the auth and partnerships stacks and a
+ * security fix propagates to every consumer. The re-exported names keep this
+ * module's public surface unchanged (still directly unit-testable without the
+ * Nest module).
  *
- * The hash is the only thing persisted; the plaintext token is delivered to
- * the partner once via email and never stored.
+ * - generateOpaqueToken: base64url-encoded token suitable for partner invites.
+ * - hashOpaqueToken: SHA-256 (hex) at-rest hash; only the hash is persisted,
+ *   the plaintext token is delivered to the partner once via email.
  */
-export function hashOpaqueToken(token: string) {
-  return createHash('sha256').update(token).digest('hex');
-}
+export { generateOpaqueToken, hashOpaqueToken } from '../common/auth-core/opaque-token';

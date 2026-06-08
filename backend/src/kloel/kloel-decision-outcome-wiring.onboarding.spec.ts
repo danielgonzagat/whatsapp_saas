@@ -122,7 +122,7 @@ describe('ConversationalOnboardingService decision-outcome wiring (PI-k8)', () =
         outcomeKey: string;
       };
       const _rcalls = onboardingDecisionOutcome.recordDecision.mock.calls as Array<[_ROnb]>;
-      const call = _rcalls[0]?.[0] as _ROnb;
+      const call = _rcalls[0]?.[0];
       expect(call.workspaceId).toBe('ws-1');
       expect(call.decisionType).toBe('chat_reply');
       expect(call.chosenAction).toBe('engage');
@@ -146,7 +146,7 @@ describe('ConversationalOnboardingService decision-outcome wiring (PI-k8)', () =
       expect(onboardingDecisionOutcome.closeOutcome).toHaveBeenCalledTimes(1);
       type _COnb = { outcomeName: string; wonVsBaseline: boolean; economicValue?: number };
       const _ccalls = onboardingDecisionOutcome.closeOutcome.mock.calls as Array<[_COnb]>;
-      const call = _ccalls[0]?.[0] as _COnb;
+      const call = _ccalls[0]?.[0];
       expect(call.outcomeName).toBe('chat.replied');
       expect(call.wonVsBaseline).toBe(true);
       expect(call.economicValue).toBeUndefined();
@@ -169,7 +169,7 @@ describe('ConversationalOnboardingService decision-outcome wiring (PI-k8)', () =
       expect(onboardingDecisionOutcome.closeOutcome).toHaveBeenCalledTimes(1);
       type _COnb = { outcomeName: string; wonVsBaseline: boolean; economicValue?: number };
       const _ccalls = onboardingDecisionOutcome.closeOutcome.mock.calls as Array<[_COnb]>;
-      const call = _ccalls[0]?.[0] as _COnb;
+      const call = _ccalls[0]?.[0];
       expect(call.outcomeName).toBe('chat.error');
       expect(call.wonVsBaseline).toBe(false);
     });
@@ -192,7 +192,7 @@ describe('ConversationalOnboardingService decision-outcome wiring (PI-k8)', () =
       expect(onboardingDecisionOutcome.closeOutcome).toHaveBeenCalledTimes(1);
       type _COnb = { outcomeName: string; wonVsBaseline: boolean; economicValue?: number };
       const _ccalls = onboardingDecisionOutcome.closeOutcome.mock.calls as Array<[_COnb]>;
-      const call = _ccalls[0]?.[0] as _COnb;
+      const call = _ccalls[0]?.[0];
       expect(call.outcomeName).toBe('chat.degraded.empty_choice');
       expect(call.wonVsBaseline).toBe(false);
     });

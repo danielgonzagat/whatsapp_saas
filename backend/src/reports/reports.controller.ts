@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query, Request, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { EmailService } from '../auth/email.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
@@ -9,6 +9,14 @@ import { ReportsService } from './reports.service';
 
 import { RouteClass } from '../common/throttler/route-class.decorator';
 type ReportResponseDetails = { score?: number; [key: string]: unknown };
+
+/** Report types the email-report UI can request; each maps to a real builder + template. */
+const EMAIL_REPORT_TYPES = ['vendas', 'assinaturas', 'abandonos', 'chargeback'] as const;
+type EmailReportType = (typeof EMAIL_REPORT_TYPES)[number];
+
+function isEmailReportType(value: string): value is EmailReportType {
+  return (EMAIL_REPORT_TYPES as readonly string[]).includes(value);
+}
 
 // All dates stored as UTC via Prisma DateTime (toISOString)
 @Controller('reports')
@@ -149,34 +157,120 @@ export class ReportsController {
   @Post('send-email')
   async sendReportEmail(
     @Request() req: AuthenticatedRequest,
-    @Body() body: { period?: string; email?: string },
+    @Body() body: { period?: string; email?: string; reportType?: string; filters?: ReportFiltersDto },
   ) {
     const workspaceId = this.ws(req);
-    const targetEmail = body.email || req.user?.email;
+    const targetEmail = (body.email || req.user?.email)?.trim();
     if (!targetEmail) {
       return { error: 'No email provided' };
     }
 
-    const periodParts = body.period?.split(',');
-    const summary = await this.reportsService.getVendasSummary(workspaceId, {
-      ...(periodParts?.[0] !== undefined ? { startDate: periodParts[0] } : {}),
-      ...(periodParts?.[1] !== undefined ? { endDate: periodParts[1] } : {}),
-    });
+    const reportType = (body.reportType || 'vendas').trim();
+    if (!isEmailReportType(reportType)) {
+      throw new BadRequestException(
+        `Unsupported reportType '${reportType}'. Supported: ${EMAIL_REPORT_TYPES.join(', ')}.`,
+      );
+    }
+
+    const submittedFilters = body.filters ?? {};
+    const periodParts = body.period
+      ?.split(/\s*(?:,|\u2192|->)\s*/)
+      .map((part) => part.trim())
+      .filter(Boolean);
+    const firstPeriodPart = periodParts?.[0];
+    const secondPeriodPart = periodParts?.[1];
+    const isoDate = /^\d{4}-\d{2}-\d{2}$/;
+    const periodFilters: ReportFiltersDto = firstPeriodPart && isoDate.test(firstPeriodPart)
+      ? {
+          startDate: firstPeriodPart,
+          ...(secondPeriodPart && isoDate.test(secondPeriodPart)
+            ? { endDate: secondPeriodPart }
+            : {}),
+        }
+      : {};
+    const filters: ReportFiltersDto = { ...periodFilters, ...submittedFilters };
+
+    const { subject, template, vars } = await this.buildReportEmail(
+      reportType,
+      workspaceId,
+      filters,
+    );
 
     await this.emailService.sendEmail({
       to: targetEmail,
-      subject: 'Relatorio KLOEL — Resumo de Vendas',
+      subject,
       html: (await import('../common/utils/email-template-renderer.util')).renderEmailTemplate(
-        'report-summary',
-        {
-          totalRevenue: (summary.totalRevenue / 100).toFixed(2),
-          totalCount: String(summary.totalCount),
-          ticketMedio: (summary.ticketMedio / 100).toFixed(2),
-          conversao: String(summary.conversao),
-        },
+        template,
+        vars,
       ),
     });
-    return { success: true, sentTo: targetEmail };
+    return { success: true, sentTo: targetEmail, reportType };
+  }
+
+  /** Build the subject, template name, and template variables for the selected report type. */
+  private async buildReportEmail(
+    reportType: EmailReportType,
+    workspaceId: string,
+    filters: ReportFiltersDto,
+  ): Promise<{ subject: string; template: string; vars: Record<string, string> }> {
+    switch (reportType) {
+      case 'vendas': {
+        const summary = await this.reportsService.getVendasSummary(workspaceId, filters);
+        return {
+          subject: 'Relatorio KLOEL — Resumo de Vendas',
+          template: 'report-summary',
+          vars: {
+            totalRevenue: (summary.totalRevenue / 100).toFixed(2),
+            totalCount: String(summary.totalCount),
+            ticketMedio: (summary.ticketMedio / 100).toFixed(2),
+            conversao: String(summary.conversao),
+          },
+        };
+      }
+      case 'assinaturas': {
+        const report = await this.reportsService.getAssinaturas(workspaceId, filters);
+        const active = report.summary
+          .filter((s) => s.status === 'ACTIVE')
+          .reduce((acc, s) => acc + s._count, 0);
+        const recurring = report.summary.reduce((acc, s) => acc + (s._sum.amount ?? 0), 0);
+        return {
+          subject: 'Relatorio KLOEL — Assinaturas',
+          template: 'report-assinaturas',
+          vars: {
+            totalCount: String(report.total),
+            activeCount: String(active),
+            recurringRevenue: (recurring / 100).toFixed(2),
+          },
+        };
+      }
+      case 'abandonos': {
+        const report = await this.reportsService.getAbandonos(workspaceId, filters);
+        const potential = report.data.reduce((acc, o) => acc + (o.totalInCents ?? 0), 0);
+        return {
+          subject: 'Relatorio KLOEL — Carrinhos Abandonados',
+          template: 'report-abandonos',
+          vars: {
+            totalCount: String(report.total),
+            potentialRevenue: (potential / 100).toFixed(2),
+          },
+        };
+      }
+      case 'chargeback': {
+        const report = await this.reportsService.getChargeback(workspaceId, filters);
+        const disputed = report.data.reduce(
+          (acc, p) => acc + (p.order?.totalInCents ?? 0),
+          0,
+        );
+        return {
+          subject: 'Relatorio KLOEL — Chargebacks',
+          template: 'report-chargeback',
+          vars: {
+            totalCount: String(report.total),
+            disputedAmount: (disputed / 100).toFixed(2),
+          },
+        };
+      }
+    }
   }
 
   // ── NPS SURVEY ──

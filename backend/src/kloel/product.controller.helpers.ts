@@ -32,6 +32,33 @@ export const AFTER_PAY_SHIPPING_PROVIDERS = [
   'outro',
 ] as const;
 
+/** Canonical product taxonomy shown before a workspace has created products. */
+export const CANONICAL_PRODUCT_CATEGORIES = [
+  'Dermocosméticos',
+  'Cosméticos',
+  'Suplementos',
+  'Saúde e Bem-estar',
+  'Beleza e Cuidados',
+  'Cabelos',
+  'Emagrecimento',
+  'Fitness e Esportes',
+  'Cursos Online',
+  'E-books',
+  'Mentorias e Consultorias',
+  'Software e SaaS',
+  'Serviços',
+  'Eventos e Ingressos',
+  'Moda e Acessórios',
+  'Casa e Decoração',
+  'Eletrônicos',
+  'Pet',
+  'Alimentos e Bebidas',
+  'Infantil',
+  'Espiritualidade',
+  'Finanças e Negócios',
+  'Outros',
+] as const;
+
 /** Bounds for commission percent and cookie-window validations. */
 export const COMMISSION_PERCENT_MIN = 0;
 export const COMMISSION_PERCENT_MAX = 100;
@@ -150,6 +177,11 @@ export interface CreateProductDtoLike {
   reclameAquiUrl?: string;
   supportEmail?: string;
   warrantyDays?: number;
+  guaranteeDays?: number;
+  affiliatesEnabled?: boolean;
+  affiliateCommission?: number;
+  affiliateCommissionPercent?: number;
+  affiliateApprovalMode?: string;
   isSample?: boolean;
   shippingType?: string;
   shippingValue?: number;
@@ -167,6 +199,8 @@ export function buildCreateProductData(
   workspaceId: string,
   dto: CreateProductDtoLike,
 ): Record<string, unknown> {
+  const commissionPercent = dto.affiliateCommissionPercent ?? dto.affiliateCommission;
+
   return {
     workspaceId,
     name: dto.name,
@@ -186,7 +220,12 @@ export function buildCreateProductData(
     ...(dto.thankyouPixUrl !== undefined ? { thankyouPixUrl: dto.thankyouPixUrl } : {}),
     ...(dto.reclameAquiUrl !== undefined ? { reclameAquiUrl: dto.reclameAquiUrl } : {}),
     supportEmail: dto.supportEmail || null,
-    warrantyDays: dto.warrantyDays || null,
+    warrantyDays: dto.warrantyDays ?? dto.guaranteeDays ?? null,
+    ...(dto.affiliatesEnabled !== undefined ? { affiliateEnabled: dto.affiliatesEnabled } : {}),
+    ...(commissionPercent !== undefined ? { commissionPercent } : {}),
+    ...(dto.affiliateApprovalMode !== undefined
+      ? { affiliateAutoApprove: dto.affiliateApprovalMode.toLowerCase() !== 'manual' }
+      : {}),
     isSample: dto.isSample || false,
     shippingType: dto.shippingType || null,
     shippingValue: dto.shippingValue || null,
@@ -288,15 +327,31 @@ export function calculateProductStats(
 }
 
 /**
- * Extracts the truthy `category` values from a list of `{ category }` rows.
- * Mirrors the behaviour of the `categories/list` endpoint.
+ * Builds the product category list for the workspace selector.
+ * Canonical taxonomy is reference data; workspace-only categories remain visible after legacy imports.
  */
 export function extractCategoriesFromProducts(
   products: Array<{ category: string | null | undefined }>,
 ): string[] {
-  return products
-    .map((product) => product.category)
-    .filter((category): category is string => Boolean(category));
+  const categories: string[] = [];
+  const seen = new Set<string>();
+
+  for (const category of CANONICAL_PRODUCT_CATEGORIES) {
+    seen.add(category);
+    categories.push(category);
+  }
+
+  for (const product of products) {
+    const category = product.category?.trim();
+    if (!category || seen.has(category)) {
+      continue;
+    }
+
+    seen.add(category);
+    categories.push(category);
+  }
+
+  return categories;
 }
 
 /** Per-row outcome of a bulk-import call. */

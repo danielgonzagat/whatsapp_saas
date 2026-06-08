@@ -10,6 +10,14 @@
 
 import type { DetectedError, ErrorExplanation } from './recovery.types';
 
+const UNKNOWN_EXPLANATION: { readonly whatHappened: string; readonly why: string } = {
+  whatHappened: 'Um desvio operacional foi detectado.',
+  why:
+    'O sistema identificou um padrão anômalo que não corresponde a ' +
+    'nenhuma categoria conhecida. Investigação adicional é ' +
+    'necessária.',
+};
+
 const EXPLANATIONS: Readonly<
   Record<string, { readonly whatHappened: string; readonly why: string }>
 > = {
@@ -71,17 +79,11 @@ const EXPLANATIONS: Readonly<
       'configuração de janela de silêncio ou por falha no cálculo ' +
       'de fuso horário.',
   },
-  unknown: {
-    whatHappened: 'Um desvio operacional foi detectado.',
-    why:
-      'O sistema identificou um padrão anômalo que não corresponde a ' +
-      'nenhuma categoria conhecida. Investigação adicional é ' +
-      'necessária.',
-  },
+  unknown: UNKNOWN_EXPLANATION,
 };
 
 function explanationFor(category: string): { readonly whatHappened: string; readonly why: string } {
-  return EXPLANATIONS[category] ?? EXPLANATIONS['unknown']!;
+  return EXPLANATIONS[category] ?? UNKNOWN_EXPLANATION;
 }
 
 function summaryFor(error: DetectedError): string {

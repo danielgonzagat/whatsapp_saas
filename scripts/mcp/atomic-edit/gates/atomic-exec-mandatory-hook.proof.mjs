@@ -3,9 +3,10 @@
  * Proof: the atomic-only-hook routes general shell through atomic_exec (proof #1
  * strong enforcement). Pipes tool-call payloads to the hook and asserts the
  * deny/allow decision:
- *   DENY (route via atomic_exec): git status, npm test, node, ls, cat, jq, tsc
- *   allow (atomic_exec cannot run): git commit/add/push/pull, npm install, ssh,
- *     sudo, gcloud, claude, curl, shell control-flow
+ *   DENY (route via atomic_exec): git status, npm test, node, ls, cat, jq, tsc,
+ *     shell control-flow and compound shell commands
+ *   allow (atomic_exec cannot safely proxy): git commit/add/push/pull, npm install, ssh,
+ *     sudo, gcloud, claude, curl
  *   code-mutation still denied (regression guard)
  *   ATOMIC_EXEC_MANDATORY=0 disables the routing denial
  */
@@ -33,17 +34,25 @@ const results = [];
 const rec = (name, ok, detail) => results.push({ name, ok: Boolean(ok), detail });
 
 // routed (atomic_exec-mandatory)
-for (const c of ['git status', 'git diff', 'npm test', 'npm run build', 'node x.mjs', 'ls -la', 'cat f.txt', 'jq . a.json', 'tsc --noEmit', 'grep -rn x .', 'find . -name x']) {
+for (const c of ['git status', 'git diff', 'npm test', 'npm run build', 'node x.mjs', 'ls -la', 'cat f.txt', 'jq . a.json', 'tsc --noEmit', 'grep -rn x .', 'find . -name x', 'for i in 1 2; do echo $i; done', 'cd /tmp && ls']) {
   rec(`route: ${c}`, decide(c) === 'route', { got: decide(c) });
 }
-// allowed escapes
-for (const c of ['git commit -m x', 'git add .', 'git push origin x', 'git pull', 'npm install foo', 'ssh host uptime', 'sudo systemctl restart x', 'gcloud auth login', 'claude --version', 'curl https://x', 'for i in 1 2; do echo $i; done', 'cd /tmp && ls']) {
+// allowed escapes that atomic_exec intentionally does not proxy as generic read-only commands
+for (const c of ['git commit -m x', 'git add .', 'git push origin x', 'git pull', 'npm install foo', 'ssh host uptime', 'sudo systemctl restart x', 'gcloud auth login', 'claude --version', 'curl https://x']) {
   rec(`allow: ${c}`, decide(c) === 'allow', { got: decide(c) });
 }
 // code-mutation regression guard
 rec('code-mutating shell still denied', decide("sed -i 's/a/b/' x.ts") === 'code-denied', { got: decide("sed -i 's/a/b/' x.ts") });
-// disable flag
-rec('ATOMIC_EXEC_MANDATORY=0 disables routing', decide('git status', { ATOMIC_EXEC_MANDATORY: '0' }) === 'allow', { got: decide('git status', { ATOMIC_EXEC_MANDATORY: '0' }) });
+// disable flag: outside the host envelope it is owner-controlled; inside the
+// atomic-only host envelope it must be ignored so a closed-loop session cannot
+// neutralize routing by exporting an env var.
+const disabledDecision = decide('git status', { ATOMIC_EXEC_MANDATORY: '0' });
+const hostAtomicOnly = process.env.ATOMIC_HOST_ATOMIC_ONLY === '1';
+rec(
+  hostAtomicOnly ? 'ATOMIC_EXEC_MANDATORY=0 is ignored inside atomic host' : 'ATOMIC_EXEC_MANDATORY=0 disables routing outside atomic host',
+  disabledDecision === (hostAtomicOnly ? 'route' : 'allow'),
+  { got: disabledDecision, hostAtomicOnly },
+);
 
 const ok = results.every((r) => r.ok);
 if (jsonMode) console.log(JSON.stringify({ ok, results }, null, 2));

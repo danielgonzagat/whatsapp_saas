@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { authApi, workspaceApi } from '@/lib/api';
+import { kycApi } from '@/lib/api/kyc';
 import { Camera, Eye, EyeOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { SettingsCard, SettingsSwitchRow, kloelSettingsClass } from './contract';
@@ -35,6 +36,11 @@ export function AccountSettingsSection() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>('weak');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [sendingReset, setSendingReset] = useState(false);
   const [profile, setProfile] = useState({
     name: '',
     email: '',
@@ -127,6 +133,37 @@ export function AccountSettingsSection() {
       setError(message || 'Falha ao salvar as configurações da conta.');
     } finally {
       setSavingAccount(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    setFeedback(null);
+    setError(null);
+    if (!currentPassword || !newPassword) {
+      setError('Preencha a senha atual e a nova senha.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError('A confirmacao nao corresponde a nova senha.');
+      return;
+    }
+    if (passwordStrength === 'weak') {
+      setError('Escolha uma senha mais forte.');
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      await kycApi.changePassword(currentPassword, newPassword);
+      setFeedback('Senha alterada com sucesso.');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setPasswordStrength('weak');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : undefined;
+      setError(message || 'Nao foi possivel alterar a senha.');
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -275,6 +312,8 @@ export function AccountSettingsSection() {
               <Input
                 type={showCurrentPassword ? 'text' : 'password'}
                 placeholder={kloelT(`Senha atual`)}
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
                 className={`${kloelSettingsClass.input} pr-10`}
               />
               <button
@@ -293,7 +332,11 @@ export function AccountSettingsSection() {
               <Input
                 type={showNewPassword ? 'text' : 'password'}
                 placeholder={kloelT(`Nova senha`)}
-                onChange={(e) => setPasswordStrength(evalPasswordStrength(e.target.value))}
+                value={newPassword}
+                onChange={(e) => {
+                  setNewPassword(e.target.value);
+                  setPasswordStrength(evalPasswordStrength(e.target.value));
+                }}
                 className={`${kloelSettingsClass.input} pr-10`}
               />
               <button
@@ -311,15 +354,48 @@ export function AccountSettingsSection() {
             <Input
               type="password"
               placeholder={kloelT(`Confirmar nova senha`)}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
               className={kloelSettingsClass.input}
             />
             <PasswordStrengthBar strength={passwordStrength} />
+            <Button
+              onClick={handleChangePassword}
+              disabled={changingPassword}
+              className={`mt-1 text-sm disabled:opacity-50 ${kloelSettingsClass.primaryButton}`}
+            >
+              {changingPassword ? 'Alterando...' : 'Alterar senha'}
+            </Button>
           </div>
         </div>
 
         <div className="mb-6">
-          <Button variant="outline" className={`text-sm ${kloelSettingsClass.outlineButton}`}>
-            {kloelT(`Enviar link de redefinição para meu e-mail`)}
+          <Button
+            variant="outline"
+            disabled={sendingReset}
+            onClick={async () => {
+              if (!profile.email) {
+                setError('E-mail da conta indisponível.');
+                return;
+              }
+              setFeedback(null);
+              setError(null);
+              setSendingReset(true);
+              try {
+                const res = await authApi.forgotPassword(profile.email);
+                if (res.error) {
+                  throw new Error(res.error);
+                }
+                setFeedback('Link de redefinição enviado para o seu e-mail.');
+              } catch (err: unknown) {
+                setError(err instanceof Error ? err.message : 'Não foi possível enviar o link de redefinição.');
+              } finally {
+                setSendingReset(false);
+              }
+            }}
+            className={`text-sm ${kloelSettingsClass.outlineButton}`}
+          >
+            {sendingReset ? 'Enviando...' : kloelT(`Enviar link de redefinição para meu e-mail`)}
           </Button>
         </div>
 

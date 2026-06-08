@@ -247,6 +247,7 @@ export function KloelMushroomVisual({
           role="presentation"
           width={size}
           height={size}
+          loading="eager"
           style={{
             display: 'block',
             width: '100%',
@@ -280,6 +281,7 @@ export function KloelMushroomVisual({
       role={ariaHidden ? 'presentation' : 'img'}
       width={size}
       height={size}
+      loading="eager"
       style={sharedStyle}
     />
   );

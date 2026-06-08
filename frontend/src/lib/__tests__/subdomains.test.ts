@@ -199,9 +199,14 @@ describe('URL builders', () => {
       expect(url).toBe('http://localhost:3000/');
     });
 
-    it('uses auth.localhost for auth target on local dev', () => {
+    it('uses a shareable root.localhost host for auth target on local dev', () => {
       const url = buildHostTargetUrl('auth', '/login', 'localhost:3000');
-      expect(url).toBe('http://auth.localhost:3000/login');
+      expect(url).toBe('http://auth.root.localhost:3000/login');
+    });
+
+    it('uses a shareable root.localhost host for app target on local dev', () => {
+      const url = buildHostTargetUrl('app', '/products?graph=1', 'localhost:3000');
+      expect(url).toBe('http://app.root.localhost:3000/products?graph=1');
     });
 
     it('uses env override for auth when NEXT_PUBLIC_AUTH_URL is set', () => {
@@ -380,6 +385,7 @@ describe('isKnownAppPath', () => {
     expect(isKnownAppPath('/analytics')).toBe(true);
     expect(isKnownAppPath('/inbox')).toBe(true);
     expect(isKnownAppPath('/whatsapp')).toBe(true);
+    expect(isKnownAppPath('/admin/kloel-motor')).toBe(true);
   });
 
   it('matches app paths with trailing sub-path', () => {

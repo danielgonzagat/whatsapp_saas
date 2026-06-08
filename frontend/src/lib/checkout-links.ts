@@ -102,6 +102,7 @@ function extractPaymentMethods(link: RawCheckoutLink): string[] {
   const methods: Array<string | null> = [
     cfg?.enablePix !== false ? 'PIX' : null,
     cfg?.enableCreditCard !== false ? 'CARTÃO' : null,
+    cfg?.enableBoleto === true ? 'BOLETO' : null,
   ];
   return methods.filter((entry): entry is string => Boolean(entry));
 }

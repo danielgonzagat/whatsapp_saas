@@ -267,8 +267,8 @@ describe('MindPolicyService', () => {
         ],
       });
 
-      const highRisk = result.decision.candidates.find((c) => c.action === 'high_risk')!;
-      const lowRisk = result.decision.candidates.find((c) => c.action === 'low_risk')!;
+      const highRisk = result.decision.candidates.find((c) => c.action === 'high_risk');
+      const lowRisk = result.decision.candidates.find((c) => c.action === 'low_risk');
 
       expect(highRisk.pragmatic).toBeLessThan(lowRisk.pragmatic);
       expect(highRisk.epistemic).toBeGreaterThan(lowRisk.epistemic);

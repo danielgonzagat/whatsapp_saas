@@ -33,6 +33,9 @@ describe('kloel.service.composer.helpers', () => {
         'create_image',
       );
       expect(extractComposerMetadata({ capability: 'search_web' }).capability).toBe('search_web');
+      expect(extractComposerMetadata({ capability: 'refine_response' }).capability).toBe(
+        'refine_response',
+      );
       expect(extractComposerMetadata({ capability: 'unknown' }).capability).toBe(null);
     });
 

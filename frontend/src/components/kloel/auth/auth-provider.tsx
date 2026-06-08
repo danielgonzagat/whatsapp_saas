@@ -9,7 +9,7 @@ import {
 } from '@/lib/api';
 import {
   decodeKloelJwtPayload,
-  isAnonymousKloelPayload,
+  hasAuthenticatedKloelToken,
   isAnonymousKloelToken,
 } from '@/lib/auth-identity';
 import { completeOnboardingProfile } from '@/lib/api/onboarding';
@@ -91,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = tokenStorage.getToken();
     if (token) {
       const payload = decodeKloelJwtPayload(token);
-      if (payload?.sub && payload?.email && !isAnonymousKloelPayload(payload)) {
+      if (hasAuthenticatedKloelToken(token) && payload?.sub && payload?.email) {
         tokenStorage.ensureAuthCookie();
         const payloadSub = payload.sub;
         const payloadEmail = payload.email;

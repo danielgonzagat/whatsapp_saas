@@ -149,6 +149,31 @@ async function ensureCheckoutProduct(product: DashboardProduct): Promise<string 
   }
 }
 
+const CHECKOUT_PRODUCT_ENSURE_CACHE_MS = 30000;
+const checkoutProductEnsurePromises = new Map<string, Promise<string | null>>();
+
+function getCheckoutProductEnsureKey(product: DashboardProduct): string {
+  return [product.id, product.slug || '', product.name].join(':');
+}
+
+function ensureCheckoutProductOnce(product: DashboardProduct): Promise<string | null> {
+  const key = getCheckoutProductEnsureKey(product);
+  const existing = checkoutProductEnsurePromises.get(key);
+  if (existing) {
+    return existing;
+  }
+
+  const promise = ensureCheckoutProduct(product).finally(() => {
+    setTimeout(() => {
+      if (checkoutProductEnsurePromises.get(key) === promise) {
+        checkoutProductEnsurePromises.delete(key);
+      }
+    }, CHECKOUT_PRODUCT_ENSURE_CACHE_MS);
+  });
+  checkoutProductEnsurePromises.set(key, promise);
+  return promise;
+}
+
 /* ── Plans for a product ── */
 export function useCheckoutPlans(product: DashboardProductInput | null | undefined) {
   const [checkoutProductId, setCheckoutProductId] = useState<string | null>(null);
@@ -158,11 +183,22 @@ export function useCheckoutPlans(product: DashboardProductInput | null | undefin
   );
 
   useEffect(() => {
-    if (checkoutSeedProduct) {
-      ensureCheckoutProduct(checkoutSeedProduct)
-        .then(setCheckoutProductId)
-        .catch(() => {});
+    if (!checkoutSeedProduct) {
+      return undefined;
     }
+
+    let cancelled = false;
+    void ensureCheckoutProductOnce(checkoutSeedProduct)
+      .then((id) => {
+        if (!cancelled) {
+          setCheckoutProductId(id);
+        }
+      })
+      .catch(() => {/* best-effort: non-blocking */});
+
+    return () => {
+      cancelled = true;
+    };
   }, [checkoutSeedProduct]);
 
   const { data, isLoading, mutate } = useSWR<CheckoutProductDetail>(
@@ -270,7 +306,12 @@ export function useCheckoutPlans(product: DashboardProductInput | null | undefin
         method: 'PUT',
         body: { planIds },
       });
-      requireCheckoutMutationSuccess(res, 'Erro ao sincronizar links do checkout');
+      // PUT /links returns a markerless 200; check apiFetch's error field rather
+      // than the mutation-envelope marker (which would false-throw on success).
+      const linksError = (res as { error?: unknown }).error;
+      if (typeof linksError === 'string' && linksError.trim()) {
+        throw new Error(linksError);
+      }
       mutate();
       return res;
     },
@@ -554,8 +595,28 @@ export function useCheckoutConfig(planId: string | null) {
       if (!planId) {
         return null;
       }
-      const res = await apiFetch(`/checkout/plans/${planId}/config`, { method: 'PATCH', body });
-      requireCheckoutMutationSuccess(res, 'Erro ao atualizar configuracao do checkout');
+      // Drop computed/display-only fields the update DTO forbids and coerce
+      // trustBadges to the DTO shape ({ label }) so the PATCH isn't rejected (400).
+      const clean: Record<string, unknown> = { ...body };
+      delete clean.pricing;
+      delete clean.socialProofAlerts;
+      if (Array.isArray(clean.trustBadges)) {
+        clean.trustBadges = clean.trustBadges.map((badge) =>
+          typeof badge === 'string' ? { label: badge } : badge,
+        );
+      }
+      const res = await apiFetch(`/checkout/plans/${planId}/config`, {
+        method: 'PATCH',
+        body: clean,
+      });
+      // /config returns the config object, not a mutation envelope — checking
+      // apiFetch's own error field is the correct success criterion (a 200 here
+      // has no success-marker, which would make requireCheckoutMutationSuccess
+      // throw a false error on a save that actually persisted).
+      const resError = (res as { error?: unknown }).error;
+      if (typeof resError === 'string' && resError.trim()) {
+        throw new Error(resError);
+      }
       mutate();
       return res;
     },

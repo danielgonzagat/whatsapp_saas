@@ -98,7 +98,7 @@ describe('Crypto Library', () => {
     });
 
     it('should return false for null/undefined', () => {
-      expect(isEncrypted(null as string)).toBe(false);
+      expect(isEncrypted(null)).toBe(false);
       expect(isEncrypted(undefined as string)).toBe(false);
       expect(isEncrypted('')).toBe(false);
     });
@@ -133,7 +133,7 @@ describe('Crypto Library', () => {
 
     it('should handle empty values', () => {
       expect(safeDecrypt('', testKey)).toEqual('');
-      expect(safeDecrypt(null as string, testKey)).toEqual(null);
+      expect(safeDecrypt(null, testKey)).toEqual(null);
     });
   });
 

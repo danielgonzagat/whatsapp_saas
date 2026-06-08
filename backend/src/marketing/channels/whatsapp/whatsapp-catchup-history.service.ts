@@ -297,7 +297,7 @@ export class WhatsappCatchupHistoryService {
       mediaUrl: m.mediaUrl,
       mediaMime: m.mimetype,
       raw: m.raw,
-    } as InboundMessage;
+    };
   }
 
   async persistHistoricalOutboundMessage(ws: string, message: WahaChatMessage): Promise<boolean> {
@@ -320,7 +320,7 @@ export class WhatsappCatchupHistoryService {
         countAsUnread: false,
         resetUnreadOnOutbound: false,
         silent: true,
-      } as Parameters<typeof this.inbox.saveMessageByPhone>[0]);
+      });
       return true;
     } catch (e: unknown) {
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {

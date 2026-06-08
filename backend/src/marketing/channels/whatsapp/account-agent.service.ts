@@ -171,10 +171,11 @@ export class AccountAgentService {
   }
 
   async getWorkItems(workspaceId: string) {
-    await materializeAccountCapabilityGaps(
-      { prisma: this.prisma, agentEvents: this.agentEvents },
-      workspaceId,
-    );
+    // Read-only. Materialization is a write side-effect owned by getRuntime,
+    // which the CIA surface always loads alongside this endpoint. Doing it here
+    // too made the two concurrent requests upsert the same capability-gap rows,
+    // racing into a Prisma P2002 unique violation -> intermittent 500 on first
+    // load (self-healing on retry). A GET should not mutate; just list.
     return listAccountWorkItems({ prisma: this.prisma }, workspaceId);
   }
 

@@ -119,14 +119,14 @@ describe('BillingCheckoutHelperService', () => {
 
     it('no-ops when no workspace can be resolved', async () => {
       prisma.subscription.findFirst.mockResolvedValue(null);
-      (stripe.subscriptions!.retrieve as jest.Mock).mockRejectedValue(new Error('not found'));
+      (stripe.subscriptions.retrieve as jest.Mock).mockRejectedValue(new Error('not found'));
       await service.markSubscriptionStatus('sub_unknown', 'PAST_DUE');
       expect(prisma.subscription.update).not.toHaveBeenCalled();
     });
 
     it('CROSS-TENANT GUARD: never uses the raw Stripe customer id (cus_...) as workspaceId', async () => {
       // Subscription has NO metadata.workspaceId — only a Stripe customer id.
-      (stripe.subscriptions!.retrieve as jest.Mock).mockResolvedValue({
+      (stripe.subscriptions.retrieve as jest.Mock).mockResolvedValue({
         id: 'sub_xtenant',
         customer: 'cus_ATTACKER123',
         metadata: {},
@@ -149,7 +149,9 @@ describe('BillingCheckoutHelperService', () => {
         where: { workspaceId: 'ws-real-owner' },
         data: { status: 'PAST_DUE' },
       });
-      for (const call of prisma.subscription.update.mock.calls as { where?: { workspaceId?: string } }[][]) {
+      for (const call of prisma.subscription.update.mock.calls as {
+        where?: { workspaceId?: string };
+      }[][]) {
         expect(call[0].where?.workspaceId).not.toMatch(/^cus_/);
       }
       const auditCall = prisma.auditLog.create.mock.calls[0][0] as {
@@ -160,7 +162,7 @@ describe('BillingCheckoutHelperService', () => {
     });
 
     it('no-ops when the Stripe customer id maps to no workspace and no local subscription exists', async () => {
-      (stripe.subscriptions!.retrieve as jest.Mock).mockResolvedValue({
+      (stripe.subscriptions.retrieve as jest.Mock).mockResolvedValue({
         id: 'sub_orphan',
         customer: 'cus_ORPHAN',
         metadata: {},

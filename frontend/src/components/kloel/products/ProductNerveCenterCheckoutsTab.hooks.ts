@@ -1,7 +1,10 @@
 'use client';
 
+import { colors } from '@/lib/design-tokens';
+
 import { useState } from 'react';
 import type { JsonRecord, JsonValue } from './product-nerve-center.shared';
+import { normalizeColorPickerValue } from './ProductNerveCenterCheckoutsTab.sections';
 
 export function useCheckoutConfigForm(
   ckEdit: string,
@@ -17,6 +20,7 @@ export function useCheckoutConfigForm(
   const [ckLocal, setCkLocal] = useState<JsonRecord>(() => (ckCfg ? (ckCfg as JsonRecord) : {}));
   const [ckSaving, setCkSaving] = useState(false);
   const [ckSaved, setCkSaved] = useState(false);
+  const [ckError, setCkError] = useState('');
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const checkoutForCk = rawCheckouts.find((checkout) => checkout.id === ckEdit);
@@ -27,6 +31,7 @@ export function useCheckoutConfigForm(
   const [lastCkCfg, setLastCkCfg] = useState(ckCfg);
   if (ckCfg !== lastCkCfg) {
     setLastCkCfg(ckCfg);
+    setCkError('');
     if (ckCfg) {
       setCkLocal(ckCfg as JsonRecord);
     }
@@ -57,8 +62,11 @@ export function useCheckoutConfigForm(
     setOriginalLinkedPlanIds(uniquePlanIds);
   }
 
-  const patch = (key: string, value: JsonValue) =>
+  const patch = (key: string, value: JsonValue) => {
+    setCkError('');
+    setCkSaved(false);
     setCkLocal((current) => ({ ...current, [key]: value }));
+  };
 
   const selectedPlans = rawPlans.filter((planCandidate) =>
     linkedPlanIds.includes(String(planCandidate.id)),
@@ -68,37 +76,52 @@ export function useCheckoutConfigForm(
     (planCandidate) => !linkedPlanIds.includes(String(planCandidate.id)),
   );
 
-  const currentConfigSignature = JSON.stringify({
-    brandName: ckLocal.brandName || '',
-    enableCreditCard: ckLocal.enableCreditCard !== false,
-    enablePix: ckLocal.enablePix !== false,
-    enableBoleto: Boolean(ckLocal.enableBoleto),
-    enableCoupon: ckLocal.enableCoupon !== false,
-    autoCouponCode: ckLocal.autoCouponCode || '',
-    enableTimer: Boolean(ckLocal.enableTimer),
-    timerMinutes: Number(ckLocal.timerMinutes || 15),
-    timerMessage: ckLocal.timerMessage || '',
-    accentColor: ckLocal.accentColor || 'colors.ember.primary',
-  });
+  const normalizeCheckoutConfigColor = (value: JsonValue | undefined, fallback: string) =>
+    normalizeColorPickerValue(String(value ?? ''), fallback);
 
-  const originalConfigSignature = JSON.stringify({
-    brandName: ckCfg?.brandName || '',
-    enableCreditCard: ckCfg?.enableCreditCard !== false,
-    enablePix: ckCfg?.enablePix !== false,
-    enableBoleto: Boolean(ckCfg?.enableBoleto),
-    enableCoupon: ckCfg?.enableCoupon !== false,
-    autoCouponCode: ckCfg?.autoCouponCode || '',
-    enableTimer: Boolean(ckCfg?.enableTimer),
-    timerMinutes: Number(ckCfg?.timerMinutes || 15),
-    timerMessage: ckCfg?.timerMessage || '',
-    accentColor: ckCfg?.accentColor || 'colors.ember.primary',
-  });
+  const getCheckoutBackgroundFallback = (config: JsonRecord | null | undefined) =>
+    String(config?.theme ?? 'BLANC') === 'NOIR' ? colors.background.void : colors.text.silver;
+
+  const buildConfigSignature = (config: JsonRecord | null | undefined) =>
+    JSON.stringify({
+      brandName: config?.brandName || '',
+      enableCreditCard: config?.enableCreditCard !== false,
+      enablePix: config?.enablePix !== false,
+      enableBoleto: Boolean(config?.enableBoleto),
+      enableCoupon: config?.enableCoupon !== false,
+      autoCouponCode: config?.autoCouponCode || '',
+      enableTimer: Boolean(config?.enableTimer),
+      timerMinutes: Number(config?.timerMinutes || 15),
+      timerMessage: config?.timerMessage || '',
+      accentColor: normalizeCheckoutConfigColor(config?.accentColor, colors.ember.primary),
+      backgroundColor: normalizeCheckoutConfigColor(
+        config?.backgroundColor,
+        getCheckoutBackgroundFallback(config),
+      ),
+      btnFinalizeText: config?.btnFinalizeText || 'Finalizar compra',
+      theme: config?.theme || 'BLANC',
+      enableTestimonials: config?.enableTestimonials !== false,
+      enableGuarantee: config?.enableGuarantee !== false,
+      showCouponPopup: Boolean(config?.showCouponPopup),
+    });
+
+  const currentConfigSignature = buildConfigSignature(ckLocal);
+  const originalConfigSignature = buildConfigSignature(ckCfg);
 
   const hasUnsavedChanges =
     currentConfigSignature !== originalConfigSignature ||
     JSON.stringify(linkedPlanIds) !== JSON.stringify(originalLinkedPlanIds);
 
   const handleSave = async () => {
+    const brandName = String(ckLocal.brandName ?? '').trim();
+    if (!brandName) {
+      const message = 'Informe o nome/descrição do checkout antes de salvar.';
+      setCkError(message);
+      setCkSaved(false);
+      showToast(message, 'error');
+      return false;
+    }
+
     setCkSaving(true);
     try {
       const {
@@ -110,11 +133,25 @@ export function useCheckoutConfigForm(
         pixels: _pixels,
         ...rest
       } = ckLocal;
-      await saveCkCfg(rest);
+      const normalizedAccentColor = normalizeCheckoutConfigColor(
+        rest.accentColor,
+        colors.ember.primary,
+      );
+      const normalizedBackgroundColor = normalizeCheckoutConfigColor(
+        rest.backgroundColor,
+        getCheckoutBackgroundFallback(rest),
+      );
+      await saveCkCfg({
+        ...rest,
+        brandName,
+        accentColor: normalizedAccentColor,
+        backgroundColor: normalizedBackgroundColor,
+      });
       await syncCheckoutLinks(ckEdit, linkedPlanIds);
-      if (checkoutForCk && ckLocal.brandName !== checkoutForCk.name) {
-        await updatePlan(ckEdit, { name: ckLocal.brandName || checkoutForCk.name });
+      if (checkoutForCk && brandName !== checkoutForCk.name) {
+        await updatePlan(ckEdit, { name: brandName });
       }
+      setCkError('');
       setCkSaved(true);
       setTimeout(() => setCkSaved(false), 2000);
       showToast('Checkout salvo', 'success');
@@ -143,6 +180,7 @@ export function useCheckoutConfigForm(
     ckLocal,
     ckSaving,
     ckSaved,
+    ckError,
     linkedPlanIds,
     setLinkedPlanIds,
     showExitConfirm,

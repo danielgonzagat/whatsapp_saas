@@ -65,7 +65,7 @@ export function ScraperJobRow({
             fontFamily: "'Sora', sans-serif",
           }}
         >
-          {TYPE_LABELS[job.type] || job.type} {kloelT(`&middot;`)} {status.toLowerCase()}
+          {TYPE_LABELS[job.type] || job.type} {kloelT(`·`)} {status.toLowerCase()}
           {job.resultsCount != null && ` \u00B7 ${job.resultsCount} resultados`}
         </div>
       </div>

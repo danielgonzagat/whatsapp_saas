@@ -29,6 +29,7 @@ interface SelfExpansionValidator {
 
 const MANDATORY_SELF_EXPANSION_VALIDATORS: readonly SelfExpansionValidator[] = [
   { phase: 'build', command: 'node build.mjs' },
+  { phase: 'runtime-integrity', command: 'node gates/dist-live-integrity.proof.mjs --json' },
   { phase: 'runtime-freshness', command: 'node gates/dist-freshness.proof.mjs --json' },
   { phase: 'type', command: 'node gates/type-soundness-gate.proof.mjs --json' },
   { phase: 'semantic', command: 'node gates/structural-lint-gate.proof.mjs --json' },
@@ -104,8 +105,9 @@ function proofTimeoutMs(command: string): number {
 }
 
 function selfExpansionBrokerSocketPath(): string | null {
-  const value = process.env.ATOMIC_EXEC_BROKER_SOCKET;
-  return value && value.trim() ? value : null;
+  const value = process.env.ATOMIC_EXEC_BROKER_SOCKET?.trim();
+  if (!value) return null;
+  return fs.existsSync(value) ? value : null;
 }
 
 function shellPath(value: string): string {
@@ -222,6 +224,7 @@ function selfExpansionHostProofEnv(socket: string, cwd: string): NodeJS.ProcessE
     ATOMIC_HOST_SANDBOX: process.env.ATOMIC_HOST_SANDBOX ?? 'macos-sandbox-exec',
     ATOMIC_HOST_WRITE_ROOT: hostRoot,
     ATOMIC_EXEC_BROKER_SOCKET: socket,
+    ATOMIC_EXEC_BROKER_ROOT: hostRoot,
     CODEX_HOME: process.env.CODEX_HOME ?? path.join(hostRoot, '.codex'),
     CODEX_PROJECT_DIR: hostRoot,
     TMPDIR: hostRoot,
@@ -236,12 +239,15 @@ function selfExpansionProofCwd(): string {
 
 function selfExpansionProofMustRunHostDirect(command: string): boolean {
   return [
+    'build.mjs',
     'atomic-exec-readonly-usability.proof.mjs',
     'atomic-exec-sandbox.proof.mjs',
     'external-runtime-denial.proof.mjs',
     'mcp-launcher-host-boundary.proof.mjs',
     'codex-entrypoint-contract.proof.mjs',
     'compiled-mcp-y-certificate.proof.mjs',
+    'whole-host-sandbox-launcher.proof.mjs',
+    'whole-host-y-certificate.proof.mjs',
   ].some((name) => command.includes(name));
 }
 
@@ -281,7 +287,7 @@ function proofFailureStdoutSummary(value: string): string {
           .map((domain) => ({
             domain: domain.domain,
             status: domain.status,
-            evidence: proofFailureSnippet(String(domain.evidence ?? ''), 400),
+            evidence: proofFailureSnippet(String(domain.evidence ?? ''), 4000),
             requiredChange: proofFailureSnippet(String(domain.requiredChange ?? ''), 300),
             detail: proofFailureSnippet(JSON.stringify(domain.detail ?? null), 500),
           }))

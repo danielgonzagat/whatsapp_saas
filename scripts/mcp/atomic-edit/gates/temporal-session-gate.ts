@@ -1,0 +1,186 @@
+import * as ts from 'typescript';
+
+export interface TemporalSessionSnapshot {
+  name: string;
+  at?: number;
+  files: Record<string, string | null>;
+}
+
+export interface TemporalSessionGateOptions {
+  /** How many following snapshots must observe the import still unused before red. */
+  followingSnapshots?: number;
+}
+
+export interface TemporalSessionGateRed {
+  gate: 'temporal-session';
+  file: string;
+  locus?: string;
+  fact: string;
+  importName: string;
+  moduleSpecifier: string;
+  introducedAt: string;
+  observedThrough: string;
+}
+
+export interface TemporalSessionGateResult {
+  gate: 'temporal-session';
+  green: boolean;
+  reds: TemporalSessionGateRed[];
+  note: string;
+  notApplicable?: boolean;
+}
+
+interface ImportBinding {
+  local: string;
+  moduleSpecifier: string;
+  line: number;
+  col: number;
+}
+
+const SOURCE_RE = /\.[cm]?[jt]sx?$/;
+
+function scriptKindFor(rel: string): ts.ScriptKind {
+  if (/\.tsx$/i.test(rel)) return ts.ScriptKind.TSX;
+  if (/\.jsx$/i.test(rel)) return ts.ScriptKind.JSX;
+  if (/\.json$/i.test(rel)) return ts.ScriptKind.JSON;
+  return ts.ScriptKind.TS;
+}
+
+function parseSource(rel: string, content: string): ts.SourceFile {
+  return ts.createSourceFile(rel, content, ts.ScriptTarget.Latest, true, scriptKindFor(rel));
+}
+
+function bindingKey(binding: Pick<ImportBinding, 'local' | 'moduleSpecifier'>): string {
+  return `${binding.local}\u0000${binding.moduleSpecifier}`;
+}
+
+function lineCol(sf: ts.SourceFile, node: ts.Node): { line: number; col: number } {
+  const pos = sf.getLineAndCharacterOfPosition(node.getStart(sf));
+  return { line: pos.line + 1, col: pos.character + 1 };
+}
+
+function importBindings(rel: string, content: string): ImportBinding[] {
+  if (!SOURCE_RE.test(rel)) return [];
+  const sf = parseSource(rel, content);
+  const out: ImportBinding[] = [];
+  const add = (name: ts.Identifier, moduleSpecifier: string): void => {
+    const loc = lineCol(sf, name);
+    out.push({ local: name.text, moduleSpecifier, line: loc.line, col: loc.col });
+  };
+  for (const stmt of sf.statements) {
+    if (!ts.isImportDeclaration(stmt)) continue;
+    if (!ts.isStringLiteral(stmt.moduleSpecifier)) continue;
+    const moduleSpecifier = stmt.moduleSpecifier.text;
+    const clause = stmt.importClause;
+    if (!clause) continue;
+    if (clause.name) add(clause.name, moduleSpecifier);
+    const named = clause.namedBindings;
+    if (!named) continue;
+    if (ts.isNamespaceImport(named)) {
+      add(named.name, moduleSpecifier);
+      continue;
+    }
+    for (const element of named.elements) add(element.name, moduleSpecifier);
+  }
+  return out;
+}
+
+function importBindingMap(rel: string, content: string | null | undefined): Map<string, ImportBinding> {
+  const map = new Map<string, ImportBinding>();
+  if (typeof content !== 'string') return map;
+  for (const binding of importBindings(rel, content)) map.set(bindingKey(binding), binding);
+  return map;
+}
+
+function identifierUsedOutsideImports(rel: string, content: string, name: string): boolean {
+  if (!SOURCE_RE.test(rel)) return false;
+  const sf = parseSource(rel, content);
+  let used = false;
+  const visit = (node: ts.Node): void => {
+    if (used) return;
+    if (ts.isImportDeclaration(node)) return;
+    if (ts.isIdentifier(node) && node.text === name) {
+      used = true;
+      return;
+    }
+    ts.forEachChild(node, visit);
+  };
+  ts.forEachChild(sf, visit);
+  return used;
+}
+
+function materializeTimeline(snapshots: readonly TemporalSessionSnapshot[]): Array<{
+  snapshot: TemporalSessionSnapshot;
+  state: Map<string, string | null>;
+}> {
+  const state = new Map<string, string | null>();
+  const out: Array<{ snapshot: TemporalSessionSnapshot; state: Map<string, string | null> }> = [];
+  for (const snapshot of snapshots) {
+    for (const [file, content] of Object.entries(snapshot.files)) state.set(file.replaceAll('\\', '/'), content);
+    out.push({ snapshot, state: new Map(state) });
+  }
+  return out;
+}
+
+export function judgeTemporalSession(
+  snapshots: readonly TemporalSessionSnapshot[],
+  options: TemporalSessionGateOptions = {},
+): TemporalSessionGateResult {
+  const gate = 'temporal-session' as const;
+  const followingSnapshots = Math.max(1, Math.floor(options.followingSnapshots ?? 5));
+  const note = `newly-added imports must be referenced within ${followingSnapshots} following session snapshot(s)`;
+  const timeline = materializeTimeline(snapshots);
+  const reds: TemporalSessionGateRed[] = [];
+
+  for (let i = 1; i < timeline.length; i += 1) {
+    const current = timeline[i];
+    const previous = timeline[i - 1];
+    if (!current || !previous) continue;
+    for (const file of Object.keys(current.snapshot.files).map((f) => f.replaceAll('\\', '/'))) {
+      const afterContent = current.state.get(file);
+      if (typeof afterContent !== 'string' || !SOURCE_RE.test(file)) continue;
+      const beforeContent = previous.state.get(file);
+      const beforeImports = importBindingMap(file, beforeContent);
+      const afterImports = importBindingMap(file, afterContent);
+      for (const [key, binding] of afterImports) {
+        if (beforeImports.has(key)) continue;
+        if (identifierUsedOutsideImports(file, afterContent, binding.local)) continue;
+        const futureIndex = i + followingSnapshots;
+        if (futureIndex >= timeline.length) continue;
+        let stillPresent = true;
+        let usedLater = false;
+        for (let j = i + 1; j <= futureIndex; j += 1) {
+          const futureContent = timeline[j]?.state.get(file);
+          if (typeof futureContent !== 'string') {
+            stillPresent = false;
+            break;
+          }
+          if (!importBindingMap(file, futureContent).has(key)) {
+            stillPresent = false;
+            break;
+          }
+          if (identifierUsedOutsideImports(file, futureContent, binding.local)) {
+            usedLater = true;
+            break;
+          }
+        }
+        if (!stillPresent || usedLater) continue;
+        const observedThrough = timeline[futureIndex]?.snapshot.name ?? `snapshot-${futureIndex}`;
+        reds.push({
+          gate,
+          file,
+          locus: `L${binding.line}:${binding.col}`,
+          fact:
+            `import binding '${binding.local}' with module specifier '${binding.moduleSpecifier}' was added at ${current.snapshot.name} ` +
+            `and never referenced through ${observedThrough}`,
+          importName: binding.local,
+          moduleSpecifier: binding.moduleSpecifier,
+          introducedAt: current.snapshot.name,
+          observedThrough,
+        });
+      }
+    }
+  }
+
+  return { gate, green: reds.length === 0, reds, note, notApplicable: reds.length === 0 };
+}

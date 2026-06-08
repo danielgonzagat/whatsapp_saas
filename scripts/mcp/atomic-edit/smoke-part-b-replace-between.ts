@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { check, type PartBCtx } from "./smoke-state.js";
+import { check, jsonBody, type PartBCtx } from "./smoke-state.js";
 
 
 export async function partBReplaceBetween(ctx: PartBCtx): Promise<void> {
@@ -25,7 +25,7 @@ export async function partBReplaceBetween(ctx: PartBCtx): Promise<void> {
           proofOfIncorrectness: 'smoke anchor fixture middle text is stale negative data and may be replaced',
         },
       })) as { content: { text: string }[]; isError?: boolean };
-      const replaceBody = JSON.parse(replaceRes.content.at(-1)?.text ?? '{}');
+      const replaceBody = jsonBody(replaceRes);
       check(
         'replace_between_anchors replaces text between anchors',
         replaceRes.isError !== true && replaceBody.ok === true && replaceBody.changed === true,
@@ -51,7 +51,7 @@ export async function partBReplaceBetween(ctx: PartBCtx): Promise<void> {
           preview: true,
         },
       })) as { content: { text: string }[]; isError?: boolean };
-      const replacePreviewBody = JSON.parse(replacePreview.content.at(-1)?.text ?? '{}');
+      const replacePreviewBody = jsonBody(replacePreview);
       check(
         'replace_between_anchors preview does not write',
         replacePreview.isError !== true &&
@@ -162,7 +162,7 @@ export async function partBReplaceBetween(ctx: PartBCtx): Promise<void> {
             proofOfIncorrectness: 'smoke anchor occurrence text is stale negative data and may be replaced',
           },
         })) as { content: { text: string }[]; isError?: boolean };
-        const replaceOccurrenceBody = JSON.parse(replaceOccurrence.content.at(-1)?.text ?? '{}');
+        const replaceOccurrenceBody = jsonBody(replaceOccurrence);
         check(
           'replace_between_anchors occurrence targets requested match',
           replaceOccurrence.isError !== true &&

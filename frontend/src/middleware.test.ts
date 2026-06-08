@@ -254,6 +254,11 @@ describe('app host routing', () => {
     expectNext(response);
   });
 
+  it('allows published site routes on app host without auth', () => {
+    const response = middleware(buildUnauthenticatedRequest('https://app.kloel.com/s/site-real'));
+    expectNext(response);
+  });
+
   it('redirects unauthenticated users on app host known paths to login', () => {
     const response = middleware(buildUnauthenticatedRequest('https://app.kloel.com/products'));
     const location = response.headers.get('location')!;
@@ -263,6 +268,11 @@ describe('app host routing', () => {
 
   it('allows authenticated users on app host known paths', () => {
     const response = middleware(buildRequest('https://app.kloel.com/products'));
+    expectNext(response);
+  });
+
+  it('allows authenticated users on app host admin graph paths', () => {
+    const response = middleware(buildRequest('https://app.kloel.com/admin/kloel-motor'));
     expectNext(response);
   });
 
@@ -366,5 +376,70 @@ describe('login redirect preserves next path', () => {
     expect(location).toContain('auth.kloel.com/login');
     expect(location).toContain('forceAuth=1');
     expect(location).toContain('next=');
+  });
+});
+
+/* ─── Expired access token + valid refresh session ─────────────────────── */
+
+function base64UrlJson(value: Record<string, unknown>): string {
+  return Buffer.from(JSON.stringify(value), 'utf8')
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+}
+
+function buildJwtCookie(payload: Record<string, unknown>): string {
+  const header = base64UrlJson({ alg: 'none', typ: 'JWT' });
+  return `${header}.${base64UrlJson(payload)}.`;
+}
+
+describe('refresh-aware route access', () => {
+  const expiredAccess = buildJwtCookie({
+    sub: 'user-1',
+    email: 'user@example.com',
+    exp: Math.floor(Date.now() / 1000) - 60,
+  });
+
+  function buildRequestWithCookies(url: string, cookie: string) {
+    return new NextRequest(url, { headers: { cookie } });
+  }
+
+  it('keeps a protected app route when access is expired but a refresh cookie exists', () => {
+    const response = middleware(
+      buildRequestWithCookies(
+        'https://app.kloel.com/products',
+        `kloel_access_token=${expiredAccess}; kloel_refresh_token=refresh-1`,
+      ),
+    );
+    expectNext(response);
+  });
+
+  it('redirects to login when access is expired and no refresh cookie exists', () => {
+    const response = middleware(
+      buildRequestWithCookies(
+        'https://app.kloel.com/products',
+        `kloel_access_token=${expiredAccess}`,
+      ),
+    );
+    const location = response.headers.get('location')!;
+    expect(location).toContain('auth.kloel.com/login');
+    expect(location).toContain('forceAuth=1');
+  });
+
+  it('does not treat an anonymous expired token as authenticated even with a refresh cookie', () => {
+    const anonymousExpired = buildJwtCookie({
+      guest: true,
+      email: 'guest@guest.kloel.local',
+      exp: Math.floor(Date.now() / 1000) - 60,
+    });
+    const response = middleware(
+      buildRequestWithCookies(
+        'https://app.kloel.com/products',
+        `kloel_access_token=${anonymousExpired}; kloel_refresh_token=refresh-1`,
+      ),
+    );
+    const location = response.headers.get('location')!;
+    expect(location).toContain('auth.kloel.com/login');
   });
 });

@@ -1,6 +1,7 @@
 import { expectValueOf } from '../../test/expect-value-of';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { normalizeCheckoutConfigUpdate } from './checkout-product.helpers';
 import { CheckoutProductService } from './checkout-product.service';
 
 jest.mock('./checkout-product.create', () => ({
@@ -104,6 +105,40 @@ beforeEach(() => {
     auditService as never,
     productConfigService as never,
   );
+});
+
+describe('normalizeCheckoutConfigUpdate', () => {
+  it('preserves an automatic coupon when coupons are enabled and popup is disabled', () => {
+    const result = normalizeCheckoutConfigUpdate({
+      enableCoupon: true,
+      showCouponPopup: false,
+      autoCouponCode: ' auditoria10 ',
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        enableCoupon: true,
+        showCouponPopup: false,
+        autoCouponCode: 'AUDITORIA10',
+      }),
+    );
+  });
+
+  it('clears an automatic coupon when coupons are disabled', () => {
+    const result = normalizeCheckoutConfigUpdate({
+      enableCoupon: false,
+      showCouponPopup: true,
+      autoCouponCode: 'AUDITORIA10',
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        enableCoupon: false,
+        showCouponPopup: false,
+        autoCouponCode: null,
+      }),
+    );
+  });
 });
 
 describe('CheckoutProductService', () => {
@@ -251,6 +286,20 @@ describe('CheckoutProductService', () => {
       expect(prisma.checkoutProductPlan.update).toHaveBeenCalledWith({
         where: { id: 'plan_1' },
         data: { name: 'Updated Plan' },
+        include: { checkoutConfig: true },
+      });
+      expect(result).toEqual(plan);
+    });
+
+    it('updates affiliate visibility on checkout plans', async () => {
+      const plan = { ...makePlan({ visibleToAffiliates: false }), checkoutConfig: { id: 'cfg_1' } };
+      prisma.checkoutProductPlan.update.mockResolvedValue(plan);
+
+      const result = await service.updatePlan('plan_1', { visibleToAffiliates: false });
+
+      expect(prisma.checkoutProductPlan.update).toHaveBeenCalledWith({
+        where: { id: 'plan_1' },
+        data: { visibleToAffiliates: false },
         include: { checkoutConfig: true },
       });
       expect(result).toEqual(plan);

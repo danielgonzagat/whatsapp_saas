@@ -10,15 +10,11 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { SOCKET_CORS_OPTIONS } from '../common/socket-cors';
 
 /** Inbox gateway. */
 @WebSocketGateway({
-  cors: {
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || [
-      process.env.FRONTEND_URL || 'http://localhost:3000',
-    ],
-    credentials: true,
-  },
+  cors: SOCKET_CORS_OPTIONS,
 })
 export class InboxGateway implements OnGatewayConnection, OnGatewayDisconnect {
   /** Server property. */
@@ -50,7 +46,7 @@ export class InboxGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.log(`Client connected: ${client.id} to workspace:${workspaceId}`);
     } catch (err: unknown) {
       this.logger.warn(
-        `Client ${client.id} disconnected: invalid token (${(err instanceof Error ? err.message : 'unknown') || String(err)})`,
+        `Client ${client.id} disconnected: invalid token (${err instanceof Error ? err.message : 'unknown'})`,
       );
       client.disconnect(true);
     }

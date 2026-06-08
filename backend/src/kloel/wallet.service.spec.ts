@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { WalletService } from './wallet.service';
+import { SellerWalletService } from './wallet.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { WalletLedgerService } from './wallet-ledger.service';
@@ -8,7 +8,7 @@ import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 import { partialMatch } from '../../test/helpers/match-instance';
 
 describe('WalletService', () => {
-  let service: WalletService;
+  let service: SellerWalletService;
   let prismaMock: ReturnType<typeof createPartialPrismaMock>;
   let walletLedger: { appendWithinTx: jest.Mock };
 
@@ -36,7 +36,7 @@ describe('WalletService', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        WalletService,
+        SellerWalletService,
         { provide: PrismaService, useValue: prismaMock },
         {
           provide: FinancialAlertService,
@@ -51,7 +51,7 @@ describe('WalletService', () => {
       ],
     }).compile();
 
-    service = module.get(WalletService);
+    service = module.get(SellerWalletService);
   });
 
   describe('getBalance', () => {

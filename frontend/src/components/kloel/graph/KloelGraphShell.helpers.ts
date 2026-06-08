@@ -15,7 +15,7 @@ import type {
   KloelGraphProductLike,
 } from './KloelGraph.routes';
 
-export const CLICK_DRAG_THRESHOLD_PX = 6;
+export const CLICK_DRAG_THRESHOLD_PX = 4;
 export const MIN_ZOOM = 0.56;
 export const MAX_ZOOM = 1.85;
 export const DEFAULT_ZOOM = 1;
@@ -35,6 +35,7 @@ export interface LayoutNode extends GraphPoint {
 export interface GraphEdge {
   readonly from: string;
   readonly to: string;
+  readonly directed?: boolean | undefined;
 }
 
 export interface NodeDragState extends GraphPoint {
@@ -132,11 +133,40 @@ export function mergeGraphProducts(
   return Array.from(merged.values());
 }
 
+// Resolve the URL a graph node click navigates to. A base node (same pathname, no
+// query) keeps context params but drops `graph`/`graphAction` and the view-selector
+// keys sibling nodes declare (e.g. `section`/`tab`) so it never opens a stale sub-view.
+export function resolveKloelGraphNodeRoute(
+  node: KloelGraphNode,
+  pathname: string,
+  currentQuery: string,
+  nodes: readonly KloelGraphNode[],
+): string {
+  const [nodePath, nodeQueryString = ''] = node.route.split('?');
+  if (nodePath !== pathname || nodeQueryString) {
+    return node.route;
+  }
+  const nextParams = new URLSearchParams(currentQuery);
+  nextParams.delete('graph');
+  nextParams.delete('graphAction');
+  for (const sibling of nodes) {
+    const [siblingPath, siblingQuery = ''] = sibling.route.split('?');
+    if (siblingPath !== nodePath || !siblingQuery) {
+      continue;
+    }
+    for (const key of new URLSearchParams(siblingQuery).keys()) {
+      nextParams.delete(key);
+    }
+  }
+  const query = nextParams.toString();
+  return query ? `${nodePath}?${query}` : nodePath;
+}
+
 export function buildKloelGraphEdges(nodes: readonly KloelGraphNode[]): GraphEdge[] {
   const ids = new Set(nodes.map((node) => node.id));
   return nodes
     .filter((node) => node.parentId && ids.has(node.parentId))
-    .map((node) => ({ from: node.parentId as string, to: node.id }));
+    .map((node) => ({ from: node.parentId as string, to: node.id, directed: true }));
 }
 
 export function computeKloelGraphLayout(nodes: readonly KloelGraphNode[]): Map<string, LayoutNode> {
@@ -153,14 +183,14 @@ export function computeKloelGraphLayout(nodes: readonly KloelGraphNode[]): Map<s
   }
 
   for (const node of nodes) {
-    if (node.type !== 'sun') {
+    if (node.type !== 'sun' && node.type !== 'core') {
       continue;
     }
     const anchor = AREA_POSITIONS[node.area];
     layout.set(node.id, { x: anchor.x, y: anchor.y, r: radiusForNode(node) });
   }
 
-  const queue = nodes.filter((node) => node.type === 'sun');
+  const queue = nodes.filter((node) => node.type === 'sun' || node.type === 'core');
   for (let cursor = 0; cursor < queue.length; cursor += 1) {
     const parent = queue[cursor];
     const parentPoint = layout.get(parent.id) ?? {
@@ -169,7 +199,7 @@ export function computeKloelGraphLayout(nodes: readonly KloelGraphNode[]): Map<s
     };
     const children = childrenByParent.get(parent.id) ?? [];
     children.forEach((child, index) => {
-      const baseRing = parent.type === 'sun' ? 96 : 64;
+      const baseRing = parent.type === 'sun' || parent.type === 'core' ? 96 : 64;
       const ring = baseRing + Math.floor(index / 10) * 58 + Math.sqrt(index + 1) * 7;
       const angle = -Math.PI / 2 + index * GOLDEN_ANGLE;
       layout.set(child.id, {
@@ -267,8 +297,8 @@ function relaxLayout(nodes: readonly KloelGraphNode[], layout: Map<string, Layou
         const push = (minimum - distance) / 2;
         const ux = dx / distance;
         const uy = dy / distance;
-        const aFixed = aNode.type === 'sun';
-        const bFixed = bNode.type === 'sun';
+        const aFixed = aNode.type === 'sun' || aNode.type === 'core';
+        const bFixed = bNode.type === 'sun' || bNode.type === 'core';
 
         if (!aFixed) {
           layout.set(aNode.id, {
@@ -290,6 +320,9 @@ function relaxLayout(nodes: readonly KloelGraphNode[], layout: Map<string, Layou
 }
 
 function radiusForNode(node: KloelGraphNode): number {
+  if (node.type === 'core') {
+    return 42;
+  }
   if (node.type === 'sun') {
     return 39;
   }
@@ -303,6 +336,56 @@ function radiusForNode(node: KloelGraphNode): number {
     return 22;
   }
   return 26;
+}
+
+export interface KloelGraphMemberAreaLike extends KloelGraphEntityLike {
+  readonly description?: string | null;
+  readonly type?: string | null;
+  readonly studentsCount?: number | null;
+  readonly totalStudents?: number | null;
+}
+
+export function buildKloelGraphMemberAreaNodes(
+  areas: readonly unknown[] | undefined,
+): KloelGraphNode[] {
+  return (areas ?? []).flatMap((rawArea) => {
+    if (!isGraphMemberAreaLike(rawArea)) {
+      return [];
+    }
+
+    const area = rawArea;
+    const areaId = normalizeGraphEntityId(area.id);
+    if (!areaId) {
+      return [];
+    }
+
+    const label = area.name || area.label || area.title || area.slug || 'Area de membros';
+    const status = area.active === false || area.isActive === false ? 'inativa' : 'ativa';
+    const students = area.studentsCount ?? area.totalStudents;
+    const subtitle = [
+      typeof students === 'number' ? `${students} alunos` : area.description || area.type || null,
+      status,
+    ]
+      .filter(Boolean)
+      .join(' - ');
+
+    return [
+      {
+        id: `educar-member-area-${areaId}`,
+        label,
+        area: 'educar' as const,
+        type: 'entity' as const,
+        route: `/produtos/area-membros/preview/${encodeURIComponent(areaId)}`,
+        parentId: 'educar-area-membros',
+        subtitle: subtitle || 'Area de membros',
+        overlayLabel: 'Area de membros',
+      },
+    ];
+  });
+}
+
+function isGraphMemberAreaLike(value: unknown): value is KloelGraphMemberAreaLike {
+  return typeof value === 'object' && value !== null;
 }
 
 function normalizeGraphEntityId(value: string | number | null | undefined): string {

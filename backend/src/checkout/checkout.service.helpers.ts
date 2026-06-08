@@ -151,8 +151,8 @@ export function buildDuplicateCheckoutInput(source: DuplicateCheckoutSource): Cr
     name: `${source.name} (Copia)`,
     priceInCents: source.priceInCents,
     currency: source.currency,
-    maxInstallments: source.maxInstallments,
-    installmentsFee: source.installmentsFee,
+    maxInstallments: source.maxInstallments ?? undefined,
+    installmentsFee: source.installmentsFee ?? undefined,
     quantity: source.quantity,
     freeShipping: source.freeShipping,
     brandName: source.checkoutConfig?.brandName ?? source.name,
@@ -272,17 +272,35 @@ export interface PlanLike {
   isActive?: boolean | null;
   kind?: string | null;
   legacyCheckoutEnabled?: boolean | null;
+  product?: {
+    active?: boolean | null;
+    status?: string | null;
+  } | null;
+}
+
+export const PUBLIC_CHECKOUT_PRODUCT_WHERE = { active: true, status: 'APPROVED' } as const;
+
+function hasPublishedProduct(plan: PlanLike | null | undefined): boolean {
+  return !!(
+    plan?.product?.active === PUBLIC_CHECKOUT_PRODUCT_WHERE.active &&
+    plan.product.status === PUBLIC_CHECKOUT_PRODUCT_WHERE.status
+  );
 }
 
 /**
- * True when the plan record is active, of PLAN kind, and eligible for
- * legacy checkout migration.
+ * True when the plan record is active, of PLAN kind, backed by a published
+ * product, and eligible for legacy checkout migration.
  */
 export function isLegacyPlanEligibleForMigration(plan: PlanLike | null | undefined): boolean {
-  return !!(plan?.isActive && plan.kind === 'PLAN' && plan.legacyCheckoutEnabled);
+  return !!(
+    plan?.isActive &&
+    plan.kind === 'PLAN' &&
+    plan.legacyCheckoutEnabled &&
+    hasPublishedProduct(plan)
+  );
 }
 
-/** True when the plan record is active and of PLAN kind. */
+/** True when the plan record is active, of PLAN kind, and commercially published. */
 export function isActivePlanKind(plan: PlanLike | null | undefined): boolean {
-  return !!(plan?.isActive && plan.kind === 'PLAN');
+  return !!(plan?.isActive && plan.kind === 'PLAN' && hasPublishedProduct(plan));
 }

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   HttpException,
@@ -102,12 +103,14 @@ export class MetaAuthController {
     @Query('returnTo') returnTo?: string,
   ) {
     const workspaceId = resolveWorkspaceId(req);
-    return {
-      url: this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId, {
-        ...(channel !== undefined ? { channel } : {}),
-        ...(returnTo !== undefined ? { returnTo: this.sanitizeReturnTo(returnTo, channel) } : {}),
-      }),
-    };
+    const url = this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId, {
+      ...(channel !== undefined ? { channel } : {}),
+      ...(returnTo !== undefined ? { returnTo: this.sanitizeReturnTo(returnTo, channel) } : {}),
+    });
+    if (!url.trim()) {
+      throw new BadRequestException('meta-oauth-url-unavailable');
+    }
+    return { url };
   }
 
   // ─── Diagnostics ─────────────────────────────────────────────────
@@ -385,7 +388,24 @@ export class MetaAuthController {
     });
 
     if (connections.length === 0) {
-      return { connected: false };
+      const channels = buildMetaChannelsStatus({});
+      let authUrlAvailable = false;
+      try {
+        authUrlAvailable = Boolean(
+          this.metaWhatsApp
+            .buildEmbeddedSignupUrl(workspaceId, {
+              channel: 'whatsapp',
+              returnTo: this.sanitizeReturnTo('/whatsapp', 'whatsapp'),
+            })
+            .trim(),
+        );
+      } catch {
+        authUrlAvailable = false;
+      }
+      if (!authUrlAvailable) {
+        channels.whatsapp.status = 'meta_oauth_configuration_missing';
+      }
+      return { connected: false, authUrlAvailable, channels };
     }
 
     const merged = mergeMetaConnections(connections);

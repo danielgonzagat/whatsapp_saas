@@ -55,6 +55,10 @@ import {
   closeChatReplyOutcome,
 } from './kloel-reply-engine.decision-outcome.helpers';
 import {
+  closeOpenChatRepliesAsContinued,
+  isRealRewardSignalEnabled,
+} from './real-reward-signal.flag';
+import {
   applyReplyEngineDegradedPath,
   applyReplyEnginePostReply,
 } from './kloel-reply-engine.degraded-path.helper';
@@ -66,7 +70,17 @@ import {
   logPostReplySentiment,
 } from './kloel-reply-engine.emotional-tone.helpers';
 import { buildRecallDirective } from './kloel-reply-engine.recall.helpers';
-import { LongTermMemoryService } from './mind/memory/long-term-memory.service';
+import {
+  chooseReplyStyleArm,
+  recordReplyStyleOutcome,
+  isAdequateReplyForBandit,
+} from './kloel-reply-engine.bandit.helpers';
+import {
+  selectChatStrategyArm,
+  recordChatStrategyOutcome,
+} from './kloel-reply-engine.chat-strategy.helpers';
+import { GraphFactMemoryService } from './mind/memory/long-term-memory.service';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 
 type ChatCompletionMessageParam = OpenAI.Chat.ChatCompletionMessageParam;
 
@@ -117,21 +131,27 @@ export class KloelReplyEngineService {
     @Optional() private readonly mindEventProcessorService?: MindEventProcessorService,
     @Optional()
     private readonly emotionalIntelligenceService?: MindEmotionalIntelligenceService,
-    @Optional() private readonly longTermMemoryService?: LongTermMemoryService,
+    @Optional() private readonly longTermMemoryService?: GraphFactMemoryService,
     @Optional() private readonly mindPredictor?: MindPredictorService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {
     this.openai = createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 });
     this.toolRouter = new KloelToolRouter(
       this.logger,
       this.unifiedAgentService,
       async (workspaceId, key, content) => {
-        await this.prisma.kloelMemory.upsert({
+        await this.mindMemoryItems.upsert({
           where: { workspaceId_key: { workspaceId, key } },
           update: { content, value: {}, category: 'tool_artifact', updatedAt: new Date() },
           create: { workspaceId, key, value: {}, content, category: 'tool_artifact' },
         });
       },
     );
+  }
+
+  /** Canonical Brain → Mind memory delegate (raw-Prisma fallback). */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
   }
 
   get contextFormatter(): KloelContextFormatter {
@@ -336,6 +356,13 @@ export class KloelReplyEngineService {
         messageLength: params.message.length,
       });
     }
+    // KLOEL_REAL_REWARD_SIGNAL (default OFF): the arrival of THIS inbound
+    // message is the real consequence that the PRIOR reply kept the conversation
+    // alive. Close any still-open chat_reply decision for this workspace as a
+    // WON (chat.continued). No-op + byte-identical when the flag is OFF.
+    closeOpenChatRepliesAsContinued(this.decisionOutcomeService, this.logger, {
+      workspaceId: params.workspaceId,
+    });
 
     // PI-K16-B: tick lease coordination – prevent concurrent reply storms
     let tickLeaseOwner: string | undefined;
@@ -413,6 +440,30 @@ export class KloelReplyEngineService {
           factCount: recallDirective.factCount,
         });
       }
+      // Brain->Mind: route the reply-STYLE decision through the canonical
+      // bandit (MindBanditService, decisionType 'reply_style'), flag-gated
+      // (KLOEL_REPLY_STYLE_BANDIT_ENABLED, default OFF) + fail-open. Null when
+      // disabled -> no directive, byte-identical hardcoded behavior.
+      const replyStyle = await chooseReplyStyleArm(this.mindBanditService, {
+        workspaceId: params.workspaceId,
+        logger: this.logger,
+      });
+      if (replyStyle) {
+        this.logger.log('kloel_reply_style_bandit_selected', {
+          workspaceId: params.workspaceId,
+          arm: replyStyle.arm,
+        });
+      }
+      // Brain->Mind: CLOSE the chat_strategy bandit loop. The mind signal
+      // builder DECIDES a chat_strategy arm via read-only selectArm but it never
+      // LEARNS. Re-derive the same selected arm here (deterministic) so the reply
+      // outcome below can reward it. Flag-gated (KLOEL_CHAT_STRATEGY_LEARN,
+      // default OFF) + fail-open: null when disabled -> no record, byte-identical
+      // bandit stats.
+      const chatStrategy = await selectChatStrategyArm(this.mindBanditService, {
+        workspaceId: params.workspaceId,
+        logger: this.logger,
+      });
       let assistantMessage: string;
       try {
         assistantMessage = await buildAssistantReplyImpl(params, {
@@ -434,23 +485,66 @@ export class KloelReplyEngineService {
           buildDynamicRuntimeContext: async (p) => {
             const base = await this.buildDynamicRuntimeContext(p);
             const withTone = toneDirective ? `${base}\n\n${toneDirective.directive}` : base;
-            return recallDirective ? `${withTone}\n\n${recallDirective.directive}` : withTone;
+            const withRecall = recallDirective
+              ? `${withTone}\n\n${recallDirective.directive}`
+              : withTone;
+            return replyStyle?.directive ? `${withRecall}\n\n${replyStyle.directive}` : withRecall;
           },
           ...(this.spine !== undefined ? { spine: this.spine } : {}),
           ...(this.mindPredictor !== undefined ? { mindPredictorService: this.mindPredictor } : {}),
           ...(params.abiStateJson !== undefined ? { abiStateJson: params.abiStateJson } : {}),
         });
-        closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
-          outcomeKey,
-          outcomeName: 'chat.replied',
-          wonVsBaseline: true,
-        });
+        // KLOEL_REAL_REWARD_SIGNAL (default OFF): defer the chat_reply reward.
+        // Flag-OFF = today: close the decision as a WIN immediately (degenerate
+        // always-win). Flag-ON: LEAVE the decision OPEN so the REAL consequence
+        // closes it later — WON when the conversation continues (next-reply
+        // closeOpenChatReplies) or a sale is attributed (KLOEL_COMMERCE_DECISION_LINK),
+        // LOST when it times out into silence (KLOEL_DECISION_SWEEP_ENABLED sweep).
+        if (!isRealRewardSignalEnabled()) {
+          closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
+            outcomeKey,
+            outcomeName: 'chat.replied',
+            wonVsBaseline: true,
+          });
+        }
+        if (replyStyle) {
+          await recordReplyStyleOutcome(this.mindBanditService, {
+            workspaceId: params.workspaceId,
+            arm: replyStyle.arm,
+            won: isAdequateReplyForBandit(assistantMessage),
+            logger: this.logger,
+          });
+        }
+        if (chatStrategy) {
+          await recordChatStrategyOutcome(this.mindBanditService, {
+            workspaceId: params.workspaceId,
+            arm: chatStrategy.arm,
+            won: isAdequateReplyForBandit(assistantMessage),
+            logger: this.logger,
+          });
+        }
       } catch (error: unknown) {
         closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
           outcomeKey,
           outcomeName: 'chat.error',
           wonVsBaseline: false,
         });
+        if (replyStyle) {
+          await recordReplyStyleOutcome(this.mindBanditService, {
+            workspaceId: params.workspaceId,
+            arm: replyStyle.arm,
+            won: false,
+            logger: this.logger,
+          });
+        }
+        if (chatStrategy) {
+          await recordChatStrategyOutcome(this.mindBanditService, {
+            workspaceId: params.workspaceId,
+            arm: chatStrategy.arm,
+            won: false,
+            logger: this.logger,
+          });
+        }
         throw error;
       }
       if (params.workspaceId) {

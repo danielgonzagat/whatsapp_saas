@@ -106,7 +106,12 @@ function extractDecisionPatterns(events: readonly SpineEventRef[]): readonly Dec
 
   const patternCounts = new Map<string, number>();
   for (let i = 0; i < decisionEvents.length - 1; i++) {
-    const pair = [decisionEvents[i]!.eventName, decisionEvents[i + 1]!.eventName].join(' → ');
+    const current = decisionEvents[i];
+    const next = decisionEvents[i + 1];
+    if (!current || !next) {
+      continue;
+    }
+    const pair = [current.eventName, next.eventName].join(' → ');
     patternCounts.set(pair, (patternCounts.get(pair) ?? 0) + 1);
   }
 

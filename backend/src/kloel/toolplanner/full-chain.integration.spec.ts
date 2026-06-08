@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ModulesContainer } from '@nestjs/core';
 import { IntentRouterService } from '../intent-router/intent-router.service';
 import { CapabilityRegistryV2Service } from '../capability-registry-v2/capability-registry-v2.service';
 import { ToolPlannerService } from '../toolplanner/toolplanner.service';
@@ -16,7 +17,7 @@ import { ToolPlannerService } from '../toolplanner/toolplanner.service';
   let planner: ToolPlannerService;
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [IntentRouterService, CapabilityRegistryV2Service, ToolPlannerService],
+      providers: [{ provide: ModulesContainer, useValue: new ModulesContainer() }, IntentRouterService, CapabilityRegistryV2Service, ToolPlannerService],
     }).compile();
     router = module.get(IntentRouterService);
     registry = module.get(CapabilityRegistryV2Service);
@@ -31,12 +32,12 @@ import { ToolPlannerService } from '../toolplanner/toolplanner.service';
     );
     expect(result.isChat).toBe(false);
     expect(result.classification?.capabilityId).toBe('products.create'); // Step 2: Resolve capability
-    const cap = registry.get(result.classification!.capabilityId!);
+    const cap = registry.get(result.classification.capabilityId);
     expect(cap).toBeDefined(); // Step 3: ToolPlanner validates inputs
-    const validation = planner.validateInputs(cap!, result.classification!.entities);
+    const validation = planner.validateInputs(cap, result.classification.entities);
     expect(validation.missing).toContain('name'); // Step 4: ToolPlanner checks confirmation
-    expect(cap!.requiresConfirmation).toBe(true); // Step 5: Build confirmation
-    const confirm = planner.buildConfirmationSummary(cap!, result.classification!.entities);
+    expect(cap.requiresConfirmation).toBe(true); // Step 5: Build confirmation
+    const confirm = planner.buildConfirmationSummary(cap, result.classification.entities);
     expect(confirm).toContain('Criar produto');
   });
   it('classifies PIX and requires confirmation', () => {
@@ -48,9 +49,9 @@ import { ToolPlannerService } from '../toolplanner/toolplanner.service';
     expect(result.isChat).toBe(false);
     expect(result.classification?.capabilityId).toBe('sales.create_pix');
     expect(result.classification?.requiresConfirmation).toBe(true);
-    const cap = registry.get(result.classification!.capabilityId!);
+    const cap = registry.get(result.classification.capabilityId);
     expect(cap?.category).toBe('MUTATION_SENSITIVE');
-    const missing = planner.validateInputs(cap!, result.classification!.entities);
+    const missing = planner.validateInputs(cap, result.classification.entities);
     expect(missing.missing.length).toBeGreaterThan(0); // needs buyer data
   });
   it('classifies general chat as isChat=true', () => {
@@ -98,7 +99,7 @@ import { ToolPlannerService } from '../toolplanner/toolplanner.service';
     }
   });
   it('ToolPlanner builds receipts with all required fields', () => {
-    const cap = registry.get('products.create')!;
+    const cap = registry.get('products.create');
     const ctx = {
       workspaceId: 'ws-test',
       actorId: 'user-test',
@@ -121,7 +122,7 @@ import { ToolPlannerService } from '../toolplanner/toolplanner.service';
     expect(receipt.idempotencyKey).toBe('key-123');
   });
   it('ToolPlanner keeps payment execution rail on success and failure receipts', () => {
-    const cap = registry.get('sales.create_pix')!;
+    const cap = registry.get('sales.create_pix');
     const ctx = {
       workspaceId: 'ws-test',
       actorId: 'user-test',
@@ -156,7 +157,7 @@ import { ToolPlannerService } from '../toolplanner/toolplanner.service';
     expect(failureReceipt.executionRail).toEqual(successReceipt.executionRail);
   });
   it('ToolPlanner verbalizes receipt in PT-BR', () => {
-    const cap = registry.get('products.create')!;
+    const cap = registry.get('products.create');
     const ctx = {
       workspaceId: 'ws-test',
       actorId: 'user-test',
@@ -179,7 +180,7 @@ import { ToolPlannerService } from '../toolplanner/toolplanner.service';
   });
 
   it('ToolPlanner verbalizes canonical PIX proof fields', () => {
-    const cap = registry.get('sales.create_pix')!;
+    const cap = registry.get('sales.create_pix');
     const ctx = {
       workspaceId: 'ws-test',
       actorId: 'user-test',

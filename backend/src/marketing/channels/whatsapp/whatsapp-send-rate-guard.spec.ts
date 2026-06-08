@@ -102,7 +102,7 @@ describe('WhatsappSendRateGuardService', () => {
 
       const proto = getProto();
       const wrapped = proto.sendMessage as (...args: unknown[]) => Promise<unknown>;
-      const result = await wrapped.call({} as WhatsappService, 'workspace-123', 'Hello');
+      const result = await wrapped('workspace-123', 'Hello');
 
       expect(planLimits.ensureDailyMessageQuota).toHaveBeenCalledWith('workspace-123');
       expect(planLimits.ensureMessageRate).toHaveBeenCalledWith('workspace-123');
@@ -127,7 +127,7 @@ describe('WhatsappSendRateGuardService', () => {
 
       const proto = getProto();
       const wrapped = proto.sendMessage as (...args: unknown[]) => Promise<unknown>;
-      await wrapped.call({} as WhatsappService, 12345, 'Hello');
+      await wrapped.call({}, 12345, 'Hello');
 
       expect(planLimits.ensureDailyMessageQuota).not.toHaveBeenCalled();
       expect(planLimits.ensureMessageRate).not.toHaveBeenCalled();
@@ -147,7 +147,7 @@ describe('WhatsappSendRateGuardService', () => {
 
       const proto = getProto();
       const wrapped = proto.sendMessage as (...args: unknown[]) => Promise<unknown>;
-      await wrapped.call({} as WhatsappService, '', 'Hello');
+      await wrapped.call({}, '', 'Hello');
 
       expect(planLimits.ensureDailyMessageQuota).not.toHaveBeenCalled();
     });

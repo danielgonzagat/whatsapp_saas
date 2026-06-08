@@ -234,10 +234,48 @@ describe('ProductController', () => {
         { id: string },
       ];
       expect(ws).toBe('ws-1');
-      expect(data).toMatchObject({ name: 'X' });
+      expect(data).toMatchObject({ name: 'X', workspaceId: 'ws-1' });
       expect(actor).toMatchObject({ id: 'u-1' });
       expect(prisma.product.create).not.toHaveBeenCalled();
       expect(result).toHaveProperty('success', true);
+    });
+
+    it('normalizes wizard-only product fields before ProductService.create', async () => {
+      await delegatingController.createProduct(mockReq(), {
+        name: 'Produto Auditoria Kloel',
+        description: 'Fluxo completo do wizard',
+        category: 'Cursos Online',
+        tags: [],
+        format: 'DIGITAL',
+        price: 97,
+        salesPageUrl: 'https://kloel.com/auditoria-produto',
+        status: 'PENDING',
+        paymentType: 'ONE_TIME',
+        checkoutType: 'standard',
+        affiliateCommission: 30,
+        affiliatesEnabled: false,
+        affiliateApprovalMode: 'auto',
+        billingType: 'one_time',
+        maxInstallments: 12,
+        interestFreeInstallments: 1,
+      } as never);
+
+      const [, data] = productService.create.mock.calls[0] as [string, Record<string, unknown>];
+      expect(data).toMatchObject({
+        workspaceId: 'ws-1',
+        name: 'Produto Auditoria Kloel',
+        description: 'Fluxo completo do wizard',
+        category: 'Cursos Online',
+        tags: [],
+        format: 'DIGITAL',
+        price: 97,
+        salesPageUrl: 'https://kloel.com/auditoria-produto',
+        status: 'PENDING',
+      });
+      expect(data).not.toHaveProperty('paymentType');
+      expect(data).not.toHaveProperty('checkoutType');
+      expect(data).not.toHaveProperty('billingType');
+      expect(data).not.toHaveProperty('maxInstallments');
     });
 
     it('updateProduct delegates persistence to ProductService.update (fires events)', async () => {
@@ -272,14 +310,33 @@ describe('ProductController', () => {
   });
 
   describe('getCategories', () => {
-    it('returns distinct non-null categories', async () => {
+    it('returns the canonical product taxonomy before the workspace has products', async () => {
+      prisma.product.findMany.mockResolvedValue([]);
+
+      const result = await controller.getCategories(mockReq());
+
+      expect(result.categories).toEqual(
+        expect.arrayContaining(['Dermocosméticos', 'Cursos Online', 'Outros']),
+      );
+      expect(result.categories.length).toBeGreaterThanOrEqual(20);
+    });
+
+    it('keeps distinct workspace categories that are outside the canonical taxonomy', async () => {
       prisma.product.findMany.mockResolvedValue([
+        { category: 'Dermocosméticos' },
         { category: 'cursos' },
         { category: 'mentorias' },
         { category: null },
       ]);
+
       const result = await controller.getCategories(mockReq());
-      expect(result).toEqual({ categories: ['cursos', 'mentorias'] });
+
+      expect(result.categories).toEqual(
+        expect.arrayContaining(['Dermocosméticos', 'cursos', 'mentorias']),
+      );
+      expect(result.categories.filter((category) => category === 'Dermocosméticos')).toHaveLength(
+        1,
+      );
     });
   });
 

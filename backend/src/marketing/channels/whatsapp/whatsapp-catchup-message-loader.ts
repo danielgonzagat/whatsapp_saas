@@ -13,7 +13,7 @@ async function canonicalizeMessages(
     chatId: resolveCanonicalChatId(String(m.chatId || m.from || '').trim(), mappings) || m.chatId,
     from: resolveCanonicalChatId(String(m.from || m.chatId).trim(), mappings) || m.from,
     to: resolveCanonicalChatId(String(m.to || '').trim(), mappings) || m.to,
-  })) as WahaChatMessage[];
+  }));
 }
 
 export async function loadCatchupMessages(

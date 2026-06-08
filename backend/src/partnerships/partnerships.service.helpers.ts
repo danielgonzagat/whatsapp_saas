@@ -71,6 +71,8 @@ export function buildListAffiliatesWhere(
   }
   if (params?.status) {
     where.status = params.status.trim().toUpperCase();
+  } else {
+    where.status = { not: 'REVOKED' };
   }
   if (params?.search) {
     where.partnerName = { contains: params.search, mode: 'insensitive' };
@@ -105,15 +107,16 @@ export interface AffiliateStatsResult {
 export function computeAffiliateStats(
   partners: ReadonlyArray<AffiliateStatsPartner>,
 ): AffiliateStatsResult {
-  const activeAffiliates = partners.filter(
+  const operationalPartners = partners.filter((p) => p.status !== 'REVOKED');
+  const activeAffiliates = operationalPartners.filter(
     (p) => p.type === 'AFFILIATE' && p.status === 'ACTIVE',
   ).length;
-  const producers = partners.filter((p) => p.type === 'PRODUCER').length;
-  const totalRevenue = partners
+  const producers = operationalPartners.filter((p) => p.type === 'PRODUCER').length;
+  const totalRevenue = operationalPartners
     .filter((p) => p.type === 'AFFILIATE')
     .reduce((s, p) => s + p.totalRevenue, 0);
-  const totalCommissions = partners.reduce((s, p) => s + p.totalCommission, 0);
-  const top = [...partners].sort((a, b) => b.totalRevenue - a.totalRevenue)[0];
+  const totalCommissions = operationalPartners.reduce((s, p) => s + p.totalCommission, 0);
+  const top = [...operationalPartners].sort((a, b) => b.totalRevenue - a.totalRevenue)[0];
   return {
     activeAffiliates,
     producers,

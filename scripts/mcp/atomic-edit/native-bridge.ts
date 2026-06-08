@@ -334,7 +334,9 @@ export interface AstNode {
   byteEnd: number;
   line: number;
   column: number;
-  /** the node's named-child field-name path is omitted for simplicity; callers filter by type */
+  /** the node's `name` field (childForFieldName('name')) when the grammar exposes one —
+   * lets callers match a definition by identifier across languages, token-correctly. */
+  name?: string;
 }
 
 /**
@@ -361,6 +363,7 @@ export async function astNodes(
   while (stack.length) {
     const n = stack.pop() as TsNode;
     if (!types || types.has(n.type)) {
+      const nameNode = n.childForFieldName?.('name') ?? null;
       out.push({
         type: n.type,
         text: content.slice(n.startIndex, n.endIndex),
@@ -368,6 +371,7 @@ export async function astNodes(
         byteEnd: u16ToByte(content, n.endIndex),
         line: n.startPosition.row + 1,
         column: n.startPosition.column + 1,
+        ...(nameNode ? { name: nameNode.text } : {}),
       });
     }
     for (let i = 0; i < n.childCount; i += 1) stack.push(n.child(i) as TsNode);

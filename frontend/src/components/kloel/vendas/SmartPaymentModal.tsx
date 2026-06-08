@@ -89,6 +89,8 @@ export function SmartPaymentModal({ workspaceId, onClose }: SmartPaymentModalPro
           <span style={modalTitleStyle}>{kloelT('Nova cobranca')}</span>
           <button
             type="button"
+            aria-label="Fechar cobranca"
+            title="Fechar cobranca"
             onClick={onClose}
             style={{
               background: 'none',

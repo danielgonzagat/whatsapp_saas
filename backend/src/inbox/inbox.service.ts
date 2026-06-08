@@ -14,7 +14,7 @@ import {
   getOrCreateConversationWithClient,
   saveMessageInTx,
 } from './inbox.conversation.helpers';
-import { isMindMessageDualWriteEnabled } from '../kloel/mind/aliases/mindmessage-dualwrite.flag';
+import { mirrorMindMessage } from '../kloel/mind/aliases/mindmessage-dualwrite.mirror';
 
 /** Inbox service. */
 @Injectable()
@@ -49,29 +49,20 @@ export class InboxService {
     content: string;
     direction: string;
   }): Promise<void> {
-    if (!isMindMessageDualWriteEnabled()) {
-      return;
-    }
     const role = message.direction === 'OUTBOUND' ? 'assistant' : 'user';
     if (!message.workspaceId || !message.content) {
       return;
     }
-    try {
-      await this.prisma.mindMessage.create({
-        data: {
-          workspaceId: message.workspaceId,
-          source: 'channel',
-          role,
-          content: message.content,
-        },
-      });
-    } catch (error) {
-      this.logger.warn(
-        `MindMessage dual-write failed (workspaceId=${message.workspaceId}, ` +
-          `direction=${message.direction}, source=channel); legacy Message write ` +
-          `committed and is unaffected: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
+    await mirrorMindMessage(
+      this.prisma,
+      { workspaceId: message.workspaceId, source: 'channel', role, content: message.content },
+      (error) =>
+        this.logger.warn(
+          `MindMessage dual-write failed (workspaceId=${message.workspaceId}, ` +
+            `direction=${message.direction}, source=channel); legacy Message write ` +
+            `committed and is unaffected: ${error instanceof Error ? error.message : String(error)}`,
+        ),
+    );
   }
 
   /** List agents. */

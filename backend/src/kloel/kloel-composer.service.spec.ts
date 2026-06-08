@@ -8,6 +8,11 @@ jest.mock('openai', () => ({
   default: jest.fn().mockImplementation(() => ({
     apiKey: 'mock-key',
     responses: { create: jest.fn().mockResolvedValue({ output_text: '', output: [], usage: {} }) },
+    chat: {
+      completions: {
+        create: jest.fn().mockResolvedValue({ choices: [{ message: { content: '' } }], usage: {} }),
+      },
+    },
     images: { generate: jest.fn().mockResolvedValue({ data: [{}] }) },
   })),
 }));
@@ -168,6 +173,94 @@ describe('KloelComposerService', () => {
       });
       expect(result.content).toContain('E2E search');
       expect(result.metadata?.capability).toBe('search_web');
+    });
+
+    it('executes refine_response through the central text LLM provider with workspace context', async () => {
+      const textLlm = (
+        service as unknown as {
+          textLlm: {
+            chat: {
+              completions: {
+                create: jest.Mock<
+                  Promise<unknown>,
+                  [
+                    {
+                      model: string;
+                      messages: Array<{ role: 'user'; content: string }>;
+                      temperature: number;
+                    },
+                    unknown?,
+                  ]
+                >;
+              };
+            };
+          };
+        }
+      ).textLlm;
+      textLlm.chat.completions.create.mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              content: 'Mesa de refinamento pronta com cortes, lacunas e próxima versão.',
+            },
+          },
+        ],
+        usage: { total_tokens: 321 },
+      });
+
+      const result = await service.executeComposerCapability({
+        capability: 'refine_response',
+        message: 'Refine a resposta sobre o produto sem expor raciocínio bruto.',
+        workspaceId: 'ws-refine',
+        composerContext: 'Produto vinculado: Serum Graph Proof.',
+      });
+
+      const request = textLlm.chat.completions.create.mock.calls[0]?.[0];
+      const prompt = request?.messages?.[0]?.content || '';
+      expect(prompt).toContain('Mesa de refinamento');
+      expect(prompt).toContain('Produto vinculado: Serum Graph Proof.');
+      expect(prompt).toContain('ações executadas');
+      expect(prompt).toContain('não escreva “ferramentas utilizadas”');
+      expect(prompt).toContain('tool/function calling');
+      expect(prompt).toContain('Use Markdown real e respirado');
+      expect(prompt).toContain('## Diagnóstico executivo');
+      expect(result.content).toContain('Mesa de refinamento pronta');
+      expect(result.metadata).toEqual(expect.objectContaining({ capability: 'refine_response' }));
+      expect(planLimits.ensureTokenBudget).toHaveBeenCalledWith('ws-refine');
+      expect(planLimits.trackAiUsage).toHaveBeenCalledWith('ws-refine', 321);
+    });
+
+    it('normalizes refine_response markdown before returning content', async () => {
+      const textLlm = (
+        service as unknown as {
+          textLlm: {
+            chat: { completions: { create: jest.Mock<Promise<unknown>, [unknown, unknown?]> } };
+          };
+        }
+      ).textLlm;
+      textLlm.chat.completions.create.mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              content:
+                '## Diagnóstico executivo - Primeiro ponto. ## Lacunas e riscos - Risco um. ## Versão refinada Texto sugerido: - Reasoning summary – Resumo público. ## Próxima ação verificável - Validar com revisor.',
+            },
+          },
+        ],
+        usage: { total_tokens: 10 },
+      });
+
+      const result = await service.executeComposerCapability({
+        capability: 'refine_response',
+        message: 'Refine com markdown respirado.',
+      });
+
+      expect(result.content).toContain('## Diagnóstico executivo\n\n- Primeiro ponto.');
+      expect(result.content).toContain('\n\n## Lacunas e riscos\n\n- Risco um.');
+      expect(result.content).toContain(
+        '\n\n## Versão refinada\n\nTexto sugerido:\n- Reasoning summary',
+      );
+      expect(result.content).not.toContain('## Diagnóstico executivo -');
     });
 
     it('executes create_image via e2e guard', async () => {

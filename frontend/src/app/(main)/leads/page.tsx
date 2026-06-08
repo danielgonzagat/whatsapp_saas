@@ -8,7 +8,7 @@ import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { LeadsHeader } from './LeadsHeader';
 import { LeadsContextBar } from './LeadsContextBar';
@@ -29,6 +29,8 @@ export default function LeadsPage() {
   const [status, setStatus] = useState<string>('');
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [copiedLeadId, setCopiedLeadId] = useState<string | null>(null);
+  const initialLoadWorkspaceRef = useRef<string | null>(null);
+  const lastFilterKeyRef = useRef<string | null>(null);
 
   const requestedLeadId = searchParams?.get('leadId') || null;
   const requestedPhone = searchParams?.get('phone') || null;
@@ -108,18 +110,35 @@ export default function LeadsPage() {
 
   useEffect(() => {
     if (isLoading || !isAuthenticated || !workspaceId) {
+      initialLoadWorkspaceRef.current = null;
+      lastFilterKeyRef.current = null;
       return;
     }
+    if (initialLoadWorkspaceRef.current === workspaceId) {
+      return;
+    }
+    initialLoadWorkspaceRef.current = workspaceId;
+    lastFilterKeyRef.current = `${workspaceId}:${status}:${searchTerm}`;
     const handle = setTimeout(() => {
       void refreshLeads();
     }, 0);
     return () => clearTimeout(handle);
-  }, [isAuthenticated, isLoading, refreshLeads, workspaceId]);
+  }, [isAuthenticated, isLoading, refreshLeads, searchTerm, status, workspaceId]);
 
   useEffect(() => {
     if (!isAuthenticated || !workspaceId) {
+      lastFilterKeyRef.current = null;
       return;
     }
+    const filterKey = `${workspaceId}:${status}:${searchTerm}`;
+    if (lastFilterKeyRef.current === null) {
+      lastFilterKeyRef.current = filterKey;
+      return;
+    }
+    if (lastFilterKeyRef.current === filterKey) {
+      return;
+    }
+    lastFilterKeyRef.current = filterKey;
     const handle = setTimeout(() => {
       void refreshLeads({ keepSelection: true });
     }, 350);
@@ -183,7 +202,7 @@ export default function LeadsPage() {
               {kloelT(`Entrar`)}
             </button>
             <Link
-              href="/"
+              href="/chat"
               className="text-sm font-medium text-muted-foreground hover:text-foreground"
             >
               {kloelT(`Voltar ao chat`)}
@@ -204,7 +223,7 @@ export default function LeadsPage() {
           </p>
           <div className="mt-6">
             <Link
-              href="/"
+              href="/chat"
               className="text-sm font-medium text-muted-foreground hover:text-foreground"
             >
               {kloelT(`Voltar ao chat`)}

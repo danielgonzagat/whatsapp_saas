@@ -5,7 +5,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { VectorService } from './vector.service';
 import { PlanLimitsService } from '../../../billing/plan-limits.service';
 import { AuditService } from '../../../audit/audit.service';
-import { WalletService } from '../../../wallet/wallet.service';
+import { PrepaidWalletService } from '../../../wallet/wallet.service';
 import {
   InsufficientWalletBalanceError,
   UsagePriceNotFoundError,
@@ -86,7 +86,7 @@ describe('KnowledgeBaseService', () => {
           useValue: { log: jest.fn(), logWithTx: jest.fn() },
         },
         {
-          provide: WalletService,
+          provide: PrepaidWalletService,
           useValue: walletService,
         },
       ],

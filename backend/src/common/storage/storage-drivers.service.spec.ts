@@ -238,7 +238,7 @@ describe('StorageDriversService', () => {
       const result = await service.checkS3Health();
       expect(result).toMatchObject({ status: 'DOWN', driver: 's3' });
       expect(result.details).toBeDefined();
-      expect(result.details!.error).toBeTruthy();
+      expect(result.details.error).toBeTruthy();
     });
   });
 });

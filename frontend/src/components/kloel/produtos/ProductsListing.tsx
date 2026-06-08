@@ -21,6 +21,69 @@ import ProductCardGrid from './ProductCardGrid';
 import ProductActions from './ProductActions';
 import ProductFilters from './ProductFilters';
 
+export function buildProductLiveFeedText(product: DisplayProduct): string {
+  const totalSales = product.totalSales ?? product.sales ?? 0;
+  const activePlanCount = Number(product.activePlansCount || 0);
+
+  if (totalSales > 0) {
+    return `${product.name} somou ${totalSales} vendas aprovadas.`;
+  }
+
+  if (product.active && activePlanCount > 0) {
+    return `${product.name} esta pronto para receber trafego e checkout.`;
+  }
+
+  if (activePlanCount > 0) {
+    return `${product.name} tem checkout configurado, mas ainda precisa ser ativado.`;
+  }
+
+  if (product.active) {
+    return `${product.name} esta ativo, mas ainda precisa de um plano com checkout.`;
+  }
+
+  return `${product.name} precisa ser ativado e receber um plano antes de trafego.`;
+}
+
+
+export function buildProductTickerText(product: DisplayProduct): string {
+  const hasBasePriceLabel = product.priceLabel.trim().length > 0 && product.priceLabel !== 'Sem planos';
+
+  return `${product.name} \u00b7 ${
+    product.hasPlanPricing || hasBasePriceLabel ? product.priceLabel : 'sem planos configurados'
+  }`;
+}
+
+
+export function pluralizePt(count: number, singular: string, plural: string): string {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+export function buildProductsAiEngineText({
+  activePlanCount,
+  activeProducts,
+  affiliateCount,
+  productCount,
+}: {
+  activePlanCount: number;
+  activeProducts: number;
+  affiliateCount: number;
+  productCount: number;
+}): string {
+  const productLabel = pluralizePt(
+    productCount,
+    activeProducts > 0 ? 'produto no motor' : 'produto configurado no motor',
+    activeProducts > 0 ? 'produtos no motor' : 'produtos configurados no motor',
+  );
+  const checkoutLabel = pluralizePt(activePlanCount, 'checkout', 'checkouts');
+  const affiliateLabel = pluralizePt(affiliateCount, 'afiliado', 'afiliados');
+
+  if (activeProducts > 0) {
+    return `${productLabel}, ${checkoutLabel} e ${affiliateLabel} — IA operando na jornada de compra.`;
+  }
+
+  return `${productLabel}, ${checkoutLabel} e ${affiliateLabel} — ative um produto para liberar a IA na jornada de compra.`;
+}
+
 export default function ProductsListing({
   displayProducts,
   totalRevenue,
@@ -64,10 +127,7 @@ export default function ProductsListing({
   const productEvents =
     displayProducts.length > 0
       ? displayProducts.slice(0, 4).map((product) => ({
-          text:
-            (product.totalSales ?? 0) > 0
-              ? `${product.name} somou ${product.totalSales} vendas aprovadas.`
-              : `${product.name} esta pronto para receber trafego e checkout.`,
+          text: buildProductLiveFeedText(product),
           time: timeAgo(product.updatedAt || product.createdAt),
         }))
       : [{ text: 'Aguardando criacao do primeiro produto.', time: '' }];
@@ -131,12 +191,7 @@ export default function ProductsListing({
       </div>
 
       <Ticker
-        items={
-          displayProducts.length > 0
-            ? displayProducts.map((p) =>
-                p.hasPlanPricing ? `${p.name} \u00b7 ${p.priceLabel}` : `${p.name} \u00b7 sem planos configurados`)
-            : ['Aguardando vendas...']
-        }
+        items={displayProducts.length > 0 ? displayProducts.map(buildProductTickerText) : ['Aguardando vendas...']}
         color={EMBER}
         duration="22s"
       />
@@ -145,6 +200,7 @@ export default function ProductsListing({
 
       <ProductCardGrid
         displayProducts={filteredProducts}
+        isFiltered={search.trim().length > 0}
         isMobile={isMobile}
         {...(onCreateProduct ? { onCreateProduct } : {})}
       />
@@ -226,7 +282,14 @@ export default function ProductsListing({
           </div>
           <p style={{ fontFamily: MONO, fontSize: 12, color: 'var(--app-text-secondary)', lineHeight: 1.6, margin: 0 }}>
             {displayProducts.length > 0
-              ? kloelT(`${displayProducts.length} produtos no motor, ${activePlanCount} checkouts e ${affiliateCount} afiliados \u2014 IA operando na jornada de compra.`)
+              ? kloelT(
+                  buildProductsAiEngineText({
+                    activePlanCount,
+                    activeProducts,
+                    affiliateCount,
+                    productCount: displayProducts.length,
+                  }),
+                )
               : kloelT('Crie produtos para ativar o motor de IA e impulsionar suas vendas.')}
           </p>
         </div>
@@ -234,7 +297,12 @@ export default function ProductsListing({
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
         {[
-          { label: 'Receita', value: fmtBRL(totalRevenue), sub: `${displayProducts.length} produtos no catalogo`, icon: IC.box },
+          {
+            label: 'Receita',
+            value: fmtBRL(totalRevenue),
+            sub: pluralizePt(displayProducts.length, 'produto no catalogo', 'produtos no catalogo'),
+            icon: IC.box,
+          },
           { label: 'Vendas', value: String(totalSales), sub: `${activePlanCount} checkout${activePlanCount === 1 ? '' : 's'} ativo${activePlanCount === 1 ? '' : 's'}`, icon: IC.store },
           { label: 'Ativos', value: String(activeProducts), sub: `${memberAreaCount} areas de membros`, icon: IC.zap },
         ].map((s) => (

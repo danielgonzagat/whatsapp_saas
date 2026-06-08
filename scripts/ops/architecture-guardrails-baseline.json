@@ -1,0 +1,29 @@
+{
+  "size": {
+    "backend/src/campaigns/campaigns.service.ts": 614,
+    "backend/src/checkout/checkout-post-payment-effects.service.spec.ts": 641,
+    "backend/src/checkout/checkout.service.ts": 601,
+    "backend/src/kloel/cart-recovery.service.spec.ts": 697,
+    "backend/src/kloel/kloel-lead-processor.service.spec.ts": 653,
+    "backend/src/kloel/kloel-thinker-think.helpers.ts": 778,
+    "backend/src/kloel/kloel-thinker.service.spec.ts": 1230,
+    "backend/src/kloel/kloel-thinker.service.ts": 645,
+    "backend/src/kloel/kloel-thread.helpers.ts": 640,
+    "backend/src/kloel/product-sub-resources.controller.spec.ts": 610,
+    "backend/src/kyc/kyc.service.spec.ts": 691,
+    "backend/src/kyc/kyc.service.ts": 636,
+    "backend/src/marketing/instagram/instagram-marketing.service.spec.ts": 772,
+    "backend/src/products/product.service.ts": 615,
+    "frontend/src/components/kloel/dashboard/ReasoningTimeline.tsx": 409,
+    "frontend/src/components/kloel/graph/KloelGraphLiteralCanvas.tsx": 1138,
+    "frontend/src/components/kloel/graph/KloelGraphShell.spec.tsx": 763,
+    "frontend/src/components/kloel/marketing/OfficialMarketingChannelPage/use-official-marketing-channel.ts": 635,
+    "frontend/src/components/kloel/products/product-nerve-center.shared.tsx": 669,
+    "frontend/src/hooks/useCheckoutPlans.ts": 638,
+    "frontend/src/lib/__tests__/kloel-message-ui.test.ts": 717,
+    "frontend/src/lib/kloel-message-ui.ts": 799
+  },
+  "line": {
+    "no_new_eslint_disable::frontend/src/components/kloel/products/ProductNerveCenterRoot.js": true
+  }
+}

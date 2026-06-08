@@ -103,7 +103,7 @@ export class MindBeliefService {
           MindBelief[]
         >`
           SELECT * FROM "RAC_MindBelief"
-          WHERE "id" = ${current.id!}
+          WHERE "id" = ${current.id}
             AND "workspaceId" = ${workspaceId}
             AND "subject" = ${subject}
             AND "predicate" = ${predicate}
@@ -120,7 +120,7 @@ export class MindBeliefService {
         const samples = locked.samples + 1;
 
         await tx.mindBelief.updateMany({
-          where: { id: locked.id!, workspaceId, subject, predicate },
+          where: { id: locked.id, workspaceId, subject, predicate },
           data: {
             alpha,
             beta,
@@ -131,7 +131,7 @@ export class MindBeliefService {
           },
         });
         return tx.mindBelief.findFirstOrThrow({
-          where: { id: locked.id!, workspaceId, subject, predicate },
+          where: { id: locked.id, workspaceId, subject, predicate },
         });
       });
       this.logSuccess('mind.belief.observe_binary', startedAt, workspaceId, subject, predicate);

@@ -24,10 +24,12 @@ export function detectPaymentsWalletIntent(msg: string): ActionIntent {
   }
 
   // ── CARTEIRA ── (saque antes de saldo, extrato antes de saldo/carteira)
+  // Anticipation match is anchored to the "antecipa" stem only — a bare c[aã]o
+  // alternative used to match any "cao"/"ção" word and mis-fire this financial tool.
   if (/saque|solicitar saque|(?:quero|preciso|gostaria|vou)\s+sacar/.test(msg)) {
     return { tool: 'request_withdrawal', args: {} };
   }
-  if (/antecipa|c[aã]o|antecipar|adiantar\s+receb[ií]vel/.test(msg)) {
+  if (/antecipa|adiantar\s+receb[ií]vel/.test(msg)) {
     return { tool: 'request_anticipation', args: {} };
   }
   if (/extrato|hist[oó]rico.*financeiro/.test(msg)) {

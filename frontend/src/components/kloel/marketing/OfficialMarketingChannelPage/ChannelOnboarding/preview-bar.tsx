@@ -34,7 +34,7 @@ export function PreviewBar({
     <div
       style={{
         position: 'fixed',
-        top: 16,
+        top: 72,
         left: 'calc(var(--kloel-main-rail-width, 0px) + ((100vw - var(--kloel-main-rail-width, 0px)) / 2))',
         transform: 'translateX(-50%)',
         zIndex: 50,

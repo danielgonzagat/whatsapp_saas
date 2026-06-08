@@ -50,6 +50,80 @@ export function readRecord(value: unknown): Record<string, unknown> {
     : {};
 }
 
+const OPERATOR_INTENT_LABELS: Record<string, string> = {
+  list_products: 'catálogo de produtos',
+  search_contact: 'busca de contatos',
+  list_conversations: 'histórico de conversas',
+  send_message_via_channel: 'envio por canal',
+  query_revenue_summary: 'resumo financeiro',
+  inspect_self: 'autoinspeção do Kloel',
+  inspect_runtime: 'saúde operacional',
+  search_code: 'busca no código',
+  read_source_file: 'leitura de fonte',
+  safe_query: 'consulta segura',
+  list_capabilities_detail: 'catálogo de capacidades',
+};
+
+function publicOperatorLabel(intent: string): string {
+  return OPERATOR_INTENT_LABELS[intent] ?? 'operação solicitada';
+}
+
+function readResultRows(result: unknown, keys: string[] = []): Array<Record<string, unknown>> {
+  if (Array.isArray(result)) {
+    return result.filter((item): item is Record<string, unknown> =>
+      Boolean(item && typeof item === 'object'),
+    );
+  }
+  const record = readRecord(result);
+  for (const key of keys) {
+    const value = record[key];
+    if (Array.isArray(value)) {
+      return value.filter((item): item is Record<string, unknown> =>
+        Boolean(item && typeof item === 'object'),
+      );
+    }
+  }
+  return [];
+}
+
+function formatBrl(value: unknown): string | undefined {
+  const amount = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(amount)) {
+    return undefined;
+  }
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
+    .format(amount)
+    .replace(/\u00a0/g, ' ');
+}
+
+function productStatusLabel(value: unknown): string {
+  if (value === true) {
+    return 'ativo';
+  }
+  if (value === false) {
+    return 'inativo';
+  }
+  return 'status não informado';
+}
+
+function summarizeProductCatalog(result: unknown): string {
+  const products = readResultRows(result, ['products', 'items', 'data']);
+  if (products.length === 0) {
+    return 'Consultei seu catálogo real e não encontrei produtos cadastrados neste workspace.';
+  }
+  const rendered = products
+    .slice(0, 4)
+    .map((product) => {
+      const name = readOptionalString(product.name) ?? 'Produto sem nome';
+      const price = formatBrl(product.price);
+      const status = productStatusLabel(product.active);
+      return [name, price, status].filter(Boolean).join(' · ');
+    })
+    .join('; ');
+  const suffix = products.length > 4 ? `; +${products.length - 4} outro(s)` : '';
+  return `Consultei seu catálogo real: ${rendered}${suffix}.`;
+}
+
 /**
  * Build the list of predecided actions for the unified agent.
  *
@@ -90,10 +164,15 @@ export function buildOperatorResponseText(input: {
   intent: string;
   ok: boolean;
   error?: string | undefined;
+  result?: unknown;
 }): string {
-  return input.ok
-    ? `Acao "${input.intent}" executada com sucesso.`
-    : `Falha ao executar "${input.intent}": ${input.error ?? 'erro desconhecido'}.`;
+  if (!input.ok) {
+    return `Falha ao executar ${publicOperatorLabel(input.intent)}: ${input.error ?? 'erro desconhecido'}.`;
+  }
+  if (input.intent === 'list_products') {
+    return summarizeProductCatalog(input.result);
+  }
+  return `Executei ${publicOperatorLabel(input.intent)} e registrei a observação operacional real.`;
 }
 
 /**

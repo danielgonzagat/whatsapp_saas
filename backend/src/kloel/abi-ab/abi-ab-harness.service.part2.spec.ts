@@ -82,11 +82,11 @@ describe('AbiAbHarnessService', () => {
 
       const r1Delta = deltas.find((d) => d.criterion.name === 'R1');
       expect(r1Delta).toBeDefined();
-      expect(r1Delta!.delta).toBeGreaterThanOrEqual(0);
+      expect(r1Delta.delta).toBeGreaterThanOrEqual(0);
 
       const r22Delta = deltas.find((d) => d.criterion.name === 'R22');
       expect(r22Delta).toBeDefined();
-      expect(r22Delta!.delta).toBeGreaterThanOrEqual(0);
+      expect(r22Delta.delta).toBeGreaterThanOrEqual(0);
     });
 
     it('scenario 13: detects regression when variant has higher hallucination rate', async () => {
@@ -122,7 +122,7 @@ describe('AbiAbHarnessService', () => {
 
       const r10Delta = deltas.find((d) => d.criterion.name === 'R10');
       expect(r10Delta).toBeDefined();
-      expect(r10Delta!.direction).toBe('regressed');
+      expect(r10Delta.direction).toBe('regressed');
     });
 
     it('scenario 14: every delta criterion has a valid family descriptor', () => {

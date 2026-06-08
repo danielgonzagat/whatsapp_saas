@@ -45,4 +45,33 @@ describe('useCommandPalette', () => {
       expect(result.current.searchError).toBe('Invalid Kloel thread payload');
     });
   });
+
+  it('preserves spaces between highlighted command palette title tokens', async () => {
+    const [{ render, screen }, { CommandPaletteItem }] = await Promise.all([
+      import('@testing-library/react'),
+      import('./CommandPaletteItem'),
+    ]);
+
+    render(
+      <CommandPaletteItem
+        item={{
+          id: 'product_1',
+          type: 'product',
+          title: 'E2E Smoke Product (edited)',
+          matchedContent: 'Produto - DRAFT',
+          href: '/products/product_1',
+        }}
+        isSelected={false}
+        hasQuery={true}
+        query="E2E Smoke"
+        groupLabel="2 JUN"
+        onHover={vi.fn()}
+        onSelect={vi.fn()}
+      />,
+    );
+
+    const result = screen.getByRole('button', { name: /E2E Smoke Product \(edited\)/ });
+
+    expect(result.textContent).toContain('E2E Smoke Product (edited)');
+  });
 });

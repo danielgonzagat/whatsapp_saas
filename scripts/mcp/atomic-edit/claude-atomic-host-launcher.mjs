@@ -67,6 +67,21 @@ function realOrSelf(p) {
   }
 }
 
+// macOS per-user Darwin scratch dirs (confstr _CS_DARWIN_USER_{TEMP,CACHE}_DIR),
+// e.g. /var/folders/xx/.../T and .../C. These are what NSTemporaryDirectory()
+// returns and — unlike POSIX $TMPDIR — they are NOT overridable by the env, so a
+// process that overrode $TMPDIR (Claude points it at its own scratch) still writes
+// scratch here. Returned trailing-slash-stripped so SBPL (subpath …) matches.
+function darwinScratchDir(name) {
+  try {
+    const r = spawnSync('/usr/bin/getconf', [name], { encoding: 'utf8' });
+    const p = (r.stdout || '').trim().replace(/\/+$/, '');
+    return p || null;
+  } catch {
+    return null;
+  }
+}
+
 // allow-by-default (so network/process/exec work for Claude), then DENY all
 // writes, then carve out the minimal writable set. SBPL is last-match-wins.
 function buildProfile() {
@@ -79,6 +94,21 @@ function buildProfile() {
     path.join(HOME, '.claude'),
     realOrSelf(path.join(HOME, '.claude')),
   ]);
+  // Browser/Chromium/Electron tools (chrome-devtools MCP, Puppeteer, Lighthouse)
+  // create scratch in the Darwin per-user temp/cache dirs — notably Chrome's
+  // ProcessSingleton socket dir. Those dirs come from NSTemporaryDirectory() and
+  // IGNORE the $TMPDIR override above, so without these carve-outs Chrome aborts
+  // with "Failed to create socket directory" and NO browser MCP can launch inside
+  // the host sandbox. Same trust level as $TMPDIR (per-user scratch); home docs,
+  // /etc, system, and repo-external source stay read-only. Both raw and realpath
+  // are added because /var → /private/var is a symlink and SBPL matches the real path.
+  for (const name of ['DARWIN_USER_TEMP_DIR', 'DARWIN_USER_CACHE_DIR']) {
+    const d = darwinScratchDir(name);
+    if (d) {
+      writableSubpaths.add(d);
+      writableSubpaths.add(realOrSelf(d));
+    }
+  }
   const lines = ['(version 1)', '(allow default)', '(deny file-write*)'];
   for (const sp of writableSubpaths) {
     lines.push(`(allow file-write* (subpath ${schemeString(sp)}))`);

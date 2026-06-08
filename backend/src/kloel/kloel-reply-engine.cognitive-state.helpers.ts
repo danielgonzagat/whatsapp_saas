@@ -13,6 +13,8 @@
  * thrown to the caller.
  */
 import type { PrismaService } from '../prisma/prisma.service';
+import type { StructuredLogger } from '../logging/structured-logger';
+import type { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 import type { AbiBuilderService } from './abi/abi-builder.service';
 import { validateAbiPayload } from './abi/abi-validator';
 import { buildMindSignals, type BuildMindSignalsDeps } from './mind/build-mind-signals.helper';
@@ -29,9 +31,7 @@ import type { RiskClassService } from './risk-class/risk-class.service';
 import type { AgentAssistService } from './mind/knowledge/agent-assist.service';
 import type { MindAutonomyCoordinator } from './mind/coordination/mind-autonomy-coordinator.service';
 
-interface CognitiveStateLogger {
-  warn: (event: string, ctx?: Record<string, unknown>) => void;
-}
+type CognitiveStateLogger = Pick<StructuredLogger, 'warn'>;
 
 interface KloelMindServices {
   attentionService?: AttentionService;
@@ -77,7 +77,7 @@ export const ABI_SNAPSHOT_MAX_BYTES = 16384;
 /** Build a BuildMindSignalsDeps spread that includes only services that are defined. */
 export function buildKloelMindSignalsDeps(
   prisma: PrismaService,
-  logger: { warn: (...args: unknown[]) => void },
+  logger: CognitiveStateLogger,
   services: KloelMindServices,
 ): BuildMindSignalsDeps {
   return {
@@ -134,9 +134,14 @@ export async function readAbiSnapshotCache(
   prisma: PrismaService,
   logger: CognitiveStateLogger,
   workspaceId: string,
+  mindMemory?: MindMemoryItemService,
 ): Promise<Record<string, unknown> | null> {
+  // Canonical Mind surface: `.items` returns the same `prisma.kloelMemory`
+  // delegate (same physical table) — byte-identical args, zero behaviour drift.
+  // Falls back to `prisma.kloelMemory` when the canonical service is absent.
+  const memoryItems = mindMemory?.items ?? prisma.kloelMemory;
   try {
-    const cached = await prisma.kloelMemory.findUnique({
+    const cached = await memoryItems.findUnique({
       where: { workspaceId_key: { workspaceId, key: ABI_SNAPSHOT_KEY } },
     });
     if (cached?.content && cached.updatedAt) {
@@ -159,7 +164,12 @@ export async function writeAbiSnapshotCache(
   logger: CognitiveStateLogger,
   workspaceId: string,
   cognitiveState: Record<string, unknown>,
+  mindMemory?: MindMemoryItemService,
 ): Promise<void> {
+  // Canonical Mind surface: `.items` returns the same `prisma.kloelMemory`
+  // delegate (same physical table) — byte-identical upsert args, zero drift.
+  // Falls back to `prisma.kloelMemory` when the canonical service is absent.
+  const memoryItems = mindMemory?.items ?? prisma.kloelMemory;
   try {
     const serialized = JSON.stringify(cognitiveState);
     if (serialized.length > ABI_SNAPSHOT_MAX_BYTES) {
@@ -169,7 +179,7 @@ export async function writeAbiSnapshotCache(
       });
       return;
     }
-    await prisma.kloelMemory.upsert({
+    await memoryItems.upsert({
       where: {
         workspaceId_key: { workspaceId, key: ABI_SNAPSHOT_KEY },
       },
@@ -209,6 +219,7 @@ export async function buildKloelAbiCognitiveState(
     logger: CognitiveStateLogger;
     abiBuilder?: AbiBuilderService;
     services: KloelMindServices;
+    mindMemory?: MindMemoryItemService;
   },
   params: {
     workspaceId?: string | null;
@@ -224,18 +235,19 @@ export async function buildKloelAbiCognitiveState(
   };
 
   if (params.workspaceId) {
-    const cached = await readAbiSnapshotCache(deps.prisma, deps.logger, params.workspaceId);
+    const cached = await readAbiSnapshotCache(
+      deps.prisma,
+      deps.logger,
+      params.workspaceId,
+      deps.mindMemory,
+    );
     if (cached) {
       return cached;
     }
   }
 
   // Mind signals — wire attention, valence, beliefs, concepts via shared helper (PI-k4/K5-A).
-  const mindDeps = buildKloelMindSignalsDeps(
-    deps.prisma,
-    deps.logger as { warn: (...args: unknown[]) => void },
-    deps.services,
-  );
+  const mindDeps = buildKloelMindSignalsDeps(deps.prisma, deps.logger, deps.services);
   cognitiveState.mindSignals = await buildMindSignals(
     mindDeps,
     params.workspaceId ?? '',
@@ -322,7 +334,13 @@ export async function buildKloelAbiCognitiveState(
   }
 
   if (params.workspaceId) {
-    await writeAbiSnapshotCache(deps.prisma, deps.logger, params.workspaceId, cognitiveState);
+    await writeAbiSnapshotCache(
+      deps.prisma,
+      deps.logger,
+      params.workspaceId,
+      cognitiveState,
+      deps.mindMemory,
+    );
   }
 
   return cognitiveState;

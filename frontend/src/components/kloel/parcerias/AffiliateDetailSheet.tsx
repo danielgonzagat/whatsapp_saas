@@ -25,6 +25,7 @@ export default function AffiliateDetailSheet({
   onRevoke: () => void;
 }) {
   const a = affiliate || ({} as Affiliate);
+  const isRevoked = a.status === 'revoked';
   const [perfData, setPerfData] = useState<AffiliatePerformance | null>(null);
   const [perfLoading, setPerfLoading] = useState(false);
 
@@ -52,6 +53,16 @@ export default function AffiliateDetailSheet({
       .catch(() => {});
   };
 
+  const handleRevoke = () => {
+    if (isRevoked) {
+      return;
+    }
+    if (window.confirm(kloelT('Revogar este afiliado? Esta acao remove o acesso dele ao programa.'))) {
+      onRevoke();
+    }
+  };
+
+
   return (
     <div
       style={{
@@ -65,7 +76,7 @@ export default function AffiliateDetailSheet({
     >
       <button
         type="button"
-        aria-label="Fechar modal"
+        aria-label="Fechar modal ao clicar fora"
         onClick={onClose}
         style={{
           position: 'absolute',
@@ -93,6 +104,7 @@ export default function AffiliateDetailSheet({
       >
         <button
           type="button"
+          aria-label="Fechar modal"
           onClick={onClose}
           style={{
             position: 'absolute',
@@ -160,7 +172,8 @@ export default function AffiliateDetailSheet({
           </button>
           <button
             type="button"
-            onClick={onRevoke}
+            onClick={handleRevoke}
+            disabled={isRevoked}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -174,7 +187,7 @@ export default function AffiliateDetailSheet({
               fontFamily: FONT.sans,
               fontSize: 13,
               fontWeight: 500,
-              cursor: 'pointer',
+              cursor: isRevoked ? 'not-allowed' : 'pointer',
             }}
           >
             <span style={{ color: colors.semantic.error }}>{IC.ban(14)}</span>

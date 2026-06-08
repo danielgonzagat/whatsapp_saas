@@ -117,9 +117,9 @@ describe('CiaInlineFallbackService', () => {
       });
 
       expect(result).not.toBeNull();
-      expect(result!.aggregatedMessage).toContain('[1]');
-      expect(result!.aggregatedMessage).toContain('[2]');
-      expect(result!.messages).toHaveLength(2);
+      expect(result.aggregatedMessage).toContain('[1]');
+      expect(result.aggregatedMessage).toContain('[2]');
+      expect(result.messages).toHaveLength(2);
     });
 
     it('uses fallback content when no inbound messages found', async () => {
@@ -133,7 +133,7 @@ describe('CiaInlineFallbackService', () => {
       });
 
       expect(result).not.toBeNull();
-      expect(result!.aggregatedMessage).toBe('fallback text');
+      expect(result.aggregatedMessage).toBe('fallback text');
     });
 
     it('queries only inbound messages after the last outbound', async () => {

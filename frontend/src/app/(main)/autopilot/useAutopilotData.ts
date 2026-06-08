@@ -159,6 +159,26 @@ export function useAutopilotData(workspaceId: string | null) {
     if (!effectiveWorkspaceId || !token || !status) {
       return;
     }
+
+    const isActivating = !status.enabled;
+    const pipelineWhatsappStatus = pipeline?.autonomy?.whatsappStatus?.toLowerCase();
+    const healthWhatsappStatus = systemHealth?.details?.whatsapp?.status?.toLowerCase();
+    const isWhatsappUnavailable =
+      pipeline?.autonomy?.connected === false ||
+      pipelineWhatsappStatus === 'down' ||
+      pipelineWhatsappStatus === 'disconnected' ||
+      pipelineWhatsappStatus === 'not_configured' ||
+      healthWhatsappStatus === 'down' ||
+      healthWhatsappStatus === 'disconnected' ||
+      healthWhatsappStatus === 'not_configured';
+
+    if (isActivating && isWhatsappUnavailable) {
+      setError(
+        'Conecte/configure o WhatsApp antes de ativar o Autopilot. Faltando: whatsappApiSession.status=connected',
+      );
+      return;
+    }
+
     try {
       setIsToggling(true);
       setError(null);
@@ -166,12 +186,11 @@ export function useAutopilotData(workspaceId: string | null) {
       setStatus((prev) => (prev ? { ...prev, enabled: Boolean(data.enabled) } : null));
       await fetchAutopilotData();
     } catch (err: unknown) {
-      console.error('Error toggling autopilot:', err);
       setError(err instanceof Error ? err.message : 'Erro ao alterar status do Autopilot');
     } finally {
       setIsToggling(false);
     }
-  }, [effectiveWorkspaceId, fetchAutopilotData, status, token]);
+  }, [effectiveWorkspaceId, fetchAutopilotData, pipeline, status, systemHealth, token]);
 
   const handleSmokeTest = useCallback(async () => {
     if (!effectiveWorkspaceId || !token) {

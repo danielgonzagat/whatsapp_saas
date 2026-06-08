@@ -3,10 +3,31 @@
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { IC, Fmt, EMBER, G, SORA, MONO } from './AnunciosShared';
+
+const PIXEL_SNIPPET = `<script>
+  !function(k,l,o,e,i){k.KloelPixel=i;k[i]=k[i]||function(){
+  (k[i].q=k[i].q||[]).push(arguments)};k[i].l=1*new Date();
+  var s=l.createElement('script'),f=l.getElementsByTagName('script')[0];
+  s.async=1;s.src='https://px.kloel.com/kl.js';
+  f.parentNode.insertBefore(s,f)}(window,document,0,0,'kl');
+  kl('init','KL-SEU_ID_AQUI');
+  kl('track','PageView');
+</script>`;
 
 export function TrackingDashboard({ focus }: { focus?: string }) {
   const router = useRouter();
+  const [copyMessage, setCopyMessage] = useState<string | null>(null);
+  const handleCopyPixelSnippet = async () => {
+    try {
+      await navigator.clipboard.writeText(PIXEL_SNIPPET);
+      setCopyMessage('Snippet copiado.');
+    } catch {
+      setCopyMessage('Nao foi possivel copiar. Copie manualmente.');
+    }
+  };
+
   const focusedRetargeting = focus === 'retargeting';
   const trackedSales = 0;
   const pixelFires = 0;
@@ -239,9 +260,35 @@ export function TrackingDashboard({ focus }: { focus?: string }) {
       </div>
 
       <div style={{ background: 'var(--app-bg-card)', border: '1px solid var(--app-border-primary)', borderRadius: 6, padding: 16 }}>
-        <div style={{ fontSize: 11, fontFamily: MONO, color: 'var(--app-text-secondary)', letterSpacing: 1, marginBottom: 12 }}>
-          {kloelT(`PIXEL KLOEL — COPIE E COLE NO SEU SITE`)}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12, flexWrap: 'wrap' as const }}>
+          <div style={{ fontSize: 11, fontFamily: MONO, color: 'var(--app-text-secondary)', letterSpacing: 1 }}>
+            {kloelT(`PIXEL KLOEL — COPIE E COLE NO SEU SITE`)}
+          </div>
+          <button
+            type="button"
+            aria-label="Copiar pixel Kloel"
+            title="Copiar pixel Kloel"
+            onClick={() => void handleCopyPixelSnippet()}
+            style={{
+              background: EMBER,
+              border: 'none',
+              borderRadius: 6,
+              padding: '8px 12px',
+              color: colors.text.silver,
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: SORA,
+            }}
+          >
+            {copyMessage === 'Snippet copiado.' ? kloelT(`Copiado`) : kloelT(`Copiar pixel`)}
+          </button>
         </div>
+        {copyMessage ? (
+          <div role="status" style={{ fontSize: 11, fontFamily: SORA, color: 'var(--app-text-secondary)', marginBottom: 10 }}>
+            {copyMessage}
+          </div>
+        ) : null}
         <div
           style={{
             background: 'var(--app-bg-primary)', borderRadius: 6, padding: 14, fontFamily: MONO,
@@ -249,17 +296,10 @@ export function TrackingDashboard({ focus }: { focus?: string }) {
             overflowX: 'auto' as const, whiteSpace: 'pre' as const, border: '1px solid var(--app-border-subtle)',
           }}
         >
-          {`<script>
-  !function(k,l,o,e,i){k.KloelPixel=i;k[i]=k[i]||function(){
-  (k[i].q=k[i].q||[]).push(arguments)};k[i].l=1*new Date();
-  var s=l.createElement('script'),f=l.getElementsByTagName('script')[0];
-  s.async=1;s.src='https://px.kloel.com/kl.js';
-  f.parentNode.insertBefore(s,f)}(window,document,0,0,'kl');
-  kl('init','KL-SEU_ID_AQUI');
-  kl('track','PageView');
-</script>`}
+          {PIXEL_SNIPPET}
         </div>
       </div>
+
 
       <div style={{ background: 'var(--app-bg-card)', border: '1px solid var(--app-border-primary)', borderRadius: 6, padding: 16 }}>
         <div style={{ fontSize: 11, fontFamily: MONO, color: 'var(--app-text-secondary)', letterSpacing: 1, marginBottom: 12 }}>

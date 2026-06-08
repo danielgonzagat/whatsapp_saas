@@ -129,6 +129,30 @@ function inferArsenalType(file: File): string {
   return 'document';
 }
 
+const pendingChannelLoads = new Map<string, Promise<unknown>>();
+
+function dedupePendingLoad<T>(key: string, load: () => Promise<T>): Promise<T> {
+  const pending = pendingChannelLoads.get(key) as Promise<T> | undefined;
+  if (pending) {
+    return pending;
+  }
+
+  const next = load();
+  pendingChannelLoads.set(key, next);
+  next.then(
+    () => {
+      if (pendingChannelLoads.get(key) === next) {
+        pendingChannelLoads.delete(key);
+      }
+    },
+    () => {
+      if (pendingChannelLoads.get(key) === next) {
+        pendingChannelLoads.delete(key);
+      }
+    },
+  );
+  return next;
+}
 
 export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficialMarketingChannelOptions) {
   const { products } = useProducts();
@@ -176,41 +200,54 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
     setSetupLoaded(false);
     setLoadError(null);
     try {
-      const nextStatus = await apiFetch<ConnectStatus>('/marketing/connect/status');
+      const nextStatus = await dedupePendingLoad('/marketing/connect/status', () =>
+        apiFetch<ConnectStatus>('/marketing/connect/status'),
+      );
       if (nextStatus.error) {
         throw new Error(nextStatus.error);
       }
       const nextConnectStatus = nextStatus.data || null;
       setStatus(nextConnectStatus);
-      const setupResponse = await apiFetch<{ setup?: unknown; completedAt?: string | null }>(
-        `/marketing/connect/channel-setup?channel=${encodeURIComponent(channel)}`,
-      );
-      if (setupResponse.error) {
-        throw new Error(setupResponse.error);
-      }
-      const realSetup = await getChannelSetup(channel);
-      setSetup(mergeRealChannelSetup(normalizeSetup(setupResponse.data?.setup), realSetup));
-      setCompleted(Boolean(setupResponse.data?.completedAt || realSetup.completed));
-      setSetupLoaded(true);
-      if (channel === 'tiktok') {
-        const nextTikTok = await apiFetch<TikTokStatus>('/marketing/connect/tiktok/status');
-        if (nextTikTok.error) {
-          throw new Error(nextTikTok.error);
-        }
-        setTikTokStatus(nextTikTok.data || null);
-        const nextMode = await apiFetch<TikTokModeData>('/marketing/tiktok/mode');
-        if (!nextMode.error) {
-          setTikTokMode(nextMode.data || null);
-        }
-      }
       if (channel === 'google-ads') {
-        const nextGoogleAds = await apiFetch<GoogleAdsStatus>(
-          '/marketing/connect/google-ads/status',
+        const nextGoogleAds = await dedupePendingLoad('/marketing/connect/google-ads/status', () =>
+          apiFetch<GoogleAdsStatus>('/marketing/connect/google-ads/status'),
         );
         if (nextGoogleAds.error) {
           throw new Error(nextGoogleAds.error);
         }
         setGoogleAdsStatus(nextGoogleAds.data || null);
+        setSetup(DEFAULT_SETUP);
+        setCompleted(Boolean(nextGoogleAds.data?.connected));
+        setSetupLoaded(true);
+        return nextConnectStatus;
+      }
+      const setupUrl = `/marketing/connect/channel-setup?channel=${encodeURIComponent(channel)}`;
+      const setupResponse = await dedupePendingLoad(setupUrl, () =>
+        apiFetch<{ setup?: unknown; completedAt?: string | null }>(setupUrl),
+      );
+      if (setupResponse.error) {
+        throw new Error(setupResponse.error);
+      }
+      const realSetup = await dedupePendingLoad(`channel-setup:${channel}`, () =>
+        getChannelSetup(channel),
+      );
+      setSetup(mergeRealChannelSetup(normalizeSetup(setupResponse.data?.setup), realSetup));
+      setCompleted(Boolean(setupResponse.data?.completedAt || realSetup.completed));
+      setSetupLoaded(true);
+      if (channel === 'tiktok') {
+        const nextTikTok = await dedupePendingLoad('/marketing/connect/tiktok/status', () =>
+          apiFetch<TikTokStatus>('/marketing/connect/tiktok/status'),
+        );
+        if (nextTikTok.error) {
+          throw new Error(nextTikTok.error);
+        }
+        setTikTokStatus(nextTikTok.data || null);
+        const nextMode = await dedupePendingLoad('/marketing/tiktok/mode', () =>
+          apiFetch<TikTokModeData>('/marketing/tiktok/mode'),
+        );
+        if (!nextMode.error) {
+          setTikTokMode(nextMode.data || null);
+        }
       }
       return nextConnectStatus;
     } catch (error) {
@@ -282,12 +319,26 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
       !initialStepApplied.current
     ) {
       initialStepApplied.current = true;
-      setCurrentStep(initialStep);
+      setSetup((current) => ({
+        ...current,
+        currentStep: Math.min(3, Math.max(0, initialStep)),
+      }));
     }
-  }, [initialStep, setup.currentStep, setupLoaded, setCurrentStep]);
+  }, [initialStep, setup.currentStep, setupLoaded]);
   const openMeta = useCallback(async () => {
-    setBusy('meta');
     setMessage(null);
+    if (
+      channelSession?.status === 'meta_oauth_configuration_missing' ||
+      channelSession?.status === 'server_not_configured' ||
+      channelSession?.status === 'unavailable'
+    ) {
+      setBusy(null);
+      setDisconnectArmed(false);
+      setMessage('Meta nao configurado neste ambiente.');
+      return;
+    }
+
+    setBusy('meta');
     setDisconnectArmed(false);
     try {
       const returnTo = `/marketing/${channel}`;
@@ -313,7 +364,7 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
       setMessage(error instanceof Error ? error.message : 'Falha ao abrir Meta.');
       setBusy(null);
     }
-  }, [channel]);
+  }, [channel, channelSession?.status]);
   const disconnectMeta = useCallback(async () => {
     if (!disconnectArmed) {
       setDisconnectArmed(true);
@@ -427,8 +478,19 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
     );
   }, []);
   const openTikTok = useCallback(async (kind: 'creator' | 'advertiser') => {
-    setBusy(`tiktok-${kind}`);
     setMessage(null);
+    if (
+      tiktokStatus?.configReady === false ||
+      tiktokStatus?.clientConfigured === false ||
+      tiktokStatus?.secretConfigured === false ||
+      tiktokMode?.details.clientConfigured === false ||
+      tiktokMode?.details.secretConfigured === false
+    ) {
+      setBusy(null);
+      setMessage('TikTok nao configurado neste ambiente.');
+      return;
+    }
+    setBusy(`tiktok-${kind}`);
     try {
       const response = await apiFetch<{ url?: string }>(
         `/marketing/connect/tiktok/url?kind=${kind}`,
@@ -444,10 +506,19 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
       setMessage(error instanceof Error ? error.message : 'Falha ao abrir TikTok.');
       setBusy(null);
     }
-  }, []);
+  }, [tiktokMode, tiktokStatus]);
   const openGoogleAds = useCallback(async () => {
-    setBusy('google-ads');
     setMessage(null);
+    if (
+      googleAdsStatus?.clientConfigured === false ||
+      googleAdsStatus?.secretConfigured === false ||
+      googleAdsStatus?.developerTokenConfigured === false
+    ) {
+      setBusy(null);
+      setMessage('Google Ads nao configurado neste ambiente.');
+      return;
+    }
+    setBusy('google-ads');
     try {
       const response = await apiFetch<{ url?: string }>('/marketing/connect/google-ads/url');
       const url = String(response.data?.url || '').trim();
@@ -459,12 +530,37 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
       setMessage(error instanceof Error ? error.message : 'Falha ao abrir Google Ads.');
       setBusy(null);
     }
-  }, []);
+  }, [googleAdsStatus]);
+
+  const details = channel === 'tiktok' ? tiktokStatus : channelSession;
+  const metaOAuthUnavailable =
+    channelSession?.status === 'meta_oauth_configuration_missing' ||
+    channelSession?.status === 'server_not_configured' ||
+    channelSession?.status === 'unavailable';
+  const tiktokSetupUnavailable =
+    channel === 'tiktok' &&
+    (tiktokStatus?.configReady === false ||
+      tiktokStatus?.clientConfigured === false ||
+      tiktokStatus?.secretConfigured === false ||
+      tiktokMode?.details.clientConfigured === false ||
+      tiktokMode?.details.secretConfigured === false);
+  const googleAdsSetupUnavailable =
+    channel === 'google-ads' &&
+    (googleAdsStatus?.clientConfigured === false ||
+      googleAdsStatus?.secretConfigured === false ||
+      googleAdsStatus?.developerTokenConfigured === false);
+  const setupUnavailable =
+    metaOAuthUnavailable || tiktokSetupUnavailable || googleAdsSetupUnavailable;
 
   const handleComplete = useCallback(async (): Promise<boolean> => {
-    setCompleteBusy(true);
     setCompleteMessage(null);
     setMessage(null);
+    if (setupUnavailable) {
+      setCompleted(false);
+      setCompleteMessage('Canal nao configurado neste ambiente. Conecte o provedor antes de concluir.');
+      return false;
+    }
+    setCompleteBusy(true);
     try {
       const configuredState = await saveChannelConfig(channel, toRealChannelConfig(setup.config));
       setSetup((current) =>
@@ -485,11 +581,7 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
     } finally {
       setCompleteBusy(false);
     }
-  }, [channel, refresh, setup.config]);
-  const details = channel === 'tiktok' ? tiktokStatus : channelSession;
-  const setupUnavailable =
-    channelSession?.status === 'server_not_configured' ||
-    channelSession?.status === 'unavailable';
+  }, [channel, refresh, setup.config, setupUnavailable]);
   const badgeStatus = isLoading
     ? 'Carregando'
     : statusText(channelSession?.connected, channelSession?.status);

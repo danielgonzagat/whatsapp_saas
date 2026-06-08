@@ -142,7 +142,10 @@ function groupByBoundaryType(
 
   const observations: EthicalLineObservation[] = [];
   for (const [boundaryType, groupSignals] of groups) {
-    const first = groupSignals[0]!;
+    const first = groupSignals[0];
+    if (!first) {
+      continue;
+    }
     observations.push({
       observationId: `eth_${randomUUID()}`,
       workspaceId,

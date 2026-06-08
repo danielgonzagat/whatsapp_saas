@@ -74,9 +74,9 @@ describe('MindPolicyService — wisdom priors (CIA Gap 9)', () => {
 
     // With belief mean = 0.5, samples = 0, wisdomWeight = 0.5 × 0.8 = 0.4
     // nudgedMean = (0.5 × 1 + 0.4 × 1.0) / (1 + 0.4) = 0.9 / 1.4 ≈ 0.643
-    expect(replyCandidate!.beliefMean).toBeCloseTo(0.9 / 1.4, 4);
+    expect(replyCandidate.beliefMean).toBeCloseTo(0.9 / 1.4, 4);
     // buy_option should NOT be nudged (predicate contains 'buy', not 'reply')
-    expect(buyCandidate!.beliefMean).toBe(0.5);
+    expect(buyCandidate.beliefMean).toBe(0.5);
 
     // The nudge should cause reply_option to be chosen (higher mean → lower EFE)
     expect(result.chosen).toBe('reply_option');
@@ -126,8 +126,8 @@ describe('MindPolicyService — wisdom priors (CIA Gap 9)', () => {
     expect(result.chosen).toBe('action_b');
     expect(result.decision.fallbackActive).toBe(false);
     // No mean shift occurred (beliefs unchanged)
-    const candidateA = result.decision.candidates.find((c) => c.action === 'action_a')!;
-    const candidateB = result.decision.candidates.find((c) => c.action === 'action_b')!;
+    const candidateA = result.decision.candidates.find((c) => c.action === 'action_a');
+    const candidateB = result.decision.candidates.find((c) => c.action === 'action_b');
     expect(candidateA.beliefMean).toBe(0.3);
     expect(candidateB.beliefMean).toBe(0.7);
   });

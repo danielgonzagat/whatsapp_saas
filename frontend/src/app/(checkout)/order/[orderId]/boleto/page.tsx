@@ -78,7 +78,7 @@ export default function BoletoPaymentPage() {
       <div style={{ maxWidth: '440px', width: '100%', textAlign: 'center' }}>
         {/* Header */}
         <div style={{ marginBottom: '24px' }}>
-          <div style={{ fontSize: '40px', marginBottom: '8px' }}>{kloelT(`&rgb(18, 129, 150);`)}</div>
+          <div style={{ fontSize: '40px', marginBottom: '8px' }}>{kloelT(``)}</div>
           <h1
             style={{
               color: colors.checkout.textPrimary,

@@ -14,6 +14,7 @@ export interface PlatformData {
   ctr: number;
   cpc: number;
   connected: boolean;
+  clientConfigured?: boolean;
 }
 
 export interface Campaign {

@@ -17,6 +17,7 @@ import {
   VOID,
   type CheckoutConfigInput,
 } from './CheckoutConfigPage.helpers';
+import { colors } from '@/lib/design-tokens';
 
 describe('createInitialCheckoutConfigState', () => {
   it('returns full default state when config is null', () => {
@@ -28,7 +29,7 @@ describe('createInitialCheckoutConfigState', () => {
     expect(state.chatWelcomeMessage).toBe('');
     expect(state.chatDelay).toBe(5);
     expect(state.chatPosition).toBe('bottom-right');
-    expect(state.chatColor).toBe('colors.ember.primary');
+    expect(state.chatColor).toBe(colors.ember.primary);
     expect(state.chatOfferDiscount).toBe(false);
     expect(state.chatDiscountCode).toBe('');
     expect(state.chatSupportPhone).toBe('');
@@ -133,7 +134,7 @@ describe('design-token constants', () => {
   });
 
   it('exposes the EMBER accent token', () => {
-    expect(EMBER).toBe('colors.ember.primary');
+    expect(EMBER).toBe(colors.ember.primary);
   });
 });
 

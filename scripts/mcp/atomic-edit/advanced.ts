@@ -13,8 +13,11 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as ts from 'typescript';
-import { validate, type ValidationResult } from './engine.js';
+import { validate, type ValidationResult, TS_EXT, extOf } from './engine.js';
 import { resolveSymbol } from './symbols.js';
+import { universalEditSymbol } from './engine-universal-symbols.js';
+import { lspRequirementMessage } from './engine-lsp-registry.js';
+import { extToGrammar } from './engine-universal.js';
 export { previewDiff, characterDiff } from './advanced-diff.js';
 
 export type SymbolOp = 'replace' | 'insert_after' | 'remove';
@@ -60,6 +63,9 @@ export async function editSymbol(
   op: SymbolOp,
   code?: string,
 ): Promise<SymbolEditResult> {
+  if (!TS_EXT.has(extOf(file))) {
+    return universalEditSymbol(file, original, selector, op, code, extOf(file));
+  }
   const { Project, Node } = await import('ts-morph');
   const project = new Project({
     useInMemoryFileSystem: true,
@@ -156,6 +162,9 @@ export async function renameSymbolCrossFile(
 ): Promise<CrossFileRenameResult> {
   if (!/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(newName)) {
     throw new Error(`invalid identifier: ${JSON.stringify(newName)}`);
+  }
+  if (!TS_EXT.has(extOf(absFile))) {
+    throw new Error(lspRequirementMessage(extToGrammar(extOf(absFile)) ?? extOf(absFile), 'rename_symbol_cross_file'));
   }
   const tsconfig = findNearestTsconfig(absFile, repoRoot);
   const { Project } = await import('ts-morph');
@@ -352,6 +361,9 @@ export async function renameMemberCrossFile(
 ): Promise<CrossFileRenameResult> {
   if (!/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(newName)) {
     throw new Error(`invalid identifier: ${JSON.stringify(newName)}`);
+  }
+  if (!TS_EXT.has(extOf(absFile))) {
+    throw new Error(lspRequirementMessage(extToGrammar(extOf(absFile)) ?? extOf(absFile), 'rename_member'));
   }
   const { Project } = await import('ts-morph');
   const probe = new Project({ compilerOptions: { allowJs: true, noEmit: true } });

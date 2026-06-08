@@ -227,8 +227,8 @@ describe('DRIFT — Camada X (Behavioral Drift Observability)', () => {
       const snap = snapshotSvc.snapshot(wsId, '2026-05-11', events);
 
       expect(snap.decisionPatterns.length).toBeGreaterThan(0);
-      expect(snap.decisionPatterns[0]!.pattern).toContain('commerce.lead.converted');
-      expect(snap.decisionPatterns[0]!.count).toBe(2);
+      expect(snap.decisionPatterns[0].pattern).toContain('commerce.lead.converted');
+      expect(snap.decisionPatterns[0].count).toBe(2);
     });
 
     it('10 returns zero messagesSent when no message events exist', () => {

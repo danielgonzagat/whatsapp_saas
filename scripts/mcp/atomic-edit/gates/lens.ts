@@ -21,7 +21,7 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LENS_GATES, runGates, type UnifiedRed, type UnifiedUnjudged } from './registry.js';
 
-const SKIP = new Set(['node_modules', '.git', 'dist', '.next', 'build', 'coverage', 'vendor', '.atomic']);
+const SKIP = new Set(['node_modules', '.git', '.atomic', '.claude', '.mcp-cache', '.next', '.turbo', '.cache', 'build', 'coverage', 'dist', 'vendor']);
 const SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
 const LOCUS_RE = /L(\d+)(?::(\d+))?/;
 const SNIPPET_LIMIT = 240;
@@ -72,7 +72,7 @@ function enumerateSource(repoRoot: string, scopeAbs: string, cap = 8000): string
       if (SKIP.has(e.name)) continue;
       const abs = path.join(absDir, e.name);
       if (e.isDirectory()) walk(abs);
-      else if (SOURCE_RE.test(e.name) && !e.name.endsWith('.proof.ts')) {
+      else if (SOURCE_RE.test(e.name)) {
         out.push(path.relative(repoRoot, abs).replaceAll('\\', '/'));
       }
     }

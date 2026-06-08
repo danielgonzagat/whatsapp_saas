@@ -1,4 +1,5 @@
 'use client';
+import type { CrmContact } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
@@ -27,11 +28,11 @@ interface Deal {
   currency?: string;
 }
 
-interface Contact {
-  id?: string;
-  name?: string;
-  phone?: string;
-  email?: string;
+// Drawer view-model for a CRM contact — the canonical contact entity
+// (CrmContact, backed by the backend `Contact` model). `tags` is widened to
+// string[] for this drawer's tag editor, and drawer-derived fields
+// (leadScore/sentiment/deals) are added. Behaviour/shape unchanged.
+type Contact = Omit<Partial<CrmContact>, 'tags'> & {
   tags?: string[];
   leadScore?: number;
   sentiment?: 'positive' | 'neutral' | 'negative';

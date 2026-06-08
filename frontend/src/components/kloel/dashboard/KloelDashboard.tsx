@@ -44,6 +44,7 @@ import {
   createSendMessageHandler,
   type SendMessageContext,
 } from './KloelDashboard.hooks';
+import { useArtifacts } from './artifacts/useArtifacts';
 
 /** Kloel dashboard. */
 export default function KloelDashboard() {
@@ -75,6 +76,10 @@ export default function KloelDashboard() {
   const [approvalActionInFlight, setApprovalActionInFlight] = useState<string | null>(null);
 
   const loadedConversationIdRef = useRef<string | null>(null);
+  const loadingConversationIdRef = useRef<string | null>(null);
+  const conversationLoadTokenRef = useRef(0);
+  const suppressedConversationLoadIdRef = useRef<string | null>(null);
+  const previousRequestedConversationIdRef = useRef<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const activeStreamRef = useRef<{ abort: () => void } | null>(null);
@@ -93,6 +98,14 @@ export default function KloelDashboard() {
 
   const isReplyInFlight = isThinking || Boolean(streamingMessageId);
   const hasMessages = messages.length > 0;
+
+  const {
+    artifacts,
+    activeArtifact,
+    openArtifact,
+    closePanel: closeArtifactPanel,
+    updateArtifactContent,
+  } = useArtifacts(messages, activeConversationId);
 
   const { isDragActive, handleDragEnter, handleDragOver, handleDragLeave, handleDropFiles } =
     useKloelDragDrop({ isReplyInFlight, queueFilesForUpload, setComposerNotice, inputRef });
@@ -138,8 +151,18 @@ export default function KloelDashboard() {
   const loadConversation = useCallback(
     async (conversationId: string) => {
       if (!conversationId) {return;}
+      if (
+        loadedConversationIdRef.current === conversationId ||
+        loadingConversationIdRef.current === conversationId
+      ) {
+        return;
+      }
+      const loadToken = conversationLoadTokenRef.current + 1;
+      conversationLoadTokenRef.current = loadToken;
+      loadingConversationIdRef.current = conversationId;
       try {
         const payload = await loadKloelThreadMessages(conversationId);
+        if (conversationLoadTokenRef.current !== loadToken) {return;}
         setMessages(
           payload
             .filter((message) => String(message?.content || '').trim())
@@ -156,10 +179,23 @@ export default function KloelDashboard() {
         setActiveConversation(conversationId);
       } catch (error) {
         console.error('Failed to load conversation in dashboard:', error);
+      } finally {
+        if (
+          loadingConversationIdRef.current === conversationId &&
+          conversationLoadTokenRef.current === loadToken
+        ) {
+          loadingConversationIdRef.current = null;
+        }
       }
     },
     [conversationTitleMap, setActiveConversation],
   );
+
+  const clearComposerContext = useCallback(() => {
+    clearAllAttachments();
+    setLinkedProduct(null);
+    setActiveCapability(null);
+  }, [clearAllAttachments]);
 
   const resetToNewChat = useCallback(
     (replaceUrl = false) => {
@@ -169,22 +205,23 @@ export default function KloelDashboard() {
         clearTimeout(playbackTimerRef.current);
         playbackTimerRef.current = null;
       }
+      conversationLoadTokenRef.current += 1;
       loadedConversationIdRef.current = null;
+      loadingConversationIdRef.current = null;
       setActiveConversationId(null);
       setConversationTitle('Nova conversa');
       setMessages([]);
       setIsThinking(false);
       setStreamingMessageId(null);
       setShowSlowHint(false);
-      setLinkedProduct(null);
-      setActiveCapability(null);
-      clearAllAttachments();
+      clearComposerContext();
       setActiveConversation(null);
       if (replaceUrl) {
+        suppressedConversationLoadIdRef.current = requestedConversationId;
         router.replace(KLOEL_CHAT_ROUTE, { scroll: false });
       }
     },
-    [clearAllAttachments, router, setActiveConversation],
+    [clearComposerContext, requestedConversationId, router, setActiveConversation],
   );
 
   const onTitle = useCallback(
@@ -245,6 +282,7 @@ export default function KloelDashboard() {
       conversationTitle,
       conversationTitleMap,
       clearAllAttachments,
+      clearComposerContext,
       loadConversation,
       refreshConversations,
       upsertConversation,
@@ -255,6 +293,7 @@ export default function KloelDashboard() {
       linkedProduct,
       activeCapability,
       activeStreamRef,
+      loadedConversationIdRef,
       streamingMessageId,
     }),
     [
@@ -263,6 +302,7 @@ export default function KloelDashboard() {
       conversationTitle,
       conversationTitleMap,
       clearAllAttachments,
+      clearComposerContext,
       loadConversation,
       refreshConversations,
       upsertConversation,
@@ -297,37 +337,42 @@ export default function KloelDashboard() {
     clearAllAttachments,
   });
 
-  const handleSend = useCallback(() => {
-    if (attachments.some((a) => a.status === 'uploading')) {
-      setComposerNotice('Aguarde o envio dos anexos terminar antes de continuar.');
-      return;
-    }
-
-    const hasReadyAttachments = attachments.some((a) => a.status === 'ready');
-    const detected =
-      !linkedProduct && !activeCapability && !hasReadyAttachments
-        ? detectOperatorIntent(input)
-        : null;
-    if (detected) {
-      if (isUnsupportedFallback(detected)) {
-        void handleUnsupportedFallback(input);
+  const handleSend = useCallback(
+    (draftOverride?: string) => {
+      const currentInput = typeof draftOverride === 'string' ? draftOverride : input;
+      if (attachments.some((a) => a.status === 'uploading')) {
+        setComposerNotice('Aguarde o envio dos anexos terminar antes de continuar.');
         return;
       }
-      void handleOperatorDispatch(input, detected);
-      return;
-    }
 
-    void handleSendMessage(input);
-  }, [
-    activeCapability,
-    attachments,
-    handleSendMessage,
-    input,
-    linkedProduct,
-    setComposerNotice,
-    handleOperatorDispatch,
-    handleUnsupportedFallback,
-  ]);
+      const hasReadyAttachments = attachments.some((a) => a.status === 'ready');
+      const detected =
+        !linkedProduct && !activeCapability && !hasReadyAttachments
+          ? detectOperatorIntent(currentInput)
+          : null;
+      if (detected) {
+        if (isUnsupportedFallback(detected)) {
+          void handleUnsupportedFallback(currentInput);
+          return;
+        }
+        void handleOperatorDispatch(currentInput, detected);
+        return;
+      }
+
+      void handleSendMessage(currentInput);
+      setInput('');
+    },
+    [
+      activeCapability,
+      attachments,
+      handleSendMessage,
+      input,
+      linkedProduct,
+      setComposerNotice,
+      handleOperatorDispatch,
+      handleUnsupportedFallback,
+    ],
+  );
 
   const handleQuickAction = useCallback(
     (action: KloelDashboardQuickAction) => {
@@ -363,10 +408,16 @@ export default function KloelDashboard() {
 
   useEffect(() => {
     if (!requestedConversationId) {
-      if (messages.length > 0 || isThinking || activeConversationId) {return;}
+      const droppedConversationId = previousRequestedConversationIdRef.current;
+      previousRequestedConversationIdRef.current = null;
+      suppressedConversationLoadIdRef.current = null;
+      if (!droppedConversationId) {return undefined;}
       const timeoutId = window.setTimeout(() => resetToNewChat(false), 0);
       return () => window.clearTimeout(timeoutId);
     }
+    previousRequestedConversationIdRef.current = requestedConversationId;
+    if (suppressedConversationLoadIdRef.current === requestedConversationId) {return undefined;}
+    suppressedConversationLoadIdRef.current = null;
     if (loadedConversationIdRef.current === requestedConversationId) {return;}
     void loadConversation(requestedConversationId);
     return undefined;
@@ -445,6 +496,7 @@ export default function KloelDashboard() {
       messages={messages}
       conversationTitle={conversationTitle}
       onTitle={onTitle}
+      onNewChat={() => resetToNewChat(true)}
       streamingMessageId={streamingMessageId}
       isThinking={isThinking}
       isReplyInFlight={isReplyInFlight}
@@ -483,6 +535,11 @@ export default function KloelDashboard() {
       onRemoveLinkedProduct={() => setLinkedProduct(null)}
       onCapabilityChange={setActiveCapability}
       onApprovalDecision={handleApprovalDecision}
+      artifacts={artifacts}
+      activeArtifact={activeArtifact}
+      onOpenArtifact={openArtifact}
+      onCloseArtifact={closeArtifactPanel}
+      onArtifactContentChange={updateArtifactContent}
     />
   );
 }

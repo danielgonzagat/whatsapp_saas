@@ -47,12 +47,12 @@ describe('WhatsAppEventEmitterService', () => {
       const events = spine.recentEvents();
       const ev = events.find((e) => e.eventName === 'commerce.whatsapp.message_received');
       expect(ev).toBeDefined();
-      expect(ev!.workspaceId).toBe(WS);
-      expect(ev!.entityRef).toEqual({ entityType: 'contact', entityId: CONTACT_ID });
-      expect(ev!.truthMode).toBe('observed');
-      expect(ev!.provenance.source).toBe('production');
-      expect(ev!.provenance.processor).toBe('whatsapp-event-emitter');
-      expect(ev!.payload).toMatchObject({
+      expect(ev.workspaceId).toBe(WS);
+      expect(ev.entityRef).toEqual({ entityType: 'contact', entityId: CONTACT_ID });
+      expect(ev.truthMode).toBe('observed');
+      expect(ev.provenance.source).toBe('production');
+      expect(ev.provenance.processor).toBe('whatsapp-event-emitter');
+      expect(ev.payload).toMatchObject({
         messageId: MESSAGE_ID,
         phone: '5511999999999',
         channel: 'whatsapp',
@@ -73,10 +73,10 @@ describe('WhatsAppEventEmitterService', () => {
       const events = spine.recentEvents();
       const ev = events.find((e) => e.eventName === 'commerce.whatsapp.message_read');
       expect(ev).toBeDefined();
-      expect(ev!.workspaceId).toBe(WS);
-      expect(ev!.entityRef).toEqual({ entityType: 'chat', entityId: chatId });
-      expect(ev!.truthMode).toBe('observed');
-      expect(ev!.payload).toMatchObject({ chatId });
+      expect(ev.workspaceId).toBe(WS);
+      expect(ev.entityRef).toEqual({ entityType: 'chat', entityId: chatId });
+      expect(ev.truthMode).toBe('observed');
+      expect(ev.payload).toMatchObject({ chatId });
     });
 
     it('message_replied — correct eventName, workspaceId, truthMode observed, author in payload', () => {
@@ -94,9 +94,9 @@ describe('WhatsAppEventEmitterService', () => {
       const events = spine.recentEvents();
       const ev = events.find((e) => e.eventName === 'commerce.whatsapp.message_replied');
       expect(ev).toBeDefined();
-      expect(ev!.workspaceId).toBe(WS);
-      expect(ev!.truthMode).toBe('observed');
-      expect(ev!.payload).toMatchObject({
+      expect(ev.workspaceId).toBe(WS);
+      expect(ev.truthMode).toBe('observed');
+      expect(ev.payload).toMatchObject({
         to: '5511999999999@c.us',
         author: 'autopilot',
         messageId: MESSAGE_ID,
@@ -115,10 +115,10 @@ describe('WhatsAppEventEmitterService', () => {
       const events = spine.recentEvents();
       const ev = events.find((e) => e.eventName === 'commerce.whatsapp.handoff_to_human');
       expect(ev).toBeDefined();
-      expect(ev!.workspaceId).toBe(WS);
-      expect(ev!.entityRef).toEqual({ entityType: 'contact', entityId: CONTACT_ID });
-      expect(ev!.truthMode).toBe('observed');
-      expect(ev!.payload).toMatchObject({ reason: 'lead_requested_human' });
+      expect(ev.workspaceId).toBe(WS);
+      expect(ev.entityRef).toEqual({ entityType: 'contact', entityId: CONTACT_ID });
+      expect(ev.truthMode).toBe('observed');
+      expect(ev.payload).toMatchObject({ reason: 'lead_requested_human' });
     });
 
     it('conversation_resumed — correct eventName, workspaceId, resumeTrigger in payload', () => {
@@ -133,9 +133,9 @@ describe('WhatsAppEventEmitterService', () => {
       const events = spine.recentEvents();
       const ev = events.find((e) => e.eventName === 'commerce.whatsapp.conversation_resumed');
       expect(ev).toBeDefined();
-      expect(ev!.workspaceId).toBe(WS);
-      expect(ev!.truthMode).toBe('observed');
-      expect(ev!.payload).toMatchObject({ resumeTrigger: 'lead_replied_after_silence' });
+      expect(ev.workspaceId).toBe(WS);
+      expect(ev.truthMode).toBe('observed');
+      expect(ev.payload).toMatchObject({ resumeTrigger: 'lead_replied_after_silence' });
     });
 
     it('lead_went_silent — correct eventName, truthMode inferred, payload carries lastMessageAt/silenceHours/reason', () => {
@@ -152,12 +152,12 @@ describe('WhatsAppEventEmitterService', () => {
       const events = spine.recentEvents();
       const ev = events.find((e) => e.eventName === 'commerce.lead.went_silent');
       expect(ev).toBeDefined();
-      expect(ev!.workspaceId).toBe(WS);
-      expect(ev!.entityRef).toEqual({ entityType: 'contact', entityId: CONTACT_ID });
-      expect(ev!.truthMode).toBe('inferred');
-      expect(ev!.provenance.source).toBe('production');
-      expect(ev!.provenance.processor).toBe('whatsapp-event-emitter');
-      expect(ev!.payload).toMatchObject({
+      expect(ev.workspaceId).toBe(WS);
+      expect(ev.entityRef).toEqual({ entityType: 'contact', entityId: CONTACT_ID });
+      expect(ev.truthMode).toBe('inferred');
+      expect(ev.provenance.source).toBe('production');
+      expect(ev.provenance.processor).toBe('whatsapp-event-emitter');
+      expect(ev.payload).toMatchObject({
         lastMessageAt: '2026-05-13T10:00:00.000Z',
         silenceHours: 48,
         reason: 'no_response_after_objection',
@@ -177,10 +177,10 @@ describe('WhatsAppEventEmitterService', () => {
       const events = spine.recentEvents();
       const ev = events.find((e) => e.eventName === 'commerce.whatsapp.session_lifecycle');
       expect(ev).toBeDefined();
-      expect(ev!.workspaceId).toBe(WS);
-      expect(ev!.entityRef).toEqual({ entityType: 'workspace', entityId: WS });
-      expect(ev!.truthMode).toBe('observed');
-      expect(ev!.payload).toMatchObject({
+      expect(ev.workspaceId).toBe(WS);
+      expect(ev.entityRef).toEqual({ entityType: 'workspace', entityId: WS });
+      expect(ev.truthMode).toBe('observed');
+      expect(ev.payload).toMatchObject({
         event: 'connected',
         phoneNumber: '5511999999999',
         reason: 'qr_scan_success',
@@ -326,7 +326,7 @@ describe('WhatsAppEventEmitterService', () => {
       const events = spine.recentEvents();
       const ev = events.find((e) => e.eventName === 'commerce.whatsapp.message_received');
       expect(ev).toBeDefined();
-      expect(ev!.valence).toBeDefined();
+      expect(ev.valence).toBeDefined();
     });
 
     it('handoff_to_human carries a valence tag', () => {
@@ -342,7 +342,7 @@ describe('WhatsAppEventEmitterService', () => {
       const events = spine.recentEvents();
       const ev = events.find((e) => e.eventName === 'commerce.whatsapp.handoff_to_human');
       expect(ev).toBeDefined();
-      expect(ev!.valence).toBeDefined();
+      expect(ev.valence).toBeDefined();
     });
   });
 

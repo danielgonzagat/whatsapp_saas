@@ -32,12 +32,13 @@ export function KloelGraphNodeButton({
 }) {
   const { C } = useGraphTheme();
   const isSun = node.type === 'sun';
-  const isCore = node.id === 'perfil';
+  const isCore = node.type === 'core';
+  const isMass = isSun || isCore;
   const size = point.r * 2;
 
-  const dotColor = active ? C.ember : isSun ? C.silver : isCore ? C.silver : C.dim;
-  const labelColor = active ? C.silver : isSun ? C.text : C.muted;
-  const labelSize = isSun ? 12 : Math.max(8.5, Math.min(11, point.r / 2.2));
+  const dotColor = active ? C.ember : isMass ? C.silver : C.dim;
+  const labelColor = active ? C.silver : isMass ? C.text : C.muted;
+  const labelSize = isMass ? 12 : Math.max(8.5, Math.min(11, point.r / 2.2));
 
   return (
     <button
@@ -86,7 +87,7 @@ export function KloelGraphNodeButton({
           whiteSpace: 'nowrap',
           fontFamily: GRAPH_FONT,
           fontSize: labelSize,
-          fontWeight: isSun ? 600 : 400,
+          fontWeight: isMass ? 600 : 400,
           color: labelColor,
           textShadow: `0 1px 2px ${C.void}`,
           pointerEvents: 'none',

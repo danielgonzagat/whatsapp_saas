@@ -2,7 +2,9 @@ import { ProductCouponDomainService } from './product-coupon-domain.service';
 import { NotFoundException, type Provider } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { AuditService } from '../audit/audit.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CampaignsService } from '../campaigns/campaigns.service';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PartnershipsService } from '../partnerships/partnerships.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -62,13 +64,26 @@ function moduleWith(
         provide: CampaignsService,
         useValue: {
           create: jest.fn().mockResolvedValue({ id: 'c1' }),
+          getDeliveryReadiness: jest.fn().mockResolvedValue({
+            emailReady: false,
+            whatsappReady: false,
+            ready: false,
+            missing: ['Meta Cloud WhatsApp conectado'],
+            message:
+              'Conecte um canal de entrega antes de lançar campanha. Faltando: Meta Cloud WhatsApp conectado',
+          }),
           launch: jest.fn(),
           pause: jest.fn(),
         },
       },
       ...extraProviders,
     ],
-  }).compile();
+  })
+    .overrideGuard(JwtAuthGuard)
+    .useValue({ canActivate: jest.fn(() => true) })
+    .overrideGuard(WorkspaceGuard)
+    .useValue({ canActivate: jest.fn(() => true) })
+    .compile();
 }
 
 describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
@@ -216,6 +231,33 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
 
     it('blocks workspace-B from listing campaigns on workspace-A product', async () => {
       await expect(controller.list(PROD_A, WS_B_USER)).rejects.toThrow(NotFoundException);
+    });
+
+    it('exposes delivery readiness for listed campaigns', async () => {
+      const mod = await moduleWith(ProductCampaignController, {
+        product: { findFirst: makeProductFindFirst() },
+        campaign: {
+          findMany: jest.fn().mockResolvedValue([]),
+        },
+        productCampaign: {
+          findMany: jest
+            .fn()
+            .mockResolvedValue([
+              { id: 'pc-ready', productId: PROD_A, name: 'Launch', code: 'LCH' },
+            ]),
+        },
+      });
+      const localController = mod.get(ProductCampaignController);
+
+      await expect(localController.list(PROD_A, WS_A_USER)).resolves.toEqual([
+        expect.objectContaining({
+          id: 'pc-ready',
+          deliveryReady: false,
+          deliveryMissing: ['Meta Cloud WhatsApp conectado'],
+          deliveryGapMessage:
+            'Conecte um canal de entrega antes de lançar campanha. Faltando: Meta Cloud WhatsApp conectado',
+        }),
+      ]);
     });
 
     it('blocks workspace-B from creating campaign on workspace-A product', async () => {

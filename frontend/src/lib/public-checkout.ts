@@ -1,6 +1,7 @@
 import type {
   PixelConfig,
   PublicCheckoutOrderBump,
+  PublicCheckoutProductFormat,
   PublicCheckoutRecord,
   PublicCheckoutResponse,
   PublicCheckoutTestimonial,
@@ -45,6 +46,18 @@ function asTimerType(value: unknown) {
 
   return undefined;
 }
+function asProductFormat(value: unknown): PublicCheckoutProductFormat | undefined {
+  const normalized = String(value || '')
+    .trim()
+    .toUpperCase();
+
+  if (normalized === 'DIGITAL' || normalized === 'PHYSICAL' || normalized === 'HYBRID') {
+    return normalized;
+  }
+
+  return undefined;
+}
+
 
 function asStringArray(value: unknown) {
   return Array.isArray(value)
@@ -109,6 +122,7 @@ export function normalizePublicCheckoutResponse(input: unknown): PublicCheckoutR
       id: readRequiredString(productRecord, 'id', 'id do produto'),
       name: productName,
       description: asOptionalString(productRecord.description),
+      format: asProductFormat(productRecord.format),
       imageUrl: asOptionalString(productRecord.imageUrl),
       images: asStringArray(productRecord.images),
       workspaceId: asOptionalString(productRecord.workspaceId),

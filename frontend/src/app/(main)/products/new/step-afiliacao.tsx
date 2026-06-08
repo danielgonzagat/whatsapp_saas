@@ -24,6 +24,7 @@ export function StepAfiliacao({ form, updateForm }: StepCommonProps) {
       <MonitorInputField label={kloelT('Habilitar afiliados')}>
         <button
           type="button"
+          aria-pressed={form.affiliatesEnabled}
           onClick={() => updateForm({ affiliatesEnabled: !form.affiliatesEnabled })}
           style={{
             display: 'flex',
@@ -84,10 +85,12 @@ export function StepAfiliacao({ form, updateForm }: StepCommonProps) {
             hint={kloelT('Percentual sobre cada venda')}
           >
             <input
+              id="product-affiliate-commission-percent"
+              name="productAffiliateCommissionPercent"
+              aria-label={kloelT('Comissao do afiliado')}
               {...inputProps}
-              type="number"
-              min="0"
-              max="100"
+              type="text"
+              inputMode="decimal"
               value={form.affiliateCommissionPercent}
               onChange={(e) => updateForm({ affiliateCommissionPercent: e.target.value })}
               placeholder="0"
@@ -102,6 +105,7 @@ export function StepAfiliacao({ form, updateForm }: StepCommonProps) {
                   <button
                     type="button"
                     key={opt.value}
+                    aria-pressed={selected}
                     onClick={() => updateForm({ affiliateApprovalMode: opt.value })}
                     style={{
                       background: selected ? 'rgba(232, 93, 48, 0.08)' : colors.background.nebula,

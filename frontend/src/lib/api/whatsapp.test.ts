@@ -73,6 +73,31 @@ describe('Meta-only WhatsApp API', () => {
     );
   });
 
+
+  it('marks unavailable Meta OAuth configuration as degraded before connection', async () => {
+    apiFetchMock.mockResolvedValue({
+      data: {
+        connected: false,
+        channels: {
+          whatsapp: {
+            connected: false,
+            status: 'meta_oauth_configuration_missing',
+          },
+        },
+      },
+      status: 200,
+    });
+
+    await expect(getWhatsAppStatus('ws-1')).resolves.toEqual(
+      expect.objectContaining({
+        connected: false,
+        status: 'meta_oauth_configuration_missing',
+        workerHealthy: false,
+        degraded: true,
+        degradedReason: 'meta_oauth_configuration_missing',
+      }),
+    );
+  });
   it('requests the official Meta authorization URL for WhatsApp', async () => {
     apiFetchMock.mockResolvedValue({ data: { url: 'https://meta.test/auth' }, status: 200 });
 

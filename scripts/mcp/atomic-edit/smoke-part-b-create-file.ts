@@ -1,7 +1,7 @@
 import * as crypto from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { check, type PartBCtx } from "./smoke-state.js";
+import { check, jsonBody, type PartBCtx } from "./smoke-state.js";
 
 
 export async function partBCreateFile(ctx: PartBCtx): Promise<void> {
@@ -25,7 +25,7 @@ export async function partBCreateFile(ctx: PartBCtx): Promise<void> {
           preview: true,
         },
       })) as { content: { text: string }[] };
-      const createPrevBody = JSON.parse(createPrev.content.at(-1)?.text ?? '{}');
+      const createPrevBody = jsonBody(createPrev);
       check(
         'create_file preview does not create file',
         createPrevBody.ok === true &&
@@ -63,7 +63,7 @@ export async function partBCreateFile(ctx: PartBCtx): Promise<void> {
           content: 'export const CREATED = 1;\n',
         },
       })) as { content: { text: string }[] };
-      const createCommitBody = JSON.parse(createCommit.content.at(-1)?.text ?? '{}');
+      const createCommitBody = jsonBody(createCommit);
       check(
         'create_file commit creates file',
         createCommitBody.ok === true &&
@@ -138,7 +138,7 @@ export async function partBCreateFile(ctx: PartBCtx): Promise<void> {
             content: 'export const FILLED = 42;\n',
           },
         })) as { content: { text: string }[] };
-        const fillEmptyBody = JSON.parse(fillEmpty.content.at(-1)?.text ?? '{}');
+        const fillEmptyBody = jsonBody(fillEmpty);
         check(
           'create_file fills existing empty file',
           fillEmptyBody.ok === true &&
@@ -180,7 +180,7 @@ export async function partBCreateFile(ctx: PartBCtx): Promise<void> {
             expectedSha256: shaHelper(''),
           },
         })) as { content: { text: string }[] };
-        const correctShaBody = JSON.parse(correctShaEmpty.content.at(-1)?.text ?? '{}');
+        const correctShaBody = jsonBody(correctShaEmpty);
         check(
           'create_file correct sha on empty file succeeds',
           correctShaBody.ok === true && correctShaBody.changed === true,
@@ -233,7 +233,7 @@ export async function partBCreateFile(ctx: PartBCtx): Promise<void> {
           name: 'atomic_create_file',
           arguments: { file: mjsRel, content: mjsContent },
         })) as { content: { text: string }[] };
-        const mjsBody = JSON.parse(mjsCreate.content.at(-1)?.text ?? '{}');
+        const mjsBody = jsonBody(mjsCreate);
         check(
           'create_file multi-line .mjs source file',
           mjsBody.ok === true && mjsBody.changed === true && mjsBody.created === true,

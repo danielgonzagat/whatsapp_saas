@@ -8,14 +8,12 @@ import {
   normalizeProductAiConfigInput,
   serializeProductAiConfig,
 } from './helpers/ai-config.helpers';
-import {
-  LooseObject,
-  ensureWorkspaceProductAccess,
-  getWorkspaceId,
-} from './helpers/common.helpers';
+import { LooseObject, ensureWorkspaceProductAccess } from './helpers/common.helpers';
 
 /** Product ai config controller. */
 import { RouteClass } from '../../common/throttler/route-class.decorator';
+import { resolveWorkspaceId } from '../../auth/workspace-access';
+
 @Controller('products/:productId/ai-config')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('mutate')
@@ -25,7 +23,7 @@ export class ProductAIConfigController {
   /** Get. */
   @Get()
   async get(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     const config = await this.prisma.productAIConfig.findUnique({
       where: { productId },
@@ -41,7 +39,7 @@ export class ProductAIConfigController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: AuthenticatedRequest,
   ) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     const current = await this.prisma.productAIConfig.findUnique({
       where: { productId },

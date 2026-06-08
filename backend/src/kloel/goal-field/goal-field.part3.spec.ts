@@ -107,7 +107,7 @@ describe('GoalFieldService — shadow accumulator integration', () => {
       ev({
         eventName: 'readiness.gate_failed',
         payload: { mode: 'hard_fail', gateName: 'origin-immutability' },
-        workspaceId: undefined as string,
+        workspaceId: undefined,
         entityRef: { entityType: 'gate', entityId: 'origin-immutability' },
       }),
     ];

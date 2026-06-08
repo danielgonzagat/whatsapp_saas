@@ -1,5 +1,6 @@
 'use client';
 
+import { useClientMounted } from '@/hooks/useClientMounted';
 import { kloelT } from '@/lib/i18n/t';
 import { colors, radius } from '@/lib/design-tokens';
 import { useEffect, useRef, useState } from 'react';
@@ -74,9 +75,7 @@ function usePrefersReducedMotion() {
 }
 
 function ThanosOmniSales({ runToken }: { runToken: number }) {
-  const [msgs, setMsgs] = useState<Record<ChannelKey, SalesMessage[]>>(
-    createEmptySalesMessages,
-  );
+  const [msgs, setMsgs] = useState<Record<ChannelKey, SalesMessage[]>>(createEmptySalesMessages);
   const { messages: flowMessages } = useSalesFlow();
 
   useEffect(() => {
@@ -208,6 +207,7 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
 /** Thanos section. */
 export default function ThanosSection() {
   const prefersReducedMotion = usePrefersReducedMotion();
+  const isMounted = useClientMounted();
   const cvRef = useRef<HTMLCanvasElement | null>(null);
   const secRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number>(0);
@@ -432,10 +432,10 @@ export default function ThanosSection() {
             width: '100%',
             height: '100%',
             transition: 'opacity .8s ease',
-            opacity: prefersReducedMotion ? 0 : 1,
+            opacity: !isMounted ? 0 : prefersReducedMotion ? 0 : 1,
           }}
         />
-        {(prefersReducedMotion || showReveal) && (
+        {(!isMounted || prefersReducedMotion || showReveal) && (
           <div
             className="thanos-reveal"
             style={{
@@ -445,7 +445,7 @@ export default function ThanosSection() {
               flexDirection: 'column',
               alignItems: 'center',
               padding: '0 24px',
-              animation: prefersReducedMotion ? 'none' : 'thanosIn 1s ease both',
+              animation: !isMounted || prefersReducedMotion ? 'none' : 'thanosIn 1s ease both',
             }}
           >
             <h2

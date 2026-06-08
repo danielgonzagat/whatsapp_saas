@@ -133,7 +133,10 @@ describe('MemoryManagementService', () => {
       const result = await service.getStats();
 
       expect(result).toEqual(stats);
-      expect(computeMemoryStats).toHaveBeenCalledWith(prisma);
+      // Canonicalized: getStats now passes the canonical Mind surface
+      // (`MindMemoryItemService.items`, which returns `prisma.kloelMemory`)
+      // as the delegate, alongside raw `prisma` for the `$queryRaw` path.
+      expect(computeMemoryStats).toHaveBeenCalledWith(prisma, prisma.kloelMemory);
     });
 
     it('returns empty stats on error', async () => {

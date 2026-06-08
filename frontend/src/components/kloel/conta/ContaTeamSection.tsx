@@ -1,21 +1,33 @@
 'use client';
 import { colors } from '@/lib/design-tokens';
+import { useAuth } from '@/components/kloel/auth/auth-provider';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useState, useId } from 'react';
 import useSWR from 'swr';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import type { TeamListResponse } from '@/lib/api/team';
-import { inviteTeamMember, listTeam, removeTeamMember, revokeTeamInvite } from '@/lib/api/team';
+import {
+  inviteTeamMember,
+  listTeam,
+  removeTeamMember,
+  revokeTeamInvite,
+  updateMemberRole,
+} from '@/lib/api/team';
 import Icons from './ContaIcons';
 import { SORA, EMBER } from './ContaConstants';
 import { getErrorMessage } from './ContaHelpers';
 import { SectionCard } from './ContaShared';
 import { TeamMember, TeamInvite } from './ContaTypes';
 
+const INVITE_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const INVALID_INVITE_EMAIL_MESSAGE = 'Informe um email valido.';
+
 export function TeamSection() {
   const fid = useId();
   const wsId = useWorkspaceId();
+  const { userEmail } = useAuth();
+  const currentUserEmail = userEmail?.trim().toLowerCase() || '';
   const {
     data,
     error: listError,
@@ -25,15 +37,14 @@ export function TeamSection() {
     keepPreviousData: true,
     revalidateOnFocus: false,
   });
-  // Backend returns { agents, invitations }. Map agents->members (deriving an
-  // honest status from isOnline) and treat every returned invitation as pending
-  // (the backend does not send a status field).
+  // Backend returns { agents, invitations }. Agents are active workspace members;
+  // pending status belongs to invitations that have not been accepted yet.
   const members: TeamMember[] = (data?.agents ?? []).map((agent) => ({
     id: agent.id,
     name: agent.name,
     email: agent.email,
     role: agent.role,
-    status: agent.isOnline ? 'active' : 'pending',
+    status: 'active',
   }));
   const invites: TeamInvite[] = (data?.invitations ?? []).map((inv) => ({
     id: inv.id,
@@ -49,10 +60,21 @@ export function TeamSection() {
   const [inviteSuccess, setInviteSuccess] = useState('');
   const [teamActionError, setTeamActionError] = useState('');
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
 
+  const trimmedInviteEmail = inviteEmail.trim();
+  const inviteEmailInvalid = !!trimmedInviteEmail && !INVITE_EMAIL_RE.test(trimmedInviteEmail);
+  const inviteValidationError = inviteEmailInvalid ? INVALID_INVITE_EMAIL_MESSAGE : '';
+  const inviteButtonDisabled = inviting || !trimmedInviteEmail || inviteEmailInvalid;
+
   const handleInvite = async () => {
-    if (!inviteEmail.trim()) {
+    if (!trimmedInviteEmail) {
+      return;
+    }
+    if (inviteEmailInvalid) {
+      setInviteError(INVALID_INVITE_EMAIL_MESSAGE);
+      setInviteSuccess('');
       return;
     }
     setInviting(true);
@@ -60,9 +82,9 @@ export function TeamSection() {
     setInviteSuccess('');
     setTeamActionError('');
     try {
-      await inviteTeamMember(inviteEmail.trim(), inviteRole);
+      await inviteTeamMember(trimmedInviteEmail, inviteRole);
       setInviteEmail('');
-      setInviteSuccess(`Convite enviado para ${inviteEmail.trim()}`);
+      setInviteSuccess(`Convite enviado para ${trimmedInviteEmail}`);
       await mutate();
     } catch (e) {
       setInviteError(getErrorMessage(e) || 'Erro ao enviar convite');
@@ -71,11 +93,15 @@ export function TeamSection() {
     }
   };
 
+
   const handleRevoke = async (id: string) => {
     setRevokingId(id);
     setTeamActionError('');
+    setInviteError('');
+    setInviteSuccess('');
     try {
       await revokeTeamInvite(id);
+      setInviteSuccess('Convite cancelado.');
       await mutate();
     } catch (e) {
       setTeamActionError(getErrorMessage(e) || 'Erro ao cancelar convite');
@@ -97,6 +123,22 @@ export function TeamSection() {
       setTeamActionError(getErrorMessage(e) || 'Erro ao remover membro');
     } finally {
       setRemovingId(null);
+    }
+  };
+
+  const handleRoleChange = async (memberId: string, currentRole: string, nextRole: string) => {
+    if (!nextRole || nextRole === currentRole) {
+      return;
+    }
+    setUpdatingRoleId(memberId);
+    setTeamActionError('');
+    try {
+      await updateMemberRole(memberId, nextRole);
+      await mutate();
+    } catch (e) {
+      setTeamActionError(getErrorMessage(e) || 'Erro ao atualizar cargo');
+    } finally {
+      setUpdatingRoleId(null);
     }
   };
 
@@ -171,11 +213,17 @@ export function TeamSection() {
             </label>
             <input
               aria-label="Email do convidado"
+              aria-invalid={inviteEmailInvalid}
               type="email"
               value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
+              onChange={(e) => {
+                setInviteEmail(e.target.value);
+                setInviteError('');
+                setInviteSuccess('');
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
+                  e.preventDefault();
                   handleInvite();
                 }
               }}
@@ -214,16 +262,16 @@ export function TeamSection() {
           <button
             type="button"
             onClick={handleInvite}
-            disabled={inviting || !inviteEmail.trim()}
+            disabled={inviteButtonDisabled}
             style={{
               padding: '11px 20px',
-              background: inviting || !inviteEmail.trim() ? 'var(--app-text-placeholder)' : EMBER,
+              background: inviteButtonDisabled ? 'var(--app-text-placeholder)' : EMBER,
               border: 'none',
               borderRadius: 6,
               color: colors.text.silver,
               fontSize: 12,
               fontWeight: 600,
-              cursor: inviting || !inviteEmail.trim() ? 'not-allowed' : 'pointer',
+              cursor: inviteButtonDisabled ? 'not-allowed' : 'pointer',
               fontFamily: SORA,
               display: 'flex',
               alignItems: 'center',
@@ -233,9 +281,9 @@ export function TeamSection() {
             {Icons.plus(12)} {inviting ? 'Enviando...' : 'Convidar'}
           </button>
         </div>
-        {inviteError && (
+        {(inviteError || inviteValidationError) && (
           <p style={{ fontSize: 11, color: colors.semantic.error, margin: '8px 0 0', fontFamily: SORA }}>
-            {inviteError}
+            {inviteError || inviteValidationError}
           </p>
         )}
         {inviteSuccess && (
@@ -266,83 +314,133 @@ export function TeamSection() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 2 }}>
-            {members.map((m) => (
-              <div
-                key={m.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: '10px 0',
-                  borderBottom: '1px solid var(--app-border-subtle)',
-                }}
-              >
+            {members.map((m) => {
+              const memberEmail = m.email.trim().toLowerCase();
+              const isCurrentUser = !!currentUserEmail && memberEmail === currentUserEmail;
+              const roleSelectDisabled = updatingRoleId === m.id || isCurrentUser;
+
+              return (
                 <div
+                  key={m.id}
                   style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: '16%',
-                    background: 'var(--app-bg-secondary)',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'var(--app-text-secondary)',
+                    gap: 12,
+                    padding: '10px 0',
+                    borderBottom: '1px solid var(--app-border-subtle)',
                   }}
                 >
-                  {Icons.user(14)}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <span
+                  <div
                     style={{
-                      fontSize: 13,
-                      fontWeight: 500,
-                      color: 'var(--app-text-primary)',
-                      display: 'block',
-                      fontFamily: SORA,
+                      width: 32,
+                      height: 32,
+                      borderRadius: '16%',
+                      background: 'var(--app-bg-secondary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'var(--app-text-secondary)',
                     }}
                   >
-                    {m.name || m.email}
-                  </span>
-                  <span
-                    style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}
+                    {Icons.user(14)}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: 'var(--app-text-primary)',
+                        display: 'block',
+                        fontFamily: SORA,
+                      }}
+                    >
+                      {m.name || m.email}
+                    </span>
+                    <span
+                      style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}
+                    >
+                      {m.email}
+                    </span>
+                  </div>
+                  <select
+                    id={`${fid}-team-role-${m.id}`}
+                    name={`team-role-${m.id}`}
+                    aria-label={kloelT(`Funcao de ${m.name || m.email}`)}
+                    value={m.role}
+                    onChange={(e) => handleRoleChange(m.id, m.role, e.target.value)}
+                    disabled={roleSelectDisabled}
+                    style={{
+                      ...selectStyle,
+                      width: 132,
+                      padding: '6px 8px',
+                      fontSize: 11,
+                      opacity: roleSelectDisabled ? 0.58 : 1,
+                    }}
+                    title={
+                      isCurrentUser
+                        ? kloelT(`Seu cargo precisa ser alterado por outro administrador`)
+                        : kloelT(`Alterar cargo de ${m.name || m.email}`)
+                    }
                   >
-                    {m.email} {kloelT(`&middot;`)} {ROLES[m.role] || m.role}
+                    {Object.entries(ROLES).map(([k, v]) => (
+                      <option key={k} value={k}>
+                        {v}
+                      </option>
+                    ))}
+                  </select>
+                  <span
+                    style={{
+                      fontSize: 9,
+                      fontWeight: 600,
+                      padding: '2px 8px',
+                      borderRadius: 4,
+                      fontFamily: SORA,
+                      color: m.status === 'active' ? colors.semantic.success : colors.semantic.warning,
+                      background:
+                        m.status === 'active' ? 'rgba(16,185,129,.08)' : 'rgba(245,158,11,.08)',
+                    }}
+                  >
+                    {m.status === 'active' ? 'Ativo' : 'Pendente'}
                   </span>
+                  {isCurrentUser ? (
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 600,
+                        padding: '5px 8px',
+                        borderRadius: 4,
+                        color: 'var(--app-text-tertiary)',
+                        border: '1px solid var(--app-border-primary)',
+                        fontFamily: SORA,
+                      }}
+                      title={kloelT(`Voce nao pode remover a si mesmo da equipe`)}
+                    >
+                      {kloelT(`Voce`)}
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleRemove(m.id)}
+                      disabled={removingId === m.id}
+                      style={{
+                        padding: '5px 8px',
+                        background: 'none',
+                        border: '1px solid var(--app-border-primary)',
+                        borderRadius: 4,
+                        color: colors.semantic.error,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        opacity: removingId === m.id ? 0.5 : 1,
+                      }}
+                      aria-label={kloelT(`Remover ${m.name || m.email}`)}
+                      title={kloelT(`Remover ${m.name || m.email}`)}
+                    >
+                      {Icons.trash(12)}
+                    </button>
+                  )}
                 </div>
-                <span
-                  style={{
-                    fontSize: 9,
-                    fontWeight: 600,
-                    padding: '2px 8px',
-                    borderRadius: 4,
-                    fontFamily: SORA,
-                    color: m.status === 'active' ? colors.semantic.success : colors.semantic.warning,
-                    background:
-                      m.status === 'active' ? 'rgba(16,185,129,.08)' : 'rgba(245,158,11,.08)',
-                  }}
-                >
-                  {m.status === 'active' ? 'Ativo' : 'Pendente'}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleRemove(m.id)}
-                  disabled={removingId === m.id}
-                  style={{
-                    padding: '5px 8px',
-                    background: 'none',
-                    border: '1px solid var(--app-border-primary)',
-                    borderRadius: 4,
-                    color: colors.semantic.error,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    opacity: removingId === m.id ? 0.5 : 1,
-                  }}
-                  title={kloelT(`Remover membro`)}
-                >
-                  {Icons.trash(12)}
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </SectionCard>
@@ -378,7 +476,7 @@ export function TeamSection() {
                     <span
                       style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}
                     >
-                      {ROLES[inv.role] || inv.role} {kloelT(`&middot; Aguardando aceite`)}
+                      {ROLES[inv.role] || inv.role} {kloelT(`· Aguardando aceite`)}
                     </span>
                   </div>
                   <span

@@ -1,4 +1,3 @@
-import { createHash, randomBytes } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
 
 import { normalizeEmail } from '../common/string';
@@ -21,10 +20,7 @@ export function buildAuthLogMessage(event: string, payload: Record<string, unkno
   });
 }
 
-export function hashOpaqueToken(token: string): string {
-  return createHash('sha256').update(token).digest('hex');
-}
-
-export function generateOpaqueToken(size = 32): string {
-  return randomBytes(size).toString('base64url');
-}
+// Opaque-token-at-rest codec delegates to the shared auth-core primitive so a
+// fix to the hashing/generation surface propagates to every consumer. The
+// re-exported names keep this file's public surface byte-identical.
+export { hashOpaqueToken, generateOpaqueToken } from '../common/auth-core/opaque-token';

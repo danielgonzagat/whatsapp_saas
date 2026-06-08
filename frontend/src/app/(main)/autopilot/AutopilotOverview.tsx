@@ -139,6 +139,8 @@ export function AutopilotOverview({
             <div className="flex flex-col items-center gap-2">
               <button
                 type="button"
+                aria-label={status?.enabled ? 'Pausar Autopilot' : 'Ativar Autopilot'}
+                title={status?.enabled ? 'Pausar Autopilot' : 'Ativar Autopilot'}
                 onClick={handleToggle}
                 disabled={isToggling || status?.billingSuspended}
                 className={`

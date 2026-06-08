@@ -71,7 +71,7 @@ export function InboxHeader({
                 {kloelT(`Leads`)}
               </Link>
               <Link
-                href="/"
+                href="/chat"
                 className="text-[length:var(--inbox-body)] font-medium text-[var(--text-muted)] hover:text-[var(--text-silver)]"
               >
                 {kloelT(`Voltar ao chat`)}

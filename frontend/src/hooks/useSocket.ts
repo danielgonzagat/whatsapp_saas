@@ -5,6 +5,10 @@ import { type Socket, io } from 'socket.io-client';
 
 type EventHandler = (data: Record<string, unknown>) => void;
 
+interface UseSocketOptions {
+  enabled?: boolean;
+}
+
 /**
  * WebSocket hook for real-time updates via Socket.IO.
  *
@@ -16,11 +20,16 @@ type EventHandler = (data: Record<string, unknown>) => void;
  *     return unsub;
  *   }, [subscribe]);
  */
-export function useSocket() {
+export function useSocket({ enabled = true }: UseSocketOptions = {}) {
   const socketRef = useRef<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
+    if (!enabled) {
+      queueMicrotask(() => setIsConnected(false));
+      return;
+    }
+
     const visualSocketDisabled =
       typeof window !== 'undefined' &&
       Boolean(
@@ -46,7 +55,7 @@ export function useSocket() {
 
     const socket = io(API_BASE, {
       auth: { token },
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'],
       reconnection: true,
       reconnectionAttempts: Number.POSITIVE_INFINITY,
       reconnectionDelay: 1000,
@@ -76,7 +85,7 @@ export function useSocket() {
       socketRef.current = null;
       setIsConnected(false);
     };
-  }, []);
+  }, [enabled]);
 
   const subscribe = useCallback((event: string, handler: EventHandler): (() => void) => {
     const socket = socketRef.current;

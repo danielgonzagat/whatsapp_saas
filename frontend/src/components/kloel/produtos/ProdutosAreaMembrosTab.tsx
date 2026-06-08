@@ -1,5 +1,5 @@
 'use client';
-import { useState, useId } from 'react';
+import { useState, useId, useEffect, useRef } from 'react';
 import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
 import { memberAreaApi, memberAreaStudentsApi } from '@/lib/api/member-area';
@@ -67,10 +67,24 @@ export default function AreaMembros({
   const [editStudentData, setEditStudentData] = useState({ name: '', email: '', phone: '', status: 'active', progress: '0' });
   const [studentLoading, setStudentLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const studentSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearStudentSearchTimer = () => {
+    if (studentSearchTimer.current) {
+      clearTimeout(studentSearchTimer.current);
+      studentSearchTimer.current = null;
+    }
+  };
+
+  useEffect(() => () => {
+    if (studentSearchTimer.current) {
+      clearTimeout(studentSearchTimer.current);
+      studentSearchTimer.current = null;
+    }
+  }, []);
 
   const setOperationError = (error: unknown, fallback: string) => {
     setActionError(error instanceof Error ? error.message : fallback);
-    console.error(error);
   };
 
   const fetchStudents = async (areaId: string, q?: string) => {
@@ -99,17 +113,31 @@ export default function AreaMembros({
     }
   };
   const openStudentDrawer = (areaId: string, areaName: string) => {
+    clearStudentSearchTimer();
     setStudentAreaId(areaId); setStudentAreaName(areaName);
     setStudentSearch(''); setShowAddStudent(false); setEditingStudentId(null);
     setEditStudentData({ name: '', email: '', phone: '', status: 'active', progress: '0' });
-    setNewStudent({ name: '', email: '', phone: '' }); fetchStudents(areaId);
+    setNewStudent({ name: '', email: '', phone: '' }); setActiveSubTab('students'); fetchStudents(areaId);
+  };
+  const handleSearchStudents = (q: string) => {
+    setStudentSearch(q);
+    clearStudentSearchTimer();
+    if (!studentAreaId) {return;}
+    const nextQuery = q.trim();
+    studentSearchTimer.current = setTimeout(() => {
+      studentSearchTimer.current = null;
+      fetchStudents(studentAreaId, nextQuery || undefined);
+    }, 500);
   };
   const handleAddStudent = async () => {
-    if (!newStudent.name || !newStudent.email || !studentAreaId) {return;}
+    const studentName = newStudent.name.trim();
+    const studentEmail = newStudent.email.trim();
+    const studentPhone = newStudent.phone.trim();
+    if (!studentName || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(studentEmail) || !studentAreaId) {return;}
     setSaving(true);
     setActionError(null);
     try {
-      await memberAreaStudentsApi.enroll(studentAreaId, { studentName: newStudent.name, studentEmail: newStudent.email, studentPhone: newStudent.phone });
+      await memberAreaStudentsApi.enroll(studentAreaId, { studentName, studentEmail, studentPhone });
       setNewStudent({ name: '', email: '', phone: '' }); setShowAddStudent(false); await fetchStudents(studentAreaId); mutateAreas();
     } catch (error) { setOperationError(error, 'Erro ao matricular aluno.'); }
     setSaving(false);
@@ -248,8 +276,13 @@ export default function AreaMembros({
     <div style={{ opacity: 1 }}>
       <div style={{ ...SUBINTERFACE_PILL_ROW_STYLE, scrollbarWidth: 'none', marginBottom: 20 }}>
         {SUB_TABS.map((tab) => (
-          <button type="button" key={tab.key} onClick={() => setActiveSubTab(tab.key)}
-            style={getSubinterfacePillStyle(activeSubTab === tab.key, isMobile)}>
+          <button
+            type="button"
+            key={tab.key}
+            aria-pressed={activeSubTab === tab.key}
+            onClick={() => setActiveSubTab(tab.key)}
+            style={getSubinterfacePillStyle(activeSubTab === tab.key, isMobile)}
+          >
             {tab.label}
           </button>
         ))}
@@ -282,19 +315,56 @@ export default function AreaMembros({
       {activeSubTab === 'editor' && <AreaMembrosEditorPanel {...editorProps} />}
 
       {activeSubTab === 'students' && (
-        <AreaMembrosStudentsPanel
-          studentAreaId={studentAreaId} studentAreaName={studentAreaName} students={students}
-          studentSearch={studentSearch}
-          handleSearchStudents={(q: string) => { setStudentSearch(q); if (studentAreaId) {fetchStudents(studentAreaId, q || undefined);} }}
-          showAddStudent={showAddStudent} setShowAddStudent={setShowAddStudent}
-          newStudent={newStudent} setNewStudent={setNewStudent} handleAddStudent={handleAddStudent}
-          saving={saving} editingStudentId={editingStudentId} setEditingStudentId={setEditingStudentId}
-          editStudentData={editStudentData} setEditStudentData={setEditStudentData}
-          handleUpdateStudent={handleUpdateStudent} handleStartEditStudent={handleStartEditStudent}
-          handleToggleStudentStatus={handleToggleStudentStatus} handleRemoveStudent={handleRemoveStudent}
-          studentLoading={studentLoading}
-          onClose={() => { setStudentAreaId(null); setEditingStudentId(null); }}
-        />
+        studentAreaId ? (
+          <AreaMembrosStudentsPanel
+            studentAreaId={studentAreaId} studentAreaName={studentAreaName} students={students}
+            studentSearch={studentSearch}
+            handleSearchStudents={handleSearchStudents}
+            showAddStudent={showAddStudent} setShowAddStudent={setShowAddStudent}
+            newStudent={newStudent} setNewStudent={setNewStudent} handleAddStudent={handleAddStudent}
+            saving={saving} editingStudentId={editingStudentId} setEditingStudentId={setEditingStudentId}
+            editStudentData={editStudentData} setEditStudentData={setEditStudentData}
+            handleUpdateStudent={handleUpdateStudent} handleStartEditStudent={handleStartEditStudent}
+            handleToggleStudentStatus={handleToggleStudentStatus} handleRemoveStudent={handleRemoveStudent}
+            studentLoading={studentLoading}
+            onClose={() => { clearStudentSearchTimer(); setStudentAreaId(null); setEditingStudentId(null); }}
+          />
+        ) : (
+          <div style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: isMobile ? 16 : 20, background: 'rgba(10,10,12,0.72)', display: 'grid', gap: 14 }}>
+            <div>
+              <div style={{ fontFamily: SORA, fontSize: 10, fontWeight: 600, color: PURPLE, letterSpacing: '0.22em', textTransform: 'uppercase' as const, marginBottom: 6 }}>Alunos</div>
+              <h3 style={{ fontFamily: SORA, fontSize: isMobile ? 18 : 22, color: 'var(--app-text-primary)', margin: 0 }}>Escolha uma area para gerenciar matriculas</h3>
+              <p style={{ fontFamily: SORA, fontSize: 12, lineHeight: 1.6, color: 'var(--app-text-secondary)', margin: '8px 0 0' }}>A aba Alunos agora abre um fluxo real: selecione uma area para buscar, matricular, editar ou suspender alunos.</p>
+            </div>
+            {displayAreas.length > 0 ? (
+              <div style={{ display: 'grid', gap: 10 }}>
+                {displayAreas.map((area) => {
+                  const studentCount = Number(area.students || 0);
+                  return (
+                    <button
+                      type="button"
+                      key={area.id}
+                      aria-label={`Gerenciar alunos de ${area.name}`}
+                      onClick={() => openStudentDrawer(area.id, area.name)}
+                      style={{ width: '100%', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: 12, background: 'rgba(255,255,255,0.035)', color: 'var(--app-text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, textAlign: 'left' as const, fontFamily: SORA }}
+                    >
+                      <span style={{ display: 'grid', gap: 4, minWidth: 0 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{area.name}</span>
+                        <span style={{ fontSize: 11, color: 'var(--app-text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{area.productName ? `Produto: ${area.productName}` : 'Sem produto vinculado'}</span>
+                      </span>
+                      <span style={{ flex: '0 0 auto', border: `1px solid ${PURPLE}55`, borderRadius: 6, padding: '6px 8px', color: PURPLE, fontSize: 11, fontWeight: 700 }}>{studentCount} aluno{studentCount === 1 ? '' : 's'}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div style={{ border: '1px dashed rgba(255,255,255,0.12)', borderRadius: 6, padding: 16, display: 'grid', gap: 10 }}>
+                <div style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-secondary)' }}>Nenhuma area de membros cadastrada.</div>
+                <button type="button" aria-label="Abrir Editor para criar area de membros" onClick={() => setActiveSubTab('editor')} style={{ width: 'fit-content', border: `1px solid ${PURPLE}`, borderRadius: 6, padding: '9px 12px', background: PURPLE, color: '#0A0A0C', fontFamily: SORA, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Criar area no Editor</button>
+              </div>
+            )}
+          </div>
+        )
       )}
 
       {activeSubTab === 'certificates' && <AreaMembrosCertificatePanel displayAreas={displayAreas} />}

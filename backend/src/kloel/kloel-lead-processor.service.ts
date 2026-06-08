@@ -27,6 +27,9 @@ import { validateAbiPayload } from './abi/abi-validator';
 
 import type { FollowupListItem } from './kloel.service.lists.helpers';
 import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
+import { DecisionOutcomeService } from './decision-outcome.service';
+import { recordWhatsAppInboundOutcome } from './whatsapp-inbound-learn.flag';
+import { recordCommerceDecisionLink } from './commerce-decision-link.flag';
 
 export type { FollowupListItem };
 
@@ -44,6 +47,7 @@ export class KloelLeadProcessorService {
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
     @Optional() private readonly mindMemory?: MindMemoryItemService,
+    @Optional() private readonly decisionOutcome?: DecisionOutcomeService,
   ) {
     this.openai = createTextLlmClient() ?? new OpenAI({ apiKey: '' });
   }
@@ -81,7 +85,7 @@ export class KloelLeadProcessorService {
         workspaceId,
         normalizedPhone || senderPhone,
       );
-      await saveLeadMessage(this.prisma, this.logger, lead.id, 'user', message);
+      await saveLeadMessage(this.prisma, this.logger, lead.id, 'user', message, workspaceId);
 
       let contactId: string | null = null;
       try {
@@ -136,8 +140,32 @@ export class KloelLeadProcessorService {
           });
           const agentResponse =
             unifiedResult?.reply || unifiedResult?.response || 'Olá! Como posso ajudar?';
-          await saveLeadMessage(this.prisma, this.logger, lead.id, 'assistant', agentResponse);
+          await saveLeadMessage(
+            this.prisma,
+            this.logger,
+            lead.id,
+            'assistant',
+            agentResponse,
+            workspaceId,
+          );
           await updateLeadFromConversation(this.prisma, this.logger, workspaceId, lead.id, message);
+          // ADDITIVE flag-gated (KLOEL_WHATSAPP_INBOUND_LEARN, default OFF):
+          // join the autopilot WhatsApp reply to the same learning loop the
+          // chat path uses. Fire-and-forget, fail-open. OFF = no-op.
+          recordWhatsAppInboundOutcome(this.decisionOutcome, this.logger, {
+            workspaceId,
+            reply: agentResponse,
+            surface: 'whatsapp-autopilot',
+          });
+          // ADDITIVE flag-gated (KLOEL_COMMERCE_DECISION_LINK, default OFF):
+          // open a commerce_decision_link decision keyed by the stable leadId so
+          // a later sale for this lead closes the originating chat decision as a
+          // WIN. Fire-and-forget, fail-open. OFF = byte-identical.
+          recordCommerceDecisionLink(this.decisionOutcome, this.logger, {
+            workspaceId,
+            leadId: lead.id,
+            surface: 'whatsapp-autopilot',
+          });
           return agentResponse;
         } catch (agentErr: unknown) {
           void this.opsAlert?.alertOnCriticalError(
@@ -233,8 +261,32 @@ export class KloelLeadProcessorService {
       if (!rawResponse || rawResponse.trim().length < 5) {
         this.logger.warn(`lead-processor short output ws=${workspaceId} len=${rawResponse.length}`);
       }
-      await saveLeadMessage(this.prisma, this.logger, lead.id, 'assistant', kloelResponse);
+      await saveLeadMessage(
+        this.prisma,
+        this.logger,
+        lead.id,
+        'assistant',
+        kloelResponse,
+        workspaceId,
+      );
       await updateLeadFromConversation(this.prisma, this.logger, workspaceId, lead.id, message);
+      // ADDITIVE flag-gated (KLOEL_WHATSAPP_INBOUND_LEARN, default OFF): record
+      // + close the whatsapp_reply decision with the same reply-adequacy reward
+      // the chat path uses. Fire-and-forget, fail-open. OFF = byte-identical.
+      recordWhatsAppInboundOutcome(this.decisionOutcome, this.logger, {
+        workspaceId,
+        reply: kloelResponse,
+        surface: 'whatsapp-lead-processor',
+      });
+      // ADDITIVE flag-gated (KLOEL_COMMERCE_DECISION_LINK, default OFF): open a
+      // commerce_decision_link decision keyed by the stable leadId so a later
+      // sale for this lead closes the originating chat decision as a WIN.
+      // Fire-and-forget, fail-open. OFF = byte-identical.
+      recordCommerceDecisionLink(this.decisionOutcome, this.logger, {
+        workspaceId,
+        leadId: lead.id,
+        surface: 'whatsapp-lead-processor',
+      });
       return kloelResponse;
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(
@@ -261,10 +313,20 @@ export class KloelLeadProcessorService {
     );
     const buyIntent = detectBuyIntent(message);
     if (buyIntent === 'high') {
-      const productMention = await extractProductFromMessage(this.prisma, workspaceId, message);
+      const productMention = await extractProductFromMessage(
+        this.prisma,
+        workspaceId,
+        message,
+        this.mindMemoryItems,
+      );
       if (productMention) {
         const lead = await this.prisma.kloelLead.findFirst({
-          where: { workspaceId, phone: senderPhone },
+          // Look up by the SAME key the lead was created under
+          // (getOrCreateLead uses normalizedPhone || senderPhone). Looking up by
+          // raw senderPhone missed the lead whenever normalization changed the
+          // number (BR-promotion / '+' / spaces) → high-buy-intent payment link
+          // silently not generated (lost revenue).
+          where: { workspaceId, phone: normalizePhone(senderPhone)?.digits || senderPhone },
         });
         if (lead) {
           const paymentResult = await this.generatePaymentForLead(

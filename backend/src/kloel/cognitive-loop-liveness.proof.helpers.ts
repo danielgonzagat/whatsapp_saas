@@ -274,7 +274,7 @@ export class RecordingPrisma {
           workspaceId: key.workspaceId,
           decisionType: key.decisionType,
           arm: key.arm,
-          context: (args.create.context as Record<string, unknown>) ?? {},
+          context: args.create.context ?? {},
           alpha: args.create.alpha ?? 1,
           beta: args.create.beta ?? 1,
           pulls: args.create.pulls ?? 0,

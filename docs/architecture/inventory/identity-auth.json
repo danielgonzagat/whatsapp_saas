@@ -1,0 +1,175 @@
+{
+  "cluster": "Identity, Auth & Tenant",
+  "generatedAt": "2026-06-07",
+  "groundedIn": "Real code only (grep/ripgrep + backend/prisma/schema.prisma). Every claim cites a model name, service class, or file:line.",
+  "domainsCovered": [
+    "Tenant root & multi-tenant resolution (Workspace)",
+    "Tenant-user identity (Agent — email/password/role/MFA/KYC/OAuth all on one model)",
+    "Session / refresh-token issuance & rotation (tenant side)",
+    "Access-token JTI revocation / blacklist (Redis)",
+    "OAuth / social login (Google, Apple, Facebook, TikTok) + SocialAccount linking",
+    "Passwordless login (MagicLinkToken, WhatsApp OTP)",
+    "Password reset & email verification",
+    "Account MFA / TOTP (tenant side)",
+    "Team membership & invitation (Invitation model)",
+    "Collaborator/partner invitation (CollaboratorInvite model — parallel to team)",
+    "API key issuance / rotation / validation (workspace-scoped)",
+    "Platform admin identity, auth, session, MFA, audit (AdminUser stack — fully parallel)",
+    "Rate limiting / login-attempt throttling (two separate implementations)"
+  ],
+  "keyArchitecturalFacts": [
+    "There is NO `User` model. `Agent` (table RAC_Agent, schema.prisma:306) IS the tenant user: it carries email, password (bcrypt), role, MFA (mfaSecret/mfaEnabled/mfaPendingSetup), KYC, OAuth provider fields, and onboarding state. `Workspace` (table RAC_Workspace, schema.prisma:119) is the tenant root.",
+    "Membership is implicit: an Agent belongs to exactly one Workspace via Agent.workspaceId (@@unique([workspaceId, email])). There is no join/membership table — role lives directly on Agent (role + displayRole).",
+    "Two completely separate auth universes exist: (1) the tenant `Agent` stack under backend/src/auth, and (2) the platform-operator `AdminUser` stack under backend/src/admin/auth. They duplicate password hashing, MFA/TOTP, session/refresh, login-attempt throttling, and audit logging with NO shared core.",
+    "Tenant sessions use opaque RefreshToken rows (PLAINTEXT token column) + JWT access tokens. Admin sessions use AdminSession rows (HASHED token_hash). Magic-link tokens are hashed (tokenHash). This hashing policy is inconsistent across token families."
+  ],
+  "canonicalEntities": [
+    { "name": "Workspace", "table": "RAC_Workspace", "file": "backend/prisma/schema.prisma:119", "role": "Tenant root / billing+branding+provider-settings container. Tenancy boundary for nearly every other model (workspaceId FK). customDomain @unique enables white-label reseller resolution." },
+    { "name": "Agent", "table": "RAC_Agent", "file": "backend/prisma/schema.prisma:306", "role": "THE tenant user identity. email+password(bcrypt)+role+MFA+KYC+OAuth provider fields. @@unique([workspaceId, email]). Owns refreshTokens, deviceTokens, passwordResetTokens, magicLinkTokens, socialAccounts." },
+    { "name": "RefreshToken", "table": "RAC_RefreshToken", "file": "backend/prisma/schema.prisma:1153", "role": "Tenant opaque refresh token. token @unique stored in PLAINTEXT (contrast AdminSession.token_hash / MagicLinkToken.tokenHash). revoked flag + expiresAt. Rotated atomically by AuthTokenService." },
+    { "name": "DeviceToken", "table": "RAC_DeviceToken", "file": "backend/prisma/schema.prisma:1168", "role": "Push/device token per platform (IOS/ANDROID/WEB) linked to Agent. Defined on schema but no service in target dirs writes it — see legacyOrDead." },
+    { "name": "PasswordResetToken", "table": "RAC_PasswordResetToken", "file": "backend/prisma/schema.prisma:1182", "role": "One-time password-reset token (token @unique, used flag, expiresAt) linked to Agent. Consumed by auth-service.password-verification.ts." },
+    { "name": "MagicLinkToken", "table": "RAC_MagicLinkToken", "file": "backend/prisma/schema.prisma:1196", "role": "Passwordless login token. Stores tokenHash @unique (HASHED via hashOpaqueToken sha256), email, redirectTo, usedAt. Optional agentId. Consumed by auth-service.magic-link.ts." },
+    { "name": "SocialAccount", "table": "RAC_SocialAccount", "file": "backend/prisma/schema.prisma:1213", "role": "OAuth provider link per Agent. @@unique([provider, providerUserId]) and @@unique([agentId, provider]). Stores access/refresh tokens + profileData. Written by auth-service.social-account.ts / OAuth resolver." },
+    { "name": "Invitation", "table": "RAC_Invitation", "file": "backend/prisma/schema.prisma:1286", "role": "TEAM invite: email+role+token(@unique)+expiresAt, @@unique([workspaceId, email]). Canonical home = TeamService. DUPLICATES CollaboratorInvite semantically." },
+    { "name": "CollaboratorInvite", "table": "RAC_CollaboratorInvite", "file": "backend/prisma/schema.prisma:2768", "role": "COLLABORATOR invite: email+role+status(PENDING/REVOKED)+token+invitedBy+expiresAt. Canonical home = PartnershipsService. SECOND, divergent implementation of the same workspace-invite concept as Invitation." },
+    { "name": "ApiKey", "table": "RAC_ApiKey", "file": "backend/prisma/schema.prisma:1646", "role": "Workspace-scoped API key. key @unique column DOCUMENTED as 'sk_live_...' but ApiKeysService stores a salted PBKDF2 hash there; validateKey scans up to 1000 rows (no index lookup possible on a salted hash)." },
+    { "name": "Persona", "table": "RAC_Persona", "file": "backend/prisma/schema.prisma:1661", "role": "AI persona (role/basePrompt/voiceId) that Agents can 'adopt' (Agent.personaId). Identity-adjacent: shapes an Agent's bot behavior, not an auth principal." },
+    { "name": "AdminUser", "table": "admin_users", "file": "backend/prisma/schema.prisma:4064", "role": "Platform-operator identity (separate DB table family, snake_case @map). passwordHash(bcrypt)+MFA+role(AdminRole)+status+allowedIps+lockout. Fully parallel to Agent for the admin console." },
+    { "name": "AdminSession", "table": "admin_sessions", "file": "backend/prisma/schema.prisma:4105", "role": "Admin refresh/session row. token_hash @unique (HASHED via sha256Hex) — contrast tenant RefreshToken plaintext. revokedAt + expiresAt. Rotated by AdminAuthService.refresh." },
+    { "name": "AdminPermission", "table": "admin_permissions", "file": "backend/prisma/schema.prisma:4092", "role": "Fine-grained admin RBAC (module+action+allowed). No tenant equivalent — Agent RBAC is a loose Json `permissions` array on the Agent model." },
+    { "name": "AdminAuditLog", "table": "admin_audit_logs", "file": "backend/prisma/schema.prisma:4121", "role": "Admin-side audit trail. Parallel to the tenant AuditLog model (schema.prisma:1374) + AuditService used by Team/ApiKeys." },
+    { "name": "AdminLoginAttempt", "table": "admin_login_attempts", "file": "backend/prisma/schema.prisma:4139", "role": "Admin login throttle ledger (email+ip+success). Parallel-but-different to the tenant RateLimitService (in-memory/Redis counter, not a table)." },
+    { "name": "CookieConsent", "table": "RAC_CookieConsent", "file": "backend/prisma/schema.prisma:385", "role": "Per-Agent cookie consent (necessary/analytics/marketing). Identity-adjacent compliance state." },
+    { "name": "DataDeletionRequest", "table": "RAC_DataDeletionRequest", "file": "backend/prisma/schema.prisma:1237", "role": "Provider-initiated (OAuth) data-deletion request keyed by providerUserId. Identity/GDPR-adjacent." },
+    { "name": "GdprRequest", "table": "RAC_GdprRequest", "file": "backend/prisma/schema.prisma:1254", "role": "Workspace+user GDPR export/erase request. Identity/compliance-adjacent." }
+  ],
+  "services": [
+    { "name": "AuthService", "file": "backend/src/auth/auth.service.ts:48", "responsibility": "Facade orchestrator. Delegates to standalone functions (register-login, oauth-entry, magic-link, whatsapp, password-verification) + AuthTokenService + AccountMfaService. Owns logout() and getMe().", "capability": "tenant-authentication-orchestration" },
+    { "name": "AuthTokenService", "file": "backend/src/auth/auth.token.service.ts:29", "responsibility": "CANONICAL JWT + refresh-token issuance, atomic Serializable rotation with P2034 retry, replay-detection grace window, and access-token JTI blacklist (Redis key `jti:revoked:<jti>`).", "capability": "tenant-session-issuance" },
+    { "name": "AuthPasswordService", "file": "backend/src/auth/auth.password.service.ts:36", "responsibility": "ORPHAN. checkEmail/createAnonymous/register/login fully implemented but NEVER injected (0 non-spec refs, absent from auth.module.ts). Superseded by auth-service.register-login.ts standalone functions.", "capability": "tenant-register-login (DEAD)" },
+    { "name": "AccountMfaService", "file": "backend/src/auth/account-mfa.service.ts:99", "responsibility": "Tenant TOTP MFA: createSetup/resumeSetup/verifyCode. Reuses encrypt/decryptAdminSecret from admin-crypto but REIMPLEMENTS the full TOTP engine (base32, generateTotp, verifyTotp).", "capability": "totp-mfa (tenant)" },
+    { "name": "GoogleAuthService", "file": "backend/src/auth/google-auth.service.ts:72", "responsibility": "Verify Google OAuth credential / ID token.", "capability": "oauth-provider-verification" },
+    { "name": "AppleAuthService", "file": "backend/src/auth/apple-auth.service.ts:34", "responsibility": "Verify Apple identity token / authorization code.", "capability": "oauth-provider-verification" },
+    { "name": "FacebookAuthService", "file": "backend/src/auth/facebook-auth.service.ts:44", "responsibility": "Verify Facebook access token.", "capability": "oauth-provider-verification" },
+    { "name": "TikTokAuthService", "file": "backend/src/auth/tiktok-auth.service.ts:85", "responsibility": "Exchange TikTok authorization code / access token.", "capability": "oauth-provider-verification" },
+    { "name": "AuthOAuthService", "file": "backend/src/auth/auth-oauth.service.ts:30", "responsibility": "OAuth login orchestration (provider-agnostic entry).", "capability": "oauth-login-orchestration" },
+    { "name": "AuthOAuthResolverService", "file": "backend/src/auth/auth-oauth-resolver.service.ts:55", "responsibility": "Resolve/link an Agent + SocialAccount from a verified OAuth identity (find-or-create).", "capability": "oauth-identity-resolution" },
+    { "name": "AuthVerificationService", "file": "backend/src/auth/auth-verification.service.ts:24", "responsibility": "Email verification + resend flows.", "capability": "email-verification" },
+    { "name": "AuthWhatsappPasswordService", "file": "backend/src/auth/auth-whatsapp-password.service.ts:35", "responsibility": "WhatsApp OTP send/verify passwordless login path.", "capability": "whatsapp-otp-login" },
+    { "name": "AuthPartnerService", "file": "backend/src/auth/auth-partner.service.ts:37", "responsibility": "Affiliate/partner invite-token handling during registration (affiliateInviteToken).", "capability": "affiliate-invite-on-register" },
+    { "name": "EmailService", "file": "backend/src/auth/email.service.ts:72", "responsibility": "Transactional auth emails (reset, verify, team invite). Note: lives under auth/ but used by TeamService too.", "capability": "auth-transactional-email" },
+    { "name": "RateLimitService", "file": "backend/src/auth/rate-limit.service.ts:25", "responsibility": "Tenant-side login/abuse rate limiting (counter-based). Parallel to admin AdminLoginAttemptsService + route-class throttler guard.", "capability": "rate-limiting (tenant)" },
+    { "name": "UserNameDerivationService", "file": "backend/src/auth/user-name-derivation.service.ts:6", "responsibility": "Derive a display name from email/OAuth profile.", "capability": "name-derivation" },
+    { "name": "DbInitErrorService", "file": "backend/src/auth/db-init-error.service.ts:18", "responsibility": "Map raw DB-init errors to friendly ServiceUnavailable messages used across auth.", "capability": "db-error-mapping" },
+    { "name": "JwtAuthGuard", "file": "backend/src/auth/jwt-auth.guard.ts:34", "responsibility": "Global tenant JWT guard. Verifies signature, honors @Public, checks Redis blacklist `jti:revoked:<jti>`, sets req.user = decoded JWT.", "capability": "tenant-request-authentication" },
+    { "name": "RolesGuard", "file": "backend/src/auth/roles.guard.ts:16", "responsibility": "Role-based route gate using @Roles decorator metadata against req.user.role.", "capability": "tenant-rbac-gate" },
+    { "name": "ApiKeysService", "file": "backend/src/api-keys/api-keys.service.ts:12", "responsibility": "Workspace API key list/create/rotate/delete/validate. PBKDF2 hash on store; validateKey does O(n) linear scan over up to 1000 keys.", "capability": "api-key-lifecycle" },
+    { "name": "TeamService", "file": "backend/src/team/team.service.ts:18", "responsibility": "Workspace member list/invite/accept/revoke/remove/update-role over Agent + Invitation. Enforces last-admin invariant (ensureLastAdmin).", "capability": "team-membership-management" },
+    { "name": "WorkspaceService", "file": "backend/src/workspaces/workspace.service.ts:57", "responsibility": "Workspace CRUD-lite + providerSettings merge (jitter, channels, business info/hours/policy, theme). Cache-wrapped getWorkspace.", "capability": "tenant-settings-management" },
+    { "name": "PartnershipsService", "file": "backend/src/partnerships/partnerships.service.ts", "responsibility": "(adjacent) Collaborator list/invite/revoke/role over Agent + CollaboratorInvite — the SECOND team-invite implementation.", "capability": "collaborator-management (duplicate of team)" },
+    { "name": "AdminAuthService", "file": "backend/src/admin/auth/admin-auth.service.ts:48", "responsibility": "(adjacent) Platform-admin login state machine, password change, MFA setup/verify, session refresh (rotate AdminSession), logout. Fully parallel to the tenant auth stack.", "capability": "admin-authentication (parallel stack)" },
+    { "name": "AdminMfaService", "file": "backend/src/admin/auth/admin-mfa.service.ts:106", "responsibility": "(adjacent) Admin TOTP MFA. createSetup/resumeSetup/verifyCode + duplicate base32/generateTotp/verifyTotp engine identical to AccountMfaService.", "capability": "totp-mfa (admin) — duplicate engine" },
+    { "name": "AdminSessionFactory", "file": "backend/src/admin/auth/admin-session-factory.ts", "responsibility": "(adjacent) Mint admin scoped + full session JWTs and AdminSession rows. Parallel to AuthTokenService.", "capability": "admin-session-issuance (parallel)" },
+    { "name": "AdminLoginAttemptsService", "file": "backend/src/admin/auth/admin-login-attempts.service.ts", "responsibility": "(adjacent) Admin login-attempt throttling backed by admin_login_attempts table. Parallel to tenant RateLimitService.", "capability": "rate-limiting (admin) — duplicate concept" }
+  ],
+  "events": [
+    "NO domain events / NestJS EventEmitter emits / BullMQ jobs are produced by any service in backend/src/auth, /api-keys, /team, /workspaces, or /admin/auth (grep for .emit/@OnEvent/Queue.add returned nothing in-cluster).",
+    "Side effects are fire-and-forget method calls, NOT events: AuthService.triggerWelcomeFlow -> WelcomeAndOnboardingEmailService.sendWelcomeEmail + scheduleOnboardingSequence (auth.service.ts:338).",
+    "TeamService.inviteMember -> EmailService.sendTeamInviteEmail (team.service.ts:108).",
+    "Audit 'events' are synchronous DB writes via AuditService.log (tenant: ApiKeysService, TeamService) and AdminAuditService.append (admin) — append-only rows, not a message bus."
+  ],
+  "capabilities": [
+    { "name": "Tenant resolution (request -> workspaceId)", "canonicalHome": "backend/src/auth/workspace-access.ts:119 resolveWorkspaceId (token-verified: enforces requested===token.workspaceId, throws Forbidden on mismatch)", "duplicatedIn": ["backend/src/kloel/product-sub-resources/helpers/common.helpers.ts:20 getWorkspaceId (trusts req.user||req.workspaceId, can return '')","backend/src/kloel/guards/kloel-security.guard.ts:45 getWorkspaceId (reads params/body ONLY, IGNORES JWT — IDOR-shaped)","backend/src/common/throttler/route-class.guard.ts:25 resolveWorkspaceId (trusts x-workspace-id header; throttle-keying only)","backend/src/marketing/channels/whatsapp/controllers/whatsapp.controller.ts:38 resolveWorkspaceId","backend/src/partnerships/partnerships.controller.ts:44 getWorkspaceId (already CONVERGED onto canonical resolveWorkspaceId — see comment)","backend/src/kloel/middleware/audit-log.middleware.ts:156 resolveWorkspaceId"] },
+    { "name": "Tenant subscription -> workspaceId resolution (Stripe)", "canonicalHome": "backend/src/billing/billing-webhook.service.ts:233 resolveWorkspaceId", "duplicatedIn": ["backend/src/billing/billing-checkout-helper.service.ts:253 resolveWorkspaceId","backend/src/billing/billing-checkout-webhook.service.ts:288 resolveWorkspaceId"] },
+    { "name": "Password hashing", "canonicalHome": "bcrypt with BCRYPT_ROUNDS=12 (backend/src/common/constants.ts:10) — auth.password.service.ts / auth-service.register-login.ts / team.service.ts", "duplicatedIn": ["backend/src/admin/auth/admin-auth.service.ts:255,486 (bcrypt BCRYPT_WORK_FACTOR=12, admin-auth.service.helpers.ts:22 — separate constant, same value)","backend/src/api-keys/api-keys.service.ts:25 hashKey (PBKDF2 210000 iters — DIFFERENT algorithm, for API keys not passwords)","backend/src/admin/common/admin-crypto.ts:59 (PBKDF2 for admin token/secret hashing)"] },
+    { "name": "TOTP MFA (setup + verify)", "canonicalHome": "backend/src/auth/account-mfa.service.ts:99 AccountMfaService", "duplicatedIn": ["backend/src/admin/auth/admin-mfa.service.ts:106 AdminMfaService — duplicate base32Encode/base32Decode/generateTotp/verifyTotp engine (same MFA_PERIOD_SECONDS=30, MFA_WINDOW_STEPS=2)"] },
+    { "name": "Refresh-token session issuance & rotation", "canonicalHome": "backend/src/auth/auth.token.service.ts:29 AuthTokenService (RefreshToken, plaintext token, atomic rotate)", "duplicatedIn": ["backend/src/admin/auth/admin-auth.service.ts:406 refresh + AdminSessionFactory (AdminSession, HASHED token_hash, rotate-by-revoke) — semantically the same capability, different model + hashing policy","backend/src/auth/auth-service.tokens.ts refreshToken() (deprecated internal fallback per auth.service.ts:128 comment)"] },
+    { "name": "Access-token revocation / blacklist", "canonicalHome": "backend/src/auth/auth.token.service.ts:449/467 revokeAccessToken/isAccessTokenRevoked (Redis key `jti:revoked:<jti>`) — same key read by jwt-auth.guard.ts:92", "duplicatedIn": ["backend/src/auth/auth.service.ts:329 logout() writes a DIFFERENT key `access-token-revoked:<jti>` that NOTHING reads — see duplications P0"] },
+    { "name": "Workspace invitation (email + role + token + expiry)", "canonicalHome": "AMBIGUOUS — two co-equal homes: TeamService (Invitation model) and PartnershipsService (CollaboratorInvite model)", "duplicatedIn": ["backend/src/team/team.service.ts:62 inviteMember (Invitation, 7-day token, sends email, has acceptInvite that creates the Agent)","backend/src/partnerships/partnerships.service.ts:103 inviteCollaborator (CollaboratorInvite, 7-day, status enum, invitedBy, NO email send, NO accept-creates-agent path observed)"] },
+    { "name": "API key lifecycle (issue/rotate/validate)", "canonicalHome": "backend/src/api-keys/api-keys.service.ts:12 ApiKeysService", "duplicatedIn": [] },
+    { "name": "Login-attempt throttling / rate limit", "canonicalHome": "backend/src/auth/rate-limit.service.ts:25 RateLimitService (tenant, counter-based)", "duplicatedIn": ["backend/src/admin/auth/admin-login-attempts.service.ts (admin, admin_login_attempts table)","backend/src/common/throttler/route-class.guard.ts (global throttler with own resolveWorkspaceId)","backend/src/kloel/guards/kloel-security.guard.ts (per-workspace in-memory rate-limit cache)"] },
+    { "name": "Audit logging of identity mutations", "canonicalHome": "AuditService.log (tenant) used by TeamService/ApiKeysService + RAC_AuditLog (schema.prisma:1374)", "duplicatedIn": ["AdminAuditService.append + admin_audit_logs (schema.prisma:4121) — parallel admin audit trail"] },
+    { "name": "Email/identity verification token", "canonicalHome": "Agent.emailVerificationToken (schema.prisma:316) consumed by auth-service.password-verification.ts / AuthVerificationService", "duplicatedIn": ["PasswordResetToken (separate model, same one-time-token shape)","MagicLinkToken (separate model, hashed variant of the same one-time-token shape)"] },
+    { "name": "One-time opaque token hashing", "canonicalHome": "backend/src/auth/auth-service.helpers.ts:24 hashOpaqueToken (sha256) — used for MagicLinkToken.tokenHash", "duplicatedIn": ["backend/src/admin/common/admin-crypto.ts sha256Hex — used for AdminSession.token_hash (same sha256-hex semantics, different module)"] }
+  ],
+  "duplications": [
+    {
+      "concept": "Access-token logout blacklist uses a Redis key namespace that the guard never reads",
+      "implementations": ["backend/src/auth/auth.service.ts:329 logout() -> redis.set('access-token-revoked:<jti>')","backend/src/auth/jwt-auth.guard.ts:92 reads redis.exists('jti:revoked:<jti>')","backend/src/auth/auth.token.service.ts:458/472 write+read 'jti:revoked:<jti>'"],
+      "severity": "P0",
+      "canonicalChoice": "Use AuthTokenService.revokeAccessToken (key `jti:revoked:<jti>`), the namespace JwtAuthGuard actually checks.",
+      "note": "PROD BUG: a user who hits POST /auth/logout has their refresh tokens revoked, but their still-valid access token is written under `access-token-revoked:<jti>` which no code reads — the access JWT remains accepted until natural expiry. Two divergent key strings for one capability."
+    },
+    {
+      "concept": "Request -> workspaceId tenant resolver with DIVERGENT security semantics",
+      "implementations": ["backend/src/auth/workspace-access.ts:119 resolveWorkspaceId (SECURE: enforces requested===token.workspaceId, Forbidden on mismatch)","backend/src/kloel/guards/kloel-security.guard.ts:45 getWorkspaceId (reads params/body, IGNORES the JWT entirely)","backend/src/kloel/product-sub-resources/helpers/common.helpers.ts:20 getWorkspaceId (req.user?.workspaceId || req.workspaceId || '' — no cross-check, can yield empty string)","backend/src/common/throttler/route-class.guard.ts:25 resolveWorkspaceId (trusts x-workspace-id header)"],
+      "severity": "P0",
+      "canonicalChoice": "workspace-access.ts resolveWorkspaceId — the only variant that proves the caller owns the workspace.",
+      "note": "Cross-tenant (IDOR) risk: any code path that selects the workspace via the kloel-security.guard or common.helpers variant trusts client-supplied workspaceId without checking it against the JWT. partnerships.controller already migrated to the secure resolver (explicit comment at line 45) — proof the team knows the others are unsafe but hasn't finished converging."
+    },
+    {
+      "concept": "Two parallel workspace-invitation models + services",
+      "implementations": ["Invitation model (schema.prisma:1286) + TeamService.inviteMember/acceptInvite/revokeInvite (team.service.ts:62-174)","CollaboratorInvite model (schema.prisma:2768) + PartnershipsService.inviteCollaborator/revokeInvite (partnerships.service.ts:103-137)"],
+      "severity": "P1",
+      "canonicalChoice": "Pick ONE invite model. Invitation has the richer flow (email send + acceptInvite that provisions the Agent); CollaboratorInvite has the better schema (status enum, invitedBy, indexes).",
+      "note": "Same capability (invite a person to a workspace by email+role+token+7-day-expiry) implemented twice with divergent behavior: Invitation sends an email and has a working accept->create-Agent path; CollaboratorInvite stores invitedBy + status but has NO observed email send and NO accept-creates-Agent path. A workspace could show two different pending-invite lists for the same person."
+    },
+    {
+      "concept": "Entire admin auth stack duplicates the tenant auth stack with no shared core",
+      "implementations": ["Tenant: AuthService/AuthTokenService/AccountMfaService/RateLimitService + Agent/RefreshToken (src/auth)","Admin: AdminAuthService/AdminSessionFactory/AdminMfaService/AdminLoginAttemptsService + AdminUser/AdminSession (src/admin/auth)"],
+      "severity": "P1",
+      "canonicalChoice": "Extract a shared credential/MFA/session core; keep AdminUser vs Agent as the only divergence (principal table + RBAC granularity).",
+      "note": "Password hashing (bcrypt@12), TOTP MFA, session rotation, login throttling, and audit logging are each implemented twice. Maintenance hazard: a security fix to one stack (e.g. the access-token-revocation key bug) does not propagate to the other. Justifiable as a blast-radius boundary, but the copy-paste is real."
+    },
+    {
+      "concept": "TOTP engine implemented identically in two MFA services",
+      "implementations": ["backend/src/auth/account-mfa.service.ts:20-96 (base32Encode/base32Decode/generateTotp/verifyTotp)","backend/src/admin/auth/admin-mfa.service.ts:20-96 (same functions, same constants MFA_PERIOD_SECONDS=30 / MFA_WINDOW_STEPS=2)"],
+      "severity": "P1",
+      "canonicalChoice": "Hoist one TOTP util (e.g. backend/src/common/totp.ts); both MFA services import it. Secret encryption is ALREADY shared (admin-crypto), so only the codec/HOTP math needs extraction.",
+      "note": "AccountMfaService already imports encrypt/decryptAdminSecret from admin-crypto, proving cross-module sharing is acceptable — yet the algorithmically identical TOTP code was copied rather than shared."
+    },
+    {
+      "concept": "Inconsistent token-at-rest policy across token families",
+      "implementations": ["RefreshToken.token — PLAINTEXT @unique (schema.prisma:1155)","AdminSession.token_hash — sha256 HASHED (schema.prisma:4109)","MagicLinkToken.tokenHash — sha256 HASHED (schema.prisma:1199)","PasswordResetToken.token — PLAINTEXT @unique (schema.prisma:1184)","ApiKey.key — PBKDF2 HASHED but column documented as plaintext 'sk_live_...' (schema.prisma:1649)"],
+      "severity": "P1",
+      "canonicalChoice": "Standardize: store sha256(token) for all bearer tokens (matches AdminSession/MagicLink); query by hash. Keep PBKDF2 only for the API-key secret if a lookup index is added.",
+      "note": "A DB read leak exposes live tenant refresh + password-reset tokens (plaintext) while admin/magic-link tokens stay safe. Same 'opaque bearer token' capability, three different at-rest treatments."
+    },
+    {
+      "concept": "ApiKey validation is an O(n) full-table scan",
+      "implementations": ["backend/src/api-keys/api-keys.service.ts:122 validateKey -> findMany(take:1000) then linear verifyStoredKey over every row"],
+      "severity": "P1",
+      "canonicalChoice": "Store a deterministic lookup hash (sha256 of the raw key) in an indexed column for the WHERE clause, keep PBKDF2 only for the constant-time secret compare.",
+      "note": "Because the stored value is a per-row salted PBKDF2 hash, no index lookup is possible, so every API request that authenticates by key scans up to 1000 keys and runs PBKDF2 (210k iters) per candidate. Scales poorly and is a DoS amplifier."
+    },
+    {
+      "concept": "Two bcrypt work-factor constants with the same value",
+      "implementations": ["backend/src/common/constants.ts:10 BCRYPT_ROUNDS = 12 (tenant)","backend/src/admin/auth/admin-auth.service.helpers.ts:22 BCRYPT_WORK_FACTOR = 12 (admin)"],
+      "severity": "P3",
+      "canonicalChoice": "Single exported constant in common/constants.ts referenced by both stacks.",
+      "note": "Currently equal (12) so no behavior divergence today, but two sources of truth invite drift if one is bumped for a security upgrade and the other is forgotten."
+    },
+    {
+      "concept": "Stripe subscription -> workspaceId resolver copied across billing services",
+      "implementations": ["backend/src/billing/billing-webhook.service.ts:233","backend/src/billing/billing-checkout-helper.service.ts:253","backend/src/billing/billing-checkout-webhook.service.ts:288"],
+      "severity": "P2",
+      "canonicalChoice": "One shared resolver injected via the billing-*.helper port interfaces that already type it (billing-subscription-status.helper.ts:15).",
+      "note": "Adjacent to the cluster but shares the resolveWorkspaceId name. Three private copies of the same subscription->tenant lookup; the port interface already exists, so the copies should collapse into the injected impl."
+    },
+    {
+      "concept": "sha256-hex opaque-token hasher defined twice",
+      "implementations": ["backend/src/auth/auth-service.helpers.ts:24 hashOpaqueToken","backend/src/admin/common/admin-crypto.ts sha256Hex"],
+      "severity": "P3",
+      "canonicalChoice": "One shared sha256-hex helper in common/.",
+      "note": "Both are createHash('sha256').digest('hex'); trivial but two homes for the identical primitive used by MagicLinkToken and AdminSession respectively."
+    }
+  ],
+  "legacyOrDead": [
+    "AuthPasswordService (backend/src/auth/auth.password.service.ts:36) — ORPHAN. Implements checkEmail/createAnonymous/register/login but has ZERO non-spec, non-self references and is NOT in auth.module.ts providers. Superseded by the standalone functions in auth-service.register-login.ts that AuthService actually calls. Only its spec helper instantiates it.",
+    "auth-service.tokens.ts refreshToken() — DEPRECATED internal fallback. auth.service.ts:128-133 comment states the canonical refresh path is AuthTokenService.refresh and 'the legacy refreshToken() function in auth-service.tokens.ts is kept as a deprecated internal fallback.'",
+    "DeviceToken model (schema.prisma:1168) — likely orphan-at-rest. Defined with Agent relation but no service in the target dirs (auth/team/workspaces/api-keys) writes or reads it; no push-notification token registration path observed in-cluster.",
+    "AuthService.logout access-token blacklist write (auth.service.ts:329) — effectively dead behavior: the `access-token-revoked:<jti>` key it writes is never read (see P0 duplication). The line executes but has no effect on auth decisions.",
+    "RiscEvent model (schema.prisma:1273) — Google RISC (cross-account protection) event sink; no processor found in the target dirs, appears to be an ingest-only stub adjacent to OAuth identity."
+  ]
+}

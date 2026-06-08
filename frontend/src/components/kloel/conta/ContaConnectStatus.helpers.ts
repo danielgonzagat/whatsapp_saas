@@ -141,8 +141,23 @@ export function humanizeConnectDisabledReason(reason: string | null | undefined)
 /** Summarize seller connect account. */
 export function summarizeSellerConnectAccount(
   account: WorkspaceConnectAccount | null | undefined,
+  kycStatus?: string | null,
 ): SellerConnectSummary {
+  const normalizedKycStatus = String(kycStatus || '').toLowerCase();
+  const kycWasSubmitted = ['submitted', 'approved', 'in_review'].includes(normalizedKycStatus);
+
   if (!account) {
+    if (kycWasSubmitted) {
+      return {
+        state: 'in_review',
+        label: 'Em configuração',
+        description:
+          'Cadastro enviado. A conta de recebimento está aguardando sincronização para exibir verificações, recebimentos e saques.',
+        requirements: [],
+        disabledReason: null,
+      };
+    }
+
     return {
       state: 'not_started',
       label: 'Ainda não iniciado',

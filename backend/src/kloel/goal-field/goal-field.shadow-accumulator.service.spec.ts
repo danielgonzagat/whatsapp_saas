@@ -62,7 +62,7 @@ describe('GoalFieldShadowAccumulatorService — accept streak', () => {
     acc.recordDecision('wks_a', 'accept', T0);
     const snap = acc.getState('wks_a');
     expect(snap?.consecutiveAccepts).toBe(1);
-    snap!.consecutiveAccepts = 999;
+    snap.consecutiveAccepts = 999;
     expect(acc.getState('wks_a')?.consecutiveAccepts).toBe(1);
   });
 });
@@ -113,7 +113,7 @@ describe('GoalFieldShadowAccumulatorService — reject blocking', () => {
     for (let i = 0; i < 20; i++) {
       acc.recordDecision('wks_a', 'accept', T0 + (20 + 4 * 6 + 5 + i) * 60_000);
     }
-    const final = acc.getState('wks_a')!;
+    const final = acc.getState('wks_a');
     expect(final.consecutiveAccepts).toBeGreaterThanOrEqual(20);
     expect(final.totalRejects).toBe(4);
     const ratio = final.totalRejects / final.totalCycles;
@@ -131,7 +131,7 @@ describe('GoalFieldShadowAccumulatorService — reject ratio gate', () => {
     for (let i = 0; i < 20; i++) {
       acc.recordDecision('wks_a', 'accept', T0 + (9 + i) * 60_000);
     }
-    const final = acc.getState('wks_a')!;
+    const final = acc.getState('wks_a');
     expect(final.consecutiveAccepts).toBe(20);
     expect(final.totalRejects).toBe(9);
     expect(final.totalRejects / final.totalCycles).toBeGreaterThanOrEqual(0.1);
@@ -146,7 +146,7 @@ describe('GoalFieldShadowAccumulatorService — reject ratio gate', () => {
     for (let i = 0; i < 20; i++) {
       acc.recordDecision('wks_a', 'accept', T0 + (2 + i) * 60_000);
     }
-    const final = acc.getState('wks_a')!;
+    const final = acc.getState('wks_a');
     expect(final.totalRejects / final.totalCycles).toBeLessThan(0.1);
     expect(final.promotionEligible).toBe(true);
   });
@@ -200,7 +200,7 @@ describe('GoalFieldShadowAccumulatorService — noop', () => {
     const acc = new GoalFieldShadowAccumulatorService();
     acc.recordDecision('wks_a', 'accept', T0);
     acc.recordDecision('wks_a', 'noop', T0 + 60_000);
-    const state = acc.getState('wks_a')!;
+    const state = acc.getState('wks_a');
     expect(state.consecutiveAccepts).toBe(1);
     expect(state.totalCycles).toBe(1);
     expect(state.totalRejects).toBe(0);
@@ -221,7 +221,7 @@ describe('GoalFieldShadowAccumulatorService — noop', () => {
     const acc = new GoalFieldShadowAccumulatorService();
     acc.recordDecision('wks_a', 'reject', T0);
     acc.recordDecision('wks_a', 'noop', T0 + 60_000);
-    const state = acc.getState('wks_a')!;
+    const state = acc.getState('wks_a');
     expect(state.consecutiveAccepts).toBe(0);
     expect(state.promotionEligible).toBe(false);
   });
@@ -297,7 +297,7 @@ describe('GoalFieldShadowAccumulatorService — edge cases', () => {
     for (let i = 0; i < 50; i++) {
       acc.recordDecision('wks_a', 'accept', T0 + i * 60_000);
     }
-    const state = acc.getState('wks_a')!;
+    const state = acc.getState('wks_a');
     expect(state.consecutiveAccepts).toBe(50);
     expect(state.totalCycles).toBe(50);
     expect(state.totalRejects).toBe(0);

@@ -1,4 +1,5 @@
 import { Body, Controller, Get, HttpException, Post, Put, Query, Req, Res } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import * as Sentry from '@sentry/node';
@@ -399,6 +400,7 @@ export class AuthController {
   /** Get authenticated user profile including onboarding status. */
   @ApiOperation({ summary: 'Get authenticated user profile and onboarding status' })
   @ApiResponse({ status: 200, description: 'User profile' })
+  @Throttle({ auth: { limit: 300, ttl: 60000 } })
   @Get('me')
   getMe(@Req() req: AuthenticatedRequest) {
     const agentId = requireAgentId(req);

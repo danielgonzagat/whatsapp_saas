@@ -16,14 +16,10 @@ import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../../common/interfaces';
 import { PrismaService } from '../../prisma/prisma.service';
-import {
-  LooseObject,
-  ensureWorkspaceProductAccess,
-  getWorkspaceId,
-  safeStr,
-} from './helpers/common.helpers';
+import { LooseObject, ensureWorkspaceProductAccess, safeStr } from './helpers/common.helpers';
 import { buildCheckoutData, serializeCheckout } from './helpers/plan.helpers';
 import { RouteClass } from '../../common/throttler/route-class.decorator';
+import { resolveWorkspaceId } from '../../auth/workspace-access';
 
 /** Product checkout controller. */
 @Controller('products/:productId/checkouts')
@@ -38,7 +34,7 @@ export class ProductCheckoutController {
   /** List. */
   @Get()
   async list(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     const checkouts = await this.prisma.productCheckout.findMany({
       where: { productId },
@@ -56,7 +52,7 @@ export class ProductCheckoutController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: AuthenticatedRequest,
   ) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     const data = buildCheckoutData(body);
     const created = await this.prisma.productCheckout.create({
@@ -79,7 +75,7 @@ export class ProductCheckoutController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: AuthenticatedRequest,
   ) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     const updated = await this.prisma.$transaction(async (tx) => {
       const checkout = await tx.productCheckout.findFirst({
@@ -105,7 +101,7 @@ export class ProductCheckoutController {
     @Param('checkoutId') checkoutId: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     const checkout = await this.prisma.productCheckout.findFirst({
       where: { id: checkoutId, productId },
@@ -115,7 +111,7 @@ export class ProductCheckoutController {
     }
 
     await this.auditService.log({
-      workspaceId: getWorkspaceId(req),
+      workspaceId: resolveWorkspaceId(req),
       action: 'DELETE_RECORD',
       resource: 'ProductCheckout',
       resourceId: checkoutId,

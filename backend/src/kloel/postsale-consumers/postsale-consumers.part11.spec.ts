@@ -89,10 +89,8 @@ describe('POSTSALE-012 — LTV Projection', () => {
     const result = svc.projectByChurnLevels([], 'wks_001', 'cohort_x');
     expect(result).toHaveLength(3);
     const [low, mid, high] = result;
-    expect(low?.projectedLtvCents).toBeGreaterThanOrEqual((mid as LtvProjection).projectedLtvCents);
-    expect(mid?.projectedLtvCents).toBeGreaterThanOrEqual(
-      (high as LtvProjection).projectedLtvCents,
-    );
+    expect(low?.projectedLtvCents).toBeGreaterThanOrEqual(mid.projectedLtvCents);
+    expect(mid?.projectedLtvCents).toBeGreaterThanOrEqual(high.projectedLtvCents);
   });
 
   test('confidence grows with event volume', () => {

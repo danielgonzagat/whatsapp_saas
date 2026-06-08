@@ -4,6 +4,7 @@ import { kloelT } from '@/lib/i18n/t';
 import { useNerveCenterContext } from './product-nerve-center.context';
 import { Bt, Fd, PanelLoadingState, Tg, V, cs, is } from './product-nerve-center.shared';
 import { useAIConfig } from './ProductNerveCenterIATab.hooks';
+import { useRef } from 'react';
 
 /** Product nerve center ia tab. */
 export function ProductNerveCenterIATab() {
@@ -11,7 +12,10 @@ export function ProductNerveCenterIATab() {
 
   const {
     aiLoading,
+    _aiSaving,
     aiSaved,
+    aiError,
+    clearAiError,
     whobuys,
     setWhobuys,
     pains,
@@ -37,6 +41,43 @@ export function ProductNerveCenterIATab() {
     setUseUrg,
     handleSaveAI,
   } = useAIConfig(productId);
+
+  const updateAIField = (update: () => void) => {
+    clearAiError();
+    update();
+  };
+
+  const objectionFieldRefs = useRef<
+    Record<string, { label: HTMLInputElement | null; response: HTMLTextAreaElement | null }>
+  >({});
+
+  const setObjectionLabelRef = (id: string, node: HTMLInputElement | null) => {
+    objectionFieldRefs.current[id] = {
+      label: node,
+      response: objectionFieldRefs.current[id]?.response ?? null,
+    };
+  };
+
+  const setObjectionResponseRef = (id: string, node: HTMLTextAreaElement | null) => {
+    objectionFieldRefs.current[id] = {
+      label: objectionFieldRefs.current[id]?.label ?? null,
+      response: node,
+    };
+  };
+
+  const readVisibleObjections = () =>
+    objs.map((obj) => {
+      const refs = objectionFieldRefs.current[obj.id];
+      return {
+        ...obj,
+        label: refs?.label?.value ?? obj.label,
+        response: refs?.response?.value ?? obj.response,
+      };
+    });
+
+  const handleSaveVisibleAI = () => {
+    void handleSaveAI({ objs: readVisibleObjections() });
+  };
 
   return (
     <>
@@ -93,7 +134,7 @@ export function ProductNerveCenterIATab() {
                 <textarea
                   style={{ ...is, height: 70 }}
                   value={whobuys}
-                  onChange={(e) => setWhobuys(e.target.value)}
+                  onChange={(e) => updateAIField(() => setWhobuys(e.target.value))}
                   placeholder={kloelT(`Mulheres 35-55 anos...`)}
                 />
               </Fd>
@@ -101,7 +142,7 @@ export function ProductNerveCenterIATab() {
                 <textarea
                   style={{ ...is, height: 60 }}
                   value={pains}
-                  onChange={(e) => setPains(e.target.value)}
+                  onChange={(e) => updateAIField(() => setPains(e.target.value))}
                   placeholder={kloelT(`Dores, problemas...`)}
                 />
               </Fd>
@@ -109,7 +150,7 @@ export function ProductNerveCenterIATab() {
                 <textarea
                   style={{ ...is, height: 60 }}
                   value={promise}
-                  onChange={(e) => setPromise(e.target.value)}
+                  onChange={(e) => updateAIField(() => setPromise(e.target.value))}
                   placeholder={kloelT(`Resultado que o cliente terá...`)}
                 />
               </Fd>
@@ -128,36 +169,61 @@ export function ProductNerveCenterIATab() {
                 >
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <input
+                      id={`ai-objection-label-${o.id}`}
+                      name={`ai_objection_label_${o.id}`}
+                      ref={(node) => setObjectionLabelRef(o.id, node)}
                       style={{ ...is, flex: 1, fontSize: 11, fontWeight: 600 }}
                       value={o.label}
                       onChange={(e) => {
-                        const n = [...objs];
-                        n[i] = { ...n[i], label: e.target.value };
-                        setObjs(n);
+                        const nextLabel = e.target.value;
+                        updateAIField(() => {
+                          setObjs((current) =>
+                            current.map((item) =>
+                              item.id === o.id ? { ...item, label: nextLabel } : item,
+                            ),
+                          );
+                        });
                       }}
                       placeholder={kloelT(`Objeção`)}
                     />
                     <Bt
-                      onClick={() => setObjs(objs.filter((_, j) => j !== i))}
-                      style={{ padding: '2px 6px', color: V.r, fontSize: 10 }}
+                      onClick={() =>
+                        updateAIField(() => {
+                          delete objectionFieldRefs.current[o.id];
+                          setObjs((current) => current.filter((item) => item.id !== o.id));
+                        })
+                      }
+                      style={{ padding: '4px 8px', color: V.r, fontSize: 10 }}
                     >
-                      x
+                      {kloelT(`Excluir`)}
                     </Bt>
                   </div>
                   <textarea
+                    id={`ai-objection-response-${o.id}`}
+                    name={`ai_objection_response_${o.id}`}
+                    ref={(node) => setObjectionResponseRef(o.id, node)}
                     style={{ ...is, height: 40, marginTop: 4, fontSize: 11 }}
                     value={o.response}
                     onChange={(e) => {
-                      const n = [...objs];
-                      n[i] = { ...n[i], response: e.target.value };
-                      setObjs(n);
+                      const nextResponse = e.target.value;
+                      updateAIField(() => {
+                        setObjs((current) =>
+                          current.map((item) =>
+                            item.id === o.id ? { ...item, response: nextResponse } : item,
+                          ),
+                        );
+                      });
                     }}
                     placeholder={kloelT(`Resposta da IA...`)}
                   />
                 </div>
               ))}
               <Bt
-                onClick={() => setObjs([...objs, { id: nextObjId(), label: '', response: '' }])}
+                onClick={() =>
+                  updateAIField(() =>
+                    setObjs((current) => [...current, { id: nextObjId(), label: '', response: '' }]),
+                  )
+                }
                 style={{ marginTop: 10, width: '100%', justifyContent: 'center' }}
               >
                 {kloelT(`+ Adicionar objeção`)}
@@ -170,7 +236,11 @@ export function ProductNerveCenterIATab() {
             </h3>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0 16px' }}>
               <Fd label={kloelT(`Tom`)}>
-                <select style={is} value={tone} onChange={(e) => setTone(e.target.value)}>
+                <select
+                  style={is}
+                  value={tone}
+                  onChange={(e) => updateAIField(() => setTone(e.target.value))}
+                >
                   <option value="CONSULTIVE">{kloelT(`Consultivo`)}</option>
                   <option value="AGGRESSIVE">{kloelT(`Agressivo`)}</option>
                   <option value="FRIENDLY">{kloelT(`Amigável`)}</option>
@@ -183,10 +253,22 @@ export function ProductNerveCenterIATab() {
                   <option value="AUTO">{kloelT(`Automático`)}</option>
                 </select>
               </Fd>
-              <Fd label={kloelT(`Persistência (1-5)`)} value={persist} onChange={setPersist} />
-              <Fd label={kloelT(`Limite mensagens`)} value={msgLimit} onChange={setMsgLimit} />
+              <Fd
+                label={kloelT(`Persistência (1-5)`)}
+                value={persist}
+                onChange={(value) => updateAIField(() => setPersist(value))}
+              />
+              <Fd
+                label={kloelT(`Limite mensagens`)}
+                value={msgLimit}
+                onChange={(value) => updateAIField(() => setMsgLimit(value))}
+              />
               <Fd label={kloelT(`Follow-up`)}>
-                <select style={is} value={followUp} onChange={(e) => setFollowUp(e.target.value)}>
+                <select
+                  style={is}
+                  value={followUp}
+                  onChange={(e) => updateAIField(() => setFollowUp(e.target.value))}
+                >
                   <option value="2h,24h,72h">{kloelT(`2h, 24h, 72h`)}</option>
                   <option value="1h,12h,48h">{kloelT(`1h, 12h, 48h`)}</option>
                   <option value="6h,24h">{kloelT(`6h, 24h`)}</option>
@@ -197,18 +279,40 @@ export function ProductNerveCenterIATab() {
             <Tg
               label={kloelT(`Enviar link checkout auto`)}
               checked={autoLink}
-              onChange={setAutoLink}
+              onChange={(checked) => updateAIField(() => setAutoLink(checked))}
             />
             <Tg
               label={kloelT(`Oferecer desconto se resistência`)}
               checked={offerDisc}
-              onChange={setOfferDisc}
+              onChange={(checked) => updateAIField(() => setOfferDisc(checked))}
             />
-            <Tg label={kloelT(`Usar urgência/escassez`)} checked={useUrg} onChange={setUseUrg} />
+            <Tg
+              label={kloelT(`Usar urgência/escassez`)}
+              checked={useUrg}
+              onChange={(checked) => updateAIField(() => setUseUrg(checked))}
+            />
           </div>
+          {aiError ? (
+            <div
+              role="alert"
+              style={{
+                ...cs,
+                padding: 12,
+                marginTop: 16,
+                border: `1px solid ${V.r}55`,
+                background: `${V.r}12`,
+                color: V.r,
+                fontSize: 12,
+                lineHeight: 1.5,
+              }}
+            >
+              {kloelT(aiError)}
+            </div>
+          ) : null}
           <Bt
             primary
-            onClick={handleSaveAI}
+            disabled={_aiSaving}
+            onClick={handleSaveVisibleAI}
             style={{ marginTop: 16, width: '100%', justifyContent: 'center' }}
           >
             <svg
@@ -223,7 +327,7 @@ export function ProductNerveCenterIATab() {
             >
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
             </svg>
-            {aiSaved ? 'IA atualizada' : 'Salvar config da IA'}
+            {_aiSaving ? 'Salvando...' : aiSaved ? 'IA atualizada' : 'Salvar config da IA'}
           </Bt>
         </>
       )}

@@ -248,7 +248,7 @@ describe('GuestChatService', () => {
 
       await service.chat('Olá', 'no-key-sse', req, res);
 
-      const sseCalls = write.mock.calls.map((c: string[]) => c[0] as string);
+      const sseCalls = write.mock.calls.map((c: string[]) => c[0]);
       const errorChunk = sseCalls.find((s: string) => s.includes('openai_api_key_missing'));
       expect(errorChunk).toBeDefined();
       expect(end).toHaveBeenCalled();

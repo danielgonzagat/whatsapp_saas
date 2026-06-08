@@ -31,6 +31,7 @@ type SharedProps = {
 type IdentityColumnProps = SharedProps & {
   loadingStep: boolean;
   goStep: (target: number) => void | Promise<void>;
+  requiresShipping?: boolean;
   socialIdentity: CheckoutSocialIdentitySnapshot | null;
   socialLoadingProvider: CheckoutSocialProvider | null;
   socialError: string;
@@ -144,7 +145,17 @@ export function CheckoutContactSections(props: IdentityColumnProps) {
         <div style={cardBase}>
           <IdentityPanel
             theme={theme}
-            config={config}
+            config={
+              props.requiresShipping === false
+                ? {
+                    ...config,
+                    btnStep1Text:
+                      config?.btnStep1Text && config.btnStep1Text !== 'Ir para Entrega'
+                        ? config.btnStep1Text
+                        : 'Ir para Pagamento',
+                  }
+                : config
+            }
             fid={fid}
             form={form}
             updateField={updateField}
@@ -169,63 +180,65 @@ export function CheckoutContactSections(props: IdentityColumnProps) {
         </div>
       )}
 
-      {step >= 2 ? (
-        step > 2 ? (
-          <div style={doneCard}>
-            <DoneHeader
-              theme={theme}
-              title={kloelT(`Entrega`)}
-              number={2}
-              onEdit={() => setStep(2)}
-            />
-            <div style={doneText}>
-              <strong style={{ color: theme.text }}>{kloelT(`Endereço para entrega:`)}</strong>
-              <br />
-              {form.street || 'Endereço'}, {form.number || 'S/N'} - {form.neighborhood}
-              <br />
-              {form.complement ? (
-                <>
-                  <span>
-                    {kloelT(`Complemento:`)} {form.complement}
-                  </span>
-                  <br />
-                </>
-              ) : null}
-              {[form.city, form.state].filter(Boolean).join(' - ')} {kloelT(`| CEP`)} {form.cep}
-              <br />
-              <strong style={{ display: 'block', marginTop: 8, color: theme.text }}>
-                {kloelT(`Forma de entrega:`)}
-              </strong>
-              {shippingInCents === 0
-                ? 'Frete padrão Grátis'
-                : `Frete padrão ${fmtBrl(shippingInCents)}`}
+      {props.requiresShipping !== false ? (
+        step >= 2 ? (
+          step > 2 ? (
+            <div style={doneCard}>
+              <DoneHeader
+                theme={theme}
+                title={kloelT(`Entrega`)}
+                number={2}
+                onEdit={() => setStep(2)}
+              />
+              <div style={doneText}>
+                <strong style={{ color: theme.text }}>{kloelT(`Endereço para entrega:`)}</strong>
+                <br />
+                {form.street || 'Endereço'}, {form.number || 'S/N'} - {form.neighborhood}
+                <br />
+                {form.complement ? (
+                  <>
+                    <span>
+                      {kloelT(`Complemento:`)} {form.complement}
+                    </span>
+                    <br />
+                  </>
+                ) : null}
+                {[form.city, form.state].filter(Boolean).join(' - ')} {kloelT(`| CEP`)} {form.cep}
+                <br />
+                <strong style={{ display: 'block', marginTop: 8, color: theme.text }}>
+                  {kloelT(`Forma de entrega:`)}
+                </strong>
+                {shippingInCents === 0
+                  ? 'Frete padrão Grátis'
+                  : `Frete padrão ${fmtBrl(shippingInCents)}`}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div style={{ ...cardBase, marginTop: 20 }}>
+              <DeliveryPanel
+                theme={theme}
+                config={config}
+                fid={fid}
+                form={form}
+                updateField={updateField}
+                submitError={submitError}
+                step={step}
+                goStep={goStep}
+                labelStyle={labelStyle}
+                renderHeader={renderDeliveryHeader}
+                renderAction={renderDeliveryAction}
+              />
+            </div>
+          )
         ) : (
-          <div style={{ ...cardBase, marginTop: 20 }}>
-            <DeliveryPanel
-              theme={theme}
-              config={config}
-              fid={fid}
-              form={form}
-              updateField={updateField}
-              submitError={submitError}
-              step={step}
-              goStep={goStep}
-              labelStyle={labelStyle}
-              renderHeader={renderDeliveryHeader}
-              renderAction={renderDeliveryAction}
-            />
+          <div style={{ ...cardBase, marginTop: 20, opacity: 0.35 }}>
+            <ActiveHeader theme={theme} title={kloelT(`Entrega`)} number={2} locked />
+            <p style={{ fontSize: 13, color: theme.mutedText, marginTop: 4 }}>
+              {kloelT(`Preencha suas informações pessoais para continuar`)}
+            </p>
           </div>
         )
-      ) : (
-        <div style={{ ...cardBase, marginTop: 20, opacity: 0.35 }}>
-          <ActiveHeader theme={theme} title={kloelT(`Entrega`)} number={2} locked />
-          <p style={{ fontSize: 13, color: theme.mutedText, marginTop: 4 }}>
-            {kloelT(`Preencha suas informações pessoais para continuar`)}
-          </p>
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }

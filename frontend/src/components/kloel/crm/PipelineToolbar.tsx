@@ -43,6 +43,8 @@ export function PipelineToolbar({
         <select
           value={selectedPipelineId}
           onChange={(e) => onSelectPipeline(e.target.value)}
+          aria-label={kloelT('Selecionar pipeline')}
+          title={kloelT('Selecionar pipeline')}
           style={{
             appearance: 'none',
             background: 'var(--app-bg-card)',

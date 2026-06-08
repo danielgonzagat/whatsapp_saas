@@ -35,7 +35,20 @@ export class PaymentMethodController {
   @Idempotent()
   async createSetupIntent(@Req() req: AuthenticatedRequest, @Body() body?: { returnUrl?: string }) {
     const workspaceId = resolveWorkspaceId(req);
-    return this.paymentMethodService.createSetupIntent(workspaceId, body?.returnUrl);
+    try {
+      return await this.paymentMethodService.createSetupIntent(workspaceId, body?.returnUrl);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      if (message.includes('Infraestrutura de cobrança indisponível')) {
+        return {
+          url: null,
+          customerId: null,
+          unavailable: true,
+          message: 'Cartao de assinatura indisponivel neste ambiente.',
+        };
+      }
+      throw error;
+    }
   }
 
   /** Attach payment method. */

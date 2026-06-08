@@ -87,6 +87,51 @@ export function canSubmitKyc(percentage: number, kycStatus: string): boolean {
   return percentage >= 100 && kycStatus === 'pending';
 }
 
+export type KycGateNoticeTone = 'warning' | 'info' | 'error';
+
+export interface KycGateNotice {
+  title: string;
+  description: string;
+  tone: KycGateNoticeTone;
+}
+
+export function getKycGateNotice(percentage: number, kycStatus: string): KycGateNotice {
+  const normalizedStatus = String(kycStatus || '').toLowerCase();
+
+  if (normalizedStatus === 'rejected') {
+    return {
+      title: 'Cadastro precisa de ajustes',
+      description:
+        'Revise os dados sinalizados, salve as correções e envie novamente para análise.',
+      tone: 'error',
+    };
+  }
+
+  if (percentage >= 100 && ['submitted', 'in_review'].includes(normalizedStatus)) {
+    return {
+      title: 'Cadastro em análise',
+      description:
+        'Seu cadastro foi enviado e está em análise. A liberação acontece quando a revisão for concluída.',
+      tone: 'info',
+    };
+  }
+
+  if (percentage >= 100 && normalizedStatus === 'pending') {
+    return {
+      title: 'Cadastro pronto para análise',
+      description: 'Todos os dados obrigatórios estão preenchidos. Envie o cadastro para análise.',
+      tone: 'info',
+    };
+  }
+
+  return {
+    title: 'Cadastro incompleto',
+    description:
+      'Você pode visualizar todas as funcionalidades, mas para criar produtos, se afiliar e utilizar a IA, complete seu cadastro e aguarde a aprovação.',
+    tone: 'warning',
+  };
+}
+
 /** True when the SystemAlertsCard should be rendered above the section panel. */
 export function shouldShowSystemAlerts(section: SettingsSectionKey): boolean {
   return SECTIONS_WITH_SYSTEM_ALERTS.has(section);

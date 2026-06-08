@@ -24,7 +24,7 @@ import { getTraceHeaders } from '../common/trace-headers';
 import { resolveKloelCapabilityModel } from '../lib/ai-models';
 import { PrismaService } from '../prisma/prisma.service';
 import { UnknownProviderPricingModelError } from '../wallet/provider-pricing';
-import { WalletService } from '../wallet/wallet.service';
+import { PrepaidWalletService } from '../wallet/wallet.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import {
   InsufficientWalletBalanceError,
@@ -35,6 +35,7 @@ import {
 import { RouteClass } from '../common/throttler/route-class.decorator';
 import {
   buildAnthropicSiteRequestBody,
+  buildDeterministicFallbackSiteHtml,
   buildOpenAiSiteRequestBody,
   buildSiteSlug,
   buildSiteSystemPrompt,
@@ -58,7 +59,7 @@ export class SiteController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
-    private readonly prepaidWalletService: WalletService,
+    private readonly prepaidWalletService: PrepaidWalletService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
@@ -224,9 +225,14 @@ export class SiteController {
 
     const providerPreference = resolveSiteProviderPreference({ openaiKey, anthropicKey });
     if (!providerPreference) {
-      throw new ServiceUnavailableException(
-        'AI site generation is not available. Configure OPENAI_API_KEY or ANTHROPIC_API_KEY.',
-      );
+      return {
+        success: true,
+        html: buildDeterministicFallbackSiteHtml({
+          prompt: dto.prompt,
+          currentHtml: dto.currentHtml,
+        }),
+        message: 'Generated via deterministic fallback',
+      };
     }
 
     const systemPrompt = buildSiteSystemPrompt({ currentHtml: dto.currentHtml });

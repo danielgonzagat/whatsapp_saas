@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { MindChatMessageService } from '../aliases/mind-chat-message.service';
 import { MindCaseMemoryService } from './mind-case-memory.service';
 
 /**
@@ -47,7 +48,13 @@ export class EpisodeService {
   public constructor(
     private readonly prisma: PrismaService,
     private readonly caseMemory: MindCaseMemoryService,
+    @Optional() private readonly mindChatMessage?: MindChatMessageService,
   ) {}
+
+  /** Canonical Brain → Mind chat-message delegate (raw-Prisma fallback). */
+  private get chatMessageItems() {
+    return this.mindChatMessage?.items ?? this.prisma.chatMessage;
+  }
 
   /**
    * Consolidate the workspace's recent conversations into indexed episodes.
@@ -130,7 +137,7 @@ export class EpisodeService {
     workspaceId: string,
     thread: { id: string; title: string | null; summary: string | null },
   ): Promise<DerivedEpisode | undefined> {
-    const messages = await this.prisma.chatMessage.findMany({
+    const messages = await this.chatMessageItems.findMany({
       where: { threadId: thread.id, thread: { workspaceId }, deletedAt: null },
       orderBy: { createdAt: 'asc' },
       select: { role: true, content: true, createdAt: true },

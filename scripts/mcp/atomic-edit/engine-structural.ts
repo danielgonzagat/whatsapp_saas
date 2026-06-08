@@ -63,6 +63,17 @@ export function structuralErrors(ext: string, text: string): string[] {
       i = end + 2;
       continue;
     }
+    if (ext === '.py' && (c === '"' || c === "'") && text.slice(i, i + 3) === c.repeat(3)) {
+      const startLine = line;
+      const end = text.indexOf(c.repeat(3), i + 3);
+      if (end === -1) {
+        errors.push(`unterminated triple-quoted string (line ${startLine})`);
+        return errors;
+      }
+      for (let k = i; k < end; k++) if (text[k] === '\n') line++;
+      i = end + 3;
+      continue;
+    }
     // string literal — skip content, honor backslash escapes
     if (c === '"' || c === "'" || c === '`') {
       const startLine = line;

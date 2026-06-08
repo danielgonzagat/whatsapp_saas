@@ -30,7 +30,7 @@ const V = {
   s: 'var(--bg-space, colors.background.surface)',
   e: 'var(--bg-nebula, colors.background.elevated)',
   b: 'var(--border-space, colors.border.space)',
-  em: 'colors.ember.primary',
+  em: colors.ember.primary,
   t: 'var(--text-starlight, colors.text.silver)',
   t2: 'var(--text-moonlight, colors.text.muted)',
   t3: 'var(--text-dust, colors.text.dim)',

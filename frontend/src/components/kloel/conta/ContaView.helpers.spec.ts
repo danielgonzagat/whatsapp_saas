@@ -124,6 +124,36 @@ describe('isKycBlocked', () => {
   });
 });
 
+describe('getKycGateNotice', () => {
+  it('uses submitted copy when a complete KYC is under review', async () => {
+    const helpers = (await import('./ContaView.helpers')) as unknown as {
+      getKycGateNotice: (percentage: number, kycStatus: string) => {
+        title: string;
+        description: string;
+        tone: string;
+      };
+    };
+
+    const notice = helpers.getKycGateNotice(100, 'submitted');
+
+    expect(notice.title).toBe('Cadastro em análise');
+    expect(notice.description).toContain('enviado');
+    expect(notice.description).not.toContain('complete seu cadastro');
+    expect(notice.tone).toBe('info');
+  });
+
+  it('uses ready-to-submit copy when completion is 100% but KYC is still pending', async () => {
+    const helpers = (await import('./ContaView.helpers')) as unknown as {
+      getKycGateNotice: (percentage: number, kycStatus: string) => { title: string; tone: string };
+    };
+
+    const notice = helpers.getKycGateNotice(100, 'pending');
+
+    expect(notice.title).toBe('Cadastro pronto para análise');
+    expect(notice.tone).toBe('info');
+  });
+});
+
 describe('canSubmitKyc', () => {
   it('allows submission only at 100% with pending status', () => {
     expect(canSubmitKyc(100, 'pending')).toBe(true);

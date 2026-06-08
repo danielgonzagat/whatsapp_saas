@@ -1,4 +1,5 @@
 'use client';
+import { useId } from 'react';
 import useSWR from 'swr';
 
 import { colors } from '@/lib/design-tokens';
@@ -23,6 +24,8 @@ interface AppCardData {
   tone: AppTone;
   cta: string;
   action: () => void;
+  disabled?: boolean | undefined;
+  disabledReason?: string | undefined;
 }
 
 interface ConnectionStatus {
@@ -96,7 +99,35 @@ function statusText({
     return 'Conectado';
   }
 
-  return status ? status.replaceAll('_', ' ') : 'Desconectado';
+  const normalizedStatus = String(status || '')
+    .trim()
+    .toLowerCase()
+    .replaceAll('_', ' ')
+    .replace(/\s+/g, ' ');
+
+  const humanLabels: Record<string, string> = {
+    connected: 'Conectado',
+    disconnected: 'Desconectado',
+    'meta auth required': 'Login Meta necessario',
+    'meta oauth configuration missing': 'Configuracao Meta ausente',
+    'meta oauth missing': 'Configuracao Meta ausente',
+    'meta oauth not configured': 'Configuracao Meta ausente',
+    'config missing': 'Configuracao ausente',
+    'not configured': 'Configuracao ausente',
+    'server not configured': 'Servidor nao configurado',
+    unavailable: 'Indisponivel',
+    'scanned refreshing': 'Sincronizando sessao',
+  };
+
+  if (normalizedStatus in humanLabels) {
+    return humanLabels[normalizedStatus];
+  }
+
+  if (!normalizedStatus) {
+    return 'Desconectado';
+  }
+
+  return normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1);
 }
 
 function connectionTone({
@@ -120,6 +151,8 @@ function connectionTone({
 }
 
 function AppConnectionCard({ app }: { app: AppCardData }) {
+  const disabledReasonId = useId();
+
   return (
     <div
       style={{
@@ -163,24 +196,43 @@ function AppConnectionCard({ app }: { app: AppCardData }) {
           >
             {app.status}
           </span>
+          {app.disabledReason ? (
+            <span
+              id={disabledReasonId}
+              style={{
+                display: 'block',
+                marginTop: 4,
+                fontSize: 10.5,
+                color: colors.semantic.warning,
+                fontFamily: SORA,
+              }}
+            >
+              {app.disabledReason}
+            </span>
+          ) : null}
         </div>
       </div>
       <button
         type="button"
-        onClick={app.action}
+        onClick={app.disabled ? undefined : app.action}
+        disabled={app.disabled}
+        aria-describedby={app.disabledReason ? disabledReasonId : undefined}
         style={{
           padding: '8px 14px',
           background: 'transparent',
           border: '1px solid var(--app-border-primary)',
           borderRadius: 6,
-          color: app.tone === 'connected'
-            ? 'var(--app-text-primary)'
-            : 'var(--app-text-secondary)',
+          color: app.disabled
+            ? 'var(--app-text-placeholder)'
+            : app.tone === 'connected'
+              ? 'var(--app-text-primary)'
+              : 'var(--app-text-secondary)',
           fontSize: 11,
           fontWeight: 600,
-          cursor: 'pointer',
+          cursor: app.disabled ? 'not-allowed' : 'pointer',
           fontFamily: SORA,
           whiteSpace: 'nowrap',
+          opacity: app.disabled ? 0.62 : 1,
         }}
       >
         {app.cta}
@@ -210,6 +262,22 @@ export function ContaAppsSection({ handleSelectSection, router }: ContaAppsSecti
       googleStatus.secretConfigured !== false &&
       googleStatus.developerTokenConfigured !== false
     : undefined;
+  const metaStatus = statusText({
+    loading: connectLoading,
+    error: connectError,
+    connected: meta?.connected,
+    status: meta?.status,
+    configured: meta?.providerAvailable,
+  });
+  const metaUnavailable =
+    !connectLoading &&
+    !connectError &&
+    meta?.connected !== true &&
+    (meta?.providerAvailable === false ||
+      metaStatus === 'Configuracao Meta ausente' ||
+      metaStatus === 'Configuracao ausente' ||
+      metaStatus === 'Servidor nao configurado' ||
+      metaStatus === 'Credenciais ausentes');
 
   const appCards: AppCardData[] = [
     {
@@ -227,15 +295,14 @@ export function ContaAppsSection({ handleSelectSection, router }: ContaAppsSecti
     },
     {
       name: 'Meta Platform',
-      status: statusText({
-        loading: connectLoading,
-        error: connectError,
-        connected: meta?.connected,
-        status: meta?.status,
-      }),
-      tone: connectionTone({ loading: connectLoading, error: connectError, connected: meta?.connected }),
-      cta: meta?.connected ? 'Abrir anuncios' : 'Conectar Meta',
-      action: () => router.push('/anuncios'),
+      status: metaStatus,
+      tone: metaUnavailable
+        ? 'error'
+        : connectionTone({ loading: connectLoading, error: connectError, connected: meta?.connected }),
+      cta: meta?.connected ? 'Abrir anuncios' : metaUnavailable ? 'Meta indisponivel' : 'Conectar Meta',
+      action: () => router.push(meta?.connected ? '/anuncios' : '/marketing/whatsapp'),
+      disabled: metaUnavailable,
+      disabledReason: metaUnavailable ? 'Configure as credenciais Meta para conectar.' : undefined,
     },
     {
       name: 'Google Ads',

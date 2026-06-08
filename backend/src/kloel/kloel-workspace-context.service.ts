@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { filterLegacyProducts, isLegacyProductName } from '../common/products/legacy-products.util';
@@ -14,6 +14,7 @@ import {
   safeStr,
 } from './kloel-workspace-context.helpers';
 import type { WorkspaceProductContextInput } from './kloel-workspace-context.types';
+import { KloelMemoryEngineService } from './kloel-memory-engine.service';
 
 type WorkspaceBranding = Record<string, unknown>;
 
@@ -44,6 +45,7 @@ export class KloelWorkspaceContextService {
     private readonly prisma: PrismaService,
     private readonly dataService: KloelWorkspaceContextDataService,
     private readonly linkedProductService: KloelWorkspaceContextLinkedProductService,
+    @Optional() private readonly memoryEngine?: KloelMemoryEngineService,
   ) {}
   hasLegacyProductMarker(value: string | null | undefined): boolean {
     if (!value) {
@@ -173,6 +175,13 @@ export class KloelWorkspaceContextService {
       this.appendMemories(contextParts, raw.memories);
       if (raw.userProfile?.content) {
         contextParts.unshift(`PERFIL DO USUÁRIO ATUAL:\n${raw.userProfile.content}`);
+      }
+      if (userId && this.memoryEngine) {
+        const userMemories = await this.memoryEngine.recall(workspaceId, userId, '');
+        const memoryBlock = this.memoryEngine.renderForContext(userMemories);
+        if (memoryBlock) {
+          contextParts.unshift(memoryBlock);
+        }
       }
 
       return contextParts.filter(Boolean).join('\n\n');

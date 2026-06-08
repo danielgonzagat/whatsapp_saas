@@ -10,19 +10,33 @@ export function Input({
   placeholder,
   style: extraStyle,
   ariaLabel,
+  id,
+  name,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   style?: React.CSSProperties;
   ariaLabel?: string;
+  id?: string;
+  name?: string;
 }) {
+  const accessibleName = ariaLabel || placeholder || 'Campo de texto';
+  const identifier = (name || id || accessibleName)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'campo-de-texto';
+
   return (
     <input
+      id={id || `site-input-${identifier}`}
+      name={name || identifier}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      aria-label={ariaLabel || placeholder}
+      aria-label={accessibleName}
       style={{
         fontFamily: SORA,
         fontSize: 13,

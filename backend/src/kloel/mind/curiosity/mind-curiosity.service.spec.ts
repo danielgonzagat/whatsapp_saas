@@ -105,8 +105,8 @@ describe('MindCuriosityService', () => {
       const result = await svc.identifyKnowledgeGap('ws-1');
 
       expect(result).not.toBeNull();
-      expect(result!.topic).toContain('concept:');
-      expect(result!.reason).toContain('0 detections');
+      expect(result.topic).toContain('concept:');
+      expect(result.reason).toContain('0 detections');
       expect(spine.emit).toHaveBeenCalledWith(
         expect.objectContaining({
           eventName: 'cognition.curiosity.gap_identified',
@@ -193,7 +193,7 @@ describe('MindCuriosityService', () => {
       const result = await svc.identifyKnowledgeGap('ws-1');
 
       expect(result).not.toBeNull();
-      expect(result!.topic).toContain('belief:');
+      expect(result.topic).toContain('belief:');
       expect(spine.emit).toHaveBeenCalled();
     });
 
@@ -214,7 +214,7 @@ describe('MindCuriosityService', () => {
       const result = await svc.identifyKnowledgeGap('ws-2');
 
       expect(result).not.toBeNull();
-      expect(result!.topic).toContain('concept:');
+      expect(result.topic).toContain('concept:');
     });
 
     it('returns null on prisma failure', async () => {
@@ -240,7 +240,7 @@ describe('MindCuriosityService', () => {
       const result = await svc.identifyKnowledgeGap('ws-1');
 
       expect(result).not.toBeNull();
-      expect(result!.topic).toContain('concept:');
+      expect(result.topic).toContain('concept:');
     });
 
     it('skips high-variance beliefs with too few samples', async () => {

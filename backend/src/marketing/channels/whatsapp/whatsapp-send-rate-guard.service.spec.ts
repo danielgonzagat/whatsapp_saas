@@ -66,7 +66,7 @@ describe('WhatsappSendRateGuardService', () => {
         (...args: unknown[]) => Promise<unknown>
       >;
       const patchedSend = proto.sendMessage;
-      await patchedSend.call({} as WhatsappService, 'ws-1', '5511', 'hello');
+      await patchedSend.call({}, 'ws-1', '5511', 'hello');
 
       expect(planLimits.ensureDailyMessageQuota).toHaveBeenCalledWith('ws-1');
       expect(planLimits.ensureMessageRate).toHaveBeenCalledWith('ws-1');
@@ -80,7 +80,7 @@ describe('WhatsappSendRateGuardService', () => {
         (...args: unknown[]) => Promise<unknown>
       >;
       const patched = proto.sendTemplate;
-      await patched.call({} as WhatsappService, 'ws-1', '5511', {});
+      await patched.call({}, 'ws-1', '5511', {});
 
       expect(planLimits.ensureDailyMessageQuota).toHaveBeenCalledWith('ws-1');
       expect(planLimits.ensureMessageRate).toHaveBeenCalledWith('ws-1');
@@ -94,7 +94,7 @@ describe('WhatsappSendRateGuardService', () => {
         (...args: unknown[]) => Promise<unknown>
       >;
       const patched = proto.sendDirectMessage;
-      await patched.call({} as WhatsappService, 'ws-1', '5511', 'hello');
+      await patched.call({}, 'ws-1', '5511', 'hello');
 
       expect(planLimits.ensureDailyMessageQuota).toHaveBeenCalledWith('ws-1');
       expect(planLimits.ensureMessageRate).toHaveBeenCalledWith('ws-1');
@@ -108,7 +108,7 @@ describe('WhatsappSendRateGuardService', () => {
         (...args: unknown[]) => Promise<unknown>
       >;
       const patchedSend = proto.sendMessage;
-      await patchedSend.call({} as WhatsappService, null, '5511', 'hello');
+      await patchedSend.call({}, null, '5511', 'hello');
 
       expect(planLimits.ensureDailyMessageQuota).not.toHaveBeenCalled();
       expect(planLimits.ensureMessageRate).not.toHaveBeenCalled();

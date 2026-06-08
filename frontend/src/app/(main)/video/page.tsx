@@ -79,7 +79,7 @@ export default function VideoPage() {
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [newVoiceName, setNewVoiceName] = useState('');
   const [newVoiceId, setNewVoiceId] = useState('');
-  const [newVoiceProvider, setNewVoiceProvider] = useState('elevenlabs');
+  const [newVoiceProvider, setNewVoiceProvider] = useState('OPENAI');
   const [creatingVoice, setCreatingVoice] = useState(false);
   const [genText, setGenText] = useState('');
   const [genProfileId, setGenProfileId] = useState('');
@@ -114,23 +114,23 @@ export default function VideoPage() {
   }, [activeTab, loadVoiceProfiles]);
 
   const handleCreateVoice = useCallback(async () => {
-    if (!newVoiceName.trim()) {
+    if (!newVoiceName.trim() || !newVoiceId.trim()) {
       return;
     }
     setCreatingVoice(true);
+    setVoiceError(null);
     try {
-      const vid = newVoiceId.trim() || undefined;
-      const vprov = newVoiceProvider || undefined;
       const res = await voiceApi.createProfile({
         name: newVoiceName.trim(),
-        ...(vid !== undefined ? { voiceId: vid } : {}),
-        ...(vprov !== undefined ? { provider: vprov } : {}),
+        provider: newVoiceProvider || 'OPENAI',
+        voiceId: newVoiceId.trim(),
       });
       if (res.error) {
         throw new Error(res.error);
       }
       setNewVoiceName('');
       setNewVoiceId('');
+      setNewVoiceProvider('OPENAI');
       await loadVoiceProfiles();
     } catch (e: unknown) {
       setVoiceError(errorMessage(e, 'Erro ao criar perfil'));
@@ -155,7 +155,10 @@ export default function VideoPage() {
       if (res.error) {
         throw new Error(res.error);
       }
-      setGenResult(readStringField(res.data, 'audioUrl') || 'Audio gerado (sem URL)');
+      const audioUrl = readStringField(res.data, 'audioUrl');
+      const jobId = readStringField(res.data, 'id');
+      const status = readStringField(res.data, 'status', 'PENDING');
+      setGenResult(audioUrl || `Job de audio criado: ${jobId ?? 'confirmado'} (${status})`);
     } catch (e: unknown) {
       setGenError(errorMessage(e, 'Erro ao gerar audio'));
     } finally {
@@ -172,17 +175,19 @@ export default function VideoPage() {
   const [mediaError, setMediaError] = useState<string | null>(null);
 
   const handleProcessMedia = useCallback(async () => {
+    if (!mediaUrl.trim()) {
+      return;
+    }
     setProcessingMedia(true);
     setMediaError(null);
     setMediaJobId(null);
     setMediaStatus(null);
     try {
-      const iurl = mediaUrl.trim() || undefined;
+      const imageUrl = mediaUrl.trim();
       const mprompt = mediaPrompt.trim() || undefined;
       const res = await mediaApi.processVideo({
-        ...(iurl !== undefined ? { inputUrl: iurl } : {}),
+        imageUrl,
         ...(mprompt !== undefined ? { prompt: mprompt } : {}),
-        type: mediaType,
       });
       if (res.error) {
         throw new Error(res.error);
@@ -190,11 +195,11 @@ export default function VideoPage() {
       setMediaJobId(readStringField(res.data, 'id'));
       setMediaStatus(readStringField(res.data, 'status', 'PENDING'));
     } catch (e: unknown) {
-      setMediaError(errorMessage(e, 'Erro ao processar midia'));
+      setMediaError(errorMessage(e, 'Erro ao processar video'));
     } finally {
       setProcessingMedia(false);
     }
-  }, [mediaUrl, mediaPrompt, mediaType]);
+  }, [mediaUrl, mediaPrompt]);
 
   const handleCheckMediaJob = useCallback(async () => {
     if (!mediaJobId) {
@@ -246,7 +251,7 @@ export default function VideoPage() {
               background: 'none',
               border: 'none',
               borderBottom:
-                activeTab === t.id ? '2px solid colors.ember.primary' : '2px solid transparent',
+                activeTab === t.id ? `2px solid ${colors.ember.primary}` : '2px solid transparent',
               cursor: 'pointer',
               marginBottom: -1,
             }}
@@ -262,6 +267,7 @@ export default function VideoPage() {
           isLoading={isLoading}
           error={error}
           onRefresh={handleRefreshJob}
+          onCreate={() => setActiveTab('create')}
         />
       )}
 

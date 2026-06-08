@@ -94,6 +94,7 @@ export default function KloelRelatorio() {
           <button
             type="button"
             key={t.k}
+            aria-pressed={active === t.k}
             onClick={() => {
               setActive(t.k);
               setPage(1);
@@ -161,12 +162,14 @@ export default function KloelRelatorio() {
         {active === 'engajamento' && <EngajamentoTab filters={filters} />}
       </div>
 
-      <AnalyticsFilterDrawer
-        open={showFilter}
-        onClose={() => setShowFilter(false)}
-        filters={filters}
-        setFilters={setFilters}
-      />
+      {showFilter && (
+        <AnalyticsFilterDrawer
+          open={showFilter}
+          onClose={() => setShowFilter(false)}
+          filters={filters}
+          setFilters={setFilters}
+        />
+      )}
     </div>
   );
 }

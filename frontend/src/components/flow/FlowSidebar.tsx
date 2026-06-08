@@ -155,6 +155,9 @@ export function FlowSidebar() {
             aria-hidden="true"
           />
           <input
+            id="flow-component-search"
+            name="flow-component-search"
+            aria-label={kloelT(`Buscar componentes`)}
             type="text"
             placeholder={kloelT(`Buscar componentes...`)}
             value={search}

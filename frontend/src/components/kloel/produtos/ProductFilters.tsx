@@ -38,6 +38,8 @@ export default function ProductFilters({
           {IC.search(14)}
         </span>
         <input
+          id="product-filter-search"
+          name="productFilterSearch"
           aria-label={kloelT('Filtrar produtos')}
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}

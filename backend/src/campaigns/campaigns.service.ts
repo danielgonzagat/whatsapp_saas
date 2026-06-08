@@ -26,11 +26,13 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 
 import { NAME_RE } from '../common/regex';
 import {
-  buildCampaignDeliveryGap,
+  buildCampaignDeliveryStatus,
   buildVariantFallbackCopy,
   computeCampaignDeliveryReadiness,
   computeSmartTimeDelayMs,
   validateVariantCopy,
+  type CampaignDeliveryReadiness,
+  type CampaignDeliveryStatus,
 } from './campaigns.helpers';
 import {
   buildCampaignDefaultStats,
@@ -329,7 +331,11 @@ export class CampaignsService {
           return;
         }
 
-        if (delivery.whatsappReady && contact.phone && (this.metaWhatsApp || this.whatsappDispatcher)) {
+        if (
+          delivery.whatsappReady &&
+          contact.phone &&
+          (this.metaWhatsApp || this.whatsappDispatcher)
+        ) {
           const bodyText = (campaign.messageTemplate || '').replace(
             NAME_RE,
             contact.name || 'Cliente',
@@ -374,18 +380,18 @@ export class CampaignsService {
     );
   }
 
+  async getDeliveryReadiness(workspaceId: string): Promise<CampaignDeliveryStatus> {
+    return buildCampaignDeliveryStatus(await this.resolveCampaignDelivery(workspaceId));
+  }
+
   private async ensureCampaignDeliveryReady(workspaceId: string): Promise<void> {
-    const delivery = await this.resolveCampaignDelivery(workspaceId);
-    const gap = buildCampaignDeliveryGap(delivery);
-    if (gap) {
-      throw new BadRequestException(gap.message);
+    const readiness = await this.getDeliveryReadiness(workspaceId);
+    if (!readiness.ready) {
+      throw new BadRequestException(readiness.message || 'Campanha sem canal de entrega pronto');
     }
   }
 
-  private async resolveCampaignDelivery(workspaceId: string): Promise<{
-    emailReady: boolean;
-    whatsappReady: boolean;
-  }> {
+  private async resolveCampaignDelivery(workspaceId: string): Promise<CampaignDeliveryReadiness> {
     const [ws, metaConnection] = await Promise.all([
       this.prisma.workspace.findUnique({
         where: { id: workspaceId },
@@ -436,7 +442,8 @@ export class CampaignsService {
             name: `${base.name} - Var ${i + 1}`,
             status: 'DRAFT',
             messageTemplate: mutatedMessage,
-            filters: base.filters as Prisma.InputJsonValue,
+            filters:
+              base.filters === null ? Prisma.JsonNull : (base.filters as Prisma.InputJsonValue),
             stats: { sent: 0, replied: 0 },
             aiStrategy: base.aiStrategy,
             parentId: base.id,

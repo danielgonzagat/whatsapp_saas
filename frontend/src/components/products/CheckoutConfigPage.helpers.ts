@@ -1,3 +1,4 @@
+import { colors } from '@/lib/design-tokens';
 import type { CSSProperties } from 'react';
 
 /**
@@ -53,7 +54,7 @@ export function createInitialCheckoutConfigState(
     chatWelcomeMessage: '',
     chatDelay: 5,
     chatPosition: 'bottom-right',
-    chatColor: 'colors.ember.primary',
+    chatColor: colors.ember.primary,
     chatOfferDiscount: false,
     chatDiscountCode: '',
     chatSupportPhone: '',
@@ -79,7 +80,7 @@ export const TEXT = 'var(--text-starlight, colors.text.silver)';
 export const SECONDARY = 'var(--text-moonlight, colors.text.muted)';
 export const FAINT = 'var(--text-dust, colors.text.dim)';
 export const TEXT_ON_ACCENT = 'var(--app-text-on-accent)';
-export const EMBER = 'colors.ember.primary';
+export const EMBER = colors.ember.primary;
 
 /* ── Shared Styles ── */
 

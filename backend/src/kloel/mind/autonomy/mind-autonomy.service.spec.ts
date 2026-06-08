@@ -75,8 +75,8 @@ describe('MindAutonomyService', () => {
       const result = await svc.proposeGoal('ws-1');
 
       expect(result).not.toBeNull();
-      expect(result!.goal).toContain('4 autopilot errors');
-      expect(result!.priority).toBeGreaterThan(0.6);
+      expect(result.goal).toContain('4 autopilot errors');
+      expect(result.priority).toBeGreaterThan(0.6);
       expect(spine.emit).toHaveBeenCalledWith(
         expect.objectContaining({
           eventName: 'cognition.autonomy.goal_proposed',
@@ -104,8 +104,8 @@ describe('MindAutonomyService', () => {
       const result = await svc.proposeGoal('ws-1');
 
       expect(result).not.toBeNull();
-      expect(result!.goal).toContain('Improve reply engagement');
-      expect(result!.priority).toBe(0.7);
+      expect(result.goal).toContain('Improve reply engagement');
+      expect(result.priority).toBe(0.7);
       expect(spine.emit).toHaveBeenCalled();
     });
 
@@ -149,8 +149,8 @@ describe('MindAutonomyService', () => {
       const result = await svc.proposeGoal('ws-1');
 
       expect(result).not.toBeNull();
-      expect(result!.goal).toContain('belief volatility');
-      expect(result!.priority).toBe(0.5);
+      expect(result.goal).toContain('belief volatility');
+      expect(result.priority).toBe(0.5);
       expect(spine.emit).toHaveBeenCalled();
     });
 
@@ -183,8 +183,8 @@ describe('MindAutonomyService', () => {
       const result = await svc.proposeGoal('ws-1');
 
       expect(result).not.toBeNull();
-      expect(result!.goal).toContain('autopilot errors');
-      expect(result!.priority).toBeGreaterThan(0.7);
+      expect(result.goal).toContain('autopilot errors');
+      expect(result.priority).toBeGreaterThan(0.7);
     });
 
     it('deduplicates goals within 1 hour', async () => {
@@ -266,7 +266,7 @@ describe('MindAutonomyService', () => {
       const result = await svc.proposeGoal('ws-1');
 
       expect(result).not.toBeNull();
-      expect(result!.goal).toContain('3 autopilot errors');
+      expect(result.goal).toContain('3 autopilot errors');
     });
   });
 

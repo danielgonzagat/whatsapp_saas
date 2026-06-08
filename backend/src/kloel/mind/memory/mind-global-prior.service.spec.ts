@@ -38,8 +38,8 @@ describe('MindGlobalPriorService', () => {
 
       expect(result).not.toBeNull();
       // totalAlpha = 1 + 9 + 5 = 15, totalBeta = 1 + 3 + 5 = 9 → mean = 15/24 ≈ 0.625
-      expect(result!.mean).toBeCloseTo(15 / 24, 5);
-      expect(result!.observations).toBe(22);
+      expect(result.mean).toBeCloseTo(15 / 24, 5);
+      expect(result.observations).toBe(22);
     });
 
     it('returns correct observations as sum of pulls across workspaces', async () => {
@@ -57,7 +57,7 @@ describe('MindGlobalPriorService', () => {
 
       const result = await service.getPriorTuple('sms', 'timing', 'send_at_9am');
 
-      expect(result!.observations).toBe(20);
+      expect(result.observations).toBe(20);
     });
 
     it('channel parameter is forwarded (does not throw) and query filters by decisionType+arm', async () => {
@@ -111,8 +111,8 @@ describe('MindGlobalPriorService', () => {
       });
 
       expect(result).not.toBeNull();
-      expect(result!.alpha).toBeCloseTo(14.0, 0);
-      expect(result!.beta).toBeCloseTo(6.0, 0);
+      expect(result.alpha).toBeCloseTo(14.0, 0);
+      expect(result.beta).toBeCloseTo(6.0, 0);
     });
 
     it('returns null when no prior row exists', async () => {
@@ -252,8 +252,8 @@ describe('MindGlobalPriorService', () => {
       const result = await service.lookupPrior('s', 'P(r)', { ch: 'sms' });
 
       expect(result).not.toBeNull();
-      expect(result!.alpha).toBeCloseTo(2, 0);
-      expect(result!.beta).toBeCloseTo(8, 0);
+      expect(result.alpha).toBeCloseTo(2, 0);
+      expect(result.beta).toBeCloseTo(8, 0);
     });
   });
 });

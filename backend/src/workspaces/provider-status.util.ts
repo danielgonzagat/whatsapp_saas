@@ -33,7 +33,6 @@ function metaRawStatusFallback(phoneNumberId: string | null): string {
   return phoneNumberId ? 'CONNECTION_INCOMPLETE' : 'DISCONNECTED';
 }
 
-
 /** Resolve raw status fallback. */
 export function resolveRawStatusFallback(
   rawStatus: string,

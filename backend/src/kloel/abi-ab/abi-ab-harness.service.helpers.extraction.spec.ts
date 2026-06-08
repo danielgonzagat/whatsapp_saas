@@ -82,7 +82,7 @@ describe('abi-ab-harness.service.helpers — extraction', () => {
         workspaceId: 'ws_1',
       });
       expect(result).not.toBeNull();
-      expect(result!.conversionSignal).toBe(true);
+      expect(result.conversionSignal).toBe(true);
     });
 
     it('detects satisfaction signal', () => {
@@ -91,7 +91,7 @@ describe('abi-ab-harness.service.helpers — extraction', () => {
         workspaceId: 'ws_1',
       });
       expect(result).not.toBeNull();
-      expect(result!.satisfactionSignal).toBe(true);
+      expect(result.satisfactionSignal).toBe(true);
     });
 
     it('detects both signals simultaneously', () => {
@@ -100,8 +100,8 @@ describe('abi-ab-harness.service.helpers — extraction', () => {
         workspaceId: 'ws_1',
       });
       expect(result).not.toBeNull();
-      expect(result!.conversionSignal).toBe(true);
-      expect(result!.satisfactionSignal).toBe(true);
+      expect(result.conversionSignal).toBe(true);
+      expect(result.satisfactionSignal).toBe(true);
     });
 
     it('is case-insensitive', () => {
@@ -110,8 +110,8 @@ describe('abi-ab-harness.service.helpers — extraction', () => {
         workspaceId: 'ws_1',
       });
       expect(result).not.toBeNull();
-      expect(result!.conversionSignal).toBe(true);
-      expect(result!.satisfactionSignal).toBe(true);
+      expect(result.conversionSignal).toBe(true);
+      expect(result.satisfactionSignal).toBe(true);
     });
   });
 });

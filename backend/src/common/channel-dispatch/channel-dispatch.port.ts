@@ -17,6 +17,7 @@ export enum ChannelKind {
   MESSENGER = 'messenger',
   FACEBOOK = 'facebook',
   EMAIL = 'email',
+  EMAIL_TRANSACTIONAL = 'email_transactional',
   TIKTOK = 'tiktok',
   INTERNAL_PARTNERSHIP = 'internal-partnership',
   INTERNAL_ADMIN = 'internal-admin',
@@ -97,6 +98,28 @@ export interface EmailSendInput {
 }
 
 /**
+ * Transactional email outbound input. Unlike {@link EmailSendInput} (which
+ * routes through the workspace's CONNECTED mailbox — Gmail/Microsoft/IMAP),
+ * this kind routes through the platform's transactional sender
+ * (`AuthEmailService.sendEmail` → Resend/SendGrid/env-SMTP from
+ * `noreply@kloel.com`). It is the canonical path for campaign / system mail
+ * that must preserve the EXACT provider + sender identity, independent of
+ * whether the workspace has connected a personal mailbox.
+ *
+ * The shape mirrors `EmailSendInput` but uses a distinct discriminant
+ * (`ChannelKind.EMAIL_TRANSACTIONAL`) so the registry routes it to the
+ * transactional adapter without colliding with the connected-mailbox adapter.
+ */
+export interface EmailTransactionalSendInput {
+  channelKind: ChannelKind.EMAIL_TRANSACTIONAL;
+  workspaceId: string;
+  toEmail: string;
+  subject: string;
+  html: string;
+  headers?: Record<string, string>;
+}
+
+/**
  * TikTok outbound input. TikTok Business Messaging has NO programmatic
  * outbound-send API today (inbound webhook only), so the adapter resolves
  * this to an honest blocked result. The shape is defined now so the canonical
@@ -131,6 +154,7 @@ export type ChannelSendInput =
   | MessengerSendInput
   | FacebookSendInput
   | EmailSendInput
+  | EmailTransactionalSendInput
   | TikTokSendInput
   | InternalPartnershipSendInput
   | InternalAdminSendInput;

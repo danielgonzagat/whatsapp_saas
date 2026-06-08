@@ -403,9 +403,18 @@ function proposeConnectionFixes(repoRoot: string, overlay: Map<string, string>, 
   return out;
 }
 
+export interface ConvergedOverlayFile {
+  /** repo-relative file in the final overlay after every accepted splice */
+  file: string;
+  /** full final bytes for this file; callers still need write-gate admission before commit */
+  newText: string;
+}
+
 export interface ConvergeReport extends ConvergeResult {
   /** the rationale of every accepted splice, in application order (corpus / audit trail) */
   accepted: string[];
+  /** final overlay bytes after convergence; this is what lets higher-level intent tools become generators */
+  files: ConvergedOverlayFile[];
   /** the reds that survived to the fixpoint (present iff !converged) — never guessed away */
   residual: UnifiedRed[];
 }
@@ -474,13 +483,14 @@ export async function converge(repoRoot: string, overlay: Map<string, string>): 
     // intention decision, NOT a guessed splice. converged ⟺ finalReds === 0.
     needsIntent: !converged,
     accepted,
+    files: [...work].map(([file, newText]) => ({ file, newText })),
     residual: converged ? [] : reds,
   };
 }
 
 /** Stable key for a red (gate+file+locus+fact) — used to test "no NEW red introduced". */
 function redKey(r: UnifiedRed): string {
-  return `${r.gate} ${r.file} ${r.locus ?? ''} ${r.fact}`;
+  return `${r.gate}\u0000${r.file}\u0000${r.locus ?? ''}\u0000${r.fact}`;
 }
 function redKeySet(reds: UnifiedRed[]): Set<string> {
   return new Set(reds.map(redKey));

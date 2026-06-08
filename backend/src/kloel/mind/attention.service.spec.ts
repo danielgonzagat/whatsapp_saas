@@ -42,9 +42,9 @@ describe('AttentionService', () => {
       ];
       const result = service.computeCandidates(events, now);
       expect(result).toHaveLength(1);
-      expect(result[0]!.targetType).toBe('lead');
-      expect(result[0]!.targetId).toBe('lead_1');
-      expect(result[0]!.weight).toBeGreaterThan(0);
+      expect(result[0].targetType).toBe('lead');
+      expect(result[0].targetId).toBe('lead_1');
+      expect(result[0].weight).toBeGreaterThan(0);
     });
 
     it('aggregates multiple events for the same entity', () => {
@@ -75,7 +75,7 @@ describe('AttentionService', () => {
       const result = service.computeCandidates(events, now, 30, 10);
       // lead_1 has 2 events, lead_2 has 1 → lead_1 should rank higher
       expect(result).toHaveLength(2);
-      expect(result[0]!.targetId).toBe('lead_1');
+      expect(result[0].targetId).toBe('lead_1');
     });
 
     it('caps results at the specified limit', () => {
@@ -105,7 +105,7 @@ describe('AttentionService', () => {
       ];
       const result = service.computeCandidates(events, now);
       expect(result).toHaveLength(1);
-      expect(result[0]!.weight).toBeLessThanOrEqual(1);
+      expect(result[0].weight).toBeLessThanOrEqual(1);
     });
 
     it('handles unknown event classes with fallback weight', () => {
@@ -120,7 +120,7 @@ describe('AttentionService', () => {
       ];
       const result = service.computeCandidates(events, now);
       expect(result).toHaveLength(1);
-      expect(result[0]!.weight).toBeGreaterThan(0);
+      expect(result[0].weight).toBeGreaterThan(0);
     });
 
     it('applies recency decay based on halfLifeMinutes', () => {
@@ -139,7 +139,7 @@ describe('AttentionService', () => {
       });
       const result = service.computeCandidates([recent, old], now, 30);
       // The recent event should have a higher weight
-      expect(result[0]!.targetId).toBe('lead_1');
+      expect(result[0].targetId).toBe('lead_1');
     });
   });
 
@@ -163,8 +163,8 @@ describe('AttentionService', () => {
       ];
       const result = service.allocate(events, { nowMs: now, halfLifeMinutes: 30 });
       expect(result.focal).toBeDefined();
-      expect(result.focal!.targetId).toBe('lead_1');
-      expect(result.focal!.reason).toContain('commerce.payment.charged_back');
+      expect(result.focal.targetId).toBe('lead_1');
+      expect(result.focal.reason).toContain('commerce.payment.charged_back');
       expect(result.candidates.length).toBeGreaterThan(0);
     });
 
@@ -203,7 +203,7 @@ describe('AttentionService', () => {
         }),
       ];
       const result = service.allocate(events, { nowMs: now, halfLifeMinutes: 30 });
-      expect(result.focal!.sinceMs).toBeGreaterThanOrEqual(10_000);
+      expect(result.focal.sinceMs).toBeGreaterThanOrEqual(10_000);
     });
 
     it('provides fallback reason when no supporting events', () => {

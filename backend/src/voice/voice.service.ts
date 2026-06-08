@@ -3,6 +3,10 @@ import { Queue } from 'bullmq';
 import { createBullMqConnectionOptions } from '../common/redis/redis.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { QUEUE_NAMES } from '../queue/queue-names.const';
+import {
+  emitVoiceActionExecutedPercept,
+  emitVoiceCloneCreatedPercept,
+} from './voice-percept-emit.helper';
 
 /** Voice service. */
 @Injectable()
@@ -21,12 +25,24 @@ export class VoiceService {
     workspaceId: string,
     data: { name: string; provider: string; voiceId: string },
   ) {
-    return this.prisma.voiceProfile.create({
+    const profile = await this.prisma.voiceProfile.create({
       data: {
         ...data,
         workspaceId,
       },
     });
+
+    // ADDITIVE, flag-gated (KLOEL_VOICE_PERCEPT_ENABLED, DEFAULT OFF),
+    // fire-and-forget: emit ONE canonical `cognition.voice.clone_created`
+    // percept into the Mind spine outbox so the cognition loop is aware a
+    // workspace cloned/configured a voice. Never blocks or breaks the create.
+    void emitVoiceCloneCreatedPercept(this.prisma, this.logger, {
+      workspaceId,
+      profileId: profile.id,
+      provider: profile.provider,
+    });
+
+    return profile;
   }
 
   /** Generate audio. */
@@ -56,6 +72,18 @@ export class VoiceService {
       workspaceId,
       text: data.text,
       profileId: data.profileId,
+    });
+
+    // ADDITIVE, flag-gated (KLOEL_VOICE_PERCEPT_ENABLED, DEFAULT OFF),
+    // fire-and-forget: emit ONE canonical `cognition.voice.action_executed`
+    // percept into the Mind spine outbox so the cognition loop is aware a
+    // workspace dispatched a voice (text-to-speech) action. Never blocks or
+    // breaks the job dispatch.
+    void emitVoiceActionExecutedPercept(this.prisma, this.logger, {
+      workspaceId,
+      jobId: job.id,
+      profileId: data.profileId,
+      textLength: data.text.length,
     });
 
     return job;

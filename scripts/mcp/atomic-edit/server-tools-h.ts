@@ -5,6 +5,7 @@ import { atomicWrite } from './server-helpers-io.js';
 import { ok, fail } from './server-helpers-result.js';
 import { chooseIntegration, riskLevelFor, validationPlan, verifiedEvidenceWeight, classifyTruth, artifactExists, isRealKind, productEvidenceVerified, hasVerifiedProductProof, readJsonOptional, readTextOptional, lockRoot, safeLockId, lockDir, lockFile, readLockRecord, listLocks, PRODUCT_INTEGRATION_IDS, EvidenceKindSchema, EvidenceStatusSchema } from './server-helpers-product-locks.js';
 import { runProveDirective, isGateBackedRealProbe } from './gate-receipt-mapper.js';
+import { createAtomicSeal, verifyAtomicSealEnvelope } from './server-helpers-seal.js';
 
 export function registerToolsH(server: McpServer): void {
 server.registerTool(
@@ -312,6 +313,41 @@ server.registerTool(
         run: result.run,
         minted: result.record !== null,
       });
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : String(e));
+    }
+  },
+);
+
+server.registerTool(
+  'atomic_seal',
+  {
+    title: 'Export or verify a proof-carrying Atomic receipt seal',
+    description:
+      'Creates a canonical tamper-evident envelope for a truth/behavior/proof receipt. If gateRunId is supplied it must be minted by this live process via atomic_prove. The seal can be verified independently by hash; if ATOMIC_SEAL_KEY is configured it also carries an HMAC issuer signature.',
+    inputSchema: {
+      mode: z.enum(['create', 'verify']).optional(),
+      subject: z.string().optional(),
+      receipt: z.record(z.string(), z.unknown()).optional(),
+      gateRunId: z.string().optional(),
+      artifactPaths: z.array(z.string()).optional(),
+      exportPath: z.string().optional(),
+      seal: z.record(z.string(), z.unknown()).optional(),
+    },
+  },
+  async (a) => {
+    try {
+      const mode = a.mode ?? 'create';
+      if (mode === 'verify') {
+        if (!a.seal) return fail('atomic_seal verify requires a seal envelope.');
+        const verification = verifyAtomicSealEnvelope(a.seal);
+        const summaryForHuman = verification.sealValid
+          ? 'Atomic seal verified: canonical hash matches and signature policy is satisfied.'
+          : 'Atomic seal verification failed: hash/signature does not match the envelope.';
+        return ok({ ok: true, summaryForHuman, summary: summaryForHuman, ...verification });
+      }
+      const created = createAtomicSeal({ subject: a.subject, receipt: a.receipt, gateRunId: a.gateRunId, artifactPaths: a.artifactPaths, exportPath: a.exportPath });
+      return ok({ ok: true, summary: created.summaryForHuman, ...created });
     } catch (e) {
       return fail(e instanceof Error ? e.message : String(e));
     }

@@ -18,10 +18,120 @@ import { Idempotent } from '../common/idempotency.guard';
 import { AuthenticatedRequest, RawBodyRequest } from '../common/interfaces';
 import { BillingService } from './billing.service';
 import { BillingCheckoutDto } from './dto/billing-checkout.dto';
-
-/** Billing controller. */
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 import { RouteClass } from '../common/throttler/route-class.decorator';
+
+type PricingPlanFeatureDto = {
+  readonly text: string;
+  readonly included: boolean;
+};
+
+type PricingPlanDto = {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly price: number;
+  readonly iconKey: 'zap' | 'crown' | 'rocket';
+  readonly features: readonly PricingPlanFeatureDto[];
+  readonly popular?: boolean;
+  readonly cta: string;
+};
+
+type PricingBenefitDto = {
+  readonly iconKey: 'messageCircle' | 'bot' | 'users' | 'barChart3' | 'headphones' | 'sparkles';
+  readonly title: string;
+  readonly description: string;
+};
+
+const PLATFORM_PRICING_PLANS: readonly PricingPlanDto[] = [
+  {
+    id: 'starter',
+    name: 'Starter',
+    description: 'Para quem está começando a vender pelo WhatsApp',
+    price: 97,
+    iconKey: 'zap',
+    cta: 'Começar agora',
+    features: [
+      { text: '1.000 mensagens/mês', included: true },
+      { text: '1 número WhatsApp', included: true },
+      { text: 'IA de vendas básica', included: true },
+      { text: 'Autopilot (100 respostas/mês)', included: true },
+      { text: '3 fluxos de automação', included: true },
+      { text: 'Suporte por email', included: true },
+      { text: 'Campanhas ilimitadas', included: false },
+      { text: 'API de integração', included: false },
+      { text: 'Suporte prioritário', included: false },
+    ],
+  },
+  {
+    id: 'pro',
+    name: 'Pro',
+    description: 'Para negócios em crescimento que querem escalar',
+    price: 297,
+    iconKey: 'crown',
+    popular: true,
+    cta: 'Escolher Pro',
+    features: [
+      { text: '10.000 mensagens/mês', included: true },
+      { text: '3 números WhatsApp', included: true },
+      { text: 'IA de vendas avançada', included: true },
+      { text: 'Autopilot ilimitado', included: true },
+      { text: 'Fluxos ilimitados', included: true },
+      { text: 'Suporte por chat', included: true },
+      { text: 'Campanhas ilimitadas', included: true },
+      { text: 'API de integração', included: true },
+      { text: 'Suporte prioritário', included: false },
+    ],
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    description: 'Para empresas que precisam de escala e suporte dedicado',
+    price: 997,
+    iconKey: 'rocket',
+    cta: 'Falar com vendas',
+    features: [
+      { text: 'Mensagens ilimitadas', included: true },
+      { text: 'Números ilimitados', included: true },
+      { text: 'IA personalizada', included: true },
+      { text: 'Autopilot ilimitado', included: true },
+      { text: 'Fluxos ilimitados', included: true },
+      { text: 'Suporte 24/7', included: true },
+      { text: 'Campanhas ilimitadas', included: true },
+      { text: 'API de integração', included: true },
+      { text: 'Suporte prioritário', included: true },
+    ],
+  },
+];
+
+const PLATFORM_PRICING_BENEFITS: readonly PricingBenefitDto[] = [
+  {
+    iconKey: 'messageCircle',
+    title: 'WhatsApp Oficial',
+    description: 'Conexão direta com API oficial',
+  },
+  { iconKey: 'bot', title: 'IA que Vende', description: 'Autopilot responde e fecha vendas' },
+  { iconKey: 'users', title: 'CRM Integrado', description: 'Gerencie leads automaticamente' },
+  { iconKey: 'barChart3', title: 'Analytics', description: 'Métricas em tempo real' },
+  { iconKey: 'headphones', title: 'Suporte Humano', description: 'Time pronto para ajudar' },
+  { iconKey: 'sparkles', title: 'Updates Gratuitos', description: 'Novas features todo mês' },
+];
+
+@Controller('pricing')
+@RouteClass('read')
+export class PricingController {
+  /** Public list of platform subscription plans used by the in-app pricing surface. */
+  @Public()
+  @Get('plans')
+  getPlans() {
+    return {
+      plans: PLATFORM_PRICING_PLANS,
+      benefits: PLATFORM_PRICING_BENEFITS,
+    };
+  }
+}
+
+/** Billing controller. */
 @Controller('billing')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('mutate')

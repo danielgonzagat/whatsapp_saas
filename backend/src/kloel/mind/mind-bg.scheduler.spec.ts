@@ -96,6 +96,7 @@ function buildScheduler(opts?: {
   return {
     scheduler: new MindBackgroundScheduler(processor, spine, undefined as never, cognitiveHealth),
     spine,
+    processor,
     cognitiveHealth,
   };
 }
@@ -290,6 +291,57 @@ describe('MindBackgroundScheduler (UTP gap B)', () => {
       // Must not throw on the optional chaining
       await scheduler.executeTick();
       // passes if no exception
+    });
+  });
+
+  // ── P1-3: in-process @Cron learning-edge fallback when Redis is absent ──
+
+  describe('in-process @Cron fallback (P1-3)', () => {
+    it('does NOT tick via the fallback when a Redis URL is present', async () => {
+      process.env['KLOEL_MIND_BG_ENABLED'] = 'true';
+      process.env['REDIS_URL'] = 'redis://localhost:6379';
+      const { scheduler, processor } = buildScheduler();
+      const tickSpy = jest.spyOn(processor, 'tick');
+
+      // Redis resolves → BullMQ loop starts → redisAbsent stays false.
+      await scheduler.onModuleInit();
+      tickSpy.mockClear();
+
+      await scheduler.inProcessTick();
+
+      expect(tickSpy).not.toHaveBeenCalled();
+    });
+
+    it('DOES tick via the fallback when Redis is absent', async () => {
+      clearRedisConnectionEnv();
+      process.env['KLOEL_MIND_BG_ENABLED'] = 'true';
+      process.env['REDIS_MODE'] = 'disabled';
+      const { scheduler, processor } = buildScheduler();
+      const tickSpy = jest.spyOn(processor, 'tick');
+
+      // No Redis URL → onModuleInit flips redisAbsent → fallback is armed.
+      await scheduler.onModuleInit();
+      tickSpy.mockClear();
+
+      await scheduler.inProcessTick();
+
+      // executeTick → tickWorkspace → processor.tick runs the learning edge.
+      expect(tickSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('does NOT tick when the scheduler is disabled even if Redis is absent', async () => {
+      clearRedisConnectionEnv();
+      process.env['KLOEL_MIND_BG_ENABLED'] = 'false';
+      process.env['REDIS_MODE'] = 'disabled';
+      const { scheduler, processor } = buildScheduler();
+      const tickSpy = jest.spyOn(processor, 'tick');
+
+      await scheduler.onModuleInit();
+      tickSpy.mockClear();
+
+      await scheduler.inProcessTick();
+
+      expect(tickSpy).not.toHaveBeenCalled();
     });
   });
 });

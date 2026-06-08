@@ -1,4 +1,7 @@
-import { hasAuthenticatedKloelToken } from '@/lib/auth-identity';
+import {
+  hasAuthenticatedKloelIdentity,
+  hasAuthenticatedKloelToken,
+} from '@/lib/auth-identity';
 import {
   buildAppUrl,
   buildAuthUrl,
@@ -21,7 +24,22 @@ function hasSharedAuth(request: NextRequest): boolean {
   const accessToken =
     request.cookies.get('kloel_access_token')?.value || request.cookies.get('kloel_token')?.value;
 
-  return hasAuthenticatedKloelToken(accessToken);
+  if (hasAuthenticatedKloelToken(accessToken)) {
+    return true;
+  }
+
+  // Non-destructive refresh-aware check: a short-lived access token may have
+  // expired while a long-lived refresh session is still valid. Rather than
+  // bouncing the user to /login before the client-side refresh path can run,
+  // treat an expired-but-authenticated identity as still-authenticated when a
+  // refresh cookie is present. The refresh cookie is opaque to the edge, so we
+  // only gate on its presence and defer renewal to the client.
+  const refreshToken = request.cookies.get('kloel_refresh_token')?.value;
+  if (refreshToken && hasAuthenticatedKloelIdentity(accessToken)) {
+    return true;
+  }
+
+  return false;
 }
 
 function currentPath(request: NextRequest): string {
@@ -179,6 +197,9 @@ function handleAuthHost(request: NextRequest, host: string, isAuthenticated: boo
 function handleAppHost(request: NextRequest, host: string, isAuthenticated: boolean) {
   const targetPath = currentPath(request);
   const { pathname } = request.nextUrl;
+  const [, section, slug, ...rest] = pathname.split('/');
+  const isPublishedSitePath =
+    section === 's' && rest.length === 0 && Boolean(slug) && isValidCheckoutEntrySegment(slug);
 
   if (pathname === '/') {
     if (!isAuthenticated) {
@@ -195,7 +216,7 @@ function handleAppHost(request: NextRequest, host: string, isAuthenticated: bool
     return NextResponse.next();
   }
 
-  if (pathname === '/dashboard') {
+  if (pathname === '/dashboard' || isPublishedSitePath) {
     return NextResponse.next();
   }
 

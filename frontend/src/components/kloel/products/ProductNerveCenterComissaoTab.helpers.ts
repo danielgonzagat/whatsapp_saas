@@ -80,6 +80,98 @@ export function readEditableHtml(
   return sanitizeHtml(source?.innerHTML || fallback);
 }
 
+export type RichTextInlineTag = 'b' | 'i' | 'u';
+
+function rangeBelongsToEditor(editor: HTMLDivElement, range: Range) {
+  const ancestor = range.commonAncestorContainer;
+  return ancestor === editor || editor.contains(ancestor);
+}
+
+function getEditableSelectionRange(editor: HTMLDivElement) {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) {
+    return null;
+  }
+
+  const range = selection.getRangeAt(0);
+  return rangeBelongsToEditor(editor, range) ? range.cloneRange() : null;
+}
+
+function createEndRange(editor: HTMLDivElement) {
+  const range = document.createRange();
+  range.selectNodeContents(editor);
+  range.collapse(false);
+  return range;
+}
+
+function focusAfterElement(editor: HTMLDivElement, element: HTMLElement) {
+  const nextRange = document.createRange();
+  nextRange.setStartAfter(element);
+  nextRange.collapse(true);
+
+  const selection = window.getSelection();
+  selection?.removeAllRanges();
+  selection?.addRange(nextRange);
+  editor.focus();
+}
+
+function replaceRangeWithElement(
+  editor: HTMLDivElement,
+  range: Range,
+  element: HTMLElement,
+  fallbackText: string,
+) {
+  if (range.collapsed) {
+    element.textContent = fallbackText;
+  } else {
+    element.appendChild(range.extractContents());
+  }
+
+  range.insertNode(element);
+  focusAfterElement(editor, element);
+  return readEditableHtml(editor, '');
+}
+
+export function cloneEditableSelection(editor: HTMLDivElement | null) {
+  if (!editor || typeof window === 'undefined') {
+    return null;
+  }
+
+  return getEditableSelectionRange(editor);
+}
+
+export function applyInlineFormatToEditable(
+  editor: HTMLDivElement | null,
+  tag: RichTextInlineTag,
+) {
+  if (!editor || typeof window === 'undefined') {
+    return null;
+  }
+
+  const range = getEditableSelectionRange(editor) || createEndRange(editor);
+  const element = document.createElement(tag);
+  const fallback = tag === 'b' ? 'texto em negrito' : tag === 'i' ? 'texto em italico' : 'texto sublinhado';
+  return replaceRangeWithElement(editor, range, element, fallback);
+}
+
+export function applyLinkToEditable(
+  editor: HTMLDivElement | null,
+  href: string,
+  preferredRange: Range | null,
+) {
+  if (!editor || typeof window === 'undefined') {
+    return null;
+  }
+
+  const range = preferredRange && rangeBelongsToEditor(editor, preferredRange)
+    ? preferredRange.cloneRange()
+    : getEditableSelectionRange(editor) || createEndRange(editor);
+  const link = document.createElement('a');
+  link.href = href;
+  link.target = '_blank';
+  return replaceRangeWithElement(editor, range, link, href);
+}
+
 /**
  * Replace `target` children with the parsed, DOMPurify-sanitised version of
  * `html`. We hand the sanitised string to `DOMParser`, then `replaceChildren`

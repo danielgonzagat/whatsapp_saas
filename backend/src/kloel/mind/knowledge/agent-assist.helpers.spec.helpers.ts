@@ -1,18 +1,18 @@
 import type { PrepaidWalletTransaction } from '@prisma/client';
 import type { ChargeUsageResult } from '../../../wallet/wallet.types';
-import { WalletService } from '../../../wallet/wallet.service';
+import { PrepaidWalletService } from '../../../wallet/wallet.service';
 
 /**
  * Build a fully auto-mocked WalletService instance whose methods are all
  * `jest.fn()`s. Relies on `jest.mock('../wallet/wallet.service')` having been
  * declared by the calling spec.
  */
-export function makeMockWalletService(): jest.Mocked<WalletService> {
-  const Ctor = WalletService as jest.MockedClass<typeof WalletService>;
+export function makeMockWalletService(): jest.Mocked<PrepaidWalletService> {
+  const Ctor = PrepaidWalletService as jest.MockedClass<typeof PrepaidWalletService>;
   // jest auto-mock fills in all method implementations; the constructor args
   // are erased so we pass `null` casts for the typed constructor positions.
   const instance = new Ctor(null as never, null as never, null as never, null as never);
-  return instance as jest.Mocked<WalletService>;
+  return instance as jest.Mocked<PrepaidWalletService>;
 }
 
 /**

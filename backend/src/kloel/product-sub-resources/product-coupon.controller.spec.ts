@@ -1,6 +1,9 @@
+jest.mock('../../auth/workspace-access', () => ({
+  resolveWorkspaceId: jest.fn().mockReturnValue('workspace-1'),
+}));
+
 jest.mock('./helpers/common.helpers', () => ({
   ensureWorkspaceProductAccess: jest.fn(),
-  getWorkspaceId: jest.fn().mockReturnValue('workspace-1'),
 }));
 
 jest.mock('./helpers/plan.helpers', () => ({
@@ -11,9 +14,9 @@ jest.mock('./helpers/plan.helpers', () => ({
 import { NotFoundException } from '@nestjs/common';
 import { ProductCouponDomainService } from '../product-coupon-domain.service';
 import { ProductCouponController } from './product-coupon.controller';
-import { getWorkspaceId } from './helpers/common.helpers';
+import { resolveWorkspaceId } from '../../auth/workspace-access';
 
-const getWorkspaceIdMock = getWorkspaceId as jest.Mock;
+const getWorkspaceIdMock = resolveWorkspaceId as jest.Mock;
 
 describe('ProductCouponController', () => {
   const deleteProductCoupon = jest.fn();

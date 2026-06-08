@@ -95,7 +95,7 @@ export function SmartPaymentResultView({
           style={{
             flex: 1,
             padding: '10px 16px',
-            background: 'colors.ember.primary',
+            background: colors.ember.primary,
             border: 'none',
             borderRadius: 6,
             color: 'var(--app-text-on-accent)',

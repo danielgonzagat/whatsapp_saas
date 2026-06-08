@@ -35,7 +35,7 @@ describe('MindMessageDto / BrainMessageDto', () => {
 
     const errors = await validate(dto);
     expect(errors.length).toBeGreaterThan(0);
-    expect(errors[0]!.property).toBe('role');
+    expect(errors[0].property).toBe('role');
   });
 
   it('MindMessageDto validators reject empty content', async () => {
@@ -54,6 +54,6 @@ describe('MindMessageDto / BrainMessageDto', () => {
 
     const errors = await validate(dto);
     expect(errors.length).toBeGreaterThan(0);
-    expect(errors[0]!.property).toBe('role');
+    expect(errors[0].property).toBe('role');
   });
 });

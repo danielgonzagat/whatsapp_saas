@@ -2,85 +2,235 @@
 
 import { CommandPalette } from '@/components/kloel/CommandPalette';
 import useCommandPalette from '@/hooks/useCommandPalette';
+import { useMemberAreas } from '@/hooks/useMemberAreas';
 import { useProducts } from '@/hooks/useProducts';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
-import type {
-  CSSProperties,
-  KeyboardEvent as ReactKeyboardEvent,
-  PointerEvent as ReactPointerEvent,
-  ReactNode,
-  WheelEvent as ReactWheelEvent,
-} from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { KloelGraphChromeButtons } from './KloelGraphChromeButtons';
 import { KloelGraphFloatingNav } from './KloelGraphFloatingNav';
-import { KloelGraphNodeButton } from './KloelGraphNodeButton';
+import {
+  createDefaultKloelGraphSettings,
+  KloelGraphLiteralCanvas,
+} from './KloelGraphLiteralCanvas';
 import { KloelGraphOverlay } from './KloelGraphOverlay';
+import { KloelGraphSettingsPanel } from './KloelGraphSettingsPanel';
 import {
   KLOEL_GRAPH_NODES,
   KLOEL_GRAPH_PRIMARY_NODES,
   buildKloelGraphProductNodes,
+  getKloelGraphOverlayLabel,
   resolveKloelGraphNodeForPathFromNodes,
 } from './KloelGraph.routes';
 import type { KloelGraphArea, KloelGraphNode } from './KloelGraph.routes';
 import {
-  CLICK_DRAG_THRESHOLD_PX,
-  DEFAULT_ZOOM,
-  MAX_ZOOM,
-  MIN_ZOOM,
+  buildKloelGraphMemberAreaNodes,
   buildKloelGraphEdges,
-  computeKloelGraphLayout,
+  resolveKloelGraphNodeRoute,
   loadCheckoutGraphProducts,
   mergeGraphProducts,
-  resolveLayoutPoint,
-  type GraphPoint,
-  type NodeDragState,
 } from './KloelGraphShell.helpers';
-import { GRAPH_FONT, GraphThemeProvider, useGraphTheme } from './KloelGraphTheme';
+import { GRAPH_FONT, GRAPH_MONO, GraphThemeProvider, useGraphTheme } from './KloelGraphTheme';
+
+const GRAPH_ONLY_DYNAMIC_DATA_DELAY_MS = 160;
+
+function shouldHydrateDynamicGraphDataArea(
+  area: KloelGraphArea | null,
+): area is 'criar' | 'educar' {
+  return area === 'criar' || area === 'educar';
+}
+
+function KloelGraphPendingOverlay({ node }: { readonly node: KloelGraphNode }) {
+  const { C } = useGraphTheme();
+  const label = getKloelGraphOverlayLabel(node);
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      style={{
+        minHeight: '100%',
+        display: 'grid',
+        placeItems: 'center',
+        padding: 32,
+        color: C.text,
+      }}
+    >
+      <div
+        style={{
+          display: 'grid',
+          justifyItems: 'center',
+          gap: 10,
+          textAlign: 'center',
+        }}
+      >
+        <span
+          aria-hidden="true"
+          style={{
+            width: 34,
+            height: 2,
+            borderRadius: 6,
+            background: C.ember,
+          }}
+        />
+        <p
+          style={{
+            margin: 0,
+            fontFamily: GRAPH_MONO,
+            fontSize: 12,
+            fontWeight: 700,
+            letterSpacing: 1.1,
+            textTransform: 'uppercase',
+            color: C.text,
+          }}
+        >
+          Carregando {label}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
   const { C } = useGraphTheme();
-  const { products } = useProducts();
+  const params = useMemo(() => new URLSearchParams(searchParams.toString()), [searchParams]);
+  const graphOnly = params.get('graph') === '1';
+  const staticActiveNode = resolveKloelGraphNodeForPathFromNodes(
+    pathname,
+    params,
+    KLOEL_GRAPH_NODES,
+  );
+  const routeAreaHint: KloelGraphArea | null =
+    pathname.startsWith('/products') ||
+    pathname.startsWith('/checkout') ||
+    pathname.startsWith('/sites') ||
+    pathname.startsWith('/video') ||
+    pathname.startsWith('/funnels') ||
+    pathname.startsWith('/canvas')
+      ? 'criar'
+      : pathname.startsWith('/produtos/area-membros') || pathname.startsWith('/member-areas')
+        ? 'educar'
+        : null;
+  const dynamicDataArea = staticActiveNode?.area ?? routeAreaHint;
+  const [deferredDynamicDataArea, setDeferredDynamicDataArea] = useState<KloelGraphArea | null>(
+    () => (shouldHydrateDynamicGraphDataArea(dynamicDataArea) ? dynamicDataArea : null),
+  );
+  const hydratedDynamicDataArea =
+    deferredDynamicDataArea === dynamicDataArea ? deferredDynamicDataArea : null;
+  const shouldLoadProductGraphData = hydratedDynamicDataArea === 'criar';
+  const shouldLoadMemberAreaGraphData = hydratedDynamicDataArea === 'educar';
+  const { products } = useProducts({ enabled: shouldLoadProductGraphData });
+  const { areas: memberAreas } = useMemberAreas({ enabled: shouldLoadMemberAreaGraphData });
   const { data: checkoutProducts = [] } = useSWR(
-    'kloel-graph-checkout-products',
+    shouldLoadProductGraphData ? 'kloel-graph-checkout-products' : null,
     loadCheckoutGraphProducts,
     { keepPreviousData: true },
   );
   const { paletteProps, executeCommand, open: openPalette } = useCommandPalette();
   const [paletteMode, setPaletteMode] = useState<'full' | 'conversations'>('full');
-  const [focusedArea, setFocusedArea] = useState<KloelGraphArea>('criar');
-  const [zoom, setZoom] = useState(DEFAULT_ZOOM);
-  const [manualPan, setManualPan] = useState<GraphPoint>({ x: 0, y: 0 });
-  const [nodeOffsets, setNodeOffsets] = useState<Record<string, GraphPoint>>({});
-  const [isSurfaceDragging, setIsSurfaceDragging] = useState(false);
-  const pointerStartRef = useRef<Record<string, NodeDragState>>({});
-  const surfaceDragRef = useRef<(GraphPoint & { panX: number; panY: number }) | null>(null);
+  const [manualFocus, setManualFocus] = useState<{
+    readonly area: KloelGraphArea;
+    readonly routeKey: string;
+  } | null>(null);
+  const [recenterNonce, setRecenterNonce] = useState(0);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [graphSettings, setGraphSettings] = useState(createDefaultKloelGraphSettings);
+  const [pendingNode, setPendingNode] = useState<{
+    readonly id: string;
+    readonly routeSignature: string;
+    readonly sequence: number;
+  } | null>(null);
+  const pendingNodeSequenceRef = useRef(0);
+  const [consumedPendingNodeSequence, setConsumedPendingNodeSequence] = useState<number | null>(
+    null,
+  );
 
-  const params = useMemo(() => new URLSearchParams(searchParams.toString()), [searchParams]);
+  useEffect(() => {
+    if (!shouldHydrateDynamicGraphDataArea(dynamicDataArea)) {
+      const timeoutId = window.setTimeout(() => setDeferredDynamicDataArea(null), 0);
+      return () => window.clearTimeout(timeoutId);
+    }
+
+    const timeoutId = window.setTimeout(
+      () => setDeferredDynamicDataArea(dynamicDataArea),
+      graphOnly ? GRAPH_ONLY_DYNAMIC_DATA_DELAY_MS : 0,
+    );
+    return () => window.clearTimeout(timeoutId);
+  }, [dynamicDataArea, graphOnly]);
+
+  const pushGraphOnlyRoute = useCallback(
+    (url: string) => {
+      if (typeof window !== 'undefined') {
+        window.history.pushState(null, '', url);
+        return;
+      }
+      router.push(url);
+    },
+    [router],
+  );
+
   const graphProducts = useMemo(
     () => mergeGraphProducts(products, checkoutProducts),
     [products, checkoutProducts],
   );
   const productNodes = useMemo(() => buildKloelGraphProductNodes(graphProducts), [graphProducts]);
-  const graphNodes = useMemo(() => [...KLOEL_GRAPH_NODES, ...productNodes], [productNodes]);
+  const memberAreaNodes = useMemo(() => buildKloelGraphMemberAreaNodes(memberAreas), [memberAreas]);
+  const graphNodes = useMemo(
+    () => [...KLOEL_GRAPH_NODES, ...productNodes, ...memberAreaNodes],
+    [memberAreaNodes, productNodes],
+  );
+
+  const resolveNodeRoute = useCallback(
+    (node: KloelGraphNode) =>
+      resolveKloelGraphNodeRoute(node, pathname, searchParams.toString(), graphNodes),
+    [graphNodes, pathname, searchParams],
+  );
   const activeNode = resolveKloelGraphNodeForPathFromNodes(pathname, params, graphNodes);
-  const graphOnly = params.get('graph') === '1';
+  const routeSignature = `${pathname}?${params.toString()}`;
+  const pendingNodeConsumed = pendingNode
+    ? consumedPendingNodeSequence === pendingNode.sequence
+    : false;
+  const pendingNodeId =
+    pendingNode && !pendingNodeConsumed && pendingNode.routeSignature === routeSignature
+      ? pendingNode.id
+      : null;
+  const activeRouteKey = activeNode?.id ?? routeSignature;
   const graphAction = params.get('graphAction');
+  const isCommandPaletteGraphAction = graphAction === 'search' || graphAction === 'recents';
   const commandPaletteMode: 'full' | 'conversations' =
     graphAction === 'recents' ? 'conversations' : paletteMode;
-  const displayArea = activeNode?.area ?? focusedArea;
-  const layout = useMemo(() => computeKloelGraphLayout(graphNodes), [graphNodes]);
+  const displayArea =
+    manualFocus?.routeKey === activeRouteKey ? manualFocus.area : (activeNode?.area ?? 'criar');
   const edges = useMemo(() => buildKloelGraphEdges(graphNodes), [graphNodes]);
-  const focusedNode =
-    activeNode ?? KLOEL_GRAPH_PRIMARY_NODES.find((node) => node.area === displayArea);
-  const focusPoint = resolveLayoutPoint(focusedNode, layout, displayArea);
+  const activeGraphNodeId = graphOnly
+    ? (pendingNodeId ?? undefined)
+    : (pendingNodeId ?? activeNode?.id);
+  const pendingOverlayNode =
+    graphOnly && pendingNodeId ? graphNodes.find((node) => node.id === pendingNodeId) : undefined;
+  const hasRouteOverlay =
+    (!graphOnly && !isCommandPaletteGraphAction) || Boolean(pendingOverlayNode);
+  const overlayNode = graphOnly ? pendingOverlayNode : activeNode;
 
   useEffect(() => {
-    for (const node of KLOEL_GRAPH_NODES) {
+    if (!pendingNode || pendingNode.routeSignature === routeSignature) {
+      return undefined;
+    }
+    const pendingSequence = pendingNode.sequence;
+    const timeoutId = window.setTimeout(() => {
+      setConsumedPendingNodeSequence((current) =>
+        current === pendingSequence ? current : pendingSequence,
+      );
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [pendingNode, routeSignature]);
+
+  useEffect(() => {
+    for (const node of KLOEL_GRAPH_PRIMARY_NODES) {
       try {
         void router.prefetch(node.route.split('?')[0]);
       } catch {}
@@ -88,15 +238,16 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
   }, [router]);
 
   const closeOverlay = useCallback(() => {
+    setPendingNode(null);
     const nextParams = new URLSearchParams(searchParams.toString());
     nextParams.set('graph', '1');
     nextParams.delete('graphAction');
     const query = nextParams.toString();
-    router.push(`${pathname}${query ? `?${query}` : ''}`);
-  }, [pathname, router, searchParams]);
+    pushGraphOnlyRoute(`${pathname}${query ? `?${query}` : ''}`);
+  }, [pathname, pushGraphOnlyRoute, searchParams]);
 
   useEffect(() => {
-    if (graphOnly || paletteProps.open) {
+    if (paletteProps.open || !hasRouteOverlay) {
       return;
     }
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
@@ -108,34 +259,79 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [closeOverlay, graphOnly, paletteProps.open]);
+  }, [closeOverlay, hasRouteOverlay, paletteProps.open]);
 
   const openNode = useCallback(
     (node: KloelGraphNode) => {
       if (node.id === 'kloel-search') {
+        setPendingNode(null);
         setPaletteMode('full');
         openPalette({ initialQuery: '' });
         return;
       }
       if (node.id === 'kloel-recents') {
+        setPendingNode(null);
         setPaletteMode('conversations');
         openPalette({ initialQuery: '' });
         return;
       }
-      router.push(node.route);
+      if (node.id === 'kloel-chat') {
+        setPendingNode({
+          id: node.id,
+          routeSignature,
+          sequence: (pendingNodeSequenceRef.current += 1),
+        });
+        router.push(node.route);
+        if (typeof window !== 'undefined') {
+          if (pathname === node.route) {
+            window.dispatchEvent(new Event('kloel:new-chat'));
+          } else {
+            window.setTimeout(() => window.dispatchEvent(new Event('kloel:new-chat')), 0);
+          }
+        }
+        return;
+      }
+      setPendingNode({
+        id: node.id,
+        routeSignature,
+        sequence: (pendingNodeSequenceRef.current += 1),
+      });
+      router.push(resolveNodeRoute(node));
     },
-    [openPalette, router],
+    [openPalette, pathname, resolveNodeRoute, routeSignature, router],
   );
 
-  const focusGalaxy = useCallback((area: KloelGraphArea) => {
-    setFocusedArea(area);
-    setManualPan({ x: 0, y: 0 });
-  }, []);
+  const focusGalaxy = useCallback(
+    (area: KloelGraphArea) => {
+      const primaryNode = KLOEL_GRAPH_NODES.find((node) => node.area === area && !node.parentId);
 
-  const openSearch = useCallback(() => {
-    setPaletteMode('full');
-    openPalette({ initialQuery: '' });
-  }, [openPalette]);
+      startTransition(() => {
+        setManualFocus({ area, routeKey: activeRouteKey });
+        setRecenterNonce((value) => value + 1);
+      });
+
+      // An open route screen (the macOS-style window) is dismissed ONLY by its red
+      // control / Escape — never by interacting with the graph navigator behind it.
+      // While a screen is open, the pill only teleports the camera (above), so the
+      // user can keep arranging screens over a live graph without losing their place.
+      if (!primaryNode || hasRouteOverlay) {
+        return;
+      }
+
+      const [path, queryString = ''] = primaryNode.route.split('?');
+      const nextParams = new URLSearchParams(queryString);
+      nextParams.set('graph', '1');
+      nextParams.delete('graphAction');
+      setPendingNode(null);
+      const query = nextParams.toString();
+      pushGraphOnlyRoute(`${path}${query ? `?${query}` : ''}`);
+    },
+    [activeRouteKey, hasRouteOverlay, pushGraphOnlyRoute],
+  );
+
+  const toggleSettings = useCallback(() => {
+    setSettingsOpen((open) => !open);
+  }, []);
 
   useEffect(() => {
     if (graphAction === 'search' || graphAction === 'recents') {
@@ -143,113 +339,9 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
     }
   }, [graphAction, openPalette]);
 
-  const onWheel = useCallback((event: ReactWheelEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    setZoom((current) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, current - event.deltaY * 0.0012)));
-  }, []);
-
-  const onSurfacePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (event.target !== event.currentTarget) {
-      return;
-    }
-    surfaceDragRef.current = {
-      x: event.clientX,
-      y: event.clientY,
-      panX: manualPan.x,
-      panY: manualPan.y,
-    };
-    setIsSurfaceDragging(true);
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-  };
-
-  const onSurfacePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const drag = surfaceDragRef.current;
-    if (!drag) {
-      return;
-    }
-    setManualPan({ x: drag.panX + event.clientX - drag.x, y: drag.panY + event.clientY - drag.y });
-  };
-
-  const onSurfacePointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
-    surfaceDragRef.current = null;
-    setIsSurfaceDragging(false);
-    try {
-      event.currentTarget.releasePointerCapture?.(event.pointerId);
-    } catch {}
-  };
-
-  const onNodePointerDown = (nodeId: string, event: ReactPointerEvent<HTMLButtonElement>) => {
-    event.stopPropagation();
-    const offset = nodeOffsets[nodeId] ?? { x: 0, y: 0 };
-    pointerStartRef.current[nodeId] = {
-      x: event.clientX,
-      y: event.clientY,
-      offsetX: offset.x,
-      offsetY: offset.y,
-    };
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-  };
-
-  const onNodePointerMove = (nodeId: string, event: ReactPointerEvent<HTMLButtonElement>) => {
-    const start = pointerStartRef.current[nodeId];
-    if (!start) {
-      return;
-    }
-    const dx = event.clientX - start.x;
-    const dy = event.clientY - start.y;
-    if (Math.hypot(dx, dy) <= CLICK_DRAG_THRESHOLD_PX) {
-      return;
-    }
-    setNodeOffsets((current) => ({
-      ...current,
-      [nodeId]: { x: start.offsetX + dx / zoom, y: start.offsetY + dy / zoom },
-    }));
-  };
-
-  const onNodePointerUp = (node: KloelGraphNode, event: ReactPointerEvent<HTMLButtonElement>) => {
-    event.stopPropagation();
-    const start = pointerStartRef.current[node.id];
-    delete pointerStartRef.current[node.id];
-    try {
-      event.currentTarget.releasePointerCapture?.(event.pointerId);
-    } catch {}
-    if (!start) {
-      return;
-    }
-
-    const distance = Math.hypot(event.clientX - start.x, event.clientY - start.y);
-    if (distance <= CLICK_DRAG_THRESHOLD_PX) {
-      openNode(node);
-    }
-  };
-
-  const onNodeKeyDown = (node: KloelGraphNode, event: ReactKeyboardEvent<HTMLButtonElement>) => {
-    if (event.key !== 'Enter' && event.key !== ' ') {
-      return;
-    }
-    event.preventDefault();
-    openNode(node);
-  };
-
-  const worldStyle: CSSProperties = {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    width: 1,
-    height: 1,
-    transform: `translate(calc(50vw + ${manualPan.x}px - ${focusPoint.x * zoom}px), calc(50vh + ${manualPan.y}px - ${focusPoint.y * zoom}px)) scale(${zoom})`,
-    transformOrigin: '0 0',
-    transition: isSurfaceDragging ? 'none' : 'transform 420ms cubic-bezier(.2,.7,.2,1)',
-  };
-
   return (
     <div
       data-testid="kloel-graph-shell"
-      onWheel={onWheel}
-      onPointerDown={onSurfacePointerDown}
-      onPointerMove={onSurfacePointerMove}
-      onPointerUp={onSurfacePointerUp}
-      onPointerCancel={onSurfacePointerUp}
       style={{
         position: 'fixed',
         inset: 0,
@@ -262,67 +354,30 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
       }}
     >
       <CommandPalette {...paletteProps} onSelect={executeCommand} mode={commandPaletteMode} />
-
       <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: C.void }} />
-
-      <div style={worldStyle}>
-        <svg
-          aria-hidden="true"
-          width="1"
-          height="1"
-          viewBox="0 0 1 1"
-          style={{ position: 'absolute', left: 0, top: 0, overflow: 'visible' }}
-        >
-          {edges.map((edge) => {
-            const from = layout.get(edge.from);
-            const to = layout.get(edge.to);
-            if (!from || !to) {
-              return null;
-            }
-            return (
-              <line
-                key={`${edge.from}-${edge.to}`}
-                x1={from.x}
-                y1={from.y}
-                x2={to.x}
-                y2={to.y}
-                stroke={C.emberBorder}
-                strokeWidth={1.2 / zoom}
-              />
-            );
-          })}
-        </svg>
-
-        {graphNodes.map((node) => {
-          const point = layout.get(node.id);
-          if (!point) {
-            return null;
-          }
-          const offset = nodeOffsets[node.id] ?? { x: 0, y: 0 };
-          return (
-            <KloelGraphNodeButton
-              key={node.id}
-              node={node}
-              point={{ ...point, x: point.x + offset.x, y: point.y + offset.y }}
-              active={activeNode?.id === node.id || activeNode?.area === node.id}
-              onPointerDown={onNodePointerDown}
-              onPointerMove={onNodePointerMove}
-              onPointerUp={onNodePointerUp}
-              onKeyDown={onNodeKeyDown}
-            />
-          );
-        })}
-      </div>
-
-      <KloelGraphFloatingNav
+      <KloelGraphLiteralCanvas
+        nodes={graphNodes}
+        edges={edges}
+        activeNodeId={activeGraphNodeId}
         focusedArea={displayArea}
-        onFocusGalaxy={focusGalaxy}
-        onSearch={openSearch}
+        recenterNonce={recenterNonce}
+        settings={graphSettings}
+        ariaHidden={hasRouteOverlay || paletteProps.open}
+        onOpenNode={openNode}
+        onClearSelection={() => setPendingNode(null)}
       />
-
-      {!graphOnly && (
-        <KloelGraphOverlay activeNode={activeNode} onClose={closeOverlay}>
-          {children}
+      {settingsOpen && (
+        <KloelGraphSettingsPanel
+          settings={graphSettings}
+          setSettings={setGraphSettings}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
+      <KloelGraphChromeButtons settingsActive={settingsOpen} onOpenSettings={toggleSettings} />
+      <KloelGraphFloatingNav focusedArea={displayArea} onFocusGalaxy={focusGalaxy} />
+      {hasRouteOverlay && (
+        <KloelGraphOverlay activeNode={overlayNode} onClose={closeOverlay}>
+          {pendingOverlayNode ? <KloelGraphPendingOverlay node={pendingOverlayNode} /> : children}
         </KloelGraphOverlay>
       )}
     </div>
@@ -337,7 +392,7 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
  */
 export function KloelGraphShell({ children }: { readonly children: ReactNode }) {
   return (
-    <GraphThemeProvider>
+    <GraphThemeProvider initialMode="dark">
       <KloelGraphShellSurface>{children}</KloelGraphShellSurface>
     </GraphThemeProvider>
   );

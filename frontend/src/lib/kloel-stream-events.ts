@@ -39,6 +39,8 @@ export interface KloelStreamToolCallEvent {
   type: 'tool_call';
   /** Call id property. */
   callId?: string | undefined;
+  /** Span id property. */
+  spanId?: string | undefined;
   /** Tool property. */
   tool: string;
   /** Args property. */
@@ -51,6 +53,8 @@ export interface KloelStreamToolResultEvent {
   type: 'tool_result';
   /** Call id property. */
   callId?: string | undefined;
+  /** Span id property. */
+  spanId?: string | undefined;
   /** Tool property. */
   tool: string;
   /** Success property. */
@@ -59,6 +63,10 @@ export interface KloelStreamToolResultEvent {
   result?: unknown | undefined;
   /** Error property. */
   error?: string | undefined;
+  /** Artifact id property. */
+  artifactId?: string | undefined;
+  /** Duration ms property. */
+  durationMs?: number | undefined;
 }
 
 /** Kloel stream done event shape. */
@@ -81,6 +89,44 @@ export interface KloelStreamErrorEvent {
   done?: boolean | undefined;
 }
 
+/** Kloel stream reasoning summary event shape. */
+export interface KloelStreamReasoningSummaryEvent {
+  /** Type property. */
+  type: 'reasoning_summary';
+  /** Text property. */
+  text: string;
+}
+
+/** Kloel stream reasoning delta event shape. */
+export interface KloelStreamReasoningDeltaEvent {
+  /** Type property. */
+  type: 'reasoning_delta';
+  /** Text property. */
+  text: string;
+}
+
+/** Kloel stream reasoning done event shape. */
+export interface KloelStreamReasoningDoneEvent {
+  /** Type property. */
+  type: 'reasoning_done';
+  /** Duration ms property. */
+  durationMs: number;
+}
+
+/** Kloel stream file event shape. */
+export interface KloelStreamFileEvent {
+  /** Type property. */
+  type: 'file';
+  /** Name property. */
+  name: string;
+  /** Meta property. */
+  meta?: string | undefined;
+  /** Url property. */
+  url?: string | undefined;
+  /** Download url property. */
+  downloadUrl?: string | undefined;
+}
+
 /** Kloel stream event type. */
 export type KloelStreamEvent =
   | KloelStreamThreadEvent
@@ -88,6 +134,10 @@ export type KloelStreamEvent =
   | KloelStreamContentEvent
   | KloelStreamToolCallEvent
   | KloelStreamToolResultEvent
+  | KloelStreamReasoningSummaryEvent
+  | KloelStreamReasoningDeltaEvent
+  | KloelStreamReasoningDoneEvent
+  | KloelStreamFileEvent
   | KloelStreamDoneEvent
   | KloelStreamErrorEvent;
 
@@ -142,6 +192,7 @@ function tryAppendToolCall(event: Record<string, unknown>, events: KloelStreamEv
   events.push({
     type: 'tool_call',
     callId: typeof event.callId === 'string' ? event.callId : undefined,
+    spanId: typeof event.spanId === 'string' ? event.spanId : undefined,
     tool: event.tool,
     args: isRecord(event.args) ? event.args : undefined,
   });
@@ -154,10 +205,13 @@ function tryAppendToolResult(event: Record<string, unknown>, events: KloelStream
   events.push({
     type: 'tool_result',
     callId: typeof event.callId === 'string' ? event.callId : undefined,
+    spanId: typeof event.spanId === 'string' ? event.spanId : undefined,
     tool: event.tool,
     success: typeof event.success === 'boolean' ? event.success : undefined,
     result: event.result,
     error: typeof event.error === 'string' ? event.error : undefined,
+    artifactId: typeof event.artifactId === 'string' ? event.artifactId : undefined,
+    durationMs: typeof event.durationMs === 'number' ? event.durationMs : undefined,
   });
 }
 
@@ -181,6 +235,50 @@ function tryAppendError(event: Record<string, unknown>, events: KloelStreamEvent
     content:
       typeof event.content === 'string' && event.content.length > 0 ? event.content : undefined,
     done: event.done === true,
+  });
+}
+
+function tryAppendReasoningSummary(
+  event: Record<string, unknown>,
+  events: KloelStreamEvent[],
+): void {
+  if (
+    event.type !== 'reasoning_summary' ||
+    typeof event.text !== 'string' ||
+    event.text.length === 0
+  ) {
+    return;
+  }
+  events.push({ type: 'reasoning_summary', text: event.text });
+}
+
+function tryAppendReasoningDelta(event: Record<string, unknown>, events: KloelStreamEvent[]): void {
+  if (event.type !== 'reasoning_delta' || typeof event.text !== 'string' || event.text.length === 0) {
+    return;
+  }
+  // Surface the streamed reasoning text token-by-token so the live thinking
+  // timeline can render the real model reasoning as it arrives (per the
+  // reasoning_delta contract). The text field carries the delta payload.
+  events.push({ type: 'reasoning_delta', text: event.text });
+}
+
+function tryAppendReasoningDone(event: Record<string, unknown>, events: KloelStreamEvent[]): void {
+  if (event.type !== 'reasoning_done' || typeof event.durationMs !== 'number') {
+    return;
+  }
+  events.push({ type: 'reasoning_done', durationMs: event.durationMs });
+}
+
+function tryAppendFile(event: Record<string, unknown>, events: KloelStreamEvent[]): void {
+  if (event.type !== 'file' || typeof event.name !== 'string' || event.name.length === 0) {
+    return;
+  }
+  events.push({
+    type: 'file',
+    name: event.name,
+    meta: typeof event.meta === 'string' ? event.meta : undefined,
+    url: typeof event.url === 'string' ? event.url : undefined,
+    downloadUrl: typeof event.downloadUrl === 'string' ? event.downloadUrl : undefined,
   });
 }
 
@@ -213,6 +311,10 @@ export function parseKloelStreamPayload(payload: unknown): KloelStreamEvent[] {
   tryAppendToolResult(event, events);
   tryAppendContent(event, events);
   tryAppendError(event, events);
+  tryAppendReasoningSummary(event, events);
+  tryAppendReasoningDelta(event, events);
+  tryAppendReasoningDone(event, events);
+  tryAppendFile(event, events);
 
   if (shouldAppendDone(event, events)) {
     const metadata = isRecord(event.metadata) ? event.metadata : undefined;

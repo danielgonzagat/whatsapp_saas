@@ -73,7 +73,33 @@ export async function buildMindSignals(
         });
       }
 
-      const attention = deps.attentionService.allocate(recentEvents, {
+      // ── Within-turn perception (PI P2-1) ───────────────────────────
+      // ADDITIVELY fold the live in-process spine's just-emitted percepts
+      // (e.g. this reply's own cognition.decision_made) into the same
+      // attention window, ALONGSIDE the persisted autopilotEvent rows above.
+      // Without this, a reply's own emitted cognition only reaches perception
+      // on the next EVERY_MINUTE tick. Read-path only — the spine ring is
+      // never mutated here. Failures degrade silently to the prisma-only set.
+      let spineEvents: SpineEventRef[] = [];
+      if (deps.spineEmitterService?.recentEventsAsRef) {
+        try {
+          spineEvents = deps.spineEmitterService
+            .recentEventsAsRef(50)
+            .filter((e) => e.workspaceId === undefined || e.workspaceId === workspaceId);
+        } catch (error: unknown) {
+          deps.logger.warn('kloel_spine_perception_skipped', {
+            reason: error instanceof Error ? error.message : 'unknown error',
+          });
+        }
+      }
+
+      // De-dupe by eventId so a percept already persisted as an autopilotEvent
+      // row is not double-counted in the attention weighting.
+      const seenEventIds = new Set(recentEvents.map((e) => e.eventId));
+      const freshSpineEvents = spineEvents.filter((e) => !seenEventIds.has(e.eventId));
+      const attentionInput: SpineEventRef[] = [...recentEvents, ...freshSpineEvents];
+
+      const attention = deps.attentionService.allocate(attentionInput, {
         nowMs: Date.now(),
         halfLifeMinutes: 30,
       });
@@ -81,7 +107,7 @@ export async function buildMindSignals(
       Object.assign(mindSignals, {
         attention,
         source: 'autopilot_events',
-        eventCount: recentEvents.length,
+        eventCount: attentionInput.length,
       });
     } catch (error: unknown) {
       deps.logger.warn('kloel_mind_signal_skipped', {

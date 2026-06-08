@@ -115,11 +115,14 @@ export function refuse(goal: GoalCandidate, verdict: MaturityVerdict): GuardVerd
   const currentIdx = STAGE_ORDERED.indexOf(verdict.stage);
 
   for (let i = STAGE_ORDERED.length - 1; i > currentIdx; i--) {
-    const laterStage = STAGE_ORDERED[i] as MaturityStage;
+    const laterStage = STAGE_ORDERED[i];
+    if (laterStage === undefined) {
+      continue;
+    }
     const keywords = STAGE_KEYWORDS[laterStage];
 
-    if (keywords.some((kw) => summaryLower.includes(kw))) {
-      const match = keywords.find((kw) => summaryLower.includes(kw));
+    if (keywords.some((kw: string) => summaryLower.includes(kw))) {
+      const match = keywords.find((kw: string) => summaryLower.includes(kw));
       return {
         ok: false,
         reason: `goal "${goal.summary}" matches "${match}" — keyword reserved for stage "${laterStage}" (current stage: "${verdict.stage}")`,

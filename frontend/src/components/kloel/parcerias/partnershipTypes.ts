@@ -52,8 +52,15 @@ export interface AffiliateLink {
 export interface AffiliateSuggestion {
   id: string;
   productId?: string;
+  name?: string;
+  description?: string;
+  producer?: string;
+  price?: number;
+  commission?: number;
   commissionPct?: number;
   category?: string;
+  requestStatus?: string | null;
+  isSaved?: boolean;
 }
 
 export interface PartnerContact {

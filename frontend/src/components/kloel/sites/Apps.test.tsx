@@ -74,4 +74,21 @@ describe('Sites Apps', () => {
     );
     expect(mutateApps).toHaveBeenCalled();
   });
+
+  it('does not request public app integrations for draft-only Kloel sites', () => {
+    const draftSite: Site = {
+      ...site,
+      id: 'draft-1',
+      slug: '',
+      status: 'DRAFT',
+      publishedAt: null,
+    };
+
+    render(<Apps workspaceId="ws-1" sites={[draftSite]} loading={false} />);
+
+    expect(useSiteApps).toHaveBeenCalledWith('ws-1', null);
+    expect(screen.getByText('Publique um site antes de instalar apps, pixels ou scripts de publicacao.')).toBeTruthy();
+    expect((screen.getByLabelText('Selecionar site para apps') as HTMLSelectElement).disabled).toBe(true);
+    expect(screen.queryByLabelText('Google Analytics ID de medicao')).toBeNull();
+  });
 });

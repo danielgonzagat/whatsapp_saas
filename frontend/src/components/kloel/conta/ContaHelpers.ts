@@ -55,11 +55,43 @@ export function fiscalToFormState(fiscal: KycFiscal) {
   };
 }
 
+function inferPixKeyType(pixKey: string | null | undefined): string {
+  const key = pixKey?.trim() ?? '';
+  if (!key) {
+    return '';
+  }
+
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(key)) {
+    return 'EMAIL';
+  }
+
+  const digits = key.replace(/\D/g, '');
+  if (/^\d{11}$/.test(digits) && /^[\d.-]+$/.test(key)) {
+    return 'CPF';
+  }
+  if (/^\d{14}$/.test(digits) && /^[\d./-]+$/.test(key)) {
+    return 'CNPJ';
+  }
+
+  const compactPhone = key.replace(/[\s().-]/g, '');
+  if (/^\+\d{10,15}$/.test(compactPhone)) {
+    return 'PHONE';
+  }
+
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(key)) {
+    return 'RANDOM';
+  }
+
+  return '';
+}
+
 export function bankAccountToFormState(
   bankAccount: KycBankAccount,
   autoHolderName: string,
   autoHolderDoc: string,
 ) {
+  const explicitPixKeyType = bankAccount.pixKeyType?.trim().toUpperCase() || '';
+
   return {
     bankName: bankAccount.bankName || '',
     bankCode: bankAccount.bankCode || '',
@@ -67,7 +99,7 @@ export function bankAccountToFormState(
     account: bankAccount.account || '',
     accountType: bankAccount.accountType || 'CHECKING',
     pixKey: bankAccount.pixKey || '',
-    pixKeyType: bankAccount.pixKeyType || '',
+    pixKeyType: explicitPixKeyType || inferPixKeyType(bankAccount.pixKey),
     holderName: bankAccount.holderName || autoHolderName,
     holderDocument: bankAccount.holderDocument || autoHolderDoc,
   };

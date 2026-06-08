@@ -147,13 +147,13 @@ describe('MarketingSkillService', () => {
       const result = await service.buildPacket(wsId, 'copy para pagina de vendas');
 
       expect(result).not.toBeNull();
-      expect(result!.isMarketingRequest).toBe(true);
-      expect(result!.selectedSkills).toHaveLength(1);
-      expect(result!.selectedSkills[0].id).toBe('copywriting');
-      expect(result!.selectedSkills[0].title).toBe('Copywriting');
-      expect(result!.snapshot.workspaceName).toBe('MyWorkspace');
-      expect(result!.promptAddendum).toContain('MODO MARKETING ATIVADO');
-      expect(result!.promptAddendum).toContain('Copywriting');
+      expect(result.isMarketingRequest).toBe(true);
+      expect(result.selectedSkills).toHaveLength(1);
+      expect(result.selectedSkills[0].id).toBe('copywriting');
+      expect(result.selectedSkills[0].title).toBe('Copywriting');
+      expect(result.snapshot.workspaceName).toBe('MyWorkspace');
+      expect(result.promptAddendum).toContain('MODO MARKETING ATIVADO');
+      expect(result.promptAddendum).toContain('Copywriting');
     });
 
     it('builds snapshot scoped to workspaceId', async () => {
@@ -181,8 +181,8 @@ describe('MarketingSkillService', () => {
       const result = await service.buildPacket(wsId, 'copy');
 
       expect(result).not.toBeNull();
-      expect(result!.selectedSkills).toHaveLength(1);
-      expect(result!.selectedSkills[0].id).toBe('copywriting');
+      expect(result.selectedSkills).toHaveLength(1);
+      expect(result.selectedSkills[0].id).toBe('copywriting');
     });
 
     it('includes promptAddendum with skill frameworks and snapshot JSON', async () => {
@@ -196,10 +196,10 @@ describe('MarketingSkillService', () => {
 
       const result = await service.buildPacket(wsId, 'trafego pago roas');
 
-      expect(result!.promptAddendum).toContain('Snapshot real do workspace');
-      expect(result!.promptAddendum).toContain('Frameworks relevantes');
-      expect(result!.promptAddendum).toContain('Paid Ads');
-      expect(result!.promptAddendum).toContain('Plan and optimize');
+      expect(result.promptAddendum).toContain('Snapshot real do workspace');
+      expect(result.promptAddendum).toContain('Frameworks relevantes');
+      expect(result.promptAddendum).toContain('Paid Ads');
+      expect(result.promptAddendum).toContain('Plan and optimize');
     });
   });
 

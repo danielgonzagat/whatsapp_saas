@@ -125,6 +125,8 @@ describe('CheckoutService public resolution', () => {
       productId: 'prod_1',
       product: {
         workspaceId: 'ws_1',
+        active: true,
+        status: 'APPROVED',
       },
       checkoutConfig: {},
       orderBumps: [],
@@ -186,5 +188,30 @@ describe('CheckoutService public resolution', () => {
         }),
       ]),
     );
+  });
+
+  it('does not build a public checkout payload for a draft inactive product', async () => {
+    prisma.checkoutProductPlan.findFirst.mockResolvedValue({
+      id: 'plan_draft',
+      slug: 'draft-offer',
+      referenceCode: 'DRAFT123',
+      kind: 'PLAN',
+      isActive: true,
+      productId: 'prod_draft',
+      product: {
+        workspaceId: 'ws_1',
+        active: false,
+        status: 'DRAFT',
+      },
+      checkoutConfig: {},
+      orderBumps: [],
+      upsells: [],
+    });
+
+    await expect(
+      service.getCheckoutByCode('DRAFT123', { correlationId: 'corr-draft' }),
+    ).rejects.toThrow('Checkout not found');
+
+    expect(internalService.publicPayloadBuilder.build).not.toHaveBeenCalled();
   });
 });

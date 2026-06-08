@@ -59,7 +59,7 @@ export default function ProductActions({
   return (
     <div>
       <IconActionButton
-        label={kloelT('Editar')}
+        label={`${kloelT('Editar')} ${product.name}`}
         color={EMBER}
         onClick={() => router.push(`/products/${product.id}`)}
       >

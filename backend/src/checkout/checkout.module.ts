@@ -25,6 +25,8 @@ import { CheckoutSocialRecoveryService } from './checkout-social-recovery.servic
 import { CheckoutController } from './checkout.controller';
 import { CheckoutService } from './checkout.service';
 import { FacebookCAPIService } from './facebook-capi.service';
+import { DecisionOutcomeService } from '../kloel/decision-outcome.service';
+import { MindBanditService } from '../kloel/mind/policy/mind-bandit.service';
 
 // Webhook ordering: CheckoutWebhookController validates event sequence via
 // validatePaymentTransition and WebhookEvent externalId unique constraint.
@@ -53,6 +55,14 @@ import { FacebookCAPIService } from './facebook-capi.service';
     CheckoutSocialLeadService,
     CheckoutSocialRecoveryService,
     FacebookCAPIService,
+    // ADDITIVE: provide the canonical decision-outcome ledger (+ its bandit) so
+    // CheckoutPostPaymentEffectsService can close the cart_recovery win on
+    // payment-approved (flag KLOEL_CART_RECOVERY_LEARN, default OFF). Both are
+    // @Optional() at the consumer; with the flag OFF they are never invoked.
+    // MindBanditService only needs PrismaService, so this stays a light, local
+    // wiring instead of importing the heavy KloelModule.
+    DecisionOutcomeService,
+    MindBanditService,
     CheckoutEventEmitterService,
   ],
   exports: [

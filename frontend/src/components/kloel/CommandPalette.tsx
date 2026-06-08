@@ -167,6 +167,8 @@ export function CommandPalette({
           <div className="kloel-search-header">
             <Search size={18} color="var(--app-text-secondary)" aria-hidden="true" />
             <input
+              id="kloel-command-palette-search"
+              name="kloelCommandPaletteSearch"
               ref={inputRef}
               className="kloel-search-input"
               value={query}

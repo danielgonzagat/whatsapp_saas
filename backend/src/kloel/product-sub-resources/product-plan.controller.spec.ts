@@ -1,8 +1,11 @@
+jest.mock('../../auth/workspace-access', () => ({
+  resolveWorkspaceId: jest.fn().mockReturnValue('ws-1'),
+}));
+
 jest.mock('./helpers/common.helpers', () => ({
   ensureWorkspaceProductAccess: jest
     .fn()
     .mockResolvedValue({ id: 'prod-1', workspaceId: 'ws-1', name: 'Product A' }),
-  getWorkspaceId: jest.fn().mockReturnValue('ws-1'),
 }));
 
 jest.mock('./helpers/plan.helpers', () => ({
@@ -14,11 +17,12 @@ jest.mock('./helpers/plan.helpers', () => ({
 
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ProductPlanController } from './product-plan.controller';
-import { ensureWorkspaceProductAccess, getWorkspaceId } from './helpers/common.helpers';
+import { ensureWorkspaceProductAccess } from './helpers/common.helpers';
+import { resolveWorkspaceId } from '../../auth/workspace-access';
 import { buildPlanData, serializePlan } from './helpers/plan.helpers';
 
 const ensureWorkspaceProductAccessMock = ensureWorkspaceProductAccess as jest.Mock;
-const getWorkspaceIdMock = getWorkspaceId as jest.Mock;
+const getWorkspaceIdMock = resolveWorkspaceId as jest.Mock;
 const buildPlanDataMock = buildPlanData as jest.Mock;
 const serializePlanMock = serializePlan as jest.Mock;
 
@@ -143,7 +147,7 @@ describe('ProductPlanController', () => {
       expect(result).toHaveProperty('slug', 'basic-plan-slug');
     });
 
-    it('propagates user identity from req through getWorkspaceId', async () => {
+    it('propagates user identity from req through resolveWorkspaceId', async () => {
       const body = { name: 'Plan' };
 
       await controller.createPlan('prod-1', body, req);

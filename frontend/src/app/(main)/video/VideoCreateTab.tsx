@@ -52,6 +52,8 @@ export function VideoCreateTab({
             {kloelT(`URL do video de entrada (opcional)`)}
           </p>
           <input
+            id="video-create-url"
+            name="video-create-url"
             aria-label="URL do video de entrada"
             type="url"
             value={createUrl}
@@ -74,6 +76,9 @@ export function VideoCreateTab({
             {kloelT(`Prompt / instrucao para a IA`)}
           </p>
           <textarea
+            id="video-create-prompt"
+            name="video-create-prompt"
+            aria-label={kloelT('Prompt para criar video')}
             value={createPrompt}
             onChange={(e) => onPromptChange(e.target.value)}
             placeholder={kloelT(`Descreva o video que deseja gerar...`)}

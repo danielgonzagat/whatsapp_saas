@@ -14,6 +14,7 @@ export type SummaryProps = {
   discount: number;
   subtotal: number;
   shippingInCents: number;
+  requiresShipping?: boolean;
   totalWithInterest: number;
   productName: string;
   productImage?: string;
@@ -29,4 +30,5 @@ export type FooterProps = {
   footerPrimary: string;
   footerSecondary: string;
   footerLegal: string;
+  checkoutUnavailableReason?: string;
 };

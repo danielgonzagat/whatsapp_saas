@@ -37,6 +37,8 @@ export default function MarketplaceFilters({
           {IC.search(16)}
         </span>
         <input
+          id="affiliate-marketplace-search"
+          name="affiliateMarketplaceSearch"
           aria-label={kloelT('Buscar produtos para se afiliar')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -60,6 +62,7 @@ export default function MarketplaceFilters({
         <button
           type="button"
           onClick={() => setCatFilter(null)}
+          aria-pressed={!catFilter}
           style={{
             padding: '6px 14px',
             borderRadius: 16,
@@ -79,6 +82,7 @@ export default function MarketplaceFilters({
             type="button"
             key={cat}
             onClick={() => setCatFilter(catFilter === cat ? null : cat)}
+            aria-pressed={catFilter === cat}
             style={{
               padding: '6px 14px',
               borderRadius: 16,

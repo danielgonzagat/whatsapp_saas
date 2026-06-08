@@ -151,6 +151,8 @@ export default function DadosFiscaisSection({
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [cnpjLoading, setCnpjLoading] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
+  const lastCnpjLookupRef = useRef<string | null>(null);
+  const lastCepLookupRef = useRef<string | null>(null);
   useEffect(
     () => () => {
       if (saveTimer.current) {
@@ -165,12 +167,17 @@ export default function DadosFiscaisSection({
     if (clean.length !== 14) {
       return;
     }
+    if (lastCnpjLookupRef.current === clean) {
+      return;
+    }
+    lastCnpjLookupRef.current = clean;
     setCnpjLoading(true);
     setError('');
     try {
       const data: BrasilApiCnpjResponse = await kycApi.lookupCnpj(clean);
       setForm((prev: FiscalFormState) => mergeCnpjIntoForm(prev, data));
     } catch (e) {
+      lastCnpjLookupRef.current = null;
       const message = getErrorMessage(e) || 'Nao foi possivel consultar o CNPJ.';
       setError(message);
       showToast(message, 'error');
@@ -183,6 +190,10 @@ export default function DadosFiscaisSection({
     if (clean.length !== 8) {
       return;
     }
+    if (lastCepLookupRef.current === clean) {
+      return;
+    }
+    lastCepLookupRef.current = clean;
     setCepLoading(true);
     setError('');
     try {
@@ -195,6 +206,7 @@ export default function DadosFiscaisSection({
       }
       setForm((prev: FiscalFormState) => mergeCepIntoForm(prev, data));
     } catch (e) {
+      lastCepLookupRef.current = null;
       const message = getErrorMessage(e) || 'Nao foi possivel consultar o CEP.';
       setError(message);
       showToast(message, 'error');
@@ -202,29 +214,93 @@ export default function DadosFiscaisSection({
       setCepLoading(false);
     }
   };
+  const showValidationError = (message: string) => {
+    setError(message);
+    showToast(message, 'error');
+    setSaveStatus('error');
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+    }
+    saveTimer.current = setTimeout(() => setSaveStatus('idle'), 4000);
+  };
+
+  const validateFiscalForm = (): string | null => {
+    if (tipo === 'PF') {
+      if (form.cpf.replace(D_RE, '').length !== 11) {
+        return 'Informe um CPF valido.';
+      }
+      if (!form.legalName.trim()) {
+        return 'Informe o nome legal.';
+      }
+    } else {
+      if (form.cnpj.replace(D_RE, '').length !== 14) {
+        return 'Informe um CNPJ valido.';
+      }
+      if (!form.razaoSocial.trim()) {
+        return 'Informe a razao social.';
+      }
+      if (!form.nomeFantasia.trim()) {
+        return 'Informe o nome fantasia.';
+      }
+      if (form.responsavelCpf.replace(D_RE, '').length !== 11) {
+        return 'Informe o CPF do responsavel.';
+      }
+      if (!form.responsavelNome.trim()) {
+        return 'Informe o nome do responsavel.';
+      }
+    }
+
+    if (form.cep.replace(D_RE, '').length !== 8) {
+      return 'Informe um CEP valido.';
+    }
+    if (!form.rua.trim()) {
+      return 'Informe a rua.';
+    }
+    if (!form.numero.trim()) {
+      return 'Informe o numero.';
+    }
+    if (!form.bairro.trim()) {
+      return 'Informe o bairro.';
+    }
+    if (!form.cidade.trim()) {
+      return 'Informe a cidade.';
+    }
+    if (form.uf.trim().length !== 2) {
+      return 'Informe a UF com 2 letras.';
+    }
+    return null;
+  };
+
   const handleSave = async () => {
     setError('');
     setSaveStatus('idle');
+
+    const validationError = validateFiscalForm();
+    if (validationError) {
+      showValidationError(validationError);
+      return;
+    }
+
     setSaving(true);
     try {
       const payload = cleanPayload({
         type: tipo,
         cpf: form.cpf,
-        fullName: form.legalName,
+        fullName: form.legalName.trim(),
         cnpj: form.cnpj,
-        razaoSocial: form.razaoSocial,
-        nomeFantasia: form.nomeFantasia,
+        razaoSocial: form.razaoSocial.trim(),
+        nomeFantasia: form.nomeFantasia.trim(),
         inscricaoEstadual: form.inscricaoEstadual,
         inscricaoMunicipal: form.inscricaoMunicipal,
         responsavelCpf: form.responsavelCpf,
-        responsavelNome: form.responsavelNome,
+        responsavelNome: form.responsavelNome.trim(),
         cep: form.cep,
-        street: form.rua,
-        number: form.numero,
+        street: form.rua.trim(),
+        number: form.numero.trim(),
         complement: form.complemento,
-        neighborhood: form.bairro,
-        city: form.cidade,
-        state: form.uf,
+        neighborhood: form.bairro.trim(),
+        city: form.cidade.trim(),
+        state: form.uf.trim().toUpperCase(),
       });
       await updateFiscal(payload);
       showToast('Dados fiscais salvos', 'success');
@@ -264,10 +340,20 @@ export default function DadosFiscaisSection({
       subtitle={kloelT(`Informacoes para emissao de notas e compliance`)}
     >
       <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
-        <button type="button" onClick={() => setTipo('PF')} style={btnStyle(tipo === 'PF')}>
+        <button
+          type="button"
+          onClick={() => setTipo('PF')}
+          aria-pressed={tipo === 'PF'}
+          style={btnStyle(tipo === 'PF')}
+        >
           {kloelT(`Pessoa Fisica (CPF)`)}
         </button>
-        <button type="button" onClick={() => setTipo('PJ')} style={btnStyle(tipo === 'PJ')}>
+        <button
+          type="button"
+          onClick={() => setTipo('PJ')}
+          aria-pressed={tipo === 'PJ'}
+          style={btnStyle(tipo === 'PJ')}
+        >
           {kloelT(`Pessoa Juridica (CNPJ)`)}
         </button>
       </div>

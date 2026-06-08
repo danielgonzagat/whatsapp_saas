@@ -243,7 +243,10 @@ export function useCheckoutExperienceSocial({
     [config?.requireCPF, config?.requirePhone, form],
   );
 
-  const validateStep2 = useCallback(() => isCheckoutAddressStepValid(form), [form]);
+  const validateStep2 = useCallback(
+    () => !derivedState.requiresShipping || isCheckoutAddressStepValid(form),
+    [derivedState.requiresShipping, form],
+  );
 
   const advanceToStep2 = useCallback(async () => {
     if (!validateStep1()) {
@@ -251,18 +254,23 @@ export function useCheckoutExperienceSocial({
       return;
     }
 
+    const nextStep = derivedState.requiresShipping ? 2 : 3;
+
     setSubmitError('');
     setLoadingStep(true);
     setPixelEvent('InitiateCheckout');
     await social.updateLeadProgress({
       ...buildIdentityLeadProgress(form),
-      stepReached: 2,
+      stepReached: nextStep,
     });
     window.setTimeout(() => {
-      setStep(2);
+      setStep(nextStep);
+      if (!derivedState.requiresShipping) {
+        setPixelEvent('AddPaymentInfo');
+      }
       setLoadingStep(false);
     }, 600);
-  }, [form, social, validateStep1]);
+  }, [derivedState.requiresShipping, form, social, validateStep1]);
 
   const advanceToStep3 = useCallback(async () => {
     if (!validateStep2()) {
@@ -394,6 +402,7 @@ export function useCheckoutExperienceSocial({
       computeFinalizeOrderPrecheckError({
         identityValid: validateStep1(),
         addressValid: validateStep2(),
+        requiresShipping: derivedState.requiresShipping,
         hasWorkspaceAndPlan: Boolean(workspaceId && planId),
         checkoutUnavailableReason,
         payMethod,
@@ -404,6 +413,7 @@ export function useCheckoutExperienceSocial({
       }),
     [
       checkoutUnavailableReason,
+      derivedState.requiresShipping,
       form.cpf,
       payMethod,
       supportsBoleto,
@@ -520,6 +530,7 @@ export function useCheckoutExperienceSocial({
     productName,
     brandName,
     unitPriceInCents,
+    requiresShipping: derivedState.requiresShipping,
     shippingInCents,
     supportsCard,
     supportsPix,

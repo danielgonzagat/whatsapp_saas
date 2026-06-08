@@ -49,6 +49,7 @@ import {
   buildSectionUrl,
   canSubmitKyc,
   getCompletionPercentage,
+  getKycGateNotice,
   getKycStatusValue,
   getSectionStatus,
   isKycBlocked,
@@ -92,6 +93,26 @@ export default function ContaView() {
   const kycStatus = getKycStatusValue(status);
   const pct = getCompletionPercentage(completionData);
   const isBlocked = isKycBlocked(pct, kycStatus);
+  const kycGateNotice = getKycGateNotice(pct, kycStatus);
+  const kycGateNoticeColor =
+    kycGateNotice.tone === 'info'
+      ? colors.semantic.info
+      : kycGateNotice.tone === 'error'
+        ? colors.semantic.error
+        : colors.semantic.warning;
+  const kycGateNoticeBackground =
+    kycGateNotice.tone === 'info'
+      ? 'rgba(59,130,246,.04)'
+      : kycGateNotice.tone === 'error'
+        ? 'rgba(239,68,68,.04)'
+        : 'rgba(245,158,11,.04)';
+  const kycGateNoticeBorder =
+    kycGateNotice.tone === 'info'
+      ? '1px solid rgba(59,130,246,.15)'
+      : kycGateNotice.tone === 'error'
+        ? '1px solid rgba(239,68,68,.15)'
+        : '1px solid rgba(245,158,11,.15)';
+
 
   const loadBillingSummary = useCallback(async () => {
     try {
@@ -155,6 +176,10 @@ export default function ContaView() {
     { key: 'fiscal', label: 'Dados fiscais', icon: Icons.building, statusKey: 'fiscal' },
     { key: 'documentos', label: 'Documentos', icon: Icons.doc, statusKey: 'documents' },
     { key: 'bancario', label: 'Dados bancarios', icon: Icons.bank, statusKey: 'bank' },
+    { key: 'perfil', label: 'Perfil publico', icon: Icons.eye, statusKey: null },
+    { key: 'equipe', label: 'Equipe', icon: Icons.users, statusKey: null },
+    { key: 'apps', label: 'Apps', icon: Icons.globe, statusKey: null },
+    { key: 'seguranca', label: 'Seguranca', icon: Icons.shield, statusKey: null },
     { key: 'idiomas', label: 'Idiomas', icon: Icons.language, statusKey: null },
     { key: 'sair', label: 'Sair', icon: Icons.logout, statusKey: null },
   ];
@@ -202,8 +227,8 @@ export default function ContaView() {
         {isBlocked && (
           <div
             style={{
-              background: 'rgba(245,158,11,.04)',
-              border: '1px solid rgba(245,158,11,.15)',
+              background: kycGateNoticeBackground,
+              border: kycGateNoticeBorder,
               borderRadius: 6,
               padding: '14px 18px',
               marginBottom: 20,
@@ -213,7 +238,9 @@ export default function ContaView() {
               gap: 12,
             }}
           >
-            <span style={{ color: colors.semantic.warning }}>{Icons.alert(20)}</span>
+            <span style={{ color: kycGateNoticeColor }}>
+              {kycGateNotice.tone === 'info' ? Icons.clock(20) : Icons.alert(20)}
+            </span>
             <div style={{ flex: 1 }}>
               <span
                 style={{
@@ -223,11 +250,10 @@ export default function ContaView() {
                   display: 'block',
                 }}
               >
-                {kloelT(`Cadastro incompleto`)}
+                {kloelT(kycGateNotice.title)}
               </span>
               <span style={{ fontSize: 11, color: 'var(--app-text-secondary)' }}>
-                {kloelT(`Voce pode visualizar todas as funcionalidades, mas para criar produtos, se afiliar e
-                utilizar a IA, complete seu cadastro e aguarde a aprovacao.`)}
+                {kloelT(kycGateNotice.description)}
               </span>
             </div>
             <div style={{ textAlign: isMobile ? ('left' as const) : ('right' as const) }}>
@@ -283,12 +309,15 @@ export default function ContaView() {
           </div>
         )}
 
-        <ConnectAccountStatusCard
-          isMobile={isMobile}
-          sellerAccount={sellerAccount}
-          isLoading={connectAccountLoading}
-          error={connectAccountError}
-        />
+        <div id="conta-recebimento">
+          <ConnectAccountStatusCard
+            isMobile={isMobile}
+            sellerAccount={sellerAccount}
+            kycStatus={kycStatus}
+            isLoading={connectAccountLoading}
+            error={connectAccountError}
+          />
+        </div>
 
         <div
           style={{
@@ -319,6 +348,7 @@ export default function ContaView() {
                   type="button"
                   key={sec.key}
                   onClick={() => handleSelectSection(sec.key)}
+                  aria-pressed={active}
                   style={{
                     display: 'flex',
                     alignItems: 'center',

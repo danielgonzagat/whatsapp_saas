@@ -27,7 +27,7 @@ export class ReportsAffiliateService {
   async getAfiliados(workspaceId: string, _f: ReportFiltersDto) {
     try {
       const partners = await this.prisma.affiliatePartner.findMany({
-        where: { workspaceId, status: 'active' },
+        where: { workspaceId, status: 'ACTIVE' },
         orderBy: { totalRevenue: 'desc' },
         take: 50,
       });

@@ -71,6 +71,72 @@ export default function CanvasEditor() {
     designNameRef.current = designName;
   }, [designName]);
 
+  const persistDesign = useCallback(async (editor: KloelEditor) => {
+    const width = Math.round(editor.canvas.getWidth());
+    const height = Math.round(editor.canvas.getHeight());
+    const json = editor.toJSON();
+    let thumbnailUrl: string | undefined;
+
+    setSaving(true);
+    try {
+      try {
+        thumbnailUrl = editor.exporter.toPNG(0.2);
+      } catch {
+        /* non-critical */
+      }
+
+      if (!currentId.current) {
+        const res = await apiFetch<{ design?: { id?: string } }>('/canvas/designs', {
+          method: 'POST',
+          body: {
+            name: designNameRef.current,
+            format: `${width}x${height}`,
+            width,
+            height,
+            elements: json,
+            ...(thumbnailUrl ? { thumbnailUrl } : {}),
+          },
+        });
+        if (res.error) {
+          throw new Error(res.error);
+        }
+        currentId.current = res.data?.design?.id || null;
+      } else {
+        const res = await apiFetch(`/canvas/designs/${currentId.current}`, {
+          method: 'PUT',
+          body: {
+            elements: json,
+            name: designNameRef.current,
+            ...(thumbnailUrl ? { thumbnailUrl } : {}),
+          },
+        });
+        if (res.error) {
+          throw new Error(res.error);
+        }
+      }
+
+      setSaved(true);
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/canvas'));
+    } catch (e) {
+      console.error('Canvas save failed:', e);
+    } finally {
+      setSaving(false);
+    }
+  }, []);
+
+  const handleSaveNow = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) {
+      return;
+    }
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+    }
+    setSaved(false);
+    void persistDesign(editor);
+  }, [persistDesign]);
+
   /* ═══ Initialize editor ═══ */
   useEffect(() => {
     if (!canvasRef.current) {
@@ -96,45 +162,8 @@ export default function CanvasEditor() {
       setSaved(false);
       setLayerList([...editor.layers.getObjects()]);
 
-      saveTimer.current = setTimeout(async () => {
-        setSaving(true);
-        const json = editor.toJSON();
-        let thumbnailUrl: string | undefined;
-        try {
-          thumbnailUrl = editor.exporter.toPNG(0.2);
-        } catch {
-          /* non-critical */
-        }
-        try {
-          if (!currentId.current) {
-            const res = await apiFetch<{ design?: { id?: string } }>('/canvas/designs', {
-              method: 'POST',
-              body: {
-                name: designNameRef.current,
-                format: `${width}x${height}`,
-                width,
-                height,
-                elements: json,
-                ...(thumbnailUrl ? { thumbnailUrl } : {}),
-              },
-            });
-            currentId.current = res?.data?.design?.id || null;
-          } else {
-            await apiFetch(`/canvas/designs/${currentId.current}`, {
-              method: 'PUT',
-              body: {
-                elements: json,
-                name: designNameRef.current,
-                ...(thumbnailUrl ? { thumbnailUrl } : {}),
-              },
-            });
-          }
-          setSaved(true);
-          mutate((key: unknown) => typeof key === 'string' && key.startsWith('/canvas'));
-        } catch (e) {
-          console.error('Auto-save failed:', e);
-        }
-        setSaving(false);
+      saveTimer.current = setTimeout(() => {
+        void persistDesign(editor);
       }, 3000);
     });
 
@@ -175,14 +204,13 @@ export default function CanvasEditor() {
         clearTimeout(saveTimer.current);
       }
     };
-  }, [PRODUCT_TEMPLATES]);
+  }, [PRODUCT_TEMPLATES, persistDesign]);
 
   /* ═══ Handlers (extracted into canvas-editor.handlers.ts) ═══ */
   const {
     handleUndo,
     handleRedo,
     handleExportFmt,
-    handleSave,
     handleCopy,
     handlePaste,
     handleDuplicate,
@@ -236,9 +264,9 @@ export default function CanvasEditor() {
         display: 'flex',
         flexDirection: 'column',
         height: '100vh',
-        background: 'colors.background.void',
+        background: colors.background.void,
         fontFamily: S,
-        color: 'colors.text.silver',
+        color: colors.text.silver,
         overflow: 'hidden',
         userSelect: 'none',
       }}
@@ -251,7 +279,7 @@ export default function CanvasEditor() {
         onUndo={handleUndo}
         onRedo={handleRedo}
         onExport={handleExportFmt}
-        onSave={handleSave}
+        onSave={handleSaveNow}
         onCopy={handleCopy}
         onPaste={handlePaste}
         onDuplicate={handleDuplicate}
@@ -275,7 +303,7 @@ export default function CanvasEditor() {
           <div
             style={{
               width: 56,
-              background: 'colors.background.void',
+              background: colors.background.void,
               borderRight: `1px solid ${colors.canvas.border}`,
               display: 'flex',
               flexDirection: 'column',
@@ -299,7 +327,7 @@ export default function CanvasEditor() {
                     borderRadius: 8,
                     border: 'none',
                     background: active ? colors.canvas.border : 'transparent',
-                    color: active ? 'colors.ember.primary' : 'colors.text.muted',
+                    color: active ? colors.ember.primary : colors.text.muted,
                     cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
@@ -330,7 +358,7 @@ export default function CanvasEditor() {
             <div
               style={{
                 width: 280,
-                background: 'colors.background.void',
+                background: colors.background.void,
                 overflowY: 'auto',
                 padding: 16,
                 borderRight: `1px solid ${colors.canvas.border}`,
@@ -368,7 +396,7 @@ export default function CanvasEditor() {
         <section
           style={{
             flex: 1,
-            background: 'colors.background.elevated',
+            background: colors.background.elevated,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

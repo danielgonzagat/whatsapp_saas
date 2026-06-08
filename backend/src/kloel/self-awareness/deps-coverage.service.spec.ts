@@ -55,7 +55,7 @@ describe('DepsCoverageService', () => {
       const result = await service.dependencies('backend', 'nestjs');
       expect(result.success).toBe(true);
       expect(result.deps).toHaveLength(1);
-      expect(result.deps![0].name).toBe('@nestjs/core');
+      expect(result.deps[0].name).toBe('@nestjs/core');
     });
 
     it('returns error on SBOM read failure', async () => {

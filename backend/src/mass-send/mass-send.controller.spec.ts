@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { JwtService } from '@nestjs/jwt';
 import { MassSendController } from './mass-send.controller';
 import { MassSendService } from './mass-send.service';
@@ -53,7 +54,10 @@ describe('MassSendController', () => {
           useValue: { sign: jest.fn(), verify: jest.fn() },
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<MassSendController>(MassSendController);
   });

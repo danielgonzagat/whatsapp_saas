@@ -11,12 +11,15 @@ interface TruncatedToolMessageContent {
 
 interface ToolResultSSEEvent {
   type: 'tool_result';
-  artifactId: string;
+  artifactId?: string;
+  spanId?: string;
+  durationMs?: number;
 }
 
 interface ToolCallSSEEvent {
   type: 'tool_call';
   tool: string;
+  spanId?: string;
 }
 
 describe('KloelToolRouter', () => {
@@ -229,7 +232,10 @@ describe('KloelToolRouter', () => {
         typeof e === 'object' && e !== null && (e as ToolResultSSEEvent).type === 'tool_result',
     );
     expect(toolCall?.tool).toBe('get_wallet_balance');
-    expect(toolResult).toBeDefined();
+    expect(toolCall?.spanId).toBe('call_w');
+    expect(toolResult?.spanId).toBe('call_w');
+    expect(typeof toolResult?.durationMs).toBe('number');
+    expect(toolResult?.durationMs).toBeGreaterThanOrEqual(0);
   });
 
   it('emits artifactId in tool_result SSE event when truncated', async () => {

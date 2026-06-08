@@ -66,18 +66,22 @@ export class MindAutonomyService {
       let priority: number;
       let rationale: string;
 
-      if (errorEvents.length >= ERROR_EVENT_MIN) {
-        const topIntent = errorEvents[0].intent;
+      const topErrorEvent = errorEvents[0];
+      const topLowReplyBelief = lowReplyBeliefs[0];
+      const topHighSurpriseBelief = highSurpriseBeliefs[0];
+
+      if (errorEvents.length >= ERROR_EVENT_MIN && topErrorEvent) {
+        const topIntent = topErrorEvent.intent;
         goal = `Investigate ${errorEvents.length} autopilot errors in last 24h`;
         priority = Math.min(0.95, 0.6 + errorEvents.length * 0.05);
         rationale = `${errorEvents.length} autopilot events failed. Top failed intent: ${topIntent}`;
-      } else if (lowReplyBeliefs.length > 0) {
-        const b = lowReplyBeliefs[0];
+      } else if (topLowReplyBelief) {
+        const b = topLowReplyBelief;
         goal = `Improve reply engagement for ${b.subject}`;
         priority = 0.7;
         rationale = `Belief mean=${b.mean.toFixed(2)} with ${b.samples} samples — replies below threshold`;
-      } else if (highSurpriseBeliefs.length > 0) {
-        const b = highSurpriseBeliefs[0];
+      } else if (topHighSurpriseBelief) {
+        const b = topHighSurpriseBelief;
         goal = `Investigate belief volatility for ${b.subject}/${b.predicate}`;
         priority = 0.5;
         rationale = `Variance=${b.variance.toFixed(2)} with ${b.samples} samples — unstable pattern`;

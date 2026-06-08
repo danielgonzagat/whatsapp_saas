@@ -16,7 +16,12 @@ const DELETE_REVERSE_SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
 const DELETE_REVERSE_SKIP_DIRS = new Set([
   '.git',
   '.atomic',
+  '.claude',
+  '.mcp-cache',
   '.next',
+  '.turbo',
+  '.cache',
+  'build',
   'coverage',
   'dist',
   'node_modules',

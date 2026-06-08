@@ -81,7 +81,10 @@ export class CodacyRigorEnforcer {
     if (this.checks.length === 0) {
       return true;
     }
-    const last = this.checks[this.checks.length - 1]!;
+    const last = this.checks[this.checks.length - 1];
+    if (!last) {
+      return true;
+    }
     return last.status === 'compliant';
   }
 
@@ -98,7 +101,10 @@ export class CodacyRigorEnforcer {
     if (this.checks.length === 0) {
       return [];
     }
-    const last = this.checks[this.checks.length - 1]!;
+    const last = this.checks[this.checks.length - 1];
+    if (!last) {
+      return [];
+    }
     return [...last.violations];
   }
 

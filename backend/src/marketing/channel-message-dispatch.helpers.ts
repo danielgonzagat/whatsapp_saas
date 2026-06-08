@@ -82,6 +82,9 @@ export function normalizeChannel(channel: DispatchChannel): ChannelKind | null {
     case 'email':
     case 'mail':
       return ChannelKind.EMAIL;
+    case 'email_transactional':
+    case 'email-transactional':
+      return ChannelKind.EMAIL_TRANSACTIONAL;
     default:
       return null;
   }
@@ -239,6 +242,29 @@ export function buildEmail(
     input.proactive = opts.proactive;
   }
   return input;
+}
+
+/**
+ * Build the discriminated input for the TRANSACTIONAL email channel
+ * ({@link ChannelKind.EMAIL_TRANSACTIONAL}). Unlike {@link buildEmail} (which
+ * routes through the workspace's connected mailbox), this targets the platform
+ * transactional sender and so requires both a `subject` and an `html` body —
+ * the message text is used as the html body when `opts.html` is absent.
+ */
+export function buildEmailTransactional(
+  workspaceId: string,
+  to: string,
+  message: string,
+  opts: DispatchOptions,
+): ChannelSendInput {
+  const html = opts.html ?? message;
+  return {
+    channelKind: ChannelKind.EMAIL_TRANSACTIONAL,
+    workspaceId,
+    toEmail: to,
+    subject: opts.subject ?? '',
+    html,
+  };
 }
 
 /**

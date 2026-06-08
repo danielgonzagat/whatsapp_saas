@@ -88,7 +88,13 @@ export const billingApi = {
   },
 
   createSetupIntent: (returnUrl?: string) => {
-    return apiFetch<{ clientSecret?: string; customerId?: string; url?: string }>(
+    return apiFetch<{
+      clientSecret?: string;
+      customerId?: string | null;
+      message?: string;
+      unavailable?: boolean;
+      url?: string | null;
+    }>(
       `/billing/payment-methods/setup-intent`,
       {
         method: 'POST',

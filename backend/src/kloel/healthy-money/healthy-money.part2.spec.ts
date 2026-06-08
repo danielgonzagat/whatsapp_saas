@@ -61,7 +61,7 @@ describe('HEALTHYMONEY-007 — BlockerPolicyService', () => {
       priority: 10,
     });
     expect(after.rules.length).toBe(before.rules.length + 1);
-    const addedRule = after.rules[after.rules.length - 1]!;
+    const addedRule = after.rules[after.rules.length - 1];
     const removed = service.removeRule(WKS, addedRule.ruleId);
     expect(removed.rules.length).toBe(before.rules.length);
   });

@@ -2,6 +2,8 @@
 
 import { execSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 const ZERO_SHA = /^0+$/;
 const WHITESPACE_SPLIT_RE = /\s+/;
@@ -125,7 +127,7 @@ const FRONTEND_BUILD_ENV =
   'NEXT_PUBLIC_SENTRY_DSN=';
 
 const changedFiles = collectChangedFiles();
-const changedFilesEnvPath = `/tmp/kloel-prepush-changed-files-${process.pid}.txt`;
+const changedFilesEnvPath = join(tmpdir(), `kloel-prepush-changed-files-${process.pid}.txt`);
 writeFileSync(changedFilesEnvPath, `${changedFiles.join('\n')}\n`);
 const changedFilesEnv = `KLOEL_CHANGED_FILES_FILE=${JSON.stringify(changedFilesEnvPath)} `;
 

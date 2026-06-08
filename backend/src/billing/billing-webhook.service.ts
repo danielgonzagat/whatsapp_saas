@@ -16,7 +16,10 @@ import type {
   StripeSubscription,
 } from './stripe-types';
 import type { WhatsappNotifier } from './billing-webhook.types';
-import { markSubscriptionStatusHelper } from './billing-subscription-status.helper';
+import {
+  markSubscriptionStatusHelper,
+  resolveWorkspaceIdHelper,
+} from './billing-subscription-status.helper';
 import { cancelSubscriptionByStripeId } from './billing-webhook.cancel';
 import { fulfillCheckout } from './billing-webhook.fulfillment';
 import { syncSubscriptionStatus } from './billing-webhook.sync-subscription';
@@ -231,19 +234,7 @@ export class BillingWebhookService {
   }
 
   private async resolveWorkspaceId(subscription: StripeSubscription): Promise<string | null> {
-    const metaWs = (subscription.metadata as Record<string, string> | null)?.workspaceId;
-    if (metaWs) {
-      return metaWs;
-    }
-    const customerId = subscription.customer as string;
-    if (!customerId) {
-      return null;
-    }
-    const ws = await this.prisma.workspace.findFirst({
-      where: { stripeCustomerId: customerId },
-      select: { id: true },
-    });
-    return ws?.id || null;
+    return resolveWorkspaceIdHelper(this.prisma, subscription);
   }
 
   async markSubscriptionStatus(stripeSubscriptionId: string, status: string) {

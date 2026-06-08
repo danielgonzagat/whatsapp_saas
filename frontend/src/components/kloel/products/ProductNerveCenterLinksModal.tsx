@@ -11,6 +11,7 @@ interface ProductNerveCenterLinksModalProps {
   copied: string | null;
   onCopyLink: (url: string, feedbackId: string) => void;
   onClose: () => void;
+  productPubliclySellable?: boolean;
 }
 
 /** Product nerve center links modal. */
@@ -20,6 +21,7 @@ export function ProductNerveCenterLinksModal({
   copied,
   onCopyLink,
   onClose,
+  productPubliclySellable = true,
 }: ProductNerveCenterLinksModalProps) {
   const plan = plans.find((entry) => entry.id === planId);
   if (!plan) {
@@ -27,6 +29,9 @@ export function ProductNerveCenterLinksModal({
   }
 
   const checkoutLinks = buildCheckoutLinksForPlan(plan);
+  const publicCheckoutUnavailableMessage = productPubliclySellable
+    ? null
+    : kloelT(`Produto inativo ou não aprovado. Publique o produto para liberar este checkout.`);
 
   return (
     <Modal title={kloelT(`Links disponíveis`)} onClose={onClose}>
@@ -79,35 +84,43 @@ export function ProductNerveCenterLinksModal({
             <span
               style={{
                 fontSize: 11,
-                color: V.t2,
+                color: publicCheckoutUnavailableMessage ? V.r : V.t2,
                 display: 'block',
                 marginBottom: 10,
                 lineHeight: 1.5,
               }}
             >
-              {link.paymentMethods.length
-                ? `Métodos liberados: ${link.paymentMethods.join(' · ')}`
-                : 'Checkout sem meios de pagamento ativos.'}
+              {publicCheckoutUnavailableMessage ||
+                (link.paymentMethods.length
+                  ? `Métodos configurados: ${link.paymentMethods.join(' · ')}`
+                  : 'Checkout sem meios de pagamento configurados.')}
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <Bt
+                disabled={!!publicCheckoutUnavailableMessage}
                 onClick={() => onCopyLink(String(link.url), `link-${plan.id}-${link.id}`)}
                 style={{ padding: '5px 12px' }}
               >
-                {copied === `link-${plan.id}-${link.id}` ? 'Copiado' : 'Copiar'}
+                {publicCheckoutUnavailableMessage
+                  ? 'Indisponível'
+                  : copied === `link-${plan.id}-${link.id}`
+                    ? 'Copiado'
+                    : 'Copiar'}
               </Bt>
               <span
                 style={{
                   fontFamily: M,
                   fontSize: 11,
-                  color: V.em,
+                  color: publicCheckoutUnavailableMessage ? V.t3 : V.em,
                   flex: 1,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                 }}
               >
-                {link.url}
+                {publicCheckoutUnavailableMessage
+                  ? kloelT(`Checkout público bloqueado até publicar o produto`)
+                  : link.url}
               </span>
             </div>
           </div>

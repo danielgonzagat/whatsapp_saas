@@ -332,7 +332,7 @@ export class MemoryManagementService {
    */
   async getStats(): Promise<MemoryStats> {
     try {
-      return await computeMemoryStats(this.prisma);
+      return await computeMemoryStats(this.prisma, this.mindMemory.items);
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'MemoryManagementService.parseFloat');
       this.logger.error(formatGetStatsFailureMessage(error));

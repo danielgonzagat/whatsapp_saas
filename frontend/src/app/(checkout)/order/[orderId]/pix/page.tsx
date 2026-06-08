@@ -97,7 +97,7 @@ export default function PixPaymentPage() {
         {/* Header */}
         <div style={{ marginBottom: '24px' }}>
           <div style={{ fontSize: '40px', marginBottom: '8px' }}>
-            {kloelT(`&rgba(153, 136, 136, 0.6);`)}
+            {kloelT(``)}
           </div>
           <h1
             style={{

@@ -25,6 +25,7 @@ export interface SendMessageContext {
   conversationTitle: string;
   conversationTitleMap: Map<string, string>;
   clearAllAttachments: () => void;
+  clearComposerContext: () => void;
   loadConversation: (id: string) => Promise<void>;
   refreshConversations: () => Promise<void>;
   upsertConversation: (conv: {
@@ -40,13 +41,15 @@ export interface SendMessageContext {
   linkedProduct: KloelLinkedProduct | null;
   activeCapability: KloelChatCapability | null;
   activeStreamRef: MutableRefObject<{ abort: () => void } | null>;
+  loadedConversationIdRef: MutableRefObject<string | null>;
   streamingMessageId: string | null;
 }
 
 export function createSendMessageHandler(ctx: SendMessageContext) {
   return async (rawText: string, requestMetadata?: KloelChatRequestMetadata) => {
     const readyAttachments = ctx.attachments.filter((attachment) => attachment.status === 'ready');
-    const text = rawText.trim() || (readyAttachments.length > 0 ? 'Analise os anexos enviados.' : '');
+    const text =
+      rawText.trim() || (readyAttachments.length > 0 ? 'Analise os anexos enviados.' : '');
     if (!text || ctx.isReplyInFlight) {
       return;
     }
@@ -55,13 +58,13 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
       clientRequestId: cid,
       source: 'kloel_dashboard',
       attachments: readyAttachments.map((a) => ({
-          id: a.id,
-          name: a.name,
-          size: a.size,
-          mimeType: a.mimeType,
-          kind: a.kind,
-          url: a.url || a.previewUrl || null,
-        })),
+        id: a.id,
+        name: a.name,
+        size: a.size,
+        mimeType: a.mimeType,
+        kind: a.kind,
+        url: a.url || a.previewUrl || null,
+      })),
       linkedProduct: ctx.linkedProduct,
       capability: ctx.activeCapability,
     });
@@ -80,10 +83,13 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
     };
 
     ctx.setMessages((current) => [...current, userMessage]);
-    ctx.clearAllAttachments();
+    ctx.clearComposerContext();
     ctx.setIsThinking(true);
 
     const assistantId = `assistant_${Date.now()}`;
+    const initialAssistantMetadata = {
+      clientRequestId,
+    };
     let streamedReply = '';
     let renderBuffer = '';
     let nextConversationId = ctx.activeConversationId || null;
@@ -125,6 +131,42 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
         playbackTimerRef.current = null;
       }
     };
+    // Streamed thinking buffer: coalesce reasoning_delta tokens over a short
+    // window before flushing into the assistant reasoning state. Each flush
+    // accumulates the real model reasoning text into metadata (streamedReasoning),
+    // which the live thinking timeline renders token-by-token. The first delta
+    // stamps t0 and reasoning_done computes the real durationMs (see
+    // applyReasoningStreamEventToMetadata in kloel-message-ui).
+    let reasoningBuffer = '';
+    let reasoningFlushTimer: ReturnType<typeof setTimeout> | null = null;
+    const flushReasoning = () => {
+      reasoningFlushTimer = null;
+      if (!reasoningBuffer) {
+        return;
+      }
+      const delta = reasoningBuffer;
+      reasoningBuffer = '';
+      ctx.setMessages((current) =>
+        current.map((message) =>
+          message.id === assistantId
+            ? {
+                ...message,
+                metadata:
+                  appendAssistantTraceFromEvent(message.metadata, {
+                    type: 'reasoning_delta',
+                    text: delta,
+                  }) || null,
+              }
+            : message,
+        ),
+      );
+    };
+    const scheduleReasoningFlush = () => {
+      if (reasoningFlushTimer) {
+        return;
+      }
+      reasoningFlushTimer = setTimeout(flushReasoning, 40);
+    };
 
     const finalizeStream = () => {
       if (finalized) {
@@ -145,7 +187,15 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
           lastMessagePreview: streamedReply.trim() || 'Resposta gerada pelo Kloel',
         });
         void ctx.refreshConversations();
-        void ctx.loadConversation(nextConversationId);
+        if (!finalError) {
+          void ctx.loadConversation(nextConversationId);
+        }
+        if (ctx.requestedConversationId !== nextConversationId) {
+          ctx.router.replace(
+            `${KLOEL_CHAT_ROUTE}?conversationId=${encodeURIComponent(nextConversationId)}`,
+            { scroll: false },
+          );
+        }
       }
     };
 
@@ -200,30 +250,39 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
           id: assistantId,
           role: 'assistant',
           text: '',
-          metadata: { clientRequestId },
+          metadata: initialAssistantMetadata,
         },
       ]);
       ctx.setStreamingMessageId(assistantId);
 
-      hardWatchdogRef.current = setTimeout(() => {
-        if (finalized) {
-          return;
-        }
-        try {
-          ctx.activeStreamRef.current?.abort();
-        } catch {
-          // best-effort: aborting a wedged stream must not throw here
-        }
-        const watchdogMessage =
-          'O Kloel não respondeu a tempo. Sua mensagem foi preservada — tente enviar novamente.';
-        finalError = finalError || watchdogMessage;
-        if (!streamedReply.trim()) {
-          streamedReply = watchdogMessage;
-          syncAssistantText(streamedReply);
-        }
-        streamEnded = true;
-        finalizeStream();
-      }, HARD_STREAM_WATCHDOG_MS);
+      // IDLE watchdog: reasoning is UNLIMITED in time. As long as the stream is
+      // actively delivering events/tokens (reasoning_delta included) the timer is
+      // re-armed (see armWatchdog() calls in onEvent/onChunk), so an arbitrarily
+      // long think never trips it. It fires ONLY on true silence — no event for
+      // the idle window — to release a genuinely wedged stream.
+      const armWatchdog = () => {
+        clearHardWatchdog();
+        hardWatchdogRef.current = setTimeout(() => {
+          if (finalized) {
+            return;
+          }
+          try {
+            ctx.activeStreamRef.current?.abort();
+          } catch {
+            // best-effort: aborting a wedged stream must not throw here
+          }
+          const watchdogMessage =
+            'O Kloel não respondeu a tempo. Sua mensagem foi preservada — tente enviar novamente.';
+          finalError = finalError || watchdogMessage;
+          if (!streamedReply.trim()) {
+            streamedReply = watchdogMessage;
+            syncAssistantText(streamedReply);
+          }
+          streamEnded = true;
+          finalizeStream();
+        }, HARD_STREAM_WATCHDOG_MS);
+      };
+      armWatchdog();
 
       ctx.activeStreamRef.current = streamAuthenticatedKloelMessage(
         {
@@ -234,6 +293,7 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
         },
         {
           onEvent: (event) => {
+            armWatchdog();
             if (
               event.type === 'status' &&
               (event.phase === 'thinking' ||
@@ -241,6 +301,13 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
                 event.phase === 'tool_result')
             ) {
               ctx.setIsThinking(true);
+            }
+
+            if (event.type === 'reasoning_delta') {
+              ctx.setIsThinking(true);
+              reasoningBuffer += event.text;
+              scheduleReasoningFlush();
+              return;
             }
 
             ctx.setMessages((current) =>
@@ -255,6 +322,7 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
             );
           },
           onChunk: (chunk) => {
+            armWatchdog();
             renderBuffer += chunk;
             scheduleDrain();
           },
@@ -270,14 +338,8 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
 
             ctx.setActiveConversationId(thread.conversationId);
             ctx.setConversationTitle(nextTitle || 'Nova conversa');
+            ctx.loadedConversationIdRef.current = thread.conversationId;
             ctx.setActiveConversation(thread.conversationId);
-
-            if (ctx.requestedConversationId !== thread.conversationId) {
-              ctx.router.replace(
-                `${KLOEL_CHAT_ROUTE}?conversationId=${encodeURIComponent(thread.conversationId)}`,
-                { scroll: false },
-              );
-            }
           },
           onDone: () => {
             streamEnded = true;

@@ -18,7 +18,7 @@ import { LLM_MAX_COMPLETION_TOKENS } from './openai-wrapper'; /** Resolved conte
 export interface ResolvedThinkContext {
   companyName: string;
   userName: string;
-  marketingPromptAddendum: string;
+  marketingPromptAddendum: string | null;
   thread: {
     id: string;
     title: string;
@@ -36,7 +36,7 @@ export interface ResolvedThinkContext {
   shouldPlanWithTools: boolean;
   responseTemperature: number;
   responseMaxTokens: number;
-  clientRequestId: string;
+  clientRequestId: string | undefined;
 } /**
  * Resolve workspace, thread, conversation history, expertise level,
  * dynamic runtime context, tool-planning flag, and response parameters

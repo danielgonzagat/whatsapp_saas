@@ -98,7 +98,12 @@ export function EditorTopBar({
   return (
     <div style={TOOLBAR_CONTAINER_STYLE}>
       {/* Home */}
-      <button type="button" onClick={onBack} style={TOOLBAR_ICON_BUTTON_STYLE}>
+      <button
+        type="button"
+        aria-label={kloelT('Voltar para o inicio do Canvas')}
+        onClick={onBack}
+        style={TOOLBAR_ICON_BUTTON_STYLE}
+      >
         {IC.home(16)}
       </button>
       <span style={{ color: SEPARATOR_COLOR }}>|</span>
@@ -331,11 +336,28 @@ export function EditorTopBar({
       {/* ── Center: design name + save status ── */}
       <div style={CENTER_CONTAINER_STYLE}>
         <input
+          id="canvas-design-name"
+          name="canvas-design-name"
           aria-label={kloelT(`Nome do design`)}
           value={designName}
           onChange={(e) => onNameChange(e.target.value)}
           style={DESIGN_NAME_INPUT_STYLE}
         />
+        <button
+          type="button"
+          aria-label={kloelT('Salvar design')}
+          onClick={onSave}
+          disabled={!onSave || saving}
+          style={{
+            ...buildDropdownTriggerStyle(false, true),
+            border: `1px solid ${saving ? colors.canvas.border : `${colors.ember.primary}66`}`,
+            color: saving ? colors.text.dim : colors.ember.primary,
+            cursor: saving ? 'progress' : 'pointer',
+            opacity: onSave ? 1 : 0.5,
+          }}
+        >
+          {IC.file(12)} {saving ? kloelT(`Salvando...`) : kloelT(`Salvar`)}
+        </button>
         {saving && (
           <span style={SAVING_LABEL_STYLE}>
             <span style={SAVING_DOT_STYLE} />
@@ -346,10 +368,20 @@ export function EditorTopBar({
       </div>
 
       {/* ── Undo / Redo ── */}
-      <button type="button" onClick={onUndo} style={TOOLBAR_ICON_BUTTON_STYLE}>
+      <button
+        type="button"
+        aria-label={kloelT('Desfazer')}
+        onClick={onUndo}
+        style={TOOLBAR_ICON_BUTTON_STYLE}
+      >
         {IC.undo(14)}
       </button>
-      <button type="button" onClick={onRedo} style={TOOLBAR_ICON_BUTTON_STYLE}>
+      <button
+        type="button"
+        aria-label={kloelT('Refazer')}
+        onClick={onRedo}
+        style={TOOLBAR_ICON_BUTTON_STYLE}
+      >
         {IC.redo(14)}
       </button>
 

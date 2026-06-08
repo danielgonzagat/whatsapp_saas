@@ -56,6 +56,9 @@ export function LeadsListPanel({
                 aria-hidden="true"
               />
               <input
+                id="leads-search"
+                name="leads-search"
+                aria-label={kloelT(`Buscar por nome, telefone ou email`)}
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
                 placeholder={kloelT(`Buscar por nome, telefone ou email`)}
@@ -63,6 +66,9 @@ export function LeadsListPanel({
               />
             </div>
             <select
+              id="leads-status"
+              name="leads-status"
+              aria-label={kloelT(`Filtrar leads por status`)}
               value={status}
               onChange={(e) => onStatusChange(e.target.value)}
               className="w-full rounded-xl border border-border bg-muted px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"

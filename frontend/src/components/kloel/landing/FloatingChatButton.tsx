@@ -37,7 +37,7 @@ export function FloatingChatButton({ isOpen, onToggle }: FloatingChatButtonProps
           height={20}
           viewBox="0 0 24 24"
           fill="none"
-          stroke="colors.background.void"
+          stroke={colors.background.void}
           strokeWidth={2}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -52,7 +52,7 @@ export function FloatingChatButton({ isOpen, onToggle }: FloatingChatButtonProps
           height={22}
           viewBox="0 0 24 24"
           fill="none"
-          stroke="colors.background.void"
+          stroke={colors.background.void}
           strokeWidth={2}
           strokeLinecap="round"
           strokeLinejoin="round"

@@ -97,4 +97,28 @@ describe('RuleEngineHub', () => {
     expect(mutateMock).toHaveBeenCalledTimes(1);
     expect(screen.queryByLabelText('Condicao da nova regra (IF)')).toBeNull();
   });
+
+  it('names existing rule controls so edit, pause and remove are clear actions', () => {
+    useSWRMock.mockReturnValue({
+      data: [
+        {
+          id: 'rule-1',
+          condition: 'ROAS < 1.0',
+          action: 'Pausar campanha',
+          active: true,
+          fireCount: 3,
+        },
+      ],
+      error: undefined,
+      isLoading: false,
+      mutate: vi.fn(),
+      isValidating: false,
+    });
+
+    render(<RuleEngineHub />);
+
+    expect(screen.getByRole('button', { name: 'Editar regra ROAS < 1.0' })).not.toBeNull();
+    expect(screen.getByRole('switch', { name: 'Pausar regra ROAS < 1.0' }).getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Remover regra ROAS < 1.0' })).not.toBeNull();
+  });
 });

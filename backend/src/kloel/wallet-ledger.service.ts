@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
+import { isLedgerBalanceSnapshotEnabled } from '../common/feature-flags/ledger-balance-snapshot.flag';
 
 /**
  * WalletLedgerService — append-only ledger writer (P6-4, I12).
@@ -80,6 +81,16 @@ export class WalletLedgerService {
       );
     }
 
+    // Money-ledgers migration (Stage 4) — ADDITIVE, flag-gated balance
+    // snapshot. Callers append AFTER mutating the wallet buckets inside the
+    // SAME `$transaction`, so reading the wallet here observes the
+    // post-mutation balances. When KLOEL_LEDGER_BALANCE_SNAPSHOT is OFF we
+    // skip the read entirely and the columns stay NULL — byte-identical to
+    // the legacy append.
+    const balanceSnapshot = isLedgerBalanceSnapshotEnabled()
+      ? await this.readBalanceSnapshotWithinTx(tx, entry.walletId)
+      : undefined;
+
     await tx.kloelWalletLedger.create({
       data: {
         workspaceId: entry.workspaceId,
@@ -89,6 +100,7 @@ export class WalletLedgerService {
         bucket: entry.bucket,
         amountInCents: entry.amountInCents,
         reason: entry.reason,
+        ...(balanceSnapshot ?? {}),
         ...(entry.metadata !== undefined ? { metadata: toPrismaJsonValue(entry.metadata) } : {}),
       },
     });
@@ -102,6 +114,44 @@ export class WalletLedgerService {
       amountInCents: entry.amountInCents.toString(),
       reason: entry.reason,
     });
+  }
+
+  /**
+   * Read the wallet's three post-mutation bucket balances inside the supplied
+   * transaction and map them to the additive `balanceAfter*Cents` columns.
+   *
+   * Only called when KLOEL_LEDGER_BALANCE_SNAPSHOT is enabled. Returns the
+   * column fragment to spread into the ledger `create`, or `undefined` if the
+   * wallet row cannot be found (snapshot is best-effort and must never break
+   * the ledger append — the columns simply stay NULL in that edge case).
+   */
+  private async readBalanceSnapshotWithinTx(
+    tx: Prisma.TransactionClient,
+    walletId: string,
+  ): Promise<
+    | {
+        balanceAfterAvailableCents: bigint;
+        balanceAfterPendingCents: bigint;
+        balanceAfterBlockedCents: bigint;
+      }
+    | undefined
+  > {
+    const wallet = await tx.kloelWallet.findUnique({
+      where: { id: walletId },
+      select: {
+        availableBalanceInCents: true,
+        pendingBalanceInCents: true,
+        blockedBalanceInCents: true,
+      },
+    });
+    if (!wallet) {
+      return undefined;
+    }
+    return {
+      balanceAfterAvailableCents: wallet.availableBalanceInCents,
+      balanceAfterPendingCents: wallet.pendingBalanceInCents,
+      balanceAfterBlockedCents: wallet.blockedBalanceInCents,
+    };
   }
 }
 

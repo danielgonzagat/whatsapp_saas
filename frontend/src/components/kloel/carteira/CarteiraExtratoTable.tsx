@@ -56,6 +56,8 @@ export default function CarteiraExtratoTable({
         >
           <span style={{ color: 'var(--app-text-tertiary)' }}>{IC.search(14)}</span>
           <input
+            id="wallet-transaction-search"
+            name="walletTransactionSearch"
             aria-label="Buscar transacao"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
@@ -79,10 +81,10 @@ export default function CarteiraExtratoTable({
               onClick={() => onFilterTypeChange(f)}
               style={{
                 padding: '7px 12px',
-                background: filterType === f ? 'var(--app-bg-card)' : 'colors.ember.primary',
+                background: filterType === f ? 'var(--app-bg-card)' : colors.ember.primary,
                 border: '1px solid colors.ember.primary',
                 borderRadius: 6,
-                color: filterType === f ? 'colors.ember.primary' : 'var(--app-text-on-accent)',
+                color: filterType === f ? colors.ember.primary : 'var(--app-text-on-accent)',
                 fontSize: 10,
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -266,7 +268,7 @@ export default function CarteiraExtratoTable({
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  completed: 'colors.ember.primary',
+  completed: colors.ember.primary,
   pending: colors.semantic.warning,
   processing: colors.semantic.info,
   failed: colors.semantic.error,

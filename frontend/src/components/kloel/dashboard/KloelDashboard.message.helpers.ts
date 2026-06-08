@@ -3,6 +3,8 @@
 // styles — these are data-shape transforms only. Visual contract is
 // preserved by the consumer component.
 
+import { sanitizeAssistantVisibleContent } from '@/lib/kloel-message-ui';
+
 import { isRecord, type JsonRecord } from './KloelDashboard.helpers';
 
 /**
@@ -172,7 +174,7 @@ export function resolveVisibleAssistantText(
   fallback: string,
 ): string {
   const slot = versions[activeIndex];
-  return slot?.content || fallback;
+  return sanitizeAssistantVisibleContent(slot?.content || fallback);
 }
 
 /**
@@ -189,7 +191,11 @@ export function computeEditTextareaRows(text: string): number {
  * original component disables on busy/empty/unchanged input — this
  * helper centralises that rule.
  */
-export function canSubmitUserEdit(isBusy: boolean, draftText: string, currentText: string): boolean {
+export function canSubmitUserEdit(
+  isBusy: boolean,
+  draftText: string,
+  currentText: string,
+): boolean {
   const trimmed = draftText.trim();
   if (isBusy || !trimmed) {
     return false;
@@ -205,7 +211,7 @@ export function shouldShowAssistantActions(
   return !isThinking && hasVisibleAssistantText;
 }
 
-/** True when the "Kloel está pensando" placeholder should render. */
+/** True when the transient public thinking placeholder should render. */
 export function shouldShowThinkingPlaceholder(
   isThinking: boolean,
   hasVisibleAssistantText: boolean,

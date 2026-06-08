@@ -41,12 +41,12 @@ describe('LocalIdentityService', () => {
     const profile = service.deriveProfile('wks_test_001', events);
 
     expect(profile).toBeDefined();
-    expect(profile!.workspaceId).toBe('wks_test_001');
-    expect(profile!.derivedFromEventsCount).toBeGreaterThanOrEqual(VOLUME_THRESHOLD);
-    expect(profile!.derivedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+    expect(profile.workspaceId).toBe('wks_test_001');
+    expect(profile.derivedFromEventsCount).toBeGreaterThanOrEqual(VOLUME_THRESHOLD);
+    expect(profile.derivedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
 
     // Operational
-    const op = profile!.operational;
+    const op = profile.operational;
     expect(op.typicalHours).toBeInstanceOf(Array);
     expect(op.typicalHours.length).toBeGreaterThan(0);
     expect(op.typicalHours.length).toBeLessThanOrEqual(3);
@@ -59,35 +59,35 @@ describe('LocalIdentityService', () => {
     expect(op.typicalEntityTypes).toContain('lead');
 
     // Language
-    expect(profile!.language.tone).toBeDefined();
-    expect(typeof profile!.language.tone).toBe('string');
-    expect(profile!.language.vocabulary).toBeInstanceOf(Array);
+    expect(profile.language.tone).toBeDefined();
+    expect(typeof profile.language.tone).toBe('string');
+    expect(profile.language.vocabulary).toBeInstanceOf(Array);
 
     // Product
-    expect(profile!.product.catalog).toBeInstanceOf(Array);
-    for (const item of profile!.product.catalog) {
+    expect(profile.product.catalog).toBeInstanceOf(Array);
+    for (const item of profile.product.catalog) {
       expect(typeof item.productId).toBe('string');
       expect(typeof item.role).toBe('string');
     }
 
     // Customer
-    const cp = profile!.customer.typicalProfile as Record<string, unknown>;
+    const cp = profile.customer.typicalProfile as Record<string, unknown>;
     expect(typeof cp.leadCount).toBe('number');
     expect(typeof cp.conversionCount).toBe('number');
     expect(typeof cp.conversionRatio).toBe('number');
     expect(cp.commonStages).toBeInstanceOf(Array);
 
     // Temporal
-    expect(profile!.temporal.peakHours).toBeInstanceOf(Array);
-    for (const h of profile!.temporal.peakHours) {
+    expect(profile.temporal.peakHours).toBeInstanceOf(Array);
+    for (const h of profile.temporal.peakHours) {
       expect(h).toBeGreaterThanOrEqual(0);
       expect(h).toBeLessThanOrEqual(23);
     }
-    expect(typeof profile!.temporal.typicalCycleHours).toBe('number');
+    expect(typeof profile.temporal.typicalCycleHours).toBe('number');
 
     // Decision patterns
-    expect(profile!.decisionPatterns.typicalNextSteps).toBeInstanceOf(Array);
-    expect(profile!.decisionPatterns.typicalEscalations).toBeInstanceOf(Array);
+    expect(profile.decisionPatterns.typicalNextSteps).toBeInstanceOf(Array);
+    expect(profile.decisionPatterns.typicalEscalations).toBeInstanceOf(Array);
   });
 
   it('tone reflects valence mix — mostly positive when positive dominates', () => {
@@ -121,7 +121,7 @@ describe('LocalIdentityService', () => {
 
     const profile = service.deriveProfile('wks_test_001', events);
     expect(profile).toBeDefined();
-    expect(profile!.language.tone).toBe('positive');
+    expect(profile.language.tone).toBe('positive');
   });
 
   it('tone reflects valence mix — mostly negative when negative dominates', () => {
@@ -154,7 +154,7 @@ describe('LocalIdentityService', () => {
 
     const profile = service.deriveProfile('wks_test_001', events);
     expect(profile).toBeDefined();
-    expect(profile!.language.tone).toBe('negative');
+    expect(profile.language.tone).toBe('negative');
   });
 
   it('peakHours matches injected hour distribution', () => {
@@ -167,7 +167,7 @@ describe('LocalIdentityService', () => {
       ...[15, 16, 17],
     ];
     for (let i = 0; i < hours.length; i++) {
-      const h = hours[i]!;
+      const h = hours[i];
       const t = new Date(
         `2026-05-10T${String(h).padStart(2, '0')}:${String(i % 60).padStart(2, '0')}:00.000Z`,
       );
@@ -194,7 +194,7 @@ describe('LocalIdentityService', () => {
     const profile = service.deriveProfile('wks_test_001', events);
     expect(profile).toBeDefined();
     // Hour 8 should be in peak hours because it's the most frequent
-    expect(profile!.temporal.peakHours).toContain(8);
+    expect(profile.temporal.peakHours).toContain(8);
   });
 
   it('computes typicalCycleHours from lead.contacted to payment.approved', () => {
@@ -260,8 +260,8 @@ describe('LocalIdentityService', () => {
     const profile = service.deriveProfile('wks_test_001', events);
     expect(profile).toBeDefined();
     // Median of 48h and 72h = 60h
-    expect(profile!.temporal.typicalCycleHours).toBeGreaterThan(0);
-    expect(profile!.temporal.typicalCycleHours).toBe(60);
+    expect(profile.temporal.typicalCycleHours).toBeGreaterThan(0);
+    expect(profile.temporal.typicalCycleHours).toBe(60);
   });
 
   it('is pure: same input produces the same output', () => {
@@ -277,8 +277,8 @@ describe('LocalIdentityService', () => {
     expect(p2).toBeDefined();
     // derivedAt uses new Date() and will differ between calls; compare
     // without it to verify functional purity.
-    const { derivedAt: _d1, ...rest1 } = p1!;
-    const { derivedAt: _d2, ...rest2 } = p2!;
+    const { derivedAt: _d1, ...rest1 } = p1;
+    const { derivedAt: _d2, ...rest2 } = p2;
     expect(rest1).toEqual(rest2);
   });
 
@@ -292,8 +292,8 @@ describe('LocalIdentityService', () => {
 
     const profile = service.deriveProfile('wks_other', allEvents);
     expect(profile).toBeDefined();
-    expect(profile!.workspaceId).toBe('wks_other');
-    expect(profile!.derivedFromEventsCount).toBe(VOLUME_THRESHOLD);
+    expect(profile.workspaceId).toBe('wks_other');
+    expect(profile.derivedFromEventsCount).toBe(VOLUME_THRESHOLD);
   });
 
   it('extracts vocabulary from message payloads', () => {
@@ -326,9 +326,9 @@ describe('LocalIdentityService', () => {
 
     const profile = service.deriveProfile('wks_test_001', events);
     expect(profile).toBeDefined();
-    expect(profile!.language.vocabulary.length).toBeGreaterThan(0);
+    expect(profile.language.vocabulary.length).toBeGreaterThan(0);
     // Check that stop words are excluded
-    const vocab = profile!.language.vocabulary.join(' ');
+    const vocab = profile.language.vocabulary.join(' ');
     expect(vocab).not.toContain('seu');
     expect(vocab).not.toContain('está');
   });

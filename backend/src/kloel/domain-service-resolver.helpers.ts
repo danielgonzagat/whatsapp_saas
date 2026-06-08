@@ -251,6 +251,13 @@ export async function executeCompound(
   }
 
   const [first, second] = parts;
+  if (first === undefined || second === undefined) {
+    return {
+      success: false,
+      error: 'invalid_compound_capability',
+      detail: `Referência composta malformada: "${domainService}" (esperado "A.m + B.n")`,
+    };
+  }
   const firstDot = first.indexOf('.');
   const secondDot = second.indexOf('.');
   const firstService = first.slice(0, firstDot);

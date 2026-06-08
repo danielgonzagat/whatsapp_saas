@@ -81,7 +81,7 @@ describe('MetaSdkService', () => {
       const result = await service.graphApiGet('me', {}, 'bad-token');
       expect(result).toEqual(errorBody);
       expect(result.error).toBeDefined();
-      expect(result.error!.message).toBe('Invalid token');
+      expect(result.error.message).toBe('Invalid token');
     });
     it('throws and alerts on network failure', async () => {
       const networkError = new Error('ECONNREFUSED');
@@ -138,7 +138,7 @@ describe('MetaSdkService', () => {
       globalThis.fetch = mockFetch;
       const result = await service.graphApiPost('me/feed', { message: 'x' }, 'token');
       expect(result.error).toBeDefined();
-      expect(result.error!.message).toBe('Permission denied');
+      expect(result.error.message).toBe('Permission denied');
     });
     it('throws and alerts on network failure', async () => {
       const networkError = new Error('ENOTFOUND');
@@ -178,7 +178,7 @@ describe('MetaSdkService', () => {
       globalThis.fetch = mockFetch;
       const result = await service.graphApiDelete('nonexistent', 'token');
       expect(result.error).toBeDefined();
-      expect(result.error!.code).toBe(100);
+      expect(result.error.code).toBe(100);
     });
     it('throws and alerts on network failure', async () => {
       const networkError = new Error('ETIMEDOUT');

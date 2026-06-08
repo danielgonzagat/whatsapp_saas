@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { check, type PartBCtx } from "./smoke-state.js";
+import { check, jsonBody, type PartBCtx } from "./smoke-state.js";
 
 
 export async function partBReplaceRegion(ctx: PartBCtx): Promise<void> {
@@ -21,7 +21,7 @@ export async function partBReplaceRegion(ctx: PartBCtx): Promise<void> {
           proofOfIncorrectness: 'smoke anchor-region fixture middle text is stale negative data and may be replaced',
         },
       })) as { content: { text: string }[]; isError?: boolean };
-      const rtaBody = JSON.parse(rtaRes.content.at(-1)?.text ?? '{}');
+      const rtaBody = jsonBody(rtaRes);
       check(
         'replace_text_in_anchor_region replaces text inside region',
         rtaRes.isError !== true && rtaBody.ok === true && rtaBody.changed === true,
@@ -48,7 +48,7 @@ export async function partBReplaceRegion(ctx: PartBCtx): Promise<void> {
           preview: true,
         },
       })) as { content: { text: string }[]; isError?: boolean };
-      const rtaPreviewBody = JSON.parse(rtaPreview.content.at(-1)?.text ?? '{}');
+      const rtaPreviewBody = jsonBody(rtaPreview);
       check(
         'replace_text_in_anchor_region preview does not write',
         rtaPreview.isError !== true &&
@@ -161,7 +161,7 @@ export async function partBReplaceRegion(ctx: PartBCtx): Promise<void> {
             proofOfIncorrectness: 'smoke anchor-region inner text is stale negative data and may be replaced',
           },
         })) as { content: { text: string }[]; isError?: boolean };
-        const rtaOutsideBody = JSON.parse(rtaOutside.content.at(-1)?.text ?? '{}');
+        const rtaOutsideBody = jsonBody(rtaOutside);
         check(
           'replace_text_in_anchor_region preserves outside identical oldText',
           rtaOutside.isError !== true &&
@@ -219,7 +219,7 @@ export async function partBReplaceRegion(ctx: PartBCtx): Promise<void> {
             proofOfIncorrectness: 'smoke anchor-region occurrence text is stale negative data and may be replaced',
           },
         })) as { content: { text: string }[]; isError?: boolean };
-        const rtaRegionOcBody = JSON.parse(rtaRegionOc.content.at(-1)?.text ?? '{}');
+        const rtaRegionOcBody = jsonBody(rtaRegionOc);
         check(
           'replace_text_in_anchor_region regionOccurrence targets correct region',
           rtaRegionOc.isError !== true &&
@@ -296,7 +296,7 @@ export async function partBReplaceRegion(ctx: PartBCtx): Promise<void> {
             proofOfIncorrectness: 'smoke anchor-region selected duplicate text is stale negative data and may be replaced',
           },
         })) as { content: { text: string }[]; isError?: boolean };
-        const rtaTextOcBody = JSON.parse(rtaTextOc.content.at(-1)?.text ?? '{}');
+        const rtaTextOcBody = jsonBody(rtaTextOc);
         check(
           'replace_text_in_anchor_region textOccurrence selects correct match',
           rtaTextOc.isError !== true && rtaTextOcBody.ok === true && rtaTextOcBody.changed === true,

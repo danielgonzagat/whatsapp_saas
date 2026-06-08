@@ -1,4 +1,8 @@
-import { describe, expect, it, vi } from 'vitest';
+import React from 'react';
+import { cleanup, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { CreateModal } from './CreateModal';
+import { EditorTopBar } from './EditorTopBar';
 import {
   APPLY_BUTTON_STYLE,
   applyCustomDimensions,
@@ -27,6 +31,97 @@ import {
   TOOLBAR_CONTAINER_STYLE,
   TOOLBAR_ICON_BUTTON_STYLE,
 } from './EditorTopBar.helpers';
+
+const pushMock = vi.hoisted(() => vi.fn());
+const canvasDesignsMock = vi.hoisted(() => ({
+  useCanvasDesigns: vi.fn(() => ({ designs: [], loading: false, deleteDesign: vi.fn() })),
+}));
+const productTemplatesMock = vi.hoisted(() => ({
+  useProductTemplates: vi.fn(() => ({ templates: [], isLoading: false, error: null })),
+}));
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: pushMock }),
+}));
+
+vi.mock('@/hooks/useCanvasDesigns', () => canvasDesignsMock);
+vi.mock('@/hooks/useProductTemplates', () => productTemplatesMock);
+
+afterEach(() => {
+  cleanup();
+  pushMock.mockReset();
+});
+
+describe('Canvas editor accessibility', () => {
+  it('names the icon-only top bar actions', () => {
+    render(
+      React.createElement(EditorTopBar, {
+        designName: 'Post Instagram (4:5)',
+        onNameChange: vi.fn(),
+        saving: false,
+        onBack: vi.fn(),
+        onUndo: vi.fn(),
+        onRedo: vi.fn(),
+        onExport: vi.fn(),
+      }),
+    );
+
+    expect(screen.getByRole('button', { name: 'Voltar para o inicio do Canvas' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Desfazer' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Refazer' })).toBeTruthy();
+    expect(screen.getByRole('textbox', { name: 'Nome do design' }).getAttribute('name')).toBe(
+      'canvas-design-name',
+    );
+  });
+
+  it('exposes a direct save action in the top bar', () => {
+    const onSave = vi.fn();
+
+    render(
+      React.createElement(EditorTopBar, {
+        designName: 'Post Instagram (4:5)',
+        onNameChange: vi.fn(),
+        saving: false,
+        onBack: vi.fn(),
+        onUndo: vi.fn(),
+        onRedo: vi.fn(),
+        onExport: vi.fn(),
+        onSave,
+      }),
+    );
+
+    const saveButton = screen.getByRole('button', { name: 'Salvar design' });
+    expect(saveButton).toBeTruthy();
+    saveButton.click();
+    expect(onSave).toHaveBeenCalledTimes(1);
+  });
+
+  it('names the create modal dialog and close icon', () => {
+    render(React.createElement(CreateModal, { open: true, onClose: vi.fn() }));
+
+    expect(screen.getByRole('dialog', { name: 'Criar um design' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Fechar painel de criacao de design' })).toBeTruthy();
+    expect(
+      screen.getByRole('textbox', { name: 'O que voce gostaria de criar' }).getAttribute('name'),
+    ).toBe('canvas-create-search');
+  });
+
+  it('names the Canvas project library search field', async () => {
+    const { default: CanvasProjetos } = await import('@/app/(main)/canvas/projetos/page');
+
+    render(React.createElement(CanvasProjetos));
+
+    expect(screen.getByRole('textbox', { name: 'Buscar projetos do Canvas' })).toBeTruthy();
+  });
+
+  it('names the Canvas AI model prompt field', async () => {
+    const { default: CanvasModelos } = await import('@/app/(main)/canvas/modelos/page');
+
+    render(React.createElement(CanvasModelos));
+
+    expect(screen.getByRole('textbox', { name: 'Descrever modelo para gerar com IA' })).toBeTruthy();
+  });
+});
 
 describe('parseCustomDimensions', () => {
   it('parses positive integers from string inputs', () => {

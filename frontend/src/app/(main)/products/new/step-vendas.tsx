@@ -42,12 +42,13 @@ export function StepVendas({ form, updateForm }: StepCommonProps) {
             {kloelT('R$')}
           </span>
           <input
+            id="product-price"
+            name="productPrice"
             aria-label="Preco em reais"
             {...inputProps}
             style={{ ...monitorInput, paddingLeft: 44 }}
-            type="number"
-            step="0.01"
-            min="0"
+            type="text"
+            inputMode="decimal"
             value={form.price}
             onChange={(e) => updateForm({ price: e.target.value })}
             placeholder="0,00"
@@ -63,6 +64,7 @@ export function StepVendas({ form, updateForm }: StepCommonProps) {
               <button
                 type="button"
                 key={opt.value}
+                aria-pressed={selected}
                 onClick={() => updateForm({ paymentType: opt.value })}
                 style={{
                   background: selected ? 'rgba(232, 93, 48, 0.08)' : colors.background.nebula,
@@ -107,9 +109,11 @@ export function StepVendas({ form, updateForm }: StepCommonProps) {
       >
         <input
           {...inputProps}
-          type="number"
-          min="0"
-          max="100"
+          id="product-affiliate-commission"
+          name="productAffiliateCommission"
+          aria-label={kloelT('Comissao de afiliado')}
+          type="text"
+          inputMode="decimal"
           value={form.affiliateCommission}
           onChange={(e) => updateForm({ affiliateCommission: e.target.value })}
           placeholder="0"
@@ -119,6 +123,9 @@ export function StepVendas({ form, updateForm }: StepCommonProps) {
       <MonitorInputField label={kloelT('URL da pagina de vendas')}>
         <input
           {...inputProps}
+          id="product-sales-page-url"
+          name="productSalesPageUrl"
+          aria-label={kloelT('URL da pagina de vendas')}
           value={form.salesPageUrl}
           onChange={(e) => updateForm({ salesPageUrl: e.target.value })}
           placeholder="https://..."
@@ -127,6 +134,9 @@ export function StepVendas({ form, updateForm }: StepCommonProps) {
 
       <MonitorInputField label={kloelT('Periodo de garantia')}>
         <select
+          id="product-guarantee-days"
+          name="productGuaranteeDays"
+          aria-label={kloelT('Periodo de garantia')}
           style={selectStyle}
           onFocus={inputProps.onFocus}
           onBlur={inputProps.onBlur}
@@ -149,6 +159,7 @@ export function StepVendas({ form, updateForm }: StepCommonProps) {
               <button
                 type="button"
                 key={opt.value}
+                aria-pressed={selected}
                 onClick={() => updateForm({ checkoutType: opt.value })}
                 style={{
                   background: selected ? 'rgba(232, 93, 48, 0.08)' : colors.background.nebula,
@@ -210,6 +221,9 @@ export function StepVendas({ form, updateForm }: StepCommonProps) {
         <MonitorInputField label={kloelT('Facebook Pixel ID')}>
           <input
             {...inputProps}
+            id="product-facebook-pixel-id"
+            name="productFacebookPixelId"
+            aria-label={kloelT('Facebook Pixel ID')}
             value={form.facebookPixelId}
             onChange={(e) => updateForm({ facebookPixelId: e.target.value })}
             placeholder="123456789012345"
@@ -219,6 +233,9 @@ export function StepVendas({ form, updateForm }: StepCommonProps) {
         <MonitorInputField label={kloelT('Google Tag Manager ID')}>
           <input
             {...inputProps}
+            id="product-google-tag-manager-id"
+            name="productGoogleTagManagerId"
+            aria-label={kloelT('Google Tag Manager ID')}
             value={form.googleTagManagerId}
             onChange={(e) => updateForm({ googleTagManagerId: e.target.value })}
             placeholder={kloelT('GTM-XXXXXXX')}

@@ -3,7 +3,7 @@ import {
   quoteOpenAiChatActualCostCents,
 } from '../../../wallet/provider-llm-billing';
 import { UnknownProviderPricingModelError } from '../../../wallet/provider-pricing';
-import { WalletService } from '../../../wallet/wallet.service';
+import { PrepaidWalletService } from '../../../wallet/wallet.service';
 import {
   InsufficientWalletBalanceError,
   UsagePriceNotFoundError,
@@ -71,7 +71,7 @@ export function estimateOpenAiQuote(model: string, messages: unknown): bigint | 
 }
 
 interface ChargeAiUsageArgs {
-  walletService: WalletService;
+  walletService: PrepaidWalletService;
   workspaceId: string | undefined | null;
   requestId: string;
   assistantAction: AssistantAction;
@@ -122,12 +122,28 @@ function handleChargeError(error: unknown): boolean {
 }
 
 interface SettleAiUsageArgs {
-  walletService: WalletService;
+  walletService: PrepaidWalletService;
   workspaceId: string | undefined | null;
   requestId: string;
   assistantAction: AssistantAction;
   model: string;
   usage: unknown;
+}
+
+/** Structural shape of an OpenAI chat-completion usage object, as billed. */
+type OpenAiChatUsageShape = {
+  prompt_tokens?: number | null;
+  completion_tokens?: number | null;
+  prompt_tokens_details?: {
+    cached_tokens?: number | null;
+  } | null;
+};
+
+/** Narrow an unknown provider-usage value to the billable usage shape, or undefined. */
+function readOpenAiChatUsage(value: unknown): OpenAiChatUsageShape | undefined {
+  return typeof value === 'object' && value !== null
+    ? (value as OpenAiChatUsageShape)
+    : undefined;
 }
 
 /** Reconcile a prior wallet hold against the provider's reported actual usage. */
@@ -143,11 +159,7 @@ export async function settleAiUsageIfNeeded(args: SettleAiUsageArgs): Promise<vo
       requestId,
       actualCostCents: quoteOpenAiChatActualCostCents({
         model,
-        usage: usage as {
-          completion_tokens?: number | null;
-          prompt_tokens?: number | null;
-          prompt_tokens_details?: { cached_tokens?: number | null } | null;
-        },
+        usage: readOpenAiChatUsage(usage),
       }),
       reason: 'ai_assistant_provider_usage',
       metadata: {
@@ -164,7 +176,7 @@ export async function settleAiUsageIfNeeded(args: SettleAiUsageArgs): Promise<vo
 }
 
 interface RefundAiUsageArgs {
-  walletService: WalletService;
+  walletService: PrepaidWalletService;
   workspaceId: string | undefined | null;
   requestId: string;
   assistantAction: AssistantAction;

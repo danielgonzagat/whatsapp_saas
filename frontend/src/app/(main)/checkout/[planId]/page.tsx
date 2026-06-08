@@ -48,13 +48,15 @@ export default function CheckoutEditorPage() {
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const embedCopiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const currentHost = typeof window !== 'undefined' ? window.location.host : undefined;
+  const mounted = useClientMounted();
+  const currentHost = mounted ? window.location.host : undefined;
   const normalizedReferenceCode = normalizeCheckoutCode(config.referenceCode);
   const checkoutPublicUrl = isValidCheckoutCode(normalizedReferenceCode)
     ? buildPayUrl(`/${normalizedReferenceCode}`, currentHost)
     : buildPayUrl(`/${config.slug || planId}`, currentHost);
-  const mounted = useClientMounted();
-  const previewUrl = mounted ? `${window.location.origin}/checkout/preview/${planId}?preview=true` : '';
+  const previewUrl = mounted
+    ? `${window.location.origin}/checkout/preview/${planId}?preview=true`
+    : '';
   const appearanceRef = useRef<HTMLDivElement>(null);
   const couponRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<HTMLDivElement>(null);

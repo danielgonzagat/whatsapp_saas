@@ -25,6 +25,8 @@ export default function CarteiraSaldoCard({
   onNavigateExtrato: () => void;
 }) {
   const { isMobile } = useResponsiveViewport();
+  const canWithdraw = bal.available > 0;
+  const canAnticipate = bal.pending > 0;
 
   return (
     <>
@@ -53,7 +55,7 @@ export default function CarteiraSaldoCard({
               left: 0,
               right: 0,
               height: 2,
-              background: 'colors.ember.primary',
+              background: colors.ember.primary,
             }}
           />
           <span
@@ -74,7 +76,7 @@ export default function CarteiraSaldoCard({
               fontFamily: "'JetBrains Mono',monospace",
               fontSize: 32,
               fontWeight: 700,
-              color: 'colors.ember.primary',
+              color: colors.ember.primary,
               display: 'block',
               marginBottom: 4,
             }}
@@ -82,22 +84,25 @@ export default function CarteiraSaldoCard({
             {kloelT(`R$`)} {Fmt(bal.available)}
           </span>
           <span style={{ fontSize: 11, color: 'var(--app-text-tertiary)' }}>
-            {kloelT(`Pronto para saque`)}
+            {kloelT(canWithdraw ? `Pronto para saque` : `Sem saldo disponivel`)}
           </span>
           <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
             <button
               type="button"
-              onClick={onOpenWithdraw}
+              onClick={canWithdraw ? onOpenWithdraw : undefined}
+              disabled={!canWithdraw}
+              aria-disabled={!canWithdraw}
+              title={canWithdraw ? undefined : kloelT(`Sem saldo disponivel para saque`)}
               style={{
                 flex: 1,
                 padding: '10px 16px',
-                background: 'colors.ember.primary',
-                color: 'var(--app-text-on-accent)',
+                background: canWithdraw ? colors.ember.primary : 'var(--app-bg-secondary)',
+                color: canWithdraw ? 'var(--app-text-on-accent)' : 'var(--app-text-secondary)',
                 border: 'none',
                 borderRadius: 6,
                 fontSize: 12,
                 fontWeight: 700,
-                cursor: 'pointer',
+                cursor: canWithdraw ? 'pointer' : 'default',
                 fontFamily: "'Sora',sans-serif",
                 display: 'flex',
                 alignItems: 'center',
@@ -109,16 +114,20 @@ export default function CarteiraSaldoCard({
             </button>
             <button
               type="button"
-              onClick={onOpenAntecipate}
+              onClick={canAnticipate ? onOpenAntecipate : undefined}
+              disabled={!canAnticipate}
+              aria-disabled={!canAnticipate}
+              title={canAnticipate ? undefined : kloelT(`Sem saldo a receber para antecipar`)}
               style={{
                 flex: 1,
                 padding: '10px 16px',
                 background: 'none',
                 border: '1px solid var(--app-border-primary)',
                 borderRadius: 6,
-                color: 'var(--app-text-secondary)',
+                color: canAnticipate ? 'var(--app-text-secondary)' : 'var(--app-text-tertiary)',
                 fontSize: 12,
-                cursor: 'pointer',
+                cursor: canAnticipate ? 'pointer' : 'default',
+                opacity: canAnticipate ? 1 : 0.56,
                 fontFamily: "'Sora',sans-serif",
                 display: 'flex',
                 alignItems: 'center',

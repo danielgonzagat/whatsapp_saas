@@ -494,7 +494,7 @@ export async function searchKloelThreads(
   }
 
   const res = await apiFetch<unknown>(
-    `/kloel/conversations/search?q=${encodeURIComponent(normalizedQuery)}&limit=${clampThreadSearchLimit(limit)}`,
+    `/kloel/threads/search?q=${encodeURIComponent(normalizedQuery)}&limit=${clampThreadSearchLimit(limit)}`,
   );
   const payload = extractWrappedPayload<unknown>(res);
   return readThreadSearchPayload(payload);

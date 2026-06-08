@@ -32,6 +32,7 @@ export function CoprodSubTab({
     setShowForm,
     form,
     setForm,
+    formError,
     creating,
     deleteTarget,
     setDeleteTarget,
@@ -39,6 +40,9 @@ export function CoprodSubTab({
     handleCreate,
     handleDelete,
   } = useCoprodState(productId);
+  const partnerError = formError.includes('nome ou e-mail') ? formError : '';
+  const emailError = formError.includes('e-mail válido') ? formError : '';
+  const percentageError = formError && !partnerError && !emailError ? formError : '';
 
   return (
     <>
@@ -147,8 +151,14 @@ export function CoprodSubTab({
                 onChange={(value) => setForm({ ...form, agentEmail: value })}
                 placeholder={kloelT(`email@exemplo.com`)}
                 type="email"
+                error={emailError}
               />
             </div>
+            {partnerError ? (
+              <div role="alert" style={{ margin: '-4px 0 12px', color: V.r, fontSize: 11 }}>
+                {partnerError}
+              </div>
+            ) : null}
             <div
               style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}
             >
@@ -159,6 +169,10 @@ export function CoprodSubTab({
                 onChange={(value) => setForm({ ...form, percentage: value })}
                 placeholder="10.0"
                 type="number"
+                min={0}
+                max={100}
+                step="0.1"
+                error={percentageError}
               />
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
                 <Bt primary onClick={handleCreate} style={{ flex: 1 }}>

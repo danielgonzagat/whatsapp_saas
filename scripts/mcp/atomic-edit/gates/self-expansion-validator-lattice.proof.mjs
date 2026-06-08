@@ -9,6 +9,7 @@ const source = fs.readFileSync(path.join(sourceDir, 'server-tools-self.ts'), 'ut
 
 const requiredCommands = [
   'node build.mjs',
+  'node gates/dist-live-integrity.proof.mjs --json',
   'node gates/dist-freshness.proof.mjs --json',
   'node gates/type-soundness-gate.proof.mjs --json',
   'node gates/structural-lint-gate.proof.mjs --json',
@@ -38,6 +39,7 @@ const requiredCommands = [
 
 const requiredPhases = [
   'build',
+  'runtime-integrity',
   'runtime-freshness',
   'type',
   'semantic',

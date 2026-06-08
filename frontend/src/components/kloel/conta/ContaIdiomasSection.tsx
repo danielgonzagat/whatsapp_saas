@@ -24,6 +24,8 @@ function LanguageOption({
   return (
     <button
       type="button"
+      aria-label={`${lang.code} ${lang.label}${isActive ? ' selecionado' : ''}`}
+      aria-pressed={isActive}
       onClick={() => onActivate()}
       style={{
         display: 'flex',
@@ -34,7 +36,7 @@ function LanguageOption({
           ? 'var(--app-accent-light)'
           : 'var(--app-bg-card)',
         border: isActive ? `1px solid ${EMBER}` : '1px solid var(--app-border-primary)',
-        borderRadius: 8,
+        borderRadius: 6,
         cursor: 'pointer',
         transition: 'all 150ms ease',
         textAlign: 'left' as const,
@@ -118,8 +120,8 @@ export default function IdiomasSection() {
       <div
         style={{
           marginTop: 16,
-          background: 'rgba(59,130,246,.04)',
-          border: '1px solid rgba(59,130,246,.15)',
+          background: 'rgba(232,93,48,.08)',
+          border: '1px solid rgba(232,93,48,.22)',
           borderRadius: 6,
           padding: '12px 16px',
           display: 'flex',
@@ -127,7 +129,7 @@ export default function IdiomasSection() {
           gap: 10,
         }}
       >
-        <span style={{ color: colors.semantic.info, marginTop: 2, flexShrink: 0 }}>{Icons.clock(16)}</span>
+        <span style={{ color: EMBER, marginTop: 2, flexShrink: 0 }}>{Icons.clock(16)}</span>
         <span style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
           {kloelT(`A traducao completa da plataforma esta em andamento. Algumas secoes podem permanecer em
           portugues temporariamente.`)}

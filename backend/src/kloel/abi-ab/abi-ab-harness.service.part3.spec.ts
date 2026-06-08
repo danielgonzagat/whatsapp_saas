@@ -162,7 +162,7 @@ describe('AbiAbHarnessService', () => {
       const deltas = service.computeRDelta('ws_slow');
       const r35Delta = deltas.find((d) => d.criterion.name === 'R35');
       expect(r35Delta).toBeDefined();
-      expect(r35Delta!.variantScore).toBeLessThan(r35Delta!.baselineScore);
+      expect(r35Delta.variantScore).toBeLessThan(r35Delta.baselineScore);
     });
 
     it('scenario 25: high token usage is captured in records', async () => {

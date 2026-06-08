@@ -201,7 +201,7 @@ describe('kloel_chat_surprise_detection — replyEngine extended (PI-k9)', () =>
     const skipped = warnCalls.filter(([msg]) => msg === 'kloel_surprise_skipped');
     expect(skipped.length).toBeGreaterThan(0);
     if (reason) {
-      expect(skipped[0]![1].reason).toContain(reason);
+      expect(skipped[0][1].reason).toContain(reason);
     }
   }
 
@@ -294,7 +294,7 @@ describe('kloel_chat_surprise_detection — replyEngine extended (PI-k9)', () =>
       // Check surprise log directly — observed is 0 (degraded)
       const detected = logCalls.find(([, meta]) => meta.event === 'kloel_chat_surprise_detected');
       expect(detected).toBeDefined();
-      const meta = detected![1];
+      const meta = detected[1];
       expect(meta.surpriseValue).toBeGreaterThan(0.3);
       expect(meta.predicted).toBeCloseTo(0.5);
       expect(meta.observed).toBe(0);

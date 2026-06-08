@@ -93,6 +93,36 @@ describe('useCiaAdvanced', () => {
     expect(result.current.approvals).toEqual([]);
   });
 
+  it('lists work items only after runtime materialization resolves', async () => {
+    const callOrder: string[] = [];
+    let resolveRuntime: ((value: { data: unknown }) => void) | undefined;
+    mockCiaApi.getAccountRuntime.mockImplementation(() => {
+      callOrder.push('runtime');
+      return new Promise<{ data: unknown }>((resolve) => {
+        resolveRuntime = resolve;
+      });
+    });
+    mockCiaApi.getAccountWorkItems.mockImplementation(() => {
+      callOrder.push('workItems');
+      return Promise.resolve({ data: [] });
+    });
+
+    renderHook(() => useCiaAdvanced('ws-1'));
+
+    // Runtime is in flight; work items must NOT have been requested yet.
+    await waitFor(() => {
+      expect(callOrder).toContain('runtime');
+    });
+    expect(mockCiaApi.getAccountWorkItems).not.toHaveBeenCalled();
+
+    // Once runtime (and its server-side materialization) resolves, work items load.
+    resolveRuntime?.({ data: { mode: 'LIVE' } });
+    await waitFor(() => {
+      expect(mockCiaApi.getAccountWorkItems).toHaveBeenCalled();
+    });
+    expect(callOrder).toEqual(['runtime', 'workItems']);
+  });
+
   it('does not load when workspaceId is empty', async () => {
     const { result } = renderHook(() => useCiaAdvanced(''));
 

@@ -95,16 +95,27 @@ export function DialogFrame({
   );
 }
 
-function RichTextToolbar({ onInsertLink }: { onInsertLink: () => void }) {
+function RichTextToolbar({
+  onFormatInline,
+  onInsertLink,
+}: {
+  onFormatInline: (tag: 'b' | 'i' | 'u') => void;
+  onInsertLink: () => void;
+}) {
+  const formatByToken = {
+    B: 'b',
+    I: 'i',
+    U: 'u',
+  } as const;
+
   return (
     <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
-      {['B', 'I', 'U'].map((token) => (
+      {(Object.keys(formatByToken) as Array<keyof typeof formatByToken>).map((token) => (
         <button
           type="button"
           key={token}
-          onClick={() =>
-            document.execCommand(token === 'B' ? 'bold' : token === 'I' ? 'italic' : 'underline')
-          }
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => onFormatInline(formatByToken[token])}
           style={{
             width: 28,
             height: 28,
@@ -124,6 +135,7 @@ function RichTextToolbar({ onInsertLink }: { onInsertLink: () => void }) {
       ))}
       <button
         type="button"
+        onMouseDown={(event) => event.preventDefault()}
         onClick={onInsertLink}
         style={{
           width: 28,
@@ -154,13 +166,16 @@ function RichTextToolbar({ onInsertLink }: { onInsertLink: () => void }) {
   );
 }
 
+
 function RichTextEditor({
   editorRef,
   html,
+  label = kloelT(`Editor de conteúdo`),
   onChange,
 }: {
   editorRef: React.RefObject<HTMLDivElement | null>;
   html: string;
+  label?: string;
   onChange: (nextHtml: string) => void;
 }) {
   useEffect(() => {
@@ -171,6 +186,10 @@ function RichTextEditor({
     <div
       ref={editorRef}
       contentEditable
+      role="textbox"
+      aria-label={label}
+      aria-multiline="true"
+      tabIndex={0}
       onInput={(event) => onChange(readEditableHtml(event.currentTarget, html))}
       style={{ minHeight: 140, color: V.t2, fontSize: 13, outline: 'none', fontFamily: S }}
       suppressContentEditableWarning
@@ -213,6 +232,7 @@ export function RichTextContentSubTab({
     linkInputId,
     editorRef,
     handleSave,
+    handleFormatInline,
     handleOpenLinkDialog,
     handleInsertLink,
   } = useRichTextContent(
@@ -233,8 +253,16 @@ export function RichTextContentSubTab({
           <p style={{ fontSize: 12, color: V.t2, marginBottom: 16 }}>{description}</p>
         ) : null}
         <div style={{ background: V.e, border: `1px solid ${V.b}`, borderRadius: 6, padding: 12 }}>
-          <RichTextToolbar onInsertLink={handleOpenLinkDialog} />
-          <RichTextEditor editorRef={editorRef} html={content} onChange={setContent} />
+          <RichTextToolbar
+            onFormatInline={handleFormatInline}
+            onInsertLink={handleOpenLinkDialog}
+          />
+          <RichTextEditor
+            editorRef={editorRef}
+            html={content}
+            label={kloelT(`Editor de ${title}`)}
+            onChange={setContent}
+          />
         </div>
         <Bt primary onClick={handleSave} style={{ marginTop: 16 }}>
           <svg

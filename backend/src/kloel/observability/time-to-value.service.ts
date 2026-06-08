@@ -119,13 +119,14 @@ export class TimeToValueService {
   getDistribution(): TimeToValueDistribution {
     const entries: WorkspaceTimeToValue[] = [];
     for (const [workspaceId, state] of this.store.entries()) {
-      if (this.getTimeToValueMs(workspaceId) !== null) {
+      const durationMs = this.getTimeToValueMs(workspaceId);
+      if (durationMs !== null && state.valueConfirmedAt !== null) {
         entries.push({
           workspaceId,
           leadCreatedAt: state.leadCreatedAt.toISOString(),
-          valueConfirmedAt: state.valueConfirmedAt!.toISOString(),
-          valueEventName: state.valueEventName!,
-          durationMs: this.getTimeToValueMs(workspaceId)!,
+          valueConfirmedAt: state.valueConfirmedAt.toISOString(),
+          valueEventName: state.valueEventName ?? '',
+          durationMs,
         });
       }
     }

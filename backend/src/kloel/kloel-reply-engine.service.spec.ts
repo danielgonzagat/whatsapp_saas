@@ -7,6 +7,7 @@ import { KloelWorkspaceContextService } from './kloel-workspace-context.service'
 import { UnifiedAgentService } from './unified-agent.service';
 import { MarketingSkillService } from './marketing-skills/marketing-skill.service';
 import { partialMatch } from '../../test/helpers/match-instance';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 
 jest.mock('openai', () => ({
   default: jest.fn().mockImplementation(() => ({
@@ -183,6 +184,19 @@ describe('KloelReplyEngineService', () => {
       ).toBe(true);
     });
 
+    it('routes reflective agent-trace and internal-tool questions through model planning', () => {
+      expect(
+        service.shouldAttemptToolPlanningPass(
+          'voce consegue observar seu codigo fonte e suas ferramentas internas?',
+        ),
+      ).toBe(true);
+      expect(
+        service.shouldAttemptToolPlanningPass(
+          'explique seu agent execution trace com raciocinio, acoes e observacoes',
+        ),
+      ).toBe(true);
+    });
+
     it('returns false for ideas-only messages', () => {
       expect(service.shouldAttemptToolPlanningPass('Me dê ideias de produtos')).toBe(false);
     });
@@ -339,6 +353,98 @@ describe('KloelReplyEngineService', () => {
     it('hasOpenAiKey returns boolean', () => {
       const result = service.hasOpenAiKey();
       expect(typeof result).toBe('boolean');
+    });
+  });
+
+  describe('canonical Mind memory surface (Brain → Mind unification)', () => {
+    // The reply-engine wires a tool-artifact persistence callback into the
+    // KloelToolRouter. After canonicalization that callback must route through
+    // MindMemoryItemService.items rather than touching prisma.kloelMemory
+    // directly. The underlying table is identical, so behaviour (the exact
+    // upsert args) must be byte-identical.
+    const TOOL_ARTIFACT_ARGS = {
+      where: { workspaceId_key: { workspaceId: 'ws-1', key: 'k1' } },
+      update: {
+        content: 'artifact body',
+        value: {},
+        category: 'tool_artifact',
+        updatedAt: expect.any(Date) as unknown,
+      },
+      create: {
+        workspaceId: 'ws-1',
+        key: 'k1',
+        value: {},
+        content: 'artifact body',
+        category: 'tool_artifact',
+      },
+    };
+
+    function getStoreToolArtifact(
+      svc: KloelReplyEngineService,
+    ): (workspaceId: string, key: string, content: string) => Promise<void> {
+      // storeToolArtifact is the 3rd ctor arg captured on the router instance.
+      const router = svc.toolRouter as unknown as {
+        storeToolArtifact: (workspaceId: string, key: string, content: string) => Promise<void>;
+      };
+      return router.storeToolArtifact;
+    }
+
+    it('routes tool-artifact persistence through MindMemoryItemService.items when provided', async () => {
+      const canonicalUpsert = jest.fn().mockResolvedValue({});
+      const prismaUpsert = jest.fn().mockResolvedValue({});
+      const prismaWithMemory = {
+        ...prisma,
+        kloelMemory: { upsert: prismaUpsert },
+      };
+      const mindMemory = { items: { upsert: canonicalUpsert } };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          KloelReplyEngineService,
+          { provide: PrismaService, useValue: prismaWithMemory },
+          { provide: PlanLimitsService, useValue: planLimits },
+          { provide: KloelThreadService, useValue: threadService },
+          { provide: KloelWorkspaceContextService, useValue: wsContextService },
+          { provide: UnifiedAgentService, useValue: unifiedAgent },
+          { provide: MarketingSkillService, useValue: marketingSkill },
+          { provide: MindMemoryItemService, useValue: mindMemory },
+        ],
+      }).compile();
+      const svc = module.get<KloelReplyEngineService>(KloelReplyEngineService);
+
+      await getStoreToolArtifact(svc)('ws-1', 'k1', 'artifact body');
+
+      // Canonical surface used; raw prisma delegate NOT touched.
+      expect(canonicalUpsert).toHaveBeenCalledTimes(1);
+      expect(canonicalUpsert).toHaveBeenCalledWith(TOOL_ARTIFACT_ARGS);
+      expect(prismaUpsert).not.toHaveBeenCalled();
+    });
+
+    it('falls back to prisma.kloelMemory with identical args when canonical service is absent', async () => {
+      const prismaUpsert = jest.fn().mockResolvedValue({});
+      const prismaWithMemory = {
+        ...prisma,
+        kloelMemory: { upsert: prismaUpsert },
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          KloelReplyEngineService,
+          { provide: PrismaService, useValue: prismaWithMemory },
+          { provide: PlanLimitsService, useValue: planLimits },
+          { provide: KloelThreadService, useValue: threadService },
+          { provide: KloelWorkspaceContextService, useValue: wsContextService },
+          { provide: UnifiedAgentService, useValue: unifiedAgent },
+          { provide: MarketingSkillService, useValue: marketingSkill },
+        ],
+      }).compile();
+      const svc = module.get<KloelReplyEngineService>(KloelReplyEngineService);
+
+      await getStoreToolArtifact(svc)('ws-1', 'k1', 'artifact body');
+
+      // Byte-identical fallback: same delegate, same args as the canonical path.
+      expect(prismaUpsert).toHaveBeenCalledTimes(1);
+      expect(prismaUpsert).toHaveBeenCalledWith(TOOL_ARTIFACT_ARGS);
     });
   });
 });

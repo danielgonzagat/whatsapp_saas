@@ -110,7 +110,7 @@ describe('GdprService', () => {
     code: 'abc123',
     status: GdprStatus.PENDING,
     requestedAt,
-    completedAt: null as Date | null,
+    completedAt: null,
   };
 
   const prismaMock = createPartialPrismaMock({

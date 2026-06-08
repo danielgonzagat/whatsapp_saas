@@ -1,5 +1,6 @@
 'use client';
 
+import { useToast } from '@/components/kloel/ToastProvider';
 import { kloelT } from '@/lib/i18n/t';
 import { useRouter } from 'next/navigation';
 import { useCallback } from 'react';
@@ -15,11 +16,13 @@ import type { ReportFilters, SetPage, ReportRow } from './analytics.types';
 const PATTERN_RE = /"/g;
 
 export function useExportReport(filters: ReportFilters) {
+  const { showToast } = useToast();
+
   const exportReport = useCallback(
     (tabKey: string, fileLabel?: string) => {
       const ep = resolveExportEndpoint(tabKey);
       if (!ep) {return;}
-      const url = buildUrl(ep, { ...filters, perPage: 1000 });
+      const url = buildUrl(ep, { ...filters, page: 1, perPage: 100 });
       swrFetcher(url)
         .then((data: unknown) => {
           const raw = data as Record<string, unknown>;
@@ -31,11 +34,17 @@ export function useExportReport(filters: ReportFilters) {
           } else {
             rows = (raw.data as ReportRow[]) || [];
           }
-          if (rows.length === 0) {return;}
-          const headers = Object.keys(rows[0]);
+          const exportRows: ReportRow[] = rows.length > 0
+            ? rows
+            : [{ status: kloelT(`Sem registros para os filtros selecionados`) }];
+          if (rows.length === 0) {
+            showToast(kloelT(`Exportacao gerada sem registros para estes filtros.`), 'info');
+          }
+          const firstRow = exportRows[0] ?? {};
+          const headers = Object.keys(firstRow);
           const csv = [
             headers.join(','),
-            ...rows.map((row) =>
+            ...exportRows.map((row) =>
               headers
                 .map((h) => {
                   const val = row[h];
@@ -55,10 +64,15 @@ export function useExportReport(filters: ReportFilters) {
           a.click();
           document.body.removeChild(a);
           URL.revokeObjectURL(csvUrl);
+          if (rows.length > 0) {
+            showToast(kloelT(`Exportacao gerada.`), 'success');
+          }
         })
-        .catch(() => console.error('Export failed'));
+        .catch(() => {
+          showToast(kloelT(`Nao foi possivel exportar este relatorio agora.`), 'error');
+        });
     },
-    [filters],
+    [filters, showToast],
   );
   return exportReport;
 }

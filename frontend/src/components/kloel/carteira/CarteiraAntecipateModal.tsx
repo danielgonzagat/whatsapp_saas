@@ -19,6 +19,9 @@ export function CarteiraAntecipateModal({
   }
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="wallet-anticipate-title"
       style={{
         position: 'fixed',
         inset: 0,
@@ -56,11 +59,16 @@ export function CarteiraAntecipateModal({
             alignItems: 'center',
           }}
         >
-          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--app-text-primary)' }}>
+          <span
+            id="wallet-anticipate-title"
+            style={{ fontSize: 14, fontWeight: 600, color: 'var(--app-text-primary)' }}
+          >
             {kloelT(`Antecipar recebiveis`)}
           </span>
           <button
             type="button"
+            aria-label={kloelT(`Fechar modal de antecipacao`)}
+            title={kloelT(`Fechar modal de antecipacao`)}
             onClick={onClose}
             style={{
               background: 'none',

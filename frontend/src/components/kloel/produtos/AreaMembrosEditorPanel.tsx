@@ -53,6 +53,32 @@ const fieldLabel = { fontFamily: SORA, fontSize: 10, color: 'var(--app-text-seco
 export default function AreaMembrosEditorPanel(props: EditorPanelProps) {
   const selectedArea = props.displayAreas.find((a) => a.id === props.editingArea);
   const modules: DisplayModule[] = selectedArea ? selectedArea.modules_list || selectedArea.modulesList || [] : [];
+  const newAreaName = String(props.newArea.name || '').trim();
+  const canCreateArea = Boolean(newAreaName) && !props.saving;
+  const buildEditAreaData = (area: DisplayArea) => ({
+    name: area.name,
+    slug: area.slug || '',
+    description: area.description || '',
+    type: area.type || 'COURSE',
+    productId: area.productId || '',
+    template: area.template || 'academy',
+    logoUrl: area.logoUrl || '',
+    coverUrl: area.coverUrl || '',
+    primaryColor: area.primaryColor || PURPLE,
+    certificates: area.certificates !== false,
+    quizzes: area.quizzes !== false,
+    community: area.community === true,
+    gamification: area.gamification !== false,
+    progressTrack: area.progressTrack !== false,
+    downloads: area.downloads !== false,
+    comments: area.comments !== false,
+    active: area.active !== false,
+  });
+  const handleSelectEditingArea = (areaId: string) => {
+    props.setEditingArea(areaId || null);
+    const nextArea = props.displayAreas.find((area) => area.id === areaId);
+    props.setEditAreaData(nextArea ? buildEditAreaData(nextArea) : props.emptyAreaForm);
+  };
 
   return (
     <div style={{ opacity: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -69,13 +95,18 @@ export default function AreaMembrosEditorPanel(props: EditorPanelProps) {
           <div style={sectionLabel}>{kloelT('Nova Area')}</div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
             <div style={{ flex: 2 }}>
-              <label style={fieldLabel}>{kloelT('Nome')}</label>
-              <input value={(props.newArea.name as string) || ''} onChange={(e) => props.setNewArea((p) => ({ ...p, name: e.target.value }))}
-                placeholder={kloelT('Nome da area...')} style={inputStyle} />
+              <label htmlFor="member-area-new-name" style={fieldLabel}>{kloelT('Nome')}</label>
+              <input id="member-area-new-name" name="member-area-new-name" aria-label={kloelT('Nome da nova area')} aria-invalid={!newAreaName || undefined} value={(props.newArea.name as string) || ''} onChange={(e) => props.setNewArea((p) => ({ ...p, name: e.target.value }))}
+                placeholder={kloelT('Nome da area...')} style={{ ...inputStyle, border: `1px solid ${newAreaName ? BORDER : colors.semantic.error}` }} />
+              {!newAreaName ? (
+                <div style={{ marginTop: 6, fontFamily: SORA, fontSize: 10, color: colors.semantic.error }}>
+                  {kloelT('Informe um nome para criar a area.')}
+                </div>
+              ) : null}
             </div>
             <div style={{ width: 160 }}>
-              <label style={fieldLabel}>{kloelT('Tipo')}</label>
-              <select value={(props.newArea.type as string) || 'COURSE'} onChange={(e) => props.setNewArea((p) => ({ ...p, type: e.target.value }))}
+              <label htmlFor="member-area-new-type" style={fieldLabel}>{kloelT('Tipo')}</label>
+              <select id="member-area-new-type" name="member-area-new-type" aria-label={kloelT('Tipo da nova area')} value={(props.newArea.type as string) || 'COURSE'} onChange={(e) => props.setNewArea((p) => ({ ...p, type: e.target.value }))}
                 style={{ ...inputStyle, width: '100%', cursor: 'pointer' }}>
                 <option value="COURSE">Curso</option>
                 <option value="COMMUNITY">Comunidade</option>
@@ -83,8 +114,8 @@ export default function AreaMembrosEditorPanel(props: EditorPanelProps) {
               </select>
             </div>
             <div style={{ flex: 1 }}>
-              <label style={fieldLabel}>{kloelT('Produto')}</label>
-              <select value={(props.newArea.productId as string) || ''} onChange={(e) => props.setNewArea((p) => ({ ...p, productId: e.target.value }))}
+              <label htmlFor="member-area-new-product" style={fieldLabel}>{kloelT('Produto')}</label>
+              <select id="member-area-new-product" name="member-area-new-product" aria-label={kloelT('Produto da nova area')} value={(props.newArea.productId as string) || ''} onChange={(e) => props.setNewArea((p) => ({ ...p, productId: e.target.value }))}
                 style={{ ...inputStyle, width: '100%', cursor: 'pointer' }}>
                 <option value="">Sem vinculo</option>
                 {props.productOptions.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -92,8 +123,8 @@ export default function AreaMembrosEditorPanel(props: EditorPanelProps) {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 12 }}>
-            <button type="button" onClick={props.handleCreateArea} disabled={props.saving}
-              style={{ ...btnPrimary(PURPLE), opacity: props.saving ? 0.6 : 1 }}>
+            <button type="button" onClick={props.handleCreateArea} disabled={!canCreateArea}
+              style={{ ...btnPrimary(PURPLE), opacity: canCreateArea ? 1 : 0.45, cursor: canCreateArea ? 'pointer' : 'not-allowed' }}>
               {props.saving ? 'Salvando...' : 'Criar'}
             </button>
             <button type="button" onClick={() => { props.setShowCreateArea(false); props.setNewArea(props.emptyAreaForm); }}
@@ -106,7 +137,7 @@ export default function AreaMembrosEditorPanel(props: EditorPanelProps) {
         <div style={{ fontFamily: SORA, fontSize: 12, fontWeight: 600, color: 'var(--app-text-primary)', marginBottom: 10 }}>
           {kloelT('Editar area existente')}
         </div>
-        <select value={props.editingArea || ''} onChange={(e) => props.setEditingArea(e.target.value || null)}
+        <select name="member-area-editor-select" value={props.editingArea || ''} onChange={(e) => handleSelectEditingArea(e.target.value)}
           style={{ ...inputStyle, width: '100%', cursor: 'pointer', marginBottom: 12 }}
           aria-label={kloelT('Selecionar area para editar')}>
           <option value="">{kloelT('Selecionar uma area...')}</option>
@@ -116,10 +147,11 @@ export default function AreaMembrosEditorPanel(props: EditorPanelProps) {
         {selectedArea && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '1.5fr 1fr 1fr' }}>
-              <input aria-label={kloelT('Nome da area')} value={(props.editAreaData.name as string) || ''}
+              <input name="member-area-edit-name" aria-label={kloelT('Nome da area')} value={(props.editAreaData.name as string) || ''}
                 onChange={(e) => props.setEditAreaData((p) => ({ ...p, name: e.target.value }))}
                 placeholder="Nome" style={inputStyle} ref={focusPrimaryInput} />
-              <select value={(props.editAreaData.type as string) || 'COURSE'}
+              <select name="member-area-edit-type" aria-label={kloelT('Tipo da area')}
+                value={(props.editAreaData.type as string) || 'COURSE'}
                 onChange={(e) => props.setEditAreaData((p) => ({ ...p, type: e.target.value }))}
                 style={{ ...inputStyle, width: '100%', cursor: 'pointer' }}>
                 <option value="COURSE">Curso</option>
@@ -127,7 +159,8 @@ export default function AreaMembrosEditorPanel(props: EditorPanelProps) {
                 <option value="HYBRID">Hibrido</option>
                 <option value="MEMBERSHIP">Membership</option>
               </select>
-              <select value={(props.editAreaData.productId as string) || ''}
+              <select name="member-area-edit-product" aria-label={kloelT('Produto vinculado da area')}
+                value={(props.editAreaData.productId as string) || ''}
                 onChange={(e) => props.setEditAreaData((p) => ({ ...p, productId: e.target.value }))}
                 style={{ ...inputStyle, width: '100%', cursor: 'pointer' }}>
                 <option value="">Sem vinculo</option>
@@ -135,10 +168,10 @@ export default function AreaMembrosEditorPanel(props: EditorPanelProps) {
               </select>
             </div>
             <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '1fr 1fr' }}>
-              <input aria-label="Slug" value={(props.editAreaData.slug as string) || ''}
+              <input name="member-area-edit-slug" aria-label="Slug" value={(props.editAreaData.slug as string) || ''}
                 onChange={(e) => props.setEditAreaData((p) => ({ ...p, slug: e.target.value }))}
                 placeholder="Slug" style={inputStyle} />
-              <input aria-label="Descricao" value={(props.editAreaData.description as string) || ''}
+              <input name="member-area-edit-description" aria-label="Descricao" value={(props.editAreaData.description as string) || ''}
                 onChange={(e) => props.setEditAreaData((p) => ({ ...p, description: e.target.value }))}
                 placeholder="Descricao" style={inputStyle} />
             </div>
@@ -165,14 +198,22 @@ export default function AreaMembrosEditorPanel(props: EditorPanelProps) {
               </div>
 
               {props.creatingModule === selectedArea.id && (
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
-                  <input aria-label={kloelT('Nome do modulo')} value={props.newModule.name}
-                    onChange={(e) => props.setNewModule({ name: e.target.value })}
-                    placeholder={kloelT('Nome do modulo')} style={{ ...inputStyle, flex: 1, fontSize: 11 }} ref={focusPrimaryInput} />
-                  <button type="button" onClick={() => props.handleCreateModule(selectedArea.id)} disabled={props.saving}
-                    style={{ ...btnPrimary(PURPLE), fontSize: 10, padding: '5px 10px' }}>Criar</button>
-                  <button type="button" onClick={() => { props.setCreatingModule(null); props.setNewModule({ name: '' }); }}
-                    style={{ ...btnGhost, fontSize: 10, padding: '5px 10px' }}>Cancelar</button>
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input name="member-area-module-new-name" aria-label={kloelT('Nome do modulo')} aria-invalid={!props.newModule.name.trim() || undefined} value={props.newModule.name}
+                      onChange={(e) => props.setNewModule({ name: e.target.value })}
+                      placeholder={kloelT('Nome do modulo')}
+                      style={{ ...inputStyle, flex: 1, fontSize: 11, border: `1px solid ${props.newModule.name.trim() ? BORDER : colors.semantic.error}` }} ref={focusPrimaryInput} />
+                    <button type="button" onClick={() => props.handleCreateModule(selectedArea.id)} disabled={!props.newModule.name.trim() || props.saving}
+                      style={{ ...btnPrimary(PURPLE), fontSize: 10, padding: '5px 10px', opacity: props.newModule.name.trim() && !props.saving ? 1 : 0.45, cursor: props.newModule.name.trim() && !props.saving ? 'pointer' : 'not-allowed' }}>Criar</button>
+                    <button type="button" onClick={() => { props.setCreatingModule(null); props.setNewModule({ name: '' }); }}
+                      style={{ ...btnGhost, fontSize: 10, padding: '5px 10px' }}>Cancelar</button>
+                  </div>
+                  {!props.newModule.name.trim() ? (
+                    <div style={{ marginTop: 6, fontFamily: SORA, fontSize: 10, color: colors.semantic.error }}>
+                      {kloelT('Informe um nome para criar o modulo.')}
+                    </div>
+                  ) : null}
                 </div>
               )}
 
@@ -184,7 +225,7 @@ export default function AreaMembrosEditorPanel(props: EditorPanelProps) {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       {isEditingMod ? (
                         <div style={{ flex: 1, display: 'flex', gap: 6, alignItems: 'center' }}>
-                          <input aria-label={kloelT('Nome do modulo')} value={props.editModuleData.name}
+                          <input name="member-area-module-edit-name" aria-label={kloelT('Nome do modulo')} value={props.editModuleData.name}
                             onChange={(e) => props.setEditModuleData({ name: e.target.value })}
                             style={{ ...inputStyle, flex: 1, fontSize: 11 }} ref={focusPrimaryInput} />
                           <button type="button" onClick={() => props.handleUpdateModule(selectedArea.id, mod.id)} disabled={props.saving}
@@ -196,9 +237,9 @@ export default function AreaMembrosEditorPanel(props: EditorPanelProps) {
                         <>
                           <span style={{ fontFamily: SORA, fontSize: 12, fontWeight: 600, color: 'var(--app-text-primary)', flex: 1 }}>{mod.name}</span>
                           <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--app-text-tertiary)' }}>{lessons.length} aulas</span>
-                          <button type="button" onClick={() => { props.setEditingModule(mod.id); props.setEditModuleData({ name: mod.name }); }}
+                          <button type="button" aria-label={`${kloelT('Editar modulo')} ${mod.name}`} onClick={() => { props.setEditingModule(mod.id); props.setEditModuleData({ name: mod.name }); }}
                             style={{ ...iconBtn, color: 'var(--app-text-secondary)' }}>{IC.edit(14)}</button>
-                          <button type="button" onClick={() => props.handleDeleteModule(selectedArea.id, mod.id)}
+                          <button type="button" aria-label={`${kloelT('Excluir modulo')} ${mod.name}`} onClick={() => props.handleDeleteModule(selectedArea.id, mod.id)}
                             style={{ ...iconBtn, color: colors.semantic.error }}>{IC.trash(14)}</button>
                         </>
                       )}
@@ -210,10 +251,10 @@ export default function AreaMembrosEditorPanel(props: EditorPanelProps) {
                         <div key={lesson.id} style={{ marginLeft: 16, padding: '6px 8px', borderLeft: `2px solid ${BORDER}`, marginTop: 4 }}>
                           {isEditingLes ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                              <input value={props.editLessonData.name}
+                              <input name="member-area-lesson-edit-name" aria-label={kloelT('Nome da aula em edicao')} value={props.editLessonData.name}
                                 onChange={(e) => props.setEditLessonData((p) => ({ ...p, name: e.target.value }))}
                                 placeholder="Nome" style={{ ...inputStyle, fontSize: 11 }} />
-                              <input value={props.editLessonData.videoUrl}
+                              <input name="member-area-lesson-edit-video-url" aria-label={kloelT('URL do video da aula em edicao')} value={props.editLessonData.videoUrl}
                                 onChange={(e) => props.setEditLessonData((p) => ({ ...p, videoUrl: e.target.value }))}
                                 placeholder="YouTube URL" style={{ ...inputStyle, fontSize: 11 }} />
                               <div style={{ display: 'flex', gap: 6 }}>
@@ -227,9 +268,9 @@ export default function AreaMembrosEditorPanel(props: EditorPanelProps) {
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               <span style={{ color: PURPLE, flexShrink: 0 }}>{IC.play(12)}</span>
                               <span style={{ fontFamily: SORA, fontSize: 11, color: 'var(--app-text-primary)', flex: 1 }}>{lesson.name}</span>
-                              <button type="button" onClick={() => { props.setEditingLesson(lesson.id); props.setEditLessonData({ name: lesson.name, description: lesson.description || '', videoUrl: lesson.videoUrl || '' }); }}
+                              <button type="button" aria-label={`${kloelT('Editar aula')} ${lesson.name}`} onClick={() => { props.setEditingLesson(lesson.id); props.setEditLessonData({ name: lesson.name, description: lesson.description || '', videoUrl: lesson.videoUrl || '' }); }}
                                 style={{ ...iconBtn, color: 'var(--app-text-secondary)' }}>{IC.edit(12)}</button>
-                              <button type="button" onClick={() => props.handleDeleteLesson(selectedArea.id, lesson.id)}
+                              <button type="button" aria-label={`${kloelT('Excluir aula')} ${lesson.name}`} onClick={() => props.handleDeleteLesson(selectedArea.id, lesson.id)}
                                 style={{ ...iconBtn, color: colors.semantic.error }}>{IC.trash(12)}</button>
                             </div>
                           )}
@@ -240,15 +281,20 @@ export default function AreaMembrosEditorPanel(props: EditorPanelProps) {
                     {props.creatingLesson === mod.id ? (
                       <div style={{ marginLeft: 16, marginTop: 6, padding: 8, background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}` }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          <input value={props.newLesson.name}
+                          <input name="member-area-lesson-new-name" aria-label={kloelT('Nome da nova aula')} aria-invalid={!props.newLesson.name.trim() || undefined} value={props.newLesson.name}
                             onChange={(e) => props.setNewLesson((p) => ({ ...p, name: e.target.value }))}
-                            placeholder="Nome da aula" style={{ ...inputStyle, fontSize: 11 }} ref={focusPrimaryInput} />
-                          <input value={props.newLesson.videoUrl}
+                            placeholder="Nome da aula" style={{ ...inputStyle, fontSize: 11, border: `1px solid ${props.newLesson.name.trim() ? BORDER : colors.semantic.error}` }} ref={focusPrimaryInput} />
+                          {!props.newLesson.name.trim() ? (
+                            <div style={{ fontFamily: SORA, fontSize: 10, color: colors.semantic.error }}>
+                              {kloelT('Informe um nome para adicionar a aula.')}
+                            </div>
+                          ) : null}
+                          <input name="member-area-lesson-new-video-url" aria-label={kloelT('URL do video da nova aula')} value={props.newLesson.videoUrl}
                             onChange={(e) => props.setNewLesson((p) => ({ ...p, videoUrl: e.target.value }))}
                             placeholder="YouTube URL" style={{ ...inputStyle, fontSize: 11 }} />
                           <div style={{ display: 'flex', gap: 6 }}>
-                            <button type="button" onClick={() => props.handleCreateLesson(selectedArea.id, mod.id)} disabled={props.saving}
-                              style={{ ...btnPrimary(PURPLE), fontSize: 10, padding: '4px 8px' }}>Adicionar</button>
+                            <button type="button" onClick={() => props.handleCreateLesson(selectedArea.id, mod.id)} disabled={!props.newLesson.name.trim() || props.saving}
+                              style={{ ...btnPrimary(PURPLE), fontSize: 10, padding: '4px 8px', opacity: props.newLesson.name.trim() && !props.saving ? 1 : 0.45, cursor: props.newLesson.name.trim() && !props.saving ? 'pointer' : 'not-allowed' }}>Adicionar</button>
                             <button type="button" onClick={() => { props.setCreatingLesson(null); props.setNewLesson({ name: '', description: '', videoUrl: '' }); }}
                               style={{ ...btnGhost, fontSize: 10, padding: '4px 8px' }}>Cancelar</button>
                           </div>

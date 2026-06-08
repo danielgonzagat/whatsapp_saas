@@ -10,7 +10,12 @@ import { KloelContextFormatter } from './kloel-context-formatter';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
 import { KloelThreadService } from './kloel-thread.service';
 import { KloelToolRouter } from './kloel-tool-router';
-import { createKloelStatusEvent, type KloelStreamEvent } from './kloel-stream-events';
+import {
+  createKloelPublicStreamingLabel,
+  createKloelPublicThinkingLabel,
+  createKloelStatusEvent,
+  type KloelStreamEvent,
+} from './kloel-stream-events';
 import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
 import { SpineEmitterService } from './spine/spine-emitter.service';
 import { chatCompletionWithFallback, LLM_MAX_COMPLETION_TOKENS } from './openai-wrapper';
@@ -334,7 +339,7 @@ export async function buildAssistantReplyImpl(
     userMessage: message,
     workspaceId,
   });
-  onTraceEvent?.(createKloelStatusEvent('thinking'));
+  onTraceEvent?.(createKloelStatusEvent('thinking', createKloelPublicThinkingLabel(message)));
   if (workspaceId) {
     await planLimits.ensureTokenBudget(workspaceId);
   }
@@ -431,7 +436,7 @@ export async function buildAssistantReplyImpl(
   let assistantMessage = initialMsg?.content || deps.unavailableMessage;
 
   if (mode === 'chat' && initialMsg?.tool_calls?.length && workspaceId && executeLocalTool) {
-    onTraceEvent?.(createKloelStatusEvent('thinking'));
+    onTraceEvent?.(createKloelStatusEvent('thinking', createKloelPublicThinkingLabel(message)));
     const { toolMessages, usedSearchWeb } = await toolRouter.executeAssistantToolCalls({
       assistantMessage: initialMsg,
       workspaceId,
@@ -473,7 +478,9 @@ export async function buildAssistantReplyImpl(
     assistantMessage = finalResponse.choices[0]?.message?.content || assistantMessage;
   }
 
-  onTraceEvent?.(createKloelStatusEvent('streaming_token'));
+  onTraceEvent?.(
+    createKloelStatusEvent('streaming_token', createKloelPublicStreamingLabel(message)),
+  );
   return assistantMessage;
 }
 

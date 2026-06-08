@@ -161,15 +161,15 @@ describe('CapabilityRegistryV2Service — describe', () => {
     const result = service.describe('create_product');
 
     expect(result).not.toBeNull();
-    expect(result!.id).toBe('create_product');
-    expect(result!.description).toBe('Cria um novo produto');
-    expect(result!.args).toEqual([
+    expect(result.id).toBe('create_product');
+    expect(result.description).toBe('Cria um novo produto');
+    expect(result.args).toEqual([
       { key: 'name', type: 'string', label: 'Nome', required: true },
       { key: 'price', type: 'number', label: 'Preço', required: false },
     ]);
-    expect(result!.output).toEqual(['product.created']);
-    expect(result!.domainService).toBe('ProductService.create');
-    expect(result!.tier).toBe(1);
+    expect(result.output).toEqual(['product.created']);
+    expect(result.domainService).toBe('ProductService.create');
+    expect(result.tier).toBe(1);
   });
 
   it('returns null for an unknown capability', () => {
@@ -181,9 +181,9 @@ describe('CapabilityRegistryV2Service — describe', () => {
     const result = service.describe('self.health');
 
     expect(result).not.toBeNull();
-    expect(result!.id).toBe('self.health');
-    expect(result!.args).toEqual([]);
-    expect(result!.output).toEqual(['health.snapshot']);
+    expect(result.id).toBe('self.health');
+    expect(result.args).toEqual([]);
+    expect(result.output).toEqual(['health.snapshot']);
   });
 });
 
@@ -218,14 +218,14 @@ describe('CapabilityRegistryV2Service — listGaps', () => {
     // self.health → HealthService.snapshot, HealthService not in container
     const healthGap = gaps.find((g) => g.id === 'self.health');
     expect(healthGap).toBeDefined();
-    expect(healthGap!.declaredService).toBe('HealthService.snapshot');
-    expect(healthGap!.missingMethod).toBe('HealthService (not found in DI container)');
+    expect(healthGap.declaredService).toBe('HealthService.snapshot');
+    expect(healthGap.missingMethod).toBe('HealthService (not found in DI container)');
 
     // orphan_cap → BogusService.doThing, not in container
     const orphanGap = gaps.find((g) => g.id === 'orphan_cap');
     expect(orphanGap).toBeDefined();
-    expect(orphanGap!.declaredService).toBe('BogusService.doThing');
-    expect(orphanGap!.missingMethod).toBe('BogusService (not found in DI container)');
+    expect(orphanGap.declaredService).toBe('BogusService.doThing');
+    expect(orphanGap.missingMethod).toBe('BogusService (not found in DI container)');
 
     // create_product → ProductService.create, method exists → not a gap
     expect(gaps.find((g) => g.id === 'create_product')).toBeUndefined();
@@ -247,8 +247,8 @@ describe('CapabilityRegistryV2Service — listGaps', () => {
     // self.health → HealthService.snapshot, but snapshot doesn't exist
     const healthGap = gaps.find((g) => g.id === 'self.health');
     expect(healthGap).toBeDefined();
-    expect(healthGap!.declaredService).toBe('HealthService.snapshot');
-    expect(healthGap!.missingMethod).toBe('HealthService.snapshot');
+    expect(healthGap.declaredService).toBe('HealthService.snapshot');
+    expect(healthGap.missingMethod).toBe('HealthService.snapshot');
   });
 
   it('reports CapabilityRegistry self-reference gaps for non-existent methods', async () => {
@@ -259,8 +259,8 @@ describe('CapabilityRegistryV2Service — listGaps', () => {
     // self.bogus_method → CapabilityRegistry.nonExistentMethod
     const bogusGap = gaps.find((g) => g.id === 'self.bogus_method');
     expect(bogusGap).toBeDefined();
-    expect(bogusGap!.declaredService).toBe('CapabilityRegistry.nonExistentMethod');
-    expect(bogusGap!.missingMethod).toBe('CapabilityRegistry.nonExistentMethod');
+    expect(bogusGap.declaredService).toBe('CapabilityRegistry.nonExistentMethod');
+    expect(bogusGap.missingMethod).toBe('CapabilityRegistry.nonExistentMethod');
 
     // self.capabilities → CapabilityRegistry.filterFor — method exists
     expect(gaps.find((g) => g.id === 'self.capabilities')).toBeUndefined();

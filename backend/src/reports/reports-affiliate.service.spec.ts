@@ -41,7 +41,7 @@ describe('ReportsAffiliateService', () => {
       expect(result).toEqual([{ id: 'p1' }]);
       expect(prisma.affiliatePartner.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { workspaceId: 'ws-1', status: 'active' },
+          where: { workspaceId: 'ws-1', status: 'ACTIVE' },
           orderBy: { totalRevenue: 'desc' },
           take: 50,
         }),

@@ -30,6 +30,8 @@ export interface CreateProductDto {
   commissionCookieDays?: number;
   stockQuantity?: number;
   trackStock?: boolean;
+  status?: string;
+  active?: boolean;
 }
 
 export interface UpdateProductDto extends Partial<CreateProductDto> {

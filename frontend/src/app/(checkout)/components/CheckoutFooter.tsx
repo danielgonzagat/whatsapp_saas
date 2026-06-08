@@ -11,6 +11,7 @@ export function CheckoutFooter({
   footerPrimary,
   footerSecondary,
   footerLegal,
+  checkoutUnavailableReason,
 }: FooterProps) {
   return (
     <footer
@@ -23,34 +24,56 @@ export function CheckoutFooter({
     >
       <div style={{ maxWidth: 600, margin: '0 auto' }}>
         <div style={{ fontSize: 14, color: theme.mutedText, marginBottom: 14 }}>
-          {kloelT(`Formas de pagamento`)}
+          {checkoutUnavailableReason
+            ? kloelT(`Pagamento temporariamente indisponível`)
+            : kloelT(`Formas de pagamento`)}
         </div>
-        <div
-          style={{
-            display: 'flex',
-            gap: 8,
-            justifyContent: 'center',
-            flexWrap: 'wrap',
-            marginBottom: 24,
-          }}
-        >
-          {PAYMENT_BADGES.map((badge) => (
-            <span
-              key={badge}
-              style={{
-                padding: '6px 14px',
-                background: theme.paymentBadgeBackground,
-                border: `1px solid ${theme.paymentBadgeBorder}`,
-                borderRadius: 6,
-                fontSize: 11,
-                fontWeight: 700,
-                color: theme.paymentBadgeText,
-              }}
-            >
-              {badge}
-            </span>
-          ))}
-        </div>
+        {checkoutUnavailableReason ? (
+          <div
+            role="status"
+            style={{
+              display: 'inline-flex',
+              maxWidth: 520,
+              marginBottom: 24,
+              padding: '10px 14px',
+              borderRadius: 6,
+              border: `1px solid ${theme.paymentBadgeBorder}`,
+              background: theme.summaryBackground,
+              color: theme.mutedText,
+              fontSize: 12,
+              lineHeight: 1.45,
+            }}
+          >
+            {checkoutUnavailableReason}
+          </div>
+        ) : (
+          <div
+            style={{
+              display: 'flex',
+              gap: 8,
+              justifyContent: 'center',
+              flexWrap: 'wrap',
+              marginBottom: 24,
+            }}
+          >
+            {PAYMENT_BADGES.map((badge) => (
+              <span
+                key={badge}
+                style={{
+                  padding: '6px 14px',
+                  background: theme.paymentBadgeBackground,
+                  border: `1px solid ${theme.paymentBadgeBorder}`,
+                  borderRadius: 6,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: theme.paymentBadgeText,
+                }}
+              >
+                {badge}
+              </span>
+            ))}
+          </div>
+        )}
         <div style={{ fontSize: 13, color: theme.mutedText, marginBottom: 4 }}>
           {footerPrimary || `${brandName}: pay.kloel.com`}
         </div>

@@ -91,9 +91,9 @@ describe('KloelDomainServiceResolver', () => {
     const result = await resolver.tryExecute('missing_svc', 'ws-1', {});
 
     expect(result).not.toBeNull();
-    expect(result!.success).toBe(false);
-    expect(result!.error).toBe('unknown_service');
-    expect(result!.detail).toContain('NonexistentService');
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('unknown_service');
+    expect(result.detail).toContain('NonexistentService');
   });
 
   it('returns unknown_service when ModuleRef throws', async () => {
@@ -105,9 +105,9 @@ describe('KloelDomainServiceResolver', () => {
     const result = await resolver.tryExecute('bank_cap', 'ws-1', {});
 
     expect(result).not.toBeNull();
-    expect(result!.success).toBe(false);
-    expect(result!.error).toBe('unknown_service');
-    expect(result!.detail).toContain('AccountService');
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('unknown_service');
+    expect(result.detail).toContain('AccountService');
   });
 
   it('returns unknown_service when ModuleRef returns undefined', async () => {
@@ -117,8 +117,8 @@ describe('KloelDomainServiceResolver', () => {
     const result = await resolver.tryExecute('bank_cap', 'ws-1', {});
 
     expect(result).not.toBeNull();
-    expect(result!.success).toBe(false);
-    expect(result!.error).toBe('unknown_service');
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('unknown_service');
   });
 
   it('returns method_not_found when method does not exist on service instance', async () => {
@@ -129,10 +129,10 @@ describe('KloelDomainServiceResolver', () => {
     const result = await resolver.tryExecute('bad_method', 'ws-1', {});
 
     expect(result).not.toBeNull();
-    expect(result!.success).toBe(false);
-    expect(result!.error).toBe('method_not_found');
-    expect(result!.detail).toContain('missingMethod');
-    expect(result!.detail).toContain('AccountService');
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('method_not_found');
+    expect(result.detail).toContain('missingMethod');
+    expect(result.detail).toContain('AccountService');
   });
 
   // ── successful single-path call (regression: must still work via invokeService) ──
@@ -175,9 +175,9 @@ describe('KloelDomainServiceResolver', () => {
     const result = await resolver.tryExecute('failing_cap', 'ws-1', {});
 
     expect(result).not.toBeNull();
-    expect(result!.success).toBe(false);
-    expect(result!.error).toBe('service_call_failed');
-    expect(result!.detail).toBe('DB connection lost');
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('service_call_failed');
+    expect(result.detail).toBe('DB connection lost');
   });
 
   it('handles non-Error throws gracefully', async () => {
@@ -188,9 +188,9 @@ describe('KloelDomainServiceResolver', () => {
 
     const result = await resolver.tryExecute('raw_error', 'ws-1', {});
 
-    expect(result!.success).toBe(false);
-    expect(result!.error).toBe('service_call_failed');
-    expect(result!.detail).toBe('raw string error');
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('service_call_failed');
+    expect(result.detail).toBe('raw string error');
   });
 
   it('passes workspaceId as first argument always', async () => {

@@ -9,7 +9,7 @@ export type KloelGraphArea =
   | 'conectar'
   | 'consultar';
 
-export type KloelGraphNodeType = 'sun' | 'route' | 'metric' | 'entity';
+export type KloelGraphNodeType = 'core' | 'sun' | 'route' | 'metric' | 'entity';
 
 export interface KloelGraphNode {
   readonly id: string;
@@ -86,7 +86,7 @@ export function resolveKloelGraphNodeForPathFromNodes(
   if (parts[0] === 'checkout' && parts[1]) {
     return resolveCheckoutNode(parts[1], searchParams, path, nodes);
   }
-  return resolveKloelGraphNodeForPath(pathname, searchParams);
+  return findStaticRouteNode(path, searchParams, nodes) ?? findFallbackRouteNode(path, nodes);
 }
 
 export function resolveKloelGraphNodeForPath(
@@ -97,9 +97,6 @@ export function resolveKloelGraphNodeForPath(
   const exact = findStaticRouteNode(path, searchParams, KLOEL_GRAPH_NODES);
   if (exact) {
     return exact;
-  }
-  if (path === '/carteira') {
-    return getKloelGraphNodeById('consultar-wallet-saldo');
   }
   if (path === '/analytics') {
     return (
@@ -183,6 +180,18 @@ const FALLBACK_PREFIXES = [
   ['/canvas', 'criar-canvas'],
   ['/ferramentas', 'kloel-tools'],
 ] as const;
+
+function findFallbackRouteNode(
+  path: string,
+  nodes: readonly KloelGraphNode[],
+): KloelGraphNode | undefined {
+  for (const [prefix, nodeId] of FALLBACK_PREFIXES) {
+    if (path.startsWith(prefix)) {
+      return nodes.find((node) => node.id === nodeId) ?? getKloelGraphNodeById(nodeId);
+    }
+  }
+  return undefined;
+}
 
 function findStaticRouteNode(
   path: string,

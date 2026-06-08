@@ -33,16 +33,7 @@ interface FloatingChatProps {
 const GUEST_SESSION_SLOT = 'kloel:floating-chat:guest-session';
 const LANDING_CHAT_EVENT = 'kloel:landing-chat-open';
 
-const THINKING_LABELS = ['Pensando', 'Analisando', 'Raciocinando'];
 
-function useRotatingLabel(labels: string[], intervalMs = 2500) {
-  const [index, setIndex] = useState(0);
-  useEffect(() => {
-    const timer = setInterval(() => setIndex((i) => (i + 1) % labels.length), intervalMs);
-    return () => clearInterval(timer);
-  }, [labels.length, intervalMs]);
-  return labels[index];
-}
 
 export { UserMessageRow, AssistantMessageRow } from './FloatingChatRows';
 
@@ -64,7 +55,6 @@ export function FloatingChat({
   const inputRef = useRef<HTMLInputElement>(null);
   const consumedRef = useRef<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
-  const thinkingLabel = useRotatingLabel(THINKING_LABELS);
 
   const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
 
@@ -406,7 +396,6 @@ export function FloatingChat({
           <FloatingChatMessages
             messages={messages}
             isStreaming={isStreaming}
-            thinkingLabel={thinkingLabel}
             hoveredMessageId={hoveredMessageId}
             onHoverEnter={setHoveredMessageId}
             onHoverLeave={(id) =>

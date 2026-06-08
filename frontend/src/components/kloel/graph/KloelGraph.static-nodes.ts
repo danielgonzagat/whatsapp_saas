@@ -7,7 +7,7 @@ type KloelGraphArea =
   | 'conectar'
   | 'consultar';
 
-type KloelGraphNodeType = 'sun' | 'route' | 'metric' | 'entity';
+type KloelGraphNodeType = 'core' | 'sun' | 'route' | 'metric' | 'entity';
 
 interface KloelGraphNode {
   readonly id: string;
@@ -31,7 +31,22 @@ type NodeSeed = readonly [
 ];
 
 const CHANNELS = ['whatsapp', 'instagram', 'tiktok', 'facebook', 'email'] as const;
-const WALLET_TABS = ['saldo', 'extrato', 'saques', 'antecipacoes', 'movimentacoes'] as const;
+const ANUNCIOS_TABS = ['meta', 'google', 'tiktok', 'rastreamento', 'regras'] as const;
+const CHANNEL_GRAPH_LABELS: Record<(typeof CHANNELS)[number], string> = {
+  whatsapp: 'Marketing WhatsApp',
+  instagram: 'Marketing Instagram',
+  tiktok: 'Marketing TikTok',
+  facebook: 'Marketing Facebook',
+  email: 'Marketing Email',
+};
+const ANUNCIOS_GRAPH_LABELS: Record<(typeof ANUNCIOS_TABS)[number], string> = {
+  meta: 'Meta Ads',
+  google: 'Google Ads',
+  tiktok: 'TikTok Ads',
+  rastreamento: 'Rastreamento',
+  regras: 'Regras',
+};
+const WALLET_TABS = ['saldo', 'extrato', 'saques', 'antecipacoes'] as const;
 const REPORT_TABS = [
   'vendas',
   'afterpay',
@@ -61,6 +76,7 @@ const PERFIL_SECTION_TABS = [
   ['documentos', 'Docs', 'Documentos'],
   ['bancario', 'Banco', 'Dados bancarios'],
   ['perfil', 'Publico', 'Perfil publico'],
+  ['idiomas', 'Idiomas', 'Idiomas'],
   ['equipe', 'Equipe', 'Equipe'],
   ['apps', 'Apps', 'Apps'],
   ['seguranca', 'Seguranca', 'Seguranca'],
@@ -79,19 +95,100 @@ function toNode([id, label, area, type, route, parentId, overlayLabel]: NodeSeed
 }
 
 const PRIMARY_NODE_SEEDS: readonly NodeSeed[] = [
-  ['perfil', 'Perfil', 'perfil', 'sun', '/settings', undefined, 'Perfil'],
+  ['perfil', 'Perfil', 'perfil', 'core', '/settings', undefined, 'Perfil'],
   ['kloel', 'Kloel', 'kloel', 'sun', '/chat', undefined, 'Kloel'],
   ['criar', 'Criar', 'criar', 'sun', '/products', undefined, 'Produtos'],
   ['afiliar', 'Afiliar', 'afiliar', 'sun', '/produtos/afiliar-se', undefined, 'Afiliar-se'],
   ['educar', 'Educar', 'educar', 'sun', '/produtos/area-membros', undefined, 'Area de membros'],
   ['conectar', 'Conversar', 'conectar', 'sun', '/inbox', undefined, 'Conversar'],
-  ['consultar', 'Consultar', 'consultar', 'sun', '/carteira/saldo', undefined, 'Consultar'],
+  ['consultar', 'Consultar', 'consultar', 'sun', '/analytics?tab=vendas', undefined, 'Relatorios'],
 ];
 
 export const KLOEL_GRAPH_PRIMARY_NODES = PRIMARY_NODE_SEEDS.map(toNode);
 
 const CORE_ROUTE_SEEDS: readonly NodeSeed[] = [
   ['dashboard', 'Dashboard', 'perfil', 'route', '/dashboard', 'perfil', 'Dashboard'],
+  [
+    'dashboard-metric-total-revenue',
+    'Receita total',
+    'perfil',
+    'metric',
+    '/analytics?tab=vendas&graphMetric=total-revenue',
+    'dashboard',
+    'Receita total',
+  ],
+  [
+    'dashboard-metric-month-revenue',
+    'Este mes',
+    'perfil',
+    'metric',
+    '/analytics?tab=vendas&graphMetric=month-revenue',
+    'dashboard',
+    'Este mes',
+  ],
+  [
+    'dashboard-metric-today-revenue',
+    'Hoje',
+    'perfil',
+    'metric',
+    '/analytics?tab=vendas&graphMetric=today-revenue',
+    'dashboard',
+    'Vendas hoje',
+  ],
+  [
+    'dashboard-metric-available-balance',
+    'Saldo',
+    'perfil',
+    'metric',
+    '/carteira/saldo?graphMetric=available-balance',
+    'dashboard',
+    'Saldo disponivel',
+  ],
+  [
+    'dashboard-metric-pending-balance',
+    'A receber',
+    'perfil',
+    'metric',
+    '/carteira/saldo?graphMetric=pending-balance',
+    'dashboard',
+    'A receber',
+  ],
+  [
+    'dashboard-metric-revenue',
+    'Receita',
+    'perfil',
+    'metric',
+    '/analytics?tab=vendas&graphMetric=revenue',
+    'dashboard',
+    'Receita',
+  ],
+  [
+    'dashboard-metric-sales',
+    'Vendas',
+    'perfil',
+    'metric',
+    '/analytics?tab=vendas&graphMetric=sales',
+    'dashboard',
+    'Vendas',
+  ],
+  [
+    'dashboard-metric-conversion',
+    'Conversao',
+    'perfil',
+    'metric',
+    '/analytics?tab=metricas&graphMetric=conversion',
+    'dashboard',
+    'Conversao',
+  ],
+  [
+    'dashboard-metric-average-ticket',
+    'Ticket medio',
+    'perfil',
+    'metric',
+    '/analytics?tab=metricas&graphMetric=average-ticket',
+    'dashboard',
+    'Ticket medio',
+  ],
   ['perfil-settings', 'Configuracoes', 'perfil', 'route', '/settings', 'perfil', 'Perfil'],
   [
     'perfil-privacy',
@@ -102,11 +199,12 @@ const CORE_ROUTE_SEEDS: readonly NodeSeed[] = [
     'perfil-settings',
     'Privacidade',
   ],
-  ['perfil-account', 'Conta', 'perfil', 'route', '/account', 'perfil', 'Conta'],
+  ['perfil-account', 'Conta', 'perfil', 'route', '/settings', 'perfil', 'Conta'],
   ['kloel-chat', 'Novo Chat', 'kloel', 'route', '/chat', 'kloel', 'Kloel'],
   ['kloel-search', 'Buscar', 'kloel', 'route', '/chat?graphAction=search', 'kloel', 'Buscar'],
   ['kloel-recents', 'Recentes', 'kloel', 'route', '/chat?graphAction=recents', 'kloel', 'Recentes'],
   ['kloel-tools', 'Ferramentas', 'kloel', 'route', '/ferramentas', 'kloel', 'Ferramentas'],
+  ['kloel-memoria', 'Memória', 'kloel', 'route', '/memoria', 'kloel', 'Memória'],
   ['kloel-cia', 'CIA', 'kloel', 'route', '/cia', 'kloel', 'CIA'],
   ['kloel-motor', 'Motor', 'kloel', 'route', '/admin/kloel-motor', 'kloel', 'Motor Kloel'],
   ['criar-products', 'Meus produtos', 'criar', 'route', '/products', 'criar', 'Produtos'],
@@ -185,12 +283,12 @@ const CORE_ROUTE_SEEDS: readonly NodeSeed[] = [
   ['conectar-sales', 'Sales', 'conectar', 'route', '/sales', 'conectar-crm', 'Vendas'],
   [
     'conectar-channel-google-ads',
-    'Google Ads',
+    'Marketing Google Ads',
     'conectar',
     'route',
     '/marketing/google-ads',
     'conectar-marketing',
-    'Google Ads',
+    'Marketing Google Ads',
   ],
   [
     'consultar-analytics',
@@ -201,7 +299,7 @@ const CORE_ROUTE_SEEDS: readonly NodeSeed[] = [
     'consultar',
     'Analytics',
   ],
-  ['consultar-payments', 'Payments', 'consultar', 'route', '/payments', 'consultar', 'Pagamentos'],
+  ['consultar-payments', 'Payments', 'consultar', 'route', '/carteira', 'consultar', 'Pagamentos'],
   ['consultar-billing', 'Billing', 'consultar', 'route', '/billing', 'consultar', 'Billing'],
   ['consultar-pricing', 'Planos', 'consultar', 'route', '/pricing', 'consultar-billing', 'Planos'],
 ];
@@ -210,18 +308,18 @@ const dynamicRouteSeeds = [
   ...CHANNELS.map(
     (channel): NodeSeed => [
       `conectar-channel-${channel}`,
-      channel[0].toUpperCase() + channel.slice(1),
+      CHANNEL_GRAPH_LABELS[channel],
       'conectar',
       'route',
       `/marketing/${channel}`,
       'conectar-marketing',
-      channel[0].toUpperCase() + channel.slice(1),
+      CHANNEL_GRAPH_LABELS[channel],
     ],
   ),
-  ...['meta', 'google', 'tiktok', 'rastreamento', 'regras'].map(
+  ...ANUNCIOS_TABS.map(
     (tab): NodeSeed => [
       `conectar-anuncios-${tab}`,
-      tab[0].toUpperCase() + tab.slice(1),
+      ANUNCIOS_GRAPH_LABELS[tab],
       'conectar',
       'route',
       `/anuncios/${tab}`,

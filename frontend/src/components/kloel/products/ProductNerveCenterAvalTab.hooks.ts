@@ -23,7 +23,6 @@ export function useProductReviews(productId: string) {
           setReviews(d);
         })
         .catch((e: unknown) => {
-          console.error(e);
           showToast(e instanceof Error ? e.message : 'Erro ao carregar avaliações', 'error');
         })
         .finally(() => setReviewsLoading(false));
@@ -35,18 +34,32 @@ export function useProductReviews(productId: string) {
   const [newRevText, setNewRevText] = useState('');
   const [newRevVer, setNewRevVer] = useState(false);
   const [showRevForm, setShowRevForm] = useState(false);
+  const [reviewError, setReviewError] = useState('');
 
   const handleCreateReview = async () => {
-    if (!newRevName.trim()) {
+    const authorName = newRevName.trim();
+    const comment = newRevText.trim();
+    if (!authorName) {
+      const message = 'Informe o nome do autor da avaliação.';
+      setReviewError(message);
+      showToast(message, 'error');
       return;
     }
+    if (!comment) {
+      const message = 'Informe o texto da avaliação.';
+      setReviewError(message);
+      showToast(message, 'error');
+      return;
+    }
+
+    setReviewError('');
     try {
       const res = await apiFetch(`/products/${productId}/reviews`, {
         method: 'POST',
         body: {
-          authorName: newRevName.trim(),
+          authorName,
           rating: newRevRating,
-          comment: newRevText.trim(),
+          comment,
           verified: newRevVer,
         },
       });
@@ -57,10 +70,12 @@ export function useProductReviews(productId: string) {
       setNewRevText('');
       setNewRevRating(5);
       setNewRevVer(false);
+      setReviewError('');
       showToast('Avaliação criada', 'success');
     } catch (e) {
-      console.error(e);
-      showToast(e instanceof Error ? e.message : 'Erro ao criar avaliação', 'error');
+      const message = e instanceof Error ? e.message : 'Erro ao criar avaliação';
+      setReviewError(message);
+      showToast(message, 'error');
     }
   };
 
@@ -72,7 +87,6 @@ export function useProductReviews(productId: string) {
       setReviews((prev) => prev.filter((r) => r.id !== id));
       showToast('Avaliação removida', 'success');
     } catch (e) {
-      console.error(e);
       showToast(e instanceof Error ? e.message : 'Erro ao remover avaliação', 'error');
     }
   };
@@ -90,6 +104,8 @@ export function useProductReviews(productId: string) {
     setNewRevVer,
     showRevForm,
     setShowRevForm,
+    reviewError,
+    setReviewError,
     handleCreateReview,
     handleDeleteReview,
   };

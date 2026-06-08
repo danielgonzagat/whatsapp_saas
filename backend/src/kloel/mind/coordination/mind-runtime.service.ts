@@ -4,12 +4,9 @@
  *
  * Central decision/observe orchestrator that fans incoming Brain requests out
  * to the unified agent, the operator capability executor, the event spine, and
- * the conversational thread store. Backwards-compat alias
- * `BrainRuntimeService` is preserved for the existing DI tokens during the
- * Wave M1 alias window (4 weeks).
- *
- * Legacy shim: `backend/src/kloel/brain-runtime.service.ts` re-exports
- * `MindRuntime` under the deprecated alias `BrainRuntimeService`.
+ * the conversational thread store. The Wave M1 backwards-compat alias
+ * `BrainRuntimeService` has been retired; `MindRuntime` is the sole canonical
+ * name and every DI token / importer resolves it directly.
  *
  * @cluster Mind/Coordination
  * @canonical backend/src/kloel/mind/coordination/mind-runtime.service.ts
@@ -311,6 +308,7 @@ export class MindRuntime {
       intent,
       ok: capabilityResult.ok,
       error: capabilityResult.error,
+      result: capabilityResult.data,
     });
 
     if (thread) {
@@ -428,10 +426,3 @@ export class MindRuntime {
     };
   }
 }
-
-/**
- * @deprecated Use {@link MindRuntime} instead. Kept for the ADR-0013 Wave M1
- * alias window (4 weeks) so existing DI tokens and direct imports keep
- * resolving while callers migrate.
- */
-export { MindRuntime as BrainRuntimeService };

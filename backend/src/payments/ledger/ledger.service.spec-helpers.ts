@@ -98,11 +98,13 @@ export function makePrismaStub(initial: ConnectAccountBalance[] = []): PrismaStu
       }),
       update: jest.fn(({ where, data }: { where: { id: string }; data: Partial<EntryRow> }) => {
         const idx = entries.findIndex((e) => e.id === where.id);
-        if (idx === -1) {
+        const current = idx === -1 ? undefined : entries[idx];
+        if (!current) {
           throw new Error(`stub: entry not found ${where.id}`);
         }
-        entries[idx] = { ...entries[idx], ...data } as EntryRow;
-        return entries[idx];
+        const next: EntryRow = { ...current, ...data };
+        entries[idx] = next;
+        return next;
       }),
     },
     connectAccountBalance: {

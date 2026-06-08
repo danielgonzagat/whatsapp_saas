@@ -18,6 +18,7 @@ import { KloelLead } from '@prisma/client';
 import { LLMBudgetService, estimateChatCostCents } from '../../llm-budget.service';
 import { PlanLimitsService } from '../../../billing/plan-limits.service';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { dualWriteLeadConversationMindMessage } from '../../kloel-lead-processor-helpers';
 import { UnifiedAgentService } from '../../unified-agent.service';
 import { SmartPaymentService } from '../../smart-payment.service';
 import { chatCompletionWithFallback } from '../../openai-wrapper';
@@ -198,6 +199,16 @@ export class LeadMindCoordinator {
         return;
       }
       await this.prisma.kloelConversation.create({ data: { leadId, role, content } });
+      // Canonical Brain->Mind mirror (source: 'lead_conversation'), flag-gated
+      // (KLOEL_MINDMESSAGE_DUALWRITE, default OFF) + fail-open. Only runs after a
+      // successful KloelConversation write (lead ownership already validated above).
+      await dualWriteLeadConversationMindMessage(
+        this.prisma,
+        this.logger,
+        workspaceId,
+        role,
+        content,
+      );
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'LeadMindCoordinator.create');
       this.logger.warn('Erro ao salvar mensagem do lead:', error); // Intencional: lead message persistence is non-critical.

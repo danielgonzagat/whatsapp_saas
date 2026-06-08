@@ -1,13 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import * as fs from 'fs';
-import { execSync } from 'child_process';
+import { execFileSync, execSync } from 'child_process';
 import { CodeAccessService } from './code-access.service';
 
 jest.mock('fs');
-jest.mock('child_process', () => ({ execSync: jest.fn() }));
+jest.mock('child_process', () => ({ execFileSync: jest.fn(), execSync: jest.fn() }));
 
 type ExecFailure = Error & { status: number };
 
+const mockExecFileSync = jest.mocked(execFileSync);
 const mockExecSync = jest.mocked(execSync);
 
 describe('CodeAccessService', () => {
@@ -68,16 +69,28 @@ describe('CodeAccessService', () => {
 
   describe('search', () => {
     it('parses ripgrep output into hits', () => {
-      mockExecSync.mockReturnValue('app.ts:10:5:console.log("hello")');
+      mockExecFileSync.mockReturnValue('app.ts:10:5:console.log("hello")');
       const hits = service.search('console');
       expect(hits).toHaveLength(1);
       expect(hits[0].file).toContain('app.ts');
       expect(hits[0].line).toBe(10);
     });
 
+    it('passes queries with single quotes as literal ripgrep arguments', () => {
+      mockExecFileSync.mockReturnValue('');
+      service.search("case '", { glob: '*.ts', max: 5 });
+      const cwdMatcher: unknown = expect.stringMatching(/.+/);
+      expect(mockExecFileSync).toHaveBeenCalledWith(
+        'rg',
+        expect.arrayContaining(['--max-count', '5', '--glob', '*.ts', "case '"]),
+        expect.objectContaining({ cwd: cwdMatcher }),
+      );
+      expect(mockExecSync).not.toHaveBeenCalled();
+    });
+
     it('returns empty array when no matches (exit code 1)', () => {
       const err: ExecFailure = Object.assign(new Error('no matches'), { status: 1 });
-      mockExecSync.mockImplementation(() => {
+      mockExecFileSync.mockImplementation(() => {
         throw err;
       });
       const hits = service.search('nonexistent');
@@ -85,7 +98,7 @@ describe('CodeAccessService', () => {
     });
 
     it('survives exec failures', () => {
-      mockExecSync.mockImplementation(() => {
+      mockExecFileSync.mockImplementation(() => {
         throw new Error('rg not found');
       });
       const hits = service.search('something');
@@ -95,14 +108,14 @@ describe('CodeAccessService', () => {
 
   describe('findUsages', () => {
     it('searches with word boundaries', () => {
-      mockExecSync.mockReturnValue('app.ts:5:1:myFunc');
+      mockExecFileSync.mockReturnValue('app.ts:5:1:myFunc');
       const hits = service.findUsages('myFunc');
       expect(hits).toHaveLength(1);
     });
 
     it('returns empty when symbol not found', () => {
       const err: ExecFailure = Object.assign(new Error('none'), { status: 1 });
-      mockExecSync.mockImplementation(() => {
+      mockExecFileSync.mockImplementation(() => {
         throw err;
       });
       const hits = service.findUsages('nonexistentSymbol');
@@ -112,14 +125,14 @@ describe('CodeAccessService', () => {
 
   describe('whichServiceImplements', () => {
     it('searches for capability id', () => {
-      mockExecSync.mockReturnValue('svc.ts:3:10:capId');
+      mockExecFileSync.mockReturnValue('svc.ts:3:10:capId');
       const hits = service.whichServiceImplements('cap-x');
       expect(hits).toHaveLength(1);
     });
 
     it('falls back to domainService search when empty', () => {
       const err: ExecFailure = Object.assign(new Error('none'), { status: 1 });
-      mockExecSync.mockImplementation(() => {
+      mockExecFileSync.mockImplementation(() => {
         throw err;
       });
       const hits = service.whichServiceImplements('cap-x');

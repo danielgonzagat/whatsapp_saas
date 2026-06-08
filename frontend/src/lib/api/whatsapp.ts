@@ -17,7 +17,7 @@ type MetaWhatsAppChannelStatus = {
   status?: string | null;
 };
 
-type MetaAuthStatusResponse = {
+export type MetaAuthStatusResponse = {
   connected?: boolean;
   tokenExpired?: boolean;
   channels?: {
@@ -55,14 +55,10 @@ function assertMetaPayload<T>(
 }
 
 
-/** Get the official Meta Cloud WhatsApp status for the current workspace. */
-export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppConnectionStatus> {
-  const res = await apiFetch<MetaAuthStatusResponse>('/meta/auth/status');
-  const data = assertMetaPayload(
-    res,
-    'Falha ao consultar status oficial da Meta.',
-    'Meta status did not return a confirmed payload.',
-  );
+/** Map a Meta auth payload into the WhatsApp session contract without another network call. */
+export function mapMetaAuthStatusToWhatsAppStatus(
+  data: MetaAuthStatusResponse,
+): WhatsAppConnectionStatus {
   const whatsapp = data.channels?.whatsapp || null;
   const phoneNumberId = readString(whatsapp?.phoneNumberId) || readString(data.whatsappPhoneNumberId);
   const whatsappBusinessId = readNullableString(whatsapp?.whatsappBusinessId || data.whatsappBusinessId);
@@ -73,6 +69,13 @@ export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppC
     : tokenExpired
       ? 'authorization_expired'
       : readString(whatsapp?.status) || 'connection_incomplete';
+  const metaOAuthConfigurationMissing = status === 'meta_oauth_configuration_missing';
+  const degraded = tokenExpired || metaOAuthConfigurationMissing;
+  const degradedReason = tokenExpired
+    ? 'meta_token_expired'
+    : metaOAuthConfigurationMissing
+      ? 'meta_oauth_configuration_missing'
+      : null;
 
   return {
     connected,
@@ -83,14 +86,25 @@ export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppC
     whatsappBusinessId,
     provider: 'meta-cloud',
     workerAvailable: true,
-    workerHealthy: connected || !tokenExpired,
-    workerError: tokenExpired ? 'meta_token_expired' : null,
-    degraded: tokenExpired,
-    degradedReason: tokenExpired ? 'meta_token_expired' : null,
+    workerHealthy: connected || !degraded,
+    workerError: degradedReason,
+    degraded,
+    degradedReason,
     takeoverActive: false,
     agentPaused: false,
     proofCount: 0,
   };
+}
+
+/** Get the official Meta Cloud WhatsApp status for the current workspace. */
+export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppConnectionStatus> {
+  const res = await apiFetch<MetaAuthStatusResponse>('/meta/auth/status');
+  const data = assertMetaPayload(
+    res,
+    'Falha ao consultar status oficial da Meta.',
+    'Meta status did not return a confirmed payload.',
+  );
+  return mapMetaAuthStatusToWhatsAppStatus(data);
 }
 
 /** Initiate the official Meta OAuth / Embedded Signup flow. */

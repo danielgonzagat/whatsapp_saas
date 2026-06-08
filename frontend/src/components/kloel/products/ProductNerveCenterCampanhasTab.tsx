@@ -38,11 +38,16 @@ export function ProductNerveCenterCampanhasTab({
     setCampPixel,
     campMessage,
     setCampMessage,
+    campError,
+    setCampError,
     campBusyId,
+    deleteConfirmId,
     handleCreateCamp,
     handleLaunchCamp,
     handlePauseCamp,
-    handleDeleteCamp,
+    requestDeleteCamp,
+    cancelDeleteCamp,
+    confirmDeleteCamp,
   } = useCampanhasTab(productId);
   return (
     <>
@@ -50,7 +55,13 @@ export function ProductNerveCenterCampanhasTab({
         <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>
           {kloelT(`Campanhas Registradas`)}
         </h2>
-        <Bt primary onClick={() => setShowCampForm(!showCampForm)}>
+        <Bt
+          primary
+          onClick={() => {
+            setCampError('');
+            setShowCampForm(!showCampForm);
+          }}
+        >
           {kloelT(`+ Nova Campanha`)}
         </Bt>
       </div>
@@ -180,24 +191,64 @@ export function ProductNerveCenterCampanhasTab({
       {showCampForm && (
         <div style={{ ...cs, padding: 16, marginBottom: 16 }}>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <Fd label={kloelT(`Nome da campanha`)} value={campName} onChange={setCampName} />
-            <Fd label={kloelT(`Pixel ID (opcional)`)} value={campPixel} onChange={setCampPixel} />
+            <Fd
+              label={kloelT(`Nome da campanha`)}
+              value={campName}
+              onChange={(value) => {
+                setCampError('');
+                setCampName(value);
+              }}
+            />
+            <Fd
+              label={kloelT(`Pixel ID (opcional)`)}
+              value={campPixel}
+              onChange={(value) => {
+                setCampError('');
+                setCampPixel(value);
+              }}
+            />
             <Fd label={kloelT(`Mensagem base`)} full>
               <textarea
                 style={{ ...is, height: 72 }}
                 value={campMessage}
-                onChange={(e) => setCampMessage(e.target.value)}
+                onChange={(e) => {
+                  setCampError('');
+                  setCampMessage(e.target.value);
+                }}
                 placeholder={kloelT(
                   `Mensagem inicial que será enviada para a audiência desta campanha.`,
                 )}
               />
             </Fd>
           </div>
+          {campError && (
+            <div
+              role="alert"
+              style={{
+                marginTop: 10,
+                padding: '9px 11px',
+                borderRadius: 6,
+                border: `1px solid ${V.r}`,
+                background: `color-mix(in srgb, ${V.r} 14%, transparent)`,
+                color: V.t,
+                fontSize: 11,
+              }}
+            >
+              {campError}
+            </div>
+          )}
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <Bt primary onClick={handleCreateCamp}>
               {kloelT(`Criar`)}
             </Bt>
-            <Bt onClick={() => setShowCampForm(false)}>{kloelT(`Cancelar`)}</Bt>
+            <Bt
+              onClick={() => {
+                setCampError('');
+                setShowCampForm(false);
+              }}
+            >
+              {kloelT(`Cancelar`)}
+            </Bt>
           </div>
         </div>
       )}
@@ -271,6 +322,21 @@ export function ProductNerveCenterCampanhasTab({
                     {String(c.messageTemplate)}
                   </span>
                 )}
+                {c.deliveryReady === false && (
+                  <span
+                    style={{
+                      fontSize: 10,
+                      color: V.em,
+                      display: 'block',
+                      marginTop: 4,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {String(c.deliveryGapMessage || 'Conecte um canal de entrega para lançar.')}
+                  </span>
+                )}
               </div>
               <div>
                 <Bg
@@ -295,27 +361,53 @@ export function ProductNerveCenterCampanhasTab({
                   <Bt onClick={() => handlePauseCamp(String(c.id))} style={{ padding: '4px 8px' }}>
                     {campBusyId === `pause-${c.id}` ? 'Pausando...' : 'Pausar'}
                   </Bt>
-                ) : (
+                ) : c.deliveryReady === false ? (
                   <Bt
-                    primary
-                    onClick={() => handleLaunchCamp(String(c.id), false)}
+                    onClick={() =>
+                      router.push(`/marketing/email?source=products&productId=${productId}`)
+                    }
                     style={{ padding: '4px 8px' }}
                   >
-                    {campBusyId === `launch-${c.id}` ? 'Lançando...' : 'Lançar'}
+                    {kloelT(`Configurar canal`)}
+                  </Bt>
+                ) : (
+                  <>
+                    <Bt
+                      primary
+                      onClick={() => handleLaunchCamp(String(c.id), false)}
+                      style={{ padding: '4px 8px' }}
+                    >
+                      {campBusyId === `launch-${c.id}` ? 'Lançando...' : 'Lançar'}
+                    </Bt>
+                    <Bt
+                      onClick={() => handleLaunchCamp(String(c.id), true)}
+                      style={{ padding: '4px 8px' }}
+                    >
+                      {campBusyId === `launch-${c.id}` ? 'Agendando...' : 'Smart time'}
+                    </Bt>
+                  </>
+                )}
+                {deleteConfirmId === String(c.id) ? (
+                  <>
+                    <Bt
+                      primary
+                      onClick={() => confirmDeleteCamp(String(c.id))}
+                      style={{ padding: '4px 8px', color: V.r }}
+                    >
+                      {campBusyId === `delete-${c.id}` ? 'Excluindo...' : 'Confirmar exclusão'}
+                    </Bt>
+                    <Bt onClick={cancelDeleteCamp} style={{ padding: '4px 8px' }}>
+                      {kloelT(`Cancelar`)}
+                    </Bt>
+                  </>
+                ) : (
+                  <Bt
+                    onClick={() => requestDeleteCamp(String(c.id))}
+                    style={{ padding: '4px 8px', color: V.r }}
+                  >
+                    {kloelT(`Excluir`)}
                   </Bt>
                 )}
-                <Bt
-                  onClick={() => handleLaunchCamp(String(c.id), true)}
-                  style={{ padding: '4px 8px' }}
-                >
-                  {campBusyId === `launch-${c.id}` ? 'Agendando...' : 'Smart time'}
-                </Bt>
-                <Bt
-                  onClick={() => handleDeleteCamp(String(c.id))}
-                  style={{ padding: '4px 8px', color: V.r }}
-                >
-                  {kloelT(`Excluir`)}
-                </Bt>
               </div>
             </div>
           ))}

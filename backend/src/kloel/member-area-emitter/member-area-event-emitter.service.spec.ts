@@ -90,7 +90,7 @@ describe('MemberAreaEventEmitterService', () => {
 
       const events = spine.recentEvents();
       expect(events).toHaveLength(1);
-      const e = events[0]!;
+      const e = events[0];
       expect(e.eventName).toBe('commerce.member_area.enrolled');
       expect(e.workspaceId).toBe('wks_test');
       expect(e.entityRef).toEqual({ entityType: 'member_enrollment', entityId: 'enr_001' });
@@ -112,7 +112,7 @@ describe('MemberAreaEventEmitterService', () => {
 
       const events = spine.recentEvents();
       expect(events).toHaveLength(1);
-      const e = events[0]!;
+      const e = events[0];
       expect(e.eventName).toBe('commerce.member_area.progressed');
       expect(e.workspaceId).toBe('wks_test');
       expect(e.entityRef).toEqual({ entityType: 'member_enrollment', entityId: 'enr_001' });
@@ -133,7 +133,7 @@ describe('MemberAreaEventEmitterService', () => {
 
       const events = spine.recentEvents();
       expect(events).toHaveLength(1);
-      const e = events[0]!;
+      const e = events[0];
       expect(e.eventName).toBe('commerce.member_area.dropped_out');
       expect(e.workspaceId).toBe('wks_test');
       expect(e.entityRef).toEqual({ entityType: 'member_enrollment', entityId: 'enr_001' });
@@ -152,7 +152,7 @@ describe('MemberAreaEventEmitterService', () => {
 
       const events = spine.recentEvents();
       expect(events).toHaveLength(1);
-      const e = events[0]!;
+      const e = events[0];
       expect(e.eventName).toBe('commerce.affiliate.performance_measured');
       expect(e.workspaceId).toBe('wks_test');
       expect(e.truthMode).toBe('observed');
@@ -174,7 +174,7 @@ describe('MemberAreaEventEmitterService', () => {
 
       const events = spine.recentEvents();
       expect(events).toHaveLength(1);
-      const e = events[0]!;
+      const e = events[0];
       expect(e.eventName).toBe('commerce.affiliate.commission_calculated');
       expect(e.workspaceId).toBe('wks_test');
       expect(e.entityRef).toEqual({ entityType: 'affiliate_link', entityId: 'link_001' });
@@ -245,21 +245,21 @@ describe('MemberAreaEventEmitterService', () => {
   it('auto-tags positive valence on enrolled event', () => {
     const { spine, emitter } = buildEmitter();
     emitter.emitEnrolled(enrollmentContext());
-    const e = spine.recentEvents()[0]!;
+    const e = spine.recentEvents()[0];
     expect(e.valence).toBe('positive');
   });
 
   it('auto-tags negative valence on dropped_out event', () => {
     const { spine, emitter } = buildEmitter();
     emitter.emitDroppedOut(dropoutContext());
-    const e = spine.recentEvents()[0]!;
+    const e = spine.recentEvents()[0];
     expect(e.valence).toBe('negative');
   });
 
   it('does not auto-tag valence on progressed event (non-terminal)', () => {
     const { spine, emitter } = buildEmitter();
     emitter.emitProgressed(progressContext());
-    const e = spine.recentEvents()[0]!;
+    const e = spine.recentEvents()[0];
     expect(e.valence).toBeUndefined();
   });
 
@@ -286,9 +286,9 @@ describe('MemberAreaEventEmitterService', () => {
     );
     const events = spine.recentEvents();
     expect(events).toHaveLength(2);
-    expect(events[0]!.correlationId).toBe('corr_a');
-    expect(events[1]!.correlationId).toBe('corr_b');
-    expect(events[0]!.eventId).not.toBe(events[1]!.eventId);
+    expect(events[0].correlationId).toBe('corr_a');
+    expect(events[1].correlationId).toBe('corr_b');
+    expect(events[0].eventId).not.toBe(events[1].eventId);
   });
 
   // --- Test 6: Provenance environment is set by spine ---
@@ -296,7 +296,7 @@ describe('MemberAreaEventEmitterService', () => {
   it('stamps provenance environment field via spine', () => {
     const { spine, emitter } = buildEmitter();
     emitter.emitEnrolled(enrollmentContext());
-    const e = spine.recentEvents()[0]!;
+    const e = spine.recentEvents()[0];
     expect(['dev', 'staging', 'prod']).toContain(e.provenance.environment);
     expect(e.provenance.source).toBe('production');
   });

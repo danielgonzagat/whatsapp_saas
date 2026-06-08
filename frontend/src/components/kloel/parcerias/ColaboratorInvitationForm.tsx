@@ -8,7 +8,7 @@ import { IC } from './ParceriasView.icons';
 import { C, FONT } from './ParceriasDesignTokens';
 
 const ROLES: { value: string; label: string; color: string }[] = [
-  { value: 'admin', label: 'Admin', color: 'colors.ember.primary' },
+  { value: 'admin', label: 'Admin', color: colors.ember.primary },
   { value: 'manager', label: 'Manager', color: colors.semantic.info },
   { value: 'support', label: 'Support', color: colors.semantic.success },
   { value: 'finance', label: 'Finance', color: colors.semantic.warning },
@@ -22,12 +22,15 @@ export default function ColaboratorInvitationForm({ onClose }: { onClose: () => 
   const [sending, setSending] = useState(false);
 
   const inviteRoles = ROLES.filter((r) => r.value !== 'admin');
+  const trimmedEmail = email.trim();
+  const emailInvalid = Boolean(trimmedEmail) && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
+  const canInvite = Boolean(trimmedEmail) && !emailInvalid;
 
   const handleSubmit = async () => {
-    if (!email.trim()) {return;}
+    if (!canInvite) {return;}
     setSending(true);
     try {
-      await inviteCollaborator({ email, role });
+      await inviteCollaborator({ email: trimmedEmail, role });
       onClose();
     } catch (e) {
       console.error('Failed to invite', e);
@@ -35,6 +38,7 @@ export default function ColaboratorInvitationForm({ onClose }: { onClose: () => 
       setSending(false);
     }
   };
+
 
   return (
     <div
@@ -68,12 +72,18 @@ export default function ColaboratorInvitationForm({ onClose }: { onClose: () => 
           {kloelT(`Email`)}
         </label>
         <input
-          aria-label="Email do colaborador" type="email" value={email}
+          aria-label="Email do colaborador" type="email" name="collaboratorInviteEmail" value={email}
+          aria-invalid={emailInvalid ? 'true' : undefined}
           onChange={(e) => setEmail(e.target.value)}
           placeholder={kloelT(`colaborador@email.com`)}
-          style={{ width: '100%', padding: '10px 14px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: 6, color: C.text, fontFamily: FONT.sans, fontSize: 13, outline: 'none', marginBottom: 16, boxSizing: 'border-box' as const }}
+          style={{ width: '100%', padding: '10px 14px', background: C.bg, border: `1px solid ${emailInvalid ? colors.semantic.error : C.border}`, borderRadius: 6, color: C.text, fontFamily: FONT.sans, fontSize: 13, outline: 'none', marginBottom: emailInvalid ? 6 : 16, boxSizing: 'border-box' as const }}
           id={`${fid}-email`}
         />
+        {emailInvalid && (
+          <div style={{ fontFamily: FONT.sans, fontSize: 12, color: colors.semantic.error, marginBottom: 16 }}>
+            {kloelT(`Informe um email valido para enviar o convite.`)}
+          </div>
+        )}
         <span style={{ fontFamily: FONT.sans, fontSize: 12, fontWeight: 500, color: C.secondary, display: 'block', marginBottom: 6 }}>
           {kloelT(`Funcao`)}
         </span>
@@ -97,8 +107,8 @@ export default function ColaboratorInvitationForm({ onClose }: { onClose: () => 
             style={{ padding: '9px 18px', background: 'none', border: `1px solid ${C.border}`, borderRadius: 6, color: C.secondary, fontFamily: FONT.sans, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
             {kloelT(`Cancelar`)}
           </button>
-          <button type="button" onClick={handleSubmit} disabled={sending || !email.trim()}
-            style={{ padding: '9px 22px', background: C.ember, border: 'none', borderRadius: 6, color: colors.text.silver, fontFamily: FONT.sans, fontSize: 13, fontWeight: 600, cursor: sending ? 'wait' : 'pointer', opacity: !email.trim() ? 0.5 : 1 }}>
+          <button type="button" onClick={handleSubmit} disabled={sending || !canInvite}
+            style={{ padding: '9px 22px', background: C.ember, border: 'none', borderRadius: 6, color: colors.text.silver, fontFamily: FONT.sans, fontSize: 13, fontWeight: 600, cursor: sending ? 'wait' : canInvite ? 'pointer' : 'not-allowed', opacity: !canInvite ? 0.5 : 1 }}>
             {sending ? 'Enviando...' : 'Enviar Convite'}
           </button>
         </div>

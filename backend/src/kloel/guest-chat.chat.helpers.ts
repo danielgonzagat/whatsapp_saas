@@ -345,9 +345,13 @@ export async function runDeterministicAction(
   // Stage 1: IntentRouter (new CapabilityRegistry-based)
   if (hasIntentRouter) {
     const classification = intentRouter.classify(message, 'dashboard-chat', ['*']);
-    if (!classification.isChat && classification.classification) {
+    if (
+      !classification.isChat &&
+      classification.classification &&
+      classification.classification.capabilityId
+    ) {
       const action = {
-        tool: classification.classification.capabilityId!,
+        tool: classification.classification.capabilityId,
         args: classification.classification.entities,
       };
       logger.log(`IntentRouter: tool=${action.tool} ws=${workspaceId} session=${sessionId}`);

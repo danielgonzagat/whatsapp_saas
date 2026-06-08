@@ -12,7 +12,6 @@ const S = "var(--font-sora), 'Sora', sans-serif";
 interface FloatingChatMessagesProps {
   messages: Message[];
   isStreaming: boolean;
-  thinkingLabel: string;
   hoveredMessageId: string | null;
   onHoverEnter: (id: string) => void;
   onHoverLeave: (id: string) => void;
@@ -26,7 +25,6 @@ interface FloatingChatMessagesProps {
 export function FloatingChatMessages({
   messages,
   isStreaming,
-  thinkingLabel,
   hoveredMessageId,
   onHoverEnter,
   onHoverLeave,
@@ -94,9 +92,6 @@ export function FloatingChatMessages({
             animated
             spores="animated"
           />
-          <span style={{ fontFamily: S, fontSize: 16, color: colors.text.muted }}>
-            {thinkingLabel}
-          </span>
         </div>
       )}
 

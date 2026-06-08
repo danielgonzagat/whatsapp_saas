@@ -4,7 +4,8 @@ type ExpectedCtor =
   | BooleanConstructor
   | FunctionConstructor
   | ObjectConstructor
-  | ArrayConstructor;
+  | ArrayConstructor
+  | DateConstructor;
 
 export function expectValueOf(ctor: ExpectedCtor) {
   return {
@@ -23,6 +24,9 @@ export function expectValueOf(ctor: ExpectedCtor) {
       }
       if (ctor === Array) {
         return Array.isArray(value);
+      }
+      if (ctor === Date) {
+        return value instanceof Date;
       }
       return typeof value === 'object' && value !== null && !Array.isArray(value);
     },

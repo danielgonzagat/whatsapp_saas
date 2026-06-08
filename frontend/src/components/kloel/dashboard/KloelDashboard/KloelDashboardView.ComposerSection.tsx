@@ -40,7 +40,7 @@ interface ComposerSectionProps {
   inputRef: MutableRefObject<HTMLTextAreaElement | null>;
   onQuickAction: (action: KloelDashboardQuickAction) => void;
   onInputChange: (value: string) => void;
-  onSend: () => void;
+  onSend: (value?: string) => void;
   onRemoveAttachment: (attachmentId: string) => void;
   onRetryAttachment: (attachmentId: string) => void;
   onSelectProduct: (product: KloelLinkedProduct) => void;
@@ -136,7 +136,7 @@ export function ComposerSection({
           linkedProduct={linkedProduct}
           selectableProducts={selectableProducts}
           productsLoading={selectableProductsLoading}
-          popoverPlacement={hasMessages ? 'above' : 'below'}
+          popoverPlacement="above"
           inputRef={inputRef}
           onInputChange={onInputChange}
           onSend={onSend}

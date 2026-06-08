@@ -14,17 +14,31 @@ export default function AffiliateRegistrationForm({ onClose }: { onClose: () => 
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
 
+  const trimmedName = partnerName.trim();
+  const trimmedEmail = partnerEmail.trim();
+  const emailInvalid = Boolean(trimmedEmail) && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
+  const emailError = emailInvalid ? 'Informe um email valido para convidar afiliado.' : '';
+  const canInvite = Boolean(trimmedName && trimmedEmail) && !emailInvalid && !sending;
+
+  const clearErrorOnFieldChange = () => {
+    setError((current) => (current ? '' : current));
+  };
+
   const handleSubmit = async () => {
-    if (!partnerName.trim() || !partnerEmail.trim()) {
+    if (!trimmedName || !trimmedEmail) {
       setError('Preencha nome e email do afiliado.');
+      return;
+    }
+    if (emailInvalid) {
+      setError('Informe um email valido para convidar afiliado.');
       return;
     }
     setSending(true);
     setError('');
     try {
       await createAffiliate({
-        partnerName: partnerName.trim(),
-        partnerEmail: partnerEmail.trim(),
+        partnerName: trimmedName,
+        partnerEmail: trimmedEmail,
         type: 'AFFILIATE',
         commissionRate: commissionRate.trim() ? Number(commissionRate) : undefined,
       });
@@ -62,7 +76,14 @@ export default function AffiliateRegistrationForm({ onClose }: { onClose: () => 
             <label htmlFor={`${fid}-affiliate-name`} style={{ display: 'block', marginBottom: 6, fontFamily: FONT.sans, fontSize: 12, fontWeight: 500, color: C.secondary }}>
               {kloelT(`Nome do afiliado`)}
             </label>
-            <input id={`${fid}-affiliate-name`} value={partnerName} onChange={(e) => setPartnerName(e.target.value)}
+            <input
+              id={`${fid}-affiliate-name`}
+              name="affiliatePartnerName"
+              value={partnerName}
+              onChange={(e) => {
+                setPartnerName(e.target.value);
+                clearErrorOnFieldChange();
+              }}
               placeholder={kloelT(`Ex.: Ana Souza`)}
               style={{ width: '100%', padding: '10px 14px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: 6, color: C.text, fontFamily: FONT.sans, fontSize: 13, outline: 'none', boxSizing: 'border-box' as const }}
             />
@@ -71,16 +92,30 @@ export default function AffiliateRegistrationForm({ onClose }: { onClose: () => 
             <label htmlFor={`${fid}-affiliate-email`} style={{ display: 'block', marginBottom: 6, fontFamily: FONT.sans, fontSize: 12, fontWeight: 500, color: C.secondary }}>
               {kloelT(`Email do afiliado`)}
             </label>
-            <input id={`${fid}-affiliate-email`} type="email" value={partnerEmail} onChange={(e) => setPartnerEmail(e.target.value)}
+            <input
+              id={`${fid}-affiliate-email`}
+              name="affiliatePartnerEmail"
+              type="email"
+              value={partnerEmail}
+              aria-invalid={emailInvalid || undefined}
+              onChange={(e) => {
+                setPartnerEmail(e.target.value);
+                clearErrorOnFieldChange();
+              }}
               placeholder={kloelT(`afiliado@email.com`)}
-              style={{ width: '100%', padding: '10px 14px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: 6, color: C.text, fontFamily: FONT.sans, fontSize: 13, outline: 'none', boxSizing: 'border-box' as const }}
+              style={{ width: '100%', padding: '10px 14px', background: C.bg, border: `1px solid ${emailInvalid ? C.error : C.border}`, borderRadius: 6, color: C.text, fontFamily: FONT.sans, fontSize: 13, outline: 'none', boxSizing: 'border-box' as const }}
             />
+            {emailError ? (
+              <div style={{ marginTop: 6, fontFamily: FONT.sans, fontSize: 11, color: C.error }}>
+                {emailError}
+              </div>
+            ) : null}
           </div>
           <div>
             <label htmlFor={`${fid}-affiliate-commission`} style={{ display: 'block', marginBottom: 6, fontFamily: FONT.sans, fontSize: 12, fontWeight: 500, color: C.secondary }}>
               {kloelT(`Comissão inicial (%)`)}
             </label>
-            <input id={`${fid}-affiliate-commission`} type="number" min={0} max={100} value={commissionRate} onChange={(e) => setCommissionRate(e.target.value)}
+            <input id={`${fid}-affiliate-commission`} name="affiliateCommissionRate" type="number" min={0} max={100} value={commissionRate} onChange={(e) => setCommissionRate(e.target.value)}
               style={{ width: '100%', padding: '10px 14px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: 6, color: C.text, fontFamily: FONT.sans, fontSize: 13, outline: 'none', boxSizing: 'border-box' as const }}
             />
           </div>
@@ -98,8 +133,8 @@ export default function AffiliateRegistrationForm({ onClose }: { onClose: () => 
             style={{ padding: '9px 18px', background: 'none', border: `1px solid ${C.border}`, borderRadius: 6, color: C.secondary, fontFamily: FONT.sans, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
             {kloelT(`Cancelar`)}
           </button>
-          <button type="button" onClick={handleSubmit} disabled={sending}
-            style={{ padding: '9px 22px', background: C.ember, border: 'none', borderRadius: 6, color: C.textOnAccent, fontFamily: FONT.sans, fontSize: 13, fontWeight: 600, cursor: sending ? 'wait' : 'pointer', opacity: sending ? 0.7 : 1 }}>
+          <button type="button" onClick={handleSubmit} disabled={!canInvite}
+            style={{ padding: '9px 22px', background: C.ember, border: 'none', borderRadius: 6, color: C.textOnAccent, fontFamily: FONT.sans, fontSize: 13, fontWeight: 600, cursor: sending ? 'wait' : canInvite ? 'pointer' : 'not-allowed', opacity: sending ? 0.7 : canInvite ? 1 : 0.45 }}>
             {sending ? 'Enviando...' : 'Enviar convite'}
           </button>
         </div>

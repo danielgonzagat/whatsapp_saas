@@ -9,12 +9,13 @@ import {
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
-import type { Product } from '@prisma/client';
+import type { Prisma, Product } from '@prisma/client';
 import { MindEventSpine } from '../kloel/mind/coordination';
 import {
   assertWorkspaceId,
   buildCommercialPayload,
   buildListWhere,
+  normalizeProductCreateInput,
   resolvePagination,
 } from './product.helpers';
 import type {
@@ -52,7 +53,7 @@ export class ProductService {
    */
   async create(
     workspaceId: string,
-    dto: CreateProductDto,
+    dto: CreateProductDto | Prisma.ProductUncheckedCreateInput,
     actor?: { id: string; email?: string },
   ): Promise<ProductResult> {
     const resolvedActor = actor ?? { id: 'kloel-resolver' };
@@ -62,13 +63,7 @@ export class ProductService {
     }
 
     const product = await this.prisma.product.create({
-      data: {
-        ...dto,
-        workspaceId,
-        format: dto.format || 'PHYSICAL',
-        status: 'DRAFT',
-        active: false,
-      },
+      data: { ...normalizeProductCreateInput(dto), workspaceId },
     });
 
     this.eventEmitter.emit('mind.product.observed', {
@@ -129,7 +124,7 @@ export class ProductService {
       // Direct path: traditional 4-arg call
       productId = productIdOrArgs;
       dto = (dtoOrActor as UpdateProductDto) ?? {};
-      actor = (actorOpt as { id: string; email?: string }) ?? { id: 'kloel-resolver' };
+      actor = actorOpt ?? { id: 'kloel-resolver' };
     }
 
     assertWorkspaceId(workspaceId);

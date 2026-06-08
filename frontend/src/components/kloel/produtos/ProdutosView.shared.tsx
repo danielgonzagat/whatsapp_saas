@@ -1,6 +1,7 @@
 'use client';
 import { colors } from '@/lib/design-tokens';
 
+import { useClientMounted } from '@/hooks/useClientMounted';
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { secureRandomFloat } from '@/lib/secure-random';
@@ -77,18 +78,22 @@ export const timeAgo = (value?: string | null) => {
 export function getProductPlanPriceSummary(product: {
   minPlanPriceInCents?: unknown;
   maxPlanPriceInCents?: unknown;
+  price?: unknown;
 }) {
   const rawMin = Number(product.minPlanPriceInCents);
   const rawMax = Number(product.maxPlanPriceInCents);
-  const hasMin = Number.isFinite(rawMin);
-  const hasMax = Number.isFinite(rawMax);
+  const hasMin = product.minPlanPriceInCents != null && Number.isFinite(rawMin);
+  const hasMax = product.maxPlanPriceInCents != null && Number.isFinite(rawMax);
 
   if (!hasMin || !hasMax) {
+    const rawProductPrice = Number(product.price);
+    const hasProductPrice = Number.isFinite(rawProductPrice) && rawProductPrice > 0;
+
     return {
       hasPlanPricing: false,
       minPlanPriceInCents: null,
       maxPlanPriceInCents: null,
-      priceLabel: 'Sem planos',
+      priceLabel: hasProductPrice ? fmtBRL(Math.max(0, rawProductPrice)) : 'Sem planos',
     };
   }
 
@@ -161,7 +166,7 @@ export const focusPrimaryInput = (element: HTMLInputElement | null) => {
 export function NP({
   w = 160,
   h = 28,
-  color = 'colors.ember.primary',
+  color = colors.ember.primary,
 }: {
   w?: number;
   h?: number;
@@ -169,6 +174,7 @@ export function NP({
 }) {
   const prefersReducedMotion = usePrefersReducedMotion({ defaultValue: true });
   const ref = useRef<HTMLCanvasElement>(null);
+  const mounted = useClientMounted();
 
   const staticWave = Array.from({ length: Math.max(2, Math.floor(w / 2)) }, (_, index) => {
     const x = (index / (Math.max(2, Math.floor(w / 2)) - 1)) * w;
@@ -230,9 +236,9 @@ export function NP({
       cancelAnimationFrame(raf);
       obs.disconnect();
     };
-  }, [w, h, color, prefersReducedMotion]);
+  }, [w, h, color, prefersReducedMotion, mounted]);
 
-  if (prefersReducedMotion) {
+  if (!mounted || prefersReducedMotion) {
     return (
       <svg
         width={w}
@@ -266,7 +272,7 @@ export function NP({
 // ── Ticker — scrolling horizontal text ──
 export function Ticker({
   items,
-  color = 'colors.ember.primary',
+  color = colors.ember.primary,
   duration = '22s',
 }: {
   items: string[];
@@ -274,6 +280,8 @@ export function Ticker({
   duration?: string;
 }) {
   const prefersReducedMotion = usePrefersReducedMotion({ defaultValue: true });
+  const mounted = useClientMounted();
+  const reduced = !mounted || prefersReducedMotion;
   const text = items.join('  ///  ');
   return (
     <div
@@ -290,15 +298,15 @@ export function Ticker({
         style={{
           display: 'inline-block',
           whiteSpace: 'nowrap',
-          animation: prefersReducedMotion ? 'none' : `tickerScroll ${duration} linear infinite`,
+          animation: reduced ? 'none' : `tickerScroll ${duration} linear infinite`,
           fontFamily: MONO,
           fontSize: 11,
           color,
           opacity: 0.7,
-          transform: prefersReducedMotion ? 'translateX(0)' : undefined,
+          transform: reduced ? 'translateX(0)' : undefined,
         }}
       >
-        {prefersReducedMotion ? text : `${text}\u00a0\u00a0\u00a0///\u00a0\u00a0\u00a0${text}`}
+        {reduced ? text : `${text}   ///   ${text}`}
       </div>
     </div>
   );
@@ -307,7 +315,7 @@ export function Ticker({
 // ── LiveFeed — small event list ──
 export function LiveFeed({
   events,
-  color = 'colors.ember.primary',
+  color = colors.ember.primary,
 }: {
   events: LiveFeedEvent[];
   color?: string;

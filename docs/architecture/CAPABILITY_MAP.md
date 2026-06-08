@@ -18,21 +18,35 @@ Each capability lists every implementation found across the codebase. A capabili
 
 - `normalizePhone` (function) — `backend/src/common/phone/phone-normalization.util.ts:150`
 - `normalizeNumber` (function) — `backend/src/marketing/channels/whatsapp/whatsapp-service.helpers.ts:15`
-- `formatPhone` (function) — `frontend/src/app/(main)/followups/followups.helpers.ts:31`
+- `formatPhone` (function) — `frontend/src/app/(main)/followups/followups.helpers.ts:32`
 - `normalizePhone` (function) — `worker/utils/phone-normalization.util.ts:171`
 
-## CAPABILITY: `resolve_tenant` (6 implementations ⚠️ duplicated)
+## CAPABILITY: `resolve_tenant` (7 implementations ⚠️ duplicated)
 
 - `resolveWorkspaceId` (function) — `backend/src/auth/workspace-access.ts:119`
+- `resolveWorkspaceIdHelper` (function) — `backend/src/billing/billing-subscription-status.helper.ts:24`
 - `getWorkspaceId` (function) — `backend/src/kloel/product-sub-resources/helpers/common.helpers.ts:20`
 - `resolveWorkspaceHeader` (function) — `frontend/src/app/api/_lib/bearer-from-request.ts:71`
 - `resolveWorkspaceFromAuthPayload` (function) — `frontend/src/lib/api/core-tokens.ts:21`
 - `resolveWorkspaceSelfIdentity` (function) — `worker/processors/autopilot/identity-resolve.ts:41`
 - `resolveWorkspaceTimezone` (function) — `worker/providers/timezone.ts:37`
 
-## CAPABILITY: `parse_webhook` (0 implementations ⚪ not implemented)
+## CAPABILITY: `parse_webhook` (14 implementations ⚠️ duplicated)
 
-No implementation detected. May not be a feature of this codebase.
+- `EmailMarketingWebhookController` (class) — `backend/src/marketing/email-marketing-webhook.controller.ts:57`
+- `MetaCoreWebhookController` (class) — `backend/src/meta/meta-webhook.controller.ts:46`
+- `MetaWebhookController` (class) — `backend/src/meta/webhooks/meta-webhook.controller.ts:123`
+- `MercadoPagoWebhookController` (class) — `backend/src/payments/mercadopago/mercadopago-webhook.controller.ts:40`
+- `StripeWebhookProcessor` (class) — `backend/src/payments/stripe/stripe-webhook.processor.ts:163`
+- `PaymentWebhookGenericController` (class) — `backend/src/webhooks/payment-webhook-generic.controller.ts:47`
+- `PaymentWebhookStripeController` (class) — `backend/src/webhooks/payment-webhook-stripe.controller.ts:63`
+- `StripeWebhookLedgerService` (class) — `backend/src/webhooks/stripe-webhook-ledger.service.ts:24`
+- `TikTokWebhookController` (class) — `backend/src/webhooks/tiktok-webhook.controller.ts:115`
+- `WebhookDispatcherService` (class) — `backend/src/webhooks/webhook-dispatcher.service.ts:13`
+- `WebhookSettingsController` (class) — `backend/src/webhooks/webhook-settings.controller.ts:27`
+- `WebhooksController` (class) — `backend/src/webhooks/webhooks.controller.ts:71`
+- `WebhooksService` (class) — `backend/src/webhooks/webhooks.service.ts:56`
+- `WhatsAppApiWebhookController` (class) — `backend/src/webhooks/whatsapp-api-webhook.controller.ts:41`
 
 ## CAPABILITY: `idempotency_check` (3 implementations ⚠️ duplicated)
 
@@ -42,15 +56,16 @@ No implementation detected. May not be a feature of this codebase.
 
 ## CAPABILITY: `recover_cart` (1 implementations)
 
-- `CartRecoveryService` (class) — `backend/src/kloel/cart-recovery.service.ts:102`
+- `CartRecoveryService` (class) — `backend/src/kloel/cart-recovery.service.ts:105`
 
 ## CAPABILITY: `score_intent` (0 implementations ⚪ not implemented)
 
 No implementation detected. May not be a feature of this codebase.
 
-## CAPABILITY: `qualify_contact` (0 implementations ⚪ not implemented)
+## CAPABILITY: `qualify_contact` (2 implementations ⚠️ duplicated)
 
-No implementation detected. May not be a feature of this codebase.
+- `NeuroCrmController` (class) — `backend/src/crm/neuro-crm.controller.ts:15`
+- `NeuroCrmService` (class) — `backend/src/crm/neuro-crm.service.ts:22`
 
 ## CAPABILITY: `authenticate_user` (6 implementations ⚠️ duplicated)
 
@@ -63,13 +78,13 @@ No implementation detected. May not be a feature of this codebase.
 
 ## CAPABILITY: `connect_channel` (7 implementations ⚠️ duplicated)
 
-- `startSession` (function) — `backend/src/marketing/channels/whatsapp/providers/provider-registry-session.ts:82`
+- `startSession` (function) — `backend/src/marketing/channels/whatsapp/providers/provider-registry-session.ts:81`
 - `WhatsappSessionService` (class) — `backend/src/marketing/channels/whatsapp/whatsapp-session.service.ts:19`
 - `MetaConnectService` (class) — `backend/src/marketing/marketing-connect/meta-connect.service.ts:13`
 - `MetaConnectionStateService` (class) — `backend/src/meta/meta-connection-state.service.ts:37`
 - `WhatsAppSessionHarness` (function) — `frontend/src/app/e2e/_components/whatsapp-session-harness.tsx:11`
 - `MetaConnectCard` (function) — `frontend/src/components/kloel/QrConnectCard.tsx:17`
-- `MetaConnectSection` (function) — `frontend/src/components/kloel/conta/ContaMetaConnectSection.tsx:12`
+- `MetaConnectSection` (function) — `frontend/src/components/kloel/conta/ContaMetaConnectSection.tsx:13`
 
 ## CAPABILITY: `process_payment` (2 implementations ⚠️ duplicated)
 
@@ -90,27 +105,27 @@ No implementation detected. May not be a feature of this codebase.
 - `buildCheckoutProjection` (function) — `backend/src/kloel/kloel-product-sub-resource-tools.service.helpers.ts:266`
 - `buildCheckoutStartFeatures` (function) — `backend/src/kloel/mind/runtime/mind-event-processor.service.helpers.ts:74`
 - `buildCheckoutData` (function) — `backend/src/kloel/product-sub-resources/helpers/plan.serialize-helpers.ts:4`
-- `CheckoutPaymentSection` (function) — `frontend/src/app/(checkout)/components/CheckoutPaymentSection.tsx:61`
+- `CheckoutPaymentSection` (function) — `frontend/src/app/(checkout)/components/CheckoutPaymentSection.tsx:69`
 - `buildCheckoutFormDraftKey` (function) — `frontend/src/app/(checkout)/hooks/useCheckoutExperience.utils.ts:37`
 - `buildCheckoutFormDraftKey` (function) — `frontend/src/app/(checkout)/hooks/useCheckoutExperienceSocial.draft.ts:15`
 - `createCheckoutForm` (function) — `frontend/src/components/products/ProductCheckoutsTab.helpers.ts:80`
-- `buildCheckoutProductBody` (function) — `frontend/src/hooks/useCheckoutPlans.helpers.ts:152`
-- `buildCheckoutSeedProduct` (function) — `frontend/src/hooks/useCheckoutPlans.helpers.ts:277`
+- `buildCheckoutProductBody` (function) — `frontend/src/hooks/useCheckoutPlans.helpers.ts:153`
+- `buildCheckoutSeedProduct` (function) — `frontend/src/hooks/useCheckoutPlans.helpers.ts:279`
 - `buildCheckoutDisplayCode` (function) — `frontend/src/lib/checkout-links.ts:57`
-- `buildCheckoutLinksForPlan` (function) — `frontend/src/lib/checkout-links.ts:141`
+- `buildCheckoutLinksForPlan` (function) — `frontend/src/lib/checkout-links.ts:142`
 - `buildCheckoutPricing` (function) — `frontend/src/lib/checkout-pricing.ts:2`
 
-## CAPABILITY: `verify_webhook_signature` (0 implementations ⚪ not implemented)
+## CAPABILITY: `verify_webhook_signature` (1 implementations)
 
-No implementation detected. May not be a feature of this codebase.
+- `MercadoPagoWebhookSignatureVerifier` (class) — `backend/src/payments/mercadopago/mercadopago-webhook-signature.verifier.ts:26`
 
-## CAPABILITY: `split_payment` (0 implementations ⚪ not implemented)
+## CAPABILITY: `split_payment` (1 implementations)
 
-No implementation detected. May not be a feature of this codebase.
+- `calculateSplit` (function) — `backend/src/payments/split/split.engine.ts:174`
 
 ## CAPABILITY: `ledger_entry` (1 implementations)
 
-- `LedgerService` (class) — `backend/src/payments/ledger/ledger.service.ts:62`
+- `LedgerService` (class) — `backend/src/payments/ledger/ledger.service.ts:59`
 
 ## CAPABILITY: `fraud_check` (3 implementations ⚠️ duplicated)
 
@@ -120,4 +135,4 @@ No implementation detected. May not be a feature of this codebase.
 
 ## CAPABILITY: `kyc_verify` (1 implementations)
 
-- `KycService` (class) — `backend/src/kyc/kyc.service.ts:75`
+- `KycService` (class) — `backend/src/kyc/kyc.service.ts:102`

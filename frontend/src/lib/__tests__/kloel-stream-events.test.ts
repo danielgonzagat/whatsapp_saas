@@ -60,6 +60,36 @@ describe('parseKloelStreamPayload', () => {
     ]);
   });
 
+  it('surfaces streamed reasoning delta text per the reasoning_delta contract', () => {
+    expect(
+      parseKloelStreamPayload({
+        type: 'reasoning_delta',
+        text: 'Analisando os dados da conta antes de responder.',
+      }),
+    ).toEqual([
+      {
+        type: 'reasoning_delta',
+        text: 'Analisando os dados da conta antes de responder.',
+      },
+    ]);
+  });
+
+  it('ignores empty or non-string reasoning delta payloads', () => {
+    expect(
+      parseKloelStreamPayload({
+        type: 'reasoning_delta',
+        text: '',
+      }),
+    ).toEqual([]);
+
+    expect(
+      parseKloelStreamPayload({
+        type: 'reasoning_delta',
+        text: 42,
+      }),
+    ).toEqual([]);
+  });
+
   it('keeps legacy compatibility for mixed payloads with content and error', () => {
     expect(
       parseKloelStreamPayload({
@@ -101,19 +131,25 @@ describe('parseKloelStreamPayload', () => {
       parseKloelStreamPayload({
         type: 'tool_result',
         callId: 'call-1',
+        spanId: 'span-1',
         tool: 'search_web',
         success: true,
         result: { answer: 'ok' },
+        artifactId: 'artifact-1',
+        durationMs: 42,
         done: false,
       }),
     ).toEqual([
       {
         type: 'tool_result',
         callId: 'call-1',
+        spanId: 'span-1',
         tool: 'search_web',
         success: true,
         result: { answer: 'ok' },
         error: undefined,
+        artifactId: 'artifact-1',
+        durationMs: 42,
       },
     ]);
   });

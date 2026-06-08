@@ -3,6 +3,10 @@ import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 import type { PrismaService } from '../../prisma/prisma.service';
 import { ProductAffiliateController } from './product-affiliate.controller';
 
+jest.mock('../../auth/workspace-access', () => ({
+  resolveWorkspaceId: jest.fn(() => 'ws-1'),
+}));
+
 jest.mock('./helpers/affiliate.helpers', () => ({
   buildAffiliateProductData: jest.fn(() => ({})),
   buildAffiliateSummary: jest.fn(() =>
@@ -43,7 +47,6 @@ jest.mock('./helpers/common.helpers', () => ({
       imageUrl: null,
     }),
   ),
-  getWorkspaceId: jest.fn(() => 'ws-1'),
   normalizeOptionalText: jest.fn((v: string) => v),
   parseNumber: jest.fn((v: unknown) => (v !== undefined && v !== null ? Number(v) : undefined)),
   removeUndefined: jest.fn((obj: Record<string, unknown>) => {

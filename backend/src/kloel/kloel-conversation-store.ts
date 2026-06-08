@@ -36,6 +36,11 @@ export class KloelConversationStore {
     return this.mindMemory?.items ?? this.prisma.kloelMemory;
   }
 
+  /** Canonical Brain → Mind message delegate (raw-Prisma fallback). */
+  private get mindMessageItems(): PrismaService['kloelMessage'] {
+    return this.mindMessage?.items ?? this.prisma.kloelMessage;
+  }
+
   /** Get conversation history. */
   /** Get conversation history. */
   async getConversationHistory(workspaceId?: string): Promise<ChatMessage[]> {
@@ -71,7 +76,7 @@ export class KloelConversationStore {
     }
 
     try {
-      const messages = await this.prisma.kloelMessage.findMany({
+      const messages = await this.mindMessageItems.findMany({
         where: { workspaceId },
         orderBy: { createdAt: 'asc' },
         take: 20,
@@ -95,7 +100,7 @@ export class KloelConversationStore {
         await this.mindMessage.appendToConversation(workspaceId, role, content);
         return;
       }
-      await this.prisma.kloelMessage.create({
+      await this.mindMessageItems.create({
         data: {
           workspaceId,
           role,

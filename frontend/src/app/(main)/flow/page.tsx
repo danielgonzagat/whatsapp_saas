@@ -16,7 +16,7 @@ import { useFlowTemplates } from '@/hooks/useFlowTemplates';
 import { useFlows, type Flow } from '@/hooks/useFlows';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { Clock, FileText, LayoutTemplate, Sparkles } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import type { Edge, Node } from 'reactflow';
 
@@ -36,18 +36,24 @@ const SOURCE_LABELS: Record<string, string> = {
   inbox: 'Inbox',
 };
 
+const FLOW_TEST_USER = 'kloel-flow-test-runner';
+
 function FlowPageContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [fallbackFlowId] = useState(() => `flow-${Date.now()}`);
-  const flowId = searchParams.get('id') || fallbackFlowId;
+  const existingFlowId = searchParams.get('id') || '';
+  const [savedFlowId, setSavedFlowId] = useState(existingFlowId);
+  const flowId = existingFlowId || savedFlowId || fallbackFlowId;
   const requestedTab = searchParams.get('tab');
   const source = searchParams.get('source') || '';
   const purpose = searchParams.get('purpose') || '';
   const requestedPhone = searchParams.get('phone') || '';
   const requestedLeadId = searchParams.get('leadId') || '';
+  const persistedFlowId = existingFlowId || savedFlowId;
   const workspaceId = useWorkspaceId();
 
-  const { saveFlow, fetchFlow, error } = useFlows(workspaceId);
+  const { saveFlow, fetchFlow, runFlow, error } = useFlows(workspaceId);
   const {
     executions,
     loading: execLoading,
@@ -69,7 +75,7 @@ function FlowPageContent() {
     result: optimizeResult,
     error: optimizeError,
     handleOptimize,
-  } = useFlowOptimize(searchParams.get('id'));
+  } = useFlowOptimize(persistedFlowId || null);
 
   const [activeTab, setActiveTab] = useState<'editor' | 'executions' | 'templates'>(
     requestedTab === 'templates' || requestedTab === 'executions' || requestedTab === 'editor'
@@ -80,6 +86,15 @@ function FlowPageContent() {
   );
 
   const sourceLabel = SOURCE_LABELS[source] || '';
+  const [operationNotice, setOperationNotice] = useState<string | null>(null);
+
+
+  useEffect(() => {
+    if (!existingFlowId) {
+      return;
+    }
+    queueMicrotask(() => setSavedFlowId(existingFlowId));
+  }, [existingFlowId]);
 
   useEffect(() => {
     if (
@@ -93,35 +108,74 @@ function FlowPageContent() {
     }
   }, [requestedTab, source]);
 
+  const persistFlow = useCallback(
+    async (flow: { nodes: Node[]; edges: Edge[]; name: string }) => {
+      const saved = await saveFlow(flowId, flow);
+      const confirmedFlowId = saved?.id || flowId;
+      setSavedFlowId(confirmedFlowId);
+
+      if (!existingFlowId) {
+        const nextParams = new URLSearchParams(searchParams.toString());
+        nextParams.set('id', confirmedFlowId);
+        router.replace(`/flow?${nextParams.toString()}`);
+      }
+
+      return confirmedFlowId;
+    },
+    [existingFlowId, flowId, router, saveFlow, searchParams],
+  );
+
   const handleSave = useCallback(
     async (flow: { nodes: Node[]; edges: Edge[]; name: string }) => {
-      await saveFlow(flowId, flow);
+      setOperationNotice(null);
+      await persistFlow(flow);
+      setOperationNotice(kloelT('Fluxo salvo'));
     },
-    [flowId, saveFlow],
+    [persistFlow],
   );
 
   const handleTest = useCallback(
-    (flow: { nodes: Node[]; edges: Edge[]; name: string }) => {
-      handleSave(flow);
+    async (flow: { nodes: Node[]; edges: Edge[]; name: string }) => {
+      setOperationNotice(null);
+      const confirmedFlowId = await persistFlow(flow);
+      const startNode = flow.nodes.find((node) => node.type === 'start')?.id || flow.nodes[0]?.id;
+
+      if (!startNode) {
+        throw new Error('Fluxo precisa ter pelo menos um nó para testar');
+      }
+
+      await runFlow(confirmedFlowId, FLOW_TEST_USER, startNode);
+      void fetchExecutions();
+      setOperationNotice(kloelT('Teste executado'));
     },
-    [handleSave],
+    [fetchExecutions, persistFlow, runFlow],
   );
 
   // Load an existing flow before mounting the builder. Opening ?id=<flow> used to
   // mount FlowBuilder with an empty seed; if the user then clicked Salvar, that
   // blank graph overwrote the saved nodes/edges (silent data loss). We now gate
   // the builder until the saved flow is fetched and pass it as initial state.
-  const existingFlowId = searchParams.get('id');
   const [loadedFlow, setLoadedFlow] = useState<Flow | null>(null);
   const [flowReady, setFlowReady] = useState(!existingFlowId);
 
   useEffect(() => {
-    if (!existingFlowId || !workspaceId) {
-      setFlowReady(true);
-      return;
-    }
     let cancelled = false;
-    setFlowReady(false);
+    const setFlowReadyIfMounted = (ready: boolean) => {
+      queueMicrotask(() => {
+        if (!cancelled) {
+          setFlowReady(ready);
+        }
+      });
+    };
+
+    if (!existingFlowId || !workspaceId) {
+      setFlowReadyIfMounted(true);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setFlowReadyIfMounted(false);
     void fetchFlow(existingFlowId).then((flow) => {
       if (cancelled) {
         return;
@@ -214,8 +268,8 @@ function FlowPageContent() {
             <button
               type="button"
               onClick={handleOptimize}
-              disabled={optimizing || !searchParams.get('id')}
-              title={!searchParams.get('id') ? 'Salve o fluxo primeiro' : 'Otimizar com IA'}
+              disabled={optimizing || !persistedFlowId}
+              title={!persistedFlowId ? 'Salve o fluxo primeiro' : 'Otimizar com IA'}
               className="py-2 px-3 flex items-center gap-2 rounded-md text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               style={{
                 background: optimizing ? 'rgba(232,93,48,0.1)' : 'rgba(232,93,48,0.15)',
@@ -244,6 +298,7 @@ function FlowPageContent() {
               workspaceId={workspaceId}
               initialNodes={loadedFlow?.nodes ?? []}
               initialEdges={loadedFlow?.edges ?? []}
+              initialName={loadedFlow?.name ?? ''}
               onSave={handleSave}
               onTest={handleTest}
             />
@@ -274,6 +329,12 @@ function FlowPageContent() {
           />
         )}
       </div>
+
+      {operationNotice && (
+        <div role="status" className="fixed bottom-16 right-4 rounded-md border border-green-200 bg-green-50 px-4 py-2 text-sm text-green-700 shadow-sm">
+          {operationNotice}
+        </div>
+      )}
 
       {/* Error Toast */}
       {error && (

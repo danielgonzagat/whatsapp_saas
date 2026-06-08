@@ -307,7 +307,7 @@ describe('GoalFieldShadowAccumulatorService — accept streak', () => {
     acc.recordDecision('wks_a', 'accept', T0);
     const snap = acc.getState('wks_a');
     expect(snap?.consecutiveAccepts).toBe(1);
-    snap!.consecutiveAccepts = 999;
+    snap.consecutiveAccepts = 999;
     expect(acc.getState('wks_a')?.consecutiveAccepts).toBe(1);
   });
 });

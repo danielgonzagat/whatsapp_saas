@@ -25,7 +25,7 @@ import {
 } from '../../../common/utils/url-validator';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { memoryQueue } from '../../../queue/queue';
-import { WalletService } from '../../../wallet/wallet.service';
+import { PrepaidWalletService } from '../../../wallet/wallet.service';
 import {
   InsufficientWalletBalanceError,
   UsagePriceNotFoundError,
@@ -60,7 +60,7 @@ export class KnowledgeBaseService {
     private prisma: PrismaService,
     private vectorService: VectorService,
     private readonly auditService: AuditService,
-    private readonly prepaidWalletService: WalletService,
+    private readonly prepaidWalletService: PrepaidWalletService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 

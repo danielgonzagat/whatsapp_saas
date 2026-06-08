@@ -23,6 +23,21 @@ const ATOMIC_TOOL_RE = /^(?:mcp__atomic_edit(?:\.|__)|mcp__atomic-edit__|atomic-
 // this as a tight allowlist; never widen it to a wildcard.
 const CODEX_CONTROL_RE = /^(?:update_goal|update_plan|get_goal|get_plan)$/;
 
+// Non-mutating MCP servers (browser inspection, docs, reasoning, code-intelligence
+// reads). The atomic-only protocol exists to keep LOCAL CODE MUTATION routed through
+// atomic-edit (so its char-level diff is the only proof shown) and to ban native/TUI
+// computation. These servers do NEITHER: they cannot write a repo code file and have
+// no atomic-edit equivalent (you cannot "atomic_create_file" a browser navigation or a
+// docs lookup). Denying them was an over-broad reading of "non-atomic == native": MCP
+// IS the sanctioned non-native path. So admit them — like atomic tools — before the
+// host-sandbox check, since they run as their own MCP subprocess and are not what the
+// host sandbox gates. INVARIANT: never add a server that can edit local code or write
+// the filesystem (e.g. serena edits, or any generic shell/patch server). Those MUST
+// stay denied so code mutation keeps flowing through atomic-edit. Matches both the
+// `mcp__server__tool` and `mcp__server.tool` name shapes Codex emits.
+const NON_MUTATING_MCP_RE =
+  /^mcp__(?:chrome[-_]devtools|context7|sequential[-_]thinking|codegraph|codebody[-_]navigator|lsp[-_]mesh|graphify[-_]plus|pulse|kloel[-_]os|cognitive[-_]hub|test[-_]runner|task[-_]graph|sentry[-_]bridge)(?:\.|__)/;
+
 function readStdinRaw() {
   try {
     return readFileSync(0, 'utf8') || '';
@@ -68,7 +83,7 @@ try {
 
 const tool = parseToolName(input);
 
-if (ATOMIC_TOOL_RE.test(tool) || CODEX_CONTROL_RE.test(tool)) allow();
+if (ATOMIC_TOOL_RE.test(tool) || CODEX_CONTROL_RE.test(tool) || NON_MUTATING_MCP_RE.test(tool)) allow();
 
 if (!hostSandboxActive()) {
   deny(

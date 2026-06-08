@@ -382,7 +382,7 @@ export class KloelBusinessConfigToolsService {
         success: true,
         channels: buildSocialChannelsView({
           providerSettings: ws?.providerSettings as Record<string, unknown> | null,
-          metaConnections: (ws?.metaConnections as Array<unknown> | undefined) ?? null,
+          metaConnections: ws?.metaConnections ?? null,
         }),
         message: 'Canais disponíveis. Conecte cada um em Configurações > Canais.',
       };

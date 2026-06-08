@@ -234,6 +234,9 @@ export function registerToolsConverge(server: McpServer): void {
               changed: true,
               gateVerdict: verdict,
             }),
+            // #1 Proof-Carrying Edits: pass the before/after content so writeTrace persists
+            // the re-exec snapshot sidecar (the verifier replays engine.validate over it).
+            { before: prior, after: t.newText },
           );
         }
 

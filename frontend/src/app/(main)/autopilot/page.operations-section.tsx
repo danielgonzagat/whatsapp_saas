@@ -68,6 +68,8 @@ export function SmokeTestSection({
             <label className="flex flex-col gap-2 text-sm">
               <span style={{ color: colors.text.secondary }}>{kloelT('Telefone de teste')}</span>
               <input
+                id="autopilot-test-phone"
+                name="testPhone"
                 value={testPhone}
                 onChange={(e) => setTestPhone(e.target.value)}
                 placeholder="5511999999999"
@@ -81,6 +83,8 @@ export function SmokeTestSection({
             </label>
             <label className="flex items-center gap-3 text-sm mt-7 md:mt-0">
               <input
+                id="autopilot-live-send"
+                name="liveSend"
                 type="checkbox"
                 checked={testLiveSend}
                 onChange={(e) => setTestLiveSend(e.target.checked)}
@@ -94,6 +98,8 @@ export function SmokeTestSection({
           <label className="flex flex-col gap-2 text-sm">
             <span style={{ color: colors.text.secondary }}>{kloelT('Mensagem de teste')}</span>
             <textarea
+              id="autopilot-test-message"
+              name="testMessage"
               value={testMessage}
               onChange={(e) => setTestMessage(e.target.value)}
               rows={3}

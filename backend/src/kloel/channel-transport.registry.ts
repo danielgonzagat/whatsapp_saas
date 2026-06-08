@@ -1,4 +1,4 @@
-import { Injectable, Optional } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import {
   EmailChannelTransport,
@@ -17,6 +17,20 @@ import type {
 import { MindGuardsService } from './mind/policy/mind-guards.service';
 import { MindGuardContextBuilderService } from './mind/policy/mind-guard-context-builder.service';
 import type { MindActionContext } from './mind/policy/mind-code-native.types';
+import { ChannelMessageDispatchService } from '../marketing/channel-message-dispatch.service';
+import type {
+  ChannelSendInput,
+  ChannelSendResult as CanonicalChannelSendResult,
+} from '../common/channel-dispatch/channel-dispatch.port';
+import {
+  buildInstagram,
+  buildMessenger,
+  buildWhatsApp,
+  type DispatchOptions,
+  type ResolvedMetaConnectionLike,
+} from '../marketing/channel-message-dispatch.helpers';
+import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
+import { isTransportCanonicalDelegateEnabled } from './channel-transport-canonical-delegate.flag';
 
 /**
  * ChannelTransportRegistry — the MindGuard-wrapped outbound send registry for
@@ -47,6 +61,12 @@ export class ChannelTransportRegistry {
     @Optional() whatsapp?: WhatsAppChannelTransport,
     @Optional() private readonly guards?: MindGuardsService,
     @Optional() private readonly guardContextBuilder?: MindGuardContextBuilderService,
+    @Optional()
+    @Inject(forwardRef(() => ChannelMessageDispatchService))
+    private readonly canonicalDispatch?: ChannelMessageDispatchService,
+    @Optional()
+    @Inject(forwardRef(() => MetaWhatsAppService))
+    private readonly metaConnection?: MetaWhatsAppService,
   ) {
     [instagram, messenger, tiktok, email, whatsapp].forEach((provider) => {
       if (provider) {
@@ -124,7 +144,175 @@ export class ChannelTransportRegistry {
       `Enviando mensagem via ${request.channel} workspace=${workspaceId} recipient=${request.recipientId}`,
     );
 
+    if (isTransportCanonicalDelegateEnabled() && this.canDelegate(request.channel)) {
+      const delegated = await this.sendViaCanonical(workspaceId, request);
+      if (delegated) {
+        return delegated;
+      }
+    }
+
     return provider.send(workspaceId, request);
+  }
+
+  /**
+   * Channels that may delegate to the canonical
+   * {@link ChannelMessageDispatchService} when
+   * `KLOEL_TRANSPORT_CANONICAL_DELEGATE` is on.
+   *
+   * Email is intentionally EXCLUDED: the canonical `EmailDispatchAdapter` is a
+   * connected-mailbox send (Gmail / Microsoft / IMAP-SMTP), a DIFFERENT delivery
+   * mechanism than this layer's `EmailCampaignService` (Resend / SendGrid /
+   * env-SMTP) path — delegating it would change behavior. TikTok has no
+   * canonical outbound builder either, so it stays on the current (blocked)
+   * provider path.
+   */
+  private canDelegate(channel: ChannelName): boolean {
+    return channel === 'whatsapp' || channel === 'instagram' || channel === 'messenger';
+  }
+
+  /**
+   * Build the canonical discriminated {@link ChannelSendInput} from a transport
+   * {@link ChannelSendRequest} and delegate to
+   * {@link ChannelMessageDispatchService.sendMessage}, mapping the canonical
+   * CONTRACT-B result back to the transport CONTRACT-A
+   * ({@link ChannelSendResult} — `blocked` REQUIRED). Returns `null` when the
+   * input cannot be built (e.g. canonical service not injected, or a Meta
+   * channel without a resolvable connection) so the caller falls back to the
+   * existing provider path with identical behavior.
+   *
+   * A thrown error from the canonical path (e.g. the WhatsApp dispatcher's
+   * subscription/opt-in checks, or an adapter failing at runtime) is caught and
+   * mapped to the transport soft-failure contract
+   * (`{ success: false, blocked: false, error }`) — mirroring how every
+   * non-delegate provider translates a throw, and preserving the documented
+   * `ChannelSendResult` contract the ~16 inbox/cart-recovery/agent callers rely
+   * on. Real opt-in/subscription BLOCKS are surfaced as a RETURNED
+   * `blocked: true` result by the canonical path (see {@link mapCanonicalResult})
+   * and therefore never reach this catch.
+   */
+  private async sendViaCanonical(
+    workspaceId: string,
+    request: ChannelSendRequest,
+  ): Promise<ChannelSendResult | null> {
+    if (!this.canonicalDispatch) {
+      return null;
+    }
+    const input = await this.buildCanonicalInput(workspaceId, request);
+    if (!input) {
+      return null;
+    }
+    try {
+      const result = await this.canonicalDispatch.sendMessage(input);
+      return this.mapCanonicalResult(result);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'unknown_error';
+      this.logger.error(
+        `Canonical delegate send erro workspace=${workspaceId} channel=${request.channel}: ${message}`,
+      );
+      return { success: false, blocked: false, error: message };
+    }
+  }
+
+  /** Map the transport request's media/threading fields onto DispatchOptions. */
+  private toDispatchOptions(request: ChannelSendRequest): DispatchOptions {
+    const opts: DispatchOptions = {};
+    if (request.mediaUrl !== undefined) {
+      opts.mediaUrl = request.mediaUrl;
+    }
+    if (request.mediaType !== undefined) {
+      opts.mediaType = request.mediaType;
+    }
+    if (request.caption !== undefined) {
+      opts.caption = request.caption;
+    }
+    if (request.quotedMessageId !== undefined) {
+      opts.quotedMessageId = request.quotedMessageId;
+    }
+    if (request.externalId !== undefined) {
+      opts.externalId = request.externalId;
+    }
+    if (request.complianceMode !== undefined) {
+      opts.complianceMode = request.complianceMode;
+    }
+    if (request.forceDirect !== undefined) {
+      opts.forceDirect = request.forceDirect;
+    }
+    return opts;
+  }
+
+  /**
+   * Build the canonical {@link ChannelSendInput} via the shared helper builders.
+   * WhatsApp needs no connection; Instagram/Messenger resolve the per-workspace
+   * Meta connection. Returns `null` if a required connection cannot be resolved
+   * so the caller falls back to the existing provider path (which surfaces its
+   * own honest blocked result).
+   */
+  private async buildCanonicalInput(
+    workspaceId: string,
+    request: ChannelSendRequest,
+  ): Promise<ChannelSendInput | null> {
+    const opts = this.toDispatchOptions(request);
+    try {
+      switch (request.channel) {
+        case 'whatsapp':
+          return buildWhatsApp(workspaceId, request.recipientId, request.content, opts);
+        case 'instagram': {
+          const conn = await this.resolveMetaConnection(workspaceId, 'instagram');
+          if (!conn) {
+            return null;
+          }
+          return buildInstagram(workspaceId, request.recipientId, request.content, opts, conn);
+        }
+        case 'messenger': {
+          const conn = await this.resolveMetaConnection(workspaceId, 'facebook');
+          if (!conn) {
+            return null;
+          }
+          return buildMessenger(workspaceId, request.recipientId, request.content, opts, conn);
+        }
+        default:
+          return null;
+      }
+    } catch {
+      // A builder threw (e.g. missing token): fall back to the current provider
+      // path, which returns its own honest blocked result unchanged.
+      return null;
+    }
+  }
+
+  /** Resolve a Meta connection projection for the canonical Meta builders. */
+  private async resolveMetaConnection(
+    workspaceId: string,
+    channel: 'instagram' | 'facebook',
+  ): Promise<ResolvedMetaConnectionLike | null> {
+    if (!this.metaConnection) {
+      return null;
+    }
+    return this.metaConnection.resolveConnection(workspaceId, channel);
+  }
+
+  /**
+   * Map a canonical CONTRACT-B {@link CanonicalChannelSendResult} (where
+   * `blocked` is OPTIONAL) onto the transport CONTRACT-A
+   * {@link ChannelSendResult} (where `blocked` is REQUIRED). On success
+   * `blocked` is set to `false`; `messageId`/`error`/`blockedReason` are carried
+   * through when present.
+   */
+  private mapCanonicalResult(result: CanonicalChannelSendResult): ChannelSendResult {
+    const mapped: ChannelSendResult = {
+      success: result.success,
+      blocked: result.blocked ?? false,
+    };
+    if (result.messageId !== undefined) {
+      mapped.messageId = result.messageId;
+    }
+    if (result.error !== undefined) {
+      mapped.error = result.error;
+    }
+    if (result.blockedReason !== undefined) {
+      mapped.blockedReason = result.blockedReason;
+    }
+    return mapped;
   }
 
   getRegisteredChannels(): ChannelName[] {

@@ -30,7 +30,7 @@ export function BillingLegacyProvidersSection() {
                 )}
               </p>
               <Link
-                href="/settings?section=billing"
+                href="#conta-recebimento"
                 className="mt-2 inline-flex items-center gap-1 text-xs font-medium underline underline-offset-2 hover:opacity-80"
               >
                 {kloelT(`Ver conta de recebimento`)}

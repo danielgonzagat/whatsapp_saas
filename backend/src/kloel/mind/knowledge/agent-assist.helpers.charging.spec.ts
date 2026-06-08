@@ -3,7 +3,7 @@ import {
   chargeAiUsageIfNeeded,
   settleAiUsageIfNeeded,
 } from './agent-assist.helpers';
-import { WalletService } from '../../../wallet/wallet.service';
+import { PrepaidWalletService } from '../../../wallet/wallet.service';
 import {
   InsufficientWalletBalanceError,
   UsagePriceNotFoundError,
@@ -28,7 +28,7 @@ const quoteOpenAiChatActualCostCentsMock =
 
 describe('agent-assist.helpers — charging', () => {
   describe('chargeAiUsageIfNeeded', () => {
-    let mockWalletService: jest.Mocked<WalletService>;
+    let mockWalletService: jest.Mocked<PrepaidWalletService>;
 
     beforeEach(() => {
       mockWalletService = makeMockWalletService();
@@ -158,7 +158,7 @@ describe('agent-assist.helpers — charging', () => {
   });
 
   describe('settleAiUsageIfNeeded', () => {
-    let mockWalletService: jest.Mocked<WalletService>;
+    let mockWalletService: jest.Mocked<PrepaidWalletService>;
 
     beforeEach(() => {
       mockWalletService = makeMockWalletService();

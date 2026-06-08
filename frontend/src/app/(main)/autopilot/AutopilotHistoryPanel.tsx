@@ -70,8 +70,11 @@ export function AutopilotHistoryPanel({
           {/* Ask AI input */}
           <div className="flex gap-3 mb-5">
             <input
+              id="autopilot-insight-question"
+              name="insightQuestion"
               value={askQuestion}
               onChange={(e) => setAskQuestion(e.target.value)}
+              aria-label={kloelT('Perguntar ao Autopilot')}
               placeholder={kloelT(
                 `Pergunte algo sobre o Autopilot... (ex: Quais leads estao mais propensos a comprar?)`,
               )}

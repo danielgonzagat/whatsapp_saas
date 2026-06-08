@@ -137,7 +137,7 @@ describe('KloelReplyEngineService decision-outcome wiring (PI-k8)', () => {
         outcomeKey: string;
       };
       const recCalls = decisionOutcome.recordDecision.mock.calls as Array<[RecordArg]>;
-      const call = recCalls[0]?.[0] as RecordArg;
+      const call = recCalls[0]?.[0];
       expect(call.workspaceId).toBe('ws-1');
       expect(call.decisionType).toBe('chat_reply');
       expect(call.chosenAction).toBe('engage');
@@ -201,11 +201,7 @@ describe('KloelReplyEngineService decision-outcome wiring (PI-k8)', () => {
       const _closeCalls = decisionOutcome.closeOutcome.mock.calls as Array<
         [{ outcomeName: string; wonVsBaseline: boolean; economicValue?: number | undefined }]
       >;
-      const call = _closeCalls[0]?.[0] as {
-        outcomeName: string;
-        wonVsBaseline: boolean;
-        economicValue?: number;
-      };
+      const call = _closeCalls[0]?.[0];
       expect(call.outcomeName).toBe('chat.replied');
       expect(call.wonVsBaseline).toBe(true);
       expect(call.economicValue).toBeUndefined();
@@ -247,11 +243,7 @@ describe('KloelReplyEngineService decision-outcome wiring (PI-k8)', () => {
       const _closeCalls = decisionOutcome.closeOutcome.mock.calls as Array<
         [{ outcomeName: string; wonVsBaseline: boolean; economicValue?: number | undefined }]
       >;
-      const call = _closeCalls[0]?.[0] as {
-        outcomeName: string;
-        wonVsBaseline: boolean;
-        economicValue?: number;
-      };
+      const call = _closeCalls[0]?.[0];
       expect(call.outcomeName).toBe('chat.error');
       expect(call.wonVsBaseline).toBe(false);
     });

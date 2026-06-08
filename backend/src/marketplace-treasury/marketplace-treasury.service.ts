@@ -6,6 +6,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MarketplaceTreasuryInsufficientAvailableBalanceError } from './marketplace-treasury.errors';
+import { isLedgerBalanceSnapshotEnabled } from '../common/feature-flags/ledger-balance-snapshot.flag';
 
 const DEFAULT_CURRENCY = 'BRL';
 
@@ -186,6 +187,38 @@ export class MarketplaceTreasuryService {
   }
 
   /**
+   * Money-ledgers migration (Stage 4) — ADDITIVE, flag-gated balance
+   * snapshot. Computes the post-mutation balance for ALL THREE treasury
+   * buckets from the pre-mutation balances (read in the same `$transaction`
+   * via the `upsert`) plus the signed delta applied to the touched bucket.
+   * Returns the `balanceAfter*Cents` column fragment to spread into the
+   * ledger `create`. Pure given its inputs; no I/O.
+   */
+  private buildTreasuryBalanceSnapshot(
+    prior: {
+      availableBalanceInCents: bigint;
+      pendingBalanceInCents: bigint;
+      reservedBalanceInCents: bigint;
+    },
+    bucket: MarketplaceTreasuryBucket,
+    delta: bigint,
+  ): {
+    balanceAfterAvailableCents: bigint;
+    balanceAfterPendingCents: bigint;
+    balanceAfterReservedCents: bigint;
+  } {
+    return {
+      balanceAfterAvailableCents:
+        prior.availableBalanceInCents +
+        (bucket === MarketplaceTreasuryBucket.AVAILABLE ? delta : 0n),
+      balanceAfterPendingCents:
+        prior.pendingBalanceInCents + (bucket === MarketplaceTreasuryBucket.PENDING ? delta : 0n),
+      balanceAfterReservedCents:
+        prior.reservedBalanceInCents + (bucket === MarketplaceTreasuryBucket.RESERVED ? delta : 0n),
+    };
+  }
+
+  /**
    * Append a ledger entry AND mutate the wallet balance in the same
    * atomic transaction (I-ADMIN-W3). Callers must pass a
    * transactional Prisma client or the service opens its own.
@@ -194,11 +227,22 @@ export class MarketplaceTreasuryService {
     const currency = input.currency ?? DEFAULT_CURRENCY;
 
     const runOnce = async (client: Prisma.TransactionClient) => {
-      await client.marketplaceTreasury.upsert({
+      const wallet = await client.marketplaceTreasury.upsert({
         where: { currency },
         update: {},
         create: { currency },
       });
+      const delta = input.direction === 'credit' ? input.amountInCents : -input.amountInCents;
+      const field =
+        input.bucket === MarketplaceTreasuryBucket.AVAILABLE
+          ? 'availableBalanceInCents'
+          : input.bucket === MarketplaceTreasuryBucket.PENDING
+            ? 'pendingBalanceInCents'
+            : 'reservedBalanceInCents';
+      // Flag-gated post-mutation snapshot; OFF → columns stay NULL.
+      const balanceSnapshot = isLedgerBalanceSnapshotEnabled()
+        ? this.buildTreasuryBalanceSnapshot(wallet, input.bucket, delta)
+        : undefined;
       await client.marketplaceTreasuryLedger.create({
         data: {
           wallet: { connect: { currency } },
@@ -210,16 +254,10 @@ export class MarketplaceTreasuryService {
           orderId: input.orderId ?? null,
           feeSnapshotId: input.feeSnapshotId ?? null,
           reason: input.reason,
+          ...(balanceSnapshot ?? {}),
           ...(input.metadata !== undefined ? { metadata: input.metadata } : {}),
         },
       });
-      const delta = input.direction === 'credit' ? input.amountInCents : -input.amountInCents;
-      const field =
-        input.bucket === MarketplaceTreasuryBucket.AVAILABLE
-          ? 'availableBalanceInCents'
-          : input.bucket === MarketplaceTreasuryBucket.PENDING
-            ? 'pendingBalanceInCents'
-            : 'reservedBalanceInCents';
       await client.marketplaceTreasury.update({
         where: { currency },
         data: { [field]: { increment: delta } },
@@ -274,6 +312,14 @@ export class MarketplaceTreasuryService {
           );
         }
 
+        const balanceSnapshot = isLedgerBalanceSnapshotEnabled()
+          ? this.buildTreasuryBalanceSnapshot(
+              wallet,
+              MarketplaceTreasuryBucket.AVAILABLE,
+              -input.amountInCents,
+            )
+          : undefined;
+
         await tx.marketplaceTreasuryLedger.create({
           data: {
             walletId: wallet.id,
@@ -284,6 +330,7 @@ export class MarketplaceTreasuryService {
             kind: MarketplaceTreasuryLedgerKind.PAYOUT_DEBIT,
             orderId: input.requestId,
             reason: 'marketplace_treasury_payout_debit',
+            ...(balanceSnapshot ?? {}),
             ...(input.metadata !== undefined ? { metadata: input.metadata } : {}),
           },
         });
@@ -336,6 +383,14 @@ export class MarketplaceTreasuryService {
           return;
         }
 
+        const balanceSnapshot = isLedgerBalanceSnapshotEnabled()
+          ? this.buildTreasuryBalanceSnapshot(
+              wallet,
+              MarketplaceTreasuryBucket.AVAILABLE,
+              input.amountInCents,
+            )
+          : undefined;
+
         await tx.marketplaceTreasuryLedger.create({
           data: {
             walletId: wallet.id,
@@ -346,6 +401,7 @@ export class MarketplaceTreasuryService {
             kind: MarketplaceTreasuryLedgerKind.ADJUSTMENT_CREDIT,
             orderId: input.requestId,
             reason: input.reason,
+            ...(balanceSnapshot ?? {}),
             ...(input.metadata !== undefined ? { metadata: input.metadata } : {}),
           },
         });

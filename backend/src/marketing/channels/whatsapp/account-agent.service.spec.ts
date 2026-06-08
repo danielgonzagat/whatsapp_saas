@@ -290,30 +290,40 @@ describe('AccountAgentService', () => {
     expect(runtime.capabilityCount).toBe(registry.items.length);
     expect(runtime.conversationActionCount).toBe(conversationRegistry.items.length);
     expect(runtime.noLegalActions).toBe(false);
-    expect(prisma.agentWorkItem.create).toHaveBeenCalledWith(
+    expect(prisma.agentWorkItem.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: partialMatch({
+        create: partialMatch({
           kind: 'api_key_gap',
           state: 'OPEN',
         }),
       }),
     );
-    expect(prisma.agentWorkItem.create).toHaveBeenCalledWith(
+    expect(prisma.agentWorkItem.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: partialMatch({
+        create: partialMatch({
           kind: 'webhook_gap',
           state: 'OPEN',
         }),
       }),
     );
-    expect(prisma.agentWorkItem.create).toHaveBeenCalledWith(
+    expect(prisma.agentWorkItem.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: partialMatch({
+        create: partialMatch({
           kind: 'team_configuration_gap',
           state: 'OPEN',
         }),
       }),
     );
+  });
+
+  it('keeps getWorkItems read-only so concurrent runtime loads own materialization', async () => {
+    await service.getWorkItems('ws-1');
+
+    expect(prisma.agentWorkItem.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { workspaceId: 'ws-1' } }),
+    );
+    expect(prisma.agentWorkItem.upsert).not.toHaveBeenCalled();
+    expect(prisma.agentWorkItem.create).not.toHaveBeenCalled();
   });
 
   it('remains registry-consistent across 50 runtime materialization cycles for the current formal account universe', async () => {

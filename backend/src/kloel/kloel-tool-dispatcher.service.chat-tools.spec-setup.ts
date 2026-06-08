@@ -2,6 +2,7 @@
 // This file intentionally does NOT match Jest's *.spec.ts pattern so it is
 // not picked up as a test suite; it is imported by each domain spec.
 
+import { ModulesContainer } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -89,6 +90,7 @@ export async function buildChatToolsHarness(): Promise<ChatToolsHarness> {
       { provide: OpsAlertService, useValue: opsAlert },
       { provide: AccountService, useValue: accountService },
       { provide: SmartPaymentService, useValue: createSmartPaymentMock() },
+      { provide: ModulesContainer, useValue: new ModulesContainer() },
       CapabilityRegistryV2Service,
     ],
   }).compile();

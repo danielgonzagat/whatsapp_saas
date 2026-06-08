@@ -1,13 +1,15 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useClientMounted } from '@/hooks/useClientMounted';
 import { usePrefersReducedMotion } from './usePrefersReducedMotion';
 
 export function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const prefersReducedMotion = usePrefersReducedMotion();
   const ref = useRef<HTMLDivElement | null>(null);
   const [hasEnteredViewport, setHasEnteredViewport] = useState(false);
-  const visible = prefersReducedMotion || hasEnteredViewport;
+  const isMounted = useClientMounted();
+  const visible = !isMounted || prefersReducedMotion || hasEnteredViewport;
 
   useEffect(() => {
     if (prefersReducedMotion) {
@@ -37,9 +39,10 @@ export function Reveal({ children, delay = 0 }: { children: React.ReactNode; del
       style={{
         opacity: visible ? 1 : 0,
         transform: visible ? 'translateY(0)' : 'translateY(28px)',
-        transition: prefersReducedMotion
-          ? 'none'
-          : `opacity .8s ease ${delay}ms, transform .8s ease ${delay}ms`,
+        transition:
+          !isMounted || prefersReducedMotion
+            ? 'none'
+            : `opacity .8s ease ${delay}ms, transform .8s ease ${delay}ms`,
       }}
     >
       {visible ? children : <div style={{ minHeight: 50 }} />}

@@ -25,16 +25,11 @@ export function DealDetailModal({ deal, stages, onClose }: DealDetailModalProps)
     if (typeof deal.stage === 'object' && deal.stage?.name) {
       return deal.stage.name;
     }
-    const stageId =
-      typeof deal.stage === 'string'
-        ? deal.stage
-        : deal.stage?._id || deal.stage?.id;
+    const stageId = typeof deal.stage === 'string' ? deal.stage : deal.stage?._id || deal.stage?.id;
     if (!stageId) {
       return '-';
     }
-    return (
-      stages.find((s) => (s._id || s.id) === stageId)?.name || '-'
-    );
+    return stages.find((s) => (s._id || s.id) === stageId)?.name || '-';
   };
 
   return (
@@ -89,6 +84,8 @@ export function DealDetailModal({ deal, stages, onClose }: DealDetailModalProps)
           </span>
           <button
             type="button"
+            aria-label={kloelT('Fechar detalhes do deal')}
+            title={kloelT('Fechar detalhes do deal')}
             onClick={onClose}
             style={{
               background: 'none',
@@ -115,19 +112,21 @@ export function DealDetailModal({ deal, stages, onClose }: DealDetailModalProps)
           {deal.contact?.phone && (
             <DetailRow label={kloelT('Telefone')} value={deal.contact.phone} mono />
           )}
-          {deal.description && (
-            <DetailRow label={kloelT('Descricao')} value={deal.description} />
-          )}
+          {deal.description && <DetailRow label={kloelT('Descricao')} value={deal.description} />}
           {deal.expectedCloseDate && (
             <DetailRow
               label={kloelT('Previsao de fechamento')}
-              value={new Date(deal.expectedCloseDate).toLocaleDateString('pt-BR')}
+              value={new Date(deal.expectedCloseDate).toLocaleDateString('pt-BR', {
+                timeZone: 'America/Sao_Paulo',
+              })}
             />
           )}
           {deal.createdAt && (
             <DetailRow
               label={kloelT('Criado em')}
-              value={new Date(deal.createdAt).toLocaleDateString('pt-BR')}
+              value={new Date(deal.createdAt).toLocaleDateString('pt-BR', {
+                timeZone: 'America/Sao_Paulo',
+              })}
             />
           )}
           {deal.notes && <DetailRow label={kloelT('Notas')} value={deal.notes} />}

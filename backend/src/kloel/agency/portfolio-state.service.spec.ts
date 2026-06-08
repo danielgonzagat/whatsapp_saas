@@ -47,7 +47,7 @@ describe('UTP-AGENCY-009 — PortfolioStateService', () => {
     });
 
     const result = service.consolidate(input);
-    const m = result.state.marginPerClient[0]!;
+    const m = result.state.marginPerClient[0];
 
     expect(m.clientWorkspaceId).toBe('ws-m');
     expect(m.marginPercent).toBe(70);
@@ -63,7 +63,7 @@ describe('UTP-AGENCY-009 — PortfolioStateService', () => {
       }),
     );
 
-    const m = result.state.marginPerClient[0]!;
+    const m = result.state.marginPerClient[0];
     expect(m.marginPercent).toBe(0);
     expect(m.trend).toBe('negative');
   });
@@ -81,7 +81,7 @@ describe('UTP-AGENCY-009 — PortfolioStateService', () => {
       }),
     );
 
-    expect(result.state.marginPerClient[0]!.trend).toBe('improving');
+    expect(result.state.marginPerClient[0].trend).toBe('improving');
   });
 
   it('detects declining margin trend vs previous margin', () => {
@@ -97,7 +97,7 @@ describe('UTP-AGENCY-009 — PortfolioStateService', () => {
       }),
     );
 
-    expect(result.state.marginPerClient[0]!.trend).toBe('declining');
+    expect(result.state.marginPerClient[0].trend).toBe('declining');
   });
 
   it('marks client as low risk with no signals', () => {
@@ -115,7 +115,7 @@ describe('UTP-AGENCY-009 — PortfolioStateService', () => {
       }),
     );
 
-    const c = result.state.churnRiskPerClient[0]!;
+    const c = result.state.churnRiskPerClient[0];
     expect(c.riskLevel).toBe('low');
     expect(c.signals).toEqual(['no_signals']);
   });
@@ -135,7 +135,7 @@ describe('UTP-AGENCY-009 — PortfolioStateService', () => {
       }),
     );
 
-    const c = result.state.churnRiskPerClient[0]!;
+    const c = result.state.churnRiskPerClient[0];
     expect(c.riskLevel).toBe('critical');
     expect(c.signals).toContain('no_recent_contact');
     expect(c.signals).toContain('delayed_payment');
@@ -166,9 +166,9 @@ describe('UTP-AGENCY-009 — PortfolioStateService', () => {
     );
 
     const ranks = result.state.priorityRanking;
-    expect(ranks[0]!.clientWorkspaceId).toBe('ws-high');
-    expect(ranks[0]!.rank).toBe(1);
-    expect(ranks[1]!.clientWorkspaceId).toBe('ws-low');
+    expect(ranks[0].clientWorkspaceId).toBe('ws-high');
+    expect(ranks[0].rank).toBe(1);
+    expect(ranks[1].clientWorkspaceId).toBe('ws-low');
   });
 
   it('returns null team load when no members provided', () => {
@@ -185,8 +185,8 @@ describe('UTP-AGENCY-009 — PortfolioStateService', () => {
     };
 
     const result = service.consolidate(baseInput({ teamMembers: [member] }));
-    expect(result.state.teamLoad!.overworkedCount).toBe(1);
-    expect(result.state.teamLoad!.underutilizedCount).toBe(0);
+    expect(result.state.teamLoad.overworkedCount).toBe(1);
+    expect(result.state.teamLoad.underutilizedCount).toBe(0);
   });
 
   it('generates critical summary when high-risk clients detected', () => {

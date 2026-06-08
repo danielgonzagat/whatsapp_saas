@@ -282,7 +282,12 @@ describe('TeamService', () => {
 
       const result = await service.acceptInvite(token, name, plainCredential);
 
-      expect(result.id).toBe('a-new');
+      expect(result).toEqual({
+        id: 'a-new',
+        name,
+        email: invite.email,
+        role: invite.role,
+      });
       expect(prisma.agent.create).toHaveBeenCalledWith({
         data: {
           workspaceId: wsId,
@@ -290,6 +295,12 @@ describe('TeamService', () => {
           name,
           password: 'hashed-pw',
           role: 'MEMBER',
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
         },
       });
       expect(prisma.invitation.delete).toHaveBeenCalledWith({

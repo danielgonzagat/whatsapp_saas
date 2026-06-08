@@ -33,6 +33,27 @@ describe('useCoprodState', () => {
     expect(result.current.loading).toBe(false);
   });
 
+  it('blocks invalid create forms before sending a POST', async () => {
+    apiFetch.mockResolvedValueOnce({ data: [], status: 200 });
+
+    const { result } = renderHook(() => useCoprodState('prod-1'));
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => {
+      await result.current.handleCreate();
+    });
+
+    expect(apiFetch).toHaveBeenCalledTimes(1);
+    expect((result.current as { formError?: string }).formError).toBe(
+      'Informe ao menos nome ou e-mail do parceiro desta comissão.',
+    );
+    expect(showToast).toHaveBeenCalledWith(
+      'Informe ao menos nome ou e-mail do parceiro desta comissão.',
+      'error',
+    );
+  });
+
   it('surfaces backend create errors instead of showing a false success toast', async () => {
     apiFetch
       .mockResolvedValueOnce({ data: [], status: 200 })

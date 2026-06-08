@@ -233,7 +233,7 @@ export function createPolicyRow(
 }
 
 export async function persistResolvedPolicyMemories(
-  prisma: Pick<PrismaService, 'kloelMemory'>,
+  memoryItems: PrismaService['kloelMemory'],
   rows: ResolvedPolicyRow[],
   baselineOutcome?: number,
 ): Promise<void> {
@@ -256,7 +256,7 @@ export async function persistResolvedPolicyMemories(
       `outcome=${row.outcome}`,
     ].join(' ');
 
-    await prisma.kloelMemory.upsert({
+    await memoryItems.upsert({
       where: { workspaceId_key: { workspaceId: row.workspaceId, key: `mind:policy:${row.id}` } },
       create: {
         workspaceId: row.workspaceId,

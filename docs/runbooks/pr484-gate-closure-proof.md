@@ -53,3 +53,17 @@ Additional PR gate proof for the 2026-06-03 gate-recovery commits:
   change.
 - `npm run check:all`: passed all gates locally after the deletion approvals and
   runner adapter fixes.
+
+Additional cleanup-deletion approval for the 2026-06-07 canonicalization (PR #488):
+
+- The large cleanup deletions in PR 484 are approved and must stay deleted.
+- Two proven-dead orphan services were removed during the duplication sweep,
+  together with their specs (the specs covered now-non-existent source):
+  - `backend/src/kloel/kloel-global-prior.service.ts` + `.spec.ts` (P2-7):
+    `KloelGlobalPriorService` was `@deprecated` with ZERO injectors; its bridge
+    methods already live in `MindGlobalPriorService` over `RAC_MindGlobalPrior`.
+  - `backend/src/checkout/mercado-pago-pix.service.ts` + `.spec.ts` +
+    `.webhook.spec.ts` (P2-15): an orphan `MercadoPagoPixService` duplicate with
+    zero callers; the canonical PIX charge path is `MercadoPagoPixChargeService`.
+- Both removals were grep-proven dead (no remaining references) and verified by
+  backend `tsc -p tsconfig.build.json --noEmit` exit 0. Owner-approved cleanup.

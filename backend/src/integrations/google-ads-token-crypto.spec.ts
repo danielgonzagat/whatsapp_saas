@@ -104,7 +104,7 @@ describe('google-ads-token-crypto (AES-256-GCM)', () => {
 
   it('isEncryptedGoogleAdsToken identifies versioned tokens', () => {
     const encrypted = encryptGoogleAdsToken('a-token');
-    expect(isEncryptedGoogleAdsToken(encrypted as string)).toBe(true);
+    expect(isEncryptedGoogleAdsToken(encrypted)).toBe(true);
   });
 
   it('isEncryptedGoogleAdsToken rejects plaintext', () => {
@@ -123,10 +123,7 @@ describe('google-ads-token-crypto (AES-256-GCM)', () => {
 
   it('fails decryption gracefully with corrupted ciphertext', () => {
     const encrypted = encryptGoogleAdsToken('valid-token');
-    const corrupted = (encrypted as string).replace(
-      (encrypted as string).substring(10, 14),
-      'XXXX',
-    );
+    const corrupted = encrypted.replace(encrypted.substring(10, 14), 'XXXX');
 
     const result = decryptGoogleAdsToken(corrupted);
     expect(result).toBe(corrupted);

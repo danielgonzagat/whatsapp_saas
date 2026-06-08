@@ -7,9 +7,11 @@ import { IC, FmtMoney, SORA, MONO, EMBER, TEXT, TEXT_DIM, BORDER, BG_CARD } from
 import { Btn, Card, SectionLabel, Badge } from './SitesViewAtoms';
 import type { SiteItem } from './SitesViewIcons';
 
+type PromptSetter = (value: string | ((previous: string) => string)) => void;
+
 interface AskPhaseProps {
   prompt: string;
-  setPrompt: (v: string) => void;
+  setPrompt: PromptSetter;
   handleGenerate: () => void;
   error: string;
   productList: Array<{ name: string; price: number }>;
@@ -36,6 +38,24 @@ export function CriarSiteAskPhase({
   source,
   productName,
 }: AskPhaseProps) {
+  const appendPromptHint = (hint: string) => {
+    setPrompt((current) => `${current.trim()} ${hint}.`.trim());
+  };
+
+  const appendProductName = (name: string) => {
+    setPrompt((current) => {
+      const trimmed = current.trim();
+      return `${trimmed}${trimmed ? ', ' : ''}${name}`.trim();
+    });
+  };
+
+  const confirmDeleteSite = (site: SiteItem) => {
+    const siteLabel = site.name || 'Site sem titulo';
+    if (window.confirm(`Excluir o site "${siteLabel}"? Esta acao nao pode ser desfeita.`)) {
+      handleDelete(site.id);
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 20 }}>
       <div style={{ color: EMBER, opacity: 0.3 }}>{IC.globe(80)}</div>
@@ -60,7 +80,7 @@ export function CriarSiteAskPhase({
           <div style={{ fontFamily: SORA, fontSize: 12, color: TEXT, marginBottom: 8 }}>{kloelT(`Modo páginas dinâmicas`)}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {['Adapte headline por origem do tráfego', 'Mostre provas por estágio de compra', 'Troque CTA por campanha ativa'].map((hint) => (
-              <button key={hint} type="button" onClick={() => setPrompt(`${prompt.trim()} ${hint}.`.trim())}
+              <button key={hint} type="button" onClick={() => appendPromptHint(hint)}
                 style={{ fontFamily: MONO, fontSize: 10, padding: '4px 10px', borderRadius: 4, border: `1px solid ${BORDER}`, background: BG_CARD, color: TEXT, cursor: 'pointer' }}>
                 {hint}
               </button>
@@ -74,7 +94,7 @@ export function CriarSiteAskPhase({
           <SectionLabel>{kloelT(`Seus Produtos (clique para incluir)`)}</SectionLabel>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {productList.map((p) => (
-              <button key={p.name} type="button" onClick={() => setPrompt(prompt + (prompt ? ', ' : '') + p.name)}
+              <button key={p.name} type="button" onClick={() => appendProductName(p.name)}
                 style={{ fontFamily: MONO, fontSize: 11, padding: '4px 10px', borderRadius: 4, border: `1px solid ${BORDER}`, background: BG_CARD, color: TEXT, cursor: 'pointer' }}>
                 {p.name} -- {FmtMoney(p.price)}
               </button>
@@ -84,6 +104,9 @@ export function CriarSiteAskPhase({
       )}
 
       <textarea
+        id="site-generation-prompt"
+        name="siteGenerationPrompt"
+        aria-label="Prompt do site"
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
         placeholder={kloelT(`Ex: Landing page para venda de curso de marketing digital, com secao de depoimentos e botao de compra...`)}
@@ -97,7 +120,7 @@ export function CriarSiteAskPhase({
       </Btn>
 
       {error && (
-        <div style={{ fontFamily: MONO, fontSize: 12, color: colors.semantic.error, maxWidth: 500, textAlign: 'center', padding: '8px 16px', background: colors.semantic.errorBg, borderRadius: 6 }}>
+        <div role="alert" style={{ fontFamily: MONO, fontSize: 12, color: colors.semantic.error, maxWidth: 500, textAlign: 'center', padding: '8px 16px', background: colors.semantic.errorBg, borderRadius: 6 }}>
           {error}
         </div>
       )}
@@ -107,26 +130,29 @@ export function CriarSiteAskPhase({
           <SectionLabel>{kloelT(`Sites Salvos`)}</SectionLabel>
           {loadingSites && <div style={{ fontFamily: MONO, fontSize: 12, color: TEXT_DIM }}>{kloelT(`Carregando...`)}</div>}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {savedSites.map((site) => (
-              <Card key={site.id} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '10px 14px' }}>
-                <button type="button" aria-label="Abrir site salvo" onClick={() => loadSavedSite(site)}
-                  style={{ color: EMBER, background: 'transparent', border: 'none', padding: 0, display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
-                  {IC.site(16)}
-                </button>
-                <button type="button" onClick={() => loadSavedSite(site)}
-                  style={{ fontFamily: SORA, fontSize: 13, color: TEXT, flex: 1, cursor: 'pointer', background: 'transparent', border: 'none', padding: 0, textAlign: 'left' }}>
-                  {site.name || 'Site sem titulo'}
-                </button>
-                {site.published && <Badge color={colors.semantic.success}>{kloelT(`Publicado`)}</Badge>}
-                <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT_DIM }}>
-                  {site.updatedAt ? new Date(site.updatedAt).toLocaleDateString('pt-BR') : ''}
-                </span>
-                <button type="button" onClick={() => handleDelete(site.id)}
-                  style={{ fontFamily: MONO, fontSize: 10, padding: '2px 8px', borderRadius: 4, border: `1px solid ${BORDER}`, background: 'transparent', color: colors.semantic.error, cursor: 'pointer' }}>
-                  X
-                </button>
-              </Card>
-            ))}
+            {savedSites.map((site) => {
+              const siteLabel = site.name || 'Site sem titulo';
+              return (
+                <Card key={site.id} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '10px 14px' }}>
+                  <button type="button" aria-label={`Abrir ${siteLabel}`} onClick={() => loadSavedSite(site)}
+                    style={{ color: EMBER, background: 'transparent', border: 'none', padding: 0, display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
+                    {IC.site(16)}
+                  </button>
+                  <button type="button" onClick={() => loadSavedSite(site)}
+                    style={{ fontFamily: SORA, fontSize: 13, color: TEXT, flex: 1, cursor: 'pointer', background: 'transparent', border: 'none', padding: 0, textAlign: 'left' }}>
+                    {siteLabel}
+                  </button>
+                  {site.published && <Badge color={colors.semantic.success}>{kloelT(`Publicado`)}</Badge>}
+                  <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT_DIM }}>
+                    {site.updatedAt ? new Date(site.updatedAt).toLocaleDateString('pt-BR') : ''}
+                  </span>
+                  <button type="button" aria-label={`Excluir ${siteLabel}`} onClick={() => confirmDeleteSite(site)}
+                    style={{ fontFamily: MONO, fontSize: 10, padding: '2px 8px', borderRadius: 4, border: `1px solid ${BORDER}`, background: 'transparent', color: colors.semantic.error, cursor: 'pointer' }}>
+                    {kloelT(`Excluir`)}
+                  </button>
+                </Card>
+              );
+            })}
           </div>
         </div>
       )}

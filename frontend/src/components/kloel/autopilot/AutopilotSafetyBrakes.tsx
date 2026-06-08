@@ -110,6 +110,8 @@ export default function AutopilotSafetyBrakes({
           <label className="flex flex-col gap-2 text-sm">
             <span style={{ color: colors.text.secondary }}>{kloelT(`Telefone de teste`)}</span>
             <input
+              id="autopilot-test-phone"
+              name="testPhone"
               value={testPhone}
               onChange={(e) => onTestPhoneChange(e.target.value)}
               placeholder="5511999999999"
@@ -123,6 +125,8 @@ export default function AutopilotSafetyBrakes({
           </label>
           <label className="flex items-center gap-3 text-sm mt-7 md:mt-0">
             <input
+              id="autopilot-live-send"
+              name="liveSend"
               type="checkbox"
               checked={testLiveSend}
               onChange={(e) => onTestLiveSendChange(e.target.checked)}
@@ -136,6 +140,8 @@ export default function AutopilotSafetyBrakes({
         <label className="flex flex-col gap-2 text-sm">
           <span style={{ color: colors.text.secondary }}>{kloelT(`Mensagem de teste`)}</span>
           <textarea
+            id="autopilot-test-message"
+            name="testMessage"
             value={testMessage}
             onChange={(e) => onTestMessageChange(e.target.value)}
             rows={3}

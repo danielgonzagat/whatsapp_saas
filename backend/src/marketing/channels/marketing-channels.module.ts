@@ -23,8 +23,10 @@ import {
 import { MarketingModule } from '../marketing.module';
 import { MetaModule } from '../../meta/meta.module';
 import { PrismaModule } from '../../prisma/prisma.module';
+import { AuthModule } from '../../auth/auth.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { EmailDispatchAdapter } from './email/email-dispatch.adapter';
+import { TransactionalEmailDispatchAdapter } from './email/transactional-email-dispatch.adapter';
 import { FacebookDispatchAdapter } from './facebook/facebook-dispatch.adapter';
 import { InstagramDispatchAdapter } from './instagram/instagram-dispatch.adapter';
 import { InternalPartnershipDispatchAdapter } from './internal-partnership/internal-partnership-dispatch.adapter';
@@ -39,6 +41,7 @@ const ADAPTERS = [
   MessengerDispatchAdapter,
   FacebookDispatchAdapter,
   EmailDispatchAdapter,
+  TransactionalEmailDispatchAdapter,
   TikTokDispatchAdapter,
   InternalPartnershipDispatchAdapter,
 ];
@@ -46,6 +49,7 @@ const ADAPTERS = [
 @Module({
   imports: [
     PrismaModule,
+    forwardRef(() => AuthModule),
     forwardRef(() => WhatsappModule),
     forwardRef(() => MetaModule),
     forwardRef(() => MarketingModule),
@@ -60,15 +64,26 @@ const ADAPTERS = [
         messenger: MessengerDispatchAdapter,
         facebook: FacebookDispatchAdapter,
         email: EmailDispatchAdapter,
+        emailTransactional: TransactionalEmailDispatchAdapter,
         tiktok: TikTokDispatchAdapter,
         partnership: InternalPartnershipDispatchAdapter,
-      ) => [whatsapp, instagram, messenger, facebook, email, tiktok, partnership],
+      ) => [
+        whatsapp,
+        instagram,
+        messenger,
+        facebook,
+        email,
+        emailTransactional,
+        tiktok,
+        partnership,
+      ],
       inject: [
         WhatsAppDispatchAdapter,
         InstagramDispatchAdapter,
         MessengerDispatchAdapter,
         FacebookDispatchAdapter,
         EmailDispatchAdapter,
+        TransactionalEmailDispatchAdapter,
         TikTokDispatchAdapter,
         InternalPartnershipDispatchAdapter,
       ],

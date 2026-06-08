@@ -1,8 +1,9 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { mutate } from 'swr';
+import useSWR, { mutate } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('swr', () => ({
+  default: vi.fn(),
   mutate: vi.fn(),
 }));
 
@@ -11,12 +12,15 @@ vi.mock('@/lib/api', () => ({
 }));
 
 import { apiFetch } from '@/lib/api';
+import { PRODUCT_TEMPLATES } from '@/lib/canvas-product-templates';
 
 import type { CanvasDesign } from './useCanvasDesigns';
 import { useCanvasDesigns } from './useCanvasDesigns';
+import { useProductTemplates } from './useProductTemplates';
 
 const apiFetchMock = vi.mocked(apiFetch);
 const mutateMock = vi.mocked(mutate);
+const useSWRMock = vi.mocked(useSWR);
 
 function makeDesign(id = 'design-1'): CanvasDesign {
   return {
@@ -39,6 +43,21 @@ function makeDesign(id = 'design-1'): CanvasDesign {
 beforeEach(() => {
   apiFetchMock.mockReset();
   mutateMock.mockReset();
+  useSWRMock.mockReset();
+  useSWRMock.mockReturnValue({ data: undefined, error: null, isLoading: false } as never);
+});
+
+describe('useProductTemplates', () => {
+  it('serves local templates without calling a missing canvas templates endpoint', () => {
+    const { result } = renderHook(() => useProductTemplates());
+
+    expect(useSWRMock).not.toHaveBeenCalled();
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.error).toBeNull();
+    expect(result.current.templates.map((template) => template.id)).toEqual(
+      PRODUCT_TEMPLATES.map((template) => template.id),
+    );
+  });
 });
 
 describe('useCanvasDesigns', () => {

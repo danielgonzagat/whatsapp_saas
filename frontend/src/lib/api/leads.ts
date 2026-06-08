@@ -1,15 +1,19 @@
 import { apiFetch } from './core';
+import type { CrmContact } from './crm';
 
-/** Lead shape. */
-export interface Contact {
-  /** Id property. */
-  id: string;
-  /** Phone property. */
-  phone: string;
-  /** Name property. */
-  name?: string;
-  /** Email property. */
-  email?: string;
+/**
+ * Lead / commercial-stage view-model for the canonical contact entity
+ * (CrmContact, backed by the backend `Contact` model). The shared identity
+ * fields are re-derived from CrmContact; this view adds funnel-/UI-derived
+ * fields (status, lastIntent, lastInteraction, totalMessages, metadata) that
+ * the leads list/detail screens render. Behaviour/shape unchanged — `name`
+ * and `email` stay optional (CrmContact already allows `| null`, which every
+ * consumer handles via `|| ''`).
+ */
+export type Contact = Pick<
+  CrmContact,
+  'id' | 'phone' | 'name' | 'email' | 'createdAt' | 'updatedAt'
+> & {
   /** Status property. */
   status: string;
   /** Last intent property. */
@@ -20,11 +24,7 @@ export interface Contact {
   totalMessages?: number;
   /** Metadata property. */
   metadata?: Record<string, unknown>;
-  /** Created at property. */
-  createdAt?: string;
-  /** Updated at property. */
-  updatedAt?: string;
-}
+};
 
 type ContactsPayload = Contact[] | { leads: Contact[] };
 

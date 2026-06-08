@@ -131,7 +131,7 @@ export function antiChurnMessage(strategy: string, offer: string): string {
     vip_support:
       'Você está em atendimento prioritário.\n\nVou te conectar com nosso time de suporte prioritário para resolver qualquer questão.',
   };
-  return messages[strategy] || messages.feedback;
+  return messages[strategy] || messages.feedback || '';
 }
 
 /** Reactivation messages keyed by strategy label. */

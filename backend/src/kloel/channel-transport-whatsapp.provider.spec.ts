@@ -53,10 +53,7 @@ describe('WhatsAppChannelTransport — compliant-send flag', () => {
     });
 
     it('sends directly via the provider registry and does NOT call the dispatcher', async () => {
-      const transport = new WhatsAppChannelTransport(
-        registry as never,
-        dispatcher as never,
-      );
+      const transport = new WhatsAppChannelTransport(registry as never, dispatcher as never);
 
       const result = await transport.send('ws-1', makeRequest());
 
@@ -73,10 +70,7 @@ describe('WhatsAppChannelTransport — compliant-send flag', () => {
 
     it('treats the literal string "false" as OFF', async () => {
       process.env[FLAG] = 'false';
-      const transport = new WhatsAppChannelTransport(
-        registry as never,
-        dispatcher as never,
-      );
+      const transport = new WhatsAppChannelTransport(registry as never, dispatcher as never);
 
       await transport.send('ws-1', makeRequest());
 
@@ -91,10 +85,7 @@ describe('WhatsAppChannelTransport — compliant-send flag', () => {
     });
 
     it('routes through the compliant dispatcher and does NOT call the provider registry directly', async () => {
-      const transport = new WhatsAppChannelTransport(
-        registry as never,
-        dispatcher as never,
-      );
+      const transport = new WhatsAppChannelTransport(registry as never, dispatcher as never);
 
       const result = await transport.send('ws-1', makeRequest());
 
@@ -111,10 +102,7 @@ describe('WhatsAppChannelTransport — compliant-send flag', () => {
     });
 
     it('forwards media + quoted options to the dispatcher', async () => {
-      const transport = new WhatsAppChannelTransport(
-        registry as never,
-        dispatcher as never,
-      );
+      const transport = new WhatsAppChannelTransport(registry as never, dispatcher as never);
 
       await transport.send(
         'ws-1',
@@ -126,12 +114,17 @@ describe('WhatsAppChannelTransport — compliant-send flag', () => {
         }),
       );
 
-      expect(dispatcher.sendMessage).toHaveBeenCalledWith('ws-1', '+5511999999999', 'Olá do KLOEL', {
-        mediaUrl: 'https://cdn/x.jpg',
-        mediaType: 'image',
-        caption: 'legenda',
-        quotedMessageId: 'q-1',
-      });
+      expect(dispatcher.sendMessage).toHaveBeenCalledWith(
+        'ws-1',
+        '+5511999999999',
+        'Olá do KLOEL',
+        {
+          mediaUrl: 'https://cdn/x.jpg',
+          mediaType: 'image',
+          caption: 'legenda',
+          quotedMessageId: 'q-1',
+        },
+      );
       expect(registry.sendMessage).not.toHaveBeenCalled();
     });
 
@@ -140,10 +133,7 @@ describe('WhatsAppChannelTransport — compliant-send flag', () => {
         error: true,
         message: 'Contato sem opt-in para WhatsApp',
       });
-      const transport = new WhatsAppChannelTransport(
-        registry as never,
-        dispatcher as never,
-      );
+      const transport = new WhatsAppChannelTransport(registry as never, dispatcher as never);
 
       const result = await transport.send('ws-1', makeRequest());
 
@@ -155,10 +145,7 @@ describe('WhatsAppChannelTransport — compliant-send flag', () => {
 
     it('maps a queued dispatcher result to success', async () => {
       dispatcher.sendMessage.mockResolvedValue({ ok: true, queued: true, delivery: 'queued' });
-      const transport = new WhatsAppChannelTransport(
-        registry as never,
-        dispatcher as never,
-      );
+      const transport = new WhatsAppChannelTransport(registry as never, dispatcher as never);
 
       const result = await transport.send('ws-1', makeRequest());
 

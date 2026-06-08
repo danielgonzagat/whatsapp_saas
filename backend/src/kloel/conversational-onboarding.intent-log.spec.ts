@@ -52,13 +52,13 @@ function expectIntentLog(expected: {
 }): void {
   const intents = logCalls.filter(([msg]) => msg === 'kloel_onboarding_intent');
   expect(intents).toHaveLength(1);
-  expect(intents[0]![1]).toMatchObject(expected);
+  expect(intents[0][1]).toMatchObject(expected);
 }
 
 function expectIntentSkippedLog(expectedReason: string): void {
   const skipped = logCalls.filter(([msg]) => msg === 'kloel_onboarding_intent_skipped');
   expect(skipped).toHaveLength(1);
-  expect(skipped[0]![1]).toMatchObject({
+  expect(skipped[0][1]).toMatchObject({
     reason: expect.stringContaining(expectedReason) as unknown,
   });
 }
@@ -275,12 +275,12 @@ describe('ConversationalOnboardingService intent-router log telemetry', () => {
       >;
       const messages = calls[0]?.[1]?.messages;
       expect(messages).toBeDefined();
-      const advisory = messages!.find(
+      const advisory = messages.find(
         (m) => m.role === 'system' && m.content.includes('Sinal interno'),
       );
       expect(advisory).toBeDefined();
-      expect(advisory!.content).toContain('não detectou intenção específica');
-      expect(advisory!.content).toContain('isChat=true');
+      expect(advisory.content).toContain('não detectou intenção específica');
+      expect(advisory.content).toContain('isChat=true');
     });
   }); // --------------------------------------------------------------
   describe('when IntentRouter is provided and classifies an intent', () => {
@@ -328,12 +328,12 @@ describe('ConversationalOnboardingService intent-router log telemetry', () => {
       >;
       const messages = calls[0]?.[1]?.messages;
       expect(messages).toBeDefined();
-      const advisory = messages!.find(
+      const advisory = messages.find(
         (m) => m.role === 'system' && m.content.includes('Sinal interno'),
       );
       expect(advisory).toBeDefined();
-      expect(advisory!.content).toContain("intenção 'crm.search_contact'");
-      expect(advisory!.content).toContain('isChat=false');
+      expect(advisory.content).toContain("intenção 'crm.search_contact'");
+      expect(advisory.content).toContain('isChat=false');
     });
   }); // --------------------------------------------------------------
   describe('when IntentRouter is absent (@Optional not provided)', () => {
@@ -385,7 +385,7 @@ describe('ConversationalOnboardingService intent-router log telemetry', () => {
       >;
       const messages = calls[0]?.[1]?.messages;
       expect(messages).toBeDefined();
-      const advisory = messages!.find(
+      const advisory = messages.find(
         (m) => m.role === 'system' && m.content.includes('Sinal interno'),
       );
       expect(advisory).toBeUndefined();

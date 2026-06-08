@@ -269,7 +269,7 @@ describe('AgentEventsService', () => {
 
       const history = service.getRecent('ws-stream');
       expect(history).toHaveLength(1);
-      const lastMsg = history[0]!;
+      const lastMsg = history[0];
       expect(lastMsg.message).toBe('token B');
     });
 

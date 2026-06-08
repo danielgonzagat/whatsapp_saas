@@ -53,7 +53,7 @@ export function FormatPills({ onPillClick }: FormatPillsProps) {
               background:
                 hp === p.id
                   ? `linear-gradient(135deg,${p.c[0]},${p.c[1]})`
-                  : 'colors.background.surface',
+                  : colors.background.surface,
               border: `1px solid ${hp === p.id ? `${p.c[0]}50` : colors.canvas.border}`,
               transition: 'all 0.3s',
               display: 'flex',
@@ -79,7 +79,7 @@ export function FormatPills({ onPillClick }: FormatPillsProps) {
             style={{
               fontSize: 9,
               fontWeight: 500,
-              color: hp === p.id ? 'colors.text.silver' : 'colors.text.muted',
+              color: hp === p.id ? colors.text.silver : colors.text.muted,
               fontFamily: S,
               transition: 'color 0.15s',
             }}

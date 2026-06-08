@@ -8,6 +8,12 @@ import { renderTemplate } from '../common/sales-templates';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { MindPolicyService } from '../kloel/mind/policy/mind-policy.service';
+import { DecisionOutcomeService } from '../kloel/decision-outcome.service';
+import { isAutopilotPerceptEmitEnabled } from './autopilot-percept-emit.flag';
+import {
+  emitAutopilotActionExecutedPercept,
+  emitAutopilotDecisionMadePercept,
+} from './autopilot-percept-emit.helper';
 import type { MindJson, MindPolicyOption } from '../kloel/mind.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -71,6 +77,7 @@ export class AutopilotCycleExecutorService {
     private readonly planLimits: PlanLimitsService,
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly mindPolicy?: MindPolicyService,
+    @Optional() private readonly decisionOutcome?: DecisionOutcomeService,
   ) {
     const apiKey = this.config.get<string>('OPENAI_API_KEY');
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
@@ -158,6 +165,19 @@ export class AutopilotCycleExecutorService {
         baselineActionQuiet: baseline,
         options: this.buildMindActionOptions(context),
         outcomeKey: this.autopilotOutcomeKey(conv),
+      });
+      // ADDITIVE, flag-gated, best-effort: emit ONE canonical
+      // `cognition.autopilot.decision_made` percept so the cognition loop is no
+      // longer blind to autopilot's per-conversation action decisions. Behind
+      // `KLOEL_AUTOPILOT_PERCEPT_ENABLED` (DEFAULT OFF). The helper swallows its
+      // own errors; this `await` cannot throw, so the decision above and
+      // autopilot behavior are NEVER affected.
+      await emitAutopilotDecisionMadePercept(this.prisma, this.logger, {
+        workspaceId: conv.workspaceId,
+        conversationId: conv.id,
+        chosenAction: result.chosen,
+        baselineAction: baseline,
+        mindInfluenced: result.chosen !== baseline,
       });
       return result.chosen;
     } catch (error: unknown) {
@@ -250,6 +270,21 @@ export class AutopilotCycleExecutorService {
         user: conv.contact.phone,
         message: responseText,
       });
+      // ADDITIVE, flag-gated, best-effort: now that the autonomous send is
+      // enqueued, emit ONE canonical `cognition.autopilot.action_executed`
+      // percept AND record this autonomous action in the decision ledger so the
+      // Mind perceives + learns from autopilot. Behind
+      // `KLOEL_AUTOPILOT_PERCEPT_ENABLED` (DEFAULT OFF). Both helpers swallow
+      // their own errors; these awaits cannot throw, so the send above and
+      // autopilot behavior are NEVER affected.
+      await emitAutopilotActionExecutedPercept(this.prisma, this.logger, {
+        workspaceId: conv.workspaceId,
+        conversationId: conv.id,
+        action,
+        complianceAllowed: compliance.allowed,
+        intent: analysis?.intent ?? 'unknown',
+      });
+      await this.recordAutopilotDecision(action, conv, analysis);
     } catch (err: unknown) {
       this.logger.warn(
         `[Autopilot] Falha ao enfileirar envio: ${err instanceof Error ? err.message : 'unknown_error'}`,
@@ -320,6 +355,48 @@ export class AutopilotCycleExecutorService {
 
   private isCommercialAction(type: string): boolean {
     return helpersIsCommercialAction(type);
+  }
+
+  /**
+   * ADDITIVE, flag-gated, best-effort: record an autopilot autonomous action as
+   * a decision in the canonical decision ledger
+   * (`DecisionOutcomeService.recordDecision`) so the Mind perceives + learns
+   * from autopilot. Behind `KLOEL_AUTOPILOT_PERCEPT_ENABLED` (DEFAULT OFF) and
+   * only when the optional `DecisionOutcomeService` is DI-provided. Wrapped in
+   * try/catch + warn-log so it can NEVER break the autopilot send path or alter
+   * autopilot behavior. The `outcomeKey` reuses the autopilot Mind outcome key
+   * so a later commerce/outcome closure can attribute against the same anchor.
+   */
+  private async recordAutopilotDecision(
+    action: string,
+    conv: AutopilotConversation,
+    analysis?: ConversationAnalysis,
+  ): Promise<void> {
+    if (!isAutopilotPerceptEmitEnabled() || !this.decisionOutcome || !conv.workspaceId) {
+      return;
+    }
+    try {
+      await this.decisionOutcome.recordDecision({
+        workspaceId: conv.workspaceId,
+        decisionType: AUTOPILOT_MIND_DECISION_TYPE,
+        chosenAction: action,
+        baselineAction: this.decideActionBaseline(analysis ?? {}, false),
+        outcomeKey: this.autopilotOutcomeKey(conv),
+        expectedWindow: 24,
+        contextSnapshot: {
+          conversationId: conv.id,
+          intent: analysis?.intent ?? 'unknown',
+          sentiment: analysis?.sentiment ?? 'neutral',
+          buyingSignal: analysis?.buyingSignal ?? false,
+          source: 'autopilot_cycle',
+        },
+      });
+    } catch (err: unknown) {
+      this.logger.warn(
+        `[Autopilot] decision-ledger record failed for conv ${conv.id}; the ` +
+          `autonomous send succeeded and is unaffected: ${err instanceof Error ? err.message : 'unknown_error'}`,
+      );
+    }
   }
 
   /**

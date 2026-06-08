@@ -80,6 +80,8 @@ export default function AreaMembrosListPanel({
               <button
                 type="button"
                 onClick={() => toggleArea(a.id)}
+                aria-label={kloelT(`${isExpanded ? 'Recolher' : 'Expandir'} area ${a.name}`)}
+                title={kloelT(`${isExpanded ? 'Recolher' : 'Expandir'} area ${a.name}`)}
                 style={{
                   ...iconBtn,
                   color: areaAccent,
@@ -147,7 +149,7 @@ export default function AreaMembrosListPanel({
                   }}
                 >
                   {a.type === 'COURSE' ? 'Curso' : a.type === 'COMMUNITY' ? 'Comunidade' : a.type}{' '}
-                  {kloelT('&middot;')} {modules.length} modulos
+                  {kloelT('·')} {modules.length} modulos
                 </div>
                 {a.slug && (
                   <div style={{ fontFamily: MONO, fontSize: 10, color: areaAccent, marginTop: 4 }}>
@@ -176,7 +178,7 @@ export default function AreaMembrosListPanel({
               <button
                 type="button"
                 onClick={() => onOpenStudents(a.id, a.name)}
-                style={{ ...iconBtn, color: 'colors.ember.primary' }}
+                style={{ ...iconBtn, color: colors.ember.primary }}
                 title={kloelT('Gerenciar alunos')}
               >
                 <svg
@@ -203,9 +205,11 @@ export default function AreaMembrosListPanel({
                   }
                 }}
                 aria-disabled={!previewHref}
+                aria-label={kloelT(`Pre-visualizar area ${a.name}`)}
+                title={kloelT(`Pre-visualizar area ${a.name}`)}
                 style={{
                   ...iconBtn,
-                  color: 'colors.ember.primary',
+                  color: colors.ember.primary,
                   opacity: previewHref ? 1 : 0.45,
                   textDecoration: 'none',
                 }}

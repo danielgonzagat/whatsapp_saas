@@ -92,7 +92,7 @@ import { PdfProcessorController } from './pdf-processor.controller';
 import { PdfProcessorService } from './pdf-processor.service';
 import { WalletLedgerService } from './wallet-ledger.service';
 import { WalletController } from './wallet.controller';
-import { WalletService } from './wallet.service';
+import { SellerWalletService } from './wallet.service';
 
 import { AuditModule } from '../audit/audit.module';
 import { BillingModule } from '../billing/billing.module';
@@ -113,12 +113,14 @@ import { AdRulesEngineService } from './ad-rules-engine.service';
 import { AdRulesController } from './ad-rules.controller';
 import { CanvasController } from './canvas.controller';
 import { CartRecoveryService } from './cart-recovery.service';
+import { CheckoutEventEmitterService } from './checkout-emitter/checkout-event-emitter.service';
 import { DiagnosticsController } from './diagnostics.controller';
 import { EmailCampaignService } from './email-campaign.service';
 import { KloelAudioModule } from './kloel-audio.module';
 import { KloelRulesModule } from './rules/kloel-rules.module';
 import { LeadsController } from './leads.controller';
 import { LeadsService } from './leads.service';
+import { LeadContactBackfillService } from './lead-contact-backfill.service';
 import { OrderAlertsService } from './order-alerts.service';
 import {
   ProductAIConfigController,
@@ -170,13 +172,12 @@ import { ChannelSetupService } from './channel-setup.service';
 import { CommercialDecisionOrchestratorService } from './commercial-decision-orchestrator.service';
 import { RuntimeConversationTracerService } from './runtime-conversation-tracer.service';
 import { DailyLimitService } from './daily-limit.service';
-import { KloelGlobalPriorService } from './kloel-global-prior.service';
 import { MindBeliefService } from './mind/inference/mind-belief.service';
 import { CommerceOutcomeLearnerService } from './mind/coordination/commerce-outcome-learner.service';
 import { MindBanditService } from './mind/policy/mind-bandit.service';
 import { MindCaseMemoryService } from './mind/memory/mind-case-memory.service';
 import { MindConceptService } from './mind/memory/mind-concepts.service';
-import { MindLongTermMemoryService } from './mind/memory/mind-long-term-memory.service';
+import { CaseConsolidationService } from './mind/memory/mind-long-term-memory.service';
 import { MindSelfModificationService } from './mind/self-evolution/mind-self-modification.service';
 import { MindGlobalPriorService } from './mind/memory/mind-global-prior.service';
 import { MindController } from './mind/coordination/mind-controller';
@@ -204,12 +205,16 @@ import { MindService } from './mind.service';
 import { AttentionService } from './mind/attention.service';
 import { ValenceAggregatorService } from './mind/valence-aggregator.service';
 import { DecisionOutcomeService } from './decision-outcome.service';
+import { DecisionSweepScheduler } from './decision-sweep.scheduler';
 import { DriftModule } from './drift/drift.module';
 import { MindLiftReportService } from './mind/observability/mind-lift-report.service';
 import { MindSurpriseService } from './mind/inference/mind-surprise.service';
 import { MindVerbalizerService } from './mind/synthetic/mind-verbalizer.service';
 import { MindWorkspaceStateService } from './mind/memory/mind-workspace-state.service';
 import { VectorService } from './mind/knowledge/vector.service';
+import { MemoryService as MindUserMemoryService } from './mind/memory/memory.service';
+import { CapabilityManifestModule } from './manifest/capability-manifest.module';
+import { KloelMemoryEngineService } from './kloel-memory-engine.service';
 import { AgentRuntimeJobRunnerService } from './agent-runtime/agent-runtime.job-runner';
 import {
   AgentRuntimeContextService,
@@ -236,6 +241,7 @@ import { KloelProductSubResourceToolsService } from './kloel-product-sub-resourc
 import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
 import { ToolPlannerModule } from './toolplanner/toolplanner.module';
 import { CapabilityRegistryV2Module } from './capability-registry-v2/capability-registry-v2.module';
+import { KloelCapabilitiesModule } from './capabilities/kloel-capabilities.module';
 import { KloelDomainServiceResolver } from './domain-service-resolver.service';
 import { IntentRouterModule } from './intent-router/intent-router.module';
 import { SelfAwarenessModule } from './self-awareness/self-awareness.module';
@@ -244,13 +250,12 @@ import { ProductsModule } from '../products/products.module';
 import { PlansModule } from '../plans/plans.module';
 import { SalesModule } from '../sales/sales.module';
 import { WorkspaceModule } from '../workspaces/workspace.module';
-import { LongTermMemoryService } from './mind/memory/long-term-memory.service';
+import { GraphFactMemoryService } from './mind/memory/long-term-memory.service';
 import { ConversationArchiveService } from './mind/memory/conversation-archive.service';
 import { EpisodeService } from './mind/memory/episode.service';
 import { MindSelfModelService } from './mind/self-model/mind-self-model.service';
 import { CrmModule } from '../crm/crm.module';
 
-/** Kloel module. */
 @Module({
   imports: [
     PrismaModule,
@@ -274,6 +279,8 @@ import { CrmModule } from '../crm/crm.module';
     DriftModule,
     RiskClassModule,
     CapabilityRegistryV2Module,
+    KloelCapabilitiesModule,
+    CapabilityManifestModule,
     IntentRouterModule,
     ToolPlannerModule,
     SelfAwarenessModule,
@@ -374,6 +381,7 @@ import { CrmModule } from '../crm/crm.module';
     KloelWorkspaceContextLinkedProductService,
     MemoryCrudService,
     MemorySearchService,
+    KloelMemoryEngineService,
     MemoryService,
     MemoryManagementService,
     MarketingSkillLoader,
@@ -381,7 +389,7 @@ import { CrmModule } from '../crm/crm.module';
     MarketingSkillContextBuilder,
     MarketingSkillService,
     PdfProcessorService,
-    WalletService,
+    SellerWalletService,
     WalletLedgerService,
     ReportService,
     LLMBudgetService,
@@ -400,10 +408,12 @@ import { CrmModule } from '../crm/crm.module';
     SmartPaymentService,
     WorkspaceGuard,
     LeadsService,
+    LeadContactBackfillService,
     OrderAlertsService,
     AdRulesEngineService,
     EmailCampaignService,
     CartRecoveryService,
+    CheckoutEventEmitterService,
     WebhooksService,
     WebhookDispatcherService,
     MindCapabilityRegistry,
@@ -430,13 +440,12 @@ import { CrmModule } from '../crm/crm.module';
     MindBanditService,
     MindCaseMemoryService,
     MindConceptService,
-    MindLongTermMemoryService,
-    LongTermMemoryService,
+    CaseConsolidationService,
+    GraphFactMemoryService,
     ConversationArchiveService,
     EpisodeService,
     MindSelfModelService,
     MindSelfModificationService,
-    KloelGlobalPriorService,
     MindGlobalPriorService,
     MindEventProcessorService,
     MindGuardContextBuilderService,
@@ -458,10 +467,12 @@ import { CrmModule } from '../crm/crm.module';
     MindService,
     MindSurpriseService,
     DecisionOutcomeService,
+    DecisionSweepScheduler,
     MindLiftReportService,
     MindVerbalizerService,
     MindWorkspaceStateService,
     VectorService,
+    MindUserMemoryService,
     AgentRuntimeContextService,
     AgentRuntimeContextCompressorService,
     AgentRuntimeBuiltinMemoryProvider,
@@ -512,6 +523,7 @@ import { CrmModule } from '../crm/crm.module';
     KloelBusinessConfigToolsService,
     KloelWhatsAppToolsService,
     LeadMindCoordinator,
+    LeadContactBackfillService,
     KloelToolDispatcherService,
     KloelToolExecutorService,
     KloelComposerService,
@@ -520,7 +532,6 @@ import { CrmModule } from '../crm/crm.module';
     GuestChatService,
     WhatsAppMindCoordinator,
     PaymentService,
-
     OnboardingService,
     ConversationalOnboardingService,
     MemoryCrudService,
@@ -530,7 +541,7 @@ import { CrmModule } from '../crm/crm.module';
     MemoryService,
     MemoryManagementService,
     PdfProcessorService,
-    WalletService,
+    SellerWalletService,
     WalletLedgerService,
     ReportService,
     LLMBudgetService,
@@ -553,7 +564,6 @@ import { CrmModule } from '../crm/crm.module';
     RuntimeConversationTracerService,
     MindBeliefService,
     MindBanditService,
-    KloelGlobalPriorService,
     MindGlobalPriorService,
     MindPolicyService,
     MindService,

@@ -96,7 +96,7 @@ export function Ticker({ items }: { items: string[] }) {
         }}
       >
         {text}
-        {kloelT(`&nbsp;&nbsp;&nbsp;///&nbsp;&nbsp;&nbsp;`)}
+        {kloelT(`   ///   `)}
         {text}
       </div>
     </div>

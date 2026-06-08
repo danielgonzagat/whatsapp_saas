@@ -11,8 +11,10 @@ import AffiliateDetailSheet from './AffiliateDetailSheet';
 import AffiliateLinkManager from './AffiliateLinkManager';
 
 export default function AffiliateDirectory({
+  onOpenChat,
   setShowAffiliateInviteModal,
 }: {
+  onOpenChat?: () => void;
   setShowAffiliateInviteModal: (value: boolean) => void;
 }) {
   const [search, setSearch] = useState('');
@@ -23,10 +25,14 @@ export default function AffiliateDirectory({
   const displayAffiliates = affiliates as Affiliate[];
 
   const filtered = displayAffiliates.filter((a) => {
-    if (filterType !== 'todos' && a.type !== filterType) {return false;}
+    if (filterType !== 'todos' && a.type !== filterType) {
+      return false;
+    }
     if (search) {
       const term = search.toLowerCase();
-      return (a.name || '').toLowerCase().includes(term) || (a.email || '').toLowerCase().includes(term);
+      return (
+        (a.name || '').toLowerCase().includes(term) || (a.email || '').toLowerCase().includes(term)
+      );
     }
     return true;
   });
@@ -48,18 +54,27 @@ export default function AffiliateDirectory({
       <AffiliateSetupCards />
       <AffiliateStatsSummary />
       <AffiliateFilterToolbar
-        filterType={filterType} setFilterType={setFilterType}
-        search={search} setSearch={setSearch}
+        filterType={filterType}
+        setFilterType={setFilterType}
+        search={search}
+        setSearch={setSearch}
         onInvite={() => setShowAffiliateInviteModal(true)}
       />
-      <AffiliateList filtered={filtered} hasData={displayAffiliates.length > 0} onSelect={setDetailId} />
+      <AffiliateList
+        filtered={filtered}
+        hasData={displayAffiliates.length > 0}
+        onSelect={setDetailId}
+      />
       <AffiliateLinkManager />
 
       {detailId && detailAffiliate && (
         <AffiliateDetailSheet
           affiliate={detailAffiliate}
           onClose={() => setDetailId(null)}
-          onChat={() => setDetailId(null)}
+          onChat={() => {
+            setDetailId(null);
+            onOpenChat?.();
+          }}
           onRevoke={() => handleRevoke(detailId)}
         />
       )}

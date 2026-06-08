@@ -10,10 +10,10 @@ import { mutate } from 'swr';
 
 const FONT_BODY = "var(--font-sora), 'Sora', sans-serif";
 const FONT_MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
-const EMBER = 'colors.ember.primary';
+const EMBER = colors.ember.primary;
 
 const card: React.CSSProperties = {
-  background: 'colors.background.surface',
+  background: colors.background.surface,
   border: '1px solid colors.border.space',
   borderRadius: '6px',
   padding: '20px',
@@ -104,7 +104,7 @@ export function PlanAffiliateTab({
         style={{
           padding: 40,
           textAlign: 'center',
-          color: 'colors.text.muted',
+          color: colors.text.muted,
           fontFamily: FONT_BODY,
         }}
       >
@@ -121,7 +121,7 @@ export function PlanAffiliateTab({
           fontFamily: FONT_BODY,
           fontSize: '16px',
           fontWeight: 600,
-          color: 'colors.text.silver',
+          color: colors.text.silver,
           margin: 0,
         }}
       >
@@ -136,7 +136,7 @@ export function PlanAffiliateTab({
               style={{
                 fontSize: 14,
                 fontWeight: 600,
-                color: 'colors.text.silver',
+                color: colors.text.silver,
                 fontFamily: FONT_BODY,
               }}
             >
@@ -145,7 +145,7 @@ export function PlanAffiliateTab({
             <div
               style={{
                 fontSize: 11,
-                color: 'colors.text.muted',
+                color: colors.text.muted,
                 fontFamily: FONT_BODY,
                 marginTop: 4,
               }}
@@ -160,7 +160,7 @@ export function PlanAffiliateTab({
               width: 44,
               height: 24,
               borderRadius: 12,
-              background: enabled ? colors.semantic.success : 'colors.border.space',
+              background: enabled ? colors.semantic.success : colors.border.space,
               border: 'none',
               position: 'relative',
               cursor: 'pointer',
@@ -192,7 +192,7 @@ export function PlanAffiliateTab({
               style={{
                 fontSize: 14,
                 fontWeight: 600,
-                color: 'colors.text.silver',
+                color: colors.text.silver,
                 fontFamily: FONT_BODY,
                 marginBottom: 16,
               }}
@@ -206,7 +206,7 @@ export function PlanAffiliateTab({
                     display: 'block',
                     fontSize: 10,
                     fontWeight: 600,
-                    color: 'colors.text.dim',
+                    color: colors.text.dim,
                     textTransform: 'uppercase' as const,
                     letterSpacing: '.08em',
                     marginBottom: 6,
@@ -227,10 +227,10 @@ export function PlanAffiliateTab({
                   style={{
                     width: '100%',
                     padding: '10px 14px',
-                    background: 'colors.background.elevated',
+                    background: colors.background.elevated,
                     border: '1px solid colors.border.space',
                     borderRadius: 6,
-                    color: 'colors.text.silver',
+                    color: colors.text.silver,
                     fontSize: 14,
                     fontFamily: FONT_MONO,
                     outline: 'none',
@@ -243,7 +243,7 @@ export function PlanAffiliateTab({
                     display: 'block',
                     fontSize: 10,
                     fontWeight: 600,
-                    color: 'colors.text.dim',
+                    color: colors.text.dim,
                     textTransform: 'uppercase' as const,
                     letterSpacing: '.08em',
                     marginBottom: 6,
@@ -264,10 +264,10 @@ export function PlanAffiliateTab({
                   style={{
                     width: '100%',
                     padding: '10px 14px',
-                    background: 'colors.background.elevated',
+                    background: colors.background.elevated,
                     border: '1px solid colors.border.space',
                     borderRadius: 6,
-                    color: 'colors.text.silver',
+                    color: colors.text.silver,
                     fontSize: 14,
                     fontFamily: FONT_MONO,
                     outline: 'none',
@@ -280,10 +280,10 @@ export function PlanAffiliateTab({
                 style={{
                   marginTop: 16,
                   padding: 12,
-                  background: 'colors.background.elevated',
+                  background: colors.background.elevated,
                   borderRadius: 6,
                   fontSize: 11,
-                  color: 'colors.text.muted',
+                  color: colors.text.muted,
                   fontFamily: FONT_BODY,
                 }}
               >
@@ -299,7 +299,7 @@ export function PlanAffiliateTab({
               style={{
                 fontSize: 14,
                 fontWeight: 600,
-                color: 'colors.text.silver',
+                color: colors.text.silver,
                 fontFamily: FONT_BODY,
                 marginBottom: 16,
               }}
@@ -316,13 +316,13 @@ export function PlanAffiliateTab({
                     flex: 1,
                     padding: '12px',
                     background:
-                      approvalMode === mode ? 'rgba(232,93,48,.08)' : 'colors.background.elevated',
+                      approvalMode === mode ? 'rgba(232,93,48,.08)' : colors.background.elevated,
                     border:
                       approvalMode === mode
                         ? `1px solid ${EMBER}`
                         : '1px solid colors.border.space',
                     borderRadius: 6,
-                    color: approvalMode === mode ? EMBER : 'colors.text.muted',
+                    color: approvalMode === mode ? EMBER : colors.text.muted,
                     fontSize: 12,
                     fontWeight: 600,
                     cursor: 'pointer',
@@ -345,10 +345,10 @@ export function PlanAffiliateTab({
         style={{
           width: '100%',
           padding: '14px',
-          background: saving ? 'colors.border.space' : EMBER,
+          background: saving ? colors.border.space : EMBER,
           border: 'none',
           borderRadius: 6,
-          color: 'colors.background.void',
+          color: colors.background.void,
           fontSize: 14,
           fontWeight: 700,
           cursor: saving ? 'not-allowed' : 'pointer',

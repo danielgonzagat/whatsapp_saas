@@ -32,6 +32,8 @@ export function RuleNerveFiber({
   onDelete: (id: string) => void;
 }) {
   const isEditing = editingId === rule.id;
+  const ruleLabel = rule.condition.trim() || rule.id;
+  const toggleLabel = rule.active ? `Pausar regra ${ruleLabel}` : `Ativar regra ${ruleLabel}`;
 
   return (
     <div
@@ -62,7 +64,7 @@ export function RuleNerveFiber({
               IF {rule.condition}
             </div>
             <div style={{ fontSize: 11, fontFamily: MONO, color: EMBER }}>
-              {kloelT(`&rarr;`)} {rule.action}
+              {kloelT(`→`)} {rule.action}
             </div>
           </div>
           <NP color={rule.active ? EMBER : colors.text.dim} intensity={rule.active ? 1.2 : 0.3} width={80} height={20} />
@@ -71,9 +73,10 @@ export function RuleNerveFiber({
           </span>
           <button
             type="button"
+            aria-label={kloelT(`Editar regra ${ruleLabel}`)}
             onClick={() => onStartEdit(rule)}
             style={{ background: 'none', border: 'none', color: 'var(--app-text-secondary)', cursor: 'pointer', padding: 4, display: 'flex' }}
-            title={kloelT(`Editar regra`)}
+            title={kloelT(`Editar regra ${ruleLabel}`)}
           >
             <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
               <rect x="9" y="9" width="13" height="13" rx="2" />
@@ -82,6 +85,10 @@ export function RuleNerveFiber({
           </button>
           <button
             type="button"
+            role="switch"
+            aria-checked={rule.active}
+            aria-label={kloelT(toggleLabel)}
+            title={kloelT(toggleLabel)}
             onClick={() => onToggle(rule.id)}
             style={{ width: 36, height: 20, borderRadius: 8, border: 'none', background: rule.active ? EMBER : colors.text.dim, cursor: 'pointer', position: 'relative' as const, transition: 'background 150ms ease', flexShrink: 0 }}
           >
@@ -89,11 +96,12 @@ export function RuleNerveFiber({
           </button>
           <button
             type="button"
+            aria-label={kloelT(`Remover regra ${ruleLabel}`)}
             onClick={() => onDelete(rule.id)}
             style={{ background: 'none', border: 'none', color: 'var(--app-text-secondary)', cursor: 'pointer', padding: 4, fontSize: 14, fontFamily: MONO, transition: 'color 150ms ease' }}
-            title={kloelT(`Remover regra`)}
+            title={kloelT(`Remover regra ${ruleLabel}`)}
           >
-            {kloelT(`&times;`)}
+            {kloelT(`×`)}
           </button>
         </div>
       )}

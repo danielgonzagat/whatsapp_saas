@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { colors } from '@/lib/design-tokens';
+import { useClientMounted } from '@/hooks/useClientMounted';
 import { usePrefersReducedMotion } from './usePrefersReducedMotion';
 import { delayForTypewriter, runSequentialRange } from './KloelLanding.helpers';
 import { KloelMushroomVisual } from '../KloelBrand';
@@ -19,6 +20,7 @@ type Tone = 'light' | 'ember';
 
 export function FinalManifestLoop() {
   const prefersReducedMotion = usePrefersReducedMotion();
+  const isMounted = useClientMounted();
   const [text, setText] = useState('');
   const [tone, setTone] = useState<Tone>('light');
 
@@ -148,7 +150,7 @@ export function FinalManifestLoop() {
     >
       <KloelMushroomVisual
         size={136}
-        traceColor={kloelT('colors.text.silver')}
+        traceColor={kloelT(colors.text.silver)}
         animated={!prefersReducedMotion}
         spores={prefersReducedMotion ? 'none' : 'animated'}
         ariaHidden
@@ -189,7 +191,7 @@ export function FinalManifestLoop() {
           <span
             style={{
               color: cursorColor,
-              animation: prefersReducedMotion ? 'none' : 'blink 1s ease infinite',
+              animation: !isMounted || prefersReducedMotion ? 'none' : 'blink 1s ease infinite',
             }}
           >
             |

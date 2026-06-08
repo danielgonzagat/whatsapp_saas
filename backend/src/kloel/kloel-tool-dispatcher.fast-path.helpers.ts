@@ -58,7 +58,12 @@ import {
   isWorkspaceActionTool,
 } from './kloel-tool-dispatcher.workspace-actions.handlers';
 import { dispatchChannelTool, isChannelTool } from './kloel-tool-dispatcher.channel.handlers';
+import {
+  dispatchCapabilityTool,
+  isCapabilityTool,
+} from './kloel-tool-dispatcher.capabilities.handlers';
 
+import type { KloelCapabilitiesService } from './capabilities/kloel-capabilities.service';
 import type { UnknownRecord } from '../common/types';
 
 type ToolResult = {
@@ -147,6 +152,7 @@ export interface FastPathServices {
   productSubTools?: KloelProductSubResourceToolsService;
   transports?: ChannelTransportRegistry;
   riskGate?: RiskGateService;
+  kloelCapabilities?: KloelCapabilitiesService;
   executeTool: (ws: string, name: string, a: UnknownRecord, u?: string) => Promise<ToolResult>;
   applyReceipt: (
     cap: string,
@@ -170,6 +176,16 @@ export async function runFastPathDispatch(
   args: UnknownRecord,
   userId: string | undefined,
 ): Promise<ToolResult | null> {
+  if (isCapabilityTool(toolName)) {
+    const result = dispatchCapabilityTool(
+      { kloelCapabilities: services.kloelCapabilities },
+      toolName,
+      args,
+    );
+    if (result !== null) {
+      return result;
+    }
+  }
   if (isWhatsAppTool(toolName)) {
     const result = await dispatchWhatsAppTool(
       services.whatsappToolsService,

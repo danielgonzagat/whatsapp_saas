@@ -10,7 +10,7 @@ import { KycApprovedGuard } from '../kyc/kyc-approved.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { formatBrlAmount } from './money-format.util';
 import { AddBankAccountDto } from './dto/wallet-actions.dto';
-import { WalletService } from './wallet.service';
+import { SellerWalletService } from './wallet.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 
 // All dates stored as UTC via Prisma DateTime (toISOString)
@@ -21,7 +21,7 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 @RouteClass('mutate')
 export class WalletController {
   constructor(
-    private readonly walletService: WalletService,
+    private readonly walletService: SellerWalletService,
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
   ) {}
@@ -353,7 +353,7 @@ export class WalletController {
       const daysAgo = Math.floor((Date.now() - new Date(t.createdAt).getTime()) / 86400000);
       const idx = 6 - daysAgo;
       if (idx >= 0 && idx < 7) {
-        bucketsCents[idx] += t.amountInCents;
+        bucketsCents[idx] = (bucketsCents[idx] ?? 0n) + t.amountInCents;
       }
     });
     const result = bucketsCents.map((cents) => Number(cents) / 100);

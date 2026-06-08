@@ -178,8 +178,8 @@ describe('GuestChatService — Cognitive Parity (PI-K19-A)', () => {
       >;
       const beliefCall = calls.find(([, , predicate]) => predicate === 'replied_to_user');
       expect(beliefCall).toBeDefined();
-      expect(beliefCall![3]).toEqual(expect.objectContaining({ surface: 'guest' }));
-      expect(beliefCall![4]).toBe(1);
+      expect(beliefCall[3]).toEqual(expect.objectContaining({ surface: 'guest' }));
+      expect(beliefCall[4]).toBe(1);
     });
 
     it('still observes belief when LLM degrades (unavailable message)', async () => {
@@ -197,7 +197,7 @@ describe('GuestChatService — Cognitive Parity (PI-K19-A)', () => {
       >;
       const beliefCall = calls.find(([, , predicate]) => predicate === 'replied_to_user');
       expect(beliefCall).toBeDefined();
-      expect(beliefCall![4]).toBe(1);
+      expect(beliefCall[4]).toBe(1);
     });
 
     it('tolerates absent MindBeliefService', async () => {

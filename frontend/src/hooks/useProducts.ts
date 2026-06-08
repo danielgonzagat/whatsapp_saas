@@ -173,19 +173,27 @@ function readProductCategoriesPayload(data: unknown): ProductCategoriesReadResul
 }
 
 /* ── List products with optional filters ── */
-export function useProducts(params?: { category?: string; active?: string; search?: string }) {
-  const qs = params
-    ? `?${new URLSearchParams(
-        Object.entries(params).filter(([, v]) => v) as [string, string][],
-      ).toString()}`
-    : '';
-  const { data, error, isLoading, mutate } = useSWR(`/products${qs}`, swrFetcher);
-  const decoded = readProductsPayload(data);
+export function useProducts(params?: {
+  category?: string;
+  active?: string;
+  search?: string;
+  enabled?: boolean;
+}) {
+  const { enabled = true, ...queryParams } = params ?? {};
+  const queryEntries = Object.entries(queryParams).filter(([, v]) => v) as [string, string][];
+  const qs = queryEntries.length ? `?${new URLSearchParams(queryEntries).toString()}` : '';
+  const { data, error, isLoading, mutate } = useSWR(
+    enabled ? `/products${qs}` : null,
+    swrFetcher,
+  );
+  const decoded = enabled
+    ? readProductsPayload(data)
+    : { products: [], total: 0, error: undefined };
   return {
     products: decoded.products,
     total: decoded.total,
-    isLoading,
-    error: error ?? decoded.error,
+    isLoading: enabled ? isLoading : false,
+    error: enabled ? error ?? decoded.error : undefined,
     mutate,
   };
 }

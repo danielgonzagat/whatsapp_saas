@@ -202,6 +202,9 @@ export async function chatCompletionWithProviderFallback(
 
   for (let i = 0; i < pool.length; i++) {
     const client = pool[i];
+    if (client === undefined) {
+      continue;
+    }
     try {
       return await client.chat.completions.create(params);
     } catch (err: unknown) {

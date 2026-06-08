@@ -73,6 +73,22 @@ describe('PaymentMethodController', () => {
       expect(createSetupIntent).toHaveBeenCalledWith('ws-1', 'https://app.kloel.com/billing');
       expect(result).toEqual(mockResult);
     });
+
+    it('returns an unavailable payload instead of throwing when card setup is not configured', async () => {
+      createSetupIntent.mockRejectedValue(new Error('Infraestrutura de cobrança indisponível'));
+
+      const result = await controller.createSetupIntent(mockReq, {
+        returnUrl: 'https://app.kloel.com/billing',
+      });
+
+      expect(createSetupIntent).toHaveBeenCalledWith('ws-1', 'https://app.kloel.com/billing');
+      expect(result).toEqual({
+        url: null,
+        customerId: null,
+        unavailable: true,
+        message: 'Cartao de assinatura indisponivel neste ambiente.',
+      });
+    });
   });
 
   describe('DELETE /billing/payment-methods/:id', () => {

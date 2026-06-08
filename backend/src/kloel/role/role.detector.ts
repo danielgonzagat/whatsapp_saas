@@ -207,5 +207,5 @@ export function primaryRoleFromDetections(detections: readonly RoleDetection[]):
   if (candidates.length === 0) {
     return undefined;
   }
-  return candidates[0]!.role;
+  return candidates[0]?.role;
 }

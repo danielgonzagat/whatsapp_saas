@@ -33,6 +33,8 @@ export function FlowExecutionsTab({
             type="button"
             onClick={onRefresh}
             disabled={loading}
+            aria-label={kloelT('Atualizar execuções')}
+            title={kloelT('Atualizar execuções')}
             className="p-2 rounded-md border border-border text-muted-foreground hover:bg-muted disabled:opacity-50"
           >
             {loading ? (

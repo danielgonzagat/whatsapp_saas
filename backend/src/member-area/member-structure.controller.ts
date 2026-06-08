@@ -70,22 +70,22 @@ const COURSE_MODULES: ModuleTemplate[] = [
   },
 ];
 
-const COMMUNITY_MODULES: ModuleTemplate[] = [
-  {
-    name: 'Comunidade',
-    description: 'Espaco de discussao e networking',
-    position: 0,
-    lessons: [
-      { name: 'Boas-vindas e Regras', type: 'TEXT', position: 0 },
-      { name: 'Apresente-se', type: 'TEXT', position: 1 },
-      { name: 'Duvidas e Suporte', type: 'TEXT', position: 2 },
-    ],
-  },
-];
+const COMMUNITY_MODULE: ModuleTemplate = {
+  name: 'Comunidade',
+  description: 'Espaco de discussao e networking',
+  position: 0,
+  lessons: [
+    { name: 'Boas-vindas e Regras', type: 'TEXT', position: 0 },
+    { name: 'Apresente-se', type: 'TEXT', position: 1 },
+    { name: 'Duvidas e Suporte', type: 'TEXT', position: 2 },
+  ],
+};
+
+const COMMUNITY_MODULES: ModuleTemplate[] = [COMMUNITY_MODULE];
 
 const HYBRID_MODULES: ModuleTemplate[] = [
   ...COURSE_MODULES,
-  { ...COMMUNITY_MODULES[0]!, position: 3 },
+  { ...COMMUNITY_MODULE, position: 3 },
 ];
 
 const MEMBERSHIP_MODULES: ModuleTemplate[] = [

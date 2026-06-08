@@ -1,12 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { WalletService } from '../../kloel/wallet.service';
+import { SellerWalletService } from '../../kloel/wallet.service';
 import { WalletLedgerService } from '../../kloel/wallet-ledger.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FinancialAlertService } from '../../common/financial-alert.service';
 import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 describe('Financial Scenarios', () => {
-  let walletService: WalletService;
+  let walletService: SellerWalletService;
   let prismaMock: ReturnType<typeof createPartialPrismaMock>;
 
   const mockWallet = {
@@ -35,7 +35,7 @@ describe('Financial Scenarios', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        WalletService,
+        SellerWalletService,
         { provide: PrismaService, useValue: prismaMock },
         {
           provide: FinancialAlertService,
@@ -54,7 +54,7 @@ describe('Financial Scenarios', () => {
       ],
     }).compile();
 
-    walletService = module.get(WalletService);
+    walletService = module.get(SellerWalletService);
   });
 
   // ── SCENARIO 1: Withdrawal with insufficient balance ──────────────

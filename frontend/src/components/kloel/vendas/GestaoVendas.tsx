@@ -50,7 +50,7 @@ export function GestaoVendas({
         <Stat
           label={kloelT('Faturamento total')}
           value={fmtBRL(st.totalRevenue || 0)}
-          color="colors.ember.primary"
+          color={colors.ember.primary}
           trend={st.revenueTrend}
         />
         <Stat
@@ -160,10 +160,10 @@ export function GestaoVendas({
               onClick={() => onFilterStatusChange(f)}
               style={{
                 padding: '7px 14px',
-                background: filterStatus === f ? 'var(--app-bg-card)' : 'colors.ember.primary',
+                background: filterStatus === f ? 'var(--app-bg-card)' : colors.ember.primary,
                 border: '1px solid colors.ember.primary',
                 borderRadius: 6,
-                color: filterStatus === f ? 'colors.ember.primary' : 'var(--app-text-on-accent)',
+                color: filterStatus === f ? colors.ember.primary : 'var(--app-text-on-accent)',
                 fontSize: 11,
                 fontWeight: 600,
                 cursor: 'pointer',

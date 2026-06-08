@@ -109,8 +109,8 @@ describe('INCENT-001 — RecommendationExplainer', () => {
       makeExplainInput({ recommendationId: 'rec_b' }),
     ]);
     expect(results).toHaveLength(2);
-    expect(results[0]!.recommendationId).toBe('rec_a');
-    expect(results[1]!.recommendationId).toBe('rec_b');
+    expect(results[0].recommendationId).toBe('rec_a');
+    expect(results[1].recommendationId).toBe('rec_b');
   });
 });
 
@@ -165,10 +165,10 @@ describe('INCENT-002 — ConflictDetector', () => {
         recommendationId: 'rec_b',
       }),
     ]);
-    expect(results[0]!.workspaceId).toBe('w1');
-    expect(results[1]!.workspaceId).toBe('w2');
-    expect(results[0]!.conflictDetected).toBe(true);
-    expect(results[1]!.conflictDetected).toBe(false);
+    expect(results[0].workspaceId).toBe('w1');
+    expect(results[1].workspaceId).toBe('w2');
+    expect(results[0].conflictDetected).toBe(true);
+    expect(results[1].conflictDetected).toBe(false);
   });
 
   it('filters structural conflicts', () => {

@@ -7,6 +7,7 @@ import {
   type KloelChatCapability,
   type KloelLinkedProduct,
 } from '@/lib/kloel-chat';
+import { secureRandomFloat } from '@/lib/secure-random';
 
 export interface OwnedProductSummary {
   id?: string | null;
@@ -83,8 +84,13 @@ export function capabilityPromptLabel(
   return hasMessages ? 'Responder...' : 'Como posso ajudar você hoje?';
 }
 
-/** Create client request id. Re-exported from chat-container.helpers (canonical). */
-export { createClientRequestId } from '../chat-container.helpers';
+/** Create client request id (canonical; relocated from the retired chat-container tree). */
+export function createClientRequestId() {
+  return (
+    globalThis.crypto?.randomUUID?.() ||
+    `kloel_${Date.now()}_${secureRandomFloat().toString(36).slice(2, 10)}`
+  );
+}
 
 /** Has dragged files. */
 export function hasDraggedFiles(dataTransfer: DataTransfer | null | undefined) {

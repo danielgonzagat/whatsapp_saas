@@ -22,7 +22,11 @@ export async function forEachSequential<T>(
     if (index >= list.length) {
       return;
     }
-    await callback(list[index], index);
+    const item = list[index];
+    if (item === undefined) {
+      return;
+    }
+    await callback(item, index);
     await run(index + 1);
   };
 
@@ -46,7 +50,11 @@ export async function findFirstSequential<T, R>(
     if (index >= list.length) {
       return undefined;
     }
-    const result = await callback(list[index], index);
+    const item = list[index];
+    if (item === undefined) {
+      return run(index + 1);
+    }
+    const result = await callback(item, index);
     if (result) {
       return result;
     }

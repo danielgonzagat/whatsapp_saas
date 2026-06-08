@@ -2,7 +2,7 @@ import { Test } from '@nestjs/testing';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletLedgerService } from './wallet-ledger.service';
-import { WalletService } from './wallet.service';
+import { SellerWalletService } from './wallet.service';
 
 type ReconcileTxClient = {
   kloelWallet: { update: jest.Mock };
@@ -28,14 +28,14 @@ describe('WalletService.reconcilePendingPayments', () => {
     };
     const moduleRef = await Test.createTestingModule({
       providers: [
-        WalletService,
+        SellerWalletService,
         { provide: PrismaService, useValue: prisma },
         { provide: FinancialAlertService, useValue: financialAlert },
         { provide: WalletLedgerService, useValue: walletLedger },
       ],
     }).compile();
 
-    return { financialAlert, prisma, service: moduleRef.get(WalletService), walletLedger };
+    return { financialAlert, prisma, service: moduleRef.get(SellerWalletService), walletLedger };
   }
 
   it('settles old pending credits into available balance with ledger pair', async () => {

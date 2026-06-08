@@ -105,12 +105,15 @@ function ensureInitialized() {
 // Getters para acesso lazy
 function getConnection() {
   ensureInitialized();
-  return _connection!;
+  return _connection;
 }
 
-function getQueueOptions() {
+function getQueueOptions(): QueueOptions {
   ensureInitialized();
-  return _queueOptions!;
+  if (!_queueOptions) {
+    throw new Error('Queue não inicializada. Opções de fila indisponíveis.');
+  }
+  return _queueOptions;
 }
 
 // Aliases para compatibilidade

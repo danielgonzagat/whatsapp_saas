@@ -227,11 +227,17 @@ export interface PriceSummary {
 }
 
 function resolveProductStatus(rawStatus: string, active?: boolean): NormalizedProduct['status'] {
-  const backendStatus = rawStatus.toUpperCase();
-  if (backendStatus === 'APPROVED') {
+  const backendStatus = rawStatus.trim().toUpperCase();
+  if (active === false) {
+    return backendStatus === 'PENDING' ? 'pending' : 'draft';
+  }
+  if (backendStatus === 'APPROVED' || backendStatus === 'ACTIVE') {
     return 'active';
   }
-  if (!backendStatus && active !== false) {
+  if (backendStatus === 'DRAFT' && active === true) {
+    return 'active';
+  }
+  if (!backendStatus) {
     return 'active';
   }
   if (backendStatus === 'PENDING') {

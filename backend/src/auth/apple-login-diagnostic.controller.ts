@@ -35,8 +35,9 @@ function resolveArtifactsDir(): string {
   if (override) {
     return resolve(override);
   }
+  const primary = resolve(process.cwd(), 'artifacts', 'apple-validation');
   const candidates = [
-    resolve(process.cwd(), 'artifacts', 'apple-validation'),
+    primary,
     resolve(process.cwd(), '..', 'artifacts', 'apple-validation'),
   ];
   for (const c of candidates) {
@@ -44,7 +45,7 @@ function resolveArtifactsDir(): string {
       return c;
     }
   }
-  return candidates[0]!;
+  return primary;
 }
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 

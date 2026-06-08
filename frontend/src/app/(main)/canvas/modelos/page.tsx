@@ -81,9 +81,12 @@ export default function CanvasModelos() {
         >
           <span style={{ color: colors.ember.primary }}>{IC.spark(18)}</span>
           <input
+            id="canvas-modelos-ai-prompt"
+            name="canvas-modelos-ai-prompt"
             value={aiPrompt}
             onChange={(e) => setAiPrompt(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
+            aria-label={kloelT(`Descrever modelo para gerar com IA`)}
             placeholder={kloelT(`Descreva o modelo que voce precisa... A IA cria pra voce`)}
             style={{
               flex: 1,
@@ -346,7 +349,7 @@ function TemplateCard({
           {tpl.name}
         </p>
         <p style={{ fontSize: 9, color: 'var(--app-text-tertiary)', fontFamily: M }}>
-          {tpl.w}x{tpl.h} {kloelT(`&middot;`)} {tpl.fmt}
+          {tpl.w}x{tpl.h} {kloelT(`·`)} {tpl.fmt}
         </p>
       </div>
     </button>

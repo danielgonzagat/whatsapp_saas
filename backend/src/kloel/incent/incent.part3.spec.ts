@@ -100,7 +100,7 @@ describe('INCENT-008 — RecommendationAttributionBuilder', () => {
     ]);
     const cross = svc.crossRecommendations(attributions);
     expect(cross).toHaveLength(1);
-    expect(cross[0]!.isCrossRecommendation).toBe(true);
+    expect(cross[0].isCrossRecommendation).toBe(true);
   });
 });
 

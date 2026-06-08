@@ -129,7 +129,7 @@ export function extractFeedbackFromEvents(
         accepted: p['accepted'] === true,
         submittedAt: e.occurredAt,
         workspaceId: e.workspaceId ?? '',
-        operatorId: e.entityRef!.entityId,
+        operatorId: e.entityRef?.entityId ?? '',
         ...(typeof p['operatorNote'] === 'string' ? { operatorNote: p['operatorNote'] } : {}),
       };
     });

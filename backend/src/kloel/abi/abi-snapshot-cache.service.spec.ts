@@ -87,8 +87,8 @@ describe('AbiSnapshotCacheService', () => {
 
       const cached = await service.getCachedSnapshot(workspaceId);
       expect(cached).not.toBeNull();
-      expect(cached!.abiVersion).toBe(ABI_VERSION);
-      expect(cached!.perception.currentSnapshot.workspaceId).toBe(workspaceId);
+      expect(cached.abiVersion).toBe(ABI_VERSION);
+      expect(cached.perception.currentSnapshot.workspaceId).toBe(workspaceId);
     });
     it('returns null when no snapshot cached', async () => {
       const cached = await service.getCachedSnapshot('wks_nonexistent');

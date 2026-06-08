@@ -16,6 +16,7 @@ import {
   NotFoundException,
   OnModuleDestroy,
   OnModuleInit,
+  Optional,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -26,6 +27,7 @@ import { attachDlq } from '../queue/queue';
 import { StorageService } from '../common/storage/storage.service';
 import { EmailService } from '../auth/email.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { MindChatMessageService } from '../kloel/mind/aliases/mind-chat-message.service';
 import { generateCode, parseFacebookSignedRequest } from './gdpr.helpers';
 import {
   processGdprDeletion,
@@ -76,7 +78,17 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
     private readonly jwt: JwtService,
     private readonly storage: StorageService,
     private readonly email: EmailService,
+    @Optional() private readonly mindChatMessage?: MindChatMessageService,
   ) {}
+
+  /**
+   * Canonical Mind surface for the SEPARATE RAC_ChatMessage table. Returns the
+   * SAME delegate legacy code used (`prisma.chatMessage`) when the alias service
+   * is not provided — byte-identical, documented fallback idiom.
+   */
+  private get chatMessageItems() {
+    return this.mindChatMessage?.items ?? this.prisma.chatMessage;
+  }
 
   onModuleInit(): void {
     try {
@@ -383,6 +395,7 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
   private processingContext() {
     return {
       prisma: this.prisma,
+      chatMessageItems: this.chatMessageItems,
       storage: this.storage,
       email: this.email,
       logger: this.logger,

@@ -1,6 +1,7 @@
 import type { PublicCheckoutResponse } from '@/lib/public-checkout-contract';
 import type { Metadata } from 'next';
 import CheckoutClient from './CheckoutClient';
+import { loadPublicCheckoutFromServer } from '../public-checkout-server';
 import { getServerApiBase } from '../server-api-base';
 
 /* ─── generateMetadata ─────────────────────────────────────────────────────── */
@@ -60,5 +61,9 @@ export async function generateMetadata({
 
 export default async function CheckoutPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  return <CheckoutClient slug={slug} />;
+  const serverResult = await loadPublicCheckoutFromServer(
+    `${getServerApiBase()}/checkout/public/${slug}`,
+  );
+
+  return <CheckoutClient slug={slug} {...serverResult} />;
 }

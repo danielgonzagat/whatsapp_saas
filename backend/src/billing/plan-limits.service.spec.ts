@@ -16,6 +16,7 @@ describe('PlanLimitsService', () => {
   };
   let redis: {
     incr: jest.Mock;
+    incrby: jest.Mock;
     expire: jest.Mock;
     set: jest.Mock;
     get: jest.Mock;
@@ -32,6 +33,7 @@ describe('PlanLimitsService', () => {
     };
     redis = {
       incr: jest.fn().mockResolvedValue(1),
+      incrby: jest.fn().mockResolvedValue(1),
       expire: jest.fn().mockResolvedValue(1),
       set: jest.fn().mockResolvedValue('OK'),
       get: jest.fn().mockResolvedValue(null),
@@ -131,6 +133,29 @@ describe('PlanLimitsService', () => {
       await expect(service.trackMessageSend('ws-A')).resolves.toBeUndefined();
       // ENTERPRISE has unlimited messages; Redis should not be touched.
       expect(redis.incr).not.toHaveBeenCalled();
+    });
+  });
+  describe('ensureTokenBudget', () => {
+    it('keeps Kloel available when a FREE workspace is over the soft monthly token budget', async () => {
+      prisma.subscription.findUnique.mockResolvedValue(null);
+      redis.get.mockResolvedValue('100001');
+
+      await expect(service.ensureTokenBudget('ws-A')).resolves.toBeUndefined();
+
+      expect(redis.get).toHaveBeenCalledWith(expect.stringContaining('ws-A'));
+      expect(opsAlert.alertOnCriticalError).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('trackAiUsage', () => {
+    it('records over-quota AI usage without emitting a false Redis critical alert', async () => {
+      prisma.subscription.findUnique.mockResolvedValue(null);
+      redis.incrby.mockResolvedValue(100_001);
+
+      await expect(service.trackAiUsage('ws-A', 100_001)).resolves.toBeUndefined();
+
+      expect(redis.incrby).toHaveBeenCalledWith(expect.stringContaining('ws-A'), 100_001);
+      expect(opsAlert.alertOnCriticalError).not.toHaveBeenCalled();
     });
   });
 });

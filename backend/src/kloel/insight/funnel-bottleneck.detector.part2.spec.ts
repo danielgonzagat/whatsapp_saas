@@ -165,7 +165,7 @@ describe('detectFunnelBottleneck', () => {
 
       const events: SpineEventRef[] = [];
       for (let i = 0; i < 7; i++) {
-        const stepName = stepOrder[i]!;
+        const stepName = stepOrder[i];
         let count: number;
         if (i === 0) {
           count = 200;

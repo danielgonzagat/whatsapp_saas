@@ -254,4 +254,93 @@ describe('MemoryManagementService', () => {
       expect(result).toBe(true);
     });
   });
+
+  describe('canonical Mind surface routing', () => {
+    // Build a service whose canonical MindMemoryItemService.items delegate is a
+    // SEPARATE spy from the bare prisma.kloelMemory delegate, so we can assert
+    // that non-transactional access is routed through the canonical surface,
+    // while the transactional setMemoryPriority correctly stays on the
+    // transaction client (tx) — never on the canonical surface (which is bound
+    // to the non-transactional connection and would break atomicity).
+    let routedService: MemoryManagementService;
+    let mindItems: {
+      count: jest.Mock;
+      deleteMany: jest.Mock;
+      groupBy: jest.Mock;
+      findMany: jest.Mock;
+      findFirst: jest.Mock;
+      updateMany: jest.Mock;
+    };
+
+    beforeEach(async () => {
+      mindItems = {
+        count: jest.fn().mockResolvedValue(0),
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+        groupBy: jest.fn().mockResolvedValue([]),
+        findMany: jest.fn().mockResolvedValue([]),
+        findFirst: jest.fn().mockResolvedValue(null),
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          MemoryManagementService,
+          { provide: PrismaService, useValue: prisma },
+          { provide: AuditService, useValue: auditService },
+          { provide: OpsAlertService, useValue: opsAlert },
+          {
+            provide: MindMemoryItemService,
+            useValue: {
+              get items() {
+                return mindItems;
+              },
+            },
+          },
+        ],
+      }).compile();
+
+      routedService = module.get<MemoryManagementService>(MemoryManagementService);
+    });
+
+    it('routes non-transactional cleanup reads through the canonical Mind surface', async () => {
+      await routedService.cleanupWorkspace('ws-canon', { category: 'product' });
+
+      // The byte-identical deleteMany must hit the canonical surface, NOT the
+      // bare prisma.kloelMemory delegate.
+      expect(mindItems.deleteMany).toHaveBeenCalledWith({
+        where: expect.objectContaining({ workspaceId: 'ws-canon' }) as unknown,
+      });
+      expect(prisma.kloelMemory.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it('routes cleanupAll counts through the canonical Mind surface', async () => {
+      await routedService.cleanupAll();
+
+      expect(mindItems.count).toHaveBeenCalled();
+      expect(prisma.kloelMemory.count).not.toHaveBeenCalled();
+    });
+
+    it('keeps setMemoryPriority on the transaction client, not the canonical surface', async () => {
+      // tx is the prisma transaction mock, distinct from the canonical surface.
+      prisma.kloelMemory.findFirst.mockResolvedValue({
+        id: 'm-tx',
+        workspaceId: 'ws-tx',
+        key: 'k',
+        value: { content: 'd' },
+      });
+      prisma.kloelMemory.updateMany.mockResolvedValue({ count: 1 });
+
+      const result = await routedService.setMemoryPriority('ws-tx', 'k', 'high');
+
+      expect(result).toBe(true);
+      // Transactional find+update MUST run on the tx client (prisma.kloelMemory
+      // here, since the $transaction mock passes prisma as tx) to preserve
+      // atomicity — and MUST NOT be diverted onto the canonical surface, which
+      // is bound to the non-transactional connection.
+      expect(prisma.kloelMemory.findFirst).toHaveBeenCalled();
+      expect(prisma.kloelMemory.updateMany).toHaveBeenCalled();
+      expect(mindItems.findFirst).not.toHaveBeenCalled();
+      expect(mindItems.updateMany).not.toHaveBeenCalled();
+    });
+  });
 });

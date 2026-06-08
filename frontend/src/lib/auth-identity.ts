@@ -42,6 +42,19 @@ export function decodeKloelJwtPayload(token?: string | null): KloelTokenPayload 
   return payload ? (payload as KloelTokenPayload) : null;
 }
 
+export function isKloelJwtExpired(
+  token?: string | null,
+  nowMs = Date.now(),
+  skewSeconds = 30,
+): boolean {
+  const exp = decodeKloelJwtPayload(token)?.exp;
+  if (typeof exp !== 'number') {
+    return false;
+  }
+
+  return exp * 1000 <= nowMs + skewSeconds * 1000;
+}
+
 /** Is anonymous kloel payload. */
 export function isAnonymousKloelPayload(payload?: KloelTokenPayload | null): boolean {
   if (!payload) {
@@ -71,6 +84,26 @@ export function isAnonymousKloelToken(token?: string | null): boolean {
 /** Has authenticated kloel token. */
 export function hasAuthenticatedKloelToken(token?: string | null): boolean {
   const payload = decodeKloelJwtPayload(token);
+  if (!payload || isKloelJwtExpired(token)) {
+    return false;
+  }
+
+  return hasAuthenticatedKloelIdentity(payload);
+}
+
+/**
+ * Identity-only check that ignores expiry. A token whose access window has
+ * lapsed still carries a real authenticated identity that a refresh token can
+ * renew, so callers that own a non-destructive refresh path (e.g. middleware)
+ * can treat such a token as still-authenticated instead of forcing logout.
+ */
+export function hasAuthenticatedKloelIdentity(
+  payloadOrToken?: KloelTokenPayload | string | null,
+): boolean {
+  const payload =
+    typeof payloadOrToken === 'string'
+      ? decodeKloelJwtPayload(payloadOrToken)
+      : (payloadOrToken ?? null);
   if (!payload) {
     return false;
   }

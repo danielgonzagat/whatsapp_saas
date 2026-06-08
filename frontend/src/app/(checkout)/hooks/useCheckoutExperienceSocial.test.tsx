@@ -69,7 +69,8 @@ function setupHook() {
         id: 'product_1',
         name: 'Curso Kloel',
         workspaceId: 'ws_123',
-      },
+        format: 'DIGITAL',
+      } as Parameters<typeof useCheckoutExperienceSocial>[0]['product'],
       config: {
         requireCPF: false,
         requirePhone: false,
@@ -103,7 +104,7 @@ function setupHook() {
   );
 }
 
-function fillRequiredFields(result: ReturnType<typeof setupHook>['result']) {
+function fillIdentityFields(result: ReturnType<typeof setupHook>['result']) {
   act(() => {
     result.current.updateField('name')({
       target: { value: 'Maria Teste' },
@@ -111,6 +112,12 @@ function fillRequiredFields(result: ReturnType<typeof setupHook>['result']) {
     result.current.updateField('email')({
       target: { value: 'maria@example.com' },
     } as React.ChangeEvent<HTMLInputElement>);
+  });
+}
+
+function fillRequiredFields(result: ReturnType<typeof setupHook>['result']) {
+  fillIdentityFields(result);
+  act(() => {
     result.current.updateField('cep')({
       target: { value: '75000-000' },
     } as React.ChangeEvent<HTMLInputElement>);
@@ -152,6 +159,44 @@ describe('useCheckoutExperienceSocial', () => {
       configurable: true,
       value: originalLocation,
     });
+    vi.useRealTimers();
+  });
+
+  it('advances digital checkouts from identity directly to payment', async () => {
+    vi.useFakeTimers();
+
+    const { result } = setupHook();
+    fillIdentityFields(result);
+
+    await act(async () => {
+      await result.current.goStep(2);
+      vi.advanceTimersByTime(600);
+    });
+
+    expect(result.current.step).toBe(3);
+    expect((result.current as { requiresShipping?: boolean }).requiresShipping).toBe(false);
+  });
+
+  it('lets digital checkouts finalize without address fields', async () => {
+    mockedFinalizeCheckoutOrder.mockResolvedValue({
+      mode: 'redirect',
+      orderNumber: 'PED-DIGITAL',
+      successPath: '/order/order_digital/pix',
+    });
+
+    const { result } = setupHook();
+    fillIdentityFields(result);
+
+    act(() => {
+      result.current.setPayMethod('pix');
+    });
+
+    await act(async () => {
+      await result.current.finalizeOrder();
+    });
+
+    expect(mockedFinalizeCheckoutOrder).toHaveBeenCalledOnce();
+    expect(routerPush).toHaveBeenCalledWith('/order/order_digital/pix');
   });
 
   it('keeps the buyer on the same page for card payments until Stripe confirms the PaymentIntent', async () => {

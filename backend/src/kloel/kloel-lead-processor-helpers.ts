@@ -8,6 +8,7 @@ export type { ChatMessage };
 import { NON_DIGIT_RE } from '../common/phone';
 import { safeStr } from '../common/string';
 export { NON_DIGIT_RE, safeStr };
+import { mirrorMindMessage } from './mind/aliases/mindmessage-dualwrite.mirror';
 
 export function asUnknownRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -111,12 +112,53 @@ export async function saveLeadMessage(
   leadId: string,
   role: string,
   content: string,
+  // ADDITIVE, flag-gated mirror of this lead message into the canonical
+  // MindMessage store (source: 'lead_conversation'). Optional + trailing so
+  // callers without a workspace id stay byte-identical (no mirror). The legacy
+  // KloelConversation write below is unchanged and always runs first.
+  workspaceId?: string,
 ): Promise<void> {
   try {
     await prisma.kloelConversation.create({ data: { leadId, role, content } });
   } catch (error: unknown) {
     logger.warn('Erro ao salvar mensagem do lead:', error);
   }
+  if (workspaceId) {
+    await dualWriteLeadConversationMindMessage(prisma, logger, workspaceId, role, content);
+  }
+}
+
+/**
+ * ADDITIVE, flag-gated dual-write of a lead conversation message into the
+ * canonical `MindMessage` store with `source: 'lead_conversation'` — the
+ * discriminator prisma/schema.prisma already reserves for the lead funnel
+ * surface. Completes the Brain->Mind message convergence: KloelConversation was
+ * the one legacy message surface not yet mirrored (thread/channel/dashboard
+ * already are).
+ *
+ * Gate: `KLOEL_MINDMESSAGE_DUALWRITE` (default OFF) -> no-op when OFF. Best-effort
+ * and fail-open: a mirror failure NEVER surfaces to the caller and never affects
+ * the legacy KloelConversation write. Mirrors the established pattern in
+ * kloel-thread.service.ts (dualWriteThreadMindMessage) and inbox.service.ts
+ * (dualWriteChannelMindMessage).
+ *
+ * @see backend/src/kloel/mind/aliases/mindmessage-dualwrite.flag.ts
+ */
+export async function dualWriteLeadConversationMindMessage(
+  prisma: PrismaService,
+  logger: Logger,
+  workspaceId: string,
+  role: string,
+  content: string,
+): Promise<void> {
+  if (!workspaceId || !content) {
+    return;
+  }
+  await mirrorMindMessage(
+    prisma,
+    { workspaceId, source: 'lead_conversation', role, content },
+    (error) => logger.warn('Falha ao espelhar mensagem do lead em MindMessage:', error),
+  );
 }
 
 export async function updateLeadFromConversation(
@@ -155,9 +197,14 @@ export async function extractProductFromMessage(
   prisma: PrismaService,
   workspaceId: string,
   message: string,
+  // Canonical Brain → Mind memory delegate. Defaults to the raw Prisma
+  // `kloelMemory` delegate so behavior is byte-identical when the caller does
+  // not route through `MindMemoryItemService`. The canonical surface hits the
+  // SAME `RAC_KloelMemory` row — no query/arg/semantic change.
+  memoryItems: PrismaService['kloelMemory'] = prisma.kloelMemory,
 ): Promise<{ name: string; price: number } | null> {
   try {
-    const products = await prisma.kloelMemory.findMany({
+    const products = await memoryItems.findMany({
       where: { workspaceId, type: 'product' },
       select: { id: true, value: true },
       take: 100,

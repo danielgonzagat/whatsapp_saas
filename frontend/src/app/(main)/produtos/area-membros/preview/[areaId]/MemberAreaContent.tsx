@@ -127,7 +127,7 @@ export function MemberAreaContent({
                 height={48}
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="colors.text.dim"
+                stroke={colors.text.dim}
                 strokeWidth={1.5}
                 style={{ margin: '0 auto 12px' }}
                 aria-hidden="true"

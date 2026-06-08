@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { MindChatMessageService } from '../aliases/mind-chat-message.service';
 
 /**
  * Wave7 L9 — Y-5 / X §3.4 Priority-16: episodic conversation recall.
@@ -9,7 +10,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
  * `ConversationArchiveService.search(workspaceId, query)` is the read path that
  * lets the Mind recall RELEVANT FRAGMENTS of the user's PAST Kloel
  * conversations instead of re-deriving everything from the live thread. It is
- * the episodic-memory counterpart to `LongTermMemoryService.recallRelevant`
+ * the episodic-memory counterpart to `GraphFactMemoryService.recallRelevant`
  * (which recalls reinforced outcome FACTS) — here we recall the actual words
  * the user/assistant exchanged before.
  *
@@ -52,7 +53,15 @@ export class ConversationArchiveService {
   /** Max chars of a raw matched message kept as the snippet preview. */
   private static readonly SNIPPET_CHARS = 240;
 
-  public constructor(private readonly prisma: PrismaService) {}
+  public constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly mindChatMessage?: MindChatMessageService,
+  ) {}
+
+  /** Canonical Brain → Mind chat-message delegate (raw-Prisma fallback). */
+  private get chatMessageItems() {
+    return this.mindChatMessage?.items ?? this.prisma.chatMessage;
+  }
 
   /**
    * Semantic/FTS search over the workspace's past Kloel conversations.
@@ -161,7 +170,7 @@ export class ConversationArchiveService {
     limit: number,
   ): Promise<ConversationSnippet[]> {
     try {
-      const messages = await this.prisma.chatMessage.findMany({
+      const messages = await this.chatMessageItems.findMany({
         take: limit,
         where: {
           thread: { workspaceId },

@@ -9,6 +9,7 @@ const arrayContains = (items: unknown[]): jest.AsymmetricMatcher =>
 
 type LeadsPrismaMock = {
   kloelLead: { findMany: jest.Mock };
+  contact: { findMany: jest.Mock };
 };
 
 function makeLead(overrides: Record<string, unknown> = {}) {
@@ -36,6 +37,9 @@ describe('LeadsService', () => {
   beforeEach(async () => {
     prisma = {
       kloelLead: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+      contact: {
         findMany: jest.fn().mockResolvedValue([]),
       },
     };
@@ -176,7 +180,6 @@ describe('LeadsService', () => {
         metadata: {},
         createdAt: new Date('2026-01-01'),
         updatedAt: null,
-        commercialScore: null,
       });
     });
 
@@ -277,6 +280,182 @@ describe('LeadsService', () => {
       await expect(service.listLeads(wsId, { status: 'new', search: 'test' })).rejects.toThrow(
         'timeout',
       );
+    });
+  });
+
+  describe('KLOEL_LEADS_READ_CONTACT flag', () => {
+    const FLAG = 'KLOEL_LEADS_READ_CONTACT';
+    const original = process.env[FLAG];
+
+    afterEach(() => {
+      if (original === undefined) {
+        delete process.env[FLAG];
+      } else {
+        process.env[FLAG] = original;
+      }
+    });
+
+    function makeContactRow(overrides: Record<string, unknown> = {}) {
+      return {
+        id: 'contact-1',
+        phone: '5511999999999',
+        name: 'Maria',
+        email: 'maria@test.com',
+        leadStatus: 'hot',
+        leadStage: 'negotiation',
+        lastIntent: 'purchase',
+        totalMessages: 4,
+        customFields: { source: 'crm' },
+        createdAt: new Date('2026-02-01'),
+        updatedAt: new Date('2026-05-10'),
+        ...overrides,
+      };
+    }
+
+    describe('flag OFF (default)', () => {
+      it('reads from kloelLead and never queries contact', async () => {
+        delete process.env[FLAG];
+        prisma.kloelLead.findMany.mockResolvedValue([makeLead({ id: 'lead-1' })]);
+
+        const result = await service.listLeads(wsId);
+
+        expect(result).toHaveLength(1);
+        expect(result[0].id).toBe('lead-1');
+        expect(prisma.kloelLead.findMany).toHaveBeenCalledTimes(1);
+        expect(prisma.contact.findMany).not.toHaveBeenCalled();
+      });
+
+      it('is byte-identical to legacy when flag is a non-true value', async () => {
+        process.env[FLAG] = 'false';
+        prisma.kloelLead.findMany.mockResolvedValue([makeLead({ id: 'lead-1' })]);
+
+        await service.listLeads(wsId, { status: 'qualified' });
+
+        expect(prisma.kloelLead.findMany).toHaveBeenCalledWith(
+          partialMatch({ where: partialMatch({ workspaceId: wsId, status: 'qualified' }) }),
+        );
+        expect(prisma.contact.findMany).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('flag ON', () => {
+      beforeEach(() => {
+        process.env[FLAG] = 'true';
+      });
+
+      it('reads from contact and maps the funnel snapshot onto LeadOutput', async () => {
+        prisma.contact.findMany.mockResolvedValue([makeContactRow({ id: 'contact-1' })]);
+
+        const result = await service.listLeads(wsId);
+
+        expect(prisma.contact.findMany).toHaveBeenCalledTimes(1);
+        expect(prisma.kloelLead.findMany).not.toHaveBeenCalled();
+        expect(result).toHaveLength(1);
+        expect(result[0]).toEqual(
+          expect.objectContaining({
+            id: 'contact-1',
+            phone: '5511999999999',
+            name: 'Maria',
+            email: 'maria@test.com',
+            status: 'hot',
+            stage: 'negotiation',
+            lastIntent: 'purchase',
+            totalMessages: 4,
+            metadata: { source: 'crm' },
+            lastInteraction: new Date('2026-05-10'),
+          }),
+        );
+      });
+
+      it('maps the status filter onto leadStatus on the contact query', async () => {
+        prisma.contact.findMany.mockResolvedValue([makeContactRow()]);
+
+        await service.listLeads(wsId, { status: 'hot' });
+
+        expect(prisma.contact.findMany).toHaveBeenCalledWith(
+          partialMatch({
+            where: partialMatch({ workspaceId: wsId, leadStatus: 'hot' }),
+          }),
+        );
+      });
+
+      it('restricts the contact query to provenance-backed leads', async () => {
+        prisma.contact.findMany.mockResolvedValue([makeContactRow()]);
+
+        await service.listLeads(wsId);
+
+        expect(prisma.contact.findMany).toHaveBeenCalledWith(
+          partialMatch({
+            where: partialMatch({
+              workspaceId: wsId,
+              OR: arrayContains([
+                { kloelLeadId: { not: null } },
+                { checkoutSocialLeadId: { not: null } },
+                { scrapingJobId: { not: null } },
+              ]),
+            }),
+          }),
+        );
+      });
+
+      it('keeps the search filter alongside the provenance predicate', async () => {
+        prisma.contact.findMany.mockResolvedValue([makeContactRow()]);
+
+        await service.listLeads(wsId, { search: 'maria' });
+
+        const callArg = (prisma.contact.findMany.mock.calls as unknown[][])[0][0] as {
+          where: { OR?: unknown[]; AND?: unknown[] };
+        };
+        // Provenance disjunction stays on the top-level OR key.
+        expect(callArg.where.OR).toEqual(
+          expect.arrayContaining([{ kloelLeadId: { not: null } }]),
+        );
+        // Search disjunction is AND-nested so it does not clobber provenance.
+        expect(callArg.where.AND).toEqual([
+          {
+            OR: expect.arrayContaining([
+              { name: { contains: 'maria', mode: 'insensitive' } },
+              { email: { contains: 'maria', mode: 'insensitive' } },
+              { phone: { contains: 'maria', mode: 'insensitive' } },
+            ]),
+          },
+        ]);
+      });
+
+      it('falls back to kloelLead when only non-lead contacts exist', async () => {
+        // A workspace with only manually-created contacts (no provenance) yields
+        // an empty provenance-filtered result, so the legacy fallback still fires.
+        prisma.contact.findMany.mockResolvedValue([]);
+        prisma.kloelLead.findMany.mockResolvedValue([makeLead({ id: 'legacy-lead' })]);
+
+        const result = await service.listLeads(wsId);
+
+        expect(prisma.contact.findMany).toHaveBeenCalledTimes(1);
+        expect(prisma.kloelLead.findMany).toHaveBeenCalledTimes(1);
+        expect(result[0].id).toBe('legacy-lead');
+      });
+
+      it('falls back to kloelLead when the contact result is empty', async () => {
+        prisma.contact.findMany.mockResolvedValue([]);
+        prisma.kloelLead.findMany.mockResolvedValue([makeLead({ id: 'legacy-lead' })]);
+
+        const result = await service.listLeads(wsId);
+
+        expect(prisma.contact.findMany).toHaveBeenCalledTimes(1);
+        expect(prisma.kloelLead.findMany).toHaveBeenCalledTimes(1);
+        expect(result).toHaveLength(1);
+        expect(result[0].id).toBe('legacy-lead');
+      });
+
+      it('does NOT fall back when the contact result is non-empty', async () => {
+        prisma.contact.findMany.mockResolvedValue([makeContactRow({ id: 'contact-1' })]);
+        prisma.kloelLead.findMany.mockResolvedValue([makeLead({ id: 'legacy-lead' })]);
+
+        const result = await service.listLeads(wsId);
+
+        expect(result[0].id).toBe('contact-1');
+        expect(prisma.kloelLead.findMany).not.toHaveBeenCalled();
+      });
     });
   });
 });

@@ -25,7 +25,7 @@ describe('KycEventEmitterService (contract spec)', () => {
 
       const events = spine.recentEvents();
       expect(events).toHaveLength(1);
-      const ev = events[0]!;
+      const ev = events[0];
       expect(ev.eventName).toBe('commerce.kyc.document_submitted');
       expect(ev.workspaceId).toBe('ws_1');
       expect(ev.entityRef).toEqual({ entityType: 'agent', entityId: 'agent_1' });
@@ -57,7 +57,7 @@ describe('KycEventEmitterService (contract spec)', () => {
 
       const events = spine.recentEvents();
       expect(events).toHaveLength(1);
-      const ev = events[0]!;
+      const ev = events[0];
       expect(ev.eventName).toBe('commerce.kyc.approved');
       expect(ev.truthMode).toBe('observed');
       expect(ev.workspaceId).toBe('ws_2');
@@ -100,7 +100,7 @@ describe('KycEventEmitterService (contract spec)', () => {
 
       const events = spine.recentEvents();
       expect(events).toHaveLength(1);
-      const ev = events[0]!;
+      const ev = events[0];
       expect(ev.eventName).toBe('commerce.kyc.rejected');
       expect(ev.truthMode).toBe('observed');
       expect(ev.workspaceId).toBe('ws_3');

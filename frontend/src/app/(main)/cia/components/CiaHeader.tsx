@@ -19,6 +19,31 @@ interface CiaHeaderProps {
   onAutopilotTotal: () => void;
 }
 
+function resolveCiaStateLabel({
+  surface,
+  accountRuntime,
+  workspaceLoading,
+  hasWorkspace,
+}: Pick<CiaHeaderProps, 'surface' | 'accountRuntime' | 'workspaceLoading' | 'hasWorkspace'>) {
+  if (surface?.state) {
+    return surface.state;
+  }
+
+  if (workspaceLoading) {
+    return 'CARREGANDO';
+  }
+
+  if (accountRuntime?.mode) {
+    return 'OPERACIONAL';
+  }
+
+  if (hasWorkspace) {
+    return 'AGUARDANDO SINAL';
+  }
+
+  return 'SEM WORKSPACE';
+}
+
 export function CiaHeader({
   surface,
   accountRuntime,
@@ -37,7 +62,9 @@ export function CiaHeader({
         />
         <div className="mt-3 flex items-center gap-2 flex-wrap">
           <Badge>{surface?.workspaceName || 'Workspace'}</Badge>
-          <Badge variant="info">{surface?.state || 'CARREGANDO'}</Badge>
+          <Badge variant="info">
+            {resolveCiaStateLabel({ surface, accountRuntime, workspaceLoading, hasWorkspace })}
+          </Badge>
           {surface?.runtime?.lastError ? (
             <Badge variant="error">{kloelT('Erro recente')}</Badge>
           ) : (

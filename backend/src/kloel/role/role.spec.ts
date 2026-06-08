@@ -68,7 +68,7 @@ describe('UTP-ROLE-001 — Role Detector', () => {
       nowMs: NOW,
     });
     expect(detections.length).toBeGreaterThanOrEqual(1);
-    const top = detections[0]!;
+    const top = detections[0];
     expect(top.role).toBe('produtor');
     expect(top.confidence).toBeGreaterThan(0.2);
     expect(top.detectedFromSignals).toContain('commerce.product.created');
@@ -88,7 +88,7 @@ describe('UTP-ROLE-001 — Role Detector', () => {
     });
     const aff = detections.find((d) => d.role === 'afiliado');
     expect(aff).toBeDefined();
-    expect(aff!.confidence).toBeGreaterThan(0);
+    expect(aff.confidence).toBeGreaterThan(0);
   });
 
   it('detects closer when deal events dominate', () => {
@@ -106,7 +106,7 @@ describe('UTP-ROLE-001 — Role Detector', () => {
     });
     const closer = detections.find((d) => d.role === 'closer');
     expect(closer).toBeDefined();
-    expect(closer!.confidence).toBeGreaterThan(0.3);
+    expect(closer.confidence).toBeGreaterThan(0.3);
   });
 
   it('detects gestor as default when events exist but lack specialisation', () => {
@@ -195,7 +195,7 @@ describe('UTP-ROLE-002 — Role Context Projector', () => {
     });
     expect(ctx.primaryRole).toBe('produtor');
     expect(ctx.detectedRoles).toHaveLength(1);
-    expect(ctx.detectedRoles[0]!.role).toBe('produtor');
+    expect(ctx.detectedRoles[0].role).toBe('produtor');
     expect(ctx.realLevers.length).toBeGreaterThan(0);
     expect(ctx.realLevers).toContain('adjust_price');
     expect(ctx.relevantMetrics.length).toBeGreaterThan(0);

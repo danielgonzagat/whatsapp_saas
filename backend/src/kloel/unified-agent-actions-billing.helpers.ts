@@ -1,4 +1,5 @@
 import { PrismaService } from '../prisma/prisma.service';
+import { isProductAiConfigReadCanonicalEnabled } from './product-aiconfig-read-canonical.flag';
 
 export async function createFunnelFlows(
   prisma: PrismaService,
@@ -69,7 +70,25 @@ export async function getProductPlans(prisma: PrismaService, productId: string) 
 }
 
 export async function getProductAIConfig(prisma: PrismaService, productId: string) {
-  return { config: await prisma.productAIConfig.findUnique({ where: { productId } }) };
+  const config = await prisma.productAIConfig.findUnique({ where: { productId } });
+  // Canonical-reader preference (flag-gated, default OFF): only when the
+  // canonical typed `ProductAIConfig` row is MISSING do we fall back to the
+  // per-plan `aiConfig` JSON blob so a not-yet-migrated product still surfaces
+  // its AI config. Flag OFF is byte-identical to the canonical-table-only read.
+  if (config === null && isProductAiConfigReadCanonicalEnabled()) {
+    const plans = await prisma.productPlan.findMany({
+      where: { productId },
+      select: { aiConfig: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    const planConfig = plans.find(
+      (plan) => plan.aiConfig !== null && typeof plan.aiConfig === 'object',
+    )?.aiConfig;
+    if (planConfig !== undefined && planConfig !== null) {
+      return { config: planConfig };
+    }
+  }
+  return { config };
 }
 
 export async function getProductReviews(prisma: PrismaService, productId: string) {

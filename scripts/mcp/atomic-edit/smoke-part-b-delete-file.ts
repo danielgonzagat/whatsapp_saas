@@ -2,7 +2,7 @@ import * as childProcess from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { check, sha, type PartBCtx } from "./smoke-state.js";
+import { check, jsonBody, sha, type PartBCtx } from "./smoke-state.js";
 
 
 export async function partBDeleteFile(ctx: PartBCtx): Promise<void> {
@@ -19,7 +19,7 @@ export async function partBDeleteFile(ctx: PartBCtx): Promise<void> {
         name: 'atomic_delete_file',
         arguments: { file: delRel, preview: true },
       })) as { content: { text: string }[] };
-      const delPrevBody = JSON.parse(delPrev.content.at(-1)?.text ?? '{}');
+      const delPrevBody = jsonBody(delPrev);
       const delPrevTracePath =
         typeof delPrevBody.tracePath === 'string' ? path.join(repoRoot, delPrevBody.tracePath) : '';
       const delPrevTrace =
@@ -67,7 +67,7 @@ export async function partBDeleteFile(ctx: PartBCtx): Promise<void> {
           proofOfIncorrectness: 'smoke fixture is deliberately created negative residue for delete proof',
         },
       })) as { content: { text: string }[] };
-      const delCommitBody = JSON.parse(delCommit.content.at(-1)?.text ?? '{}');
+      const delCommitBody = jsonBody(delCommit);
       const delCommitTracePath =
         typeof delCommitBody.tracePath === 'string'
           ? path.join(repoRoot, delCommitBody.tracePath)
@@ -110,7 +110,7 @@ export async function partBDeleteFile(ctx: PartBCtx): Promise<void> {
         name: 'atomic_delete_file',
         arguments: { file: delRel },
       })) as { content: { text: string }[] };
-      const delMissingBody = JSON.parse(delMissing.content.at(-1)?.text ?? '{}');
+      const delMissingBody = jsonBody(delMissing);
       check(
         'delete_file idempotent on absent file',
         delMissingBody.ok === true &&
@@ -246,7 +246,7 @@ export async function partBDeleteFile(ctx: PartBCtx): Promise<void> {
           proofOfIncorrectness: 'smoke fixture linked-worktree digit is stale negative data and may be replaced',
         },
       })) as { content: { text: string }[]; isError?: boolean };
-      const linkedBody = JSON.parse(linked.content.at(-1)?.text ?? '{}');
+      const linkedBody = jsonBody(linked);
       check(
         'absolute registered worktree path accepted',
         linkedBody.ok === true && linkedBody.changed === true,

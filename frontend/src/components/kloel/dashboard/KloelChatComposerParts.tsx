@@ -18,6 +18,7 @@ import {
   Link2,
   Paperclip,
   Search,
+  SlidersHorizontal,
   Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -106,7 +107,9 @@ function ProductMenuContent({
         <button
           key={`${product.source}:${product.id}`}
           type="button"
-          onClick={() => {
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
             onSelectProduct(product);
             onClose();
           }}
@@ -231,6 +234,9 @@ export function capabilityIcon(capability: KloelChatCapability, size = 14) {
   if (capability === 'create_site') {
     return <LayoutTemplate {...common} aria-hidden="true" />;
   }
+  if (capability === 'refine_response') {
+    return <SlidersHorizontal {...common} aria-hidden="true" />;
+  }
   return <Globe {...common} aria-hidden="true" />;
 }
 
@@ -284,6 +290,7 @@ export function ComposerPopover({
       {isOpen ? (
         <motion.div
           ref={popoverRef}
+          data-testid="kloel-composer-popover"
           initial={{ opacity: 0, y: openBelow ? -10 : 10, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: openBelow ? -8 : 8, scale: 0.985 }}
@@ -429,6 +436,26 @@ export function ComposerPopover({
               }}
               trailing={
                 activeCapability === 'search_web' ? (
+                  <Check size={14} strokeWidth={2.2} aria-hidden="true" />
+                ) : null
+              }
+            />
+
+            <PopoverAction
+              icon={<SlidersHorizontal size={15} strokeWidth={1.9} aria-hidden="true" />}
+              label={
+                activeCapability === 'refine_response'
+                  ? kloelT(`Refinamento ativo`)
+                  : kloelT(`Mesa de refinamento`)
+              }
+              onClick={() => {
+                onCapabilityChange(
+                  activeCapability === 'refine_response' ? null : 'refine_response',
+                );
+                onClose();
+              }}
+              trailing={
+                activeCapability === 'refine_response' ? (
                   <Check size={14} strokeWidth={2.2} aria-hidden="true" />
                 ) : null
               }

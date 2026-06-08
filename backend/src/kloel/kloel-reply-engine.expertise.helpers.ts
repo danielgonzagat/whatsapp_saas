@@ -80,6 +80,13 @@ export function shouldAttemptToolPlanningPass(message: string): boolean {
   if (CRIE_CADASTRAR_CADASTRE_RE.test(normalized) && PRODUTO_CAT_A__LOGO_AUT_RE.test(normalized)) {
     return true;
   }
+  if (
+    /\b(agent\s+trace|execution\s+trace|trajet[oó]ria|pré-resposta|pre-resposta|racioc[ií]nio|observa[cç][oõ]es|ferramentas?\s+internas?|codigo\s+fonte|c[oó]digo\s+fonte)\b/i.test(
+      normalized,
+    )
+  ) {
+    return true;
+  }
   return /\b(liste|listar|mostre|mostrar|busque|buscar|pesquise|pesquisar|procure|procurar|consulte|consultar|verifique|verificar|analise|analisar|resuma|resumo|status|dashboard|produtos?|leads?|contatos?|conversas?|whatsapp|mensagens?|evid[eê]ncias?|mem[oó]ria|sess(ões|oes)|jobs?|billing|cobran[çc]a|faturamento|receita|vendas?|pagamentos?)\b/i.test(
     normalized,
   );

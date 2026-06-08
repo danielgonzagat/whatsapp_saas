@@ -7,6 +7,7 @@ import Icons from './ContaIcons';
 import { SORA, MONO, EMBER } from './ContaConstants';
 import { StatusBadge } from './ContaShared';
 import { ConnectAccountStatusCard } from './ContaConnectAccountCard';
+import { getKycGateNotice } from './ContaView.helpers';
 import type { useSellerConnectAccount } from '@/hooks/useConnectAccounts';
 
 interface ContaTopSectionProps {
@@ -30,6 +31,26 @@ export function ContaTopSection({
   connectAccountLoading,
   connectAccountError,
 }: ContaTopSectionProps) {
+  const kycGateNotice = getKycGateNotice(pct, kycStatus);
+  const kycGateNoticeColor =
+    kycGateNotice.tone === 'info'
+      ? colors.semantic.info
+      : kycGateNotice.tone === 'error'
+        ? colors.semantic.error
+        : colors.semantic.warning;
+  const kycGateNoticeBackground =
+    kycGateNotice.tone === 'info'
+      ? 'rgba(59,130,246,.04)'
+      : kycGateNotice.tone === 'error'
+        ? 'rgba(239,68,68,.04)'
+        : 'rgba(245,158,11,.04)';
+  const kycGateNoticeBorder =
+    kycGateNotice.tone === 'info'
+      ? '1px solid rgba(59,130,246,.15)'
+      : kycGateNotice.tone === 'error'
+        ? '1px solid rgba(239,68,68,.15)'
+        : '1px solid rgba(245,158,11,.15)';
+
   return (
     <>
       <div
@@ -54,8 +75,8 @@ export function ContaTopSection({
       {isBlocked && (
         <div
           style={{
-            background: 'rgba(245,158,11,.04)',
-            border: '1px solid rgba(245,158,11,.15)',
+            background: kycGateNoticeBackground,
+            border: kycGateNoticeBorder,
             borderRadius: 6,
             padding: '14px 18px',
             marginBottom: 20,
@@ -65,7 +86,9 @@ export function ContaTopSection({
             gap: 12,
           }}
         >
-          <span style={{ color: colors.semantic.warning }}>{Icons.alert(20)}</span>
+          <span style={{ color: kycGateNoticeColor }}>
+            {kycGateNotice.tone === 'info' ? Icons.clock(20) : Icons.alert(20)}
+          </span>
           <div style={{ flex: 1 }}>
             <span
               style={{
@@ -75,12 +98,10 @@ export function ContaTopSection({
                 display: 'block',
               }}
             >
-              {kloelT('Cadastro incompleto')}
+              {kloelT(kycGateNotice.title)}
             </span>
             <span style={{ fontSize: 11, color: 'var(--app-text-secondary)' }}>
-              {kloelT(
-                'Voce pode visualizar todas as funcionalidades, mas para criar produtos, se afiliar e utilizar a IA, complete seu cadastro e aguarde a aprovacao.',
-              )}
+              {kloelT(kycGateNotice.description)}
             </span>
           </div>
           <div style={{ textAlign: isMobile ? ('left' as const) : ('right' as const) }}>
@@ -140,6 +161,7 @@ export function ContaTopSection({
       <ConnectAccountStatusCard
         isMobile={isMobile}
         sellerAccount={sellerAccount}
+        kycStatus={kycStatus}
         isLoading={connectAccountLoading}
         error={connectAccountError}
       />

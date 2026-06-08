@@ -1,8 +1,19 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+  Logger,
+  Optional,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { InstagramService } from '../channels/instagram/instagram.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { decryptMetaToken } from '../../meta/meta-token-crypto';
+import { ChannelMessageDispatchService } from '../channel-message-dispatch.service';
+import { isInstagramCanonicalDispatchEnabled } from './instagram-canonical-dispatch.flag';
+import { isInstagramResolverUnifyEnabled } from './instagram-resolver-unify.flag';
+import { MetaWhatsAppService } from '../../meta/meta-whatsapp.service';
 
 type InstagramConnection = {
   accessToken: string;
@@ -38,7 +49,50 @@ export class InstagramMarketingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly instagramService: InstagramService,
+    @Optional()
+    @Inject(forwardRef(() => ChannelMessageDispatchService))
+    private readonly canonicalDispatch?: ChannelMessageDispatchService,
+    @Optional()
+    @Inject(forwardRef(() => MetaWhatsAppService))
+    private readonly metaResolver?: MetaWhatsAppService,
   ) {}
+
+  /**
+   * Resolve the Instagram credentials (`accessToken` + `instagramAccountId`)
+   * consumed by the read-only Graph callers below.
+   *
+   * Flag-OFF (default) or resolver-not-injected: runs the EXISTING raw
+   * workspace-scoped meta connection lookup for the Instagram channel +
+   * {@link resolveInstagramConnection} path byte-for-byte unchanged.
+   *
+   * Flag-ON (`KLOEL_INSTAGRAM_RESOLVER_UNIFY='true'`) with the canonical
+   * {@link MetaWhatsAppService} injected: sources the same two fields from
+   * {@link MetaWhatsAppService.resolveConnection}(`workspaceId`, 'instagram').
+   * The `accessToken` derivation
+   * (`decryptMetaToken(row.accessToken) || env.META_ACCESS_TOKEN`, trimmed) and
+   * the `instagramAccountId` derivation (`row.instagramAccountId || null`) are
+   * byte-equivalent between the two resolvers, so this is a behavior-preserving
+   * delegation for these two callers (no `pageAccessToken`, no expiry change).
+   */
+  private async resolveInstagramCredentials(
+    workspaceId: string,
+  ): Promise<{ accessToken: string; instagramAccountId: string | null }> {
+    if (isInstagramResolverUnifyEnabled() && this.metaResolver) {
+      const resolved = await this.metaResolver.resolveConnection(workspaceId, 'instagram');
+      return {
+        accessToken: resolved.accessToken,
+        instagramAccountId: resolved.instagramAccountId,
+      };
+    }
+    const row = await this.prisma.metaConnection.findFirst({
+      where: { workspaceId, channel: 'instagram' },
+    });
+    const channelSession = resolveInstagramConnection(row);
+    return {
+      accessToken: channelSession.accessToken,
+      instagramAccountId: channelSession.instagramAccountId,
+    };
+  }
 
   async listAccounts(workspaceId: string) {
     const channelSession = await this.prisma.metaConnection.findFirst({
@@ -68,10 +122,7 @@ export class InstagramMarketingService {
   }
 
   async publishPost(workspaceId: string, imageUrl: string, caption?: string) {
-    const row = await this.prisma.metaConnection.findFirst({
-      where: { workspaceId, channel: 'instagram' },
-    });
-    const channelSession = resolveInstagramConnection(row);
+    const channelSession = await this.resolveInstagramCredentials(workspaceId);
 
     if (!channelSession.instagramAccountId) {
       throw new BadRequestException('instagram_account_not_connected');
@@ -109,10 +160,7 @@ export class InstagramMarketingService {
   }
 
   async getInsights(workspaceId: string, metrics: string[], period: string) {
-    const row = await this.prisma.metaConnection.findFirst({
-      where: { workspaceId, channel: 'instagram' },
-    });
-    const channelSession = resolveInstagramConnection(row);
+    const channelSession = await this.resolveInstagramCredentials(workspaceId);
 
     if (!channelSession.instagramAccountId) {
       throw new BadRequestException('instagram_account_not_connected');
@@ -273,6 +321,20 @@ export class InstagramMarketingService {
     const igAccountId = channelSession.instagramAccountId;
     const accessToken = channelSession.pageAccessToken;
 
+    if (isInstagramCanonicalDispatchEnabled()) {
+      const delegated = await this.sendViaCanonical(
+        workspaceId,
+        igAccountId,
+        trimmedRecipient,
+        trimmed,
+        accessToken,
+      );
+      if (delegated) {
+        return delegated;
+      }
+      // Fall through to the existing raw path on any build/DI failure.
+    }
+
     const result = await this.instagramService.sendMessage(
       igAccountId,
       trimmedRecipient,
@@ -293,6 +355,74 @@ export class InstagramMarketingService {
     );
 
     return { messageId, metaResponse: result };
+  }
+
+  /**
+   * Delegate an Instagram DM through the canonical
+   * {@link ChannelMessageDispatchService.dispatch} (census P2-3) — the single
+   * cross-channel send front door, which routes via the pure
+   * {@link ChannelDispatchRegistry} → {@link InstagramDispatchAdapter} →
+   * {@link InstagramService.sendMessage}. The already-resolved `igAccountId` and
+   * page `accessToken` are passed as explicit credential overrides so the
+   * canonical path uses the EXACT same credentials this service resolved (no
+   * double Meta-connection resolution, no behavior drift).
+   *
+   * The canonical `ChannelSendResult` is mapped back to this service's existing
+   * `{ messageId, metaResponse }` return shape. Returns `null` on any failure
+   * (canonical service not injected, build/dispatch throw) so the caller falls
+   * back to the existing raw `instagramService.sendMessage` path unchanged.
+   */
+  private async sendViaCanonical(
+    workspaceId: string,
+    igAccountId: string,
+    recipientId: string,
+    text: string,
+    accessToken: string,
+  ): Promise<{ messageId: string | null; metaResponse: unknown } | null> {
+    if (!this.canonicalDispatch) {
+      return null;
+    }
+    try {
+      const result = await this.canonicalDispatch.dispatch(
+        workspaceId,
+        'instagram',
+        recipientId,
+        text,
+        { igAccountId, accessToken },
+      );
+      // The canonical adapter catches Meta send exceptions and reports them as
+      // `{ success: false, error }` rather than throwing. A failed send must NOT
+      // be returned as a success-looking `{ messageId: null, metaResponse }` —
+      // that would make the controller respond as if the DM completed. Return
+      // `null` so the caller falls back to the raw `instagramService.sendMessage`
+      // path, which rethrows the underlying Meta failure (the raw path's failure
+      // semantics), surfacing a real error to the caller.
+      if (!result.success) {
+        this.logger.warn(
+          `Instagram canonical dispatch reported failure for workspace ${workspaceId}; falling back to raw path: ${
+            result.error ?? 'unknown_error'
+          }`,
+        );
+        return null;
+      }
+      const messageId =
+        typeof result.messageId === 'string'
+          ? result.messageId
+          : typeof result.externalId === 'string'
+            ? result.externalId
+            : null;
+      this.logger.log(
+        `Instagram DM dispatched (canonical) for workspace ${workspaceId} to ${recipientId}: ${messageId ?? 'no_id'}`,
+      );
+      return { messageId, metaResponse: result };
+    } catch (error) {
+      this.logger.warn(
+        `Instagram canonical dispatch failed for workspace ${workspaceId}; falling back to raw path: ${
+          error instanceof Error ? error.message : 'unknown_error'
+        }`,
+      );
+      return null;
+    }
   }
 
   /**

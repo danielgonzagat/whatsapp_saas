@@ -1,0 +1,474 @@
+{
+  "cluster": "Channels & OmniCore Dispatch",
+  "generatedBy": "code archaeologist (static analysis: grep/glob + prisma/schema.prisma + AST)",
+  "scope": "backend/src/marketing/channels (email|facebook|instagram|messenger|tiktok|whatsapp|internal-partnership), backend/src/omnichannel, backend/src/meta, backend/src/common/channel-dispatch — plus adjacent send/registry surfaces in backend/src/kloel and backend/src/inbox that participate in the same dispatch concern",
+  "domainsCovered": [
+    "outbound message dispatch (every channel send path)",
+    "inbound webhook ingestion + parsing (Meta/WhatsApp/Instagram/Messenger/TikTok)",
+    "channel session / Meta connection resolution and state",
+    "channel capability / configured-readiness reporting",
+    "channel setup wizard + per-channel config/arsenal/product catalog",
+    "contact resolution across channels (omnichannel identity)",
+    "policy-guarded sends (MindGuards) and the cognition percept spine hook",
+    "transactional vs connected-mailbox email delivery"
+  ],
+  "canonicalEntities": [
+    {
+      "name": "MetaConnection",
+      "table": "RAC_MetaConnection",
+      "file": "backend/prisma/schema.prisma:3467",
+      "role": "Per-(workspace,channel) Meta OAuth connection: accessToken, pageId/pageAccessToken, instagramAccountId, whatsappPhoneNumberId/whatsappBusinessId, adAccountId, pixelId, catalogId. Unique on (workspaceId, channel). The single physical row backing WhatsApp/Instagram/Facebook/Messenger credential resolution."
+    },
+    {
+      "name": "ChannelSetup",
+      "table": "RAC_ChannelSetup",
+      "file": "backend/prisma/schema.prisma:3492",
+      "role": "Per-(workspace,channel) setup-wizard progress (currentStep, completedAt, lastReconfiguredAt). Unique on (workspaceId, channel)."
+    },
+    {
+      "name": "ChannelProduct",
+      "table": "RAC_ChannelProduct",
+      "file": "backend/prisma/schema.prisma:3508",
+      "role": "Join table scoping which Products are sellable on a given channel. Unique on (workspaceId, channel, productId)."
+    },
+    {
+      "name": "ChannelArsenal",
+      "table": "RAC_ChannelArsenal",
+      "file": "backend/prisma/schema.prisma:3523",
+      "role": "Per-channel creative/asset library (assetId, type, label, storageRef, metadata). Unique on (workspaceId, channel, assetId)."
+    },
+    {
+      "name": "ChannelConfig",
+      "table": "RAC_ChannelConfig",
+      "file": "backend/prisma/schema.prisma:3540",
+      "role": "Per-(workspace,channel) agent/runtime config: tone, aggressiveness, businessHours, followupEnabled, dailyMessageLimit, transferCriteria(JSON), language. Note: transferCriteria is OVERLOADED — email delivery overrides are stashed here and read by EmailChannelTransport.resolveWorkspaceDelivery (channel-transport.providers.ts:346)."
+    },
+    {
+      "name": "Integration",
+      "table": "RAC_Integration",
+      "file": "backend/prisma/schema.prisma:857",
+      "role": "Generic encrypted-credential integration row (type/name/credentials JSON/isActive). Used by kloel services-v2 ChannelService.connect (channel.service.ts) as a SECOND, parallel credential store distinct from MetaConnection."
+    },
+    {
+      "name": "IntegrationCredential",
+      "table": "RAC_IntegrationCredential",
+      "file": "backend/prisma/schema.prisma:4002",
+      "role": "Per-(workspace,platform) OAuth credential (default platform 'google'): accessToken/refreshToken/expiresAt/keyVersion/loginCustomerId/status. Google-Ads-shaped sibling of MetaConnection — same concept (channel credential) under a different table."
+    },
+    {
+      "name": "WebhookEvent",
+      "table": "(WebhookEvent — @prisma/client, persisted by WebhooksService.logWebhookEvent)",
+      "file": "backend/src/meta/webhooks/meta-webhook.controller.ts:31",
+      "role": "Durable inbound webhook log + dedup unique-constraint (provider, externalId). Both meta webhook controllers write to it via WebhooksService."
+    },
+    {
+      "name": "FbMessage",
+      "table": "RAC_FbMessage",
+      "file": "backend/src/marketing/facebook-messenger.service.ts:64",
+      "role": "Facebook/Messenger message persistence (direction, senderPsid, recipientPsid, deliveryStatus). Written ONLY on the FacebookMessengerService path — the parallel MessengerService send path does NOT persist (divergence)."
+    },
+    {
+      "name": "IgPost / IgInsight",
+      "table": "RAC_IgPost / RAC_IgInsight",
+      "file": "backend/src/marketing/instagram/instagram-marketing.service.ts:104",
+      "role": "Instagram publishing + insights persistence. There is intentionally NO IgMessage model yet — listMessages returns honest empty state (instagram-marketing.service.ts:416)."
+    }
+  ],
+  "services": [
+    {
+      "name": "ChannelDispatchRegistry",
+      "file": "backend/src/common/channel-dispatch/channel-dispatch.registry.ts:31",
+      "responsibility": "Pure (un-guarded) registry mapping ChannelKind -> ChannelDispatchPort adapter; exposes send() and the Wave-21 alias sendMessage(). The marketing-layer canonical router.",
+      "capability": "route-outbound-by-channel-kind"
+    },
+    {
+      "name": "ChannelMessageDispatchService",
+      "file": "backend/src/marketing/channel-message-dispatch.service.ts:55",
+      "responsibility": "Ergonomic facade over ChannelDispatchRegistry: dispatch(workspaceId, channel, to, message, opts) resolves Meta creds once, builds the discriminated ChannelSendInput (via channel-message-dispatch.helpers buildWhatsApp/buildInstagram/buildMessenger/buildFacebook/buildEmail), delegates. Also dispatchTool/createAdDraftTool resolver shims.",
+      "capability": "ergonomic-cross-channel-send-facade"
+    },
+    {
+      "name": "ChannelTransportRegistry",
+      "file": "backend/src/kloel/channel-transport.registry.ts:52",
+      "responsibility": "MindGuard-WRAPPED outbound registry for the agent/inbox/webhook layer. Maps ChannelName -> ChannelTransportProvider, runs send_message policy guard + structured audit, then either delegates to ChannelMessageDispatchService (flag KLOEL_TRANSPORT_CANONICAL_DELEGATE, channels wa/ig/messenger only) OR to the legacy provider.send(). Parallel registry to ChannelDispatchRegistry.",
+      "capability": "guarded-route-outbound-by-channel-name"
+    },
+    {
+      "name": "InstagramChannelTransport / MessengerChannelTransport / TikTokChannelTransport / EmailChannelTransport",
+      "file": "backend/src/kloel/channel-transport.providers.ts:42",
+      "responsibility": "ChannelTransportProvider impls (the legacy guarded providers). Instagram/Messenger re-resolve MetaConnection and re-call InstagramService/MessengerService; Email routes via EmailCampaignService (Resend/SendGrid/env-SMTP); TikTok is an honest-blocked stub. These duplicate, capability-for-capability, the marketing/channels/*-dispatch.adapter classes.",
+      "capability": "per-channel-guarded-send-provider"
+    },
+    {
+      "name": "WhatsAppChannelTransport",
+      "file": "backend/src/kloel/channel-transport-whatsapp.provider.ts",
+      "responsibility": "WhatsApp ChannelTransportProvider; delegates into the WhatsApp send chain (WhatsappService).",
+      "capability": "per-channel-guarded-send-provider"
+    },
+    {
+      "name": "WhatsAppDispatchAdapter",
+      "file": "backend/src/marketing/channels/whatsapp/whatsapp-dispatch.adapter.ts:26",
+      "responsibility": "ChannelDispatchPort adapter for WhatsApp; delegates to WhatsappService.sendMessage and maps the loose result to ChannelSendResult.",
+      "capability": "whatsapp-outbound-adapter"
+    },
+    {
+      "name": "InstagramDispatchAdapter",
+      "file": "backend/src/marketing/channels/instagram/instagram-dispatch.adapter.ts:24",
+      "responsibility": "ChannelDispatchPort adapter for Instagram; delegates to InstagramService.sendMessage (igAccountId/recipientId/text/accessToken).",
+      "capability": "instagram-outbound-adapter"
+    },
+    {
+      "name": "MessengerDispatchAdapter",
+      "file": "backend/src/marketing/channels/messenger/messenger-dispatch.adapter.ts:23",
+      "responsibility": "ChannelDispatchPort adapter for Messenger; delegates to MessengerService.sendTextMessage/sendMediaMessage.",
+      "capability": "messenger-outbound-adapter"
+    },
+    {
+      "name": "FacebookDispatchAdapter",
+      "file": "backend/src/marketing/channels/facebook/facebook-dispatch.adapter.ts:22",
+      "responsibility": "ChannelDispatchPort adapter for Facebook page; delegates to FacebookMessengerService.sendMessage (posts ${pageId}/messages, persists FbMessage).",
+      "capability": "facebook-outbound-adapter"
+    },
+    {
+      "name": "EmailDispatchAdapter",
+      "file": "backend/src/marketing/channels/email/email-dispatch.adapter.ts:39",
+      "responsibility": "ChannelDispatchPort adapter for CONNECTED-mailbox email; tries Gmail -> Microsoft -> IMAP-SMTP sendMessageFromMailbox in priority order.",
+      "capability": "email-connected-mailbox-outbound-adapter"
+    },
+    {
+      "name": "TransactionalEmailDispatchAdapter",
+      "file": "backend/src/marketing/channels/email/transactional-email-dispatch.adapter.ts:35",
+      "responsibility": "ChannelDispatchPort adapter for TRANSACTIONAL email (ChannelKind.EMAIL_TRANSACTIONAL); delegates to EmailService.sendEmail (Resend/SendGrid/env-SMTP from noreply@kloel.com). Distinct kind so it never collides with the connected-mailbox adapter.",
+      "capability": "email-transactional-outbound-adapter"
+    },
+    {
+      "name": "TikTokDispatchAdapter",
+      "file": "backend/src/marketing/channels/tiktok/tiktok-dispatch.adapter.ts:33",
+      "responsibility": "ChannelDispatchPort adapter for TikTok; honest-blocked (no programmatic outbound API). Supersedes TikTokChannelTransport.",
+      "capability": "tiktok-outbound-adapter-blocked"
+    },
+    {
+      "name": "InternalPartnershipDispatchAdapter",
+      "file": "backend/src/marketing/channels/internal-partnership/internal-partnership-dispatch.adapter.ts:26",
+      "responsibility": "ChannelDispatchPort adapter for internal partner chat; DB-only insert via partnerships.chat.helpers.sendMessage to partnerMessage.",
+      "capability": "internal-partnership-outbound-adapter"
+    },
+    {
+      "name": "InstagramService",
+      "file": "backend/src/marketing/channels/instagram/instagram.service.ts:6",
+      "responsibility": "Thin Meta Graph client for IG: sendMessage (${igAccountId}/messages), publishPhoto, getAccountInsights, getConversations.",
+      "capability": "instagram-graph-client"
+    },
+    {
+      "name": "InstagramMarketingService",
+      "file": "backend/src/marketing/instagram/instagram-marketing.service.ts:44",
+      "responsibility": "Higher-level IG: listAccounts/publishPost/getInsights/sendDirectMessage/listConversations/listMessages. sendDirectMessage flag-gates delegation to ChannelMessageDispatchService (instagram-canonical-dispatch.flag) else raw InstagramService.sendMessage — a THIRD IG send entrypoint.",
+      "capability": "instagram-marketing-orchestration + instagram-dm-send"
+    },
+    {
+      "name": "MessengerService",
+      "file": "backend/src/marketing/channels/messenger/messenger.service.ts:6",
+      "responsibility": "Thin Meta Graph client for Messenger page: sendTextMessage/sendMediaMessage (${pageId}/messages), getUserProfile, getConversations. Does NOT persist.",
+      "capability": "messenger-graph-client"
+    },
+    {
+      "name": "FacebookMessengerService",
+      "file": "backend/src/marketing/facebook-messenger.service.ts:33",
+      "responsibility": "Full Facebook page messaging: sendMessage (${pageId}/messages, SAME endpoint as MessengerService) + persists FbMessage + processWebhookEvent/processDeliveryReceipt/processReadReceipt/processMessageEcho/reconcileDelivery + getStatus/getSummary/getContacts/getMessages.",
+      "capability": "facebook-page-messaging + webhook-processing"
+    },
+    {
+      "name": "MetaWhatsAppService",
+      "file": "backend/src/meta/meta-whatsapp.service.ts:30",
+      "responsibility": "Canonical Meta Cloud WhatsApp + connection resolver: resolveConnection(workspaceId, channel), sendTextMessage/sendMediaMessage/markMessageAsRead (${phoneNumberId}/messages), discoverWhatsAppAssets, getPhoneNumberDetails, resolveWorkspaceIdByPhoneNumberId, touchWebhookHeartbeat, embedded-signup URL.",
+      "capability": "meta-whatsapp-cloud-client + meta-connection-resolution"
+    },
+    {
+      "name": "MetaConnectionStateService",
+      "file": "backend/src/meta/meta-connection-state.service.ts:37",
+      "responsibility": "forWorkspace(workspaceId): aggregate connected/expired state for instagram/facebook/whatsapp from MetaConnection rows. A SECOND connection reader with a different shape than MetaWhatsAppService.resolveConnection.",
+      "capability": "meta-connection-state-aggregation"
+    },
+    {
+      "name": "MetaSdkService",
+      "file": "backend/src/meta/meta-sdk.service.ts",
+      "responsibility": "Low-level Meta Graph API client (graphApiGet/graphApiPost) shared by all Meta services.",
+      "capability": "meta-graph-http-client"
+    },
+    {
+      "name": "MetaWebhookController (core)",
+      "file": "backend/src/meta/webhooks/meta-webhook.controller.ts:123",
+      "responsibility": "@Controller('webhooks/meta'): HMAC-verify + Redis NX + WebhookEvent dedup, then route object=instagram|page|whatsapp_business_account to handlers that call OmnichannelService.processInstagramWebhook / handleIncomingMessage(MESSENGER) / processIncomingWhatsAppMessage. The LIVE inbound message ingress.",
+      "capability": "meta-inbound-webhook-ingest-and-route"
+    },
+    {
+      "name": "MetaWebhookController (marketing)",
+      "file": "backend/src/meta/meta-webhook.controller.ts:46",
+      "responsibility": "@Controller('webhooks/meta-marketing'): SAME-NAMED class (aliased MetaCoreWebhookController in module). HMAC-verify + Redis NX dedup, then only logs the event via WebhooksService.logWebhookEvent('meta-marketing', ...) — does NOT route to message handlers. Ad-account/marketing-changes envelope.",
+      "capability": "meta-marketing-webhook-log"
+    },
+    {
+      "name": "OmnichannelService",
+      "file": "backend/src/inbox/omnichannel.service.ts:42",
+      "responsibility": "Inbound normalization hub: handleIncomingMessage(NormalizedMessage), processInstagramWebhook, processTikTokWebhook, attachment processing, dispatch to unified agent. Single funnel where every channel's inbound converges.",
+      "capability": "inbound-message-normalization-and-fanout"
+    },
+    {
+      "name": "ChannelInboundHookService",
+      "file": "backend/src/omnichannel/channel-inbound-hook.service.ts:27",
+      "responsibility": "onMessageReceived/onMessageSent -> builds MindPerceptEvent, records durable commercial event on MindEventSpine, and processes via MindEventProcessorService with 3-attempt retry. The cognition percept bridge for inbound/outbound.",
+      "capability": "message-percept-spine-hook"
+    },
+    {
+      "name": "OmnichannelContactResolutionService",
+      "file": "backend/src/omnichannel/contact-resolution.service.ts:12",
+      "responsibility": "resolveFromMessage/findExisting/linkChannelToContact — delegates to ChannelIdentifierService; extractChannelValue picks from/externalId per channel (WhatsApp/Email=from, IG/Messenger=externalId).",
+      "capability": "cross-channel-contact-resolution"
+    },
+    {
+      "name": "WhatsappService",
+      "file": "backend/src/marketing/channels/whatsapp/whatsapp.service.ts:40",
+      "responsibility": "WhatsApp public facade; sendMessage delegates to WhatsappMessageDispatcherService.sendMessage. The WhatsApp send chain front door.",
+      "capability": "whatsapp-send-facade"
+    },
+    {
+      "name": "WhatsappMessageDispatcherService",
+      "file": "backend/src/marketing/channels/whatsapp/whatsapp-message-dispatcher.service.ts:21",
+      "responsibility": "Canonical WhatsApp send core: sendMessage/sendTemplate/sendDirectMessage; routes through provider registry (provider-registry-messaging), rate-limit/optin guards, and enqueues flowQueue work.",
+      "capability": "whatsapp-send-core + provider-registry-routing"
+    },
+    {
+      "name": "InboundProcessorService",
+      "file": "backend/src/marketing/channels/whatsapp/inbound-processor.service.ts",
+      "responsibility": "WhatsApp inbound processing: persist, enqueue voiceQueue(transcribe-audio)/flowQueue(run-flow)/autopilotQueue, inline-autopilot, mind percept.",
+      "capability": "whatsapp-inbound-processing"
+    },
+    {
+      "name": "ChannelService (services-v2)",
+      "file": "backend/src/kloel/services-v2/channel.service.ts:109",
+      "responsibility": "kloel capability-registry service: connect() (writes Integration table) + send() delegating to ChannelMessageDispatchService.dispatch. A thin agent-tool facade — yet another send entrypoint.",
+      "capability": "agent-tool-channel-connect-and-send"
+    },
+    {
+      "name": "MessagingService (services-v2)",
+      "file": "backend/src/kloel/services-v2/messaging.service.ts:35",
+      "responsibility": "kloel capability-registry facade: sendWhatsApp/sendImage/sendAudio/sendDocument all delegate to ChannelMessageDispatchService.dispatch('whatsapp', ...).",
+      "capability": "agent-tool-whatsapp-send-facade"
+    },
+    {
+      "name": "dispatchChannelTool (kloel-tool-dispatcher.channel.handlers)",
+      "file": "backend/src/kloel/kloel-tool-dispatcher.channel.handlers.ts:76",
+      "responsibility": "Chat tool dispatcher for email/IG-DM/Messenger send tools; builds ChannelSendRequest and calls ChannelTransportRegistry.send() (guarded path) — distinct from the services-v2 ChannelMessageDispatchService path.",
+      "capability": "chat-tool-channel-send (guarded path)"
+    }
+  ],
+  "events": [
+    "MindPerceptEvent{kind:'message.received'} — built in ChannelInboundHookService.onMessageReceived (channel-inbound-hook.service.ts:46), processed by MindEventProcessorService",
+    "MindPerceptEvent{kind:'message.sent'} — ChannelInboundHookService.onMessageSent (channel-inbound-hook.service.ts:76)",
+    "MindEventSpine.recordCommercial{eventType:'message.received'|'message.sent', direction INBOUND/OUTBOUND, idempotencyKey} — channel-inbound-hook.service.ts:151",
+    "BullMQ flowQueue.add('run-flow', ...) — whatsapp-message-dispatcher.service.ts:96/150, inbound-processor.service.ts:249/359, whatsapp-reconciler.service.ts:151/199",
+    "BullMQ autopilotQueue.add(...) — inbound-processor.service.ts:334, whatsapp.service.catalog.ts:102/157, account-agent.service.ts:412, whatsapp-catchup-orchestrator.helpers.ts:168, whatsapp-reconciler.service.ts:162",
+    "BullMQ voiceQueue.add('transcribe-audio', ...) — inbound-processor.service.ts:199",
+    "WebhookEvent persisted + markWebhookProcessed — WebhooksService.logWebhookEvent / markWebhookProcessed (both meta webhook controllers)",
+    "webhookDispatcher.dispatch(workspaceId, 'message.received', message) — inbox.service.ts:249 (inbox-level outbound webhook fanout)"
+  ],
+  "capabilities": [
+    {
+      "name": "route outbound message to the right channel",
+      "canonicalHome": "ChannelDispatchRegistry.send/sendMessage (common/channel-dispatch/channel-dispatch.registry.ts:61) fronted by ChannelMessageDispatchService.dispatch (marketing/channel-message-dispatch.service.ts:72)",
+      "duplicatedIn": [
+        "ChannelTransportRegistry.send (kloel/channel-transport.registry.ts:107) — guarded parallel registry",
+        "kloel/services-v2/channel.service.ts:122 ChannelService.send (delegates to dispatch — thin)",
+        "kloel/services-v2/messaging.service.ts MessagingService.* (delegates to dispatch — thin)",
+        "kloel-tool-dispatcher.channel.handlers.ts:76 dispatchChannelTool (uses ChannelTransportRegistry — guarded)"
+      ]
+    },
+    {
+      "name": "send a WhatsApp message",
+      "canonicalHome": "WhatsappService.sendMessage -> WhatsappMessageDispatcherService.sendMessage (whatsapp-message-dispatcher.service.ts:49)",
+      "duplicatedIn": [
+        "WhatsAppDispatchAdapter.send (marketing/channels/whatsapp/whatsapp-dispatch.adapter.ts:31)",
+        "MetaWhatsAppService.sendTextMessage/sendMediaMessage (meta/meta-whatsapp.service.ts:236) — direct Meta Cloud path",
+        "WhatsAppChannelTransport (kloel/channel-transport-whatsapp.provider.ts) — guarded provider"
+      ]
+    },
+    {
+      "name": "send an Instagram DM",
+      "canonicalHome": "InstagramService.sendMessage (channels/instagram/instagram.service.ts:12) via InstagramDispatchAdapter",
+      "duplicatedIn": [
+        "InstagramMarketingService.sendDirectMessage (marketing/instagram/instagram-marketing.service.ts:263) — flag-gated to canonical else raw",
+        "InstagramChannelTransport.send (kloel/channel-transport.providers.ts:79) — guarded provider re-resolving MetaConnection",
+        "ChannelMessageDispatchService buildInstagram path (channel-message-dispatch.service.ts:147)"
+      ]
+    },
+    {
+      "name": "send a Facebook/Messenger page message",
+      "canonicalHome": "AMBIGUOUS — two services hit the SAME Graph endpoint ${pageId}/messages: MessengerService.sendTextMessage (channels/messenger/messenger.service.ts:12) and FacebookMessengerService.sendMessage (marketing/facebook-messenger.service.ts:41)",
+      "duplicatedIn": [
+        "MessengerDispatchAdapter -> MessengerService (ChannelKind.MESSENGER) — no persistence",
+        "FacebookDispatchAdapter -> FacebookMessengerService (ChannelKind.FACEBOOK) — persists FbMessage",
+        "MessengerChannelTransport.send (kloel/channel-transport.providers.ts:157) — guarded, uses MessengerService"
+      ]
+    },
+    {
+      "name": "send an email",
+      "canonicalHome": "Split by intent: connected-mailbox = EmailDispatchAdapter (channels/email/email-dispatch.adapter.ts), transactional = TransactionalEmailDispatchAdapter (channels/email/transactional-email-dispatch.adapter.ts)",
+      "duplicatedIn": [
+        "EmailChannelTransport.send (kloel/channel-transport.providers.ts:296) — uses EmailCampaignService (Resend/SendGrid/env-SMTP), a THIRD email delivery mechanism",
+        "EmailService.sendEmail (auth/email.service.ts) — underlying transactional sender, also called directly elsewhere"
+      ]
+    },
+    {
+      "name": "resolve a workspace's Meta connection / credentials",
+      "canonicalHome": "MetaWhatsAppService.resolveConnection (meta/meta-whatsapp.service.ts:71)",
+      "duplicatedIn": [
+        "MetaConnectionStateService.forWorkspace (meta/meta-connection-state.service.ts:44) — different shape",
+        "resolveInstagramConnection helper (marketing/instagram/instagram-marketing.service.ts:24) — bespoke decrypt+shape",
+        "~19 direct prisma.metaConnection.find* callsites across marketing/meta/omnichannel/kloel bypassing the resolvers"
+      ]
+    },
+    {
+      "name": "report channel capability / send-readiness",
+      "canonicalHome": "ChannelDispatchPort.capability + ChannelCapability (common/channel-dispatch/channel-dispatch.port.ts:210)",
+      "duplicatedIn": [
+        "ChannelTransportRegistry.getCapability/getAllCapabilities + ChannelCapability (kloel/channel-transport.types.ts:27) — parallel near-identical interface",
+        "per-provider capability() in channel-transport.providers.ts (blockedCapability/availableCapability)"
+      ]
+    },
+    {
+      "name": "verify + dedup + ingest an inbound Meta webhook",
+      "canonicalHome": "MetaWebhookController('webhooks/meta') (meta/webhooks/meta-webhook.controller.ts:123) -> OmnichannelService",
+      "duplicatedIn": [
+        "MetaWebhookController('webhooks/meta-marketing') (meta/meta-webhook.controller.ts:46) — duplicated HMAC+Redis-NX+WebhookEvent logic, log-only",
+        "WhatsappController @Post('incoming') (channels/whatsapp/controllers/whatsapp.controller.ts:62) — WAHA/self-hosted inbound path",
+        "internal-whatsapp-runtime.controller / whatsapp-meta-compat.controller — additional WhatsApp webhook surfaces"
+      ]
+    },
+    {
+      "name": "parse/normalize a channel message into a common shape",
+      "canonicalHome": "NormalizedMessage + OmniChannel + extract* helpers (inbox/omnichannel.helpers.ts:34) consumed by OmnichannelService",
+      "duplicatedIn": [
+        "meta-webhook.controller.helpers (extractWhatsAppMessageText/normalizeWhatsAppMessageType/buildContactIndex/normalizeOutboundStatus) at meta/webhooks/meta-webhook.controller.helpers.ts",
+        "per-channel inline normalization inside FacebookMessengerService.processWebhookEvent and inbound-processor.helpers"
+      ]
+    },
+    {
+      "name": "channel vocabulary / name discriminator",
+      "canonicalHome": "ChannelKind enum + CanonicalChannelName (common/channel-dispatch/channel-dispatch.port.ts:14)",
+      "duplicatedIn": [
+        "ChannelName (kloel/channel-transport.types.ts:22) — now DERIVED from CanonicalChannelName (good)",
+        "OmniChannel = Uppercase<...> (inbox/omnichannel.helpers.ts:34) — independent uppercased union (NOT yet collapsed)",
+        "normalizeChannelIdentifierChannel output (contacts/channel-identifier.service) — a THIRD casing/normalization of channel names"
+      ]
+    }
+  ],
+  "duplications": [
+    {
+      "concept": "Two parallel outbound dispatch registries: pure ChannelDispatchRegistry vs guarded ChannelTransportRegistry",
+      "implementations": [
+        "ChannelDispatchRegistry (common/channel-dispatch/channel-dispatch.registry.ts:31) — keyed by ChannelKind, ChannelDispatchPort adapters, NO policy guard",
+        "ChannelTransportRegistry (kloel/channel-transport.registry.ts:52) — keyed by ChannelName, ChannelTransportProvider, MindGuard + audit, flag-gated delegation to the former"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "ChannelDispatchRegistry as the transport/routing core; keep ChannelTransportRegistry ONLY as a guard+audit decorator that always delegates (finish KLOEL_TRANSPORT_CANONICAL_DELEGATE rollout so the legacy provider.send bodies in channel-transport.providers.ts become dead).",
+      "note": "Two registries, two result contracts (CONTRACT-A blocked REQUIRED in channel-transport.types.ts:49 vs CONTRACT-B blocked OPTIONAL in channel-dispatch.port.ts:164) requiring mapCanonicalResult glue (registry.ts:283). Delegation is OFF by default behind a flag and EXCLUDES email+tiktok, so today the guarded path mostly runs the DUPLICATE legacy provider bodies, not the canonical adapters — real divergence risk."
+    },
+    {
+      "concept": "Per-channel send implemented twice: marketing/channels/*-dispatch.adapter vs kloel/channel-transport.providers",
+      "implementations": [
+        "InstagramDispatchAdapter (instagram-dispatch.adapter.ts:24) vs InstagramChannelTransport (channel-transport.providers.ts:42)",
+        "MessengerDispatchAdapter (messenger-dispatch.adapter.ts:23) vs MessengerChannelTransport (channel-transport.providers.ts:124)",
+        "TikTokDispatchAdapter (tiktok-dispatch.adapter.ts:33) vs TikTokChannelTransport (channel-transport.providers.ts:202)",
+        "EmailDispatchAdapter+TransactionalEmailDispatchAdapter vs EmailChannelTransport (channel-transport.providers.ts:258)"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "marketing/channels/*-dispatch.adapter (ChannelDispatchPort) — TikTokDispatchAdapter's own docstring says it 'supersedes' TikTokChannelTransport. Collapse the *ChannelTransport classes into thin re-resolution-free delegations once the guard is the only thing they add.",
+      "note": "Same capability, two class families, two credential re-resolutions. EmailChannelTransport uses a DIFFERENT delivery mechanism (EmailCampaignService) than either email adapter — delegating it would change behavior, which is exactly why it is excluded from canDelegate (registry.ts:169). That mechanism split is itself a latent P1."
+    },
+    {
+      "concept": "Two services send to the SAME Meta page endpoint ${pageId}/messages under two ChannelKinds (Messenger vs Facebook)",
+      "implementations": [
+        "MessengerService.sendTextMessage (channels/messenger/messenger.service.ts:12) — ChannelKind.MESSENGER, NO persistence",
+        "FacebookMessengerService.sendMessage (marketing/facebook-messenger.service.ts:41) — ChannelKind.FACEBOOK, persists FbMessage + full webhook processing"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "FacebookMessengerService is the richer, persistence-backed implementation; MessengerService is the thin duplicate. Either unify to one page-messaging service or make the ChannelKind split semantically real (it currently is not — both are Facebook-Page PSID sends).",
+      "note": "ChannelKind.FACEBOOK and ChannelKind.MESSENGER are effectively the same wire surface (page PSID send). Sends via MESSENGER do not write FbMessage, so message history diverges by which adapter the caller happened to pick — a correctness/observability hazard."
+    },
+    {
+      "concept": "Three Meta-connection readers with divergent shapes",
+      "implementations": [
+        "MetaWhatsAppService.resolveConnection (meta-whatsapp.service.ts:71) -> ResolvedMetaConnection",
+        "MetaConnectionStateService.forWorkspace (meta-connection-state.service.ts:44) -> MetaConnectionState",
+        "resolveInstagramConnection (instagram-marketing.service.ts:24) -> InstagramConnection (bespoke decrypt)"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "MetaWhatsAppService.resolveConnection as the single credential resolver; MetaConnectionStateService should consume it rather than re-querying MetaConnection; delete resolveInstagramConnection in favor of the canonical resolver.",
+      "note": "Plus ~19 raw prisma.metaConnection.find* callsites across the cluster bypass all three. Token-expiry logic (EXPIRED in meta-connection-state.service.ts:31 vs tokenExpired in resolveConnection) is reimplemented per reader — drift on expiry semantics is the concrete risk."
+    },
+    {
+      "concept": "Two webhook controllers named MetaWebhookController with duplicated HMAC-verify + Redis-NX + WebhookEvent dedup",
+      "implementations": [
+        "meta/webhooks/meta-webhook.controller.ts:123 ('webhooks/meta') — verify + ROUTE to OmnichannelService (live ingest)",
+        "meta/meta-webhook.controller.ts:46 ('webhooks/meta-marketing') — verify + LOG-ONLY"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "Extract the shared HMAC-verify + Redis-NX + WebhookEvent-dedup into one guard/util (partially started: webhook-challenge-response.util, crypto-compare.util) and keep two thin route handlers. Rename one class to remove the same-name-aliased collision in meta.module.ts:17-18.",
+      "note": "Identical signature-verification and dedup code copied across both controllers with subtly different verify-token env precedence (META_MARKETING_VERIFY_TOKEN||META_VERIFY_TOKEN||META_WEBHOOK_VERIFY_TOKEN in marketing vs META_VERIFY_TOKEN-path elsewhere) and different idempotency helpers — exactly the class of copy that drifts on a security-sensitive path."
+    },
+    {
+      "concept": "ChannelCapability + ChannelSendResult DTOs declared twice",
+      "implementations": [
+        "common/channel-dispatch/channel-dispatch.port.ts:164/210 (ChannelSendResult/ChannelCapability — blocked OPTIONAL)",
+        "kloel/channel-transport.types.ts:27/49 (ChannelCapability/ChannelSendResult — blocked REQUIRED)"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "common/channel-dispatch/channel-dispatch.port.ts DTOs. Re-export the transport variants as type aliases (ChannelName already does this for the name union) instead of re-declaring.",
+      "note": "Near-identical interfaces forcing mapCanonicalResult/mapResult glue at every boundary (channel-transport.registry.ts:283, whatsapp-dispatch.adapter.ts:80). The 'blocked required vs optional' divergence is the only real difference and is purely accidental."
+    },
+    {
+      "concept": "Channel-name vocabularies: ChannelKind vs OmniChannel vs ChannelIdentifier casing",
+      "implementations": [
+        "ChannelKind/CanonicalChannelName lowercase (channel-dispatch.port.ts:14/37)",
+        "OmniChannel = Uppercase<...> (inbox/omnichannel.helpers.ts:34)",
+        "normalizeChannelIdentifierChannel UPPER ('WHATSAPP'/'EMAIL'/'INSTAGRAM'/'MESSENGER') (contacts/channel-identifier.service via contact-resolution.service.ts:63)"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "ChannelKind (lowercase) as the one enum; OmniChannel and the identifier casing should be derived Uppercase<ChannelKind> views, not independent unions.",
+      "note": "ChannelName was already collapsed to a derived view of CanonicalChannelName (good precedent, channel-transport.types.ts:22). OmniChannel and the contacts-layer uppercase casing remain independent, so every inbound path re-casts channel strings."
+    },
+    {
+      "concept": "Four+ outbound send entrypoints/facades over the same core",
+      "implementations": [
+        "ChannelMessageDispatchService.dispatch (channel-message-dispatch.service.ts:72)",
+        "services-v2/channel.service.ts ChannelService.send",
+        "services-v2/messaging.service.ts MessagingService.sendWhatsApp/...",
+        "kloel-tool-dispatcher.channel.handlers.ts dispatchChannelTool (via ChannelTransportRegistry)",
+        "billing-checkout-helper.service.ts:118 resolves ChannelMessageDispatchService via ModuleRef ad hoc"
+      ],
+      "severity": "P3",
+      "canonicalChoice": "ChannelMessageDispatchService.dispatch/dispatchTool. The services-v2 facades are thin and acceptable as agent-tool adapters; the concern is dispatchChannelTool taking the GUARDED transport path while services-v2 takes the pure path — two policy postures for the same agent.",
+      "note": "Mostly thin delegations (low redundancy), but the split between the guarded (transport) and un-guarded (dispatch) agent send paths means MindGuards apply inconsistently depending on which tool surface the agent hit."
+    },
+    {
+      "concept": "WhatsApp has its own internal provider 'registry' separate from the channel registries",
+      "implementations": [
+        "providers/provider-registry-messaging.ts sendMessage/sendMedia (channels/whatsapp/providers)",
+        "ChannelDispatchRegistry / ChannelTransportRegistry above it"
+      ],
+      "severity": "P3",
+      "canonicalChoice": "Acceptable layering — the WhatsApp provider registry abstracts WAHA vs Meta-Cloud BELOW the channel adapter. Its own docstring (provider-registry-messaging.ts:29) already names channel-transport.registry as the intended upstream.",
+      "note": "Not a true duplicate of the channel registries (different abstraction level: provider-vendor selection within WhatsApp), but adds to the 'how many registries are there' cognitive load — documented here for completeness."
+    }
+  ],
+  "legacyOrDead": [
+    "channel-transport.providers.ts legacy provider.send() BODIES for whatsapp/instagram/messenger — become dead once isTransportCanonicalDelegateEnabled (channel-transport-canonical-delegate.flag.ts) is permanently ON; currently the DEFAULT path because the flag is off, so they are live-but-superseded duplicates.",
+    "TikTokChannelTransport (channel-transport.providers.ts:202) — explicitly superseded by TikTokDispatchAdapter per the adapter's docstring; still registered in ChannelTransportRegistry. Pure orphan-in-waiting.",
+    "ChannelDispatchPort.sendMessage? optional alias + every adapter's sendMessage() one-liner (Wave-21) — redundant once callers standardize on one of send/sendMessage; currently both exist on all 8 adapters.",
+    "MessengerService vs FacebookMessengerService — one of the two page-send services is redundant; MessengerService is the thinner, persistence-less candidate for removal.",
+    "InstagramMarketingService.sendDirectMessage raw fallback (instagram-marketing.service.ts:302) — dead once isInstagramCanonicalDispatchEnabled is permanently ON.",
+    "channel-transport-canonical-delegate.flag.ts / instagram-canonical-dispatch.flag.ts — real migration flags, each gates a legacy path that should be deleted at end-of-rollout. (NB: there is NO lead-contact-dualwrite.flag.ts file — the Lead->Contact dual-write is implemented directly in the 3 lead services + person-kloel-lead-to-contact.backfill.*.)",
+    "ChannelMessageDispatchService.createAdDraftTool (channel-message-dispatch.service.ts:218) — honest setup-required stub (no real Ads outbound integration); not dead but a placeholder surface.",
+    "meta/meta-webhook.controller.ts ('webhooks/meta-marketing') — log-only; verify whether Meta is actually subscribed to this path or whether it is an unreached endpoint (no internal references found besides module registration)."
+  ]
+}

@@ -197,7 +197,7 @@ export function AddBankAccountForm({
         style={{
           width: '100%',
           padding: '10px 16px',
-          background: addLoading ? 'var(--app-bg-secondary)' : 'colors.ember.primary',
+          background: addLoading ? 'var(--app-bg-secondary)' : colors.ember.primary,
           color: addLoading ? 'var(--app-text-secondary)' : 'var(--app-text-on-accent)',
           border: 'none',
           borderRadius: 6,

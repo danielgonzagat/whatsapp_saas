@@ -151,13 +151,32 @@ describe('mind-runtime helpers', () => {
   });
 
   describe('buildOperatorResponseText', () => {
-    it('formats a success line with the intent', () => {
-      expect(
-        buildOperatorResponseText({
-          intent: 'list_products',
-          ok: true,
-        }),
-      ).toBe('Acao "list_products" executada com sucesso.');
+    it('summarizes product catalog results without leaking the operator intent', () => {
+      const input = {
+        intent: 'list_products',
+        ok: true,
+        result: [{ name: 'PDRN Coreamy', price: 197, active: true }],
+      };
+
+      const result = buildOperatorResponseText(input);
+
+      expect(result).toContain('Consultei seu catálogo real');
+      expect(result).toContain('PDRN Coreamy');
+      expect(result).toContain('R$ 197,00');
+      expect(result).not.toContain('list_products');
+      expect(result).not.toContain('Acao');
+    });
+
+    it('explains an empty product catalog as a real observation', () => {
+      const input = {
+        intent: 'list_products',
+        ok: true,
+        result: [] as unknown[],
+      };
+
+      expect(buildOperatorResponseText(input)).toBe(
+        'Consultei seu catálogo real e não encontrei produtos cadastrados neste workspace.',
+      );
     });
 
     it('formats a failure line with the error message', () => {
@@ -167,7 +186,7 @@ describe('mind-runtime helpers', () => {
           ok: false,
           error: 'workspace_required',
         }),
-      ).toBe('Falha ao executar "list_products": workspace_required.');
+      ).toBe('Falha ao executar catálogo de produtos: workspace_required.');
     });
 
     it('uses the default error message when no error is supplied', () => {
@@ -176,7 +195,7 @@ describe('mind-runtime helpers', () => {
           intent: 'safe_query',
           ok: false,
         }),
-      ).toBe('Falha ao executar "safe_query": erro desconhecido.');
+      ).toBe('Falha ao executar consulta segura: erro desconhecido.');
     });
   });
 

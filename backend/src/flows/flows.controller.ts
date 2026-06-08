@@ -255,24 +255,6 @@ export class FlowsController {
     return { ok: true, executionId: execution.id };
   }
 
-  /** Get flow. */
-  @Get(':workspaceId/:flowId')
-  async getFlow(
-    @Req() req: AuthenticatedRequest,
-    @Param('workspaceId') workspaceId: string,
-    @Param('flowId') flowId: string,
-  ) {
-    const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    return this.flows.get(effectiveWorkspaceId, flowId);
-  }
-
-  /** List flows. */
-  @Get(':workspaceId')
-  async listFlows(@Req() req: AuthenticatedRequest, @Param('workspaceId') workspaceId: string) {
-    const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    return this.flows.list(effectiveWorkspaceId);
-  }
-
   /** List executions. */
   @Get(':workspaceId/executions')
   async listExecutions(
@@ -283,6 +265,24 @@ export class FlowsController {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     const clampedLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
     return this.flows.listExecutions(effectiveWorkspaceId, clampedLimit);
+  }
+
+  /** List flows. */
+  @Get(':workspaceId')
+  async listFlows(@Req() req: AuthenticatedRequest, @Param('workspaceId') workspaceId: string) {
+    const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
+    return this.flows.list(effectiveWorkspaceId);
+  }
+
+  /** Get flow. */
+  @Get(':workspaceId/:flowId')
+  async getFlow(
+    @Req() req: AuthenticatedRequest,
+    @Param('workspaceId') workspaceId: string,
+    @Param('flowId') flowId: string,
+  ) {
+    const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
+    return this.flows.get(effectiveWorkspaceId, flowId);
   }
 
   /** List flow versions. */

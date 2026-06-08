@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { check, type PartBCtx } from "./smoke-state.js";
+import { check, jsonBody, type PartBCtx } from "./smoke-state.js";
 
 
 export async function partBRenameProp(ctx: PartBCtx): Promise<void> {
@@ -21,7 +21,7 @@ export async function partBRenameProp(ctx: PartBCtx): Promise<void> {
           proofOfIncorrectness: 'smoke fixture old phone key is intentionally obsolete negative bytes',
         },
       })) as { content: { text: string }[]; isError?: boolean };
-      const rpkBody = JSON.parse(rpkRes.content.at(-1)?.text ?? '{}');
+      const rpkBody = jsonBody(rpkRes);
       check(
         'live rename_property_key ok + changed',
         rpkRes.isError !== true && rpkBody.ok === true && rpkBody.changed === true,
@@ -76,7 +76,7 @@ export async function partBRenameProp(ctx: PartBCtx): Promise<void> {
         name: 'atomic_add_await_to_call',
         arguments: { file: awaitRel, callee: 'compute', selector: 'build' },
       })) as { content: { text: string }[]; isError?: boolean };
-      const awaitBody = JSON.parse(awaitRes.content.at(-1)?.text ?? '{}');
+      const awaitBody = jsonBody(awaitRes);
       check(
         'live add_await_to_call wraps call with await',
         awaitRes.isError !== true && awaitBody.ok === true && awaitBody.changed === true,

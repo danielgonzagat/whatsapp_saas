@@ -3,6 +3,15 @@ import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import { Card } from '@/components/kloel/Card';
 import { STATUS_COLORS } from './page.shared';
+function isValidHttpMediaUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 
 export function MediaProcessingTab({
   mediaUrl,
@@ -44,6 +53,10 @@ export function MediaProcessingTab({
     boxSizing: 'border-box',
   };
 
+  const trimmedMediaUrl = mediaUrl.trim();
+  const mediaUrlInvalid = Boolean(trimmedMediaUrl) && !isValidHttpMediaUrl(trimmedMediaUrl);
+  const canProcessMedia = Boolean(trimmedMediaUrl) && !mediaUrlInvalid;
+
   return (
     <Card>
       <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -58,16 +71,17 @@ export function MediaProcessingTab({
               letterSpacing: '0.1em',
             }}
           >
-            {kloelT(`Tipo de processamento`)}
+            {kloelT(`Fluxo de media`)}
           </p>
           <select
+            id="media-processing-type"
+            name="media-processing-type"
+            aria-label={kloelT('Tipo de processamento de midia')}
             value={mediaType}
             onChange={(e) => onMediaTypeChange(e.target.value)}
             style={{ ...inputStyle, cursor: 'pointer' }}
           >
-            <option value="video">{kloelT(`Video`)}</option>
-            <option value="audio">{kloelT(`Audio`)}</option>
-            <option value="image">{kloelT(`Imagem`)}</option>
+            <option value="video">{kloelT(`Video a partir de imagem`)}</option>
           </select>
         </div>
         <div>
@@ -81,15 +95,21 @@ export function MediaProcessingTab({
               letterSpacing: '0.1em',
             }}
           >
-            {kloelT(`URL da midia (opcional)`)}
+            {kloelT(`URL da imagem`)}
           </p>
           <input
-            aria-label="URL da midia"
+            id="media-processing-url"
+            name="media-processing-url"
+            aria-label="URL da imagem de entrada"
             type="url"
             value={mediaUrl}
             onChange={(e) => onMediaUrlChange(e.target.value)}
             placeholder="https://..."
-            style={inputStyle}
+            aria-invalid={mediaUrlInvalid ? 'true' : undefined}
+            style={{
+              ...inputStyle,
+              borderColor: mediaUrlInvalid ? 'rgba(239,68,68,0.45)' : 'var(--app-border-primary)',
+            }}
           />
         </div>
         <div>
@@ -103,9 +123,12 @@ export function MediaProcessingTab({
               letterSpacing: '0.1em',
             }}
           >
-            {kloelT(`Instrucao / prompt`)}
+            {kloelT(`Prompt opcional`)}
           </p>
           <textarea
+            id="media-processing-prompt"
+            name="media-processing-prompt"
+            aria-label={kloelT('Prompt para processar midia')}
             value={mediaPrompt}
             onChange={(e) => onMediaPromptChange(e.target.value)}
             placeholder={kloelT(`Descreva o processamento desejado...`)}
@@ -113,6 +136,20 @@ export function MediaProcessingTab({
             style={{ ...inputStyle, resize: 'vertical' }}
           />
         </div>
+        {mediaUrlInvalid && (
+          <div
+            style={{
+              background: 'rgba(239,68,68,0.08)',
+              border: '1px solid rgba(239,68,68,0.2)',
+              borderRadius: 6,
+              padding: '10px 14px',
+              color: colors.semantic.error,
+              fontSize: 13,
+            }}
+          >
+            {kloelT(`Informe uma URL http(s) valida antes de gerar video.`)}
+          </div>
+        )}
         {mediaError && (
           <div
             style={{
@@ -181,22 +218,22 @@ export function MediaProcessingTab({
         <button
           type="button"
           onClick={onProcess}
-          disabled={processingMedia}
+          disabled={processingMedia || !canProcessMedia}
           style={{
             background: 'var(--app-accent)',
             color: 'var(--app-text-on-accent)',
             border: 'none',
             borderRadius: 6,
             padding: '9px 20px',
-            cursor: 'pointer',
+            cursor: processingMedia || !canProcessMedia ? 'not-allowed' : 'pointer',
             fontSize: 13,
             fontWeight: 600,
             fontFamily: "'Sora', sans-serif",
             whiteSpace: 'nowrap',
-            opacity: processingMedia ? 0.5 : 1,
+            opacity: processingMedia || !canProcessMedia ? 0.5 : 1,
           }}
         >
-          {processingMedia ? 'Processando...' : 'Processar Midia'}
+          {processingMedia ? 'Processando...' : 'Gerar Video'}
         </button>
       </div>
     </Card>

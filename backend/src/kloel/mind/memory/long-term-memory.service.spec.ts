@@ -1,4 +1,4 @@
-import { LongTermMemoryService } from './long-term-memory.service';
+import { GraphFactMemoryService } from './long-term-memory.service';
 import type { PrismaService } from '../../../prisma/prisma.service';
 import type { SpineEventEnvelope } from '../../spine/spine-event.types';
 
@@ -13,7 +13,7 @@ interface GraphNodeRow {
 
 /**
  * Minimal in-memory fake of the slice of PrismaService.mindGraphNode the
- * LongTermMemoryService touches. Models the @@unique([workspaceId,kind,label])
+ * GraphFactMemoryService touches. Models the @@unique([workspaceId,kind,label])
  * upsert key so reinforce-on-repeat collides correctly.
  */
 function makePrisma(seed: GraphNodeRow[] = []) {
@@ -114,59 +114,59 @@ function makeEvent(overrides: Partial<SpineEventEnvelope> = {}): SpineEventEnvel
   };
 }
 
-describe('LongTermMemoryService', () => {
+describe('GraphFactMemoryService', () => {
   describe('consolidation (Hebbian reinforce on terminal outcomes)', () => {
     it('creates a durable fact node on first terminal outcome', async () => {
       const { prisma, rows } = makePrisma();
-      const svc = new LongTermMemoryService(prisma);
+      const svc = new GraphFactMemoryService(prisma);
 
       await svc.handle(makeEvent({ eventName: 'commerce.payment.approved', valence: 'positive' }));
 
       expect(rows).toHaveLength(1);
-      expect(rows[0]!.kind).toBe(LongTermMemoryService.FACT_KIND);
-      expect(rows[0]!.label).toBe('commerce.payment.approved');
-      expect(rows[0]!.metadata['valence']).toBe('positive');
-      expect(rows[0]!.metadata['occurrences']).toBe(1);
+      expect(rows[0].kind).toBe(GraphFactMemoryService.FACT_KIND);
+      expect(rows[0].label).toBe('commerce.payment.approved');
+      expect(rows[0].metadata['valence']).toBe('positive');
+      expect(rows[0].metadata['occurrences']).toBe(1);
     });
 
     it('reinforces weight and bumps occurrences when the same outcome recurs', async () => {
       const { prisma, rows } = makePrisma();
-      const svc = new LongTermMemoryService(prisma);
+      const svc = new GraphFactMemoryService(prisma);
 
       await svc.handle(
         makeEvent({ eventId: 'e1', eventName: 'commerce.crm.deal_won', valence: 'positive' }),
       );
-      const w1 = rows[0]!.weight;
+      const w1 = rows[0].weight;
       await svc.handle(
         makeEvent({ eventId: 'e2', eventName: 'commerce.crm.deal_won', valence: 'positive' }),
       );
 
       expect(rows).toHaveLength(1); // collides on unique key, not duplicated
-      expect(rows[0]!.weight).toBeGreaterThan(w1); // reinforced
-      expect(rows[0]!.metadata['occurrences']).toBe(2);
+      expect(rows[0].weight).toBeGreaterThan(w1); // reinforced
+      expect(rows[0].metadata['occurrences']).toBe(2);
     });
 
     it('is idempotent — a replayed eventId does not double-reinforce', async () => {
       const { prisma, rows } = makePrisma();
-      const svc = new LongTermMemoryService(prisma);
+      const svc = new GraphFactMemoryService(prisma);
 
       await svc.handle(
         makeEvent({ eventId: 'dup', eventName: 'commerce.lead.converted', valence: 'positive' }),
       );
-      const w1 = rows[0]!.weight;
+      const w1 = rows[0].weight;
       await svc.handle(
         makeEvent({ eventId: 'dup', eventName: 'commerce.lead.converted', valence: 'positive' }),
       );
 
-      expect(rows[0]!.weight).toBe(w1);
-      expect(rows[0]!.metadata['occurrences']).toBe(1);
+      expect(rows[0].weight).toBe(w1);
+      expect(rows[0].metadata['occurrences']).toBe(1);
     });
 
     it('decays a stale fact before reinforcing it', async () => {
       const stale: GraphNodeRow = {
         id: 'n1',
         workspaceId: 'ws-1',
-        kind: LongTermMemoryService.FACT_KIND,
+        kind: GraphFactMemoryService.FACT_KIND,
         label: 'commerce.payment.approved',
         weight: 20,
         // last seen ~60 days ago → multiple half-lives → heavy decay
@@ -177,18 +177,18 @@ describe('LongTermMemoryService', () => {
         },
       };
       const { prisma, rows } = makePrisma([stale]);
-      const svc = new LongTermMemoryService(prisma);
+      const svc = new GraphFactMemoryService(prisma);
 
       await svc.handle(makeEvent({ eventName: 'commerce.payment.approved', valence: 'positive' }));
 
       // 20 decayed over ~4 half-lives (≈1.25) + 1 reinforce ≈ ~2.25, far below 20.
-      expect(rows[0]!.weight).toBeLessThan(20);
-      expect(rows[0]!.metadata['occurrences']).toBe(6);
+      expect(rows[0].weight).toBeLessThan(20);
+      expect(rows[0].metadata['occurrences']).toBe(6);
     });
 
     it('ignores non-terminal events', async () => {
       const { prisma, rows } = makePrisma();
-      const svc = new LongTermMemoryService(prisma);
+      const svc = new GraphFactMemoryService(prisma);
 
       await svc.handle(makeEvent({ eventName: 'cognition.analysis_started', valence: 'positive' }));
 
@@ -197,7 +197,7 @@ describe('LongTermMemoryService', () => {
 
     it('ignores neutral terminal events (no durable learning signal)', async () => {
       const { prisma, rows } = makePrisma();
-      const svc = new LongTermMemoryService(prisma);
+      const svc = new GraphFactMemoryService(prisma);
 
       await svc.handle(
         makeEvent({
@@ -211,7 +211,7 @@ describe('LongTermMemoryService', () => {
 
     it('skips events without a workspaceId', async () => {
       const { prisma, rows } = makePrisma();
-      const svc = new LongTermMemoryService(prisma);
+      const svc = new GraphFactMemoryService(prisma);
 
       await svc.handle(
         makeEvent({ workspaceId: undefined, eventName: 'commerce.payment.approved' }),
@@ -227,7 +227,7 @@ describe('LongTermMemoryService', () => {
         {
           id: 'a',
           workspaceId: 'ws-1',
-          kind: LongTermMemoryService.FACT_KIND,
+          kind: GraphFactMemoryService.FACT_KIND,
           label: 'commerce.payment.approved',
           weight: 10,
           metadata: { valence: 'positive', occurrences: 8, lastAt: new Date().toISOString() },
@@ -235,22 +235,22 @@ describe('LongTermMemoryService', () => {
         {
           id: 'b',
           workspaceId: 'ws-1',
-          kind: LongTermMemoryService.FACT_KIND,
+          kind: GraphFactMemoryService.FACT_KIND,
           label: 'commerce.payment.declined',
           weight: 3,
           metadata: { valence: 'negative', occurrences: 2, lastAt: new Date().toISOString() },
         },
       ];
       const { prisma } = makePrisma(seed);
-      const svc = new LongTermMemoryService(prisma);
+      const svc = new GraphFactMemoryService(prisma);
 
       const recalled = await svc.recallRelevant('ws-1');
 
       expect(recalled).toHaveLength(2);
-      expect(recalled[0]!.fact).toBe('commerce.payment.approved');
-      expect(recalled[0]!.valence).toBe('positive');
-      expect(recalled[0]!.strength).toBeGreaterThan(recalled[1]!.strength);
-      expect(recalled[0]!.occurrences).toBe(8);
+      expect(recalled[0].fact).toBe('commerce.payment.approved');
+      expect(recalled[0].valence).toBe('positive');
+      expect(recalled[0].strength).toBeGreaterThan(recalled[1].strength);
+      expect(recalled[0].occurrences).toBe(8);
     });
 
     it('filters by valence when requested', async () => {
@@ -258,7 +258,7 @@ describe('LongTermMemoryService', () => {
         {
           id: 'a',
           workspaceId: 'ws-1',
-          kind: LongTermMemoryService.FACT_KIND,
+          kind: GraphFactMemoryService.FACT_KIND,
           label: 'commerce.payment.approved',
           weight: 10,
           metadata: { valence: 'positive', occurrences: 8, lastAt: new Date().toISOString() },
@@ -266,26 +266,26 @@ describe('LongTermMemoryService', () => {
         {
           id: 'b',
           workspaceId: 'ws-1',
-          kind: LongTermMemoryService.FACT_KIND,
+          kind: GraphFactMemoryService.FACT_KIND,
           label: 'commerce.payment.declined',
           weight: 3,
           metadata: { valence: 'negative', occurrences: 2, lastAt: new Date().toISOString() },
         },
       ];
       const { prisma } = makePrisma(seed);
-      const svc = new LongTermMemoryService(prisma);
+      const svc = new GraphFactMemoryService(prisma);
 
       const negatives = await svc.recallRelevant('ws-1', { valence: 'negative' });
 
       expect(negatives).toHaveLength(1);
-      expect(negatives[0]!.fact).toBe('commerce.payment.declined');
+      expect(negatives[0].fact).toBe('commerce.payment.declined');
     });
 
     it('returns an empty list (never throws) when the store fails', async () => {
       const prisma = {
         mindGraphNode: { findMany: jest.fn(async () => Promise.reject(new Error('db down'))) },
       } as unknown as PrismaService;
-      const svc = new LongTermMemoryService(prisma);
+      const svc = new GraphFactMemoryService(prisma);
 
       await expect(svc.recallRelevant('ws-1')).resolves.toEqual([]);
     });
@@ -302,10 +302,10 @@ describe('LongTermMemoryService', () => {
         }),
       } as unknown as import('../../spine/spine-emitter.service').SpineEmitterService;
 
-      const svc = new LongTermMemoryService(prisma, spine);
+      const svc = new GraphFactMemoryService(prisma, spine);
       expect(handler).toBeDefined();
 
-      handler!(makeEvent({ eventName: 'commerce.payment.approved', valence: 'positive' }));
+      handler(makeEvent({ eventName: 'commerce.payment.approved', valence: 'positive' }));
       await new Promise((r) => setImmediate(r)); // let the detached promise settle
       void svc;
 

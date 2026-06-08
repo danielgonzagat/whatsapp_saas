@@ -259,9 +259,9 @@ describe('Inbound Golden Path — P12 WhatsApp integration proof', () => {
         (r) => r.decisionType === 'coupon_offer' && r.channel === CHANNEL,
       );
       expect(couponRow).toBeDefined();
-      expect(couponRow!.total).toBe(1);
-      expect(couponRow!.closed).toBe(1);
-      expect(couponRow!.successRate).toBeGreaterThan(0);
+      expect(couponRow.total).toBe(1);
+      expect(couponRow.closed).toBe(1);
+      expect(couponRow.successRate).toBeGreaterThan(0);
     });
   });
 });

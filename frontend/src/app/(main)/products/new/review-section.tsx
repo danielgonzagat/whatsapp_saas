@@ -50,6 +50,7 @@ export function ReviewSection({
         </h3>
         <button
           type="button"
+          aria-label={`${kloelT('Editar')} ${title}`}
           onClick={onEdit}
           style={{
             display: 'flex',

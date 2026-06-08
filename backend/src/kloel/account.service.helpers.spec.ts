@@ -124,7 +124,7 @@ describe('fiscalDataPatch', () => {
   });
 
   it('throws on null data (defensive — caller must guard)', () => {
-    expect(() => fiscalDataPatch(null as unknown as Record<string, unknown>)).toThrow(TypeError);
+    expect(() => fiscalDataPatch(null)).toThrow(TypeError);
   });
 });
 describe('requireDefinedFiscalType', () => {

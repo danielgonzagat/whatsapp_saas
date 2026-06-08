@@ -7,7 +7,7 @@ import type {
   FlowTemplate,
   Flow as LibFlow,
 } from '@/lib/api/flows';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { Edge, Node } from 'reactflow';
 
 /** Flow shape. */
@@ -55,6 +55,7 @@ export function useFlows(workspaceId?: string) {
   const [flows, setFlows] = useState<Flow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fetchFlowRequestRef = useRef(0);
 
   const fetchFlows = useCallback(async () => {
     if (!workspaceId) {
@@ -80,16 +81,28 @@ export function useFlows(workspaceId?: string) {
       if (!workspaceId) {
         return null;
       }
+
+      fetchFlowRequestRef.current += 1;
+      const requestId = fetchFlowRequestRef.current;
+      const isLatestRequest = () => fetchFlowRequestRef.current === requestId;
+
       setLoading(true);
       setError(null);
       try {
         const response = await api.get<Flow>(`/flows/${workspaceId}/${flowId}`);
+        if (isLatestRequest()) {
+          setError(null);
+        }
         return response.data ?? null;
       } catch (err) {
-        setError(errorMessage(err, 'Erro ao carregar fluxo'));
+        if (isLatestRequest()) {
+          setError(errorMessage(err, 'Erro ao carregar fluxo'));
+        }
         return null;
       } finally {
-        setLoading(false);
+        if (isLatestRequest()) {
+          setLoading(false);
+        }
       }
     },
     [workspaceId],

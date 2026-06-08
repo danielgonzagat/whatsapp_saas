@@ -2,7 +2,7 @@ import { Injectable, Inject, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { Response } from 'express';
-import { LLMBudgetService, estimateChatCostCents } from './llm-budget.service';
+import { LLMBudgetService } from './llm-budget.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelComposerService } from './kloel-composer.service';
@@ -10,10 +10,10 @@ import { KloelConversationStore } from './kloel-conversation-store';
 import { KLOEL_LLM_E2E_GUARD, KloelLLME2EGuard } from './kloel-llm-e2e-guard';
 import {
   createKloelErrorEvent,
-  createKloelStatusEvent,
+  createKloelPublicStreamingLabel,
+  createKloelPublicThinkingLabel,
   createKloelThreadEvent,
   type KloelStreamEvent,
-  createKloelContentEvent,
 } from './kloel-stream-events';
 import { KloelStreamWriter } from './kloel-stream-writer';
 import { KloelThreadService, StoredProcessingTraceEntry } from './kloel-thread.service';
@@ -23,10 +23,19 @@ import { AbiBuilderService } from './abi/abi-builder.service';
 import { MindCapabilityExecutor } from './mind/coordination';
 import { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { detectActionIntent } from './guest-chat.action-intent.helpers';
+import { isMutationSensitiveTool } from './operation-receipt.helpers';
+import { KloelMemoryEngineService } from './kloel-memory-engine.service';
 import { KloelReplyEngineService, LocalToolExecutor } from './kloel-reply-engine.service';
 import { thinkSyncImpl, regenerateThreadAssistantResponseImpl } from './kloel-thinker.helpers';
 import { runAbiEnrichmentBranch } from './kloel-thinker.abi.helpers';
 import { resolveThinkContext } from './kloel-thinker.think-context.helpers';
+import {
+  appendWireContext,
+  buildWireContextBlock,
+  type WireContextServices,
+} from './kloel-thinker.wire-context.helpers';
+import { MemoryService } from './mind/memory/memory.service';
+import { ManifestInjectionBuilderService } from './manifest/manifest-injection.builder';
 import { StateBuilderService } from './state/state-builder.service';
 import { summarizeConversationState } from './state/conversation-state.helpers';
 import {
@@ -37,19 +46,11 @@ import {
 } from './kloel-thinker.substrate.helpers';
 import {
   finalizeSuccessfulReply,
-  persistChatTurnToSpine,
-  runComposerCapabilityBranch,
   runDeterministicActionBranch,
   runToolPlanningBranch,
   type ThinkBranchContext,
 } from './kloel-thinker-think.helpers';
-import {
-  closeThinkLoopError,
-  closeThinkLoopSuccess,
-  openThinkLoop,
-  type ThinkLoopHandle,
-  type ThinkLoopServices,
-} from './kloel-thinker-think-loop.helpers';
+import { type ThinkLoopServices } from './kloel-thinker-think-loop.helpers';
 import { DecisionOutcomeService } from './decision-outcome.service';
 import { MindBeliefService } from './mind/inference/mind-belief.service';
 import { MindSurpriseService } from './mind/inference/mind-surprise.service';
@@ -57,10 +58,15 @@ import { MindEventProcessorService } from './mind/runtime/mind-event-processor.s
 import { MindGlobalPriorService } from './mind/memory/mind-global-prior.service';
 import { MindPredictorService } from './mind/inference/mind-predictor.service';
 import { ValenceTaggerService } from './mind/valence-tagger.service';
+import { MindChatMessageService } from './mind/aliases/mind-chat-message.service';
+import { extractComposerMetadata } from './kloel.service.composer.helpers';
+import {
+  runStreamingComposerCapabilityBranch,
+  type ComposerCapability,
+} from './kloel-thinker-streaming-composer.branch';
+import { runStandardStreamingReplyBranch } from './kloel-thinker-standard-streaming.branch';
 
 export type { LocalToolExecutor } from './kloel-reply-engine.service';
-
-type ComposerCapability = 'create_image' | 'create_site' | 'search_web';
 
 export type { ChatMessage, ThinkRequest, ThinkSyncResult } from './kloel-thinker.types';
 import type { ThinkRequest, ThinkSyncResult } from './kloel-thinker.types';
@@ -94,8 +100,35 @@ export class KloelThinkerService {
     @Optional() private readonly mindGlobalPriorService?: MindGlobalPriorService,
     @Optional() private readonly mindPredictorService?: MindPredictorService,
     @Optional() private readonly valenceTagger?: ValenceTaggerService,
+    @Optional() private readonly memoryEngine?: KloelMemoryEngineService,
+    @Optional() private readonly mindChatMessage?: MindChatMessageService,
+    // wire-context: per-user typed MEMORY graph + CAPABILITY MANIFEST injection.
+    // Both @Optional() — flag-off / DI contexts that don't provide them resolve
+    // to undefined and the wire-context helpers degrade to an empty block, so the
+    // critical path is byte-identical to legacy when they are absent.
+    @Optional() private readonly memoryGraph?: MemoryService,
+    @Optional() private readonly manifestInjection?: ManifestInjectionBuilderService,
   ) {
     this.conversationStore = new KloelConversationStore(prisma, this.logger);
+  }
+
+  /** Bundle the optional wire-context services for the per-turn injection helpers. */
+  private get wireContextServices(): WireContextServices {
+    return {
+      ...(this.memoryGraph !== undefined ? { memoryService: this.memoryGraph } : {}),
+      ...(this.manifestInjection !== undefined
+        ? { manifestInjection: this.manifestInjection }
+        : {}),
+    };
+  }
+
+  /**
+   * Canonical Mind surface for the SEPARATE RAC_ChatMessage table. Returns the
+   * SAME delegate legacy code used (`prisma.chatMessage`) when the alias service
+   * is not provided — byte-identical, documented fallback idiom.
+   */
+  private get chatMessageItems() {
+    return this.mindChatMessage?.items ?? this.prisma.chatMessage;
   }
 
   /** Bundle the optional cognition services for the think-loop helpers. */
@@ -131,6 +164,12 @@ export class KloelThinkerService {
       metadata,
       allowedTools,
     } = request;
+    // Per-user memory (Mem0 brain): learn durable facts/preferences from this
+    // turn's user message, fire-and-forget so it never adds latency to the reply
+    // and never breaks the turn. Recalled on later turns by the context builder.
+    if (mode === 'chat' && workspaceId && userId) {
+      void this.memoryEngine?.remember(workspaceId, userId, message);
+    }
     const signal = opts?.signal;
     const isAborted = () => !!signal?.aborted;
     const abortReason = (): unknown => signal?.reason;
@@ -148,18 +187,26 @@ export class KloelThinkerService {
     streamWriter.init();
     const thinkStartedAt = Date.now();
     let thinkErrorCode: string | null = null;
-    // P0-C: handle for the streaming-path cognition loop. Stays null when the
-    // KLOEL_THINK_LOOP_ENABLED flag is OFF (byte-identical legacy behavior) or
-    // when there is no workspace to learn against. Opened just before the main
-    // conversational stream and closed after finalize / in the catch arm.
-    let thinkLoopHandle: ThinkLoopHandle | null = null;
-
     try {
       const deterministicWorkspaceId =
         mode === 'chat' && typeof workspaceId === 'string' && workspaceId.length > 0
           ? workspaceId
           : undefined;
-      const deterministicAction = deterministicWorkspaceId ? detectActionIntent(message) : null;
+      const composerMetadata = extractComposerMetadata(metadata);
+      const hasExplicitComposerContext =
+        !!composerCapability ||
+        !!composerMetadata.linkedProduct ||
+        (composerMetadata.attachments?.length ?? 0) > 0;
+      const detectedAction =
+        deterministicWorkspaceId && !hasExplicitComposerContext
+          ? detectActionIntent(message)
+          : null;
+      // MUTATION_SENSITIVE gate: the deterministic regex path bypasses the LLM
+      // tool-router's confirmation block, so never auto-execute a confirmation-
+      // sensitive tool (e.g. request_anticipation/request_withdrawal — money moves)
+      // from this path. Fall through to the LLM path, which enforces confirmation.
+      const deterministicAction =
+        detectedAction && isMutationSensitiveTool(detectedAction.tool) ? null : detectedAction;
       if (deterministicAction && deterministicWorkspaceId) {
         await runDeterministicActionBranch(
           deterministicAction,
@@ -195,6 +242,18 @@ export class KloelThinkerService {
         streamWriter.close();
         return;
       }
+      const openaiClient = this.replyEngine.openai;
+      if (!openaiClient) {
+        safeWrite(
+          createKloelErrorEvent({
+            content: AI_KEY_MISSING_MESSAGE,
+            error: 'ai_api_key_missing',
+            done: true,
+          }),
+        );
+        streamWriter.close();
+        return;
+      }
       if (isAborted()) {
         if (!isClientDisconnected()) {
           safeWrite(
@@ -219,7 +278,7 @@ export class KloelThinkerService {
         thread,
         historyState,
         expertiseLevel,
-        dynamicContext,
+        dynamicContext: baseDynamicContext,
         summaryMessage,
         shouldPlanWithTools,
         responseTemperature,
@@ -239,6 +298,50 @@ export class KloelThinkerService {
         metadata,
         enrichedCompanyContext,
       });
+
+      // wire-context: assemble the per-user MEMORY block + CAPABILITY MANIFEST
+      // block and append them to the HIDDEN runtime context the model carries
+      // (the same `dynamicContext` JSON channel — never the user-visible answer).
+      // Fully guarded: an empty block (no memories, no provided service, or any
+      // throw) leaves `dynamicContext` byte-identical to legacy. Skipped on the
+      // composer path, which returns before the model-message build.
+      const wireContextBlock =
+        mode === 'chat' && !composerCapability
+          ? await buildWireContextBlock(this.wireContextServices, this.logger, {
+              workspaceId,
+              userId,
+              message,
+              surface: mode,
+              permissions: allowedTools,
+            })
+          : { text: '', internalNames: [] };
+      const dynamicContext = appendWireContext(baseDynamicContext, wireContextBlock);
+
+      if (mode === 'chat' && composerCapability) {
+        await runStreamingComposerCapabilityBranch({
+          composerCapability,
+          effectiveCompanyContext,
+          signal,
+          composerService: this.composerService,
+          workspaceId,
+          userId,
+          message,
+          mode,
+          metadata,
+          clientRequestId,
+          thread,
+          processingTraceEntries,
+          safeWrite,
+          streamWriter,
+          replyEngine: this.replyEngine,
+          threadService: this.threadService,
+          conversationStore: this.conversationStore,
+          planLimits: this.planLimits,
+          llmBudget: this.llmBudget,
+          responseMaxTokens,
+        });
+        return;
+      }
 
       // Y-4 / X §2.6/3.4: assemble the REAL per-turn ConversationState
       // from production sources. The LLM verbalizes this State; it does
@@ -327,18 +430,8 @@ export class KloelThinkerService {
         threadService: this.threadService,
         conversationStore: this.conversationStore,
         planLimits: this.planLimits,
+        llmBudget: this.llmBudget,
       };
-
-      if (mode === 'chat' && composerCapability) {
-        await runComposerCapabilityBranch(
-          composerCapability,
-          effectiveCompanyContext,
-          signal,
-          this.composerService,
-          branchCtx,
-        );
-        return;
-      }
 
       const messages = await this.replyEngine.buildChatModelMessages({
         systemPrompt: finalSystemPrompt,
@@ -350,15 +443,19 @@ export class KloelThinkerService {
         userMessage: finalUserMessage,
         workspaceId,
       });
+      const publicThinkingLabel = createKloelPublicThinkingLabel(finalUserMessage);
+      const publicStreamingLabel = createKloelPublicStreamingLabel(finalUserMessage);
       const streamWriterResponse = (
         writerMessages: ChatCompletionMessageParam[],
         temperature: number,
       ) =>
         streamWriter.streamModelResponse({
-          openai: this.replyEngine.openai!,
+          openai: openaiClient,
           writerMessages,
           temperature,
           responseMaxTokens,
+          thinkingLabel: publicThinkingLabel,
+          streamingLabel: publicStreamingLabel,
         });
 
       if (mode === 'chat' && workspaceId && shouldPlanWithTools) {
@@ -380,79 +477,22 @@ export class KloelThinkerService {
         return;
       }
 
-      if (workspaceId) {
-        await this.planLimits.ensureTokenBudget(workspaceId);
-        const estimatedCost = estimateChatCostCents({
-          inputChars: JSON.stringify(messages).length,
-          maxOutputTokens: responseMaxTokens,
-        });
-        await this.llmBudget.assertBudget(workspaceId, estimatedCost);
-      }
-      // P0-C: open the cognition learning loop BEFORE the stream starts —
-      // mirrors the sync path (recordChatReplyDecision + predictChatReply ahead
-      // of the LLM call). No-op + null handle when the flag is OFF, so the
-      // critical path below is byte-identical to legacy in that case.
-      thinkLoopHandle = openThinkLoop(this.thinkLoopServices, this.logger, {
-        workspaceId,
-        messageLength: message.length,
+      await runStandardStreamingReplyBranch({
+        messages,
+        responseTemperature,
+        responseMaxTokens,
+        streamWriterResponse,
+        branchCtx,
+        prisma: this.prisma,
+        logger: this.logger,
+        thinkLoopServices: this.thinkLoopServices,
+        wireContextServices: this.wireContextServices,
+        conversationId,
+        userId,
       });
-      safeWrite(createKloelStatusEvent('thinking'));
-      const streamedReply = await streamWriterResponse(messages, responseTemperature);
-      if (workspaceId && streamedReply) {
-        this.llmBudget.recordSpend(workspaceId, streamedReply.estimatedTokens).catch(() => {});
-      }
-      if (!streamedReply) {
-        // Aborted/disconnected mid-stream: close the loop as a non-won outcome
-        // so the open prediction/decision row doesn't dangle. No-op when the
-        // handle is null (flag OFF). Fire-and-forget — never throws.
-        closeThinkLoopError(this.thinkLoopServices, this.logger, thinkLoopHandle);
-        return;
-      }
-      let fullResponse = streamedReply.fullResponse;
-      // P0-C: a real (non-empty) model reply is outcome 1; the empty-stream
-      // fallback below is outcome 0 — identical to the sync path's
-      // `assistantMessage.length > 0 ? 1 : 0` decision.
-      const replyOutcome: 0 | 1 = fullResponse.trim() ? 1 : 0;
-      if (!fullResponse.trim()) {
-        // Recoverable (non-terminal) empty-stream: stream the fallback text as
-        // a content event so the UI renders it, then let
-        // finalizeSuccessfulReply emit the terminal `done`. `type:'error'` is
-        // reserved for terminal failures (done:true) — the frontend treats any
-        // error event as terminal and stops reading the stream.
-        fullResponse = this.replyEngine.unavailableMessage;
-        safeWrite(createKloelStatusEvent('streaming_token'));
-        safeWrite(createKloelContentEvent(fullResponse));
-      }
-      await finalizeSuccessfulReply(fullResponse, streamedReply.estimatedTokens, branchCtx);
-      // P0-C: close the learning loop AFTER the reply is finalized — mirrors the
-      // sync path's success arm (closeChatReplyOutcome + applyReplyEnginePostReply:
-      // belief observe + resolveChatReplySurprise + global-prior + valence +
-      // event-processor). No-op when the handle is null (flag OFF). Fire-and-
-      // forget — wrapped so a loop failure can never wedge the SSE stream.
-      closeThinkLoopSuccess(this.thinkLoopServices, this.logger, thinkLoopHandle, replyOutcome);
-      // Consume the handle so the outer catch can't double-close this outcome.
-      thinkLoopHandle = null;
-      // Persist this conversational turn to the cognitive spine so it
-      // becomes CROSS-SESSION memory (MindPerceptionService reads
-      // autopilotEvent → working/episodic/consolidated/beliefs → ABI).
-      // B4: memory is a structural effect of the operation, not an LLM
-      // decision. Fire-and-forget — never blocks or fails the reply.
-      if (workspaceId) {
-        persistChatTurnToSpine(this.prisma, this.logger, {
-          workspaceId,
-          message,
-          fullResponse,
-          mode,
-          conversationId,
-        });
-      }
     } catch (error: unknown) {
       this.logger.error('Erro no KLOEL Thinker:', error);
       thinkErrorCode = resolveThinkErrorCode(abortReason(), 'think_unhandled_error');
-      // P0-C: close the loop as a failed outcome — mirrors the sync path's catch
-      // arm (closeChatReplyOutcome 'chat.error', won=false). No-op when the
-      // handle is null (flag OFF, or the throw happened before the loop opened).
-      closeThinkLoopError(this.thinkLoopServices, this.logger, thinkLoopHandle);
       try {
         if (!isClientDisconnected()) {
           const code = resolveThinkErrorCode(abortReason(), 'Erro ao processar mensagem');
@@ -499,6 +539,12 @@ export class KloelThinkerService {
     _executeLocalTool?: LocalToolExecutor,
   ): Promise<ThinkSyncResult> {
     try {
+      // Per-user memory: learn durable facts/preferences from this turn on the
+      // sync path too (mirrors the streaming think() path). Fire-and-forget so it
+      // never adds latency to or breaks the reply.
+      if (request.mode === 'chat' && request.workspaceId && request.userId) {
+        void this.memoryEngine?.remember(request.workspaceId, request.userId, request.message);
+      }
       return await thinkSyncImpl(request, composerCapability, effectiveCompanyContext, {
         replyEngine: this.replyEngine,
         prisma: this.prisma,
@@ -511,6 +557,14 @@ export class KloelThinkerService {
           ? { capabilityExecutor: this.capabilityExecutor }
           : {}),
         ...(_executeLocalTool !== undefined ? { executeLocalTool: _executeLocalTool } : {}),
+        // Capability-turn observability (KLOEL_CAPABILITY_TURN_LEARN): pass the
+        // SAME @Optional DecisionOutcomeService the streaming loop uses so a
+        // capability-driven sync turn can be recorded as a `capability_reply`
+        // decision. Undefined when not provided → the gated helper short-circuits
+        // and the reply path is byte-identical.
+        ...(this.decisionOutcomeService !== undefined
+          ? { decisionOutcomeService: this.decisionOutcomeService }
+          : {}),
       });
     } catch (error: unknown) {
       this.logger.error('Erro no KLOEL Thinker Sync:', error);
@@ -535,7 +589,8 @@ export class KloelThinkerService {
     deletedMessageIds: string[];
   }> {
     return regenerateThreadAssistantResponseImpl(params, {
-      prisma: this.prisma as Parameters<typeof regenerateThreadAssistantResponseImpl>[1]['prisma'],
+      prisma: this.prisma,
+      chatMessageItems: this.chatMessageItems,
       replyEngine: this.replyEngine,
       threadService: this.threadService,
     });

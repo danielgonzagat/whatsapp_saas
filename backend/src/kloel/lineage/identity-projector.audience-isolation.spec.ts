@@ -144,7 +144,7 @@ describe('IdentityProjectorService — audience isolation', () => {
     it('returns compromised projection for each audience when ledger is broken', async () => {
       const { repo, projector } = await build();
       const internal = (repo as { entries: LineageEntry[] }).entries;
-      internal[0] = { ...internal[0]!, hash: 'a'.repeat(64) };
+      internal[0] = { ...internal[0], hash: 'a'.repeat(64) };
       const audiences = ['public', 'technical', 'origin', 'internal'] as const;
       for (const audience of audiences) {
         const p = await projector.project({ audience });

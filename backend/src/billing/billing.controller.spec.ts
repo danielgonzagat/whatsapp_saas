@@ -29,7 +29,7 @@ jest.mock('../common/guards/workspace.guard', () => ({
   },
 }));
 
-import { BillingController } from './billing.controller';
+import { BillingController, PricingController } from './billing.controller';
 import { BillingService } from './billing.service';
 
 type BillingWebhookResult = { received: boolean; reason?: string; idempotent?: boolean };
@@ -108,5 +108,17 @@ describe('BillingController.handleWebhook', () => {
 
     expect(stub.handleWebhook).toHaveBeenCalledWith(expectedSignature, expectedBody);
     expect(result).toEqual({ received: true });
+  });
+});
+
+describe('PricingController.getPlans', () => {
+  it('returns serializable platform plans and benefits', () => {
+    const controller = new PricingController();
+
+    const result = controller.getPlans();
+
+    expect(result.plans.map((plan) => plan.id)).toEqual(['starter', 'pro', 'enterprise']);
+    expect(result.plans[0]).toMatchObject({ iconKey: 'zap', price: 97 });
+    expect(result.benefits[0]).toHaveProperty('iconKey', 'messageCircle');
   });
 });

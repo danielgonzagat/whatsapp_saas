@@ -326,7 +326,7 @@ export class AuthService {
     });
     if (accessTokenJti && accessTokenExp && this.redis) {
       const ttl = Math.max(1, accessTokenExp - Math.floor(Date.now() / 1000));
-      await this.redis.set(`access-token-revoked:${accessTokenJti}`, '1', 'EX', ttl);
+      await this.redis.set(`jti:revoked:${accessTokenJti}`, '1', 'EX', ttl);
     }
     return { success: true };
   }

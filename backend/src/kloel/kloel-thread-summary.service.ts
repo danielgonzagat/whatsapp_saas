@@ -3,6 +3,7 @@ import { StructuredLogger } from '../logging/structured-logger';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { hasTextLlmApiKey } from '../lib/llm-provider';
 import { PrismaService } from '../prisma/prisma.service';
+import { MindChatMessageService } from './mind/aliases/mind-chat-message.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import OpenAI from 'openai';
@@ -27,7 +28,32 @@ export class KloelThreadSummaryService {
     private readonly prisma: PrismaService,
     private readonly planLimits: PlanLimitsService,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly mindChatMessage?: MindChatMessageService,
   ) {}
+
+  /** Canonical Brain → Mind chat-message delegate (raw-Prisma fallback). */
+  private get chatMessageItems() {
+    return this.mindChatMessage?.items ?? this.prisma.chatMessage;
+  }
+
+  private formatUnknownError(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    if (typeof error === 'string') {
+      return error;
+    }
+    try {
+      const serialized: unknown = JSON.stringify(error);
+      if (typeof serialized === 'string') {
+        return serialized;
+      }
+    } catch {
+      // fall through to Object.prototype.toString
+    }
+    const fallback: unknown = Object.prototype.toString.call(error);
+    return typeof fallback === 'string' ? fallback : 'unknown error';
+  }
 
   private buildFallbackThreadTitle(message: string): string {
     const cleaned = String(message || '')
@@ -78,6 +104,20 @@ export class KloelThreadSummaryService {
     return _COMO_ESTRATEGIA_F_RE.test(normalized);
   }
 
+  private async trackThreadAiUsage(
+    workspaceId: string,
+    tokens: number,
+    source: string,
+  ): Promise<void> {
+    try {
+      await this.planLimits.trackAiUsage(workspaceId, tokens);
+    } catch (error: unknown) {
+      this.logger.warn(
+        `Falha ao registrar uso de IA ${source} ws=${workspaceId} tokens=${tokens}: ${this.formatUnknownError(error)}`,
+      );
+    }
+  }
+
   async generateConversationTitle(
     message: string,
     workspaceId?: string,
@@ -112,7 +152,7 @@ export class KloelThreadSummaryService {
       const title = this.sanitizeGeneratedThreadTitle(rawTitle);
       const tokens = response?.usage?.total_tokens ?? 64;
       if (workspaceId) {
-        await this.planLimits.trackAiUsage(workspaceId, tokens).catch(() => {});
+        await this.trackThreadAiUsage(workspaceId, tokens, 'thread-title');
       }
       this.logger.log(
         `thread-title ws=${workspaceId ?? 'anon'} model=writer baseLen=${message.length} outLen=${title.length} tokens=${tokens}`,
@@ -123,7 +163,7 @@ export class KloelThreadSummaryService {
         error,
         'KloelThreadSummaryService.sanitizeGeneratedThreadTitle',
       );
-      this.logger.warn(`Falha ao gerar título da conversa: ${String(error)}`);
+      this.logger.warn(`Falha ao gerar título da conversa: ${this.formatUnknownError(error)}`);
       return fallbackTitle;
     }
   }
@@ -163,10 +203,10 @@ export class KloelThreadSummaryService {
       select: { id: true, summary: true, summaryUpdatedAt: true },
     });
     const countMessages =
-      typeof this.prisma.chatMessage.count === 'function'
-        ? this.prisma.chatMessage.count({ where: { threadId, thread: { workspaceId } } })
+      typeof this.chatMessageItems.count === 'function'
+        ? this.chatMessageItems.count({ where: { threadId, thread: { workspaceId } } })
         : (async () => {
-            const rows = await this.prisma.chatMessage.findMany({
+            const rows = await this.chatMessageItems.findMany({
               where: { threadId, thread: { workspaceId } },
               take: 10_000,
               select: { id: true },
@@ -188,7 +228,7 @@ export class KloelThreadSummaryService {
       return;
     }
 
-    const olderMessages = await this.prisma.chatMessage.findMany({
+    const olderMessages = await this.chatMessageItems.findMany({
       where: { threadId, thread: { workspaceId } },
       orderBy: { createdAt: 'asc' },
       take: olderCount,
@@ -207,45 +247,55 @@ export class KloelThreadSummaryService {
     let summary = fallbackSummary;
 
     if (openai && hasTextLlmApiKey()) {
+      let budgetAvailable = true;
       try {
         await this.planLimits.ensureTokenBudget(workspaceId);
-        const response = await chatCompletionWithFallback(
-          openai,
-          {
-            model: resolveBackendOpenAIModel('writer'),
-            messages: [
-              {
-                role: 'system',
-                content:
-                  'Resuma a conversa em um único bloco curto, em português brasileiro, preservando fatos, preferências, objeções, decisões, itens prometidos e próximos passos. Não invente nada.',
-              },
-              { role: 'user', content: `Conversa para resumir:\n${transcript}` },
-            ],
-            temperature: 0.2,
-            top_p: 0.95,
-            max_tokens: 1200,
-          },
-          resolveBackendOpenAIModel('writer_fallback'),
-        );
-        await this.planLimits
-          .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 120)
-          .catch(() => {});
-        const rawSummary = String(response.choices[0]?.message?.content || '').trim();
-        const tokens = response?.usage?.total_tokens ?? 120;
-        this.logger.log(
-          `thread-summary ws=${workspaceId} model=writer baseLen=${transcript.length} outLen=${rawSummary.length} tokens=${tokens}`,
-        );
-        if (!rawSummary || rawSummary.length < 10) {
-          this.logger.warn(
-            `thread-summary short output ws=${workspaceId} len=${rawSummary.length}`,
-          );
-          summary = fallbackSummary;
-        } else {
-          summary = rawSummary;
-        }
       } catch (error: unknown) {
-        void this.opsAlert?.alertOnCriticalError(error, 'KloelThreadSummaryService.trackAiUsage');
-        this.logger.warn(`Falha ao atualizar resumo da thread ${threadId}: ${String(error)}`); // Intencional: thread summary update is best-effort.
+        budgetAvailable = false;
+        this.logger.warn(
+          `Resumo da thread ${threadId} usou fallback local por limite de IA: ${this.formatUnknownError(error)}`,
+        );
+      }
+
+      if (budgetAvailable) {
+        try {
+          const response = await chatCompletionWithFallback(
+            openai,
+            {
+              model: resolveBackendOpenAIModel('writer'),
+              messages: [
+                {
+                  role: 'system',
+                  content:
+                    'Resuma a conversa em um único bloco curto, em português brasileiro, preservando fatos, preferências, objeções, decisões, itens prometidos e próximos passos. Não invente nada.',
+                },
+                { role: 'user', content: `Conversa para resumir:\n${transcript}` },
+              ],
+              temperature: 0.2,
+              top_p: 0.95,
+              max_tokens: 1200,
+            },
+            resolveBackendOpenAIModel('writer_fallback'),
+          );
+          const tokens = response?.usage?.total_tokens ?? 120;
+          await this.trackThreadAiUsage(workspaceId, tokens, 'thread-summary');
+          const rawSummary = String(response.choices[0]?.message?.content || '').trim();
+          this.logger.log(
+            `thread-summary ws=${workspaceId} model=writer baseLen=${transcript.length} outLen=${rawSummary.length} tokens=${tokens}`,
+          );
+          if (!rawSummary || rawSummary.length < 10) {
+            this.logger.warn(
+              `thread-summary short output ws=${workspaceId} len=${rawSummary.length}`,
+            );
+            summary = fallbackSummary;
+          } else {
+            summary = rawSummary;
+          }
+        } catch (error: unknown) {
+          this.logger.warn(
+            `Falha ao atualizar resumo da thread ${threadId}; usando fallback local: ${this.formatUnknownError(error)}`,
+          ); // Intencional: thread summary update is best-effort.
+        }
       }
     }
 

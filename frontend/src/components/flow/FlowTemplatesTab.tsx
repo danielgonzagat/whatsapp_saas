@@ -44,6 +44,8 @@ export function FlowTemplatesTab({
           type="button"
           onClick={onRefresh}
           disabled={loading}
+          aria-label={kloelT('Atualizar templates')}
+          title={kloelT('Atualizar templates')}
           className="p-2 rounded-md border border-border text-muted-foreground hover:bg-muted disabled:opacity-50"
         >
           {loading ? (
@@ -125,11 +127,11 @@ export function FlowTemplatesTab({
 
                   <div className="flex items-center gap-3 text-xs text-muted">
                     <span>{nodeCount} nodes</span>
-                    <span>{kloelT('&middot;')}</span>
+                    <span>{kloelT('·')}</span>
                     <span>{edgeCount} conexoes</span>
                     {tmpl.downloads !== undefined && (
                       <>
-                        <span>{kloelT('&middot;')}</span>
+                        <span>{kloelT('·')}</span>
                         <span>{tmpl.downloads} usos</span>
                       </>
                     )}

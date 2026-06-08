@@ -214,7 +214,7 @@ describe('UTP-COLDSTART-003 — hypothesis-template-bank', () => {
 // UTP-COLDSTART-004 — Guided Question Generator
 // =========================================================================
 describe('UTP-COLDSTART-004 — generateGuidedQuestion', () => {
-  const template = HYPOTHESIS_TEMPLATES[0]!;
+  const template = HYPOTHESIS_TEMPLATES[0];
 
   it('generates a question with required fields', () => {
     const q = generateGuidedQuestion({
@@ -231,7 +231,7 @@ describe('UTP-COLDSTART-004 — generateGuidedQuestion', () => {
   });
 
   it('single_choice questions include options', () => {
-    const audienceTemplate = HYPOTHESIS_TEMPLATES.find((t) => t.category === 'audience')!;
+    const audienceTemplate = HYPOTHESIS_TEMPLATES.find((t) => t.category === 'audience');
     const q = generateGuidedQuestion({
       template: audienceTemplate,
       workspaceId: WKS_A,
@@ -245,7 +245,7 @@ describe('UTP-COLDSTART-004 — generateGuidedQuestion', () => {
 // UTP-COLDSTART-005 — Micro-Test Designer
 // =========================================================================
 describe('UTP-COLDSTART-005 — designMicroTest', () => {
-  const template = HYPOTHESIS_TEMPLATES[0]!;
+  const template = HYPOTHESIS_TEMPLATES[0];
 
   it('designs a micro-test from a template', () => {
     const test = designMicroTest({

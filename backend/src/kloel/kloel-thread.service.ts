@@ -1,9 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { isMindMessageDualWriteEnabled } from './mind/aliases/mindmessage-dualwrite.flag';
+import { MindChatMessageService } from './mind/aliases/mind-chat-message.service';
+import { mirrorMindMessage } from './mind/aliases/mindmessage-dualwrite.mirror';
 import { type KloelStreamEvent } from './kloel-stream-events';
+import { normalizeRefinementMarkdown } from './kloel-composer.service.helpers';
 import { KloelThreadSummaryService } from './kloel-thread-summary.service';
 import OpenAI from 'openai';
 import {
@@ -39,8 +41,14 @@ export class KloelThreadService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly summaryService: KloelThreadSummaryService,
+    @Optional() private readonly mindChatMessage?: MindChatMessageService,
   ) {
     this.logger.log('KloelThreadService initialized');
+  }
+
+  /** Canonical Brain → Mind chat-message delegate (raw-Prisma fallback). */
+  private get chatMessageItems() {
+    return this.mindChatMessage?.items ?? this.prisma.chatMessage;
   }
 
   /**
@@ -61,24 +69,20 @@ export class KloelThreadService {
     role: string,
     content: string,
   ): Promise<void> {
-    if (!isMindMessageDualWriteEnabled()) {
-      return;
-    }
     if (!workspaceId || !role || !content) {
       return;
     }
-    try {
-      await this.prisma.mindMessage.create({
-        data: { workspaceId, source: 'thread', role, content },
-      });
-    } catch (error) {
-      this.logger.warn(
-        `MindMessage dual-write failed (workspaceId=${workspaceId}, role=${role}, ` +
-          `source=thread); legacy ChatMessage write succeeded and is unaffected: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
-      );
-    }
+    await mirrorMindMessage(
+      this.prisma,
+      { workspaceId, source: 'thread', role, content },
+      (error) =>
+        this.logger.warn(
+          `MindMessage dual-write failed (workspaceId=${workspaceId}, role=${role}, ` +
+            `source=thread); legacy ChatMessage write succeeded and is unaffected: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+        ),
+    );
   }
 
   async resolveThread(
@@ -119,7 +123,7 @@ export class KloelThreadService {
       return [];
     }
 
-    const messages = await this.prisma.chatMessage.findMany({
+    const messages = await this.chatMessageItems.findMany({
       where: workspaceId ? { threadId, thread: { workspaceId } } : { threadId },
       orderBy: { createdAt: 'desc' },
       take: limit,
@@ -146,10 +150,10 @@ export class KloelThreadService {
     });
 
     const countMessages =
-      typeof this.prisma.chatMessage.count === 'function'
-        ? this.prisma.chatMessage.count({ where: { threadId, thread: { workspaceId } } })
+      typeof this.chatMessageItems.count === 'function'
+        ? this.chatMessageItems.count({ where: { threadId, thread: { workspaceId } } })
         : (async () => {
-            const rows = await this.prisma.chatMessage.findMany({
+            const rows = await this.chatMessageItems.findMany({
               where: { threadId, thread: { workspaceId } },
               take: 10_000,
               select: { id: true },
@@ -201,7 +205,7 @@ export class KloelThreadService {
     if (!threadId) {
       return null;
     }
-    const created = await this.prisma.chatMessage.create({
+    const created = await this.chatMessageItems.create({
       data: {
         thread: { connect: { id: threadId } },
         workspaceId,
@@ -225,17 +229,21 @@ export class KloelThreadService {
     if (!threadId) {
       return null;
     }
-    const created = await this.prisma.chatMessage.create({
+    const persistedAssistantMessage =
+      this.normalizeThreadMessageMetadataRecord(metadata).capability === 'refine_response'
+        ? normalizeRefinementMarkdown(assistantMessage)
+        : assistantMessage;
+    const created = await this.chatMessageItems.create({
       data: {
         thread: { connect: { id: threadId } },
         workspaceId,
         role: 'assistant',
-        content: assistantMessage,
+        content: persistedAssistantMessage,
         ...(metadata !== undefined ? { metadata } : {}),
       },
       select: { id: true },
     });
-    await this.dualWriteThreadMindMessage(workspaceId, 'assistant', assistantMessage);
+    await this.dualWriteThreadMindMessage(workspaceId, 'assistant', persistedAssistantMessage);
     await this.touchThread(threadId, workspaceId);
     return created;
   }

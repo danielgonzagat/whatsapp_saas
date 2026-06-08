@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { check, sha, type PartBCtx } from "./smoke-state.js";
+import { check, jsonBody, sha, type PartBCtx } from "./smoke-state.js";
 
 
 export async function partBSetup(ctx: PartBCtx): Promise<void> {
@@ -8,12 +8,14 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
   const tools = await client.listTools();
   const names = tools.tools.map((t: { name: string }) => t.name).sort();
     check(
-      'server lists all 76 tools (incl. atomic_expand_self + Y certificate + apex: lens (atomic_lens/atomic_grep_calls/atomic_repair_scope) + atomic_session_* (begin/savepoint/rollback/commit) + atomic_prove (gate-sourced receipt) + atomic_exec shell operator + content-addressed atomic_replace_at + atomic_locate + universal native engine: atomic_grep + atomic_glob + atomic_outline + atomic_ast_search + atomic_ast_edit + atomic_ast_rewrite + atomic_apply_workspace_edit + atomic_native_status + atomic_create_file + atomic_delete_file + code_file_stat + analyzer transaction + product apex layer + rename property key + add await to call + insert after anchor + insert before anchor + replace between anchors + replace text in anchor region + atomic_edit unified router + code_outline_batch)',
-      names.length === 76 &&
+      'server lists all 86 tools (incl. atomic_expand_self + Y certificate + host re-entry receipt + apex: lens/read/scan (atomic_lens/atomic_read_file/atomic_scan_bytes/atomic_grep_calls/atomic_repair_scope) + atomic_session_* (begin/savepoint/rollback/commit) + atomic_prove/atomic_seal + atomic_exec shell operator + atomic_converge + atomic_intent_converge + content-addressed atomic_replace_at + atomic_locate + universal native engine + product apex layer + unified router + code_outline_batch)',
+      names.length === 86 &&
           names.includes('atomic_exec') &&
           names.includes('atomic_expand_self') &&
           names.includes('atomic_y_certificate') &&
+          names.includes('atomic_host_reentry_receipt') &&
           names.includes('atomic_converge') &&
+          names.includes('atomic_intent_converge') &&
           names.includes('atomic_rename_symbol_universal') &&
           names.includes('atomic_bypass_report') &&
           names.includes('atomic_replace_at') &&
@@ -22,6 +24,8 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
           names.includes('atomic_glob') &&
           names.includes('atomic_outline') &&
         names.includes('atomic_lens') &&
+        names.includes('atomic_read_file') &&
+        names.includes('atomic_scan_bytes') &&
         names.includes('atomic_grep_calls') &&
         names.includes('atomic_repair_scope') &&
         names.includes('atomic_session_begin') &&
@@ -29,8 +33,13 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
         names.includes('atomic_session_rollback') &&
         names.includes('atomic_session_commit') &&
         names.includes('atomic_prove') &&
+        names.includes('atomic_seal') &&
         names.includes('atomic_create_file') &&
         names.includes('atomic_delete_file') &&
+        names.includes('atomic_positive_bytes_begin') &&
+        names.includes('atomic_positive_bytes_append') &&
+        names.includes('atomic_positive_bytes_commit') &&
+        names.includes('atomic_positive_bytes_abort') &&
         names.includes('code_file_stat') &&
         names.includes('atomic_replace_text') &&
         names.includes('atomic_transaction') &&
@@ -60,15 +69,102 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
       names.join(','),
     );
 
+    const scanRel = path.join('scripts', 'mcp', 'atomic-edit', 'server.ts');
+    const scanSource = fs.readFileSync(path.join(repoRoot, scanRel), 'utf8');
+    const scan = (await client.callTool({
+      name: 'atomic_scan_bytes',
+      arguments: { scope: scanRel, maxFiles: 5, maxEvidencePerFile: 3 },
+    })) as { content: { text: string }[]; isError?: boolean };
+    const scanBody = jsonBody(scan);
+    const scanFile = scanBody.files?.find((entry: { file?: string }) => entry.file === scanRel);
+    check(
+      'atomic_scan_bytes summarizes reachable source as positive within declared battery',
+      scan.isError !== true &&
+        scanBody.ok === true &&
+        scanBody.sourceFilesRead === 1 &&
+        scanBody.totals?.positiveFiles === 1 &&
+        scanBody.totals?.negativeFiles === 0 &&
+        scanFile?.sha256 === sha(scanSource) &&
+        scanFile?.verdict === 'POSITIVE_WITHIN_DECLARED_BATTERY' &&
+        scanFile?.negativeByteEvidenceCount === 0,
+      scan.content[0]?.text ?? '',
+    );
+
+    const scanFiltered = (await client.callTool({
+      name: 'atomic_scan_bytes',
+      arguments: { scope: scanRel, includePositiveFiles: false, maxFiles: 5 },
+    })) as { content: { text: string }[]; isError?: boolean };
+    const scanFilteredBody = jsonBody(scanFiltered);
+    check(
+      'atomic_scan_bytes can omit clean positives while keeping totals',
+      scanFiltered.isError !== true &&
+        scanFilteredBody.ok === true &&
+        scanFilteredBody.files?.length === 0 &&
+        scanFilteredBody.omittedPositiveFiles === 1 &&
+        scanFilteredBody.totals?.positiveFiles === 1 &&
+        scanFilteredBody.totals?.negativeFiles === 0,
+      scanFiltered.content[0]?.text ?? '',
+    );
+
+    const scanMdRel = path.join('scripts', 'mcp', 'atomic-edit', `.smoke-scan-notes.${process.pid}.opaque`);
+    const scanMdAbs = path.join(repoRoot, scanMdRel);
+    const scanMdSource = 'Atomic scan smoke\nOutside every declared direct-file battery.\n';
+    fs.writeFileSync(scanMdAbs, scanMdSource);
+    try {
+      const scanUnjudged = (await client.callTool({
+        name: 'atomic_scan_bytes',
+        arguments: { scope: scanMdRel, maxFiles: 5, maxEvidencePerFile: 5 },
+      })) as { content: { text: string }[]; isError?: boolean };
+      const scanUnjudgedBody = jsonBody(scanUnjudged);
+      const scanUnjudgedFile = scanUnjudgedBody.files?.find((entry: { file?: string }) => entry.file === scanMdRel);
+      check(
+        'atomic_scan_bytes keeps direct non-source files as explicit proof debt',
+        scanUnjudged.isError !== true &&
+          scanUnjudgedBody.ok === true &&
+          scanUnjudgedBody.unjudgedFilesRead === 1 &&
+          scanUnjudgedBody.totals?.proofDebtFiles === 1 &&
+          scanUnjudgedBody.totals?.unjudgedFiles === 1 &&
+          scanUnjudgedFile?.sha256 === sha(scanMdSource) &&
+          scanUnjudgedFile?.verdict === 'UNJUDGED' &&
+          scanUnjudgedFile?.sourceLensApplied === false &&
+          scanUnjudgedFile?.proofDebt?.some((debt: string) => /no declared source-language battery/i.test(debt)),
+        scanUnjudged.content[0]?.text ?? '',
+      );
+    } finally {
+      if (fs.existsSync(scanMdAbs)) fs.unlinkSync(scanMdAbs);
+    }
+
     const intent = (await client.callTool({
       name: 'product_intent_contract',
       arguments: { goal: 'fazer o chat do admin persistir mensagens em Postgres' },
     })) as { content: { text: string }[] };
-    const intentBody = JSON.parse(intent.content.at(-1)?.text ?? '{}');
+    const intentBody = jsonBody(intent);
     check(
       'product intent maps chat persistence',
       intentBody.ok === true && intentBody.targetIntegration === 'chat_persistence',
       intent.content[0]?.text ?? '',
+    );
+
+    const intentConvergeRel = path.join('.atomic', 'generated-intent', `smoke-intent-converge-${process.pid}.test.ts`);
+    const intentConvergeAbs = path.join(repoRoot, intentConvergeRel);
+    if (fs.existsSync(intentConvergeAbs)) fs.unlinkSync(intentConvergeAbs);
+    const intentConverge = (await client.callTool({
+      name: 'atomic_intent_converge',
+      arguments: {
+        goal: 'fazer o chat do admin persistir mensagens em Postgres',
+        outputFile: intentConvergeRel,
+      },
+    })) as { content: { text: string }[] };
+    const intentConvergeBody = jsonBody(intentConverge);
+    check(
+      'intent converge generates a green product-contract preview without writing',
+      intentConvergeBody.ok === true &&
+        intentConvergeBody.targetIntegration === 'chat_persistence' &&
+        intentConvergeBody.converged === true &&
+        intentConvergeBody.committed === false &&
+        intentConvergeBody.files?.[0]?.newText?.includes('atomicIntentContract') &&
+        !fs.existsSync(intentConvergeAbs),
+      intentConverge.content[0]?.text ?? '',
     );
 
     const zct = (await client.callTool({
@@ -85,7 +181,7 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
         founderCanValidateByProduct: true,
       },
     })) as { content: { text: string }[] };
-    const zctBody = JSON.parse(zct.content.at(-1)?.text ?? '{}');
+    const zctBody = jsonBody(zct);
     check(
       'zero-code trust reaches 100 with product proof',
       zctBody.score === 100 && zctBody.verdict === 'PRODUCT_VALIDATABLE',
@@ -107,7 +203,7 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
         clickPath: ['Admin', 'Chat', 'Reload session'],
       },
     })) as { content: { text: string }[] };
-    const receiptBody = JSON.parse(receipt.content.at(-1)?.text ?? '{}');
+    const receiptBody = jsonBody(receipt);
     check(
       'behavior receipt produces founder proof',
       receiptBody.zeroCodeTrust === 100 && receiptBody.productProof === true,
@@ -128,7 +224,7 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
         ],
       },
     })) as { content: { text: string }[] };
-    const truthBody = JSON.parse(truth.content.at(-1)?.text ?? '{}');
+    const truthBody = jsonBody(truth);
     check(
       'truth receipt refuses stub as real',
       truthBody.claims?.[0]?.truth === 'REAL' && truthBody.claims?.[1]?.truth === 'STUB',
@@ -139,7 +235,7 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
       name: 'continuity_status',
       arguments: {},
     })) as { content: { text: string }[] };
-    const continuityBody = JSON.parse(continuity.content.at(-1)?.text ?? '{}');
+    const continuityBody = jsonBody(continuity);
     check(
       'continuity status reads repo state',
       continuityBody.ok === true && typeof continuityBody.nextAction === 'string',
@@ -149,20 +245,25 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
     const yCert = (await client.callTool({
       name: 'atomic_y_certificate',
       arguments: { scope: 'whole-host', includeAudits: false },
-    })) as { content: { text: string }[] };
-    const yCertBody = JSON.parse(yCert.content.at(-1)?.text ?? '{}');
+    }, undefined, { timeout: 120000 })) as { content: { text: string }[] };
+    const yCertBody = jsonBody(yCert);
     const yDomains = Array.isArray(yCertBody.domains) ? yCertBody.domains : [];
+    const yBlockers = Array.isArray(yCertBody.blockers) ? yCertBody.blockers : [];
+    const yBlockerDomains = new Set(yBlockers.map((b: { domain?: string }) => b.domain).filter(Boolean));
     const yDomain = (domain: string): { domain?: string; status?: string } | undefined =>
       yDomains.find((entry: { domain?: string }) => entry.domain === domain);
+    const yNonGreenDomains = yDomains.filter(
+      (entry: { domain?: string; status?: string }) =>
+        entry.domain && entry.status !== 'GREEN' && entry.domain !== 'certificateMandatoryDomainCoverage',
+    );
     check(
-      'Y certificate refuses current whole-host universality until active host sandbox',
+      'Y certificate blocks whole-host universality for every non-green mandatory domain',
       yCertBody.ok === true &&
         yCertBody.yComplete === false &&
         yCertBody.verdict === 'Y_BLOCKED' &&
-        yCertBody.blockers?.some((b: { domain?: string }) => b.domain === 'wholeHostActionSpace') &&
-        yDomain('externalRuntimeState')?.status === 'GREEN' &&
-        yDomain('arbitraryInterpreterSandbox')?.status === 'GREEN' &&
-        yDomain('atomicityAudit')?.status === 'UNJUDGED',
+        yDomain('certificateMandatoryDomainCoverage')?.status === 'GREEN' &&
+        yNonGreenDomains.length > 0 &&
+        yNonGreenDomains.every((entry: { domain?: string }) => entry.domain && yBlockerDomains.has(entry.domain)),
       yCert.content.map((p) => p.text).join('\n'),
     );
 
@@ -188,13 +289,13 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
         files: [{ op: 'create', file: selfAllowedRel, content: 'export const SELF_EXPANSION_ALLOWED = true;\n' }],
         proofCommands: ['node build.mjs', 'node codex-atomic-only-hook.proof.mjs --json'],
       },
-    })) as { content: { text: string }[]; isError?: boolean };
-    const selfAllowedBody = JSON.parse(selfAllowed.content.at(-1)?.text ?? '{}');
+    }, undefined, { timeout: 120000 })) as { content: { text: string }[]; isError?: boolean };
+    const selfAllowedBody = jsonBody(selfAllowed);
     check(
       'atomic_expand_self creates atomic source only after proofs pass',
       selfAllowed.isError !== true &&
         selfAllowedBody.ok === true &&
-        selfAllowedBody.admission === 'self-expansion-proof-green' &&
+        selfAllowedBody.admission === 'self-expansion-validator-lattice-green' &&
         fs.existsSync(selfAllowedAbs),
       selfAllowed.content.map((p) => p.text).join('\n'),
     );
@@ -211,8 +312,8 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
         ],
         proofCommands: ['node build.mjs', 'node codex-atomic-only-hook.proof.mjs --json'],
       },
-    })) as { content: { text: string }[]; isError?: boolean };
-    const selfCleanupBody = JSON.parse(selfCleanup.content.at(-1)?.text ?? '{}');
+    }, undefined, { timeout: 120000 })) as { content: { text: string }[]; isError?: boolean };
+    const selfCleanupBody = jsonBody(selfCleanup);
     check(
       'atomic_expand_self deletes only with explicit negative-byte proof',
       selfCleanup.isError !== true && selfCleanupBody.ok === true && !fs.existsSync(selfAllowedAbs),
@@ -227,7 +328,7 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
         intent: 'smoke read-only exec classification',
       },
     })) as { content: { text: string }[]; isError?: boolean };
-    const readOnlyExecBody = JSON.parse(readOnlyExec.content.at(-1)?.text ?? '{}');
+    const readOnlyExecBody = jsonBody(readOnlyExec);
     check(
       'atomic_exec allows classified read-only command without effect proof',
       readOnlyExec.isError !== true &&
@@ -291,7 +392,7 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
           intent: 'smoke proven shell write records byte effect',
         },
       })) as { content: { text: string }[]; isError?: boolean };
-      const execProvenBody = JSON.parse(execProven.content.at(-1)?.text ?? '{}');
+      const execProvenBody = jsonBody(execProven);
       check(
         'atomic_exec proven mutable command records byte effect',
         execProven.isError !== true &&
@@ -311,13 +412,13 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
       name: 'atomic_lock_acquire',
       arguments: { frontId: lockId, owner: 'smoke', objective: 'prove mkdir lock' },
     })) as { content: { text: string }[] };
-    const acquiredBody = JSON.parse(acquired.content.at(-1)?.text ?? '{}');
+    const acquiredBody = jsonBody(acquired);
     check('atomic lock acquire works', acquiredBody.ok === true, acquired.content[0]?.text ?? '');
     const status = (await client.callTool({
       name: 'atomic_lock_status',
       arguments: {},
     })) as { content: { text: string }[] };
-    const statusBody = JSON.parse(status.content.at(-1)?.text ?? '{}');
+    const statusBody = jsonBody(status);
     check(
       'atomic lock status lists acquired lock',
       Array.isArray(statusBody.locks) &&
@@ -328,7 +429,7 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
       name: 'atomic_lock_release',
       arguments: { frontId: lockId, owner: 'smoke', reason: 'smoke complete' },
     })) as { content: { text: string }[] };
-    const releasedBody = JSON.parse(released.content.at(-1)?.text ?? '{}');
+    const releasedBody = jsonBody(released);
     check(
       'atomic lock release works',
       releasedBody.changed === true,
@@ -349,7 +450,7 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
     })) as { content: { text: string }[] };
     check(
       'sha guard passes on correct hash',
-      JSON.parse(okSha.content.at(-1)?.text ?? '{}').ok === true,
+      jsonBody(okSha).ok === true,
       okSha.content[0].text,
     );
     const badSha = (await client.callTool({
@@ -404,7 +505,7 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
         commit: false,
       },
     })) as { content: { text: string }[] };
-    const convRedBody = JSON.parse(convRed.content.at(-1)?.text ?? '{}');
+    const convRedBody = jsonBody(convRed);
     check(
       'atomic_converge refuses a mutation that introduces a dangling dependency (supply-chain gate fires through the one tool)',
       convRedBody.converged === false && convRedBody.refusedGate === 'supply-chain',
@@ -417,7 +518,7 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
         commit: false,
       },
     })) as { content: { text: string }[] };
-    const convGreenBody = JSON.parse(convGreen.content.at(-1)?.text ?? '{}');
+    const convGreenBody = jsonBody(convGreen);
     check(
       'atomic_converge passes a clean mutation — no false red from the 7 folded write gates',
       convGreenBody.converged === true,

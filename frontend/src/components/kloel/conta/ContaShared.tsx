@@ -36,11 +36,13 @@ export function StatusBadge({ status }: { status: string }) {
 
 export function Field({
   label,
+  name,
   placeholder,
   value,
   onChange,
   onBlur: onBlurProp,
   type = 'text',
+  autoComplete,
   mono = false,
   half = false,
   required = true,
@@ -49,11 +51,13 @@ export function Field({
   suffix,
 }: {
   label: string;
+  name?: string;
   placeholder?: string;
   value: string;
   onChange: (v: string) => void;
   onBlur?: () => void;
   type?: string;
+  autoComplete?: string;
   mono?: boolean;
   half?: boolean;
   required?: boolean;
@@ -90,6 +94,7 @@ export function Field({
   };
 
   const fieldId = useId();
+  const fieldName = name ?? fieldId;
 
   return (
     <div style={{ flex: half ? 1 : 'none', width: half ? 'auto' : '100%' }}>
@@ -112,6 +117,7 @@ export function Field({
         {rows ? (
           <textarea
             id={`${fieldId}-input`}
+            name={fieldName}
             aria-label={label}
             value={value}
             onChange={(e) => onChange(e.target.value)}
@@ -125,8 +131,10 @@ export function Field({
         ) : (
           <input
             id={`${fieldId}-input`}
+            name={fieldName}
             aria-label={label}
             type={type}
+            autoComplete={autoComplete}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}

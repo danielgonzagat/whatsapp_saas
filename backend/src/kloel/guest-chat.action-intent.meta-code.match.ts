@@ -19,9 +19,15 @@ export function detectMetaCodeIntent(msg: string): ActionIntent {
   if (/(?:lint|problema|erro|issue|bug).*(?:c[oó]digo|code)|detectar|analisar/.test(msg)) {
     return { tool: 'code_detect_issues', args: {} };
   }
-  if (/c[oó]digo.*(fonte|source)|ler.*arquivo|read.*file|estrutura|arquivo.*codigo/.test(msg)) {
+  const explicitFileInspection =
+    /(?:ler|read|abrir|inspecionar|mostrar)\s+(?:o\s+)?(?:arquivo|file|path)\b/.test(msg) ||
+    /(?:backend|frontend|worker)\/[^\s?]+\.(?:prisma|ts|tsx|js|json|md)\b/.test(msg) ||
+    /(?:codigo|c[oó]digo|schema|prisma|fonte|source)\s+(?:de\s+)?['"]?[a-zA-Z0-9_\-/.]+\.(?:prisma|ts|tsx|js|json|md)\b/i.test(
+      msg,
+    );
+  if (explicitFileInspection) {
     const pathMatch = msg.match(
-      /(?:arquivo|file|path|codigo|schema|prisma|fonte|source)\s+(?:de\s+)?['"]?([a-zA-Z0-9_\-/.]+(?:\.prisma|\.ts|\.tsx|\.js|\.json|\.md)?)/i,
+      /(?:arquivo|file|path|codigo|c[oó]digo|schema|prisma|fonte|source)\s+(?:de\s+)?['"]?([a-zA-Z0-9_\-/.]+(?:\.prisma|\.ts|\.tsx|\.js|\.json|\.md)?)/i,
     );
     const extracted = pathMatch?.[1] || '';
     const filePath = extracted.includes('.')
@@ -36,7 +42,13 @@ export function detectMetaCodeIntent(msg: string): ActionIntent {
   if (/build|compila[rç]|status.*build/.test(msg)) {
     return { tool: 'build_status', args: { scope: 'backend' } };
   }
-  if (/teste|rodar test|executar test/.test(msg)) {
+  const explicitBackendTestIntent =
+    /(?:rodar|executar|rode|run)\s+(?:os\s+)?(?:testes?|tests?)(?:\s+(?:do|de|no|na)\s+(?:backend|c[oó]digo|projeto|sistema))?/.test(
+      msg,
+    ) ||
+    /(?:testes?|tests?)\s+(?:do|de|no|na)\s+(?:backend|c[oó]digo|projeto|sistema)/.test(msg) ||
+    /\b(?:npm\s+(?:run\s+)?test|jest|vitest)\b/.test(msg);
+  if (explicitBackendTestIntent) {
     return { tool: 'run_backend_tests', args: {} };
   }
   if (/schema|prisma|banco.*dados|database/.test(msg)) {

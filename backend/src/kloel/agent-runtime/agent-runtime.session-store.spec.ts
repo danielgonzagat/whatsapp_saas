@@ -303,7 +303,7 @@ describe('AgentRuntimeSessionStore', () => {
       const result = await store.search('ws_1', 'pricing', 1);
       expect(result.memories[0].source.expiresAt).toBeDefined();
       const expectedExpiry = new Date(created.getTime() + 365 * MILLIS_PER_DAY);
-      expect(new Date(result.memories[0].source.expiresAt!).getTime()).toBe(
+      expect(new Date(result.memories[0].source.expiresAt).getTime()).toBe(
         expectedExpiry.getTime(),
       );
     });
@@ -320,7 +320,7 @@ describe('AgentRuntimeSessionStore', () => {
       const result = await store.search('ws_1', 'pricing', 1);
       expect(result.memories[0].source.retentionScore).toBeDefined();
       expect(typeof result.memories[0].source.retentionScore).toBe('number');
-      expect(result.memories[0].source.retentionScore!).toBeGreaterThan(0);
+      expect(result.memories[0].source.retentionScore).toBeGreaterThan(0);
     });
     it('includes ttlMs in source stamp', async () => {
       const { store } = makeStore({

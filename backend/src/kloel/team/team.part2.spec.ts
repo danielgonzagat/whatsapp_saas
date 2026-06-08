@@ -61,7 +61,7 @@ describe('ForgottenFollowupRescuer (UTP-TEAM-003)', () => {
     });
 
     expect(results.length).toBeGreaterThanOrEqual(1);
-    const r = results[0]!;
+    const r = results[0];
     expect(r.leadId).toBe(leadA);
     expect(r.urgency).toBeDefined();
   });
@@ -89,10 +89,10 @@ describe('ForgottenFollowupRescuer (UTP-TEAM-003)', () => {
       budgetHours: 24,
     });
 
-    expect(results[0]!.r1Contract.riskClass).toBe('R1');
-    expect(results[0]!.r1Contract.delegationMode).toBe('allowed_alone');
-    expect(results[0]!.r1Contract.safeNextStep).toContain('do not send');
-    expect(results[0]!.r1Contract.leadOutcomeGuardrail.antiPressureLanguage).toBe(true);
+    expect(results[0].r1Contract.riskClass).toBe('R1');
+    expect(results[0].r1Contract.delegationMode).toBe('allowed_alone');
+    expect(results[0].r1Contract.safeNextStep).toContain('do not send');
+    expect(results[0].r1Contract.leadOutcomeGuardrail.antiPressureLanguage).toBe(true);
   });
 
   it('skips leads with recent operator action', () => {
@@ -164,7 +164,7 @@ describe('BlindSpotIlluminator (UTP-TEAM-004)', () => {
     });
 
     expect(spots.length).toBeGreaterThanOrEqual(1);
-    const spot = spots[0]!;
+    const spot = spots[0];
     expect(spot.leadId).toBe(leadA);
     expect(spot.activityCount).toBeGreaterThanOrEqual(1);
   });
@@ -277,9 +277,9 @@ describe('SmartHandoffService (UTP-TEAM-005)', () => {
     const action = pkg.suggestedActions.find((s) => s.action === 'review_post_sale_value_gap');
 
     expect(action).toBeDefined();
-    expect(action!.r1Contract.riskClass).toBe('R2');
-    expect(action!.r1Contract.delegationMode).toBe('human_only');
-    expect(action!.guardrails).toContain('frame as customer support, not team failure');
+    expect(action.r1Contract.riskClass).toBe('R2');
+    expect(action.r1Contract.delegationMode).toBe('human_only');
+    expect(action.guardrails).toContain('frame as customer support, not team failure');
   });
 });
 

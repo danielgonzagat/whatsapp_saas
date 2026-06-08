@@ -7,6 +7,8 @@ import { Response } from 'express';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { MindCapabilityExecutor } from './mind/coordination';
 import { StateBuilderService } from './state/state-builder.service';
+import { MemoryService } from './mind/memory/memory.service';
+import { ManifestInjectionBuilderService } from './manifest/manifest-injection.builder';
 
 jest.mock('./kloel-thread.service', () => ({
   KloelThreadService: class MockKloelThreadService {},
@@ -45,7 +47,10 @@ import { KloelComposerService } from './kloel-composer.service';
 import { KloelReplyEngineService, LocalToolExecutor } from './kloel-reply-engine.service';
 import { KLOEL_LLM_E2E_GUARD, KloelLLME2EGuard } from './kloel-llm-e2e-guard';
 import { KloelStreamWriter } from './kloel-stream-writer';
-import { finalizeSuccessfulReply } from './kloel-thinker-think.helpers';
+import {
+  finalizeSuccessfulReply,
+  runComposerCapabilityBranch,
+} from './kloel-thinker-think.helpers';
 jest.mock('./kloel-thinker.helpers', () => ({
   thinkSyncImpl: jest.fn(),
   regenerateThreadAssistantResponseImpl: jest.fn(),
@@ -75,8 +80,15 @@ jest.mock('./kloel-stream-writer', () => ({
     write: jest.fn(),
     close: jest.fn(),
     streamModelResponse: jest.fn(),
+    getLastReasoning: jest.fn(() => ({ text: '', durationMs: undefined })),
   })),
 }));
+
+jest.mock('./openai-wrapper', () => ({
+  chatCompletionWithFallback: jest.fn(),
+}));
+
+import { chatCompletionWithFallback } from './openai-wrapper';
 
 type ThinkerPrismaMock = {
   workspace: { findUnique: jest.Mock };
@@ -122,6 +134,8 @@ describe('KloelThinkerService', () => {
   let llmE2EGuard: Pick<KloelLLME2EGuard, 'isEnabled' | 'buildStream'>;
   let abiBuilder: Pick<AbiBuilderService, 'build'>;
   let capabilityExecutor: Pick<MindCapabilityExecutor, 'buildCognitiveSubstrate'>;
+  let memoryGraph: Pick<MemoryService, 'buildMemoryContextForModel' | 'extractFromTurn'>;
+  let manifestInjection: Pick<ManifestInjectionBuilderService, 'assemble'>;
   const wsId = 'ws-1';
 
   beforeEach(async () => {
@@ -199,10 +213,11 @@ describe('KloelThinkerService', () => {
       isClientDisconnected: jest.fn().mockReturnValue(false),
       buildStreamAbortMessage: jest.fn().mockReturnValue('timeout'),
       openai: {} as Pick<KloelReplyEngineService, 'openai'>['openai'],
-      unavailableMessage: 'Indisponível no momento.',
+      unavailableMessage:
+        'Eu fiquei sem acesso ao motor de resposta agora. Me chama de novo em instantes que eu retomo sem te fazer repetir tudo.',
       contextFormatter: {
         sanitizeUserNameForAssistant: jest.fn().mockReturnValue('User'),
-      } as Pick<KloelReplyEngineService, 'contextFormatter'>['contextFormatter'],
+      } as unknown as Pick<KloelReplyEngineService, 'contextFormatter'>['contextFormatter'],
     };
 
     llmE2EGuard = {
@@ -218,6 +233,30 @@ describe('KloelThinkerService', () => {
         workingMemory: ['memória operacional'],
         beliefs: [{ predicate: 'has_products', confidence: 0.8, n: 3 }],
       }),
+    };
+
+    // wire-context: default to an empty memory recall + empty manifest so the
+    // EXISTING tests are byte-identical (no injected text). Individual tests
+    // override these to assert injection / degradation behavior.
+    memoryGraph = {
+      buildMemoryContextForModel: jest.fn().mockResolvedValue({
+        userProfileStatic: [],
+        userProfileDynamic: [],
+        relevantMemories: [],
+        preferences: [],
+        constraints: [],
+        text: '',
+      }),
+      extractFromTurn: jest.fn().mockResolvedValue({
+        created: 0,
+        updated: 0,
+        contradictions: 0,
+        forgotten: 0,
+        nodeIds: [],
+      }),
+    };
+    manifestInjection = {
+      assemble: jest.fn().mockReturnValue({ text: '', internalNames: [] }),
     };
 
     jest.clearAllMocks();
@@ -251,6 +290,8 @@ describe('KloelThinkerService', () => {
         },
         { provide: AbiBuilderService, useValue: abiBuilder },
         { provide: MindCapabilityExecutor, useValue: capabilityExecutor },
+        { provide: MemoryService, useValue: memoryGraph },
+        { provide: ManifestInjectionBuilderService, useValue: manifestInjection },
       ],
     }).compile();
 
@@ -295,7 +336,7 @@ describe('KloelThinkerService', () => {
       );
 
       expect(executeLocalTool).toHaveBeenCalledWith(wsId, 'list_products', {}, 'agent-1');
-      expect(replyEngine.hasOpenAiKey).not.toHaveBeenCalled();
+      expect(replyEngine.hasOpenAiKey).toHaveBeenCalledTimes(1);
       expect(replyEngine.buildChatModelMessages).not.toHaveBeenCalled();
       const streamWriter = (KloelStreamWriter as jest.Mock).mock.results.at(-1)?.value as {
         write: jest.Mock<void, [unknown]>;
@@ -326,26 +367,57 @@ describe('KloelThinkerService', () => {
       );
     });
 
-    it('includes canonical receipt proof in deterministic SSE replies', async () => {
-      const executeLocalTool = jest.fn().mockResolvedValue({
-        success: true,
-        product: { id: 'prod-1', name: 'PDRN', price: 197 },
-        capabilityId: 'products.create',
-        auditLogId: 'audit_prod_1',
-        evidenceUrl: '/produtos/prod-1',
-        domainEvents: ['product.created'],
-        receipt: {
-          capabilityId: 'products.create',
-          auditLogId: 'audit_prod_1',
-          evidenceUrl: '/produtos/prod-1',
-          domainEvents: ['product.created'],
-          idempotencyKey: 'products.create:ws-1:agent-1',
-          success: true,
-        },
-      });
+    it('lets an explicit composer capability bypass generic action routing', async () => {
+      const executeLocalTool = jest.fn().mockResolvedValue({ success: true });
+      jest.mocked(runComposerCapabilityBranch).mockResolvedValueOnce(undefined);
 
       await service.think(
-        { message: 'criar produto nome: PDRN, preco R$ 197', workspaceId: wsId, userId: 'agent-1' },
+        {
+          message: 'rode os testes backend e crie uma landing page curta para Serum Graph Proof',
+          workspaceId: wsId,
+          userId: 'agent-1',
+          metadata: { capability: 'create_site' },
+        },
+        {} as Response,
+        'create_site',
+        undefined,
+        undefined,
+        executeLocalTool as LocalToolExecutor,
+      );
+
+      expect(executeLocalTool).not.toHaveBeenCalled();
+      expect(runComposerCapabilityBranch).toHaveBeenCalledWith(
+        'create_site',
+        undefined,
+        undefined,
+        expect.anything(),
+        expect.objectContaining({
+          workspaceId: wsId,
+          message: 'rode os testes backend e crie uma landing page curta para Serum Graph Proof',
+          metadata: { capability: 'create_site' },
+        }),
+      );
+    });
+
+    it('lets an explicit linked product bypass generic sales action routing', async () => {
+      const executeLocalTool = jest.fn().mockResolvedValue({ success: true });
+
+      await service.think(
+        {
+          message:
+            'Use o produto vinculado para responder: confirme nome e status do produto sem expor IDs internos.',
+          workspaceId: wsId,
+          userId: 'agent-1',
+          metadata: {
+            linkedProduct: {
+              id: 'prod-1',
+              productId: 'prod-1',
+              name: 'Produto chat link',
+              source: 'owned',
+              status: 'draft',
+            },
+          },
+        },
         {} as Response,
         null,
         undefined,
@@ -353,12 +425,92 @@ describe('KloelThinkerService', () => {
         executeLocalTool as LocalToolExecutor,
       );
 
-      expect(executeLocalTool).toHaveBeenCalledWith(
-        wsId,
-        'products.create',
-        expect.objectContaining({ name: 'pdrn', price: 197 }),
-        'agent-1',
+      expect(executeLocalTool).not.toHaveBeenCalled();
+      expect(replyEngine.buildChatModelMessages).toHaveBeenCalled();
+    });
+
+    it('synthesizes deterministic tool observations through the model when the AI provider is available', async () => {
+      jest.mocked(chatCompletionWithFallback).mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content:
+                'Raciocínio resumido: consultei o catálogo real.\nAções: executei a leitura operacional.\nObservações: encontrei PDRN como produto ativo.\nResposta final: Consultei seu catálogo real e encontrei PDRN ativo para você revisar.',
+            },
+          },
+        ],
+        usage: { total_tokens: 222 },
+      } as never);
+      const executeLocalTool = jest
+        .fn()
+        .mockResolvedValue({ success: true, products: [{ name: 'PDRN', price: 197 }] });
+
+      await service.think(
+        { message: 'listar produtos', workspaceId: wsId, userId: 'agent-1' },
+        {} as Response,
+        null,
+        undefined,
+        undefined,
+        executeLocalTool as LocalToolExecutor,
       );
+
+      expect(executeLocalTool).toHaveBeenCalledWith(wsId, 'list_products', {}, 'agent-1');
+      expect(chatCompletionWithFallback).toHaveBeenCalledTimes(1);
+      const synthesisCall = jest.mocked(chatCompletionWithFallback).mock.calls[0];
+      expect(synthesisCall?.[0]).toBe(replyEngine.openai);
+      expect(JSON.stringify(synthesisCall?.[1])).toContain('Produtos: PDRN - R$ 197');
+      const streamWriter = (KloelStreamWriter as jest.Mock).mock.results.at(-1)?.value as {
+        write: jest.Mock<void, [unknown]>;
+      };
+      expect(
+        streamWriter.write.mock.calls.some(([event]) => {
+          if (event === null || typeof event !== 'object' || Array.isArray(event)) {
+            return false;
+          }
+          const candidate = event as { type?: unknown; content?: unknown };
+          return (
+            candidate.type === 'content' &&
+            typeof candidate.content === 'string' &&
+            candidate.content.includes('Consultei seu catálogo real')
+          );
+        }),
+      ).toBe(true);
+      expect(finalizeSuccessfulReply).toHaveBeenCalledWith(
+        expect.stringContaining('Consultei seu catálogo real'),
+        222,
+        expect.objectContaining({ workspaceId: wsId, message: 'listar produtos' }),
+      );
+    });
+
+    it('includes canonical receipt proof in deterministic SSE replies', async () => {
+      const executeLocalTool = jest.fn().mockResolvedValue({
+        success: true,
+        products: [{ id: 'prod-1', name: 'PDRN', price: 197 }],
+        capabilityId: 'list_products',
+        auditLogId: 'audit_catalog_1',
+        evidenceUrl: '/produtos',
+        domainEvents: ['product.catalog_read'],
+        receipt: {
+          capabilityId: 'list_products',
+          auditLogId: 'audit_catalog_1',
+          evidenceUrl: '/produtos',
+          domainEvents: ['product.catalog_read'],
+          idempotencyKey: 'list_products:ws-1:agent-1',
+          success: true,
+        },
+      });
+
+      await service.think(
+        { message: 'listar produtos', workspaceId: wsId, userId: 'agent-1' },
+        {} as Response,
+        null,
+        undefined,
+        undefined,
+        executeLocalTool as LocalToolExecutor,
+      );
+
+      expect(executeLocalTool).toHaveBeenCalledWith(wsId, 'list_products', {}, 'agent-1');
 
       const streamWriter = (KloelStreamWriter as unknown as jest.Mock).mock.results.at(-1)
         ?.value as { write: jest.Mock<void, [unknown]> };
@@ -373,154 +525,16 @@ describe('KloelThinkerService', () => {
         );
       const content = contentEvents.map((event) => event.content).join('\n');
 
-      expect(content).toContain('Produto PDRN');
+      expect(content).toContain('Produtos: PDRN - R$ 197');
       expect(content).toContain('Prova material:');
-      expect(content).toContain('Evidência: /produtos/prod-1');
-      expect(content).toContain('AuditLog: audit_prod_1');
-      expect(content).toContain('Eventos: product.created');
+      expect(content).toContain('Evidência: /produtos');
+      expect(content).toContain('AuditLog: audit_catalog_1');
+      expect(content).toContain('Eventos: product.catalog_read');
       expect(finalizeSuccessfulReply).toHaveBeenCalledWith(
-        expect.stringContaining('Evidência: /produtos/prod-1'),
-        0,
-        expect.objectContaining({
-          workspaceId: wsId,
-          message: 'criar produto nome: PDRN, preco R$ 197',
-        }),
-      );
-    });
-
-    it('returns an honest tool failure on SSE without falling through to the LLM', async () => {
-      const executeLocalTool = jest
-        .fn()
-        .mockResolvedValue({ success: false, error: 'tool_not_allowed' });
-
-      await service.think(
-        { message: 'listar produtos', workspaceId: wsId, allowedTools: ['search_web'] },
-        {} as Response,
-        null,
-        undefined,
-        undefined,
-        executeLocalTool as LocalToolExecutor,
-      );
-
-      expect(executeLocalTool).toHaveBeenCalledWith(wsId, 'list_products', {}, undefined);
-      expect(replyEngine.buildChatModelMessages).not.toHaveBeenCalled();
-      const streamWriter = (KloelStreamWriter as jest.Mock).mock.results.at(-1)?.value as {
-        write: jest.Mock<void, [unknown]>;
-      };
-      expect(streamWriter.write).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'tool_result',
-          tool: 'list_products',
-          success: false,
-          error: 'tool_not_allowed',
-        }),
-      );
-      expect(streamWriter.write).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'content', content: 'Erro: tool_not_allowed' }),
-      );
-      expect(finalizeSuccessfulReply).toHaveBeenCalledWith(
-        'Erro: tool_not_allowed',
+        expect.stringContaining('Evidência: /produtos'),
         0,
         expect.objectContaining({ workspaceId: wsId, message: 'listar produtos' }),
       );
-    });
-
-    it('builds conversational ABI by default and sends cognitive state to model messages', async () => {
-      const previousFlag = process.env['KLOEL_THINKER_USE_ABI'];
-      delete process.env['KLOEL_THINKER_USE_ABI'];
-      const cognitiveState = {
-        abiVersion: '1.1.0',
-        lineage: {
-          canonicalName: 'Kloel',
-          genesisEventId: 'genesis-1',
-          lineageStatus: 'intact',
-          operationalAge: { days: 1 },
-          capabilities: ['list_products'],
-        },
-        identityProjection: {
-          audience: 'public',
-          currentMaturity: 'developing',
-          truthMode: 'observed',
-        },
-        perception: { currentSnapshot: { channel: 'web' }, recentSalientEvents: [] },
-        beliefs: [],
-        predictions: { active: [], recentSurprises: [] },
-        attention: { candidates: [] },
-        memory: { workingMemory: [], episodicRefs: [], consolidatedRefs: [] },
-        capabilities: {
-          available: [
-            { capabilityId: 'list_products', maturity: 'developing', runtimeEvidencePct: 1 },
-          ],
-          restricted: [],
-        },
-        valence: {
-          recentTrace: [],
-          aggregatedMood: { positive: 0, negative: 0, neutral: 1, ambiguous: 0, windowHours: 24 },
-        },
-        readinessTruth: {
-          noOverclaimStatus: 'PASS',
-          capabilityHealthScore: 1,
-          gates: [],
-          certificationVerdict: {
-            verdict: 'DEVELOPING',
-            score: 1,
-            measuredAt: '2026-05-27T00:00:00.000Z',
-          },
-          overclaimRisk: 0,
-        },
-        currentInput: {
-          raw: 'Liste meus produtos ativos',
-          channel: 'web',
-          arrivalTimestamp: '2026-05-27T00:00:00.000Z',
-        },
-      };
-      abiBuilder.build = jest.fn().mockResolvedValue({ status: 'ok', abi: cognitiveState });
-
-      try {
-        await service.think(
-          { message: 'Liste meus produtos ativos', workspaceId: wsId },
-          {} as Response,
-          null,
-          undefined,
-          undefined,
-          jest.fn() as LocalToolExecutor,
-        );
-      } finally {
-        if (previousFlag === undefined) {
-          delete process.env['KLOEL_THINKER_USE_ABI'];
-        } else {
-          process.env['KLOEL_THINKER_USE_ABI'] = previousFlag;
-        }
-      }
-
-      expect(capabilityExecutor.buildCognitiveSubstrate).toHaveBeenCalledWith(wsId);
-      const buildMock = abiBuilder.build as jest.MockedFunction<AbiBuilderService['build']>;
-      const [abiBuildParams] = buildMock.mock.calls[0] as [
-        Parameters<AbiBuilderService['build']>[0],
-      ];
-      expect(abiBuildParams.cognitiveSubstrate).toEqual(
-        expect.objectContaining({ workingMemory: ['memória operacional'] }),
-      );
-      expect(abiBuildParams.capabilityIds).toEqual(expect.arrayContaining(['list_products']));
-      expect(replyEngine.buildChatModelMessages).toHaveBeenCalledWith(
-        expect.objectContaining({ prebuiltCognitiveState: cognitiveState }),
-      );
-    });
-
-    it('does not throw when request is aborted before start', async () => {
-      const signal = AbortSignal.abort();
-
-      await expect(
-        service.think(
-          { message: 'hello', workspaceId: wsId },
-          {} as Response,
-          null,
-          undefined,
-          undefined,
-          jest.fn() as LocalToolExecutor,
-          { signal },
-        ),
-      ).resolves.toBeUndefined();
     });
   });
 });

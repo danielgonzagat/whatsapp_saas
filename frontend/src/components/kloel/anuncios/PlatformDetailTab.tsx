@@ -14,12 +14,14 @@ export function PlatformDetailTab({
   campaigns,
   metaAccessToken,
   onCampaignsChange,
+  onConnectPlatform,
 }: {
   platformKey: PlatformKey;
   platform: PlatformData;
   campaigns: Campaign[];
   metaAccessToken?: string;
   onCampaignsChange: (campaigns: Campaign[]) => void;
+  onConnectPlatform: (platformKey: PlatformKey) => void;
 }) {
   const isConnected = platform.connected;
   const profit = platform.revenue - platform.spend;
@@ -51,7 +53,7 @@ export function PlatformDetailTab({
           </div>
         ) : (
           <div style={{ fontSize: 48, fontWeight: 800, fontFamily: MONO, color: 'var(--app-text-tertiary)', lineHeight: 1 }}>
-            {kloelT(`&mdash;`)}
+            {kloelT(`—`)}
           </div>
         )}
       </div>
@@ -71,9 +73,9 @@ export function PlatformDetailTab({
           </div>
           <button
             type="button"
-            onClick={() => {
-              if (platformKey === 'meta') {window.location.href = '/conta';}
-            }}
+            aria-label={`Conectar ${platform.name}`}
+            title={`Conectar ${platform.name}`}
+            onClick={() => onConnectPlatform(platformKey)}
             style={{
               padding: '10px 24px', background: platform.color, border: 'none', borderRadius: 6,
               color: colors.text.silver, fontSize: 13, fontFamily: SORA, fontWeight: 600, cursor: 'pointer',
@@ -146,7 +148,7 @@ export function PlatformDetailTab({
                 <span
                   style={{
                     fontSize: 10, fontFamily: MONO, padding: '2px 6px', borderRadius: 4,
-                    background: c.status === 'active' ? `${G}18` : 'colors.text.dim18', color: c.status === 'active' ? G : colors.text.muted,
+                    background: c.status === 'active' ? `${G}18` : colors.background.elevated, color: c.status === 'active' ? G : colors.text.muted,
                   }}
                 >
                   {c.status === 'active' ? 'Ativo' : 'Pausado'}

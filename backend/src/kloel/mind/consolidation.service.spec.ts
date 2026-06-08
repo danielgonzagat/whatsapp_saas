@@ -66,8 +66,8 @@ describe('ConsolidationService', () => {
         recentEvents: events,
       });
       expect(result.episodicProposals).toHaveLength(1);
-      expect(result.episodicProposals[0]!.summary).toBe('Payment approved for lead X');
-      expect(result.episodicProposals[0]!.valenceMix.positive).toBe(2);
+      expect(result.episodicProposals[0].summary).toBe('Payment approved for lead X');
+      expect(result.episodicProposals[0].valenceMix.positive).toBe(2);
     });
 
     it('skips working memory items with fewer than 2 related event IDs', () => {
@@ -160,7 +160,7 @@ describe('ConsolidationService', () => {
       // All three have pattern "payment_processed_for" → consolidated
       expect(result.episodicProposals).toHaveLength(3);
       expect(result.consolidatedProposals).toHaveLength(1);
-      expect(result.consolidatedProposals[0]!.summary).toContain('payment_processed_for');
+      expect(result.consolidatedProposals[0].summary).toContain('payment_processed_for');
     });
 
     it('does not produce consolidated proposals when fewer than 3 episodes share a pattern', () => {
@@ -273,7 +273,7 @@ describe('ConsolidationService', () => {
         workingMemory: wm,
         recentEvents: events,
       });
-      const mix = result.episodicProposals[0]!.valenceMix;
+      const mix = result.episodicProposals[0].valenceMix;
       expect(mix.positive).toBe(1);
       expect(mix.negative).toBe(1);
       expect(mix.neutral).toBe(1);
@@ -296,7 +296,7 @@ describe('ConsolidationService', () => {
         workingMemory: wm,
         recentEvents: events,
       });
-      expect(result.episodicProposals[0]!.valenceMix.neutral).toBe(2);
+      expect(result.episodicProposals[0].valenceMix.neutral).toBe(2);
     });
 
     it('counts workingItemsConsidered correctly', () => {

@@ -182,9 +182,9 @@ describe('CommercialDecisionOrchestratorService', () => {
       expect(entry).toBeTruthy();
       const justification = entry.hierarchyJustification as Record<string, unknown> | undefined;
       expect(justification).toBeTruthy();
-      expect(justification!.level).toBeDefined();
-      expect(typeof justification!.reason).toBe('string');
-      expect((justification!.reason as string).length).toBeGreaterThan(0);
+      expect(justification.level).toBeDefined();
+      expect(typeof justification.reason).toBe('string');
+      expect((justification.reason as string).length).toBeGreaterThan(0);
     }
 
     const eventCall = castMock<Array<[{ eventType: string }]>>(
@@ -201,15 +201,13 @@ describe('CommercialDecisionOrchestratorService', () => {
 
     const transferAction = decision.actions.find((a) => a.tool === 'transfer_to_human');
     expect(transferAction).toBeTruthy();
-    const handoffDecision = transferAction!.args.handoffDecision as
+    const handoffDecision = transferAction.args.handoffDecision as
       | Record<string, unknown>
       | undefined;
     expect(handoffDecision).toBeTruthy();
-    expect(handoffDecision!.hierarchyJustification).toBeTruthy();
-    expect(
-      (handoffDecision!.hierarchyJustification as Record<string, unknown>).level,
-    ).toBeDefined();
-    expect(typeof (handoffDecision!.hierarchyJustification as Record<string, unknown>).reason).toBe(
+    expect(handoffDecision.hierarchyJustification).toBeTruthy();
+    expect((handoffDecision.hierarchyJustification as Record<string, unknown>).level).toBeDefined();
+    expect(typeof (handoffDecision.hierarchyJustification as Record<string, unknown>).reason).toBe(
       'string',
     );
   });

@@ -1,5 +1,7 @@
 'use client';
 
+import { colors } from '@/lib/design-tokens';
+
 import { useSaleDetail } from '@/hooks/useSales';
 import { IC } from './VendasView.icons';
 import { Badge } from './Badge';
@@ -50,14 +52,14 @@ type DetailRow = { l: string; v: string | number; c?: string };
 
 function buildDetailRows(item: DetailItemData, detailType: 'sale' | 'sub' | 'order'): DetailRow[] {
   const candidates: (false | DetailRow)[] = [
-    { l: 'Valor', v: fmtBRL(item.amount || 0), c: 'colors.ember.primary' },
+    { l: 'Valor', v: fmtBRL(item.amount || 0), c: colors.ember.primary },
     item.paymentMethod ? { l: 'Metodo', v: item.paymentMethod } : false,
     { l: 'Data', v: fmtDate(item.createdAt || item.startedAt || new Date()) },
     detailType === 'sub' && item.nextBillingAt
       ? { l: 'Proxima cobranca', v: fmtDate(item.nextBillingAt) }
       : false,
     detailType === 'sub'
-      ? { l: 'LTV', v: fmtBRL(item.totalPaid || 0), c: 'colors.ember.primary' }
+      ? { l: 'LTV', v: fmtBRL(item.totalPaid || 0), c: colors.ember.primary }
       : false,
     detailType === 'order'
       ? { l: 'Rastreamento', v: item.trackingCode || 'Aguardando' }

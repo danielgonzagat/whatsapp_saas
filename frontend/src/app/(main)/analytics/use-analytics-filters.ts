@@ -2,6 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
+import { createDefaultReportFilters } from './analytics.helpers';
 import type { ReportFilters, SetFilters, SetPage } from './analytics.types';
 
 const VISIBLE_REPORT_TABS = new Set([
@@ -28,9 +29,6 @@ export function normalizeVisibleReportTab(tab: string | null | undefined): strin
   return tab && VISIBLE_REPORT_TABS.has(tab) ? tab : 'vendas';
 }
 
-const defaultStartDate = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
-const defaultEndDate = new Date().toISOString().split('T')[0];
-
 export function useAnalyticsFilters() {
   const searchParams = useSearchParams();
   const tabParam = searchParams?.get('tab');
@@ -38,10 +36,7 @@ export function useAnalyticsFilters() {
   const [active, setActive] = useState<string>(normalizeVisibleReportTab(tabParam));
   const [page, setPage] = useState<number>(1);
   const [showFilter, setShowFilter] = useState(false);
-  const [filters, setFilters] = useState<ReportFilters>({
-    startDate: defaultStartDate,
-    endDate: defaultEndDate,
-  });
+  const [filters, setFilters] = useState<ReportFilters>(createDefaultReportFilters);
 
   const baseFilters: ReportFilters & { page: number; perPage: number } = {
     ...filters,

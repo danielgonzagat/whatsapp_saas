@@ -1,5 +1,25 @@
 import type { ReportFilters } from './analytics.types';
 
+type ReportDateRange = Required<Pick<ReportFilters, 'startDate' | 'endDate'>>;
+
+const REPORT_RANGE_DAYS = 30;
+
+export function createDefaultReportFilters(referenceDate = new Date()): ReportDateRange {
+  const endDate = referenceDate.toISOString().slice(0, 10);
+  const startDate = new Date(referenceDate.getTime() - REPORT_RANGE_DAYS * 86400000)
+    .toISOString()
+    .slice(0, 10);
+  return { startDate, endDate };
+}
+
+export function clearReportAdvancedFilters(filters: ReportFilters): ReportDateRange {
+  const fallback = createDefaultReportFilters();
+  return {
+    startDate: filters.startDate || fallback.startDate,
+    endDate: filters.endDate || fallback.endDate,
+  };
+}
+
 export function buildUrl(ep: string, f: ReportFilters = {}) {
   const p = new URLSearchParams();
   (Object.entries(f) as Array<[string, string | number | undefined | null]>).forEach(([k, v]) => {

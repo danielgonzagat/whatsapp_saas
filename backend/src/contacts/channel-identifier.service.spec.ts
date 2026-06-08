@@ -193,8 +193,8 @@ describe('ChannelIdentifierService', () => {
       const result = await service.findContactByChannel('WHATSAPP', '5511999999999', 'ws-1');
 
       expect(result).not.toBeNull();
-      expect(result!.id).toBe('contact-1');
-      expect(result!.wasCreated).toBe(false);
+      expect(result.id).toBe('contact-1');
+      expect(result.wasCreated).toBe(false);
     });
   });
 

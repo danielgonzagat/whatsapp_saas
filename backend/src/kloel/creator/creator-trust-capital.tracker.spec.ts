@@ -184,7 +184,7 @@ describe('CreatorTrustCapitalTrackerService (UTP-CREATOR-006) — full spec', ()
     const stateB = tracker.getState('wks_b');
     expect(stateA).toBeDefined();
     expect(stateB).toBeDefined();
-    expect(stateA!.trustCapital).toBeLessThan(stateB!.trustCapital);
+    expect(stateA.trustCapital).toBeLessThan(stateB.trustCapital);
   });
 
   // ─── 11: getState returns previously tracked state ──────────────────
@@ -194,9 +194,9 @@ describe('CreatorTrustCapitalTrackerService (UTP-CREATOR-006) — full spec', ()
     const tracked = tracker.trackCapital('wks_persist', events, states);
     const stored = tracker.getState('wks_persist');
     expect(stored).toBeDefined();
-    expect(stored!.trustCapital).toBe(tracked.trustCapital);
-    expect(stored!.verdict).toBe(tracked.verdict);
-    expect(stored!.workspaceId).toBe('wks_persist');
+    expect(stored.trustCapital).toBe(tracked.trustCapital);
+    expect(stored.verdict).toBe(tracked.verdict);
+    expect(stored.workspaceId).toBe('wks_persist');
   });
 
   // ─── 12: recommendation fidelity computed from endorsement signals ──

@@ -11,8 +11,8 @@
 //
 // Exit 0 = clean. Exit 1 = new duplications introduced.
 
-import { readFileSync, existsSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
+import { readFileSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { spawnSync, execSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -43,35 +43,61 @@ function parseMap(content) {
   while ((m = re.exec(content))) map.set(m[1], parseInt(m[2], 10));
   return map;
 }
-const baselineCounts = parseMap(readFileSync(BASELINE, 'utf8'));
+// ---------------------------------------------------------------------------
+// FRESH SCAN — do NOT trust the (possibly stale) committed CAPABILITY_MAP.md
+// on disk. Run scan.mjs against the LIVE working tree into an isolated temp
+// out-dir (CANON_OUT_DIR, honoured by scan.mjs — non-destructive, never
+// overwrites the canonical docs/architecture/*.md), then parse the FRESH map.
+// This way a NEW duplicate added in source is caught even when the developer
+// forgot to regenerate / commit CAPABILITY_MAP.md.
+// ---------------------------------------------------------------------------
+const committedBaseline = (() => {
+  try {
+    return parseMap(
+      execSync('git show HEAD:docs/architecture/CAPABILITY_MAP.md', {
+        cwd: ROOT,
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).toString(),
+    );
+  } catch {
+    return null;
+  }
+})();
 
-// run a fresh scan to /tmp without overwriting the canonical
-const tmp = '/tmp/canonical-fresh-' + Date.now();
-const env = { ...process.env, CANONICALIZE_OUT: tmp };
-const r = spawnSync('node', [SCAN], { cwd: ROOT, env, stdio: 'pipe' });
-// The scanner writes to docs/architecture; we can't redirect cleanly.
-// Instead: re-read after a "would-be" scan by parsing same logic inline.
-
-// SIMPLER APPROACH: read the same docs/architecture/CAPABILITY_MAP.md
-// but ASSUME developer ran `npm run canonical:scan` first. Then we diff
-// against the previously committed version via git.
-
-import { execSync } from 'node:child_process';
-
-let committedMap;
-try {
-  const committed = execSync(`git show HEAD:docs/architecture/CAPABILITY_MAP.md 2>/dev/null`, { cwd: ROOT }).toString();
-  committedMap = parseMap(committed);
-} catch {
+if (!committedBaseline) {
   console.log('No committed baseline yet — first run. Pass.');
   process.exit(0);
 }
 
-const currentMap = parseMap(readFileSync(BASELINE, 'utf8'));
+// Repo-local temp dir (works in CI and in sandboxed local runs alike). The
+// scanner writes CAPABILITY_MAP.md + siblings here; we read it back, then wipe.
+const tmpOut = mkdtempSync(join(ROOT, '.canon-fresh-'));
+let currentMap;
+try {
+  const env = { ...process.env, CANON_OUT_DIR: tmpOut };
+  const scan = spawnSync('node', [SCAN], { cwd: ROOT, env, stdio: 'pipe' });
+  if (scan.status !== 0) {
+    console.error('canonical scan failed; cannot verify duplicates:');
+    console.error((scan.stderr || scan.stdout || '').toString().trim());
+    process.exit(2);
+  }
+  const freshMap = join(tmpOut, 'CAPABILITY_MAP.md');
+  if (!existsSync(freshMap)) {
+    console.error(`fresh scan produced no CAPABILITY_MAP.md at ${freshMap}`);
+    process.exit(2);
+  }
+  currentMap = parseMap(readFileSync(freshMap, 'utf8'));
+} finally {
+  rmSync(tmpOut, { recursive: true, force: true });
+}
 
+// Ratchet: fail only when a capability's FRESH implementation count exceeds its
+// committed baseline (a NEW duplicate). Existing duplication debt is tolerated;
+// new capabilities (baseCount 0) are allowed to appear — the gate guards
+// against GROWING an already-canonical capability's implementation count.
 let regressions = 0;
 for (const [cap, currentCount] of currentMap) {
-  const baseCount = committedMap.get(cap) ?? 0;
+  const baseCount = committedBaseline.get(cap) ?? 0;
   if (currentCount > baseCount && baseCount > 0) {
     console.error(`REGRESSION: capability \`${cap}\` grew ${baseCount} → ${currentCount} implementations.`);
     console.error('  → consolidate into the canonical implementation, or update baseline if intentional:');
@@ -81,10 +107,12 @@ for (const [cap, currentCount] of currentMap) {
 }
 
 if (regressions > 0) {
-  console.error(`\n${regressions} capability regression(s) detected.`);
+  console.error(`\n${regressions} capability regression(s) detected (fresh scan vs HEAD baseline).`);
   console.error('See docs/architecture/CAPABILITY_MAP.md for current implementations of each capability.');
   process.exit(1);
 }
 
-console.log(`OK — ${currentMap.size} canonical capabilities, no regressions vs HEAD.`);
+console.log(
+  `OK — ${currentMap.size} canonical capabilities (fresh scan), no regressions vs HEAD.`,
+);
 process.exit(0);

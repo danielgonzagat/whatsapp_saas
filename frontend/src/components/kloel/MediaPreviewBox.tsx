@@ -277,6 +277,7 @@ export function MediaPreviewBox({
 
       <input
         id={fileInputId}
+        name="mediaPreviewFile"
         aria-label={inputAriaLabel || label || 'Selecionar arquivo'}
         ref={inputRef}
         type="file"

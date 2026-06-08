@@ -24,6 +24,8 @@ const SKIP_DIRS = new Set([
 
 export interface EffectSnapshot {
   rootAbs: string;
+  /** Optional repo-relative roots that bound capture/diff coverage. Undefined means whole root. */
+  includeRel?: string[];
   /** repo-relative path -> UTF-8 content of every existing in-scope file at snapshot time */
   files: Map<string, string>;
   /** repo-relative path -> POSIX mode bits for every existing in-scope file at snapshot time */
@@ -169,7 +171,7 @@ export function assertCompleteEffectSnapshot(snap: EffectSnapshot, action: strin
 /** Capture the byte-content of every in-scope file under `rootAbs` (bounded). */
 export function captureEffectSnapshot(
   rootAbs: string,
-  opts: { maxFiles?: number; maxBytes?: number; maxFileBytes?: number } = {},
+  opts: { maxFiles?: number; maxBytes?: number; maxFileBytes?: number; includeRel?: string[] } = {},
 ): EffectSnapshot {
   const maxFiles = opts.maxFiles ?? 4000;
   const maxBytes = opts.maxBytes ?? 64 * 1024 * 1024;
@@ -179,6 +181,65 @@ export function captureEffectSnapshot(
   const modes = new Map<string, number>();
   let total = 0;
   let limitReached = false;
+
+  const normalizeInclude = (value: string): string | null => {
+    const raw = value.replaceAll('\\', '/').replace(/^\/+/, '').trim();
+    if (!raw || raw === '.') return null;
+    const abs = path.resolve(rootAbs, raw);
+    const rel = path.relative(rootAbs, abs);
+    if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) {
+      limitReached = true;
+      return null;
+    }
+    return rel.split(path.sep).join('/');
+  };
+
+  const includeRel = Array.from(new Set((opts.includeRel ?? []).map(normalizeInclude).filter((rel): rel is string => rel !== null)));
+
+  const snapshotFile = (full: string): void => {
+    if (files.size >= maxFiles || total >= maxBytes) {
+      limitReached = true;
+      return;
+    }
+    let st: fs.Stats;
+    try {
+      st = fs.statSync(full);
+    } catch {
+      // An in-scope file we cannot stat -> coverage is no longer provably
+      // complete. Honest ceiling: mark incomplete rather than pretend.
+      limitReached = true;
+      return;
+    }
+    if (!st.isFile()) return;
+    if (st.size > maxFileBytes) {
+      // Too large to snapshot under the cap -> we cannot guarantee byte-exact
+      // reversal for it, so the snapshot is NOT complete (was silently skipped).
+      limitReached = true;
+      return;
+    }
+    let buf: Buffer;
+    try {
+      buf = fs.readFileSync(full);
+    } catch {
+      limitReached = true;
+      return;
+    }
+    const content = buf.toString('utf8');
+    // A non-UTF-8 (binary) file cannot be faithfully held as a string and
+    // would be CORRUPTED on restore (utf8 round-trip replaces invalid bytes
+    // with U+FFFD). Refuse to claim coverage instead of silently corrupting:
+    // mark the snapshot incomplete so assertCompleteEffectSnapshot blocks the
+    // byte-exact diff/rollback. Unprovable ≡ uncovered, never a false "reversed".
+    if (!buf.equals(Buffer.from(content, 'utf8'))) {
+      limitReached = true;
+      return;
+    }
+    const rel = path.relative(rootAbs, full).split(path.sep).join('/');
+    files.set(rel, content);
+    modes.set(rel, st.mode & 0o7777);
+    total += st.size;
+  };
+
   const walk = (dir: string): void => {
     if (files.size >= maxFiles || total >= maxBytes) {
       limitReached = true;
@@ -197,56 +258,41 @@ export function captureEffectSnapshot(
       }
       if (SKIP_DIRS.has(e.name)) continue;
       const full = path.join(dir, e.name);
-      if (e.isDirectory()) {
-        walk(full);
-      } else if (e.isFile()) {
-        let st: fs.Stats;
-        try {
-          st = fs.statSync(full);
-        } catch {
-          // An in-scope file we cannot stat -> coverage is no longer provably
-          // complete. Honest ceiling: mark incomplete rather than pretend.
-          limitReached = true;
-          continue;
-        }
-        if (st.size > maxFileBytes) {
-          // Too large to snapshot under the cap -> we cannot guarantee byte-exact
-          // reversal for it, so the snapshot is NOT complete (was silently skipped).
-          limitReached = true;
-          continue;
-        }
-        let buf: Buffer;
-        try {
-          buf = fs.readFileSync(full);
-        } catch {
-          limitReached = true;
-          continue;
-        }
-        const content = buf.toString('utf8');
-        // A non-UTF-8 (binary) file cannot be faithfully held as a string and
-        // would be CORRUPTED on restore (utf8 round-trip replaces invalid bytes
-        // with U+FFFD). Refuse to claim coverage instead of silently corrupting:
-        // mark the snapshot incomplete so assertCompleteEffectSnapshot blocks the
-        // byte-exact diff/rollback. Unprovable ≡ uncovered, never a false "reversed".
-        if (!buf.equals(Buffer.from(content, 'utf8'))) {
-          limitReached = true;
-          continue;
-        }
-        const rel = path.relative(rootAbs, full);
-        files.set(rel, content);
-        modes.set(rel, st.mode & 0o7777);
-        total += st.size;
-      }
+      if (e.isDirectory()) walk(full);
+      else if (e.isFile()) snapshotFile(full);
     }
   };
-  walk(rootAbs);
-  return { rootAbs, files, modes, limitReached, limits };
+
+  if (includeRel.length > 0) {
+    for (const rel of includeRel) {
+      if (files.size >= maxFiles || total >= maxBytes) {
+        limitReached = true;
+        break;
+      }
+      const full = path.join(rootAbs, rel);
+      let st: fs.Stats;
+      try {
+        st = fs.lstatSync(full);
+      } catch {
+        // Missing scoped roots are legitimate for sessions that intend to create
+        // new files. The same includeRel is reused at diff time, where the new
+        // path will be observed if it materialized.
+        continue;
+      }
+      if (st.isDirectory()) walk(full);
+      else if (st.isFile()) snapshotFile(full);
+    }
+  } else {
+    walk(rootAbs);
+  }
+
+  return { rootAbs, ...(includeRel.length > 0 ? { includeRel } : {}), files, modes, limitReached, limits };
 }
 
 /** Re-walk and compute the exact per-file byte-effect since the snapshot. */
 export function diffEffect(snap: EffectSnapshot): FileEffect[] {
   assertCompleteEffectSnapshot(snap, 'diff filesystem effect');
-  const after = captureEffectSnapshot(snap.rootAbs, snap.limits);
+  const after = captureEffectSnapshot(snap.rootAbs, { ...snap.limits, includeRel: snap.includeRel });
   assertCompleteEffectSnapshot(after, 'diff filesystem effect after command');
   const effects: FileEffect[] = [];
   const beforeModes = snap.modes ?? new Map<string, number>();

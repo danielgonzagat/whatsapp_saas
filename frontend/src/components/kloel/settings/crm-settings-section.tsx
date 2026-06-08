@@ -1,5 +1,7 @@
 'use client';
 
+import { colors } from '@/lib/design-tokens';
+
 import { kloelT } from '@/lib/i18n/t';
 import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
 import { Button } from '@/components/ui/button';
@@ -359,7 +361,7 @@ export function CrmSettingsSection() {
               <KloelMushroomMark
                 size={18}
                 title="Auto-segmentando"
-                traceColor="colors.ember.primary"
+                traceColor={colors.ember.primary}
               />
             ) : (
               <Sparkles className="mr-2 h-4 w-4" aria-hidden="true" />
@@ -378,7 +380,7 @@ export function CrmSettingsSection() {
               <KloelMushroomMark
                 size={18}
                 title="Atualizando CRM"
-                traceColor="colors.ember.primary"
+                traceColor={colors.ember.primary}
               />
             ) : (
               <RotateCw className="mr-2 h-4 w-4" aria-hidden="true" />

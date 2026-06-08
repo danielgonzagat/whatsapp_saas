@@ -30,14 +30,14 @@ function jaccard(left: string[], right: string[]): number {
 }
 
 @Injectable()
-export class MindLongTermMemoryService {
-  private readonly logger = StructuredLogger.from(MindLongTermMemoryService.name);
+export class CaseConsolidationService {
+  private readonly logger = StructuredLogger.from(CaseConsolidationService.name);
 
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly spine?: SpineEmitterService,
   ) {
-    this.logger.debug?.('MindLongTermMemoryService initialized');
+    this.logger.debug?.('CaseConsolidationService initialized');
   }
 
   async consolidate(workspaceId: string): Promise<{ consolidated: number; pruned: number }> {
@@ -78,8 +78,9 @@ export class MindLongTermMemoryService {
           .filter((r) => r.sim >= SIMILARITY_THRESHOLD)
           .sort((a, b) => b.sim - a.sim);
 
-        if (similarRecent.length > 0) {
-          const bestSim = similarRecent[0]!.sim;
+        const bestMatch = similarRecent[0];
+        if (bestMatch) {
+          const bestSim = bestMatch.sim;
           const concept = oldCase.caseType;
           const evidence = oldCase.text.slice(0, 500);
 
@@ -91,7 +92,7 @@ export class MindLongTermMemoryService {
               concept,
               confidence: Math.min(0.95, 0.5 + bestSim * 0.45),
               evidence,
-              features: oldCase.features,
+              features: oldCase.features as Prisma.InputJsonValue,
               occurredAt: oldCase.occurredAt,
             },
           });

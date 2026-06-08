@@ -141,7 +141,8 @@ export class MindBanditService {
       const arms = await this.prisma.mindBanditArm.findMany({
         where: { workspaceId, decisionType, isActive: true },
       });
-      if (arms.length === 0) {
+      const first = arms[0];
+      if (!first) {
         return null;
       }
 
@@ -151,7 +152,7 @@ export class MindBanditService {
           const s = score(arm.alpha, arm.beta, arm.pulls, totalPulls);
           return s > leader.score ? { arm, score: s } : leader;
         },
-        { arm: arms[0], score: score(arms[0].alpha, arms[0].beta, arms[0].pulls, totalPulls) },
+        { arm: first, score: score(first.alpha, first.beta, first.pulls, totalPulls) },
       );
 
       const chosenMean =

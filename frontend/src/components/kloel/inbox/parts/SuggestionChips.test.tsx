@@ -10,6 +10,7 @@ vi.mock('@/hooks/useSocket', () => ({
 }));
 
 import { useCopilotSuggestions } from '@/hooks/use-copilot-suggestions';
+import { useSocket } from '@/hooks/useSocket';
 import { SuggestionChips } from './SuggestionChips';
 
 describe('SuggestionChips', () => {
@@ -26,7 +27,7 @@ describe('SuggestionChips', () => {
     });
   });
 
-  it('renders nothing when no contactId is provided', () => {
+  it('renders nothing and disables realtime when no contactId is provided', () => {
     const { container } = render(
       <SuggestionChips
         workspaceId="ws-1"
@@ -35,6 +36,7 @@ describe('SuggestionChips', () => {
       />,
     );
     expect(container.firstChild).toBeNull();
+    expect(vi.mocked(useSocket)).toHaveBeenCalledWith({ enabled: false });
   });
 
   it('renders suggestions as clickable chips', () => {

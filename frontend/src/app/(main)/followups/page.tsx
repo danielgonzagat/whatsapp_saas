@@ -142,6 +142,9 @@ export default function FollowupsPage() {
           <div className="flex items-center gap-3 bg-card rounded-xl border border-border px-4 py-3">
             <Search className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <input
+              id="followups-search"
+              name="followups-search"
+              aria-label={kloelT(`Buscar por telefone, mensagem ou status`)}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={kloelT(`Buscar por telefone, mensagem ou status...`)}
@@ -149,6 +152,9 @@ export default function FollowupsPage() {
             />
           </div>
           <select
+            id="followups-status"
+            name="followups-status"
+            aria-label={kloelT(`Filtrar follow-ups por status`)}
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as 'all' | Followup['status'])}
             className="bg-card rounded-xl border border-border px-4 py-3 text-sm text-foreground outline-none"

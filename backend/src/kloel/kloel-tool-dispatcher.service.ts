@@ -43,6 +43,7 @@ import { MindGuardsService } from './mind/policy/mind-guards.service';
 import { ReportService } from './report.service';
 import { ChannelTransportRegistry } from './channel-transport.registry';
 import { RiskGateService } from './risk-class/risk-gate.service';
+import { KloelCapabilitiesService } from './capabilities/kloel-capabilities.service';
 
 import type { UnknownRecord } from '../common/types';
 
@@ -114,6 +115,7 @@ export class KloelToolDispatcherService {
     @Optional() private readonly mindCapabilityExecutor?: MindCapabilityExecutor,
     @Optional() private readonly mindGuards?: MindGuardsService,
     @Optional() private readonly domainServiceResolver?: KloelDomainServiceResolver,
+    @Optional() private readonly kloelCapabilities?: KloelCapabilitiesService,
   ) {}
 
   /** Execute a named tool, delegating to the appropriate sub-service. */
@@ -253,8 +255,10 @@ export class KloelToolDispatcherService {
       productSubTools: this.productSubTools,
       transports: this.transports,
       riskGate: this.riskGate,
+      kloelCapabilities: this.kloelCapabilities,
       executeTool: (ws, name, a, u) => this.executeTool(ws, name, a, u),
-      applyReceipt: (cap, ws, a, r, u, s) => this.withCanonicalReceipt(cap, ws, a, r, u, s),
+      applyReceipt: (cap, ws, a, r, u, s) =>
+        this.withCanonicalReceipt(cap, ws, a, r, u, s ?? Date.now()),
     };
   }
 

@@ -205,7 +205,10 @@ export const repeatedObjectionDetector: Detector = {
       if (objections.length < 2) {
         continue;
       }
-      const last = objections[objections.length - 1]!;
+      const last = objections[objections.length - 1];
+      if (!last) {
+        continue;
+      }
       out.push(
         makeTension(
           'commerce.repeated_objection',
@@ -409,7 +412,10 @@ const viewedWithoutPurchaseDetector: Detector = {
       if (purchase) {
         continue;
       }
-      const last = reads[reads.length - 1]!;
+      const last = reads[reads.length - 1];
+      if (!last) {
+        continue;
+      }
       out.push(
         makeTension(
           'commerce.viewed_without_purchase',

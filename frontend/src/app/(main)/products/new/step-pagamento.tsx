@@ -29,6 +29,7 @@ export function StepPagamento({ form, updateForm }: StepCommonProps) {
               <button
                 type="button"
                 key={opt.value}
+                aria-pressed={selected}
                 onClick={() => updateForm({ billingType: opt.value })}
                 style={{
                   background: selected ? 'rgba(232, 93, 48, 0.08)' : colors.background.nebula,
@@ -71,6 +72,9 @@ export function StepPagamento({ form, updateForm }: StepCommonProps) {
         <>
           <MonitorInputField label={kloelT('Maximo de parcelas')}>
             <select
+              id="product-max-installments"
+              name="productMaxInstallments"
+              aria-label={kloelT('Maximo de parcelas')}
               style={selectStyle}
               onFocus={inputProps.onFocus}
               onBlur={inputProps.onBlur}
@@ -87,6 +91,9 @@ export function StepPagamento({ form, updateForm }: StepCommonProps) {
 
           <MonitorInputField label={kloelT('Parcelas sem juros')}>
             <select
+              id="product-interest-free-installments"
+              name="productInterestFreeInstallments"
+              aria-label={kloelT('Parcelas sem juros')}
               style={selectStyle}
               onFocus={inputProps.onFocus}
               onBlur={inputProps.onBlur}

@@ -3,9 +3,18 @@ import type { Prisma } from '@prisma/client';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { KloelService } from './kloel.service';
 import { clampLimit } from '../common/pagination-clamp.pipe';
+import {
+  formatTraceToolLabel,
+  sanitizeAssistantThreadContentForRead,
+} from './kloel-thread.helpers';
 
 export interface ControllerDeps {
   prisma: PrismaService;
+  // Canonical Mind surface for the SEPARATE RAC_ChatMessage table. The caller
+  // (KloelController) passes `mindChatMessage?.items ?? this.prisma.chatMessage`
+  // — same delegate, byte-identical. When absent we fall back to
+  // `prisma.chatMessage` (documented fallback idiom).
+  chatMessageItems?: PrismaService['chatMessage'];
   kloelService: KloelService;
 }
 
@@ -112,8 +121,86 @@ export async function deleteThread(
   }
 }
 
+// Metadata keys whose values are generated artifact payloads, not assistant
+// prose. The frontend renders these verbatim (e.g. `generatedSiteHtml` via an
+// iframe `srcDoc`, image/source URLs as links), so the prose sanitizer must
+// leave them untouched — collapsing whitespace or rewriting tokens would
+// corrupt the generated HTML, URLs, or filenames on reload. Producers live in
+// KloelComposerService (runComposerCapabilityBranch persists `capResult.metadata`).
+const ARTIFACT_PAYLOAD_METADATA_KEYS = new Set([
+  'generatedSiteHtml',
+  'generatedImageUrl',
+  'generatedImageFilename',
+  'webSources',
+]);
+
+function sanitizeThreadResponseVersionForRead(value: unknown): unknown {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return value;
+  }
+  const record = value as Record<string, unknown>;
+  if (typeof record.content !== 'string') {
+    return value;
+  }
+  return { ...record, content: sanitizeAssistantThreadContentForRead(record.content) };
+}
+
+function sanitizeThreadMessageMetadataValueForRead(value: unknown): unknown {
+  if (typeof value === 'string') {
+    return sanitizeAssistantThreadContentForRead(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(sanitizeThreadMessageMetadataValueForRead);
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+
+  const record = value as Record<string, unknown>;
+  const sanitized: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(record)) {
+    if (ARTIFACT_PAYLOAD_METADATA_KEYS.has(key)) {
+      sanitized[key] = item;
+      continue;
+    }
+    if ((key === 'tool' || key === 'brainIntent') && typeof item === 'string') {
+      sanitized[key] = formatTraceToolLabel(item);
+      continue;
+    }
+    if (key === 'responseVersions' && Array.isArray(item)) {
+      sanitized[key] = item.map(sanitizeThreadResponseVersionForRead);
+      continue;
+    }
+    sanitized[key] = sanitizeThreadMessageMetadataValueForRead(item);
+  }
+  return sanitized;
+}
+
+function sanitizeThreadMessageMetadataForRead(
+  metadata: Prisma.JsonValue | null,
+): Prisma.JsonValue | null {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    return metadata;
+  }
+  return sanitizeThreadMessageMetadataValueForRead(metadata) as Prisma.JsonValue;
+}
+
+function sanitizeThreadMessageForRead<
+  T extends { role: string; content: string; metadata: Prisma.JsonValue | null },
+>(message: T): T {
+  const metadata = sanitizeThreadMessageMetadataForRead(message.metadata);
+  if (message.role !== 'assistant') {
+    return { ...message, metadata };
+  }
+  return {
+    ...message,
+    content: sanitizeAssistantThreadContentForRead(message.content),
+    metadata,
+  };
+}
+
 export async function getThreadMessages(
-  deps: Pick<ControllerDeps, 'prisma'>,
+  deps: Pick<ControllerDeps, 'prisma' | 'chatMessageItems'>,
   id: string,
   workspaceId: string,
 ) {
@@ -124,7 +211,8 @@ export async function getThreadMessages(
   if (!thread) {
     throw new NotFoundException('Conversa não encontrada');
   }
-  const messages = await deps.prisma.chatMessage.findMany({
+  const chatMessageItems = deps.chatMessageItems ?? deps.prisma.chatMessage;
+  const messages = await chatMessageItems.findMany({
     where: { threadId: id, workspaceId },
     select: {
       id: true,
@@ -137,11 +225,13 @@ export async function getThreadMessages(
     orderBy: { createdAt: 'asc' },
     take: 200,
   });
-  return messages.filter((m) => String(m.content || '').trim().length > 0);
+  return messages
+    .filter((m) => String(m.content || '').trim().length > 0)
+    .map(sanitizeThreadMessageForRead);
 }
 
 export async function addThreadMessage(
-  deps: Pick<ControllerDeps, 'prisma'>,
+  deps: Pick<ControllerDeps, 'prisma' | 'chatMessageItems'>,
   id: string,
   dto: { role: string; content: string; metadata?: Record<string, unknown> },
   workspaceId: string,
@@ -151,7 +241,8 @@ export async function addThreadMessage(
       where: { id, workspaceId },
       select: { id: true },
     });
-    const msg = await deps.prisma.chatMessage.create({
+    const chatMessageItems = deps.chatMessageItems ?? deps.prisma.chatMessage;
+    const msg = await chatMessageItems.create({
       data: {
         thread: { connect: { id } },
         workspaceId,
@@ -178,7 +269,7 @@ function normalizeMessageMetadata(metadata: Prisma.JsonValue): Record<string, un
 }
 
 export async function updateThreadMessage(
-  deps: Pick<ControllerDeps, 'prisma'>,
+  deps: Pick<ControllerDeps, 'prisma' | 'chatMessageItems'>,
   id: string,
   dto: { content?: string },
   workspaceId: string,
@@ -187,7 +278,8 @@ export async function updateThreadMessage(
   if (!content) {
     throw new BadRequestException('Conteúdo da mensagem é obrigatório.');
   }
-  const existing = await deps.prisma.chatMessage.findFirst({
+  const chatMessageItems = deps.chatMessageItems ?? deps.prisma.chatMessage;
+  const existing = await chatMessageItems.findFirst({
     where: { id, thread: { workspaceId } },
     select: { id: true, threadId: true, role: true, metadata: true, createdAt: true },
   });
@@ -203,7 +295,7 @@ export async function updateThreadMessage(
   };
   await deps.prisma.$transaction(
     [
-      deps.prisma.chatMessage.updateMany({
+      chatMessageItems.updateMany({
         where: { id, workspaceId },
         data: { content, metadata: nextMetadata },
       }),
@@ -214,7 +306,7 @@ export async function updateThreadMessage(
     ],
     { isolationLevel: 'ReadCommitted' },
   );
-  const message = await deps.prisma.chatMessage.findFirstOrThrow({
+  const message = await chatMessageItems.findFirstOrThrow({
     where: { id, workspaceId },
   });
   return message;

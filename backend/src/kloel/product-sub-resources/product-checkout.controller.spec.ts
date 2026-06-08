@@ -1,8 +1,11 @@
 import { NotFoundException } from '@nestjs/common';
 
+jest.mock('../../auth/workspace-access', () => ({
+  resolveWorkspaceId: jest.fn(),
+}));
+
 jest.mock('./helpers/common.helpers', () => ({
   ensureWorkspaceProductAccess: jest.fn().mockResolvedValue(undefined),
-  getWorkspaceId: jest.fn(),
   safeStr: jest.fn((v: unknown, fb: string = ''): string => (typeof v === 'string' ? v : fb)),
 }));
 
@@ -12,12 +15,13 @@ jest.mock('./helpers/plan.helpers', () => ({
 }));
 
 import { ProductCheckoutController } from './product-checkout.controller';
-import { ensureWorkspaceProductAccess, getWorkspaceId, safeStr } from './helpers/common.helpers';
+import { ensureWorkspaceProductAccess, safeStr } from './helpers/common.helpers';
+import { resolveWorkspaceId } from '../../auth/workspace-access';
 import { buildCheckoutData, serializeCheckout } from './helpers/plan.helpers';
 import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 const ensureWorkspaceProductAccessMock = ensureWorkspaceProductAccess as jest.Mock;
-const getWorkspaceIdMock = getWorkspaceId as jest.Mock;
+const getWorkspaceIdMock = resolveWorkspaceId as jest.Mock;
 const safeStrMock = safeStr as jest.Mock;
 const buildCheckoutDataMock = buildCheckoutData as jest.Mock;
 const serializeCheckoutMock = serializeCheckout as jest.Mock;
@@ -173,7 +177,7 @@ describe('ProductCheckoutController', () => {
   });
 
   describe('identity propagation', () => {
-    it('calls getWorkspaceId with req and flows workspaceId into ensureWorkspaceProductAccess', async () => {
+    it('calls resolveWorkspaceId with req and flows workspaceId into ensureWorkspaceProductAccess', async () => {
       const req = { user: { sub: 'u-1', workspaceId: 'ws-1' }, headers: {} } as never;
 
       await controller.list('p-1', req);

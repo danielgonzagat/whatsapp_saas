@@ -19,6 +19,10 @@ import { WorkerRuntimeService } from '../../../marketing/channels/whatsapp/worke
 import { CiaBootstrapService } from './cia-bootstrap.service';
 import type { BacklogMode, WorkspaceAutonomyMode } from './cia-backlog-run.helpers';
 import { ensureBacklogCoverageHelper } from './cia-backlog-run.helpers';
+import {
+  emitCiaActionExecutedPercept,
+  emitCiaDecisionMadePercept,
+} from './cia-percept-emit.helper';
 
 /**
  * Orchestrates the backlog run: decides between queue-based (BullMQ worker),
@@ -117,6 +121,20 @@ export class CiaBacklogRunService {
       },
     });
 
+    // ADDITIVE, flag-gated, best-effort: emit ONE canonical
+    // `cognition.cia.decision_made` percept into the Mind spine outbox so the
+    // cognition loop is no longer blind to CIA's autonomy-posture decisions.
+    // Behind `KLOEL_CIA_PERCEPT_ENABLED` (DEFAULT OFF). The helper swallows its
+    // own errors; this `await` cannot throw, so the autonomy writes above (the
+    // source of truth, already committed) and CIA behavior are NEVER affected.
+    await emitCiaDecisionMadePercept(this.prisma, this.logger, {
+      workspaceId,
+      runId,
+      autonomyMode,
+      triggeredBy,
+      backlogMode: mode,
+    });
+
     if (mode === 'reply_only_new') {
       await this.runtimeState.updateAutonomyRunStatus(workspaceId, runId, 'COMPLETED');
 
@@ -128,6 +146,13 @@ export class CiaBacklogRunService {
           'Autonomia ativa. Vou responder automaticamente apenas as novas mensagens a partir de agora.',
         persistent: true,
         runId,
+      });
+
+      await emitCiaActionExecutedPercept(this.prisma, this.logger, {
+        workspaceId,
+        runId,
+        executionPath: 'live',
+        candidateCount: 0,
       });
 
       return {
@@ -169,6 +194,13 @@ export class CiaBacklogRunService {
           sessionKey,
         );
 
+        await emitCiaActionExecutedPercept(this.prisma, this.logger, {
+          workspaceId,
+          runId,
+          executionPath: 'remote_inline',
+          candidateCount: remoteChats.length,
+        });
+
         return {
           queued: true,
           runId,
@@ -196,6 +228,13 @@ export class CiaBacklogRunService {
         mode,
         inlineCandidates,
       );
+
+      await emitCiaActionExecutedPercept(this.prisma, this.logger, {
+        workspaceId,
+        runId,
+        executionPath: 'inline_fallback',
+        candidateCount: previewCandidates.length,
+      });
 
       return {
         queued: true,
@@ -240,6 +279,13 @@ export class CiaBacklogRunService {
         mode,
         autoStarted: options?.autoStarted === true,
       },
+    });
+
+    await emitCiaActionExecutedPercept(this.prisma, this.logger, {
+      workspaceId,
+      runId,
+      executionPath: 'queue',
+      candidateCount: previewCandidates.length,
     });
 
     return {

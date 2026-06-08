@@ -66,6 +66,33 @@ describe('KloelConversationStore — Brain→Mind delegation (Claude-K66)', () =
       expect(getHistory).not.toHaveBeenCalled();
       expect(findMany).not.toHaveBeenCalled();
     });
+
+    it('resolves the raw-fallback message delegate to MindMessageService.items (canonical surface) when injected', () => {
+      // The raw projection/create paths read `this.mindMessageItems`, which
+      // routes through the canonical `mindMessage.items` delegate when the Mind
+      // wrapper is present — NOT bare `this.prisma.kloelMessage`. `.items`
+      // returns the SAME underlying `kloelMessage` delegate, so the routed read
+      // is byte-identical to the legacy direct access.
+      const canonicalItems = { findMany: jest.fn(), create: jest.fn() };
+      const prismaItems = { findMany: jest.fn(), create: jest.fn() };
+      const prisma = { kloelMessage: prismaItems } as unknown as PrismaService;
+      const mindMessage = { items: canonicalItems } as unknown as MindMessageService;
+      const store = new KloelConversationStore(prisma, logger, undefined, mindMessage);
+
+      expect((store as unknown as { mindMessageItems: unknown }).mindMessageItems).toBe(
+        canonicalItems,
+      );
+    });
+
+    it('falls back to bare prisma.kloelMessage delegate when the Mind wrapper is absent (byte-identical)', () => {
+      const prismaItems = { findMany: jest.fn(), create: jest.fn() };
+      const prisma = { kloelMessage: prismaItems } as unknown as PrismaService;
+      const store = new KloelConversationStore(prisma, logger);
+
+      expect((store as unknown as { mindMessageItems: unknown }).mindMessageItems).toBe(
+        prismaItems,
+      );
+    });
   });
 
   describe('saveMessage', () => {

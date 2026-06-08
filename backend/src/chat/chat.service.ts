@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { isMindMessageDualWriteEnabled } from '../kloel/mind/aliases/mindmessage-dualwrite.flag';
+import { MindChatMessageService } from '../kloel/mind/aliases/mind-chat-message.service';
+import { mirrorMindMessage } from '../kloel/mind/aliases/mindmessage-dualwrite.mirror';
 
 export interface ChatMessageResult {
   id: string;
@@ -19,8 +20,16 @@ export interface PaginatedMessages {
 export class ChatService {
   private readonly logger = new Logger(ChatService.name);
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly mindChatMessage?: MindChatMessageService,
+  ) {
     this.logger.log('ChatService initialized');
+  }
+
+  /** Canonical Brain → Mind chat-message delegate (raw-Prisma fallback). */
+  private get chatMessageItems() {
+    return this.mindChatMessage?.items ?? this.prisma.chatMessage;
   }
 
   async getMessages(
@@ -29,7 +38,7 @@ export class ChatService {
     cursor?: string,
     limit = 50,
   ): Promise<PaginatedMessages> {
-    const messages = await this.prisma.chatMessage.findMany({
+    const messages = await this.chatMessageItems.findMany({
       where: {
         threadId: conversationId,
         workspaceId,
@@ -61,7 +70,7 @@ export class ChatService {
       select: { id: true },
     });
 
-    const message = await this.prisma.chatMessage.create({
+    const message = await this.chatMessageItems.create({
       data: { threadId: conversationId, workspaceId, userId, role, content },
       select: { id: true, role: true, content: true, createdAt: true, userId: true },
     });
@@ -72,19 +81,16 @@ export class ChatService {
     // with a warn-log so it can NEVER break the legacy ChatMessage write above.
     // No read path depends on this. `source: 'dashboard'` is the unified-table
     // discriminator recording which legacy surface the row came from.
-    if (isMindMessageDualWriteEnabled()) {
-      try {
-        await this.prisma.mindMessage.create({
-          data: { workspaceId, source: 'dashboard', role, content },
-        });
-      } catch (error) {
+    await mirrorMindMessage(
+      this.prisma,
+      { workspaceId, source: 'dashboard', role, content },
+      (error) =>
         this.logger.warn(
           `MindMessage dual-write failed (workspaceId=${workspaceId}, ` +
             `conversationId=${conversationId}); legacy ChatMessage write succeeded ` +
             `and is unaffected: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
-    }
+        ),
+    );
 
     await this.prisma.chatThread.updateMany({
       where: { id: conversationId, workspaceId },

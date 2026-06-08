@@ -1,4 +1,4 @@
-import { MindLongTermMemoryService } from './mind-long-term-memory.service';
+import { CaseConsolidationService } from './mind-long-term-memory.service';
 
 function makeMindCase(overrides: Record<string, unknown> = {}) {
   return {
@@ -81,14 +81,14 @@ function makeSpine() {
   return { emit: jest.fn().mockResolvedValue(undefined) };
 }
 
-describe('MindLongTermMemoryService', () => {
+describe('CaseConsolidationService', () => {
   describe('consolidate', () => {
     it('returns zeroes when consolidation ran recently (idempotent)', async () => {
       const prisma = makePrisma({
         workspaceState: { health: { lastConsolidationAt: new Date().toISOString() } },
       });
       const spine = makeSpine();
-      const svc = new MindLongTermMemoryService(prisma as never, spine as never);
+      const svc = new CaseConsolidationService(prisma as never, spine as never);
 
       const result = await svc.consolidate('ws-1');
 
@@ -116,7 +116,7 @@ describe('MindLongTermMemoryService', () => {
         workspaceState: null,
       });
       const spine = makeSpine();
-      const svc = new MindLongTermMemoryService(prisma as never, spine as never);
+      const svc = new CaseConsolidationService(prisma as never, spine as never);
 
       const result = await svc.consolidate('ws-1');
 
@@ -133,7 +133,7 @@ describe('MindLongTermMemoryService', () => {
     it('handles empty case memory (no data)', async () => {
       const prisma = makePrisma({ mindCases: [], workspaceState: null });
       const spine = makeSpine();
-      const svc = new MindLongTermMemoryService(prisma as never, spine as never);
+      const svc = new CaseConsolidationService(prisma as never, spine as never);
 
       const result = await svc.consolidate('ws-1');
 
@@ -154,7 +154,7 @@ describe('MindLongTermMemoryService', () => {
         deleteCount: 3,
       });
       const spine = makeSpine();
-      const svc = new MindLongTermMemoryService(prisma as never, spine as never);
+      const svc = new CaseConsolidationService(prisma as never, spine as never);
 
       const result = await svc.consolidate('ws-1');
 
@@ -181,7 +181,7 @@ describe('MindLongTermMemoryService', () => {
         occurredAt: new Date(now - 10 * 24 * 3600 * 1000),
       });
       const prisma = makePrisma({ mindCases: [ws1Case, ws2Case], workspaceState: null });
-      const svc = new MindLongTermMemoryService(prisma as never);
+      const svc = new CaseConsolidationService(prisma as never);
 
       const result = await svc.consolidate('ws-1');
 
@@ -208,7 +208,7 @@ describe('MindLongTermMemoryService', () => {
         workspaceState: null,
         groupByResult: [{ concept: 'hot_lead', _count: { id: 15 } }],
       });
-      const svc = new MindLongTermMemoryService(prisma as never);
+      const svc = new CaseConsolidationService(prisma as never);
 
       const result = await svc.consolidate('ws-1');
 
@@ -228,7 +228,7 @@ describe('MindLongTermMemoryService', () => {
 
     it('works without spine (optional)', async () => {
       const prisma = makePrisma({ mindCases: [], workspaceState: null });
-      const svc = new MindLongTermMemoryService(prisma as never);
+      const svc = new CaseConsolidationService(prisma as never);
 
       const result = await svc.consolidate('ws-1');
 
@@ -241,7 +241,7 @@ describe('MindLongTermMemoryService', () => {
           findUnique: jest.fn().mockRejectedValue(new Error('db down')),
         },
       };
-      const svc = new MindLongTermMemoryService(prisma as never);
+      const svc = new CaseConsolidationService(prisma as never);
 
       const result = await svc.consolidate('ws-1');
 
@@ -259,7 +259,7 @@ describe('MindLongTermMemoryService', () => {
         occurredAt: new Date(now - 1 * 3600 * 1000),
       });
       const prisma = makePrisma({ mindCases: [oldCase, recentCase], workspaceState: null });
-      const svc = new MindLongTermMemoryService(prisma as never);
+      const svc = new CaseConsolidationService(prisma as never);
 
       await svc.consolidate('ws-1');
 

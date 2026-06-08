@@ -24,28 +24,28 @@ describe('Hypproof module (UTP-HYPPROOF-001..009)', () => {
       const signals = [makeSignal({ eventName: 'commerce.lead.went_silent' })];
       const result = svc.formulate(signals);
       expect(result).toHaveLength(1);
-      expect(result[0]!.domain).toBe('lead_response');
-      expect(result[0]!.status).toBe('pending');
-      expect(result[0]!.confidence).toBeGreaterThan(0.5);
-      expect(result[0]!.marketEntryId).toBe('producer-validation-infoproduct-direct-checkout');
-      expect(result[0]!.commercialStage).toBe('validacao');
-      expect(result[0]!.flagshipJourney).toContain('lead inseguro');
-      expect(result[0]!.payablePain).toContain('perder lead quente');
+      expect(result[0].domain).toBe('lead_response');
+      expect(result[0].status).toBe('pending');
+      expect(result[0].confidence).toBeGreaterThan(0.5);
+      expect(result[0].marketEntryId).toBe('producer-validation-infoproduct-direct-checkout');
+      expect(result[0].commercialStage).toBe('validacao');
+      expect(result[0].flagshipJourney).toContain('lead inseguro');
+      expect(result[0].payablePain).toContain('perder lead quente');
     });
 
     it('generates hypothesis for churn risk signal', () => {
       const signals = [makeSignal({ eventName: 'commerce.post_sale.churn_risk_detected' })];
       const result = svc.formulate(signals);
       expect(result).toHaveLength(1);
-      expect(result[0]!.domain).toBe('churn_prevention');
+      expect(result[0].domain).toBe('churn_prevention');
     });
 
     it('generates hypothesis for objection raised signal', () => {
       const signals = [makeSignal({ eventName: 'commerce.lead.objection_raised' })];
       const result = svc.formulate(signals);
       expect(result).toHaveLength(1);
-      expect(result[0]!.domain).toBe('lead_response');
-      expect(result[0]!.payablePain).toContain('responder objecao');
+      expect(result[0].domain).toBe('lead_response');
+      expect(result[0].payablePain).toContain('responder objecao');
     });
 
     it('returns empty for signals without matching patterns', () => {
@@ -89,15 +89,15 @@ describe('Hypproof module (UTP-HYPPROOF-001..009)', () => {
       };
       const result = svc.design(hypothesis);
       expect(result).not.toBeNull();
-      expect(result!.hypothesisId).toBe('hyp-1');
-      expect(result!.targetMetric).toBe('lead_reengagement_rate');
-      expect(result!.riskAssessment).toBe('safe');
-      expect(result!.riskClass).toBe('R1');
-      expect(result!.autonomyMode).toBe('alone');
-      expect(result!.proofLevelTarget).toBe('N3');
-      expect(result!.commercialWork).toContain('decide whether to wait');
-      expect(result!.noFaithProofSignal).toContain('concrete next-step');
-      expect(result!.leadLeavesBetterCheck).toContain('fake urgency');
+      expect(result.hypothesisId).toBe('hyp-1');
+      expect(result.targetMetric).toBe('lead_reengagement_rate');
+      expect(result.riskAssessment).toBe('safe');
+      expect(result.riskClass).toBe('R1');
+      expect(result.autonomyMode).toBe('alone');
+      expect(result.proofLevelTarget).toBe('N3');
+      expect(result.commercialWork).toContain('decide whether to wait');
+      expect(result.noFaithProofSignal).toContain('concrete next-step');
+      expect(result.leadLeavesBetterCheck).toContain('fake urgency');
     });
 
     it('rejects hypothesis with unknown domain', () => {
@@ -143,13 +143,13 @@ describe('Hypproof module (UTP-HYPPROOF-001..009)', () => {
       ]);
 
       expect(result).toHaveLength(1);
-      expect(result[0]!.marketEntryId).toBe('producer-validation-infoproduct-direct-checkout');
-      expect(result[0]!.shouldContactLeadNow).toBe(false);
-      expect(result[0]!.ownerDecision).toContain('risk=R1');
-      expect(result[0]!.ownerDecision).toContain('autonomy=alone');
-      expect(result[0]!.nextSafeStep).toContain('concrete next-step');
-      expect(result[0]!.uncertaintyStatement).toContain('not observed user proof yet');
-      expect(result[0]!.validationNeeded).toContain('Lead interessado');
+      expect(result[0].marketEntryId).toBe('producer-validation-infoproduct-direct-checkout');
+      expect(result[0].shouldContactLeadNow).toBe(false);
+      expect(result[0].ownerDecision).toContain('risk=R1');
+      expect(result[0].ownerDecision).toContain('autonomy=alone');
+      expect(result[0].nextSafeStep).toContain('concrete next-step');
+      expect(result[0].uncertaintyStatement).toContain('not observed user proof yet');
+      expect(result[0].validationNeeded).toContain('Lead interessado');
     });
 
     it('ignores non-market-entry hypotheses', () => {
@@ -252,8 +252,8 @@ describe('Hypproof module (UTP-HYPPROOF-001..009)', () => {
     it('starts experiment run when authorized', () => {
       const run = svc.start(experiment, auth);
       expect(run).not.toBeNull();
-      expect(run!.status).toBe('running');
-      expect(run!.workspaceId).toBe('ws-1');
+      expect(run.status).toBe('running');
+      expect(run.workspaceId).toBe('ws-1');
     });
 
     it('rejects start when not authorized', () => {
@@ -265,23 +265,23 @@ describe('Hypproof module (UTP-HYPPROOF-001..009)', () => {
       const run1 = svc.start(experiment, auth);
       const run2 = svc.start(experiment, auth);
       expect(run2).not.toBeNull();
-      expect(run2!.id).toBe(run1!.id);
+      expect(run2.id).toBe(run1.id);
     });
 
     it('completes run successfully', () => {
-      const run = svc.start(experiment, auth)!;
+      const run = svc.start(experiment, auth);
       const completed = svc.complete(run.id, 'ws-1');
       expect(completed).not.toBeNull();
-      expect(completed!.status).toBe('completed');
-      expect(completed!.completedAt).not.toBeNull();
+      expect(completed.status).toBe('completed');
+      expect(completed.completedAt).not.toBeNull();
     });
 
     it('marks run as failed', () => {
-      const run = svc.start(experiment, auth)!;
+      const run = svc.start(experiment, auth);
       const failed = svc.fail(run.id, 'ws-1', 'test error');
       expect(failed).not.toBeNull();
-      expect(failed!.status).toBe('failed');
-      expect(failed!.error).toBe('test error');
+      expect(failed.status).toBe('failed');
+      expect(failed.error).toBe('test error');
     });
   });
 
@@ -307,8 +307,8 @@ describe('Hypproof module (UTP-HYPPROOF-001..009)', () => {
       ];
       const result = svc.collect(run, 10, raw);
       expect(result).toHaveLength(2);
-      expect(result[0]!.delta).toBe(2);
-      expect(result[0]!.evidenceCount).toBe(2);
+      expect(result[0].delta).toBe(2);
+      expect(result[0].evidenceCount).toBe(2);
     });
 
     it('returns empty for zero raw observations', () => {
@@ -323,8 +323,8 @@ describe('Hypproof module (UTP-HYPPROOF-001..009)', () => {
       ];
       const result = svc.collect(run, 10, raw);
       expect(result).toHaveLength(2);
-      expect(result[0]!.confidence).toBe(1);
-      expect(result[1]!.confidence).toBe(0);
+      expect(result[0].confidence).toBe(1);
+      expect(result[1].confidence).toBe(0);
     });
   });
 });

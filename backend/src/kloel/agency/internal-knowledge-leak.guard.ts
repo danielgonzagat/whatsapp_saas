@@ -129,8 +129,16 @@ export function guardKnowledgeLeak(input: LeakGuardInput): LeakGuardResult {
   const allDetails: LeakDetail[] = [];
 
   for (let i = 0; i < bundles.length; i++) {
+    const source = bundles[i];
+    if (source === undefined) {
+      continue;
+    }
     for (let j = i + 1; j < bundles.length; j++) {
-      const details = checkBundlePair(bundles[i]!, bundles[j]!);
+      const target = bundles[j];
+      if (target === undefined) {
+        continue;
+      }
+      const details = checkBundlePair(source, target);
       allDetails.push(...details);
     }
   }

@@ -23,6 +23,61 @@ interface UseBrainRouterDeps {
   clearAllAttachments: () => void;
 }
 
+type PublicBrainIntentCopy = {
+  action: string;
+  target: string;
+};
+
+const PUBLIC_BRAIN_INTENT_COPY: Record<string, PublicBrainIntentCopy> = {
+  list_products: { action: 'consultar', target: 'o catálogo de produtos' },
+  search_contact: { action: 'consultar', target: 'os contatos' },
+  list_conversations: { action: 'consultar', target: 'as conversas recentes' },
+  send_message_via_channel: { action: 'preparar', target: 'o envio de mensagem' },
+  query_revenue_summary: { action: 'consultar', target: 'o resumo financeiro' },
+  inspect_self: { action: 'verificar', target: 'a própria operação' },
+  inspect_runtime: { action: 'verificar', target: 'a saúde do sistema' },
+};
+
+function publicBrainIntentCopy(intent: string): PublicBrainIntentCopy {
+  return PUBLIC_BRAIN_INTENT_COPY[intent] ?? { action: 'executar', target: 'a ação operacional' };
+}
+
+function readBrainOperatorErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message.trim();
+  }
+  if (typeof error === 'string' && error.trim()) {
+    return error.trim();
+  }
+  return 'erro inesperado';
+}
+
+function isAuthBoundaryError(message: string): boolean {
+  return /missing authorization header|unauthorized|\b401\b|jwt|bearer/i.test(message);
+}
+
+function sanitizeBrainOperatorErrorMessage(message: string): string {
+  if (isAuthBoundaryError(message)) {
+    return 'sessão expirada';
+  }
+  return message.replace(/[_-]+/g, ' ').trim() || 'erro inesperado';
+}
+
+export function formatBrainOperatorSuccessFallback(intent: string): string {
+  const copy = publicBrainIntentCopy(intent);
+  return `Consegui ${copy.action} ${copy.target} e registrei a observação operacional real.`;
+}
+
+export function formatBrainOperatorErrorMessage(intent: string, error: unknown): string {
+  const copy = publicBrainIntentCopy(intent);
+  const rawMessage = readBrainOperatorErrorMessage(error);
+  if (isAuthBoundaryError(rawMessage)) {
+    return `Não consegui ${copy.action} ${copy.target} agora porque sua sessão expirou. Faça login novamente para continuar.`;
+  }
+
+  return `Não consegui ${copy.action} ${copy.target} agora: ${sanitizeBrainOperatorErrorMessage(rawMessage)}. Tente novamente.`;
+}
+
 export function useBrainRouter(deps: UseBrainRouterDeps) {
   const {
     isReplyInFlight,
@@ -73,7 +128,7 @@ export function useBrainRouter(deps: UseBrainRouterDeps) {
           {
             id: assistantId,
             role: 'assistant',
-            text: output.response || `Acao "${intent}" executada.`,
+            text: output.response || formatBrainOperatorSuccessFallback(intent),
             metadata: {
               clientRequestId,
               brainOperator: true,
@@ -98,13 +153,12 @@ export function useBrainRouter(deps: UseBrainRouterDeps) {
           }
         }
       } catch (error: unknown) {
-        const msg = error instanceof Error ? error.message : 'brain_failed';
         setMessages((current) => [
           ...current,
           {
             id: assistantId,
             role: 'assistant',
-            text: `Falha ao executar "${intent}": ${msg}. Tente novamente.`,
+            text: formatBrainOperatorErrorMessage(intent, error),
             metadata: { clientRequestId, brainOperator: true, brainIntent: intent, ok: false },
           },
         ]);

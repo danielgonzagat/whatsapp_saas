@@ -161,6 +161,8 @@ export function PipelineStageColumn({
           <button
             type="button"
             onClick={() => setAdding(true)}
+            aria-label={`${kloelT('Novo deal em')} ${stage.name}`}
+            title={`${kloelT('Novo deal em')} ${stage.name}`}
             style={{
               display: 'flex',
               alignItems: 'center',

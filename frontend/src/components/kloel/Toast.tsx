@@ -70,66 +70,74 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: number) =
   const color = TOAST_COLORS[toast.type];
   const label = TOAST_LABELS[toast.type];
 
-  return (
-    <button
-      type="button"
-      style={{
-        background: 'var(--app-bg-card)',
-        border: `1px solid ${colors.stroke}`,
-        borderRadius: 6,
-        padding: '14px 18px',
-        minWidth: 280,
-        maxWidth: 400,
-        boxShadow: 'none',
-        animation: toast.exiting
-          ? 'toastFadeOut 150ms ease forwards'
-          : 'toastFadeIn 150ms ease forwards',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: 12,
-      }}
-      onClick={() => onRemove(toast.id)}
-      aria-label={`Fechar notificação ${label}`}
-    >
-      {/* Color indicator dot */}
-      <span
-        style={{
-          width: 8,
-          height: 8,
-          borderRadius: 4,
-          backgroundColor: color,
-          flexShrink: 0,
-          marginTop: 5,
-        }}
-      />
+  const accessibleLabel = `${label}: ${toast.message}`;
 
-      <span style={{ flex: 1, minWidth: 0 }}>
-        <p
+  return (
+    <div
+      role={toast.type === 'error' ? 'alert' : 'status'}
+      aria-live={toast.type === 'error' ? 'assertive' : 'polite'}
+      aria-atomic="true"
+    >
+      <button
+        type="button"
+        style={{
+          background: 'var(--app-bg-card)',
+          border: `1px solid ${colors.stroke}`,
+          borderRadius: 6,
+          padding: '14px 18px',
+          minWidth: 280,
+          maxWidth: 400,
+          boxShadow: 'none',
+          animation: toast.exiting
+            ? 'toastFadeOut 150ms ease forwards'
+            : 'toastFadeIn 150ms ease forwards',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 12,
+        }}
+        onClick={() => onRemove(toast.id)}
+        aria-label={`Fechar notificação ${accessibleLabel}`}
+      >
+        {/* Color indicator dot */}
+        <span
           style={{
-            fontFamily: "'Sora', sans-serif",
-            fontSize: 13,
-            fontWeight: 600,
-            color,
-            margin: 0,
-            lineHeight: 1.2,
+            width: 8,
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: color,
+            flexShrink: 0,
+            marginTop: 5,
           }}
-        >
-          {label}
-        </p>
-        <p
-          style={{
-            fontFamily: "'Sora', sans-serif",
-            fontSize: 13,
-            color: 'var(--app-text-primary)',
-            margin: '4px 0 0',
-            lineHeight: 1.4,
-          }}
-        >
-          {toast.message}
-        </p>
-      </span>
-    </button>
+        />
+
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <p
+            style={{
+              fontFamily: "'Sora', sans-serif",
+              fontSize: 13,
+              fontWeight: 600,
+              color,
+              margin: 0,
+              lineHeight: 1.2,
+            }}
+          >
+            {label}
+          </p>
+          <p
+            style={{
+              fontFamily: "'Sora', sans-serif",
+              fontSize: 13,
+              color: 'var(--app-text-primary)',
+              margin: '4px 0 0',
+              lineHeight: 1.4,
+            }}
+          >
+            {toast.message}
+          </p>
+        </span>
+      </button>
+    </div>
   );
 }
 

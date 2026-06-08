@@ -141,7 +141,7 @@ describe('KloelReplyEngineService mind-signal attention wiring (PI-k4)', () => {
         select: Record<string, boolean>;
       };
       const calls = prisma.autopilotEvent.findMany.mock.calls as Array<[FindManyArg]>;
-      const findManyArg = calls[0]?.[0] as FindManyArg;
+      const findManyArg = calls[0]?.[0];
       expect(findManyArg.where.workspaceId).toBe('ws-1');
       expect(findManyArg.where.createdAt.gte).toBeInstanceOf(Date);
       expect(findManyArg.orderBy).toEqual({ createdAt: 'desc' });

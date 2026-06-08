@@ -14,8 +14,8 @@ import { MetaAuthController } from './meta-auth.controller';
 import { MetaSdkService } from './meta-sdk.service';
 import { MetaWhatsAppService } from './meta-whatsapp.service';
 import { MetaConnectionStateService } from './meta-connection-state.service';
-import { MetaWebhookController as MetaCoreWebhookController } from './webhooks/meta-webhook.controller';
-import { MetaWebhookController } from './meta-webhook.controller';
+import { MetaWebhookController } from './webhooks/meta-webhook.controller';
+import { MetaCoreWebhookController } from './meta-webhook.controller';
 
 // Webhook ordering: MetaWebhookController processes events with createdAt
 // timestamps from Meta Graph API; duplicate entries skipped by externalId.
@@ -29,8 +29,8 @@ import { MetaWebhookController } from './meta-webhook.controller';
   ],
   controllers: [
     MetaAuthController,
-    MetaCoreWebhookController,
     MetaWebhookController,
+    MetaCoreWebhookController,
     InstagramController,
     MessengerController,
     MetaAdsController,

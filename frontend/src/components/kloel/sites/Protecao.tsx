@@ -26,7 +26,7 @@ const selectStyle: CSSProperties = {
 };
 
 function isPublished(site: Site): boolean {
-  return site.status === 'PUBLISHED';
+  return site.status === 'PUBLISHED' && Boolean(site.slug);
 }
 
 function statusColor(status: string) {
@@ -44,8 +44,8 @@ function hasSecureSsl(domain: SiteDomain): boolean {
 }
 
 export function Protecao({ workspaceId = '', sites = [], loading = false }: ProtecaoProps) {
-  const [selectedSiteId, setSelectedSiteId] = useState(() => sites.find(isPublished)?.id ?? sites[0]?.id ?? '');
-  const selectableSites = useMemo(() => (sites.filter(isPublished).length > 0 ? sites.filter(isPublished) : sites), [sites]);
+  const [selectedSiteId, setSelectedSiteId] = useState(() => sites.find(isPublished)?.id ?? '');
+  const selectableSites = useMemo(() => sites.filter(isPublished), [sites]);
   const effectiveSelectedSiteId = useMemo(() => {
     if (selectableSites.some((site) => site.id === selectedSiteId)) {
       return selectedSiteId;
@@ -100,7 +100,7 @@ export function Protecao({ workspaceId = '', sites = [], loading = false }: Prot
             style={selectStyle}
           >
             {selectableSites.length === 0 ? (
-              <option value="">{kloelT(`Nenhum site`)}</option>
+              <option value="">{kloelT(`Nenhum site publicado`)}</option>
             ) : (
               selectableSites.map((site) => (
                 <option key={site.id} value={site.id}>
@@ -111,12 +111,14 @@ export function Protecao({ workspaceId = '', sites = [], loading = false }: Prot
           </select>
         </div>
 
-        {domainsErrorMessage ? (
+        {!selectedSite ? (
+          <div style={{ padding: 18, fontFamily: SORA, fontSize: 12, color: TEXT_DIM, lineHeight: 1.6 }}>
+            {kloelT(`Publique um site antes de acompanhar DNS e SSL.`)}
+          </div>
+        ) : domainsErrorMessage ? (
           <div style={{ padding: 18, fontFamily: SORA, fontSize: 12, color: 'rgb(239, 68, 68)' }}>{domainsErrorMessage}</div>
         ) : loading || domainsLoading ? (
           <div style={{ padding: 18, fontFamily: SORA, fontSize: 12, color: TEXT_DIM }}>{kloelT(`Carregando dominios...`)}</div>
-        ) : !selectedSite ? (
-          <div style={{ padding: 18, fontFamily: SORA, fontSize: 12, color: TEXT_DIM }}>{kloelT(`Nenhum site criado ainda.`)}</div>
         ) : domains.length === 0 ? (
           <div style={{ padding: 18, fontFamily: SORA, fontSize: 12, color: TEXT_DIM }}>
             {kloelT(`Nenhum dominio proprio cadastrado para este site.`)}

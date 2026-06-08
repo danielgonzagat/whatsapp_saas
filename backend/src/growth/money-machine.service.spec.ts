@@ -15,8 +15,10 @@ describe('MoneyMachineService', () => {
       contact: ['count'],
       flow: ['create'],
       message: ['count'],
+      mindOutboxEvent: ['upsert'],
     });
     prisma.flow.create.mockResolvedValue({ id: 'flow-1' });
+    prisma.mindOutboxEvent.upsert.mockResolvedValue(undefined);
     campaigns = {
       create: jest.fn().mockResolvedValue({ id: 'campaign-1' }),
     };
@@ -63,7 +65,7 @@ describe('MoneyMachineService', () => {
       expect(result.status).toBe('ACTIVE');
       expect(result.found).toEqual({ inactiveLeads: 42 });
       expect(result.actions).toHaveLength(1);
-      expect(result.actions![0]).toContain('Created Campaign');
+      expect(result.actions[0]).toContain('Created Campaign');
 
       expect(prisma.flow.create).toHaveBeenCalledTimes(1);
       expect(campaigns.create).toHaveBeenCalledTimes(1);
@@ -92,6 +94,85 @@ describe('MoneyMachineService', () => {
         [{ where: { conversations: { some: { lastMessageAt: { lt: unknown } } } } }]
       >(prisma.contact.count.mock.calls[0])[0];
       expect(countCall.where.conversations.some.lastMessageAt.lt).toBeInstanceOf(Date);
+    });
+  });
+
+  describe('Money Machine -> Mind percept loop (KLOEL_MONEY_PERCEPT_ENABLED)', () => {
+    const FLAG = 'KLOEL_MONEY_PERCEPT_ENABLED';
+    const prevFlag = process.env[FLAG];
+
+    afterEach(() => {
+      if (prevFlag === undefined) {
+        delete process.env[FLAG];
+      } else {
+        process.env[FLAG] = prevFlag;
+      }
+    });
+
+    it('flag OFF (default): activate generates a campaign but emits NO percept (byte-identical to today)', async () => {
+      delete process.env[FLAG];
+      prisma.contact.count.mockResolvedValue(42);
+
+      const result = await service.activate('ws-1');
+
+      // The legacy campaign-generation path is unchanged.
+      expect(result.status).toBe('ACTIVE');
+      expect(prisma.flow.create).toHaveBeenCalledTimes(1);
+      expect(campaigns.create).toHaveBeenCalledTimes(1);
+      // No cognition feedback reaches the Mind when the flag is OFF.
+      expect(prisma.mindOutboxEvent.upsert).not.toHaveBeenCalled();
+    });
+
+    it('flag OFF + IDLE scan: emits NO percept', async () => {
+      delete process.env[FLAG];
+      prisma.contact.count.mockResolvedValue(0);
+
+      const result = await service.activate('ws-1');
+
+      expect(result.status).toBe('IDLE');
+      expect(prisma.mindOutboxEvent.upsert).not.toHaveBeenCalled();
+    });
+
+    it('flag ON: the loop closes — activate emits BOTH the lead-scan and the campaign-generated percept', async () => {
+      process.env[FLAG] = 'true';
+      prisma.contact.count.mockResolvedValue(42);
+
+      const result = await service.activate('ws-1');
+
+      expect(result.status).toBe('ACTIVE');
+      // Two percepts feed the Mind: the scan + the campaign-generation decision.
+      expect(prisma.mindOutboxEvent.upsert).toHaveBeenCalledTimes(2);
+
+      const eventTypes = (prisma.mindOutboxEvent.upsert.mock.calls as unknown[][]).map(
+        (call) => (call[0] as { create: { eventType: string } }).create.eventType,
+      );
+      expect(eventTypes).toContain('cognition.money.lead_scan');
+      expect(eventTypes).toContain('cognition.money.campaign_generated');
+    });
+
+    it('flag ON but IDLE scan: emits ONLY the lead-scan percept (no campaign decision)', async () => {
+      process.env[FLAG] = 'true';
+      prisma.contact.count.mockResolvedValue(0);
+
+      const result = await service.activate('ws-1');
+
+      expect(result.status).toBe('IDLE');
+      expect(prisma.mindOutboxEvent.upsert).toHaveBeenCalledTimes(1);
+      const onlyCall = (prisma.mindOutboxEvent.upsert.mock.calls[0] as unknown[])[0] as {
+        create: { eventType: string };
+      };
+      expect(onlyCall.create.eventType).toBe('cognition.money.lead_scan');
+    });
+
+    it('flag ON + outbox throws: the campaign-generation path still succeeds (best-effort, never breaks the engine)', async () => {
+      process.env[FLAG] = 'true';
+      prisma.contact.count.mockResolvedValue(42);
+      prisma.mindOutboxEvent.upsert.mockRejectedValue(new Error('db down'));
+
+      const result = await service.activate('ws-1');
+
+      expect(result.status).toBe('ACTIVE');
+      expect(campaigns.create).toHaveBeenCalledTimes(1);
     });
   });
 

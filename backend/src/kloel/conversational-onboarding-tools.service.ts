@@ -8,21 +8,22 @@
  * ============================================
  */
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { StructuredLogger } from '../logging/structured-logger';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 import { getFlowTemplate } from './conversational-onboarding-flow-templates';
 import { readNumberOr } from '../common/parse';
 
-/** Prisma extension with dynamic models not yet in generated types */
+/**
+ * Prisma extension for the genuinely-dynamic `flow`/`product` models that are
+ * not yet in the generated Prisma types. `kloelMemory` is intentionally NOT
+ * here — it is reached through the canonical Mind alias surface
+ * (`MindMemoryItemService.items`) via the `mindMemoryItems` getter below.
+ */
 interface PrismaWithDynamicModels {
-  kloelMemory: {
-    findUnique(args: Record<string, unknown>): Promise<Record<string, unknown> | null>;
-    findMany(args: Record<string, unknown>): Promise<Array<Record<string, unknown>>>;
-    upsert(args: Record<string, unknown>): Promise<Record<string, unknown>>;
-    deleteMany(args: Record<string, unknown>): Promise<{ count: number }>;
-  };
   product: {
     create(args: Record<string, unknown>): Promise<Record<string, unknown>>;
   };
@@ -41,8 +42,20 @@ export class ConversationalOnboardingToolsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {
     this.prismaExt = prisma as object as PrismaWithDynamicModels;
+  }
+
+  /**
+   * Canonical Mind surface for the `RAC_KloelMemory` table. Reads/writes go
+   * through `MindMemoryItemService.items` (a fully-typed `kloelMemory` Prisma
+   * delegate) when DI provides it, falling back to the raw `prisma.kloelMemory`
+   * delegate when the optional service is absent (e.g. legacy test harnesses).
+   * Both surfaces hit the SAME row — no behaviour drift.
+   */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
   }
 
   // ---------------------------------------------------------------------------
@@ -96,15 +109,19 @@ export class ConversationalOnboardingToolsService {
     value: unknown,
     category: string,
   ): Promise<void> {
-    await this.prismaExt.kloelMemory.upsert({
+    // The onboarding tool payloads (strings, booleans, arrays, plain objects)
+    // are genuine JSON values; pin the type for the `Json` column with a single
+    // safe cast so the canonical delegate typechecks without a bridge.
+    const jsonValue = value as Prisma.InputJsonValue;
+    await this.mindMemoryItems.upsert({
       where: { workspaceId_key: { workspaceId, key } },
-      create: { workspaceId, key, value, category },
-      update: { value, category },
+      create: { workspaceId, key, value: jsonValue, category },
+      update: { value: jsonValue, category },
     });
   }
 
   async getMemoryValue(workspaceId: string, key: string): Promise<unknown> {
-    const memory = await this.prismaExt.kloelMemory.findUnique({
+    const memory = await this.mindMemoryItems.findUnique({
       where: { workspaceId_key: { workspaceId, key } },
     });
     return memory?.value;
@@ -117,14 +134,14 @@ export class ConversationalOnboardingToolsService {
   async getOnboardingHistory(
     workspaceId: string,
   ): Promise<Array<{ role: string; content: string }>> {
-    const messages = await this.prismaExt.kloelMemory.findMany({
+    const messages = await this.mindMemoryItems.findMany({
       where: { workspaceId, key: { startsWith: 'onboarding_msg_' } },
       select: { id: true, key: true, value: true, createdAt: true },
       orderBy: { createdAt: 'asc' },
       take: 100,
     });
 
-    return messages.map((m: Record<string, unknown>) => {
+    return messages.map((m) => {
       const val = this.isRecord(m.value) ? m.value : {};
       return {
         role: this.readText(val.role) || 'assistant',
@@ -148,7 +165,7 @@ export class ConversationalOnboardingToolsService {
       })
       .catch(() => {});
 
-    await this.prismaExt.kloelMemory.deleteMany({
+    await this.mindMemoryItems.deleteMany({
       where: { workspaceId, key: { startsWith: 'onboarding_msg_' } },
     });
   }

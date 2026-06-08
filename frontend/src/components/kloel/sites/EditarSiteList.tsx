@@ -46,7 +46,7 @@ export function EditarSiteList({ savedSites, loading, onSelectSite, onDeleteSite
               </button>
               {site.published && <Badge color={colors.semantic.success}>{kloelT(`Publicado`)}</Badge>}
               <Btn variant="ghost" small onClick={() => onSelectSite(site)}>{IC.edit(14)} {kloelT(`Editar`)}</Btn>
-              <Btn variant="danger" small onClick={() => onDeleteSite(site.id)}>{IC.trash(14)}</Btn>
+              <Btn variant="danger" small ariaLabel={`Excluir ${site.name || 'site'}`} onClick={() => onDeleteSite(site.id)}>{IC.trash(14)}</Btn>
             </Card>
           ))}
         </div>

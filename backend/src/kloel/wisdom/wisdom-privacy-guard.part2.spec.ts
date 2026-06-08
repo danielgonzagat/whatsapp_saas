@@ -328,12 +328,12 @@ describe('WisdomPrivacyGuardService — integration', () => {
     expect(filtered).toHaveLength(1);
 
     const wp: WisdomPattern = {
-      patternId: filtered[0]!.patternId,
-      description: filtered[0]!.description,
-      applicableConditions: filtered[0]!.applicableConditions,
-      evidenceWorkspacesCount: filtered[0]!.evidenceWorkspacesCount,
-      confidence: filtered[0]!.confidence,
-      signalKind: filtered[0]!.signalKind,
+      patternId: filtered[0].patternId,
+      description: filtered[0].description,
+      applicableConditions: filtered[0].applicableConditions,
+      evidenceWorkspacesCount: filtered[0].evidenceWorkspacesCount,
+      confidence: filtered[0].confidence,
+      signalKind: filtered[0].signalKind,
       taxonomy: {},
     };
     expect(() => service.guardProjection([wp])).not.toThrow();

@@ -1,7 +1,7 @@
 'use client';
 import { colors, typography } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
-import { ExternalLink, Globe, Pencil, Trash2 } from 'lucide-react';
+import { ExternalLink, Globe, Trash2 } from 'lucide-react';
 import { AI_LEARN_BADGES, PRODUCT_URLS_COPY } from './ProductUrlsTab.constants';
 import type { ProductUrlItem } from './ProductUrlForm';
 
@@ -164,13 +164,6 @@ export function ProductUrlList({
               </td>
               <td className="px-4 py-3">
                 <div className="flex gap-1.5">
-                  <button
-                    type="button"
-                    className="rounded-full p-1.5 transition-colors"
-                    style={{ background: `${colors.accent.webb}15`, color: colors.accent.webb }}
-                  >
-                    <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-                  </button>
                   <button
                     type="button"
                     onClick={() => onDelete(row)}

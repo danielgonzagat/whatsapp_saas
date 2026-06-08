@@ -123,7 +123,17 @@ try {
     fs.writeFileSync(aAbs, 'export const x: number = 1;\n'); // restore
   }
 
-  // (4) UNJUDGED blocks — write a file in a dir with NO resolvable tsconfig up to
+  // (4) GREEN new-file materialization — a valid, type-sound new file in a missing
+  //     subdirectory is admitted and atomicWrite creates the parent directory inside
+  //     the Atomic materializer after all gates pass.
+  {
+    const nestedAbs = path.join(proj, 'nested', 'deep', 'new.ts');
+    const msg = threw(() => atomicWrite(nestedAbs, 'export const nested: number = 7;\n'));
+    check('(4) GREEN: valid new file in missing subdirectory passes', msg === null);
+    check('(4) GREEN: atomicWrite created the parent directory and wrote bytes', fs.readFileSync(nestedAbs, 'utf8') === 'export const nested: number = 7;\n');
+  }
+
+  // (5) UNJUDGED blocks — write a file in a dir with NO resolvable tsconfig up to
   //     REPO_ROOT-relative path: type-soundness bails unjudged. Under Y, an honest
   //     cannot-decide is not green approval, so the byte is refused before disk.
   {
@@ -132,7 +142,7 @@ try {
     // c.ts has no relative imports (connection green), no bare deps (supply-chain green); the
     // only applicable rung is type-soundness, which is now unjudged (no tsconfig) and must block.
     const msg = threw(() => atomicWrite(cAbs, 'export const y: number = nope();\n'));
-    check('(4) UNJUDGED at floor: no-tsconfig write is refused before disk', !!msg && /UNJUDGED|unjudged/.test(msg) && !fs.existsSync(cAbs));
+    check('(5) UNJUDGED at floor: no-tsconfig write is refused before disk', !!msg && /UNJUDGED|unjudged/.test(msg) && !fs.existsSync(cAbs));
   }
 } finally {
   fs.rmSync(proj, { recursive: true, force: true });

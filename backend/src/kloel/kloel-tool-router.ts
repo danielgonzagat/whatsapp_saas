@@ -40,6 +40,8 @@ interface KloelToolExecutionReceipt {
   error?: string;
   /** Artifact id property. */
   artifactId?: string;
+  /** Duration ms property. */
+  durationMs?: number;
 }
 
 interface ExecuteAssistantToolCallsInput {
@@ -162,6 +164,7 @@ export class KloelToolRouter {
     await forEachSequential(toolCalls, async (toolCall) => {
       const toolName = toolCall.function?.name || '';
       const callId = toolCall.id || buildTimestampedRuntimeId(toolName || 'tool');
+      const spanStartedAt = Date.now();
       let toolArgs: Record<string, unknown> = {};
 
       try {
@@ -265,6 +268,7 @@ export class KloelToolRouter {
           }
         }
       }
+      const durationMs = Math.max(0, Date.now() - spanStartedAt);
 
       receipts.push({
         callId,
@@ -274,6 +278,7 @@ export class KloelToolRouter {
         result,
         ...(error !== undefined ? { error } : {}),
         ...(artifactId !== undefined ? { artifactId } : {}),
+        durationMs,
       });
 
       // already-budgeted completion; this router does not invoke OpenAI directly.
@@ -300,6 +305,7 @@ export class KloelToolRouter {
           result,
           ...(error !== undefined ? { error } : {}),
           ...(artifactId !== undefined ? { artifactId } : {}),
+          durationMs,
         }),
       );
     });

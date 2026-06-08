@@ -1,10 +1,8 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
-import {
-  AssistantProcessingTraceCard,
-  AssistantVersionNavigator,
-} from '@/components/kloel/AssistantResponseChrome';
+import { AssistantVersionNavigator } from '@/components/kloel/AssistantResponseChrome';
+import { ReasoningTimeline } from './ReasoningTimeline';
 import { KloelMarkdown } from '@/components/kloel/KloelMarkdown';
 import { MessageActionBar } from '@/components/kloel/MessageActionBar';
 import {
@@ -33,13 +31,15 @@ import {
   toRecordArray,
 } from './KloelDashboard.message.helpers';
 import {
+  getAssistantReasoning,
+  withDeliverableFiles,
   getAssistantProcessingTrace,
   getAssistantResponseVersions,
   summarizeAssistantProcessingTrace,
 } from '@/lib/kloel-message-ui';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { EMBER, F, MUTED, TEXT, SURFACE, DIVIDER, V } from './KloelDashboard.subcomponents';
-import { AssistantThinkingState, AssistantAssetBlock } from './KloelDashboard.assistant';
+import { AssistantAssetBlock } from './KloelDashboard.assistant';
 import { useEffect, useMemo, useState } from 'react';
 
 export type DashboardMessage = {
@@ -280,6 +280,7 @@ export function MessageBlock({
       ),
     [message.metadata, processingTrace],
   );
+  const reasoning = useMemo(() => getAssistantReasoning(message.metadata), [message.metadata]);
   const [activeVersionIndex, setActiveVersionIndex] = useState(
     clampVersionIndex(assistantVersions.length - 1, assistantVersions.length),
   );
@@ -435,23 +436,20 @@ export function MessageBlock({
     clampVersionIndex(activeVersionIndex, assistantVersions.length),
     message.text,
   );
-  const hasProcessingTrace = processingTrace.length > 0;
   const hasVisibleAssistantText = !!visibleAssistantText.trim();
 
   if (shouldShowThinkingPlaceholder(isThinking, hasVisibleAssistantText)) {
-    if (hasProcessingTrace) {
-      return (
-        <AssistantProcessingTraceCard
-          entries={processingTrace}
-          summary={processingSummary}
-          isProcessing={true}
-          {...(showSlowHint !== undefined ? { showSlowHint } : {})}
-          {...(onCancelProcessing !== undefined ? { onCancel: onCancelProcessing } : {})}
-        />
-      );
-    }
-
-    return <AssistantThinkingState label={kloelT(`Kloel está pensando`)} />;
+    return (
+      <ReasoningTimeline
+        reasoning={reasoning}
+        steps={processingTrace}
+        fallbackSummary={processingSummary}
+        isProcessing
+        isComplete={false}
+        {...(showSlowHint !== undefined ? { showSlowHint } : {})}
+        {...(onCancelProcessing !== undefined ? { onCancel: onCancelProcessing } : {})}
+      />
+    );
   }
 
   return (
@@ -463,15 +461,15 @@ export function MessageBlock({
         fontFamily: F,
       }}
     >
-      {hasProcessingTrace ? (
-        <AssistantProcessingTraceCard
-          entries={processingTrace}
-          summary={processingSummary}
-          isProcessing={isThinking}
-          {...(showSlowHint !== undefined ? { showSlowHint } : {})}
-          {...(onCancelProcessing !== undefined ? { onCancel: onCancelProcessing } : {})}
-        />
-      ) : null}
+      <ReasoningTimeline
+        reasoning={withDeliverableFiles(reasoning, visibleAssistantText)}
+        steps={processingTrace}
+        fallbackSummary={processingSummary}
+        isProcessing={isThinking}
+        isComplete={!isThinking && hasVisibleAssistantText}
+        {...(showSlowHint !== undefined ? { showSlowHint } : {})}
+        {...(onCancelProcessing !== undefined ? { onCancel: onCancelProcessing } : {})}
+      />
 
       <AssistantVersionNavigator
         total={assistantVersions.length}

@@ -153,6 +153,20 @@ export function ColorField({
   onChange: (v: string) => void;
 }) {
   const colorId = useId();
+  const toHexColor = (v: string): string => {
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+      return v;
+    }
+    const m = v.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+    if (m) {
+      const h = (n: string) =>
+        Math.max(0, Math.min(255, parseInt(n, 10)))
+          .toString(16)
+          .padStart(2, '0');
+      return `#${h(m[1] ?? '0')}${h(m[2] ?? '0')}${h(m[3] ?? '0')}`;
+    }
+    return '#0a0a0c';
+  };
   return (
     <div style={{ marginBottom: 12 }}>
       <label htmlFor={`${colorId}-color`} style={labelStyle}>
@@ -163,7 +177,7 @@ export function ColorField({
           id={`${colorId}-color`}
           aria-label={`${lbl} (seletor de cor)`}
           type="color"
-          value={value || colors.background.void}
+          value={toHexColor(value || colors.background.void)}
           onChange={(e) => onChange(e.target.value)}
           style={{
             width: 36,
@@ -248,7 +262,7 @@ export function LoadingBar({
         width,
         height,
         borderRadius: R,
-        background:          'rgba(34, 34, 38, 0.96)',
+        background: 'rgba(34, 34, 38, 0.96)',
         ...style,
       }}
     />

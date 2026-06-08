@@ -3,9 +3,12 @@ jest.mock('./helpers/ai-config.helpers', () => ({
   normalizeProductAiConfigInput: jest.fn(),
 }));
 
+jest.mock('../../auth/workspace-access', () => ({
+  resolveWorkspaceId: jest.fn(),
+}));
+
 jest.mock('./helpers/common.helpers', () => ({
   ensureWorkspaceProductAccess: jest.fn().mockResolvedValue(undefined),
-  getWorkspaceId: jest.fn(),
 }));
 
 import { ProductAIConfigController } from './product-ai-config.controller';
@@ -13,12 +16,13 @@ import {
   serializeProductAiConfig,
   normalizeProductAiConfigInput,
 } from './helpers/ai-config.helpers';
-import { ensureWorkspaceProductAccess, getWorkspaceId } from './helpers/common.helpers';
+import { ensureWorkspaceProductAccess } from './helpers/common.helpers';
+import { resolveWorkspaceId } from '../../auth/workspace-access';
 
 const serializeProductAiConfigMock = serializeProductAiConfig as jest.Mock;
 const normalizeProductAiConfigInputMock = normalizeProductAiConfigInput as jest.Mock;
 const ensureWorkspaceProductAccessMock = ensureWorkspaceProductAccess as jest.Mock;
-const getWorkspaceIdMock = getWorkspaceId as jest.Mock;
+const getWorkspaceIdMock = resolveWorkspaceId as jest.Mock;
 
 describe('ProductAIConfigController', () => {
   const mockFindUnique = jest.fn();

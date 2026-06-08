@@ -104,7 +104,8 @@ export class ConsolidationService {
       const relatedEvents = item.relatedEventIds
         .map((id) => eventById.get(id))
         .filter((e): e is SpineEventRef => Boolean(e));
-      if (relatedEvents.length === 0) {
+      const firstRelatedEvent = relatedEvents[0];
+      if (!firstRelatedEvent) {
         continue;
       }
       const valenceMix = relatedEvents.reduce(
@@ -118,7 +119,7 @@ export class ConsolidationService {
       out.push({
         episodeId: `ep_${item.itemId}_${cycleAt}`,
         summary: item.content,
-        occurredAt: relatedEvents[0]!.occurredAt,
+        occurredAt: firstRelatedEvent.occurredAt,
         relatedEventIds: item.relatedEventIds,
         valenceMix,
       });

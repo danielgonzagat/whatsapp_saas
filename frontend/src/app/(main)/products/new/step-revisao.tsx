@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { formatLocalizedCurrency, formatLocalizedPercent } from './page.helpers';
 import { monitorCard } from './shared-styles';
 import { ReviewSection } from './review-section';
 import {
@@ -54,15 +55,13 @@ export function StepRevisao({ form, needsPhysical, onEditStep }: StepRevisaoProp
         items={[
           {
             label: 'Preco',
-            value: `R$ ${Number.parseFloat(form.price || '0')
-              .toFixed(2)
-              .replace('.', ',')}`,
+            value: formatLocalizedCurrency(form.price || '0'),
             highlight: true,
           },
           { label: 'Tipo de pagamento', value: PAYMENT_TYPE_LABEL_MAP[form.paymentType] },
           {
             label: 'Comissao afiliado',
-            value: form.affiliateCommission ? `${form.affiliateCommission}%` : '',
+            value: formatLocalizedPercent(form.affiliateCommission),
           },
           { label: 'Garantia', value: `${form.guaranteeDays} dias` },
           {
@@ -122,9 +121,7 @@ export function StepRevisao({ form, needsPhysical, onEditStep }: StepRevisaoProp
             ? [
                 {
                   label: 'Comissao',
-                  value: form.affiliateCommissionPercent
-                    ? `${form.affiliateCommissionPercent}%`
-                    : '',
+                  value: formatLocalizedPercent(form.affiliateCommissionPercent),
                 },
                 {
                   label: 'Aprovacao',

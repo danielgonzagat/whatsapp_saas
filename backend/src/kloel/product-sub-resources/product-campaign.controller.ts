@@ -21,7 +21,6 @@ import { PrismaService } from '../../prisma/prisma.service';
 import {
   LooseObject,
   ensureWorkspaceProductAccess,
-  getWorkspaceId,
   parseObject,
   removeUndefined,
   safeStr,
@@ -35,6 +34,8 @@ import {
 
 /** Product campaign controller. */
 import { RouteClass } from '../../common/throttler/route-class.decorator';
+import { resolveWorkspaceId } from '../../auth/workspace-access';
+
 @Controller('products/:productId/campaigns')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('mutate')
@@ -82,6 +83,19 @@ export class ProductCampaignController {
     });
   }
 
+  private serializeWithDeliveryReadiness(
+    productCampaign: LooseObject,
+    linkedCampaign: LooseObject | null,
+    deliveryReadiness: Awaited<ReturnType<CampaignsService['getDeliveryReadiness']>>,
+  ) {
+    return {
+      ...serializeProductCampaignRecord(productCampaign, linkedCampaign),
+      deliveryReady: deliveryReadiness.ready,
+      deliveryMissing: deliveryReadiness.missing,
+      deliveryGapMessage: deliveryReadiness.message,
+    };
+  }
+
   private async ensureLinkedCampaign(
     workspaceId: string,
     product: LooseObject,
@@ -127,21 +141,24 @@ export class ProductCampaignController {
   /** List. */
   @Get()
   async list(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    const workspaceId = resolveWorkspaceId(req);
+    await ensureWorkspaceProductAccess(this.prisma, productId, workspaceId);
 
-    const [productCampaigns, workspaceCampaigns] = await Promise.all([
+    const [productCampaigns, workspaceCampaigns, deliveryReadiness] = await Promise.all([
       this.prisma.productCampaign.findMany({
         where: { productId },
         orderBy: { createdAt: 'desc' },
         take: 100,
       }),
-      this.listWorkspaceCampaigns(getWorkspaceId(req)),
+      this.listWorkspaceCampaigns(workspaceId),
+      this.campaignsService.getDeliveryReadiness(workspaceId),
     ]);
 
     return productCampaigns.map((campaign) =>
-      serializeProductCampaignRecord(
+      this.serializeWithDeliveryReadiness(
         campaign,
         findLinkedCampaignForProductCampaign(workspaceCampaigns, campaign),
+        deliveryReadiness,
       ),
     );
   }
@@ -153,7 +170,8 @@ export class ProductCampaignController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: AuthenticatedRequest,
   ) {
-    const product = await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    const workspaceId = resolveWorkspaceId(req);
+    const product = await ensureWorkspaceProductAccess(this.prisma, productId, workspaceId);
 
     if (!safeStr(body.name).trim()) {
       throw new BadRequestException('Nome da campanha é obrigatório');
@@ -168,13 +186,18 @@ export class ProductCampaignController {
     });
 
     const linkedCampaign = await this.ensureLinkedCampaign(
-      getWorkspaceId(req),
+      workspaceId,
       product,
       createdProductCampaign,
       body,
     );
+    const deliveryReadiness = await this.campaignsService.getDeliveryReadiness(workspaceId);
 
-    return serializeProductCampaignRecord(createdProductCampaign, linkedCampaign);
+    return this.serializeWithDeliveryReadiness(
+      createdProductCampaign,
+      linkedCampaign,
+      deliveryReadiness,
+    );
   }
 
   /** Update. */
@@ -185,7 +208,8 @@ export class ProductCampaignController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: AuthenticatedRequest,
   ) {
-    const product = await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    const workspaceId = resolveWorkspaceId(req);
+    const product = await ensureWorkspaceProductAccess(this.prisma, productId, workspaceId);
 
     const productCampaign = await this.prisma.productCampaign.findFirst({
       where: { id: campaignId, productId },
@@ -203,13 +227,18 @@ export class ProductCampaignController {
     });
 
     const linkedCampaign = await this.ensureLinkedCampaign(
-      getWorkspaceId(req),
+      workspaceId,
       product,
       updatedProductCampaign,
       body,
     );
+    const deliveryReadiness = await this.campaignsService.getDeliveryReadiness(workspaceId);
 
-    return serializeProductCampaignRecord(updatedProductCampaign, linkedCampaign);
+    return this.serializeWithDeliveryReadiness(
+      updatedProductCampaign,
+      linkedCampaign,
+      deliveryReadiness,
+    );
   }
 
   /** Launch. */
@@ -220,7 +249,11 @@ export class ProductCampaignController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: AuthenticatedRequest,
   ) {
-    const product = await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    const product = await ensureWorkspaceProductAccess(
+      this.prisma,
+      productId,
+      resolveWorkspaceId(req),
+    );
 
     const productCampaign = await this.prisma.productCampaign.findFirst({
       where: { id: campaignId, productId },
@@ -230,14 +263,14 @@ export class ProductCampaignController {
     }
 
     const linkedCampaign = await this.ensureLinkedCampaign(
-      getWorkspaceId(req),
+      resolveWorkspaceId(req),
       product,
       productCampaign,
       body,
     );
 
     return this.campaignsService.launch(
-      getWorkspaceId(req),
+      resolveWorkspaceId(req),
       linkedCampaign.id,
       body.smartTime === true,
     );
@@ -250,7 +283,7 @@ export class ProductCampaignController {
     @Param('campaignId') campaignId: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     const productCampaign = await this.prisma.productCampaign.findFirst({
       where: { id: campaignId, productId },
@@ -260,14 +293,14 @@ export class ProductCampaignController {
     }
 
     const linkedCampaign = findLinkedCampaignForProductCampaign(
-      await this.listWorkspaceCampaigns(getWorkspaceId(req)),
+      await this.listWorkspaceCampaigns(resolveWorkspaceId(req)),
       productCampaign,
     );
     if (!linkedCampaign) {
       throw new NotFoundException('Campanha operacional não encontrada');
     }
 
-    return this.campaignsService.pause(getWorkspaceId(req), safeStr(linkedCampaign.id));
+    return this.campaignsService.pause(resolveWorkspaceId(req), safeStr(linkedCampaign.id));
   }
 
   /** Delete. */
@@ -277,7 +310,7 @@ export class ProductCampaignController {
     @Param('campaignId') campaignId: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     const campaign = await this.prisma.productCampaign.findFirst({
       where: { id: campaignId, productId },
@@ -287,19 +320,19 @@ export class ProductCampaignController {
     }
 
     const linkedCampaign = findLinkedCampaignForProductCampaign(
-      await this.listWorkspaceCampaigns(getWorkspaceId(req)),
+      await this.listWorkspaceCampaigns(resolveWorkspaceId(req)),
       campaign,
     );
 
     await this.auditService.log({
-      workspaceId: getWorkspaceId(req),
+      workspaceId: resolveWorkspaceId(req),
       action: 'DELETE_RECORD',
       resource: 'ProductCampaign',
       resourceId: campaignId,
       details: { deletedBy: 'user', productId },
     });
 
-    const workspaceId = getWorkspaceId(req);
+    const workspaceId = resolveWorkspaceId(req);
     if (linkedCampaign) {
       await this.prisma.campaign.deleteMany({
         where: { id: safeStr(linkedCampaign.id), workspaceId },

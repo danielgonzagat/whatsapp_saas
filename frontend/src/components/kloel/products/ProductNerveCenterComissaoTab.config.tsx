@@ -67,10 +67,12 @@ export function ConfigSubTab({ productId, p, refreshProduct, setAffiliateSummary
         }),
       );
       setAffiliateSummary(summary);
-      await refreshProduct();
       setComSaved(true);
       setTimeout(() => setComSaved(false), 2000);
       showToast('Comissões salvas', 'success');
+      void refreshProduct().catch((error) => {
+        console.error('Commission refresh error:', error);
+      });
     } catch (e) {
       console.error('Commission save error:', e);
       showToast(e instanceof Error ? e.message : 'Erro ao salvar comissões', 'error');

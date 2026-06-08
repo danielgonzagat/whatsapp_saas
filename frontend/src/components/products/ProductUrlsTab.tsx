@@ -13,12 +13,27 @@ import type { ProductUrlItem, ProductUrlFormData } from './ProductUrlForm';
 import { ProductUrlList } from './ProductUrlList';
 import { ProductUrlDeleteModal } from './ProductUrlDeleteModal';
 
+type ProductUrlListEnvelope = {
+  data?: unknown;
+  urls?: unknown;
+};
+
 function normalizeProductUrlList(response: unknown): ProductUrlItem[] {
-  if (!Array.isArray(response)) {
+  const envelope =
+    response && typeof response === 'object' ? (response as ProductUrlListEnvelope) : null;
+  const list = Array.isArray(response)
+    ? response
+    : Array.isArray(envelope?.data)
+      ? envelope.data
+      : Array.isArray(envelope?.urls)
+        ? envelope.urls
+        : null;
+
+  if (!list) {
     throw new Error('Payload de URLs invalido.');
   }
 
-  return response;
+  return list as ProductUrlItem[];
 }
 
 export function ProductUrlsTab({ productId }: { productId: string }) {

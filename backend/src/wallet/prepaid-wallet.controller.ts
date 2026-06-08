@@ -8,7 +8,7 @@ import { Metrics } from '../observability/metrics';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
-import { WalletService } from './wallet.service';
+import { PrepaidWalletService } from './wallet.service';
 import { InsufficientWalletBalanceError } from './wallet.types';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 
@@ -17,7 +17,7 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 @RouteClass('mutate')
 export class PrepaidWalletController {
   constructor(
-    private readonly walletService: WalletService,
+    private readonly walletService: PrepaidWalletService,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -164,18 +164,19 @@ export class PrepaidWalletController {
       amountCents?: number;
     },
   ) {
-    if (body.enabled === true) {
+    const enabled = body.enabled ?? false;
+    let threshold: bigint | null = null;
+    let amount: bigint | null = null;
+    if (enabled) {
       if (!body.thresholdCents || body.thresholdCents <= 0) {
         throw new RangeError('thresholdCents must be greater than 0 when enabling auto-recharge');
       }
       if (!body.amountCents || body.amountCents <= 0) {
         throw new RangeError('amountCents must be greater than 0 when enabling auto-recharge');
       }
+      threshold = BigInt(body.thresholdCents);
+      amount = BigInt(body.amountCents);
     }
-
-    const enabled = body.enabled ?? false;
-    const threshold = body.enabled ? BigInt(body.thresholdCents!) : null;
-    const amount = body.enabled ? BigInt(body.amountCents!) : null;
 
     const wallet = await this.prisma.prepaidWallet.upsert({
       where: { workspaceId },

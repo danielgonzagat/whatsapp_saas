@@ -444,6 +444,20 @@ function readStringList(...values: unknown[]): string[] {
   return [];
 }
 
+function formatCapabilityProofLabel(capabilityId: string): string {
+  const normalized = capabilityId.trim().toLowerCase();
+  const labels: Record<string, string> = {
+    'self.health': 'saúde operacional',
+    'sales.create_pix': 'geração de PIX',
+    'sales.create_boleto': 'emissão de boleto',
+    'sales.create_card_link': 'link de cartão',
+    create_payment_link: 'link de pagamento',
+    generate_pix: 'geração de PIX',
+    generate_boleto: 'emissão de boleto',
+  };
+  return labels[normalized] ?? 'ação executada';
+}
+
 export function appendToolResultProof(reply: string, result: unknown): string {
   const r = readRecord(result);
   if (r.success === false) {
@@ -462,7 +476,7 @@ export function appendToolResultProof(reply: string, result: unknown): string {
   const providerMethod = readStringField(executionRail.providerMethod);
   const proofFields = readStringList(executionRail.proofFields);
   const proofLines = [
-    capabilityId ? `Capacidade: ${capabilityId}` : '',
+    capabilityId ? `Ação operacional: ${formatCapabilityProofLabel(capabilityId)}` : '',
     evidenceUrl ? `Evidência: ${evidenceUrl}` : '',
     auditLogId ? `AuditLog: ${auditLogId}` : '',
     provider ? `Provedor: ${provider}` : '',

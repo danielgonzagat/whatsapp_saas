@@ -49,6 +49,12 @@ function makeStubBandit(options: { arm?: string } = {}) {
   };
 }
 
+function makeStubCheckoutEvents() {
+  return {
+    cartAbandoned: jest.fn().mockResolvedValue(undefined),
+  };
+}
+
 function makeStubMindPolicy(action: string) {
   return {
     choose: jest.fn().mockResolvedValue({
@@ -101,6 +107,7 @@ describe('CartRecoveryService', () => {
       workspaceId: 'ws-1',
       orderNumber: '1001',
       status: 'PENDING',
+      planId: 'plan-1',
       customerEmail: overrides?.email ?? 'cliente@kloel.test',
       metadata: overrides?.metadata ?? undefined,
       createdAt: new Date(Date.now() - 45 * 60 * 1000),
@@ -532,6 +539,158 @@ describe('CartRecoveryService', () => {
       expect(stubTransport.send).toHaveBeenCalledTimes(1);
       expect(sendEmail).not.toHaveBeenCalled();
       expect(prisma.checkoutOrder.updateMany).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('spine abandonment emission', () => {
+    function makeService(stubCheckoutEvents: ReturnType<typeof makeStubCheckoutEvents>) {
+      return new CartRecoveryService(
+        prisma as never,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        stubCheckoutEvents as never,
+      );
+    }
+
+    it('emits commerce.cart.abandoned once for a newly-abandoned order', async () => {
+      prisma.checkoutOrder.findMany.mockResolvedValue([pendingOrder()]);
+      const stubCheckoutEvents = makeStubCheckoutEvents();
+      service = makeService(stubCheckoutEvents);
+
+      await service.checkAbandonedCarts();
+
+      expect(stubCheckoutEvents.cartAbandoned).toHaveBeenCalledTimes(1);
+      expect(stubCheckoutEvents.cartAbandoned).toHaveBeenCalledWith(
+        partialMatch({
+          workspaceId: 'ws-1',
+          orderId: 'order-1',
+          planId: 'plan-1',
+        }),
+      );
+    });
+
+    it('does not re-emit on a second cron pass once recovery metadata is recorded', async () => {
+      const stubCheckoutEvents = makeStubCheckoutEvents();
+      service = makeService(stubCheckoutEvents);
+
+      // First pass: order is freshly abandoned (no recovery metadata).
+      prisma.checkoutOrder.findMany.mockResolvedValueOnce([pendingOrder()]);
+      await service.checkAbandonedCarts();
+      expect(stubCheckoutEvents.cartAbandoned).toHaveBeenCalledTimes(1);
+
+      // Second pass: the recoveryEmailSent marker is now set, so the toRecover
+      // filter excludes the order and no further abandonment is emitted.
+      prisma.checkoutOrder.findMany.mockResolvedValueOnce([
+        pendingOrder({ metadata: { recoveryEmailSent: true } }),
+      ]);
+      await service.checkAbandonedCarts();
+      expect(stubCheckoutEvents.cartAbandoned).toHaveBeenCalledTimes(1);
+    });
+
+    it('preserves recovery behavior when the emitter is not injected', async () => {
+      prisma.checkoutOrder.findMany.mockResolvedValue([pendingOrder()]);
+      service = new CartRecoveryService(prisma as never);
+
+      await service.checkAbandonedCarts();
+
+      expect(sendEmail).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('win-loop decision recording (KLOEL_CART_RECOVERY_LEARN)', () => {
+    const ORIGINAL_FLAG = process.env.KLOEL_CART_RECOVERY_LEARN;
+
+    function makeStubDecisionOutcome() {
+      return { recordDecision: jest.fn().mockResolvedValue(undefined) };
+    }
+
+    function makeService(decisionOutcome: ReturnType<typeof makeStubDecisionOutcome>) {
+      return new CartRecoveryService(
+        prisma as never,
+        undefined,
+        makeStubMindPolicy('discount') as never,
+        undefined,
+        undefined,
+        undefined,
+        makeStubBandit({ arm: 'discount' }) as never,
+        undefined,
+        decisionOutcome as never,
+      );
+    }
+
+    afterEach(() => {
+      if (ORIGINAL_FLAG === undefined) {
+        delete process.env.KLOEL_CART_RECOVERY_LEARN;
+      } else {
+        process.env.KLOEL_CART_RECOVERY_LEARN = ORIGINAL_FLAG;
+      }
+    });
+
+    it('flag OFF: never records the decision and never persists the outcomeKey', async () => {
+      delete process.env.KLOEL_CART_RECOVERY_LEARN;
+      prisma.checkoutOrder.findMany.mockResolvedValue([pendingOrder()]);
+      const decisionOutcome = makeStubDecisionOutcome();
+      service = makeService(decisionOutcome);
+
+      await service.checkAbandonedCarts();
+
+      expect(decisionOutcome.recordDecision).not.toHaveBeenCalled();
+      const updatePayload = castMock<{ data: { metadata: Record<string, unknown> } }>(
+        prisma.checkoutOrder.updateMany.mock.calls[0]?.[0],
+      ).data.metadata;
+      expect(updatePayload.cartRecoveryOutcomeKey).toBeUndefined();
+    });
+
+    it('flag ON: records the cart_recovery decision and persists the outcomeKey on the order', async () => {
+      process.env.KLOEL_CART_RECOVERY_LEARN = 'true';
+      prisma.checkoutOrder.findMany.mockResolvedValue([pendingOrder()]);
+      const decisionOutcome = makeStubDecisionOutcome();
+      service = makeService(decisionOutcome);
+
+      await service.checkAbandonedCarts();
+
+      expect(decisionOutcome.recordDecision).toHaveBeenCalledTimes(1);
+      expect(decisionOutcome.recordDecision).toHaveBeenCalledWith(
+        partialMatch({
+          workspaceId: 'ws-1',
+          decisionType: 'cart_recovery',
+          chosenAction: 'discount',
+          outcomeKey: stringMatch(/^cart_recovery:ws-1:order-1:\d+$/),
+          expectedWindow: 1,
+        }),
+      );
+
+      const recordedKey = castMock<[{ outcomeKey: string }]>(
+        decisionOutcome.recordDecision.mock.calls[0],
+      )[0].outcomeKey;
+      const updatePayload = castMock<{ data: { metadata: Record<string, unknown> } }>(
+        prisma.checkoutOrder.updateMany.mock.calls[0]?.[0],
+      ).data.metadata;
+      // The persisted key is the SAME key the decision was recorded under, so the
+      // payment-approved effect can close exactly this decision row as a WIN.
+      expect(updatePayload.cartRecoveryOutcomeKey).toBe(recordedKey);
+    });
+
+    it('flag ON but DecisionOutcomeService not injected: no record, no key, recovery still sends', async () => {
+      process.env.KLOEL_CART_RECOVERY_LEARN = 'true';
+      prisma.checkoutOrder.findMany.mockResolvedValue([pendingOrder()]);
+      service = new CartRecoveryService(
+        prisma as never,
+        undefined,
+        makeStubMindPolicy('discount') as never,
+      );
+
+      await service.checkAbandonedCarts();
+
+      expect(sendEmail).toHaveBeenCalledTimes(1);
+      const updatePayload = castMock<{ data: { metadata: Record<string, unknown> } }>(
+        prisma.checkoutOrder.updateMany.mock.calls[0]?.[0],
+      ).data.metadata;
+      expect(updatePayload.cartRecoveryOutcomeKey).toBeUndefined();
     });
   });
 });

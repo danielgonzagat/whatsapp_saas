@@ -7,6 +7,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import { actionGetWorkspaceStatus } from './unified-agent-actions-workspace.helpers';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 import { partialMatch } from '../../test/helpers/match-instance';
 
 jest.mock('./openai-wrapper', () => ({
@@ -537,6 +538,45 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
       expect(prisma.contact.count).toHaveBeenCalledWith(
         partialMatch({ where: partialMatch({ workspaceId: 'ws-tenant' }) }),
       );
+    });
+  });
+
+  describe('canonical Mind memory surface (MindMemoryItemService)', () => {
+    it('routes memory writes through MindMemoryItemService.items when injected, byte-identical', async () => {
+      // The canonical alias surface returns a fully-typed KloelMemory delegate.
+      // Here we point `.items` at a distinct spy so we can prove the service
+      // routes through the canonical surface rather than the raw Prisma delegate
+      // when MindMemoryItemService is present — without changing any args.
+      const canonicalCreate = jest.fn().mockResolvedValue({});
+      const canonicalDelegate = { create: canonicalCreate } as unknown;
+      const mindMemory = { items: canonicalDelegate } as unknown;
+
+      const moduleWithMind: TestingModule = await Test.createTestingModule({
+        providers: [
+          UnifiedAgentActionsWorkspaceService,
+          { provide: PrismaService, useValue: prisma },
+          { provide: PlanLimitsService, useValue: planLimits },
+          { provide: OpsAlertService, useValue: { alertOnCriticalError: jest.fn() } },
+          { provide: MindMemoryItemService, useValue: mindMemory },
+        ],
+      }).compile();
+
+      const mindAwareService = moduleWithMind.get<UnifiedAgentActionsWorkspaceService>(
+        UnifiedAgentActionsWorkspaceService,
+      );
+
+      const result = await mindAwareService.actionCreateFlow(wsId, {
+        name: 'Flow A',
+        trigger: 'welcome',
+      });
+
+      expect(result.success).toBe(true);
+      // Canonical surface received the write…
+      expect(canonicalCreate).toHaveBeenCalledWith(
+        partialMatch({ data: partialMatch({ workspaceId: wsId, type: 'flow' }) }),
+      );
+      // …and the raw Prisma delegate was NOT used (proves re-routing).
+      expect(prisma.kloelMemory.create).not.toHaveBeenCalled();
     });
   });
 });

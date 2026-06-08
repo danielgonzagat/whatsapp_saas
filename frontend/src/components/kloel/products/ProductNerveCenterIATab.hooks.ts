@@ -31,30 +31,155 @@ export interface AiConfigShape {
   };
 }
 
+export type AiObjectionDraft = { id: string; label: string; response: string };
+
+export type AiConfigDraftInput = {
+  whobuys: string;
+  pains: string;
+  promise: string;
+  objs: AiObjectionDraft[];
+  tone: string;
+  persist: string;
+  msgLimit: string;
+  followUp: string;
+  autoLink: boolean;
+  offerDisc: boolean;
+  useUrg: boolean;
+};
+
+export type AiConfigSavePayload = {
+  customerProfile: { whobuys: string; pains: string; promise: string };
+  objections: Array<{ label: string; response: string }>;
+  tone: string;
+  persistenceLevel: number;
+  messageLimit: number;
+  followUpConfig: {
+    schedule: string;
+    autoCheckoutLink: boolean;
+    offerDiscount: boolean;
+    useUrgency: boolean;
+  };
+  salesArguments: {
+    autoCheckoutLink: boolean;
+    offerDiscount: boolean;
+    useUrgency: boolean;
+  };
+};
+
+export type AiConfigPayloadResult =
+  | { ok: true; payload: AiConfigSavePayload }
+  | { ok: false; error: string };
+
+export const AI_CONFIG_OBJECTION_ERROR = 'Preencha a objecao e a resposta antes de salvar.';
+export const AI_CONFIG_PERSISTENCE_ERROR = 'A persistencia precisa ficar entre 1 e 5.';
+export const AI_CONFIG_MESSAGE_LIMIT_ERROR =
+  'O limite de mensagens precisa ser zero ou um inteiro positivo.';
+
+function parseIntegerField(value: string): number | null {
+  const trimmed = value.trim();
+  if (!/^-?\d+$/.test(trimmed)) {
+    return null;
+  }
+  return Number.parseInt(trimmed, 10);
+}
+
+export function buildAIConfigPayload(input: AiConfigDraftInput): AiConfigPayloadResult {
+  const objections: Array<{ label: string; response: string }> = [];
+
+  for (const objection of input.objs) {
+    const label = objection.label.trim();
+    const response = objection.response.trim();
+
+    if (!label && !response) {
+      continue;
+    }
+    if (!label || !response) {
+      return { ok: false, error: AI_CONFIG_OBJECTION_ERROR };
+    }
+
+    objections.push({ label, response });
+  }
+
+  const persistenceLevel = parseIntegerField(input.persist);
+  if (persistenceLevel === null || persistenceLevel < 1 || persistenceLevel > 5) {
+    return { ok: false, error: AI_CONFIG_PERSISTENCE_ERROR };
+  }
+
+  const messageLimit = parseIntegerField(input.msgLimit);
+  if (messageLimit === null || messageLimit < 0) {
+    return { ok: false, error: AI_CONFIG_MESSAGE_LIMIT_ERROR };
+  }
+
+  return {
+    ok: true,
+    payload: {
+      customerProfile: {
+        whobuys: input.whobuys.trim(),
+        pains: input.pains.trim(),
+        promise: input.promise.trim(),
+      },
+      objections,
+      tone: input.tone,
+      persistenceLevel,
+      messageLimit,
+      followUpConfig: {
+        schedule: input.followUp.trim() || '2h,24h,72h',
+        autoCheckoutLink: input.autoLink,
+        offerDiscount: input.offerDisc,
+        useUrgency: input.useUrg,
+      },
+      salesArguments: {
+        autoCheckoutLink: input.autoLink,
+        offerDiscount: input.offerDisc,
+        useUrgency: input.useUrg,
+      },
+    },
+  };
+}
+
 export function useAIConfig(productId: string) {
   const { showToast } = useToast();
 
   const [aiCfg, setAiCfg] = useState<AiConfigShape | null>(null);
-  const [aiLoading, setAiLoading] = useState(true);
+  const [aiLoadState, setAiLoadState] = useState({ productId, pending: true });
   const [_aiSaving, setAiSaving] = useState(false);
   const [aiSaved, setAiSaved] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const aiLoading = aiLoadState.productId !== productId || aiLoadState.pending;
   useEffect(() => {
+    let active = true;
+
     apiFetch(`/products/${productId}/ai-config`)
-      .then((r) => setAiCfg(unwrapApiPayload<AiConfigShape>(r) || {}))
-      .catch((error) => {
-        console.error(error);
-        setAiCfg(null);
-        showToast(
-          error instanceof Error ? error.message : 'Erro ao carregar configuração de IA',
-          'error',
-        );
+      .then((r) => {
+        if (!active) {
+          return;
+        }
+        setAiError(null);
+        setAiCfg(unwrapApiPayload<AiConfigShape>(r) || {});
       })
-      .finally(() => setAiLoading(false));
+      .catch((error) => {
+        if (!active) {
+          return;
+        }
+        const message = error instanceof Error ? error.message : 'Erro ao carregar configuração de IA';
+        setAiCfg(null);
+        setAiError(message);
+        showToast(message, 'error');
+      })
+      .finally(() => {
+        if (active) {
+          setAiLoadState({ productId, pending: false });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
   }, [productId, showToast]);
   const [whobuys, setWhobuys] = useState('');
   const [pains, setPains] = useState('');
   const [promise, setPromise] = useState('');
-  const [objs, setObjs] = useState<{ id: string; label: string; response: string }[]>([]);
+  const [objs, setObjs] = useState<AiObjectionDraft[]>([]);
   const objIdCounter = useRef(0);
   const nextObjId = () => {
     objIdCounter.current += 1;
@@ -98,38 +223,54 @@ export function useAIConfig(productId: string) {
     setOfferDisc((sa.offerDiscount ?? fc.offerDiscount) !== false);
     setUseUrg((sa.useUrgency ?? fc.useUrgency) !== false);
   }
-  const handleSaveAI = async () => {
+  const clearAiError = () => setAiError(null);
+  const handleSaveAI = async (draftOverride: Partial<AiConfigDraftInput> = {}) => {
+    const payloadResult = buildAIConfigPayload({
+      whobuys,
+      pains,
+      promise,
+      objs,
+      tone,
+      persist,
+      msgLimit,
+      followUp,
+      autoLink,
+      offerDisc,
+      useUrg,
+      ...draftOverride,
+    });
+
+    if (!payloadResult.ok) {
+      setAiSaved(false);
+      setAiError(payloadResult.error);
+      showToast(payloadResult.error, 'error');
+      return;
+    }
+
+    setAiError(null);
     setAiSaving(true);
     try {
       unwrapApiPayload(
         await apiFetch(`/products/${productId}/ai-config`, {
           method: 'PUT',
-          body: {
-            customerProfile: { whobuys, pains, promise },
-            objections: objs,
-            tone,
-            persistenceLevel: Number.parseInt(persist, 10) || 3,
-            messageLimit: Number.parseInt(msgLimit, 10) || 10,
-            followUpConfig: {
-              schedule: followUp,
-              autoCheckoutLink: autoLink,
-              offerDiscount: offerDisc,
-              useUrgency: useUrg,
-            },
-            salesArguments: {
-              autoCheckoutLink: autoLink,
-              offerDiscount: offerDisc,
-              useUrgency: useUrg,
-            },
-          },
+          body: payloadResult.payload,
         }),
+      );
+      setObjs(
+        payloadResult.payload.objections.map((obj, idx) => ({
+          id: `obj-saved-${idx}`,
+          label: obj.label,
+          response: obj.response,
+        })),
       );
       setAiSaved(true);
       setTimeout(() => setAiSaved(false), 2000);
       showToast('Configuração de IA salva', 'success');
     } catch (e) {
-      console.error(e);
-      showToast(e instanceof Error ? e.message : 'Erro ao salvar configuração de IA', 'error');
+      const message = e instanceof Error ? e.message : 'Erro ao salvar configuração de IA';
+      setAiSaved(false);
+      setAiError(message);
+      showToast(message, 'error');
     } finally {
       setAiSaving(false);
     }
@@ -139,6 +280,8 @@ export function useAIConfig(productId: string) {
     aiLoading,
     _aiSaving,
     aiSaved,
+    aiError,
+    clearAiError,
     whobuys,
     setWhobuys,
     pains,

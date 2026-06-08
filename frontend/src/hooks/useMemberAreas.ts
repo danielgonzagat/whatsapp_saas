@@ -43,18 +43,26 @@ function resolveListPayload(
 }
 
 /** Use member areas. */
-export function useMemberAreas() {
+export function useMemberAreas(options?: { enabled?: boolean }) {
+  const enabled = options?.enabled ?? true;
   const { data, isLoading, error, mutate } = useSWR<MemberAreasResponse | unknown[]>(
-    '/member-areas',
+    enabled ? '/member-areas' : null,
     swrFetcher,
   );
-  const { items, payloadError } = resolveListPayload(
-    data as ListPayload,
-    'areas',
-    isLoading,
-    'Invalid member areas payload',
-  );
-  return { areas: items, isLoading, error: error ?? payloadError, mutate };
+  const { items, payloadError } = enabled
+    ? resolveListPayload(
+        data as ListPayload,
+        'areas',
+        isLoading,
+        'Invalid member areas payload',
+      )
+    : { items: [], payloadError: undefined };
+  return {
+    areas: items,
+    isLoading: enabled ? isLoading : false,
+    error: enabled ? error ?? payloadError : undefined,
+    mutate,
+  };
 }
 
 /** Use member area stats. */

@@ -1,34 +1,34 @@
 'use client';
 
 import { colors } from '@/lib/design-tokens';
-import { kloelT } from '@/lib/i18n/t';
-import { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/api';
-import { mutate as globalMutate } from 'swr';
+import { swrFetcher } from '@/lib/fetcher';
+import { kloelT } from '@/lib/i18n/t';
+import { useState } from 'react';
+import useSWR, { mutate as globalMutate } from 'swr';
 import { SORA, EMBER } from './ContaConstants';
 import { SectionCard } from './ContaShared';
 import { MetaAuthStatus, MetaAuthUrlResponse } from './ContaTypes';
 
 export function MetaConnectSection() {
-  const [status, setStatus] = useState<MetaAuthStatus | null>(null);
-  const [loading, setLoading] = useState(true);
+  const {
+    data: status,
+    error: statusError,
+    isLoading: loading,
+    mutate: mutateStatus,
+  } = useSWR<MetaAuthStatus>('/meta/auth/status', swrFetcher, {
+    dedupingInterval: 30_000,
+    revalidateOnFocus: false,
+  });
   const [disconnecting, setDisconnecting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    apiFetch<MetaAuthStatus>('/meta/auth/status')
-      .then((res) => {
-        if (res.error) {
-          setMessage(res.error);
-          return;
-        }
-        setStatus(res.data ?? null);
-      })
-      .catch((error: unknown) => {
-        setMessage(error instanceof Error ? error.message : 'Falha ao carregar status Meta.');
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  const statusMessage =
+    message ||
+    (statusError instanceof Error
+      ? statusError.message
+      : statusError
+        ? 'Falha ao carregar status Meta.'
+        : null);
 
   const handleConnect = async () => {
     setMessage(null);
@@ -55,7 +55,7 @@ export function MetaConnectSection() {
       if (response.error) {
         throw new Error(response.error);
       }
-      setStatus({ connected: false });
+      await mutateStatus({ connected: false }, { revalidate: false });
       globalMutate((key: unknown) => typeof key === 'string' && key.startsWith('/meta'));
     } catch (error: unknown) {
       setMessage(error instanceof Error ? error.message : 'Falha ao desconectar Meta.');
@@ -64,7 +64,7 @@ export function MetaConnectSection() {
     }
   };
 
-  const messageBanner = message ? (
+  const messageBanner = statusMessage ? (
     <div
       role="alert"
       aria-live="polite"
@@ -79,7 +79,7 @@ export function MetaConnectSection() {
         fontFamily: SORA,
       }}
     >
-      {message}
+      {statusMessage}
     </div>
   ) : null;
 

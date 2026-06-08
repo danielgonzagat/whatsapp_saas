@@ -47,7 +47,7 @@ describe('MindMultiModalPerceptionService', () => {
       expect(typeof out.sourceFingerprint).toBe('string');
       expect(out.sourceFingerprint).toHaveLength(32);
       expect(spine.emit).toHaveBeenCalledTimes(1);
-      const env = (spine.emit.mock.calls as Array<[Record<string, unknown>]>)[0]![0];
+      const env = (spine.emit.mock.calls as Array<[Record<string, unknown>]>)[0][0];
       expect(env.eventName).toBe('cognition.perception.multimodal_observed');
       expect(env.workspaceId).toBe('ws-1');
       expect(env.payload.modality).toBe('audio');
@@ -96,7 +96,7 @@ describe('MindMultiModalPerceptionService', () => {
 
       expect(out.transcript).toBeUndefined();
       expect(out.sourceFingerprint).toHaveLength(32);
-      const env = (spine.emit.mock.calls as Array<[Record<string, unknown>]>)[0]![0];
+      const env = (spine.emit.mock.calls as Array<[Record<string, unknown>]>)[0][0];
       expect(env.payload.failure).toBe('transcribe_threw');
     });
   });
@@ -117,7 +117,7 @@ describe('MindMultiModalPerceptionService', () => {
       expect(out.description).toBe('gato');
       expect(out.detectedObjects).toEqual(['gato', 'sofa']);
       expect(out.sourceFingerprint).toHaveLength(32);
-      const env = (spine.emit.mock.calls as Array<[Record<string, unknown>]>)[0]![0];
+      const env = (spine.emit.mock.calls as Array<[Record<string, unknown>]>)[0][0];
       expect(env.payload.modality).toBe('image');
       expect(env.payload.objectCount).toBe(2);
     });
@@ -156,7 +156,7 @@ describe('MindMultiModalPerceptionService', () => {
       const out = await svc.perceiveImage('ws-2', Buffer.from('jpg'), 'image/jpeg');
 
       expect(out.description).toBeUndefined();
-      const env = (spine.emit.mock.calls as Array<[Record<string, unknown>]>)[0]![0];
+      const env = (spine.emit.mock.calls as Array<[Record<string, unknown>]>)[0][0];
       expect(env.payload.failure).toBe('vision_threw');
     });
   });
@@ -187,7 +187,7 @@ describe('MindMultiModalPerceptionService', () => {
       expect(out.subject).toBe('lead:abc');
       expect(out.salience).toBe(0.77);
       expect(out.semanticContext).toEqual({ tag: 'lead.qualified' });
-      const env = (spine.emit.mock.calls as Array<[Record<string, unknown>]>)[0]![0];
+      const env = (spine.emit.mock.calls as Array<[Record<string, unknown>]>)[0][0];
       expect(env.payload.delegated).toBe(true);
       expect(env.payload.modality).toBe('structured');
     });
@@ -214,7 +214,7 @@ describe('MindMultiModalPerceptionService', () => {
         kind: 'commerce.lead.qualified',
         payloadKeys: ['leadId', 'extra'],
       });
-      const env = (spine.emit.mock.calls as Array<[Record<string, unknown>]>)[0]![0];
+      const env = (spine.emit.mock.calls as Array<[Record<string, unknown>]>)[0][0];
       expect(env.payload.delegated).toBe(false);
     });
 

@@ -299,7 +299,7 @@ export function TheMachine() {
             textTransform: 'uppercase',
           }}
         >
-          {kloelT(`Kloel v1.0 &mdash; SISTEMA ATIVO`)}
+          {kloelT(`Kloel v1.0 — SISTEMA ATIVO`)}
         </p>
       </div>
     </div>

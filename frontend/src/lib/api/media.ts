@@ -57,8 +57,8 @@ export interface VoiceProfile {
 export const voiceApi = {
   createProfile: async (data: {
     name: string;
-    provider?: string;
-    voiceId?: string;
+    provider: string;
+    voiceId: string;
     settings?: Record<string, unknown>;
   }) => {
     const res = requireMediaResponse(
@@ -84,22 +84,24 @@ export const voiceApi = {
     provider?: string;
   }) => {
     const res = requireMediaResponse(
-      await apiFetch<{ audioUrl: string; duration?: number }>('/voice/generate', {
-        method: 'POST',
-        body: data,
-      }),
+      await apiFetch<{ id: string; status: string; audioUrl?: string; duration?: number }>(
+        '/voice/generate',
+        {
+          method: 'POST',
+          body: data,
+        },
+      ),
       'Falha ao gerar audio.',
     );
-    requireStringField(res.data, 'audioUrl', 'Audio gerado sem URL confirmado.');
+    requireStringField(res.data, 'id', 'Job de audio nao foi confirmado.');
     return res;
   },
 };
 
 export const mediaApi = {
   processVideo: async (data: {
-    inputUrl?: string;
+    imageUrl: string;
     prompt?: string;
-    type?: string;
     workspaceId?: string;
   }) => {
     const res = requireMediaResponse(

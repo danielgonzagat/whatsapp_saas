@@ -12,6 +12,7 @@ import { createRedisClient } from '../common/redis/redis.util';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
 import { readString } from '../common/parse';
+import { SOCKET_CORS_OPTIONS } from '../common/socket-cors';
 type GatewayPayload = Record<string, unknown>;
 
 function isGatewayPayload(value: unknown): value is GatewayPayload {
@@ -36,12 +37,7 @@ function readWorkspaceId(payload: unknown): string | undefined {
 
 /** Flows gateway. */
 @WebSocketGateway({
-  cors: {
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || [
-      process.env.FRONTEND_URL || 'http://localhost:3000',
-    ],
-    credentials: true,
-  },
+  cors: SOCKET_CORS_OPTIONS,
 })
 export class FlowsGateway implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit {
   /** Server property. */
@@ -104,7 +100,7 @@ export class FlowsGateway implements OnGatewayConnection, OnGatewayDisconnect, O
     } catch (err: unknown) {
       void this.opsAlert?.alertOnCriticalError(err, 'FlowsGateway.handleConnection');
       this.logger.warn(
-        `Client ${client.id} disconnected: invalid token (${(err instanceof Error ? err.message : 'unknown') || String(err)})`,
+        `Client ${client.id} disconnected: invalid token (${err instanceof Error ? err.message : 'unknown'})`,
       );
       client.disconnect(true);
     }

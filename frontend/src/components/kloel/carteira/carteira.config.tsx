@@ -11,7 +11,7 @@ export const TYPE_CONFIG: Record<
   string,
   { label: string; color: string; icon: (s: number) => React.ReactElement; sign: string }
 > = {
-  sale: { label: 'Venda', color: 'colors.ember.primary', icon: IC.arrowDown, sign: '+' },
+  sale: { label: 'Venda', color: colors.ember.primary, icon: IC.arrowDown, sign: '+' },
   commission: { label: 'Comissão', color: colors.semantic.success, icon: IC.arrowDown, sign: '+' },
   withdrawal: { label: 'Saque', color: 'var(--app-text-secondary)', icon: IC.arrowUp, sign: '' },
   refund: { label: 'Reembolso', color: colors.semantic.error, icon: IC.arrowUp, sign: '' },
@@ -19,7 +19,7 @@ export const TYPE_CONFIG: Record<
 };
 
 export const STATUS_COLOR: Record<string, string> = {
-  completed: 'colors.ember.primary',
+  completed: colors.ember.primary,
   pending: colors.semantic.warning,
   processing: colors.semantic.info,
   failed: colors.semantic.error,

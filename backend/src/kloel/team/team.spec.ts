@@ -149,7 +149,7 @@ describe('PreCallContextBuilder (UTP-TEAM-001)', () => {
     });
 
     expect(ctx.leadHistory.length).toBe(1);
-    expect(ctx.leadHistory[0]!.eventName).toBe('commerce.post_sale.churn_risk_detected');
+    expect(ctx.leadHistory[0].eventName).toBe('commerce.post_sale.churn_risk_detected');
     expect(ctx.openQuestions.length).toBe(1);
     expect(ctx.openQuestions[0]).toContain('first value');
     expect(ctx.openQuestions[0]).toContain('human review only');
@@ -203,7 +203,7 @@ describe('NextBestActionSuggester (UTP-TEAM-002)', () => {
   it('suggestions are ranked by confidence descending', () => {
     const suggestions = suggestNextBestActions({ context: minimalCtx });
     for (let i = 1; i < suggestions.length; i++) {
-      expect(suggestions[i - 1]!.confidence).toBeGreaterThanOrEqual(suggestions[i]!.confidence);
+      expect(suggestions[i - 1].confidence).toBeGreaterThanOrEqual(suggestions[i].confidence);
     }
   });
 
@@ -252,11 +252,11 @@ describe('NextBestActionSuggester (UTP-TEAM-002)', () => {
     const action = suggestions.find((s) => s.action === 'reengage_silent_lead');
 
     expect(action).toBeDefined();
-    expect(action!.r1Contract.riskClass).toBe('R1');
-    expect(action!.r1Contract.delegationMode).toBe('allowed_alone');
-    expect(action!.r1Contract.safeNextStep).toContain('do not send');
-    expect(action!.r1Contract.leadOutcomeGuardrail.antiPressureLanguage).toBe(true);
-    expect(action!.r1Contract.rollback).toContain('dismiss_suggestion');
+    expect(action.r1Contract.riskClass).toBe('R1');
+    expect(action.r1Contract.delegationMode).toBe('allowed_alone');
+    expect(action.r1Contract.safeNextStep).toContain('do not send');
+    expect(action.r1Contract.leadOutcomeGuardrail.antiPressureLanguage).toBe(true);
+    expect(action.r1Contract.rollback).toContain('dismiss_suggestion');
   });
 
   it('does not re-engage unqualified silence as if it were a hot lead', () => {
@@ -278,9 +278,9 @@ describe('NextBestActionSuggester (UTP-TEAM-002)', () => {
     const suggestions = suggestNextBestActions({ context });
 
     expect(suggestions.some((s) => s.action === 'reengage_silent_lead')).toBe(false);
-    expect(suggestions[0]!.action).toBe('review_silent_lead');
-    expect(suggestions[0]!.r1Contract.riskClass).toBe('R1');
-    expect(suggestions[0]!.r1Contract.safeNextStep).toContain('review timeline');
+    expect(suggestions[0].action).toBe('review_silent_lead');
+    expect(suggestions[0].r1Contract.riskClass).toBe('R1');
+    expect(suggestions[0].r1Contract.safeNextStep).toContain('review timeline');
   });
 
   it('routes post-sale churn risk to human-only value-gap review without blaming the team', () => {
@@ -302,11 +302,11 @@ describe('NextBestActionSuggester (UTP-TEAM-002)', () => {
     const action = suggestions.find((s) => s.action === 'review_post_sale_value_gap');
 
     expect(action).toBeDefined();
-    expect(action!.rationale).toContain('first value');
-    expect(action!.guardrails).toContain('frame as customer support, not team failure');
-    expect(action!.r1Contract.riskClass).toBe('R2');
-    expect(action!.r1Contract.delegationMode).toBe('human_only');
-    expect(action!.r1Contract.safeNextStep).toContain('verify delivery');
+    expect(action.rationale).toContain('first value');
+    expect(action.guardrails).toContain('frame as customer support, not team failure');
+    expect(action.r1Contract.riskClass).toBe('R2');
+    expect(action.r1Contract.delegationMode).toBe('human_only');
+    expect(action.r1Contract.safeNextStep).toContain('verify delivery');
   });
 });
 

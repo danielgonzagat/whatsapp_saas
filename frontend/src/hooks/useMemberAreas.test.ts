@@ -45,6 +45,18 @@ describe('useMemberAreas', () => {
     expect(result.current.isLoading).toBe(true);
   });
 
+  it('does not start the member areas request when disabled', () => {
+    const callUseMemberAreas = useMemberAreas as (options?: { enabled?: boolean }) => ReturnType<
+      typeof useMemberAreas
+    >;
+
+    const { result } = renderHook(() => callUseMemberAreas({ enabled: false }));
+
+    expect(vi.mocked(useSWR)).toHaveBeenCalledWith(null, expect.any(Function));
+    expect(result.current.areas).toEqual([]);
+    expect(result.current.isLoading).toBe(false);
+  });
+
   it('returns areas from data.areas', () => {
     const items = [{ id: 'a1', name: 'Area 1' }];
     vi.mocked(useSWR).mockReturnValue({

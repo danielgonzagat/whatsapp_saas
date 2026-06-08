@@ -13,7 +13,9 @@ export function useCampanhasTab(productId: string) {
   const [campName, setCampName] = useState('');
   const [campPixel, setCampPixel] = useState('');
   const [campMessage, setCampMessage] = useState('');
+  const [campError, setCampError] = useState('');
   const [campBusyId, setCampBusyId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const loadCampaigns = useCallback(() => {
     setCampsLoading(true);
@@ -26,7 +28,6 @@ export function useCampanhasTab(productId: string) {
         setCamps(d);
       })
       .catch((e: unknown) => {
-        console.error(e);
         showToast(e instanceof Error ? e.message : 'Erro ao carregar campanhas', 'error');
       })
       .finally(() => setCampsLoading(false));
@@ -37,14 +38,20 @@ export function useCampanhasTab(productId: string) {
   }, [loadCampaigns]);
 
   const handleCreateCamp = async () => {
-    if (!campName.trim()) {
+    const name = campName.trim();
+    if (!name) {
+      const message = 'Informe o nome da campanha.';
+      setCampError(message);
+      showToast(message, 'error');
       return;
     }
+
+    setCampError('');
     try {
       const res = await apiFetch(`/products/${productId}/campaigns`, {
         method: 'POST',
         body: {
-          name: campName.trim(),
+          name,
           pixelId: campPixel.trim() || null,
           messageTemplate: campMessage.trim() || undefined,
         },
@@ -54,11 +61,13 @@ export function useCampanhasTab(productId: string) {
       setCampName('');
       setCampPixel('');
       setCampMessage('');
+      setCampError('');
       setShowCampForm(false);
       showToast('Campanha criada', 'success');
     } catch (e) {
-      console.error(e);
-      showToast(e instanceof Error ? e.message : 'Erro ao criar campanha', 'error');
+      const message = e instanceof Error ? e.message : 'Erro ao criar campanha';
+      setCampError(message);
+      showToast(message, 'error');
     }
   };
 
@@ -74,7 +83,6 @@ export function useCampanhasTab(productId: string) {
       await loadCampaigns();
       showToast('Campanha lançada', 'success');
     } catch (e) {
-      console.error(e);
       showToast(e instanceof Error ? e.message : 'Erro ao lançar campanha', 'error');
     } finally {
       setCampBusyId(null);
@@ -92,23 +100,33 @@ export function useCampanhasTab(productId: string) {
       await loadCampaigns();
       showToast('Campanha pausada', 'success');
     } catch (e) {
-      console.error(e);
       showToast(e instanceof Error ? e.message : 'Erro ao pausar campanha', 'error');
     } finally {
       setCampBusyId(null);
     }
   };
 
-  const handleDeleteCamp = async (id: string) => {
+  const requestDeleteCamp = useCallback((id: string) => {
+    setDeleteConfirmId(id);
+  }, []);
+
+  const cancelDeleteCamp = useCallback(() => {
+    setDeleteConfirmId(null);
+  }, []);
+
+  const confirmDeleteCamp = async (id: string) => {
+    setCampBusyId(`delete-${id}`);
     try {
       await unwrapApiPayload(
         await apiFetch(`/products/${productId}/campaigns/${id}`, { method: 'DELETE' }),
       );
       setCamps((prev) => prev.filter((c: JsonRecord) => c.id !== id));
+      setDeleteConfirmId((current) => (current === id ? null : current));
       showToast('Campanha removida', 'success');
     } catch (e) {
-      console.error(e);
       showToast(e instanceof Error ? e.message : 'Erro ao remover campanha', 'error');
+    } finally {
+      setCampBusyId(null);
     }
   };
 
@@ -123,11 +141,16 @@ export function useCampanhasTab(productId: string) {
     setCampPixel,
     campMessage,
     setCampMessage,
+    campError,
+    setCampError,
     campBusyId,
+    deleteConfirmId,
     loadCampaigns,
     handleCreateCamp,
     handleLaunchCamp,
     handlePauseCamp,
-    handleDeleteCamp,
+    requestDeleteCamp,
+    cancelDeleteCamp,
+    confirmDeleteCamp,
   };
 }

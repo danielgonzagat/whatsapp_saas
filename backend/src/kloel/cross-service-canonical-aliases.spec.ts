@@ -5,7 +5,7 @@ import { DashboardService } from '../dashboard/dashboard.service';
 import { HealthService } from '../health/health.service';
 import { WorkspaceService } from '../workspaces/workspace.service';
 import { CodeAccessService } from './self-awareness/code-access.service';
-import { WalletService } from './wallet.service';
+import { SellerWalletService } from './wallet.service';
 
 /**
  * Cross-service capability-resolver wiring proofs.
@@ -111,7 +111,7 @@ describe('Cross-service canonical-name aliases (capability resolver wiring)', ()
 
     it('delegates to getTransactionHistory with defaults when args omitted', async () => {
       const delegate = jest.fn().mockResolvedValue({ rows: [], total: 0 });
-      await (WalletService.prototype.getStatement as GetStatementFn).call(
+      await (SellerWalletService.prototype.getStatement as GetStatementFn).call(
         { getTransactionHistory: delegate },
         'ws-wallet-1',
       );
@@ -122,7 +122,7 @@ describe('Cross-service canonical-name aliases (capability resolver wiring)', ()
 
     it('forwards page/limit/type when provided', async () => {
       const delegate = jest.fn().mockResolvedValue({ rows: [], total: 0 });
-      await (WalletService.prototype.getStatement as GetStatementFn).call(
+      await (SellerWalletService.prototype.getStatement as GetStatementFn).call(
         { getTransactionHistory: delegate },
         'ws-wallet-2',
         { page: 3, limit: 50, type: 'WITHDRAWAL' },
@@ -168,7 +168,7 @@ describe('Cross-service canonical-name aliases (capability resolver wiring)', ()
 
     it('forwards amount and bankInfo to requestWithdrawal', async () => {
       const delegate = jest.fn().mockResolvedValue({ success: true, transactionId: 'tx-1' });
-      await (WalletService.prototype.withdraw as WithdrawFn).call(
+      await (SellerWalletService.prototype.withdraw as WithdrawFn).call(
         { requestWithdrawal: delegate },
         'ws-wd-1',
         { amount: 150, bankInfo: { bankCode: '341' } },
@@ -183,7 +183,7 @@ describe('Cross-service canonical-name aliases (capability resolver wiring)', ()
 
     it('passes empty bankInfo when args omitted', async () => {
       const delegate = jest.fn().mockResolvedValue({ success: false });
-      await (WalletService.prototype.withdraw as WithdrawFn).call(
+      await (SellerWalletService.prototype.withdraw as WithdrawFn).call(
         { requestWithdrawal: delegate },
         'ws-wd-2',
       );
@@ -201,7 +201,7 @@ describe('Cross-service canonical-name aliases (capability resolver wiring)', ()
 
     it('forwards amount, installments and feePercent to requestAnticipation', async () => {
       const delegate = jest.fn().mockResolvedValue({ success: true });
-      await (WalletService.prototype.anticipate as AnticipateFn).call(
+      await (SellerWalletService.prototype.anticipate as AnticipateFn).call(
         { requestAnticipation: delegate },
         'ws-ant-1',
         { amount: 500, installments: 3, feePercent: 2.5 },
@@ -213,7 +213,7 @@ describe('Cross-service canonical-name aliases (capability resolver wiring)', ()
 
     it('defaults feePercent to 3.0 when omitted', async () => {
       const delegate = jest.fn().mockResolvedValue({ success: true });
-      await (WalletService.prototype.anticipate as AnticipateFn).call(
+      await (SellerWalletService.prototype.anticipate as AnticipateFn).call(
         { requestAnticipation: delegate },
         'ws-ant-2',
         { amount: 100 },

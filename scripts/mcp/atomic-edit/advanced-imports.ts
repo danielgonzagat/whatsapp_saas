@@ -1,6 +1,7 @@
 import * as ts from 'typescript';
 import { validate, type ValidationResult } from './engine.js';
 import { resolveSymbol } from './symbols.js';
+import { universalAddImport, universalRemoveImport, universalAddAwait } from './engine-universal-imports.js';
 
 // ── v3: import + object-property semantic ops (adopted from Codex's
 //        semantic-edit, but routed through validate()+atomic write so they
@@ -129,7 +130,11 @@ export async function addNamedImport(
   alias?: string,
   typeOnly = false,
 ): Promise<SemanticEditResult> {
-  assertTs(file, 'add_import');
+  const importExt = (() => {
+    const i = file.lastIndexOf('.');
+    return i < 0 ? '' : file.slice(i).toLowerCase();
+  })();
+  if (!TS_EXT.has(importExt)) return universalAddImport(file, original, moduleSpecifier, name, alias, importExt);
   const sf = await tsmProject(file, original);
   const decls = sf
     .getImportDeclarations()
@@ -190,7 +195,11 @@ export async function removeNamedImport(
   moduleSpecifier: string,
   name: string,
 ): Promise<SemanticEditResult> {
-  assertTs(file, 'remove_import');
+  const removeExt = (() => {
+    const i = file.lastIndexOf('.');
+    return i < 0 ? '' : file.slice(i).toLowerCase();
+  })();
+  if (!TS_EXT.has(removeExt)) return universalRemoveImport(file, original, moduleSpecifier, name, removeExt);
   const sf = await tsmProject(file, original);
   const decls = sf
     .getImportDeclarations()
@@ -326,7 +335,11 @@ export async function addAwaitToCall(
   callee: string,
   selector?: string,
 ): Promise<SemanticEditResult> {
-  assertTs(file, 'add_await_to_call');
+  const awaitExt = (() => {
+    const i = file.lastIndexOf('.');
+    return i < 0 ? '' : file.slice(i).toLowerCase();
+  })();
+  if (!TS_EXT.has(awaitExt)) return universalAddAwait(file, original, callee, awaitExt);
   const { SyntaxKind, Node } = await import('ts-morph');
   const sf = await tsmProject(file, original);
   const scopeNode = selector ? resolveSymbol(sf, selector).node : sf;

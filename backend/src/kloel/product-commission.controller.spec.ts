@@ -1,5 +1,6 @@
 import { ServiceUnavailableException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuditService } from '../audit/audit.service';
 import { PartnershipsService } from '../partnerships/partnerships.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -43,7 +44,10 @@ describe('ProductCommissionController - Core Behavior', () => {
         { provide: AuditService, useValue: { log: jest.fn() } },
         { provide: PartnershipsService, useValue: partnershipsService },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get(ProductCommissionController);
   });

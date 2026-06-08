@@ -78,6 +78,9 @@ export function StepEntrega({ form, updateForm, onCarrierToggle }: StepEntregaPr
 
       <MonitorInputField label={kloelT('Prazo de despacho')}>
         <select
+          id="product-dispatch-time"
+          name="productDispatchTime"
+          aria-label={kloelT('Prazo de despacho')}
           style={selectStyle}
           onFocus={(e) => {
             e.target.style.borderColor = colors.accent.webb;
@@ -101,9 +104,16 @@ export function StepEntrega({ form, updateForm, onCarrierToggle }: StepEntregaPr
         <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg2)', gap: 8 }}>
           {CARRIERS.map((carrier) => {
             const checked = form.carriers.includes(carrier);
+            const carrierSlug = carrier
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/^-|-$/g, '');
+            const carrierId = `product-carrier-${carrierSlug}`;
+
             return (
               <label
                 key={carrier}
+                htmlFor={carrierId}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -119,6 +129,9 @@ export function StepEntrega({ form, updateForm, onCarrierToggle }: StepEntregaPr
                 }}
               >
                 <input
+                  id={carrierId}
+                  name="productCarriers"
+                  value={carrier}
                   aria-label={carrier}
                   type="checkbox"
                   checked={checked}

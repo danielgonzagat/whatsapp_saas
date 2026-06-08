@@ -76,6 +76,8 @@ export function VoiceProfilesTab({
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <input
+              id="voice-profile-name"
+              name="voice-profile-name"
               aria-label="Nome do perfil de voz"
               type="text"
               value={newVoiceName}
@@ -84,21 +86,24 @@ export function VoiceProfilesTab({
               style={inputStyle}
             />
             <input
-              aria-label="Voice ID do ElevenLabs"
+              id="voice-profile-provider-id"
+              name="voice-profile-provider-id"
+              aria-label="Voice ID do OpenAI TTS"
               type="text"
               value={newVoiceId}
               onChange={(e) => onNewVoiceIdChange(e.target.value)}
-              placeholder={kloelT(`Voice ID (ex: ElevenLabs voice ID)`)}
+              placeholder={kloelT(`Voice ID (ex: alloy, verse, nova)`)}
               style={inputStyle}
             />
             <select
+              id="voice-profile-provider"
+              name="voice-profile-provider"
+              aria-label={kloelT('Provedor do perfil de voz')}
               value={newVoiceProvider}
               onChange={(e) => onNewVoiceProviderChange(e.target.value)}
               style={{ ...inputStyle, cursor: 'pointer' }}
             >
-              <option value="elevenlabs">{kloelT(`ElevenLabs`)}</option>
-              <option value="openai">{kloelT(`OpenAI TTS`)}</option>
-              <option value="google">{kloelT(`Google TTS`)}</option>
+              <option value="OPENAI">{kloelT(`OpenAI TTS`)}</option>
             </select>
             {voiceError && (
               <div
@@ -113,19 +118,19 @@ export function VoiceProfilesTab({
             <button
               type="button"
               onClick={onCreateVoice}
-              disabled={creatingVoice || !newVoiceName.trim()}
+              disabled={creatingVoice || !newVoiceName.trim() || !newVoiceId.trim()}
               style={{
                 background: 'var(--app-accent)',
                 color: 'var(--app-text-on-accent)',
                 border: 'none',
                 borderRadius: 6,
                 padding: '9px 20px',
-                cursor: 'pointer',
+                cursor: creatingVoice || !newVoiceName.trim() || !newVoiceId.trim() ? 'not-allowed' : 'pointer',
                 fontSize: 13,
                 fontWeight: 600,
                 fontFamily: "'Sora', sans-serif",
                 whiteSpace: 'nowrap',
-                opacity: creatingVoice || !newVoiceName.trim() ? 0.5 : 1,
+                opacity: creatingVoice || !newVoiceName.trim() || !newVoiceId.trim() ? 0.5 : 1,
               }}
             >
               {creatingVoice ? 'Criando...' : 'Criar Perfil'}
@@ -189,6 +194,8 @@ export function VoiceProfilesTab({
                   </div>
                   <button
                     type="button"
+                    aria-label={`${genProfileId === p.id ? 'Perfil de voz selecionado' : 'Selecionar perfil de voz'} ${p.name}`}
+                    aria-pressed={genProfileId === p.id}
                     onClick={() => onGenProfileIdChange(p.id)}
                     style={{
                       background: 'rgba(255,255,255,0.04)',
@@ -228,12 +235,22 @@ export function VoiceProfilesTab({
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <textarea
+              id="voice-generate-text"
+              name="voice-generate-text"
+              aria-label={kloelT('Texto para gerar audio')}
               value={genText}
               onChange={(e) => onGenTextChange(e.target.value)}
               placeholder={kloelT(`Texto para converter em audio...`)}
               rows={3}
               style={{ ...inputStyle, resize: 'vertical' }}
             />
+            {!genProfileId && (
+              <div style={{ color: 'var(--app-text-tertiary)', fontSize: 12 }}>
+                {voiceProfiles.length === 0
+                  ? kloelT(`Crie um perfil de voz antes de gerar audio.`)
+                  : kloelT(`Selecione um perfil de voz antes de gerar audio.`)}
+              </div>
+            )}
             {genError && (
               <div
                 style={{
@@ -260,7 +277,9 @@ export function VoiceProfilesTab({
                     marginBottom: 4,
                   }}
                 >
-                  {kloelT(`Audio gerado`)}
+                  {genResult.startsWith('http')
+                    ? kloelT(`Audio gerado`)
+                    : kloelT(`Job de audio criado`)}
                 </p>
                 {genResult.startsWith('http') ? (
                   <audio controls src={genResult} style={{ width: '100%', marginTop: 4 }} />
@@ -280,19 +299,19 @@ export function VoiceProfilesTab({
             <button
               type="button"
               onClick={onGenerate}
-              disabled={generating || !genText.trim()}
+              disabled={generating || !genText.trim() || !genProfileId}
               style={{
                 background: 'var(--app-accent)',
                 color: 'var(--app-text-on-accent)',
                 border: 'none',
                 borderRadius: 6,
                 padding: '9px 20px',
-                cursor: 'pointer',
+                cursor: generating || !genText.trim() || !genProfileId ? 'not-allowed' : 'pointer',
                 fontSize: 13,
                 fontWeight: 600,
                 fontFamily: "'Sora', sans-serif",
                 whiteSpace: 'nowrap',
-                opacity: generating || !genText.trim() ? 0.5 : 1,
+                opacity: generating || !genText.trim() || !genProfileId ? 0.5 : 1,
               }}
             >
               {generating ? 'Gerando...' : 'Gerar Audio'}

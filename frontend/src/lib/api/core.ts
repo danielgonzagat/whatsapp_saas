@@ -1,5 +1,6 @@
 import { mutate } from 'swr';
 import { API_BASE } from '../http';
+import { isKloelJwtExpired } from '../auth-identity';
 import { tokenStorage, resolveWorkspaceFromAuthPayload } from './core-tokens';
 import { REFRESH_TOKEN_ERROR_CODES } from './auth-errors';
 import {
@@ -153,8 +154,15 @@ const API_ORIGIN = API_URL ? new URL(API_URL).origin : '';
 
 // Mutex to prevent concurrent refresh attempts (race condition on polling pages)
 let refreshPromise: Promise<boolean> | null = null;
+const API_READ_DEDUPLICATION_TTL_MS = 1000;
+const inFlightApiReads = new Map<string, Promise<ApiResponse<unknown>>>();
+const recentApiReadResponses = new Map<
+  string,
+  { response: ApiResponse<unknown>; expiresAt: number }
+>();
+let apiReadFetchIdentity: typeof globalThis.fetch | null = null;
 
-async function refreshAccessToken(): Promise<boolean> {
+export async function refreshAccessToken(): Promise<boolean> {
   // If a refresh is already in-flight, wait for its result instead of starting a new one
   if (refreshPromise) {
     return refreshPromise;
@@ -166,6 +174,16 @@ async function refreshAccessToken(): Promise<boolean> {
   } finally {
     refreshPromise = null;
   }
+}
+
+export async function ensureFreshAccessToken(): Promise<boolean> {
+  const token = tokenStorage.getToken();
+  const refreshToken = tokenStorage.getRefreshToken();
+  if (!isKloelJwtExpired(token) || !refreshToken) {
+    return false;
+  }
+
+  return refreshAccessToken();
 }
 
 async function doRefreshAccessToken(): Promise<boolean> {
@@ -239,7 +257,11 @@ async function doRefreshAccessToken(): Promise<boolean> {
 
     return false;
   } catch {
-    tokenStorage.clear();
+    // Transient failure (network down, timeout, /auth/refresh unreachable).
+    // Do NOT clear the session — the still-valid access token can finish the
+    // current request, and a later attempt can refresh once the network
+    // recovers. Only explicit auth rejections (handled in the !res.ok branch
+    // above) clear credentials.
     return false;
   }
 }
@@ -332,25 +354,71 @@ async function retryAfterBackoff<T>(
   return last;
 }
 
-/** Api fetch. */
-export async function apiFetch<T = unknown>(
-  endpoint: string,
-  options: Omit<RequestInit, 'body'> & {
-    body?: unknown;
-    params?: Record<string, string | undefined>;
-  } = {},
-): Promise<ApiResponse<T>> {
-  const resolvedEndpoint = resolveApiEndpoint(endpoint);
-  const headers = buildApiHeaders(options);
-  const url = appendQueryParams(`${API_URL}${resolvedEndpoint}`, options.params);
-  const body = serializeApiBody(options.body);
-  const baseInit: RequestInit = {
-    ...options,
-    credentials: 'include',
-    body: body ?? null,
-    headers,
-  };
+function resolveApiMethod(init: RequestInit): string {
+  return String(init.method || 'GET').toUpperCase();
+}
 
+function shouldDeduplicateApiRead(init: RequestInit): boolean {
+  const method = resolveApiMethod(init);
+  return (method === 'GET' || method === 'HEAD') && !init.body && !init.signal;
+}
+
+function isMutatingApiRequest(init: RequestInit): boolean {
+  const method = resolveApiMethod(init);
+  return !['GET', 'HEAD', 'OPTIONS'].includes(method);
+}
+
+function buildApiReadDeduplicationKey(url: string, headers: Record<string, string>): string {
+  const normalizedHeaders = Array.from(new Headers(headers).entries()).sort(([left], [right]) =>
+    left.localeCompare(right),
+  );
+  return JSON.stringify([url, normalizedHeaders]);
+}
+
+function getRecentApiReadResponse<T>(key: string): ApiResponse<T> | null {
+  const entry = recentApiReadResponses.get(key);
+  if (!entry) {
+    return null;
+  }
+
+  if (entry.expiresAt <= Date.now()) {
+    recentApiReadResponses.delete(key);
+    return null;
+  }
+
+  return entry.response as ApiResponse<T>;
+}
+
+function rememberApiReadResponse<T>(key: string, response: ApiResponse<T>): void {
+  if (response.error || response.status < 200 || response.status >= 400) {
+    return;
+  }
+
+  recentApiReadResponses.set(key, {
+    response: response as ApiResponse<unknown>,
+    expiresAt: Date.now() + API_READ_DEDUPLICATION_TTL_MS,
+  });
+}
+
+function clearApiReadDeduplicationMemory(): void {
+  inFlightApiReads.clear();
+  recentApiReadResponses.clear();
+}
+
+function clearApiReadDeduplicationMemoryWhenFetchChanges(): void {
+  const currentFetch = globalThis.fetch;
+  if (apiReadFetchIdentity === currentFetch) {
+    return;
+  }
+  clearApiReadDeduplicationMemory();
+  apiReadFetchIdentity = currentFetch;
+}
+
+async function executeApiFetchRequest<T>(
+  url: string,
+  baseInit: RequestInit,
+  headers: Record<string, string>,
+): Promise<ApiResponse<T>> {
   try {
     const response = await performApiRequest<T>(url, baseInit);
 
@@ -372,6 +440,70 @@ export async function apiFetch<T = unknown>(
       status: 0,
     };
   }
+}
+
+function performDeduplicatedApiRead<T>(
+  url: string,
+  baseInit: RequestInit,
+  headers: Record<string, string>,
+): Promise<ApiResponse<T>> {
+  clearApiReadDeduplicationMemoryWhenFetchChanges();
+  const key = buildApiReadDeduplicationKey(url, headers);
+  const recent = getRecentApiReadResponse<T>(key);
+  if (recent) {
+    return Promise.resolve(recent);
+  }
+
+  const existing = inFlightApiReads.get(key);
+  if (existing) {
+    return existing as Promise<ApiResponse<T>>;
+  }
+
+  const promise = executeApiFetchRequest<T>(url, baseInit, headers)
+    .then((response) => {
+      rememberApiReadResponse(key, response);
+      return response;
+    })
+    .finally(() => {
+      if (inFlightApiReads.get(key) === promise) {
+        inFlightApiReads.delete(key);
+      }
+    });
+  inFlightApiReads.set(key, promise as Promise<ApiResponse<unknown>>);
+  return promise;
+}
+
+/** Api fetch. */
+export async function apiFetch<T = unknown>(
+  endpoint: string,
+  options: Omit<RequestInit, 'body'> & {
+    body?: unknown;
+    params?: Record<string, string | undefined>;
+  } = {},
+): Promise<ApiResponse<T>> {
+  const resolvedEndpoint = resolveApiEndpoint(endpoint);
+  await ensureFreshAccessToken();
+
+  const headers = buildApiHeaders(options);
+  const url = appendQueryParams(`${API_URL}${resolvedEndpoint}`, options.params);
+  const body = serializeApiBody(options.body);
+  const baseInit: RequestInit = {
+    ...options,
+    cache: options.cache ?? 'no-store',
+    credentials: 'include',
+    body: body ?? null,
+    headers,
+  };
+
+  if (shouldDeduplicateApiRead(baseInit)) {
+    return performDeduplicatedApiRead<T>(url, baseInit, headers);
+  }
+
+  if (isMutatingApiRequest(baseInit)) {
+    clearApiReadDeduplicationMemory();
+  }
+
+  return executeApiFetchRequest<T>(url, baseInit, headers);
 }
 
 // ============================================

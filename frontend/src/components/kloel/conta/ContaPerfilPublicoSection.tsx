@@ -62,17 +62,34 @@ export default function PerfilPublicoSection({
 
   const set = (k: string, v: string) => setForm((prev) => ({ ...prev, [k]: v }));
 
+  const showValidationError = (message: string) => {
+    setError(message);
+    showToast(message, 'error');
+    setSaveStatus('error');
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+    }
+    saveTimer.current = setTimeout(() => setSaveStatus('idle'), 4000);
+  };
+
   const handleSave = async () => {
     setError(null);
     setSaveStatus('idle');
+
+    const publicName = form.publicName.trim();
+    if (!publicName) {
+      showValidationError('Informe o nome publico.');
+      return;
+    }
+
     setSaving(true);
     try {
       await updateProfile(
         cleanPayload({
-          publicName: form.publicName,
-          bio: form.bio,
-          website: form.website,
-          instagram: form.instagram,
+          publicName,
+          bio: form.bio.trim(),
+          website: form.website.trim(),
+          instagram: form.instagram.trim(),
         }),
       );
       showToast('Perfil público salvo', 'success');

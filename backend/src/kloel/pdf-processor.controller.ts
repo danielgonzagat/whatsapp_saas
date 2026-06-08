@@ -17,13 +17,14 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { StructuredLogger } from '../logging/structured-logger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import {
   estimateOpenAiChatQuoteCostCents,
   quoteOpenAiChatActualCostCents,
 } from '../wallet/provider-llm-billing';
 import { UnknownProviderPricingModelError } from '../wallet/provider-pricing';
-import { WalletService } from '../wallet/wallet.service';
+import { PrepaidWalletService } from '../wallet/wallet.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import {
   InsufficientWalletBalanceError,
@@ -41,6 +42,16 @@ import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorat
 const PDF_TXT_RE = /\.(pdf|txt)$/i;
 const APPLICATION__PDF_OR_TEXT_RE = /^(application\/pdf|text\/plain)$/;
 
+/** Provider usage shape consumed by quoteOpenAiChatActualCostCents (matches OpenAiChatUsageShape). */
+type PdfUsageShape = {
+  prompt_tokens?: number | null;
+  completion_tokens?: number | null;
+  prompt_tokens_details?: {
+    cached_tokens?: number | null;
+  } | null;
+  total_tokens?: number | null;
+} | null;
+
 function countAnalysisItems(value: unknown): number {
   return Array.isArray(value) ? value.length : 0;
 }
@@ -48,14 +59,14 @@ function countAnalysisItems(value: unknown): number {
 /** Pdf processor controller. */
 @ApiTags('KLOEL PDF Processor')
 @Controller('kloel/pdf')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('ai')
 export class PdfProcessorController {
   private readonly logger = StructuredLogger.from(PdfProcessorController.name);
 
   constructor(
     private readonly pdfProcessor: PdfProcessorService,
-    private readonly prepaidWalletService: WalletService,
+    private readonly prepaidWalletService: PrepaidWalletService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
@@ -128,7 +139,7 @@ export class PdfProcessorController {
     workspaceId: string;
     requestId: string;
     sourceName: string;
-    usage: unknown;
+    usage: PdfUsageShape;
   }) {
     try {
       await this.prepaidWalletService.settleUsageCharge({
@@ -137,11 +148,7 @@ export class PdfProcessorController {
         requestId: input.requestId,
         actualCostCents: quoteOpenAiChatActualCostCents({
           model: resolveBackendOpenAIModel('brain'),
-          usage: input.usage as {
-            prompt_tokens?: number | null;
-            completion_tokens?: number | null;
-            prompt_tokens_details?: { cached_tokens?: number | null } | null;
-          },
+          usage: input.usage,
         }),
         reason: 'pdf_analysis_provider_usage',
         metadata: {

@@ -13,6 +13,7 @@ import { readJsonFile } from './lib/scan-utils.mjs';
 import {
   collectStatusNameEntries,
   countGeneratedOverlayNotes,
+  forbiddenPatternScanText,
   hasFunctionalProofSignal,
   isProductionSourceFile,
   isTestFile,
@@ -23,13 +24,12 @@ import {
 } from './ai-constitution-helpers.mjs';
 
 const constitution = readJsonFile('ops/kloel-ai-constitution.json', null);
-const failures = []
-
+const failures = [];
 
 const governancePolicy = readJsonFile(['ops', 'protected-governance-files.json'].join('/'), null);
 let addedTextByFileCache = null;
 let constitutionChangedFilesCache = null;
-let constitutionNameStatusCache = null;;
+let constitutionNameStatusCache = null;
 const CONSTITUTION_AUTHORITY_FILES = new Set([
   'ops/kloel-ai-constitution.json',
   'scripts/ops/check-ai-constitution.mjs',
@@ -280,8 +280,6 @@ function checkGraphContract() {
   }
 }
 
-
-
 function checkChangedFiles() {
   const changed = collectConstitutionChangedFiles().filter((file) =>
     existsSync(path.join(repoRoot, file)),
@@ -372,7 +370,8 @@ function checkChangedFiles() {
       if (productionOnly && (!productionSource || isTestFile(file))) {
         continue;
       }
-      if (pattern.test(content)) {
+      const scanText = forbiddenPatternScanText(label, file, content);
+      if (scanText !== null && pattern.test(scanText)) {
         fail(`${file} contem ${label}; a constituicao proibe bypass/supressao.`);
       }
     }
@@ -561,7 +560,6 @@ function isUnprovenProductionChangeCandidate(file) {
     !CONSTITUTION_AUTHORITY_FILES.has(file)
   );
 }
-
 
 function isCriticalPolicySurface(file) {
   return (

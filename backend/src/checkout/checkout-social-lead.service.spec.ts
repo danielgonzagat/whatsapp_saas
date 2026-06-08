@@ -225,7 +225,7 @@ describe('CheckoutSocialLeadService', () => {
         status: 'CONVERTED',
         convertedOrderId: 'order-1',
       });
-      const [updateArgs] = mockUpdate.mock.calls[0]!;
+      const [updateArgs] = mockUpdate.mock.calls[0];
       expect(updateArgs.data.status).toBe('CONVERTED');
       expect(updateArgs.data.convertedOrderId).toBe('order-1');
     });

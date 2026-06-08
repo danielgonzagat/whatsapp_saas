@@ -72,9 +72,9 @@ describe('AGENCY-009 — PortfolioStateService', () => {
 
     expect(state.clientCount).toBe(1);
     expect(state.marginPerClient).toHaveLength(1);
-    expect(state.marginPerClient[0]!.marginCents).toBe(150_000n);
-    expect(state.marginPerClient[0]!.marginPercent).toBe(75);
-    expect(state.marginPerClient[0]!.trend).toBe('stable');
+    expect(state.marginPerClient[0].marginCents).toBe(150_000n);
+    expect(state.marginPerClient[0].marginPercent).toBe(75);
+    expect(state.marginPerClient[0].trend).toBe('stable');
   });
 
   it('detects improving margin trend from previous', () => {
@@ -91,8 +91,8 @@ describe('AGENCY-009 — PortfolioStateService', () => {
     };
     const { state } = svc.consolidate(input);
 
-    expect(state.marginPerClient[0]!.marginPercent).toBe(90);
-    expect(state.marginPerClient[0]!.trend).toBe('improving');
+    expect(state.marginPerClient[0].marginPercent).toBe(90);
+    expect(state.marginPerClient[0].trend).toBe('improving');
   });
 
   it('detects declining margin trend from previous', () => {
@@ -109,8 +109,8 @@ describe('AGENCY-009 — PortfolioStateService', () => {
     };
     const { state } = svc.consolidate(input);
 
-    expect(state.marginPerClient[0]!.marginPercent).toBe(10);
-    expect(state.marginPerClient[0]!.trend).toBe('declining');
+    expect(state.marginPerClient[0].marginPercent).toBe(10);
+    expect(state.marginPerClient[0].trend).toBe('declining');
   });
 
   it('classifies churn risk as low for healthy client', () => {
@@ -127,8 +127,8 @@ describe('AGENCY-009 — PortfolioStateService', () => {
     };
     const { state } = svc.consolidate(input);
 
-    expect(state.churnRiskPerClient[0]!.riskLevel).toBe('low');
-    expect(state.churnRiskPerClient[0]!.signals).toContain('no_signals');
+    expect(state.churnRiskPerClient[0].riskLevel).toBe('low');
+    expect(state.churnRiskPerClient[0].signals).toContain('no_signals');
   });
 
   it('classifies churn risk as critical with multiple signals', () => {
@@ -147,10 +147,10 @@ describe('AGENCY-009 — PortfolioStateService', () => {
     };
     const { state } = svc.consolidate(input);
 
-    expect(state.churnRiskPerClient[0]!.riskLevel).toBe('critical');
-    expect(state.churnRiskPerClient[0]!.riskProbability).toBeGreaterThanOrEqual(0.7);
-    expect(state.churnRiskPerClient[0]!.signals).toContain('delayed_payment');
-    expect(state.churnRiskPerClient[0]!.signals).toContain('no_recent_contact');
+    expect(state.churnRiskPerClient[0].riskLevel).toBe('critical');
+    expect(state.churnRiskPerClient[0].riskProbability).toBeGreaterThanOrEqual(0.7);
+    expect(state.churnRiskPerClient[0].signals).toContain('delayed_payment');
+    expect(state.churnRiskPerClient[0].signals).toContain('no_recent_contact');
   });
 
   it('ranks clients by priority score descending', () => {
@@ -175,10 +175,10 @@ describe('AGENCY-009 — PortfolioStateService', () => {
     const { state } = svc.consolidate(input);
 
     expect(state.priorityRanking).toHaveLength(2);
-    expect(state.priorityRanking[0]!.clientWorkspaceId).toBe('wks_high');
-    expect(state.priorityRanking[0]!.rank).toBe(1);
-    expect(state.priorityRanking[1]!.clientWorkspaceId).toBe('wks_low');
-    expect(state.priorityRanking[1]!.rank).toBe(2);
+    expect(state.priorityRanking[0].clientWorkspaceId).toBe('wks_high');
+    expect(state.priorityRanking[0].rank).toBe(1);
+    expect(state.priorityRanking[1].clientWorkspaceId).toBe('wks_low');
+    expect(state.priorityRanking[1].rank).toBe(2);
   });
 
   it('assigns higher priority tier to high-scoring clients', () => {
@@ -196,8 +196,8 @@ describe('AGENCY-009 — PortfolioStateService', () => {
     };
     const { state } = svc.consolidate(input);
 
-    expect(state.priorityRanking[0]!.tier).toBe('agora');
-    expect(state.priorityRanking[0]!.drivers).toContain('sustained_health');
+    expect(state.priorityRanking[0].tier).toBe('agora');
+    expect(state.priorityRanking[0].drivers).toContain('sustained_health');
   });
 
   it('builds team load summary for balanced team', () => {
@@ -218,8 +218,8 @@ describe('AGENCY-009 — PortfolioStateService', () => {
     const { state } = svc.consolidate(input);
 
     expect(state.teamLoad).not.toBeNull();
-    expect(state.teamLoad!.overworkedCount).toBe(0);
-    expect(state.teamLoad!.underutilizedCount).toBe(0);
+    expect(state.teamLoad.overworkedCount).toBe(0);
+    expect(state.teamLoad.underutilizedCount).toBe(0);
   });
 
   it('detects overworked team members', () => {
@@ -245,8 +245,8 @@ describe('AGENCY-009 — PortfolioStateService', () => {
     };
     const { state } = svc.consolidate(input);
 
-    expect(state.teamLoad!.overworkedCount).toBe(1);
-    expect(state.teamLoad!.recommendation).toContain('sobrecarregado');
+    expect(state.teamLoad.overworkedCount).toBe(1);
+    expect(state.teamLoad.recommendation).toContain('sobrecarregado');
   });
 
   it('produces summary for critical portfolio', () => {

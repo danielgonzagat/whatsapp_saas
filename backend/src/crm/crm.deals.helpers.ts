@@ -6,6 +6,19 @@ import { PIPELINE_STAGE_COLORS } from '../common/kloel-colors';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { AuditService } from '../audit/audit.service';
 import type { CrmEventEmitterService } from '../kloel/crm-emitter/crm-event-emitter.service';
+import { isTagViaCrmEnabled } from './tag-via-crm.flag';
+/**
+ * Canonical tag-write callback threaded into {@link moveDeal} from
+ * `CrmService.moveDeal`. When the `KLOEL_TAG_VIA_CRM` flag is ON, the deal-won
+ * branch routes its tag write through this callback (i.e. `CrmService.addTag`,
+ * the single canonical tagging surface) instead of the local `addTagInline`.
+ * The return value is intentionally untyped/ignored — `moveDeal` discards it.
+ */
+export type AddTagCanonical = (
+  workspaceId: string,
+  phone: string,
+  tagName: string,
+) => Promise<unknown>;
 const logger = new Logger('CrmDealsHelpers');
 /** Create pipeline with default stages. */
 export async function createPipeline(prisma: PrismaService, workspaceId: string, name: string) {
@@ -297,6 +310,7 @@ export async function moveDeal(
   dealId: string,
   newStageId: string,
   crmEmitter?: CrmEventEmitterService,
+  addTagCanonical?: AddTagCanonical,
 ) {
   const [deal, stage] = await Promise.all([
     prisma.deal.findUnique({
@@ -334,7 +348,15 @@ export async function moveDeal(
   if (updatedDeal.stage?.name?.toLowerCase() === 'fechado') {
     const contact = updatedDeal.contact;
     if (contact) {
-      await addTagInline(prisma, contact.workspaceId, contact.phone, 'cliente');
+      // Census P2-13: when KLOEL_TAG_VIA_CRM is ON and a canonical addTag
+      // callback was threaded in, route the 'cliente' tag through the single
+      // canonical CrmService.addTag surface. Default OFF → byte-identical to
+      // the legacy local addTagInline transaction below.
+      if (isTagViaCrmEnabled() && addTagCanonical) {
+        await addTagCanonical(contact.workspaceId, contact.phone, 'cliente');
+      } else {
+        await addTagInline(prisma, contact.workspaceId, contact.phone, 'cliente');
+      }
     }
   }
   const fromStageName = deal.stage?.name ?? 'unknown';

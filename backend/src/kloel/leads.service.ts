@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { clampLimit } from '../common/pagination-clamp.pipe';
+import { isLeadsReadContactEnabled } from './leads-read-contact.flag';
 
 type LeadRow = {
   id: string;
@@ -90,8 +91,33 @@ export class LeadsService {
     this.logger.log('LeadsService initialized');
   }
 
-  /** List leads with optional commercial scoring. */
+  /**
+   * List leads with optional commercial scoring.
+   *
+   * Reader source is flag-gated (Lead–Contact duplication family, STEP 6).
+   * Flag OFF (default, `KLOEL_LEADS_READ_CONTACT` unset/non-`'true'`) is
+   * BYTE-IDENTICAL to the legacy behaviour: the legacy `RAC_KloelLead` read only,
+   * with no Contact query issued. Flag ON reads from the canonical `Contact`
+   * (joined on `workspaceId`, funnel snapshot mapped onto `LeadOutput`); on an
+   * EMPTY canonical result it FALLS BACK to the legacy `RAC_KloelLead` read so a
+   * not-yet-backfilled workspace never surfaces an empty lead list.
+   */
   async listLeads(
+    workspaceId: string,
+    options?: { status?: string; search?: string; limit?: number },
+  ) {
+    if (isLeadsReadContactEnabled()) {
+      const fromContact = await this.listLeadsFromContact(workspaceId, options);
+      if (fromContact.length > 0) {
+        return fromContact;
+      }
+      // EMPTY canonical result → fall back to the still-authoritative legacy read.
+    }
+    return this.listLeadsFromKloelLead(workspaceId, options);
+  }
+
+  /** Legacy reader: list leads from the authoritative `RAC_KloelLead` table. */
+  private async listLeadsFromKloelLead(
     workspaceId: string,
     options?: { status?: string; search?: string; limit?: number },
   ) {
@@ -132,5 +158,83 @@ export class LeadsService {
     });
 
     return leads.map((lead) => mapLead(lead));
+  }
+
+  /**
+   * Canonical reader: list leads from `RAC_Contact`, mapping the denormalized
+   * funnel snapshot (`leadStatus`/`leadStage`/`lastIntent`/`totalMessages`) onto
+   * the existing `LeadOutput`. Field-compatible with the legacy reader. The
+   * status filter matches `leadStatus`; `customFields` carries the metadata blob.
+   */
+  private async listLeadsFromContact(
+    workspaceId: string,
+    options?: { status?: string; search?: string; limit?: number },
+  ): Promise<LeadOutput[]> {
+    const limit = clampLimit(options?.limit, { default: 200, max: 500 });
+
+    const statusFilter = options?.status ? { leadStatus: options.status } : {};
+    const search = options?.search?.trim();
+
+    const contacts = await this.prisma.contact.findMany({
+      where: {
+        workspaceId,
+        // Provenance/funnel predicate — only treat a Contact as a lead when it
+        // carries a canonical lead-origin pointer (promoted from KloelLead, a
+        // CheckoutSocialLead, or surfaced by a scraping job). Manually created
+        // contacts/customers have none of these and MUST NOT pollute the leads
+        // screen — nor suppress the legacy `RAC_KloelLead` fallback just because
+        // some unrelated contact exists in the workspace.
+        OR: [
+          { kloelLeadId: { not: null } },
+          { checkoutSocialLeadId: { not: null } },
+          { scrapingJobId: { not: null } },
+        ],
+        ...statusFilter,
+        ...(search
+          ? {
+              AND: [
+                {
+                  OR: [
+                    { name: { contains: search, mode: 'insensitive' } },
+                    { email: { contains: search, mode: 'insensitive' } },
+                    { phone: { contains: search, mode: 'insensitive' } },
+                  ],
+                },
+              ],
+            }
+          : {}),
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        phone: true,
+        name: true,
+        email: true,
+        leadStatus: true,
+        leadStage: true,
+        lastIntent: true,
+        totalMessages: true,
+        customFields: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return contacts.map((contact) =>
+      mapLead({
+        id: contact.id,
+        phone: contact.phone,
+        name: contact.name,
+        email: contact.email,
+        status: contact.leadStatus,
+        stage: contact.leadStage,
+        lastIntent: contact.lastIntent,
+        totalMessages: contact.totalMessages,
+        metadata: contact.customFields,
+        createdAt: contact.createdAt,
+        updatedAt: contact.updatedAt,
+      }),
+    );
   }
 }

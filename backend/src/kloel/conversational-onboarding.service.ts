@@ -261,13 +261,15 @@ export class ConversationalOnboardingService {
     const onboardingStateMessage = await this.buildOnboardingStateMessage(workspaceId, userMessage);
 
     // PI-k8: record decision outcome at start of every onboarding chat reply
-    const outcomeKey = buildChatOutcomeKey(workspaceId) as string;
-    recordChatReplyDecision(this.decisionOutcomeService, this.logger, {
-      workspaceId,
-      outcomeKey,
-      surface: 'onboarding',
-      messageLength: userMessage.length,
-    });
+    const outcomeKey = buildChatOutcomeKey(workspaceId);
+    if (outcomeKey) {
+      recordChatReplyDecision(this.decisionOutcomeService, this.logger, {
+        workspaceId,
+        outcomeKey,
+        surface: 'onboarding',
+        messageLength: userMessage.length,
+      });
+    }
 
     let degradedReason: string | null = null;
     let intentAdvisory: string | null = null;
@@ -306,7 +308,12 @@ export class ConversationalOnboardingService {
 
     // Mind signals — inject attention, beliefs, concepts into onboarding prompt (PI-k5-A).
     try {
-      const mindDeps = buildOnboardingMindSignalsDeps(this.prismaExt, this.logger, {
+      const mindLogger = {
+        warn: (event: unknown, ctx?: unknown): void => {
+          this.logger.warn(String(event), ctx as Record<string, unknown> | undefined);
+        },
+      };
+      const mindDeps = buildOnboardingMindSignalsDeps(this.prismaExt, mindLogger, {
         ...(this.attentionService !== undefined ? { attentionService: this.attentionService } : {}),
         ...(this.valenceAggregatorService !== undefined
           ? { valenceAggregatorService: this.valenceAggregatorService }
@@ -406,7 +413,7 @@ export class ConversationalOnboardingService {
           workspaceId,
           outcomeKey,
           successOutcomeName,
-          degradedReason,
+          degradedReason: degradedReason ?? undefined,
         });
       };
       if (res) {

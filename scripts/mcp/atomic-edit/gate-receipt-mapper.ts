@@ -128,7 +128,9 @@ export async function runProveDirective(args: {
   const verb = verbOf(args.directive);
   // .mjs keeps the throwaway a real source file the SOURCE_RE-gated dynamic gates
   // (formal/probe-convergence/liveness) apply to, with no tsconfig dependency.
-  const probeRel = `scripts/mcp/atomic-edit/.atomic-prove-${process.pid}-${crypto.randomBytes(6).toString('hex')}.mjs`;
+  // Keep it outside scripts/mcp/atomic-edit/**: that tree is guarded by
+  // atomic_expand_self, and a throwaway proof probe is not an Atomic source edit.
+  const probeRel = `.atomic/prove/atomic-prove-${process.pid}-${crypto.randomBytes(6).toString('hex')}.mjs`;
   const probeAbs = path.join(repoRoot, probeRel);
 
   // The throwaway carries ONLY the directive (a comment is enough for the self-driving
@@ -138,6 +140,7 @@ export async function runProveDirective(args: {
   let run: RegistryRun;
   try {
     // Write through the SAME byte-floor every tool funnels through (snapshot/validate/trace).
+    fs.mkdirSync(path.dirname(probeAbs), { recursive: true });
     atomicWrite(probeAbs, content);
     run = await runGates(DYNAMIC_GATES, repoRoot, new Map<string, string>(), [probeRel]);
   } finally {

@@ -307,7 +307,12 @@ function staticLauncherContract() {
 }
 
 function hostBoundaryContract() {
-  if (process.env.ATOMIC_HOST_SANDBOX === 'macos-sandbox-exec' && process.env.ATOMIC_HOST_ATOMIC_ONLY === '1') {
+  const agent = process.env.ATOMIC_HOST_AGENT ?? '';
+  if (
+    (agent === 'codex' || agent === 'claude') &&
+    process.env.ATOMIC_HOST_SANDBOX === 'macos-sandbox-exec' &&
+    process.env.ATOMIC_HOST_ATOMIC_ONLY === '1'
+  ) {
     const inherited = inspectHostEnv(process.env, 'inherited');
     return { ok: hostEnvOk(inherited), live: true, detail: inherited };
   }
@@ -343,11 +348,18 @@ function main() {
   );
 
   const noBypass = runProof('no-bypass-static-policy.proof.mjs');
+  const noBypassResults = Array.isArray(noBypass.parsed?.results) ? noBypass.parsed.results : [];
   record(
     results,
     'Static no-bypass policy proof passes for representative native tools',
     noBypass.status === 0 && noBypass.parsed?.ok === true,
-    noBypass,
+    {
+      status: noBypass.status,
+      parsedOk: noBypass.parsed?.ok === true,
+      resultCount: noBypassResults.length,
+      failedResults: noBypassResults.filter((entry) => entry?.ok !== true),
+      stderr: String(noBypass.stderr ?? '').slice(0, 1000),
+    },
   );
 
   const hostContract = hostBoundaryContract();

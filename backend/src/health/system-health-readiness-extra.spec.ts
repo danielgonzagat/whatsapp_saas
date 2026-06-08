@@ -333,7 +333,7 @@ describe('SystemHealthService deep probes', () => {
         storageService as never,
         observabilityQueries as never,
         queueHealth as never,
-        undefined as never,
+        undefined,
       );
 
       const result = await serviceWithoutStripe.deepReadiness();

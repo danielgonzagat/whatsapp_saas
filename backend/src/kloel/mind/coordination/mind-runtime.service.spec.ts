@@ -1,4 +1,18 @@
+import * as mindRuntimeModule from './mind-runtime.service';
 import { MindRuntime } from './mind-runtime.service';
+
+describe('MindRuntime canonical export (P3-5 alias consolidation)', () => {
+  it('exports MindRuntime as the sole canonical runtime class', () => {
+    expect(mindRuntimeModule.MindRuntime).toBe(MindRuntime);
+    expect(typeof mindRuntimeModule.MindRuntime).toBe('function');
+  });
+
+  it('no longer exports the retired BrainRuntimeService alias', () => {
+    // The Wave M1 backwards-compat alias was removed (zero importers, dead
+    // re-export). Lock it so the alias cannot silently reappear.
+    expect('BrainRuntimeService' in mindRuntimeModule).toBe(false);
+  });
+});
 
 describe('MindRuntime', () => {
   let unifiedAgent: { processMessage: jest.Mock };
@@ -319,6 +333,16 @@ describe('MindRuntime', () => {
     expect(events.record).toHaveBeenCalledWith(expect.objectContaining({ action: 'brain.decide' }));
     expect(result.intent).toBe('list_products');
     expect(result.confidence).toBe(1);
+    expect(result.response).toContain('Consultei seu catálogo real');
+    expect(result.response).toContain('Produto A');
+    expect(result.response).not.toContain('list_products');
+    expect(result.response).not.toContain('Acao');
+    expect(threads.persistAssistantThreadMessage).toHaveBeenCalledWith(
+      'thread-1',
+      'ws-1',
+      expect.stringContaining('Produto A'),
+      expect.objectContaining({ brainIntent: 'list_products' }),
+    );
     expect(result.actions).toHaveLength(1);
     expect(result.actions[0]).toEqual(expect.objectContaining({ tool: 'list_products' }));
   });

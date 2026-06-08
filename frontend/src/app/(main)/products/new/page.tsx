@@ -10,7 +10,13 @@ import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { apiFetch } from '@/lib/api';
 import { useProductCategories } from '@/hooks/useProducts';
 import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
-import { buildProductCreatePayload, extractCreatedProductId } from './page.helpers';
+import {
+  buildProductCreatePayload,
+  extractCreatedProductId,
+  mergeProductTags,
+  validateProductCreateFlow,
+  validateProductCreateStep,
+} from './page.helpers';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -51,7 +57,37 @@ export default function NewProductPage() {
   const isLastStep = currentVisibleIndex === visibleSteps.length - 1;
   const isFirstStep = currentVisibleIndex === 0;
 
+  const commitPendingTags = () => {
+    const pendingTags = tagInput.trim();
+
+    if (!pendingTags) {
+      return form;
+    }
+
+    const nextTags = mergeProductTags(form.tags, pendingTags);
+    const tagsChanged =
+      nextTags.length !== form.tags.length ||
+      nextTags.some((tag, index) => tag !== form.tags[index]);
+    const nextForm = tagsChanged ? { ...form, tags: nextTags } : form;
+
+    if (tagsChanged) {
+      setForm(nextForm);
+    }
+
+    setTagInput('');
+    return nextForm;
+  };
+
   const goNext = () => {
+    const nextForm = commitPendingTags();
+    const validation = validateProductCreateStep(nextForm, step);
+
+    if (!validation.ok) {
+      setStep(validation.step);
+      showToast(validation.message, 'error');
+      return;
+    }
+
     if (currentVisibleIndex < visibleSteps.length - 1) {
       setStep(visibleSteps[currentVisibleIndex + 1]);
     }
@@ -70,11 +106,7 @@ export default function NewProductPage() {
   };
 
   const handleTagAdd = () => {
-    const t = tagInput.trim();
-    if (t && form.tags.length < 5 && !form.tags.includes(t)) {
-      updateForm({ tags: [...form.tags, t] });
-      setTagInput('');
-    }
+    commitPendingTags();
   };
 
   const handleTagRemove = (tag: string) => {
@@ -107,14 +139,18 @@ export default function NewProductPage() {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) {
-      showToast('Informe o nome do produto antes de salvar.', 'error');
+    const nextForm = commitPendingTags();
+    const validation = validateProductCreateFlow(nextForm, visibleSteps);
+
+    if (!validation.ok) {
+      setStep(validation.step);
+      showToast(validation.message, 'error');
       return;
     }
 
     setSaving(true);
     try {
-      const body = buildProductCreatePayload(form, workspaceId, needsPhysical);
+      const body = buildProductCreatePayload(nextForm, workspaceId, needsPhysical);
 
       const res = await apiFetch<Record<string, unknown>>('/products', { method: 'POST', body });
 
@@ -180,7 +216,7 @@ export default function NewProductPage() {
               marginBottom: 4,
             }}
           >
-            {kloelT('Home &rarr; Produtos &rarr; Cadastrar produto')}
+            {kloelT('Home → Produtos → Cadastrar produto')}
           </p>
           <h1
             style={{
@@ -357,7 +393,7 @@ export default function NewProductPage() {
               ) : (
                 <Check style={{ width: 16, height: 16 }} aria-hidden="true" />
               )}
-              {saving ? 'Salvando...' : 'Publicar Produto'}
+              {saving ? 'Salvando...' : 'Salvar produto'}
             </button>
           )}
         </div>

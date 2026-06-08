@@ -104,7 +104,7 @@ describe('CrmController', () => {
       const body = { workspaceId: undefined, name: 'John', phone: '+5511999999999' };
       createContact.mockResolvedValue({ id: 'contact-1' });
 
-      await controller.createContact(mockReq, body as never);
+      await controller.createContact(mockReq, body);
 
       expect(resolveWorkspaceId).toHaveBeenCalledWith(mockReq, undefined);
       expect(createContact).toHaveBeenCalledWith('ws-resolved', {

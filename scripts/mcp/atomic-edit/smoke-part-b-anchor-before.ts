@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { check, type PartBCtx } from "./smoke-state.js";
+import { check, jsonBody, type PartBCtx } from "./smoke-state.js";
 
 
 export async function partBAnchorBefore(ctx: PartBCtx): Promise<void> {
@@ -24,7 +24,7 @@ export async function partBAnchorBefore(ctx: PartBCtx): Promise<void> {
           insertText: "'beta', ",
         },
       })) as { content: { text: string }[]; isError?: boolean };
-      const beforeAnchorBody = JSON.parse(beforeAnchorRes.content.at(-1)?.text ?? '{}');
+      const beforeAnchorBody = jsonBody(beforeAnchorRes);
       check(
         'insert_before_anchor inserts beta before alpha',
         beforeAnchorRes.isError !== true &&
@@ -51,7 +51,7 @@ export async function partBAnchorBefore(ctx: PartBCtx): Promise<void> {
           preview: true,
         },
       })) as { content: { text: string }[]; isError?: boolean };
-      const beforeAnchorPreviewBody = JSON.parse(beforeAnchorPreview.content.at(-1)?.text ?? '{}');
+      const beforeAnchorPreviewBody = jsonBody(beforeAnchorPreview);
       check(
         'insert_before_anchor preview does not write',
         beforeAnchorPreview.isError !== true &&
@@ -119,9 +119,7 @@ export async function partBAnchorBefore(ctx: PartBCtx): Promise<void> {
             occurrence: 2,
           },
         })) as { content: { text: string }[]; isError?: boolean };
-        const beforeAnchorOccurrenceBody = JSON.parse(
-          beforeAnchorOccurrence.content.at(-1)?.text ?? '{}',
-        );
+        const beforeAnchorOccurrenceBody = jsonBody(beforeAnchorOccurrence);
         check(
           'insert_before_anchor occurrence targets requested match',
           beforeAnchorOccurrence.isError !== true &&

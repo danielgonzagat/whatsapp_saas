@@ -1,6 +1,6 @@
 import { ForbiddenException } from '@nestjs/common';
 import type { Product, Prisma } from '@prisma/client';
-import type { ProductListFilters } from './product.types';
+import type { CreateProductDto, ProductListFilters } from './product.types';
 
 /**
  * Convert a numeric or Prisma.Decimal-ish product price to integer cents.
@@ -85,4 +85,60 @@ export function assertWorkspaceId(workspaceId: string | null | undefined): void 
   if (!workspaceId) {
     throw new ForbiddenException('Workspace ID is required');
   }
+}
+
+const PRODUCT_CREATE_STRIP_KEYS = [
+  'paymentType',
+  'checkoutType',
+  'billingType',
+  'maxInstallments',
+  'interestFreeInstallments',
+  'affiliateApprovalMode',
+  'affiliatesEnabled',
+  'affiliateCommission',
+  'affiliateCommissionPercent',
+  'guaranteeDays',
+  'packageType',
+  'dimensions',
+  'width',
+  'height',
+  'depth',
+  'weight',
+  'shippingResponsible',
+  'dispatchTime',
+  'carriers',
+  'facebookPixelId',
+  'googleTagManagerId',
+] as const;
+
+export function normalizeProductCreateInput(
+  dto: CreateProductDto | Prisma.ProductUncheckedCreateInput,
+): Prisma.ProductUncheckedCreateInput {
+  const cleanDto = { ...dto } as Record<string, unknown>;
+  if (cleanDto.guaranteeDays != null) {
+    cleanDto.warrantyDays = Number(cleanDto.guaranteeDays);
+  }
+  if (cleanDto.affiliatesEnabled != null) {
+    cleanDto.affiliateEnabled = Boolean(cleanDto.affiliatesEnabled);
+  }
+  const affiliateApprovalMode = cleanDto.affiliateApprovalMode;
+  if (typeof affiliateApprovalMode === 'string') {
+    cleanDto.affiliateAutoApprove = affiliateApprovalMode.toLowerCase() !== 'manual';
+  }
+  const commissionPct = cleanDto.affiliateCommissionPercent ?? cleanDto.affiliateCommission;
+  if (commissionPct != null) {
+    cleanDto.commissionPercent = Number(commissionPct);
+  }
+  for (const stripKey of PRODUCT_CREATE_STRIP_KEYS) {
+    delete cleanDto[stripKey];
+  }
+
+  const requestedStatus =
+    typeof cleanDto.status === 'string' && cleanDto.status.length > 0 ? cleanDto.status : 'DRAFT';
+  return {
+    ...(cleanDto as Prisma.ProductUncheckedCreateInput),
+    format: dto.format || 'PHYSICAL',
+    status: requestedStatus === 'APPROVED' ? 'PENDING' : requestedStatus,
+    active: false,
+  };
 }

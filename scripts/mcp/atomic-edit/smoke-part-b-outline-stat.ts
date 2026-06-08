@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { check, sha, type PartBCtx } from "./smoke-state.js";
+import { check, jsonBody, sha, type PartBCtx } from "./smoke-state.js";
 
 
 export async function partBOutlineStat(ctx: PartBCtx): Promise<void> {
@@ -10,7 +10,7 @@ export async function partBOutlineStat(ctx: PartBCtx): Promise<void> {
       name: 'code_outline',
       arguments: { file: fixtureRel },
     })) as { content: { text: string }[] };
-    const ob = JSON.parse(out.content[0].text);
+    const ob = jsonBody(out);
     check('live code_outline ok', ob.ok === true && Array.isArray(ob.symbols), out.content[0].text);
     check('live code_outline omits fullText', !('fullText' in ob), out.content[0].text);
     check(
@@ -23,7 +23,7 @@ export async function partBOutlineStat(ctx: PartBCtx): Promise<void> {
       name: 'code_file_stat',
       arguments: { file: fixtureRel },
     })) as { content: { text: string }[] };
-    const fileStatBody = JSON.parse(fileStat.content.at(-1)?.text ?? '{}');
+    const fileStatBody = jsonBody(fileStat);
     const fixtureBytes = fs.readFileSync(fixtureAbs);
     check(
       'code_file_stat fixture file returns ok+exists',
@@ -54,7 +54,7 @@ export async function partBOutlineStat(ctx: PartBCtx): Promise<void> {
       name: 'code_file_stat',
       arguments: { file: `scripts/mcp/atomic-edit/.smoke-nonexistent.${process.pid}.ts` },
     })) as { content: { text: string }[] };
-    const missingStatBody = JSON.parse(missingStat.content.at(-1)?.text ?? '{}');
+    const missingStatBody = jsonBody(missingStat);
     check(
       'code_file_stat missing path is non-throwing (ok:true, kind:missing)',
       missingStatBody.ok === true &&
@@ -68,7 +68,7 @@ export async function partBOutlineStat(ctx: PartBCtx): Promise<void> {
       name: 'code_file_stat',
       arguments: { file: 'scripts/mcp/atomic-edit' },
     })) as { content: { text: string }[] };
-    const dirStatBody = JSON.parse(dirStat.content.at(-1)?.text ?? '{}');
+    const dirStatBody = jsonBody(dirStat);
     check(
       'code_file_stat directory returns kind=directory, no sha256/bytes/content',
       dirStatBody.ok === true &&
@@ -85,7 +85,7 @@ export async function partBOutlineStat(ctx: PartBCtx): Promise<void> {
       name: 'code_file_stat',
       arguments: { file: 'CLAUDE.md' },
     })) as { content: { text: string }[] };
-    const protectedStatBody = JSON.parse(protectedStat.content.at(-1)?.text ?? '{}');
+    const protectedStatBody = jsonBody(protectedStat);
     check(
       'code_file_stat protected path marked protected=true, no content/bytes/sha256',
       protectedStatBody.ok === true &&
@@ -100,7 +100,7 @@ export async function partBOutlineStat(ctx: PartBCtx): Promise<void> {
       name: 'atomic_insert_at',
       arguments: { file: fixtureRel, line: 1, column: 1, text: '// hdr\n', preview: true },
     })) as { content: { text: string }[] };
-    const pb = JSON.parse(prev.content.at(-1)?.text ?? '{}');
+    const pb = jsonBody(prev);
     check(
       'preview dry-run does not write',
       pb.preview === true && pb.changed === false && typeof pb.diff === 'string',
@@ -118,7 +118,7 @@ export async function partBOutlineStat(ctx: PartBCtx): Promise<void> {
         preview: true,
       },
     })) as { content: { text: string }[] };
-    const literalPreviewBody = JSON.parse(literalPreview.content.at(-1)?.text ?? '{}');
+    const literalPreviewBody = jsonBody(literalPreview);
     check(
       'literal preview dry-run does not write',
       literalPreviewBody.preview === true &&
@@ -153,7 +153,7 @@ export async function partBOutlineStat(ctx: PartBCtx): Promise<void> {
         proofOfIncorrectness: 'smoke fixture literal is stale negative data and may be replaced',
       },
     })) as { content: { text: string }[]; isError?: boolean };
-    const body = JSON.parse(res.content.at(-1)?.text ?? '{}');
+    const body = jsonBody(res);
     check(
       'live literal swap returns human summary first',
       res.content.length >= 2 && /Atomic edit applied/.test(res.content[0]?.text ?? ''),

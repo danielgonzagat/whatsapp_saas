@@ -53,8 +53,10 @@ interface ScenarioOverrides {
   setup?: Partial<MutableState>;
   productOptions?: Array<{ id: string; name: string; price?: number | null }>;
   completed?: boolean;
+  completeMessage?: string | null;
   connectionConnected?: boolean;
   loadError?: string | null;
+  setupUnavailable?: boolean;
   toggleEmailResult?: boolean;
 }
 
@@ -84,9 +86,11 @@ function makeData(overrides: ScenarioOverrides = {}) {
     channelSession: { connected: overrides.connectionConnected ?? false },
     completed: overrides.completed ?? false,
     completeBusy: false,
+    completeMessage: overrides.completeMessage ?? null,
     isLoading: false,
     busy: null as string | null,
     loadError: overrides.loadError ?? null,
+    setupUnavailable: overrides.setupUnavailable ?? false,
     get setup() {
       return setup;
     },
@@ -124,6 +128,20 @@ describe('handleConnect by channel', () => {
     fireEvent.click(screen.getByRole('button', { name: /Vincular número/ }));
     expect(data.openMeta).toHaveBeenCalledTimes(1);
     expect(data.openTikTok).not.toHaveBeenCalled();
+  });
+
+  it('disables the connect CTA when channel setup is unavailable', () => {
+    const data = makeData({ setupUnavailable: true });
+    hookMock.mockReturnValue(data);
+    render(<ChannelOnboarding channel="instagram" />);
+
+    const button = screen.getByRole('button', { name: /Vincular conta/ });
+    expect((button as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText('Canal nao configurado neste ambiente.')).toBeTruthy();
+
+    fireEvent.click(button);
+
+    expect(data.openMeta).not.toHaveBeenCalled();
   });
 
   it('calls openMeta for instagram and facebook', () => {
@@ -256,6 +274,25 @@ describe('awakened state', () => {
     expect(screen.getByText(/Vincular conta/)).toBeTruthy();
     // Recomeçar must NOT call setCurrentStep on the backend (it is UI-only).
     expect(data.setCurrentStep).not.toHaveBeenCalled();
+  });
+
+  it('does not render Done when a completed setup has no provider configuration', () => {
+    const data = makeData({
+      completed: true,
+      completeMessage: 'Setup concluido. O canal esta liberado para operacao.',
+      setupUnavailable: true,
+      setup: { currentStep: 3 },
+    });
+    hookMock.mockReturnValue(data);
+    const { container } = render(<ChannelOnboarding channel="whatsapp" />);
+
+    expect(container.textContent).not.toContain('acordou');
+    expect(container.textContent).not.toContain('Setup concluido');
+    expect(screen.getByText('Canal nao configurado neste ambiente.')).toBeTruthy();
+    const button = screen.getByRole('button', { name: /Despertar/ }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    fireEvent.click(button);
+    expect(data.handleComplete).not.toHaveBeenCalled();
   });
 
   it('surfaces loadError below the vignette', () => {

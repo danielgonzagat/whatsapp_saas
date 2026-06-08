@@ -100,6 +100,25 @@ export const BRAIN_EVENT_TAXONOMY = [
   'cognition.identity.contact_resolved',
   'cognition.case_memory.consulted',
   'cognition.predecided.actions_built',
+  // --- cognition.* percept family — durable subsystem telemetry --------------
+  // Canonical names for the ADDITIVE, flag-gated percepts written to the spine
+  // outbox (`RAC_MindOutboxEvent`) by the Flows / CIA / Voice seams. These are
+  // durable telemetry following the Flows precedent: emitted as a single
+  // best-effort percept per business event, NEVER reprocessed by the decision
+  // ingestor (deliberately distinct from the ingestor's `cognition.decision_made`
+  // poll string). Registered here so the taxonomy is COMPLETE — every emitted
+  // percept has one official name — without changing any ingestor poll-string
+  // behavior. Emit-site constants:
+  //   - cognition.flow.node_completed   → flows/flows-percept-emit.helper.ts
+  //   - cognition.cia.decision_made     → kloel/mind/cia/cia-percept-emit.helper.ts
+  //   - cognition.cia.action_executed   → kloel/mind/cia/cia-percept-emit.helper.ts
+  //   - cognition.voice.clone_created   → voice/voice-percept-emit.helper.ts
+  //   - cognition.voice.action_executed → voice/voice-percept-emit.helper.ts
+  'cognition.flow.node_completed',
+  'cognition.cia.decision_made',
+  'cognition.cia.action_executed',
+  'cognition.voice.clone_created',
+  'cognition.voice.action_executed',
 ] as const;
 
 export type MindEventName = (typeof BRAIN_EVENT_TAXONOMY)[number];

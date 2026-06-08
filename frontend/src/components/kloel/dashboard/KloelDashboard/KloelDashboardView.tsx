@@ -28,6 +28,9 @@ import {
   DropOverlay,
 } from '../KloelDashboard.subcomponents';
 import { PendingApprovalsStrip } from './KloelDashboardView.ApprovalStrip';
+import { ArtifactsBar } from '../artifacts/ArtifactsBar';
+import { ArtifactsPanel } from '../artifacts/ArtifactsPanel';
+import type { Artifact } from '../artifacts/artifact-types';
 
 export type KloelDashboardQuickAction = (typeof KLOEL_CHAT_QUICK_ACTIONS)[number];
 
@@ -37,6 +40,7 @@ interface KloelDashboardViewProps {
   messages: DashboardMessage[];
   conversationTitle: string;
   onTitle: (title: string) => void;
+  onNewChat: () => void;
   streamingMessageId: string | null;
   isThinking: boolean;
   isReplyInFlight: boolean;
@@ -68,13 +72,18 @@ interface KloelDashboardViewProps {
   onAssistantRegenerate: (messageId: string) => Promise<void>;
   onCancelActiveReply: () => void;
   onInputChange: (value: string) => void;
-  onSend: () => void;
+  onSend: (value?: string) => void;
   onRemoveAttachment: (attachmentId: string) => void;
   onRetryAttachment: (attachmentId: string) => void;
   onSelectProduct: (product: KloelLinkedProduct) => void;
   onRemoveLinkedProduct: () => void;
   onCapabilityChange: (capability: KloelChatCapability | null) => void;
   onApprovalDecision: (approvalRequestId: string, decision: KloelApprovalDecision) => Promise<void>;
+  artifacts?: readonly Artifact[];
+  activeArtifact?: Artifact | null;
+  onOpenArtifact?: (artifactId: string) => void;
+  onCloseArtifact?: () => void;
+  onArtifactContentChange?: (artifactId: string, nextContent: string) => void;
 }
 
 export function KloelDashboardView({
@@ -83,6 +92,7 @@ export function KloelDashboardView({
   messages,
   conversationTitle,
   onTitle,
+  onNewChat,
   streamingMessageId,
   isThinking,
   isReplyInFlight,
@@ -120,6 +130,11 @@ export function KloelDashboardView({
   onRemoveLinkedProduct,
   onCapabilityChange,
   onApprovalDecision,
+  artifacts = [],
+  activeArtifact = null,
+  onOpenArtifact,
+  onCloseArtifact,
+  onArtifactContentChange,
 }: KloelDashboardViewProps) {
   return (
     <section
@@ -147,6 +162,8 @@ export function KloelDashboardView({
       <DashboardGlobalStyles />
       <input
         ref={fileInputRef}
+        id="kloel-chat-file-input"
+        name="kloelChatFileInput"
         data-testid="kloel-chat-file-input"
         type="file"
         hidden
@@ -172,7 +189,7 @@ export function KloelDashboardView({
       >
         {hasMessages ? (
           <>
-            <ConversationHeaderBar title={conversationTitle} onTitle={onTitle} />
+            <ConversationHeaderBar title={conversationTitle} onTitle={onTitle} onNewChat={onNewChat} />
             <div
               style={{
                 flex: 1,
@@ -220,6 +237,10 @@ export function KloelDashboardView({
           </>
         ) : null}
 
+        {hasMessages && onOpenArtifact ? (
+          <ArtifactsBar artifacts={artifacts} onOpenArtifact={onOpenArtifact} />
+        ) : null}
+
         <PendingApprovalsStrip
           approvals={pendingApprovals}
           loading={pendingApprovalsLoading}
@@ -263,7 +284,7 @@ export function KloelDashboardView({
                 linkedProduct={linkedProduct}
                 selectableProducts={selectableProducts}
                 productsLoading={selectableProductsLoading}
-                popoverPlacement={hasMessages ? 'above' : 'below'}
+                popoverPlacement="above"
                 inputRef={inputRef}
                 onInputChange={onInputChange}
                 onSend={onSend}
@@ -298,6 +319,13 @@ export function KloelDashboardView({
           </motion.div>
         </div>
       </div>
+
+      <ArtifactsPanel
+        artifact={activeArtifact}
+        editable={activeArtifact?.editable ?? false}
+        onClose={onCloseArtifact ?? (() => {})}
+        onContentChange={onArtifactContentChange ?? (() => {})}
+      />
     </section>
   );
 }

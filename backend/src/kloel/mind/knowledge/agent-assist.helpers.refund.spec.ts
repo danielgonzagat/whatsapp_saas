@@ -1,5 +1,5 @@
 import { refundAiUsageIfNeeded } from './agent-assist.helpers';
-import { WalletService } from '../../../wallet/wallet.service';
+import { PrepaidWalletService } from '../../../wallet/wallet.service';
 import { makeMockWalletService } from './agent-assist.helpers.spec.helpers';
 import { partialMatch } from '../../../../test/helpers/match-instance';
 
@@ -12,7 +12,7 @@ jest.mock('../../../wallet/provider-pricing');
 
 describe('agent-assist.helpers — refund', () => {
   describe('refundAiUsageIfNeeded', () => {
-    let mockWalletService: jest.Mocked<WalletService>;
+    let mockWalletService: jest.Mocked<PrepaidWalletService>;
 
     beforeEach(() => {
       mockWalletService = makeMockWalletService();

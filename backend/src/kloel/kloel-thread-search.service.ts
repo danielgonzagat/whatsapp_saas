@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { MindChatMessageService } from './mind/aliases/mind-chat-message.service';
 import { extractThreadSearchTags, stripHtmlTags } from './thread-search.util';
 import { WHITESPACE_G_RE } from '../common/regex';
 
@@ -29,7 +30,15 @@ export interface ThreadSearchResult {
 export class KloelThreadSearchService {
   private readonly logger = StructuredLogger.from(KloelThreadSearchService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly mindChatMessage?: MindChatMessageService,
+  ) {}
+
+  /** Canonical Brain → Mind chat-message delegate (raw-Prisma fallback). */
+  private get chatMessageItems() {
+    return this.mindChatMessage?.items ?? this.prisma.chatMessage;
+  }
 
   async search(
     workspaceId: string,
@@ -180,7 +189,7 @@ export class KloelThreadSearchService {
       orderBy: { updatedAt: 'desc' },
     });
 
-    const messages = await this.prisma.chatMessage.findMany({
+    const messages = await this.chatMessageItems.findMany({
       take: limit * 2,
       where: {
         thread: { workspaceId },

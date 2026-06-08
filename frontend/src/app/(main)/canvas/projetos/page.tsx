@@ -99,6 +99,7 @@ export default function CanvasProjetos() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            aria-label={kloelT(`Buscar projetos do Canvas`)}
             placeholder={kloelT(`Buscar entre todos os projetos...`)}
             style={{
               flex: 1,
@@ -271,7 +272,7 @@ function ProjectCard({
           {design.name}
         </p>
         <p style={{ fontSize: 9, color: 'var(--app-text-tertiary)', fontFamily: M }}>
-          {design.format} {kloelT(`&middot;`)} {dateStr}
+          {design.format} {kloelT(`·`)} {dateStr}
         </p>
       </button>
       {h && (

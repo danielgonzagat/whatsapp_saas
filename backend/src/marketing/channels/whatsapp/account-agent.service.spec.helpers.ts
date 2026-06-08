@@ -330,7 +330,7 @@ export function createMockPrisma(stores: AccountAgentMockStores): MockPrisma {
       findUnique: jest
         .fn()
         .mockImplementation(({ where }: { where?: { id: string } } = {}) =>
-          Promise.resolve(workItems.get(where!.id) ?? null),
+          Promise.resolve((where ? workItems.get(where.id) : undefined) ?? null),
         ),
       findFirst: jest
         .fn()

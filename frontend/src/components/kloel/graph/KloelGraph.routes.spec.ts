@@ -16,7 +16,11 @@ import {
   resolveKloelGraphNodeForPathFromNodes,
   resolveKloelGraphRoute,
 } from './KloelGraph.routes';
-import { loadCheckoutGraphProducts } from './KloelGraphShell.helpers';
+import {
+  buildKloelGraphMemberAreaNodes,
+  loadCheckoutGraphProducts,
+  mergeGraphProducts,
+} from './KloelGraphShell.helpers';
 
 vi.mock('@/lib/fetcher', () => ({
   swrFetcher: vi.fn(),
@@ -29,6 +33,15 @@ describe('KloelGraph route contract', () => {
     swrFetcherMock.mockReset();
   });
 
+  it('does not synthesize product nodes when real product sources are empty', () => {
+    const staticLabels = KLOEL_GRAPH_NODES.map((node) => node.label.toLowerCase());
+
+    expect(staticLabels).not.toContain('ghk-cu');
+    expect(staticLabels).not.toContain('pdrn');
+    expect(mergeGraphProducts(undefined, undefined)).toEqual([]);
+    expect(buildKloelGraphProductNodes(mergeGraphProducts([], []))).toEqual([]);
+  });
+
   it('keeps the seven canonical primary galaxies from the prototype', () => {
     expect(KLOEL_GRAPH_PRIMARY_NODES.map((node) => node.label)).toEqual([
       'Perfil',
@@ -39,6 +52,20 @@ describe('KloelGraph route contract', () => {
       'Conversar',
       'Consultar',
     ]);
+  });
+
+  it('opens the Consultar primary galaxy on real analytics reports instead of wallet balance', () => {
+    const consultar = KLOEL_GRAPH_PRIMARY_NODES.find((node) => node.id === 'consultar');
+
+    expect(consultar?.route).toBe('/analytics?tab=vendas');
+    expect(resolveKloelGraphRoute('consultar')).toBe('/analytics?tab=vendas');
+    expect(resolveKloelGraphNodeForPath('/analytics', new URLSearchParams('tab=vendas'))?.area).toBe(
+      'consultar',
+    );
+    expect(resolveKloelGraphRoute('consultar-payments')).toBe('/carteira');
+    expect(resolveKloelGraphNodeForPath('/carteira', new URLSearchParams())?.id).toBe(
+      'consultar-payments',
+    );
   });
 
   it('keeps split graph modules under the architecture guard line budget', () => {
@@ -84,6 +111,36 @@ describe('KloelGraph route contract', () => {
     expect(resolveKloelGraphRoute('criar')).toBe('/products');
   });
 
+  it('opens Conta on the canonical settings route without the legacy account redirect', () => {
+    expect(resolveKloelGraphRoute('perfil-account')).toBe('/settings');
+    expect(resolveKloelGraphRoute('perfil-account')).not.toBe('/account');
+    expect(resolveKloelGraphNodeForPath('/settings', new URLSearchParams())?.area).toBe('perfil');
+  });
+
+  it('resolves Perfil language settings to the dedicated Idiomas graph node', () => {
+    const idiomasNode = resolveKloelGraphNodeForPath(
+      '/settings',
+      new URLSearchParams('section=idiomas'),
+    );
+
+    expect(idiomasNode?.id).toBe('perfil-settings-idiomas');
+    expect(idiomasNode?.overlayLabel).toBe('Idiomas');
+    expect(resolveKloelGraphRoute('perfil-settings-idiomas')).toBe('/settings?section=idiomas');
+  });
+
+  it('keeps Sites subroutes attached to the Sites graph overlay label', () => {
+    expect(resolveKloelGraphNodeForPath('/sites/criar', new URLSearchParams())?.id).toBe(
+      'criar-sites',
+    );
+    expect(
+      resolveKloelGraphNodeForPathFromNodes(
+        '/sites/editar',
+        new URLSearchParams(),
+        KLOEL_GRAPH_NODES,
+      )?.id,
+    ).toBe('criar-sites');
+  });
+
   it('maps affiliate, member area, channel, inbox, wallet, and reports routes', () => {
     expect(resolveKloelGraphNodeForPath('/produtos/afiliar-se', new URLSearchParams())?.id).toBe(
       'afiliar-marketplace',
@@ -101,9 +158,73 @@ describe('KloelGraph route contract', () => {
     expect(resolveKloelGraphNodeForPath('/carteira/saques', new URLSearchParams())?.id).toBe(
       'consultar-wallet-saques',
     );
+    expect(getKloelGraphNodeById('consultar-wallet-movimentacoes')).toBeUndefined();
     expect(
       resolveKloelGraphNodeForPath('/analytics', new URLSearchParams('tab=abandonos'))?.id,
     ).toBe('consultar-report-abandonos');
+  });
+
+  it('uses contextual Conversar labels for duplicated channel surfaces', () => {
+    expect(getKloelGraphNodeById('conectar-whatsapp')?.label).toBe('WhatsApp');
+    expect(getKloelGraphNodeById('conectar-channel-whatsapp')?.label).toBe('Marketing WhatsApp');
+    expect(getKloelGraphNodeById('conectar-channel-google-ads')?.label).toBe(
+      'Marketing Google Ads',
+    );
+    expect(getKloelGraphNodeById('conectar-channel-tiktok')?.label).toBe('Marketing TikTok');
+    expect(getKloelGraphNodeById('conectar-anuncios-tiktok')?.label).toBe('TikTok Ads');
+
+    const conversarLabels = KLOEL_GRAPH_NODES.filter((node) => node.area === 'conectar').map(
+      (node) => node.label,
+    );
+
+    expect(conversarLabels.filter((label) => label === 'Whatsapp')).toHaveLength(0);
+    expect(conversarLabels.filter((label) => label === 'Tiktok')).toHaveLength(0);
+    expect(conversarLabels.filter((label) => label === 'Google Ads')).toHaveLength(1);
+  });
+
+  it('exposes dashboard metric nodes that open real report and wallet screens', () => {
+    const metricNodes = KLOEL_GRAPH_NODES.filter((node) => node.parentId === 'dashboard');
+
+    expect(metricNodes.map((node) => [node.id, node.type, node.route])).toEqual([
+      [
+        'dashboard-metric-total-revenue',
+        'metric',
+        '/analytics?tab=vendas&graphMetric=total-revenue',
+      ],
+      [
+        'dashboard-metric-month-revenue',
+        'metric',
+        '/analytics?tab=vendas&graphMetric=month-revenue',
+      ],
+      [
+        'dashboard-metric-today-revenue',
+        'metric',
+        '/analytics?tab=vendas&graphMetric=today-revenue',
+      ],
+      [
+        'dashboard-metric-available-balance',
+        'metric',
+        '/carteira/saldo?graphMetric=available-balance',
+      ],
+      ['dashboard-metric-pending-balance', 'metric', '/carteira/saldo?graphMetric=pending-balance'],
+      ['dashboard-metric-revenue', 'metric', '/analytics?tab=vendas&graphMetric=revenue'],
+      ['dashboard-metric-sales', 'metric', '/analytics?tab=vendas&graphMetric=sales'],
+      ['dashboard-metric-conversion', 'metric', '/analytics?tab=metricas&graphMetric=conversion'],
+      [
+        'dashboard-metric-average-ticket',
+        'metric',
+        '/analytics?tab=metricas&graphMetric=average-ticket',
+      ],
+    ]);
+    expect(
+      resolveKloelGraphNodeForPath(
+        '/analytics',
+        new URLSearchParams('tab=vendas&graphMetric=sales'),
+      )?.id,
+    ).toBe('dashboard-metric-sales');
+    expect(resolveKloelGraphNodeForPath('/analytics', new URLSearchParams('tab=vendas'))?.id).toBe(
+      'consultar-report-vendas',
+    );
   });
 
   it('exposes stable nodes for graph rendering and deep-link focus', () => {
@@ -123,7 +244,7 @@ describe('KloelGraph route contract', () => {
     const productNodes = buildKloelGraphProductNodes([
       {
         id: 'prod_123',
-        name: 'GHK-CU',
+        name: 'Produto real',
         category: 'Dermocosmeticos',
         status: 'active',
         plans: [{ id: 'plan_1', name: 'Plano principal', active: true }],
@@ -138,6 +259,12 @@ describe('KloelGraph route contract', () => {
     );
     expect(productNodes.find((node) => node.id === 'criar-product-prod_123-cupons')?.route).toBe(
       '/products/prod_123?tab=cupons',
+    );
+    expect(productNodes.find((node) => node.id === 'criar-product-prod_123')?.overlayLabel).toBe(
+      'Produto real',
+    );
+    expect(productNodes.find((node) => node.id === 'criar-product-prod_123-cupons')?.overlayLabel).toBe(
+      'Produto real - Cupons',
     );
     expect(
       productNodes.find((node) => node.id === 'criar-product-prod_123-plan-plan_1')?.route,
@@ -173,6 +300,34 @@ describe('KloelGraph route contract', () => {
     ).toBe('criar-product-prod_123-plan-plan_1-checkout-order-bump');
   });
 
+  it('derives member area nodes from live member areas and resolves their deep-link focus', () => {
+    const memberAreaNodes = buildKloelGraphMemberAreaNodes([
+      { id: 'area_123', name: 'Curso real', description: 'Area conectada', active: true },
+      { name: 'Sem id' },
+    ]);
+    const allNodes = [...KLOEL_GRAPH_NODES, ...memberAreaNodes];
+
+    expect(memberAreaNodes).toEqual([
+      {
+        id: 'educar-member-area-area_123',
+        label: 'Curso real',
+        area: 'educar',
+        type: 'entity',
+        route: '/produtos/area-membros/preview/area_123',
+        parentId: 'educar-area-membros',
+        subtitle: 'Area conectada - ativa',
+        overlayLabel: 'Area de membros',
+      },
+    ]);
+    expect(
+      resolveKloelGraphNodeForPathFromNodes(
+        '/produtos/area-membros/preview/area_123',
+        new URLSearchParams(),
+        allNodes,
+      )?.id,
+    ).toBe('educar-member-area-area_123');
+  });
+
   it('keeps real checkout products visible when detail payload fetch fails', async () => {
     swrFetcherMock
       .mockResolvedValueOnce([
@@ -191,9 +346,6 @@ describe('KloelGraph route contract', () => {
       },
     ]);
     expect(swrFetcherMock).toHaveBeenNthCalledWith(1, '/checkout/products');
-    expect(swrFetcherMock).toHaveBeenNthCalledWith(
-      2,
-      '/checkout/products/checkout_prod_real',
-    );
+    expect(swrFetcherMock).toHaveBeenNthCalledWith(2, '/checkout/products/checkout_prod_real');
   });
 });

@@ -320,15 +320,16 @@ export class MercadoEntradaDeclaratorService implements OnModuleInit {
       };
       return result;
     }
-    const previousMarketId = this.activeDeclaration?.active.marketId;
-    if (previousMarketId === marketId) {
+    const current = this.activeDeclaration;
+    const previousMarketId = current?.active.marketId;
+    if (current && previousMarketId === marketId) {
       return {
         ok: true,
         declaration: {
-          active: this.activeDeclaration!.active,
-          declaredAt: this.activeDeclaration!.declaredAt,
-          declaredBy: this.activeDeclaration!.declaredBy,
-          eventId: this.activeDeclaration!.eventId,
+          active: current.active,
+          declaredAt: current.declaredAt,
+          declaredBy: current.declaredBy,
+          eventId: current.eventId,
         },
       };
     }

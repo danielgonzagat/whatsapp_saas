@@ -8,6 +8,12 @@ import { C, FONT, TempBar } from './ParceriasDesignTokens';
 export default function AffiliateProfileCard({ affiliate }: { affiliate: Affiliate }) {
   const a = affiliate;
   const tempColor = (a.temperature || 0) > 70 ? colors.semantic.success : colors.semantic.warning;
+  const statusMeta =
+    a.status === 'active'
+      ? { label: 'Ativo', color: colors.semantic.success, background: 'rgba(16,185,129,0.15)' }
+      : a.status === 'revoked'
+        ? { label: 'Revogado', color: colors.semantic.error, background: 'rgba(239,68,68,0.15)' }
+        : { label: 'Pendente', color: colors.semantic.warning, background: 'rgba(245,158,11,0.15)' };
 
   return (
     <>
@@ -40,12 +46,12 @@ export default function AffiliateProfileCard({ affiliate }: { affiliate: Affilia
             <span
               style={{
                 display: 'inline-block', padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 600,
-                fontFamily: FONT.sans, color: a.status === 'active' ? colors.semantic.success : colors.semantic.warning,
-                background: a.status === 'active' ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)',
+                fontFamily: FONT.sans, color: statusMeta.color,
+                background: statusMeta.background,
                 letterSpacing: '0.02em', textTransform: 'uppercase' as const,
               }}
             >
-              {a.status === 'active' ? 'Ativo' : 'Pendente'}
+              {statusMeta.label}
             </span>
           </div>
         </div>

@@ -21,14 +21,11 @@ import {
   findConflictingProductCouponInWorkspace,
   syncWorkspaceCheckoutCouponForProduct,
 } from '../product-coupon-sync.util';
-import {
-  LooseObject,
-  ensureWorkspaceProductAccess,
-  getWorkspaceId,
-} from './helpers/common.helpers';
+import { LooseObject, ensureWorkspaceProductAccess } from './helpers/common.helpers';
 import { buildCouponData, serializeCoupon } from './helpers/plan.helpers';
 import { RouteClass } from '../../common/throttler/route-class.decorator';
 import { ProductCouponDomainService } from '../product-coupon-domain.service';
+import { resolveWorkspaceId } from '../../auth/workspace-access';
 
 /** Product coupon controller. */
 @Controller('products/:productId/coupons')
@@ -43,7 +40,7 @@ export class ProductCouponController {
   /** List. */
   @Get()
   async list(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     const coupons = await this.prisma.productCoupon.findMany({
       where: { productId },
@@ -61,12 +58,16 @@ export class ProductCouponController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: AuthenticatedRequest,
   ) {
-    const product = await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    const product = await ensureWorkspaceProductAccess(
+      this.prisma,
+      productId,
+      resolveWorkspaceId(req),
+    );
 
     const payload = buildCouponData(body);
     const conflict = await findConflictingProductCouponInWorkspace(
       this.prisma,
-      getWorkspaceId(req),
+      resolveWorkspaceId(req),
       payload.code,
     );
     if (conflict) {
@@ -84,7 +85,7 @@ export class ProductCouponController {
 
     await syncWorkspaceCheckoutCouponForProduct(
       this.prisma,
-      getWorkspaceId(req),
+      resolveWorkspaceId(req),
       product.id,
       created.code,
     );
@@ -100,7 +101,7 @@ export class ProductCouponController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: AuthenticatedRequest,
   ) {
-    const workspaceId = getWorkspaceId(req);
+    const workspaceId = resolveWorkspaceId(req);
     await ensureWorkspaceProductAccess(this.prisma, productId, workspaceId);
 
     const couponSnapshot = await this.prisma.productCoupon.findFirst({
@@ -156,7 +157,7 @@ export class ProductCouponController {
     @Body() body: ValidateCouponDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    await ensureWorkspaceProductAccess(this.prisma, productId, resolveWorkspaceId(req));
 
     const coupon = await this.prisma.productCoupon.findUnique({
       where: {
@@ -187,7 +188,7 @@ export class ProductCouponController {
     @Param('couponId') couponId: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    const workspaceId = getWorkspaceId(req);
+    const workspaceId = resolveWorkspaceId(req);
     return this.productCouponDomain.deleteProductCoupon({
       workspaceId,
       productId,

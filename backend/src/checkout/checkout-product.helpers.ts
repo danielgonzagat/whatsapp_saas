@@ -64,9 +64,5 @@ export function normalizeCheckoutConfigUpdate(
     normalized.showCouponPopup = false;
     normalized.autoCouponCode = null;
   }
-  if (data.showCouponPopup === false) {
-    normalized.autoCouponCode = null;
-  }
-
   return normalized;
 }

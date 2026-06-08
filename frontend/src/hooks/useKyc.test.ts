@@ -147,6 +147,21 @@ describe('useSecurityState', () => {
     expect(result.current.error).toBeUndefined();
   });
 
+  it('returns active auth sessions from the real security payload', () => {
+    mockSWR({
+      mfa: { enabled: true, pendingSetup: false },
+      sessions: [{ id: 'rt-1', createdAt: '2026-06-01T10:00:00.000Z', expiresAt: '2026-07-01T10:00:00.000Z' }],
+    });
+
+    const { result } = renderHook(() => useSecurityState());
+
+    expect(result.current.security).toEqual({
+      mfa: { enabled: true, pendingSetup: false },
+      sessions: [{ id: 'rt-1', createdAt: '2026-06-01T10:00:00.000Z', expiresAt: '2026-07-01T10:00:00.000Z' }],
+    });
+    expect(result.current.error).toBeUndefined();
+  });
+
   it('surfaces malformed security payload instead of showing security as unset', () => {
     mockSWR({ mfa: { enabled: true } });
 
@@ -154,6 +169,15 @@ describe('useSecurityState', () => {
 
     expect(result.current.security).toBeNull();
     expect((result.current.error as Error).message).toBe('Invalid KYC security payload');
+  });
+
+  it('surfaces malformed security sessions instead of showing fake active devices', () => {
+    mockSWR({ mfa: { enabled: true, pendingSetup: false }, sessions: [{ id: 'rt-1', createdAt: 42 }] });
+
+    const { result } = renderHook(() => useSecurityState());
+
+    expect(result.current.security).toBeNull();
+    expect((result.current.error as Error).message).toBe('Invalid KYC security sessions payload');
   });
 });
 

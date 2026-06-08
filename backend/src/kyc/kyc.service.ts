@@ -15,7 +15,7 @@ import { StorageService } from '../common/storage/storage.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { KycEventEmitterService } from '../kloel/kyc-emitter/kyc-event-emitter.service';
 import { KycChangePasswordDto } from './dto/change-password.dto';
-import { KycMfaCodeDto } from './dto/mfa.dto';
+import { KycMfaCodeDto, KycMfaDisableDto } from './dto/mfa.dto';
 import { UpdateBankDto } from './dto/update-bank.dto';
 import { UpdateFiscalDto } from './dto/update-fiscal.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -69,6 +69,33 @@ const PROFILE_SELECT = Prisma.validator<Prisma.AgentSelect>()({
   website: true,
   instagram: true,
 });
+
+type PendingConnectOnboarding = {
+  synced: false;
+  status: 'pending';
+  reason: 'provider_unavailable';
+};
+
+function isRecoverableConnectSyncError(error: unknown): boolean {
+  return !(
+    error instanceof BadRequestException ||
+    error instanceof NotFoundException ||
+    error instanceof UnauthorizedException
+  );
+}
+
+function describeConnectSyncError(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return typeof error === 'string' ? error : 'Unknown Connect sync error';
+}
+function rethrowMfaFormError(error: unknown): never {
+  if (error instanceof UnauthorizedException) {
+    throw new BadRequestException(error.message);
+  }
+  throw error;
+}
 
 /** Kyc service. */
 @Injectable()
@@ -235,10 +262,11 @@ export class KycService {
       agentId,
       details: { deletedBy: 'user', type: doc.type },
     });
-    await this.prisma.kycDocument.delete({
+    const deleted = await this.prisma.kycDocument.delete({
       where: { id: documentId, workspaceId: doc.workspaceId },
+      select: { id: true },
     });
-    return { success: true };
+    return { success: deleted.id === documentId };
   }
 
   async listBrazilianBanks(): Promise<
@@ -299,14 +327,15 @@ export class KycService {
         }
         const valid = await bcryptCompare(dto.currentPassword, agent.password);
         if (!valid) {
-          throw new UnauthorizedException('Current password is incorrect');
+          throw new BadRequestException('Current password is incorrect');
         }
         const hashedPassword = await bcryptHash(dto.newPassword, BCRYPT_ROUNDS);
-        await tx.agent.update({
+        const updated = await tx.agent.update({
           where: { id: agentId, workspaceId: agent.workspaceId },
           data: { password: hashedPassword },
+          select: { id: true },
         });
-        return { success: true };
+        return { success: updated.id === agentId };
       },
       { isolationLevel: 'ReadCommitted' },
     );
@@ -325,7 +354,32 @@ export class KycService {
         enabled: agent.mfaEnabled,
         pendingSetup: agent.mfaPendingSetup,
       },
+      sessions: await this.listSecuritySessions(agentId),
     };
+  }
+
+  async listSecuritySessions(agentId: string) {
+    const rows = await this.prisma.refreshToken.findMany({
+      where: { agentId, revoked: false, expiresAt: { gt: new Date() } },
+      select: { id: true, createdAt: true, expiresAt: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    return rows.map((session) => ({
+      id: session.id,
+      createdAt: session.createdAt.toISOString(),
+      expiresAt: session.expiresAt.toISOString(),
+    }));
+  }
+
+  async revokeSecuritySession(agentId: string, sessionId: string) {
+    const result = await this.prisma.refreshToken.updateMany({
+      where: { id: sessionId, agentId, revoked: false },
+      data: { revoked: true },
+    });
+    if (result.count === 0) {
+      throw new NotFoundException('Security session not found');
+    }
+    return { success: result.count === 1 };
   }
 
   async startMfaSetup(agentId: string) {
@@ -384,7 +438,11 @@ export class KycService {
       if (!agent.mfaSecret || !agent.mfaPendingSetup) {
         throw new BadRequestException('Inicie a configuracao 2FA antes de confirmar.');
       }
-      this.accountMfaService.verifyCode(agent.mfaSecret, dto.code);
+      try {
+        this.accountMfaService.verifyCode(agent.mfaSecret, dto.code);
+      } catch (error) {
+        rethrowMfaFormError(error);
+      }
       await tx.agent.update({
         where: { id: agent.id, workspaceId: agent.workspaceId },
         data: { mfaEnabled: true, mfaPendingSetup: false },
@@ -393,7 +451,7 @@ export class KycService {
     });
   }
 
-  async disableMfa(agentId: string, dto: KycMfaCodeDto) {
+  async disableMfa(agentId: string, dto: KycMfaDisableDto) {
     return this.prisma.$transaction(async (tx) => {
       const agent = await tx.agent.findUnique({
         where: { id: agentId, workspaceId: { not: '' } },
@@ -409,7 +467,14 @@ export class KycService {
         throw new NotFoundException('Agent not found');
       }
       if (agent.mfaEnabled) {
-        this.accountMfaService.verifyCode(agent.mfaSecret, dto.code);
+        if (!dto.code) {
+          throw new BadRequestException('Informe o codigo 2FA para desativar.');
+        }
+        try {
+          this.accountMfaService.verifyCode(agent.mfaSecret, dto.code);
+        } catch (error) {
+          rethrowMfaFormError(error);
+        }
       }
       await tx.agent.update({
         where: { id: agent.id, workspaceId: agent.workspaceId },
@@ -479,16 +544,33 @@ export class KycService {
       { isolationLevel: 'ReadCommitted' },
     );
 
+    let onboardingStatus: Awaited<ReturnType<typeof syncSellerConnectOnboarding>> | null = null;
+    let connectOnboarding: PendingConnectOnboarding | undefined;
+
     this.logger.log('Calling Stripe Connect', {
       context: 'KycService.submitKyc',
       action: 'syncSellerConnectOnboarding',
     });
-    const onboardingStatus = await syncSellerConnectOnboarding(
-      this.syncDeps,
-      agentId,
-      workspaceId,
-      context,
-    );
+    try {
+      onboardingStatus = await syncSellerConnectOnboarding(
+        this.syncDeps,
+        agentId,
+        workspaceId,
+        context,
+      );
+    } catch (error) {
+      if (!isRecoverableConnectSyncError(error)) {
+        throw error;
+      }
+      connectOnboarding = {
+        synced: false,
+        status: 'pending',
+        reason: 'provider_unavailable',
+      };
+      this.logger.warn(
+        `Stripe Connect onboarding sync unavailable for workspace=${workspaceId}: ${describeConnectSyncError(error)}`,
+      );
+    }
 
     this.kycEventEmitter.emitDocumentSubmitted({
       agentId,
@@ -516,7 +598,11 @@ export class KycService {
         autoApproved: true,
       };
     }
-    return { success: true, status: 'submitted' };
+    return {
+      success: true,
+      status: 'submitted',
+      ...(connectOnboarding ? { connectOnboarding } : {}),
+    };
   }
 
   /**

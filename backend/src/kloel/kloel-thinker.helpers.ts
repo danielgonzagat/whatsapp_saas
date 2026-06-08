@@ -24,6 +24,11 @@ import {
   isAiProviderConfigured,
 } from './kloel-thinker.substrate.helpers';
 import { emitCognitionAlias } from './event-taxonomy.canonical-aliases';
+import { StructuredLogger } from '../logging/structured-logger';
+import { recordCapabilityTurnDecision } from './capability-turn-learn.flag';
+import { type DecisionOutcomeService } from './decision-outcome.service';
+
+const capabilityTurnLogger = StructuredLogger.from('KloelThinkerSync');
 
 const ERR_THREAD_NOT_FOUND = 'Conversa não encontrada.';
 const ERR_ASSISTANT_MSG_NOT_FOUND = 'Mensagem do assistente não encontrada.';
@@ -39,7 +44,7 @@ function buildRegenerationError(message: string) {
 /** Sync think loop — extracted to keep KloelThinkerService under 400 lines. */
 export async function thinkSyncImpl(
   request: ThinkRequest,
-  composerCapability: 'create_image' | 'create_site' | 'search_web' | null,
+  composerCapability: 'create_image' | 'create_site' | 'search_web' | 'refine_response' | null,
   effectiveCompanyContext: string | undefined,
   deps: {
     replyEngine: KloelReplyEngineService;
@@ -51,6 +56,12 @@ export async function thinkSyncImpl(
     abiBuilder?: AbiBuilderService;
     capabilityExecutor?: MindCapabilityExecutor;
     executeLocalTool?: LocalToolExecutor;
+    // P0-C sibling: optional cognition producer for the capability-turn
+    // observability closure (KLOEL_CAPABILITY_TURN_LEARN). Same service the
+    // reply engine injects for plain chat turns. @Optional — flag-OFF (and DI
+    // contexts that don't provide it) leave it undefined and the gated helper
+    // short-circuits, so the capability reply path is byte-identical.
+    decisionOutcomeService?: DecisionOutcomeService;
   },
 ): Promise<ThinkSyncResult> {
   const {
@@ -183,6 +194,23 @@ export async function thinkSyncImpl(
     // Dual-emit: legacy `kloel.chat.turn` + canonical `cognition.chat.turn`
     // per docs/architecture/EVENT_TAXONOMY_MIGRATION.md. Both rows are
     // persisted so SQL aggregators can be migrated independently.
+    // Capability/tool-driven replies BYPASS the reply engine: when
+    // `capabilityResult?.content` was used above, `buildAssistantReply` never
+    // ran, so NONE of its learning hooks fired for this turn. Behind
+    // KLOEL_CAPABILITY_TURN_LEARN (default OFF), record the turn as a
+    // `capability_reply` decision so capability turns become OBSERVABLE to the
+    // Mind. The reply itself is UNCHANGED — `assistantMessage` already holds
+    // the verbatim `capabilityResult.content`. Fire-and-forget / flag-OFF =
+    // byte-identical. Only fires when a capability actually produced the reply.
+    if (capabilityResult?.content) {
+      recordCapabilityTurnDecision(deps.decisionOutcomeService, capabilityTurnLogger, {
+        workspaceId,
+        capability: composerCapability ?? 'unknown',
+        mode,
+        messageLength: message.length,
+        replyLength: assistantMessage.length,
+      });
+    }
     const chatTurnMeta: Prisma.InputJsonValue = {
       userPreview: message.slice(0, 280),
       replyPreview: assistantMessage.slice(0, 280),
@@ -230,10 +258,10 @@ export async function regenerateThreadAssistantResponseImpl(
   deps: {
     prisma: {
       chatThread: {
-        findFirst: (args: unknown) => Promise<{ id: string; summary: string | null } | null>;
+        findFirst(args: unknown): Promise<{ id: string; summary: string | null } | null>;
       };
       chatMessage: {
-        findFirst: (args: unknown) => Promise<{
+        findFirst(args: unknown): Promise<{
           id: string;
           threadId: string;
           role: string;
@@ -241,7 +269,7 @@ export async function regenerateThreadAssistantResponseImpl(
           metadata: Prisma.JsonValue | null;
           createdAt: Date;
         } | null>;
-        findMany: (args: unknown) => Promise<
+        findMany(args: unknown): Promise<
           Array<{
             id: string;
             threadId: string;
@@ -251,11 +279,36 @@ export async function regenerateThreadAssistantResponseImpl(
             createdAt: Date;
           }>
         >;
-        updateMany: (args: unknown) => Promise<unknown>;
-        deleteMany: (args: unknown) => Promise<unknown>;
+        updateMany(args: unknown): Promise<unknown>;
+        deleteMany(args: unknown): Promise<unknown>;
       };
-      auditLog: { create: (args: unknown) => Promise<unknown> };
-      $transaction: (ops: unknown) => Promise<unknown[]>;
+      auditLog: { create(args: unknown): Promise<unknown> };
+      $transaction(ops: unknown): Promise<unknown[]>;
+    };
+    // Canonical Mind surface for the SEPARATE RAC_ChatMessage table. The caller
+    // (KloelThinkerService) passes `mindChatMessage?.items ?? this.prisma.chatMessage`
+    // — same delegate, byte-identical. When absent we fall back to `prisma.chatMessage`.
+    chatMessageItems?: {
+      findFirst(args: unknown): Promise<{
+        id: string;
+        threadId: string;
+        role: string;
+        content: string;
+        metadata: Prisma.JsonValue | null;
+        createdAt: Date;
+      } | null>;
+      findMany(args: unknown): Promise<
+        Array<{
+          id: string;
+          threadId: string;
+          role: string;
+          content: string;
+          metadata: Prisma.JsonValue | null;
+          createdAt: Date;
+        }>
+      >;
+      updateMany(args: unknown): Promise<unknown>;
+      deleteMany(args: unknown): Promise<unknown>;
     };
     replyEngine: KloelReplyEngineService;
     threadService: KloelThreadService;
@@ -271,6 +324,8 @@ export async function regenerateThreadAssistantResponseImpl(
 }> {
   const { workspaceId, conversationId, assistantMessageId, userId, userName } = params;
   const { prisma, replyEngine, threadService } = deps;
+  // Canonical Mind accessor for RAC_ChatMessage (documented fallback idiom).
+  const chatMessageItems = deps.chatMessageItems ?? prisma.chatMessage;
 
   const thread = await prisma.chatThread.findFirst({
     where: { id: conversationId, workspaceId },
@@ -281,7 +336,7 @@ export async function regenerateThreadAssistantResponseImpl(
   }
 
   const messages = (
-    await prisma.chatMessage.findMany({
+    await chatMessageItems.findMany({
       where: { threadId: conversationId, workspaceId },
       orderBy: { createdAt: 'desc' },
       take: 500,
@@ -326,6 +381,7 @@ export async function regenerateThreadAssistantResponseImpl(
     );
 
   const regeneratedTraceEntries: StoredProcessingTraceEntry[] = [];
+  const threadSummary = (thread as { summary?: string | null }).summary;
   const regeneratedContent = await replyEngine.buildAssistantReply({
     message: sourceUserMessage.content,
     workspaceId,
@@ -333,9 +389,7 @@ export async function regenerateThreadAssistantResponseImpl(
     ...(userName ? { userName } : {}),
     mode: 'chat',
     conversationState: {
-      ...(typeof (thread as { summary?: string | null }).summary === 'string'
-        ? { summary: (thread as { summary?: string | null }).summary as string }
-        : {}),
+      ...(typeof threadSummary === 'string' ? { summary: threadSummary } : {}),
       recentMessages: historyBeforeUser,
       totalMessages: sourceUserIndex,
     },
@@ -379,7 +433,7 @@ export async function regenerateThreadAssistantResponseImpl(
   );
 
   const operations: Prisma.PrismaPromise<unknown>[] = [
-    prisma.chatMessage.updateMany({
+    chatMessageItems.updateMany({
       where: { id: assistantMessageId, workspaceId },
       data: {
         content: regeneratedContent,
@@ -389,7 +443,7 @@ export async function regenerateThreadAssistantResponseImpl(
   ];
   if (deletedMessageIds.length > 0) {
     operations.push(
-      prisma.chatMessage.deleteMany({
+      chatMessageItems.deleteMany({
         where: { id: { in: deletedMessageIds }, workspaceId },
       }) as Prisma.PrismaPromise<unknown>,
       prisma.auditLog.create({
@@ -410,7 +464,7 @@ export async function regenerateThreadAssistantResponseImpl(
   operations.push(threadService.touchThread(conversationId, workspaceId));
 
   await prisma.$transaction(operations);
-  const updatedMessage = await prisma.chatMessage.findFirst({
+  const updatedMessage = await chatMessageItems.findFirst({
     where: { id: assistantMessageId, workspaceId },
     select: {
       id: true,

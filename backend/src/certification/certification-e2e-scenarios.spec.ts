@@ -244,7 +244,7 @@ describe('Certification E2E Scenario Coverage (Block 10)', () => {
       },
       WalletService: {
         relativePath: '../wallet/wallet.service.ts',
-        exportName: 'WalletService',
+        exportName: 'PrepaidWalletService',
       },
       FraudEngine: {
         relativePath: '../payments/fraud/fraud.engine.ts',

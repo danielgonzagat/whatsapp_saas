@@ -148,7 +148,7 @@ export function AdAccountsBoard({
                             fontWeight: 600,
                           }}
                         >
-                          {kloelT(`&mdash;`)}
+                          {kloelT(`—`)}
                         </div>
                       </div>
                     ))}
@@ -156,6 +156,7 @@ export function AdAccountsBoard({
                   <NP color={colors.text.dim} intensity={0} width={200} height={28} />
                   <button
                     type="button"
+                    aria-label={kloelT(`Conectar ${p.name}`)}
                     onClick={() => onConnectPlatform(key)}
                     style={{
                       marginTop: 12,
@@ -172,7 +173,7 @@ export function AdAccountsBoard({
                       transition: 'background 150ms ease',
                     }}
                   >
-                    {kloelT(`Conectar`)} {p.name}
+                    {kloelT(`Conectar ${p.name}`)}
                   </button>
                 </>
               )}

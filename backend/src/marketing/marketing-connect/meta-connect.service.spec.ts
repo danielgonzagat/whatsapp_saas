@@ -229,6 +229,17 @@ describe('MetaConnectService', () => {
       expect(result.whatsapp.degradedReason).toBe('Session refresh in progress');
     });
 
+    it('marks disconnected Meta channels as configuration missing when OAuth URL is unavailable', async () => {
+      safeBuildEmbeddedSignupUrl.mockReturnValue('');
+
+      const result = await service.getStatus(workspaceId);
+
+      expect(result.whatsapp.status).toBe('meta_oauth_configuration_missing');
+      expect(result.whatsapp.degradedReason).toBe('meta_oauth_configuration_missing');
+      expect(result.instagram.status).toBe('meta_oauth_configuration_missing');
+      expect(result.facebook.status).toBe('meta_oauth_configuration_missing');
+    });
+
     it('scopes prisma workspace query to workspaceId for tenant isolation', async () => {
       workspaceFindUnique.mockResolvedValue({
         providerSettings: {},

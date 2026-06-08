@@ -153,7 +153,7 @@ export function createPrismaMock(options: CreatePrismaMockOptions = {}): PrismaM
       if (prisma[model]) {
         Object.assign(prisma[model], methods);
       } else {
-        prisma[model] = methods as PrismaMockModel;
+        prisma[model] = methods;
       }
     }
   }
@@ -193,7 +193,7 @@ export function createPartialPrismaMock(
       if (prisma[model]) {
         Object.assign(prisma[model], methods);
       } else {
-        prisma[model] = methods as PrismaMockModel;
+        prisma[model] = methods;
       }
     }
   }

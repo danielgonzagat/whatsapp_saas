@@ -14,6 +14,7 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  Optional,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
@@ -24,8 +25,10 @@ import { resolveWorkspaceId } from '../auth/workspace-access';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { MaxFileSizeValidator, ParseFilePipe, FileTypeValidator } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { MindChatMessageService } from './mind/aliases/mind-chat-message.service';
 import { ConversationalOnboardingService } from './conversational-onboarding.service';
 import { KloelService } from './kloel.service';
+import { KloelMemoryEngineService } from './kloel-memory-engine.service';
 import { KloelThreadSearchService } from './kloel-thread-search.service';
 import { KloelGlobalSearchService } from './kloel-global-search.service';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
@@ -83,7 +86,34 @@ export class KloelController {
     private readonly threadSearchService: KloelThreadSearchService,
     private readonly globalSearchService: KloelGlobalSearchService,
     private readonly toolDispatcher: KloelToolDispatcherService,
+    @Optional() private readonly mindChatMessage?: MindChatMessageService,
+    @Optional() private readonly memoryEngine?: KloelMemoryEngineService,
   ) {}
+
+  /**
+   * Per-user memory GRAPH for the immutable Kloel Sigma renderer — the "Memória"
+   * node's data source. Derived read-time from the user's MindMemory slots; never
+   * leaks other users' memory (scoped by JWT workspaceId + userId).
+   */
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @Get('memory/graph')
+  async getMemoryGraph(@Request() req: AuthenticatedRequest) {
+    const workspaceId = req.workspaceId || req.user?.workspaceId || '';
+    const userId = readUserId(req.user) || '';
+    if (!this.memoryEngine || !workspaceId || !userId) {
+      return { nodes: [], edges: [] };
+    }
+    return this.memoryEngine.recallGraph(workspaceId, userId);
+  }
+
+  /**
+   * Canonical Mind surface for the SEPARATE RAC_ChatMessage table. Returns the
+   * SAME delegate legacy code used (`prisma.chatMessage`) when the alias service
+   * is not provided — byte-identical, documented fallback idiom.
+   */
+  private get chatMessageItems() {
+    return this.mindChatMessage?.items ?? this.prisma.chatMessage;
+  }
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('think')
   async think(
@@ -228,7 +258,10 @@ export class KloelController {
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: KLOEL_UPLOAD_MAX_BYTES }),
-          new FileTypeValidator({ fileType: KLOEL_UPLOAD_GENERIC_MIME_RE }),
+          new FileTypeValidator({
+            fileType: KLOEL_UPLOAD_GENERIC_MIME_RE,
+            fallbackToMimetype: true,
+          }),
         ],
         fileIsRequired: false,
       }),
@@ -258,7 +291,10 @@ export class KloelController {
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: KLOEL_UPLOAD_MAX_BYTES }),
-          new FileTypeValidator({ fileType: KLOEL_UPLOAD_CHAT_MIME_RE }),
+          new FileTypeValidator({
+            fileType: KLOEL_UPLOAD_CHAT_MIME_RE,
+            fallbackToMimetype: true,
+          }),
         ],
         fileIsRequired: false,
       }),
@@ -419,7 +455,11 @@ export class KloelController {
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('threads/:id/messages')
   async getChatThreadMessages(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
-    return getThreadMessages({ prisma: this.prisma }, id, resolveWorkspaceId(req));
+    return getThreadMessages(
+      { prisma: this.prisma, chatMessageItems: this.chatMessageItems },
+      id,
+      resolveWorkspaceId(req),
+    );
   }
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @InternalEndpoint('thread message creation')
@@ -435,7 +475,12 @@ export class KloelController {
     },
     @Req() req: AuthenticatedRequest,
   ) {
-    return addThreadMessage({ prisma: this.prisma }, id, dto, resolveWorkspaceId(req));
+    return addThreadMessage(
+      { prisma: this.prisma, chatMessageItems: this.chatMessageItems },
+      id,
+      dto,
+      resolveWorkspaceId(req),
+    );
   }
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Put('messages/:id')
@@ -444,7 +489,12 @@ export class KloelController {
     @Body() dto: { content?: string },
     @Req() req: AuthenticatedRequest,
   ) {
-    return updateThreadMessage({ prisma: this.prisma }, id, dto, resolveWorkspaceId(req));
+    return updateThreadMessage(
+      { prisma: this.prisma, chatMessageItems: this.chatMessageItems },
+      id,
+      dto,
+      resolveWorkspaceId(req),
+    );
   }
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('messages/:id/feedback')

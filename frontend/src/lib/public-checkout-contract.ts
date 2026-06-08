@@ -83,6 +83,8 @@ export interface PublicCheckoutOrderBump {
   checkboxLabel?: string | undefined;
 }
 
+export type PublicCheckoutProductFormat = 'DIGITAL' | 'PHYSICAL' | 'HYBRID';
+
 /** Public checkout product shape. */
 export interface PublicCheckoutProduct {
   /** Id property. */
@@ -91,6 +93,8 @@ export interface PublicCheckoutProduct {
   name: string;
   /** Description property. */
   description?: string | undefined;
+  /** Fulfillment format property. */
+  format?: PublicCheckoutProductFormat | undefined;
   /** Image url property. */
   imageUrl?: string | undefined;
   /** Images property. */

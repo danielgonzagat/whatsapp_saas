@@ -28,7 +28,11 @@ export default function AffiliateFilterToolbar({
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, gap: 12, flexWrap: 'wrap' as const }}>
       <div style={{ display: 'flex', gap: 6 }}>
         {FILTER_OPTIONS.map((opt) => (
-          <button type="button" key={opt.value} onClick={() => setFilterType(opt.value)}
+          <button
+            type="button"
+            key={opt.value}
+            onClick={() => setFilterType(opt.value)}
+            aria-pressed={filterType === opt.value}
             style={{
               padding: '7px 14px', background: filterType === opt.value ? C.ember : C.card,
               border: `1px solid ${filterType === opt.value ? C.ember : C.border}`, borderRadius: 6,
@@ -43,6 +47,8 @@ export default function AffiliateFilterToolbar({
         <div style={{ position: 'relative', width: 280 }}>
           <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: C.muted }}>{IC.search(14)}</div>
           <input
+            id="affiliate-partner-search"
+            name="affiliatePartnerSearch"
             aria-label="Buscar parceiro" type="text" placeholder={kloelT(`Buscar parceiro...`)} value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{ width: '100%', padding: '9px 14px 9px 34px', background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, color: C.text, fontFamily: FONT.sans, fontSize: 13, outline: 'none', boxSizing: 'border-box' as const }}

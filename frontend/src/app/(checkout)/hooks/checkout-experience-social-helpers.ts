@@ -310,11 +310,13 @@ export function deriveCheckoutExperienceState({
     0,
     Math.round(Number(plan?.priceInCents || defaults.product.priceInCents)),
   );
-  const { shippingMode, variableShippingFloorInCents, shippingInCents } = deriveShipping(
-    config,
-    plan,
-    dynamicShippingInCents,
-  );
+  const requiresShipping = product?.format !== 'DIGITAL';
+  const derivedShipping = deriveShipping(config, plan, dynamicShippingInCents);
+  const shippingMode = requiresShipping ? derivedShipping.shippingMode : 'FREE';
+  const variableShippingFloorInCents = requiresShipping
+    ? derivedShipping.variableShippingFloorInCents
+    : 0;
+  const shippingInCents = requiresShipping ? derivedShipping.shippingInCents : 0;
   const { supportsCard, supportsPix, supportsBoleto } = resolveSupportedMethods(
     config,
     paymentProvider,
@@ -344,6 +346,7 @@ export function deriveCheckoutExperienceState({
     productName,
     brandName,
     unitPriceInCents,
+    requiresShipping,
     shippingMode,
     variableShippingFloorInCents,
     shippingInCents,
@@ -414,6 +417,7 @@ export function resolveCheckoutCouponCode(currentCode: string, explicitCode?: st
 interface FinalizeOrderPrecheckInput {
   identityValid: boolean;
   addressValid: boolean;
+  requiresShipping?: boolean;
   hasWorkspaceAndPlan: boolean;
   checkoutUnavailableReason: string;
   payMethod: 'card' | 'pix' | 'boleto';
@@ -458,7 +462,7 @@ function findFinalizePrecheckError(input: FinalizeOrderPrecheckInput): PrecheckE
   if (!input.identityValid) {
     return PRECHECK_IDENTITY_ERROR;
   }
-  if (!input.addressValid) {
+  if (input.requiresShipping !== false && !input.addressValid) {
     return PRECHECK_ADDRESS_ERROR;
   }
   if (!input.hasWorkspaceAndPlan) {

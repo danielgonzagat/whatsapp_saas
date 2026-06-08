@@ -2,7 +2,7 @@
 
 import { kloelT } from '@/lib/i18n/t';
 import Image from 'next/image';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useProfileMutations } from '@/hooks/useKyc';
 import { useToast } from '@/components/kloel/ToastProvider';
 import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
@@ -34,7 +34,9 @@ function AvatarUploader({
   const [isHovered, setIsHovered] = useState(false);
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
-      <div
+      <button
+        type="button"
+        aria-label={kloelT(`Alterar foto de perfil`)}
         onClick={() => fileRef.current?.click()}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -50,12 +52,6 @@ function AvatarUploader({
           position: 'relative' as const,
           cursor: 'pointer',
           padding: 8,
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            (e.currentTarget as HTMLElement).click();
-          }
         }}
       >
         {imgSrc ? (
@@ -99,7 +95,7 @@ function AvatarUploader({
         >
           <span style={{ color: 'var(--app-text-primary)' }}>{Icons.camera(18)}</span>
         </div>
-      </div>
+      </button>
       <div>
         <span
           style={{
@@ -117,6 +113,8 @@ function AvatarUploader({
         </span>
       </div>
       <input
+        id="conta-avatar-file"
+        name="contaAvatarFile"
         aria-label="Foto de perfil"
         ref={fileRef}
         type="file"
@@ -124,6 +122,273 @@ function AvatarUploader({
         style={{ display: 'none' }}
         onChange={onFileChange}
       />
+    </div>
+  );
+}
+
+type BirthDateParts = { day: string; month: string; year: string };
+
+const MONTH_LABELS = [
+  'Janeiro',
+  'Fevereiro',
+  'Marco',
+  'Abril',
+  'Maio',
+  'Junho',
+  'Julho',
+  'Agosto',
+  'Setembro',
+  'Outubro',
+  'Novembro',
+  'Dezembro',
+];
+
+function pad2(value: number): string {
+  return String(value).padStart(2, '0');
+}
+
+function splitBirthDate(value: string): BirthDateParts {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value || '');
+  if (!match) {
+    return { day: '1', month: '1', year: String(new Date().getFullYear() - 18) };
+  }
+  return { day: String(Number(match[3])), month: String(Number(match[2])), year: match[1] };
+}
+
+function daysInMonth(year: number, month: number): number {
+  return new Date(year, month, 0).getDate();
+}
+
+function normalizedBirthDate(parts: BirthDateParts): string {
+  const year = Number(parts.year);
+  const month = Math.min(12, Math.max(1, Number(parts.month) || 1));
+  const day = Math.min(daysInMonth(year, month), Math.max(1, Number(parts.day) || 1));
+  if (!Number.isFinite(year) || year < 1900) {
+    return '';
+  }
+  return `${String(year).padStart(4, '0')}-${pad2(month)}-${pad2(day)}`;
+}
+
+function formatBirthDate(value: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value || '');
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : 'Selecionar data';
+}
+
+function BirthDatePickerField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<BirthDateParts>(() => splitBirthDate(value));
+  const fieldId = useId();
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 121 }, (_, index) => currentYear - index);
+  const draftYear = Number(draft.year) || currentYear - 18;
+  const draftMonth = Math.min(12, Math.max(1, Number(draft.month) || 1));
+  const maxDay = daysInMonth(draftYear, draftMonth);
+  const draftDay = Math.min(maxDay, Math.max(1, Number(draft.day) || 1));
+  const birthDateLabel = formatBirthDate(value);
+  const birthDateAriaLabel = value
+    ? `Data de nascimento: ${birthDateLabel}`
+    : 'Data de nascimento: selecionar data';
+  const selectStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '9px 10px',
+    background: 'var(--app-bg-input)',
+    border: '1px solid var(--app-border-primary)',
+    borderRadius: 6,
+    color: 'var(--app-text-primary)',
+    fontFamily: SORA,
+    fontSize: 12,
+    outline: 'none',
+  };
+
+  return (
+    <div style={{ position: 'relative' as const, width: '100%' }}>
+      <label
+        htmlFor={fieldId}
+        style={{
+          fontSize: 11,
+          fontWeight: 600,
+          color: 'var(--app-text-secondary)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4,
+          marginBottom: 6,
+          fontFamily: SORA,
+        }}
+      >
+        {kloelT(`Data de nascimento`)} <span style={{ color: 'var(--app-accent)', fontSize: 8 }}>*</span>
+      </label>
+      <button
+        id={fieldId}
+        type="button"
+        aria-label={birthDateAriaLabel}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => {
+          if (!open) {
+            setDraft(splitBirthDate(value));
+          }
+          setOpen((next) => !next);
+        }}
+        style={{
+          width: '100%',
+          padding: '11px 14px',
+          background: 'var(--app-bg-input)',
+          border: `1px solid ${open ? 'var(--app-accent)' : 'var(--app-border-primary)'}`,
+          borderRadius: 6,
+          color: value ? 'var(--app-text-primary)' : 'var(--app-text-placeholder)',
+          boxSizing: 'border-box' as const,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          fontFamily: SORA,
+          fontSize: 13,
+          textAlign: 'left' as const,
+        }}
+      >
+        <span>{birthDateLabel}</span>
+        <span
+          aria-hidden="true"
+          style={{
+            width: 7,
+            height: 7,
+            borderRight: '1.5px solid var(--app-text-tertiary)',
+            borderBottom: '1.5px solid var(--app-text-tertiary)',
+            transform: open ? 'rotate(225deg)' : 'rotate(45deg)',
+            transition: 'transform 150ms ease',
+            flexShrink: 0,
+          }}
+        />
+      </button>
+      {open && (
+        <div
+          role="dialog"
+          aria-label="Selecionar data de nascimento"
+          style={{
+            position: 'absolute' as const,
+            zIndex: 20,
+            top: 'calc(100% + 8px)',
+            left: 0,
+            right: 0,
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
+            borderRadius: 6,
+            boxShadow: '0 18px 44px rgba(0,0,0,0.18)',
+            padding: 14,
+          }}
+        >
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.25fr 1fr', gap: 10 }}>
+            <label style={{ fontFamily: SORA, fontSize: 11, color: 'var(--app-text-secondary)' }}>
+              Dia
+              <select
+                aria-label="Dia"
+                value={String(draftDay)}
+                onChange={(event) => setDraft((prev) => ({ ...prev, day: event.target.value }))}
+                style={selectStyle}
+              >
+                {Array.from({ length: maxDay }, (_, index) => index + 1).map((day) => (
+                  <option key={day} value={day}>
+                    {pad2(day)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label style={{ fontFamily: SORA, fontSize: 11, color: 'var(--app-text-secondary)' }}>
+              Mes
+              <select
+                aria-label="Mes"
+                value={String(draftMonth)}
+                onChange={(event) => setDraft((prev) => ({ ...prev, month: event.target.value }))}
+                style={selectStyle}
+              >
+                {MONTH_LABELS.map((label, index) => (
+                  <option key={label} value={index + 1}>
+                    {pad2(index + 1)} - {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label style={{ fontFamily: SORA, fontSize: 11, color: 'var(--app-text-secondary)' }}>
+              Ano
+              <select
+                aria-label="Ano"
+                value={String(draftYear)}
+                onChange={(event) => setDraft((prev) => ({ ...prev, year: event.target.value }))}
+                style={selectStyle}
+              >
+                {years.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
+            <button
+              type="button"
+              onClick={() => {
+                onChange('');
+                setOpen(false);
+              }}
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--app-border-primary)',
+                borderRadius: 6,
+                color: 'var(--app-text-secondary)',
+                cursor: 'pointer',
+                fontFamily: SORA,
+                fontSize: 12,
+                padding: '8px 12px',
+              }}
+            >
+              Limpar
+            </button>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--app-border-primary)',
+                borderRadius: 6,
+                color: 'var(--app-text-secondary)',
+                cursor: 'pointer',
+                fontFamily: SORA,
+                fontSize: 12,
+                padding: '8px 12px',
+              }}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onChange(normalizedBirthDate({ ...draft, day: String(draftDay) }));
+                setOpen(false);
+              }}
+              style={{
+                background: 'var(--app-accent)',
+                border: 'none',
+                borderRadius: 6,
+                color: 'var(--app-text-on-accent)',
+                cursor: 'pointer',
+                fontFamily: SORA,
+                fontSize: 12,
+                fontWeight: 600,
+                padding: '8px 12px',
+              }}
+            >
+              Aplicar data
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -179,14 +444,40 @@ export default function DadosPessoaisSection({
 
   const set = (k: string, v: string) => setForm((prev) => ({ ...prev, [k]: v }));
 
+  const showValidationError = (message: string) => {
+    setError(message);
+    showToast(message, 'error');
+    setSaveStatus('error');
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+    }
+    saveTimer.current = setTimeout(() => setSaveStatus('idle'), 4000);
+  };
+
   const handleSave = async () => {
     setError('');
     setSaveStatus('idle');
+
+    const trimmedName = form.name.trim();
+    const phoneDigits = form.phone.replace(/\D/g, '');
+    if (!trimmedName) {
+      showValidationError('Informe seu nome completo.');
+      return;
+    }
+    if (phoneDigits.length < 10) {
+      showValidationError('Informe um celular valido com DDD.');
+      return;
+    }
+    if (!form.birthDate) {
+      showValidationError('Informe sua data de nascimento.');
+      return;
+    }
+
     setSaving(true);
     try {
       await updateProfile(
         cleanPayload({
-          name: form.name,
+          name: trimmedName,
           phone: form.phone,
           birthDate: form.birthDate,
         }),
@@ -257,12 +548,7 @@ export default function DadosPessoaisSection({
           onChange={(v) => set('phone', v)}
           mono
         />
-        <Field
-          label={kloelT(`Data de nascimento`)}
-          value={form.birthDate}
-          onChange={(v) => set('birthDate', v)}
-          type="date"
-        />
+        <BirthDatePickerField value={form.birthDate} onChange={(v) => set('birthDate', v)} />
       </div>
 
       <SaveActions error={error} saveStatus={saveStatus} saving={saving} onSave={handleSave} />

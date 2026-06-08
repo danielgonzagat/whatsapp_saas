@@ -38,6 +38,7 @@ import { ChannelDispatchRegistry } from '../common/channel-dispatch/channel-disp
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import {
   buildEmail,
+  buildEmailTransactional,
   buildFacebook,
   buildInstagram,
   buildMessenger,
@@ -158,6 +159,8 @@ export class ChannelMessageDispatchService {
       }
       case ChannelKind.EMAIL:
         return buildEmail(workspaceId, to, message, opts);
+      case ChannelKind.EMAIL_TRANSACTIONAL:
+        return buildEmailTransactional(workspaceId, to, message, opts);
       default:
         throw new Error('channel_not_supported');
     }

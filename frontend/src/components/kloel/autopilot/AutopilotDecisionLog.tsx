@@ -122,8 +122,11 @@ export default function AutopilotDecisionLog({
         <div className="flex items-center gap-2">
           <Filter size={16} style={{ color: colors.text.muted }} aria-hidden="true" />
           <select
+            id="autopilot-action-status-filter"
+            name="statusFilter"
             value={statusFilter}
             onChange={(e) => onStatusFilterChange(e.target.value)}
+            aria-label={kloelT('Filtro de status das ações')}
             className="px-3 py-1.5 rounded-lg text-sm border outline-none"
             style={{
               backgroundColor: colors.background.surface2,
@@ -172,7 +175,15 @@ export default function AutopilotDecisionLog({
             )}
           </div>
         ) : (
-          filteredActions.map((action) => <ActionRow key={action.id} action={action} />)
+          filteredActions.map((action, index) => (
+            <ActionRow
+              key={
+                action.id ??
+                `${action.createdAt}-${action.contactId ?? action.contact ?? 'contact'}-${action.intent ?? 'intent'}-${action.action ?? 'action'}-${index}`
+              }
+              action={action}
+            />
+          ))
         )}
       </div>
 

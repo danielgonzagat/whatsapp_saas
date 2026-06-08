@@ -67,7 +67,7 @@ export function ProductNerveCenterCuponsTab({
             <div style={{ fontSize: 11, color: V.t3, marginTop: 4, lineHeight: 1.6 }}>
               {primaryPlanId
                 ? `Checkout principal ${primaryCheckoutConfig.enableCoupon !== false ? 'já aceita' : 'ainda não aceita'} cupom. ${primaryCheckoutConfig.autoCouponCode ? `Cupom automático atual: ${primaryCheckoutConfig.autoCouponCode}.` : 'Você pode aplicar um cupom automático no popup e no exit intent.'}`
-                : 'Crie um checkout para aplicar cupons automáticos e popup de recuperação.'}
+                : 'Crie um cupom para liberar descontos. Depois vincule esse cupom ao checkout quando quiser automatizar popup e exit intent.'}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

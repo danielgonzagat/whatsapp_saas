@@ -71,7 +71,7 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const [locale, messages] = await Promise.all([getLocale(), getMessages()]);
   return (
-    <html lang={locale} suppressHydrationWarning>
+    <html lang={locale} data-scroll-behavior="smooth" suppressHydrationWarning>
       <body
         className={`${sora.variable} ${jetbrainsMono.variable} antialiased`}
         style={{

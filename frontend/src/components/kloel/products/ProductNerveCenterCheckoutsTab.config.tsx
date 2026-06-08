@@ -57,6 +57,7 @@ export function CheckoutConfigPanel({
     ckLocal,
     ckSaving,
     ckSaved,
+    ckError,
     setLinkedPlanIds,
     showExitConfirm,
     setShowExitConfirm,
@@ -106,6 +107,7 @@ export function CheckoutConfigPanel({
             label={kloelT(`Nome / Descrição *`)}
             value={String(ckLocal.brandName ?? '')}
             onChange={(value) => patch('brandName', value)}
+            error={ckError}
             full
           />
           <Dv />
@@ -120,7 +122,7 @@ export function CheckoutConfigPanel({
           </h4>
           <ColorPickerField
             label={kloelT(`Cor principal`)}
-            value={String(ckLocal.accentColor ?? 'colors.ember.primary')}
+            value={String(ckLocal.accentColor ?? colors.ember.primary)}
             placeholder={kloelT(`colors.ember.primary`)}
             onChange={(value) => patch('accentColor', value)}
           />
@@ -128,10 +130,10 @@ export function CheckoutConfigPanel({
             label={kloelT(`Cor fundo`)}
             value={String(
               ckLocal.backgroundColor ||
-                (ckLocal.theme === 'NOIR' ? 'colors.background.void' : colors.text.silver),
+                (ckLocal.theme === 'NOIR' ? colors.background.void : colors.text.silver),
             )}
             placeholder={
-              ckLocal.theme === 'NOIR' ? 'colors.background.void' : colors.text.silver
+              ckLocal.theme === 'NOIR' ? colors.background.void : colors.text.silver
             }
             onChange={(value) => patch('backgroundColor', value)}
           />

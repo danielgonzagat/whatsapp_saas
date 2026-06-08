@@ -1,5 +1,7 @@
 'use client';
 
+import { colors } from '@/lib/design-tokens';
+
 import { kloelT } from '@/lib/i18n/t';
 import { useState, useId } from 'react';
 import { useBankAccounts } from '@/hooks/useWallet';
@@ -30,6 +32,7 @@ export default function CarteiraSaque({
   });
   const [addLoading, setAddLoading] = useState(false);
   const [addError, setAddError] = useState('');
+  const [confirmingRemoveAccountId, setConfirmingRemoveAccountId] = useState<string | null>(null);
 
   const handleAddAccount = async () => {
     if (!addForm.bankName) {
@@ -43,7 +46,13 @@ export default function CarteiraSaque({
     setAddLoading(true);
     setAddError('');
     try {
-      await addBankAccount({ ...addForm });
+      await addBankAccount({
+        bankName: addForm.bankName,
+        pixKey: addForm.pixKey,
+        bankCode: addForm.bankCode,
+        agency: addForm.agency,
+        account: addForm.account,
+      });
       setShowAddAccount(false);
       setAddForm({
         bankName: '',
@@ -97,7 +106,7 @@ export default function CarteiraSaque({
               fontFamily: "'JetBrains Mono',monospace",
               fontSize: 20,
               fontWeight: 700,
-              color: 'colors.ember.primary',
+              color: colors.ember.primary,
             }}
           >
             {kloelT(`R$`)} {Fmt(available)}
@@ -108,7 +117,7 @@ export default function CarteiraSaque({
           onClick={onOpenWithdraw}
           style={{
             padding: '10px 24px',
-            background: 'colors.ember.primary',
+            background: colors.ember.primary,
             color: 'var(--app-text-on-accent)',
             border: 'none',
             borderRadius: 6,
@@ -153,7 +162,7 @@ export default function CarteiraSaque({
               background: showAddAccount ? 'var(--app-bg-secondary)' : 'var(--app-accent-light)',
               border: `1px solid ${showAddAccount ? 'var(--app-border-primary)' : 'var(--app-accent-medium)'}`,
               borderRadius: 6,
-              color: showAddAccount ? 'var(--app-text-secondary)' : 'colors.ember.primary',
+              color: showAddAccount ? 'var(--app-text-secondary)' : colors.ember.primary,
               fontSize: 11,
               fontWeight: 600,
               cursor: 'pointer',
@@ -196,7 +205,7 @@ export default function CarteiraSaque({
                   padding: '10px 14px',
                 }}
               >
-                <span style={{ color: 'colors.ember.primary', display: 'flex' }}>
+                <span style={{ color: colors.ember.primary, display: 'flex' }}>
                   {IC.bank(16)}
                 </span>
                 <div style={{ flex: 1 }}>
@@ -225,7 +234,7 @@ export default function CarteiraSaque({
                     style={{
                       fontSize: 9,
                       fontWeight: 600,
-                      color: 'colors.ember.primary',
+                      color: colors.ember.primary,
                       background: 'rgba(232,93,48,0.1)',
                       padding: '2px 6px',
                       borderRadius: 4,
@@ -238,19 +247,39 @@ export default function CarteiraSaque({
                 )}
                 <button
                   type="button"
-                  onClick={() => removeBankAccount(a.id)}
+                  onClick={() => {
+                    if (confirmingRemoveAccountId !== a.id) {
+                      setConfirmingRemoveAccountId(a.id);
+                      return;
+                    }
+                    setConfirmingRemoveAccountId(null);
+                    void removeBankAccount(a.id);
+                  }}
                   style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--app-text-tertiary)',
+                    background: confirmingRemoveAccountId === a.id ? 'rgba(232,93,48,0.12)' : 'none',
+                    border: confirmingRemoveAccountId === a.id ? '1px solid rgba(232,93,48,0.42)' : '1px solid transparent',
+                    borderRadius: 4,
+                    color: confirmingRemoveAccountId === a.id ? colors.ember.primary : 'var(--app-text-tertiary)',
                     cursor: 'pointer',
-                    padding: 4,
+                    padding: confirmingRemoveAccountId === a.id ? '4px 8px' : 4,
                     display: 'flex',
                     alignItems: 'center',
+                    fontFamily: "'Sora',sans-serif",
+                    fontSize: 10,
+                    fontWeight: 600,
                   }}
-                  title={kloelT(`Remover conta`)}
+                  title={
+                    confirmingRemoveAccountId === a.id
+                      ? kloelT(`Confirmar remocao da conta ${a.bankName || a.bank || 'Conta'}`)
+                      : kloelT(`Remover conta`)
+                  }
+                  aria-label={
+                    confirmingRemoveAccountId === a.id
+                      ? kloelT(`Confirmar remocao da conta ${a.bankName || a.bank || 'Conta'}`)
+                      : kloelT(`Remover conta`)
+                  }
                 >
-                  {IC.x(12)}
+                  {confirmingRemoveAccountId === a.id ? kloelT(`Confirmar`) : IC.x(12)}
                 </button>
               </div>
             ))}

@@ -8,6 +8,10 @@ import {
   finalizeConversationProofSnapshot,
 } from './score-proof';
 import { dispatchCiaActionByType } from './cia-action-dispatch';
+import { WorkerLogger } from '../../logger';
+import { emitAutopilotActionExecutedPercept } from './autopilot-percept-emit.helper';
+
+const ciaActionPerceptLog = new WorkerLogger('autopilot:cia-action-percept');
 
 export async function runCiaAction(data: UnknownRecord) {
   const workspaceId = data?.workspaceId;
@@ -163,6 +167,21 @@ export async function runCiaAction(data: UnknownRecord) {
         accountProofId: data?.accountProofId || null,
       },
     });
+    // ADDITIVE, flag-gated (KLOEL_AUTOPILOT_PERCEPT_ENABLED, DEFAULT OFF):
+    // fire-and-forget cognition percept into the Mind spine. No-op when OFF;
+    // best-effort + try/catch so it can NEVER alter CIA action behavior.
+    try {
+      await emitAutopilotActionExecutedPercept(prisma, ciaActionPerceptLog, {
+        workspaceId,
+        actionType: String(data?.type || 'CIA_ACTION'),
+        outcome,
+        contactId: data?.contactId ?? null,
+        conversationId: data?.conversationId ?? null,
+        conversationProofId,
+      });
+    } catch {
+      // swallow: the spine percept is non-load-bearing for action dispatch
+    }
 
     await releaseCiaContactLock(lockKey);
   }

@@ -108,9 +108,62 @@ const FALLBACK_BENEFITS: Benefit[] = [
   { icon: Sparkles, title: 'Updates Gratuitos', description: 'Novas features todo mês' },
 ];
 
+type PricingApiPlan = Omit<Plan, 'icon'> & {
+  readonly iconKey?: string;
+};
+
+type PricingApiBenefit = Omit<Benefit, 'icon'> & {
+  readonly iconKey?: string;
+};
+
+const PLAN_ICONS: Record<string, React.ElementType> = {
+  starter: Zap,
+  pro: Crown,
+  enterprise: Rocket,
+  zap: Zap,
+  crown: Crown,
+  rocket: Rocket,
+};
+
+const BENEFIT_ICONS: Record<string, React.ElementType> = {
+  messageCircle: MessageCircle,
+  bot: Bot,
+  users: Users,
+  barChart3: BarChart3,
+  headphones: Headphones,
+  sparkles: Sparkles,
+};
+
 interface PricingApiResponse {
-  plans?: Plan[];
-  benefits?: Benefit[];
+  plans?: PricingApiPlan[];
+  benefits?: PricingApiBenefit[];
+}
+
+function hydratePlan(plan: PricingApiPlan): Plan {
+  const fallback = FALLBACK_PLANS.find((candidate) => candidate.id === plan.id);
+
+  return {
+    ...fallback,
+    ...plan,
+    name: plan.name || fallback?.name || plan.id,
+    description: plan.description || fallback?.description || '',
+    price: typeof plan.price === 'number' ? plan.price : (fallback?.price ?? 0),
+    cta: plan.cta || fallback?.cta || 'Começar agora',
+    features: plan.features?.length ? plan.features : (fallback?.features ?? []),
+    icon: PLAN_ICONS[plan.iconKey || plan.id] || fallback?.icon || Zap,
+  };
+}
+
+function hydrateBenefit(benefit: PricingApiBenefit): Benefit {
+  const fallback = FALLBACK_BENEFITS.find((candidate) => candidate.title === benefit.title);
+
+  return {
+    ...fallback,
+    ...benefit,
+    title: benefit.title || fallback?.title || '',
+    description: benefit.description || fallback?.description || '',
+    icon: BENEFIT_ICONS[benefit.iconKey || ''] || fallback?.icon || Sparkles,
+  };
 }
 
 export function usePricingPlans() {
@@ -124,8 +177,8 @@ export function usePricingPlans() {
     },
   );
 
-  const plans = data?.plans?.length ? data.plans : FALLBACK_PLANS;
-  const benefits = data?.benefits?.length ? data.benefits : FALLBACK_BENEFITS;
+  const plans = data?.plans?.length ? data.plans.map(hydratePlan) : FALLBACK_PLANS;
+  const benefits = data?.benefits?.length ? data.benefits.map(hydrateBenefit) : FALLBACK_BENEFITS;
   const apiError = error ? (error as Error).message : null;
 
   return { plans, benefits, isLoading, error: apiError };

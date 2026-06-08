@@ -2,7 +2,8 @@
 
 import { kloelT } from '@/lib/i18n/t';
 import type React from 'react';
-import { S, V, ls } from './product-nerve-center.shared';
+import { useId } from 'react';
+import { buildProductNerveFieldIdentity, S, V, ls } from './product-nerve-center.shared';
 
 const D_RE = /\D/g;
 const PATTERN_RE = /\./g;
@@ -132,6 +133,10 @@ function StepperIcon({ direction }: { direction: 'up' | 'down' }) {
   );
 }
 
+function useProductNerveFieldIdentity(label: string) {
+  return buildProductNerveFieldIdentity(label, useId());
+}
+
 function FieldContainer({
   label,
   full,
@@ -175,11 +180,15 @@ export function IntegerStepperField({
   helper?: string;
 }) {
   const safeValue = clamp(Math.round(Number(value || 0)), min, max);
+  const fieldIdentity = useProductNerveFieldIdentity(label);
 
   return (
     <FieldContainer label={label} full={full} helper={helper}>
       <div style={shellStyle}>
         <input
+          id={fieldIdentity.id}
+          name={fieldIdentity.name}
+          aria-label={label}
           type="text"
           inputMode="numeric"
           value={String(safeValue)}
@@ -193,6 +202,7 @@ export function IntegerStepperField({
         <div style={stepperRailStyle}>
           <button
             type="button"
+            aria-label={`Aumentar ${label}`}
             onClick={() => onChange(clamp(safeValue + step, min, max))}
             style={{ ...stepperButtonStyle, borderBottom: `1px solid ${V.b}` }}
           >
@@ -200,6 +210,7 @@ export function IntegerStepperField({
           </button>
           <button
             type="button"
+            aria-label={`Diminuir ${label}`}
             onClick={() => onChange(clamp(safeValue - step, min, max))}
             style={stepperButtonStyle}
           >
@@ -230,12 +241,16 @@ export function CurrencyStepperField({
   helper?: string;
 }) {
   const safeValue = Math.max(minCents, Math.round(Number(cents || 0)));
+  const fieldIdentity = useProductNerveFieldIdentity(label);
 
   return (
     <FieldContainer label={label} full={full} helper={helper}>
       <div style={shellStyle}>
         <span style={insetPrefixStyle}>{kloelT(`R$`)}</span>
         <input
+          id={fieldIdentity.id}
+          name={fieldIdentity.name}
+          aria-label={label}
           type="text"
           inputMode="numeric"
           value={formatCurrencyDigits(safeValue)}
@@ -248,6 +263,7 @@ export function CurrencyStepperField({
         <div style={stepperRailStyle}>
           <button
             type="button"
+            aria-label={`Aumentar ${label}`}
             onClick={() => onChange(safeValue + stepCents)}
             style={{ ...stepperButtonStyle, borderBottom: `1px solid ${V.b}` }}
           >
@@ -255,6 +271,7 @@ export function CurrencyStepperField({
           </button>
           <button
             type="button"
+            aria-label={`Diminuir ${label}`}
             onClick={() => onChange(Math.max(minCents, safeValue - stepCents))}
             style={stepperButtonStyle}
           >
@@ -287,11 +304,15 @@ export function PercentStepperField({
   const normalized = normalizePercentInput(value, min, max);
   const parsed = Number(normalized.replace(',', '.'));
   const rounded = Number.isFinite(parsed) ? clamp(Math.round(parsed), min, max) : min;
+  const fieldIdentity = useProductNerveFieldIdentity(label);
 
   return (
     <FieldContainer label={label} full={full} helper={helper}>
       <div style={shellStyle}>
         <input
+          id={fieldIdentity.id}
+          name={fieldIdentity.name}
+          aria-label={label}
           type="text"
           inputMode="decimal"
           value={normalized}
@@ -302,6 +323,7 @@ export function PercentStepperField({
         <div style={stepperRailStyle}>
           <button
             type="button"
+            aria-label={`Aumentar ${label}`}
             onClick={() => onChange(String(clamp(rounded + 1, min, max)))}
             style={{ ...stepperButtonStyle, borderBottom: `1px solid ${V.b}` }}
           >
@@ -309,6 +331,7 @@ export function PercentStepperField({
           </button>
           <button
             type="button"
+            aria-label={`Diminuir ${label}`}
             onClick={() => onChange(String(clamp(rounded - 1, min, max)))}
             style={stepperButtonStyle}
           >
@@ -336,10 +359,14 @@ export function SelectField({
   full?: boolean;
   helper?: string;
 }) {
+  const fieldIdentity = useProductNerveFieldIdentity(label);
   return (
     <FieldContainer label={label} full={full} helper={helper}>
       <div style={shellStyle}>
         <select
+          id={fieldIdentity.id}
+          name={fieldIdentity.name}
+          aria-label={label}
           value={value}
           onChange={(event) => onChange(event.target.value)}
           style={{

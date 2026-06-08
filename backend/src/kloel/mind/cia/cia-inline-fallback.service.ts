@@ -126,7 +126,7 @@ export class CiaInlineFallbackService {
     return {
       aggregatedMessage:
         messages.length === 1
-          ? messages[0]!.content
+          ? messages[0]?.content ?? ''
           : messages
               .map((message, index) => `[${index + 1}] ${String(message.content || '').trim()}`)
               .join('\n'),

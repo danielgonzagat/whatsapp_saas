@@ -2,6 +2,10 @@ import { randomUUID } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { CampaignsService } from '../campaigns/campaigns.service';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  emitMoneyCampaignGeneratedPercept,
+  emitMoneyLeadScanPercept,
+} from './money-percept-emit.helper';
 
 /** Money machine service. */
 @Injectable()
@@ -26,6 +30,16 @@ export class MoneyMachineService {
         workspaceId,
         conversations: { some: { lastMessageAt: { lt: thirtyDaysAgo } } },
       },
+    });
+
+    // ADDITIVE, flag-gated (KLOEL_MONEY_PERCEPT_ENABLED, default OFF),
+    // best-effort: feed the Mind a percept that the money engine scanned this
+    // workspace's leads. Flag-OFF = synchronous no-op (byte-identical to today).
+    const scanId = randomUUID();
+    await emitMoneyLeadScanPercept(this.prisma, this.logger, {
+      workspaceId,
+      inactiveLeads,
+      scanId,
     });
 
     // 2. Auto-Generate Campaigns
@@ -65,6 +79,17 @@ export class MoneyMachineService {
       });
 
       this.logger.log(`Generated Campaign: ${campaign.id} with Flow: ${flowId}`);
+
+      // ADDITIVE, flag-gated, best-effort: record the campaign-generation as a
+      // decision the Mind perceives (MindEventSpine.recordCommercial maps this
+      // outbox event into a commercial decision row). Does NOT change the
+      // campaign/flow logic above. Flag-OFF = synchronous no-op.
+      await emitMoneyCampaignGeneratedPercept(this.prisma, this.logger, {
+        workspaceId,
+        campaignId: campaign.id,
+        flowId,
+        inactiveLeads,
+      });
 
       return {
         status: 'ACTIVE',

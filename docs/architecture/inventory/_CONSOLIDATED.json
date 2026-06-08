@@ -1,0 +1,983 @@
+{
+  "_meta": {
+    "title": "Kloel domain inventory — CONSOLIDATED machine digest",
+    "generatedAt": "2026-06-07",
+    "groundedIn": "backend/prisma/schema.prisma + backend/src/** + worker/** (separate deployable). Every name is a real model/service/file verified by grep/AST. NO invented names.",
+    "sourceClusters": [
+      "channels-omnicore.json",
+      "checkout-payment-wallet.json",
+      "contact-crm.json",
+      "conversation-message.json",
+      "identity-auth.json",
+      "kloel-mind-core.json",
+      "product-plan-offer.json"
+    ],
+    "clustersConsumed": 7,
+    "note": "Task brief said 16 files; only 7 inventory JSONs exist on disk (no '_'-prefixed inputs other than this output). All 7 were read in full. The 7 collectively cover every named vocabulary surface (Contact, Message, Conversation, Channel/Session, Workspace/Tenant, Product/Plan/Offer, Checkout/Order/Payment, Wallet/Ledger, Campaign, Memory, GlobalPrior).",
+    "criticCorrectionsApplied": [
+      "1. ChannelSession is FICTIONAL — confirmed ZERO grep matches in src/ and schema.prisma. Removed from canonical vocabulary. Real channel-session surface = WhatsappSessionService (backend/src/marketing/channels/whatsapp/whatsapp-session.service.ts:19) over ChannelSetup (schema:3492) + MetaConnection (schema:3467).",
+      "2. Lead is NOT an alias of Contact. KloelLead (RAC_KloelLead, schema:1834, separate live table) recorded as an explicit P1 MERGE DECISION vs Contact (RAC_Contact, schema:399), not a settled alias.",
+      "3. OpsEvent (schema:1614, written by OpsAlertService at observability/ops-alert.service.ts) and RiscEvent (schema:1273, written by ComplianceService.routeRiscEvent at compliance/compliance.service.ts:140) are LIVE models — added (were absent from v1).",
+      "4. campaign-jobs/voice-jobs/media-jobs are NOT dead — they have live workers in the separate worker/ package (worker/campaign-processor.ts:147 campaignWorker, worker/voice-processor.ts:254 voiceWorker, worker/media-processor.ts:16 mediaWorker, all `new Worker(...)`). Only mass-send (backend/src/mass-send/*) is genuinely the questionable one. Corrected.",
+      "5. In-flight migrations surfaced as mid-migration (not converged): KloelMemory->MindMemory dual-write (mind-memory-item.service.ts:96, flag KLOEL_MINDMEMORY_DUALWRITE default OFF), MindMessage canonical-but-dead-on-read (flag KLOEL_MINDMESSAGE_DUALWRITE), ProductPlan.price(Float)->CheckoutProductPlan.priceInCents.",
+      "6. (Bonus) identity-auth.json called RiscEvent an 'ingest-only stub with no processor' — STALE. ComplianceService.routeRiscEvent (compliance.service.ts:148/165) IS the processor and writes/updates riscEvent rows. Corrected in services/events."
+    ]
+  },
+
+  "duplications": [
+    {
+      "concept": "Sale/Order/Payment record split — one human payment can be PAID in one ledger and PENDING in another",
+      "family": "checkout-payment",
+      "implementations": [
+        "CheckoutOrder (schema:3220) + CheckoutPayment (schema:3330) — checkout pipeline source of truth, CheckoutPaymentService.capture (checkout/checkout-payment.service.ts:52)",
+        "KloelSale (schema:1917) — chat-driven sales source of truth, SalesService (sales/sales.service.ts:64) + kloel/PaymentService + kloel/SmartPaymentService",
+        "Payment (schema:2744) — generic raw webhook-only record, NO owning @Injectable service",
+        "PhysicalOrder (schema:2706) — physical fulfillment, saleId String? with NO FK"
+      ],
+      "severity": "P0",
+      "canonicalChoice": "CheckoutOrder+CheckoutPayment for product sales; KloelSale becomes a thin originator that ALWAYS materializes a CheckoutOrder; retire the orphan Payment model.",
+      "migrationSketch": "1) Make every KloelSale create/confirm also upsert a CheckoutOrder+CheckoutPayment keyed on a shared externalId. 2) Repoint webhooks/payment-webhook-stripe.handlers.ts:44-54 and payment-webhook-generic.helpers.ts:79/111 to a single resolver that updates ONE canonical row, not three parallel updateMany() calls. 3) Fold KloelSale revenue into admin gmv.query.ts and dashboard.service GMV. 4) Drop RAC_Payment after confirming zero readers besides webhook helpers.",
+      "sourceClusters": ["checkout-payment-wallet"]
+    },
+    {
+      "concept": "Phone normalization semantics diverge across Contact-keying paths (BR-promotion vs digits-only vs raw) → one human becomes multiple Contact rows",
+      "family": "contact-identity",
+      "implementations": [
+        "CrmService.upsertContact -> normalizePhone().digits (BR-promoting) crm.service.ts:47 [canonical]",
+        "KloelLeadProcessorService -> normalizePhone().digits kloel-lead-processor.service.ts:92",
+        "CheckoutSocialLeadService.buildContactUpsertArgs -> digitsOrNull (digits-only, NO 55 promotion), aliased locally AS `normalizePhone` checkout-social-lead.service.helpers.ts:185",
+        "crm.deals.helpers.createDeal -> String(phone).trim() (raw) crm.deals.helpers.ts:80",
+        "scrapers.service.importLeads -> lead.phone (raw) scrapers.service.ts:145",
+        "WhatsAppMindCoordinator.handleIncomingMessage:135 -> getOrCreateLead(msg.from RAW)"
+      ],
+      "severity": "P0",
+      "canonicalChoice": "normalizePhone() from backend/src/common/phone/phone-normalization.util.ts:150 (structured, BR-promoting). ALL Contact/KloelLead (workspaceId, phone) writes MUST route through it.",
+      "migrationSketch": "1) Replace digitsOrNull/raw-phone keying at every Contact and KloelLead write with normalizePhone().digits. 2) Normalize at the channel boundary BEFORE getOrCreateLead (fixes the WhatsApp coordinator raw-JID path). 3) Remove the misleading `import digitsOrNull as normalizePhone` alias in checkout-social-lead. 4) Backfill/merge already-fragmented Contact rows (needs the orphan merge service activated).",
+      "sourceClusters": ["contact-crm"]
+    },
+    {
+      "concept": "processWhatsAppMessageWithPayment looks up KloelLead by RAW senderPhone while the lead was created under normalized phone → high-buy-intent payment link silently not generated (lost revenue)",
+      "family": "contact-identity",
+      "implementations": [
+        "KloelLeadProcessorService.processWhatsAppMessage creates lead via normalizedPhone (kloel-lead-processor.service.ts:78-83)",
+        "KloelLeadProcessorService.processWhatsAppMessageWithPayment lookup prisma.kloelLead.findFirst({ where:{ workspaceId, phone: senderPhone } }) RAW (kloel-lead-processor.service.ts:285)"
+      ],
+      "severity": "P0",
+      "canonicalChoice": "Use normalizePhone(senderPhone).digits for the lookup, matching getOrCreateLead.",
+      "migrationSketch": "Single-line fix at kloel-lead-processor.service.ts:285 to normalize the lookup key; add a regression test asserting the payment link fires for a '(11) 98765-4321'-format sender.",
+      "sourceClusters": ["contact-crm"]
+    },
+    {
+      "concept": "Plan / pricing source-of-truth split across two tables with different money units → merchant can edit a price that has NO commercial effect",
+      "family": "product-plan-offer",
+      "implementations": [
+        "CheckoutProductPlan (RAC_CheckoutProductPlan, schema:2969, priceInCents Int) — checkout/checkout-product.service.ts [canonical, ONLY model read by checkout-order-pricing.util.ts]",
+        "ProductPlan (RAC_ProductPlan, schema:2213, price Float; priceInCents Int nullable mid-migration) — plans/plan.service.ts + kloel/product-sub-resources/product-plan.controller.ts:83 + kloel-product-sub-resource-tools.service.ts:107"
+      ],
+      "severity": "P0",
+      "canonicalChoice": "CheckoutProductPlan.priceInCents — the only plan model read by paid pricing. ProductPlan.price is never consulted at order time.",
+      "migrationSketch": "1) Backfill ProductPlan.priceInCents from price*100 for all rows (PHASE A is only additive on NEW PlanService.create writes; ProductPlanController + chat tools don't dual-write). 2) Route ProductPlanController and KloelProductSubResourceToolsService writes through CheckoutProductService. 3) Make order pricing the single reader (already is). 4) Demote ProductPlan to read-through view or retire.",
+      "sourceClusters": ["product-plan-offer", "checkout-payment-wallet"]
+    },
+    {
+      "concept": "Coupon model + validation divergence (ProductCoupon vs CheckoutCoupon) — two value types, two enum spellings, divergent validate logic",
+      "family": "checkout-payment",
+      "implementations": [
+        "CheckoutCoupon (RAC_CheckoutCoupon, schema:3178, Int cents, DiscountType PERCENTAGE/FIXED) + validateCouponHelper (checkout/checkout-catalog.helpers.ts:79) [canonical — only coupon priced at order time, enforces minOrderValue/appliesTo/discountAmount]",
+        "ProductCoupon (RAC_ProductCoupon, schema:2297, Float, PERCENT/FIXED) + kloel/CouponService + ProductCouponDomainService + ProductCouponController.validate (product-coupon.controller.ts:154) [omits minOrderValue/appliesTo/discount-amount]",
+        "Bridge: syncWorkspaceCheckoutCouponForProduct (kloel/product-coupon-sync.util.ts:54) — one-directional Float->cents",
+        "Third surface: CheckoutConfig.autoCouponCode + couponPopup* fields (schema:3061)"
+      ],
+      "severity": "P0",
+      "canonicalChoice": "CheckoutCoupon + validateCouponHelper. ProductCoupon becomes a write-through view that always upserts a CheckoutCoupon (or is retired).",
+      "migrationSketch": "1) Make ProductCouponController.validate delegate to validateCouponHelper. 2) Make ProductCoupon writes always upsert CheckoutCoupon (sync already exists one-way). 3) Unify enum spelling (PERCENT/PERCENTAGE) at the model. 4) Eliminate the Float->cents rounding round-trip by storing cents on both.",
+      "sourceClusters": ["checkout-payment-wallet", "product-plan-offer"]
+    },
+    {
+      "concept": "Cognitive loop (perceive->predict->belief->surprise->policy->update) implemented 3+ times with divergent storage; one persists NOTHING",
+      "family": "mind-core",
+      "implementations": [
+        "MindService.tick + MindEventProcessorService.process (mind.service.ts:46; mind/runtime/mind-event-processor.service.ts:27) -> RAC_MindBelief/MindPrediction/MindPolicy [canonical, DB-persisted, lease-coordinated]",
+        "MindPredictionService.runCycle (mind/mind-prediction.service.ts:51) -> in-memory activePredictions[] + RAC_AutopilotEvent (NON-durable, lost on restart, linear surprise=confidence)",
+        "MindBackgroundProcessor.tick (mind/mind-bg.processor.ts:38) -> hebbian/consolidation/valence substrate",
+        "MindEventIngestor.tickAllWorkspaces (mind/coordination/mind-event-ingestor.service.ts:50)"
+      ],
+      "severity": "P0",
+      "canonicalChoice": "MindService.tick + MindEventProcessorService — the only DB-persisted, lease-coordinated, prediction-table-backed loop.",
+      "migrationSketch": "1) Make MindPredictionService persist to RAC_MindPrediction (or delete its shadow loop) so learning isn't split across two unreconciled stores. 2) Unify surprise math on MindSurpriseService.computeSurprise (Shannon -log(p)) — remove the linear surprise=confidence path. 3) Re-scope mind-bg as an explicit 'substrate sub-tick' demoted under MindProcessorService.",
+      "sourceClusters": ["kloel-mind-core"]
+    },
+    {
+      "concept": "Access-token logout blacklist writes a Redis key namespace the JWT guard never reads → logged-out access token stays valid until natural expiry",
+      "family": "identity-auth",
+      "implementations": [
+        "AuthService.logout() -> redis.set('access-token-revoked:<jti>') (auth.service.ts:329) [DEAD: nothing reads this key]",
+        "JwtAuthGuard reads redis.exists('jti:revoked:<jti>') (jwt-auth.guard.ts:92)",
+        "AuthTokenService.revokeAccessToken/isAccessTokenRevoked write+read 'jti:revoked:<jti>' (auth.token.service.ts:458/472) [canonical]"
+      ],
+      "severity": "P0",
+      "canonicalChoice": "AuthTokenService.revokeAccessToken (key `jti:revoked:<jti>`), the namespace JwtAuthGuard actually checks.",
+      "migrationSketch": "Repoint AuthService.logout to call AuthTokenService.revokeAccessToken instead of the bespoke set; delete the dead `access-token-revoked:<jti>` write; add a test asserting a logged-out access JWT is rejected.",
+      "sourceClusters": ["identity-auth"]
+    },
+    {
+      "concept": "Request -> workspaceId tenant resolver with DIVERGENT security semantics → cross-tenant IDOR risk",
+      "family": "identity-auth",
+      "implementations": [
+        "workspace-access.ts:119 resolveWorkspaceId (SECURE: enforces requested===token.workspaceId, Forbidden on mismatch) [canonical]",
+        "kloel/guards/kloel-security.guard.ts:45 getWorkspaceId (reads params/body, IGNORES the JWT)",
+        "kloel/product-sub-resources/helpers/common.helpers.ts:20 getWorkspaceId (req.user||req.workspaceId||'' — can yield empty string, no cross-check)",
+        "common/throttler/route-class.guard.ts:25 resolveWorkspaceId (trusts x-workspace-id header — throttle-keying only)",
+        "marketing/channels/whatsapp/controllers/whatsapp.controller.ts:38 resolveWorkspaceId",
+        "kloel/middleware/audit-log.middleware.ts:156 resolveWorkspaceId",
+        "partnerships/partnerships.controller.ts:44 — ALREADY CONVERGED onto the secure resolver (proof team knows the others are unsafe)"
+      ],
+      "severity": "P0",
+      "canonicalChoice": "workspace-access.ts resolveWorkspaceId — the only variant that proves the caller owns the workspace.",
+      "migrationSketch": "Converge kloel-security.guard + common.helpers onto resolveWorkspaceId (follow the partnerships.controller migration pattern at line 45). Keep route-class.guard's header-trust ONLY for throttle keying, never for data access.",
+      "sourceClusters": ["identity-auth"]
+    },
+    {
+      "concept": "Two parallel outbound dispatch registries: pure ChannelDispatchRegistry vs guarded ChannelTransportRegistry (two result contracts, flag-gated partial delegation)",
+      "family": "channel-dispatch",
+      "implementations": [
+        "ChannelDispatchRegistry (common/channel-dispatch/channel-dispatch.registry.ts:31) — keyed by ChannelKind, ChannelDispatchPort adapters, NO policy guard [canonical transport core]",
+        "ChannelTransportRegistry (kloel/channel-transport.registry.ts:52) — keyed by ChannelName, ChannelTransportProvider, MindGuard + audit, flag-gated delegation (KLOEL_TRANSPORT_CANONICAL_DELEGATE, default OFF, excludes email+tiktok)"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "ChannelDispatchRegistry as the transport/routing core; keep ChannelTransportRegistry ONLY as a guard+audit decorator that ALWAYS delegates.",
+      "migrationSketch": "1) Finish the KLOEL_TRANSPORT_CANONICAL_DELEGATE rollout (flip default ON) so the legacy provider.send() bodies in channel-transport.providers.ts become dead. 2) Resolve the email exclusion (EmailChannelTransport uses EmailCampaignService — a different mechanism than the email adapters; that mechanism split is itself a latent P1). 3) Collapse the two result contracts (see ChannelSendResult dup below).",
+      "sourceClusters": ["channels-omnicore", "conversation-message"]
+    },
+    {
+      "concept": "Per-channel send implemented twice: marketing/channels/*-dispatch.adapter vs kloel/channel-transport.providers",
+      "family": "channel-dispatch",
+      "implementations": [
+        "InstagramDispatchAdapter (instagram-dispatch.adapter.ts:24) vs InstagramChannelTransport (channel-transport.providers.ts:42)",
+        "MessengerDispatchAdapter (messenger-dispatch.adapter.ts:23) vs MessengerChannelTransport (channel-transport.providers.ts:124)",
+        "TikTokDispatchAdapter (tiktok-dispatch.adapter.ts:33) vs TikTokChannelTransport (channel-transport.providers.ts:202)",
+        "EmailDispatchAdapter + TransactionalEmailDispatchAdapter vs EmailChannelTransport (channel-transport.providers.ts:258)"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "marketing/channels/*-dispatch.adapter (ChannelDispatchPort). TikTokDispatchAdapter's own docstring says it 'supersedes' TikTokChannelTransport.",
+      "migrationSketch": "Collapse the *ChannelTransport classes into thin guard-only decorations once delegation is the only thing they add; resolve the EmailChannelTransport mechanism divergence first (it changes delivery behavior, hence its canDelegate exclusion at registry.ts:169).",
+      "sourceClusters": ["channels-omnicore"]
+    },
+    {
+      "concept": "Two services send to the SAME Meta page endpoint ${pageId}/messages under two ChannelKinds (Messenger vs Facebook); only one persists",
+      "family": "channel-dispatch",
+      "implementations": [
+        "MessengerService.sendTextMessage (channels/messenger/messenger.service.ts:12) — ChannelKind.MESSENGER, NO persistence",
+        "FacebookMessengerService.sendMessage (marketing/facebook-messenger.service.ts:41) — ChannelKind.FACEBOOK, persists FbMessage (RAC_FbMessage schema:3911) + full webhook processing"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "FacebookMessengerService is the richer, persistence-backed implementation; MessengerService is the thin duplicate. Make the ChannelKind split semantically real or unify to one page-messaging service.",
+      "migrationSketch": "Route both kinds through one page-messaging service that always persists FbMessage (as a provider-native delivery ledger) while RAC_Message stays the canonical conversation store; verify whether FB inbound is double-persisted into both RAC_Message and RAC_FbMessage.",
+      "sourceClusters": ["channels-omnicore", "conversation-message"]
+    },
+    {
+      "concept": "Three Meta-connection readers with divergent shapes + ~19 raw prisma.metaConnection.find* bypasses",
+      "family": "channel-dispatch",
+      "implementations": [
+        "MetaWhatsAppService.resolveConnection (meta/meta-whatsapp.service.ts:71) -> ResolvedMetaConnection [canonical]",
+        "MetaConnectionStateService.forWorkspace (meta/meta-connection-state.service.ts:44) -> MetaConnectionState",
+        "resolveInstagramConnection (marketing/instagram/instagram-marketing.service.ts:24) -> InstagramConnection (bespoke decrypt)",
+        "~19 direct prisma.metaConnection.find* callsites across marketing/meta/omnichannel/kloel"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "MetaWhatsAppService.resolveConnection as the single credential resolver; MetaConnectionStateService consumes it; delete resolveInstagramConnection.",
+      "migrationSketch": "Unify token-expiry semantics (EXPIRED in meta-connection-state.service.ts:31 vs tokenExpired in resolveConnection) into one helper; replace raw find* callsites with the resolver.",
+      "sourceClusters": ["channels-omnicore"]
+    },
+    {
+      "concept": "Lead family — Contact (RAC_Contact) vs KloelLead (RAC_KloelLead): two person/lead entities modeling the same human with overlapping funnel columns. MERGE DECISION (Lead is NOT an alias of Contact).",
+      "family": "contact-identity",
+      "implementations": [
+        "Contact (RAC_Contact, schema:399, unique workspaceId_phone) with leadStatus/leadStage/lastMessage/lastIntent/totalMessages mirror — read by CrmService/CRM UI",
+        "KloelLead (RAC_KloelLead, schema:1834, unique workspaceId_phone) with status/stage/lastMessage/lastIntent/totalMessages/score — read by LeadsService for GET /kloel/leads/:workspaceId (the leads-list UI), live backing store for the WhatsApp lead-processing path",
+        "CheckoutSocialLead.status/stepReached (schema:3273) — separate status machine",
+        "ScrapedLead.phone (schema:779) — distinct identity surface until imported"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "Contact is the DECLARED canonical person (PERSON migration). This is an UNSETTLED merge: KloelLead funnel state is mirrored onto Contact via best-effort dual-write + backfill, but the cut-over is NOT complete and LeadsService still reads KloelLead. Treat Contact-vs-KloelLead as an open P1 merge decision, NOT a settled alias.",
+      "migrationSketch": "1) Make KloelLead funnel state read-through/derived from Contact. 2) Repoint LeadsService.listLeads from KloelLead to Contact (fix the stale frontend docstring at leads.ts:4-12 that already claims Contact-backing). 3) Activate ContactIdentityMergeService (currently orphan, zero callers) to reconcile already-fragmented rows. 4) Then retire RAC_KloelLead.",
+      "sourceClusters": ["contact-crm", "conversation-message"]
+    },
+    {
+      "concept": "Three near-identical lead-lifecycle services (WhatsApp message -> KloelLead + Contact dual-write), each with its own getOrCreateLead",
+      "family": "contact-identity",
+      "implementations": [
+        "KloelLeadProcessorService.processWhatsAppMessage (kloel/kloel-lead-processor.service.ts:56) + getOrCreateLead (kloel-lead-processor-helpers.ts:76)",
+        "LeadMindCoordinator.processWhatsAppMessage + syncCanonicalContact + getOrCreateLead (kloel/mind/coordination/lead-mind-coordinator.service.ts:92) [annotated 'canonical per-lead cognitive coordinator']",
+        "WhatsAppMindCoordinator.handleIncomingMessage + syncCanonicalContact + getOrCreateLead (kloel/mind/coordination/whatsapp-mind-coordinator.service.ts:175) [passes RAW msg.from]"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "LeadMindCoordinator (self-annotated canonical). Collapse the other two into it, or extract one shared getOrCreateLead + syncCanonicalContact helper.",
+      "migrationSketch": "Extract a single getOrCreateLead(workspaceId, normalizedPhone) + syncCanonicalContact helper; delete the 3 drifted copies; normalize phone at the channel boundary before any of them.",
+      "sourceClusters": ["contact-crm"]
+    },
+    {
+      "concept": "Two distinct WalletService classes with the SAME name on DIFFERENT tables (DI/import hazard)",
+      "family": "wallet-ledger",
+      "implementations": [
+        "kloel/wallet.service.ts:49 WalletService -> KloelWallet/KloelWalletLedger (seller earnings; confirmPayment pending->available, withdraw)",
+        "wallet/wallet.service.ts:73 WalletService -> PrepaidWallet/PrepaidWalletTransaction (usage credits; createTopupIntent, debit)"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "Rename to SellerWalletService and PrepaidWalletService (or UsageWalletService). Legitimately different domains; the identical class name is a maintenance + DI trap.",
+      "migrationSketch": "Rename both classes + their provider tokens; update injectors. Both call MercadoPagoPixChargeService/StripeService so wrong-import bugs are silent today.",
+      "sourceClusters": ["checkout-payment-wallet"]
+    },
+    {
+      "concept": "Five parallel money balance+ledger systems with near-identical hand-rolled append/reconcile/mature logic and inconsistent ledger contracts",
+      "family": "wallet-ledger",
+      "implementations": [
+        "KloelWallet/KloelWalletTransaction/KloelWalletLedger (seller earnings) — kloel/WalletService + kloel/WalletLedgerService.appendWithinTx",
+        "PrepaidWallet/PrepaidWalletTransaction (usage prepaid, self-ledger with balanceAfterCents) — wallet/WalletService",
+        "ConnectAccountBalance/ConnectLedgerEntry (Stripe Connect per-account, balanceAfter snapshots) — payments/ledger/LedgerService",
+        "MarketplaceTreasury/MarketplaceTreasuryLedger (Kloel house balance) — MarketplaceTreasuryService",
+        "WalletAnticipation (Float receivable anticipation, schema:2855) — NO dedicated service"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "Each represents a genuinely different actor's money — keep separate, but extract ONE shared append-only ledger abstraction (direction/bucket/amountInCents/balanceAfter/reason + reconcile + maturation).",
+      "migrationSketch": "1) Define a SharedLedger interface; back the 4 ledger writers with it. 2) Add balanceAfter to KloelWalletLedger + MarketplaceTreasuryLedger (currently missing, unlike ConnectLedgerEntry/PrepaidWalletTransaction). 3) Migrate WalletAnticipation Float -> BigInt cents. 4) Unify the 3 reconciliation services (ConnectLedgerReconciliationService, MarketplaceTreasuryReconcileService, common/ledger-reconciliation.service.ts).",
+      "sourceClusters": ["checkout-payment-wallet"]
+    },
+    {
+      "concept": "Cart/abandonment recovery owned by two independent crons on different cadences with no cross-dedup (same human recovered twice)",
+      "family": "checkout-payment",
+      "implementations": [
+        "kloel/CartRecoveryService — @Cron 30min over CheckoutOrder status=PENDING, MIND-chosen email, stamps CheckoutOrder.recoveryEmailSentAt",
+        "checkout/CheckoutSocialRecoveryService (checkout-social-recovery.service.ts:46) — @Cron 10min over CheckoutSocialLead, deterministic workspaceChannels gate, stamps CheckoutSocialLead.recoveryEmailSentAt/recoveryWhatsAppSentAt"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "One Recovery domain owning 'a buyer started but did not pay' regardless of whether they reached order-creation (CheckoutOrder PENDING) or only lead-capture (CheckoutSocialLead).",
+      "migrationSketch": "Unify the two crons behind one recovery scheduler keyed on the person (Contact); dedup so a human who is both a PENDING CheckoutOrder and a CheckoutSocialLead is recovered once; pick one channel-decision engine (MIND bandit vs deterministic gate).",
+      "sourceClusters": ["checkout-payment-wallet"]
+    },
+    {
+      "concept": "Unified message table (RAC_MindMessage) vs the 4 live source tables it claims to canonicalize — canonical-but-DEAD-on-read",
+      "family": "message",
+      "implementations": [
+        "RAC_MindMessage (schema:3849) source discriminator brain|dashboard|lead_conversation|thread|channel [DECLARED canonical; WRITE-ONLY, ZERO readers]",
+        "RAC_KloelMessage (schema:1691) — brain, REAL read/write via MindMessageService",
+        "RAC_ChatMessage (schema:1899) — dashboard thread, REAL read/write via MindChatMessageService/KloelThreadService",
+        "RAC_KloelConversation (schema:1865) — lead funnel, REAL read/write via saveLeadMessage",
+        "RAC_Message (schema:721) — omnichannel, REAL read/write via InboxService.saveMessage"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "RAC_MindMessage is the DECLARED canonical but is canonical-but-DEAD: every writer is gated behind KLOEL_MINDMESSAGE_DUALWRITE (default OFF) and there are ZERO readers (StateBuilderService.resolveShortTermMemory + KloelConversationStore read .items = prisma.kloelMessage). Until backfill + read cut-over lands, the 4 legacy tables remain de-facto canonical per surface.",
+      "migrationSketch": "1) Wire ONE reader path (state-builder + conversation-store) onto RAC_MindMessage behind a read flag. 2) Backfill the 4 source tables into RAC_MindMessage. 3) Flip dual-write ON, verify parity, then cut reads over. 4) Until then, do NOT enable dual-write blindly (ON-but-no-reader = 2x write cost + silent divergence). Stale schema comment on MindMessage claiming 'ZERO writers' must be corrected.",
+      "sourceClusters": ["conversation-message", "kloel-mind-core"]
+    },
+    {
+      "concept": "Conversation-history read implemented across 6 call sites with divergent take/order/projection — 'history' means different windows per caller",
+      "family": "message",
+      "implementations": [
+        "MindCanonicalService.getConversationHistory (take=50, asc) (mind-canonical.service.ts:45) [canonical]",
+        "MindMessageService.getHistory (take=50, asc) (mind-message.service.ts:70)",
+        "KloelConversationStore.getConversationHistory (take=20, asc) (kloel-conversation-store.ts:46)",
+        "StateBuilderService.resolveShortTermMemory (take=limit, desc then reverse) (state-builder.service.ts:206)",
+        "kloel-lead-processor-helpers history read (take=30, KloelConversation)",
+        "kloel.service.ts:313 (take=50)"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "MindCanonicalService.getConversationHistory as the single read; the others are pre-facade reads the Mind unification was meant to absorb.",
+      "migrationSketch": "Route all 6 callers through MindCanonicalService.getConversationHistory with an explicit window parameter; remove the bespoke take limits (20/30/50).",
+      "sourceClusters": ["conversation-message"]
+    },
+    {
+      "concept": "MindMemory vs KloelMemory — canonical memory table dual-written but legacy remains source of truth (split-brain risk)",
+      "family": "memory",
+      "implementations": [
+        "RAC_KloelMemory (schema:1711, @deprecated) via MindMemoryItemService.items — PRIMARY read+write, ~89+ direct prisma.kloelMemory callers",
+        "RAC_MindMemory (schema:3872) dual-write behind KLOEL_MINDMEMORY_DUALWRITE (mind-memory-item.service.ts:96) + read by kloel-memory-engine.service.ts:232/282/192"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "RAC_MindMemory (target) — but migration is incomplete; RAC_KloelMemory still authoritative.",
+      "migrationSketch": "1) Backfill RAC_KloelMemory -> RAC_MindMemory. 2) Repoint the ~89 prisma.kloelMemory callers through MindMemoryItemService. 3) Flip dual-write ON, verify, cut reads over to RAC_MindMemory fully. The schema comment on MindMemory claiming 'canonical-but-dead / ZERO writers' is STALE (2 writers, 2 readers exist) — correct it.",
+      "sourceClusters": ["kloel-mind-core", "conversation-message"]
+    },
+    {
+      "concept": "Two parallel workspace-invitation models + services (workspace could show two different pending-invite lists for the same person)",
+      "family": "identity-auth",
+      "implementations": [
+        "Invitation (schema:1286) + TeamService.inviteMember/acceptInvite/revokeInvite (team.service.ts:62-174) [sends email, accept->creates Agent]",
+        "CollaboratorInvite (schema:2768) + PartnershipsService.inviteCollaborator/revokeInvite (partnerships.service.ts:103-137) [status enum + invitedBy, NO email send, NO accept-creates-Agent path]"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "Pick ONE invite model. Invitation has the richer flow (email + accept->create-Agent); CollaboratorInvite has the better schema (status enum, invitedBy, indexes).",
+      "migrationSketch": "Merge into one model+service: take Invitation's accept/email flow and CollaboratorInvite's schema columns; migrate rows; delete the loser.",
+      "sourceClusters": ["identity-auth"]
+    },
+    {
+      "concept": "Entire admin auth stack duplicates the tenant auth stack with no shared core (security fixes don't propagate)",
+      "family": "identity-auth",
+      "implementations": [
+        "Tenant: AuthService/AuthTokenService/AccountMfaService/RateLimitService + Agent/RefreshToken (src/auth)",
+        "Admin: AdminAuthService/AdminSessionFactory/AdminMfaService/AdminLoginAttemptsService + AdminUser/AdminSession (src/admin/auth)"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "Extract a shared credential/MFA/session core; keep AdminUser vs Agent as the only divergence (principal table + RBAC granularity).",
+      "migrationSketch": "Hoist password hashing, TOTP, session rotation, login throttling, audit append into common/; both stacks consume them. The access-token-revocation bug (P0) is a live example of a fix that didn't propagate.",
+      "sourceClusters": ["identity-auth"]
+    },
+    {
+      "concept": "TOTP engine + MFA implemented identically in two services",
+      "family": "identity-auth",
+      "implementations": [
+        "AccountMfaService base32/generateTotp/verifyTotp (auth/account-mfa.service.ts:20-96)",
+        "AdminMfaService same functions, same constants MFA_PERIOD_SECONDS=30 / MFA_WINDOW_STEPS=2 (admin/auth/admin-mfa.service.ts:20-96)"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "Hoist one TOTP util (common/totp.ts); both MFA services import it. Secret encryption is ALREADY shared (admin-crypto), so only the HOTP/codec math needs extraction.",
+      "migrationSketch": "Move base32Encode/base32Decode/generateTotp/verifyTotp to common/totp.ts; both services import; delete the copies.",
+      "sourceClusters": ["identity-auth"]
+    },
+    {
+      "concept": "Inconsistent token-at-rest policy across token families (plaintext bearer tokens in DB)",
+      "family": "identity-auth",
+      "implementations": [
+        "RefreshToken.token — PLAINTEXT @unique (schema:1155)",
+        "PasswordResetToken.token — PLAINTEXT @unique (schema:1184)",
+        "AdminSession.token_hash — sha256 HASHED (schema:4109)",
+        "MagicLinkToken.tokenHash — sha256 HASHED (schema:1199)",
+        "ApiKey.key — PBKDF2 HASHED but column documented as plaintext 'sk_live_...' (schema:1649)"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "Standardize: store sha256(token) for all bearer tokens (matches AdminSession/MagicLink); query by hash. Keep PBKDF2 only for the API-key secret if a lookup index is added.",
+      "migrationSketch": "Hash RefreshToken + PasswordResetToken at rest; query by hash; migrate existing rows on next rotation. A DB read leak currently exposes live tenant refresh + reset tokens in plaintext.",
+      "sourceClusters": ["identity-auth"]
+    },
+    {
+      "concept": "ApiKey validation is an O(n) full-table scan running PBKDF2 per candidate (DoS amplifier)",
+      "family": "identity-auth",
+      "implementations": [
+        "ApiKeysService.validateKey -> findMany(take:1000) then linear verifyStoredKey (PBKDF2 210k iters) over every row (api-keys.service.ts:122)"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "Store a deterministic lookup hash (sha256 of the raw key) in an indexed column for the WHERE clause; keep PBKDF2 only for the constant-time secret compare.",
+      "migrationSketch": "Add indexed lookupHash column; backfill from existing keys on rotation; change validateKey to WHERE lookupHash = sha256(rawKey) then single PBKDF2 verify.",
+      "sourceClusters": ["identity-auth"]
+    },
+    {
+      "concept": "Three+ parallel product/plan CRUD write stacks; the checkout stack bypasses events/audit/cognition",
+      "family": "product-plan-offer",
+      "implementations": [
+        "ProductService + PlanService (products/, plans/) [ProductService alone emits mind.product.observed + AuditService + MindEventSpine]",
+        "CheckoutProductService (checkout/) — createProduct/updateProduct bypass events+audit+brainSpine",
+        "Product*Controller family (kloel/product-sub-resources/*) writing Prisma directly",
+        "KloelProductSubResourceToolsService (chat tools)"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "Consolidate Product writes on ProductService (it alone emits events+audit+brainSpine); plan writes on CheckoutProductService (canonical money).",
+      "migrationSketch": "Route CheckoutProductService.createProduct through ProductService for the Product half; route sub-resource controllers + chat tools through the service layer; products created via checkout are currently invisible to cognition/audit.",
+      "sourceClusters": ["product-plan-offer"]
+    },
+    {
+      "concept": "Order bump / upsell stored both typed and as JSON; JSON variant not read by checkout pricing",
+      "family": "product-plan-offer",
+      "implementations": [
+        "OrderBump (schema:3132) + Upsell (schema:3154) typed tables via CheckoutCatalogService (checkout-catalog.service.ts:30,117) [priced at checkout]",
+        "ProductPlan.checkoutImages.orderBump JSON via PlanService.setOrderBump (plan.service.ts:419) [dead config, never read by pricing]"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "Typed OrderBump/Upsell tables.",
+      "migrationSketch": "Stop writing the checkoutImages JSON slots; migrate any data into typed rows; merchant edits via PlanService.setOrderBump currently never surface on the actual checkout.",
+      "sourceClusters": ["product-plan-offer"]
+    },
+    {
+      "concept": "Affiliate config has 3-5 sources of truth with no synchronization",
+      "family": "product-plan-offer",
+      "implementations": [
+        "Product.affiliate*/commission* columns (AffiliateService — affiliate.service.ts) [what AffiliateService.getConfig reads]",
+        "AffiliateProduct own commissionPct/cookieDays/approvalMode (schema:2538)",
+        "ProductPlan affiliate fields (PlanService.setAffiliateConfig — plan.service.ts:383)",
+        "AffiliatePartner (workspace partners) + ProductCommission (per-product splits, schema:2332) — 4th/5th overlapping commission surface"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "Product.affiliate* columns (what AffiliateService.getConfig reads).",
+      "migrationSketch": "Make AffiliateProduct + ProductPlan affiliate fields derive from / sync to Product.affiliate* columns; define one commission source of truth.",
+      "sourceClusters": ["product-plan-offer"]
+    },
+    {
+      "concept": "Member enrollment created by divergent paths; auto-enroll on payment emits no event and is invisible to cognition",
+      "family": "product-plan-offer",
+      "implementations": [
+        "MemberEnrollmentsController.enrollStudent (member-enrollments.controller.ts:77) [uses MemberAreaStatsService.recalculate + emits member.enrolled]",
+        "CheckoutPostPaymentEffectsService.autoEnrollInMemberAreas (checkout-post-payment-effects.service.ts:228) [inlines stats update, emits NOTHING, re-keys buyer by email with no link to CheckoutOrder]",
+        "MemberAreaPublicController enroll-by-email surface"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "MemberEnrollmentsController path (event + shared stats service).",
+      "migrationSketch": "Make autoEnrollInMemberAreas call MemberAreaStatsService.recalculate + emit member.enrolled; link enrollment to CheckoutOrder.customerEmail instead of re-keying by email.",
+      "sourceClusters": ["product-plan-offer"]
+    },
+    {
+      "concept": "Divergent surprise / prediction-error math (same concept 'surprise', different units)",
+      "family": "mind-core",
+      "implementations": [
+        "MindSurpriseService.computeSurprise (mind/inference/mind-surprise.service.ts:135) = Shannon -log(p) [canonical]",
+        "MindPredictionService (mind/mind-prediction.service.ts:105) = linear surprise=confidence"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "MindSurpriseService.computeSurprise (information-theoretic, used by belief update + causal model).",
+      "migrationSketch": "Make MindPredictionService use MindSurpriseService.computeSurprise; downstream thresholds (e.g. self-modification surprise>0.7) are currently ambiguous depending on which loop fired.",
+      "sourceClusters": ["kloel-mind-core"]
+    },
+    {
+      "concept": "Two BullMQ tick schedulers fanning out the same active-workspace set (5s vs 30s)",
+      "family": "mind-core",
+      "implementations": [
+        "MindProcessorService (mind/runtime/mind-processor.service.ts:30; queues mind-scheduler/mind-tick; 30s) [canonical persisted tick]",
+        "MindBackgroundScheduler (mind/mind-bg.scheduler.ts:17; queue mind-bg-tick; 5s + @Cron fallback)",
+        "MindEventIngestor.tickAllWorkspaces (mind/coordination/mind-event-ingestor.service.ts:50)"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "MindProcessorService for the persisted cognitive tick; demote mind-bg to a clearly-scoped substrate sub-tick or fold in.",
+      "migrationSketch": "Make one scheduler own 'who ticks a workspace'; nest the substrate cadence under it to avoid double work + Redis queue sprawl.",
+      "sourceClusters": ["kloel-mind-core"]
+    },
+    {
+      "concept": "Event spine has TWO physical event sinks; generic events land in the legacy non-idempotent table",
+      "family": "mind-core",
+      "implementations": [
+        "MindEventSpine.record -> RAC_AutopilotEvent (mind/coordination/mind-event-spine.service.ts:43) [legacy log, no idempotency/outbox]",
+        "MindEventSpine.recordCommercial/recordMany -> RAC_MindOutboxEvent (same file:73,142) [transactional, idempotent, dispatchable]"
+      ],
+      "severity": "P1",
+      "canonicalChoice": "RAC_MindOutboxEvent (transactional, idempotent, dispatchable) as the single spine sink.",
+      "migrationSketch": "Migrate generic brain/cognition events onto the outbox; note MindPerceptionService READS percepts back out of RAC_AutopilotEvent, so the perception read path must move too.",
+      "sourceClusters": ["kloel-mind-core"]
+    },
+    {
+      "concept": "Two webhook controllers named MetaWebhookController with duplicated HMAC-verify + Redis-NX + WebhookEvent dedup",
+      "family": "channel-dispatch",
+      "implementations": [
+        "meta/webhooks/meta-webhook.controller.ts:123 ('webhooks/meta') — verify + ROUTE to OmnichannelService (live ingest)",
+        "meta/meta-webhook.controller.ts:46 ('webhooks/meta-marketing', aliased MetaCoreWebhookController) — verify + LOG-ONLY"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "Extract the shared HMAC-verify + Redis-NX + WebhookEvent-dedup into one guard/util; keep two thin route handlers; rename one class to remove the same-name collision in meta.module.ts.",
+      "migrationSketch": "Unify the verify-token env precedence (META_MARKETING_VERIFY_TOKEN||META_VERIFY_TOKEN||META_WEBHOOK_VERIFY_TOKEN vs META_VERIFY_TOKEN); copy-on-security-path is exactly the drift class to eliminate.",
+      "sourceClusters": ["channels-omnicore"]
+    },
+    {
+      "concept": "ChannelCapability + ChannelSendResult DTOs declared twice (blocked required vs optional)",
+      "family": "channel-dispatch",
+      "implementations": [
+        "common/channel-dispatch/channel-dispatch.port.ts:164/210 (ChannelSendResult/ChannelCapability — blocked OPTIONAL) [canonical]",
+        "kloel/channel-transport.types.ts:27/49 (ChannelCapability/ChannelSendResult — blocked REQUIRED)"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "common/channel-dispatch/channel-dispatch.port.ts DTOs. Re-export the transport variants as type aliases (ChannelName already does this for the name union).",
+      "migrationSketch": "Delete the transport-side re-declarations; alias them; remove mapCanonicalResult/mapResult glue at channel-transport.registry.ts:283 and whatsapp-dispatch.adapter.ts:80.",
+      "sourceClusters": ["channels-omnicore"]
+    },
+    {
+      "concept": "Channel-name vocabularies: ChannelKind (lowercase) vs OmniChannel (Uppercase) vs ChannelIdentifier casing",
+      "family": "channel-dispatch",
+      "implementations": [
+        "ChannelKind/CanonicalChannelName lowercase (channel-dispatch.port.ts:14/37) [canonical]",
+        "OmniChannel = Uppercase<...> (inbox/omnichannel.helpers.ts:34)",
+        "normalizeChannelIdentifierChannel UPPER (contacts/channel-identifier.service)"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "ChannelKind (lowercase) as the one enum; OmniChannel and identifier casing become derived Uppercase<ChannelKind> views.",
+      "migrationSketch": "ChannelName was already collapsed to a derived view of CanonicalChannelName (good precedent at channel-transport.types.ts:22); do the same for OmniChannel and the contacts-layer casing.",
+      "sourceClusters": ["channels-omnicore"]
+    },
+    {
+      "concept": "Legacy ProductCheckout (JSON-blob) vs canonical CheckoutProductPlan/CheckoutConfig graph",
+      "family": "checkout-payment",
+      "implementations": [
+        "ProductCheckout (schema:2273) — single row, 14-section JSON config blob; consumed by kloel chat tools (kloel-product-sub-resource-tools.service.ts) + product-checkout.controller.ts",
+        "CheckoutProductPlan + CheckoutConfig + CheckoutPlanLink (schema:2969/3027/3005) — typed-column canonical graph"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "CheckoutProductPlan/CheckoutConfig graph.",
+      "migrationSketch": "Migrate ProductCheckout.config JSON into typed CheckoutConfig columns; repoint chat-tool writers; no order-time pricing reads ProductCheckout config, so it's transitional not load-bearing.",
+      "sourceClusters": ["checkout-payment-wallet", "product-plan-offer"]
+    },
+    {
+      "concept": "Overlapping cross-channel identity resolution surfaces — omnichannel bypasses the cross-channel match",
+      "family": "contact-identity",
+      "implementations": [
+        "ContactIdentityResolverService.resolve (contacts/contact-identity-resolver.service.ts:29) [canonical — does cross-channel phone/email/socialHandle match]",
+        "ChannelIdentifierService.resolve/findContactByChannel (contacts/channel-identifier.service.ts:79/189) [persistence primitive]",
+        "OmnichannelContactResolutionService.resolveFromMessage (omnichannel/contact-resolution.service.ts:19) [calls ChannelIdentifierService DIRECTLY, bypassing cross-channel match]"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "ContactIdentityResolverService for full resolution; ChannelIdentifierService as its persistence primitive; OmnichannelContactResolutionService should delegate to the Resolver.",
+      "migrationSketch": "Make resolveFromMessage call ContactIdentityResolverService.resolve so inbound messages merge into existing verified contacts instead of creating synthetic-phone duplicates.",
+      "sourceClusters": ["contact-crm"]
+    },
+    {
+      "concept": "recordCase capability bypassed by direct prisma.mindCase.create writers",
+      "family": "mind-core",
+      "implementations": [
+        "MindCaseMemoryService.recordCase (mind/memory/mind-case-memory.service.ts:40) [canonical]",
+        "MindMultiModalPerceptionService prisma.mindCase.create direct (mind/perception/mind-multimodal-perception.service.ts:103)",
+        "MindCanonicalService prisma.mindCase.create direct (mind/mind-canonical.service.ts:105)"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "MindCaseMemoryService.recordCase.",
+      "migrationSketch": "Repoint the two direct-create bypasses through recordCase so future invariants (token extraction, dedup) aren't silently skipped. EpisodeService + MindConsciousnessService already delegate correctly.",
+      "sourceClusters": ["kloel-mind-core"]
+    },
+    {
+      "concept": "MindGlobalPrior vs KloelGlobalPrior — two global-prior tables+services for the same capability",
+      "family": "global-prior",
+      "implementations": [
+        "MindGlobalPriorService over RAC_MindGlobalPrior (mind/memory/mind-global-prior.service.ts:55) [canonical, injected via MindPolicyService.mixWithGlobalPrior]",
+        "KloelGlobalPriorService over RAC_KloelGlobalPrior (kloel/kloel-global-prior.service.ts:32) [@deprecated, registered in kloel.module but ZERO constructor injectors = dead]"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "MindGlobalPriorService / RAC_MindGlobalPrior.",
+      "migrationSketch": "Drop KloelGlobalPriorService + its provider registration (no consumers); the bridge methods replacing it already exist and are wired; RAC_KloelGlobalPrior table drop is owner-gated.",
+      "sourceClusters": ["kloel-mind-core"]
+    },
+    {
+      "concept": "MindMessage canonical table is WRITE-ONLY (dual-written, never read)",
+      "family": "message",
+      "implementations": [
+        "WRITERS: inbox.service.ts:60, chat.service.ts:86, kloel-thread.service.ts:79, kloel-lead-processor-helpers.ts:161 (all prisma.mindMessage.create, flag-gated)",
+        "READERS: none (no prisma.mindMessage.find* outside specs)"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "RAC_MindMessage once a reader migration lands; today reads go to RAC_KloelMessage/RAC_ChatMessage via the alias services.",
+      "migrationSketch": "Either wire reads or stop the writes to avoid an orphan growing table. Stale schema comment claiming 'ZERO writers' must be corrected.",
+      "sourceClusters": ["kloel-mind-core", "conversation-message"]
+    },
+    {
+      "concept": "Per-surface MindMessage dual-write helper duplicated 4x",
+      "family": "message",
+      "implementations": [
+        "InboxService.dualWriteChannelMindMessage source:'channel' (inbox.service.ts:47)",
+        "KloelThreadService.dualWriteThreadMindMessage source:'thread' (kloel-thread.service.ts:67)",
+        "chat.service.ts addMessage dual-write source:'dashboard' (chat.service.ts:86)",
+        "dualWriteLeadConversationMindMessage source:'lead_conversation' (kloel-lead-processor-helpers.ts:147)"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "A single MindMessageDualWriteService.mirror(source, {workspaceId,role,content}) reading the one flag, instead of four hand-rolled try/catch+flag-check copies.",
+      "migrationSketch": "Extract one fail-open mirror service gated on isMindMessageDualWriteEnabled(); replace the 4 copies.",
+      "sourceClusters": ["conversation-message"]
+    },
+    {
+      "concept": "Two distinctly-behaving services named *LongTermMemory* (naming collision) + a third 'consolidation' surface",
+      "family": "memory",
+      "implementations": [
+        "LongTermMemoryService (mind/memory/long-term-memory.service.ts:51) — spine-event -> RAC_MindGraphNode fact consolidation + recallRelevant",
+        "MindLongTermMemoryService (mind/memory/mind-long-term-memory.service.ts:33) — tick -> RAC_MindCase->belief consolidation + prune",
+        "ConsolidationService (mind/consolidation.service.ts:52) — bg-substrate working-memory consolidation"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "Keep all three (different stores/triggers) but RENAME for intent (e.g. GraphFactMemoryService vs CaseConsolidationService); ConsolidationService is the substrate variant.",
+      "migrationSketch": "Rename to remove the LongTermMemoryService vs MindLongTermMemoryService trap (a dev will wire the wrong one); document the store/trigger of each.",
+      "sourceClusters": ["kloel-mind-core"]
+    },
+    {
+      "concept": "Stripe subscription -> workspaceId resolver copied across 3 billing services",
+      "family": "checkout-payment",
+      "implementations": [
+        "billing/billing-webhook.service.ts:233 resolveWorkspaceId",
+        "billing/billing-checkout-helper.service.ts:253 resolveWorkspaceId",
+        "billing/billing-checkout-webhook.service.ts:288 resolveWorkspaceId"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "One shared resolver injected via the billing-*.helper port interface that already types it (billing-subscription-status.helper.ts:15).",
+      "migrationSketch": "Collapse the 3 private copies into the injected impl behind the existing port interface.",
+      "sourceClusters": ["identity-auth", "checkout-payment-wallet"]
+    },
+    {
+      "concept": "Payout execution reimplemented 3x with separate approval models",
+      "family": "wallet-ledger",
+      "implementations": [
+        "ConnectPayoutService (payments/connect/connect-payout.service.ts:78) — stripe.payouts.create from Connect available balance (two-step ConnectPayoutApprovalService)",
+        "MarketplaceTreasuryPayoutService (marketplace-treasury-payout.service.ts:44) — payout from house treasury (direct)",
+        "kloel/WalletService.withdraw — withdraw from KloelWallet (WalletAnticipation auto-complete)"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "Per-actor payout is legitimately distinct, but the debit-balance + append-ledger + create-payout sequence should share the ledger abstraction.",
+      "migrationSketch": "Back all three with the shared ledger abstraction; keep the distinct approval models but unify the debit+append+payout core.",
+      "sourceClusters": ["checkout-payment-wallet"]
+    },
+    {
+      "concept": "Tag upsert + connect duplicated outside CrmService",
+      "family": "contact-identity",
+      "implementations": [
+        "CrmService.addTag (crm.service.ts:86) [canonical]",
+        "crm.deals.helpers.ts addTagInline (line 258, auto-tags 'cliente' on deal won)"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "CrmService.addTag (or a shared tagging helper).",
+      "migrationSketch": "Replace addTagInline with a call into the shared tagging helper; it currently re-implements tag upsert + contact.update connect with possibly-non-canonical phone keying.",
+      "sourceClusters": ["contact-crm"]
+    },
+    {
+      "concept": "Contact provenance bridge columns unwired in the scraped-lead import path",
+      "family": "contact-identity",
+      "implementations": [
+        "Contact.scrapingJobId/scrapedFrom (schema:441-443) — typed provenance pointers",
+        "ScrapersService.importLeads contact.upsert (scrapers.service.ts:141) — sets customFields.source but never scrapingJobId/scrapedFrom"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "Set scrapingJobId + scrapedFrom on the upsert so the typed provenance bridge is populated.",
+      "migrationSketch": "Write the typed columns; the @@index([scrapingJobId]) and ScrapingJobContacts relation are currently dead for imported contacts.",
+      "sourceClusters": ["contact-crm"]
+    },
+    {
+      "concept": "PIX charge creation — canonical vs ORPHAN dead duplicate",
+      "family": "checkout-payment",
+      "implementations": [
+        "MercadoPagoPixChargeService (payments/mercadopago/mercadopago-pix-charge.service.ts:27) [canonical, 10+ consumers]",
+        "MercadoPagoPixService (checkout/mercado-pago-pix.service.ts:146) [ORPHAN — not registered in checkout.module.ts, only its own specs import it]"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "MercadoPagoPixChargeService. Delete checkout/mercado-pago-pix.service.ts + its 2 spec files.",
+      "migrationSketch": "Pure dead-code deletion (~12KB of payload-building logic that can drift from the live one).",
+      "sourceClusters": ["checkout-payment-wallet"]
+    },
+    {
+      "concept": "Per-product AI config split (typed table vs per-plan JSON)",
+      "family": "product-plan-offer",
+      "implementations": [
+        "ProductAIConfig table (schema:2394) + services-v2/product-ai-config.service.ts [canonical, typed]",
+        "ProductPlan.aiConfig JSON (schema:2261)"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "ProductAIConfig table (typed, per-product, dedicated controller).",
+      "migrationSketch": "Migrate ProductPlan.aiConfig JSON into ProductAIConfig; no reader-consistency guarantee between the two today.",
+      "sourceClusters": ["product-plan-offer"]
+    },
+    {
+      "concept": "Pixels stored in three places; only one is fired",
+      "family": "product-plan-offer",
+      "implementations": [
+        "CheckoutPixel table (CheckoutCatalogService.createPixel) [canonical — fired by checkout/facebook-capi.service.ts]",
+        "Product.metadata.pixels (ProductService.setPixels — product.service.ts:427)",
+        "ProductCampaign.pixelId scalar (schema:2378)"
+      ],
+      "severity": "P2",
+      "canonicalChoice": "CheckoutPixel table.",
+      "migrationSketch": "Product.metadata.pixels + ProductCampaign.pixelId are not consulted by the checkout pixel-firing path; consolidate or document as attribution-only.",
+      "sourceClusters": ["product-plan-offer"]
+    },
+    {
+      "concept": "Four+ outbound send entrypoints/facades over the same core (guarded vs un-guarded policy posture)",
+      "family": "channel-dispatch",
+      "implementations": [
+        "ChannelMessageDispatchService.dispatch (marketing/channel-message-dispatch.service.ts:72) [canonical facade]",
+        "services-v2/channel.service.ts ChannelService.send (thin)",
+        "services-v2/messaging.service.ts MessagingService.sendWhatsApp/... (thin)",
+        "kloel-tool-dispatcher.channel.handlers.ts dispatchChannelTool (via GUARDED ChannelTransportRegistry)",
+        "billing-checkout-helper.service.ts:118 resolves ChannelMessageDispatchService via ModuleRef ad hoc"
+      ],
+      "severity": "P3",
+      "canonicalChoice": "ChannelMessageDispatchService.dispatch/dispatchTool. The services-v2 facades are acceptable thin adapters; the concern is dispatchChannelTool taking the GUARDED path while services-v2 takes the pure path — two policy postures for the same agent.",
+      "migrationSketch": "Unify the agent send paths so MindGuards apply consistently regardless of which tool surface the agent hit.",
+      "sourceClusters": ["channels-omnicore"]
+    },
+    {
+      "concept": "Two contact-by-phone DTOs that are byte-identical",
+      "family": "contact-identity",
+      "implementations": [
+        "CreateContactDto (crm/dto/create-contact.dto.ts)",
+        "UpsertContactDto (crm/dto/upsert-contact.dto.ts)"
+      ],
+      "severity": "P3",
+      "canonicalChoice": "Keep one DTO (UpsertContactDto); make Create extend Upsert.",
+      "migrationSketch": "Pure copy; merge to prevent drift.",
+      "sourceClusters": ["contact-crm"]
+    },
+    {
+      "concept": "Two bcrypt work-factor constants with the same value",
+      "family": "identity-auth",
+      "implementations": [
+        "common/constants.ts:10 BCRYPT_ROUNDS = 12 (tenant)",
+        "admin/auth/admin-auth.service.helpers.ts:22 BCRYPT_WORK_FACTOR = 12 (admin)"
+      ],
+      "severity": "P3",
+      "canonicalChoice": "Single exported constant in common/constants.ts referenced by both stacks.",
+      "migrationSketch": "Two sources of truth invite drift if one is bumped for a security upgrade; collapse to one.",
+      "sourceClusters": ["identity-auth"]
+    },
+    {
+      "concept": "sha256-hex opaque-token hasher + 'marketplace' namespace overload (cosmetic naming entropy)",
+      "family": "cross-cutting-naming",
+      "implementations": [
+        "auth/auth-service.helpers.ts:24 hashOpaqueToken vs admin/common/admin-crypto.ts sha256Hex (identical primitive, two homes)",
+        "marketplace/MarketplaceService (FlowTemplate catalog, NOT money) vs marketplace-treasury/* (house money) vs split/MarketplaceFee"
+      ],
+      "severity": "P3",
+      "canonicalChoice": "One shared sha256-hex helper in common/; rename the FlowTemplate marketplace to template-marketplace/TemplateMarketplaceService.",
+      "migrationSketch": "Trivial helper consolidation + rename to stop 'marketplace' meaning both the template store and the payments marketplace.",
+      "sourceClusters": ["identity-auth", "checkout-payment-wallet"]
+    },
+    {
+      "concept": "BrainRuntimeService alias re-export + self-model vs consciousness overlap + two runtime orchestrators",
+      "family": "mind-core",
+      "implementations": [
+        "MindRuntime (mind/coordination/mind-runtime.service.ts:52) + export { MindRuntime as BrainRuntimeService } (line 438) + legacy shim kloel/brain-runtime.service.ts [ADR-0013 Wave M1 alias window]",
+        "MindSelfModelService.snapshot (-> RAC_MindSelfModel) vs MindConsciousnessService.getSelfNarrative/selfAssess (consciousness/mind-consciousness.service.ts:47)",
+        "MindRuntime (synchronous decide/observe) vs CiaRuntimeService (cia/cia-runtime.service.ts:13, async autonomy lifecycle)"
+      ],
+      "severity": "P3",
+      "canonicalChoice": "MindRuntime + MindSelfModelService canonical; MindConsciousnessService as a read/narrative view; CiaRuntime distinct (document the split).",
+      "migrationSketch": "Remove the BrainRuntimeService alias once DI tokens migrate; make MindConsciousnessService read the canonical RAC_MindSelfModel snapshot instead of collecting goals/experiences/limits independently.",
+      "sourceClusters": ["kloel-mind-core"]
+    }
+  ],
+
+  "domains": [
+    {
+      "name": "Identity, Auth & Tenant",
+      "purpose": "Tenant root + tenant-user identity + sessions/tokens + OAuth/passwordless + MFA + team/collaborator invites + API keys + platform-admin auth.",
+      "ownsEntities": ["Workspace", "Agent", "RefreshToken", "DeviceToken", "PasswordResetToken", "MagicLinkToken", "SocialAccount", "Invitation", "CollaboratorInvite", "ApiKey", "Persona", "AdminUser", "AdminSession", "AdminPermission", "AdminAuditLog", "AdminLoginAttempt", "CookieConsent", "DataDeletionRequest", "GdprRequest", "RiscEvent"],
+      "mustNotOwn": ["Contact", "KloelLead", "Message", "any commerce/wallet model"],
+      "modules": ["backend/src/auth", "backend/src/api-keys", "backend/src/team", "backend/src/workspaces", "backend/src/admin/auth", "backend/src/partnerships (CollaboratorInvite half)", "backend/src/compliance (RiscEvent)"],
+      "upstream": [],
+      "downstream": ["every domain (workspaceId tenancy boundary)"]
+    },
+    {
+      "name": "Contact, CRM & Lead identity",
+      "purpose": "Canonical person identity, cross-channel identity resolution/merge, lead funnel + scoring, CRM pipeline/deals/tags. CONTAINS the open Contact-vs-KloelLead merge decision.",
+      "ownsEntities": ["Contact", "ContactInsight", "ContactIdentityLink", "ChannelIdentifier", "KloelLead", "KloelConversation", "ScrapedLead", "Tag", "Pipeline", "Stage", "Deal"],
+      "mustNotOwn": ["Message (RAC_Message — owned by Conversation domain)", "CheckoutSocialLead persistence (owned by Checkout, only synced here)", "Workspace/Agent"],
+      "modules": ["backend/src/contacts", "backend/src/crm", "backend/src/kloel (lead processor + mind coordinators + leads.service)", "backend/src/scrapers"],
+      "upstream": ["Channels/OmniCore (inbound messages -> contact resolution)", "Checkout (CheckoutSocialLead sync)"],
+      "downstream": ["Kloel Mind (lead percepts)", "Checkout (lead conversion)"]
+    },
+    {
+      "name": "Conversation, Message & Thread",
+      "purpose": "All message + conversation persistence: omnichannel inbox, brain dialog, dashboard threads, lead-funnel logs, admin/partner chat, and the intended-canonical unified MindMessage layer (currently dead-on-read).",
+      "ownsEntities": ["Conversation", "Message", "KloelMessage", "ChatMessage", "ChatThread", "KloelConversation", "MindMessage", "FbMessage", "PartnerMessage", "AdminChatMessage", "AdminChatSession"],
+      "mustNotOwn": ["channel credential resolution (Channels domain)", "outbound transport adapters (Channels domain)"],
+      "modules": ["backend/src/inbox", "backend/src/kloel (thread/conversation-store/mind aliases)", "backend/src/chat", "backend/src/partnerships (PartnerMessage)", "backend/src/admin/chat"],
+      "upstream": ["Channels/OmniCore (NormalizedMessage ingest)"],
+      "downstream": ["Kloel Mind (history reads for prompt assembly + percepts)"]
+    },
+    {
+      "name": "Channels & OmniCore Dispatch",
+      "purpose": "Outbound multi-channel send (WhatsApp/IG/Messenger/Facebook/Email/TikTok/internal), inbound Meta/WhatsApp webhook ingest, channel session + Meta connection resolution, channel setup/config/arsenal/product catalog.",
+      "ownsEntities": ["MetaConnection", "ChannelSetup", "ChannelProduct", "ChannelArsenal", "ChannelConfig", "Integration", "IntegrationCredential", "WebhookEvent", "FbMessage (channel-native delivery ledger)", "IgPost", "IgInsight"],
+      "mustNotOwn": ["Conversation/Message canonical store (Conversation domain owns RAC_Message)", "MindGuard policy (Mind domain)"],
+      "modules": ["backend/src/marketing/channels", "backend/src/omnichannel", "backend/src/meta", "backend/src/common/channel-dispatch", "backend/src/inbox (omnichannel funnel)"],
+      "upstream": ["Kloel Mind (decide -> dispatch)", "Marketing/Campaigns"],
+      "downstream": ["Conversation/Message (saveMessage)", "Contact (resolution)", "Kloel Mind (percept spine hook)"]
+    },
+    {
+      "name": "Product, Plan & Offer / Member Area",
+      "purpose": "Product catalog, plans/pricing (two parallel models mid-migration), offer/checkout config, coupons, affiliate program, member-area courses/enrollment, per-product AI config.",
+      "ownsEntities": ["Product", "ProductPlan", "CheckoutProductPlan", "CheckoutConfig", "OrderBump", "Upsell", "ProductCoupon", "CheckoutCoupon", "CheckoutPixel", "ProductReview", "ProductCommission", "ProductUrl", "ProductCampaign", "ProductAIConfig", "ProductCheckout", "MemberArea", "MemberModule", "MemberLesson", "MemberEnrollment", "AffiliateProduct", "AffiliateRequest", "AffiliateLink", "ChannelProduct (join)"],
+      "mustNotOwn": ["CheckoutOrder/CheckoutPayment (Checkout domain owns the transaction)", "wallet/ledger"],
+      "modules": ["backend/src/products", "backend/src/plans", "backend/src/product-categories", "backend/src/member-area", "backend/src/affiliate", "backend/src/checkout (CheckoutProductPlan/CheckoutConfig)", "backend/src/kloel/product-sub-resources"],
+      "upstream": ["Identity (workspace)"],
+      "downstream": ["Checkout (pricing reads CheckoutProductPlan)", "Channels (ChannelProduct)"]
+    },
+    {
+      "name": "Checkout, Payment & Wallet",
+      "purpose": "Checkout order lifecycle + payment capture, chat-driven direct sales, provider charge adapters + routing + fraud, Stripe Connect ledger, marketplace treasury, seller earnings wallet, prepaid usage wallet, coupons-at-order-time, payouts, SaaS subscription billing.",
+      "ownsEntities": ["CheckoutOrder", "CheckoutPayment", "UpsellOrder", "CheckoutSocialLead", "KloelSale", "Payment", "ExternalPaymentLink", "PhysicalOrder", "KloelWallet", "KloelWalletTransaction", "KloelWalletLedger", "PrepaidWallet", "PrepaidWalletTransaction", "BankAccount", "WalletAnticipation", "MarketplaceTreasury", "MarketplaceTreasuryLedger", "MarketplaceFee", "ConnectAccountBalance", "ConnectLedgerEntry", "ConnectMaturationRule"],
+      "mustNotOwn": ["Product/Plan definitions (Product domain)", "Contact identity (only references customerEmail/lead)"],
+      "modules": ["backend/src/checkout", "backend/src/payments", "backend/src/sales", "backend/src/billing", "backend/src/wallet", "backend/src/marketplace-treasury", "backend/src/kloel (payment/smart-payment/wallet/cart-recovery)"],
+      "upstream": ["Product/Plan (CheckoutProductPlan pricing)", "Channels (payment link send)"],
+      "downstream": ["Wallet/ledger (split + credit)", "Member Area (auto-enroll)", "Kloel Mind (commerce.payment.* spine)", "CRM (markLeadConverted)"]
+    },
+    {
+      "name": "Kloel Mind cognitive core",
+      "purpose": "Perception -> inference (beliefs/predictions/surprise) -> policy (epsilon-greedy/bandit/global-prior) -> memory (cases/graph/episodes/priors) -> runtime (tick scheduler, event spine/outbox, capability executor, Brain decide/observe), self-model/consciousness/self-evolution, CIA autonomy, and Brain->Mind canonicalization aliases.",
+      "ownsEntities": ["MindBelief", "MindPrediction", "MindPolicy", "MindWorkspaceState", "MindCase", "MindConceptDetection", "MindGraphNode", "MindGraphEdge", "MindOutboxEvent", "MindBanditArm", "MindGuardAudit", "MindDailyReport", "MindGlobalPrior", "MindSelfModel", "MindMemory", "KloelMemory", "KloelGlobalPrior", "AutopilotEvent (event log sink)"],
+      "mustNotOwn": ["channel transport", "payment capture", "the message tables themselves (it READS them via aliases)"],
+      "modules": ["backend/src/kloel/mind/**", "backend/src/kloel/mind.service.ts", "backend/src/kloel/kloel-global-prior.service.ts"],
+      "upstream": ["Channels (percept hook)", "Conversation (history)", "Checkout/CRM (commerce spine events)"],
+      "downstream": ["Channels (decide -> dispatch)", "all domains (policy decisions, reports)"]
+    },
+    {
+      "name": "Observability & Ops (cross-cutting)",
+      "purpose": "Operational error/degradation/recovery event sink for dashboard alerting (distinct from the cognitive event spine).",
+      "ownsEntities": ["OpsEvent"],
+      "mustNotOwn": ["cognitive events (Mind domain owns AutopilotEvent/MindOutboxEvent)"],
+      "modules": ["backend/src/observability (OpsAlertService writes OpsEvent)"],
+      "upstream": ["all services (error reporting)"],
+      "downstream": ["admin dashboard"]
+    }
+  ],
+
+  "vocabulary": [
+    {
+      "canonical": "Contact",
+      "backingModel": "Contact (RAC_Contact, schema:399)",
+      "forbiddenAliases": ["Lead (as a synonym for Contact)", "Person", "Customer (as a distinct model)"],
+      "allowedNarrowUses": ["CRM read surface aliases Deal as 'lead' in getPipeline (stage.leads = deals) — a pipeline naming overload, distinct from the Lead entity"],
+      "note": "Canonical person, unique (workspaceId, phone). KloelLead is NOT an alias of Contact — it is a separate live table pending merge (see vocabulary entry KloelLead and the P1 merge duplication)."
+    },
+    {
+      "canonical": "KloelLead",
+      "backingModel": "KloelLead (RAC_KloelLead, schema:1834)",
+      "forbiddenAliases": ["Contact alias", "settled-duplicate-of-Contact"],
+      "allowedNarrowUses": ["the live backing store for the WhatsApp lead-processing path and GET /kloel/leads/:workspaceId (LeadsService)"],
+      "note": "EXPLICIT MERGE DECISION (P1), NOT a settled alias. Overlaps Contact funnel columns; bridged via Contact.kloelLeadId + best-effort dual-write. Cut-over to Contact is incomplete; LeadsService still reads KloelLead while CRM reads Contact (the two screens can disagree)."
+    },
+    {
+      "canonical": "Message",
+      "backingModel": "Message (RAC_Message, schema:721) for the omnichannel inbox; per-surface legacy tables KloelMessage/ChatMessage/KloelConversation remain de-facto canonical for brain/thread/lead",
+      "forbiddenAliases": ["MindMessage as if live (it is canonical-but-dead-on-read)"],
+      "allowedNarrowUses": ["FbMessage (RAC_FbMessage) as a provider-native delivery ledger ONLY, not a parallel conversation history", "AdminChatMessage/PartnerMessage as separate-audience surfaces"],
+      "note": "RAC_MindMessage (schema:3849) is the DECLARED unified target (source discriminator) but has ZERO readers and only flag-gated writers; until backfill + read cut-over, the 4 source tables stand."
+    },
+    {
+      "canonical": "Conversation / Thread",
+      "backingModel": "Conversation (RAC_Conversation, schema:682) for the inbox; ChatThread (RAC_ChatThread, schema:1885) for the dashboard assistant chat; AdminChatSession for admin copilot",
+      "forbiddenAliases": ["using 'thread' and 'conversation' interchangeably across inbox vs dashboard"],
+      "allowedNarrowUses": ["ChatThread is the UI-facing assistant grouping, DISTINCT from the inbox Conversation — different surface entirely"],
+      "note": "Conversation is the customer-facing omnichannel thread (singleton-open per workspace,contact,channel). ChatThread is the internal dashboard chat container."
+    },
+    {
+      "canonical": "Channel / Session",
+      "backingModel": "ChannelSetup (RAC_ChannelSetup, schema:3492) + MetaConnection (RAC_MetaConnection, schema:3467); the channel-session SERVICE is WhatsappSessionService (backend/src/marketing/channels/whatsapp/whatsapp-session.service.ts:19)",
+      "forbiddenAliases": ["ChannelSession (FICTIONAL — zero grep matches in src/ and schema.prisma; do NOT use)"],
+      "allowedNarrowUses": ["ChannelKind enum (channel-dispatch.port.ts:14) as the one channel-name discriminator; OmniChannel/identifier casing should be derived Uppercase views"],
+      "note": "There is NO ChannelSession model or service. Channel session state lives in ChannelSetup (wizard progress) + MetaConnection (credentials), resolved by WhatsappSessionService and MetaWhatsAppService.resolveConnection. SessionStatus is a provider-registry type, not a model."
+    },
+    {
+      "canonical": "Workspace / Tenant",
+      "backingModel": "Workspace (RAC_Workspace, schema:119)",
+      "forbiddenAliases": ["Tenant (as a separate model)", "Account (as the tenant root)"],
+      "allowedNarrowUses": ["customDomain @unique enables white-label reseller resolution"],
+      "note": "The tenancy boundary (workspaceId FK) for nearly every model. Membership is implicit: Agent.workspaceId (@@unique([workspaceId, email])) — there is no membership join table; role lives on Agent. Request->workspaceId MUST go through the secure resolveWorkspaceId (workspace-access.ts:119)."
+    },
+    {
+      "canonical": "Product / Plan / Offer",
+      "backingModel": "Product (RAC_Product, schema:1734); CheckoutProductPlan (RAC_CheckoutProductPlan, schema:2969, priceInCents) is the CANONICAL plan/offer read by pricing; CheckoutConfig (schema:3027) is the offer presentation",
+      "forbiddenAliases": ["ProductPlan.price (Float) as the live price — it is never consulted at order time", "ProductCheckout JSON config as the canonical offer config"],
+      "allowedNarrowUses": ["ProductPlan (RAC_ProductPlan) as a legacy/UI plan model mid-migration to priceInCents", "CheckoutProductPlan(kind=CHECKOUT) reused as a checkout-template grouping via CheckoutPlanLink"],
+      "note": "Money lives in two unsynced tables with different units (Float reais vs Int cents). Only CheckoutProductPlan.priceInCents drives what the buyer is charged."
+    },
+    {
+      "canonical": "Checkout / Order / Payment",
+      "backingModel": "CheckoutOrder (RAC_CheckoutOrder, schema:3220) + CheckoutPayment (RAC_CheckoutPayment, schema:3330)",
+      "forbiddenAliases": ["Payment (RAC_Payment) as a canonical order/payment — it is an unowned raw webhook sink", "KloelSale as a parallel GMV silo that's excluded from platform GMV"],
+      "allowedNarrowUses": ["KloelSale (RAC_KloelSale) as the chat-driven direct-sale originator that SHOULD materialize a CheckoutOrder", "PhysicalOrder for fulfillment (soft-linked via saleId, no FK)"],
+      "note": "CheckoutOrder.totalInCents is the GMV source of truth; KloelSale chat revenue is currently double-orphaned (not in admin gmv.query nor dashboard.service). A single Stripe webhook fans out to 3 tables — a record can be PAID in one and PENDING in another."
+    },
+    {
+      "canonical": "Wallet / Balance / Ledger",
+      "backingModel": "FIVE distinct actors' money: KloelWallet+KloelWalletLedger (seller earnings), PrepaidWallet+PrepaidWalletTransaction (usage), ConnectAccountBalance+ConnectLedgerEntry (Stripe Connect), MarketplaceTreasury+MarketplaceTreasuryLedger (house), WalletAnticipation (receivable)",
+      "forbiddenAliases": ["'WalletService' as an unqualified name (TWO different classes share it: kloel/WalletService for seller earnings, wallet/WalletService for prepaid usage)"],
+      "allowedNarrowUses": ["each ledger is a legitimately different actor's money — keep separate but share ONE append-only ledger abstraction"],
+      "note": "Append/reconcile/mature logic is hand-rolled ~3-4x with inconsistent contracts (some carry balanceAfter, some don't; WalletAnticipation still Float while others are BigInt cents)."
+    },
+    {
+      "canonical": "Campaign",
+      "backingModel": "ProductCampaign (RAC_ProductCampaign, schema:2378) for per-product attribution; marketing campaign execution runs on BullMQ queue 'campaign-jobs' with a LIVE worker (worker/campaign-processor.ts:147 campaignWorker)",
+      "forbiddenAliases": ["'dead queue' label for campaign-jobs/voice-jobs/media-jobs — they have live workers in the separate worker/ deployable"],
+      "allowedNarrowUses": ["voice-jobs (worker/voice-processor.ts:254 voiceWorker) and media-jobs (worker/media-processor.ts:16 mediaWorker) are also LIVE"],
+      "note": "CORRECTION: the recon falsely flagged campaign/voice/media queues as dead. Only mass-send (backend/src/mass-send/*) is the genuinely questionable surface. The worker/ package is a separate deployable with its own queue registry (queue-names.const.ts header documents this)."
+    },
+    {
+      "canonical": "Memory",
+      "backingModel": "KloelMemory (RAC_KloelMemory, schema:1711) is the CURRENT source of truth (~89+ callers via MindMemoryItemService.items); MindMemory (RAC_MindMemory, schema:3872) is the canonical TARGET (dual-write + partial reads)",
+      "forbiddenAliases": ["MindMemory as if fully live (migration incomplete)", "MindMessage as a memory store (it is a message store)"],
+      "allowedNarrowUses": ["MindCase (case memory), MindGraphNode/Edge (semantic graph), MindBelief (beliefs) are distinct typed memory surfaces, not KV memory"],
+      "note": "KloelMemory->MindMemory is IN-FLIGHT (flag KLOEL_MINDMEMORY_DUALWRITE, default OFF; 2 writers + 2 readers exist). Schema comment on MindMemory claiming 'canonical-but-dead / ZERO writers' is STALE."
+    },
+    {
+      "canonical": "GlobalPrior",
+      "backingModel": "MindGlobalPrior (RAC_MindGlobalPrior, schema:3800) via MindGlobalPriorService (mind/memory/mind-global-prior.service.ts:55)",
+      "forbiddenAliases": ["KloelGlobalPrior (RAC_KloelGlobalPrior, schema:3897) as live — @deprecated, its service has ZERO injectors (dead)"],
+      "allowedNarrowUses": ["KloelGlobalPrior table retained for data safety until owner-gated drop"],
+      "note": "Canonical cross-workspace anonymized prior by (domain,predicate,context). KloelGlobalPriorService is dead code (provider with no consumer); the replacing bridge methods are already wired into MindPolicyService.mixWithGlobalPrior."
+    }
+  ],
+
+  "capabilities": [
+    { "capability": "route-outbound-message-by-channel", "canonicalImpl": "ChannelDispatchRegistry.send/sendMessage (common/channel-dispatch/channel-dispatch.registry.ts:61) fronted by ChannelMessageDispatchService.dispatch (marketing/channel-message-dispatch.service.ts:72)", "duplicateImpls": ["ChannelTransportRegistry.send (guarded, kloel/channel-transport.registry.ts:107)", "services-v2/channel.service.ts ChannelService.send", "services-v2/messaging.service.ts MessagingService.*", "kloel-tool-dispatcher.channel.handlers.ts dispatchChannelTool"], "status": "mid-migration (KLOEL_TRANSPORT_CANONICAL_DELEGATE default OFF, excludes email+tiktok)" },
+    { "capability": "send-whatsapp-message", "canonicalImpl": "WhatsappService.sendMessage -> WhatsappMessageDispatcherService.sendMessage (whatsapp-message-dispatcher.service.ts:49)", "duplicateImpls": ["WhatsAppDispatchAdapter.send", "MetaWhatsAppService.sendTextMessage (direct Cloud path)", "WhatsAppChannelTransport (guarded)"], "status": "layered (provider registry below adapters is acceptable)" },
+    { "capability": "send-instagram-dm", "canonicalImpl": "InstagramService.sendMessage via InstagramDispatchAdapter", "duplicateImpls": ["InstagramMarketingService.sendDirectMessage (flag-gated to canonical, commit a38949d94)", "InstagramChannelTransport.send (guarded)"], "status": "mid-migration (instagram-canonical-dispatch.flag)" },
+    { "capability": "send-facebook-page-message", "canonicalImpl": "FacebookMessengerService.sendMessage (persists FbMessage)", "duplicateImpls": ["MessengerService.sendTextMessage (same endpoint, NO persistence)", "MessengerChannelTransport (guarded)"], "status": "duplicate (two ChannelKinds for one wire surface)" },
+    { "capability": "resolve-meta-connection-credentials", "canonicalImpl": "MetaWhatsAppService.resolveConnection (meta/meta-whatsapp.service.ts:71)", "duplicateImpls": ["MetaConnectionStateService.forWorkspace", "resolveInstagramConnection", "~19 raw prisma.metaConnection.find*"], "status": "fragmented" },
+    { "capability": "channel-session-state", "canonicalImpl": "WhatsappSessionService (marketing/channels/whatsapp/whatsapp-session.service.ts:19) over ChannelSetup + MetaConnection", "duplicateImpls": [], "status": "canonical (NO ChannelSession model exists)" },
+    { "capability": "ingest-meta-inbound-webhook", "canonicalImpl": "MetaWebhookController('webhooks/meta') -> OmnichannelService (meta/webhooks/meta-webhook.controller.ts:123)", "duplicateImpls": ["MetaWebhookController('webhooks/meta-marketing', log-only)", "WhatsappController @Post('incoming')", "internal-whatsapp-runtime/whatsapp-meta-compat controllers"], "status": "duplicated HMAC+dedup logic" },
+    { "capability": "persist-customer-message", "canonicalImpl": "InboxService.saveMessage -> RAC_Message (inbox.service.ts:207)", "duplicateImpls": ["FacebookMessengerService -> RAC_FbMessage", "InboxService.dualWriteChannelMindMessage -> RAC_MindMessage (flag-gated)"], "status": "mid-migration (MindMessage dead-on-read)" },
+    { "capability": "read-brain-conversation-history", "canonicalImpl": "MindCanonicalService.getConversationHistory -> RAC_KloelMessage (mind-canonical.service.ts:45)", "duplicateImpls": ["KloelConversationStore.getConversationHistory", "MindMessageService.getHistory/listByWorkspace", "StateBuilderService.resolveShortTermMemory", "kloel.service.ts:313"], "status": "6 call sites with divergent take/order" },
+    { "capability": "person-contact-identity-by-phone", "canonicalImpl": "CrmService.upsertContact (normalizePhone().digits, crm.service.ts:39)", "duplicateImpls": ["KloelLeadProcessorService", "LeadMindCoordinator/WhatsAppMindCoordinator syncCanonicalContact", "CheckoutSocialLeadService.upsertContact (digitsOrNull)", "crm.deals.helpers createDeal (raw)", "scrapers.service.importLeads (raw)"], "status": "P0 phone-normalization divergence -> identity fragmentation" },
+    { "capability": "cross-channel-identity-resolution", "canonicalImpl": "ContactIdentityResolverService.resolve (contacts/contact-identity-resolver.service.ts:29)", "duplicateImpls": ["ChannelIdentifierService.resolve (persistence primitive)", "OmnichannelContactResolutionService.resolveFromMessage (bypasses cross-channel match)"], "status": "bypass hazard" },
+    { "capability": "identity-merge-dedupe", "canonicalImpl": "ContactIdentityMergeService.mergeContacts (contacts/contact-identity-merge.service.ts:24)", "duplicateImpls": ["person-kloel-lead-to-contact.backfill.core.ts (implicit merge, no ContactIdentityLink)"], "status": "ORPHAN (zero production callers despite live duplication paths)" },
+    { "capability": "checkout-payment-capture", "canonicalImpl": "CheckoutPaymentService.capture -> CheckoutPayment+CheckoutOrder (checkout-payment.service.ts:52)", "duplicateImpls": ["SalesService -> KloelSale", "kloel/PaymentService + SmartPaymentService -> KloelSale", "wallet/WalletService.createTopupIntent -> PrepaidWalletTransaction"], "status": "parallel revenue silos (P0)" },
+    { "capability": "pix-charge", "canonicalImpl": "MercadoPagoPixChargeService (payments/mercadopago/mercadopago-pix-charge.service.ts:27)", "duplicateImpls": ["MercadoPagoPixService (checkout/mercado-pago-pix.service.ts:146) ORPHAN"], "status": "dead duplicate to delete" },
+    { "capability": "coupon-validate-at-order", "canonicalImpl": "validateCouponHelper / CheckoutCatalogService.validateCoupon (checkout-catalog.helpers.ts:79) -> CheckoutCoupon", "duplicateImpls": ["ProductCouponController.validate (omits minOrderValue/appliesTo/discount-amount)", "ProductCoupon path synced one-way"], "status": "divergent validate (P0)" },
+    { "capability": "append-only-money-ledger", "canonicalImpl": "(no single owner — needs shared abstraction)", "duplicateImpls": ["LedgerService (ConnectLedgerEntry)", "MarketplaceTreasuryService (MarketplaceTreasuryLedger)", "kloel/WalletLedgerService (KloelWalletLedger)", "PrepaidWalletTransaction self-ledger"], "status": "3-4 hand-rolled implementations" },
+    { "capability": "cognitive-loop", "canonicalImpl": "MindService.tick + MindEventProcessorService.process (mind.service.ts:46)", "duplicateImpls": ["MindPredictionService.runCycle (in-memory, non-durable)", "MindBackgroundProcessor.tick (substrate)", "MindEventIngestor.tickAllWorkspaces"], "status": "3+ loops, P0" },
+    { "capability": "tick-scheduling", "canonicalImpl": "MindProcessorService (queue mind-tick, 30s)", "duplicateImpls": ["MindBackgroundScheduler (queue mind-bg-tick, 5s)", "MindEventIngestor.tickAllWorkspaces"], "status": "two schedulers, double work" },
+    { "capability": "global-prior", "canonicalImpl": "MindGlobalPriorService -> RAC_MindGlobalPrior (mind/memory/mind-global-prior.service.ts:55)", "duplicateImpls": ["KloelGlobalPriorService -> RAC_KloelGlobalPrior (dead, zero injectors)"], "status": "legacy dead, safe to drop service" },
+    { "capability": "memory-kv-store", "canonicalImpl": "KloelMemory via MindMemoryItemService.items (current source of truth)", "duplicateImpls": ["MindMemory dual-write behind KLOEL_MINDMEMORY_DUALWRITE + read by kloel-memory-engine.service.ts"], "status": "mid-migration (split-brain risk)" },
+    { "capability": "tenant-resolution-request-to-workspaceId", "canonicalImpl": "resolveWorkspaceId (auth/workspace-access.ts:119, token-verified)", "duplicateImpls": ["kloel-security.guard.ts:45 (ignores JWT — IDOR)", "common.helpers.ts:20 (can yield '')", "route-class.guard.ts:25 (trusts header)"], "status": "P0 IDOR risk; partnerships.controller already converged" },
+    { "capability": "tenant-session-issuance-rotation", "canonicalImpl": "AuthTokenService (auth/auth.token.service.ts:29)", "duplicateImpls": ["AdminAuthService.refresh + AdminSessionFactory (admin stack, no shared core)"], "status": "parallel admin duplicate" },
+    { "capability": "totp-mfa", "canonicalImpl": "AccountMfaService (auth/account-mfa.service.ts:99)", "duplicateImpls": ["AdminMfaService (identical engine, admin/auth/admin-mfa.service.ts:106)"], "status": "copy to hoist into common/totp.ts" },
+    { "capability": "workspace-invitation", "canonicalImpl": "AMBIGUOUS — TeamService.inviteMember (Invitation) vs PartnershipsService.inviteCollaborator (CollaboratorInvite)", "duplicateImpls": ["two co-equal models+services"], "status": "P1 pick-one" },
+    { "capability": "api-key-lifecycle", "canonicalImpl": "ApiKeysService (api-keys/api-keys.service.ts:12)", "duplicateImpls": [], "status": "single owner but O(n) validate scan (P1 perf/DoS)" },
+    { "capability": "product-crud", "canonicalImpl": "ProductService (products/product.service.ts:39, emits events+audit+brainSpine)", "duplicateImpls": ["CheckoutProductService.createProduct (bypasses events+audit)", "Product*Controller family (direct Prisma)", "KloelProductSubResourceToolsService (chat tools)"], "status": "3+ write stacks" },
+    { "capability": "plan-crud", "canonicalImpl": "CheckoutProductService.createPlan -> CheckoutProductPlan.priceInCents (checkout-product.service.ts:162)", "duplicateImpls": ["PlanService.create -> ProductPlan.price Float", "ProductPlanController.createPlan", "KloelProductSubResourceToolsService"], "status": "P0 money split, 4 writers" },
+    { "capability": "member-enrollment", "canonicalImpl": "MemberEnrollmentsController.enrollStudent (event + MemberAreaStatsService)", "duplicateImpls": ["CheckoutPostPaymentEffectsService.autoEnrollInMemberAreas (no event, inline stats)", "MemberAreaPublicController enroll-by-email"], "status": "P1 divergent paths" },
+    { "capability": "ops-error-eventing", "canonicalImpl": "OpsAlertService -> OpsEvent (observability/ops-alert.service.ts, schema:1614)", "duplicateImpls": [], "status": "canonical (distinct from cognitive spine)" },
+    { "capability": "risc-cross-account-protection", "canonicalImpl": "ComplianceService.routeRiscEvent -> RiscEvent (compliance/compliance.service.ts:140, schema:1273)", "duplicateImpls": [], "status": "canonical (CORRECTION: NOT an unprocessed stub — routeRiscEvent IS the processor)" }
+  ],
+
+  "events": [
+    { "raw": ["cognition.belief_updated", "cognition.prediction_made", "cognition.surprise_observed", "cognition.decision_made", "cognition.analysis_started", "cognition.memory.consolidated"], "canonicalForm": "cognition.<domain>.<verb>", "note": "Mind cognitive events; some land in legacy RAC_AutopilotEvent (no idempotency), only 'commercial' ones in RAC_MindOutboxEvent — unify on the outbox." },
+    { "raw": ["cognition.autonomy.goal_proposed", "cognition.curiosity.gap_identified", "cognition.emotional.inferred", "cognition.causal.inferred", "cognition.causal.edge_reinforced", "cognition.causal.simulated", "cognition.self.modification_proposed", "cognition.perception.multimodal_observed", "cognition.cia_backlog_action"], "canonicalForm": "cognition.<emergent-faculty>.<verb>", "note": "Emergent-cognition events from autonomy/curiosity/emotional/causal/self-evolution/CIA services." },
+    { "raw": ["commerce.lead.contacted", "commerce.lead.replied", "commerce.lead.objection_raised", "commerce.lead.converted"], "canonicalForm": "commerce.lead.<verb>", "note": "CrmEventEmitterService.emitObjectionRaised (entity=lead, truthMode=inferred) + lead lifecycle on the Spine." },
+    { "raw": ["commerce.crm.stage_changed", "commerce.crm.owner_assigned", "commerce.crm.next_step_defined", "commerce.crm.deal_won", "commerce.crm.deal_lost"], "canonicalForm": "commerce.crm.<verb>", "note": "CrmEventEmitterService; entity=deal." },
+    { "raw": ["commerce.cart.created", "commerce.cart.abandoned", "commerce.payment.initiated", "commerce.payment.approved", "commerce.payment.declined", "commerce.payment.refunded", "commerce.payment.charged_back", "commerce.checkout.created", "commerce.checkout.updated", "commerce.checkout.completed", "commerce.checkout.deleted"], "canonicalForm": "commerce.<cart|payment|checkout>.<verb>", "note": "SpineEmitterService via LedgerService + CheckoutPostPaymentEffectsService; CheckoutEventEmitterService also emits checkoutCreated/Updated/Initiated/cartCreated/paymentInitiated/Approved/Declined (NestJS-emitter layer)." },
+    { "raw": ["commerce.post_sale.churn_risk_detected", "commerce.post_sale.repurchase_window_opened", "commerce.post_sale.satisfaction_signal_observed", "commerce.whatsapp.message_received"], "canonicalForm": "commerce.<phase>.<verb>", "note": "Post-sale + whatsapp commerce spine events." },
+    { "raw": ["mind.product.observed", "mind.plan.observed", "product.activated", "product.deactivated", "product.updated", "product.published", "product.deleted", "product.created", "plan.updated", "plan.deleted"], "canonicalForm": "mind.<entity>.observed (cognition) + <entity>.<verb> (commerce alias via emitCommerceAlias)", "note": "ProductService/PlanService dual-emit a mind.* cognitive observation AND a commerce alias; CheckoutProductService bypasses BOTH (products created via checkout invisible to cognition)." },
+    { "raw": ["member.enrolled", "member.droppedOut", "member.progressed"], "canonicalForm": "member.<verb>", "note": "MemberAreaEventEmitterService; auto-enroll on payment emits NONE of these (cognition blind to paid enrollments)." },
+    { "raw": ["MindPerceptEvent{kind:'message.received'}", "MindPerceptEvent{kind:'message.sent'}", "brain.decide", "brain.observe", "brain.capability.invoked", "brain.autonomy.propose", "mind.prediction.generate", "mind.prediction.surprise"], "canonicalForm": "brain.<verb> / mind.<verb> as RAC_AutopilotEvent actions; MindPerceptEvent via ChannelInboundHookService", "note": "Percept spine bridge (channel-inbound-hook.service.ts:46/76) + brain/mind events written as AutopilotEvent action rows; MindEventSpine.recordCommercial mirrors message.received/sent to the outbox with idempotencyKey." },
+    { "raw": ["ws 'message:new'", "ws 'conversation:update'", "ws 'message:status'", "webhook 'message.received'"], "canonicalForm": "ws <resource>:<verb> + outbound webhook 'message.received'", "note": "InboxService realtime emits + post-commit webhookDispatcher.dispatch (inbox.service.ts:249)." },
+    { "raw": ["QUEUE mind-scheduler", "QUEUE mind-tick", "QUEUE mind-bg-tick", "QUEUE flow-jobs", "QUEUE campaign-jobs", "QUEUE voice-jobs (transcribe-audio)", "QUEUE media-jobs", "QUEUE autopilot-jobs", "QUEUE memory-jobs", "QUEUE crm-jobs (checkout-social-lead-enrich)", "QUEUE webhook-jobs", "QUEUE mass-send"], "canonicalForm": "BullMQ <queue-name> (QUEUE_NAMES, backend/src/queue/queue-names.const.ts)", "note": "campaign-jobs/voice-jobs/media-jobs have LIVE workers in the separate worker/ deployable (campaignWorker/voiceWorker/mediaWorker). NOT dead. mass-send is the genuinely questionable surface." },
+    { "raw": ["NO events in identity-auth cluster"], "canonicalForm": "(none)", "note": "auth/api-keys/team/workspaces/admin-auth produce NO domain events/EventEmitter/BullMQ — side effects are fire-and-forget method calls (triggerWelcomeFlow, sendTeamInviteEmail) and synchronous AuditService.log DB writes." }
+  ],
+
+  "services": [
+    { "name": "WhatsappSessionService", "file": "backend/src/marketing/channels/whatsapp/whatsapp-session.service.ts:19", "responsibility": "Canonical channel-session surface over ChannelSetup + MetaConnection (getConnectionStatus, session lifecycle via WhatsAppProviderRegistry). The REAL channel-session service (there is NO ChannelSession model).", "mustNotDo": "Be referred to as 'ChannelSession' (fictional).", "duplicatesOf": null },
+    { "name": "OpsAlertService", "file": "backend/src/observability/ops-alert.service.ts", "responsibility": "Persists OpsEvent (schema:1614) rows for dashboard alerting on critical_error/degradation/recovery.", "mustNotDo": "Emit into the cognitive event spine (Mind owns AutopilotEvent/MindOutboxEvent).", "duplicatesOf": null },
+    { "name": "ComplianceService", "file": "backend/src/compliance/compliance.service.ts:140", "responsibility": "Ingests + ROUTES RISC (Google cross-account protection) events: writes RiscEvent (schema:1273), classifyRiscEvent + routeRiscEvent + marks processed. CORRECTION: this IS the RiscEvent processor (v1 wrongly called RiscEvent an unprocessed stub).", "mustNotDo": "Be treated as ingest-only.", "duplicatesOf": null },
+    { "name": "ChannelDispatchRegistry", "file": "backend/src/common/channel-dispatch/channel-dispatch.registry.ts:31", "responsibility": "Canonical pure ChannelKind->adapter outbound router (send/sendMessage).", "mustNotDo": "Run policy guards (that's the transport registry's decorator role).", "duplicatesOf": null },
+    { "name": "ChannelTransportRegistry", "file": "backend/src/kloel/channel-transport.registry.ts:52", "responsibility": "MindGuard+audit decorator over the dispatch core; flag-gated delegation to ChannelDispatchRegistry.", "mustNotDo": "Own legacy provider.send bodies long-term (collapse once delegation is default-ON).", "duplicatesOf": "ChannelDispatchRegistry (guard-decorator, should always delegate)" },
+    { "name": "MetaWhatsAppService", "file": "backend/src/meta/meta-whatsapp.service.ts:30", "responsibility": "Canonical Meta Cloud WhatsApp client + resolveConnection credential resolver.", "mustNotDo": null, "duplicatesOf": null },
+    { "name": "CheckoutPaymentService", "file": "backend/src/checkout/checkout-payment.service.ts:52", "responsibility": "Canonical checkout payment capture -> CheckoutPayment+CheckoutOrder across Stripe/MP-PIX/MP-boleto arms.", "mustNotDo": "Be bypassed by parallel KloelSale capture without materializing a CheckoutOrder.", "duplicatesOf": null },
+    { "name": "SalesService", "file": "backend/src/sales/sales.service.ts:64", "responsibility": "Chat-driven sale -> KloelSale.", "mustNotDo": "Be a parallel GMV silo invisible to platform GMV.", "duplicatesOf": "CheckoutPaymentService (parallel payment-capture path)" },
+    { "name": "MercadoPagoPixChargeService", "file": "backend/src/payments/mercadopago/mercadopago-pix-charge.service.ts:27", "responsibility": "Canonical MP PIX charge adapter (10+ consumers).", "mustNotDo": null, "duplicatesOf": null },
+    { "name": "MercadoPagoPixService", "file": "backend/src/checkout/mercado-pago-pix.service.ts:146", "responsibility": "ORPHAN PIX charge — unregistered, only its own specs import it.", "mustNotDo": "Be wired anywhere.", "duplicatesOf": "MercadoPagoPixChargeService (dead duplicate, delete)" },
+    { "name": "LedgerService", "file": "backend/src/payments/ledger/ledger.service.ts:59", "responsibility": "Append-only Connect ledger over ConnectAccountBalance+ConnectLedgerEntry; emits commerce.payment.*.", "mustNotDo": null, "duplicatesOf": null },
+    { "name": "WalletService (kloel)", "file": "backend/src/kloel/wallet.service.ts:49", "responsibility": "Seller earnings wallet over KloelWallet+KloelWalletLedger.", "mustNotDo": "Share an unqualified class name with the prepaid wallet.", "duplicatesOf": "name-collides-with wallet/WalletService" },
+    { "name": "WalletService (prepaid)", "file": "backend/src/wallet/wallet.service.ts:73", "responsibility": "Prepaid usage wallet over PrepaidWallet+PrepaidWalletTransaction.", "mustNotDo": "Share an unqualified class name with the seller wallet.", "duplicatesOf": "name-collides-with kloel/WalletService" },
+    { "name": "InboxService", "file": "backend/src/inbox/inbox.service.ts:21", "responsibility": "Canonical omnichannel message+conversation persistence (RAC_Message/RAC_Conversation) in one $transaction.", "mustNotDo": "Enable MindMessage dual-write without a reader path.", "duplicatesOf": null },
+    { "name": "MindCanonicalService", "file": "backend/src/kloel/mind/mind-canonical.service.ts:31", "responsibility": "Brain->Mind Phase-1 facade for history/memory/case/policy/graph.", "mustNotDo": "prisma.mindCase.create directly (use MindCaseMemoryService.recordCase).", "duplicatesOf": null },
+    { "name": "MindService", "file": "backend/src/kloel/mind.service.ts:31", "responsibility": "Canonical WIRED cognitive loop (tick -> MindEventProcessorService), DB-persisted + lease-coordinated.", "mustNotDo": null, "duplicatesOf": null },
+    { "name": "MindPredictionService", "file": "backend/src/kloel/mind/mind-prediction.service.ts:51", "responsibility": "Parallel in-memory predictive-coding engine; persists NOTHING to RAC_MindPrediction.", "mustNotDo": "Claim to 'close the cognitive loop' while losing state on restart.", "duplicatesOf": "MindService.tick + MindPredictorService (shadow loop)" },
+    { "name": "MindGlobalPriorService", "file": "backend/src/kloel/mind/memory/mind-global-prior.service.ts:55", "responsibility": "Canonical global priors over RAC_MindGlobalPrior.", "mustNotDo": null, "duplicatesOf": null },
+    { "name": "KloelGlobalPriorService", "file": "backend/src/kloel/kloel-global-prior.service.ts:32", "responsibility": "@deprecated legacy global prior; ZERO injectors.", "mustNotDo": "Be injected (dead).", "duplicatesOf": "MindGlobalPriorService (dead, drop)" },
+    { "name": "CrmService", "file": "backend/src/crm/crm.service.ts:18", "responsibility": "Canonical Contact CRUD/tag/pipeline; upsertContact is the only write using structured normalizePhone.", "mustNotDo": null, "duplicatesOf": null },
+    { "name": "LeadsService", "file": "backend/src/kloel/leads.service.ts:86", "responsibility": "Reads KloelLead for GET /kloel/leads/:workspaceId.", "mustNotDo": "Be the canonical person list (should read Contact post-merge).", "duplicatesOf": "CrmService.listContacts (different store for same UI concept)" },
+    { "name": "ContactIdentityMergeService", "file": "backend/src/contacts/contact-identity-merge.service.ts:19", "responsibility": "Merge two Contacts (writes ContactIdentityLink, re-points relations).", "mustNotDo": "Stay orphaned while duplication paths run.", "duplicatesOf": null },
+    { "name": "AuthTokenService", "file": "backend/src/auth/auth.token.service.ts:29", "responsibility": "Canonical tenant JWT+refresh issuance/rotation + access-token JTI blacklist (jti:revoked:<jti>).", "mustNotDo": null, "duplicatesOf": null },
+    { "name": "AuthPasswordService", "file": "backend/src/auth/auth.password.service.ts:36", "responsibility": "ORPHAN register/login — never injected, absent from auth.module.ts.", "mustNotDo": "Be wired (superseded by auth-service.register-login.ts).", "duplicatesOf": "auth-service.register-login standalone functions" },
+    { "name": "ProductService", "file": "backend/src/products/product.service.ts:39", "responsibility": "Canonical Product CRUD that alone emits mind.product.observed + AuditService + MindEventSpine.", "mustNotDo": null, "duplicatesOf": null },
+    { "name": "CheckoutProductService", "file": "backend/src/checkout/checkout-product.service.ts:23", "responsibility": "Canonical plan/offer write stack (CheckoutProductPlan.priceInCents + CheckoutConfig).", "mustNotDo": "Bypass mind.product.observed/audit/brainSpine on createProduct.", "duplicatesOf": "ProductService for the Product half" },
+    { "name": "PlanService", "file": "backend/src/plans/plan.service.ts:35", "responsibility": "Legacy ProductPlan (Float) CRUD; stuffs config into checkoutImages JSON; dual-writes priceInCents.", "mustNotDo": "Be treated as the live-pricing plan.", "duplicatesOf": "CheckoutProductService (canonical money plan)" }
+  ],
+
+  "inFlightMigrations": [
+    { "what": "KloelMemory -> MindMemory (KV/semantic memory canonicalization)", "from": "RAC_KloelMemory (schema:1711, source of truth, ~89+ callers)", "to": "RAC_MindMemory (schema:3872, canonical target)", "flag": "KLOEL_MINDMEMORY_DUALWRITE (default OFF; mind-memory-item.service.ts:96)", "state": "mid-migration: 2 writers (mind-memory-item upsert, kloel-memory-engine upsert) + 2 readers (kloel-memory-engine findMany) exist; NO backfill; schema 'canonical-but-dead/ZERO writers' comment is STALE; split-brain risk if a key is written to one and read from the other." },
+    { "what": "Legacy message tables -> MindMessage (unified source-discriminated message store)", "from": "RAC_KloelMessage + RAC_ChatMessage + RAC_KloelConversation + RAC_Message", "to": "RAC_MindMessage (schema:3849)", "flag": "KLOEL_MINDMESSAGE_DUALWRITE (default OFF)", "state": "canonical-but-DEAD-on-read: 4 flag-gated writers (inbox/chat/thread/lead-processor) but ZERO readers (StateBuilder/KloelConversationStore read .items = prisma.kloelMessage). Enabling dual-write today = 2x write cost + silent divergence with no benefit. Needs reader cut-over + backfill + KloelConversation/Message inclusion." },
+    { "what": "ProductPlan.price (Float) -> CheckoutProductPlan.priceInCents (Int cents)", "from": "RAC_ProductPlan.price Float (also additive nullable priceInCents)", "to": "RAC_CheckoutProductPlan.priceInCents (the only plan read by order pricing)", "flag": "(no env flag — PHASE A additive column migration)", "state": "half-done: ProductPlan.priceInCents populated only by PlanService.create; ProductPlanController + chat tools do NOT dual-write it. Merchant can edit a ProductPlan.price that has NO commercial effect because pricing reads CheckoutProductPlan only. Needs backfill + write-path consolidation onto CheckoutProductService." },
+    { "what": "Channel transport: legacy guarded providers -> canonical dispatch adapters", "from": "kloel/channel-transport.providers.ts provider.send bodies", "to": "marketing/channels/*-dispatch.adapter (ChannelDispatchPort) via ChannelDispatchRegistry", "flag": "KLOEL_TRANSPORT_CANONICAL_DELEGATE (default OFF; channel-transport-canonical-delegate.flag.ts; EXCLUDES email+tiktok)", "state": "mid-migration: default OFF so the guarded path mostly runs DUPLICATE legacy provider bodies; email excluded because EmailChannelTransport uses a different delivery mechanism (EmailCampaignService) — a behavior change risk that blocks delegation." },
+    { "what": "Instagram DM send -> canonical dispatch", "from": "InstagramMarketingService.sendDirectMessage raw InstagramService.sendMessage", "to": "ChannelMessageDispatchService via InstagramDispatchAdapter", "flag": "instagram-canonical-dispatch.flag (isInstagramCanonicalDispatchEnabled)", "state": "mid-migration: flag-gated delegation landed (commit a38949d94); raw fallback dead once flag permanently ON." },
+    { "what": "Lead funnel: KloelLead -> Contact (PERSON migration)", "from": "RAC_KloelLead funnel columns (status/stage/lastMessage/lastIntent/totalMessages/score)", "to": "RAC_Contact mirror columns (leadStatus/leadStage/... schema:426-430) + Contact.kloelLeadId bridge", "flag": "(none — no dedicated *.flag.ts file) — best-effort fail-open dual-write implemented directly in the 3 lead services (kloel-lead-processor.service.ts / lead-mind-coordinator.service.ts / whatsapp-mind-coordinator.service.ts) + person-kloel-lead-to-contact.backfill.* (backend/src/prisma/backfills/)", "state": "mid-migration: additive columns + backfill landed, but cut-over incomplete — LeadsService still reads KloelLead while CRM reads Contact; dual-write can silently drift. Open P1 MERGE DECISION (Lead is NOT yet an alias of Contact)." },
+    { "what": "KloelGlobalPrior -> MindGlobalPrior", "from": "RAC_KloelGlobalPrior (schema:3897, @deprecated) + KloelGlobalPriorService", "to": "RAC_MindGlobalPrior + MindGlobalPriorService", "flag": "(no flag — service already wired, legacy has zero injectors)", "state": "near-complete: replacing bridge methods wired into MindPolicyService.mixWithGlobalPrior; KloelGlobalPriorService is dead (zero injectors); safe to drop service+provider; table drop owner-gated." },
+    { "what": "ProductCoupon -> CheckoutCoupon (coupon canonicalization)", "from": "RAC_ProductCoupon (Float, PERCENT/FIXED)", "to": "RAC_CheckoutCoupon (Int cents, PERCENTAGE/FIXED)", "flag": "(no flag — one-way product-coupon-sync.util)", "state": "mid-migration: one-directional sync (ProductCoupon->CheckoutCoupon) fires only on product-coupon controller writes; coupons created via CheckoutCatalogService.createCoupon have no ProductCoupon row; divergent validate logic; silent Float->cents rounding." },
+    { "what": "BrainRuntimeService -> MindRuntime (Brain->Mind DI rename)", "from": "BrainRuntimeService alias + kloel/brain-runtime.service.ts shim", "to": "MindRuntime (mind/coordination/mind-runtime.service.ts:52)", "flag": "(no flag — ADR-0013 Wave M1 4-week alias window)", "state": "scheduled-for-removal compatibility layer; track until DI tokens migrate." }
+  ]
+}
