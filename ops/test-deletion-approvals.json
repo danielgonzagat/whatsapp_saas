@@ -376,5 +376,26 @@
     "reason": "PR484 Meta-only WhatsApp cleanup removed the legacy WAHA watchdog/session recovery implementation; the user explicitly approved all deletions in this PR, so this test covered approved-deleted legacy code.",
     "issue": "PR#484 user-approved cleanup",
     "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/checkout/mercado-pago-pix.service.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR#488 canonicalization P2-15: orphan MercadoPagoPixService (zero callers, canonical PIX path is MercadoPagoPixChargeService) was removed; this spec covered the deleted orphan. Owner-approved.",
+    "issue": "PR#488 canonicalization cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/checkout/mercado-pago-pix.service.webhook.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR#488 canonicalization P2-15: webhook spec of the orphan MercadoPagoPixService removed with the dead service. Owner-approved.",
+    "issue": "PR#488 canonicalization cleanup",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/kloel-global-prior.service.spec.ts",
+    "rule": "testDeletion",
+    "reason": "PR#488 canonicalization P2-7: orphan KloelGlobalPriorService (@deprecated, ZERO injectors; bridge methods live in MindGlobalPriorService over RAC_MindGlobalPrior) removed; this spec covered the deleted orphan. Owner-approved.",
+    "issue": "PR#488 canonicalization cleanup",
+    "expires": "2026-12-31"
   }
 ]
