@@ -35,6 +35,8 @@ import { detectPricingPsychologySignal } from '../offer/detectors/pricing-psycho
 import { detectProductVersionFit } from '../offer/detectors/product-version-fit.detector';
 import { detectPromiseStrength } from '../offer/detectors/promise-strength.detector';
 import type { OfferInsight } from '../offer/offer.types';
+import { PositioningUniquenessDetector } from '../defens/positioning-uniqueness.detector';
+import { SocialProofHarvester } from '../defens/social-proof.harvester';
 
 const PROCESSOR = 'mind-cognitive-consolidation';
 const PROCESSOR_VERSION = '1.0.0';
@@ -98,6 +100,8 @@ export async function runCognitiveConsolidation(
   let roleConfidence = 0;
   let offerInsightCount = 0;
   let topOffer: OfferInsight | undefined;
+  let positioningSignals = 0;
+  let socialProofSignals = 0;
 
   try {
     const errors = detectErrors({ events, workspaceId, nowMs, windowDays: ERROR_WINDOW_DAYS });
@@ -136,10 +140,24 @@ export async function runCognitiveConsolidation(
     logger?.warn(`cognitive consolidation: offer detectors failed: ${errMsg(err)}`);
   }
 
+  try {
+    // Defensibility detectors are stateless @Injectable classes with no
+    // constructor deps, so they instantiate without the Nest container.
+    const evidence = { events, workspaceId, nowMs };
+    positioningSignals = new PositioningUniquenessDetector().detect(evidence).length;
+    socialProofSignals = new SocialProofHarvester().harvest(evidence).length;
+  } catch (err: unknown) {
+    logger?.warn(`cognitive consolidation: defens detectors failed: ${errMsg(err)}`);
+  }
+
   // Mark the throttle even on a quiet workspace so deterministic detectors are
   // not re-run every tick when there is nothing to report.
   throttle.set(workspaceId, nowMs);
 
+  // Materiality is gated on the EVENT-DRIVEN detectors (errors / role / offer):
+  // the defensibility detectors emit a near-constant baseline regardless of the
+  // event window, so they ride along as context in the payload but never on
+  // their own force a periodic emit (which would defeat the throttle's intent).
   if (errorCount === 0 && primaryRole === null && offerInsightCount === 0) {
     return null;
   }
@@ -159,6 +177,8 @@ export async function runCognitiveConsolidation(
             confidence: topOffer.confidence,
           }
         : null,
+    positioningSignals,
+    socialProofSignals,
     eventsScanned: events.length,
   };
 

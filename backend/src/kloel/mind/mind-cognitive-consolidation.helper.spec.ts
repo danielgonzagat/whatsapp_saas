@@ -64,6 +64,9 @@ describe('runCognitiveConsolidation', () => {
     expect(event.truthMode).toBe('inferred');
     expect(event.provenance.processor).toBe('mind-cognitive-consolidation');
     expect(event.payload.errorCount).toBeGreaterThanOrEqual(1);
+    // Defensibility detectors run and ride along as payload context.
+    expect(event.payload).toHaveProperty('positioningSignals');
+    expect(event.payload).toHaveProperty('socialProofSignals');
     expect(out).not.toBeNull();
     expect(out?.['errorCount']).toBeGreaterThanOrEqual(1);
   });
