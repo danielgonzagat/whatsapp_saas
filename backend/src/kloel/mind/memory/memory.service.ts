@@ -58,6 +58,12 @@ export class MemoryService {
   /** Cap on memories pulled per retrieval before re-ranking. */
   private static readonly RETRIEVE_POOL = 200;
 
+  /** Max consolidated beliefs injected into a turn's context. */
+  private static readonly BELIEF_INJECT_LIMIT = 8;
+
+  /** Beliefs not updated within this window are treated as stale (≈ 90 days). */
+  private static readonly BELIEF_STALE_AFTER_MS = 90 * 24 * 3600 * 1000;
+
   constructor(
     private readonly config: ConfigService,
     @Inject(PrismaService) private readonly prisma: MemoryServicePrisma,
@@ -191,9 +197,9 @@ export class MemoryService {
             data: { forgotten: true },
           });
           updated += 1;
-          await this.linkEdge(workspaceId, newId, prior.id, 'replaces');
+          await this.linkEdge(workspaceId, userId, newId, prior.id, 'replaces');
           if (prior.content.trim() !== mem.content) {
-            await this.linkEdge(workspaceId, newId, prior.id, 'contradicts');
+            await this.linkEdge(workspaceId, userId, newId, prior.id, 'contradicts');
             contradictions += 1;
           }
         }
@@ -210,14 +216,27 @@ export class MemoryService {
 
   // ─── edges ─────────────────────────────────────────────────────────
 
-  /** Idempotent typed edge between two of THIS user's nodes (best-effort). */
+  /**
+   * Idempotent typed edge between two of THIS user's nodes (best-effort).
+   *
+   * INVARIANT: `RAC_MemoryEdge` has only a `workspaceId` column — there is no
+   * `userId` on the edge, so per-user isolation holds only TRANSITIVELY through
+   * the endpoints' own `(workspaceId, userId)` scoping. We therefore enforce it
+   * EXPLICITLY here (defense-in-depth): both `fromId` and `toId` must resolve to
+   * nodes owned by `(workspaceId, userId)` before any edge is written, so a
+   * caller can never silently wire an edge across users or workspaces.
+   */
   private async linkEdge(
     workspaceId: string,
+    userId: string,
     fromId: string,
     toId: string,
     relation: MemoryEdgeRelation,
   ): Promise<void> {
     if (asMemoryEdgeRelation(relation) === undefined) {
+      return;
+    }
+    if (!(await this.bothEndpointsOwnedByUser(workspaceId, userId, fromId, toId))) {
       return;
     }
     try {
@@ -233,6 +252,30 @@ export class MemoryService {
         context: 'MemoryService.linkEdge',
         error: formatMemoryError(error),
       });
+    }
+  }
+
+  /**
+   * Defense-in-depth ownership check for an edge: returns true only when BOTH
+   * node ids resolve to rows owned by `(workspaceId, userId)`. Best-effort — a
+   * lookup failure denies the edge rather than risking a cross-user link.
+   */
+  private async bothEndpointsOwnedByUser(
+    workspaceId: string,
+    userId: string,
+    fromId: string,
+    toId: string,
+  ): Promise<boolean> {
+    try {
+      const owns = async (id: string): Promise<boolean> =>
+        (await this.prisma.memoryNode.findFirst({ where: { id, workspaceId, userId } })) !== null;
+      return (await owns(fromId)) && (await owns(toId));
+    } catch (error: unknown) {
+      this.logger.warn('linkEdge ownership check failed', {
+        context: 'MemoryService.bothEndpointsOwnedByUser',
+        error: formatMemoryError(error),
+      });
+      return false;
     }
   }
 
@@ -308,14 +351,52 @@ export class MemoryService {
       return EMPTY_MEMORY_CONTEXT;
     }
     try {
-      const relevant = await this.retrieveRelevant(workspaceId, userId, query, k);
-      return buildMemoryContextFromRetrieved(relevant);
+      const [relevant, beliefs] = await Promise.all([
+        this.retrieveRelevant(workspaceId, userId, query, k),
+        this.fetchConsolidatedBeliefs(workspaceId),
+      ]);
+      return buildMemoryContextFromRetrieved(relevant, beliefs);
     } catch (error: unknown) {
       this.logger.warn('buildMemoryContextForModel failed', {
         context: 'MemoryService.buildMemoryContextForModel',
         error: formatMemoryError(error),
       });
       return EMPTY_MEMORY_CONTEXT;
+    }
+  }
+
+  /**
+   * Fetch a BOUNDED set of non-stale consolidated beliefs for live recall.
+   *
+   * These are written WRITE-ONLY by mind-bg consolidation into `RAC_MindBelief`
+   * (`subject` = skill, `predicate` = the human-readable learning, `mean`/
+   * `samples` = confidence proxy). `RAC_MindBelief` is WORKSPACE-SCOPED (no
+   * `userId` column), so this reads at workspace level — these are shared
+   * workspace learnings by design, not per-user memories. Stale rows (not
+   * updated within `BELIEF_STALE_AFTER_MS`) are excluded; the rest are ordered by
+   * reinforcement (`samples`) then recency and capped at `BELIEF_INJECT_LIMIT`.
+   * Best-effort: any failure yields an empty list (no fabricated section).
+   */
+  private async fetchConsolidatedBeliefs(workspaceId: string): Promise<string[]> {
+    if (!workspaceId) {
+      return [];
+    }
+    try {
+      const freshSince = new Date(Date.now() - MemoryService.BELIEF_STALE_AFTER_MS);
+      const rows = await this.prisma.mindBelief.findMany({
+        where: { workspaceId, updatedAt: { gte: freshSince } },
+        orderBy: [{ samples: 'desc' }, { updatedAt: 'desc' }],
+        take: MemoryService.BELIEF_INJECT_LIMIT,
+      });
+      return rows
+        .map((row) => row.predicate?.trim())
+        .filter((line): line is string => typeof line === 'string' && line.length > 0);
+    } catch (error: unknown) {
+      this.logger.warn('fetchConsolidatedBeliefs failed', {
+        context: 'MemoryService.fetchConsolidatedBeliefs',
+        error: formatMemoryError(error),
+      });
+      return [];
     }
   }
 

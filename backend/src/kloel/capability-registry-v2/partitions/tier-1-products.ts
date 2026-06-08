@@ -284,23 +284,6 @@ export const TIER_1_PRODUCTS_CAPABILITIES: CapabilityDefinition[] = [
     evidenceUrlBuilder: '/produtos/${productId}',
     surface: ['dashboard-chat'],
   },
-  {
-    id: 'products.link_campaign',
-    title: 'Vincular campanha ao produto',
-    description: 'Vincula uma campanha de marketing a um produto',
-    category: 'MUTATION_SAFE',
-    tier: 1,
-    requiresConfirmation: false,
-    requiredPermissions: ['product:write'],
-    inputSchema: [
-      { key: 'productId', type: 'string', label: 'ID do produto', required: true },
-      { key: 'campaignId', type: 'string', label: 'ID da campanha', required: true },
-    ],
-    domainService: 'CampaignsService.linkToProduct',
-    emits: ['campaign.product_linked'],
-    evidenceUrlBuilder: '/produtos/${productId}',
-    surface: ['dashboard-chat'],
-  },
   // ── Legacy IDs (deprecated) — see sibling tier-1-products.part2.ts ──
   ...TIER_1_PRODUCTS_CAPABILITIES_PART2,
 ];

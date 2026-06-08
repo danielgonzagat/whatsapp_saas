@@ -30,6 +30,26 @@ type MemoryNodeFindManyWhere = MemoryNodeWhere & {
   OR?: Array<{ expiresAt: null | { gt: Date } }>;
 };
 
+/**
+ * Consolidated belief row written by mind-bg consolidation (`RAC_MindBelief`).
+ * Workspace-scoped only — there is NO `userId` column — so live recall reads it
+ * scoped to `workspaceId` (workspace-level learnings, shared across the
+ * workspace's users by design). `predicate` carries the human-readable learning;
+ * `mean`/`samples` are the confidence proxy; `updatedAt` drives staleness.
+ */
+type MindBeliefRow = {
+  subject: string;
+  predicate: string;
+  mean: number;
+  samples: number;
+  updatedAt: Date;
+};
+
+type MindBeliefWhere = {
+  workspaceId?: string;
+  updatedAt?: { gte?: Date };
+};
+
 export type MemoryServicePrisma = {
   memoryNode: {
     findFirst(args: {
@@ -60,6 +80,13 @@ export type MemoryServicePrisma = {
       create: Record<string, unknown>;
       update: Record<string, unknown>;
     }): Promise<unknown>;
+  };
+  mindBelief: {
+    findMany(args: {
+      where: MindBeliefWhere;
+      orderBy?: Array<Record<string, string>> | Record<string, string>;
+      take?: number;
+    }): Promise<MindBeliefRow[]>;
   };
   $executeRaw(strings: TemplateStringsArray, ...values: unknown[]): Promise<number>;
   $queryRaw<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T>;
