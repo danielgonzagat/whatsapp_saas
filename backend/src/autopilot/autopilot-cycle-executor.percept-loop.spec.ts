@@ -81,7 +81,9 @@ describe('AutopilotCycleExecutorService — Mind percept/decision loop (flag-gat
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    delete process.env[FLAG];
+    // Default is now ON; the OFF-path tests below assert behavior under an
+    // explicit disable, so the baseline here is the explicit-false case.
+    process.env[FLAG] = 'false';
     mockConfig.get.mockReturnValue(undefined);
     upsert.mockResolvedValue(undefined);
     mockPrisma.product.findMany.mockResolvedValue([]);
@@ -111,7 +113,7 @@ describe('AutopilotCycleExecutorService — Mind percept/decision loop (flag-gat
   });
 
   describe('action seam (executeAction)', () => {
-    it('flag OFF: enqueues the send but emits NO percept and records NO decision (byte-identical behavior)', async () => {
+    it('flag OFF (explicit =false): enqueues the send but emits NO percept and records NO decision (byte-identical behavior)', async () => {
       await service.executeAction(
         'send_calendar',
         makeConv(),

@@ -147,9 +147,9 @@ describe('CopilotService — KLOEL_COPILOT_LOOP_ENABLED cognition loop', () => {
   // Drain the fire-and-forget microtasks the loop schedules.
   const flush = () => new Promise((r) => setImmediate(r));
 
-  describe('flag OFF (default)', () => {
+  describe('flag OFF (explicit =false)', () => {
     it('produces the answer WITHOUT touching cognition services', async () => {
-      delete process.env.KLOEL_COPILOT_LOOP_ENABLED;
+      process.env.KLOEL_COPILOT_LOOP_ENABLED = 'false';
       const service = build();
 
       const result = await service.suggest({ workspaceId, contactId: 'c-1' });
@@ -167,8 +167,8 @@ describe('CopilotService — KLOEL_COPILOT_LOOP_ENABLED cognition loop', () => {
       expect(mindGlobalPriorService.recordObservation).not.toHaveBeenCalled();
     });
 
-    it('treats a non-true flag value as OFF', async () => {
-      process.env.KLOEL_COPILOT_LOOP_ENABLED = '1';
+    it('treats an explicit =false as OFF', async () => {
+      process.env.KLOEL_COPILOT_LOOP_ENABLED = 'false';
       const service = build();
 
       await service.suggest({ workspaceId, contactId: 'c-1' });

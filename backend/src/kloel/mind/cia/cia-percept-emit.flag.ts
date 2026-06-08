@@ -11,16 +11,19 @@
  * percept and the decision ingestor read from (see
  * `flows-percept-emit.helper.ts`, `mind-event-ingestor.service.ts`).
  *
- * DEFAULT OFF. Best-effort: every emit is wrapped in try/catch + warn-log so it
- * can NEVER break the legacy CIA autonomy write/dispatch or change CIA behavior
- * / outputs. No read path consumes this flag. No backfill.
+ * DEFAULT ON (one-Mind unification): the cognition loop must perceive every
+ * surface, so CIA feeds the spine by default. Disable only via
+ * `KLOEL_CIA_PERCEPT_ENABLED=false`. Best-effort: every emit is wrapped in
+ * try/catch + warn-log so it can NEVER break the legacy CIA autonomy
+ * write/dispatch or change CIA behavior / outputs, and the outbox write is an
+ * idempotent upsert. No read path consumes this flag. No backfill.
  *
- * Mirrors the repo's established `process.env.X === 'true'` flag idiom
- * (e.g. KLOEL_FLOWS_PERCEPT_ENABLED / KLOEL_THINK_LOOP_ENABLED).
+ * Inverse of the repo's `=== 'true'` idiom precisely because the safe default
+ * here is ON (mirrors KLOEL_THINK_LOOP_ENABLED, flipped on for the same reason).
  *
  * @see backend/src/kloel/mind/cia/cia-percept-emit.helper.ts
  * @see backend/src/flows/flows-percept-emit.flag.ts (the pattern this mirrors)
  */
 export function isCiaPerceptEmitEnabled(): boolean {
-  return (process.env.KLOEL_CIA_PERCEPT_ENABLED ?? '').toLowerCase() === 'true';
+  return (process.env.KLOEL_CIA_PERCEPT_ENABLED ?? 'true').toLowerCase() !== 'false';
 }

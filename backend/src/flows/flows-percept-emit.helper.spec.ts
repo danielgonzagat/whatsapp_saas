@@ -29,7 +29,7 @@ describe('emitFlowNodeCompletedPercept', () => {
     jest.clearAllMocks();
   });
 
-  it('flag OFF (default): no outbox write fires and returns false', async () => {
+  it('flag default (unset): emits — cognition loop ON by default', async () => {
     const { upsert, prisma, logger } = makeDeps();
 
     const attempted = await emitFlowNodeCompletedPercept(prisma, logger, {
@@ -39,8 +39,8 @@ describe('emitFlowNodeCompletedPercept', () => {
       nodeCount: 3,
     });
 
-    expect(attempted).toBe(false);
-    expect(upsert).not.toHaveBeenCalled();
+    expect(attempted).toBe(true);
+    expect(upsert).toHaveBeenCalledTimes(1);
     expect(logger.warn).not.toHaveBeenCalled();
   });
 

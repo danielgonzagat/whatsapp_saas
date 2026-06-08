@@ -47,13 +47,13 @@ describe('cia percept emit helpers', () => {
   });
 
   describe('emitCiaDecisionMadePercept', () => {
-    it('flag OFF (default): no outbox write fires and returns false', async () => {
+    it('flag default (unset): emits — cognition loop ON by default', async () => {
       const { upsert, prisma, logger } = makeDeps();
 
       const attempted = await emitCiaDecisionMadePercept(prisma, logger, decisionParams);
 
-      expect(attempted).toBe(false);
-      expect(upsert).not.toHaveBeenCalled();
+      expect(attempted).toBe(true);
+      expect(upsert).toHaveBeenCalledTimes(1);
       expect(logger.warn).not.toHaveBeenCalled();
     });
 
@@ -123,13 +123,13 @@ describe('cia percept emit helpers', () => {
   });
 
   describe('emitCiaActionExecutedPercept', () => {
-    it('flag OFF (default): no outbox write fires and returns false', async () => {
+    it('flag default (unset): emits — cognition loop ON by default', async () => {
       const { upsert, prisma, logger } = makeDeps();
 
       const attempted = await emitCiaActionExecutedPercept(prisma, logger, actionParams);
 
-      expect(attempted).toBe(false);
-      expect(upsert).not.toHaveBeenCalled();
+      expect(attempted).toBe(true);
+      expect(upsert).toHaveBeenCalledTimes(1);
       expect(logger.warn).not.toHaveBeenCalled();
     });
 

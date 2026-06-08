@@ -17,16 +17,20 @@
  *      ledger (`DecisionOutcomeService.recordDecision`) so the Mind perceives +
  *      learns from autopilot's autonomous actions.
  *
- * DEFAULT OFF. Best-effort: every emit/record is wrapped in try/catch + warn-log
- * so it can NEVER break the legacy autopilot decide/execute path or change
- * autopilot behavior / outputs. No read path consumes this flag. No backfill.
+ * DEFAULT ON (one-Mind unification): the cognition loop must perceive every
+ * surface, so autopilot decisions/actions feed the spine by default. Disable
+ * only via `KLOEL_AUTOPILOT_PERCEPT_ENABLED=false`. The flag gates ONLY the
+ * additive percept/decision-ledger emit — NOT what autopilot sends. Best-effort:
+ * every emit/record is wrapped in try/catch + warn-log (and the outbox write is
+ * an idempotent upsert) so it can NEVER break the legacy autopilot
+ * decide/execute path or change autopilot behavior / outputs. No backfill.
  *
- * Mirrors the repo's established `process.env.X === 'true'` flag idiom
- * (e.g. KLOEL_CIA_PERCEPT_ENABLED / KLOEL_VOICE_PERCEPT_ENABLED).
+ * Inverse of the repo's `=== 'true'` idiom precisely because the safe default
+ * here is ON (mirrors KLOEL_THINK_LOOP_ENABLED).
  *
  * @see backend/src/autopilot/autopilot-percept-emit.helper.ts
  * @see backend/src/kloel/mind/cia/cia-percept-emit.flag.ts (the pattern this mirrors)
  */
 export function isAutopilotPerceptEmitEnabled(): boolean {
-  return (process.env.KLOEL_AUTOPILOT_PERCEPT_ENABLED ?? '').toLowerCase() === 'true';
+  return (process.env.KLOEL_AUTOPILOT_PERCEPT_ENABLED ?? 'true').toLowerCase() !== 'false';
 }
