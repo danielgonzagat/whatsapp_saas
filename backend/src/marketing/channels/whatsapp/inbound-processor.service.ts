@@ -26,6 +26,10 @@ import { WorkerRuntimeService } from './worker-runtime.service';
 import { asProviderSettings, type ProviderSettings } from './provider-settings.types';
 import { executeInlineAutopilot } from './inbound-processor.inline-autopilot';
 import { triggerWhatsappMindPercept } from './inbound-mind-percept';
+import {
+  shouldEmitInboundPercept,
+  type CatchupPerceptWindow,
+} from './inbound-catchup-percept-guard';
 import { WhatsAppEventEmitterService } from '../../../kloel/whatsapp-emitter/whatsapp-event-emitter.service';
 
 import {
@@ -62,6 +66,8 @@ export class InboundProcessorService {
   private readonly sharedReplyLockMs = parseSharedReplyLockMs(
     process.env.AUTOPILOT_SHARED_REPLY_LOCK_MS,
   );
+  /** Per-workspace catchup MIND-percept rate window (anti-replay-storm guard). */
+  private readonly catchupPerceptWindows = new Map<string, CatchupPerceptWindow>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -212,15 +218,26 @@ export class InboundProcessorService {
       conversationId: savedMessage.conversationId || null,
       messageContent: processedContent,
     });
-    triggerWhatsappMindPercept({
-      ...(this.mindHook !== undefined ? { mindHook: this.mindHook } : {}),
-      logger: this.logger,
-      msg,
-      contactId: contact.id,
-      messageId: savedMessage.id,
-      phone,
-      content: processedContent,
-    });
+    // Anti-replay-storm: a catchup backfill replays a chat's whole history
+    // through process() sequentially, so emit at most CATCHUP_PERCEPT_CAP
+    // percepts per workspace per window. FAIL-OPEN — any guard error emits.
+    let emitPercept = true;
+    try {
+      emitPercept = shouldEmitInboundPercept(msg, this.catchupPerceptWindows, Date.now());
+    } catch {
+      emitPercept = true;
+    }
+    if (emitPercept) {
+      triggerWhatsappMindPercept({
+        ...(this.mindHook !== undefined ? { mindHook: this.mindHook } : {}),
+        logger: this.logger,
+        msg,
+        contactId: contact.id,
+        messageId: savedMessage.id,
+        phone,
+        content: processedContent,
+      });
+    }
     await this.triggerAutopilot(
       msg.workspaceId,
       contact.id,
