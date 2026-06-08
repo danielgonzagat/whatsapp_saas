@@ -1,3 +1,4 @@
+import { ModulesContainer } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -101,6 +102,7 @@ export async function buildDispatcherTestBed(): Promise<DispatcherTestBed> {
       { provide: KloelProductSubResourceToolsService, useValue: productSubTools },
       { provide: SalesService, useValue: salesService },
       { provide: SmartPaymentService, useValue: createSmartPaymentMock() },
+      { provide: ModulesContainer, useValue: new ModulesContainer() },
       CapabilityRegistryV2Service,
     ],
   }).compile();

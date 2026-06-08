@@ -1,3 +1,4 @@
+import { ModulesContainer } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { MindGuardsService } from './mind/policy/mind-guards.service';
@@ -47,6 +48,7 @@ function buildModule(mindGuardsOverride: Partial<MindGuardsService> | null) {
 
   const providers = [
     KloelToolDispatcherService,
+    { provide: ModulesContainer, useValue: new ModulesContainer() },
     CapabilityRegistryV2Service,
     { provide: PrismaService, useValue: prisma },
     { provide: PlanLimitsService, useValue: planLimits },
