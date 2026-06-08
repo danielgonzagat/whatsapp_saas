@@ -70,6 +70,8 @@ describe('runCognitiveConsolidation', () => {
     // ComMem knowledge-capital snapshot rides along too.
     expect(event.payload).toHaveProperty('knowledgeProjections');
     expect(event.payload).toHaveProperty('knowledgeAuditable');
+    // Hypproof market-entry decision count rides along too.
+    expect(event.payload).toHaveProperty('marketEntryDecisions');
     expect(out).not.toBeNull();
     expect(out?.['errorCount']).toBeGreaterThanOrEqual(1);
   });

@@ -42,6 +42,9 @@ import { CommemLedgerService } from '../commem/ledger.service';
 import { MemoryProjector } from '../commem/memory.projector';
 import { ExporterService } from '../commem/exporter.service';
 import { AttributionGuard } from '../commem/attribution.guard';
+import { MarketEntryDecisionService } from '../hypproof/market-entry-decision.service';
+import { HypothesisFormulatorService } from '../hypproof/hypothesis-formulator';
+import { MicroExperimentDesignerService } from '../hypproof/micro-experiment.designer';
 
 const PROCESSOR = 'mind-cognitive-consolidation';
 const PROCESSOR_VERSION = '1.0.0';
@@ -110,6 +113,7 @@ export async function runCognitiveConsolidation(
   let knowledgeLedgerEntries = 0;
   let knowledgeProjections = 0;
   let knowledgeAuditable = false;
+  let marketEntryDecisions = 0;
 
   try {
     const errors = detectErrors({ events, workspaceId, nowMs, windowDays: ERROR_WINDOW_DAYS });
@@ -175,6 +179,19 @@ export async function runCognitiveConsolidation(
     logger?.warn(`cognitive consolidation: commem exporter failed: ${errMsg(err)}`);
   }
 
+  try {
+    // SpineEventRef is structurally a SpineSignal (carries every required
+    // field), so it feeds decideFromSignals directly. The formulator and
+    // designer are dep-free @Injectable classes, so the facade news cleanly.
+    const decider = new MarketEntryDecisionService(
+      new HypothesisFormulatorService(),
+      new MicroExperimentDesignerService(),
+    );
+    marketEntryDecisions = decider.decideFromSignals(events).length;
+  } catch (err: unknown) {
+    logger?.warn(`cognitive consolidation: hypproof decider failed: ${errMsg(err)}`);
+  }
+
   // Mark the throttle even on a quiet workspace so deterministic detectors are
   // not re-run every tick when there is nothing to report.
   throttle.set(workspaceId, nowMs);
@@ -207,6 +224,7 @@ export async function runCognitiveConsolidation(
     knowledgeLedgerEntries,
     knowledgeProjections,
     knowledgeAuditable,
+    marketEntryDecisions,
     eventsScanned: events.length,
   };
 
