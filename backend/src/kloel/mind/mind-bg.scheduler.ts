@@ -8,6 +8,10 @@ import { attachDlq } from '../../queue/queue';
 import { PrismaService } from '../../prisma/prisma.service';
 import { type SpineEventRef } from './mind.types';
 import { CiaCognitiveHealthService } from './cia/cia-cognitive-health.service';
+import {
+  isCognitiveConsolidationEnabled,
+  runCognitiveConsolidation,
+} from './mind-cognitive-consolidation.helper';
 
 const MIND_BG_QUEUE = 'mind-bg-tick';
 
@@ -42,6 +46,8 @@ export class MindBackgroundScheduler implements OnModuleInit, OnModuleDestroy {
    * restart keeps ticking already-active workspaces.
    */
   private readonly registered = new Set<string>();
+  /** Per-workspace last-emit clock for the cognitive consolidation pass. */
+  private readonly cognitiveConsolidationThrottle = new Map<string, number>();
 
   /**
    * Dev/bootstrap workspace ticked only when no real workspace is discoverable
@@ -259,6 +265,27 @@ export class MindBackgroundScheduler implements OnModuleInit, OnModuleDestroy {
       } catch (err: unknown) {
         this.logger.warn(
           `Cognitive health scan failed for ${workspaceId}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+
+    // Cognitive consolidation: fire the previously-dormant recovery / role /
+    // offer detectors over this tick's events and emit a throttled summary so
+    // their real logic finally executes against production events and surfaces
+    // its findings. Flag-gated (default ON), fully fire-and-forget.
+    if (isCognitiveConsolidationEnabled()) {
+      try {
+        await runCognitiveConsolidation({
+          events: mergedEvents,
+          workspaceId,
+          nowMs: Date.now(),
+          spine: this.spine,
+          throttle: this.cognitiveConsolidationThrottle,
+          logger: this.logger,
+        });
+      } catch (err: unknown) {
+        this.logger.warn(
+          `Cognitive consolidation failed for ${workspaceId}: ${err instanceof Error ? err.message : String(err)}`,
         );
       }
     }

@@ -10,10 +10,7 @@
  * @see backend/src/marketing/channel-message-dispatch.helpers.ts
  */
 import { ChannelKind } from '../common/channel-dispatch/channel-dispatch.port';
-import {
-  buildEmailTransactional,
-  normalizeChannel,
-} from './channel-message-dispatch.helpers';
+import { buildEmailTransactional, normalizeChannel } from './channel-message-dispatch.helpers';
 
 describe('normalizeChannel', () => {
   it('maps the existing canonical channel selectors', () => {
@@ -30,9 +27,7 @@ describe('normalizeChannel', () => {
     expect(normalizeChannel('EMAIL_TRANSACTIONAL')).toBe(ChannelKind.EMAIL_TRANSACTIONAL);
     // The enum value stringifies to its raw form — the path used by callers
     // dispatching with ChannelKind.EMAIL_TRANSACTIONAL directly.
-    expect(normalizeChannel(ChannelKind.EMAIL_TRANSACTIONAL)).toBe(
-      ChannelKind.EMAIL_TRANSACTIONAL,
-    );
+    expect(normalizeChannel(ChannelKind.EMAIL_TRANSACTIONAL)).toBe(ChannelKind.EMAIL_TRANSACTIONAL);
   });
 
   it('returns null for unknown selectors', () => {

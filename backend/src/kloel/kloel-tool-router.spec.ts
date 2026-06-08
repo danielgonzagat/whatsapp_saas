@@ -231,11 +231,61 @@ describe('KloelToolRouter', () => {
       (e): e is ToolResultSSEEvent =>
         typeof e === 'object' && e !== null && (e as ToolResultSSEEvent).type === 'tool_result',
     );
-    expect(toolCall?.tool).toBe('get_wallet_balance');
+    expect(toolCall?.tool).toBe('consulta operacional');
     expect(toolCall?.spanId).toBe('call_w');
     expect(toolResult?.spanId).toBe('call_w');
     expect(typeof toolResult?.durationMs).toBe('number');
     expect(toolResult?.durationMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it('keeps internal capability names out of public router status messages', async () => {
+    const logger = { warn: jest.fn() };
+    const unifiedAgentService = {
+      executeTool: jest.fn().mockResolvedValue({ error: 'Unknown tool' }),
+    };
+    const executeLocalTool = jest.fn().mockResolvedValue({ success: true, summary: 'ok' });
+    const router = new KloelToolRouter(logger, unifiedAgentService, jest.fn());
+    const safeWrite = jest.fn();
+
+    await router.executeAssistantToolCalls({
+      assistantMessage: {
+        tool_calls: [
+          {
+            id: 'call_cap',
+            function: {
+              name: 'mind.capability.refine_prompt',
+              arguments: '{"prompt":"arruma meu pedido"}',
+            },
+          },
+        ],
+      },
+      workspaceId: 'ws_1',
+      allowedTools: ['mind.capability.refine_prompt'],
+      executeLocalTool,
+      safeWrite,
+    });
+
+    const publicMessages = safeWrite.mock.calls
+      .map((call: unknown[]) => call[0])
+      .filter(
+        (event): event is { type: 'status'; message?: string } =>
+          typeof event === 'object' &&
+          event !== null &&
+          (event as { type?: string }).type === 'status',
+      )
+      .map((event) => event.message)
+      .filter((message): message is string => typeof message === 'string');
+
+    expect(publicMessages).toContain('Executando refinamento de pedido.');
+    expect(publicMessages).toContain('Concluiu refinamento de pedido.');
+    expect(publicMessages.join(' ')).not.toContain('mind.capability');
+    expect(publicMessages.join(' ')).not.toContain('refine_prompt');
+    expect(executeLocalTool).toHaveBeenCalledWith(
+      'ws_1',
+      'mind.capability.refine_prompt',
+      { prompt: 'arruma meu pedido' },
+      undefined,
+    );
   });
 
   it('emits artifactId in tool_result SSE event when truncated', async () => {

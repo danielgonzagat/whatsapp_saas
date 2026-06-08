@@ -306,6 +306,8 @@ export function BillingFormSection({
                 }}
               >
                 <input
+                  id={`${localFid}-trust-badge-${i}`}
+                  name={`trustBadge-${i}`}
                   aria-label="Texto do selo de confianca"
                   type="text"
                   value={b.label}

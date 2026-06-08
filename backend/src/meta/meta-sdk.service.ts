@@ -3,6 +3,7 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import Redis from 'ioredis';
 import { getTraceHeaders } from '../common/trace-headers';
+import { safeCompareStrings } from '../common/utils/crypto-compare.util';
 import { validateExternalUrl } from '../common/utils/url-validator';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { normalizeMetaGraphPath } from './meta-input.util';
@@ -234,7 +235,9 @@ export class MetaSdkService {
 
     const expected = `sha256=${createHmac('sha256', this.appSecret).update(payload).digest('hex')}`;
 
-    return expected === signature;
+    // Timing-safe comparison via the canonical helper — a plain `===` on an
+    // HMAC signature is a timing-oracle (leaks the expected digest byte-by-byte).
+    return safeCompareStrings(expected, signature);
   }
 
   // ─── Rate limiting ───────────────────────────────────────────────

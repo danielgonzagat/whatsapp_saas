@@ -106,9 +106,7 @@ export class SalesService {
   ): Promise<CreatePixOrderResult | CreatePixOrderV2Result> {
     if (typeof arg2 === 'string') {
       if (arg3 === undefined || arg4 === undefined) {
-        throw new ServiceUnavailableException(
-          'Dados insuficientes para criar a ordem PIX legada.',
-        );
+        throw new ServiceUnavailableException('Dados insuficientes para criar a ordem PIX legada.');
       }
       return createPixOrderLegacyV1(this.v1Deps(), workspaceId, arg2, arg3, arg4);
     }

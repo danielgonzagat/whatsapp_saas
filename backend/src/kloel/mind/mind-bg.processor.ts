@@ -58,12 +58,21 @@ export class MindBackgroundProcessor {
     let consolidation: BgTickResult['consolidation'];
 
     if (due.includes('short')) {
+      // Lazily merge persisted weights before learning from this batch so the
+      // Hebbian map survives a restart (best-effort, never blocks the tick).
+      if (input.workspaceId) {
+        void this.hebbian.rehydrate(input.workspaceId);
+      }
       this.hebbian.ingest(input.recentEvents);
       this.coordinator.markFired('short', nowMs);
     }
     if (due.includes('medium')) {
       this.hebbian.decay(new Date(nowMs), new Date(this.lastDecayMs));
       this.lastDecayMs = nowMs;
+      // Persist post-decay weights so they outlive this process.
+      if (input.workspaceId) {
+        void this.hebbian.persist(input.workspaceId);
+      }
       mood = this.valenceAggregator.aggregate(input.recentEvents, 24, nowMs); // Run prediction cycle on medium timescale (predictive coding B5)
       if (input.workspaceId) {
         void this.prediction.runCycle(input.workspaceId);

@@ -5,7 +5,7 @@ import { apiUrl } from '@/lib/http';
 import { readStreamSequential } from '@/lib/async-sequence';
 import { type KloelChatRequestMetadata } from '@/lib/kloel-chat';
 import { mutate } from 'swr';
-import { tokenStorage } from './api/core';
+import { ensureFreshAccessToken, refreshAccessToken, tokenStorage } from './api/core';
 import {
   STREAM_INTERRUPTED_MESSAGE,
   clampThreadSearchLimit,
@@ -212,7 +212,25 @@ export function streamAuthenticatedKloelMessage(
   options: KloelStreamOptions,
 ) {
   const controller = new AbortController();
-  const token = tokenStorage.getToken();
+  const requestBody = JSON.stringify({
+    message: input.message,
+    conversationId: input.conversationId || undefined,
+    mode: input.mode,
+    companyContext: input.companyContext,
+    metadata: input.metadata,
+  });
+  const fetchStream = () =>
+    fetch(apiUrl('/kloel/think'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+        Authorization: `Bearer ${tokenStorage.getToken() || ''}`,
+        'x-workspace-id': tokenStorage.getWorkspaceId() || '',
+      },
+      body: requestBody,
+      signal: controller.signal,
+    });
   // Time allowed between consecutive SSE chunks once the stream is flowing.
   const SSE_IDLE_TIMEOUT_MS = 45_000;
   // Extra grace period for the *first* byte after headers are accepted.
@@ -232,23 +250,15 @@ export function streamAuthenticatedKloelMessage(
 
   const run = async () => {
     try {
-      const response = await fetch(apiUrl('/kloel/think'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'text/event-stream',
-          Authorization: `Bearer ${tokenStorage.getToken() || token || ''}`,
-          'x-workspace-id': tokenStorage.getWorkspaceId() || '',
-        },
-        body: JSON.stringify({
-          message: input.message,
-          conversationId: input.conversationId || undefined,
-          mode: input.mode,
-          companyContext: input.companyContext,
-          metadata: input.metadata,
-        }),
-        signal: controller.signal,
-      });
+      await ensureFreshAccessToken();
+      let response = await fetchStream();
+
+      if (response.status === 401 && !controller.signal.aborted) {
+        const refreshed = await refreshAccessToken();
+        if (refreshed && !controller.signal.aborted) {
+          response = await fetchStream();
+        }
+      }
 
       if (!response.ok || !response.body) {
         const payload = await response.json().catch(() => ({}));

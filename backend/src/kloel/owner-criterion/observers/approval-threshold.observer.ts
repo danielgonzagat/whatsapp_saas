@@ -35,7 +35,7 @@ function extractAutopilotStats(events: readonly SpineEventRef[]): DomainStats {
 
   for (const e of events) {
     if (e.eventName === 'commerce.whatsapp.message_replied') {
-      const payload = e.payload as Record<string, unknown> | undefined;
+      const payload = e.payload;
       if (payload?.['sender'] === 'autopilot') {
         autoApprovals++;
       } else {
@@ -64,7 +64,7 @@ function extractCRMStats(events: readonly SpineEventRef[]): DomainStats {
 
   for (const e of events) {
     if (e.eventName === 'commerce.crm.stage_changed') {
-      const payload = e.payload as Record<string, unknown> | undefined;
+      const payload = e.payload;
       if (payload?.['triggeredBy'] === 'autopilot') {
         autoApprovals++;
       } else {
@@ -129,7 +129,7 @@ function extractCampaignStats(events: readonly SpineEventRef[]): DomainStats {
       ids.push(e.eventId);
     }
     if (e.eventName === 'commerce.campaign.creative_swapped') {
-      const payload = e.payload as Record<string, unknown> | undefined;
+      const payload = e.payload;
       if (payload?.['swappedBy'] === 'owner') {
         manualOverrides++;
       } else {

@@ -71,6 +71,24 @@ describe('ValenceTaggerService', () => {
       expect(result.valence).toBe('neutral');
     });
 
+    it('tags commerce.affiliate.commission_received as positive (new terminal outcome)', () => {
+      const event = makeEvent({
+        eventName: 'commerce.affiliate.commission_received',
+        valence: undefined,
+      });
+      const result = service.tag(event);
+      expect(result.valence).toBe('positive');
+    });
+
+    it('tags commerce.post_sale.no_regret_confirmed as positive (new terminal outcome)', () => {
+      const event = makeEvent({
+        eventName: 'commerce.post_sale.no_regret_confirmed',
+        valence: undefined,
+      });
+      const result = service.tag(event);
+      expect(result.valence).toBe('positive');
+    });
+
     it('leaves a terminal event without a default mapping unchanged', () => {
       // commerce.lead.replied is NOT in TERMINAL_EVENT_NAMES
       const event = makeEvent({

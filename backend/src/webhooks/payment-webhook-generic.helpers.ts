@@ -1,5 +1,6 @@
 import { createHmac } from 'node:crypto';
 import { Logger, NotFoundException } from '@nestjs/common';
+import { safeCompareStrings } from '../common/utils/crypto-compare.util';
 import type { Redis } from 'ioredis';
 import { validatePaymentTransition } from '../common/payment-state-machine';
 import { PrismaService } from '../prisma/prisma.service';
@@ -33,7 +34,11 @@ export function verifySharedSecretOrSignature(
   const raw = req?.rawBody || JSON.stringify(req?.body || {});
   const rawBuffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw, 'utf8');
   const digest = createHmac('sha256', expectedSecret).update(rawBuffer).digest('hex');
-  return signatureHeader === digest || signatureHeader === `sha256=${digest}`;
+  // Timing-safe: a plain `===` on a webhook HMAC is a timing-oracle.
+  return (
+    safeCompareStrings(signatureHeader, digest) ||
+    safeCompareStrings(signatureHeader, `sha256=${digest}`)
+  );
 }
 
 export async function ensureIdempotent(
@@ -80,10 +85,7 @@ export async function updateSaleAndPaymentHelper(
         where: {
           workspaceId,
           OR: body.orderId
-            ? [
-                { externalPaymentId: String(body.orderId) },
-                { id: String(body.orderId) },
-              ]
+            ? [{ externalPaymentId: String(body.orderId) }, { id: String(body.orderId) }]
             : [],
         },
         data: { status: 'paid', paidAt: new Date() },

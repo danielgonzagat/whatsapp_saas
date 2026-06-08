@@ -41,7 +41,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
 // dir = scripts/mcp/atomic-edit/gates ; dist lives at scripts/mcp/atomic-edit/dist
-const distDir = path.join(dir, '..', 'src', 'dist');
+const distDir = path.join(dir, '..', 'dist');
 const engine = await import(pathToFileURL(path.join(distDir, 'engine-gate-registry.js')).href);
 const {
   runRegistryGatesOverEditSync,

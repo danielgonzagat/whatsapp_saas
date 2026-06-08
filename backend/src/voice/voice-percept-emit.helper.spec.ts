@@ -45,13 +45,13 @@ describe('voice percept emit helpers', () => {
   });
 
   describe('emitVoiceCloneCreatedPercept', () => {
-    it('flag OFF (default): no outbox write fires and returns false', async () => {
+    it('flag default (unset): emits — cognition loop ON by default', async () => {
       const { upsert, prisma, logger } = makeDeps();
 
       const attempted = await emitVoiceCloneCreatedPercept(prisma, logger, cloneParams);
 
-      expect(attempted).toBe(false);
-      expect(upsert).not.toHaveBeenCalled();
+      expect(attempted).toBe(true);
+      expect(upsert).toHaveBeenCalledTimes(1);
       expect(logger.warn).not.toHaveBeenCalled();
     });
 
@@ -119,13 +119,13 @@ describe('voice percept emit helpers', () => {
   });
 
   describe('emitVoiceActionExecutedPercept', () => {
-    it('flag OFF (default): no outbox write fires and returns false', async () => {
+    it('flag default (unset): emits — cognition loop ON by default', async () => {
       const { upsert, prisma, logger } = makeDeps();
 
       const attempted = await emitVoiceActionExecutedPercept(prisma, logger, actionParams);
 
-      expect(attempted).toBe(false);
-      expect(upsert).not.toHaveBeenCalled();
+      expect(attempted).toBe(true);
+      expect(upsert).toHaveBeenCalledTimes(1);
       expect(logger.warn).not.toHaveBeenCalled();
     });
 

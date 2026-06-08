@@ -1,3 +1,4 @@
+import * as childProcess from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -94,6 +95,68 @@ function findDeleteReverseImportDependents(
     }
   }
   return dependents;
+}
+
+const GENERATED_TREE_SEGMENTS = new Set([
+  '.cache',
+  '.next',
+  '.turbo',
+  'build',
+  'chrome-home',
+  'chrome-tmp',
+  'coverage',
+  'dist',
+  'node-compile-cache',
+  'playwright-report',
+  'temp',
+  'test-results',
+  'tmp',
+]);
+
+function looksLikeGeneratedTree(relPath: string): boolean {
+  return relPath
+    .split(/[\\/]+/)
+    .filter(Boolean)
+    .some((part) => GENERATED_TREE_SEGMENTS.has(part) || part.endsWith('-cache') || part.endsWith('-tmp'));
+}
+
+function gitTrackedFilesUnder(repoRoot: string, relPath: string): string[] {
+  try {
+    const output = childProcess.execFileSync('git', ['ls-files', '--', relPath], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    return output
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+  } catch {
+    throw new Error('could not verify tracked files with git ls-files; refusing generated tree delete');
+  }
+}
+
+function collectGeneratedTreeStats(absDir: string, maxFiles: number): { files: number; bytes: number } {
+  let files = 0;
+  let bytes = 0;
+  const visit = (dir: string) => {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const abs = path.join(dir, entry.name);
+      const stat = fs.lstatSync(abs);
+      if (entry.isDirectory()) {
+        visit(abs);
+      } else {
+        files += 1;
+        bytes += stat.size;
+        if (files > maxFiles) {
+          throw new Error(`refused: generated tree has more than maxFiles=${maxFiles} files`);
+        }
+      }
+    }
+  };
+  visit(absDir);
+  return { files, bytes };
 }
 
 const pos = z.object({
@@ -233,6 +296,130 @@ server.registerTool(
           `✅ Deleted ${relPath} ` +
           `(${beforeByteLength} bytes freed). ` +
           `Full proof persisted to trace file (not echoed back, to save context).`,
+        operation: trace.operation,
+        operationId: trace.operationId,
+        founder: trace.audit,
+        negativeActionProof,
+        ...persisted,
+      });
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : String(e));
+    }
+  },
+);
+
+server.registerTool(
+  'atomic_delete_generated_tree',
+  {
+    title: 'Delete a generated directory tree — governed, traced',
+    description:
+      'Delete a generated/untracked directory tree such as cache, tmp, build, coverage, node-compile-cache, ' +
+      'chrome-tmp, or chrome-home. Refuses repo root, non-generated path names, and any tree containing git-tracked files. ' +
+      'Requires proofOfIncorrectness for non-preview deletion and records a metadata trace.',
+    inputSchema: {
+      dir: z.string().describe('repo-relative generated directory path to delete'),
+      maxFiles: z.number().int().min(1).max(10000).optional().describe('safety cap; default 2000 files'),
+      preview: z.boolean().optional().describe('dry-run: validate + return metadata, do not delete'),
+      proofOfIncorrectness: z
+        .string()
+        .optional()
+        .describe('required for non-preview deletion: proof that the generated tree is removable negative residue'),
+    },
+  },
+  async (a) => {
+    try {
+      const { absPath, relPath, repoRoot } = resolveSafeTarget(a.dir);
+      if (!fs.existsSync(absPath)) {
+        return ok({
+          ok: true,
+          changed: false,
+          note: `directory already absent: ${relPath}`,
+          dir: relPath,
+          exists: false,
+        });
+      }
+      const stat = fs.statSync(absPath);
+      if (!stat.isDirectory()) {
+        return fail(`refused: ${relPath} is not a directory.`);
+      }
+      if (!relPath || relPath === '.' || path.resolve(absPath) === path.resolve(repoRoot)) {
+        return fail('refused: generated tree delete cannot target the repository root.');
+      }
+      if (!looksLikeGeneratedTree(relPath)) {
+        return fail(`refused: ${relPath} does not look like a generated/cache/tmp tree.`);
+      }
+      const tracked = gitTrackedFilesUnder(repoRoot, relPath);
+      if (tracked.length > 0) {
+        return fail(
+          `refused: ${relPath} contains ${tracked.length} git-tracked file(s), e.g. ${tracked.slice(0, 5).join(', ')}`,
+        );
+      }
+      const maxFiles = a.maxFiles ?? 2000;
+      const stats = collectGeneratedTreeStats(absPath, maxFiles);
+      const preview = a.preview ?? false;
+      const before = `generated tree: ${relPath}\nfiles: ${stats.files}\nbytes: ${stats.bytes}\n`;
+      const negativeActionProof = preview
+        ? undefined
+        : requireNegativeActionProof({
+            action: 'atomic_delete_generated_tree',
+            target: relPath,
+            targetUnit: 'directory',
+            removedByteCount: stats.bytes,
+            proofOfIncorrectness: a.proofOfIncorrectness,
+          });
+      const inlinePreview = characterDiff(before, '', relPath);
+      const zones = computeZones(before, '');
+      const trace = buildTrace({
+        file: relPath,
+        repoRoot,
+        operator: 'atomic_delete_generated_tree',
+        before,
+        newText: '',
+        inlinePreview,
+        validation: { language: 'generic', before: 0, after: 0 },
+        metrics: {
+          changedChars: before.length,
+          lineRewriteSurfaceChars: before.length,
+          expansionFactorAvoided: 1,
+          bytesNet: -stats.bytes,
+        },
+        preservedZones: zones.preservedZones,
+        modifiedZones: zones.modifiedZones,
+        movementZones: zones.movementZones,
+        targetUnit: 'directory',
+        intention: `delete generated tree ${relPath} (${stats.files} files, ${stats.bytes} bytes)`,
+        semanticImpact: preview ? 'preview_generated_tree_deletion' : 'generated_tree_deleted',
+        negativeActionProof,
+        preview,
+        changed: !preview,
+      });
+      if (preview) {
+        return ok(
+          shapePayload(
+            levelFor(true),
+            {
+              ok: true,
+              preview: true,
+              changed: false,
+              dir: relPath,
+              filesWouldDelete: stats.files,
+              bytesWouldFree: stats.bytes,
+              note: 'dry-run: directory tree NOT deleted',
+            },
+            { inlinePreview, legacyDiff: previewDiff(before, '', relPath), trace },
+          ),
+        );
+      }
+      fs.rmSync(absPath, { recursive: true, force: true });
+      const persisted = writeTrace(trace);
+      log(`deleted generated tree ${relPath} (${stats.files} files, ${stats.bytes} bytes)`);
+      return ok({
+        ok: true,
+        changed: true,
+        deleted: true,
+        dir: relPath,
+        filesDeleted: stats.files,
+        bytesDeleted: stats.bytes,
         operation: trace.operation,
         operationId: trace.operationId,
         founder: trace.audit,

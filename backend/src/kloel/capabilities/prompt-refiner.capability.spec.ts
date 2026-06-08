@@ -25,7 +25,9 @@ describe('PromptRefinerCapability', () => {
   });
 
   it('classifies a testing prompt', () => {
-    const result = cap.refine({ prompt: 'Adiciona testes unitários para o carrinho no arquivo cart.ts' });
+    const result = cap.refine({
+      prompt: 'Adiciona testes unitários para o carrinho no arquivo cart.ts',
+    });
     expect(result.intent).toBe('testing');
   });
 
@@ -36,7 +38,8 @@ describe('PromptRefinerCapability', () => {
 
   it('escalates scope to epic on whole-system signals', () => {
     const result = cap.refine({
-      prompt: 'Reescrever tudo: refator da arquitetura completa do sistema inteiro em várias sessões',
+      prompt:
+        'Reescrever tudo: refator da arquitetura completa do sistema inteiro em várias sessões',
     });
     expect(result.scope).toBe('epic');
   });

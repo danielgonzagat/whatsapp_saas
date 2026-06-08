@@ -306,13 +306,31 @@ export class KloelWorkspaceContextService {
   }
   private appendMemories(
     parts: string[],
-    memories: Array<{ type?: string | null; content?: string | null }>,
+    memories: Array<{
+      key?: string | null;
+      category?: string | null;
+      type?: string | null;
+      content?: string | null;
+    }>,
   ): void {
     for (const memory of memories) {
-      if (this.hasLegacyProductMarker(memory.content)) {
+      const category = memory.category ?? '';
+      const type = memory.type ?? '';
+      const key = memory.key ?? '';
+      if (
+        category === 'agent_event' ||
+        category === 'user_memory' ||
+        type === 'turn' ||
+        type === 'user_fact' ||
+        type === 'user_profile' ||
+        key.startsWith('agent_turn:') ||
+        key.startsWith('slot:') ||
+        key.startsWith('user_profile:') ||
+        this.hasLegacyProductMarker(memory.content)
+      ) {
         continue;
       }
-      switch (memory.type) {
+      switch (type) {
         case 'product':
           if (!memory.content || isLegacyProductName(memory.content)) {
             continue;
@@ -320,9 +338,6 @@ export class KloelWorkspaceContextService {
           break;
         case 'persona':
           parts.push(`PERSONA/TOM DE VOZ: ${memory.content}`);
-          break;
-        case 'user_profile':
-          parts.push(`PERFIL DO USUÁRIO: ${memory.content}`);
           break;
         case 'objection':
           parts.push(`OBJEÇÃO COMUM: ${memory.content}`);
@@ -333,10 +348,6 @@ export class KloelWorkspaceContextService {
         case 'contact_context':
           parts.push(`CONTEXTO DE CONTATO: ${memory.content}`);
           break;
-        default:
-          if (memory.content) {
-            parts.push(memory.content);
-          }
       }
     }
   }

@@ -36,4 +36,21 @@ describe('memory graph API truthfulness', () => {
 
     await expect(getMemoryGraph()).rejects.toThrow('Memory graph did not return a confirmed payload');
   });
+
+  it('updates a memory graph node through the authenticated mutating endpoint', async () => {
+    const payload = {
+      nodes: [{ id: 'mem-1', label: 'Formato', group: 'preference', state: 'blocked' }],
+      edges: [],
+    };
+    apiFetchMock.mockResolvedValueOnce({ data: payload, status: 200 });
+    const { updateMemoryGraphNode } = await import('./memory-graph');
+
+    await expect(updateMemoryGraphNode('mem-1', { blockedForAgent: true })).resolves.toEqual(
+      payload,
+    );
+    expect(apiFetchMock).toHaveBeenCalledWith('/kloel/memory/graph/nodes/mem-1', {
+      method: 'POST',
+      body: { blockedForAgent: true },
+    });
+  });
 });

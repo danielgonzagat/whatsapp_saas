@@ -336,8 +336,6 @@ describe('KloelDashboardView trace', () => {
                 createdAt: '2026-06-03T12:00:02.000Z',
               },
             ],
-            processingSummary:
-              'Analisei a pergunta e consultei contexto real antes da resposta final.',
           },
         },
       ],
@@ -347,11 +345,13 @@ describe('KloelDashboardView trace', () => {
     });
 
     expect(
-      screen.getByText('Analisei a pergunta e consultei contexto real antes da resposta final.'),
+      screen.getByText(
+        'Consultei contexto operacional relevante antes de responder e incorporei as observações encontradas e descartei detalhes privados.',
+      ),
     ).toBeTruthy();
     expect(screen.queryByText(/We are in a chat conversation/)).toBeNull();
     expect(screen.queryByText(/must decide what answer to show/)).toBeNull();
-    expect(screen.getAllByText('list_products').length).toBeGreaterThan(0);
+    expect(screen.queryByText('list_products')).toBeNull();
     expect(screen.queryByText('Pré-resposta executável')).toBeNull();
     expect(screen.queryByText('Reasoning summary')).toBeNull();
     expect(screen.queryByText('Agent trace')).toBeNull();
@@ -366,7 +366,7 @@ describe('KloelDashboardView trace', () => {
     ).toBeNull();
   });
 
-  it('uses the live public thinking summary instead of the fixed mushroom placeholder', () => {
+  it('does not render a persisted processing summary without real trace events', () => {
     renderDashboardView({
       hasMessages: true,
       messages: [
@@ -386,10 +386,10 @@ describe('KloelDashboardView trace', () => {
     });
 
     expect(
-      screen.getByText(
+      screen.queryByText(
         'O usuário quer avaliar a inteligência percebida do chat; estou separando resposta pública de raciocínio privado.',
       ),
-    ).toBeTruthy();
+    ).toBeNull();
     expect(screen.queryByText('Kloel está pensando')).toBeNull();
   });
 });
@@ -440,6 +440,62 @@ describe('KloelDashboardSendMessage trace', () => {
         'Pré-resposta executável: entendendo pedido, contexto e próxima ação.',
       );
       expect(streamAuthenticatedKloelMessage).toHaveBeenCalledOnce();
+    } finally {
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
+  });
+
+  it('drops the thinking state as soon as the first real answer chunk drains', async () => {
+    vi.useFakeTimers();
+    vi.mocked(streamAuthenticatedKloelMessage).mockClear();
+
+    const streamHandlers: { onChunk?: (chunk: string) => void } = {};
+    vi.mocked(streamAuthenticatedKloelMessage).mockImplementationOnce((_payload, handlers) => {
+      streamHandlers.onChunk = handlers.onChunk;
+      return { abort: vi.fn() };
+    });
+
+    let messages: DashboardMessage[] = [];
+    const setMessages = (updater: SetStateAction<DashboardMessage[]>) => {
+      messages = typeof updater === 'function' ? updater(messages) : updater;
+    };
+    const setIsThinking = vi.fn();
+
+    try {
+      await createSendMessageHandler({
+        setMessages,
+        setIsThinking,
+        setStreamingMessageId: vi.fn(),
+        setActiveConversationId: vi.fn(),
+        setConversationTitle: vi.fn(),
+        isReplyInFlight: false,
+        activeConversationId: null,
+        conversationTitle: 'Nova conversa',
+        conversationTitleMap: new Map(),
+        clearAllAttachments: vi.fn(),
+        clearComposerContext: vi.fn(),
+        loadConversation: vi.fn().mockResolvedValue(undefined),
+        refreshConversations: vi.fn().mockResolvedValue(undefined),
+        upsertConversation: vi.fn(),
+        setActiveConversation: vi.fn(),
+        requestedConversationId: null,
+        router: { replace: vi.fn() } as never,
+        attachments: [],
+        linkedProduct: null,
+        activeCapability: null,
+        activeStreamRef: { current: null },
+        loadedConversationIdRef: { current: null },
+        streamingMessageId: null,
+      })('Oi.');
+
+      streamHandlers.onChunk?.('Resposta real.');
+      await act(async () => {
+        vi.advanceTimersByTime(0);
+      });
+
+      expect(setIsThinking).toHaveBeenLastCalledWith(false);
+      expect(messages.find((message) => message.role === 'assistant')?.text).not.toBe('');
     } finally {
       vi.clearAllTimers();
       vi.useRealTimers();

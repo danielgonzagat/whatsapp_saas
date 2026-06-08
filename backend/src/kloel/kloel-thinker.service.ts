@@ -314,7 +314,13 @@ export class KloelThinkerService {
               surface: mode,
               permissions: allowedTools,
             })
-          : { text: '', internalNames: [] };
+          : {
+              text: '',
+              internalNames: [],
+              memoryChecked: false,
+              memorySignalCount: 0,
+              capabilitySignalCount: 0,
+            };
       const dynamicContext = appendWireContext(baseDynamicContext, wireContextBlock);
 
       if (mode === 'chat' && composerCapability) {

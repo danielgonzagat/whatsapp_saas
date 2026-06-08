@@ -55,6 +55,9 @@ async function main() {
   const positiveRel = path.join('scripts', 'mcp', 'atomic-edit', 'server.ts');
   const badRel = path.join(baseRel, 'scan-bad.ts');
   const mdRel = path.join(baseRel, 'scan-notes.opaque');
+  const directMdRel = path.join(baseRel, 'scan-notes.md');
+  const directGoRel = path.join(baseRel, 'scan-main.go');
+  const badDirectGoRel = path.join(baseRel, 'scan-broken.go');
   const positiveSource = fs.readFileSync(path.join(repoRoot, positiveRel), 'utf8');
   const missingSpecifier = './missing-scan-target';
   const badSource = [
@@ -67,11 +70,17 @@ async function main() {
     'export const SCAN_BAD = MissingScanTarget;\n',
   ].join('');
   const mdSource = 'Atomic scan proof\nThis file is outside every declared direct-file battery.\n';
+  const directMdSource = '# Atomic scan proof\nThis Markdown file is covered by the direct-file text battery.\n';
+  const directGoSource = 'package main\nfunc main() { println("atomic") }\n';
+  const badDirectGoSource = 'package main\nfunc main() { println("atomic" \n';
 
   try {
     fs.mkdirSync(baseAbs, { recursive: true });
     fs.writeFileSync(path.join(repoRoot, badRel), badSource);
     fs.writeFileSync(path.join(repoRoot, mdRel), mdSource);
+    fs.writeFileSync(path.join(repoRoot, directMdRel), directMdSource);
+    fs.writeFileSync(path.join(repoRoot, directGoRel), directGoSource);
+    fs.writeFileSync(path.join(repoRoot, badDirectGoRel), badDirectGoSource);
 
     await client.connect(transport);
     const listed = await client.listTools();
@@ -150,22 +159,93 @@ async function main() {
       unjudgedBody,
     );
 
+    const directMd = await client.callTool({
+      name: 'atomic_scan_bytes',
+      arguments: { scope: directMdRel, maxFiles: 5, maxEvidencePerFile: 5 },
+    });
+    const directMdBody = lastJson(directMd);
+    const directMdFile = directMdBody.files?.find((entry) => entry.file === directMdRel);
+    record(
+      'scan exposes explicit direct-file battery evidence for Markdown bytes',
+      directMdBody.ok === true &&
+        directMdBody.unjudgedFilesRead === 0 &&
+        directMdBody.totals?.positiveFiles === 1 &&
+        directMdBody.totals?.directFileBatteryFiles === 1 &&
+        directMdBody.totals?.proofDebtFiles === 0 &&
+        directMdFile?.sha256 === sha(directMdSource) &&
+        directMdFile?.verdict === 'POSITIVE_WITHIN_DECLARED_BATTERY' &&
+        directMdFile?.sourceLensApplied === false &&
+        directMdFile?.directFileBatteryApplied === true &&
+        directMdFile?.proofDebt?.length === 0 &&
+        /Markdown text is UTF-8 readable/.test(directMdFile?.zones?.[0]?.reason ?? ''),
+      directMdBody,
+    );
+
+    const directGo = await client.callTool({
+      name: 'atomic_scan_bytes',
+      arguments: { scope: directGoRel, maxFiles: 5, maxEvidencePerFile: 5 },
+    });
+    const directGoBody = lastJson(directGo);
+    const directGoFile = directGoBody.files?.find((entry) => entry.file === directGoRel);
+    record(
+      'scan applies direct structural battery to Go bytes',
+      directGoBody.ok === true &&
+        directGoBody.unjudgedFilesRead === 0 &&
+        directGoBody.totals?.positiveFiles === 1 &&
+        directGoBody.totals?.directFileBatteryFiles === 1 &&
+        directGoBody.totals?.proofDebtFiles === 0 &&
+        directGoFile?.sha256 === sha(directGoSource) &&
+        directGoFile?.verdict === 'POSITIVE_WITHIN_DECLARED_BATTERY' &&
+        directGoFile?.sourceLensApplied === false &&
+        directGoFile?.directFileBatteryApplied === true &&
+        directGoFile?.proofDebt?.length === 0 &&
+        /structural balance battery/.test(directGoFile?.zones?.[0]?.reason ?? ''),
+      directGoBody,
+    );
+
+    const badDirectGo = await client.callTool({
+      name: 'atomic_scan_bytes',
+      arguments: { scope: badDirectGoRel, maxFiles: 5, maxEvidencePerFile: 5 },
+    });
+    const badDirectGoBody = lastJson(badDirectGo);
+    const badDirectGoFile = badDirectGoBody.files?.find((entry) => entry.file === badDirectGoRel);
+    record(
+      'scan marks structurally broken Go direct bytes as negative evidence',
+      badDirectGoBody.ok === true &&
+        badDirectGoBody.unjudgedFilesRead === 0 &&
+        badDirectGoBody.totals?.negativeFiles === 1 &&
+        badDirectGoBody.totals?.directFileBatteryFiles === 1 &&
+        badDirectGoBody.totals?.proofDebtFiles === 0 &&
+        badDirectGoFile?.sha256 === sha(badDirectGoSource) &&
+        badDirectGoFile?.verdict === 'HAS_NEGATIVE_BYTES' &&
+        badDirectGoFile?.sourceLensApplied === false &&
+        badDirectGoFile?.directFileBatteryApplied === true &&
+        badDirectGoFile?.negativeByteEvidenceCount > 0 &&
+        badDirectGoFile?.proofDebt?.length === 0 &&
+        /unclosed/.test(badDirectGoFile?.zones?.[0]?.reason ?? ''),
+      badDirectGoBody,
+    );
+
     const mixedDirectory = await client.callTool({
       name: 'atomic_scan_bytes',
       arguments: { scope: baseRel, maxFiles: 10, maxEvidencePerFile: 5 },
     });
     const mixedDirectoryBody = lastJson(mixedDirectory);
     const mixedBadFile = mixedDirectoryBody.files?.find((entry) => entry.file === badRel);
+    const mixedBadDirectGoFile = mixedDirectoryBody.files?.find((entry) => entry.file === badDirectGoRel);
     const mixedUnjudgedFile = mixedDirectoryBody.files?.find((entry) => entry.file === mdRel);
     record(
       'scan keeps non-source files inside directory scopes as explicit proof debt',
       mixedDirectoryBody.ok === true &&
         mixedDirectoryBody.sourceFilesRead === 1 &&
         mixedDirectoryBody.unjudgedFilesRead === 1 &&
-        mixedDirectoryBody.totals?.negativeFiles === 1 &&
+        mixedDirectoryBody.totals?.negativeFiles === 2 &&
         mixedDirectoryBody.totals?.unjudgedFiles === 1 &&
+        mixedDirectoryBody.totals?.directFileBatteryFiles === 3 &&
         mixedDirectoryBody.totals?.proofDebtFiles >= 1 &&
         mixedBadFile?.verdict === 'HAS_NEGATIVE_BYTES' &&
+        mixedBadDirectGoFile?.verdict === 'HAS_NEGATIVE_BYTES' &&
+        mixedBadDirectGoFile?.directFileBatteryApplied === true &&
         mixedUnjudgedFile?.sha256 === sha(mdSource) &&
         mixedUnjudgedFile?.verdict === 'UNJUDGED' &&
         mixedUnjudgedFile?.sourceLensApplied === false,
@@ -176,7 +256,10 @@ async function main() {
       'atomic_scan_bytes is read-only on disk fixtures',
       fs.readFileSync(path.join(repoRoot, positiveRel), 'utf8') === positiveSource &&
         fs.readFileSync(path.join(repoRoot, badRel), 'utf8') === badSource &&
-        fs.readFileSync(path.join(repoRoot, mdRel), 'utf8') === mdSource,
+        fs.readFileSync(path.join(repoRoot, mdRel), 'utf8') === mdSource &&
+        fs.readFileSync(path.join(repoRoot, directMdRel), 'utf8') === directMdSource &&
+        fs.readFileSync(path.join(repoRoot, directGoRel), 'utf8') === directGoSource &&
+        fs.readFileSync(path.join(repoRoot, badDirectGoRel), 'utf8') === badDirectGoSource,
       {},
     );
   } finally {

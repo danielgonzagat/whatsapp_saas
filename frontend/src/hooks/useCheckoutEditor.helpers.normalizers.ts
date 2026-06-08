@@ -174,6 +174,7 @@ export function normalizeConfigForEditor(data: Record<string, unknown>): Checkou
           ? plan.referenceCode
           : undefined,
     timerType: normalizeTimerTypeForEditor(rest.timerType),
+    customCSS: typeof rest.customCSS === 'string' ? rest.customCSS : DEFAULT_CONFIG.customCSS,
     testimonials,
     trustBadges,
     orderBumps,

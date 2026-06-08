@@ -28,6 +28,15 @@ export interface EdgeRow {
   weight: number;
 }
 
+export interface BeliefRow {
+  subject: string;
+  predicate: string;
+  mean: number;
+  samples: number;
+  updatedAt: Date;
+  workspaceId: string;
+}
+
 /**
  * Map-backed fake of the `memoryNode` / `memoryEdge` Prisma delegates plus the
  * raw escape hatches. It faithfully reproduces only the operations the service
@@ -38,6 +47,7 @@ export interface EdgeRow {
 export class FakePrisma {
   nodes: NodeRow[] = [];
   edges: EdgeRow[] = [];
+  beliefs: BeliefRow[] = [];
   private idSeq = 0;
   private timeSeq = 0;
 
@@ -96,7 +106,10 @@ export class FakePrisma {
 
   memoryNode = {
     findFirst: jest.fn(
-      (args: { where: Parameters<FakePrisma['matchesNode']>[1] }): Promise<NodeRow | null> => {
+      (args: {
+        where: Parameters<FakePrisma['matchesNode']>[1];
+        orderBy?: Record<string, string> | Array<Record<string, string>>;
+      }): Promise<NodeRow | null> => {
         const found = this.nodes
           .filter((n) => this.matchesNode(n, args.where))
           .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
@@ -108,6 +121,8 @@ export class FakePrisma {
         where: Parameters<FakePrisma['matchesNode']>[1] & {
           OR?: Array<{ expiresAt: null | { gt: Date } }>;
         };
+        orderBy?: Record<string, string> | Array<Record<string, string>>;
+        take?: number;
       }): Promise<NodeRow[]> => {
         return Promise.resolve(
           this.nodes
@@ -166,6 +181,22 @@ export class FakePrisma {
   };
 
   memoryEdge = {
+    findMany: jest.fn(
+      (args: {
+        where: { workspaceId?: string; fromId?: { in?: string[] }; toId?: { in?: string[] } };
+        orderBy?: Record<string, string> | Array<Record<string, string>>;
+        take?: number;
+      }): Promise<Array<{ fromId: string; toId: string; relation: string }>> => {
+        const fromIn = args.where.fromId?.in;
+        const toIn = args.where.toId?.in;
+        const filtered = this.edges
+          .filter((e) => args.where.workspaceId === undefined || e.workspaceId === args.where.workspaceId)
+          .filter((e) => fromIn === undefined || fromIn.includes(e.fromId))
+          .filter((e) => toIn === undefined || toIn.includes(e.toId))
+          .map((e) => ({ fromId: e.fromId, toId: e.toId, relation: e.relation }));
+        return Promise.resolve(filtered.slice(0, args.take ?? filtered.length));
+      },
+    ),
     upsert: jest.fn(
       (args: {
         where: {
@@ -204,6 +235,24 @@ export class FakePrisma {
     ),
   };
 
+  mindBelief = {
+    findMany: jest.fn(
+      (args: {
+        where: { workspaceId?: string; updatedAt?: { gte?: Date } };
+        take?: number;
+      }): Promise<BeliefRow[]> => {
+        const filtered = this.beliefs
+          .filter((b) => args.where.workspaceId === undefined || b.workspaceId === args.where.workspaceId)
+          .filter((b) => {
+            const gte = args.where.updatedAt?.gte;
+            return gte === undefined || b.updatedAt.getTime() >= gte.getTime();
+          })
+          .sort((a, b) => b.samples - a.samples || b.updatedAt.getTime() - a.updatedAt.getTime());
+        return Promise.resolve(filtered.slice(0, args.take ?? filtered.length));
+      },
+    ),
+  };
+
   $executeRaw = jest.fn().mockResolvedValue(0);
   $queryRaw = jest.fn().mockResolvedValue([]);
 }
@@ -212,4 +261,26 @@ export function buildService(prisma: FakePrisma): MemoryService {
   const config = new ConfigService();
   // No VectorService injected → degrades to recency/importance ranking (honest).
   return new MemoryService(config, prisma, undefined);
+}
+
+/**
+ * Minimal `VectorService` stand-in. `getEmbedding` returns a programmable vector
+ * (default: a valid 1536-dim vector) and a `tokensUsed` count, matching the real
+ * `EmbeddingResult` shape — enough to exercise the embedding-write path.
+ */
+export class FakeVectors {
+  getEmbedding = jest.fn(
+    (_text: string): Promise<{ embedding: number[]; tokensUsed: number }> =>
+      Promise.resolve({ embedding: this.nextEmbedding, tokensUsed: 7 }),
+  );
+
+  constructor(public nextEmbedding: number[] = new Array(1536).fill(0.001)) {}
+}
+
+export function buildServiceWithVectors(
+  prisma: FakePrisma,
+  vectors: FakeVectors,
+): MemoryService {
+  const config = new ConfigService();
+  return new MemoryService(config, prisma, vectors);
 }

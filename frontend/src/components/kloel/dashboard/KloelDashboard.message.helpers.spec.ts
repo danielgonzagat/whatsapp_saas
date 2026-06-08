@@ -16,7 +16,7 @@ import {
   readSendMessageInfo,
   resolveVisibleAssistantText,
   shouldShowAssistantActions,
-  shouldShowThinkingPlaceholder,
+  shouldShowLiveProcessingTimeline,
   toRecordArray,
 } from './KloelDashboard.message.helpers';
 
@@ -262,17 +262,17 @@ describe('KloelDashboard.message.helpers', () => {
     });
   });
 
-  describe('shouldShowAssistantActions / shouldShowThinkingPlaceholder', () => {
+  describe('shouldShowAssistantActions / shouldShowLiveProcessingTimeline', () => {
     it('actions render only when not thinking and there is visible text', () => {
       expect(shouldShowAssistantActions(false, true)).toBe(true);
       expect(shouldShowAssistantActions(true, true)).toBe(false);
       expect(shouldShowAssistantActions(false, false)).toBe(false);
     });
 
-    it('thinking placeholder renders only while thinking with no visible text', () => {
-      expect(shouldShowThinkingPlaceholder(true, false)).toBe(true);
-      expect(shouldShowThinkingPlaceholder(true, true)).toBe(false);
-      expect(shouldShowThinkingPlaceholder(false, false)).toBe(false);
+    it('live processing timeline renders only while processing with no visible text', () => {
+      expect(shouldShowLiveProcessingTimeline(true, false)).toBe(true);
+      expect(shouldShowLiveProcessingTimeline(true, true)).toBe(false);
+      expect(shouldShowLiveProcessingTimeline(false, false)).toBe(false);
     });
   });
 });

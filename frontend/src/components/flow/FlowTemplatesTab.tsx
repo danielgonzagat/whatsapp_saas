@@ -36,7 +36,7 @@ export function FlowTemplatesTab({
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
             {kloelT(
-              'Templates prontos para usar — clique em Usar para copiar nodes/edges ao editor',
+              'Templates prontos para usar — clique em Usar para copiar nós e conexões ao editor',
             )}
           </p>
         </div>
@@ -77,10 +77,10 @@ export function FlowTemplatesTab({
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <LayoutTemplate className="w-12 h-12 text-muted" aria-hidden="true" />
           <p className="text-muted-foreground text-sm">
-            {kloelT('Nenhum template publico disponivel ainda')}
+            {kloelT('Nenhum template público disponível ainda')}
           </p>
           <p className="text-muted text-xs">
-            {kloelT('Templates criados por admins aparecerao aqui')}
+            {kloelT('Templates criados por admins aparecerão aqui')}
           </p>
         </div>
       ) : (
@@ -126,9 +126,9 @@ export function FlowTemplatesTab({
                   )}
 
                   <div className="flex items-center gap-3 text-xs text-muted">
-                    <span>{nodeCount} nodes</span>
+                    <span>{nodeCount} nós</span>
                     <span>{kloelT('·')}</span>
-                    <span>{edgeCount} conexoes</span>
+                    <span>{edgeCount} conexões</span>
                     {tmpl.downloads !== undefined && (
                       <>
                         <span>{kloelT('·')}</span>

@@ -58,6 +58,10 @@ const TERMINAL_EVENT_NAMES: ReadonlySet<string> = new Set([
   'commerce.post_sale.churn_risk_detected',
   'commerce.post_sale.repurchase_window_opened',
   'commerce.post_sale.win_back_window_opened',
+  'commerce.post_sale.no_regret_confirmed',
+  // commerce.affiliate.* — commission_received is a realized-revenue win the
+  // cognition loop must learn from (the affiliate channel's terminal outcome).
+  'commerce.affiliate.commission_received',
   // commerce.whatsapp.* — operational signals carry a baseline valence so
   // ValenceTaggerService can satisfy V5 coverage on inbox traffic.
   'commerce.whatsapp.message_received',
@@ -92,6 +96,8 @@ const DEFAULT_TERMINAL_VALENCE: ReadonlyMap<string, AbiValence> = new Map([
   ['commerce.post_sale.churn_risk_detected', 'negative'],
   ['commerce.post_sale.repurchase_window_opened', 'positive'],
   ['commerce.post_sale.win_back_window_opened', 'neutral'],
+  ['commerce.post_sale.no_regret_confirmed', 'positive'],
+  ['commerce.affiliate.commission_received', 'positive'],
   ['commerce.whatsapp.message_received', 'neutral'],
   ['commerce.whatsapp.handoff_to_human', 'negative'],
 ]);

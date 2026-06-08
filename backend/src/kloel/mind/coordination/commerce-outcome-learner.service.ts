@@ -1,5 +1,8 @@
 import { Injectable, Optional } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import { Prisma } from '@prisma/client';
 import { StructuredLogger } from '../../../logging/structured-logger';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { SpineEmitterService } from '../../spine/spine-emitter.service';
 import type { SpineEventEnvelope } from '../../spine/spine-event.types';
 import { DecisionOutcomeService } from '../../decision-outcome.service';
@@ -31,9 +34,16 @@ import { defaultValenceFor, isTerminalEvent } from '../mind.types';
  * Guarantees:
  *   - Append-only: observeBinary increments Beta α/β; closeOutcome only fills
  *     rows whose outcomeAt is still null. Neither mutates historical rows.
- *   - Idempotent: a bounded recently-seen eventId set prevents a spine replay
- *     from double-incrementing the Beta belief (observeBinary itself is NOT
- *     idempotent). closeOutcome is already idempotent on outcomeAt.
+ *   - Idempotent (DURABLE): a two-tier dedup prevents a spine replay or a
+ *     cross-instance re-delivery from double-incrementing the Beta belief
+ *     (observeBinary itself is NOT idempotent). L1 = a bounded in-memory
+ *     recently-seen set (fast path). L2 = a durable per-event marker row in
+ *     RAC_MindOutboxEvent keyed by the (workspaceId, idempotencyKey) unique
+ *     constraint — survives restart and is shared across instances, so the
+ *     at-most-once guarantee holds even if the in-memory set evicts or the
+ *     process restarts. The marker doubles as a `cognition.commerce_outcome.learned`
+ *     audit row. When PrismaService is absent (unit tests) it degrades to L1
+ *     only. closeOutcome is already idempotent on outcomeAt.
  *   - Fire-and-forget: a learning failure NEVER breaks the commerce path —
  *     the subscribe handler is sync, all async work is detached and guarded.
  *   - Canonical entrypoints only: reuses MindBeliefService.observeBinary and
@@ -54,6 +64,7 @@ export class CommerceOutcomeLearnerService {
     private readonly belief: MindBeliefService,
     @Optional() private readonly decisionOutcome?: DecisionOutcomeService,
     @Optional() private readonly spine?: SpineEmitterService,
+    @Optional() private readonly prisma?: PrismaService,
   ) {
     this.spine?.subscribe((event) => {
       // Sync handler: never await, never throw into the emitter loop.
@@ -75,7 +86,7 @@ export class CommerceOutcomeLearnerService {
     if (event.workspaceId === undefined || event.workspaceId === '') {
       return;
     }
-    if (this.isDuplicate(event.eventId)) {
+    if (await this.isDuplicate(event.workspaceId, event.eventId, event.eventName)) {
       return;
     }
 
@@ -108,20 +119,68 @@ export class CommerceOutcomeLearnerService {
     return undefined;
   }
 
-  private isDuplicate(eventId: string): boolean {
+  /**
+   * Two-tier at-most-once guard. Returns true when this eventId has already been
+   * learned from (skip), false when it is the first sighting (proceed).
+   *
+   * L1 (in-memory, fast): a bounded recently-seen set. L2 (durable): an
+   * idempotent marker row in RAC_MindOutboxEvent — its (workspaceId,
+   * idempotencyKey) unique constraint makes the FIRST writer win across restarts
+   * and instances; a unique-violation on create means another path already
+   * learned from this event. Marker-first (before observe) gives at-most-once,
+   * which is the correct bias for belief learning (never double-count). When
+   * Prisma is absent (unit tests) this degrades to L1-only — the prior behavior.
+   */
+  private async isDuplicate(
+    workspaceId: string,
+    eventId: string,
+    eventName: string,
+  ): Promise<boolean> {
     if (this.seenEventIds.has(eventId)) {
       return true;
     }
+
+    if (this.prisma) {
+      try {
+        await this.prisma.mindOutboxEvent.create({
+          data: {
+            id: randomUUID(),
+            workspaceId,
+            eventType: 'cognition.commerce_outcome.learned',
+            subject: `commerce:learn:${eventId}`,
+            payload: { eventName } satisfies Prisma.InputJsonObject,
+            idempotencyKey: `commerce-learn:${eventId}`,
+            occurredAt: new Date(),
+          },
+        });
+      } catch (error: unknown) {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          // Durable marker already exists → another path/instance/run learned
+          // from this event. Skip (at-most-once).
+          this.remember(eventId);
+          return true;
+        }
+        // Any other DB error: do NOT block learning (best-effort) — fall through
+        // to L1-only for this event.
+      }
+    }
+
+    this.remember(eventId);
+    return false;
+  }
+
+  /** Record an eventId in the bounded in-memory L1 window (insertion-ordered). */
+  private remember(eventId: string): void {
     this.seenEventIds.add(eventId);
     if (this.seenEventIds.size > CommerceOutcomeLearnerService.DEDUP_CAPACITY) {
-      // Evict the oldest insertion to keep the window bounded (Set preserves
-      // insertion order).
       const oldest = this.seenEventIds.values().next().value;
       if (oldest !== undefined) {
         this.seenEventIds.delete(oldest);
       }
     }
-    return false;
   }
 
   private async observe(

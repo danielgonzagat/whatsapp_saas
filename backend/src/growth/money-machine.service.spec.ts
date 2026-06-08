@@ -109,8 +109,8 @@ describe('MoneyMachineService', () => {
       }
     });
 
-    it('flag OFF (default): activate generates a campaign but emits NO percept (byte-identical to today)', async () => {
-      delete process.env[FLAG];
+    it('flag OFF (explicit =false): activate generates a campaign but emits NO percept (byte-identical to today)', async () => {
+      process.env[FLAG] = 'false';
       prisma.contact.count.mockResolvedValue(42);
 
       const result = await service.activate('ws-1');
@@ -123,8 +123,8 @@ describe('MoneyMachineService', () => {
       expect(prisma.mindOutboxEvent.upsert).not.toHaveBeenCalled();
     });
 
-    it('flag OFF + IDLE scan: emits NO percept', async () => {
-      delete process.env[FLAG];
+    it('flag OFF (explicit =false) + IDLE scan: emits NO percept', async () => {
+      process.env[FLAG] = 'false';
       prisma.contact.count.mockResolvedValue(0);
 
       const result = await service.activate('ws-1');

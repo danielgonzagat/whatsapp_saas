@@ -36,7 +36,7 @@ const CODEX_CONTROL_RE = /^(?:update_goal|update_plan|get_goal|get_plan)$/;
 // stay denied so code mutation keeps flowing through atomic-edit. Matches both the
 // `mcp__server__tool` and `mcp__server.tool` name shapes Codex emits.
 const NON_MUTATING_MCP_RE =
-  /^mcp__(?:chrome[-_]devtools|context7|sequential[-_]thinking|codegraph|codebody[-_]navigator|lsp[-_]mesh|graphify[-_]plus|pulse|kloel[-_]os|cognitive[-_]hub|test[-_]runner|task[-_]graph|sentry[-_]bridge)(?:\.|__)/;
+  /^mcp__(?:chrome[-_]devtools(?:[-_]live)?|context7|sequential[-_]thinking|codegraph|codebody[-_]navigator|lsp[-_]mesh|graphify[-_]plus|pulse|kloel[-_]os|cognitive[-_]hub|test[-_]runner|task[-_]graph|sentry[-_]bridge)(?:\.|__)/;
 
 function readStdinRaw() {
   try {

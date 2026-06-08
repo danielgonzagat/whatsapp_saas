@@ -155,6 +155,7 @@ const API_ORIGIN = API_URL ? new URL(API_URL).origin : '';
 // Mutex to prevent concurrent refresh attempts (race condition on polling pages)
 let refreshPromise: Promise<boolean> | null = null;
 const API_READ_DEDUPLICATION_TTL_MS = 1000;
+let apiReadDeduplicationFetchReference: typeof globalThis.fetch | null = null;
 const inFlightApiReads = new Map<string, Promise<ApiResponse<unknown>>>();
 const recentApiReadResponses = new Map<
   string,
@@ -404,6 +405,15 @@ function clearApiReadDeduplicationMemory(): void {
   inFlightApiReads.clear();
   recentApiReadResponses.clear();
 }
+function clearApiReadDeduplicationMemoryIfFetchChanged(): void {
+  if (apiReadDeduplicationFetchReference === globalThis.fetch) {
+    return;
+  }
+
+  apiReadDeduplicationFetchReference = globalThis.fetch;
+  clearApiReadDeduplicationMemory();
+}
+
 
 function clearApiReadDeduplicationMemoryWhenFetchChanges(): void {
   const currentFetch = globalThis.fetch;
@@ -482,6 +492,7 @@ export async function apiFetch<T = unknown>(
   } = {},
 ): Promise<ApiResponse<T>> {
   const resolvedEndpoint = resolveApiEndpoint(endpoint);
+  clearApiReadDeduplicationMemoryIfFetchChanged();
   await ensureFreshAccessToken();
 
   const headers = buildApiHeaders(options);

@@ -69,8 +69,9 @@ describe('WhatsAppPage', () => {
     render(<WhatsAppPage />);
 
     expect(
-      await screen.findByText('A autorizacao Meta ainda nao esta configurada no backend.'),
+      await screen.findByText('A autorização Meta ainda não está configurada no backend.'),
     ).toBeTruthy();
+    expect(screen.queryByText('A autorizacao Meta ainda nao esta configurada no backend.')).toBeNull();
 
     const connectButton = screen.getByRole('button', { name: 'Conectar com Meta' });
     expect((connectButton as HTMLButtonElement).disabled).toBe(true);

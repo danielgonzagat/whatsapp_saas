@@ -27,10 +27,11 @@ import {
   readSendMessageInfo,
   resolveVisibleAssistantText,
   shouldShowAssistantActions,
-  shouldShowThinkingPlaceholder,
+  shouldShowLiveProcessingTimeline,
   toRecordArray,
 } from './KloelDashboard.message.helpers';
 import {
+  collapseDeliverableAnswerBlocks,
   getAssistantReasoning,
   withDeliverableFiles,
   getAssistantProcessingTrace,
@@ -271,14 +272,8 @@ export function MessageBlock({
     [message.metadata],
   );
   const processingSummary = useMemo(
-    () =>
-      summarizeAssistantProcessingTrace(
-        processingTrace,
-        typeof message.metadata?.processingSummary === 'string'
-          ? message.metadata.processingSummary
-          : undefined,
-      ),
-    [message.metadata, processingTrace],
+    () => summarizeAssistantProcessingTrace(processingTrace),
+    [processingTrace],
   );
   const reasoning = useMemo(() => getAssistantReasoning(message.metadata), [message.metadata]);
   const [activeVersionIndex, setActiveVersionIndex] = useState(
@@ -436,9 +431,14 @@ export function MessageBlock({
     clampVersionIndex(activeVersionIndex, assistantVersions.length),
     message.text,
   );
+  const reasoningWithDeliverables = withDeliverableFiles(reasoning, visibleAssistantText);
+  const displayedAssistantText = collapseDeliverableAnswerBlocks(
+    visibleAssistantText,
+    reasoningWithDeliverables.files,
+  );
   const hasVisibleAssistantText = !!visibleAssistantText.trim();
 
-  if (shouldShowThinkingPlaceholder(isThinking, hasVisibleAssistantText)) {
+  if (shouldShowLiveProcessingTimeline(isThinking, hasVisibleAssistantText)) {
     return (
       <ReasoningTimeline
         reasoning={reasoning}
@@ -462,7 +462,7 @@ export function MessageBlock({
       }}
     >
       <ReasoningTimeline
-        reasoning={withDeliverableFiles(reasoning, visibleAssistantText)}
+        reasoning={reasoningWithDeliverables}
         steps={processingTrace}
         fallbackSummary={processingSummary}
         isProcessing={isThinking}
@@ -484,7 +484,7 @@ export function MessageBlock({
         <BrainOperatorResult metadata={message.metadata} />
       ) : null}
       {message.metadata && hasBrainFallback(message.metadata) ? <BrainFallbackMessage /> : null}
-      <KloelMarkdown content={visibleAssistantText} />
+      <KloelMarkdown content={displayedAssistantText} />
       {isStreaming ? (
         <span
           aria-hidden

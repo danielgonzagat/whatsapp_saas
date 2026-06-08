@@ -27,6 +27,9 @@ export function ScraperFilterBar({
     >
       <div />
       <select
+        id="scraper-type-filter"
+        name="scraperTypeFilter"
+        aria-label="Filtrar jobs por tipo"
         value={typeFilter}
         onChange={(e) => onTypeFilterChange(e.target.value as 'ALL' | ScrapingJob['type'])}
         style={{
@@ -46,6 +49,9 @@ export function ScraperFilterBar({
         <option value="GROUP">{kloelT(`Grupo WhatsApp`)}</option>
       </select>
       <select
+        id="scraper-status-filter"
+        name="scraperStatusFilter"
+        aria-label="Filtrar jobs por status"
         value={statusFilter}
         onChange={(e) => onStatusFilterChange(e.target.value)}
         style={{

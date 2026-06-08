@@ -48,6 +48,15 @@ describe('guest chat action intent helpers', () => {
     expect(action).toBeNull();
   });
 
+  it('keeps generated artifact requests out of dashboard analytics routing', () => {
+    const action = detectActionIntent(
+      'Crie um arquivo Markdown chamado prova-harvest.md com 3 bullets sobre pesquisa web, dashboard de dados e validacao browser.',
+    );
+
+    expect(action).toBeNull();
+    expect(detectActionIntent('quero dashboard de vendas')?.tool).toBe('get_analytics');
+  });
+
   it('routes explicit file inspection to the code outline tool', () => {
     const action = detectActionIntent('ler arquivo backend/src/kloel/kloel.service.ts');
 

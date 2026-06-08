@@ -10,6 +10,12 @@ import type { DisplayProduct } from './ProdutosView.types';
 
 const pushMock = vi.hoisted(() => vi.fn());
 const requestAffiliationMock = vi.hoisted(() => vi.fn());
+const useKycStatusMock = vi.hoisted(() =>
+  vi.fn(() => ({ status: { kycStatus: 'approved' }, isLoading: false, error: null })),
+);
+const useKycCompletionMock = vi.hoisted(() =>
+  vi.fn(() => ({ completion: { percentage: 100, sections: [] }, isLoading: false, error: null })),
+);
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: pushMock, replace: vi.fn() }),
@@ -23,9 +29,20 @@ vi.mock('@/lib/api/affiliate', () => ({
   },
 }));
 
+vi.mock('@/hooks/useKyc', () => ({
+  useKycStatus: useKycStatusMock,
+  useKycCompletion: useKycCompletionMock,
+}));
+
 beforeEach(() => {
   pushMock.mockReset();
   requestAffiliationMock.mockReset();
+  useKycStatusMock.mockReturnValue({ status: { kycStatus: 'approved' }, isLoading: false, error: null });
+  useKycCompletionMock.mockReturnValue({
+    completion: { percentage: 100, sections: [] },
+    isLoading: false,
+    error: null,
+  });
 });
 
 const catalogProduct: DisplayProduct = {
@@ -206,10 +223,13 @@ describe('AfiliarSe marketplace search', () => {
     expect(solicitationsCard?.textContent).toContain('Solicitacoes1');
     expect(solicitationsCard?.textContent).toContain('1 salvo');
   });
-  it('guides users to profile completion when affiliation is blocked', async () => {
-    requestAffiliationMock.mockRejectedValueOnce(
-      new Error('Complete seu cadastro para usar esta funcionalidade'),
-    );
+  it('guides users to profile completion without posting when known KYC state is incomplete', async () => {
+    useKycStatusMock.mockReturnValue({ status: { kycStatus: 'pending' }, isLoading: false, error: null });
+    useKycCompletionMock.mockReturnValue({
+      completion: { percentage: 75, sections: [] },
+      isLoading: false,
+      error: null,
+    });
 
     render(
       <AfiliarSe
@@ -235,6 +255,7 @@ describe('AfiliarSe marketplace search', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Solicitar afiliacao' }));
 
     expect(await screen.findByText('Complete seu cadastro para usar esta funcionalidade')).toBeTruthy();
+    expect(requestAffiliationMock).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ir para Perfil' }));
     expect(pushMock).toHaveBeenCalledWith('/settings');

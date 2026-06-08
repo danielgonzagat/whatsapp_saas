@@ -1,23 +1,29 @@
 import { describe, expect, it } from '@jest/globals';
 import {
   createKloelDoneEvent,
+  createKloelFileEvent,
+  createKloelMemoryLoadedEvent,
   createKloelReasoningDeltaEvent,
+  createKloelStatusEvent,
   createKloelToolCallEvent,
   createKloelToolResultEvent,
 } from './kloel-stream-events';
 import * as streamEvents from './kloel-stream-events';
 
 describe('kloel-stream-events', () => {
-  it('carries capability metadata on terminal done events', () => {
-    const metadata = {
-      capability: 'create_image',
-      generatedImageUrl: 'https://cdn.example.test/generated.png',
-    };
-
-    expect(createKloelDoneEvent(metadata)).toEqual({
+  it('keeps public artifact metadata on terminal done events without internal capability names', () => {
+    expect(
+      createKloelDoneEvent({
+        capability: 'create_image',
+        capabilityError: 'create_image failed internally',
+        generatedImageUrl: 'https://cdn.example.test/generated.png',
+      }),
+    ).toEqual({
       type: 'done',
       done: true,
-      metadata,
+      metadata: {
+        generatedImageUrl: 'https://cdn.example.test/generated.png',
+      },
     });
   });
 
@@ -29,6 +35,36 @@ describe('kloel-stream-events', () => {
     expect(createKloelDoneEvent({})).toEqual({
       type: 'done',
       done: true,
+    });
+  });
+
+  it('emits rich public file artifact metadata', () => {
+    expect(
+      createKloelFileEvent({
+        name: 'plano.md',
+        artifactId: 'artifact-1',
+        kind: 'markdown',
+        content: '# Plano real',
+        contentRef: 'artifact://artifact-1',
+        meta: 'Documento · MD',
+        url: 'https://cdn.example.test/plano.md',
+        downloadUrl: 'https://cdn.example.test/plano.md?download=1',
+        editable: true,
+        persistent: true,
+      }),
+    ).toEqual({
+      type: 'file',
+      name: 'plano.md',
+      artifactId: 'artifact-1',
+      kind: 'markdown',
+      content: '# Plano real',
+      contentRef: 'artifact://artifact-1',
+      meta: 'Documento · MD',
+      url: 'https://cdn.example.test/plano.md',
+      downloadUrl: 'https://cdn.example.test/plano.md?download=1',
+      editable: true,
+      persistent: true,
+      done: false,
     });
   });
 
@@ -50,34 +86,109 @@ describe('kloel-stream-events', () => {
     expect(event.text).toContain('We are in a chat conversation');
   });
 
-  it('emits tool calls and observations as correlated spans', () => {
-    expect(createKloelToolCallEvent('call-1', 'search_web', { query: 'kloel' })).toEqual({
+  it('omits empty public status messages instead of streaming facade text', () => {
+    expect(createKloelStatusEvent('thinking', '')).toEqual({
+      type: 'status',
+      phase: 'thinking',
+      streaming: false,
+      done: false,
+    });
+    expect(createKloelStatusEvent('thinking', '  Buscando contexto real.  ')).toEqual({
+      type: 'status',
+      phase: 'thinking',
+      streaming: false,
+      message: 'Buscando contexto real.',
+      done: false,
+    });
+  });
+
+  it('emits memory-loaded events as public counts without memory contents', () => {
+    expect(createKloelMemoryLoadedEvent({ signalCount: 2 })).toEqual({
+      type: 'memory_loaded',
+      signalCount: 2,
+      message: '2 memórias relevantes encontradas.',
+      done: false,
+    });
+    expect(createKloelMemoryLoadedEvent({ signalCount: 0 })).toEqual({
+      type: 'memory_loaded',
+      signalCount: 0,
+      message: 'Nada relevante encontrado na memória.',
+      done: false,
+    });
+    expect(JSON.stringify(createKloelMemoryLoadedEvent({ signalCount: 2 }))).not.toContain(
+      'preferencia_formato',
+    );
+  });
+
+  it('emits tool calls and observations as correlated public spans without raw tool payloads', () => {
+    const callEvent = createKloelToolCallEvent('call-1', 'search_web', {
+      query: 'lead@example.test kloel secret',
+    });
+
+    expect(callEvent).toEqual({
       type: 'tool_call',
       callId: 'call-1',
       spanId: 'call-1',
-      tool: 'search_web',
-      args: { query: 'kloel' },
+      tool: 'pesquisa na web',
+      risk: {
+        level: 'low',
+        label: 'consulta segura',
+        score: 2,
+        factors: ['leitura sem alteração', 'alcance externo'],
+      },
       done: false,
     });
+    expect(JSON.stringify(callEvent)).not.toContain('lead@example.test');
+    expect(JSON.stringify(callEvent)).not.toContain('search_web');
 
-    expect(
-      createKloelToolResultEvent({
-        callId: 'call-1',
-        tool: 'search_web',
-        success: true,
-        result: { answer: 'ok' },
-        durationMs: 42,
-      }),
-    ).toEqual({
+    const resultEvent = createKloelToolResultEvent({
+      callId: 'call-1',
+      tool: 'search_web',
+      success: true,
+      result: { answer: 'ok', rawHtml: '<secret>token</secret>' },
+      durationMs: 42,
+    });
+
+    expect(resultEvent).toEqual({
       type: 'tool_result',
       callId: 'call-1',
       spanId: 'call-1',
-      tool: 'search_web',
+      tool: 'pesquisa na web',
       success: true,
-      result: { answer: 'ok' },
       durationMs: 42,
+      risk: {
+        level: 'low',
+        label: 'consulta segura',
+        score: 2,
+        factors: ['leitura sem alteração', 'alcance externo'],
+      },
       done: false,
     });
+    expect(JSON.stringify(resultEvent)).not.toContain('rawHtml');
+    expect(JSON.stringify(resultEvent)).not.toContain('secret');
+    expect(JSON.stringify(resultEvent)).not.toContain('search_web');
+  });
+
+  it('classifies outbound payment-like tools as controlled sensitive actions', () => {
+    const event = createKloelToolCallEvent('call-2', 'send_email', {
+      email: 'lead@example.test',
+      message: 'Olá',
+      amountCents: 120000,
+    });
+
+    expect(event.risk).toEqual({
+      level: 'high',
+      label: 'ação sensível controlada',
+      score: 10,
+      factors: [
+        'pode alterar estado',
+        'alcance externo',
+        'reversão exige cuidado',
+        'argumentos sensíveis redigidos',
+      ],
+    });
+    expect(JSON.stringify(event.risk)).not.toContain('send_email');
+    expect(JSON.stringify(event.risk)).not.toContain('lead@example.test');
   });
 
   it('removes assistant-visible DSML tool markup before persistence', () => {
@@ -90,6 +201,30 @@ describe('kloel-stream-events', () => {
         'Eu observei a operação.\n<｜｜DSML｜｜tool_calls> <｜｜DSML｜｜invoke name="get_workspace_status"> </｜｜DSML｜｜invoke> </｜｜DSML｜｜tool_calls>\nResposta final limpa.',
       ),
     ).toBe('Eu observei a operação.\nResposta final limpa.');
+  });
+
+  it('removes assistant-visible artifact protocol blocks before persistence', () => {
+    const sanitize = (streamEvents as Record<string, unknown>)[
+      'sanitizeKloelAssistantVisibleText'
+    ] as (value: string) => string;
+
+    expect(
+      sanitize(
+        [
+          'Arquivo preparado.',
+          '__artifact',
+          JSON.stringify({
+            type: 'artifact',
+            artifact: {
+              name: 'tabela.md',
+              content: '| Produto | Preco |',
+              'content-type': 'text/markdown',
+            },
+          }),
+          'Resposta final limpa.',
+        ].join('\n'),
+      ),
+    ).toBe('Arquivo preparado.\nResposta final limpa.');
   });
 
   it('redacts implementation details from assistant-visible product answers', () => {
@@ -123,6 +258,10 @@ describe('kloel-stream-events', () => {
     expect(sanitize('Intermediate steps — pass-os intermediários.')).toBe(
       'Intermediate steps — pass-os intermediários.',
     );
+    expect(sanitize('Resumo de conversas passadas.')).toBe('Resumo de conversas passadas.');
+    expect(sanitize('Resultado interno: PASS.')).toBe(
+      'Resultado interno: alegação acima do observado.',
+    );
   });
 
   it('preserves ordinary attachment wording while redacting implementation file references', () => {
@@ -152,6 +291,23 @@ describe('kloel-stream-events', () => {
     expect(visible).not.toContain('camada internaexado');
   });
 
+  it('does not redact ordinary words split near the PASS certification token boundary', () => {
+    const createFilter = (streamEvents as Record<string, unknown>)[
+      'createKloelAssistantVisibleTextStreamFilter'
+    ] as () => { push: (chunk: string) => string; flush: () => string };
+    const filter = createFilter();
+    const rawWindowEndingInPartialWord = 'Lembra preferências e contexto de conversas pass';
+    const tailAfterPartialWord = `adas. ${'continua '.repeat(24)}`.padEnd(192, 'x');
+
+    const visible = [
+      filter.push(rawWindowEndingInPartialWord + tailAfterPartialWord),
+      filter.flush(),
+    ].join('');
+
+    expect(visible).toContain('conversas passadas.');
+    expect(visible).not.toContain('alegação acima do observadoadas');
+  });
+
   it('translates runtime certification wording into product-facing language', () => {
     const sanitize = (streamEvents as Record<string, unknown>)[
       'sanitizeKloelAssistantVisibleText'
@@ -179,6 +335,32 @@ describe('kloel-stream-events', () => {
       filter.push('Resposta em linguagem de produto. <｜｜DS'),
       filter.push('ML｜｜tool_calls> <｜｜DSML｜｜invoke name="get_workspace_status">'),
       filter.push(' </｜｜DSML｜｜invoke> </｜｜DSML｜｜tool_calls> Continua limpa.'),
+      filter.flush(),
+    ].join('');
+
+    expect(visible).toBe('Resposta em linguagem de produto. Continua limpa.');
+  });
+
+  it('buffers split artifact protocol blocks so SSE content never receives internal artifacts', () => {
+    const createFilter = (streamEvents as Record<string, unknown>)[
+      'createKloelAssistantVisibleTextStreamFilter'
+    ] as () => { push: (chunk: string) => string; flush: () => string };
+    const filter = createFilter();
+
+    const visible = [
+      filter.push('Resposta em linguagem de produto. __arti'),
+      filter.push('fact\n'),
+      filter.push(
+        JSON.stringify({
+          type: 'artifact',
+          artifact: {
+            name: 'contador.html',
+            content: '<!doctype html><html><body>ok</body></html>',
+            'content-type': 'text/html',
+          },
+        }),
+      ),
+      filter.push('\nContinua limpa.'),
       filter.flush(),
     ].join('');
 

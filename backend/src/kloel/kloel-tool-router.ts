@@ -15,6 +15,14 @@ import { isMutationSensitiveTool } from './operation-receipt.helpers';
 const PATTERN_RE = /[_-]+/g;
 const MAX_TOOL_MESSAGE_CONTENT_CHARS = 6000;
 const ARTIFACT_PREFIX = 'tool_artifact';
+const PRODUCT_TOOL_LABELS: Record<string, string> = {
+  'mind.capability.extract_structured_text': 'extração estruturada',
+  'mind.capability.extract structured text': 'extração estruturada',
+  'mind.capability.advise_response_depth': 'calibração de profundidade',
+  'mind.capability.advise response depth': 'calibração de profundidade',
+  'mind.capability.refine_prompt': 'refinamento de pedido',
+  'mind.capability.refine prompt': 'refinamento de pedido',
+};
 
 type StoreToolArtifact = (workspaceId: string, key: string, content: string) => Promise<void>;
 type ToolMessage = {
@@ -84,13 +92,11 @@ interface ExecuteAssistantToolCallsResult {
 }
 
 function formatToolLabel(toolName: string) {
-  const normalized = String(toolName || 'ferramenta')
-    .trim()
-    .replace(PATTERN_RE, ' ')
-    .replace(WHITESPACE_G_RE, ' ')
-    .toLowerCase();
+  const raw = String(toolName || 'ferramenta').trim();
+  const normalized = raw.replace(PATTERN_RE, ' ').replace(WHITESPACE_G_RE, ' ').toLowerCase();
+  const productLabel = PRODUCT_TOOL_LABELS[raw] ?? PRODUCT_TOOL_LABELS[normalized];
 
-  return normalized || 'ferramenta';
+  return (productLabel ?? normalized) || 'ferramenta';
 }
 
 function stringArgument(value: unknown) {

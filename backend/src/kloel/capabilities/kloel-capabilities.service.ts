@@ -22,10 +22,7 @@ export interface KloelCapabilityDescriptor {
   readonly mutating: false;
 }
 
-type CapabilityInput =
-  | StructuredTextExtractInput
-  | ResponseDepthInput
-  | PromptRefineInput;
+type CapabilityInput = StructuredTextExtractInput | ResponseDepthInput | PromptRefineInput;
 
 /**
  * KloelCapabilitiesService — the single entry point the Kloel chat uses to
@@ -82,7 +79,10 @@ export class KloelCapabilitiesService {
    * Dispatch a capability by name. Throws a typed error for unknown names so the
    * chat can surface a clean message rather than a silent no-op.
    */
-  invoke(name: 'structured_text_extractor', input: StructuredTextExtractInput): KloelCapabilityResult;
+  invoke(
+    name: 'structured_text_extractor',
+    input: StructuredTextExtractInput,
+  ): KloelCapabilityResult;
   invoke(name: 'response_depth_advisor', input: ResponseDepthInput): KloelCapabilityResult;
   invoke(name: 'prompt_refiner', input: PromptRefineInput): KloelCapabilityResult;
   invoke(name: KloelCapabilityName, input: CapabilityInput): KloelCapabilityResult;

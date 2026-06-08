@@ -116,7 +116,12 @@ export class AgentRuntimeSessionStore {
     }
   }
 
-  async search(workspaceId: string, query: string, limit = 6): Promise<AgentRuntimeRecallResult> {
+  async search(
+    workspaceId: string,
+    query: string,
+    limit = 6,
+    options: { userId?: string } = {},
+  ): Promise<AgentRuntimeRecallResult> {
     const normalizedQuery = sanitizeAgentRuntimeText(query, 500).trim();
     if (!workspaceId || !normalizedQuery) {
       return { query: normalizedQuery, tokens: [], totalFound: 0, memories: [] };
@@ -128,7 +133,7 @@ export class AgentRuntimeSessionStore {
     }
 
     const safeLimit = Math.max(1, Math.min(limit, 20));
-    const fetchLimit = safeLimit * 3;
+    const fetchLimit = safeLimit * (options.userId ? 12 : 3);
 
     const orConditions = tokens.flatMap((token) => [
       { content: { contains: token, mode: 'insensitive' as const } },
@@ -149,12 +154,24 @@ export class AgentRuntimeSessionStore {
         category: true,
         content: true,
         value: true,
+        metadata: true,
         createdAt: true,
         updatedAt: true,
       },
     });
 
-    const scored = rows
+    const visibleRows = rows.filter((row) => {
+      if (!options.userId || row.category !== 'agent_event') {
+        return true;
+      }
+      const metadata =
+        typeof row.metadata === 'object' && row.metadata !== null && !Array.isArray(row.metadata)
+          ? (row.metadata as Record<string, unknown>)
+          : {};
+      return metadata['userId'] === options.userId;
+    });
+
+    const scored = visibleRows
       .map((row) => {
         const matchable = `${row.key ?? ''} ${row.content ?? ''}`.toLowerCase();
         const matchCount = tokens.filter((t) => matchable.includes(t.toLowerCase())).length;
@@ -206,6 +223,7 @@ export class AgentRuntimeSessionStore {
     workspaceId: string,
     query: string,
     limit = 3,
+    options: { userId?: string } = {},
   ): Promise<AgentRuntimeSessionRecallResult> {
     const normalizedQuery = sanitizeAgentRuntimeText(query, 500).trim();
     if (!workspaceId || !normalizedQuery) {
@@ -244,6 +262,15 @@ export class AgentRuntimeSessionStore {
 
     const groups = new Map<string, AgentRuntimeSessionRecallGroup>();
     for (const row of rows) {
+      if (options.userId && row.category === 'agent_event') {
+        const metadata =
+          typeof row.metadata === 'object' && row.metadata !== null && !Array.isArray(row.metadata)
+            ? (row.metadata as Record<string, unknown>)
+            : {};
+        if (metadata['userId'] !== options.userId) {
+          continue;
+        }
+      }
       const matchable = `${row.key ?? ''} ${row.content ?? ''}`.toLowerCase();
       const matchCount = tokens.filter((token) => matchable.includes(token.toLowerCase())).length;
       if (matchCount === 0) {

@@ -125,7 +125,7 @@ describe('KloelThinkerService', () => {
       );
       expect(manifestInjection.assemble).toHaveBeenCalledWith(
         'crie um produto',
-        expect.objectContaining({ surface: 'chat' }),
+        expect.objectContaining({ surface: 'dashboard-chat' }),
       );
       // The injected blocks reach the model via the hidden `dynamicContext`
       // channel of buildChatModelMessages — never the user-visible answer.

@@ -32,7 +32,7 @@ describe('money percept emit helpers', () => {
   });
 
   describe('emitMoneyLeadScanPercept', () => {
-    it('flag OFF (default): no outbox write fires and returns false', async () => {
+    it('flag default (unset): emits — cognition loop ON by default', async () => {
       const { upsert, prisma, logger } = makeDeps();
 
       const attempted = await emitMoneyLeadScanPercept(prisma, logger, {
@@ -41,8 +41,8 @@ describe('money percept emit helpers', () => {
         scanId: 'scan_1',
       });
 
-      expect(attempted).toBe(false);
-      expect(upsert).not.toHaveBeenCalled();
+      expect(attempted).toBe(true);
+      expect(upsert).toHaveBeenCalledTimes(1);
       expect(logger.warn).not.toHaveBeenCalled();
     });
 
@@ -123,7 +123,7 @@ describe('money percept emit helpers', () => {
   });
 
   describe('emitMoneyCampaignGeneratedPercept', () => {
-    it('flag OFF (default): no outbox write fires and returns false', async () => {
+    it('flag default (unset): emits — cognition loop ON by default', async () => {
       const { upsert, prisma, logger } = makeDeps();
 
       const attempted = await emitMoneyCampaignGeneratedPercept(prisma, logger, {
@@ -133,8 +133,8 @@ describe('money percept emit helpers', () => {
         inactiveLeads: 42,
       });
 
-      expect(attempted).toBe(false);
-      expect(upsert).not.toHaveBeenCalled();
+      expect(attempted).toBe(true);
+      expect(upsert).toHaveBeenCalledTimes(1);
       expect(logger.warn).not.toHaveBeenCalled();
     });
 

@@ -50,7 +50,9 @@ describe('KloelCapabilitiesService (chat dispatcher)', () => {
   });
 
   it('typed accessors return the matching capability result', () => {
-    expect(service.extractStructuredText({ text: 'x' }).capability).toBe('structured_text_extractor');
+    expect(service.extractStructuredText({ text: 'x' }).capability).toBe(
+      'structured_text_extractor',
+    );
     expect(service.adviseResponseDepth({ prompt: 'oi' }).capability).toBe('response_depth_advisor');
     expect(service.refinePrompt({ prompt: 'cria algo' }).capability).toBe('prompt_refiner');
   });

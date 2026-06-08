@@ -12,6 +12,53 @@ import { type CapabilityDefinition } from '../capability-registry-v2.types';
  */
 export const TIER_0C_MUTATIONS_CAPABILITIES: CapabilityDefinition[] = [
   {
+    id: 'artifacts.create_renderable',
+    title: 'Criar Markdown PDF HTML SVG Mermaid DOCX PPTX XLSX artifact renderizavel',
+    description:
+      'Cria e renderiza entregaveis reais no chat: Markdown, HTML, SVG, Mermaid, PDF, DOCX, PPTX, XLSX, dados e codigo com card de download e painel editavel quando houver conteudo textual.',
+    category: 'MUTATION_SAFE',
+    tier: 0,
+    requiresConfirmation: false,
+    requiredPermissions: [],
+    inputSchema: [
+      {
+        key: 'kind',
+        type: 'select',
+        label: 'Formato markdown pdf html svg mermaid docx pptx xlsx react dashboard',
+        required: false,
+        enum: [
+          'markdown',
+          'html',
+          'svg',
+          'mermaid',
+          'react',
+          'pdf',
+          'docx',
+          'pptx',
+          'xlsx',
+          'data',
+          'code',
+        ],
+      },
+      {
+        key: 'title',
+        type: 'string',
+        label: 'Titulo do artifact arquivo documento',
+        required: false,
+      },
+      {
+        key: 'content',
+        type: 'string',
+        label: 'Conteudo artifact arquivo documento dashboard codigo',
+        required: false,
+      },
+    ],
+    domainService: 'Alias for Kloel stream artifact pipeline',
+    emits: ['artifact.created'],
+    surface: ['dashboard-chat'],
+    maturity: 'testable',
+  },
+  {
     id: 'toggle_autopilot',
     title: 'Ativar/desativar autopilot (legado)',
     description: 'DEPRECATED — use workspace.toggle_autopilot',

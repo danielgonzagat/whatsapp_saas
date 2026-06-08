@@ -342,8 +342,8 @@ server.registerTool(
         if (!a.seal) return fail('atomic_seal verify requires a seal envelope.');
         const verification = verifyAtomicSealEnvelope(a.seal);
         const summaryForHuman = verification.sealValid
-          ? 'Atomic seal verified: canonical hash matches and signature policy is satisfied.'
-          : 'Atomic seal verification failed: hash/signature does not match the envelope.';
+          ? 'Atomic seal verified: canonical hash, signature policy, artifact custody, and schema contract are satisfied.'
+          : 'Atomic seal verification failed: hash, signature, artifact custody, or schema contract does not match the envelope.';
         return ok({ ok: true, summaryForHuman, summary: summaryForHuman, ...verification });
       }
       const created = createAtomicSeal({ subject: a.subject, receipt: a.receipt, gateRunId: a.gateRunId, artifactPaths: a.artifactPaths, exportPath: a.exportPath });

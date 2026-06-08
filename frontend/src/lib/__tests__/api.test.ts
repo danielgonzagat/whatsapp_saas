@@ -205,6 +205,34 @@ describe('apiFetch', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
+  it('does not reuse a recent GET response after fetch implementation changes', async () => {
+    tokenStorage.setToken('test-token-123');
+    tokenStorage.setWorkspaceId('ws-123');
+
+    const firstFetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ products: [{ id: 'old' }] }),
+    } as Response);
+
+    await expect(apiFetch<{ products: { id: string }[] }>('/checkout/products/fetch-change')).resolves.toMatchObject({
+      data: { products: [{ id: 'old' }] },
+    });
+    expect(firstFetchSpy).toHaveBeenCalledTimes(1);
+    firstFetchSpy.mockRestore();
+
+    const secondFetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ products: [{ id: 'fresh' }] }),
+    } as Response);
+
+    await expect(apiFetch<{ products: { id: string }[] }>('/checkout/products/fetch-change')).resolves.toMatchObject({
+      data: { products: [{ id: 'fresh' }] },
+    });
+    expect(secondFetchSpy).toHaveBeenCalledTimes(1);
+  });
+
   it('does not deduplicate concurrent mutating requests', async () => {
     const mockResponse = {
       ok: true,

@@ -10,16 +10,19 @@
  * (`RAC_MindOutboxEvent`) — the same table other surfaces emit into (see
  * `MindEventSpine.recordCommercial`, `agent-runtime.scheduler.enqueueDueJob`).
  *
- * DEFAULT OFF. Best-effort: the emit is wrapped in try/catch + warn-log so it
- * can NEVER break the legacy `flowExecution.create` write or change flow
- * execution behavior / outputs. No read path consumes this flag. No backfill.
+ * DEFAULT ON (one-Mind unification): the cognition loop must perceive every
+ * surface, so completed flows feed the spine by default. Disable only via
+ * `KLOEL_FLOWS_PERCEPT_ENABLED=false`. Best-effort: the emit is wrapped in
+ * try/catch + warn-log so it can NEVER break the legacy `flowExecution.create`
+ * write or change flow execution behavior / outputs. No read path consumes this
+ * flag. No backfill.
  *
- * Mirrors the repo's established `process.env.X === 'true'` flag idiom
- * (e.g. KLOEL_THINK_LOOP_ENABLED / KLOEL_MINDMEMORY_DUALWRITE).
+ * Inverse of the repo's `=== 'true'` idiom precisely because the safe default
+ * here is ON (mirrors KLOEL_THINK_LOOP_ENABLED).
  *
  * @see backend/src/flows/flows-percept-emit.helper.ts
  * @see backend/src/flows/flows.service.ts (logExecution)
  */
 export function isFlowsPerceptEmitEnabled(): boolean {
-  return (process.env.KLOEL_FLOWS_PERCEPT_ENABLED ?? '').toLowerCase() === 'true';
+  return (process.env.KLOEL_FLOWS_PERCEPT_ENABLED ?? 'true').toLowerCase() !== 'false';
 }

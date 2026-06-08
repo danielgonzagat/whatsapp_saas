@@ -1,10 +1,9 @@
+import { TIER_0C_MUTATIONS_CAPABILITIES } from '../capability-registry-v2/partitions/tier-0c-mutations';
+import { TIER_0D_FACTORY_HARVEST_CAPABILITIES } from '../capability-registry-v2/partitions/tier-0-self-awareness';
 import { CapabilityRouterService } from './capability-router.service';
 import { CapabilityManifestBuilderService } from './capability-manifest.builder';
 import { ManifestInjectionBuilderService } from './manifest-injection.builder';
-import type {
-  CapabilityManifest,
-  CapabilityManifestEntry,
-} from './capability-manifest.types';
+import type { CapabilityManifest, CapabilityManifestEntry } from './capability-manifest.types';
 
 // ── Test fixtures ──
 
@@ -25,6 +24,7 @@ function entry(overrides: Partial<CapabilityManifestEntry>): CapabilityManifestE
     category: 'QUERY',
     maturity: 'verified',
     surface: ['dashboard-chat'],
+    dependsOn: [],
     ...overrides,
   };
 }
@@ -198,12 +198,8 @@ describe('CapabilityManifestBuilderService (derivation)', () => {
   ): CapabilityManifestBuilderService {
     const registry = {
       list: () => definitions,
-    } as unknown as Parameters<
-      typeof CapabilityManifestBuilderService.prototype.constructor
-    >[0];
-    return new CapabilityManifestBuilderService(
-      registry as ConstructorParameters<typeof CapabilityManifestBuilderService>[0],
-    );
+    } as unknown as Parameters<typeof CapabilityManifestBuilderService.prototype.constructor>[0];
+    return new CapabilityManifestBuilderService(registry);
   }
 
   it('marks every entry hiddenFromUser and derives a safety level', () => {
@@ -238,6 +234,179 @@ describe('CapabilityManifestBuilderService (derivation)', () => {
     // Triggers derived from id/title/labels.
     expect(entryOut.triggers).toContain('billing');
     expect(entryOut.triggers).toContain('plano');
+  });
+
+  it('derives hidden artifact triggers from the registered renderable artifact capability', () => {
+    const artifactDefinition = TIER_0C_MUTATIONS_CAPABILITIES.find(
+      (cap) => cap.id === 'artifacts.create_renderable',
+    );
+    expect(artifactDefinition).toBeDefined();
+    if (!artifactDefinition) {
+      return;
+    }
+
+    const manifest = builderWith([
+      artifactDefinition as unknown as Record<string, unknown>,
+    ]).build();
+    const entryOut = manifest.capabilities[0];
+    expect(entryOut).toBeDefined();
+    if (!entryOut) {
+      return;
+    }
+
+    expect(entryOut.hiddenFromUser).toBe(true);
+    expect(entryOut.internalName).toBe('artifacts.create_renderable');
+    expect(entryOut.safetyProfile.level).toBe('safe_mutation');
+    expect(entryOut.safetyProfile.requiresConfirmation).toBe(false);
+    expect(entryOut.triggers).toEqual(
+      expect.arrayContaining([
+        'artifacts',
+        'create',
+        'renderable',
+        'pdf',
+        'html',
+        'svg',
+        'mermaid',
+      ]),
+    );
+
+    const selected = new CapabilityRouterService(stubBuilder(manifest)).select(
+      'crie um PDF e um HTML interativo',
+      {
+        surface: 'dashboard-chat',
+        permissions: [],
+      },
+    );
+    expect(selected.capabilities.map((cap) => cap.id)).toEqual(['artifacts.create_renderable']);
+  });
+
+  it('routes harvested factory capabilities from the ECC corpus without exposing skill names', () => {
+    const manifest = builderWith(
+      TIER_0D_FACTORY_HARVEST_CAPABILITIES as unknown as Record<string, unknown>[],
+    ).build();
+
+    expect(manifest.capabilities).toHaveLength(17);
+    expect(manifest.capabilities.every((capability) => capability.hiddenFromUser)).toBe(true);
+    expect(manifest.capabilities.map((capability) => capability.id)).toEqual(
+      expect.arrayContaining([
+        'factory.web_research_extraction',
+        'factory.browser_qa_click_path',
+        'factory.codebase_navigation',
+        'factory.validation_loop',
+        'factory.security_privacy_review',
+        'factory.document_coauthoring',
+        'factory.visual_artifact_generation',
+        'factory.algorithmic_art_p5',
+        'factory.brand_guidelines_visual_identity',
+        'factory.canvas_design_poster',
+        'factory.workflow_orchestration',
+        'factory.data_dashboard_builder',
+        'factory.accessibility_performance_review',
+        'factory.code_execution_codemod_terminal',
+        'factory.localized_external_data',
+        'factory.media_animation_builder',
+        'factory.api_connector_builder',
+      ]),
+    );
+
+    const router = new CapabilityRouterService(stubBuilder(manifest));
+    const selected = router.select(
+      'pesquise na web, extraia dados da pagina, crie um dashboard com charts e valide no browser',
+      {
+        surface: 'dashboard-chat',
+        permissions: [],
+        maxCapabilities: 6,
+      },
+    );
+
+    expect(selected.capabilities.map((capability) => capability.id)).toEqual(
+      expect.arrayContaining([
+        'factory.web_research_extraction',
+        'factory.data_dashboard_builder',
+        'factory.browser_qa_click_path',
+      ]),
+    );
+
+    const creativeSelected = router.select(
+      'crie arte generativa em p5.js com seed, aplique guideline de marca e entregue poster PNG/PDF de museum quality',
+      {
+        surface: 'dashboard-chat',
+        permissions: [],
+        maxCapabilities: 8,
+      },
+    );
+    expect(creativeSelected.capabilities.map((capability) => capability.id)).toEqual(
+      expect.arrayContaining([
+        'factory.algorithmic_art_p5',
+        'factory.brand_guidelines_visual_identity',
+        'factory.canvas_design_poster',
+        'factory.visual_artifact_generation',
+      ]),
+    );
+
+    const fullManifest = builderWith([
+      ...(TIER_0C_MUTATIONS_CAPABILITIES as unknown as Record<string, unknown>[]),
+      ...(TIER_0D_FACTORY_HARVEST_CAPABILITIES as unknown as Record<string, unknown>[]),
+    ]).build();
+    const fullRouter = new CapabilityRouterService(stubBuilder(fullManifest));
+    const p5Selected = fullRouter.select(
+      'crie arte generativa em p5.js com seed e fluxo de particulas',
+      {
+        surface: 'dashboard-chat',
+        permissions: [],
+        maxCapabilities: 8,
+      },
+    );
+    expect(p5Selected.capabilities.map((capability) => capability.id)).toEqual(
+      expect.arrayContaining(['factory.algorithmic_art_p5', 'artifacts.create_renderable']),
+    );
+
+    const p5Injection = new ManifestInjectionBuilderService(fullRouter).assemble(
+      'crie arte generativa em p5.js com seed e fluxo de particulas',
+      {
+        surface: 'dashboard-chat',
+        permissions: [],
+        maxCapabilities: 8,
+      },
+    );
+    expect(p5Injection.text).toContain('FORMATO DE ENTREGA PARA ARQUIVOS BAIXÁVEIS');
+
+    const toolGatewaySelected = router.select(
+      'execute um script no terminal, aplique codemod, monte mapa com clima e placar e gere GIF animado',
+      {
+        surface: 'dashboard-chat',
+        permissions: [],
+        maxCapabilities: 8,
+      },
+    );
+    expect(toolGatewaySelected.capabilities.map((capability) => capability.id)).toEqual(
+      expect.arrayContaining([
+        'factory.code_execution_codemod_terminal',
+        'factory.localized_external_data',
+        'factory.media_animation_builder',
+      ]),
+    );
+
+    const injectionBuilder = new ManifestInjectionBuilderService(router);
+    const injection = injectionBuilder.assemble(
+      'audite acessibilidade performance e gere um relatorio PDF',
+      {
+        surface: 'dashboard-chat',
+        permissions: [],
+        maxCapabilities: 6,
+      },
+    );
+    const leaked = `${injection.text}\nResposta publica via factory.accessibility_performance_review`;
+    const clean = injectionBuilder.sanitizeForUser(leaked, injection.internalNames);
+
+    expect(injection.internalNames).toEqual(
+      expect.arrayContaining([
+        'factory.accessibility_performance_review',
+        'factory.document_coauthoring',
+      ]),
+    );
+    expect(clean).not.toContain('factory.');
+    expect(clean).not.toContain('<<<KLOEL_CAPABILITY_MANIFEST>>>');
   });
 });
 
@@ -275,5 +444,37 @@ describe('ManifestInjectionBuilderService (hidden-from-user enforcement)', () =>
     expect(clean).not.toContain('wallet.get_balance');
     expect(clean).not.toContain('<<<KLOEL_CAPABILITY_MANIFEST>>>');
     expect(clean).toContain('Seu saldo é R$ 100.');
+  });
+
+  it('adds a materializable file format rule only when renderable artifacts are selected', () => {
+    const artifact = entry({
+      id: 'artifacts.create_renderable',
+      internalName: 'artifacts.create_renderable',
+      description: 'Cria entregáveis reais no chat',
+      triggers: ['crie', 'arquivo', 'baixável', 'tabela.md', 'contador.html'],
+      category: 'MUTATION_SAFE',
+      safetyProfile: {
+        level: 'safe_mutation',
+        requiresConfirmation: false,
+        requiredPermissions: [],
+      },
+    });
+    const artifactBuilder = new ManifestInjectionBuilderService(
+      new CapabilityRouterService(stubBuilder(manifestWith([artifact]))),
+    );
+
+    const artifactInjection = artifactBuilder.assemble('crie tabela.md e contador.html baixáveis', {
+      surface: 'dashboard-chat',
+      permissions: [],
+    });
+    expect(artifactInjection.text).toContain('FORMATO DE ENTREGA PARA ARQUIVOS BAIXÁVEIS');
+    expect(artifactInjection.text).toContain('Arquivo: nome.ext');
+    expect(artifactInjection.text).toContain('blocos nomeados');
+
+    const walletInjection = injection().assemble('qual meu saldo', {
+      surface: 'dashboard-chat',
+      permissions: ['*'],
+    });
+    expect(walletInjection.text).not.toContain('FORMATO DE ENTREGA PARA ARQUIVOS BAIXÁVEIS');
   });
 });

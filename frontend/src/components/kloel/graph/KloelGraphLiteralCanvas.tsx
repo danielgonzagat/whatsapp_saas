@@ -8,7 +8,7 @@ import type {
 } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import type { KloelGraphArea, KloelGraphNode } from './KloelGraph.routes';
+import { getKloelGraphNodeActionLabel, type KloelGraphArea, type KloelGraphNode } from './KloelGraph.routes';
 import type { GraphEdge } from './KloelGraphShell.helpers';
 import { GRAPH_FONT, useGraphTheme } from './KloelGraphTheme';
 
@@ -753,7 +753,7 @@ export function KloelGraphLiteralCanvas({
                 role="button"
                 tabIndex={keyboardReachable ? 0 : -1}
                 aria-hidden={keyboardReachable ? undefined : true}
-                aria-label={`Abrir ${node.label}`}
+                aria-label={`Abrir ${getKloelGraphNodeActionLabel(node)}`}
                 transform={`translate(${live.x}, ${live.y})`}
                 onPointerDown={(event) => onNodePointerDown(node.id, event)}
                 onPointerUp={(event) => onNodePointerUp(node, event)}

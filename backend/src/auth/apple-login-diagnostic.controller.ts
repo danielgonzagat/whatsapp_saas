@@ -36,10 +36,7 @@ function resolveArtifactsDir(): string {
     return resolve(override);
   }
   const primary = resolve(process.cwd(), 'artifacts', 'apple-validation');
-  const candidates = [
-    primary,
-    resolve(process.cwd(), '..', 'artifacts', 'apple-validation'),
-  ];
+  const candidates = [primary, resolve(process.cwd(), '..', 'artifacts', 'apple-validation')];
   for (const c of candidates) {
     if (existsSync(c)) {
       return c;

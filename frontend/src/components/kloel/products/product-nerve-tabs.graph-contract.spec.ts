@@ -47,4 +47,21 @@ describe('ProductNerveCenter graph placement contract', () => {
     expect(checkoutPage).toContain('tab=checkouts&focus=order-bump');
     expect(campanhasTab).toContain('tab=checkouts&focus=order-bump');
   });
+
+  it('loads checkout preview from the public preview route used by the checkout app', () => {
+    const checkoutPage = readFileSync('src/app/(main)/checkout/[planId]/page.tsx', 'utf8');
+
+    expect(checkoutPage).toContain('/preview/${planId}?preview=true');
+    expect(checkoutPage).toContain('src={previewUrl || undefined}');
+    expect(checkoutPage).not.toContain('/checkout/preview/${planId}?preview=true');
+    expect(checkoutPage).not.toContain('src={previewUrl}');
+  });
+
+  it('hydrates checkout preview through authenticated apiFetch instead of raw fetch', () => {
+    const previewPage = readFileSync('src/app/(checkout)/preview/[planId]/page.tsx', 'utf8');
+
+    expect(previewPage).toContain("apiFetch<Record<string, unknown>>(`/checkout/plans/${planId}/config`)");
+    expect(previewPage).not.toContain('fetch(`${API_BASE}/checkout/plans/${planId}/config`)');
+    expect(previewPage).not.toContain('/checkout/public/${encodeURIComponent(planId)}');
+  });
 });

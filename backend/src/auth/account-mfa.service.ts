@@ -3,11 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { toDataURL as qrToDataURL } from 'qrcode';
 import { decryptAdminSecret, encryptAdminSecret } from '../admin/common/admin-crypto';
 import { StructuredLogger } from '../logging/structured-logger';
-import {
-  MFA_PERIOD_SECONDS,
-  generateMfaSecret,
-  verifyTotp,
-} from '../common/totp';
+import { MFA_PERIOD_SECONDS, generateMfaSecret, verifyTotp } from '../common/totp';
 
 const MFA_CODE_RE = /^[0-9]{6}$/;
 const TEST_ENCRYPTION_KEY = '0000000000000000000000000000000000000000000000000000000000000000';
@@ -57,12 +53,7 @@ export class AccountMfaService {
     }
     const secret = this.decryptSecret(encryptedSecret, 'verifyCode');
     if (
-      !verifyTotp(
-        secret,
-        code,
-        undefined,
-        () => new UnauthorizedException('Codigo 2FA invalido.'),
-      )
+      !verifyTotp(secret, code, undefined, () => new UnauthorizedException('Codigo 2FA invalido.'))
     ) {
       throw new UnauthorizedException('Codigo 2FA invalido.');
     }

@@ -26,6 +26,7 @@ import { AuthenticatedRequest } from '../common/interfaces';
 import { MaxFileSizeValidator, ParseFilePipe, FileTypeValidator } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MindChatMessageService } from './mind/aliases/mind-chat-message.service';
+import { MemoryService as MindUserMemoryService } from './mind/memory/memory.service';
 import { ConversationalOnboardingService } from './conversational-onboarding.service';
 import { KloelService } from './kloel.service';
 import { KloelMemoryEngineService } from './kloel-memory-engine.service';
@@ -88,22 +89,88 @@ export class KloelController {
     private readonly toolDispatcher: KloelToolDispatcherService,
     @Optional() private readonly mindChatMessage?: MindChatMessageService,
     @Optional() private readonly memoryEngine?: KloelMemoryEngineService,
+    @Optional() private readonly typedMemoryGraph?: MindUserMemoryService,
   ) {}
+
+  private static sanitizeMemoryGraphPayload(payload: unknown) {
+    const graph =
+      typeof payload === 'object' && payload !== null ? (payload as Record<string, unknown>) : {};
+    const nodes = Array.isArray(graph.nodes)
+      ? graph.nodes.map((node) => {
+          if (typeof node !== 'object' || node === null || Array.isArray(node)) {
+            return {};
+          }
+          const safeNode = { ...(node as Record<string, unknown>) };
+          delete safeNode.slot;
+          return safeNode;
+        })
+      : [];
+    const edges = Array.isArray(graph.edges) ? graph.edges : [];
+    return { ...graph, nodes, edges };
+  }
 
   /**
    * Per-user memory GRAPH for the immutable Kloel Sigma renderer — the "Memória"
-   * node's data source. Derived read-time from the user's MindMemory slots; never
-   * leaks other users' memory (scoped by JWT workspaceId + userId).
+   * node's data source. Prefers the typed MemoryNode/MemoryEdge topology used by
+   * chat recall; falls back to the legacy slot engine only while older accounts
+   * still have no typed nodes. Both paths are scoped by JWT workspaceId + userId.
    */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('memory/graph')
   async getMemoryGraph(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId || req.user?.workspaceId || '';
     const userId = readUserId(req.user) || '';
-    if (!this.memoryEngine || !workspaceId || !userId) {
+    if (!workspaceId || !userId) {
       return { nodes: [], edges: [] };
     }
-    return this.memoryEngine.recallGraph(workspaceId, userId);
+
+    if (this.typedMemoryGraph) {
+      const typedGraph = await this.typedMemoryGraph.recallGraph(workspaceId, userId);
+      if (typedGraph.nodes.length > 0 || typedGraph.edges.length > 0) {
+        return KloelController.sanitizeMemoryGraphPayload(typedGraph);
+      }
+    }
+
+    if (!this.memoryEngine) {
+      return { nodes: [], edges: [] };
+    }
+    const legacyGraph = await this.memoryEngine.recallGraph(workspaceId, userId);
+    return KloelController.sanitizeMemoryGraphPayload(legacyGraph);
+  }
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @Post('memory/graph/nodes/:nodeId')
+  async updateMemoryGraphNode(
+    @Param('nodeId') nodeId: string,
+    @Body()
+    dto: {
+      readonly content?: unknown;
+      readonly summary?: unknown;
+      readonly pinned?: unknown;
+      readonly archived?: unknown;
+      readonly sensitive?: unknown;
+      readonly blockedForAgent?: unknown;
+      readonly forgotten?: unknown;
+    },
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const workspaceId = req.workspaceId || req.user?.workspaceId || '';
+    const userId = readUserId(req.user) || '';
+    if (!workspaceId || !userId) {
+      throw new BadRequestException('memory_scope_required');
+    }
+    if (!nodeId || nodeId === 'you') {
+      throw new BadRequestException('memory_node_required');
+    }
+    if (!this.typedMemoryGraph) {
+      throw new BadRequestException('typed_memory_unavailable');
+    }
+    const graph = await this.typedMemoryGraph.updateGraphNode(
+      workspaceId,
+      userId,
+      nodeId,
+      dto ?? {},
+    );
+    return KloelController.sanitizeMemoryGraphPayload(graph);
   }
 
   /**

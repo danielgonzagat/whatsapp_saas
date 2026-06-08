@@ -151,8 +151,18 @@ check(
   cdpUnhosted.stdout || cdpUnhosted.stderr,
 );
 
+const cdpUnderscore = run({ tool_name: 'mcp__chrome_devtools__navigate_page', tool_input: { url: 'https://example.com' } });
+check(
+  'underscore chrome_devtools MCP tool is admitted (browser inspection, no code mutation)',
+  cdpUnderscore.status === 0 && cdpUnderscore.stdout === '',
+  cdpUnderscore.stdout || cdpUnderscore.stderr,
+);
+
 const cdpHosted = run({ tool_name: 'mcp__chrome-devtools__take_snapshot', tool_input: {} }, hostEnv);
 check('hosted chrome-devtools MCP tool passes silently', cdpHosted.status === 0 && cdpHosted.stdout === '', cdpHosted.stdout || cdpHosted.stderr);
+
+const cdpLiveHosted = run({ tool_name: 'mcp__chrome_devtools_live__take_snapshot', tool_input: {} }, hostEnv);
+check('hosted chrome-devtools-live MCP tool passes silently', cdpLiveHosted.status === 0 && cdpLiveHosted.stdout === '', cdpLiveHosted.stdout || cdpLiveHosted.stderr);
 
 const context7 = run({ tool_name: 'mcp__context7__query-docs', tool_input: { q: 'react' } }, hostEnv);
 check('hosted context7 docs MCP tool passes silently', context7.status === 0 && context7.stdout === '', context7.stdout || context7.stderr);

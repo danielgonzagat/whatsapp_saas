@@ -34,7 +34,7 @@ import type {
   AutopilotImpact,
   SystemHealth,
 } from './page.ui';
-import { StatCard, StatusPill, formatDateTime } from './page.ui';
+import { StatCard, StatusPill, formatDateTime, formatStatusLabel } from './page.ui';
 
 interface PipelineSectionProps {
   status: AutopilotStatus | null;
@@ -273,7 +273,9 @@ export function PipelineSection({
                     </span>
                   </div>
                   <p style={{ color: colors.text.primary }}>
-                    {pipeline?.autopilot?.lastEvent?.status || 'Sem eventos recentes'}
+                    {pipeline?.autopilot?.lastEvent?.status
+                      ? formatStatusLabel(pipeline.autopilot.lastEvent.status)
+                      : 'Sem eventos recentes'}
                     {pipeline?.autopilot?.lastEvent?.reason
                       ? ` — ${pipeline.autopilot.lastEvent.reason}`
                       : ''}

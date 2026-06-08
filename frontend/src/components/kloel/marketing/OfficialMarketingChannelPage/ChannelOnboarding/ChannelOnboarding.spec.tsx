@@ -207,7 +207,14 @@ describe('step vignettes wired by props', () => {
       <StepArsenal C={D} count={0} onAddFiles={onAddFiles} onBack={vi.fn()} onContinue={vi.fn()} />,
     );
     expect(screen.getByText(/Pular esta camada/)).toBeTruthy();
-    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+    const input = screen.getByLabelText('Adicionar provas ao canal') as HTMLInputElement;
+    const button = screen.getByRole('button', { name: /Adicionar prova/ });
+
+    expect(container.querySelector('input[type="file"]')).toBe(input);
+    expect(input.getAttribute('id')).toBe('channel-arsenal-file-input');
+    expect(input.getAttribute('name')).toBe('channelArsenalFiles');
+    expect(button.getAttribute('aria-controls')).toBe('channel-arsenal-file-input');
+
     const file = new File(['x'], 'proof.png', { type: 'image/png' });
     fireEvent.change(input, { target: { files: [file] } });
     expect(onAddFiles).toHaveBeenCalled();

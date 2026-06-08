@@ -76,8 +76,26 @@ export class ManifestInjectionBuilderService {
       }
     }
 
+    if (this.hasRenderableArtifactCapability(selection)) {
+      lines.push('FORMATO DE ENTREGA PARA ARQUIVOS BAIXÁVEIS:');
+      lines.push(
+        '- Quando o usuário pedir arquivos, documentos, PDF, HTML, SVG, Mermaid, React, DOCX, PPTX, XLSX, dados ou código baixável, materialize cada arquivo no corpo da resposta.',
+      );
+      lines.push(
+        '- Para cada arquivo, escreva uma linha `Arquivo: nome.ext` imediatamente antes de um bloco cercado com a linguagem/formato correspondente.',
+      );
+      lines.push(
+        '- Não diga que não consegue criar ou baixar arquivos quando o formato estiver coberto; entregue os bytes como blocos nomeados e deixe o chat gerar os cards.',
+      );
+      lines.push('- Mantenha a resposta final curta e não explique este mecanismo interno.');
+    }
+
     lines.push(MANIFEST_INJECTION_CLOSE);
     return lines.join('\n');
+  }
+
+  private hasRenderableArtifactCapability(selection: CapabilityRouterSelection): boolean {
+    return selection.capabilities.some((entry) => entry.id === 'artifacts.create_renderable');
   }
 
   private renderObligation(obligation: CapabilityManifestObligation): string {
@@ -86,13 +104,9 @@ export class ManifestInjectionBuilderService {
 
   /** One compact line per capability: internalName + description + inputs. */
   private renderEntry(entry: CapabilityManifestEntry): string {
-    const required = entry.inputs
-      .filter((input) => input.required)
-      .map((input) => input.key);
+    const required = entry.inputs.filter((input) => input.required).map((input) => input.key);
     const inputsPart = required.length > 0 ? ` (args: ${required.join(', ')})` : '';
-    const confirmPart = entry.safetyProfile.requiresConfirmation
-      ? ' [confirmar antes]'
-      : '';
+    const confirmPart = entry.safetyProfile.requiresConfirmation ? ' [confirmar antes]' : '';
     return `${entry.internalName}: ${entry.description}${inputsPart}${confirmPart}`;
   }
 
@@ -136,6 +150,9 @@ export class ManifestInjectionBuilderService {
   }
 
   private collapseWhitespace(text: string): string {
-    return text.replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+    return text
+      .replace(/[ \t]{2,}/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
   }
 }

@@ -103,9 +103,6 @@ const EXPLICIT_OPERATOR_INTENT_PATTERNS: Array<{
   },
 ];
 
-const UNSUPPORTED_FALLBACK_RE =
-  /^(?:kloel[\s,.:;-]+)?(?:crie|criar|gera|gerar|configure|configurar|monte|faca|faz|envie|mande)\b.{0,90}\b(site|landing|pagina|anuncio|anuncios|campanha|email|relatorio|relatorios|dashboard|integracao)\b/;
-
 function normalizeIntentText(rawText: string): string {
   return rawText
     .normalize('NFD')
@@ -125,10 +122,6 @@ export function detectOperatorIntent(rawText: string): string | null {
     if (entry.patterns.some((pattern) => pattern.test(normalized))) {
       return entry.intent;
     }
-  }
-
-  if (UNSUPPORTED_FALLBACK_RE.test(normalized)) {
-    return 'unsupported_fallback';
   }
 
   return null;

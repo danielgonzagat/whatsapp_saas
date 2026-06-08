@@ -214,81 +214,81 @@ export class SitesService {
 
   /** List domains for a site. */
   async listDomains(workspaceId: string, siteId: string): Promise<SiteDomain[]> {
-      const site = await this.ensureOwnership(workspaceId, siteId);
-      return this.prisma.siteDomain.findMany({
-        where: { siteId: site.id },
-        orderBy: { createdAt: 'desc' },
-      });
-    }
+    const site = await this.ensureOwnership(workspaceId, siteId);
+    return this.prisma.siteDomain.findMany({
+      where: { siteId: site.id },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 
   /** Add a custom domain. */
   async addDomain(workspaceId: string, siteId: string, dto: AddSiteDomainDto): Promise<SiteDomain> {
-      const site = await this.ensureOwnership(workspaceId, siteId);
+    const site = await this.ensureOwnership(workspaceId, siteId);
 
-      const existingHost = await this.prisma.siteDomain.findUnique({
-        where: { hostname: dto.hostname },
-      });
-      if (existingHost) {
-        throw new ConflictException(`Hostname "${dto.hostname}" is already in use`);
-      }
-
-      return this.prisma.siteDomain.create({
-        data: {
-          siteId: site.id,
-          hostname: dto.hostname,
-          isCustom: true,
-        },
-      });
+    const existingHost = await this.prisma.siteDomain.findUnique({
+      where: { hostname: dto.hostname },
+    });
+    if (existingHost) {
+      throw new ConflictException(`Hostname "${dto.hostname}" is already in use`);
     }
+
+    return this.prisma.siteDomain.create({
+      data: {
+        siteId: site.id,
+        hostname: dto.hostname,
+        isCustom: true,
+      },
+    });
+  }
 
   /** Remove a domain from a site. */
   async removeDomain(workspaceId: string, siteId: string, domainId: string): Promise<void> {
-      const site = await this.ensureOwnership(workspaceId, siteId);
+    const site = await this.ensureOwnership(workspaceId, siteId);
 
-      const domain = await this.prisma.siteDomain.findFirst({
-        where: { id: domainId, siteId: site.id },
-      });
-      if (!domain) {
-        throw new NotFoundException(`Domain ${domainId} not found on site ${site.id}`);
-      }
-
-      await this.prisma.siteDomain.delete({ where: { id: domainId } });
+    const domain = await this.prisma.siteDomain.findFirst({
+      where: { id: domainId, siteId: site.id },
+    });
+    if (!domain) {
+      throw new NotFoundException(`Domain ${domainId} not found on site ${site.id}`);
     }
+
+    await this.prisma.siteDomain.delete({ where: { id: domainId } });
+  }
 
   // ── App Integrations ─────────────────────────────────────
 
   /** List app integrations for a site. */
   async listApps(workspaceId: string, siteId: string): Promise<SiteAppIntegration[]> {
-      const site = await this.ensureOwnership(workspaceId, siteId);
-      return this.prisma.siteAppIntegration.findMany({
-        where: { siteId: site.id },
-        orderBy: { createdAt: 'desc' },
-      });
-    }
+    const site = await this.ensureOwnership(workspaceId, siteId);
+    return this.prisma.siteAppIntegration.findMany({
+      where: { siteId: site.id },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 
   /** Create or update an app integration (enable/disable + config). */
   async upsertApp(
-      workspaceId: string,
-      siteId: string,
-      appKey: string,
-      dto: UpdateSiteAppDto,
-    ): Promise<SiteAppIntegration> {
-      const site = await this.ensureOwnership(workspaceId, siteId);
+    workspaceId: string,
+    siteId: string,
+    appKey: string,
+    dto: UpdateSiteAppDto,
+  ): Promise<SiteAppIntegration> {
+    const site = await this.ensureOwnership(workspaceId, siteId);
 
-      return this.prisma.siteAppIntegration.upsert({
-        where: { siteId_appKey: { siteId: site.id, appKey } },
-        create: {
-          siteId: site.id,
-          appKey,
-          enabled: dto.enabled ?? false,
-          config: (dto.config ?? {}) as Prisma.InputJsonValue,
-        },
-        update: {
-          ...(dto.enabled !== undefined ? { enabled: dto.enabled } : {}),
-          ...(dto.config !== undefined ? { config: dto.config as Prisma.InputJsonValue } : {}),
-        },
-      });
-    }
+    return this.prisma.siteAppIntegration.upsert({
+      where: { siteId_appKey: { siteId: site.id, appKey } },
+      create: {
+        siteId: site.id,
+        appKey,
+        enabled: dto.enabled ?? false,
+        config: (dto.config ?? {}) as Prisma.InputJsonValue,
+      },
+      update: {
+        ...(dto.enabled !== undefined ? { enabled: dto.enabled } : {}),
+        ...(dto.config !== undefined ? { config: dto.config as Prisma.InputJsonValue } : {}),
+      },
+    });
+  }
 
   // ── Helpers ──────────────────────────────────────────────
 
@@ -299,48 +299,48 @@ export class SitesService {
   }
 
   private async ensureOwnership(workspaceId: string, siteId: string): Promise<Site> {
-      this.assertWorkspace(workspaceId);
+    this.assertWorkspace(workspaceId);
 
-      const site = await this.prisma.site.findUnique({ where: { id: siteId, workspaceId } });
-      if (site) {
-        if (site.workspaceId !== workspaceId) {
-          throw new ForbiddenException('Cross-workspace access denied');
-        }
-        return site;
+    const site = await this.prisma.site.findUnique({ where: { id: siteId, workspaceId } });
+    if (site) {
+      if (site.workspaceId !== workspaceId) {
+        throw new ForbiddenException('Cross-workspace access denied');
       }
-
-      const existingBridge = await this.prisma.site.findFirst({
-        where: { workspaceId, legacyKloelSiteId: siteId },
-      });
-      if (existingBridge) {
-        return existingBridge;
-      }
-
-      const kloelSite = await this.prisma.kloelSite.findFirst({
-        where: { id: siteId, workspaceId },
-      });
-      if (!kloelSite) {
-        throw new NotFoundException(`Site ${siteId} not found`);
-      }
-
-      const slugBase = slugify(kloelSite.slug || kloelSite.name || siteId).slice(0, 180) || 'site';
-      let slug = slugBase;
-      let suffix = 2;
-      while (await this.prisma.site.findFirst({ where: { workspaceId, slug } })) {
-        slug = `${slugBase}-${suffix}`;
-        suffix += 1;
-      }
-
-      return this.prisma.site.create({
-        data: {
-          workspaceId,
-          name: kloelSite.name || 'Site sem titulo',
-          slug,
-          status: kloelSite.published ? 'PUBLISHED' : 'DRAFT',
-          publishedAt: kloelSite.published ? new Date() : null,
-          template: 'kloel-site-builder',
-          legacyKloelSiteId: kloelSite.id,
-        },
-      });
+      return site;
     }
+
+    const existingBridge = await this.prisma.site.findFirst({
+      where: { workspaceId, legacyKloelSiteId: siteId },
+    });
+    if (existingBridge) {
+      return existingBridge;
+    }
+
+    const kloelSite = await this.prisma.kloelSite.findFirst({
+      where: { id: siteId, workspaceId },
+    });
+    if (!kloelSite) {
+      throw new NotFoundException(`Site ${siteId} not found`);
+    }
+
+    const slugBase = slugify(kloelSite.slug || kloelSite.name || siteId).slice(0, 180) || 'site';
+    let slug = slugBase;
+    let suffix = 2;
+    while (await this.prisma.site.findFirst({ where: { workspaceId, slug } })) {
+      slug = `${slugBase}-${suffix}`;
+      suffix += 1;
+    }
+
+    return this.prisma.site.create({
+      data: {
+        workspaceId,
+        name: kloelSite.name || 'Site sem titulo',
+        slug,
+        status: kloelSite.published ? 'PUBLISHED' : 'DRAFT',
+        publishedAt: kloelSite.published ? new Date() : null,
+        template: 'kloel-site-builder',
+        legacyKloelSiteId: kloelSite.id,
+      },
+    });
+  }
 }

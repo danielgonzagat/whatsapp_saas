@@ -156,6 +156,7 @@ server.registerTool(
       }
 
       const fileBytes = fs.readFileSync(absPath);
+      const fileSha256 = crypto.createHash('sha256').update(fileBytes).digest('hex');
       return ok({
         ok: true,
         changed: false,
@@ -163,7 +164,16 @@ server.registerTool(
         exists: true,
         kind: 'file',
         bytes: stat.size,
-        sha256: crypto.createHash('sha256').update(fileBytes).digest('hex'),
+        sha256: fileSha256,
+        byteClassification: {
+          scope: 'entire-file',
+          status: 'unproven',
+          materializationPolicy: 'unproven-is-negative',
+          bytes: stat.size,
+          sha256: fileSha256,
+          reason:
+            'code_file_stat proves file existence, size, and sha256 only. No proof receipt or validation chain was supplied, so these bytes are not classified positive.',
+        },
         mtimeMs: stat.mtimeMs,
         ...targetDetails(absPath, relPath),
       });

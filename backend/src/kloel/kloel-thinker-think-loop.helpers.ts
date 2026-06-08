@@ -14,9 +14,12 @@
  * `applyReplyEnginePostReply`).
  *
  * It is gated behind {@link isThinkLoopEnabled} (env `KLOEL_THINK_LOOP_ENABLED`,
- * DEFAULT OFF). When OFF, the caller skips this module entirely — `think()` is
- * byte-for-byte the current behavior (no new awaits, no new DB writes, no added
- * latency on the stream critical path).
+ * DEFAULT ON). When explicitly disabled (`KLOEL_THINK_LOOP_ENABLED=false`) the
+ * caller skips this module entirely — `think()` is byte-for-byte the legacy
+ * behavior (no new awaits, no new DB writes, no added latency on the stream
+ * critical path). When ON (the default), every call below remains
+ * fire-and-forget and try/catch-wrapped, so the loop can never block or crash
+ * the user-facing SSE stream.
  *
  * Every call here is fire-and-forget at the helper boundary (the helpers catch
  * their own errors and warn-log), and the orchestration below additionally
@@ -66,13 +69,19 @@ export interface ThinkLoopHandle {
 }
 
 /**
- * Feature flag for the streaming-path cognition loop. DEFAULT OFF — the loop
- * only fires when `KLOEL_THINK_LOOP_ENABLED` is exactly `'true'` (case
- * insensitive). Mirrors the repo's established `process.env.X === 'true'` flag
- * idiom (e.g. GUEST_CHAT_ENABLED / HANDOFF_CONFIDENCE_GATE_ENABLED).
+ * Feature flag for the streaming-path cognition loop. DEFAULT ON — the loop
+ * fires unless `KLOEL_THINK_LOOP_ENABLED` is explicitly set to `'false'` (case
+ * insensitive). This is a deliberate prod-default flip: the loop is the only
+ * path that closes the predictive-coding / decision-outcome cycle on the
+ * primary streaming `think()`, so leaving it OFF kept RAC_MindPrediction /
+ * RAC_MindBanditArm / RAC_DecisionOutcome at 0 rows in production. Every call
+ * downstream is fire-and-forget and try/catch-wrapped, so an ON default adds no
+ * blocking await and can never crash the SSE stream; operators can still hard
+ * off via `KLOEL_THINK_LOOP_ENABLED=false`. Uses the inverse of the repo's
+ * `=== 'true'` idiom precisely because the safe default here is ON.
  */
 export function isThinkLoopEnabled(): boolean {
-  return (process.env.KLOEL_THINK_LOOP_ENABLED ?? '').toLowerCase() === 'true';
+  return (process.env.KLOEL_THINK_LOOP_ENABLED ?? 'true').toLowerCase() !== 'false';
 }
 
 /**

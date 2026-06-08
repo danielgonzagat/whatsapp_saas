@@ -6,11 +6,7 @@ import { StructuredLogger } from '../../logging/structured-logger';
 import { toDataURL as qrToDataURL } from 'qrcode';
 import { decryptAdminSecret, encryptAdminSecret } from '../common/admin-crypto';
 import { adminErrors } from '../common/admin-api-errors';
-import {
-  MFA_PERIOD_SECONDS,
-  generateMfaSecret,
-  verifyTotp,
-} from '../../common/totp';
+import { MFA_PERIOD_SECONDS, generateMfaSecret, verifyTotp } from '../../common/totp';
 
 const RX_0_9__6_RE = /^[0-9]{6}$/;
 

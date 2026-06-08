@@ -160,10 +160,10 @@ export function QueueConfigSection({
               </div>
               <div>
                 <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
-                  {kloelT('Configuracao de Runtime')}
+                  {kloelT('Configuração de Runtime')}
                 </h2>
                 <p className="text-sm" style={{ color: colors.text.muted }}>
-                  {kloelT('Parametros de execucao do Autopilot')}
+                  {kloelT('Parâmetros de execução do Autopilot')}
                 </p>
               </div>
             </div>
@@ -209,7 +209,7 @@ export function QueueConfigSection({
                   aria-hidden="true"
                 />
                 <p className="text-sm" style={{ color: colors.text.muted }}>
-                  {kloelT('Configuracao de runtime indisponivel')}
+                  {kloelT('Configuração de runtime indisponível')}
                 </p>
               </div>
             )}

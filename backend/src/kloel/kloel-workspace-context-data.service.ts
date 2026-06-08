@@ -255,7 +255,16 @@ export class KloelWorkspaceContextDataService {
       }),
       typeof this.mindMemoryItems?.findMany === 'function'
         ? this.mindMemoryItems.findMany({
-            where: { workspaceId },
+            where: {
+              workspaceId,
+              NOT: [
+                { category: { in: ['agent_event', 'user_memory'] } },
+                { type: { in: ['turn', 'user_fact', 'user_profile'] } },
+                { key: { startsWith: 'agent_turn:' } },
+                { key: { startsWith: 'slot:' } },
+                { key: { startsWith: 'user_profile:' } },
+              ],
+            },
             select: {
               id: true,
               key: true,

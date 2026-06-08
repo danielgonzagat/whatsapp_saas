@@ -134,6 +134,9 @@ export function OrderConfirmationSection({
       <div style={sectionStyle}>
         <h3 style={sectionTitleStyle}>{kloelT('CSS Personalizado')}</h3>
         <textarea
+          id={`${localFid}-custom-css`}
+          name="customCSS"
+          aria-label={kloelT('CSS personalizado')}
           value={config.customCSS}
           onChange={(e) => void patch({ customCSS: e.target.value })}
           placeholder={'.checkout-container {\n  /* seus estilos aqui */\n}'}

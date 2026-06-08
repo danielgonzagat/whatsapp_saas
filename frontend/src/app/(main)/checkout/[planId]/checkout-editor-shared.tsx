@@ -190,6 +190,8 @@ export function ColorField({
           }}
         />
         <input
+          id={`${colorId}-text`}
+          name={`${colorId}-text`}
           aria-label={lbl}
           type="text"
           value={value || ''}

@@ -19,19 +19,21 @@
  * status) the Mind perceives, so emitting it feeds the money engine's decision
  * into the cognition ledger without changing the campaign-generation logic.
  *
- * DEFAULT OFF. Best-effort: every emit is wrapped in try/catch + warn-log so it
- * can NEVER break the legacy lead scan / campaign + flow creation or change
- * Money Machine behavior / outputs. No read path consumes this flag. No
- * backfill. Flag-OFF is byte-identical to today (synchronous early-return, no
- * DB call).
+ * DEFAULT ON (one-Mind unification): the cognition loop must perceive every
+ * surface, so Money Machine scans + campaign generation feed the spine by
+ * default. Disable only via `KLOEL_MONEY_PERCEPT_ENABLED=false`. The flag gates
+ * ONLY the additive percept emit — NOT the lead scan / campaign + flow creation.
+ * Best-effort: every emit is wrapped in try/catch + warn-log (idempotent outbox
+ * upsert) so it can NEVER break the legacy money path or change Money Machine
+ * behavior / outputs. No backfill.
  *
- * Mirrors the repo's established `process.env.X === 'true'` flag idiom
- * (e.g. KLOEL_FLOWS_PERCEPT_ENABLED / KLOEL_VOICE_PERCEPT_ENABLED).
+ * Inverse of the repo's `=== 'true'` idiom precisely because the safe default
+ * here is ON (mirrors KLOEL_THINK_LOOP_ENABLED).
  *
  * @see backend/src/growth/money-percept-emit.helper.ts
  * @see backend/src/growth/money-machine.service.ts (activate)
  * @see backend/src/voice/voice-percept-emit.flag.ts (the pattern this mirrors)
  */
 export function isMoneyPerceptEmitEnabled(): boolean {
-  return (process.env.KLOEL_MONEY_PERCEPT_ENABLED ?? '').toLowerCase() === 'true';
+  return (process.env.KLOEL_MONEY_PERCEPT_ENABLED ?? 'true').toLowerCase() !== 'false';
 }

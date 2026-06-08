@@ -18,12 +18,7 @@ export type KloelCapabilityName =
 export type ContentKind = 'prose' | 'code';
 
 /** Coarse complexity band for a request, used to size a response window. */
-export type RequestComplexity =
-  | 'simple'
-  | 'medium'
-  | 'medium_high'
-  | 'complex'
-  | 'creative';
+export type RequestComplexity = 'simple' | 'medium' | 'medium_high' | 'complex' | 'creative';
 
 /** Depth tier the chat can offer the user. */
 export type ResponseDepthLevel = 'essential' | 'moderate' | 'detailed' | 'exhaustive';

@@ -20,8 +20,13 @@ describe('detectOperatorIntent', () => {
     expect(detectOperatorIntent('analise a si mesmo')).toBe('inspect_self');
   });
 
-  it('keeps unsupported fallback scoped to explicit operational commands', () => {
-    expect(isUnsupportedFallback(detectOperatorIntent('crie uma landing para PDRN'))).toBe(true);
+  it('does not hijack creation prompts before they reach the chat runtime', () => {
+    const artifactPrompt =
+      'Crie um arquivo Markdown chamado prova-harvest.md com 3 bullets sobre pesquisa web, dashboard de dados e validacao browser.';
+
+    expect(detectOperatorIntent('crie uma landing para PDRN')).toBeNull();
+    expect(detectOperatorIntent(artifactPrompt)).toBeNull();
+    expect(isUnsupportedFallback(detectOperatorIntent(artifactPrompt))).toBe(false);
     expect(detectOperatorIntent('quero discutir a landing e o dashboard completo')).toBeNull();
   });
 });

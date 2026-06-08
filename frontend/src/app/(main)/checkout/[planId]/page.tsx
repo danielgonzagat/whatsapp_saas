@@ -54,9 +54,7 @@ export default function CheckoutEditorPage() {
   const checkoutPublicUrl = isValidCheckoutCode(normalizedReferenceCode)
     ? buildPayUrl(`/${normalizedReferenceCode}`, currentHost)
     : buildPayUrl(`/${config.slug || planId}`, currentHost);
-  const previewUrl = mounted
-    ? `${window.location.origin}/checkout/preview/${planId}?preview=true`
-    : '';
+  const previewUrl = mounted ? `${window.location.origin}/preview/${planId}?preview=true` : '';
   const appearanceRef = useRef<HTMLDivElement>(null);
   const couponRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<HTMLDivElement>(null);
@@ -314,7 +312,7 @@ export default function CheckoutEditorPage() {
           >
             <iframe
               ref={iframeRef}
-              src={previewUrl}
+              src={previewUrl || undefined}
               style={{
                 width: '100%',
                 height: '100%',

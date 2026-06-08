@@ -21,14 +21,15 @@ import type {
 @Injectable()
 export class ResponseDepthAdvisorCapability {
   /** Multiplier bands (min, max) per complexity, applied to input tokens. */
-  private static readonly MULTIPLIERS: Readonly<Record<RequestComplexity, readonly [number, number]>> =
-    {
-      simple: [3, 8],
-      medium: [8, 20],
-      medium_high: [10, 25],
-      complex: [15, 40],
-      creative: [10, 30],
-    };
+  private static readonly MULTIPLIERS: Readonly<
+    Record<RequestComplexity, readonly [number, number]>
+  > = {
+    simple: [3, 8],
+    medium: [8, 20],
+    medium_high: [10, 25],
+    complex: [15, 40],
+    creative: [10, 30],
+  };
 
   private static readonly TIERS: ReadonlyArray<{
     level: ResponseDepthLevel;
@@ -105,7 +106,8 @@ export class ResponseDepthAdvisorCapability {
       /\b(hist[oó]ria|conto|narrativa|poema|ensaio|roteiro|story|essay|narrative|escreva um texto)\b/;
     const complexSignals =
       /\b(compare|comparar|arquitetura|architecture|trade-?off|an[aá]lise|analise|m[uú]ltipl|estrat[eé]gia|migra[cç][aã]o|design system)\b/;
-    const mediumHighSignals = /\b(implemente|implement|escreva (uma|um) (fun[cç][aã]o|c[oó]digo)|crie (uma|um) (componente|endpoint|fun[cç][aã]o)|refator)/;
+    const mediumHighSignals =
+      /\b(implemente|implement|escreva (uma|um) (fun[cç][aã]o|c[oó]digo)|crie (uma|um) (componente|endpoint|fun[cç][aã]o)|refator)/;
     const mediumSignals = /\b(como|how (does|do|to)|por que|porqu[eê]|explique|explain|funciona)\b/;
     const simpleSignals = /^(o que [eé]|what is|qual|quando|quem|sim ou n[aã]o|yes or no)\b/;
 

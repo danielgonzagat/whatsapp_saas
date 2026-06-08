@@ -18,6 +18,7 @@ type MushroomVisualProps = {
   spores?: 'none' | 'animated' | 'static' | undefined;
   ariaHidden?: boolean | undefined;
   fit?: 'default' | 'icon' | undefined;
+  loading?: 'lazy' | 'eager' | undefined;
 };
 
 type MarkProps = {
@@ -174,6 +175,7 @@ export function KloelMushroomVisual({
   spores = 'animated',
   ariaHidden = false,
   fit = 'default',
+  loading = 'lazy',
 }: MushroomVisualProps) {
   const [svgText, setSvgText] = useState<string | null>(null);
   const svgHostRef = useRef<HTMLSpanElement>(null);
@@ -247,7 +249,7 @@ export function KloelMushroomVisual({
           role="presentation"
           width={size}
           height={size}
-          loading="eager"
+          loading={loading}
           style={{
             display: 'block',
             width: '100%',
@@ -281,7 +283,7 @@ export function KloelMushroomVisual({
       role={ariaHidden ? 'presentation' : 'img'}
       width={size}
       height={size}
-      loading="eager"
+      loading={loading}
       style={sharedStyle}
     />
   );
@@ -394,7 +396,7 @@ export function KloelLoadingState({
         ...style,
       }}
     >
-      <KloelMushroomVisual size={size} traceColor={traceColor} animated spores="animated" />
+      <KloelMushroomVisual size={size} traceColor={traceColor} animated spores="animated" loading="eager" />
       <div style={{ display: 'grid', gap: 6 }}>
         <p
           style={{

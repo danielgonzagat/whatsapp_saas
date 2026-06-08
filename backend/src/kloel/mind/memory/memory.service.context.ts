@@ -11,8 +11,10 @@ export const EMPTY_MEMORY_CONTEXT: MemoryContextForModel = {
 
 export function buildMemoryContextFromRetrieved(
   relevant: RetrievedMemory[],
+  consolidatedBeliefs: readonly string[] = [],
 ): MemoryContextForModel {
-  if (relevant.length === 0) {
+  if (relevant.length === 0 && consolidatedBeliefs.length === 0) {
+    // Empty/absent on both sides → byte-identical no-op (no fabricated section).
     return EMPTY_MEMORY_CONTEXT;
   }
 
@@ -57,6 +59,9 @@ export function buildMemoryContextFromRetrieved(
   pushSection('PREFERÊNCIAS DO USUÁRIO', preferences);
   pushSection('RESTRIÇÕES', constraints);
   pushSection('MEMÓRIAS RELEVANTES PARA ESTA CONVERSA', relevantMemories);
+  // Workspace-level learnings consolidated by mind-bg (RAC_MindBelief). Only
+  // rendered when non-empty, so an absent set stays a byte-identical no-op.
+  pushSection('APRENDIZADOS CONSOLIDADOS (aprendidos pelo workspace)', consolidatedBeliefs);
 
   const text = sections.length
     ? `MEMÓRIA DO USUÁRIO (aprendida em conversas anteriores):\n\n${sections.join('\n\n')}`

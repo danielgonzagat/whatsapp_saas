@@ -93,7 +93,7 @@ export function ScraperNewJobModal({ onClose, onCreated }: { onClose: () => void
             margin: '0 0 24px',
           }}
         >
-          {kloelT(`Configure a coleta de leads automatica.`)}
+          {kloelT(`Configure a coleta de leads automática.`)}
         </p>
 
         <label
@@ -151,7 +151,7 @@ export function ScraperNewJobModal({ onClose, onCreated }: { onClose: () => void
           onChange={(e) => setForm({ ...form, query: e.target.value })}
           placeholder={
             form.type === 'MAPS'
-              ? 'Ex: academias de ginastica'
+              ? 'Ex: academias de ginástica'
               : form.type === 'INSTAGRAM'
                 ? 'Ex: @fitnessbr'
                 : 'Ex: link do grupo'
@@ -191,7 +191,7 @@ export function ScraperNewJobModal({ onClose, onCreated }: { onClose: () => void
               type="text"
               value={form.location}
               onChange={(e) => setForm({ ...form, location: e.target.value })}
-              placeholder={kloelT(`Ex: Sao Paulo, SP`)}
+              placeholder={kloelT(`Ex: São Paulo, SP`)}
               style={{
                 width: '100%',
                 padding: '10px 14px',

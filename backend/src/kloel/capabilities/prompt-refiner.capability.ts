@@ -28,31 +28,48 @@ export class PromptRefinerCapability {
   private static readonly RULES: readonly IntentRule[] = [
     {
       intent: 'bug_fix',
-      signals: /\b(corrig|conserta|bug|erro|n[aã]o funciona|quebrad|falha|fix|broken|not working|error)\b/i,
+      signals:
+        /\b(corrig|conserta|bug|erro|n[aã]o funciona|quebrad|falha|fix|broken|not working|error)\b/i,
       contextChecks: [
-        { test: /\b(erro|exce|stack|log|mensagem|message)\b/i, question: 'Qual é a mensagem de erro exata ou o comportamento observado?' },
-        { test: /\b(reproduz|passo|quando|ao |steps|reproduce)\b/i, question: 'Como reproduzir o problema (passos)?' },
+        {
+          test: /\b(erro|exce|stack|log|mensagem|message)\b/i,
+          question: 'Qual é a mensagem de erro exata ou o comportamento observado?',
+        },
+        {
+          test: /\b(reproduz|passo|quando|ao |steps|reproduce)\b/i,
+          question: 'Como reproduzir o problema (passos)?',
+        },
       ],
     },
     {
       intent: 'testing',
       signals: /\b(teste|testes|cobertura|test|coverage|spec|e2e)\b/i,
       contextChecks: [
-        { test: /\b(unit|integra|e2e|tipo)\b/i, question: 'Que tipo de teste (unitário, integração, e2e)?' },
+        {
+          test: /\b(unit|integra|e2e|tipo)\b/i,
+          question: 'Que tipo de teste (unitário, integração, e2e)?',
+        },
       ],
     },
     {
       intent: 'review',
       signals: /\b(revis|auditar|audit|review|verifique se|checar|c[oó]digo seguro)\b/i,
       contextChecks: [
-        { test: /\b(arquivo|m[oó]dulo|pasta|pr|file|module)\b/i, question: 'Qual arquivo, módulo ou PR deve ser revisado?' },
+        {
+          test: /\b(arquivo|m[oó]dulo|pasta|pr|file|module)\b/i,
+          question: 'Qual arquivo, módulo ou PR deve ser revisado?',
+        },
       ],
     },
     {
       intent: 'refactor',
-      signals: /\b(refator|reorganiz|limpa o c[oó]digo|reestrutur|refactor|clean up|restructure)\b/i,
+      signals:
+        /\b(refator|reorganiz|limpa o c[oó]digo|reestrutur|refactor|clean up|restructure)\b/i,
       contextChecks: [
-        { test: /\b(arquivo|m[oó]dulo|pasta|scope|escopo|file|module)\b/i, question: 'Qual é o escopo do refactor (arquivos/módulos)?' },
+        {
+          test: /\b(arquivo|m[oó]dulo|pasta|scope|escopo|file|module)\b/i,
+          question: 'Qual é o escopo do refactor (arquivos/módulos)?',
+        },
       ],
     },
     {
@@ -62,28 +79,41 @@ export class PromptRefinerCapability {
     },
     {
       intent: 'infrastructure',
-      signals: /\b(deploy|implant|ci\/?cd|docker|kubernetes|banco de dados|database|pipeline|infra)\b/i,
+      signals:
+        /\b(deploy|implant|ci\/?cd|docker|kubernetes|banco de dados|database|pipeline|infra)\b/i,
       contextChecks: [
-        { test: /\b(ambiente|env|produ[cç][aã]o|homolog|provedor|provider)\b/i, question: 'Qual ambiente/provedor (produção, homolog, etc.)?' },
+        {
+          test: /\b(ambiente|env|produ[cç][aã]o|homolog|provedor|provider)\b/i,
+          question: 'Qual ambiente/provedor (produção, homolog, etc.)?',
+        },
       ],
     },
     {
       intent: 'design',
-      signals: /\b(arquitetura|architecture|modelagem|modelo de dados|projetar|design (the|a|o|de)|planejar a estrutura)\b/i,
+      signals:
+        /\b(arquitetura|architecture|modelagem|modelo de dados|projetar|design (the|a|o|de)|planejar a estrutura)\b/i,
       contextChecks: [
-        { test: /\b(requisito|restri[cç]|constraint|requirement|crit[eé]rio)\b/i, question: 'Quais são os requisitos e restrições principais?' },
+        {
+          test: /\b(requisito|restri[cç]|constraint|requirement|crit[eé]rio)\b/i,
+          question: 'Quais são os requisitos e restrições principais?',
+        },
       ],
     },
     {
       intent: 'research',
-      signals: /\b(como (fazer|adicionar|integrar)|how to|investiga|pesquis|explore|o que [eé]|what is|qual a melhor forma)\b/i,
+      signals:
+        /\b(como (fazer|adicionar|integrar)|how to|investiga|pesquis|explore|o que [eé]|what is|qual a melhor forma)\b/i,
       contextChecks: [],
     },
     {
       intent: 'new_feature',
-      signals: /\b(cri[ae]|construir|construa|implement|adicion|build|create|add|fazer (uma|um))\b/i,
+      signals:
+        /\b(cri[ae]|construir|construa|implement|adicion|build|create|add|fazer (uma|um))\b/i,
       contextChecks: [
-        { test: /\b(crit[eé]rio|aceita|done|pronto|requisito)\b/i, question: 'Quais são os critérios de aceitação (como saber que está pronto)?' },
+        {
+          test: /\b(crit[eé]rio|aceita|done|pronto|requisito)\b/i,
+          question: 'Quais são os critérios de aceitação (como saber que está pronto)?',
+        },
       ],
     },
   ];
@@ -102,7 +132,13 @@ export class PromptRefinerCapability {
     {
       test: /\b(n[aã]o (fa[cç]a|altere|mexa)|exceto|sem (mexer|alterar)|do not|scope boundary|fora do escopo)\b/i,
       question: 'Há algo que NÃO deve ser alterado (limites de escopo)?',
-      intents: new Set<PromptIntent>(['new_feature', 'bug_fix', 'refactor', 'infrastructure', 'design']),
+      intents: new Set<PromptIntent>([
+        'new_feature',
+        'bug_fix',
+        'refactor',
+        'infrastructure',
+        'design',
+      ]),
     },
   ];
 
@@ -149,10 +185,18 @@ export class PromptRefinerCapability {
     const lower = prompt.toLowerCase();
     const wordCount = prompt.split(/\s+/).filter(Boolean).length;
 
-    if (/\b(multi-?sess|v[aá]rias telas|sistema inteiro|reescrever tudo|arquitetura completa|epic)\b/.test(lower)) {
+    if (
+      /\b(multi-?sess|v[aá]rias telas|sistema inteiro|reescrever tudo|arquitetura completa|epic)\b/.test(
+        lower,
+      )
+    ) {
       return 'epic';
     }
-    if (/\b(v[aá]rios m[oó]dulos|cross-?domain|m[uú]ltiplos arquivos|integra[cç][aã]o entre|5\+ arquivos|toda a)\b/.test(lower)) {
+    if (
+      /\b(v[aá]rios m[oó]dulos|cross-?domain|m[uú]ltiplos arquivos|integra[cç][aã]o entre|5\+ arquivos|toda a)\b/.test(
+        lower,
+      )
+    ) {
       return 'high';
     }
     if (/\b(componente|endpoint|m[oó]dulo|tela|fluxo)\b/.test(lower) || wordCount > 40) {
@@ -230,10 +274,7 @@ export class PromptRefinerCapability {
           'Cubra com testes e revise antes de finalizar.',
         ];
       case 'refactor':
-        return [
-          'Preserve o comportamento existente.',
-          'Garanta que os testes continuem passando.',
-        ];
+        return ['Preserve o comportamento existente.', 'Garanta que os testes continuem passando.'];
       case 'testing':
         return ['Cubra casos felizes e de borda.', 'Mantenha os testes determinísticos.'];
       case 'review':

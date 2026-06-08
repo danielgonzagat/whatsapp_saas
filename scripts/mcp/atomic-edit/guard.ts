@@ -177,6 +177,7 @@ const PROTECTED_PREFIXES = [
   "docs/codacy/",
   "docs/design/",
   "ops/",
+  "scripts/ops/check",
 ];
 
 /** Owner-approval / exception ledger files inside ops/ that atomic MAY append to

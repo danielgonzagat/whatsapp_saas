@@ -5,6 +5,21 @@
       "command": "bash",
       "args": ["scripts/mcp/atomic-edit-mcp-launcher.sh"],
       "description": "Structured code action space for atomic, validated code edits."
+    },
+    "chrome-devtools": {
+      "command": "bash",
+      "args": ["scripts/mcp/chrome-devtools-mcp-launcher.sh", "--browserUrl=http://127.0.0.1:9222"],
+      "description": "Browser inspection, console, network, performance and interaction audit through Chrome DevTools MCP."
+    },
+    "chrome-devtools-live": {
+      "command": "bash",
+      "args": ["scripts/mcp/chrome-devtools-mcp-launcher.sh", "--browserUrl=http://127.0.0.1:9223"],
+      "description": "Second Chrome DevTools MCP channel for live product validation when the primary browser context is busy."
+    },
+    "chrome-devtools-open": {
+      "command": "bash",
+      "args": ["scripts/mcp/chrome-devtools-open-mcp-launcher.sh", "--browserUrl=http://127.0.0.1:9333"],
+      "description": "Chrome DevTools MCP channel that starts a local debuggable Chrome via LaunchServices before connecting."
     }
   }
 }

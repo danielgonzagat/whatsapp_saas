@@ -259,7 +259,7 @@ function FlowPageContent() {
           <div className="ml-auto flex items-center pr-2">
             {optimizeResult && (
               <span className="text-xs text-[var(--semantic-success)] mr-3">
-                {kloelT('Sugestoes:')} {optimizeResult.suggestions?.length ?? 0} melhorias
+                {kloelT('Sugestões:')} {optimizeResult.suggestions?.length ?? 0} melhorias
               </span>
             )}
             {optimizeError && (
@@ -301,6 +301,7 @@ function FlowPageContent() {
               initialName={loadedFlow?.name ?? ''}
               onSave={handleSave}
               onTest={handleTest}
+              suppressSuccessNotice
             />
           ) : (
             <KloelLoadingState />

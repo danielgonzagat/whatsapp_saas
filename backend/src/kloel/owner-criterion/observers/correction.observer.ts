@@ -72,7 +72,7 @@ function extractClassificationFixes(events: readonly SpineEventRef[]): Correctio
   return events
     .filter((e) => e.eventName === 'commerce.lead.objection_raised')
     .filter((e) => {
-      const payload = e.payload as Record<string, unknown> | undefined;
+      const payload = e.payload;
       return payload?.['causedByEventId'] !== undefined;
     })
     .map((e) => ({
@@ -87,9 +87,7 @@ function extractClassificationFixes(events: readonly SpineEventRef[]): Correctio
 function extractActionReversals(events: readonly SpineEventRef[]): CorrectionSignal[] {
   return events
     .filter(
-      (e) =>
-        e.eventName === 'cognition.belief_updated' &&
-        (e.payload as Record<string, unknown> | undefined)?.['updateKind'] === 'reversal',
+      (e) => e.eventName === 'cognition.belief_updated' && e.payload?.['updateKind'] === 'reversal',
     )
     .map((e) => ({
       correctionKind: 'action_reversal',

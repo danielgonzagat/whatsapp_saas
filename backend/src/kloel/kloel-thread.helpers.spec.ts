@@ -169,88 +169,20 @@ describe('kloel-thread.helpers', () => {
         }
       ).extractExecutablePreResponseFromAssistantText;
 
-    it('moves model-generated pre-response sections into persisted trace metadata', () => {
-      const result = extractExecutablePreResponseFromAssistantText()(`Intro curto.
+    it('does not convert model-authored headings into execution trace metadata', () => {
+      const assistantText = `Intro curto.
 **Raciocínio resumido:** entendi o pedido e o contexto.
 **Ações:**
 - consultei o estado da conversa.
 - escolhi a resposta mais clara.
 **Observações:** não encontrei pendências críticas.
-**Resposta final:** pronto, aqui está a resposta limpa.`);
+**Resposta final:** pronto, aqui está a resposta limpa.`;
+      const result = extractExecutablePreResponseFromAssistantText()(assistantText);
 
-      expect(result.visibleContent).toBe('pronto, aqui está a resposta limpa.');
-      expect(result.processingTrace.map((entry) => [entry.phase, entry.label])).toEqual([
-        ['thinking', 'Raciocínio resumido: entendi o pedido e o contexto.'],
-        ['tool_calling', 'Ações: consultei o estado da conversa. escolhi a resposta mais clara.'],
-        ['tool_result', 'Observações: não encontrei pendências críticas.'],
-      ]);
-      expect(result.processingSummary).toBe('Entendi o pedido e o contexto.');
+      expect(result.visibleContent).toBe(assistantText);
+      expect(result.processingTrace).toEqual([]);
+      expect(result.processingSummary).toBeUndefined();
     });
-
-    it('keeps conceptual final-answer terms out of executable action headings', () => {
-      const result = extractExecutablePreResponseFromAssistantText()(
-        `**Raciocínio resumido** O pedido é conceitual e não exige ações no workspace. --- **Resposta final** - **Reasoning summary** resume o porquê. - **Agent trace** registra a execução. - **ReAct trajectory** organiza pensamento, ação e observação.`,
-      );
-
-      expect(result.visibleContent).toBe(
-        '**Reasoning summary** resume o porquê. - **Agent trace** registra a execução. - **ReAct trajectory** organiza pensamento, ação e observação.',
-      );
-      expect(result.processingTrace.map((entry) => [entry.phase, entry.label])).toEqual([
-        ['thinking', 'Raciocínio resumido: O pedido é conceitual e não exige ações no workspace.'],
-      ]);
-      expect(result.processingSummary).toBe(
-        'O pedido é conceitual e não exige ações no workspace.',
-      );
-    });
-
-    it.each([
-      {
-        reasoning: 'Chain-of-thought',
-        action: 'Tool calling / function calling',
-        observation: 'Tool observations',
-        final: 'Final answer',
-      },
-      {
-        reasoning: 'Reasoning trace / reasoning chain',
-        action: 'ReAct trajectory',
-        observation: 'Tool results',
-        final: 'Final response',
-      },
-      {
-        reasoning: 'Scratchpad',
-        action: 'Computer use loop',
-        observation: 'Observations',
-        final: 'Answer',
-      },
-      {
-        reasoning: 'Extended thinking / thinking blocks',
-        action: 'Code Interpreter tool use',
-        observation: 'Results',
-        final: 'Response',
-      },
-      {
-        reasoning: 'Reasoning item',
-        action: 'Agent execution trace with ReAct-style intermediate steps',
-        observation: 'Observation',
-        final: 'Resposta final',
-      },
-    ])(
-      'recognizes canonical pre-response headings %#',
-      ({ reasoning, action, observation, final }) => {
-        const result = extractExecutablePreResponseFromAssistantText()(`${reasoning}: resumo seguro.
-${action}: executei a etapa.
-${observation}: observei resultado.
-${final}: final limpo.`);
-
-        expect(result.visibleContent).toBe('final limpo.');
-        expect(result.processingTrace.map((entry) => [entry.phase, entry.label])).toEqual([
-          ['thinking', 'Raciocínio resumido: resumo seguro.'],
-          ['tool_calling', 'Ações: executei a etapa.'],
-          ['tool_result', 'Observações: observei resultado.'],
-        ]);
-        expect(result.processingSummary).toBe('Resumo seguro.');
-      },
-    );
 
     it('leaves ordinary assistant text untouched', () => {
       const result = extractExecutablePreResponseFromAssistantText()('Resposta normal sem trace.');
@@ -292,6 +224,13 @@ ${final}: final limpo.`);
       expect(formatTraceToolLabel('create_site')).toBe('criação de site');
       expect(formatTraceToolLabel('refine_response')).toBe('mesa de refinamento');
       expect(formatTraceToolLabel('refine response')).toBe('mesa de refinamento');
+      expect(formatTraceToolLabel('mind.capability.extract_structured_text')).toBe(
+        'extração estruturada',
+      );
+      expect(formatTraceToolLabel('mind.capability.advise_response_depth')).toBe(
+        'calibração de profundidade',
+      );
+      expect(formatTraceToolLabel('mind.capability.refine_prompt')).toBe('refinamento de pedido');
       expect(formatTraceToolLabel('create image')).toBe('criação de imagem');
       expect(formatTraceToolLabel('get settings')).toBe('configurações da conta');
       expect(formatTraceToolLabel('get_billing_status')).toBe('status da assinatura');

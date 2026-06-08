@@ -307,7 +307,7 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
 
         {data.setupUnavailable ? (
           <Chip C={C} dim>
-            Canal nao configurado neste ambiente.
+            Canal não configurado neste ambiente.
           </Chip>
         ) : null}
 

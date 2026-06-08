@@ -41,9 +41,9 @@ import {
 } from './FlowBuilder.helpers';
 
 const FLOW_PRO_OPTIONS = { hideAttribution: true };
-const FLOW_EDGE_TYPES = Object.freeze({});
 const handleReactFlowError: OnError = (id, message) => {
-  if (id === '002') {
+  const reactFlowErrorId = String(id).trim();
+  if (reactFlowErrorId === '002' || message.includes('nodeTypes or edgeTypes')) {
     return;
   }
 
@@ -54,9 +54,12 @@ const handleReactFlowError: OnError = (id, message) => {
 
 function ReactFlowErrorBootstrap({ children }: { children: ReactNode }) {
   const store = useStoreApi();
+  const state = store.getState();
 
-  if (store.getState().onError !== handleReactFlowError) {
-    store.setState({ onError: handleReactFlowError });
+  // React Flow reads onError while rendering GraphView, before StoreUpdater applies props.
+  // Assigning the handler directly prevents a dev-only warning without notifying subscribers during render.
+  if (state.onError !== handleReactFlowError) {
+    state.onError = handleReactFlowError;
   }
 
   return <>{children}</>;
@@ -72,6 +75,7 @@ interface FlowBuilderProps {
   initialEdges?: Edge[];
   initialName?: string;
   readOnly?: boolean;
+  suppressSuccessNotice?: boolean;
 }
 
 /** Flow builder. */
@@ -84,6 +88,7 @@ export default function FlowBuilder({
   initialEdges = [],
   initialName,
   readOnly = false,
+  suppressSuccessNotice = false,
 }: FlowBuilderProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
@@ -247,6 +252,7 @@ export default function FlowBuilder({
 
   // Minimap node color
   const nodeColor = useCallback((node: Node) => resolveNodeMinimapColor(node), []);
+  const stableNodeTypes = useMemo(() => nodeTypes, []);
 
   return (
     <div className="flex h-full w-full">
@@ -265,8 +271,7 @@ export default function FlowBuilder({
           onDrop={onDrop}
           onDragOver={onDragOver}
           onNodeClick={onNodeClick}
-          nodeTypes={nodeTypes}
-          edgeTypes={FLOW_EDGE_TYPES}
+          nodeTypes={stableNodeTypes}
           onError={handleReactFlowError}
           fitView
           snapToGrid
@@ -382,7 +387,7 @@ export default function FlowBuilder({
 
                   {isTesting ? kloelT('Testando...') : kloelT('Testar')}
                 </button>
-                {saveMessage ? (
+                {saveMessage && !suppressSuccessNotice ? (
                   <span role="status" className="max-w-[180px] truncate rounded-md border border-green-200 bg-green-50 px-2 py-1 text-xs text-green-700" title={saveMessage}>
                     {saveMessage}
                   </span>

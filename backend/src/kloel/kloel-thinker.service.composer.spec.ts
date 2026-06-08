@@ -33,9 +33,8 @@ describe('KloelThinkerService', () => {
       expect(streamWriter.write).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'tool_result',
-          tool: 'list_products',
+          tool: 'catálogo de produtos',
           success: false,
-          error: 'tool_not_allowed',
         }),
       );
       expect(streamWriter.write).toHaveBeenCalledWith(
@@ -89,35 +88,28 @@ describe('KloelThinkerService', () => {
         } as unknown as Parameters<typeof realFinalizeSuccessfulReply>[2],
       );
 
+      // Model-authored headings ("Raciocínio resumido", "Ações", "Observações")
+      // are ordinary answer text — NOT executable evidence. The runtime no longer
+      // splits them into a fabricated structured trace; the full pre-response is
+      // persisted verbatim as the visible reply, and the processing trace stays
+      // empty (it only carries REAL tool/status/reasoning events from the agent
+      // loop, of which there were none on this turn).
+      const persistedPreResponse =
+        '**Raciocínio resumido:** entendi o contexto do operador.\n**Ações:** verifiquei a conversa ativa.\n**Observações:** não houve chamada de ferramenta nesta resposta.\n**Resposta final:** A resposta limpa para o usuário.';
       expect(localThreadService.persistAssistantThreadMessage).toHaveBeenCalledWith(
         'thread-trace-1',
         wsId,
-        'A resposta limpa para o usuário.',
+        persistedPreResponse,
         expect.objectContaining({
-          responseVersions: [
-            expect.objectContaining({ content: 'A resposta limpa para o usuário.' }),
-          ],
-          processingTrace: [
-            expect.objectContaining({
-              phase: 'thinking',
-              label: 'Raciocínio resumido: entendi o contexto do operador.',
-            }),
-            expect.objectContaining({
-              phase: 'tool_calling',
-              label: 'Ações: verifiquei a conversa ativa.',
-            }),
-            expect.objectContaining({
-              phase: 'tool_result',
-              label: 'Observações: não houve chamada de ferramenta nesta resposta.',
-            }),
-          ],
-          processingSummary: 'Entendi o contexto do operador.',
+          responseVersions: [expect.objectContaining({ content: persistedPreResponse })],
+          processingTrace: [],
+          processingSummary: undefined,
         }),
       );
       expect(localConversationStore.saveMessage).toHaveBeenLastCalledWith(
         wsId,
         'assistant',
-        'A resposta limpa para o usuário.',
+        persistedPreResponse,
       );
       expect(events).toEqual(expect.arrayContaining([expect.objectContaining({ type: 'done' })]));
     });
@@ -193,8 +185,8 @@ describe('KloelThinkerService', () => {
 
       expect(events).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ type: 'tool_call', tool: 'search_web' }),
-          expect.objectContaining({ type: 'tool_result', tool: 'search_web', success: true }),
+          expect.objectContaining({ type: 'tool_call', tool: 'pesquisa na web' }),
+          expect.objectContaining({ type: 'tool_result', tool: 'pesquisa na web', success: true }),
           expect.objectContaining({ type: 'content', content: 'Resultado real da busca web.' }),
         ]),
       );

@@ -55,6 +55,22 @@ describe('useCheckoutEditor', () => {
     expect(result.current.isLoading).toBe(false);
   });
 
+  it('normalizes nullable textarea fields to controlled strings', () => {
+    vi.mocked(useSWR).mockReturnValue({
+      data: {
+        customCSS: null,
+      },
+      error: undefined,
+      isLoading: false,
+      mutate: vi.fn(),
+      isValidating: false,
+    });
+
+    const { result } = renderHook(() => useCheckoutEditor('plan-1'));
+
+    expect(result.current.config.customCSS).toBe('');
+  });
+
   it('returns error on SWR failure', () => {
     const err = new Error('fetch failed');
     vi.mocked(useSWR).mockReturnValue({

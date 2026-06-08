@@ -50,8 +50,7 @@ export function asMemoryNodeType(value: unknown): MemoryNodeType | undefined {
 
 /** Narrow an arbitrary string to a known edge relation, else undefined. */
 export function asMemoryEdgeRelation(value: unknown): MemoryEdgeRelation | undefined {
-  return typeof value === 'string' &&
-    (MEMORY_EDGE_RELATIONS as readonly string[]).includes(value)
+  return typeof value === 'string' && (MEMORY_EDGE_RELATIONS as readonly string[]).includes(value)
     ? (value as MemoryEdgeRelation)
     : undefined;
 }
@@ -106,4 +105,57 @@ export interface MemoryContextForModel {
   readonly constraints: readonly string[];
   /** Pre-rendered single string ready to unshift into the system context. */
   readonly text: string;
+}
+
+export type MemoryGraphNodeState =
+  | 'confirmed'
+  | 'uncertain'
+  | 'pinned'
+  | 'sensitive'
+  | 'archived'
+  | 'blocked'
+  | 'contradicted'
+  | 'replaced';
+
+/** Read-model node consumed by the Kloel Graph memory screen. */
+export interface MemoryGraphNodeView {
+  readonly id: string;
+  readonly label: string;
+  readonly group: MemoryNodeType | 'center';
+  readonly content?: string;
+  readonly summary?: string | null;
+  readonly scope?: MemoryScope;
+  readonly updatedAt?: string;
+  readonly confidence?: number;
+  readonly importance?: number;
+  readonly state?: MemoryGraphNodeState;
+  readonly pinned?: boolean;
+  readonly sensitive?: boolean;
+  readonly archived?: boolean;
+  readonly blockedForAgent?: boolean;
+  readonly usableByAgent?: boolean;
+}
+
+/** Mutations allowed from the user's memory graph detail panel. */
+export interface MemoryGraphNodeUpdateInput {
+  readonly content?: string;
+  readonly summary?: string | null;
+  readonly pinned?: boolean;
+  readonly archived?: boolean;
+  readonly sensitive?: boolean;
+  readonly blockedForAgent?: boolean;
+  readonly forgotten?: boolean;
+}
+
+/** Read-model edge consumed by the Kloel Graph memory screen. */
+export interface MemoryGraphEdgeView {
+  readonly from: string;
+  readonly to: string;
+  readonly relation: MemoryEdgeRelation;
+}
+
+/** Per-user graph payload for GET /kloel/memory/graph. */
+export interface MemoryGraphPayload {
+  readonly nodes: readonly MemoryGraphNodeView[];
+  readonly edges: readonly MemoryGraphEdgeView[];
 }

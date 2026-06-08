@@ -14,6 +14,8 @@ const state = vi.hoisted(() => ({
   handleRetry: vi.fn(),
   handleDownload: vi.fn(),
   handleOptimize: vi.fn(),
+  optimizeResult: null as { suggestions?: unknown[] } | null,
+  optimizeError: null as string | null,
   searchParams: new URLSearchParams(),
 }));
 
@@ -60,8 +62,8 @@ vi.mock('@/hooks/useFlowTemplates', () => ({
 vi.mock('@/hooks/useFlowOptimize', () => ({
   useFlowOptimize: () => ({
     optimizing: false,
-    result: null,
-    error: null,
+    result: state.optimizeResult,
+    error: state.optimizeError,
     handleOptimize: state.handleOptimize,
   }),
 }));
@@ -70,9 +72,11 @@ vi.mock('@/components/flow/FlowBuilder', () => ({
   default: ({
     onSave,
     onTest,
+    suppressSuccessNotice,
   }: {
     onSave: (flow: { nodes: Node[]; edges: Edge[]; name: string }) => void;
     onTest: (flow: { nodes: Node[]; edges: Edge[]; name: string }) => void;
+    suppressSuccessNotice?: boolean;
   }) => {
     const flow = {
       nodes: [{ id: 'start-1', type: 'start', position: { x: 0, y: 0 }, data: {} }] as Node[],
@@ -88,6 +92,7 @@ vi.mock('@/components/flow/FlowBuilder', () => ({
         <button type="button" onClick={() => onTest(flow)}>
           Builder test
         </button>
+        {!suppressSuccessNotice && <span role="status">Builder local notice</span>}
       </div>
     );
   },
@@ -121,7 +126,18 @@ describe('FlowPage', () => {
     state.handleRetry.mockReset();
     state.handleDownload.mockReset();
     state.handleOptimize.mockReset();
+    state.optimizeResult = null;
+    state.optimizeError = null;
     state.searchParams = new URLSearchParams();
+  });
+
+  it('shows polished Optimize feedback copy when AI suggestions are available', () => {
+    state.optimizeResult = { suggestions: [{ id: 's1' }, { id: 's2' }] };
+
+    render(<FlowPage />);
+
+    expect(screen.getByText(/Sugestões:\s*2 melhorias/)).toBeTruthy();
+    expect(screen.queryByText(/Sugestoes:/)).toBeNull();
   });
 
   it('tests the current graph by saving and running the confirmed saved flow', async () => {
@@ -149,6 +165,8 @@ describe('FlowPage', () => {
     });
     expect(state.fetchExecutions).toHaveBeenCalled();
     expect(await screen.findByText('Teste executado')).toBeTruthy();
+    expect(screen.queryByText('Builder local notice')).toBeNull();
+    expect(await screen.findAllByRole('status')).toHaveLength(1);
     expect(state.replace).toHaveBeenCalledWith('/flow?id=flow-confirmed');
   });
 });

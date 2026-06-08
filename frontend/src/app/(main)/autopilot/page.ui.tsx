@@ -27,6 +27,67 @@ export type { SystemHealth } from './page.types';
 
 export type { AutopilotSmokeTestResult } from './page.types';
 
+const STATUS_LABELS: Record<string, string> = {
+  UP: 'Disponível',
+  DOWN: 'Indisponível',
+  CONFIGURED: 'Configurado',
+  NOT_CONFIGURED: 'Não configurado',
+  CONNECTED: 'Conectado',
+  DISCONNECTED: 'Desconectado',
+  MISSING: 'Ausente',
+  COMPLETED: 'Concluído',
+  FAILED: 'Falhou',
+  ERROR: 'Erro',
+  SKIPPED: 'Ignorado',
+  DISABLED: 'Desativado',
+  BILLING_SUSPENDED: 'Cobrança suspensa',
+  DEGRADED: 'Degradado',
+  PARTIAL: 'Parcial',
+  QUEUED: 'Na fila',
+  PROCESSING: 'Processando',
+};
+
+const AUTOPILOT_EVENT_LABELS: Record<string, string> = {
+  'autonomy.propose': 'Proposta de autonomia',
+  'brain.autonomy.propose': 'Proposta cognitiva',
+  kloel_chat_turn: 'Turno de chat Kloel',
+  'kloel.chat.turn': 'Turno de chat Kloel',
+  'cognition.chat.turn': 'Turno cognitivo',
+  prediction_generated: 'Predição gerada',
+  'mind.prediction.generate': 'Predição gerada',
+  surprise_detected: 'Surpresa detectada',
+  'mind.prediction.surprise': 'Surpresa detectada',
+};
+
+function titleizeTechnicalValue(value: string) {
+  return value
+    .replace(/[._-]+/g, ' ')
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ');
+}
+
+export function formatStatusLabel(status?: string) {
+  const raw = String(status || 'unknown').trim();
+  if (!raw) {
+    return 'Desconhecido';
+  }
+  if (/^-?\d+(\.\d+)?$/.test(raw)) {
+    return raw;
+  }
+  const normalized = raw.toUpperCase();
+  return STATUS_LABELS[normalized] || titleizeTechnicalValue(raw);
+}
+
+export function formatAutopilotEventLabel(value?: string) {
+  const raw = String(value || '').trim();
+  if (!raw) {
+    return 'Evento sem nome';
+  }
+  return AUTOPILOT_EVENT_LABELS[raw] || AUTOPILOT_EVENT_LABELS[raw.toLowerCase()] || titleizeTechnicalValue(raw);
+}
+
 export function StatCard({
   icon: Icon,
   label,
@@ -103,6 +164,8 @@ export function ActionRow({ action }: { action: AutopilotAction }) {
   const statusKey = action.status || 'unknown';
   const StatusIcon = statusIcons[statusKey] || Activity;
   const statusColor = statusColors[statusKey] || colors.text.muted;
+  const intentLabel = formatAutopilotEventLabel(action.intent);
+  const actionLabel = formatAutopilotEventLabel(action.action);
 
   return (
     <div
@@ -121,11 +184,11 @@ export function ActionRow({ action }: { action: AutopilotAction }) {
             className="px-2 py-0.5 rounded text-xs font-medium"
             style={{ backgroundColor: `${colors.brand.cyan}20`, color: colors.brand.cyan }}
           >
-            {action.intent}
+            {intentLabel}
           </span>
         </div>
         <div className="text-sm truncate" style={{ color: colors.text.muted }}>
-          {action.action}
+          {actionLabel}
           {action.reason && ` — ${action.reason}`}
         </div>
       </div>
@@ -184,10 +247,10 @@ export function StatusPill({ label, status }: { label: string; status?: string |
     >
       <span style={{ color: colors.text.secondary }}>{label}</span>
       <span
-        className="px-2 py-1 rounded-md text-xs font-semibold uppercase tracking-wide"
+        className="px-2 py-1 rounded-md text-xs font-semibold tracking-wide"
         style={{ color: tone.color, backgroundColor: tone.bg }}
       >
-        {status || 'unknown'}
+        {formatStatusLabel(status)}
       </span>
     </div>
   );

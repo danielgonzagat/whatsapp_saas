@@ -30,7 +30,7 @@ function extractToneSignals(events: readonly SpineEventRef[]): ToneSignal[] {
 
   for (const e of events) {
     if (e.eventName === 'commerce.whatsapp.message_replied') {
-      const payload = e.payload as Record<string, unknown> | undefined;
+      const payload = e.payload;
       const text = typeof payload?.['text'] === 'string' ? payload['text'] : '';
       signals.push({
         messageLength: text.length,

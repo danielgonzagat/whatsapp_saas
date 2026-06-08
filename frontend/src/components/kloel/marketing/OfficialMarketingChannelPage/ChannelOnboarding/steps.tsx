@@ -192,6 +192,9 @@ export function StepArsenal({
       footer={
         <>
           <input
+            id="channel-arsenal-file-input"
+            name="channelArsenalFiles"
+            aria-label="Adicionar provas ao canal"
             ref={inputRef}
             type="file"
             multiple
@@ -205,6 +208,7 @@ export function StepArsenal({
           />
           <button
             type="button"
+            aria-controls="channel-arsenal-file-input"
             onClick={() => inputRef.current?.click()}
             style={{
               width: '100%',

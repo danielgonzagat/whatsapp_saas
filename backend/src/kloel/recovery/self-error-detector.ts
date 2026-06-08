@@ -101,7 +101,7 @@ function detectDeclines(input: ErrorDetectorInput): DetectedError[] {
 function detectMisclassifications(input: ErrorDetectorInput): DetectedError[] {
   const qualified = input.events.filter((e) => e.eventName === 'commerce.lead.objection_raised');
   const corrections = qualified.filter((e) => {
-    const causedBy = (e.payload as Record<string, unknown> | undefined)?.['causedByEventId'];
+    const causedBy = e.payload?.['causedByEventId'];
     return typeof causedBy === 'string' && causedBy.length > 0;
   });
 

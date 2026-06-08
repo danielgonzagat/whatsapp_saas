@@ -447,11 +447,11 @@ export default function DadosPessoaisSection({
   const showValidationError = (message: string) => {
     setError(message);
     showToast(message, 'error');
-    setSaveStatus('error');
+    setSaveStatus('idle');
     if (saveTimer.current) {
       clearTimeout(saveTimer.current);
+      saveTimer.current = null;
     }
-    saveTimer.current = setTimeout(() => setSaveStatus('idle'), 4000);
   };
 
   const handleSave = async () => {

@@ -52,6 +52,7 @@ function buildProductGraphNodeSet(product: KloelGraphProductLike): KloelGraphNod
       parentId: productNodeId,
       subtitle: `${label} - ${tab.label}`,
       overlayLabel: `${label} - ${tab.label}`,
+      actionLabel: `${label} - ${tab.label}`,
     })),
     ...buildPlanGraphNodes(product, productNodeId, productId, label, encodedProductId),
     ...buildCheckoutGraphNodes(product, productNodeId, productId, label),
@@ -65,7 +66,7 @@ function buildPlanGraphNodes(
   label: string,
   encodedProductId: string,
 ): KloelGraphNode[] {
-  return collectGraphEntities(product.checkoutPlans, product.plans).flatMap((plan) => {
+  return collectGraphEntities(product.plans).flatMap((plan) => {
     const planId = resolveGraphEntityId(plan);
     if (!planId) {
       return [];
@@ -83,6 +84,7 @@ function buildPlanGraphNodes(
         parentId: `${productNodeId}-planos`,
         subtitle: ['Plano', describeGraphEntityStatus(plan)].filter(Boolean).join(' - '),
         overlayLabel: 'Plano',
+        actionLabel: `${label} - ${planLabel}`,
       },
       checkoutGraphNode(
         checkoutNodeId,
@@ -92,8 +94,9 @@ function buildPlanGraphNodes(
         label,
         planNodeId,
         planLabel,
+        `${label} - ${planLabel} - Checkout`,
       ),
-      orderBumpGraphNode(checkoutNodeId, planId, productId, label),
+      orderBumpGraphNode(checkoutNodeId, planId, productId, label, planLabel),
     ];
   });
 }
@@ -104,7 +107,7 @@ function buildCheckoutGraphNodes(
   productId: string,
   label: string,
 ): KloelGraphNode[] {
-  return collectGraphEntities(product.checkoutTemplates, product.checkouts).flatMap((checkout) => {
+  return collectGraphEntities(product.checkoutPlans, product.checkoutTemplates, product.checkouts).flatMap((checkout) => {
     const checkoutId = resolveGraphEntityId(checkout);
     if (!checkoutId) {
       return [];
@@ -120,8 +123,9 @@ function buildCheckoutGraphNodes(
         label,
         `${productNodeId}-checkouts`,
         ['Checkout', describeGraphEntityStatus(checkout)].filter(Boolean).join(' - '),
+        `${label} - ${checkoutLabel}`,
       ),
-      orderBumpGraphNode(checkoutNodeId, checkoutId, productId, label),
+      orderBumpGraphNode(checkoutNodeId, checkoutId, productId, label, checkoutLabel),
     ];
   });
 }
@@ -134,6 +138,7 @@ function checkoutGraphNode(
   productLabel: string,
   parentId: string,
   subtitle: string,
+  actionLabel: string,
 ): KloelGraphNode {
   return {
     id,
@@ -144,6 +149,7 @@ function checkoutGraphNode(
     parentId,
     subtitle,
     overlayLabel: 'Checkout',
+    actionLabel,
   };
 }
 
@@ -152,7 +158,9 @@ function orderBumpGraphNode(
   checkoutId: string,
   productId: string,
   productLabel: string,
+  checkoutLabel: string,
 ): KloelGraphNode {
+  const actionLabel = `${productLabel} - ${checkoutLabel} - Order Bump`;
   return {
     id: `${checkoutNodeId}-order-bump`,
     label: 'Order Bump',
@@ -160,8 +168,9 @@ function orderBumpGraphNode(
     type: 'entity',
     route: buildCheckoutEditorRoute(checkoutId, productId, productLabel, 'order-bump'),
     parentId: checkoutNodeId,
-    subtitle: 'Dentro do checkout',
+    subtitle: actionLabel,
     overlayLabel: 'Checkout',
+    actionLabel,
   };
 }
 

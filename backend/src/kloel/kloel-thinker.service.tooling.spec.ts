@@ -72,17 +72,20 @@ describe('KloelThinkerService', () => {
         return candidate.type === 'tool_result';
       });
 
+      // The composer observation event is the public SSE wire: it must never
+      // carry the raw generated-site HTML. The hardened tool_result event no
+      // longer ships ANY raw result payload over the wire (only a sanitized
+      // PT-BR tool label + risk summary), which is a strictly stronger guarantee
+      // than the previous omitted-bytes summary.
       expect(JSON.stringify(resultEvent)).not.toContain(generatedSiteHtml);
       expect(resultEvent).toEqual(
         expect.objectContaining({
-          result: expect.objectContaining({
-            capability: 'create_site',
-            generatedSiteHtmlBytes: generatedSiteHtml.length,
-            generatedSiteHtmlOmitted: true,
-            siteDraftId: 'site-draft-1',
-          }) as unknown,
+          type: 'tool_result',
+          tool: 'criação de site',
+          success: true,
         }),
       );
+      expect(resultEvent).not.toHaveProperty('result');
     });
 
     it('does not re-check plan budget mid tool-planning turn after the first model call overshoots usage', async () => {

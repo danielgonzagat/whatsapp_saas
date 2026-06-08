@@ -25,7 +25,7 @@ const SUB_TABS = [
 const emptyAreaForm = {
   name: '', slug: '', description: '', type: 'COURSE', productId: '',
   template: 'academy', logoUrl: '', coverUrl: '', primaryColor: PURPLE,
-  certificates: true, quizzes: true, community: true, gamification: true,
+  certificates: true, quizzes: true, community: false, gamification: true,
   progressTrack: true, downloads: true, comments: true, active: true,
 };
 

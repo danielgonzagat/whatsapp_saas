@@ -246,4 +246,76 @@ describe('AreaMembrosEditorPanel', () => {
       expect(screen.getByLabelText(label).getAttribute('name')).toBe(name);
     }
   });
+
+  it('exposes real resource toggles when creating a member area', () => {
+    const setNewArea = vi.fn();
+
+    render(
+      <AreaMembrosEditorPanel
+        {...makeProps({
+          setNewArea,
+          newArea: {
+            name: 'Area Auditoria',
+            type: 'COURSE',
+            productId: '',
+            certificates: true,
+            community: false,
+          },
+        })}
+      />,
+    );
+
+    const certificates = screen.getByRole('checkbox', { name: 'Certificados' }) as HTMLInputElement;
+    const community = screen.getByRole('checkbox', { name: 'Comunidade' }) as HTMLInputElement;
+
+    expect(certificates.checked).toBe(true);
+    expect(community.checked).toBe(false);
+
+    fireEvent.click(community);
+
+    const updateCommunity = setNewArea.mock.calls[0][0] as (prev: Record<string, unknown>) => Record<string, unknown>;
+    expect(updateCommunity({ community: false })).toMatchObject({ community: true });
+  });
+
+  it('exposes real resource toggles when editing a member area', () => {
+    const setEditAreaData = vi.fn();
+    const displayAreas = [
+      {
+        id: 'area-1',
+        name: 'Area Existente',
+        type: 'COURSE',
+        productId: '',
+        certificates: true,
+        community: false,
+        modules_list: [],
+      },
+    ] as unknown as Props['displayAreas'];
+
+    render(
+      <AreaMembrosEditorPanel
+        {...makeProps({
+          displayAreas,
+          editingArea: 'area-1',
+          showCreateArea: false,
+          setEditAreaData,
+          editAreaData: {
+            name: 'Area Existente',
+            type: 'COURSE',
+            productId: '',
+            certificates: true,
+            community: false,
+          },
+        })}
+      />,
+    );
+
+    const community = screen.getByRole('checkbox', { name: 'Comunidade' }) as HTMLInputElement;
+
+    expect(community.checked).toBe(false);
+
+    fireEvent.click(community);
+
+    const updateCommunity = setEditAreaData.mock.calls[0][0] as (prev: Record<string, unknown>) => Record<string, unknown>;
+    expect(updateCommunity({ community: false })).toMatchObject({ community: true });
+  });
 });

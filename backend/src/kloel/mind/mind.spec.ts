@@ -218,6 +218,127 @@ describe('HebbianService (UTP-MIND-HEB-001/002)', () => {
     const wAfter = heb.top()[0]?.weight ?? 0;
     expect(wAfter).toBeLessThan(wBefore);
   });
+
+  // ── UTP-MIND-HEB durability — weights survive a process restart ──
+  // Fake Prisma backed by the SAME `health` JSON column the real model uses, so
+  // the test exercises the actual serialize → persist → rehydrate roundtrip
+  // without a DB. Keyed by workspaceId (multi-tenant isolation).
+  function makeFakePrisma(): {
+    prisma: { mindWorkspaceState: unknown };
+    store: Map<string, { id: string; health: unknown }>;
+  } {
+    const store = new Map<string, { id: string; health: unknown }>();
+    const mindWorkspaceState = {
+      findUnique: async ({ where }: { where: { workspaceId: string } }) =>
+        store.get(where.workspaceId) ?? null,
+      update: async ({
+        where,
+        data,
+      }: {
+        where: { workspaceId: string };
+        data: { health: unknown };
+      }) => {
+        const row = store.get(where.workspaceId);
+        if (row) {
+          row.health = data.health;
+        }
+        return row;
+      },
+      create: async ({
+        data,
+      }: {
+        data: { id: string; workspaceId: string; health: unknown };
+      }) => {
+        store.set(data.workspaceId, { id: data.id, health: data.health });
+        return data;
+      },
+    };
+    return { prisma: { mindWorkspaceState }, store };
+  }
+
+  it('persists weights and rehydrates them into a fresh instance (survives restart)', async () => {
+    const { prisma, store } = makeFakePrisma();
+    const ws = 'wks_persist';
+
+    // First "process": learn an association and persist it.
+    const heb1 = new HebbianService({ windowMs: 60_000 }, prisma as never);
+    heb1.ingest([
+      baseEvent({ eventName: 'commerce.lead.replied', occurredAt: '2026-05-13T20:00:00.000Z' }),
+      baseEvent({
+        eventName: 'commerce.crm.next_step_defined',
+        occurredAt: '2026-05-13T20:00:30.000Z',
+      }),
+    ]);
+    const wPersisted = heb1.top()[0]?.weight ?? 0;
+    expect(wPersisted).toBeGreaterThan(0);
+    await heb1.persist(ws);
+    expect(store.has(ws)).toBe(true);
+
+    // Second "process": empty map, rehydrate from the durable store.
+    const heb2 = new HebbianService({ windowMs: 60_000 }, prisma as never);
+    expect(heb2.size()).toBe(0);
+    await heb2.rehydrate(ws);
+    expect(heb2.size()).toBe(1);
+    const assoc = heb2.associationsFor('commerce.lead.replied');
+    expect(assoc[0]?.b).toBe('commerce.crm.next_step_defined');
+    expect(assoc[0]?.weight).toBeCloseTo(wPersisted);
+  });
+
+  it('rehydrate is idempotent and never clobbers fresher in-memory weights', async () => {
+    const { prisma } = makeFakePrisma();
+    const ws = 'wks_idem';
+
+    const heb1 = new HebbianService({ windowMs: 60_000 }, prisma as never);
+    heb1.ingest([
+      baseEvent({ eventName: 'a.b.c', occurredAt: '2026-05-13T20:00:00.000Z' }),
+      baseEvent({ eventName: 'd.e.f', occurredAt: '2026-05-13T20:00:30.000Z' }),
+    ]);
+    await heb1.persist(ws);
+
+    const heb2 = new HebbianService({ windowMs: 60_000 }, prisma as never);
+    // Learn the SAME pair twice in-memory → weight higher than the stored 0.05.
+    heb2.ingest([
+      baseEvent({ eventName: 'a.b.c', occurredAt: '2026-05-13T20:00:00.000Z' }),
+      baseEvent({ eventName: 'd.e.f', occurredAt: '2026-05-13T20:00:30.000Z' }),
+    ]);
+    heb2.ingest([
+      baseEvent({ eventName: 'a.b.c', occurredAt: '2026-05-13T20:01:00.000Z' }),
+      baseEvent({ eventName: 'd.e.f', occurredAt: '2026-05-13T20:01:30.000Z' }),
+    ]);
+    const wFresh = heb2.top()[0]?.weight ?? 0;
+    await heb2.rehydrate(ws); // must NOT overwrite the fresher pair
+    await heb2.rehydrate(ws); // idempotent — second call is a no-op
+    expect(heb2.size()).toBe(1);
+    expect(heb2.top()[0]?.weight).toBeCloseTo(wFresh);
+  });
+
+  it('persist/rehydrate are best-effort no-ops without a store (no throw)', async () => {
+    const heb = new HebbianService({ windowMs: 60_000 }); // no prisma
+    heb.ingest([
+      baseEvent({ eventName: 'x.y.z', occurredAt: '2026-05-13T20:00:00.000Z' }),
+      baseEvent({ eventName: 'p.q.r', occurredAt: '2026-05-13T20:00:30.000Z' }),
+    ]);
+    await expect(heb.persist('wks_nostore')).resolves.toBeUndefined();
+    await expect(heb.rehydrate('wks_nostore')).resolves.toBeUndefined();
+    expect(heb.size()).toBe(1); // unchanged
+  });
+
+  it('rehydrate swallows store failures and keeps in-memory weights', async () => {
+    const failingPrisma = {
+      mindWorkspaceState: {
+        findUnique: async () => {
+          throw new Error('db down');
+        },
+      },
+    };
+    const heb = new HebbianService({ windowMs: 60_000 }, failingPrisma as never);
+    heb.ingest([
+      baseEvent({ eventName: 'q.r.s', occurredAt: '2026-05-13T20:00:00.000Z' }),
+      baseEvent({ eventName: 't.u.v', occurredAt: '2026-05-13T20:00:30.000Z' }),
+    ]);
+    await expect(heb.rehydrate('wks_fail')).resolves.toBeUndefined();
+    expect(heb.size()).toBe(1); // learning preserved despite store failure
+  });
 });
 
 describe('ConsolidationService (UTP-MIND-CONS-001/002)', () => {

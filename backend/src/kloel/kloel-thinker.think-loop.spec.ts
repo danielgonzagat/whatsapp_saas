@@ -3,10 +3,11 @@
  * surface (`KloelThinkerService.think`) ONLY behind the KLOEL_THINK_LOOP_ENABLED
  * feature flag.
  *
- * - Flag OFF (default): none of the loop's underlying services are touched —
- *   recordDecision / predictReply / resolveReply / closeOutcome are NOT called.
- *   `think()` behaves exactly as legacy.
- * - Flag ON: the SAME envelope the proven sync path uses fires, in order:
+ * - Flag OFF (explicit `=false`): none of the loop's underlying services are
+ *   touched — recordDecision / predictReply / resolveReply / closeOutcome are
+ *   NOT called. `think()` behaves exactly as legacy.
+ * - Flag ON (default, or explicit `=true`): the SAME envelope the proven sync
+ *   path uses fires, in order:
  *     recordChatReplyDecision (DecisionOutcomeService.recordDecision)
  *       → predictReply (MindPredictorService.predictReply)
  *       → [stream + finalize]
@@ -276,9 +277,9 @@ describe('KloelThinkerService — P0-C streaming cognition loop (KLOEL_THINK_LOO
     jest.clearAllMocks();
   });
 
-  describe('flag OFF (default)', () => {
+  describe('flag OFF (explicit =false)', () => {
     it('does NOT call cognition-loop producers', async () => {
-      delete process.env.KLOEL_THINK_LOOP_ENABLED;
+      process.env.KLOEL_THINK_LOOP_ENABLED = 'false';
       service = await buildService();
 
       await runThink();
@@ -291,14 +292,26 @@ describe('KloelThinkerService — P0-C streaming cognition loop (KLOEL_THINK_LOO
       expect(mindGlobalPriorService.recordObservation).not.toHaveBeenCalled();
     });
 
-    it('treats an explicit non-true value as OFF', async () => {
-      process.env.KLOEL_THINK_LOOP_ENABLED = 'false';
+    it('treats an explicit non-false value as ON', async () => {
+      process.env.KLOEL_THINK_LOOP_ENABLED = 'true';
       service = await buildService();
 
       await runThink();
 
-      expect(decisionOutcomeService.recordDecision).not.toHaveBeenCalled();
-      expect(mindPredictorService.predictReply).not.toHaveBeenCalled();
+      expect(decisionOutcomeService.recordDecision).toHaveBeenCalled();
+      expect(mindPredictorService.predictReply).toHaveBeenCalled();
+    });
+  });
+
+  describe('flag ON (default — env unset)', () => {
+    it('fires the cognition loop when KLOEL_THINK_LOOP_ENABLED is unset', async () => {
+      delete process.env.KLOEL_THINK_LOOP_ENABLED;
+      service = await buildService();
+
+      await runThink();
+
+      expect(decisionOutcomeService.recordDecision).toHaveBeenCalledTimes(1);
+      expect(mindPredictorService.predictReply).toHaveBeenCalled();
     });
   });
 

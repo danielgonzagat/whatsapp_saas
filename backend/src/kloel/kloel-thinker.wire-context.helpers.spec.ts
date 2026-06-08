@@ -26,10 +26,10 @@ const MANIFEST_TEXT =
 
 function memoryContext(text: string): MemoryContextForModel {
   return {
-    userProfileStatic: [],
+    userProfileStatic: ['O usuário se chama Daniel'],
     userProfileDynamic: [],
     relevantMemories: [],
-    preferences: [],
+    preferences: ['Prefere respostas diretas'],
     constraints: [],
     text,
   };
@@ -42,14 +42,12 @@ function manifestInjection(text: string, internalNames: string[]): ManifestInjec
 describe('wire-context helpers', () => {
   describe('buildWireContextBlock', () => {
     it('injects both the memory block and the manifest block when available', async () => {
-      const memoryService = {
-        buildMemoryContextForModel: jest.fn().mockResolvedValue(memoryContext(MEMORY_TEXT)),
-      } as unknown as MemoryService;
-      const manifestInjectionBuilder = {
-        assemble: jest
-          .fn()
-          .mockReturnValue(manifestInjection(MANIFEST_TEXT, ['products.create'])),
-      } as unknown as ManifestInjectionBuilderService;
+      const buildMemoryContextForModel = jest.fn().mockResolvedValue(memoryContext(MEMORY_TEXT));
+      const assemble = jest
+        .fn()
+        .mockReturnValue(manifestInjection(MANIFEST_TEXT, ['products.create']));
+      const memoryService = { buildMemoryContextForModel } as unknown as MemoryService;
+      const manifestInjectionBuilder = { assemble } as unknown as ManifestInjectionBuilderService;
       const services: WireContextServices = {
         memoryService,
         manifestInjection: manifestInjectionBuilder,
@@ -67,22 +65,25 @@ describe('wire-context helpers', () => {
       expect(block.text).toContain('O usuário se chama Daniel');
       expect(block.text).toContain('CAPACIDADES DISPONÍVEIS');
       expect(block.internalNames).toEqual(['products.create']);
-      expect(
-        (memoryService.buildMemoryContextForModel as jest.Mock).mock.calls[0],
-      ).toEqual(['ws-1', 'user-1', 'criar um produto']);
-      expect(
-        (manifestInjectionBuilder.assemble as jest.Mock).mock.calls[0],
-      ).toEqual(['criar um produto', { surface: 'chat', permissions: ['*'] }]);
+      expect(block.memoryChecked).toBe(true);
+      expect(block.memorySignalCount).toBe(2);
+      expect(block.capabilitySignalCount).toBe(1);
+      expect(buildMemoryContextForModel).toHaveBeenCalledWith('ws-1', 'user-1', 'criar um produto');
+      expect(assemble).toHaveBeenCalledWith('criar um produto', {
+        surface: 'dashboard-chat',
+        permissions: ['*'],
+      });
     });
 
     it('still injects the manifest when the memory service throws (independent guards)', async () => {
-      const logger = makeLogger();
-      const memoryService = {
-        buildMemoryContextForModel: jest.fn().mockRejectedValue(new Error('db down')),
-      } as unknown as MemoryService;
-      const manifestInjectionBuilder = {
-        assemble: jest.fn().mockReturnValue(manifestInjection(MANIFEST_TEXT, ['products.create'])),
-      } as unknown as ManifestInjectionBuilderService;
+      const warn = jest.fn();
+      const logger = { ...makeLogger(), warn } as unknown as StructuredLogger;
+      const buildMemoryContextForModel = jest.fn().mockRejectedValue(new Error('db down'));
+      const assemble = jest
+        .fn()
+        .mockReturnValue(manifestInjection(MANIFEST_TEXT, ['products.create']));
+      const memoryService = { buildMemoryContextForModel } as unknown as MemoryService;
+      const manifestInjectionBuilder = { assemble } as unknown as ManifestInjectionBuilderService;
 
       const block = await buildWireContextBlock(
         { memoryService, manifestInjection: manifestInjectionBuilder },
@@ -98,24 +99,24 @@ describe('wire-context helpers', () => {
 
       expect(block.text).toContain('CAPACIDADES DISPONÍVEIS');
       expect(block.text).not.toContain('MEMÓRIA DO USUÁRIO');
-      expect(logger.warn).toHaveBeenCalledWith(
+      expect(warn).toHaveBeenCalledWith(
         'wire-context memory injection failed',
         expect.objectContaining({ error: 'db down' }),
       );
-      // permissions undefined → normalized to an empty array for the router.
-      expect((manifestInjectionBuilder.assemble as jest.Mock).mock.calls[0]?.[1]).toEqual({
-        surface: 'chat',
+      // permissions undefined -> normalized to an empty array for the router.
+      expect(assemble).toHaveBeenCalledWith('oi', {
+        surface: 'dashboard-chat',
         permissions: [],
       });
     });
 
     it('returns an empty block when the manifest assembler throws and there is no memory', async () => {
-      const logger = makeLogger();
-      const manifestInjectionBuilder = {
-        assemble: jest.fn().mockImplementation(() => {
-          throw new Error('router boom');
-        }),
-      } as unknown as ManifestInjectionBuilderService;
+      const warn = jest.fn();
+      const logger = { ...makeLogger(), warn } as unknown as StructuredLogger;
+      const assemble = jest.fn().mockImplementation(() => {
+        throw new Error('router boom');
+      });
+      const manifestInjectionBuilder = { assemble } as unknown as ManifestInjectionBuilderService;
 
       const block = await buildWireContextBlock(
         { manifestInjection: manifestInjectionBuilder },
@@ -131,7 +132,7 @@ describe('wire-context helpers', () => {
 
       expect(block.text).toBe('');
       expect(block.internalNames).toEqual([]);
-      expect(logger.warn).toHaveBeenCalledWith(
+      expect(warn).toHaveBeenCalledWith(
         'wire-context manifest injection failed',
         expect.objectContaining({ error: 'router boom' }),
       );
@@ -150,9 +151,8 @@ describe('wire-context helpers', () => {
     });
 
     it('skips memory recall when workspace/user are missing', async () => {
-      const memoryService = {
-        buildMemoryContextForModel: jest.fn(),
-      } as unknown as MemoryService;
+      const buildMemoryContextForModel = jest.fn();
+      const memoryService = { buildMemoryContextForModel } as unknown as MemoryService;
       const block = await buildWireContextBlock({ memoryService }, makeLogger(), {
         workspaceId: undefined,
         userId: undefined,
@@ -160,7 +160,7 @@ describe('wire-context helpers', () => {
         surface: 'chat',
         permissions: [],
       });
-      expect(memoryService.buildMemoryContextForModel).not.toHaveBeenCalled();
+      expect(buildMemoryContextForModel).not.toHaveBeenCalled();
       expect(block.text).toBe('');
     });
   });
@@ -170,26 +170,45 @@ describe('wire-context helpers', () => {
       const result = appendWireContext('RUNTIME', {
         text: 'MEMORY',
         internalNames: [],
+        memoryChecked: true,
+        memorySignalCount: 1,
+        capabilitySignalCount: 0,
       });
       expect(result).toBe('RUNTIME\n\nMEMORY');
     });
 
     it('returns the block alone when there is no existing dynamic context', () => {
-      const result = appendWireContext('', { text: 'MEMORY', internalNames: [] });
+      const result = appendWireContext('', {
+        text: 'MEMORY',
+        internalNames: [],
+        memoryChecked: true,
+        memorySignalCount: 1,
+        capabilitySignalCount: 0,
+      });
       expect(result).toBe('MEMORY');
     });
 
     it('is a no-op (byte-identical) when the block is empty', () => {
-      const result = appendWireContext('RUNTIME', { text: '', internalNames: [] });
+      const result = appendWireContext('RUNTIME', {
+        text: '',
+        internalNames: [],
+        memoryChecked: false,
+        memorySignalCount: 0,
+        capabilitySignalCount: 0,
+      });
       expect(result).toBe('RUNTIME');
     });
   });
 
   describe('captureTurnMemory', () => {
     it('extracts memories from the turn fire-and-forget when available', () => {
-      const extractFromTurn = jest
-        .fn()
-        .mockResolvedValue({ created: 1, updated: 0, contradictions: 0, forgotten: 0, nodeIds: [] });
+      const extractFromTurn = jest.fn().mockResolvedValue({
+        created: 1,
+        updated: 0,
+        contradictions: 0,
+        forgotten: 0,
+        nodeIds: [],
+      });
       const memoryService = { extractFromTurn } as unknown as MemoryService;
 
       captureTurnMemory({ memoryService }, makeLogger(), {
@@ -207,7 +226,8 @@ describe('wire-context helpers', () => {
     });
 
     it('swallows a rejected extraction so the turn is never broken', async () => {
-      const logger = makeLogger();
+      const warn = jest.fn();
+      const logger = { ...makeLogger(), warn } as unknown as StructuredLogger;
       const extractFromTurn = jest.fn().mockRejectedValue(new Error('extract failed'));
       const memoryService = { extractFromTurn } as unknown as MemoryService;
 
@@ -223,7 +243,7 @@ describe('wire-context helpers', () => {
       // Let the swallowed rejection settle.
       await Promise.resolve();
       await Promise.resolve();
-      expect(logger.warn).toHaveBeenCalledWith(
+      expect(warn).toHaveBeenCalledWith(
         'wire-context memory capture failed',
         expect.objectContaining({ error: 'extract failed' }),
       );
