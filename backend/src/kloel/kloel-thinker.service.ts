@@ -31,6 +31,14 @@ import { KloelReplyEngineService, LocalToolExecutor } from './kloel-reply-engine
 import { thinkSyncImpl, regenerateThreadAssistantResponseImpl } from './kloel-thinker.helpers';
 import { runAbiEnrichmentBranch } from './kloel-thinker.abi.helpers';
 import { resolveThinkContext } from './kloel-thinker.think-context.helpers';
+import {
+  appendWireContext,
+  buildWireContextBlock,
+  captureTurnMemory,
+  type WireContextServices,
+} from './kloel-thinker.wire-context.helpers';
+import { MemoryService } from './mind/memory/memory.service';
+import { ManifestInjectionBuilderService } from './manifest/manifest-injection.builder';
 import { StateBuilderService } from './state/state-builder.service';
 import { summarizeConversationState } from './state/conversation-state.helpers';
 import {
@@ -102,8 +110,24 @@ export class KloelThinkerService {
     @Optional() private readonly valenceTagger?: ValenceTaggerService,
     @Optional() private readonly memoryEngine?: KloelMemoryEngineService,
     @Optional() private readonly mindChatMessage?: MindChatMessageService,
+    // wire-context: per-user typed MEMORY graph + CAPABILITY MANIFEST injection.
+    // Both @Optional() — flag-off / DI contexts that don't provide them resolve
+    // to undefined and the wire-context helpers degrade to an empty block, so the
+    // critical path is byte-identical to legacy when they are absent.
+    @Optional() private readonly memoryGraph?: MemoryService,
+    @Optional() private readonly manifestInjection?: ManifestInjectionBuilderService,
   ) {
     this.conversationStore = new KloelConversationStore(prisma, this.logger);
+  }
+
+  /** Bundle the optional wire-context services for the per-turn injection helpers. */
+  private get wireContextServices(): WireContextServices {
+    return {
+      ...(this.memoryGraph !== undefined ? { memoryService: this.memoryGraph } : {}),
+      ...(this.manifestInjection !== undefined
+        ? { manifestInjection: this.manifestInjection }
+        : {}),
+    };
   }
 
   /**
@@ -268,7 +292,7 @@ export class KloelThinkerService {
         thread,
         historyState,
         expertiseLevel,
-        dynamicContext,
+        dynamicContext: baseDynamicContext,
         summaryMessage,
         shouldPlanWithTools,
         responseTemperature,
@@ -288,6 +312,24 @@ export class KloelThinkerService {
         metadata,
         enrichedCompanyContext,
       });
+
+      // wire-context: assemble the per-user MEMORY block + CAPABILITY MANIFEST
+      // block and append them to the HIDDEN runtime context the model carries
+      // (the same `dynamicContext` JSON channel — never the user-visible answer).
+      // Fully guarded: an empty block (no memories, no provided service, or any
+      // throw) leaves `dynamicContext` byte-identical to legacy. Skipped on the
+      // composer path, which returns before the model-message build.
+      const wireContextBlock =
+        mode === 'chat' && !composerCapability
+          ? await buildWireContextBlock(this.wireContextServices, this.logger, {
+              workspaceId,
+              userId,
+              message,
+              surface: mode,
+              permissions: allowedTools,
+            })
+          : { text: '', internalNames: [] };
+      const dynamicContext = appendWireContext(baseDynamicContext, wireContextBlock);
 
       if (mode === 'chat' && composerCapability) {
         // Budget preflight BEFORE the composer provider runs — the same gate
@@ -560,6 +602,18 @@ export class KloelThinkerService {
           fullResponse,
           mode,
           conversationId,
+        });
+      }
+      // wire-context: capture durable typed memories from this completed turn
+      // into the per-user graph (extract→embed→persist). Fire-and-forget after
+      // the reply has streamed + finalized, so it never adds latency to or
+      // breaks the turn. No-op when the memory service is not provided.
+      if (mode === 'chat') {
+        captureTurnMemory(this.wireContextServices, this.logger, {
+          workspaceId,
+          userId,
+          message,
+          reply: fullResponse,
         });
       }
     } catch (error: unknown) {

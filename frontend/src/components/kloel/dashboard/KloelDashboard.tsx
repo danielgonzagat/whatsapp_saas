@@ -44,6 +44,7 @@ import {
   createSendMessageHandler,
   type SendMessageContext,
 } from './KloelDashboard.hooks';
+import { useArtifacts } from './artifacts/useArtifacts';
 
 /** Kloel dashboard. */
 export default function KloelDashboard() {
@@ -97,6 +98,14 @@ export default function KloelDashboard() {
 
   const isReplyInFlight = isThinking || Boolean(streamingMessageId);
   const hasMessages = messages.length > 0;
+
+  const {
+    artifacts,
+    activeArtifact,
+    openArtifact,
+    closePanel: closeArtifactPanel,
+    updateArtifactContent,
+  } = useArtifacts(messages, activeConversationId);
 
   const { isDragActive, handleDragEnter, handleDragOver, handleDragLeave, handleDropFiles } =
     useKloelDragDrop({ isReplyInFlight, queueFilesForUpload, setComposerNotice, inputRef });
@@ -526,6 +535,11 @@ export default function KloelDashboard() {
       onRemoveLinkedProduct={() => setLinkedProduct(null)}
       onCapabilityChange={setActiveCapability}
       onApprovalDecision={handleApprovalDecision}
+      artifacts={artifacts}
+      activeArtifact={activeArtifact}
+      onOpenArtifact={openArtifact}
+      onCloseArtifact={closeArtifactPanel}
+      onArtifactContentChange={updateArtifactContent}
     />
   );
 }

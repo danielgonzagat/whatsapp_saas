@@ -28,6 +28,9 @@ import {
   DropOverlay,
 } from '../KloelDashboard.subcomponents';
 import { PendingApprovalsStrip } from './KloelDashboardView.ApprovalStrip';
+import { ArtifactsBar } from '../artifacts/ArtifactsBar';
+import { ArtifactsPanel } from '../artifacts/ArtifactsPanel';
+import type { Artifact } from '../artifacts/artifact-types';
 
 export type KloelDashboardQuickAction = (typeof KLOEL_CHAT_QUICK_ACTIONS)[number];
 
@@ -76,6 +79,11 @@ interface KloelDashboardViewProps {
   onRemoveLinkedProduct: () => void;
   onCapabilityChange: (capability: KloelChatCapability | null) => void;
   onApprovalDecision: (approvalRequestId: string, decision: KloelApprovalDecision) => Promise<void>;
+  artifacts?: readonly Artifact[];
+  activeArtifact?: Artifact | null;
+  onOpenArtifact?: (artifactId: string) => void;
+  onCloseArtifact?: () => void;
+  onArtifactContentChange?: (artifactId: string, nextContent: string) => void;
 }
 
 export function KloelDashboardView({
@@ -122,6 +130,11 @@ export function KloelDashboardView({
   onRemoveLinkedProduct,
   onCapabilityChange,
   onApprovalDecision,
+  artifacts = [],
+  activeArtifact = null,
+  onOpenArtifact,
+  onCloseArtifact,
+  onArtifactContentChange,
 }: KloelDashboardViewProps) {
   return (
     <section
@@ -224,6 +237,10 @@ export function KloelDashboardView({
           </>
         ) : null}
 
+        {hasMessages && onOpenArtifact ? (
+          <ArtifactsBar artifacts={artifacts} onOpenArtifact={onOpenArtifact} />
+        ) : null}
+
         <PendingApprovalsStrip
           approvals={pendingApprovals}
           loading={pendingApprovalsLoading}
@@ -302,6 +319,13 @@ export function KloelDashboardView({
           </motion.div>
         </div>
       </div>
+
+      <ArtifactsPanel
+        artifact={activeArtifact}
+        editable={activeArtifact?.editable ?? false}
+        onClose={onCloseArtifact ?? (() => {})}
+        onContentChange={onArtifactContentChange ?? (() => {})}
+      />
     </section>
   );
 }

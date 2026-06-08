@@ -212,6 +212,12 @@ import { MindSurpriseService } from './mind/inference/mind-surprise.service';
 import { MindVerbalizerService } from './mind/synthetic/mind-verbalizer.service';
 import { MindWorkspaceStateService } from './mind/memory/mind-workspace-state.service';
 import { VectorService } from './mind/knowledge/vector.service';
+// wire-context: per-user typed MEMORY graph (distinct from the legacy
+// ./memory.service MemoryService above — aliased to avoid the class-name
+// collision) + the CAPABILITY MANIFEST injection module. Provided here so the
+// KloelThinkerService can @Optional()-inject them for the per-turn context wire.
+import { MemoryService as MindUserMemoryService } from './mind/memory/memory.service';
+import { CapabilityManifestModule } from './manifest/capability-manifest.module';
 import { KloelMemoryEngineService } from './kloel-memory-engine.service';
 import { AgentRuntimeJobRunnerService } from './agent-runtime/agent-runtime.job-runner';
 import {
@@ -239,6 +245,7 @@ import { KloelProductSubResourceToolsService } from './kloel-product-sub-resourc
 import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
 import { ToolPlannerModule } from './toolplanner/toolplanner.module';
 import { CapabilityRegistryV2Module } from './capability-registry-v2/capability-registry-v2.module';
+import { KloelCapabilitiesModule } from './capabilities/kloel-capabilities.module';
 import { KloelDomainServiceResolver } from './domain-service-resolver.service';
 import { IntentRouterModule } from './intent-router/intent-router.module';
 import { SelfAwarenessModule } from './self-awareness/self-awareness.module';
@@ -277,6 +284,8 @@ import { CrmModule } from '../crm/crm.module';
     DriftModule,
     RiskClassModule,
     CapabilityRegistryV2Module,
+    KloelCapabilitiesModule,
+    CapabilityManifestModule,
     IntentRouterModule,
     ToolPlannerModule,
     SelfAwarenessModule,
@@ -468,6 +477,9 @@ import { CrmModule } from '../crm/crm.module';
     MindVerbalizerService,
     MindWorkspaceStateService,
     VectorService,
+    // wire-context: per-user typed MEMORY graph, provided so KloelThinkerService
+    // can inject it for the per-turn memory recall + post-turn capture.
+    MindUserMemoryService,
     AgentRuntimeContextService,
     AgentRuntimeContextCompressorService,
     AgentRuntimeBuiltinMemoryProvider,

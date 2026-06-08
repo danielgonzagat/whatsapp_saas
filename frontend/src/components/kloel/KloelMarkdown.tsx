@@ -2,6 +2,7 @@
 
 import { sanitizeAssistantMarkdown } from '@/lib/kloel-message-ui';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import { loadKatex, loadMermaid, renderMermaidWithApi } from './KloelMarkdownCdn';
 import type { HTMLAttributes } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
@@ -246,17 +247,120 @@ function latexToHtml(input: string): string {
   return out;
 }
 
+/** DOMPurify config for the built-in LaTeX-subset fallback (closed tag set). */
+const MATH_FALLBACK_PURIFY = {
+  ALLOWED_TAGS: ['span', 'sup', 'sub'],
+  ALLOWED_ATTR: ['class', 'style'],
+};
+
+/** DOMPurify config for real KaTeX HTML output (its full presentational tag set). */
+const KATEX_PURIFY = {
+  ALLOWED_TAGS: [
+    'span',
+    'sup',
+    'sub',
+    'svg',
+    'path',
+    'line',
+    'g',
+    'mrow',
+    'mi',
+    'mn',
+    'mo',
+    'msup',
+    'msub',
+    'mfrac',
+    'msqrt',
+    'mroot',
+    'math',
+    'semantics',
+    'annotation',
+  ],
+  ALLOWED_ATTR: [
+    'class',
+    'style',
+    'aria-hidden',
+    'd',
+    'viewBox',
+    'preserveAspectRatio',
+    'width',
+    'height',
+    'x',
+    'y',
+    'x1',
+    'x2',
+    'y1',
+    'y2',
+    'fill',
+    'stroke',
+    'stroke-width',
+    'xmlns',
+    'encoding',
+    'mathvariant',
+  ],
+};
+
+/**
+ * Build the rendered math HTML. Prefers real KaTeX (loaded at runtime from the
+ * CDN); falls back to the built-in LaTeX-subset renderer when KaTeX is not
+ * available (SSR, CDN unreachable, or render error). Output is always DOMPurified.
+ */
+function buildFallbackMathHtml(source: string): string {
+  const rendered = latexToHtml(source.trim());
+  return DOMPurify.sanitize(rendered, MATH_FALLBACK_PURIFY);
+}
+
+/** A KaTeX render keyed by the exact source it was produced from (stale-guard). */
+interface KatexResult {
+  source: string;
+  display: boolean;
+  html: string;
+}
+
 /** Render an isolated `$…$` / `$$…$$` math node as sanitized, styled HTML. */
 function KloelMath({ source, display }: { source: string; display: boolean }) {
-  const html = useMemo(() => {
-    const rendered = latexToHtml(source.trim());
-    // The renderer only emits a known, closed set of tags/classes, but we still
-    // DOMPurify to guarantee no script/handler/attribute can ever survive.
-    return DOMPurify.sanitize(rendered, {
-      ALLOWED_TAGS: ['span', 'sup', 'sub'],
-      ALLOWED_ATTR: ['class', 'style'],
+  const mounted = useClientMounted();
+  // SSR-safe built-in renderer; the displayed HTML upgrades to KaTeX once loaded.
+  const fallbackHtml = useMemo(() => buildFallbackMathHtml(source), [source]);
+  const [katexResult, setKatexResult] = useState<KatexResult | null>(null);
+
+  useEffect(() => {
+    if (!mounted) {
+      return;
+    }
+    let cancelled = false;
+    void loadKatex().then((katex) => {
+      if (cancelled || !katex) {
+        // CDN unreachable → keep the graceful built-in fallback already shown.
+        return;
+      }
+      let rendered: string;
+      try {
+        rendered = katex.renderToString(source.trim(), {
+          displayMode: display,
+          throwOnError: false,
+          output: 'htmlAndMathml',
+          strict: 'ignore',
+          trust: false,
+        });
+      } catch {
+        return; // keep fallback on any KaTeX parse error
+      }
+      const clean = DOMPurify.sanitize(rendered, KATEX_PURIFY);
+      if (!cancelled && clean) {
+        setKatexResult({ source, display, html: clean });
+      }
     });
-  }, [source]);
+    return () => {
+      cancelled = true;
+    };
+  }, [mounted, source, display]);
+
+  // Derive the displayed HTML: use KaTeX only if it matches the current source
+  // (so a source change before the next render falls back, never shows stale math).
+  const katexLoaded =
+    katexResult !== null && katexResult.source === source && katexResult.display === display;
+  const html = katexLoaded ? katexResult.html : fallbackHtml;
 
   const sharedStyle = {
     fontFamily:
@@ -269,6 +373,7 @@ function KloelMath({ source, display }: { source: string; display: boolean }) {
     return (
       <span
         className="kloel-math kloel-math-display"
+        data-katex={katexLoaded ? 'true' : undefined}
         style={{
           ...sharedStyle,
           display: 'block',
@@ -278,7 +383,7 @@ function KloelMath({ source, display }: { source: string; display: boolean }) {
           fontSize: 16,
           overflowX: 'auto',
         }}
-        // Sanitized above; only span/sup/sub with class/style survive.
+        // Sanitized above with DOMPurify — no script/handler/event-attr survives.
         dangerouslySetInnerHTML={{ __html: html }}
       />
     );
@@ -287,8 +392,9 @@ function KloelMath({ source, display }: { source: string; display: boolean }) {
   return (
     <span
       className="kloel-math kloel-math-inline"
+      data-katex={katexLoaded ? 'true' : undefined}
       style={{ ...sharedStyle, fontSize: '0.97em' }}
-      // Sanitized above; only span/sup/sub with class/style survive.
+      // Sanitized above with DOMPurify — no script/handler/event-attr survives.
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );
@@ -617,28 +723,79 @@ function renderMermaidSvg(graph: MermaidGraph): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="Diagrama"><defs><marker id="kloel-mermaid-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="${accentColor}"/></marker></defs>${edgesSvg}${nodesSvg}</svg>`;
 }
 
+/** Stable, DOM-safe id for a mermaid render call (mermaid mutates by id). */
+let mermaidRenderSeq = 0;
+function nextMermaidId(): string {
+  mermaidRenderSeq += 1;
+  return `kloel-mermaid-${mermaidRenderSeq}`;
+}
+
+/** Sanitize a mermaid SVG string defensively (its own securityLevel is strict). */
+function sanitizeMermaidSvg(raw: string): string {
+  return DOMPurify.sanitize(raw, { USE_PROFILES: { svg: true, svgFilters: true } });
+}
+
+/**
+ * Built-in fallback: render the directed-graph subset locally, or signal an
+ * unsupported diagram type so the caller shows the labelled source block.
+ */
+function buildFallbackMermaid(source: string): { svg: string | null; unsupported: boolean } {
+  const graph = parseMermaid(source);
+  if (!graph) {
+    return { svg: null, unsupported: true };
+  }
+  return { svg: sanitizeMermaidSvg(renderMermaidSvg(graph)), unsupported: false };
+}
+
+/** A real-mermaid SVG keyed by the exact source it was produced from. */
+interface MermaidCdnResult {
+  source: string;
+  svg: string;
+}
+
 /** Render a ```mermaid block as a real client-side SVG diagram (lazy / no SSR). */
 function MermaidArtifact({ source }: { source: string }) {
   // Defer parse/render until after the first client paint (lazy), keeping SSR a no-op.
   const mounted = useClientMounted();
 
-  const result = useMemo<{ svg: string | null; unsupported: boolean }>(() => {
+  // Immediate, SSR-safe built-in render (real geometry for graph/flowchart).
+  const fallback = useMemo(() => {
     if (!mounted) {
       return { svg: null, unsupported: false };
     }
-    const graph = parseMermaid(source);
-    if (!graph) {
-      return { svg: null, unsupported: true };
+    return buildFallbackMermaid(source);
+  }, [mounted, source]);
+
+  const [cdnResult, setCdnResult] = useState<MermaidCdnResult | null>(null);
+
+  useEffect(() => {
+    if (!mounted) {
+      return;
     }
-    // Renderer output is a closed SVG element set; sanitize defensively anyway.
-    const raw = renderMermaidSvg(graph);
-    return {
-      svg: DOMPurify.sanitize(raw, { USE_PROFILES: { svg: true, svgFilters: true } }),
-      unsupported: false,
+    let cancelled = false;
+    void loadMermaid().then(async (mermaid) => {
+      if (cancelled || !mermaid) {
+        // CDN unreachable → keep the built-in fallback already shown.
+        return;
+      }
+      const rendered = await renderMermaidWithApi(mermaid, nextMermaidId(), source);
+      if (cancelled || rendered === null) {
+        // Real mermaid couldn't parse this source; keep the built-in fallback.
+        return;
+      }
+      // mermaid runs with securityLevel:'strict'; sanitize once more defensively.
+      setCdnResult({ source, svg: sanitizeMermaidSvg(rendered) });
+    });
+    return () => {
+      cancelled = true;
     };
   }, [mounted, source]);
 
-  const { svg, unsupported } = result;
+  // Prefer the real-mermaid SVG only when it matches the current source.
+  const mermaidLoaded = cdnResult !== null && cdnResult.source === source;
+  const { svg, unsupported } = mermaidLoaded
+    ? { svg: cdnResult.svg, unsupported: false }
+    : fallback;
 
   if (unsupported || (svg !== null && svg.length === 0)) {
     return (
@@ -668,6 +825,7 @@ function MermaidArtifact({ source }: { source: string }) {
   return (
     <div
       className="kloel-artifact-mermaid"
+      data-mermaid={mermaidLoaded ? 'cdn' : 'builtin'}
       style={{
         display: 'flex',
         justifyContent: 'center',

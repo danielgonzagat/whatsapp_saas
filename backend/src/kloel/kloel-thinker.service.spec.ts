@@ -8,6 +8,8 @@ import { Response } from 'express';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { MindCapabilityExecutor } from './mind/coordination';
 import { StateBuilderService } from './state/state-builder.service';
+import { MemoryService } from './mind/memory/memory.service';
+import { ManifestInjectionBuilderService } from './manifest/manifest-injection.builder';
 
 jest.mock('./kloel-thread.service', () => ({
   KloelThreadService: class MockKloelThreadService {},
@@ -132,6 +134,8 @@ describe('KloelThinkerService', () => {
   let llmE2EGuard: Pick<KloelLLME2EGuard, 'isEnabled' | 'buildStream'>;
   let abiBuilder: Pick<AbiBuilderService, 'build'>;
   let capabilityExecutor: Pick<MindCapabilityExecutor, 'buildCognitiveSubstrate'>;
+  let memoryGraph: Pick<MemoryService, 'buildMemoryContextForModel' | 'extractFromTurn'>;
+  let manifestInjection: Pick<ManifestInjectionBuilderService, 'assemble'>;
   const wsId = 'ws-1';
 
   beforeEach(async () => {
@@ -231,6 +235,26 @@ describe('KloelThinkerService', () => {
       }),
     };
 
+    // wire-context: default to an empty memory recall + empty manifest so the
+    // EXISTING tests are byte-identical (no injected text). Individual tests
+    // override these to assert injection / degradation behavior.
+    memoryGraph = {
+      buildMemoryContextForModel: jest.fn().mockResolvedValue({
+        userProfileStatic: [],
+        userProfileDynamic: [],
+        relevantMemories: [],
+        preferences: [],
+        constraints: [],
+        text: '',
+      }),
+      extractFromTurn: jest
+        .fn()
+        .mockResolvedValue({ created: 0, updated: 0, contradictions: 0, forgotten: 0, nodeIds: [] }),
+    };
+    manifestInjection = {
+      assemble: jest.fn().mockReturnValue({ text: '', internalNames: [] }),
+    };
+
     jest.clearAllMocks();
 
     const module: TestingModule = await Test.createTestingModule({
@@ -262,6 +286,8 @@ describe('KloelThinkerService', () => {
         },
         { provide: AbiBuilderService, useValue: abiBuilder },
         { provide: MindCapabilityExecutor, useValue: capabilityExecutor },
+        { provide: MemoryService, useValue: memoryGraph },
+        { provide: ManifestInjectionBuilderService, useValue: manifestInjection },
       ],
     }).compile();
 
@@ -1267,6 +1293,74 @@ describe('KloelThinkerService', () => {
       expect(replyEngine.buildChatModelMessages).toHaveBeenCalledWith(
         expect.objectContaining({ prebuiltCognitiveState: cognitiveState }),
       );
+    });
+
+    it('injects the per-user memory + capability manifest into the hidden runtime context', async () => {
+      (memoryGraph.buildMemoryContextForModel as jest.Mock).mockResolvedValueOnce({
+        userProfileStatic: ['O usuário se chama Daniel'],
+        userProfileDynamic: [],
+        relevantMemories: [],
+        preferences: [],
+        constraints: [],
+        text: 'MEMÓRIA DO USUÁRIO (aprendida em conversas anteriores):\n\nPERFIL DO USUÁRIO (estável):\n- O usuário se chama Daniel',
+      });
+      (manifestInjection.assemble as jest.Mock).mockReturnValueOnce({
+        text: '<<<KLOEL_CAPABILITY_MANIFEST>>>\nCAPACIDADES DISPONÍVEIS (opcionais, selecionadas para este turno):\n- products.create: Cria um produto\n<<<END_KLOEL_CAPABILITY_MANIFEST>>>',
+        internalNames: ['products.create'],
+      });
+
+      await service.think(
+        { message: 'crie um produto', workspaceId: wsId, userId: 'agent-1' },
+        {} as Response,
+        null,
+        undefined,
+        undefined,
+        jest.fn() as LocalToolExecutor,
+      );
+
+      expect(memoryGraph.buildMemoryContextForModel).toHaveBeenCalledWith(
+        wsId,
+        'agent-1',
+        'crie um produto',
+      );
+      expect(manifestInjection.assemble).toHaveBeenCalledWith(
+        'crie um produto',
+        expect.objectContaining({ surface: 'chat' }),
+      );
+      // The injected blocks reach the model via the hidden `dynamicContext`
+      // channel of buildChatModelMessages — never the user-visible answer.
+      const buildCalls = (replyEngine.buildChatModelMessages as jest.Mock).mock.calls;
+      const lastBuild = buildCalls.at(-1)?.[0] as { dynamicContext?: unknown } | undefined;
+      expect(typeof lastBuild?.dynamicContext).toBe('string');
+      expect(lastBuild?.dynamicContext as string).toContain('O usuário se chama Daniel');
+      expect(lastBuild?.dynamicContext as string).toContain('CAPACIDADES DISPONÍVEIS');
+    });
+
+    it('still completes the turn when the memory + manifest services throw (degrades to empty)', async () => {
+      (memoryGraph.buildMemoryContextForModel as jest.Mock).mockRejectedValueOnce(
+        new Error('memory db down'),
+      );
+      (manifestInjection.assemble as jest.Mock).mockImplementationOnce(() => {
+        throw new Error('router boom');
+      });
+
+      await expect(
+        service.think(
+          { message: 'oi tudo bem', workspaceId: wsId, userId: 'agent-1' },
+          {} as Response,
+          null,
+          undefined,
+          undefined,
+          jest.fn() as LocalToolExecutor,
+        ),
+      ).resolves.toBeUndefined();
+
+      // The turn still reached the model-message build with the legacy
+      // (un-augmented) dynamicContext — neither failure broke the turn.
+      expect(replyEngine.buildChatModelMessages).toHaveBeenCalled();
+      const buildCalls = (replyEngine.buildChatModelMessages as jest.Mock).mock.calls;
+      const lastBuild = buildCalls.at(-1)?.[0] as { dynamicContext?: unknown } | undefined;
+      expect(lastBuild?.dynamicContext as string).not.toContain('CAPACIDADES DISPONÍVEIS');
     });
 
     it('does not throw when request is aborted before start', async () => {
