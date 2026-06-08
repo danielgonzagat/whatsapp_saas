@@ -140,7 +140,11 @@ export class MindPredictionService {
             { predicate: pred.predicate },
             pred.wasCorrect ? 1 : 0,
           )
-          .catch(() => {});
+          .catch((err: unknown) =>
+            this.logger.debug(
+              `mind-prediction async write failed: ${err instanceof Error ? err.message : String(err)}`,
+            ),
+          );
       }
 
       // Emit surprise as event
@@ -161,7 +165,11 @@ export class MindPredictionService {
               },
             },
           })
-          .catch(() => {});
+          .catch((err: unknown) =>
+            this.logger.debug(
+              `mind-prediction async write failed: ${err instanceof Error ? err.message : String(err)}`,
+            ),
+          );
       }
     }
 
@@ -230,7 +238,11 @@ export class MindPredictionService {
             },
           },
         })
-        .catch(() => {});
+        .catch((err: unknown) =>
+          this.logger.debug(
+            `mind-prediction async write failed: ${err instanceof Error ? err.message : String(err)}`,
+          ),
+        );
     }
 
     const meanSurprise = evaluated > 0 ? totalSurprise / evaluated : 0;

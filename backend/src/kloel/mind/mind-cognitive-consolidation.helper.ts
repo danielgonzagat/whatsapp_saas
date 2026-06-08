@@ -210,6 +210,7 @@ export async function runCognitiveConsolidation(
       try {
         cents = BigInt(raw);
       } catch {
+        logger?.warn(`cognitive consolidation: skipping non-numeric amountCents=${String(raw)}`);
         continue;
       }
       if (cents <= 0n) {
