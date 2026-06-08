@@ -3741,8 +3741,8 @@ model MindGraphEdge {
 ///
 /// Per-user isolation is enforced by `(workspaceId, userId)` on every read/write.
 /// `type` is one of: fact | preference | project | goal | decision | entity |
-/// document | summary | contradiction. The `embedding` column uses
-/// `Unsupported("vector(1536)")` because Prisma cannot type pgvector natively —
+/// document | conversation | task | summary | sensitive | expired | contradiction.
+/// The `embedding` column uses `Unsupported("vector(1536)")` because Prisma cannot type pgvector natively —
 /// all vector reads go through `$queryRaw` (see MemoryService.retrieveRelevant).
 model MemoryNode {
   id          String                       @id @default(uuid())
@@ -3750,7 +3750,7 @@ model MemoryNode {
   workspace   Workspace                    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   userId      String
   scope       String                       @default("user") // user | workspace | shared
-  type        String // fact|preference|project|goal|decision|entity|document|summary|contradiction
+  type        String // fact|preference|project|goal|decision|entity|document|conversation|task|summary|sensitive|expired|contradiction
   content     String
   summary     String?
   confidence  Float                        @default(0.5) // [0..1] extraction certainty
@@ -3773,9 +3773,9 @@ model MemoryNode {
 
 /// Typed edge between two `MemoryNode`s (track m3-memory-graph).
 ///
-/// `relation` is one of: supports | contradicts | updates | extends |
-/// belongs_to | references | replaces. Edges are per-user-scoped via
-/// `workspaceId` + the endpoints' own `(workspaceId, userId)` isolation, and
+/// `relation` is one of: supports | contradicts | updates | extends | summarizes |
+/// belongs_to | references | derived_from | used_by | similar_to | replaces | expires | protects.
+/// Edges are per-user-scoped via `workspaceId` + the endpoints' own `(workspaceId, userId)` isolation, and
 /// cascade-delete with their `from` node so a forgotten/removed node never
 /// leaves dangling edges.
 model MemoryEdge {
@@ -3786,7 +3786,7 @@ model MemoryEdge {
   toId        String
   from        MemoryNode @relation("MemoryEdgeFrom", fields: [fromId], references: [id], onDelete: Cascade)
   to          MemoryNode @relation("MemoryEdgeTo", fields: [toId], references: [id], onDelete: Cascade)
-  relation    String // supports|contradicts|updates|extends|belongs_to|references|replaces
+  relation    String // supports|contradicts|updates|extends|summarizes|belongs_to|references|derived_from|used_by|similar_to|replaces|expires|protects
   weight      Float      @default(1)
   metadata    Json       @default("{}") @db.JsonB
   createdAt   DateTime   @default(now())
@@ -3927,14 +3927,21 @@ model MindMessage {
   id          String    @id @default(uuid())
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  source      String    @default("brain") // "brain" | "dashboard" | "lead_conversation"
+  source      String    @default("brain") // "brain" | "dashboard" | "lead_conversation" | "channel" | "thread"
   role        String // "user" | "assistant" | "system"
   content     String
   metadata    Json? // Dados extras (intenção, sentimento, etc)
+  // Correlation key for the Brain→Mind backfill: the originating legacy row id
+  // (e.g. RAC_KloelMessage.id). NULL for live dual-written rows. The unique
+  // index below makes the backfill idempotent — re-running can never duplicate a
+  // historical message. Postgres treats NULLs as distinct, so live dual-write
+  // rows (sourceId = NULL) stay unconstrained.
+  sourceId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([workspaceId, source, sourceId])
   @@index([workspaceId, createdAt])
   @@index([workspaceId, source, createdAt])
   @@map("RAC_MindMessage")
