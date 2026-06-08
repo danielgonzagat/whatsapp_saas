@@ -103,6 +103,8 @@ function readConfirmMutations(metadata: Prisma.InputJsonValue | undefined): bool
 }
 
 const KLOEL_TOOL_PLANNING_WORKSPACE_REQUIRED = 'workspaceId is required for Kloel tool planning';
+const KLOEL_TOOL_PLANNING_OPENAI_REQUIRED =
+  'OpenAI client is required for Kloel tool planning';
 const KLOEL_FINAL_ANSWER_NO_TOOL_MARKUP_PROMPT =
   'Passe de resposta final: escreva somente linguagem de produto. Não emita markup de ferramenta, DSML, XML/JSON de chamada de ferramenta, nomes internos de ferramenta, código cru, caminhos de arquivo, linguagens de implementação, contagem de símbolos, IDs técnicos, labels de certificação interna ou blocos de tool call. Traduza raciocínio, ações e observações já executadas para uma pré-resposta executável clara, sem expor detalhes de implementação.';
 
@@ -189,7 +191,9 @@ export async function finalizeSuccessfulReply(
     },
   ];
   if (workspaceId) {
-    await planLimits.trackAiUsage(workspaceId, estimatedTokens).catch(() => {});
+    await planLimits.trackAiUsage(workspaceId, estimatedTokens).catch(() => {
+      /* best-effort: usage/budget tracking must never break the reply */
+    });
   }
   // Persist only public-safe reasoning metadata. Provider chain-of-thought text is
   // intentionally blank here; duration can survive reloads without leaking content.
@@ -443,9 +447,9 @@ export async function runComposerCapabilityBranch(
   // no provider call happened). Fire-and-forget — accounting must never wedge
   // the SSE stream, matching the normal path's `.catch(() => {})` semantics.
   if (workspaceId && !capabilityFailed) {
-    await planLimits.trackAiUsage(workspaceId, capResult.estimatedTokens).catch(() => {});
+    await planLimits.trackAiUsage(workspaceId, capResult.estimatedTokens ?? 0).catch(() => {/* best-effort: non-blocking tracking */});
     if (llmBudget) {
-      llmBudget.recordSpend(workspaceId, capResult.estimatedTokens).catch(() => {});
+      llmBudget.recordSpend(workspaceId, capResult.estimatedTokens ?? 0).catch(() => {/* best-effort: non-blocking spend tracking */});
     }
   }
   safeWrite(createKloelDoneEvent(doneMetadata));
@@ -477,6 +481,12 @@ export async function runToolPlanningBranch(
     error.message = KLOEL_TOOL_PLANNING_WORKSPACE_REQUIRED;
     throw error;
   }
+  const openaiClient = replyEngine.openai;
+  if (!openaiClient) {
+    const error = new Error();
+    error.message = KLOEL_TOOL_PLANNING_OPENAI_REQUIRED;
+    throw error;
+  }
   safeWrite(createKloelStatusEvent('thinking', createKloelPublicThinkingLabel(message)));
   await planLimits.ensureTokenBudget(workspaceId ?? '');
   const allowedTools =
@@ -487,7 +497,7 @@ export async function runToolPlanningBranch(
           return typeof name === 'string' && requestedAllowedTools.includes(name);
         });
   const initialResponse = await chatCompletionWithFallback(
-    replyEngine.openai,
+    openaiClient,
     {
       model: resolveBackendOpenAIModel('brain'),
       messages,
@@ -505,7 +515,7 @@ export async function runToolPlanningBranch(
   );
   await planLimits
     .trackAiUsage(workspaceId ?? '', initialResponse?.usage?.total_tokens ?? 500)
-    .catch(() => {});
+    .catch(() => {/* best-effort: non-blocking */});
   const assistantMsg = initialResponse.choices[0]?.message;
   const assistantText = assistantMsg?.content || '';
   if (assistantMsg?.tool_calls?.length) {

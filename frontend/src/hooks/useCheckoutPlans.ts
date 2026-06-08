@@ -194,7 +194,7 @@ export function useCheckoutPlans(product: DashboardProductInput | null | undefin
           setCheckoutProductId(id);
         }
       })
-      .catch(() => {});
+      .catch(() => {/* best-effort: non-blocking */});
 
     return () => {
       cancelled = true;

@@ -385,7 +385,10 @@ function checkChangedFiles() {
       const proseLabel =
         label === 'bypass-oriented flag' ||
         label === 'fake/mock implementation marker' ||
-        label === 'debug artifact';
+        label === 'debug artifact' ||
+        label === 'swallowed promise rejection' ||
+        label === 'empty catch block' ||
+        label === 'swallowed exception';
       const scanText = proseLabel
         ? content
             .replace(/\/\/[^\n]*/g, '')
