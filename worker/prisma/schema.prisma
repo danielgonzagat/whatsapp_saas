@@ -270,6 +270,8 @@ model Workspace {
   mindDailyReports      MindDailyReport[]
   mindGlobalPriors      MindGlobalPrior[]
   mindSelfModels        MindSelfModel[]
+  memoryNodes           MemoryNode[]
+  memoryEdges           MemoryEdge[]
 
   // Facebook Messenger Messages
   fbMessages FbMessage[]
@@ -2015,6 +2017,14 @@ model KloelWalletLedger {
   bucket        String // 'available' | 'pending' | 'blocked'
   amountInCents BigInt
   reason        String // 'sale_credit' | 'confirm_payment_credit' | 'confirm_payment_debit' | 'withdrawal_debit' | 'reconcile_settle_credit' | 'reconcile_settle_debit'
+  // Money-ledgers migration (Stage 1): additive, nullable post-mutation
+  // bucket balance snapshots mirroring the Connect ledger contract
+  // (ConnectLedgerEntry.balanceAfter*Cents). Populated only on NEW writes
+  // when KLOEL_LEDGER_BALANCE_SNAPSHOT is enabled; NULL on historical rows
+  // and when the flag is OFF (byte-identical legacy behaviour).
+  balanceAfterAvailableCents BigInt?
+  balanceAfterPendingCents   BigInt?
+  balanceAfterBlockedCents   BigInt?
   metadata      Json?
   createdAt     DateTime    @default(now())
 
@@ -2983,6 +2993,7 @@ model CheckoutProductPlan {
   quantity              Int                  @default(1)
   freeShipping          Boolean              @default(false)
   shippingPrice         Int?
+  visibleToAffiliates   Boolean              @default(true)
   isActive              Boolean              @default(true)
   checkoutConfig        CheckoutConfig?
   orders                CheckoutOrder[]
@@ -3721,6 +3732,70 @@ model MindGraphEdge {
   @@map("RAC_MindGraphEdge")
 }
 
+/// Per-USER typed memory graph node (track m3-memory-graph).
+///
+/// Distinct from `MindGraphNode` (per-WORKSPACE Hebbian outcome facts): this is
+/// the per-user supermemory/Mem0-equivalent layer with a typed taxonomy, an
+/// optional pgvector embedding for semantic recall, and lifecycle columns
+/// (importance / recency / confidence / expiry / pinning / forgetting).
+///
+/// Per-user isolation is enforced by `(workspaceId, userId)` on every read/write.
+/// `type` is one of: fact | preference | project | goal | decision | entity |
+/// document | summary | contradiction. The `embedding` column uses
+/// `Unsupported("vector(1536)")` because Prisma cannot type pgvector natively —
+/// all vector reads go through `$queryRaw` (see MemoryService.retrieveRelevant).
+model MemoryNode {
+  id          String                       @id @default(uuid())
+  workspaceId String
+  workspace   Workspace                    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+  scope       String                       @default("user") // user | workspace | shared
+  type        String // fact|preference|project|goal|decision|entity|document|summary|contradiction
+  content     String
+  summary     String?
+  confidence  Float                        @default(0.5) // [0..1] extraction certainty
+  importance  Float                        @default(0.5) // [0..1] salience for ranking
+  recency     Float                        @default(1) // [0..1] decayed at read time
+  embedding   Unsupported("vector(1536)")? // semantic recall via pgvector
+  pinned      Boolean                      @default(false) // never auto-forgotten
+  forgotten   Boolean                      @default(false) // soft-deleted; excluded from recall
+  metadata    Json                         @default("{}") @db.JsonB
+  createdAt   DateTime                     @default(now())
+  expiresAt   DateTime? // hard TTL; expired rows excluded from recall
+
+  outgoingEdges MemoryEdge[] @relation("MemoryEdgeFrom")
+  incomingEdges MemoryEdge[] @relation("MemoryEdgeTo")
+
+  @@index([workspaceId, userId, type])
+  @@index([workspaceId, userId, importance])
+  @@map("RAC_MemoryNode")
+}
+
+/// Typed edge between two `MemoryNode`s (track m3-memory-graph).
+///
+/// `relation` is one of: supports | contradicts | updates | extends |
+/// belongs_to | references | replaces. Edges are per-user-scoped via
+/// `workspaceId` + the endpoints' own `(workspaceId, userId)` isolation, and
+/// cascade-delete with their `from` node so a forgotten/removed node never
+/// leaves dangling edges.
+model MemoryEdge {
+  id          String     @id @default(uuid())
+  workspaceId String
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  fromId      String
+  toId        String
+  from        MemoryNode @relation("MemoryEdgeFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to          MemoryNode @relation("MemoryEdgeTo", fields: [toId], references: [id], onDelete: Cascade)
+  relation    String // supports|contradicts|updates|extends|belongs_to|references|replaces
+  weight      Float      @default(1)
+  metadata    Json       @default("{}") @db.JsonB
+  createdAt   DateTime   @default(now())
+
+  @@unique([workspaceId, fromId, relation, toId])
+  @@index([workspaceId, relation])
+  @@map("RAC_MemoryEdge")
+}
+
 model MindOutboxEvent {
   id             String    @id
   workspaceId    String
@@ -3840,9 +3915,12 @@ model MindSelfModel {
 
 /// Canonical message store (Brain → Mind unification PR-1, see
 /// docs/architecture/BRAIN_MIND_UNIFICATION_PLAN.md §5). Mirrors the column
-/// shape of `KloelMessage` (`RAC_KloelMessage`) so `MindCanonicalService` can
-/// dual-write here later. The extra `source` discriminator lets the three
-/// legacy message tables (`KloelMessage`=`brain`, `ChatMessage`=`dashboard`,
+/// shape of `KloelMessage` (`RAC_KloelMessage`). NOW DUAL-WRITTEN behind
+/// `KLOEL_MINDMESSAGE_DUALWRITE` (default OFF) — best-effort writers in
+/// inbox/chat/kloel-thread services and the lead-processor helper mirror legacy
+/// message writes here. Still canonical-but-dead-on-READ: no read path consumes
+/// this table yet. The extra `source` discriminator lets the three legacy
+/// message tables (`KloelMessage`=`brain`, `ChatMessage`=`dashboard`,
 /// `KloelConversation`=`lead_conversation`) converge into this one table.
 /// ADDITIVE — no legacy table is renamed or dropped in PR-1.
 model MindMessage {
@@ -3864,9 +3942,17 @@ model MindMessage {
 
 /// Canonical memory store (Brain → Mind unification PR-1, see
 /// docs/architecture/BRAIN_MIND_UNIFICATION_PLAN.md §2.5 / §5). Mirrors the
-/// column shape of `KloelMemory` (`RAC_KloelMemory`) so `MindCanonicalService`
-/// can dual-write here later. Adds the `namespace` column called for in §2.5 so
-/// the agent-runtime KV usages can be partitioned during the migration.
+/// column shape of `KloelMemory` (`RAC_KloelMemory`). NOW HAS WRITERS:
+/// `KloelMemoryEngineService` writes per-user facts here directly (namespace
+/// `umem:<userId>`), and `MindMemoryItemService` mirrors legacy KloelMemory
+/// upserts here behind `KLOEL_MINDMEMORY_DUALWRITE` (default OFF). LIVE ON READ
+/// for the `umem:` namespace only: `KloelMemoryEngineService.recall()` /
+/// `recallGraph()` read these rows back (consumed by
+/// `KloelWorkspaceContextService` context injection and the `kloel` controller).
+/// The dual-write (`source`-tagged) rows mirrored from legacy tables are still
+/// dead-on-READ — no read path consumes those yet. Adds the `namespace` column
+/// called for in §2.5 so the agent-runtime KV usages can be partitioned during
+/// the migration.
 /// ADDITIVE — no legacy table is renamed or dropped in PR-1.
 model MindMemory {
   id          String                       @id @default(uuid())
@@ -4277,6 +4363,13 @@ model MarketplaceTreasuryLedger {
   orderId       String?                       @map("order_id")
   feeSnapshotId String?                       @map("fee_snapshot_id")
   reason        String
+  // Money-ledgers migration (Stage 1): additive, nullable post-mutation
+  // bucket balance snapshots mirroring the Connect ledger contract.
+  // Populated only on NEW writes when KLOEL_LEDGER_BALANCE_SNAPSHOT is
+  // enabled; NULL on historical rows and when the flag is OFF.
+  balanceAfterAvailableCents BigInt?          @map("balance_after_available_cents")
+  balanceAfterPendingCents   BigInt?          @map("balance_after_pending_cents")
+  balanceAfterReservedCents  BigInt?          @map("balance_after_reserved_cents")
   metadata      Json?
   createdAt     DateTime                      @default(now()) @map("created_at")
 

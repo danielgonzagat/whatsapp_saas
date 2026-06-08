@@ -26,11 +26,13 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 
 import { NAME_RE } from '../common/regex';
 import {
-  buildCampaignDeliveryGap,
+  buildCampaignDeliveryStatus,
   buildVariantFallbackCopy,
   computeCampaignDeliveryReadiness,
   computeSmartTimeDelayMs,
   validateVariantCopy,
+  type CampaignDeliveryReadiness,
+  type CampaignDeliveryStatus,
 } from './campaigns.helpers';
 import {
   buildCampaignDefaultStats,
@@ -378,21 +380,8 @@ export class CampaignsService {
     );
   }
 
-  async getDeliveryReadiness(workspaceId: string): Promise<{
-    emailReady: boolean;
-    whatsappReady: boolean;
-    ready: boolean;
-    missing: string[];
-    message: string | null;
-  }> {
-    const delivery = await this.resolveCampaignDelivery(workspaceId);
-    const gap = buildCampaignDeliveryGap(delivery);
-    return {
-      ...delivery,
-      ready: gap === null,
-      missing: gap?.missing || [],
-      message: gap?.message || null,
-    };
+  async getDeliveryReadiness(workspaceId: string): Promise<CampaignDeliveryStatus> {
+    return buildCampaignDeliveryStatus(await this.resolveCampaignDelivery(workspaceId));
   }
 
   private async ensureCampaignDeliveryReady(workspaceId: string): Promise<void> {
@@ -402,10 +391,7 @@ export class CampaignsService {
     }
   }
 
-  private async resolveCampaignDelivery(workspaceId: string): Promise<{
-    emailReady: boolean;
-    whatsappReady: boolean;
-  }> {
+  private async resolveCampaignDelivery(workspaceId: string): Promise<CampaignDeliveryReadiness> {
     const [ws, metaConnection] = await Promise.all([
       this.prisma.workspace.findUnique({
         where: { id: workspaceId },
@@ -457,9 +443,7 @@ export class CampaignsService {
             status: 'DRAFT',
             messageTemplate: mutatedMessage,
             filters:
-              base.filters === null
-                ? Prisma.JsonNull
-                : (base.filters as Prisma.InputJsonValue),
+              base.filters === null ? Prisma.JsonNull : (base.filters as Prisma.InputJsonValue),
             stats: { sent: 0, replied: 0 },
             aiStrategy: base.aiStrategy,
             parentId: base.id,

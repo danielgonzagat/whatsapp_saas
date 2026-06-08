@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useClientMounted } from '@/hooks/useClientMounted';
 import { usePrefersReducedMotion } from './usePrefersReducedMotion';
 
 export function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const prefersReducedMotion = usePrefersReducedMotion();
   const ref = useRef<HTMLDivElement | null>(null);
   const [hasEnteredViewport, setHasEnteredViewport] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => setIsMounted(true), []);
+  const isMounted = useClientMounted();
   const visible = !isMounted || prefersReducedMotion || hasEnteredViewport;
 
   useEffect(() => {

@@ -182,6 +182,28 @@ export function loadCanonicalMoveApprovals(repoRoot) {
   return approved;
 }
 
+const FORBIDDEN_PROSE_LABELS = new Set([
+  'bypass-oriented flag',
+  'fake/mock implementation marker',
+  'debug artifact',
+  'swallowed promise rejection',
+  'empty catch block',
+  'swallowed exception',
+]);
+
+export function forbiddenPatternScanText(label, file, content) {
+  if (label === 'debug artifact' && /\.proof\.[cm]?[jt]sx?$/.test(file)) {
+    return null;
+  }
+  if (!FORBIDDEN_PROSE_LABELS.has(label)) {
+    return content;
+  }
+  return content
+    .replace(/\/\/[^\n]*/g, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\*.*$/gm, '');
+}
+
 function hasAnyPrefix(value, prefixes) {
   return prefixes.some((prefix) => value.startsWith(prefix));
 }

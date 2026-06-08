@@ -122,7 +122,7 @@ export async function updatePaymentAndSaleForSessionHelper(
       const saleWhere = buildKloelSaleStripeWhere(workspaceId, stripePaymentExternalId, saleId);
       if (saleWhere) {
         await deps.prisma.kloelSale.updateMany({
-          where: { ...saleWhere },
+          where: { ...saleWhere, workspaceId },
           data: {
             status: 'paid',
             paidAt: new Date(),
@@ -212,7 +212,7 @@ export async function updatePaymentAndSaleForSessionAtomicHelper(
       }
       if (deps.prisma.kloelSale && saleWhere) {
         await tx.kloelSale.updateMany({
-          where: { ...saleWhere },
+          where: { ...saleWhere, workspaceId },
           data: {
             status: 'paid',
             paidAt: new Date(),

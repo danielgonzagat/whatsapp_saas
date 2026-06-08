@@ -256,7 +256,10 @@ describe('WhatsAppApiController', () => {
   });
 
   it('delegates contacts, chats, backlog and sync actions to WhatsappService', async () => {
-    const mockReq = { workspaceId: 'ws-1' } as never as AuthenticatedRequest;
+    const mockReq = {
+      user: { workspaceId: 'ws-1' },
+      workspaceId: 'ws-1',
+    } as never as AuthenticatedRequest;
     const contacts = await catalogController.getContacts(mockReq);
     const created = await catalogController.createContact(mockReq, {
       phone: '5511999992222',
@@ -264,7 +267,12 @@ describe('WhatsAppApiController', () => {
     });
     const chats = await catalogController.getChats(mockReq);
     const messages = await catalogController.getChatMessages(
-      { workspaceId: 'ws-1', query: { limit: '50' }, body: {} } as never as AuthenticatedRequest,
+      {
+        user: { workspaceId: 'ws-1' },
+        workspaceId: 'ws-1',
+        query: { limit: '50' },
+        body: {},
+      } as never as AuthenticatedRequest,
       '5511999991111%40c.us',
     );
     const presence = await catalogController.setPresence(mockReq, '5511999991111%40c.us', {

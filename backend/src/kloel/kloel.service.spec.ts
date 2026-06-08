@@ -189,7 +189,7 @@ describe('KloelService', () => {
       expect(result.response).toContain('PIX gerado');
       expect(result.response).toContain('PIX copia e cola: 000201pix');
       expect(result.response).toContain('Prova material:');
-      expect(result.response).toContain('Capacidade: sales.create_pix');
+      expect(result.response).toContain('Ação operacional: geração de PIX');
       expect(result.response).toContain('Evidência: /vendas/sale-pix-1');
       expect(result.response).toContain('AuditLog: audit-pix-1');
       expect(result.response).toContain('Provedor: mercadopago');

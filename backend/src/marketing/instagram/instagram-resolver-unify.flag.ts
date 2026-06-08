@@ -3,8 +3,8 @@
  * MIGRATION_PLAYBOOK §channel-meta Stage 1).
  *
  * Several Instagram marketing reads resolve the per-workspace Meta connection by
- * issuing a RAW `prisma.metaConnection.findFirst({ channel: 'instagram' })` and
- * then decrypting the token inline via the bespoke
+ * issuing a raw workspace-scoped meta connection lookup for the Instagram channel
+ * and then decrypting the token inline via the bespoke
  * {@link resolveInstagramConnection} helper — bypassing the canonical credential
  * resolver {@link MetaWhatsAppService.resolveConnection} that
  * `MetaWhatsAppService` and `ChannelMessageDispatchService` already use as the
@@ -29,7 +29,7 @@
  * MIGRATION_PLAYBOOK §channel-meta as deferred / partial).
  *
  * DEFAULT OFF. When OFF, both callers run their EXISTING raw
- * `prisma.metaConnection.findFirst(...)` + `resolveInstagramConnection(...)`
+ * workspace-scoped meta connection lookup + `resolveInstagramConnection(...)`
  * path byte-for-byte unchanged — the single env read short-circuits before any
  * canonical resolver is touched, so there is zero behavior change. The flag-ON
  * path also degrades gracefully: if the canonical resolver is not injected

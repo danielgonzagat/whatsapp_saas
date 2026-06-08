@@ -2,6 +2,9 @@ import { jest } from '@jest/globals';
 import { KycService } from './kyc.service';
 
 type Scenario = 'PF' | 'PJ';
+type AgentFindMock = jest.Mock<
+  ({ select }?: { select?: Record<string, boolean> }) => Promise<unknown>
+>;
 
 export interface ConnectOnboardingStatusOverride {
   chargesEnabled?: boolean;
@@ -9,12 +12,49 @@ export interface ConnectOnboardingStatusOverride {
   requirementsCurrentlyDue?: string[];
 }
 
+export interface KycPrismaMock {
+  agent: { findUnique: AgentFindMock; findFirst: AgentFindMock; update: jest.Mock };
+  workspace: { findUnique: jest.Mock };
+  fiscalData: { findUnique: jest.Mock };
+  kycDocument: {
+    findMany: jest.Mock;
+    findUnique: jest.Mock;
+    delete: jest.Mock;
+  };
+  bankAccount: { findFirst: jest.Mock };
+  refreshToken: { findMany: jest.Mock; updateMany: jest.Mock };
+  connectAccountBalance: { findFirst: jest.Mock };
+  $transaction: jest.Mock<(callback: (tx: KycPrismaMock) => unknown) => unknown>;
+}
+
+export interface KycServiceFixture {
+  prisma: KycPrismaMock;
+  storage: { upload: jest.Mock };
+  auditService: { log: jest.Mock };
+  connectService: {
+    createCustomAccount: jest.Mock;
+    submitOnboardingProfile: jest.Mock;
+    getOnboardingStatus: jest.Mock;
+  };
+  kycEventEmitter: {
+    emitDocumentSubmitted: jest.Mock;
+    emitApproved: jest.Mock;
+    emitRejected: jest.Mock;
+  };
+  accountMfaService: {
+    createSetup: jest.Mock;
+    resumeSetup: jest.Mock;
+    verifyCode: jest.Mock;
+  };
+  service: KycService;
+}
+
 export function buildService(options?: {
   scenario?: Scenario;
   existingStripeAccountId?: string | null;
   /** Overrides the Stripe Connect onboarding status reported by the test ConnectService double. */
   connectStatus?: ConnectOnboardingStatusOverride;
-}) {
+}): KycServiceFixture {
   const scenario = options?.scenario ?? 'PF';
   const existingStripeAccountId = options?.existingStripeAccountId ?? null;
   const connectStatus = options?.connectStatus ?? {};
@@ -133,7 +173,7 @@ export function buildService(options?: {
   });
   const resolved = <T>(value: T) =>
     jest.fn<(...args: unknown[]) => Promise<T>>().mockResolvedValue(value);
-  const prisma = {
+  const prisma: KycPrismaMock = {
     agent: {
       findUnique: agentFindUnique,
       findFirst: agentFindUnique,
@@ -168,10 +208,10 @@ export function buildService(options?: {
           : null,
       ),
     },
+    $transaction: jest.fn<(callback: (tx: KycPrismaMock) => unknown) => unknown>(
+      (callback): unknown => callback(prisma),
+    ),
   };
-  Object.assign(prisma, {
-    $transaction: jest.fn((callback: (tx: typeof prisma) => unknown) => callback(prisma)),
-  });
   const storage = {
     upload: jest.fn(),
   };

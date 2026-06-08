@@ -148,6 +148,24 @@ export function buildCampaignDeliveryGap(
   };
 }
 
+export type CampaignDeliveryStatus = CampaignDeliveryReadiness & {
+  ready: boolean;
+  missing: string[];
+  message: string | null;
+};
+
+export function buildCampaignDeliveryStatus(
+  readiness: CampaignDeliveryReadiness,
+): CampaignDeliveryStatus {
+  const gap = buildCampaignDeliveryGap(readiness);
+  return {
+    ...readiness,
+    ready: gap === null,
+    missing: gap?.missing || [],
+    message: gap?.message || null,
+  };
+}
+
 /** Stable fallback line appended when OpenAI is unavailable for variant copy. */
 export function buildVariantFallbackCopy(base: string | null | undefined, idx: number): string {
   return `${base || ''} [variante ${idx + 1} com CTA: responda SIM agora]`;

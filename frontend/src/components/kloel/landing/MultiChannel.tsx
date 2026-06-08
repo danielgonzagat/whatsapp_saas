@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useClientMounted } from '@/hooks/useClientMounted';
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import { usePrefersReducedMotion } from './usePrefersReducedMotion';
@@ -43,8 +44,7 @@ export function MultiChannel({
   messages?: MultiChannelMessage[];
 }) {
   const prefersReducedMotion = usePrefersReducedMotion();
-  const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => setIsMounted(true), []);
+  const isMounted = useClientMounted();
   const [msgs, setMsgs] = useState<MultiChannelState>({ wa: [], ig: [], em: [] });
   const visibleMsgs = prefersReducedMotion ? groupMultiChannelMessages(messages) : msgs;
   const ref = useRef<HTMLDivElement | null>(null);

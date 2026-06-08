@@ -5,6 +5,21 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import {
+  CLOSE_BORDER,
+  CLOSE_FILL,
+  GREEN_BORDER,
+  GREEN_FILL,
+  ResizeGripGlyph,
+  TrafficLight,
+} from './ArtifactWindowChrome.controls';
+import {
+  VIEWPORT_MARGIN,
+  clampRectToViewport,
+  computeDefaultRect,
+  readViewportSize,
+  type WindowRect,
+} from './ArtifactWindowChrome.geometry';
 
 /**
  * Faithful reuse of the Kloel macOS-style floating window chrome (the same
@@ -18,190 +33,6 @@ import { KLOEL_THEME } from '@/lib/kloel-theme';
  * exactly so the affordance reads identically — the visual identity is
  * preserved, not restyled.
  */
-
-const WINDOW_MIN_WIDTH = 360;
-const WINDOW_MIN_HEIGHT = 280;
-const VIEWPORT_MARGIN = 24;
-const DEFAULT_WIDTH_RATIO = 0.6;
-const DEFAULT_HEIGHT_RATIO = 0.8;
-const DEFAULT_MAX_WIDTH = 920;
-const DEFAULT_MAX_HEIGHT = 900;
-
-// macOS traffic-light hues, tuned to the warm Kloel palette (identical to the
-// graph overlay): ember-red close, emerald-green fullscreen.
-const CLOSE_FILL = '#E85D30';
-const CLOSE_BORDER = '#C44A22';
-const GREEN_FILL = '#2DBE76';
-const GREEN_BORDER = '#1FA862';
-
-interface WindowRect {
-  readonly width: number;
-  readonly height: number;
-  readonly left: number;
-  readonly top: number;
-}
-
-interface ViewportSize {
-  readonly width: number;
-  readonly height: number;
-}
-
-function readViewportSize(): ViewportSize {
-  if (typeof window === 'undefined') {
-    return { width: 1280, height: 800 };
-  }
-  return { width: window.innerWidth || 1280, height: window.innerHeight || 800 };
-}
-
-function clamp(value: number, min: number, max: number): number {
-  if (max < min) {
-    return min;
-  }
-  return Math.min(Math.max(value, min), max);
-}
-
-function computeDefaultRect(viewport: ViewportSize): WindowRect {
-  const maxWidth = Math.min(DEFAULT_MAX_WIDTH, viewport.width - VIEWPORT_MARGIN);
-  const maxHeight = Math.min(DEFAULT_MAX_HEIGHT, viewport.height - VIEWPORT_MARGIN);
-  const width = clamp(viewport.width * DEFAULT_WIDTH_RATIO, WINDOW_MIN_WIDTH, maxWidth);
-  const height = clamp(viewport.height * DEFAULT_HEIGHT_RATIO, WINDOW_MIN_HEIGHT, maxHeight);
-  return {
-    width,
-    height,
-    // Anchor to the right edge so the artifact reads as a side panel over chat.
-    left: Math.max(viewport.width - width - VIEWPORT_MARGIN, VIEWPORT_MARGIN / 2),
-    top: Math.max((viewport.height - height) / 2, VIEWPORT_MARGIN / 2),
-  };
-}
-
-function clampRectToViewport(rect: WindowRect, viewport: ViewportSize): WindowRect {
-  const maxWidth = Math.max(WINDOW_MIN_WIDTH, viewport.width - VIEWPORT_MARGIN);
-  const maxHeight = Math.max(WINDOW_MIN_HEIGHT, viewport.height - VIEWPORT_MARGIN);
-  const width = clamp(rect.width, WINDOW_MIN_WIDTH, maxWidth);
-  const height = clamp(rect.height, WINDOW_MIN_HEIGHT, maxHeight);
-  const left = clamp(
-    rect.left,
-    VIEWPORT_MARGIN / 2,
-    Math.max(viewport.width - width - VIEWPORT_MARGIN / 2, VIEWPORT_MARGIN / 2),
-  );
-  const top = clamp(
-    rect.top,
-    VIEWPORT_MARGIN / 2,
-    Math.max(viewport.height - height - VIEWPORT_MARGIN / 2, VIEWPORT_MARGIN / 2),
-  );
-  return { width, height, left, top };
-}
-
-function CloseGlyph({ color }: { readonly color: string }) {
-  return (
-    <svg width="8" height="8" viewBox="0 0 8 8" aria-hidden="true">
-      <path d="M1 1L7 7M7 1L1 7" stroke={color} strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function ExpandGlyph({ color }: { readonly color: string }) {
-  return (
-    <svg width="9" height="9" viewBox="0 0 9 9" aria-hidden="true">
-      <path
-        d="M5.2 0.8H8.2V3.8M3.8 8.2H0.8V5.2"
-        fill="none"
-        stroke={color}
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function RestoreGlyph({ color }: { readonly color: string }) {
-  return (
-    <svg width="9" height="9" viewBox="0 0 9 9" aria-hidden="true">
-      <path
-        d="M8 1L5 4M5 4V1.5M5 4H7.5M1 8L4 5M4 5V7.5M4 5H1.5"
-        fill="none"
-        stroke={color}
-        strokeWidth="1.3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function ResizeGripGlyph({ color }: { readonly color: string }) {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-      <path
-        d="M13 7L7 13M13 11L11 13"
-        stroke={color}
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        opacity="0.9"
-      />
-    </svg>
-  );
-}
-
-function TrafficLight({
-  glyph,
-  label,
-  onActivate,
-  fill,
-  border,
-  glyphColor,
-}: {
-  readonly glyph: 'close' | 'fullscreen' | 'restore';
-  readonly label: string;
-  readonly onActivate: () => void;
-  readonly fill: string;
-  readonly border: string;
-  readonly glyphColor: string;
-}) {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      onClick={onActivate}
-      onPointerEnter={() => setHovered(true)}
-      onPointerLeave={() => setHovered(false)}
-      onFocus={() => setHovered(true)}
-      onBlur={() => setHovered(false)}
-      style={{
-        width: 14,
-        height: 14,
-        padding: 0,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: '50%',
-        background: fill,
-        border: `0.5px solid ${border}`,
-        cursor: 'pointer',
-        lineHeight: 0,
-        transition: 'filter .15s ease',
-        filter: hovered ? 'brightness(0.92)' : 'none',
-        boxShadow: 'inset 0 0 0 0.5px rgba(0,0,0,0.06)',
-      }}
-    >
-      <span
-        aria-hidden="true"
-        style={{ opacity: hovered ? 1 : 0, transition: 'opacity .12s ease', display: 'flex' }}
-      >
-        {glyph === 'close' ? (
-          <CloseGlyph color={glyphColor} />
-        ) : glyph === 'restore' ? (
-          <RestoreGlyph color={glyphColor} />
-        ) : (
-          <ExpandGlyph color={glyphColor} />
-        )}
-      </span>
-    </button>
-  );
-}
 
 /** A floating macOS-style window hosting arbitrary artifact content. */
 export function ArtifactWindowChrome({
@@ -265,7 +96,11 @@ export function ArtifactWindowChrome({
     if (drag.mode === 'move') {
       setRect(
         clampRectToViewport(
-          { ...drag.startRect, left: drag.startRect.left + deltaX, top: drag.startRect.top + deltaY },
+          {
+            ...drag.startRect,
+            left: drag.startRect.left + deltaX,
+            top: drag.startRect.top + deltaY,
+          },
           currentViewport,
         ),
       );
@@ -283,15 +118,18 @@ export function ArtifactWindowChrome({
     );
   }, []);
 
-  const endDrag = useCallback(() => {
-    dragStateRef.current = null;
-    if (typeof window === 'undefined') {
-      return;
-    }
-    window.removeEventListener('pointermove', onPointerMove);
-    window.removeEventListener('pointerup', endDrag);
-    window.removeEventListener('pointercancel', endDrag);
-  }, [onPointerMove]);
+  const endDrag = useCallback(
+    function handleEndDrag() {
+      dragStateRef.current = null;
+      if (typeof window === 'undefined') {
+        return;
+      }
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', handleEndDrag);
+      window.removeEventListener('pointercancel', handleEndDrag);
+    },
+    [onPointerMove],
+  );
 
   useEffect(() => endDrag, [endDrag]);
 
@@ -319,7 +157,12 @@ export function ArtifactWindowChrome({
   const fillsViewport = isMobile || fullscreen;
 
   const panelStyle: CSSProperties = fillsViewport
-    ? { position: 'fixed', inset: isMobile ? 0 : VIEWPORT_MARGIN / 2, width: 'auto', height: 'auto' }
+    ? {
+        position: 'fixed',
+        inset: isMobile ? 0 : VIEWPORT_MARGIN / 2,
+        width: 'auto',
+        height: 'auto',
+      }
     : { position: 'fixed', left: rect.left, top: rect.top, width: rect.width, height: rect.height };
 
   const glyphColor = 'rgba(0,0,0,0.6)';
@@ -387,7 +230,9 @@ export function ArtifactWindowChrome({
               glyphColor={glyphColor}
             />
           </span>
-          <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center' }}>{header}</div>
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center' }}>
+            {header}
+          </div>
           <span data-window-control style={{ display: 'flex' }}>
             <TrafficLight
               glyph={fullscreen ? 'restore' : 'fullscreen'}

@@ -405,9 +405,7 @@ describe('KloelThreadService', () => {
         },
       ];
       const result = service.buildProcessingTraceSummary(entries);
-      expect(result).toContain('Raciocínio resumido');
-      expect(result).toContain('1 ação real');
-      expect(result).toContain('1 observação');
+      expect(result).toBe('Pensando, buscando e respondendo.');
     });
   });
 

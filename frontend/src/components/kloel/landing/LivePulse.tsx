@@ -1,14 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useClientMounted } from '@/hooks/useClientMounted';
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import { usePrefersReducedMotion } from './usePrefersReducedMotion';
 
 export function LivePulse() {
   const prefersReducedMotion = usePrefersReducedMotion();
-  const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => setIsMounted(true), []);
+  const isMounted = useClientMounted();
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>

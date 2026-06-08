@@ -152,8 +152,8 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
 
   useEffect(() => {
     if (!shouldHydrateDynamicGraphDataArea(dynamicDataArea)) {
-      setDeferredDynamicDataArea(null);
-      return undefined;
+      const timeoutId = window.setTimeout(() => setDeferredDynamicDataArea(null), 0);
+      return () => window.clearTimeout(timeoutId);
     }
 
     const timeoutId = window.setTimeout(

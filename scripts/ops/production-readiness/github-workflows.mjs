@@ -20,7 +20,7 @@ const CI_REQUIRED_TOKENS = [
 ];
 
 function checkCiPinnedActions(filePath) {
-  requireWorkflowAction(filePath, 'codecov/codecov-action', 'v5', 'CI uploads coverage to Codecov');
+  requireWorkflowAction(filePath, 'codecov/codecov-action', 'v7', 'CI uploads coverage to Codecov');
   requireWorkflowAction(
     filePath,
     'codacy/codacy-coverage-reporter-action',

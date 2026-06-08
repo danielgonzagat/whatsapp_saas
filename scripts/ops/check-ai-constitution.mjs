@@ -13,6 +13,7 @@ import { readJsonFile } from './lib/scan-utils.mjs';
 import {
   collectStatusNameEntries,
   countGeneratedOverlayNotes,
+  forbiddenPatternScanText,
   hasFunctionalProofSignal,
   isProductionSourceFile,
   isTestFile,
@@ -23,13 +24,12 @@ import {
 } from './ai-constitution-helpers.mjs';
 
 const constitution = readJsonFile('ops/kloel-ai-constitution.json', null);
-const failures = []
-
+const failures = [];
 
 const governancePolicy = readJsonFile(['ops', 'protected-governance-files.json'].join('/'), null);
 let addedTextByFileCache = null;
 let constitutionChangedFilesCache = null;
-let constitutionNameStatusCache = null;;
+let constitutionNameStatusCache = null;
 const CONSTITUTION_AUTHORITY_FILES = new Set([
   'ops/kloel-ai-constitution.json',
   'scripts/ops/check-ai-constitution.mjs',
@@ -280,8 +280,6 @@ function checkGraphContract() {
   }
 }
 
-
-
 function checkChangedFiles() {
   const changed = collectConstitutionChangedFiles().filter((file) =>
     existsSync(path.join(repoRoot, file)),
@@ -372,30 +370,8 @@ function checkChangedFiles() {
       if (productionOnly && (!productionSource || isTestFile(file))) {
         continue;
       }
-      // Proof/gate scripts (*.proof.mjs/ts) legitimately print PASS/FAIL/diagnostic
-      // output to stdout — that IS their function, not a stray debug artifact.
-      if (label === 'debug artifact' && /\.proof\.[cm]?[jt]sx?$/.test(file)) {
-        continue;
-      }
-      // Prose-word patterns (bypass / mock-fake-stub / console.log) are routinely
-      // mentioned in DESCRIPTIVE comments ("would otherwise bypass the gate",
-      // "tests can mock this", "jest.mock of this module") — those are docs, not
-      // violations. Strip comments before matching for those labels (TODO/FIXME
-      // and similar intentionally stay comment-scanned).
-      const proseLabel =
-        label === 'bypass-oriented flag' ||
-        label === 'fake/mock implementation marker' ||
-        label === 'debug artifact' ||
-        label === 'swallowed promise rejection' ||
-        label === 'empty catch block' ||
-        label === 'swallowed exception';
-      const scanText = proseLabel
-        ? content
-            .replace(/\/\/[^\n]*/g, '')
-            .replace(/\/\*[\s\S]*?\*\//g, '')
-            .replace(/^\s*\*.*$/gm, '')
-        : content;
-      if (pattern.test(scanText)) {
+      const scanText = forbiddenPatternScanText(label, file, content);
+      if (scanText !== null && pattern.test(scanText)) {
         fail(`${file} contem ${label}; a constituicao proibe bypass/supressao.`);
       }
     }
@@ -584,7 +560,6 @@ function isUnprovenProductionChangeCandidate(file) {
     !CONSTITUTION_AUTHORITY_FILES.has(file)
   );
 }
-
 
 function isCriticalPolicySurface(file) {
   return (

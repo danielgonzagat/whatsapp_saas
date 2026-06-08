@@ -6,7 +6,7 @@ import { KloelBrandLockup } from '@/components/kloel/KloelBrand';
 import { API_BASE } from '@/lib/http';
 import { normalizePublicCheckoutResponse } from '@/lib/public-checkout';
 import type { PublicCheckoutResponse } from '@/lib/public-checkout-contract';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import CheckoutBlancSocial from './CheckoutBlancSocial';
 import CheckoutNoirSocial from './CheckoutNoirSocial';
 import PixelTracker from './PixelTracker';
@@ -31,18 +31,20 @@ export default function CheckoutShell({
   initialError,
 }: CheckoutShellProps) {
   const hasServerResult = initialData !== undefined || initialError !== undefined;
-  const [data, setData] = useState<CheckoutData | null>(() =>
-    initialData ? normalizePublicCheckoutResponse(initialData) : null,
+  const serverData = useMemo(
+    () => (initialData ? normalizePublicCheckoutResponse(initialData) : null),
+    [initialData],
   );
-  const [error, setError] = useState<string | null>(() => initialError ?? null);
-  const [loading, setLoading] = useState(() => !hasServerResult);
+  const clientRequestKey = hasServerResult ? null : `${mode}:${slug}`;
+  const [clientState, setClientState] = useState<{
+    readonly requestKey: string | null;
+    readonly data: CheckoutData | null;
+    readonly error: string | null;
+  }>(() => ({ requestKey: null, data: null, error: null }));
 
   useEffect(() => {
-    if (hasServerResult) {
-      setData(initialData ? normalizePublicCheckoutResponse(initialData) : null);
-      setError(initialError ?? null);
-      setLoading(false);
-      return;
+    if (!clientRequestKey) {
+      return undefined;
     }
 
     const controller = new AbortController();
@@ -50,11 +52,6 @@ export default function CheckoutShell({
       mode === 'code'
         ? `${API_BASE}/checkout/public/r/${slug}`
         : `${API_BASE}/checkout/public/${slug}`;
-
-    queueMicrotask(() => {
-      setLoading(true);
-      setError(null);
-    });
 
     fetch(endpoint, { signal: controller.signal })
       .then((res) => {
@@ -64,19 +61,34 @@ export default function CheckoutShell({
         return res.json();
       })
       .then((json: unknown) => {
-        setData(normalizePublicCheckoutResponse(json));
-        setLoading(false);
+        setClientState({
+          requestKey: clientRequestKey,
+          data: normalizePublicCheckoutResponse(json),
+          error: null,
+        });
       })
       .catch((err: Error) => {
         if (controller.signal.aborted) {
           return;
         }
-        setError(err.message);
-        setLoading(false);
+        setClientState({
+          requestKey: clientRequestKey,
+          data: null,
+          error: err.message,
+        });
       });
 
     return () => controller.abort();
-  }, [slug, mode, hasServerResult, initialData, initialError]);
+  }, [slug, mode, clientRequestKey]);
+
+  const clientResultCurrent = clientState.requestKey === clientRequestKey;
+  const data = hasServerResult ? serverData : clientResultCurrent ? clientState.data : null;
+  const error = hasServerResult
+    ? (initialError ?? null)
+    : clientResultCurrent
+      ? clientState.error
+      : null;
+  const loading = hasServerResult ? false : !clientResultCurrent;
 
   /* ── Loading state ─────────────────────────────────────────────────────── */
 

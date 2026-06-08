@@ -21,10 +21,9 @@ import {
 } from './CheckoutPaymentSection.helpers';
 
 const StripePaymentElement = lazy(async () => {
-  const module = await import('./StripePaymentElement');
-  return { default: module.StripePaymentElement };
+  const stripeModule = await import('./StripePaymentElement');
+  return { default: stripeModule.StripePaymentElement };
 });
-
 
 type FormState = {
   cpf: string;

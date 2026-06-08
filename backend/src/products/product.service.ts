@@ -15,6 +15,7 @@ import {
   assertWorkspaceId,
   buildCommercialPayload,
   buildListWhere,
+  normalizeProductCreateInput,
   resolvePagination,
 } from './product.helpers';
 import type {
@@ -61,73 +62,8 @@ export class ProductService {
       throw new BadRequestException('price is required and must be a non-negative number');
     }
 
-    // Approval is a privileged transition that must flow through `publish()` /
-    // `reviewAndPublish()` — never through a raw create. A client (or a cast dto)
-    // that supplies `status: 'APPROVED'` / `active: true` would otherwise mint an
-    // already-live product and skip past the admin review gate. Clamp any approved/
-    // active-on-create request down to the pending-review state; everything else
-    // keeps its requested draft/pending status but is never born active.
-    const requestedStatus = dto.status || 'DRAFT';
-    const status = requestedStatus === 'APPROVED' ? 'PENDING' : requestedStatus;
-    const active = false;
-
-    // Defensive: some callers/casts pass rich create-wizard or checkout fields
-    // that are not Product columns (a raw dto here previously 500'd the Prisma
-    // create). Strip them and map the renamed ones so create is robust for every
-    // caller, not just the controller that pre-maps via buildCreateProductData.
-    const cleanDto = { ...dto } as Record<string, unknown>;
-    if (cleanDto.guaranteeDays != null) {
-      cleanDto.warrantyDays = Number(cleanDto.guaranteeDays);
-    }
-    if (cleanDto.affiliatesEnabled != null) {
-      cleanDto.affiliateEnabled = Boolean(cleanDto.affiliatesEnabled);
-    }
-    const affiliateApprovalMode = cleanDto.affiliateApprovalMode;
-    if (typeof affiliateApprovalMode === 'string') {
-      cleanDto.affiliateAutoApprove = affiliateApprovalMode.toLowerCase() !== 'manual';
-    }
-    const commissionPct = cleanDto.affiliateCommissionPercent ?? cleanDto.affiliateCommission;
-    if (commissionPct != null) {
-      cleanDto.commissionPercent = Number(commissionPct);
-    }
-    for (const stripKey of [
-      'paymentType',
-      'checkoutType',
-      'billingType',
-      'maxInstallments',
-      'interestFreeInstallments',
-      'affiliateApprovalMode',
-      'affiliatesEnabled',
-      'affiliateCommission',
-      'affiliateCommissionPercent',
-      'guaranteeDays',
-      // Physical / shipping wizard fields — captured in the create-product
-      // wizard but not Product columns. Forwarding them makes prisma.create
-      // reject the whole physical-product save path.
-      'packageType',
-      'dimensions',
-      'width',
-      'height',
-      'depth',
-      'weight',
-      'shippingResponsible',
-      'dispatchTime',
-      'carriers',
-      // Marketing-pixel wizard fields — likewise not Product columns.
-      'facebookPixelId',
-      'googleTagManagerId',
-    ]) {
-      delete cleanDto[stripKey];
-    }
-
     const product = await this.prisma.product.create({
-      data: {
-        ...(cleanDto as Prisma.ProductUncheckedCreateInput),
-        workspaceId,
-        format: dto.format || 'PHYSICAL',
-        status,
-        active,
-      },
+      data: { ...normalizeProductCreateInput(dto), workspaceId },
     });
 
     this.eventEmitter.emit('mind.product.observed', {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Code2, Download, FileText, Pencil, Check } from 'lucide-react';
 
 import { kloelT } from '@/lib/i18n/t';
@@ -83,7 +83,7 @@ function HtmlArtifactView({ html }: { readonly html: string }) {
         height: '100%',
         minHeight: 320,
         border: 'none',
-        background: '#fff',
+        background: 'rgb(255,255,255)',
         flex: 1,
       }}
     />
@@ -120,12 +120,12 @@ export function ArtifactsPanel({
   readonly onClose: () => void;
   readonly onContentChange: (artifactId: string, nextContent: string) => void;
 }) {
-  const [isEditing, setIsEditing] = useState(false);
-
-  // Reset edit mode whenever a different artifact opens.
-  useEffect(() => {
-    setIsEditing(false);
-  }, [artifact?.id]);
+  const activeArtifactId = artifact?.id ?? null;
+  const [editState, setEditState] = useState<{
+    artifactId: string | null;
+    isEditing: boolean;
+  }>({ artifactId: null, isEditing: false });
+  const isEditing = editState.artifactId === activeArtifactId ? editState.isEditing : false;
 
   const downloadHref = useMemo(() => {
     if (!artifact) {
@@ -163,7 +163,9 @@ export function ArtifactsPanel({
       >
         {artifact.title}
       </span>
-      <span style={{ fontSize: 12, color: MUTED, fontFamily: F, flexShrink: 0 }}>· {kindLabel}</span>
+      <span style={{ fontSize: 12, color: MUTED, fontFamily: F, flexShrink: 0 }}>
+        · {kindLabel}
+      </span>
       <span style={{ flex: 1 }} />
       {canEdit ? (
         <button
@@ -171,7 +173,12 @@ export function ArtifactsPanel({
           data-window-control
           aria-label={isEditing ? kloelT(`Concluir edição`) : kloelT(`Editar`)}
           title={isEditing ? kloelT(`Concluir edição`) : kloelT(`Editar`)}
-          onClick={() => setIsEditing((value) => !value)}
+          onClick={() =>
+            setEditState((value) => ({
+              artifactId: artifact.id,
+              isEditing: value.artifactId === artifact.id ? !value.isEditing : true,
+            }))
+          }
           style={{
             display: 'inline-flex',
             alignItems: 'center',

@@ -67,7 +67,7 @@ export interface MermaidApi {
 
 /** Read a typed library global off `window` without polluting the global scope. */
 function readGlobal<T>(key: string): T | undefined {
-  return (window as unknown as Record<string, T | undefined>)[key];
+  return Reflect.get(window, key) as T | undefined;
 }
 
 /**

@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { useClientMounted } from '@/hooks/useClientMounted';
 import { secureRandomFloat } from '@/lib/secure-random';
 import { usePrefersReducedMotion } from './usePrefersReducedMotion';
 import { runSequentialRange } from './KloelLanding.helpers';
@@ -48,8 +49,7 @@ export function HeroLoop() {
   const noiseRef = useHeroNoiseCanvasRef();
   const m = useRef<boolean>(true);
   const prefersReducedMotion = usePrefersReducedMotion();
-  const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => setIsMounted(true), []);
+  const isMounted = useClientMounted();
 
   useHeroNoiseCanvas(noiseRef, gx.on);
 

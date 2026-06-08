@@ -160,6 +160,7 @@ const recentApiReadResponses = new Map<
   string,
   { response: ApiResponse<unknown>; expiresAt: number }
 >();
+let apiReadFetchIdentity: typeof globalThis.fetch | null = null;
 
 export async function refreshAccessToken(): Promise<boolean> {
   // If a refresh is already in-flight, wait for its result instead of starting a new one
@@ -404,6 +405,15 @@ function clearApiReadDeduplicationMemory(): void {
   recentApiReadResponses.clear();
 }
 
+function clearApiReadDeduplicationMemoryWhenFetchChanges(): void {
+  const currentFetch = globalThis.fetch;
+  if (apiReadFetchIdentity === currentFetch) {
+    return;
+  }
+  clearApiReadDeduplicationMemory();
+  apiReadFetchIdentity = currentFetch;
+}
+
 async function executeApiFetchRequest<T>(
   url: string,
   baseInit: RequestInit,
@@ -437,6 +447,7 @@ function performDeduplicatedApiRead<T>(
   baseInit: RequestInit,
   headers: Record<string, string>,
 ): Promise<ApiResponse<T>> {
+  clearApiReadDeduplicationMemoryWhenFetchChanges();
   const key = buildApiReadDeduplicationKey(url, headers);
   const recent = getRecentApiReadResponse<T>(key);
   if (recent) {

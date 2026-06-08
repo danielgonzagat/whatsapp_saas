@@ -62,7 +62,7 @@ export class InstagramMarketingService {
    * consumed by the read-only Graph callers below.
    *
    * Flag-OFF (default) or resolver-not-injected: runs the EXISTING raw
-   * `prisma.metaConnection.findFirst({ channel: 'instagram' })` +
+   * workspace-scoped meta connection lookup for the Instagram channel +
    * {@link resolveInstagramConnection} path byte-for-byte unchanged.
    *
    * Flag-ON (`KLOEL_INSTAGRAM_RESOLVER_UNIFY='true'`) with the canonical

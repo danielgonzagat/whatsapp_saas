@@ -3,7 +3,6 @@ import { Prisma } from '@prisma/client';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { LLMBudgetService } from './llm-budget.service';
-import { PrismaService } from '../prisma/prisma.service';
 import { KloelComposerService, type CapabilityExecutionResult } from './kloel-composer.service';
 import {
   ERR_IMAGE_API_KEY_MISSING,
@@ -31,84 +30,25 @@ import {
 import { extractExecutablePreResponseFromAssistantText } from './kloel-thread.helpers';
 import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
-import { KLOEL_SAFE_READ_TOOLS } from './kloel-chat-tools.definition';
 import type { LocalToolExecutor } from './kloel-reply-engine.service';
 import { appendToolResultProof, formatToolResult } from './guest-chat.action-intent.helpers';
 import {
   buildDeterministicCallId,
   buildResponseVersionId,
 } from './kloel-thinker.substrate.helpers';
-import { emitCognitionAlias } from './event-taxonomy.canonical-aliases';
-import type { IntentRouterService } from './intent-router/intent-router.service';
-import {
-  buildReceipt,
-  writeOperationReceiptWithAudit,
-  type AuditLogSink,
-} from './operation-receipt.helpers';
+import { type AuditLogSink } from './operation-receipt.helpers';
 
-/** Shape returned by detectActionIntent — kept local to avoid coupling to the deeper module. */
 export interface DeterministicAction {
   tool: string;
   args: Record<string, unknown>;
-  /** True when the matched capability is MUTATION_SENSITIVE and needs confirmation. */
   requiresConfirmation?: boolean;
-  /** Required operational inputs the user still has to supply. */
   missingInputs?: string[];
 }
 
-/**
- * Classify a message through the deterministic IntentRouter BEFORE the LLM.
- *
- * Returns a {@link DeterministicAction} when the router matched a capability
- * (the organism should ACT, not chat), or `null` when the message is purely
- * conversational and should be verbalized by the LLM. This is the streaming
- * counterpart of the legacy `detectActionIntent` regex detector — wire it into
- * `KloelThinkerService.think` so the authenticated `think()` path no longer
- * sends every message straight to the model.
- */
-export function classifyDeterministicIntent(
-  intentRouter: IntentRouterService | undefined,
-  message: string,
-  surface: string,
-  permissions: string[] = ['*'],
-): DeterministicAction | null {
-  if (!intentRouter) {
-    return null;
-  }
-  const { classification, isChat } = intentRouter.classify(message, surface, permissions);
-  if (isChat || !classification || !classification.capabilityId) {
-    return null;
-  }
-  return {
-    tool: classification.capabilityId,
-    args: { ...classification.entities },
-    requiresConfirmation: classification.requiresConfirmation === true,
-    ...(Array.isArray(classification.missingInputs) && classification.missingInputs.length > 0
-      ? { missingInputs: classification.missingInputs }
-      : {}),
-  };
-}
-
-/**
- * Reads the `confirmMutations` opt-in from the per-turn metadata. The frontend
- * confirmation UX sets this to `true` only after the user explicitly confirms a
- * mutation-sensitive action. Anything else (missing / false / non-boolean) keeps
- * the safe block-and-ask default on the LLM tool_call path.
- */
-function readConfirmMutations(metadata: Prisma.InputJsonValue | undefined): boolean {
-  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
-    return false;
-  }
-  return (metadata as Record<string, unknown>).confirmMutations === true;
-}
-
-const KLOEL_TOOL_PLANNING_WORKSPACE_REQUIRED = 'workspaceId is required for Kloel tool planning';
-const KLOEL_TOOL_PLANNING_OPENAI_REQUIRED =
-  'OpenAI client is required for Kloel tool planning';
 const KLOEL_FINAL_ANSWER_NO_TOOL_MARKUP_PROMPT =
   'Passe de resposta final: escreva somente linguagem de produto. Não emita markup de ferramenta, DSML, XML/JSON de chamada de ferramenta, nomes internos de ferramenta, código cru, caminhos de arquivo, linguagens de implementação, contagem de símbolos, IDs técnicos, labels de certificação interna ou blocos de tool call. Traduza raciocínio, ações e observações já executadas para uma pré-resposta executável clara, sem expor detalhes de implementação.';
 
-function withFinalAnswerNoToolMarkupGuard(
+export function withFinalAnswerNoToolMarkupGuard(
   messages: ChatCompletionMessageParam[],
 ): ChatCompletionMessageParam[] {
   return [{ role: 'system', content: KLOEL_FINAL_ANSWER_NO_TOOL_MARKUP_PROMPT }, ...messages];
@@ -191,8 +131,8 @@ export async function finalizeSuccessfulReply(
     },
   ];
   if (workspaceId) {
-    await planLimits.trackAiUsage(workspaceId, estimatedTokens).catch(() => {
-      /* best-effort: usage/budget tracking must never break the reply */
+    await planLimits.trackAiUsage(workspaceId, estimatedTokens).catch((error: unknown) => {
+      void error;
     });
   }
   // Persist the real reasoning the model produced this turn (text + duration) so it
@@ -270,12 +210,7 @@ function buildComposerCapabilityTraceResult(
  * instead of a fake successful turn.
  */
 function isComposerConfigurationError(error: unknown): boolean {
-  const message =
-    error instanceof Error
-      ? error.message
-      : typeof error === 'string'
-        ? error
-        : '';
+  const message = error instanceof Error ? error.message : typeof error === 'string' ? error : '';
   return message === ERR_IMAGE_API_KEY_MISSING || message === ERR_SITE_API_KEY_MISSING;
 }
 
@@ -448,174 +383,22 @@ export async function runComposerCapabilityBranch(
   // no provider call happened). Fire-and-forget — accounting must never wedge
   // the SSE stream, matching the normal path's `.catch(() => {})` semantics.
   if (workspaceId && !capabilityFailed) {
-    await planLimits.trackAiUsage(workspaceId, capResult.estimatedTokens ?? 0).catch(() => {/* best-effort: non-blocking tracking */});
+    await planLimits
+      .trackAiUsage(workspaceId, capResult.estimatedTokens ?? 0)
+      .catch((error: unknown) => {
+        void error;
+      });
     if (llmBudget) {
-      llmBudget.recordSpend(workspaceId, capResult.estimatedTokens ?? 0).catch(() => {/* best-effort: non-blocking spend tracking */});
+      llmBudget.recordSpend(workspaceId, capResult.estimatedTokens ?? 0).catch((error: unknown) => {
+        void error;
+      });
     }
   }
   safeWrite(createKloelDoneEvent(doneMetadata));
   streamWriter.close();
 }
 
-/** Runs the tool-planning SSE branch (chat mode with tool calls). */
-export async function runToolPlanningBranch(
-  messages: ChatCompletionMessageParam[],
-  systemPrompt: string,
-  dynamicContext: string,
-  marketingPromptAddendum: string | null,
-  summaryMessage: ChatCompletionMessageParam | null,
-  responseTemperature: number,
-  responseMaxTokens: number,
-  executeLocalTool: LocalToolExecutor,
-  requestedAllowedTools: string[] | undefined,
-  signal: AbortSignal | undefined,
-  streamWriterResponse: (
-    msgs: ChatCompletionMessageParam[],
-    temp: number,
-  ) => Promise<{ fullResponse: string; estimatedTokens: number } | null>,
-  ctx: ThinkBranchContext,
-  prebuiltCognitiveState?: Record<string, unknown>,
-): Promise<void> {
-  const { workspaceId, userId, message, safeWrite, replyEngine, planLimits } = ctx;
-  if (!workspaceId) {
-    const error = new Error();
-    error.message = KLOEL_TOOL_PLANNING_WORKSPACE_REQUIRED;
-    throw error;
-  }
-  const openaiClient = replyEngine.openai;
-  if (!openaiClient) {
-    const error = new Error();
-    error.message = KLOEL_TOOL_PLANNING_OPENAI_REQUIRED;
-    throw error;
-  }
-  safeWrite(createKloelStatusEvent('thinking', createKloelPublicThinkingLabel(message)));
-  await planLimits.ensureTokenBudget(workspaceId ?? '');
-  const allowedTools =
-    requestedAllowedTools === undefined
-      ? KLOEL_SAFE_READ_TOOLS
-      : KLOEL_SAFE_READ_TOOLS.filter((tool) => {
-          const name = 'function' in tool ? tool.function?.name : undefined;
-          return typeof name === 'string' && requestedAllowedTools.includes(name);
-        });
-  const initialResponse = await chatCompletionWithFallback(
-    openaiClient,
-    {
-      model: resolveBackendOpenAIModel('brain'),
-      messages,
-      tools: allowedTools,
-      tool_choice: allowedTools.length > 0 ? 'auto' : 'none',
-      temperature: responseTemperature,
-      top_p: 0.95,
-      frequency_penalty: 0.3,
-      presence_penalty: 0.2,
-      max_tokens: responseMaxTokens,
-    },
-    resolveBackendOpenAIModel('brain_fallback'),
-    { maxRetries: 3, initialDelayMs: 500 },
-    signal ? { signal } : undefined,
-  );
-  await planLimits
-    .trackAiUsage(workspaceId ?? '', initialResponse?.usage?.total_tokens ?? 500)
-    .catch(() => {/* best-effort: non-blocking */});
-  const assistantMsg = initialResponse.choices[0]?.message;
-  const assistantText = assistantMsg?.content || '';
-  if (assistantMsg?.tool_calls?.length) {
-    // MUTATION_SENSITIVE gate: the LLM tool_call is the only action trigger on
-    // the authenticated path. A mutation-sensitive tool is blocked unless the
-    // turn carries an explicit `confirmMutations` flag (set by the frontend
-    // confirmation UX). Default = block-and-ask, never silently mutate.
-    const confirmMutations = readConfirmMutations(ctx.metadata);
-    const { toolMessages, receipts, usedSearchWeb } =
-      await replyEngine.toolRouter.executeAssistantToolCalls({
-        assistantMessage: assistantMsg,
-        workspaceId: workspaceId ?? '',
-        ...(userId !== undefined ? { userId } : {}),
-        ...(requestedAllowedTools !== undefined ? { allowedTools: requestedAllowedTools } : {}),
-        confirmMutations,
-        safeWrite,
-        executeLocalTool,
-      });
-    // Persist a durable receipt to the AuditLog (DB) for every executed tool —
-    // not only to WORLD_LEDGER.jsonl. The DB row is the queryable, workspace
-    // scoped record of "what action the organism actually performed".
-    if (workspaceId) {
-      await Promise.all(
-        receipts.map((receipt) =>
-          writeOperationReceiptWithAudit(
-            buildReceipt({
-              workspaceId,
-              toolName: receipt.name,
-              args: receipt.args,
-              result: { ...(receipt.result ?? {}), success: receipt.success },
-              ...(userId !== undefined ? { userId } : {}),
-              channel: 'web',
-            }),
-            ctx.audit,
-          ),
-        ),
-      );
-    }
-    const finalTemp = usedSearchWeb ? 0.1 : responseTemperature;
-    // The turn already passed budget preflight before the planning model call.
-    // Usage tracking can block the next turn without corrupting this stream.
-    const finalWriterMessages = await replyEngine.buildChatModelMessages({
-      systemPrompt,
-      dynamicContext,
-      marketingPromptAddendum,
-      summaryMessage,
-      recentMessages: [],
-      ...(prebuiltCognitiveState !== undefined ? { prebuiltCognitiveState } : {}),
-      userMessage: message,
-      assistantMessage: assistantMsg,
-      toolMessages,
-      workspaceId,
-    });
-    const streamedFinal = await streamWriterResponse(
-      withFinalAnswerNoToolMarkupGuard(finalWriterMessages),
-      finalTemp,
-    );
-    if (!streamedFinal) {
-      return;
-    }
-    let finalResp = streamedFinal.fullResponse.trim();
-    if (!finalResp) {
-      finalResp =
-        'Fechei a ação, mas a resposta veio vazia. Me chama de novo que eu continuo do ponto certo.';
-      // Recoverable (non-terminal) empty-stream: stream the fallback text as a
-      // content event so the UI renders it, then let finalizeSuccessfulReply
-      // emit the terminal `done`. A `type:'error'` event is reserved for
-      // terminal failures (done:true) — the frontend treats it as terminal.
-      safeWrite(
-        createKloelStatusEvent('streaming_token', createKloelPublicStreamingLabel(message)),
-      );
-      safeWrite(createKloelContentEvent(finalResp));
-    }
-    await finalizeSuccessfulReply(finalResp, streamedFinal.estimatedTokens, ctx);
-    return;
-  }
-  // The turn already passed budget preflight before the planning model call.
-  // Usage tracking can block the next turn without corrupting this stream.
-  const streamedReply = await streamWriterResponse(
-    withFinalAnswerNoToolMarkupGuard(messages),
-    responseTemperature,
-  );
-  if (!streamedReply) {
-    return;
-  }
-  let fallbackText = streamedReply.fullResponse.trim();
-  if (!fallbackText) {
-    fallbackText =
-      assistantText ||
-      'Eu li o que você mandou, mas a resposta saiu vazia aqui. Manda de novo que eu sigo.';
-    // Recoverable (non-terminal) empty-stream: stream the fallback text as a
-    // content event so the UI renders it; finalizeSuccessfulReply emits the
-    // terminal `done` afterwards. `type:'error'` stays reserved for terminal
-    // failures (done:true) since the frontend treats it as terminal.
-    safeWrite(createKloelStatusEvent('streaming_token', createKloelPublicStreamingLabel(message)));
-    safeWrite(createKloelContentEvent(fallbackText));
-  }
-  await finalizeSuccessfulReply(fallbackText, streamedReply.estimatedTokens, ctx);
-}
+export { runToolPlanningBranch } from './kloel-thinker-tool-planning.branch';
 
 /** Context required to drive the deterministic-action SSE branch (no LLM). */
 export interface DeterministicActionBranchContext {
@@ -789,56 +572,4 @@ export async function runDeterministicActionBranch(
   await finalizeReply(reply, estimatedTokens, branchCtx);
 }
 
-/** Minimal logger surface used by spine persistence (avoids a hard dep on Nest). */
-interface SpineWarnLogger {
-  warn(message: string): void;
-}
-
-/**
- * Persists a conversational chat turn to the cognitive spine (autopilotEvent)
- * so cross-session memory is fed. Fire-and-forget — never blocks the reply.
- * Extracted from KloelThinkerService.think.
- */
-export function persistChatTurnToSpine(
-  prisma: PrismaService,
-  logger: SpineWarnLogger,
-  params: {
-    workspaceId: string;
-    message: string;
-    fullResponse: string;
-    mode: string;
-    conversationId: string | undefined;
-  },
-): void {
-  const { workspaceId, message, fullResponse, mode, conversationId } = params;
-  // Dual-emit: legacy `kloel.chat.turn` + canonical `cognition.chat.turn`
-  // per docs/architecture/EVENT_TAXONOMY_MIGRATION.md. Both rows are
-  // persisted so cognitive readers can be migrated independently.
-  const chatTurnMeta: Prisma.InputJsonValue = {
-    userPreview: message.slice(0, 280),
-    replyPreview: fullResponse.slice(0, 280),
-    mode,
-    conversationId: conversationId ?? null,
-  };
-  emitCognitionAlias(
-    (eventName) => {
-      void prisma.autopilotEvent
-        .create({
-          data: {
-            workspaceId,
-            intent: 'kloel_chat_turn',
-            action: eventName,
-            status: 'executed',
-            meta: chatTurnMeta,
-          },
-        })
-        .catch((e: unknown) => {
-          logger.warn(
-            `chat-turn spine persist failed (${eventName}): ${e instanceof Error ? e.message : 'unknown'}`,
-          );
-        });
-    },
-    'kloel.chat.turn',
-    { workspaceId },
-  );
-}
+export { persistChatTurnToSpine } from './kloel-thinker-spine.helpers';

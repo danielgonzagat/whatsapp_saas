@@ -2,34 +2,14 @@
 
 import { ErrorBoundary } from '@/components/kloel/ErrorBoundary';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
+import { Grip, Maximize2, Minimize2, X } from 'lucide-react';
+import { KLOEL_THEME } from '@/lib/kloel-theme';
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { getKloelGraphOverlayLabel } from './KloelGraph.routes';
 import type { KloelGraphNode } from './KloelGraph.routes';
 import { useGraphTheme } from './KloelGraphTheme';
-
-/**
- * The route overlay — a macOS-style floating window over the live graph. The real
- * route screen renders inside a draggable/resizable panel with the graph dimmed
- * behind it. The shell stays "almost invisible": no header re-theming of the inner
- * screen — the panel surface uses the host app void so the real (themed) screen
- * blends in, and only the macOS traffic-light controls sit on top.
- *
- * Window controls (faithful to the Mac metaphor):
- *  - top-LEFT RED circle  → close (hover reveals the × inside; click = onClose)
- *  - top-RIGHT GREEN circle → fullscreen toggle (hover reveals the diagonal expand
- *    arrows; click maximizes / restores the window)
- *  - bottom-right resize grip (desktop only) → macOS-style free resize so the user
- *    can arrange the window and keep it open while working in the graph behind it.
- *
- * Adaptive: the window clamps to the viewport from a minimum-collapsed size up to a
- * maximum-expanded size; on mobile it is always a single edge-to-edge sheet (no
- * drag, no resize, no multi-window) — red closes, green expands.
- *
- * The open screen closes ONLY via the red control / Escape / explicit close — it is
- * never auto-dismissed by interacting with the graph navigator behind it.
- */
 
 const WINDOW_MIN_WIDTH = 360;
 const WINDOW_MIN_HEIGHT = 280;
@@ -88,61 +68,17 @@ function clampRectToViewport(rect: WindowRect, viewport: ViewportSize): WindowRe
   const maxHeight = Math.max(WINDOW_MIN_HEIGHT, viewport.height - VIEWPORT_MARGIN);
   const width = clamp(rect.width, WINDOW_MIN_WIDTH, maxWidth);
   const height = clamp(rect.height, WINDOW_MIN_HEIGHT, maxHeight);
-  const left = clamp(rect.left, VIEWPORT_MARGIN / 2, Math.max(viewport.width - width - VIEWPORT_MARGIN / 2, VIEWPORT_MARGIN / 2));
-  const top = clamp(rect.top, VIEWPORT_MARGIN / 2, Math.max(viewport.height - height - VIEWPORT_MARGIN / 2, VIEWPORT_MARGIN / 2));
+  const left = clamp(
+    rect.left,
+    VIEWPORT_MARGIN / 2,
+    Math.max(viewport.width - width - VIEWPORT_MARGIN / 2, VIEWPORT_MARGIN / 2),
+  );
+  const top = clamp(
+    rect.top,
+    VIEWPORT_MARGIN / 2,
+    Math.max(viewport.height - height - VIEWPORT_MARGIN / 2, VIEWPORT_MARGIN / 2),
+  );
   return { width, height, left, top };
-}
-
-function CloseGlyph({ color }: { readonly color: string }) {
-  return (
-    <svg width="8" height="8" viewBox="0 0 8 8" aria-hidden="true">
-      <path d="M1 1L7 7M7 1L1 7" stroke={color} strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function ExpandGlyph({ color }: { readonly color: string }) {
-  return (
-    <svg width="9" height="9" viewBox="0 0 9 9" aria-hidden="true">
-      <path
-        d="M5.2 0.8H8.2V3.8M3.8 8.2H0.8V5.2"
-        fill="none"
-        stroke={color}
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function RestoreGlyph({ color }: { readonly color: string }) {
-  return (
-    <svg width="9" height="9" viewBox="0 0 9 9" aria-hidden="true">
-      <path
-        d="M8 1L5 4M5 4V1.5M5 4H7.5M1 8L4 5M4 5V7.5M4 5H1.5"
-        fill="none"
-        stroke={color}
-        strokeWidth="1.3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function ResizeGripGlyph({ color }: { readonly color: string }) {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-      <path
-        d="M13 7L7 13M13 11L11 13"
-        stroke={color}
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        opacity="0.9"
-      />
-    </svg>
-  );
 }
 
 function TrafficLight({
@@ -179,7 +115,7 @@ function TrafficLight({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: '50%',
+        borderRadius: 8,
         background: fill,
         border: `0.5px solid ${border}`,
         cursor: 'pointer',
@@ -198,11 +134,11 @@ function TrafficLight({
         }}
       >
         {glyph === 'close' ? (
-          <CloseGlyph color={glyphColor} />
+          <X size={8} strokeWidth={2.4} color={glyphColor} aria-hidden="true" />
         ) : glyph === 'restore' ? (
-          <RestoreGlyph color={glyphColor} />
+          <Minimize2 size={9} strokeWidth={2} color={glyphColor} aria-hidden="true" />
         ) : (
-          <ExpandGlyph color={glyphColor} />
+          <Maximize2 size={9} strokeWidth={2} color={glyphColor} aria-hidden="true" />
         )}
       </span>
     </button>
@@ -231,8 +167,6 @@ export function KloelGraphOverlay({
     readonly startRect: WindowRect;
   } | null>(null);
 
-  // Keep the window inside the viewport on resize so the layout never breaks
-  // from minimum-collapsed to maximum-expanded.
   useEffect(() => {
     if (typeof window === 'undefined') {
       return undefined;
@@ -283,14 +217,14 @@ export function KloelGraphOverlay({
     );
   }, []);
 
-  const endDrag = useCallback(() => {
+  const endDrag = useCallback(function handleEndDrag() {
     dragStateRef.current = null;
     if (typeof window === 'undefined') {
       return;
     }
     window.removeEventListener('pointermove', onPointerMove);
-    window.removeEventListener('pointerup', endDrag);
-    window.removeEventListener('pointercancel', endDrag);
+    window.removeEventListener('pointerup', handleEndDrag);
+    window.removeEventListener('pointercancel', handleEndDrag);
   }, [onPointerMove]);
 
   useEffect(() => endDrag, [endDrag]);
@@ -337,10 +271,10 @@ export function KloelGraphOverlay({
   // macOS traffic-light hues, tuned to the warm Kloel palette: ember-red close,
   // emerald-green fullscreen. These are deliberate fixed control hues (not theme
   // tokens) so the affordance reads as a window control in both light and dark.
-  const closeFill = '#E85D30';
-  const closeBorder = '#C44A22';
-  const greenFill = '#2DBE76';
-  const greenBorder = '#1FA862';
+  const closeFill = KLOEL_THEME.error;
+  const closeBorder = KLOEL_THEME.error;
+  const greenFill = KLOEL_THEME.success;
+  const greenBorder = KLOEL_THEME.success;
 
   return (
     <div
@@ -456,7 +390,7 @@ export function KloelGraphOverlay({
               touchAction: 'none',
             }}
           >
-            <ResizeGripGlyph color={C.dim} />
+            <Grip size={14} strokeWidth={1.4} color={C.dim} aria-hidden="true" />
           </button>
         )}
       </section>

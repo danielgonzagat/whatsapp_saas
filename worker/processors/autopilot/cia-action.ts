@@ -183,7 +183,6 @@ export async function runCiaAction(data: UnknownRecord) {
       // swallow: the spine percept is non-load-bearing for action dispatch
     }
 
-
     await releaseCiaContactLock(lockKey);
   }
 

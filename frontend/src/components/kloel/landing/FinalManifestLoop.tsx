@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { colors } from '@/lib/design-tokens';
+import { useClientMounted } from '@/hooks/useClientMounted';
 import { usePrefersReducedMotion } from './usePrefersReducedMotion';
 import { delayForTypewriter, runSequentialRange } from './KloelLanding.helpers';
 import { KloelMushroomVisual } from '../KloelBrand';
@@ -19,11 +20,9 @@ type Tone = 'light' | 'ember';
 
 export function FinalManifestLoop() {
   const prefersReducedMotion = usePrefersReducedMotion();
-  const [isMounted, setIsMounted] = useState(false);
+  const isMounted = useClientMounted();
   const [text, setText] = useState('');
   const [tone, setTone] = useState<Tone>('light');
-
-  useEffect(() => setIsMounted(true), []);
 
   useEffect(() => {
     if (prefersReducedMotion) {

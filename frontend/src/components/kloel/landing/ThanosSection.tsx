@@ -1,5 +1,6 @@
 'use client';
 
+import { useClientMounted } from '@/hooks/useClientMounted';
 import { kloelT } from '@/lib/i18n/t';
 import { colors, radius } from '@/lib/design-tokens';
 import { useEffect, useRef, useState } from 'react';
@@ -206,8 +207,7 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
 /** Thanos section. */
 export default function ThanosSection() {
   const prefersReducedMotion = usePrefersReducedMotion();
-  const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => setIsMounted(true), []);
+  const isMounted = useClientMounted();
   const cvRef = useRef<HTMLCanvasElement | null>(null);
   const secRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number>(0);
