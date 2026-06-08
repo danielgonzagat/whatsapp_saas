@@ -83,6 +83,9 @@ describe('runCognitiveConsolidation', () => {
     expect(event.payload).toHaveProperty('knowledgeAuditable');
     // Hypproof market-entry decision count rides along too.
     expect(event.payload).toHaveProperty('marketEntryDecisions');
+    // Cash + goal-field snapshots ride along too.
+    expect(event.payload).toHaveProperty('cashEntriesObserved');
+    expect(event.payload).toHaveProperty('goalCandidates');
     expect(out).not.toBeNull();
     expect(out?.['errorCount']).toBeGreaterThanOrEqual(1);
   });

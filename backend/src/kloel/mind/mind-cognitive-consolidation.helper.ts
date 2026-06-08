@@ -47,6 +47,7 @@ import { HypothesisFormulatorService } from '../hypproof/hypothesis-formulator';
 import { MicroExperimentDesignerService } from '../hypproof/micro-experiment.designer';
 import { CashPositionTracker } from '../cash/cash-position.tracker';
 import type { CashEntry } from '../cash/types';
+import { GoalFieldService } from '../goal-field/goal-field.service';
 
 const PROCESSOR = 'mind-cognitive-consolidation';
 const PROCESSOR_VERSION = '1.0.0';
@@ -119,6 +120,9 @@ export async function runCognitiveConsolidation(
   let cashEntriesObserved = 0;
   let cashBalanceCents: string | null = null;
   let cashTrend30d = 0;
+  let goalTensions = 0;
+  let goalCandidates = 0;
+  let topGoalSummary: string | null = null;
 
   try {
     const errors = detectErrors({ events, workspaceId, nowMs, windowDays: ERROR_WINDOW_DAYS });
@@ -231,6 +235,20 @@ export async function runCognitiveConsolidation(
   }
 
   try {
+    // Goal-field's runCycle is tick-shaped and the service news cleanly (its
+    // detector set and deps are all @Optional, so the default detector bank is
+    // used). Shadow mode (default) only DETECTS goal candidates from event
+    // tensions — it never promotes — so it is safe to run on every tick.
+    const goalResult = new GoalFieldService().runCycle({ events, nowMs, mode: 'shadow' });
+    goalTensions = goalResult.tensions.length;
+    goalCandidates = goalResult.candidates.length;
+    const topGoal = [...goalResult.candidates].sort((a, b) => b.score - a.score)[0];
+    topGoalSummary = topGoal !== undefined ? topGoal.summary : null;
+  } catch (err: unknown) {
+    logger?.warn(`cognitive consolidation: goal-field cycle failed: ${errMsg(err)}`);
+  }
+
+  try {
     // SpineEventRef is structurally a SpineSignal (carries every required
     // field), so it feeds decideFromSignals directly. The formulator and
     // designer are dep-free @Injectable classes, so the facade news cleanly.
@@ -279,6 +297,9 @@ export async function runCognitiveConsolidation(
     cashEntriesObserved,
     cashBalanceCents,
     cashTrend30d,
+    goalTensions,
+    goalCandidates,
+    topGoalSummary,
     eventsScanned: events.length,
   };
 
