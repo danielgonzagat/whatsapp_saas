@@ -24,6 +24,17 @@ function handoffEvents(n: number): SpineEventRef[] {
   }));
 }
 
+function paymentEvent(name: string, amountCents: string, i: number): SpineEventRef {
+  return {
+    eventId: `pay_${i}`,
+    eventName: name,
+    workspaceId: WS,
+    occurredAt: new Date(NOW - i * 1000).toISOString(),
+    truthMode: 'observed' as const,
+    payload: { amountCents },
+  };
+}
+
 describe('runCognitiveConsolidation', () => {
   let emit: jest.Mock;
   let spine: { emit: jest.Mock };
@@ -74,6 +85,21 @@ describe('runCognitiveConsolidation', () => {
     expect(event.payload).toHaveProperty('marketEntryDecisions');
     expect(out).not.toBeNull();
     expect(out?.['errorCount']).toBeGreaterThanOrEqual(1);
+  });
+
+  it('derives observed cash position from payment events (refund as outflow)', async () => {
+    const events: SpineEventRef[] = [
+      ...handoffEvents(1), // material trigger so the summary emits
+      paymentEvent('commerce.payment.approved', '10000', 1),
+      paymentEvent('commerce.payment.approved', '5000', 2),
+      paymentEvent('commerce.payment.refunded', '3000', 3),
+    ];
+
+    await runCognitiveConsolidation({ events, workspaceId: WS, nowMs: NOW, spine, throttle });
+
+    const event = emit.mock.calls[0][0];
+    expect(event.payload.cashEntriesObserved).toBe(3);
+    expect(event.payload.cashBalanceCents).toBe('12000'); // 10000 + 5000 - 3000
   });
 
   it('throttles a second run within the window (no duplicate emit)', async () => {

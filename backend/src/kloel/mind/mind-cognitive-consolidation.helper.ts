@@ -45,6 +45,8 @@ import { AttributionGuard } from '../commem/attribution.guard';
 import { MarketEntryDecisionService } from '../hypproof/market-entry-decision.service';
 import { HypothesisFormulatorService } from '../hypproof/hypothesis-formulator';
 import { MicroExperimentDesignerService } from '../hypproof/micro-experiment.designer';
+import { CashPositionTracker } from '../cash/cash-position.tracker';
+import type { CashEntry } from '../cash/types';
 
 const PROCESSOR = 'mind-cognitive-consolidation';
 const PROCESSOR_VERSION = '1.0.0';
@@ -114,6 +116,9 @@ export async function runCognitiveConsolidation(
   let knowledgeProjections = 0;
   let knowledgeAuditable = false;
   let marketEntryDecisions = 0;
+  let cashEntriesObserved = 0;
+  let cashBalanceCents: string | null = null;
+  let cashTrend30d = 0;
 
   try {
     const errors = detectErrors({ events, workspaceId, nowMs, windowDays: ERROR_WINDOW_DAYS });
@@ -180,6 +185,52 @@ export async function runCognitiveConsolidation(
   }
 
   try {
+    // Derive observed cash flow from this window's payment events. The payment
+    // spine event payload carries amountCents as a string (ledger emitter); a
+    // refund is an outflow so it enters as a negative entry. CashPositionTracker
+    // is a stateless @Injectable, so it news without the container. This is a
+    // window-scoped observed snapshot (not the full ledger), labelled as such.
+    const cashEntries: CashEntry[] = [];
+    for (const e of events) {
+      if (
+        e.eventName !== 'commerce.payment.approved' &&
+        e.eventName !== 'commerce.payment.refunded'
+      ) {
+        continue;
+      }
+      const raw = e.payload?.['amountCents'];
+      if (typeof raw !== 'string' && typeof raw !== 'number' && typeof raw !== 'bigint') {
+        continue;
+      }
+      let cents: bigint;
+      try {
+        cents = BigInt(raw);
+      } catch {
+        continue;
+      }
+      if (cents <= 0n) {
+        continue;
+      }
+      cashEntries.push({
+        workspaceId,
+        amountCents: e.eventName === 'commerce.payment.refunded' ? -cents : cents,
+        entryDate: e.occurredAt,
+        category: 'actual',
+        confidence: 1,
+        source: `spine:${e.eventName}`,
+      });
+    }
+    cashEntriesObserved = cashEntries.length;
+    if (cashEntries.length > 0) {
+      const position = new CashPositionTracker().track(cashEntries, workspaceId, nowMs);
+      cashBalanceCents = position.currentBalanceCents.toString();
+      cashTrend30d = position.trend30d;
+    }
+  } catch (err: unknown) {
+    logger?.warn(`cognitive consolidation: cash tracker failed: ${errMsg(err)}`);
+  }
+
+  try {
     // SpineEventRef is structurally a SpineSignal (carries every required
     // field), so it feeds decideFromSignals directly. The formulator and
     // designer are dep-free @Injectable classes, so the facade news cleanly.
@@ -225,6 +276,9 @@ export async function runCognitiveConsolidation(
     knowledgeProjections,
     knowledgeAuditable,
     marketEntryDecisions,
+    cashEntriesObserved,
+    cashBalanceCents,
+    cashTrend30d,
     eventsScanned: events.length,
   };
 
