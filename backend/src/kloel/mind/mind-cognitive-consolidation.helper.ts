@@ -1,0 +1,184 @@
+/**
+ * Cognitive consolidation pass for the MIND long-tick.
+ *
+ * Three production modules — `recovery` (self-error detection), `role`
+ * (commercial role detection), and `offer` (offer-evolution insights) — ship
+ * real, unit-tested detector logic but were registered in `app.module.ts` with
+ * ZERO downstream consumers: their code never executed against production
+ * events. Their entrypoints are all PURE functions over the exact shape the
+ * mind long-tick already holds (`{ events: SpineEventRef[], workspaceId, nowMs }`),
+ * so this helper fires them on the long cadence and emits ONE compact, throttled
+ * summary spine event (`cognition.consolidation_scan`) so the findings become
+ * observable and available to any spine observer.
+ *
+ * Design constraints (mirrors the existing `cognitiveHealth?.scanAndEscalate`
+ * pattern in the scheduler):
+ *   - PURE inputs, NO DI — the detectors are standalone functions, so wiring
+ *     them needs no module-graph edit; the only collaborator is the
+ *     `SpineEmitterService` the scheduler already injects (the sink).
+ *   - FULLY fire-and-forget — every detector call and the emit are wrapped so a
+ *     failure can NEVER disturb the mind tick.
+ *   - THROTTLED per workspace (default 30 min) so the deterministic detectors do
+ *     not re-emit the same summary every tick or flood the spine ring.
+ *   - Emits only when there is a MATERIAL finding; a quiet workspace still marks
+ *     the throttle so the detectors are not re-run every tick for nothing.
+ */
+import { Logger } from '@nestjs/common';
+import type { SpineEventRef } from './mind.types';
+import type { SpineEmitterService } from '../spine/spine-emitter.service';
+import { detectErrors } from '../recovery/self-error-detector';
+import { detectRoles, primaryRoleFromDetections } from '../role/role.detector';
+import { detectBonusDesirability } from '../offer/detectors/bonus-desirability.detector';
+import { detectPagePromiseMismatch } from '../offer/detectors/page-promise-mismatch.detector';
+import { detectPositioningMismatch } from '../offer/detectors/positioning-mismatch.detector';
+import { detectPricingPsychologySignal } from '../offer/detectors/pricing-psychology-signal.detector';
+import { detectProductVersionFit } from '../offer/detectors/product-version-fit.detector';
+import { detectPromiseStrength } from '../offer/detectors/promise-strength.detector';
+import type { OfferInsight } from '../offer/offer.types';
+
+const PROCESSOR = 'mind-cognitive-consolidation';
+const PROCESSOR_VERSION = '1.0.0';
+const SCHEMA_VERSION = '1.0.0';
+/** Per-workspace minimum gap between consolidation emits. */
+const DEFAULT_THROTTLE_MS = 30 * 60 * 1000;
+/** Recovery self-error detection window. */
+const ERROR_WINDOW_DAYS = 7;
+
+export interface CognitiveConsolidationDeps {
+  readonly events: readonly SpineEventRef[];
+  readonly workspaceId: string;
+  readonly nowMs: number;
+  /** The sink — only `.emit` is used. */
+  readonly spine: Pick<SpineEmitterService, 'emit'>;
+  /** Per-workspace last-emit clock owned by the caller (singleton scheduler). */
+  readonly throttle: Map<string, number>;
+  readonly throttleMs?: number;
+  readonly logger?: Logger;
+}
+
+/**
+ * Feature flag for the cognitive consolidation pass. DEFAULT ON — the pass only
+ * runs dormant detector logic and emits a single throttled summary event, all
+ * fire-and-forget, so it is safe on by default and aligns with bringing the
+ * previously-dead defensive/commercial modules to life. Hard-off via
+ * `KLOEL_COGNITIVE_CONSOLIDATION_ENABLED=false`.
+ */
+export function isCognitiveConsolidationEnabled(): boolean {
+  return (
+    (process.env.KLOEL_COGNITIVE_CONSOLIDATION_ENABLED ?? 'true').toLowerCase() !== 'false'
+  );
+}
+
+function errMsg(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
+/**
+ * Run the dormant tick-shaped detectors over this long-tick's events and emit a
+ * compact, throttled summary. Returns the emitted summary (or `null` when
+ * throttled / nothing material) to make the behavior unit-testable.
+ */
+export async function runCognitiveConsolidation(
+  deps: CognitiveConsolidationDeps,
+): Promise<Record<string, unknown> | null> {
+  const { events, workspaceId, nowMs, spine, throttle, logger } = deps;
+  const throttleMs = deps.throttleMs ?? DEFAULT_THROTTLE_MS;
+
+  if (events.length === 0) {
+    return null;
+  }
+  const last = throttle.get(workspaceId);
+  if (last !== undefined && nowMs - last < throttleMs) {
+    return null;
+  }
+
+  let errorCount = 0;
+  let highSeverityErrors = 0;
+  let primaryRole: string | null = null;
+  let roleConfidence = 0;
+  let offerInsightCount = 0;
+  let topOffer: OfferInsight | undefined;
+
+  try {
+    const errors = detectErrors({ events, workspaceId, nowMs, windowDays: ERROR_WINDOW_DAYS });
+    errorCount = errors.length;
+    highSeverityErrors = errors.filter((e) => e.severity === 'high').length;
+  } catch (err: unknown) {
+    logger?.warn(`cognitive consolidation: recovery detector failed: ${errMsg(err)}`);
+  }
+
+  try {
+    const detections = detectRoles({ events, workspaceId, nowMs });
+    const primary = primaryRoleFromDetections(detections);
+    if (primary !== undefined) {
+      primaryRole = primary;
+      roleConfidence = detections.find((d) => d.role === primary)?.confidence ?? 0;
+    }
+  } catch (err: unknown) {
+    logger?.warn(`cognitive consolidation: role detector failed: ${errMsg(err)}`);
+  }
+
+  try {
+    const offerInput = { events, workspaceId, nowMs };
+    const insights: OfferInsight[] = [
+      ...detectBonusDesirability(offerInput).insights,
+      ...detectPagePromiseMismatch(offerInput).insights,
+      ...detectPositioningMismatch(offerInput).insights,
+      ...detectPricingPsychologySignal(offerInput).insights,
+      ...detectProductVersionFit(offerInput).insights,
+      ...detectPromiseStrength(offerInput).insights,
+    ];
+    offerInsightCount = insights.length;
+    topOffer = [...insights].sort(
+      (a, b) => b.impactMultiplicative * b.confidence - a.impactMultiplicative * a.confidence,
+    )[0];
+  } catch (err: unknown) {
+    logger?.warn(`cognitive consolidation: offer detectors failed: ${errMsg(err)}`);
+  }
+
+  // Mark the throttle even on a quiet workspace so deterministic detectors are
+  // not re-run every tick when there is nothing to report.
+  throttle.set(workspaceId, nowMs);
+
+  if (errorCount === 0 && primaryRole === null && offerInsightCount === 0) {
+    return null;
+  }
+
+  const summary: Record<string, unknown> = {
+    errorCount,
+    highSeverityErrors,
+    primaryRole,
+    roleConfidence,
+    offerInsightCount,
+    topOfferInsight:
+      topOffer !== undefined
+        ? {
+            kind: topOffer.kind,
+            description: topOffer.description,
+            impactMultiplicative: topOffer.impactMultiplicative,
+            confidence: topOffer.confidence,
+          }
+        : null,
+    eventsScanned: events.length,
+  };
+
+  try {
+    await spine.emit({
+      eventName: 'cognition.consolidation_scan',
+      workspaceId,
+      truthMode: 'inferred',
+      provenance: {
+        source: 'production',
+        processor: PROCESSOR,
+        processorVersion: PROCESSOR_VERSION,
+        schemaVersion: SCHEMA_VERSION,
+      },
+      payload: summary,
+      occurredAt: new Date(nowMs).toISOString(),
+    });
+  } catch (err: unknown) {
+    logger?.warn(`cognitive consolidation: spine emit failed: ${errMsg(err)}`);
+  }
+
+  return summary;
+}
