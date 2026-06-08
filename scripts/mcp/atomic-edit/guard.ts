@@ -179,8 +179,19 @@ const PROTECTED_PREFIXES = [
   "ops/",
 ];
 
+/** Owner-approval / exception ledger files inside ops/ that atomic MAY append to
+ *  (the sanctioned channels for recording owner-approved deletions/exceptions).
+ *  The governing policy files (kloel-ai-constitution.json, protected-governance-
+ *  files.json) stay protected — only these append-only approval ledgers open. */
+const EDITABLE_GOVERNANCE_APPROVALS = new Set<string>([
+  "ops/visual-contract-exceptions.json",
+  "ops/test-deletion-approvals.json",
+  "ops/skipped-tests-approvals.json",
+]);
+
 /** Repo-relative prefixes/globs that are protected directory-wide. */
 export function isProtectedRelative(rel: string): string | null {
+  if (EDITABLE_GOVERNANCE_APPROVALS.has(rel)) return null;
   if (PROTECTED_FILES.has(rel)) return rel;
   for (const prefix of PROTECTED_PREFIXES) {
     if (rel.startsWith(prefix)) return prefix;
