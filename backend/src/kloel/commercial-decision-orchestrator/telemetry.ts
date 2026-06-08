@@ -21,8 +21,13 @@ export function stableInboundKey(
 }
 
 function buildLegacyBaseline(concept: string, _channel: string): Record<string, unknown> {
+  const general: Record<string, unknown> = {
+    action: 'send_message',
+    tone: 'NEUTRAL',
+    aggressiveness: 'LOW',
+  };
   const baselines: Record<string, Record<string, unknown>> = {
-    general: { action: 'send_message', tone: 'NEUTRAL', aggressiveness: 'LOW' },
+    general,
     price_objection: { action: 'apply_discount', coupon: 'coupon_10', tone: 'CONSULTIVE' },
     imminent_purchase: { action: 'send_message', productOffer: 'top_seller', tone: 'DIRECT' },
     hot_lead: { action: 'send_message', productOffer: 'top_seller', tone: 'DIRECT' },
@@ -30,7 +35,7 @@ function buildLegacyBaseline(concept: string, _channel: string): Record<string, 
     fatigue_risk: { action: 'pause', tone: 'NEUTRAL' },
     audio_preference: { action: 'send_audio', tone: 'NEUTRAL' },
   };
-  return baselines[concept] ?? baselines.general;
+  return baselines[concept] ?? general;
 }
 
 function toInputJson(value: unknown): Prisma.InputJsonValue {

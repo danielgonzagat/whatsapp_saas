@@ -46,10 +46,8 @@ export const CAPABILITY_MAP = new Map<string, CapabilityDefinition>(
 /** Map capability ID -> tier grouping */
 export const CAPABILITIES_BY_TIER: Record<number, CapabilityDefinition[]> =
   CAPABILITY_DEFINITIONS.reduce<Record<number, CapabilityDefinition[]>>((acc, cap) => {
-    if (!acc[cap.tier]) {
-      acc[cap.tier] = [];
-    }
-    acc[cap.tier].push(cap);
+    const bucket = acc[cap.tier] ?? (acc[cap.tier] = []);
+    bucket.push(cap);
     return acc;
   }, {});
 

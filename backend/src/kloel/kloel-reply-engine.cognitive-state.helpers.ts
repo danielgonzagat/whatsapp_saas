@@ -13,6 +13,7 @@
  * thrown to the caller.
  */
 import type { PrismaService } from '../prisma/prisma.service';
+import type { StructuredLogger } from '../logging/structured-logger';
 import type { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 import type { AbiBuilderService } from './abi/abi-builder.service';
 import { validateAbiPayload } from './abi/abi-validator';
@@ -30,9 +31,7 @@ import type { RiskClassService } from './risk-class/risk-class.service';
 import type { AgentAssistService } from './mind/knowledge/agent-assist.service';
 import type { MindAutonomyCoordinator } from './mind/coordination/mind-autonomy-coordinator.service';
 
-interface CognitiveStateLogger {
-  warn: (event: string, ctx?: Record<string, unknown>) => void;
-}
+type CognitiveStateLogger = Pick<StructuredLogger, 'warn'>;
 
 interface KloelMindServices {
   attentionService?: AttentionService;
@@ -78,7 +77,7 @@ export const ABI_SNAPSHOT_MAX_BYTES = 16384;
 /** Build a BuildMindSignalsDeps spread that includes only services that are defined. */
 export function buildKloelMindSignalsDeps(
   prisma: PrismaService,
-  logger: { warn: (...args: unknown[]) => void },
+  logger: CognitiveStateLogger,
   services: KloelMindServices,
 ): BuildMindSignalsDeps {
   return {

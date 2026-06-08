@@ -87,7 +87,7 @@ export async function getCheckoutByCode(
     include: PLAN_INCLUDE,
   });
 
-  if (isLegacyPlanEligibleForMigration(planRecord)) {
+  if (planRecord && isLegacyPlanEligibleForMigration(planRecord)) {
     await deps.productService.ensureLegacyCheckoutForPlan(planRecord.id);
     const migratedLink = await deps.prisma.checkoutPlanLink.findFirst({
       where: {
@@ -116,7 +116,7 @@ export async function getCheckoutByCode(
     }
   }
 
-  if (isActivePlanKind(planRecord)) {
+  if (planRecord && isActivePlanKind(planRecord)) {
     const plan = await planLinkManager.ensurePlanReferenceCode(planRecord);
     deps.logCheckoutEvent('checkout_public_lookup_resolved', {
       correlationId,

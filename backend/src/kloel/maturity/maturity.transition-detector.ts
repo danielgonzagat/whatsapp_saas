@@ -40,6 +40,10 @@ export function detectTransitions(
     const prev = sorted[i - 1];
     const curr = sorted[i];
 
+    if (!prev || !curr) {
+      continue;
+    }
+
     if (prev.stage === curr.stage) {
       continue;
     }

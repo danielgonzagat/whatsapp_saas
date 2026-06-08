@@ -7,7 +7,10 @@ import type { MercadoPagoBoletoChargeService } from '../payments/mercadopago/mer
 import type { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
 import type { StripeChargeService } from '../payments/stripe/stripe-charge.service';
 import type { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-event-emitter.service';
-import type { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
+import type {
+  CheckoutOrderForEffects,
+  CheckoutPostPaymentEffectsService,
+} from './checkout-post-payment-effects.service';
 import { sanitizeDocumentDigits } from '../sales/sales.helpers.shared';
 import {
   BOLETO_EXPIRATION_DAYS,
@@ -55,7 +58,9 @@ export type CheckoutPaymentArmParams = {
 
 /** Minimal checkout-order shape required by the per-arm processors. */
 export type CheckoutPaymentArmOrder = {
-  plan: unknown;
+  // Typed to match CheckoutOrderForEffects so the order can be forwarded to
+  // finalizeApprovedCheckoutPayment; also satisfies extractProductName's reader.
+  plan: CheckoutOrderForEffects['plan'];
   shippingAddress: unknown;
 } & {
   // Required for runApprovedCheckoutPostPaymentEffects via finalizeApprovedCheckoutPayment.
@@ -172,7 +177,7 @@ export async function runCheckoutPixArm(input: {
   const { deps, params, order, amount, chargedTotalInCents, persist } = input;
   try {
     addPaymentBreadcrumb(params, amount, 'Mercado Pago');
-    const productName = extractProductName(order.plan);
+    const productName = extractProductName(order.plan ?? null);
     const payerDocument =
       params.customerCPF != null
         ? sanitizeDocumentDigits(params.customerCPF) || undefined
@@ -260,7 +265,7 @@ export async function runCheckoutBoletoArm(input: {
 
   try {
     addPaymentBreadcrumb(params, amount, 'Mercado Pago', 'boleto ');
-    const productName = extractProductName(order.plan);
+    const productName = extractProductName(order.plan ?? null);
     const charge = await deps.mercadoPagoBoleto.create(
       buildMercadoPagoBoletoChargeInput({
         idempotencyKey: params.idempotencyKey || params.orderId,

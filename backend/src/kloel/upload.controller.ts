@@ -63,6 +63,39 @@ interface UploadedFileType {
   buffer: Buffer;
 }
 
+/** Structural usage shape accepted by quoteOpenAiChatActualCostCents. */
+interface OpenAiChatUsageLike {
+  prompt_tokens?: number | null;
+  completion_tokens?: number | null;
+  prompt_tokens_details?: {
+    cached_tokens?: number | null;
+  } | null;
+}
+
+/** Narrow an unknown provider usage payload to the billing usage shape. */
+function coerceOpenAiChatUsage(usage: unknown): OpenAiChatUsageLike | null {
+  if (usage === null || typeof usage !== 'object') {
+    return null;
+  }
+  const record = usage as Record<string, unknown>;
+  const promptTokens = record.prompt_tokens;
+  const completionTokens = record.completion_tokens;
+  const detailsRaw = record.prompt_tokens_details;
+  const details =
+    detailsRaw !== null && typeof detailsRaw === 'object'
+      ? (detailsRaw as Record<string, unknown>)
+      : null;
+  const cachedTokens = details?.cached_tokens;
+  return {
+    prompt_tokens: typeof promptTokens === 'number' ? promptTokens : null,
+    completion_tokens: typeof completionTokens === 'number' ? completionTokens : null,
+    prompt_tokens_details:
+      details === null
+        ? null
+        : { cached_tokens: typeof cachedTokens === 'number' ? cachedTokens : null },
+  };
+}
+
 /** Upload controller. */
 @ApiTags('KLOEL Upload')
 @Controller('kloel/upload')
@@ -186,7 +219,7 @@ export class UploadController {
         requestId: input.requestId,
         actualCostCents: quoteOpenAiChatActualCostCents({
           model: resolveBackendOpenAIModel('brain'),
-          usage: input.usage,
+          usage: coerceOpenAiChatUsage(input.usage),
         }),
         reason: 'upload_pdf_provider_usage',
         metadata: {

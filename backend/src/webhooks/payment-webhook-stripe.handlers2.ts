@@ -68,7 +68,7 @@ export async function handlePaymentIntentEvent(
         const saleWhere = buildKloelSaleStripeWhere(workspaceId, intent.id, orderId);
         if (saleWhere) {
           await tx.kloelSale.updateMany({
-            where: { workspaceId, ...saleWhere },
+            where: { ...saleWhere },
             data: {
               status: 'paid',
               paidAt: new Date(),
@@ -104,7 +104,7 @@ export async function handlePaymentIntentEvent(
             const saleWhere = buildKloelSaleStripeWhere(workspaceId, intent.id, orderId);
             if (saleWhere) {
               await tx.kloelSale.updateMany({
-                where: { workspaceId, ...saleWhere },
+                where: { ...saleWhere },
                 data: {
                   status: 'paid',
                   paidAt: new Date(),

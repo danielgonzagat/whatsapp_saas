@@ -85,7 +85,7 @@ export function enforceAffiliateTerms(input: PolicyEnforcementInput): PolicyEnfo
 
   for (const disclaimer of AFFILIATE_REQUIRED_DISCLAIMERS) {
     const normalized = disclaimer.replace(/_/g, ' ');
-    if (!lowerContent.includes(normalized.split('_')[0])) {
+    if (!lowerContent.includes(normalized.split('_')[0] ?? normalized)) {
       warnings.push(`Recommended: add '${normalized}' disclosure.`);
     }
   }

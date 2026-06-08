@@ -145,7 +145,7 @@ export class UnifiedAgentActionsCommerceService {
 
     const productData = product.value as ProductMemoryValue;
     const message = this.buildProductInfoMessage(
-      productData.name,
+      productData.name ?? '',
       productData.description,
       includePrice ? productData.price : null,
       includeLink ? productData.paymentLink : undefined,

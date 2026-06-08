@@ -73,10 +73,11 @@ export class AttentionService {
       }
     }
     const ranked = [...scored.values()].sort((a, b) => b.weight - a.weight).slice(0, cap);
-    if (ranked.length === 0) {
+    const topRanked = ranked[0];
+    if (!topRanked) {
       return [];
     }
-    const max = ranked[0].weight;
+    const max = topRanked.weight;
     return ranked.map((r) => ({
       targetType: r.targetType,
       targetId: r.targetId,

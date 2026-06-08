@@ -456,7 +456,10 @@ export class CampaignsService {
             name: `${base.name} - Var ${i + 1}`,
             status: 'DRAFT',
             messageTemplate: mutatedMessage,
-            filters: base.filters,
+            filters:
+              base.filters === null
+                ? Prisma.JsonNull
+                : (base.filters as Prisma.InputJsonValue),
             stats: { sent: 0, replied: 0 },
             aiStrategy: base.aiStrategy,
             parentId: base.id,

@@ -163,7 +163,7 @@ export class PrepaidWalletService {
     paymentIntent: StripePaymentIntent,
   ): Promise<PrepaidWalletTransaction | null> {
     const walletId = extractStripeTopupWalletId(paymentIntent);
-    if (!isValidStripeTopupPaymentIntent(paymentIntent)) {
+    if (!isValidStripeTopupPaymentIntent(paymentIntent) || walletId === null) {
       return null;
     }
     const amountCents = BigInt(paymentIntent.amount);

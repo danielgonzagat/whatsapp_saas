@@ -206,6 +206,9 @@ export const repeatedObjectionDetector: Detector = {
         continue;
       }
       const last = objections[objections.length - 1];
+      if (!last) {
+        continue;
+      }
       out.push(
         makeTension(
           'commerce.repeated_objection',
@@ -410,6 +413,9 @@ const viewedWithoutPurchaseDetector: Detector = {
         continue;
       }
       const last = reads[reads.length - 1];
+      if (!last) {
+        continue;
+      }
       out.push(
         makeTension(
           'commerce.viewed_without_purchase',

@@ -298,10 +298,11 @@ export class AgentRuntimeEvidenceStoreService {
       },
       take: 1,
     });
-    if (rows.length === 0) {
+    const row = rows[0];
+    if (!row) {
       return null;
     }
-    return this.rowToRecord(rows[0]);
+    return this.rowToRecord(row);
   }
 
   private rowToRecord(row: EvidenceRow): AgentEvidenceRecord {

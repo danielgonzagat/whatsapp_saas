@@ -108,8 +108,11 @@ function getConnection() {
   return _connection;
 }
 
-function getQueueOptions() {
+function getQueueOptions(): QueueOptions {
   ensureInitialized();
+  if (!_queueOptions) {
+    throw new Error('Queue não inicializada. Opções de fila indisponíveis.');
+  }
   return _queueOptions;
 }
 

@@ -74,7 +74,7 @@ export function buildOnboardingAccountUpdate(
 export function buildCreateCustomAccountPayload(
   input: CreateCustomAccountInput,
   country: string,
-): StripeAccountCreateParams {
+): NonNullable<StripeAccountCreateParams> {
   return {
     type: 'custom',
     country,
@@ -105,8 +105,8 @@ export function buildCreateCustomAccountPayload(
  * keep payout orchestration in LedgerService instead.
  */
 export function stripManualPayoutSchedule(
-  payload: StripeAccountCreateParams,
-): StripeAccountCreateParams {
+  payload: NonNullable<StripeAccountCreateParams>,
+): NonNullable<StripeAccountCreateParams> {
   const { settings: _settings, ...rest } = payload;
   return rest;
 }

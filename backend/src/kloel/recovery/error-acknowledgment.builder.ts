@@ -10,6 +10,10 @@
 
 import type { Acknowledgment, DetectedError } from './recovery.types';
 
+const UNKNOWN_ACKNOWLEDGMENT_TEMPLATE: string =
+  'Um desvio operacional foi detectado e registrado para ' +
+  'investigação. Nenhum impacto permanente é esperado.';
+
 const ACKNOWLEDGMENT_TEMPLATES: Readonly<Record<string, string>> = {
   handoff:
     'Uma conversa foi transferida para atendimento humano. O sistema ' +
@@ -39,13 +43,11 @@ const ACKNOWLEDGMENT_TEMPLATES: Readonly<Record<string, string>> = {
   inappropriate_timing:
     'Uma ação automática foi executada em momento inadequado. O ' +
     'padrão de timing foi registrado para calibração.',
-  unknown:
-    'Um desvio operacional foi detectado e registrado para ' +
-    'investigação. Nenhum impacto permanente é esperado.',
+  unknown: UNKNOWN_ACKNOWLEDGMENT_TEMPLATE,
 };
 
 function templateFor(category: string): string {
-  return ACKNOWLEDGMENT_TEMPLATES[category] ?? ACKNOWLEDGMENT_TEMPLATES['unknown'];
+  return ACKNOWLEDGMENT_TEMPLATES[category] ?? UNKNOWN_ACKNOWLEDGMENT_TEMPLATE;
 }
 
 function channelFor(category: string): Acknowledgment['channel'] {

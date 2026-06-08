@@ -93,7 +93,7 @@ export class WhatsappService {
       resolveTimestamp: (v: unknown) => this.resolveTimestamp(v),
       resolveTrustedContactName: (p: string, ...cs: unknown[]) =>
         this.resolveTrustedContactName(p, ...cs),
-      listOperationalConversations: (ws: string, o?: unknown) =>
+      listOperationalConversations: (ws: string, o?: { limit?: number; pendingOnly?: boolean }) =>
         this.listOperationalConversations(ws, o),
     };
   }

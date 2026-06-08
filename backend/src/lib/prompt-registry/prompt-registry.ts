@@ -7,11 +7,12 @@ import type { PromptId, PromptVersion, RegisteredPrompt } from './prompt-registr
 /** Split a `major.minor` version string into numeric parts. */
 function parseVersion(v: PromptVersion): { major: number; minor: number } {
   const parts = v.split('.');
-  if (parts.length !== 2) {
+  const [majorPart, minorPart] = parts;
+  if (parts.length !== 2 || majorPart === undefined || minorPart === undefined) {
     throw new Error(`Invalid semver string: "${v}"`);
   }
-  const major = parseInt(parts[0], 10);
-  const minor = parseInt(parts[1], 10);
+  const major = parseInt(majorPart, 10);
+  const minor = parseInt(minorPart, 10);
   if (isNaN(major) || isNaN(minor)) {
     throw new Error(`Invalid semver string: "${v}"`);
   }

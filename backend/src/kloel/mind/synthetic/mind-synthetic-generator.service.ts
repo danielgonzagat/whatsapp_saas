@@ -232,9 +232,12 @@ export class MindSyntheticGeneratorService {
 
     const shuffled = [...recipeKeys].sort(() => rng() - 0.5).slice(0, decisionCount);
 
-    const decisions = shuffled.map((key, index) => {
+    const decisions = shuffled.flatMap((key, index) => {
       const recipe = BUILTIN_RECIPES[key];
-      return this.generateDecision(recipe, effectiveSeed + index * 100);
+      if (recipe === undefined) {
+        return [];
+      }
+      return [this.generateDecision(recipe, effectiveSeed + index * 100)];
     });
 
     return { workspaceId, decisions };

@@ -42,6 +42,16 @@ import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorat
 const PDF_TXT_RE = /\.(pdf|txt)$/i;
 const APPLICATION__PDF_OR_TEXT_RE = /^(application\/pdf|text\/plain)$/;
 
+/** Provider usage shape consumed by quoteOpenAiChatActualCostCents (matches OpenAiChatUsageShape). */
+type PdfUsageShape = {
+  prompt_tokens?: number | null;
+  completion_tokens?: number | null;
+  prompt_tokens_details?: {
+    cached_tokens?: number | null;
+  } | null;
+  total_tokens?: number | null;
+} | null;
+
 function countAnalysisItems(value: unknown): number {
   return Array.isArray(value) ? value.length : 0;
 }
@@ -129,7 +139,7 @@ export class PdfProcessorController {
     workspaceId: string;
     requestId: string;
     sourceName: string;
-    usage: unknown;
+    usage: PdfUsageShape;
   }) {
     try {
       await this.prepaidWalletService.settleUsageCharge({

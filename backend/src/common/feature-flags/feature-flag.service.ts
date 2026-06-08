@@ -106,7 +106,14 @@ export class FeatureFlagService {
       this.logger.warn(`Feature flag ${envName}="${raw}" is not 'true'/'false'; using default`);
     }
 
-    return this.FLAG_DEFAULTS[flag];
+    const defaultValue = this.FLAG_DEFAULTS[flag];
+    if (defaultValue === undefined) {
+      // Unreachable: the `flag in this.FLAG_DEFAULTS` guard above
+      // already rejects unregistered flags. This narrows the
+      // index-signature access from `boolean | undefined` to `boolean`.
+      throw new Error(`Unknown feature flag: ${flag}`);
+    }
+    return defaultValue;
   }
 
   /**

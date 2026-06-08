@@ -209,6 +209,15 @@ export type AnthropicSiteUsage = {
 };
 
 /**
+ * Narrow an opaque provider usage payload to a plain record. The quoters read
+ * every field defensively (`?.` + `?? 0`), so a non-object payload yields the
+ * same zero-cost result as before — behavior is preserved.
+ */
+function asUsageRecord<T extends OpenAiSiteUsage | AnthropicSiteUsage>(usage: unknown): T | null {
+  return usage !== null && typeof usage === 'object' ? (usage as T) : null;
+}
+
+/**
  * Route the post-call usage payload through the correct provider quoter to
  * derive the actual settlement cost.
  */
@@ -220,12 +229,12 @@ export function quoteSiteActualCostCents(input: {
   if (input.providerPreference === 'openai') {
     return quoteOpenAiChatActualCostCents({
       model: input.model,
-      usage: input.usage,
+      usage: asUsageRecord<OpenAiSiteUsage>(input.usage),
     });
   }
   return quoteAnthropicMessageActualCostCents({
     model: input.model,
-    usage: input.usage,
+    usage: asUsageRecord<AnthropicSiteUsage>(input.usage),
   });
 }
 

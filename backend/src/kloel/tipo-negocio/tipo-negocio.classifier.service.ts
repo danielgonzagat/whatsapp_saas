@@ -185,7 +185,8 @@ export function classifyOferta(
   const entries = Object.entries(typeCounts) as [Oferta, number][];
   entries.sort((a, b) => b[1] - a[1]);
 
-  if (entries.length === 0) {
+  const topEntry = entries[0];
+  if (!topEntry) {
     const amounts = approved.map((p) => p.amount);
     const mean = amounts.reduce((a, b) => a + b, 0) / amounts.length;
     if (mean >= 5000) {
@@ -197,7 +198,6 @@ export function classifyOferta(
     return { label: 'infoproduct', confidence: 0.25 };
   }
 
-  const topEntry = entries[0];
   const topRatio = topEntry[1] / approved.length;
   const conf = clampConfidence(0.3 + topRatio * 0.65);
 

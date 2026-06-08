@@ -75,7 +75,7 @@ function normalizeAiObjections(value: unknown): LooseObject[] {
         enabled: objection.enabled !== false,
       };
     })
-    .filter(Boolean);
+    .filter((entry): entry is LooseObject => entry !== null);
 }
 
 const CUSTOMER_PROFILE_KEYS = [

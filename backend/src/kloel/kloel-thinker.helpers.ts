@@ -258,10 +258,10 @@ export async function regenerateThreadAssistantResponseImpl(
   deps: {
     prisma: {
       chatThread: {
-        findFirst: (args: unknown) => Promise<{ id: string; summary: string | null } | null>;
+        findFirst(args: unknown): Promise<{ id: string; summary: string | null } | null>;
       };
       chatMessage: {
-        findFirst: (args: unknown) => Promise<{
+        findFirst(args: unknown): Promise<{
           id: string;
           threadId: string;
           role: string;
@@ -269,7 +269,7 @@ export async function regenerateThreadAssistantResponseImpl(
           metadata: Prisma.JsonValue | null;
           createdAt: Date;
         } | null>;
-        findMany: (args: unknown) => Promise<
+        findMany(args: unknown): Promise<
           Array<{
             id: string;
             threadId: string;
@@ -279,17 +279,17 @@ export async function regenerateThreadAssistantResponseImpl(
             createdAt: Date;
           }>
         >;
-        updateMany: (args: unknown) => Promise<unknown>;
-        deleteMany: (args: unknown) => Promise<unknown>;
+        updateMany(args: unknown): Promise<unknown>;
+        deleteMany(args: unknown): Promise<unknown>;
       };
-      auditLog: { create: (args: unknown) => Promise<unknown> };
-      $transaction: (ops: unknown) => Promise<unknown[]>;
+      auditLog: { create(args: unknown): Promise<unknown> };
+      $transaction(ops: unknown): Promise<unknown[]>;
     };
     // Canonical Mind surface for the SEPARATE RAC_ChatMessage table. The caller
     // (KloelThinkerService) passes `mindChatMessage?.items ?? this.prisma.chatMessage`
     // — same delegate, byte-identical. When absent we fall back to `prisma.chatMessage`.
     chatMessageItems?: {
-      findFirst: (args: unknown) => Promise<{
+      findFirst(args: unknown): Promise<{
         id: string;
         threadId: string;
         role: string;
@@ -297,7 +297,7 @@ export async function regenerateThreadAssistantResponseImpl(
         metadata: Prisma.JsonValue | null;
         createdAt: Date;
       } | null>;
-      findMany: (args: unknown) => Promise<
+      findMany(args: unknown): Promise<
         Array<{
           id: string;
           threadId: string;
@@ -307,8 +307,8 @@ export async function regenerateThreadAssistantResponseImpl(
           createdAt: Date;
         }>
       >;
-      updateMany: (args: unknown) => Promise<unknown>;
-      deleteMany: (args: unknown) => Promise<unknown>;
+      updateMany(args: unknown): Promise<unknown>;
+      deleteMany(args: unknown): Promise<unknown>;
     };
     replyEngine: KloelReplyEngineService;
     threadService: KloelThreadService;
@@ -381,6 +381,7 @@ export async function regenerateThreadAssistantResponseImpl(
     );
 
   const regeneratedTraceEntries: StoredProcessingTraceEntry[] = [];
+  const threadSummary = (thread as { summary?: string | null }).summary;
   const regeneratedContent = await replyEngine.buildAssistantReply({
     message: sourceUserMessage.content,
     workspaceId,
@@ -388,9 +389,7 @@ export async function regenerateThreadAssistantResponseImpl(
     ...(userName ? { userName } : {}),
     mode: 'chat',
     conversationState: {
-      ...(typeof (thread as { summary?: string | null }).summary === 'string'
-        ? { summary: (thread as { summary?: string | null }).summary }
-        : {}),
+      ...(typeof threadSummary === 'string' ? { summary: threadSummary } : {}),
       recentMessages: historyBeforeUser,
       totalMessages: sourceUserIndex,
     },

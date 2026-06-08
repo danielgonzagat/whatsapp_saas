@@ -254,7 +254,8 @@ export class KloelToolDispatcherService {
       transports: this.transports,
       riskGate: this.riskGate,
       executeTool: (ws, name, a, u) => this.executeTool(ws, name, a, u),
-      applyReceipt: (cap, ws, a, r, u, s) => this.withCanonicalReceipt(cap, ws, a, r, u, s),
+      applyReceipt: (cap, ws, a, r, u, s) =>
+        this.withCanonicalReceipt(cap, ws, a, r, u, s ?? Date.now()),
     };
   }
 

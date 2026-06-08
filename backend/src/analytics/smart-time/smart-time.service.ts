@@ -56,8 +56,10 @@ export class SmartTimeService {
 
     messages.forEach((msg) => {
       const date = new Date(msg.createdAt);
-      hourBuckets[date.getHours()]++;
-      dayBuckets[date.getDay()]++;
+      const hour = date.getHours();
+      const day = date.getDay();
+      hourBuckets[hour] = (hourBuckets[hour] ?? 0) + 1;
+      dayBuckets[day] = (dayBuckets[day] ?? 0) + 1;
     });
 
     // 3. Find Peaks
@@ -67,7 +69,7 @@ export class SmartTimeService {
 
     // 4. Calculate Confidence
     const avgHour = total / 24;
-    const peakHourCount = hourBuckets[bestHour];
+    const peakHourCount = hourBuckets[bestHour] ?? 0;
     const confidence = peakHourCount > avgHour * 2 ? 'HIGH' : 'MEDIUM';
 
     // 5. Build heatmap: normalize hour×day scores to [0, 1]
@@ -75,7 +77,7 @@ export class SmartTimeService {
     const heatmap: Array<{ hour: number; day: string; score: number }> = [];
     for (let h = 0; h < 24; h += 1) {
       for (let d = 0; d < 7; d += 1) {
-        const count = hourBuckets[h] * (dayBuckets[d] / total) * 24;
+        const count = (hourBuckets[h] ?? 0) * ((dayBuckets[d] ?? 0) / total) * 24;
         const score = Math.round((count / maxCount) * 100) / 100;
         if (score > 0) {
           const dayName = DAY_NAMES[d];

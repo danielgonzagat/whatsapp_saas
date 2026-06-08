@@ -144,8 +144,8 @@ function findCurrentStage(events: readonly SpineEventRef[]): string | undefined 
     .filter((e) => e.eventName === 'commerce.crm.stage_changed')
     .sort((a, b) => parseTimestampMs(b.occurredAt) - parseTimestampMs(a.occurredAt));
 
-  if (stageEvents.length > 0) {
-    const last = stageEvents[0];
+  const last = stageEvents[0];
+  if (last !== undefined) {
     const payload = last.payload as Record<string, unknown> | undefined;
     return (payload?.['toStage'] as string) ?? (payload?.['stage'] as string) ?? undefined;
   }
@@ -192,16 +192,20 @@ export function buildPreCallContext(input: PreCallContextInput): PreCallContext 
       return result;
     });
 
-  const valenceTrace: ValenceTraceEntry[] = relevant
-    .filter((e) => e.valence !== undefined)
-    .map(
-      (e): ValenceTraceEntry => ({
+  const valenceTrace: ValenceTraceEntry[] = relevant.flatMap((e): ValenceTraceEntry[] => {
+    const valence = normalizeValence(e.valence);
+    if (valence === undefined) {
+      return [];
+    }
+    return [
+      {
         eventId: e.eventId,
-        valence: normalizeValence(e.valence),
-        weight: valenceWeight(normalizeValence(e.valence)),
+        valence,
+        weight: valenceWeight(valence),
         occurredAt: e.occurredAt,
-      }),
-    );
+      },
+    ];
+  });
 
   const openQuestions = findOpenQuestions(leadEvents);
   const currentStage = findCurrentStage(leadEvents);

@@ -104,13 +104,13 @@ export class RecommendationAttributionBuilderService {
     if (entries.length === 0) {
       return 'business_rule';
     }
-    let best = entries[0];
+    let best: AttributionEntry | undefined = entries[0];
     for (const e of entries) {
-      if (e.weight > best.weight) {
+      if (best === undefined || e.weight > best.weight) {
         best = e;
       }
     }
-    return best.kind;
+    return best?.kind ?? 'business_rule';
   }
 
   private computeTransparency(entries: readonly AttributionEntry[]): number {

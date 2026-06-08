@@ -130,6 +130,22 @@ interface SettleAiUsageArgs {
   usage: unknown;
 }
 
+/** Structural shape of an OpenAI chat-completion usage object, as billed. */
+type OpenAiChatUsageShape = {
+  prompt_tokens?: number | null;
+  completion_tokens?: number | null;
+  prompt_tokens_details?: {
+    cached_tokens?: number | null;
+  } | null;
+};
+
+/** Narrow an unknown provider-usage value to the billable usage shape, or undefined. */
+function readOpenAiChatUsage(value: unknown): OpenAiChatUsageShape | undefined {
+  return typeof value === 'object' && value !== null
+    ? (value as OpenAiChatUsageShape)
+    : undefined;
+}
+
 /** Reconcile a prior wallet hold against the provider's reported actual usage. */
 export async function settleAiUsageIfNeeded(args: SettleAiUsageArgs): Promise<void> {
   const { walletService, workspaceId, requestId, assistantAction, model, usage } = args;
@@ -143,7 +159,7 @@ export async function settleAiUsageIfNeeded(args: SettleAiUsageArgs): Promise<vo
       requestId,
       actualCostCents: quoteOpenAiChatActualCostCents({
         model,
-        usage: usage,
+        usage: readOpenAiChatUsage(usage),
       }),
       reason: 'ai_assistant_provider_usage',
       metadata: {

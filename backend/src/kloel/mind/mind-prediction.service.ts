@@ -88,8 +88,9 @@ export class MindPredictionService {
     let evaluated = 0;
     let correct = 0;
     let totalSurprise = 0;
-    const newEvents = this.lastCycleAt
-      ? rows.filter((r: AutopilotEventRow) => new Date(r.createdAt) > new Date(this.lastCycleAt))
+    const lastCycleAt = this.lastCycleAt;
+    const newEvents = lastCycleAt
+      ? rows.filter((r: AutopilotEventRow) => new Date(r.createdAt) > new Date(lastCycleAt))
       : [];
 
     for (const pred of this.activePredictions) {

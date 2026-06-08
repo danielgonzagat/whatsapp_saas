@@ -167,6 +167,10 @@ export class TikTokAdsService {
       );
     }
 
+    if (body.data === undefined) {
+      throw new Error(`TikTok Ads API returned no data (path: ${path})`);
+    }
+
     return body.data;
   }
 

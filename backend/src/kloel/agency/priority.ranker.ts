@@ -101,11 +101,14 @@ export function rankPriorities(input: PriorityInput): RankerResult {
     .sort((a, b) => b.score - a.score);
 
   for (let i = 0; i < rankings.length; i++) {
-    rankings[i] = { ...rankings[i], rank: i + 1 };
+    const ranking = rankings[i];
+    if (ranking) {
+      rankings[i] = { ...ranking, rank: i + 1 };
+    }
   }
 
   return {
     rankings,
-    topClient: rankings.length > 0 ? rankings[0] : null,
+    topClient: rankings[0] ?? null,
   };
 }

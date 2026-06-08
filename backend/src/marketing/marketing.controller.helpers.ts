@@ -203,12 +203,9 @@ export function formatAvgResponseTime(avgMs: number | null): string {
  * the AI brain endpoint to bound the outbound-reply lookup window.
  */
 export function minInboundCreatedAt(inbound: InboundSampleMessage[]): Date | null {
-  if (inbound.length === 0) {
-    return null;
-  }
-  let min: Date = inbound[0].createdAt;
+  let min: Date | null = null;
   for (const message of inbound) {
-    if (message.createdAt < min) {
+    if (min === null || message.createdAt < min) {
       min = message.createdAt;
     }
   }

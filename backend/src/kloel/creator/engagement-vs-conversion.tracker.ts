@@ -138,8 +138,13 @@ function computeInteractionFrequency(events: readonly CreatorEvent[]): number {
   let gapCount = 0;
 
   for (let i = 1; i < events.length; i++) {
-    const prev = new Date(events[i - 1].occurredAt).getTime();
-    const curr = new Date(events[i].occurredAt).getTime();
+    const prevEvent = events[i - 1];
+    const currEvent = events[i];
+    if (!prevEvent || !currEvent) {
+      continue;
+    }
+    const prev = new Date(prevEvent.occurredAt).getTime();
+    const curr = new Date(currEvent.occurredAt).getTime();
     const gap = curr - prev;
     if (gap > 0) {
       totalGapMs += gap;

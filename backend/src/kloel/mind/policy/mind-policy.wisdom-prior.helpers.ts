@@ -87,6 +87,9 @@ export function applyWisdomPriors(input: {
 
     for (let i = 0; i < result.length; i++) {
       const entry = result[i];
+      if (!entry) {
+        continue;
+      }
       const option = input.inputOptions[i];
 
       // Determine alignment: does the option's predicate/context keywords

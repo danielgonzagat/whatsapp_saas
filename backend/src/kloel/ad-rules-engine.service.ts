@@ -188,6 +188,9 @@ export class AdRulesEngineService {
       return;
     }
     const pending = this.pendingBanditOutcomes.get(rule.id);
+    if (!pending) {
+      return;
+    }
     try {
       if (metrics) {
         const improved = metrics.convertedCount >= pending.previousConvertedCount;

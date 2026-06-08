@@ -291,7 +291,7 @@ export class MarketingController {
     @Request() req: { user: { workspaceId: string; email?: string } },
     @Body() body: DirectEmailSendBody,
   ) {
-    const workspaceId = req.user?.workspaceId;
+    const workspaceId = req.user.workspaceId;
     const approvalRequestId = normalizeApprovalRequestId(body.approvalRequestId);
     let sendBody: DirectEmailSendBody = body;
 
@@ -319,6 +319,9 @@ export class MarketingController {
     const subject = sendBody.subject;
     const htmlTemplate = sendBody.html;
     const recipients = sendBody.recipients;
+    if (!subject || !htmlTemplate || !recipients) {
+      throw new BadRequestException('Missing required fields: subject, html, recipients');
+    }
 
     if (!approvalRequestId) {
       const payload = {

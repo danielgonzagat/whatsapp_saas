@@ -167,7 +167,12 @@ export function countTierChanges(
   }
   let changes = 0;
   for (let i = 0; i < original.length; i++) {
-    if (original[i].tier !== reTiered[i].adjustedTier) {
+    const originalItem = original[i];
+    const reTieredItem = reTiered[i];
+    if (originalItem === undefined || reTieredItem === undefined) {
+      continue;
+    }
+    if (originalItem.tier !== reTieredItem.adjustedTier) {
       changes++;
     }
   }

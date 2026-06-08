@@ -88,5 +88,5 @@ export function allowedOnly(
   if (checks.length !== results.length) {
     return [];
   }
-  return checks.filter((_, i) => results[i].allowed);
+  return checks.filter((_, i) => results[i]?.allowed === true);
 }

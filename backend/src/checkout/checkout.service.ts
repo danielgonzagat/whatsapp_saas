@@ -269,7 +269,7 @@ export class CheckoutService {
       include: PLAN_INCLUDE,
     });
 
-    if (isLegacyPlanEligibleForMigration(planRecord)) {
+    if (planRecord && isLegacyPlanEligibleForMigration(planRecord)) {
       await this.productService.ensureLegacyCheckoutForPlan(planRecord.id);
       const migratedLink = await this.prisma.checkoutPlanLink.findFirst({
         where: {
@@ -298,7 +298,7 @@ export class CheckoutService {
       }
     }
 
-    if (isActivePlanKind(planRecord)) {
+    if (planRecord && isActivePlanKind(planRecord)) {
       const plan = await planLinkManager.ensurePlanReferenceCode(planRecord);
       this.logCheckoutEvent('checkout_public_lookup_resolved', {
         correlationId,

@@ -79,10 +79,12 @@ export async function updateSaleAndPaymentHelper(
       await prisma.kloelSale.updateMany({
         where: {
           workspaceId,
-          OR: [
-            body.orderId ? { externalPaymentId: String(body.orderId) } : undefined,
-            body.orderId ? { id: String(body.orderId) } : undefined,
-          ].filter(Boolean),
+          OR: body.orderId
+            ? [
+                { externalPaymentId: String(body.orderId) },
+                { id: String(body.orderId) },
+              ]
+            : [],
         },
         data: { status: 'paid', paidAt: new Date() },
       });

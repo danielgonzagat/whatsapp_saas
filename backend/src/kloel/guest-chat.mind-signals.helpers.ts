@@ -1,6 +1,7 @@
 import { buildMindSignals } from './mind/build-mind-signals.helper';
 import { buildKloelMindSignalsDeps } from './kloel-reply-engine.cognitive-state.helpers';
 import type { PrismaService } from '../prisma/prisma.service';
+import type { StructuredLogger } from '../logging/structured-logger';
 import type { AttentionService } from './mind/attention.service';
 import type { ValenceAggregatorService } from './mind/valence-aggregator.service';
 import type { MindBeliefService } from './mind/inference/mind-belief.service';
@@ -25,7 +26,7 @@ export interface GuestMindSignalsServices {
 export async function buildGuestMindSignals(
   prisma: PrismaService | undefined,
   services: GuestMindSignalsServices,
-  logger: { warn: (...args: unknown[]) => void },
+  logger: Pick<StructuredLogger, 'warn'>,
   workspaceId: string,
   userMessage: string,
 ): Promise<Record<string, unknown> | null> {

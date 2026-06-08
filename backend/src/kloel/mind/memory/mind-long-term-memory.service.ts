@@ -78,8 +78,9 @@ export class CaseConsolidationService {
           .filter((r) => r.sim >= SIMILARITY_THRESHOLD)
           .sort((a, b) => b.sim - a.sim);
 
-        if (similarRecent.length > 0) {
-          const bestSim = similarRecent[0].sim;
+        const bestMatch = similarRecent[0];
+        if (bestMatch) {
+          const bestSim = bestMatch.sim;
           const concept = oldCase.caseType;
           const evidence = oldCase.text.slice(0, 500);
 
@@ -91,7 +92,7 @@ export class CaseConsolidationService {
               concept,
               confidence: Math.min(0.95, 0.5 + bestSim * 0.45),
               evidence,
-              features: oldCase.features,
+              features: oldCase.features as Prisma.InputJsonValue,
               occurredAt: oldCase.occurredAt,
             },
           });

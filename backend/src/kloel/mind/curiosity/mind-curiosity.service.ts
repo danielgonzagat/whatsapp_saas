@@ -99,8 +99,8 @@ export class MindCuriosityService {
         take: 10,
       });
 
-      if (beliefs.length > 0) {
-        const b = beliefs[0];
+      const b = beliefs[0];
+      if (b) {
         const gap = {
           topic: `belief:${b.subject}/${b.predicate}`,
           reason: `Variance=${b.variance.toFixed(2)} with ${b.samples} samples — knowledge is unstable`,

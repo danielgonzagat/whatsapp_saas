@@ -107,7 +107,7 @@ export class AdminAuthService {
       throw adminErrors.invalidCredentials();
     }
 
-    if (isAccountLocked(user.lockedUntil)) {
+    if (user.lockedUntil && isAccountLocked(user.lockedUntil)) {
       throw adminErrors.accountLocked(user.lockedUntil);
     }
 

@@ -29,7 +29,7 @@ export interface ProjectRoleContextInput {
  */
 export function projectRoleContext(input: ProjectRoleContextInput): AbiRoleContext {
   const detections = input.detections;
-  const primaryRole = detections.length > 0 ? detections[0].role : undefined;
+  const primaryRole = detections.length > 0 ? detections[0]?.role : undefined;
 
   const abiDetections: AbiRoleDetection[] = detections.map((d) => ({
     role: d.role,

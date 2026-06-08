@@ -37,8 +37,9 @@ export class MultiHatService {
 
     const detections = [...input.detections].sort((a, b) => b.confidence - a.confidence);
 
+    const topDetection = detections[0];
     const primaryRole: Role | undefined =
-      detections.length > 0 && detections[0].confidence >= 0.3 ? detections[0].role : undefined;
+      topDetection && topDetection.confidence >= 0.3 ? topDetection.role : undefined;
 
     const secondaryRoles: Role[] = detections
       .slice(primaryRole ? 1 : 0)

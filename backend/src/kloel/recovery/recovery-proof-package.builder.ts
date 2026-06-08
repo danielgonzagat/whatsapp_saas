@@ -33,6 +33,15 @@ interface NonRepeatTemplate {
   readonly commitmentStatement: string;
 }
 
+const UNKNOWN_NON_REPEAT_TEMPLATE: NonRepeatTemplate = {
+  learnedFrom: 'um padrao anomalo foi detectado que nao corresponde a categorias ' + 'conhecidas',
+  preventiveChange:
+    'catalogar o padrao anomalo e expandir monitoramento para reconhecimento futuro',
+  commitmentStatement:
+    'Kloel nao ignorara padroes anomalos. Catalogara e expandira ' +
+    'monitoramento para reconhece-los no futuro.',
+};
+
 const NON_REPEAT_TEMPLATES: Readonly<Record<string, NonRepeatTemplate>> = {
   handoff: {
     learnedFrom:
@@ -117,18 +126,11 @@ const NON_REPEAT_TEMPLATES: Readonly<Record<string, NonRepeatTemplate>> = {
       'Kloel nao contatara leads fora do horario comercial do fuso ' +
       'horario do lead. Respeitara janela de silencio configurada.',
   },
-  unknown: {
-    learnedFrom: 'um padrao anomalo foi detectado que nao corresponde a categorias ' + 'conhecidas',
-    preventiveChange:
-      'catalogar o padrao anomalo e expandir monitoramento para reconhecimento futuro',
-    commitmentStatement:
-      'Kloel nao ignorara padroes anomalos. Catalogara e expandira ' +
-      'monitoramento para reconhece-los no futuro.',
-  },
+  unknown: UNKNOWN_NON_REPEAT_TEMPLATE,
 };
 
 function nonRepeatTemplateFor(category: string): NonRepeatTemplate {
-  return NON_REPEAT_TEMPLATES[category] ?? NON_REPEAT_TEMPLATES['unknown'];
+  return NON_REPEAT_TEMPLATES[category] ?? UNKNOWN_NON_REPEAT_TEMPLATE;
 }
 
 function buildNonRepeatCommitment(

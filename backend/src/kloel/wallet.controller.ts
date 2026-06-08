@@ -353,7 +353,7 @@ export class WalletController {
       const daysAgo = Math.floor((Date.now() - new Date(t.createdAt).getTime()) / 86400000);
       const idx = 6 - daysAgo;
       if (idx >= 0 && idx < 7) {
-        bucketsCents[idx] += t.amountInCents;
+        bucketsCents[idx] = (bucketsCents[idx] ?? 0n) + t.amountInCents;
       }
     });
     const result = bucketsCents.map((cents) => Number(cents) / 100);

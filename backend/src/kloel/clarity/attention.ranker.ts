@@ -62,7 +62,7 @@ export function rankAttention(items: readonly RankingInput[], nowMs: number): Ra
 
   return {
     rankings: ranked,
-    topItem: ranked.length > 0 ? ranked[0] : null,
+    topItem: ranked[0] ?? null,
     rankedAt: new Date(nowMs).toISOString(),
   };
 }

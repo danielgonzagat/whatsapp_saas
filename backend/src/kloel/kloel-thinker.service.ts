@@ -232,6 +232,18 @@ export class KloelThinkerService {
         streamWriter.close();
         return;
       }
+      const openaiClient = this.replyEngine.openai;
+      if (!openaiClient) {
+        safeWrite(
+          createKloelErrorEvent({
+            content: AI_KEY_MISSING_MESSAGE,
+            error: 'ai_api_key_missing',
+            done: true,
+          }),
+        );
+        streamWriter.close();
+        return;
+      }
       if (isAborted()) {
         if (!isClientDisconnected()) {
           safeWrite(
@@ -457,7 +469,7 @@ export class KloelThinkerService {
         temperature: number,
       ) =>
         streamWriter.streamModelResponse({
-          openai: this.replyEngine.openai,
+          openai: openaiClient,
           writerMessages,
           temperature,
           responseMaxTokens,
