@@ -185,3 +185,5 @@ scripts/mcp/atomic-edit/.z3venv/
 .ecc-research/
 
 .z3venv/
+.elan/
+.elan-init.sh
