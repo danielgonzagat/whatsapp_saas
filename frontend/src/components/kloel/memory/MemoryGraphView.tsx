@@ -421,7 +421,7 @@ export function MemoryGraphView() {
                   key={`${ref.type}:${ref.ref ?? ref.label}:${index}`}
                   style={{
                     border: '1px solid rgba(148,163,184,.22)',
-                    borderRadius: 999,
+                    borderRadius: 6,
                     color: 'rgb(203,213,225)',
                     fontSize: 11,
                     padding: '4px 8px',
