@@ -278,7 +278,6 @@ export function KloelGraphOverlay({
 
   return (
     <div
-      onClick={onClose}
       style={{
         position: 'fixed',
         inset: 0,
