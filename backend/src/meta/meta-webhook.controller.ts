@@ -1,6 +1,6 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import * as crypto from 'node:crypto';
-import { createHmac } from 'node:crypto';
+import { verifyHmacSha256Signature } from '../common/webhook/webhook-signature.util';
 import {
   Body,
   Controller,
@@ -102,11 +102,7 @@ export class MetaCoreWebhookController {
       throw new ForbiddenException('Missing Meta webhook signature');
     }
     const raw = req.rawBody || Buffer.from(JSON.stringify(body || {}));
-    const expected = `sha256=${createHmac('sha256', appSecret)
-      .update(Buffer.isBuffer(raw) ? raw : Buffer.from(String(raw)))
-      .digest('hex')}`;
-
-    if (!safeCompareStrings(signature, expected)) {
+    if (!verifyHmacSha256Signature(raw, signature, appSecret)) {
       this.logger.warn('Invalid Meta Marketing webhook signature — rejecting');
       throw new ForbiddenException('Invalid Meta webhook signature');
     }
