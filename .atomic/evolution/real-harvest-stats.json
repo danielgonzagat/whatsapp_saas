@@ -1,0 +1,649 @@
+{
+  "ok": true,
+  "asOfLedgerTsMax": 1781039565296,
+  "anchorArchiveHead": "a61af6c6796857a6cc93f94d36b4e711e5c2fcbd37238cb6df6ff0cc6625785a",
+  "archiveEntryCount": 2,
+  "corpus": {
+    "path": ".atomic/evolution/real-disproof-corpus.jsonl",
+    "sha256": "4ad16154bfbfacd1d4e0d09cbee0ff730b08097cc00bc376d80cc5704884cb12",
+    "records": 6778,
+    "walls": 658,
+    "headRecordSha256": "517efc66ae3f74d439d8b00f680ca5290e8e33c2f6c8fed1349084a87bec648f"
+  },
+  "harvestStats": {
+    "exec": {
+      "parsedLines": 20071,
+      "invalidJson": 0,
+      "refused": 6146,
+      "skippedFields": 0
+    },
+    "bypass": {
+      "parsedLines": 639,
+      "invalidJson": 0,
+      "blockedStrict": 632,
+      "skippedNonStrict": 0
+    },
+    "events": 6778,
+    "witnesses": 658,
+    "hits": 6120,
+    "walls": 658,
+    "generations": 87,
+    "byInvariant": {
+      "atomic-exec.refusal.effect-proof-required": 415,
+      "atomic-exec.refusal.external-or-host-effect": 26,
+      "atomic-exec.refusal.governance-file-write": 6,
+      "atomic-exec.refusal.other": 19,
+      "atomic-exec.refusal.read-only-sandbox": 1,
+      "deny-hook.bypass-blocked.bash-exec": 17,
+      "deny-hook.bypass-blocked.bash-grep": 2,
+      "deny-hook.bypass-blocked.native-read": 162,
+      "deny-hook.bypass-blocked.bash-glob": 1,
+      "deny-hook.bypass-blocked.bash-edit": 1,
+      "deny-hook.bypass-blocked.native-edit": 8
+    }
+  },
+  "lessons": {
+    "path": ".atomic/evolution/real-lessons.jsonl",
+    "sha256": "b691ca42feff6d32704a31d073a2d4c4585e43d0b51214d6df6f248c94a93e6f",
+    "accepted": [
+      {
+        "lessonId": "lesson:atomic-exec.refusal.effect-proof-required::exec/node:v1",
+        "conditionKind": "wall-presence",
+        "witnessCount": 62,
+        "validation": {
+          "splitGeneration": 33,
+          "trainExplained": "31/31",
+          "testPredicted": "31/31"
+        },
+        "statement": "edições na região exec/node colidem recorrentemente com atomic-exec.refusal.effect-proof-required — sonde antes de propor"
+      },
+      {
+        "lessonId": "lesson:atomic-exec.refusal.external-or-host-effect::exec/curl:v2",
+        "conditionKind": "wall-presence",
+        "witnessCount": 5,
+        "validation": {
+          "splitGeneration": 4,
+          "trainExplained": "2/2",
+          "testPredicted": "3/3"
+        },
+        "statement": "edições na região exec/curl colidem recorrentemente com atomic-exec.refusal.external-or-host-effect — sonde antes de propor"
+      },
+      {
+        "lessonId": "lesson:atomic-exec.refusal.effect-proof-required::exec/echo:v3",
+        "conditionKind": "wall-presence",
+        "witnessCount": 34,
+        "validation": {
+          "splitGeneration": 30,
+          "trainExplained": "18/18",
+          "testPredicted": "16/16"
+        },
+        "statement": "edições na região exec/echo colidem recorrentemente com atomic-exec.refusal.effect-proof-required — sonde antes de propor"
+      },
+      {
+        "lessonId": "lesson:atomic-exec.refusal.other::exec/find:v4",
+        "conditionKind": "wall-presence",
+        "witnessCount": 6,
+        "validation": {
+          "splitGeneration": 12,
+          "trainExplained": "3/3",
+          "testPredicted": "3/3"
+        },
+        "statement": "edições na região exec/find colidem recorrentemente com atomic-exec.refusal.other — sonde antes de propor"
+      },
+      {
+        "lessonId": "lesson:atomic-exec.refusal.effect-proof-required::exec/test:v5",
+        "conditionKind": "wall-presence",
+        "witnessCount": 13,
+        "validation": {
+          "splitGeneration": 72,
+          "trainExplained": "7/7",
+          "testPredicted": "6/6"
+        },
+        "statement": "edições na região exec/test colidem recorrentemente com atomic-exec.refusal.effect-proof-required — sonde antes de propor"
+      },
+      {
+        "lessonId": "lesson:atomic-exec.refusal.effect-proof-required::exec/shasum:v6",
+        "conditionKind": "wall-presence",
+        "witnessCount": 25,
+        "validation": {
+          "splitGeneration": 67,
+          "trainExplained": "14/14",
+          "testPredicted": "11/11"
+        },
+        "statement": "edições na região exec/shasum colidem recorrentemente com atomic-exec.refusal.effect-proof-required — sonde antes de propor"
+      },
+      {
+        "lessonId": "lesson:atomic-exec.refusal.effect-proof-required::exec/git:v7",
+        "conditionKind": "wall-presence",
+        "witnessCount": 33,
+        "validation": {
+          "splitGeneration": 81,
+          "trainExplained": "17/17",
+          "testPredicted": "16/16"
+        },
+        "statement": "edições na região exec/git colidem recorrentemente com atomic-exec.refusal.effect-proof-required — sonde antes de propor"
+      },
+      {
+        "lessonId": "lesson:atomic-exec.refusal.effect-proof-required::exec/tail:v8",
+        "conditionKind": "wall-presence",
+        "witnessCount": 12,
+        "validation": {
+          "splitGeneration": 73,
+          "trainExplained": "6/6",
+          "testPredicted": "6/6"
+        },
+        "statement": "edições na região exec/tail colidem recorrentemente com atomic-exec.refusal.effect-proof-required — sonde antes de propor"
+      },
+      {
+        "lessonId": "lesson:atomic-exec.refusal.effect-proof-required::exec/nl:v9",
+        "conditionKind": "wall-presence",
+        "witnessCount": 36,
+        "validation": {
+          "splitGeneration": 72,
+          "trainExplained": "21/21",
+          "testPredicted": "15/15"
+        },
+        "statement": "edições na região exec/nl colidem recorrentemente com atomic-exec.refusal.effect-proof-required — sonde antes de propor"
+      },
+      {
+        "lessonId": "lesson:atomic-exec.refusal.effect-proof-required::exec/npm:v10",
+        "conditionKind": "wall-presence",
+        "witnessCount": 4,
+        "validation": {
+          "splitGeneration": 68,
+          "trainExplained": "2/2",
+          "testPredicted": "2/2"
+        },
+        "statement": "edições na região exec/npm colidem recorrentemente com atomic-exec.refusal.effect-proof-required — sonde antes de propor"
+      },
+      {
+        "lessonId": "lesson:atomic-exec.refusal.effect-proof-required::exec/printf:v11",
+        "conditionKind": "wall-presence",
+        "witnessCount": 11,
+        "validation": {
+          "splitGeneration": 68,
+          "trainExplained": "6/6",
+          "testPredicted": "5/5"
+        },
+        "statement": "edições na região exec/printf colidem recorrentemente com atomic-exec.refusal.effect-proof-required — sonde antes de propor"
+      },
+      {
+        "lessonId": "lesson:atomic-exec.refusal.effect-proof-required::exec/sed:v12",
+        "conditionKind": "wall-presence",
+        "witnessCount": 5,
+        "validation": {
+          "splitGeneration": 17,
+          "trainExplained": "2/2",
+          "testPredicted": "3/3"
+        },
+        "statement": "edições na região exec/sed colidem recorrentemente com atomic-exec.refusal.effect-proof-required — sonde antes de propor"
+      },
+      {
+        "lessonId": "lesson:atomic-exec.refusal.effect-proof-required::exec/for:v13",
+        "conditionKind": "wall-presence",
+        "witnessCount": 15,
+        "validation": {
+          "splitGeneration": 74,
+          "trainExplained": "7/7",
+          "testPredicted": "8/8"
+        },
+        "statement": "edições na região exec/for colidem recorrentemente com atomic-exec.refusal.effect-proof-required — sonde antes de propor"
+      },
+      {
+        "lessonId": "lesson:atomic-exec.refusal.effect-proof-required::exec/ps:v14",
+        "conditionKind": "wall-presence",
+        "witnessCount": 15,
+        "validation": {
+          "splitGeneration": 70,
+          "trainExplained": "7/7",
+          "testPredicted": "8/8"
+        },
+        "statement": "edições na região exec/ps colidem recorrentemente com atomic-exec.refusal.effect-proof-required — sonde antes de propor"
+      },
+      {
+        "lessonId": "lesson:atomic-exec.refusal.effect-proof-required::exec/pgrep:v15",
+        "conditionKind": "wall-presence",
+        "witnessCount": 6,
+        "validation": {
+          "splitGeneration": 70,
+          "trainExplained": "3/3",
+          "testPredicted": "3/3"
+        },
+        "statement": "edições na região exec/pgrep colidem recorrentemente com atomic-exec.refusal.effect-proof-required — sonde antes de propor"
+      },
+      {
+        "lessonId": "lesson:atomic-exec.refusal.effect-proof-required::exec/env:v16",
+        "conditionKind": "wall-presence",
+        "witnessCount": 5,
+        "validation": {
+          "splitGeneration": 53,
+          "trainExplained": "2/2",
+          "testPredicted": "3/3"
+        },
+        "statement": "edições na região exec/env colidem recorrentemente com atomic-exec.refusal.effect-proof-required — sonde antes de propor"
+      },
+      {
+        "lessonId": "lesson:atomic-exec.refusal.effect-proof-required::exec/cd:v17",
+        "conditionKind": "wall-presence",
+        "witnessCount": 22,
+        "validation": {
+          "splitGeneration": 82,
+          "trainExplained": "15/15",
+          "testPredicted": "7/7"
+        },
+        "statement": "edições na região exec/cd colidem recorrentemente com atomic-exec.refusal.effect-proof-required — sonde antes de propor"
+      },
+      {
+        "lessonId": "lesson:deny-hook.bypass-blocked.bash-exec::tool/Bash:v18",
+        "conditionKind": "wall-presence",
+        "witnessCount": 17,
+        "validation": {
+          "splitGeneration": 80,
+          "trainExplained": "8/8",
+          "testPredicted": "9/9"
+        },
+        "statement": "edições na região tool/Bash colidem recorrentemente com deny-hook.bypass-blocked.bash-exec — sonde antes de propor"
+      },
+      {
+        "lessonId": "lesson:atomic-exec.refusal.effect-proof-required::exec/lsof:v19",
+        "conditionKind": "wall-presence",
+        "witnessCount": 4,
+        "validation": {
+          "splitGeneration": 68,
+          "trainExplained": "2/2",
+          "testPredicted": "2/2"
+        },
+        "statement": "edições na região exec/lsof colidem recorrentemente com atomic-exec.refusal.effect-proof-required — sonde antes de propor"
+      },
+      {
+        "lessonId": "lesson:atomic-exec.refusal.effect-proof-required::exec/du:v20",
+        "conditionKind": "wall-presence",
+        "witnessCount": 15,
+        "validation": {
+          "splitGeneration": 77,
+          "trainExplained": "8/8",
+          "testPredicted": "7/7"
+        },
+        "statement": "edições na região exec/du colidem recorrentemente com atomic-exec.refusal.effect-proof-required — sonde antes de propor"
+      },
+      {
+        "lessonId": "lesson:atomic-exec.refusal.effect-proof-required::exec/find:v21",
+        "conditionKind": "wall-presence",
+        "witnessCount": 9,
+        "validation": {
+          "splitGeneration": 68,
+          "trainExplained": "5/5",
+          "testPredicted": "4/4"
+        },
+        "statement": "edições na região exec/find colidem recorrentemente com atomic-exec.refusal.effect-proof-required — sonde antes de propor"
+      },
+      {
+        "lessonId": "lesson:atomic-exec.refusal.effect-proof-required::exec/bash:v22",
+        "conditionKind": "wall-presence",
+        "witnessCount": 6,
+        "validation": {
+          "splitGeneration": 68,
+          "trainExplained": "3/3",
+          "testPredicted": "3/3"
+        },
+        "statement": "edições na região exec/bash colidem recorrentemente com atomic-exec.refusal.effect-proof-required — sonde antes de propor"
+      },
+      {
+        "lessonId": "lesson:atomic-exec.refusal.effect-proof-required::exec/awk:v23",
+        "conditionKind": "wall-presence",
+        "witnessCount": 5,
+        "validation": {
+          "splitGeneration": 69,
+          "trainExplained": "2/2",
+          "testPredicted": "3/3"
+        },
+        "statement": "edições na região exec/awk colidem recorrentemente com atomic-exec.refusal.effect-proof-required — sonde antes de propor"
+      },
+      {
+        "lessonId": "lesson:atomic-exec.refusal.other::exec/rg:v24",
+        "conditionKind": "wall-presence",
+        "witnessCount": 4,
+        "validation": {
+          "splitGeneration": 78,
+          "trainExplained": "2/2",
+          "testPredicted": "2/2"
+        },
+        "statement": "edições na região exec/rg colidem recorrentemente com atomic-exec.refusal.other — sonde antes de propor"
+      },
+      {
+        "lessonId": "lesson:deny-hook.bypass-blocked.native-read::tool/Read:v25",
+        "conditionKind": "wall-presence",
+        "witnessCount": 162,
+        "validation": {
+          "splitGeneration": 82,
+          "trainExplained": "99/99",
+          "testPredicted": "63/63"
+        },
+        "statement": "edições na região tool/Read colidem recorrentemente com deny-hook.bypass-blocked.native-read — sonde antes de propor"
+      },
+      {
+        "lessonId": "lesson:deny-hook.bypass-blocked.native-edit::tool/Edit:v26",
+        "conditionKind": "wall-presence",
+        "witnessCount": 6,
+        "validation": {
+          "splitGeneration": 82,
+          "trainExplained": "3/3",
+          "testPredicted": "3/3"
+        },
+        "statement": "edições na região tool/Edit colidem recorrentemente com deny-hook.bypass-blocked.native-edit — sonde antes de propor"
+      }
+    ],
+    "discardedCount": 70,
+    "discardedReasons": [
+      {
+        "clusterKey": "atomic-exec.refusal.governance-file-write::exec/cd",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.external-or-host-effect::exec/psql",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.external-or-host-effect::exec/railway",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.external-or-host-effect::exec/npm",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.governance-file-write::exec/sed",
+        "reason": "split inviável: train=4 test=1 (precisa train>=2, test>=2)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/pwd",
+        "reason": "cluster size 2 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.other::exec/node",
+        "reason": "cluster size 2 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.read-only-sandbox::exec/pwd",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/npx",
+        "reason": "split inviável: train=1 test=2 (precisa train>=2, test>=2)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.external-or-host-effect::exec/node",
+        "reason": "split inviável: train=4 test=1 (precisa train>=2, test>=2)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.other::exec/grep",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/openssl",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/cmp",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/diff",
+        "reason": "split inviável: train=3 test=1 (precisa train>=2, test>=2)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/eslint",
+        "reason": "cluster size 2 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.other::exec/printf",
+        "reason": "cluster size 2 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/NODE_DISABLE_COMPILE_CACHE=1",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/grep",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/mcp-test-runner-run_vitest-1780338862961.txt\"",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/mcp-test-runner-run_vitest-1780338869245.txt\";",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/mcp-test-runner-run_vitest-1780339851789.txt\";",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/mcp-test-runner-run_jest-1780340060181.txt\";",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/mcp-test-runner-run_vitest-1780340763072.txt\";",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/mcp-atomic-edit-atomic_apply_edits-1780360421357.txt\";",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/ls",
+        "reason": "split inviável: train=1 test=2 (precisa train>=2, test>=2)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/sha256sum",
+        "reason": "split inviável: train=3 test=0 (precisa train>=2, test>=2)"
+      },
+      {
+        "clusterKey": "deny-hook.bypass-blocked.bash-grep::tool/Bash",
+        "reason": "cluster size 2 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/chrome-devtools-mcp",
+        "reason": "split inviável: train=1 test=2 (precisa train>=2, test>=2)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/tsc",
+        "reason": "split inviável: train=7 test=1 (precisa train>=2, test>=2)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/printenv",
+        "reason": "split inviável: train=6 test=0 (precisa train>=2, test>=2)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/rm",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/prettier",
+        "reason": "cluster size 2 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.external-or-host-effect::exec/bash",
+        "reason": "cluster size 2 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/command",
+        "reason": "cluster size 2 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.external-or-host-effect::exec/tsconfig.json",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/pwd;",
+        "reason": "cluster size 2 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.external-or-host-effect::exec/sqlite3",
+        "reason": "split inviável: train=3 test=0 (precisa train>=2, test>=2)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/strings",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.external-or-host-effect::exec/body='{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2025-03-26\",\"capabilities\":{},\"clientInfo\":{\"name\":\"atomic-smoke\",\"version\":\"0.0.0\"}}}'",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/python3",
+        "reason": "cluster size 2 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.external-or-host-effect::exec/set",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/file",
+        "reason": "cluster size 2 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/perl",
+        "reason": "cluster size 2 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.external-or-host-effect::exec/git",
+        "reason": "cluster size 2 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.external-or-host-effect::exec/bbbfa24a352080c64bb0ed47aa5661cb;",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.external-or-host-effect::exec/NODE_ENV=production",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/head",
+        "reason": "split inviável: train=1 test=2 (precisa train>=2, test>=2)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/smoke-atomic-code-editing.mjs",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/Google",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "deny-hook.bypass-blocked.bash-glob::tool/Bash",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/atomic-edit",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.other::exec/eval",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.other::exec/alias",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.other::exec/source",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.other::exec/.",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/wf_542fdb30-9b7\";",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "deny-hook.bypass-blocked.bash-edit::tool/Bash",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/ATOMIC_SINGLE_TOOL_CALL=1",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "deny-hook.bypass-blocked.native-edit::tool/Write",
+        "reason": "cluster size 2 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/ln",
+        "reason": "cluster size 2 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/stat",
+        "reason": "cluster size 2 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/.atomic-test-tmp",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/kill",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/cut",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/mcp-atomic-edit-atomic_exec-1781032257625.txt;",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/if",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/mdfind",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/set",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.effect-proof-required::exec/1478c11b843ac9dce0ecab551f034ddf;",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      },
+      {
+        "clusterKey": "atomic-exec.refusal.external-or-host-effect::exec/sed",
+        "reason": "cluster size 1 < 3 (instância demais, lei de menos)"
+      }
+    ]
+  },
+  "heldOut": {
+    "path": ".atomic/evolution/held-out-v1.json",
+    "heldOut": [
+      "atomic-exec.refusal.effect-proof-required",
+      "atomic-exec.refusal.external-or-host-effect",
+      "atomic-exec.refusal.other"
+    ],
+    "taught": [
+      "deny-hook.bypass-blocked.native-read",
+      "atomic-exec.refusal.read-only-sandbox",
+      "deny-hook.bypass-blocked.native-edit",
+      "deny-hook.bypass-blocked.bash-glob",
+      "deny-hook.bypass-blocked.bash-edit",
+      "deny-hook.bypass-blocked.bash-exec",
+      "deny-hook.bypass-blocked.bash-grep",
+      "atomic-exec.refusal.governance-file-write"
+    ]
+  },
+  "briefing": {
+    "path": ".atomic/evolution/real-briefing.md",
+    "briefingDigest": "2e1fbb211be3c33b6a809f1ea0dfba1bb902ad3090590d7051d56b96d1fd049b",
+    "layers": {
+      "l1": 6,
+      "l2": 3,
+      "l3": 0
+    },
+    "excludedHeldOutWalls": 5,
+    "excludedHeldOutLessons": 23
+  }
+}

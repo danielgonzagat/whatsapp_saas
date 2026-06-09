@@ -1,0 +1,21 @@
+{
+  "ok": true,
+  "salt": "darwin-godel-heldout-v1",
+  "fraction": 0.2,
+  "heldOut": [
+    "atomic-exec.refusal.effect-proof-required",
+    "atomic-exec.refusal.external-or-host-effect",
+    "atomic-exec.refusal.other"
+  ],
+  "taught": [
+    "deny-hook.bypass-blocked.native-read",
+    "atomic-exec.refusal.read-only-sandbox",
+    "deny-hook.bypass-blocked.native-edit",
+    "deny-hook.bypass-blocked.bash-glob",
+    "deny-hook.bypass-blocked.bash-edit",
+    "deny-hook.bypass-blocked.bash-exec",
+    "deny-hook.bypass-blocked.bash-grep",
+    "atomic-exec.refusal.governance-file-write"
+  ],
+  "total": 11
+}
