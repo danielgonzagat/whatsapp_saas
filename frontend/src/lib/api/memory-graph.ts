@@ -45,6 +45,7 @@ export interface MemoryGraphNode {
 export interface MemoryGraphNodePatch {
   readonly content?: string;
   readonly summary?: string | null;
+  readonly scope?: 'user' | 'workspace' | 'shared';
   readonly pinned?: boolean;
   readonly archived?: boolean;
   readonly sensitive?: boolean;

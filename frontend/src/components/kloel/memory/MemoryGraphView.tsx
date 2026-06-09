@@ -145,7 +145,16 @@ export function MemoryGraphView() {
       return true;
     }
     return normalizeMemorySearchText(
-      [node.label, node.summary, node.content, node.group, node.scope, node.state]
+      [
+        node.label,
+        node.summary,
+        node.content,
+        node.group,
+        node.scope,
+        node.state,
+        node.originLabel,
+        ...(node.sourceRefs?.flatMap((ref) => [ref.type, ref.label, ref.ref, ref.url]) ?? []),
+      ]
         .filter((value): value is string => typeof value === 'string' && value.length > 0)
         .join(' '),
     ).includes(memoryQueryNeedle);
@@ -400,6 +409,44 @@ export function MemoryGraphView() {
               Fechar
             </button>
           </div>
+          {selectedNode.originLabel ? (
+            <div style={{ marginTop: 10, color: 'rgb(148,163,184)', fontSize: 12 }}>
+              Origem · {selectedNode.originLabel}
+            </div>
+          ) : null}
+          {selectedNode.sourceRefs?.length ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+              {selectedNode.sourceRefs.slice(0, 3).map((ref, index) => (
+                <span
+                  key={`${ref.type}:${ref.ref ?? ref.label}:${index}`}
+                  style={{
+                    border: '1px solid rgba(148,163,184,.22)',
+                    borderRadius: 999,
+                    color: 'rgb(203,213,225)',
+                    fontSize: 11,
+                    padding: '4px 8px',
+                  }}
+                >
+                  {ref.type} · {ref.ref ?? ref.url ?? ref.label}
+                </span>
+              ))}
+            </div>
+          ) : null}
+          <label style={{ display: 'block', marginTop: 14, fontSize: 12, color: 'rgb(203,213,225)' }}>
+            Escopo
+            <select
+              value={selectedNode.scope ?? 'user'}
+              onChange={(event) =>
+                updateSelectedNode({ scope: event.target.value as 'user' | 'workspace' | 'shared' })
+              }
+              disabled={actionStatus === 'saving'}
+              style={{ ...filterControlStyle, width: '100%', marginTop: 6 }}
+            >
+              <option value="user">Usuário</option>
+              <option value="workspace">Workspace</option>
+              <option value="shared">Compartilhada</option>
+            </select>
+          </label>
           <label style={{ display: 'block', marginTop: 14, fontSize: 12, color: 'rgb(203,213,225)' }}>
             Resumo
             <textarea

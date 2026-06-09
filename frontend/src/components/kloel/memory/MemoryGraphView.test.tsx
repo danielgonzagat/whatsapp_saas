@@ -105,6 +105,43 @@ describe('MemoryGraphView', () => {
     expect(await screen.findByRole('button', { name: 'Permitir agente' })).not.toBeNull();
   });
 
+  it('lets the user change a memory scope through the graph panel', async () => {
+    const initialGraph = {
+      nodes: [
+        { id: 'you', label: 'Você', group: 'center' },
+        {
+          id: 'mem-1',
+          label: 'Projeto Kloel',
+          group: 'project',
+          content: 'O usuário trabalha no Kloel',
+          summary: 'Projeto Kloel',
+          state: 'confirmed',
+          scope: 'user',
+        },
+      ],
+      edges: [{ from: 'you', to: 'mem-1', relation: 'belongs_to' }],
+    };
+    const updatedGraph = {
+      ...initialGraph,
+      nodes: [initialGraph.nodes[0], { ...initialGraph.nodes[1], scope: 'workspace' }],
+    };
+    getMemoryGraphMock.mockResolvedValueOnce(initialGraph);
+    memoryGraphApiMock.updateMemoryGraphNode.mockResolvedValueOnce(updatedGraph);
+    const { fireEvent, waitFor } = await import('@testing-library/react');
+
+    render(<MemoryGraphView />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Projeto Kloel' }));
+    fireEvent.change(screen.getByLabelText('Escopo'), { target: { value: 'workspace' } });
+
+    await waitFor(() => {
+      expect(memoryGraphApiMock.updateMemoryGraphNode).toHaveBeenCalledWith('mem-1', {
+        scope: 'workspace',
+      });
+    });
+    expect((await screen.findByLabelText('Escopo') as HTMLSelectElement).value).toBe('workspace');
+  });
+
   it('refreshes the editor from the persisted memory returned by the source of truth', async () => {
     const initialGraph = {
       nodes: [
@@ -380,6 +417,11 @@ describe('MemoryGraphView', () => {
 
     expect(screen.getByRole('button', { name: 'Documento importado' })).not.toBeNull();
     expect(screen.queryByRole('button', { name: 'Decisão do chat' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Documento importado' }));
+
+    expect(screen.getByText('Origem · Manual de produto')).not.toBeNull();
+    expect(screen.getByText('document · doc-7')).not.toBeNull();
   });
 
   it('filters memory graph by confidence band', async () => {
