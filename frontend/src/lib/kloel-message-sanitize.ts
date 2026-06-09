@@ -20,20 +20,6 @@ const ASSISTANT_INTERNAL_CERTIFICATION_TOKEN_RE =
   /\b(?:no overclaim|overclaim|PASS(?![-A-Za-zÀ-ÖØ-öø-ÿ0-9_])|ABI\s+\d+(?:\.\d+){1,3}|certificationVerdict|runtimeEvidencePct|INSUFFICIENT_EVIDENCE)\b/gi;
 const ASSISTANT_INTERNAL_VERSION_RE = /\bversão\s+\d+(?:\.\d+){1,3}\b/gi;
 const ASSISTANT_PRODUCT_LANGUAGE_REPLACEMENTS: Array<[RegExp, string]> = [
-  [/\bcode_outline\b/gi, 'inspeção da arquitetura interna'],
-  [/\bcode outline\b/gi, 'inspeção da arquitetura interna'],
-  [/\bsearch_codebase\b/gi, 'busca na arquitetura interna'],
-  [/\bcode_detect_issues\b/gi, 'auditoria da arquitetura interna'],
-  [/\brun_backend_tests\b/gi, 'validação operacional'],
-  [/\brun backend tests\b/gi, 'validação operacional'],
-  [/\bget_workspace_status\b/gi, 'verificação do estado do ambiente operacional'],
-  [/\blist_products\b/gi, 'catálogo de produtos'],
-  [/\blist products\b/gi, 'catálogo de produtos'],
-  [/\bget_settings\b/gi, 'configurações da conta'],
-  [/\bget settings\b/gi, 'configurações da conta'],
-  [/\bget_billing_status\b/gi, 'status da assinatura'],
-  [/\bget billing status\b/gi, 'status da assinatura'],
-  [/\bget_product_plans\b/gi, 'consultar planos do produto'],
   [/\bworkingMemory\b/g, 'memória de trabalho'],
   [/\battention\.candidates\b/gi, 'foco de atenção'],
   [/\bdashboard:chat\b/gi, 'chat do Kloel'],
@@ -42,7 +28,6 @@ const ASSISTANT_PRODUCT_LANGUAGE_REPLACEMENTS: Array<[RegExp, string]> = [
   [/\bskill\s+recuperação de checkout\b/gi, 'habilidade de recuperação de checkout'],
   [/\bcheckout-recovery\b/gi, 'recuperação de checkout'],
   [/\bwebhook\b/gi, 'integração externa'],
-  [/\bbilling\b/gi, 'assinatura e cobrança'],
   [/\bscore\b/gi, 'pontuação'],
   [/\bworkspace\b/gi, 'ambiente operacional'],
   [/\bruntime\b/gi, 'arquitetura cognitiva'],
@@ -57,10 +42,6 @@ const ASSISTANT_PRODUCT_LANGUAGE_REPLACEMENTS: Array<[RegExp, string]> = [
   [/\bproven\b/gi, 'comprovado'],
   [/\bobserved\b/gi, 'observado'],
   [/\bcertificação interna\b/gi, 'verificação de consistência'],
-  [/\bpassos e ferramentas acionados\b/gi, 'passos e ações executadas'],
-  [/\bferramentas utilizadas\b/gi, 'ações executadas'],
-  [/\bferramentas acionad[ao]s\b/gi, 'ações acionadas'],
-  [/\bnomes de ferramentas\b/gi, 'nomes internos de capacidades'],
   [/\bmódulo principal\b/gi, 'núcleo operacional'],
 ];
 
@@ -74,7 +55,6 @@ export function sanitizeAssistantVisibleContent(value: string): string {
     .replace(ASSISTANT_XML_TOOL_CALLS_BLOCK_RE, ' ')
     .replace(ASSISTANT_XML_INVOKE_BLOCK_RE, ' ')
     .replace(ASSISTANT_OPEN_TOOL_MARKUP_RE, '')
-    .replace(/\bcapacidade:\s*[A-Za-z0-9_.-]+\b/gi, 'Ação operacional')
     .replace(
       /\bErro:\s*Venda\s+n[aã]o\s+encontrada\.?/gi,
       'Não encontrei uma venda correspondente para essa consulta.',
@@ -83,15 +63,8 @@ export function sanitizeAssistantVisibleContent(value: string): string {
       /\bA criação de site está conectada, mas o provedor de geração de sites ainda não está configurado neste ambiente\. Configure a chave do provedor e tente novamente\.?/gi,
       'A criação de site está conectada, mas a configuração de geração de sites ainda não foi concluída neste ambiente. Finalize a configuração e tente novamente.',
     )
-    .replace(
-      /\bA[cç][aã]o\s+"?catálogo de produtos"?\s+executada com sucesso\.?/gi,
-      'Consultei seu catálogo real e registrei a observação operacional.',
-    )
-    .replace(
-      /\bFalha ao executar\s+"?catálogo de produtos"?:\s*Missing Authorization header\.?\s*Tente novamente\.?/gi,
-      'Não consegui consultar o catálogo de produtos agora porque sua sessão expirou. Faça login novamente para continuar.',
-    )
     .replace(/\bMissing Authorization header\b/gi, 'sessão expirada')
+    .replace(/\bAcao\b/g, 'Ação')
     .replace(
       ASSISTANT_INTERNAL_CERTIFICATION_SENTENCE_RE,
       ' A verificação de consistência não detectou capacidades sem evidência observada. ',

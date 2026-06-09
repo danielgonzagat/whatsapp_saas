@@ -8,13 +8,17 @@ export const ASSISTANT_REASONING_REDACTED_TEXT =
 
 const PRIVATE_CREDENTIAL_REASONING_RE =
   /(?:sk-[a-z0-9_-]{8,}|AKIA[0-9A-Z]{16}|api[_ -]?key\s*[:=]|authorization\s*[:=]|bearer\s+[a-z0-9._-]{20,}|password\s*[:=]|secret\s*[:=])/i;
+const PRIVATE_INTERNAL_REASONING_RE =
+  /\b(?:runtime context|developer prompt|system prompt|hidden runtime)\b|\bskill\s*=|<[^>]*(?:tool_calls|invoke)\b|<[\uFF5C|]{2}DSML/i;
 
 export function sanitizeAssistantReasoningTextForDisplay(value: string): string {
   const text = String(value || '');
   if (!text) {
     return '';
   }
-  return PRIVATE_CREDENTIAL_REASONING_RE.test(text) ? ASSISTANT_REASONING_REDACTED_TEXT : text;
+  return PRIVATE_CREDENTIAL_REASONING_RE.test(text) || PRIVATE_INTERNAL_REASONING_RE.test(text)
+    ? ASSISTANT_REASONING_REDACTED_TEXT
+    : text;
 }
 
 export type AssistantReasoningFileKind =
@@ -73,11 +77,11 @@ export interface AssistantReasoningFile {
   persistent?: boolean | undefined;
 }
 
-/** Public-safe reasoning UI shape. Raw provider reasoning is never exposed. */
+/** Public-safe reasoning UI shape. Provider reasoning deltas are user-visible after sanitization. */
 export interface AssistantReasoning {
   /**
-   * Public reasoning text. Raw provider reasoning from reasoning_delta and the
-   * legacy private `reasoningText` metadata field are never read here.
+   * Public reasoning text accumulated from reasoning_delta or persisted metadata.
+   * Secret-like payloads are redacted before display.
    */
   text: string;
   /** Summary property. */

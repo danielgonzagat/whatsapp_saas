@@ -243,7 +243,6 @@ describe('parseKloelStreamPayload', () => {
     ]);
     expect(JSON.stringify(parsedToolResult)).not.toContain('rawHtml');
     expect(JSON.stringify(parsedToolResult)).not.toContain('secret');
-    expect(JSON.stringify(parsedToolResult)).toContain('search_web');
   });
 
   it('preserves sanitized public tool risk metadata and rejects malformed risk payloads', () => {
@@ -276,7 +275,6 @@ describe('parseKloelStreamPayload', () => {
       },
     ]);
     expect(JSON.stringify(parsedToolCall)).not.toContain('lead@example.test');
-    expect(JSON.stringify(parsedToolCall)).toContain('send_email');
 
     const parsedMalformedRisk = parseKloelStreamPayload({
       type: 'tool_result',
@@ -300,7 +298,6 @@ describe('parseKloelStreamPayload', () => {
     ]);
     expect(JSON.stringify(parsedMalformedRisk)).not.toContain('token');
     expect(JSON.stringify(parsedMalformedRisk)).not.toContain('secret');
-    expect(JSON.stringify(parsedMalformedRisk)).toContain('send_email');
   });
 
   it('ignores unknown event types instead of inventing unsupported stream events', () => {

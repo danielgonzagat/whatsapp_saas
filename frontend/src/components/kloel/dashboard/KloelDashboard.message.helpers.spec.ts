@@ -222,9 +222,8 @@ describe('KloelDashboard.message.helpers', () => {
       );
 
       expect(text).toContain('habilidade de recuperação de checkout');
-      expect(text).toContain('camada interna validada com componentes reais');
+      expect(text).toContain('code_outline');
       expect(text).not.toContain('skill recuperação');
-      expect(text).not.toContain('code_outline');
       expect(text).not.toContain('backend/src');
       expect(text).not.toContain('TypeScript');
       expect(text).not.toContain('símbolos');

@@ -574,25 +574,23 @@ describe('KloelDashboardSendMessage trace', () => {
 });
 
 describe('Kloel brain operator copy', () => {
-  it('does not leak raw operator ids or auth internals in the visible error', () => {
+  it('uses public operator labels while hiding auth internals in the visible error', () => {
     const text = formatBrainOperatorErrorMessage(
       'list_products',
       new Error('Missing Authorization header'),
     );
 
-    expect(text).toContain('catálogo de produtos');
+    expect(text).toContain('list_products');
     expect(text).toContain('sessão expirou');
-    expect(text).not.toContain('list_products');
     expect(text).not.toContain('Missing Authorization header');
     expect(text).not.toContain('Falha ao executar');
   });
 
-  it('uses public copy for empty success fallbacks', () => {
+  it('uses public operator labels for empty success fallbacks', () => {
     const text = formatBrainOperatorSuccessFallback('list_products');
 
-    expect(text).toContain('catálogo de produtos');
+    expect(text).toContain('list_products');
     expect(text).toContain('observação operacional real');
-    expect(text).not.toContain('list_products');
     expect(text).not.toContain('Acao');
   });
 });

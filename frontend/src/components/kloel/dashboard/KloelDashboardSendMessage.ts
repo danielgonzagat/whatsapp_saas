@@ -129,13 +129,12 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
         playbackTimerRef.current = null;
       }
     };
-    // Streamed thinking buffer: coalesce reasoning_delta tokens over a short
-    // window before flushing into the assistant reasoning state. The metadata
-    // reducer treats those deltas as private provider context: it keeps timing
-    // information for the public thinking duration, but never persists or
-    // exposes the raw reasoning text. The first delta stamps t0 and
-    // reasoning_done computes the real durationMs (see
-    // applyReasoningStreamEventToMetadata in kloel-message-ui).
+    // Streamed thinking buffer: coalesce public reasoning_delta tokens over a
+    // short window before flushing into the assistant reasoning state. The
+    // metadata reducer stores sanitized provider-emitted reasoning for the live
+    // timeline, stamps t0 on the first delta, and reasoning_done computes the
+    // real durationMs (see applyReasoningStreamEventToMetadata in
+    // kloel-message-ui).
     let reasoningBuffer = '';
     let reasoningFlushTimer: ReturnType<typeof setTimeout> | null = null;
     const flushReasoning = () => {
@@ -303,6 +302,8 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
               return;
             }
 
+            flushReasoning();
+
             ctx.setMessages((current) =>
               current.map((message) =>
                 message.id === assistantId
@@ -316,6 +317,7 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
           },
           onChunk: (chunk) => {
             armWatchdog();
+            flushReasoning();
             renderBuffer += chunk;
             scheduleDrain();
           },
@@ -335,10 +337,12 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
             ctx.setActiveConversation(thread.conversationId);
           },
           onDone: () => {
+            flushReasoning();
             streamEnded = true;
             scheduleDrain();
           },
           onError: (error) => {
+            flushReasoning();
             finalError = error || 'Desculpe, ocorreu uma instabilidade ao continuar sua conversa.';
             if (!streamedReply.trim() && !renderBuffer.trim()) {
               renderBuffer = finalError;

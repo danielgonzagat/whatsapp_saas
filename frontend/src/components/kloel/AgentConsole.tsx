@@ -89,7 +89,7 @@ export function AgentConsole({
             />
             {isThinking && (
               <span className="text-xs font-medium" style={{ color: colors.brand.cyan }}>
-                {kloelT(`Pensando...`)}
+                {kloelT(`Em execução`)}
               </span>
             )}
           </div>
@@ -222,7 +222,7 @@ export function AgentConsole({
               aria-hidden="true"
             />
             <span className="text-sm font-medium" style={{ color: colors.brand.cyan }}>
-              {kloelT(`Agente processando...`)}
+              {kloelT(`Agente em execução`)}
             </span>
             <div className="flex gap-1 ml-auto">
               {[0, 1, 2].map((dotIdx) => (
