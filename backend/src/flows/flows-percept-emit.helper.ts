@@ -1,7 +1,10 @@
-import { randomUUID } from 'crypto';
 import type { Logger } from '@nestjs/common';
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { isFlowsPerceptEmitEnabled } from './flows-percept-emit.flag';
+import {
+  emitPerceptToMindSpine,
+  type OutboxPrismaDelegate,
+} from '../kloel/mind/coordination/percept-emit.factory';
 
 /**
  * Canonical cognition event type for a completed flow run. Mirrors the
@@ -9,11 +12,6 @@ import { isFlowsPerceptEmitEnabled } from './flows-percept-emit.flag';
  * the `cognition.decision_made` / `cognition.belief_updated` emitters).
  */
 export const FLOW_NODE_COMPLETED_EVENT_TYPE = 'cognition.flow.node_completed';
-
-/** Minimal Prisma surface this helper needs — only the outbox delegate. */
-interface OutboxPrismaDelegate {
-  mindOutboxEvent: PrismaClient['mindOutboxEvent'];
-}
 
 export interface FlowPerceptEmitParams {
   readonly workspaceId: string;
@@ -50,7 +48,6 @@ export async function emitFlowNodeCompletedPercept(
 
   const idempotencyKey = `cognition.flow.node_completed:${params.executionId}`;
   const subject = `flow:${params.flowId}`;
-  const occurredAt = new Date();
   const payload: Prisma.InputJsonObject = {
     flowId: params.flowId,
     executionId: params.executionId,
@@ -58,37 +55,17 @@ export async function emitFlowNodeCompletedPercept(
     status: 'COMPLETED',
   };
 
-  try {
-    await prisma.mindOutboxEvent.upsert({
-      where: {
-        workspaceId_idempotencyKey: {
-          workspaceId: params.workspaceId,
-          idempotencyKey,
-        },
-      },
-      update: {
-        eventType: FLOW_NODE_COMPLETED_EVENT_TYPE,
-        subject,
-        payload,
-        occurredAt,
-      },
-      create: {
-        id: randomUUID(),
-        workspaceId: params.workspaceId,
-        eventType: FLOW_NODE_COMPLETED_EVENT_TYPE,
-        subject,
-        payload,
-        idempotencyKey,
-        occurredAt,
-      },
-    });
-  } catch (err: unknown) {
-    logger.warn(
+  await emitPerceptToMindSpine(prisma, logger, {
+    eventType: FLOW_NODE_COMPLETED_EVENT_TYPE,
+    workspaceId: params.workspaceId,
+    subject,
+    idempotencyKey,
+    payload,
+    failureLog: (formattedError) =>
       `Flows percept emit failed (workspaceId=${params.workspaceId}, ` +
-        `executionId=${params.executionId}); the flow-execution write succeeded ` +
-        `and is unaffected: ${err instanceof Error ? err.message : String(err)}`,
-    );
-  }
+      `executionId=${params.executionId}); the flow-execution write succeeded ` +
+      `and is unaffected: ${formattedError}`,
+  });
 
   return true;
 }

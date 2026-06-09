@@ -1,7 +1,10 @@
-import { randomUUID } from 'node:crypto';
 import type { Logger } from '@nestjs/common';
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { isAutopilotPerceptEmitEnabled } from './autopilot-percept-emit.flag';
+import {
+  emitPerceptToMindSpine,
+  type OutboxPrismaDelegate,
+} from '../kloel/mind/coordination/percept-emit.factory';
 
 /**
  * Canonical cognition event type for an autopilot *decision* (the autopilot loop
@@ -17,11 +20,6 @@ export const AUTOPILOT_DECISION_MADE_EVENT_TYPE = 'cognition.autopilot.decision_
  * executing/dispatching an autonomous reply send).
  */
 export const AUTOPILOT_ACTION_EXECUTED_EVENT_TYPE = 'cognition.autopilot.action_executed';
-
-/** Minimal Prisma surface this helper needs — only the outbox delegate. */
-interface OutboxPrismaDelegate {
-  mindOutboxEvent: PrismaClient['mindOutboxEvent'];
-}
 
 export interface AutopilotDecisionPerceptParams {
   readonly workspaceId: string;
@@ -45,25 +43,6 @@ export interface AutopilotActionPerceptParams {
   readonly complianceAllowed: boolean;
   /** Best-effort detected intent the action responded to. */
   readonly intent: string;
-}
-
-function formatUnknownError(err: unknown): string {
-  if (err instanceof Error) {
-    return err.message;
-  }
-  if (typeof err === 'string') {
-    return err;
-  }
-  try {
-    const serialized: unknown = JSON.stringify(err);
-    if (typeof serialized === 'string') {
-      return serialized;
-    }
-  } catch {
-    // fall through to Object.prototype.toString
-  }
-  const fallback: unknown = Object.prototype.toString.call(err);
-  return typeof fallback === 'string' ? fallback : 'unknown error';
 }
 
 /**
@@ -93,7 +72,6 @@ export async function emitAutopilotDecisionMadePercept(
 
   const idempotencyKey = `cognition.autopilot.decision_made:${params.conversationId}:${params.chosenAction}`;
   const subject = `autopilot:conversation:${params.conversationId}`;
-  const occurredAt = new Date();
   const payload: Prisma.InputJsonObject = {
     conversationId: params.conversationId,
     chosenAction: params.chosenAction,
@@ -101,37 +79,17 @@ export async function emitAutopilotDecisionMadePercept(
     mindInfluenced: params.mindInfluenced,
   };
 
-  try {
-    await prisma.mindOutboxEvent.upsert({
-      where: {
-        workspaceId_idempotencyKey: {
-          workspaceId: params.workspaceId,
-          idempotencyKey,
-        },
-      },
-      update: {
-        eventType: AUTOPILOT_DECISION_MADE_EVENT_TYPE,
-        subject,
-        payload,
-        occurredAt,
-      },
-      create: {
-        id: randomUUID(),
-        workspaceId: params.workspaceId,
-        eventType: AUTOPILOT_DECISION_MADE_EVENT_TYPE,
-        subject,
-        payload,
-        idempotencyKey,
-        occurredAt,
-      },
-    });
-  } catch (err: unknown) {
-    logger.warn(
+  await emitPerceptToMindSpine(prisma, logger, {
+    eventType: AUTOPILOT_DECISION_MADE_EVENT_TYPE,
+    workspaceId: params.workspaceId,
+    subject,
+    idempotencyKey,
+    payload,
+    failureLog: (formattedError) =>
       `Autopilot decision percept emit failed (workspaceId=${params.workspaceId}, ` +
-        `conversationId=${params.conversationId}); the autopilot decision ` +
-        `succeeded and is unaffected: ${formatUnknownError(err)}`,
-    );
-  }
+      `conversationId=${params.conversationId}); the autopilot decision ` +
+      `succeeded and is unaffected: ${formattedError}`,
+  });
 
   return true;
 }
@@ -154,7 +112,6 @@ export async function emitAutopilotActionExecutedPercept(
 
   const idempotencyKey = `cognition.autopilot.action_executed:${params.conversationId}:${params.action}`;
   const subject = `autopilot:conversation:${params.conversationId}`;
-  const occurredAt = new Date();
   const payload: Prisma.InputJsonObject = {
     conversationId: params.conversationId,
     action: params.action,
@@ -162,37 +119,17 @@ export async function emitAutopilotActionExecutedPercept(
     intent: params.intent,
   };
 
-  try {
-    await prisma.mindOutboxEvent.upsert({
-      where: {
-        workspaceId_idempotencyKey: {
-          workspaceId: params.workspaceId,
-          idempotencyKey,
-        },
-      },
-      update: {
-        eventType: AUTOPILOT_ACTION_EXECUTED_EVENT_TYPE,
-        subject,
-        payload,
-        occurredAt,
-      },
-      create: {
-        id: randomUUID(),
-        workspaceId: params.workspaceId,
-        eventType: AUTOPILOT_ACTION_EXECUTED_EVENT_TYPE,
-        subject,
-        payload,
-        idempotencyKey,
-        occurredAt,
-      },
-    });
-  } catch (err: unknown) {
-    logger.warn(
+  await emitPerceptToMindSpine(prisma, logger, {
+    eventType: AUTOPILOT_ACTION_EXECUTED_EVENT_TYPE,
+    workspaceId: params.workspaceId,
+    subject,
+    idempotencyKey,
+    payload,
+    failureLog: (formattedError) =>
       `Autopilot action percept emit failed (workspaceId=${params.workspaceId}, ` +
-        `conversationId=${params.conversationId}); the autopilot dispatch ` +
-        `succeeded and is unaffected: ${formatUnknownError(err)}`,
-    );
-  }
+      `conversationId=${params.conversationId}); the autopilot dispatch ` +
+      `succeeded and is unaffected: ${formattedError}`,
+  });
 
   return true;
 }

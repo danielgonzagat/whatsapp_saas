@@ -1,7 +1,10 @@
-import { randomUUID } from 'node:crypto';
 import type { Logger } from '@nestjs/common';
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { isMoneyPerceptEmitEnabled } from './money-percept-emit.flag';
+import {
+  emitPerceptToMindSpine,
+  type OutboxPrismaDelegate,
+} from '../kloel/mind/coordination/percept-emit.factory';
 
 /**
  * Canonical cognition event type for a Money Machine *lead scan* — a workspace's
@@ -18,11 +21,6 @@ export const MONEY_LEAD_SCAN_EVENT_TYPE = 'cognition.money.lead_scan';
  * maps the outbox event into a commercial decision row the Mind perceives.
  */
 export const MONEY_CAMPAIGN_GENERATED_EVENT_TYPE = 'cognition.money.campaign_generated';
-
-/** Minimal Prisma surface this helper needs — only the outbox delegate. */
-interface OutboxPrismaDelegate {
-  mindOutboxEvent: PrismaClient['mindOutboxEvent'];
-}
 
 export interface MoneyLeadScanPerceptParams {
   readonly workspaceId: string;
@@ -44,10 +42,6 @@ export interface MoneyCampaignGeneratedPerceptParams {
   readonly flowId: string;
   /** Number of inactive leads that justified the campaign (best-effort metric). */
   readonly inactiveLeads: number;
-}
-
-function formatUnknownError(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
 }
 
 /**
@@ -77,43 +71,22 @@ export async function emitMoneyLeadScanPercept(
 
   const idempotencyKey = `cognition.money.lead_scan:${params.scanId}`;
   const subject = `money:scan:${params.scanId}`;
-  const occurredAt = new Date();
   const payload: Prisma.InputJsonObject = {
     scanId: params.scanId,
     inactiveLeads: params.inactiveLeads,
   };
 
-  try {
-    await prisma.mindOutboxEvent.upsert({
-      where: {
-        workspaceId_idempotencyKey: {
-          workspaceId: params.workspaceId,
-          idempotencyKey,
-        },
-      },
-      update: {
-        eventType: MONEY_LEAD_SCAN_EVENT_TYPE,
-        subject,
-        payload,
-        occurredAt,
-      },
-      create: {
-        id: randomUUID(),
-        workspaceId: params.workspaceId,
-        eventType: MONEY_LEAD_SCAN_EVENT_TYPE,
-        subject,
-        payload,
-        idempotencyKey,
-        occurredAt,
-      },
-    });
-  } catch (err: unknown) {
-    logger.warn(
+  await emitPerceptToMindSpine(prisma, logger, {
+    eventType: MONEY_LEAD_SCAN_EVENT_TYPE,
+    workspaceId: params.workspaceId,
+    subject,
+    idempotencyKey,
+    payload,
+    failureLog: (formattedError) =>
       `Money lead-scan percept emit failed (workspaceId=${params.workspaceId}, ` +
-        `scanId=${params.scanId}); the Money Machine scan succeeded and is ` +
-        `unaffected: ${formatUnknownError(err)}`,
-    );
-  }
+      `scanId=${params.scanId}); the Money Machine scan succeeded and is ` +
+      `unaffected: ${formattedError}`,
+  });
 
   return true;
 }
@@ -138,7 +111,6 @@ export async function emitMoneyCampaignGeneratedPercept(
 
   const idempotencyKey = `cognition.money.campaign_generated:${params.campaignId}`;
   const subject = `money:campaign:${params.campaignId}`;
-  const occurredAt = new Date();
   const payload: Prisma.InputJsonObject = {
     campaignId: params.campaignId,
     flowId: params.flowId,
@@ -147,37 +119,17 @@ export async function emitMoneyCampaignGeneratedPercept(
     chosenAction: 'generate_campaign',
   };
 
-  try {
-    await prisma.mindOutboxEvent.upsert({
-      where: {
-        workspaceId_idempotencyKey: {
-          workspaceId: params.workspaceId,
-          idempotencyKey,
-        },
-      },
-      update: {
-        eventType: MONEY_CAMPAIGN_GENERATED_EVENT_TYPE,
-        subject,
-        payload,
-        occurredAt,
-      },
-      create: {
-        id: randomUUID(),
-        workspaceId: params.workspaceId,
-        eventType: MONEY_CAMPAIGN_GENERATED_EVENT_TYPE,
-        subject,
-        payload,
-        idempotencyKey,
-        occurredAt,
-      },
-    });
-  } catch (err: unknown) {
-    logger.warn(
+  await emitPerceptToMindSpine(prisma, logger, {
+    eventType: MONEY_CAMPAIGN_GENERATED_EVENT_TYPE,
+    workspaceId: params.workspaceId,
+    subject,
+    idempotencyKey,
+    payload,
+    failureLog: (formattedError) =>
       `Money campaign-generated percept emit failed (workspaceId=${params.workspaceId}, ` +
-        `campaignId=${params.campaignId}); the Money Machine campaign + flow ` +
-        `write succeeded and is unaffected: ${formatUnknownError(err)}`,
-    );
-  }
+      `campaignId=${params.campaignId}); the Money Machine campaign + flow ` +
+      `write succeeded and is unaffected: ${formattedError}`,
+  });
 
   return true;
 }

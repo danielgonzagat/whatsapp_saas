@@ -1,7 +1,10 @@
-import { randomUUID } from 'node:crypto';
 import type { Logger } from '@nestjs/common';
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { isCiaPerceptEmitEnabled } from './cia-percept-emit.flag';
+import {
+  emitPerceptToMindSpine,
+  type OutboxPrismaDelegate,
+} from '../coordination/percept-emit.factory';
 
 /**
  * Canonical cognition event type for a CIA autonomy *decision* (the agent
@@ -17,11 +20,6 @@ export const CIA_DECISION_MADE_EVENT_TYPE = 'cognition.cia.decision_made';
  * executing/dispatching a backlog run).
  */
 export const CIA_ACTION_EXECUTED_EVENT_TYPE = 'cognition.cia.action_executed';
-
-/** Minimal Prisma surface this helper needs — only the outbox delegate. */
-interface OutboxPrismaDelegate {
-  mindOutboxEvent: PrismaClient['mindOutboxEvent'];
-}
 
 export interface CiaDecisionPerceptParams {
   readonly workspaceId: string;
@@ -43,25 +41,6 @@ export interface CiaActionPerceptParams {
   readonly executionPath: string;
   /** Number of candidate conversations the action targeted (best-effort metric). */
   readonly candidateCount: number;
-}
-
-function formatUnknownError(err: unknown): string {
-  if (err instanceof Error) {
-    return err.message;
-  }
-  if (typeof err === 'string') {
-    return err;
-  }
-  try {
-    const serialized: unknown = JSON.stringify(err);
-    if (typeof serialized === 'string') {
-      return serialized;
-    }
-  } catch {
-    // fall through to Object.prototype.toString
-  }
-  const fallback: unknown = Object.prototype.toString.call(err);
-  return typeof fallback === 'string' ? fallback : 'unknown error';
 }
 
 /**
@@ -90,7 +69,6 @@ export async function emitCiaDecisionMadePercept(
 
   const idempotencyKey = `cognition.cia.decision_made:${params.runId}`;
   const subject = `cia:run:${params.runId}`;
-  const occurredAt = new Date();
   const payload: Prisma.InputJsonObject = {
     runId: params.runId,
     autonomyMode: params.autonomyMode,
@@ -98,37 +76,17 @@ export async function emitCiaDecisionMadePercept(
     backlogMode: params.backlogMode,
   };
 
-  try {
-    await prisma.mindOutboxEvent.upsert({
-      where: {
-        workspaceId_idempotencyKey: {
-          workspaceId: params.workspaceId,
-          idempotencyKey,
-        },
-      },
-      update: {
-        eventType: CIA_DECISION_MADE_EVENT_TYPE,
-        subject,
-        payload,
-        occurredAt,
-      },
-      create: {
-        id: randomUUID(),
-        workspaceId: params.workspaceId,
-        eventType: CIA_DECISION_MADE_EVENT_TYPE,
-        subject,
-        payload,
-        idempotencyKey,
-        occurredAt,
-      },
-    });
-  } catch (err: unknown) {
-    logger.warn(
+  await emitPerceptToMindSpine(prisma, logger, {
+    eventType: CIA_DECISION_MADE_EVENT_TYPE,
+    workspaceId: params.workspaceId,
+    subject,
+    idempotencyKey,
+    payload,
+    failureLog: (formattedError) =>
       `CIA decision percept emit failed (workspaceId=${params.workspaceId}, ` +
-        `runId=${params.runId}); the autonomy write succeeded and is ` +
-        `unaffected: ${formatUnknownError(err)}`,
-    );
-  }
+      `runId=${params.runId}); the autonomy write succeeded and is ` +
+      `unaffected: ${formattedError}`,
+  });
 
   return true;
 }
@@ -150,44 +108,23 @@ export async function emitCiaActionExecutedPercept(
 
   const idempotencyKey = `cognition.cia.action_executed:${params.runId}`;
   const subject = `cia:run:${params.runId}`;
-  const occurredAt = new Date();
   const payload: Prisma.InputJsonObject = {
     runId: params.runId,
     executionPath: params.executionPath,
     candidateCount: params.candidateCount,
   };
 
-  try {
-    await prisma.mindOutboxEvent.upsert({
-      where: {
-        workspaceId_idempotencyKey: {
-          workspaceId: params.workspaceId,
-          idempotencyKey,
-        },
-      },
-      update: {
-        eventType: CIA_ACTION_EXECUTED_EVENT_TYPE,
-        subject,
-        payload,
-        occurredAt,
-      },
-      create: {
-        id: randomUUID(),
-        workspaceId: params.workspaceId,
-        eventType: CIA_ACTION_EXECUTED_EVENT_TYPE,
-        subject,
-        payload,
-        idempotencyKey,
-        occurredAt,
-      },
-    });
-  } catch (err: unknown) {
-    logger.warn(
+  await emitPerceptToMindSpine(prisma, logger, {
+    eventType: CIA_ACTION_EXECUTED_EVENT_TYPE,
+    workspaceId: params.workspaceId,
+    subject,
+    idempotencyKey,
+    payload,
+    failureLog: (formattedError) =>
       `CIA action percept emit failed (workspaceId=${params.workspaceId}, ` +
-        `runId=${params.runId}); the autonomy dispatch succeeded and is ` +
-        `unaffected: ${formatUnknownError(err)}`,
-    );
-  }
+      `runId=${params.runId}); the autonomy dispatch succeeded and is ` +
+      `unaffected: ${formattedError}`,
+  });
 
   return true;
 }
