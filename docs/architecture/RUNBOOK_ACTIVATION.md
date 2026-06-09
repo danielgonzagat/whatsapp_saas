@@ -85,3 +85,27 @@ These are irreversible. Each has a hard gate. Do them LAST, one at a time, with 
 ## Rollback (any step)
 
 Every flag flip is reversible by **unsetting the env var** (or setting `≠ 'true'`) and redeploying the env — the code reverts to its byte-identical legacy path on the next request. The only non-reversible actions are §4 (destructive migrations), which is why each is gated behind a proven, soaked dual-write + backfill.
+
+---
+
+## 6. Activation readiness — OmniCore channel unification (verified safe-to-activate)
+
+> **Verified:** 2026-06-09 on `feat/kloel-production-ship-20260608`. Method: ran the canonical-path specs
+> green and read each flag's OFF branch. All three flags below are **default-OFF and behavior-preserving when
+> OFF** (single `process.env.X === 'true'` read short-circuits before any canonical surface is touched), so the
+> operator can flip them ON per the staging → parity → soak → prod sequence in §1–§3 with one-command rollback.
+
+**Spec evidence — all 3 suites green (`npx jest instagram-marketing.service.dispatch instagram-marketing.service.resolver email-routing` → 3 suites, 32 tests, 0 fail):**
+
+| Flag | Canonical path it activates | OFF-path proof (file:line) | ON-path / fallback proof |
+|---|---|---|---|
+| `KLOEL_INSTAGRAM_CANONICAL_DISPATCH` | `InstagramMarketingService.sendDirectMessage` delegates the provider send to `ChannelMessageDispatchService.dispatch(ws, 'instagram', …)` instead of calling `InstagramService.sendMessage` directly | OFF runs the existing `sendMessage` path and never touches the canonical service; a non-`true` value is treated as OFF — `backend/src/marketing/instagram/instagram-marketing.service.dispatch.spec.ts:48-71`. Flag reader: `instagram-canonical-dispatch.flag.ts:37-39` | ON delegates + maps `messageId`/`externalId`; falls back to the raw path when the canonical service is not injected, when dispatch throws, or when it returns `success:false`; still enforces validation/connection guards — `…dispatch.spec.ts:73-188` |
+| `KLOEL_INSTAGRAM_RESOLVER_UNIFY` | `publishPost` + `getInsights` resolve the Meta connection via the canonical `MetaWhatsAppService.resolveConnection(ws, 'instagram')` instead of a raw prisma `metaConnection.findFirst` + inline decrypt | OFF reads the raw prisma path and never touches `resolveConnection`; `'false'` treated as OFF — `backend/src/marketing/instagram/instagram-marketing.service.resolver.spec.ts:74-118`. Flag reader: `instagram-resolver-unify.flag.ts:45-47` | ON routes both reads through `resolveConnection`, skips the raw `findFirst`, preserves the same connection guard, and falls back to the raw prisma path when the resolver is not injected — `…resolver.spec.ts:120-205` |
+| `KLOEL_EMAIL_ROUTING_FACADE` | `routeEmail(messageClass, …)` front door picks the correct existing adapter: `transactional → ChannelKind.EMAIL` (connected mailbox), `campaign → ChannelKind.EMAIL_TRANSACTIONAL` (platform sender) | OFF returns a **blocked** result (`blockedReason: 'email_routing_facade_disabled'`) — the facade has no existing callers, so OFF is byte-identical to today; `'1'`/`'false'` treated as OFF — `backend/src/marketing/channels/email/email-routing.spec.ts:70-100`. Flag reader: `email-routing-facade.flag.ts:40-42` | ON routes by class and blocks honestly on missing recipient / subject / html (no silent empty send); the routing TABLE `resolveEmailChannelKind` is flag-independent and always inspectable — `email-routing.spec.ts:49-194` |
+
+**TikTok — NOT a flag gap, platform-blocked.** `TikTokDispatchAdapter` is an honest blocked surface, not a missing
+flag. TikTok Business Messaging has no programmatic outbound-send API today (receive-via-webhook only), so the
+adapter never fakes a send: `send`/`sendMessage` return `{ success:false, blocked:true,
+blockedReason:'channel_tiktok_outbound_unsupported' }`, `isConfigured()` is `false`, and `capability()` reports
+`sendAvailable:false` — `backend/src/marketing/channels/tiktok/tiktok-dispatch.adapter.ts:33-71`. When TikTok ships an
+outbound API this adapter is the single drop-in wire point; there is nothing for the operator to flip.
