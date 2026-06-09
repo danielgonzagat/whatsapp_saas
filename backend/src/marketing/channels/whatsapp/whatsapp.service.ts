@@ -325,10 +325,10 @@ export class WhatsappService {
   async status(ws: string) {
     return this.getConnectionStatus(ws);
   }
-  async getQrCode(ws: string) {
+  getQrCode(ws: string) {
     return this.sessionService.getQrCode(ws);
   }
-  async disconnect(ws: string) {
+  disconnect(ws: string) {
     return this.sessionService.disconnect(ws);
   }
   async setPresence(

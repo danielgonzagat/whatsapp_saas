@@ -125,11 +125,11 @@ export class WhatsappSessionService {
     };
   }
 
-  async getQrCode(_ws: string) {
+  getQrCode(_ws: string) {
     return this.throwMetaOnlyGone('legacy_session_qr');
   }
 
-  async disconnect(_ws: string) {
+  disconnect(_ws: string) {
     return this.throwMetaOnlyGone('legacy_session_disconnect');
   }
 
