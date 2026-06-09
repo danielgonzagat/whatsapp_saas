@@ -82,7 +82,9 @@ const SELF_EVOLUTION_ARCHIVE_REL = 'self-evolution-archive.jsonl';
 const SELF_EVOLUTION_ARCHIVE_ID = 'atomic-real-self-expansion-archive-v1';
 const SELF_EVOLUTION_POLICY_ID = 'atomic-real-self-expansion-admission-v1';
 const SELF_EVOLUTION_DISPROOF_CORPUS_REL = path.join('.atomic', 'disproof-corpus.jsonl');
+const SELF_EVOLUTION_LESSON_RULES_REL = path.join('.atomic', 'lesson-rules.jsonl');
 const DISPROOF_CORPUS_HARNESS_REL = path.join('scripts/mcp/atomic-edit-evolution', 'disproof-corpus-harness.mjs');
+const LESSON_RULE_HARNESS_REL = path.join('scripts/mcp/atomic-edit-evolution', 'lesson-harness.mjs');
 
 function parseFileOps(raw: unknown[]): SelfFileOp[] {
   return raw.map((entry) => {
@@ -726,6 +728,26 @@ function runDisproofCorpusHarness(mode: string, input: unknown): JsonRecord {
   return payload;
 }
 
+function runLessonRuleHarness(mode: string, input: unknown): JsonRecord {
+  const harnessPath = path.join(REPO_ROOT, LESSON_RULE_HARNESS_REL);
+  if (!fs.existsSync(harnessPath)) throw new Error(`lesson rule harness is missing: ${LESSON_RULE_HARNESS_REL}`);
+  const result = childProcess.spawnSync(process.execPath, [harnessPath, mode], {
+    cwd: REPO_ROOT,
+    input: stableJson(input),
+    encoding: 'utf8',
+    timeout: 30000,
+    maxBuffer: 10 * 1024 * 1024,
+  });
+  if (result.status !== 0) {
+    throw new Error(
+      `lesson rule harness ${mode} failed: ${(result.stderr || result.stdout || 'unknown').toString().trim()}`,
+    );
+  }
+  const payload = JSON.parse(result.stdout || '{}') as JsonRecord;
+  if (payload.ok === false) throw new Error(`lesson rule harness ${mode} rejected input: ${String(payload.error ?? 'unknown')}`);
+  return payload;
+}
+
 function appendSelfEvolutionDisproofCorpus(witnessArgs: JsonRecord): JsonRecord {
   const corpusPath = path.join(REPO_ROOT, SELF_EVOLUTION_DISPROOF_CORPUS_REL);
   const corpusText = fs.existsSync(corpusPath) ? fs.readFileSync(corpusPath, 'utf8') : '';
@@ -741,11 +763,28 @@ function appendSelfEvolutionDisproofCorpus(witnessArgs: JsonRecord): JsonRecord 
   };
 }
 
+function readSelfEvolutionLessonRules(): JsonRecord {
+  const lessonsPath = path.join(REPO_ROOT, SELF_EVOLUTION_LESSON_RULES_REL);
+  const lessonsText = fs.existsSync(lessonsPath) ? fs.readFileSync(lessonsPath, 'utf8') : '';
+  const verified = runLessonRuleHarness('--verify-lessons-jsonl', { lessonsText });
+  const lessons = Array.isArray(verified.lessons) ? verified.lessons : [];
+  return {
+    lessons,
+    lessonCount: lessons.length,
+    lessonsFile: SELF_EVOLUTION_LESSON_RULES_REL,
+    lessonsVerified: {
+      ok: verified.ok === true,
+      lessonCount: lessons.length,
+    },
+  };
+}
+
 function buildSelfEvolutionNextDisproofBriefing(region: string, mode = 'next-rejection-briefing'): JsonRecord {
   const limits = [
     'Briefing remains proposer guidance, not a gate and not a proof of correctness.',
     'The hard gate remains the only judge; learned lessons may never weaken admission.',
     'The corpus is verified before selection; forged records are rejected by the harness.',
+    'LessonRules are validated guidance and never become gates.',
   ];
   try {
     const corpusPath = path.join(REPO_ROOT, SELF_EVOLUTION_DISPROOF_CORPUS_REL);
@@ -753,6 +792,7 @@ function buildSelfEvolutionNextDisproofBriefing(region: string, mode = 'next-rej
       return { ok: false, changed: false, mode, region, selectedCount: 0, error: 'missing disproof corpus', proofLimits: limits };
     }
     const corpusText = fs.readFileSync(corpusPath, 'utf8');
+    const lessonRules = readSelfEvolutionLessonRules();
     const corpusVerified = runDisproofCorpusHarness('--verify-corpus-jsonl', { corpusText });
     const selection = runDisproofCorpusHarness('--select-disproofs', {
       corpusText,
@@ -763,7 +803,7 @@ function buildSelfEvolutionNextDisproofBriefing(region: string, mode = 'next-rej
     const selected = Array.isArray(selection.selected) ? selection.selected : [];
     const briefing = runDisproofCorpusHarness('--build-briefing', {
       selected,
-      lessons: [],
+      lessons: lessonRules.lessons,
       repairTraces: [],
     });
     return {
@@ -779,6 +819,9 @@ function buildSelfEvolutionNextDisproofBriefing(region: string, mode = 'next-rej
         headRecordSha256: corpusVerified.headRecordSha256 ?? null,
       },
       selectedCount: selected.length,
+      lessonCount: lessonRules.lessonCount,
+      lessonsFile: lessonRules.lessonsFile,
+      lessonsVerified: lessonRules.lessonsVerified,
       briefingDigest: typeof briefing.briefingDigest === 'string' ? briefing.briefingDigest : null,
       briefingText: typeof briefing.text === 'string' ? briefing.text : '',
       proofLimits: limits,

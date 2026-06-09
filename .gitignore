@@ -213,3 +213,6 @@ dfpuXW1uFOqNEd6kFVZHE/
 ecc-mcp-home-*/
 ecc-mcp-health-*/
 ecc-session-recordings/
+
+# PID files de dev-boot do harness atomic — runtime puro, nunca versionar
+.atomic-devboot/
