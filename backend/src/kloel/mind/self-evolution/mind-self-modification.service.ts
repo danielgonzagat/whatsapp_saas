@@ -49,6 +49,47 @@ const CACHE_TTL_MS = 60_000;
 const DEAD_CODE_SCAN_LIMIT = 50;
 
 /**
+ * Minimum high-surprise events per predicate before a recurrent-miss
+ * opportunity is surfaced. Previously a hard-coded 3 which, with ~7 total
+ * predictions in prod, was NEVER reached → the self-evolution detector was
+ * starved (opportunityCount=0 on every emitted row). Env-tunable so the floor
+ * can be lowered without a redeploy. Floored at 2 so a single fluke prediction
+ * never trips a proposal.
+ */
+const MIN_PREDICATE_RECURRENCE = Math.max(
+  2,
+  Number.parseInt(process.env.KLOEL_SELF_EVOLUTION_MIN_RECURRENCE ?? '2', 10) || 2,
+);
+
+/**
+ * Feature flag for the WIDENED opportunity signals (belief drift + bandit
+ * underperformance). DEFAULT OFF — turning it on increases emitted opportunity
+ * volume, so it is gated to keep the change additive and reversible. Enable via
+ * `KLOEL_SELF_EVOLUTION_WIDEN_SIGNALS=true`. When off, behavior is identical to
+ * before except for the (conservative) recurrence-floor drop above.
+ */
+function isWidenSignalsEnabled(): boolean {
+  return (process.env.KLOEL_SELF_EVOLUTION_WIDEN_SIGNALS ?? 'false').toLowerCase() === 'true';
+}
+
+/**
+ * Belief-drift gate: a belief with high variance after enough samples means the
+ * Mind has NOT converged on it — a learnable, actionable gap. Conservative
+ * defaults so only genuinely unstable beliefs surface.
+ */
+const BELIEF_DRIFT_MIN_SAMPLES = 8;
+const BELIEF_DRIFT_MIN_VARIANCE = 0.2;
+
+/**
+ * Bandit-underperformance gate: an arm with enough pulls but a low win-rate is
+ * a decision the Mind keeps making badly — surface it for review. winRate uses
+ * the Beta posterior mean (wins+α)/(pulls+α+β) is approximated here by the raw
+ * wins/pulls since alpha/beta default to 1 and we only flag clearly-bad arms.
+ */
+const BANDIT_MIN_PULLS = 10;
+const BANDIT_MAX_WIN_RATE = 0.3;
+
+/**
  * Canonical event type for the self-evolution outbox row. Tagged in
  * `cognition.self_modification.*` namespace to match the cognition.* event
  * family already published in asyncapi (see protocol_hub_asyncapi).
@@ -119,12 +160,105 @@ export class MindSelfModificationService {
     }
 
     const opportunities = this.buildOpportunities(rows);
+
+    // WIDENED signals (flag-gated, default OFF): the prediction window alone is
+    // too sparse in prod to ever yield an opportunity. Belief drift and bandit
+    // underperformance are durable, always-populated learning signals, so they
+    // un-starve the loop. Each is best-effort and additive — a query failure or
+    // a prisma surface that lacks the table is logged and skipped, never thrown.
+    if (isWidenSignalsEnabled()) {
+      const widened = await this.buildWidenedOpportunities(workspaceId);
+      opportunities.push(...widened);
+    }
+
     const proposal: SelfModificationProposal = { opportunities };
     this.proposalCache.set(workspaceId, {
       expiresAt: Date.now() + CACHE_TTL_MS,
       value: proposal,
     });
     return proposal;
+  }
+
+  /**
+   * Build opportunities from the WIDENED learning signals (belief drift +
+   * bandit underperformance). Only invoked when the widen flag is on. Each
+   * source is independently guarded so a missing table / query failure degrades
+   * to "no opportunities from that source" rather than aborting the cycle.
+   */
+  private async buildWidenedOpportunities(
+    workspaceId: string,
+  ): Promise<SelfModificationOpportunity[]> {
+    const opportunities: SelfModificationOpportunity[] = [];
+    const prisma = this.prisma;
+    if (!prisma) {
+      return opportunities;
+    }
+
+    // (a) Belief drift — high-variance beliefs the Mind has sampled enough to
+    // have converged on but hasn't. A learnable gap in its world-model.
+    if (typeof prisma.mindBelief?.findMany === 'function') {
+      try {
+        const beliefs = await prisma.mindBelief.findMany({
+          where: {
+            workspaceId,
+            samples: { gte: BELIEF_DRIFT_MIN_SAMPLES },
+            variance: { gt: BELIEF_DRIFT_MIN_VARIANCE },
+          },
+          select: { predicate: true, variance: true, samples: true },
+          orderBy: { variance: 'desc' },
+          take: 25,
+        });
+        for (const b of beliefs) {
+          const impact: SelfModificationImpact = b.variance >= 0.35 ? 'high' : 'medium';
+          opportunities.push({
+            kind: 'belief-drift',
+            targetFile: 'backend/src/kloel/mind/inference/mind-belief.service.ts',
+            rationale: `predicate=${b.predicate} still has high variance (${b.variance.toFixed(2)}) after ${b.samples} samples; the Mind has not converged — consider tighter priors, more context features, or a decay tweak`,
+            estimatedImpact: impact,
+          });
+        }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.warn(`belief-drift signal failed workspace=${workspaceId}: ${message}`);
+      }
+    }
+
+    // (b) Bandit underperformance — active arms with enough pulls but a poor
+    // win-rate. A decision the Mind keeps making badly.
+    if (typeof prisma.mindBanditArm?.findMany === 'function') {
+      try {
+        const arms = await prisma.mindBanditArm.findMany({
+          where: {
+            workspaceId,
+            isActive: true,
+            pulls: { gte: BANDIT_MIN_PULLS },
+          },
+          select: { decisionType: true, arm: true, pulls: true, wins: true },
+          take: 50,
+        });
+        for (const a of arms) {
+          if (a.pulls <= 0) {
+            continue;
+          }
+          const winRate = a.wins / a.pulls;
+          if (winRate > BANDIT_MAX_WIN_RATE) {
+            continue;
+          }
+          const impact: SelfModificationImpact = winRate <= 0.1 ? 'high' : 'medium';
+          opportunities.push({
+            kind: 'bandit-underperformance',
+            targetFile: 'backend/src/kloel/mind/decision/mind-bandit.service.ts',
+            rationale: `decisionType=${a.decisionType} arm=${a.arm} has a low win-rate (${(winRate * 100).toFixed(0)}% over ${a.pulls} pulls); consider retiring the arm or revisiting the reward signal`,
+            estimatedImpact: impact,
+          });
+        }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.warn(`bandit-underperformance signal failed workspace=${workspaceId}: ${message}`);
+      }
+    }
+
+    return opportunities;
   }
 
   /**
@@ -295,7 +429,7 @@ export class MindSelfModificationService {
 
     const opportunities: SelfModificationOpportunity[] = [];
     for (const [predicate, agg] of counts.entries()) {
-      if (agg.count < 3) {
+      if (agg.count < MIN_PREDICATE_RECURRENCE) {
         continue;
       }
       const avg = agg.total / agg.count;

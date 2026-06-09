@@ -28,6 +28,21 @@ export interface DerivedSelfModel {
 }
 
 /**
+ * Retention bounds for the append-only self-model timeline.
+ *
+ * snapshot() runs every long-tick (~30s) and appends a row that is NEVER
+ * updated. Left unbounded the table grows ~120 rows/hour/workspace and was
+ * verified in prod at 2.6M rows. prune() keeps the timeline durable but bounded:
+ * the {@link SELF_MODEL_RETENTION_VERSIONS} newest versions per workspace are
+ * always kept, and any older row beyond a {@link SELF_MODEL_RETENTION_DAYS}-day
+ * floor is reaped. The two bounds are OR'd: a version survives if it is among
+ * the newest N OR younger than the day floor, so a slow workspace never loses
+ * its only recent history and a busy one stays capped.
+ */
+export const SELF_MODEL_RETENTION_VERSIONS = 200;
+export const SELF_MODEL_RETENTION_DAYS = 90;
+
+/**
  * MindSelfModelService — persistent, versioned self-model timeline.
  *
  * Each cycle it derives a self-description (beliefs_about_self,
@@ -226,7 +241,72 @@ export class MindSelfModelService {
       });
     }
 
+    // Best-effort retention sweep AFTER the append commits. Never blocks or
+    // fails the snapshot — a prune error must not break the durable history.
+    void this.prune(workspaceId).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn('mind_self_model_prune_failed', { workspaceId, message });
+    });
+
     return row;
+  }
+
+  /**
+   * Bound the append-only timeline for a workspace. Keeps the newest
+   * {@link SELF_MODEL_RETENTION_VERSIONS} versions AND any row younger than the
+   * {@link SELF_MODEL_RETENTION_DAYS}-day floor; deletes only rows that fail
+   * BOTH. Idempotent and safe to call after every snapshot(). Returns the
+   * number of rows reaped (0 when under the cap). Read APIs (timeline/latest)
+   * are unaffected — they always read the newest versions, which prune keeps.
+   */
+  async prune(
+    workspaceId: string,
+    opts: { keepVersions?: number; maxAgeDays?: number } = {},
+  ): Promise<{ deleted: number }> {
+    if (!workspaceId) {
+      return { deleted: 0 };
+    }
+    const keepVersions = Math.max(1, opts.keepVersions ?? SELF_MODEL_RETENTION_VERSIONS);
+    const maxAgeDays = Math.max(1, opts.maxAgeDays ?? SELF_MODEL_RETENTION_DAYS);
+
+    // Find the version cutoff: the Nth-newest version. Anything strictly below
+    // it is a candidate for deletion (subject to the age floor).
+    const boundaryRows = await this.prisma.mindSelfModel.findMany({
+      where: { workspaceId },
+      orderBy: { version: 'desc' },
+      skip: keepVersions - 1,
+      take: 1,
+      select: { version: true },
+    });
+    const cutoffVersion = boundaryRows[0]?.version;
+    if (cutoffVersion === undefined) {
+      // Fewer than keepVersions rows exist — nothing is over the cap.
+      return { deleted: 0 };
+    }
+
+    const ageFloor = new Date(Date.now() - maxAgeDays * 24 * 3600 * 1000);
+
+    // Delete rows that are BOTH below the version cutoff AND older than the age
+    // floor. The two conditions are AND'd here, which makes the kept set the
+    // UNION (newest N OR younger than floor) — exactly the OR semantics above.
+    const result = await this.prisma.mindSelfModel.deleteMany({
+      where: {
+        workspaceId,
+        version: { lt: cutoffVersion },
+        snapshotAt: { lt: ageFloor },
+      },
+    });
+
+    if (result.count > 0) {
+      this.logger.debug?.('mind_self_model_pruned', {
+        workspaceId,
+        deleted: result.count,
+        keepVersions,
+        maxAgeDays,
+        cutoffVersion,
+      });
+    }
+    return { deleted: result.count };
   }
 
   /**
