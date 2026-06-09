@@ -125,3 +125,55 @@ export function computeBalanceAfter(
   }
   return direction === 'credit' ? priorCents + amountInCents : priorCents - amountInCents;
 }
+
+/**
+ * One append-only ledger entry as the replay needs it: which bucket it touched,
+ * the movement direction, and the unsigned magnitude. Bucket names are the
+ * actor's union `B` (e.g. 'available'|'pending'|'blocked').
+ */
+export interface LedgerReplayEntry<B extends string> {
+  bucket: B;
+  direction: LedgerDirection;
+  amountInCents: bigint;
+}
+
+/**
+ * Pure, I/O-free CUMULATIVE replay used by the historical `balanceAfter`
+ * backfill (money-ledgers migration Stage 5). Given a chronologically-ordered
+ * sequence of one wallet's ledger entries and the FULL set of bucket names,
+ * fold {@link computeBalanceAfter} per touched bucket and emit, for each entry,
+ * the post-mutation snapshot of EVERY bucket at that point in history.
+ *
+ * Each running bucket balance starts at 0 (the ledger is the source of truth —
+ * a wallet's balance is, by invariant I12, the sum of its entries), so this
+ * reconstructs exactly the snapshot the live dual-write would have written had
+ * the flag been on from the first entry.
+ *
+ * The caller is responsible for passing entries in `createdAt` (then a stable
+ * tiebreak like `id`) order; the replay does not sort. Returns one
+ * `BucketBalances<B>` per input entry, positionally aligned with `entries`.
+ */
+export function replayBalanceAfter<B extends string>(
+  entries: ReadonlyArray<LedgerReplayEntry<B>>,
+  buckets: ReadonlyArray<B>,
+): Array<BucketBalances<B>> {
+  const running = {} as Record<B, bigint>;
+  for (const b of buckets) {
+    running[b] = 0n;
+  }
+  const out: Array<BucketBalances<B>> = [];
+  for (const entry of entries) {
+    running[entry.bucket] = computeBalanceAfter(
+      running[entry.bucket],
+      entry.direction,
+      entry.amountInCents,
+    );
+    // Snapshot ALL buckets at this point (positional, per-entry).
+    const snapshot = {} as Record<B, bigint>;
+    for (const b of buckets) {
+      snapshot[b] = running[b];
+    }
+    out.push(snapshot);
+  }
+  return out;
+}

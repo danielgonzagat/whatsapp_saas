@@ -4,6 +4,8 @@
 
 import type { AnticipationSplit, SaleSplit } from './wallet.helpers.cents';
 import { buildInsufficientBalanceMessage } from './wallet.helpers.descriptions';
+import { deriveAnticipationCents } from './wallet.anticipation.cents';
+import { isAnticipationCentsDualWriteEnabled } from './wallet.anticipation-cents-dualwrite.flag';
 
 /** Response envelope returned by `processSale` to the caller. */
 export interface ProcessSaleResponse {
@@ -126,12 +128,44 @@ export function buildAnticipationSuccessResponse(input: {
   };
 }
 
+/** The additive `*InCents` fragment of a WalletAnticipation row payload. */
+export interface WalletAnticipationCentsFragment {
+  originalAmountInCents: bigint;
+  feeAmountInCents: bigint;
+  netAmountInCents: bigint;
+}
+
+/**
+ * The persisted `WalletAnticipation` row payload. The three `*InCents` keys are
+ * present ONLY when the cents dual-write flag is on (Stage 7); when off the
+ * payload is byte-identical to the pre-migration shape so the Float columns
+ * stay the sole source of truth.
+ */
+export type WalletAnticipationRowData = {
+  workspaceId: string;
+  originalAmount: number;
+  feePercent: number;
+  feeAmount: number;
+  netAmount: number;
+  installments: number | null;
+  status: 'COMPLETED';
+  transactionId: string;
+} & Partial<WalletAnticipationCentsFragment>;
+
 /**
  * Build the data payload persisted as a `WalletAnticipation` row by
  * `requestAnticipation`. Normalizes `installments` to `null` when absent so
  * the column stays schema-stable — same normalization
  * `buildAnticipationTransactionMetadata` already applies. Pure projection;
  * never reads or writes anything.
+ *
+ * Money-ledgers migration (Stage 7): when KLOEL_ANTICIPATION_CENTS_DUALWRITE is
+ * enabled, ALSO emits the three nullable `*InCents` BigInt columns derived from
+ * the SAME Float amounts via the canonical {@link deriveAnticipationCents}
+ * rounding. When the flag is OFF the cents keys are omitted entirely and the
+ * payload is byte-identical to the legacy write. The flag is read here (not by
+ * the caller) so every anticipation write site picks up the dual-write without
+ * threading a parameter.
  */
 export function buildWalletAnticipationRowData(input: {
   workspaceId: string;
@@ -141,24 +175,24 @@ export function buildWalletAnticipationRowData(input: {
   netAmount: number;
   transactionId: string;
   installments?: number;
-}): {
-  workspaceId: string;
-  originalAmount: number;
-  feePercent: number;
-  feeAmount: number;
-  netAmount: number;
-  installments: number | null;
-  status: 'COMPLETED';
-  transactionId: string;
-} {
-  return {
+}): WalletAnticipationRowData {
+  const base = {
     workspaceId: input.workspaceId,
     originalAmount: input.amount,
     feePercent: input.feePercent,
     feeAmount: input.feeAmount,
     netAmount: input.netAmount,
     installments: input.installments ?? null,
-    status: 'COMPLETED',
+    status: 'COMPLETED' as const,
     transactionId: input.transactionId,
   };
+  if (!isAnticipationCentsDualWriteEnabled()) {
+    return base;
+  }
+  const cents = deriveAnticipationCents({
+    originalAmount: input.amount,
+    feeAmount: input.feeAmount,
+    netAmount: input.netAmount,
+  });
+  return { ...base, ...cents };
 }
