@@ -1,7 +1,7 @@
 import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { URL } from 'node:url';
+import { URL, pathToFileURL } from 'node:url';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
@@ -79,7 +79,8 @@ function launcherPath(): string {
 }
 
 function runtimeRoot(): string {
-  return path.join(REPO_ROOT, '.codex-artifacts/chrome-devtools-mcp');
+  const override = process.env.KLOEL_CHROME_DEVTOOLS_TMP?.trim();
+  return override ? path.resolve(override) : path.join(REPO_ROOT, '.codex-artifacts/chrome-devtools-mcp');
 }
 
 function chromeBinary(): string {
@@ -381,6 +382,38 @@ function rejectAll(session: ChromeSession, reason: Error): void {
   }
 }
 
+function handleServerRequest(session: ChromeSession, msg: JsonRpcMessage): boolean {
+  if (typeof msg.id !== 'number' || typeof msg.method !== 'string' || msg.result !== undefined || msg.error !== undefined) {
+    return false;
+  }
+
+  if (msg.method === 'roots/list') {
+    writeJsonLine(session.child, {
+      jsonrpc: '2.0',
+      id: msg.id,
+      result: {
+        roots: [
+          {
+            uri: pathToFileURL(REPO_ROOT).href,
+            name: path.basename(REPO_ROOT),
+          },
+        ],
+      },
+    });
+    return true;
+  }
+
+  writeJsonLine(session.child, {
+    jsonrpc: '2.0',
+    id: msg.id,
+    error: {
+      code: -32601,
+      message: `Method not found: ${msg.method}`,
+    },
+  });
+  return true;
+}
+
 function handleJsonLine(session: ChromeSession, line: string): void {
   if (!line.startsWith('{')) return;
   let msg: JsonRpcMessage;
@@ -389,6 +422,7 @@ function handleJsonLine(session: ChromeSession, line: string): void {
   } catch {
     return;
   }
+  if (handleServerRequest(session, msg)) return;
   if (typeof msg.id !== 'number') return;
   const pending = session.pending.get(msg.id);
   if (!pending) return;
