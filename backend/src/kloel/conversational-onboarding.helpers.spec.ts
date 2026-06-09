@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-
 import { buildOnboardingFallback, writeSseResponse } from './conversational-onboarding.helpers';
 import type { StructuredLogger } from '../logging/structured-logger';
 
@@ -23,12 +21,15 @@ describe('conversational-onboarding.helpers (K74 proof)', () => {
       expect(reply).toContain('onboarding');
       expect(warn).toHaveBeenCalledTimes(1);
       const calls = warn.mock.calls as Array<[string, Record<string, unknown>]>;
-      const [message, meta] = calls[0];
+      const firstCall = calls[0];
+      expect(firstCall).toBeDefined();
+      const message = firstCall?.[0];
+      const meta = firstCall?.[1];
       expect(message).toBe('Onboarding degraded');
-      expect(meta.tag).toBe('kloel_onboarding_degraded');
-      expect(meta.reason).toBe('thinker_failed');
-      expect(meta.errorMessage).toBe('boom');
-      expect(meta.errorName).toBe('TypeError');
+      expect(meta?.tag).toBe('kloel_onboarding_degraded');
+      expect(meta?.reason).toBe('thinker_failed');
+      expect(meta?.errorMessage).toBe('boom');
+      expect(meta?.errorName).toBe('TypeError');
     });
 
     it('coerces non-Error errors to a JSON-stringified diagnostic', () => {
@@ -46,9 +47,11 @@ describe('conversational-onboarding.helpers (K74 proof)', () => {
       );
 
       const calls = warn.mock.calls as Array<[string, Record<string, unknown>]>;
-      const [, meta] = calls[0];
-      expect(meta.errorMessage).toBe('{"code":"EPIPE"}');
-      expect(meta.errorName).toBe('object');
+      const firstCall = calls[0];
+      expect(firstCall).toBeDefined();
+      const meta = firstCall?.[1];
+      expect(meta?.errorMessage).toBe('{"code":"EPIPE"}');
+      expect(meta?.errorName).toBe('object');
     });
 
     it('returns empty errorMessage for null error', () => {
@@ -66,8 +69,10 @@ describe('conversational-onboarding.helpers (K74 proof)', () => {
       );
 
       const calls = warn.mock.calls as Array<[string, Record<string, unknown>]>;
-      const [, meta] = calls[0];
-      expect(meta.errorMessage).toBe('');
+      const firstCall = calls[0];
+      expect(firstCall).toBeDefined();
+      const meta = firstCall?.[1];
+      expect(meta?.errorMessage).toBe('');
     });
   });
 

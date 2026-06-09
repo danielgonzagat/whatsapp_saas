@@ -1,7 +1,18 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
-
 import { WalletController } from './wallet.controller';
 import { partialMatch } from '../../test/helpers/match-instance';
+
+type TxFindManyArg = {
+  where: { amountInCents?: { gt: number }; amount?: unknown };
+  select: Record<string, boolean>;
+};
+
+const findManyArgAt = (mock: jest.Mock, index: number): TxFindManyArg => {
+  const call = (mock.mock.calls as Array<[TxFindManyArg]>)[index];
+  if (!call) {
+    throw new Error(`findMany call ${index} was not recorded`);
+  }
+  return call[0];
+};
 
 describe('WalletController withdrawal approval gate', () => {
   let walletService: { requestWithdrawal: jest.Mock; getBalance: jest.Mock };
@@ -154,7 +165,7 @@ describe('WalletController money reads source bigint cents', () => {
       expect(result.expense).toBe(500.25);
       expect(result.balance).toBe(1000.5);
       // The query must select the cents column, not the Float column.
-      const findManyArg = prisma.kloelWalletTransaction.findMany.mock.calls[0][0];
+      const findManyArg = findManyArgAt(prisma.kloelWalletTransaction.findMany, 0);
       expect(findManyArg.select).toEqual({ amountInCents: true, createdAt: true });
       // Daily buckets are also cents-sourced.
       expect(result.daily[dayA.getDate() - 1]).toEqual({
@@ -193,7 +204,7 @@ describe('WalletController money reads source bigint cents', () => {
       expect(result.chart[6]).toBe(2500.5);
       expect(result.chart.slice(0, 6)).toEqual([0, 0, 0, 0, 0, 0]);
       // The query must filter + select on the cents column, not the Float column.
-      const findManyArg = prisma.kloelWalletTransaction.findMany.mock.calls[0][0];
+      const findManyArg = findManyArgAt(prisma.kloelWalletTransaction.findMany, 0);
       expect(findManyArg.where.amountInCents).toEqual({ gt: 0 });
       expect(findManyArg.where.amount).toBeUndefined();
       expect(findManyArg.select).toEqual({ amountInCents: true, createdAt: true });

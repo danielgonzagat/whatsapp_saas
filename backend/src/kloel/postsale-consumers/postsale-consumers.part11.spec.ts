@@ -1,7 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { SpineEventRef } from '../mind/mind.types';
 import { LtvProjectionService } from './ltv-projection.service';
-import type { LtvProjection } from './postsale-consumers.types';
 import { makeEventFactory } from '../../../test/helpers/spine-event-factory';
 import { baseInput } from '../../../test/helpers/detection-input-factory';
 

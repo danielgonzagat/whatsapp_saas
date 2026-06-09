@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
-
 import { BadRequestException } from '@nestjs/common';
 import { MailboxProvider, MailboxStatus } from '@prisma/client';
 import { createTransport } from 'nodemailer';
@@ -71,6 +69,14 @@ type MailboxValidationInternals = {
   validateSmtpConnection(config: MailboxSocketConfig): Promise<void>;
 };
 
+const firstCallArg = <T>(calls: ReadonlyArray<[T]>, label: string): T => {
+  const call = calls[0];
+  if (!call) {
+    throw new Error(`${label} was not called`);
+  }
+  return call[0];
+};
+
 describe('MailboxImapSmtpService', () => {
   const upsert = jest.fn<Promise<MailboxConnectionRecord>, [MailboxConnectionUpsertArgs]>();
   const findFirst = jest.fn<
@@ -102,7 +108,7 @@ describe('MailboxImapSmtpService', () => {
     createTransportMock.mockReturnValue({
       sendMail: sendMailMock,
       close: closeMock,
-    } as ReturnType<typeof createTransport>);
+    } as never);
     process.env.EMAIL_TOKEN_ENCRYPTION_KEY =
       '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
     process.env.EMAIL_UNSUBSCRIBE_SECRET = 'unsubscribe-secret';
@@ -114,7 +120,8 @@ describe('MailboxImapSmtpService', () => {
       },
       contact: { findFirst: contactFindFirst },
     } as never);
-    const validationInternals = service as MailboxValidationInternals;
+    const serviceErased: unknown = service;
+    const validationInternals = serviceErased as MailboxValidationInternals;
     validateImapConnectionSpy = jest
       .spyOn(validationInternals, 'validateImapConnection')
       .mockResolvedValue(undefined);
@@ -170,7 +177,7 @@ describe('MailboxImapSmtpService', () => {
         password: 'plain-smtp-password',
       }),
     );
-    const [call] = upsert.mock.calls[0];
+    const call = firstCallArg(upsert.mock.calls, 'upsert');
     expect(call.where.workspaceId_provider_email).toEqual({
       workspaceId: 'ws-1',
       provider: MailboxProvider.IMAP_SMTP,
@@ -183,8 +190,8 @@ describe('MailboxImapSmtpService', () => {
     expect(call.update.status).toBe(MailboxStatus.ACTIVE);
     expect(call.update.imapPassword).not.toContain('plain-imap-password');
     expect(call.update.smtpPassword).not.toContain('plain-smtp-password');
-    expect(isEncryptedMailboxToken(call.create.imapPassword)).toBe(true);
-    expect(isEncryptedMailboxToken(call.create.smtpPassword)).toBe(true);
+    expect(isEncryptedMailboxToken(call.create.imapPassword ?? '')).toBe(true);
+    expect(isEncryptedMailboxToken(call.create.smtpPassword ?? '')).toBe(true);
     expect(result).toEqual(
       expect.objectContaining({
         connected: true,
@@ -226,8 +233,9 @@ describe('MailboxImapSmtpService', () => {
   });
 
   it('does not persist credentials when validation fails', async () => {
+    const serviceErased: unknown = service;
     jest
-      .spyOn(service as MailboxValidationInternals, 'validateImapConnection')
+      .spyOn(serviceErased as MailboxValidationInternals, 'validateImapConnection')
       .mockRejectedValueOnce(new BadRequestException('imap_validation_failed'));
 
     await expect(
@@ -292,7 +300,7 @@ describe('MailboxImapSmtpService', () => {
         auth: { user: 'owner@example.com', pass: 'plain-smtp-password' },
       }),
     );
-    const [sendMailArgs] = sendMailMock.mock.calls[0];
+    const sendMailArgs = firstCallArg(sendMailMock.mock.calls, 'sendMail');
     expect(sendMailArgs.from).toBe('owner@example.com');
     expect(sendMailArgs.to).toBe('lead@example.com');
     expect(sendMailArgs.subject).toBe('Oferta especial');
@@ -334,7 +342,7 @@ describe('MailboxImapSmtpService', () => {
       proactive: false,
     });
 
-    const [sendCall] = sendMailMock.mock.calls[0];
+    const sendCall = firstCallArg(sendMailMock.mock.calls, 'sendMail');
     expect(sendCall.html).not.toContain('cancelar');
     expect(sendCall.headers).toEqual({});
     expect(result.sent).toBe(true);
@@ -387,7 +395,7 @@ describe('MailboxImapSmtpService', () => {
       }),
     ).rejects.toThrow('imap_smtp_send_failed');
 
-    const [updateCall] = update.mock.calls[0];
+    const updateCall = firstCallArg(update.mock.calls, 'update');
     expect(updateCall.where).toEqual({ id: 'mailbox-1', workspaceId: 'ws-1' });
     expect(updateCall.data.lastError).toBe('SMTP connection refused');
     expect(mailboxMetrics.sendFailed.mock.calls).toContainEqual([

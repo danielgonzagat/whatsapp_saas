@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
-
 /**
  * Proves the cognitive consolidation pass fires the previously-dormant
  * recovery / role / offer detectors over the long-tick's events and emits a
@@ -37,6 +35,26 @@ function paymentEvent(name: string, amountCents: string, i: number): SpineEventR
   };
 }
 
+type ConsolidationScanEvent = {
+  eventName: string;
+  workspaceId: string;
+  truthMode: string;
+  provenance: { processor: string };
+  payload: Record<string, unknown> & {
+    errorCount: number;
+    cashEntriesObserved: number;
+    cashBalanceCents: string;
+  };
+};
+
+function emittedEvent(mock: jest.Mock, index = 0): ConsolidationScanEvent {
+  const call = (mock.mock.calls as Array<[ConsolidationScanEvent]>)[index];
+  if (!call) {
+    throw new Error(`expected emit to have been called at least ${index + 1} time(s)`);
+  }
+  return call[0];
+}
+
 describe('runCognitiveConsolidation', () => {
   let emit: jest.Mock;
   let spine: { emit: jest.Mock };
@@ -71,7 +89,7 @@ describe('runCognitiveConsolidation', () => {
     });
 
     expect(emit).toHaveBeenCalledTimes(1);
-    const event = emit.mock.calls[0][0];
+    const event = emittedEvent(emit);
     expect(event.eventName).toBe('cognition.consolidation_scan');
     expect(event.workspaceId).toBe(WS);
     expect(event.truthMode).toBe('inferred');
@@ -102,7 +120,7 @@ describe('runCognitiveConsolidation', () => {
 
     await runCognitiveConsolidation({ events, workspaceId: WS, nowMs: NOW, spine, throttle });
 
-    const event = emit.mock.calls[0][0];
+    const event = emittedEvent(emit);
     expect(event.payload.cashEntriesObserved).toBe(3);
     expect(event.payload.cashBalanceCents).toBe('12000'); // 10000 + 5000 - 3000
   });

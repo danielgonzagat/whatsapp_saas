@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-
 /**
  * Proves the WalletAnticipation Float→cents backfill (Stage 8):
  *   - flag-gated: no-op when KLOEL_ANTICIPATION_CENTS_BACKFILL is OFF;
@@ -13,6 +11,11 @@
 import { WalletAnticipationBackfillService } from './wallet-anticipation-backfill.service';
 
 const FLAG = 'KLOEL_ANTICIPATION_CENTS_BACKFILL';
+
+const nthCallArg = (mock: jest.Mock, index: number): Record<string, unknown> => {
+  const call = (mock.mock.calls as Array<[Record<string, unknown>]>)[index];
+  return call ? call[0] : {};
+};
 
 type Row = {
   id: string;
@@ -64,7 +67,7 @@ describe('WalletAnticipationBackfillService.backfill', () => {
     const { prisma, findMany } = makeBackfillPrisma([[row('a')], []]);
     const svc = new WalletAnticipationBackfillService(prisma as never);
     await svc.backfill();
-    expect(findMany.mock.calls[0]![0].where).toMatchObject({ originalAmountInCents: null });
+    expect(nthCallArg(findMany, 0).where).toMatchObject({ originalAmountInCents: null });
   });
 
   it('fills the three cents columns via canonical rounding (NULL-guarded update)', async () => {
@@ -91,7 +94,7 @@ describe('WalletAnticipationBackfillService.backfill', () => {
     expect(res.scanned).toBe(3);
     expect(res.batches).toBe(2);
     // second page resumes from cursor id 'b'
-    expect(findMany.mock.calls[1]![0]).toMatchObject({ cursor: { id: 'b' }, skip: 1 });
+    expect(nthCallArg(findMany, 1)).toMatchObject({ cursor: { id: 'b' }, skip: 1 });
   });
 
   it('skips a garbage Float row without aborting the run', async () => {

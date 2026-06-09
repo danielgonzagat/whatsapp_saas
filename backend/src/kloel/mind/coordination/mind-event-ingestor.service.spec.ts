@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-
 import { MindEventIngestor } from './mind-event-ingestor.service';
 import { MindEventSpine } from './mind-event-spine.service';
 import { HebbianService } from '../hebbian.service';
@@ -22,6 +20,13 @@ function makeClaimedEvent(
     lastError: null,
   };
 }
+
+type SpineSurface = Pick<MindEventSpine, 'claimPendingEvents' | 'markDispatchSucceeded'>;
+
+function asMindEventSpine(partial: SpineSurface): MindEventSpine {
+  return partial as MindEventSpine;
+}
+
 describe('MindEventIngestor', () => {
   let ingestor: MindEventIngestor;
   let spine: jest.Mocked<Pick<MindEventSpine, 'claimPendingEvents' | 'markDispatchSucceeded'>>;
@@ -33,7 +38,7 @@ describe('MindEventIngestor', () => {
       claimPendingEvents: jest.fn(),
       markDispatchSucceeded: jest.fn(),
     };
-    ingestor = new MindEventIngestor(spine as unknown as MindEventSpine, hebbian, {
+    ingestor = new MindEventIngestor(asMindEventSpine(spine), hebbian, {
       mindOutboxEvent: {
         findMany: jest.fn().mockResolvedValue([]),
         updateMany: jest.fn().mockResolvedValue({ count: 0 }),
@@ -153,17 +158,22 @@ describe('MindEventIngestor', () => {
   describe('expireStaleSelfModifications', () => {
     it('marks pending proposals older than the TTL as expired (not deleted)', async () => {
       const updateMany = jest.fn().mockResolvedValue({ count: 5 });
-      ingestor = new MindEventIngestor(spine as unknown as MindEventSpine, hebbian, {
+      ingestor = new MindEventIngestor(asMindEventSpine(spine), hebbian, {
         mindOutboxEvent: { findMany: jest.fn(), updateMany },
       } as never);
 
       const expired = await ingestor.expireStaleSelfModifications();
 
       expect(expired).toBe(5);
-      const arg = updateMany.mock.calls[0]?.[0] as {
+      type ExpireUpdateManyArg = {
         where: { eventType: string; status: string; occurredAt: { lt: Date } };
         data: { status: string };
       };
+      const call = (updateMany.mock.calls as Array<[ExpireUpdateManyArg]>)[0];
+      if (!call) {
+        throw new Error('expected updateMany to have been called');
+      }
+      const arg = call[0];
       expect(arg.where.eventType).toBe('cognition.self_modification.proposed');
       expect(arg.where.status).toBe('pending');
       expect(arg.where.occurredAt.lt).toBeInstanceOf(Date);
@@ -179,20 +189,21 @@ describe('MindEventIngestor', () => {
           updateMany: jest.fn().mockResolvedValue({ count: 0 }),
         },
       };
-      ingestor = new MindEventIngestor(
-        spine as unknown as MindEventSpine,
-        hebbian,
-        prisma as never,
-      );
+      ingestor = new MindEventIngestor(asMindEventSpine(spine), hebbian, prisma as never);
 
       spine.claimPendingEvents.mockResolvedValue({ events: [] });
 
       await ingestor.tickAllWorkspaces();
 
-      const findArg = prisma.mindOutboxEvent.findMany.mock.calls[0]?.[0] as {
+      type FindManyArg = {
         where: { eventType: { in: string[] }; status: string };
         distinct: string[];
       };
+      const findCall = (prisma.mindOutboxEvent.findMany.mock.calls as Array<[FindManyArg]>)[0];
+      if (!findCall) {
+        throw new Error('expected findMany to have been called');
+      }
+      const findArg = findCall[0];
       expect(findArg.where.eventType.in).toEqual([
         'cognition.decision_made',
         'cognition.self_modification.proposed',
@@ -213,11 +224,7 @@ describe('MindEventIngestor', () => {
           updateMany: jest.fn().mockResolvedValue({ count: 0 }),
         },
       };
-      ingestor = new MindEventIngestor(
-        spine as unknown as MindEventSpine,
-        hebbian,
-        prisma as never,
-      );
+      ingestor = new MindEventIngestor(asMindEventSpine(spine), hebbian, prisma as never);
 
       // First claim (ws-1 decisions) throws; all other claims resolve empty.
       spine.claimPendingEvents

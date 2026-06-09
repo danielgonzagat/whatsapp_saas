@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-
 import { BadRequestException } from '@nestjs/common';
 import type { AuthenticatedRequest } from '../common/interfaces';
 import { ReportsController } from './reports.controller';
@@ -78,7 +76,7 @@ describe('ReportsController', () => {
       expect(sendEmail).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'ops@example.com',
-          subject: expect.stringContaining('Resumo de Vendas'),
+          subject: expect.stringContaining('Resumo de Vendas') as string,
         }),
       );
     });
@@ -97,7 +95,7 @@ describe('ReportsController', () => {
       expect(sendEmail).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'ops@example.com',
-          subject: expect.stringContaining('Assinaturas'),
+          subject: expect.stringContaining('Assinaturas') as string,
         }),
       );
       expect(res).toMatchObject({ success: true, reportType: 'assinaturas' });

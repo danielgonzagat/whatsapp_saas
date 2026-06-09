@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-
 import { NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ScrapersService } from './scrapers.service';
@@ -143,17 +141,15 @@ describe('ScrapersService', () => {
       ]);
       const result = await service.importLeads('ws-1', 'j-1');
       expect(result.count).toBe(1);
+      const scrapedFieldsMatcher: Record<string, unknown> = expect.objectContaining({
+        scrapingJobId: 'j-1',
+        scrapedFrom: 'SCRAPER:google-maps',
+      }) as Record<string, unknown>;
       expect(prisma.contact.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { workspaceId_phone: { workspaceId: 'ws-1', phone: '+5511' } },
-          update: expect.objectContaining({
-            scrapingJobId: 'j-1',
-            scrapedFrom: 'SCRAPER:google-maps',
-          }),
-          create: expect.objectContaining({
-            scrapingJobId: 'j-1',
-            scrapedFrom: 'SCRAPER:google-maps',
-          }),
+          update: scrapedFieldsMatcher,
+          create: scrapedFieldsMatcher,
         }),
       );
       expect(prisma.scrapedLead.update).toHaveBeenCalledWith({

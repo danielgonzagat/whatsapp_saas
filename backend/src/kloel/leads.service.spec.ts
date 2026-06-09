@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { LeadsService } from './leads.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -413,7 +411,7 @@ describe('LeadsService', () => {
         // Search disjunction is AND-nested so it does not clobber provenance.
         expect(callArg.where.AND).toEqual([
           {
-            OR: expect.arrayContaining([
+            OR: arrayContains([
               { name: { contains: 'maria', mode: 'insensitive' } },
               { email: { contains: 'maria', mode: 'insensitive' } },
               { phone: { contains: 'maria', mode: 'insensitive' } },

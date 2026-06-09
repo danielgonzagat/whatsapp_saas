@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { ModuleRef } from '@nestjs/core';
@@ -31,7 +29,9 @@ jest.mock('./billing-webhook.cancel', () => ({
   cancelSubscriptionByStripeId: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock('./billing-subscription-status.helper', () => ({
-  ...jest.requireActual('./billing-subscription-status.helper'),
+  ...jest.requireActual<typeof import('./billing-subscription-status.helper')>(
+    './billing-subscription-status.helper',
+  ),
   markSubscriptionStatusHelper: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock('./billing-webhook.helpers', () => ({

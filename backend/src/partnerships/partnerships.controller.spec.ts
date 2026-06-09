@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-
 import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { PartnershipsController } from './partnerships.controller';
 import type { PartnershipsService } from './partnerships.service';
@@ -73,7 +71,7 @@ describe('PartnershipsController workspace resolution (cross-tenant safe)', () =
 
   it('rejects a body workspaceId that mismatches the token (Forbidden)', () => {
     const req = makeReq({
-      body: { workspaceId: 'ws-victim' } as AuthenticatedRequest['body'],
+      body: { workspaceId: 'ws-victim' },
     });
 
     // The mismatch is detected synchronously in the workspace resolver, before

@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-
 import { NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { CheckoutSocialProvider } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -227,9 +225,13 @@ describe('CheckoutSocialLeadService', () => {
         status: 'CONVERTED',
         convertedOrderId: 'order-1',
       });
-      const [updateArgs] = mockUpdate.mock.calls[0];
-      expect(updateArgs.data.status).toBe('CONVERTED');
-      expect(updateArgs.data.convertedOrderId).toBe('order-1');
+      const updateCalls = mockUpdate.mock.calls as Array<
+        [{ data: { status: string; convertedOrderId: string } }]
+      >;
+      const firstUpdateCall = updateCalls[0];
+      expect(firstUpdateCall).toBeDefined();
+      expect(firstUpdateCall?.[0].data.status).toBe('CONVERTED');
+      expect(firstUpdateCall?.[0].data.convertedOrderId).toBe('order-1');
     });
   });
 });

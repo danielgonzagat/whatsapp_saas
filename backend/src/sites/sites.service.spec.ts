@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   NotFoundException,
@@ -307,12 +305,13 @@ describe('SitesService', () => {
 
       await service.listDomains(ws, 'kloel-site-1');
 
+      const bridgedDataMatcher: Record<string, unknown> = expect.objectContaining({
+        legacyKloelSiteId: 'kloel-site-1',
+        status: 'PUBLISHED',
+      }) as Record<string, unknown>;
       expect(prisma.site.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
-            legacyKloelSiteId: 'kloel-site-1',
-            status: 'PUBLISHED',
-          }),
+          data: bridgedDataMatcher,
         }),
       );
       expect(prisma.siteDomain.findMany).toHaveBeenCalledWith(

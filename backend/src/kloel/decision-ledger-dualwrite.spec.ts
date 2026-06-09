@@ -1,8 +1,12 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
-
 import { DecisionOutcomeService } from './decision-outcome.service';
 import { StructuredLogger } from '../logging/structured-logger';
 import type { PrismaService } from '../prisma/prisma.service';
+
+const nthCallArg = (mock: jest.Mock, i: number): Record<string, unknown> => {
+  const calls = mock.mock.calls as Array<[Record<string, unknown>]>;
+  const call = calls[i];
+  return call ? call[0] : {};
+};
 
 /**
  * Covers the ADDITIVE, flag-gated decision-ledger dual-write from
@@ -136,7 +140,7 @@ describe('DecisionOutcomeService — RAC_MindPolicy decision-ledger dual-write (
       select: { id: true },
     });
     expect(prisma.mindPolicy.create).toHaveBeenCalledTimes(1);
-    const created = prisma.mindPolicy.create.mock.calls[0][0].data;
+    const created = nthCallArg(prisma.mindPolicy.create, 0).data as Record<string, unknown>;
     expect(created.workspaceId).toBe('ws-1');
     expect(created.decisionType).toBe('chat_reply');
     expect(created.chosen).toBe('engage');
@@ -170,14 +174,15 @@ describe('DecisionOutcomeService — RAC_MindPolicy decision-ledger dual-write (
 
     expect(prisma.decisionOutcome.updateMany).toHaveBeenCalledTimes(1);
     expect(prisma.mindPolicy.updateMany).toHaveBeenCalledTimes(1);
-    const call = prisma.mindPolicy.updateMany.mock.calls[0][0];
+    const call = nthCallArg(prisma.mindPolicy.updateMany, 0);
     expect(call.where).toEqual({
       workspaceId: 'ws-1',
       outcomeKey: 'chat:ws-1:abc',
       resolvedAt: null,
     });
-    expect(call.data.outcome).toBe(1);
-    expect(call.data.resolvedAt).toBeInstanceOf(Date);
+    const callData = call.data as Record<string, unknown>;
+    expect(callData.outcome).toBe(1);
+    expect(callData.resolvedAt).toBeInstanceOf(Date);
   });
 
   it('flag ON + mirror create throws → canonical recordDecision still succeeds, error swallowed + warn-logged', async () => {
