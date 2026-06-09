@@ -4,6 +4,7 @@ import { InboxModule } from '../inbox/inbox.module';
 import { KloelModule } from '../kloel/kloel.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WhatsappModule } from './channels/whatsapp/whatsapp.module';
+import { MarketingChannelsModule } from './channels/marketing-channels.module';
 import { EmailMarketingController } from './email-marketing.controller';
 import { EmailMarketingService } from './email-marketing.service';
 import { EmailMarketingWebhookController } from './email-marketing-webhook.controller';
@@ -42,6 +43,10 @@ import { EmailInboundService } from '../email/email-inbound.service';
     PrismaModule,
     AuthModule,
     forwardRef(() => WhatsappModule),
+    // Provides ChannelMessageDispatchService for the TikTokInboxController's
+    // flag-gated canonical-dispatch route (P2). forwardRef because
+    // MarketingChannelsModule imports MarketingModule (bidirectional).
+    forwardRef(() => MarketingChannelsModule),
     forwardRef(() => InboxModule),
     forwardRef(() => KloelModule),
   ],

@@ -85,6 +85,9 @@ export function normalizeChannel(channel: DispatchChannel): ChannelKind | null {
     case 'email_transactional':
     case 'email-transactional':
       return ChannelKind.EMAIL_TRANSACTIONAL;
+    case 'tiktok':
+    case 'tt':
+      return ChannelKind.TIKTOK;
     default:
       return null;
   }
@@ -264,6 +267,26 @@ export function buildEmailTransactional(
     toEmail: to,
     subject: opts.subject ?? '',
     html,
+  };
+}
+
+/**
+ * Build the discriminated input for the TIKTOK channel
+ * ({@link ChannelKind.TIKTOK}). TikTok Business Messaging has NO programmatic
+ * outbound-send API today (inbound webhook only), so the registry routes this
+ * to {@link TikTokDispatchAdapter}, which resolves it to an HONEST blocked
+ * result — this builder never fakes a send, it only shapes the canonical input.
+ */
+export function buildTikTok(
+  workspaceId: string,
+  to: string,
+  message: string,
+): ChannelSendInput {
+  return {
+    channelKind: ChannelKind.TIKTOK,
+    workspaceId,
+    to,
+    message,
   };
 }
 
