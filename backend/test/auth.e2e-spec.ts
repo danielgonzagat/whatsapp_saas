@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any */
-
 process.env.DATABASE_URL =
   process.env.DATABASE_URL || 'postgresql://postgres:password@localhost:5432/whatsapp_saas';
 process.env.REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
@@ -7,18 +5,22 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret';
 process.env.AUTH_OPTIONAL = 'true';
 
 jest.mock('ioredis', () => {
-  const Redis = class {
-    private store = new Map<string, any>();
-    constructor(..._args: any[]) {}
+  const Redis = class RedisMock {
+    private store = new Map<string, unknown>();
+    constructor(..._args: unknown[]) {}
+    getMaxListeners = () => 10;
+    setMaxListeners = (_n: number) => this;
     get = async (key: string) => this.store.get(key);
     setex = async (key: string, _ttl: number, value: string) => this.store.set(key, value);
     incr = async (key: string) => {
-      const v = (this.store.get(key) || 0) + 1;
+      const current = this.store.get(key);
+      const v = (typeof current === 'number' ? current : 0) + 1;
       this.store.set(key, v);
       return v;
     };
     incrby = async (key: string, n: number) => {
-      const v = (this.store.get(key) || 0) + n;
+      const current = this.store.get(key);
+      const v = (typeof current === 'number' ? current : 0) + n;
       this.store.set(key, v);
       return v;
     };
@@ -28,7 +30,7 @@ jest.mock('ioredis', () => {
     psubscribe = async () => {};
     subscribe = async () => {};
     publish = async () => 1;
-    duplicate = () => new (Redis as any)();
+    duplicate = () => new RedisMock();
     on = () => {};
     quit = async () => {};
     disconnect = () => {};
@@ -39,7 +41,7 @@ jest.mock('ioredis', () => {
 jest.mock('bullmq', () => {
   class Dummy {
     name: string;
-    constructor(name?: string, ..._args: any[]) {
+    constructor(name?: string, ..._args: unknown[]) {
       this.name = name || 'dummy';
     }
     add = async () => {};
@@ -62,6 +64,7 @@ jest.mock('bullmq', () => {
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
+import type { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 
@@ -87,13 +90,13 @@ describe('Auth (e2e)', () => {
     const email = `e2e_${Date.now()}_${Math.random().toString(16).slice(2)}@example.com`;
     const password = 'SenhaForte123';
 
-    await request(app.getHttpServer())
+    await request(app.getHttpServer() as App)
       .get('/auth/check-email')
       .query({ email })
       .expect(200)
       .expect({ exists: false });
 
-    const registerRes = await request(app.getHttpServer())
+    const registerRes = await request(app.getHttpServer() as App)
       .post('/auth/register')
       .send({
         name: 'E2E',
@@ -108,13 +111,13 @@ describe('Auth (e2e)', () => {
     expect(registerRes.body).toHaveProperty('access_token');
     expect(registerRes.body).toHaveProperty('refresh_token');
 
-    await request(app.getHttpServer())
+    await request(app.getHttpServer() as App)
       .post('/auth/register')
       .send({ name: 'E2E', email, password })
       .expect(409)
       .expect({ error: 'Email já em uso' });
 
-    const loginRes = await request(app.getHttpServer())
+    const loginRes = await request(app.getHttpServer() as App)
       .post('/auth/login')
       .send({ email, password })
       .expect((res) => {
@@ -123,7 +126,7 @@ describe('Auth (e2e)', () => {
 
     expect(loginRes.body).toHaveProperty('access_token');
 
-    await request(app.getHttpServer())
+    await request(app.getHttpServer() as App)
       .post('/auth/oauth')
       .send({
         provider: 'google',
@@ -135,7 +138,7 @@ describe('Auth (e2e)', () => {
         expect([200, 201]).toContain(res.status);
       });
 
-    await request(app.getHttpServer())
+    await request(app.getHttpServer() as App)
       .post('/auth/oauth')
       .send({
         provider: 'apple',
@@ -157,7 +160,7 @@ describe('Auth (e2e)', () => {
     const email = `e2e_rate_${Date.now()}_${Math.random().toString(16).slice(2)}@example.com`;
     const password = 'SenhaForte123';
 
-    await request(app.getHttpServer())
+    await request(app.getHttpServer() as App)
       .post('/auth/register')
       .send({ name: 'E2E', email, password, workspaceName: 'E2E Workspace' })
       .expect((res) => {
@@ -167,7 +170,7 @@ describe('Auth (e2e)', () => {
     // Pode virar 429 antes por rate limit adicional (IP e IP+email)
     let blocked = false;
     for (let i = 0; i < 10; i++) {
-      const res = await request(app.getHttpServer())
+      const res = await request(app.getHttpServer() as App)
         .post('/auth/login')
         .send({ email, password: 'wrong' });
 
