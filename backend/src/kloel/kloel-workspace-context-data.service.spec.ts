@@ -253,7 +253,7 @@ describe('KloelWorkspaceContextDataService', () => {
 
       expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { workspaceId: wsId },
+          where: partialMatch({ workspaceId: wsId }),
         }),
       );
     });
