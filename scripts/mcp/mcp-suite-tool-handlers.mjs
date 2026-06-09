@@ -341,7 +341,7 @@ export function createToolHandlers({
         protectedFiles,
         rules: [
           'no protected governance edits without explicit human approval',
-          'no destructive git file restoration',
+          'no git restore',
           'read-only postgres by default',
           'atomic-edit first for code edits',
         ],
