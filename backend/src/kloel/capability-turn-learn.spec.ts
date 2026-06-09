@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+
 /**
  * Proves the ADDITIVE capability-turn observability closure
  * (KLOEL_CAPABILITY_TURN_LEARN) on the `thinkSyncImpl` sync chat path.

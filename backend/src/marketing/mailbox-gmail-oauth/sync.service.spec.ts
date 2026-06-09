@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
 import { GmailSyncService } from './sync.service';
 import type { GmailMailboxRecord, GmailListResponse, GmailMessageResponse } from './types';
 import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';

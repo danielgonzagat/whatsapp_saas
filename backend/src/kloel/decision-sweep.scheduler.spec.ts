@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-redundant-type-constituents */
 import { DecisionSweepScheduler } from './decision-sweep.scheduler';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { DecisionOutcomeService } from './decision-outcome.service';

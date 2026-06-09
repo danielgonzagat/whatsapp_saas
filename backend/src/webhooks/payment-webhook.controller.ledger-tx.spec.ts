@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * Flag-gated atomicity for the Stripe sale/payment co-writes
  * (KLOEL_PAYMENT_LEDGER_TX). Covers BOTH flag states:

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { SpineEventRef } from '../mind/mind.types';
 import { LtvProjectionService } from './ltv-projection.service';
 import type { LtvProjection } from './postsale-consumers.types';

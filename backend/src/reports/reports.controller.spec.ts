@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+
 import { BadRequestException } from '@nestjs/common';
 import type { AuthenticatedRequest } from '../common/interfaces';
 import { ReportsController } from './reports.controller';

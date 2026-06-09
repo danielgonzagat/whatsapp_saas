@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+
 import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { PartnershipsController } from './partnerships.controller';
 import type { PartnershipsService } from './partnerships.service';

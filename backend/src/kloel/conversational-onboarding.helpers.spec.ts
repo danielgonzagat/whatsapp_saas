@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
 import { buildOnboardingFallback, writeSseResponse } from './conversational-onboarding.helpers';
 import type { StructuredLogger } from '../logging/structured-logger';
 

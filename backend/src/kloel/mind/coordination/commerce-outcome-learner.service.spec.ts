@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
 import { Prisma } from '@prisma/client';
 import { CommerceOutcomeLearnerService } from './commerce-outcome-learner.service';
 import type { SpineEventEnvelope } from '../../spine/spine-event.types';

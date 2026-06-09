@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
+
 import { WalletController } from './wallet.controller';
 import { partialMatch } from '../../test/helpers/match-instance';
 

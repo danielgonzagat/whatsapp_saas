@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any */
+
 process.env.DATABASE_URL =
   process.env.DATABASE_URL || 'postgresql://postgres:password@localhost:5432/whatsapp_saas';
 process.env.REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';

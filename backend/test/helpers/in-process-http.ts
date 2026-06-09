@@ -90,9 +90,13 @@ function decodeChunkedBody(body: Buffer): Buffer {
   let offset = 0;
   for (;;) {
     const lineEnd = body.indexOf('\r\n', offset);
-    if (lineEnd === -1) break;
+    if (lineEnd === -1) {
+      break;
+    }
     const size = Number.parseInt(body.subarray(offset, lineEnd).toString('ascii'), 16);
-    if (!Number.isFinite(size) || size <= 0) break;
+    if (!Number.isFinite(size) || size <= 0) {
+      break;
+    }
     parts.push(body.subarray(lineEnd + 2, lineEnd + 2 + size));
     offset = lineEnd + 2 + size + 2;
   }
@@ -112,7 +116,9 @@ function parseRawResponse(raw: Buffer): InjectedResponse {
   const headers: Record<string, string> = {};
   for (const line of headerLines) {
     const colonIndex = line.indexOf(':');
-    if (colonIndex === -1) continue;
+    if (colonIndex === -1) {
+      continue;
+    }
     headers[line.slice(0, colonIndex).trim().toLowerCase()] = line.slice(colonIndex + 1).trim();
   }
 

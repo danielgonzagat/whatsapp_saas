@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 // Jest E2E mock for bullmq
 // Avoids opening real Redis connections/timers.
 

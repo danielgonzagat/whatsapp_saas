@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
+
 import { DecisionOutcomeService } from './decision-outcome.service';
 import { StructuredLogger } from '../logging/structured-logger';
 import type { PrismaService } from '../prisma/prisma.service';

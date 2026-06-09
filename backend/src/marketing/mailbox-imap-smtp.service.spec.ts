@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
+
 import { BadRequestException } from '@nestjs/common';
 import { MailboxProvider, MailboxStatus } from '@prisma/client';
 import { createTransport } from 'nodemailer';

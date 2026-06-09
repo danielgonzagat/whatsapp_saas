@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { describe, expect, it, jest } from '@jest/globals';
 import {
   emitPerceptToMindSpine,

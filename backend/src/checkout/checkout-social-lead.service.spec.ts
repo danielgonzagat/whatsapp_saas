@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
 import { NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { CheckoutSocialProvider } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';

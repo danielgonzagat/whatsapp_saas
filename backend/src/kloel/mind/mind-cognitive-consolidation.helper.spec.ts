@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
+
 /**
  * Proves the cognitive consolidation pass fires the previously-dormant
  * recovery / role / offer detectors over the long-tick's events and emits a
