@@ -14,10 +14,10 @@ import {
 const WS = 'ws-1';
 const NOW = 1_700_000_000_000;
 
-function msg(ingestMode: InboundMessage['ingestMode'], workspaceId = WS): Pick<
-  InboundMessage,
-  'ingestMode' | 'workspaceId'
-> {
+function msg(
+  ingestMode: InboundMessage['ingestMode'],
+  workspaceId = WS,
+): Pick<InboundMessage, 'ingestMode' | 'workspaceId'> {
   return { ingestMode, workspaceId };
 }
 

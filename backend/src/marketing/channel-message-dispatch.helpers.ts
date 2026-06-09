@@ -277,11 +277,7 @@ export function buildEmailTransactional(
  * to {@link TikTokDispatchAdapter}, which resolves it to an HONEST blocked
  * result — this builder never fakes a send, it only shapes the canonical input.
  */
-export function buildTikTok(
-  workspaceId: string,
-  to: string,
-  message: string,
-): ChannelSendInput {
+export function buildTikTok(workspaceId: string, to: string, message: string): ChannelSendInput {
   return {
     channelKind: ChannelKind.TIKTOK,
     workspaceId,
