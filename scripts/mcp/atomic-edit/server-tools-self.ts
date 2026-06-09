@@ -59,6 +59,7 @@ const MANDATORY_SELF_EXPANSION_VALIDATORS: readonly SelfExpansionValidator[] = [
   { phase: 'self-lattice', command: 'node gates/self-expansion-validator-lattice.proof.mjs --json' },
   { phase: 'self-evolution', command: 'node gates/self-evolution-harness.proof.mjs --json' },
   { phase: 'self-evolution-tool', command: 'node gates/self-evolution-mcp-tool.proof.mjs --json' },
+  { phase: 'self-evolution-disproof', command: 'node gates/self-evolution-disproof-consumer.proof.mjs --json' },
   { phase: 'benchmark', command: 'node gates/atomic-agent-bench.proof.mjs' },
   { phase: 'test', command: 'node gates/test-execution-gate.proof.mjs --json' },
   { phase: 'ledger', command: 'node proof-chain.proof.mjs --json' },
@@ -77,7 +78,9 @@ const MANDATORY_SELF_EXPANSION_VALIDATORS: readonly SelfExpansionValidator[] = [
 
 const SELF_EVOLUTION_ARCHIVE_REL = 'self-evolution-archive.jsonl';
 const SELF_EVOLUTION_ARCHIVE_ID = 'atomic-real-self-expansion-archive-v1';
-const SELF_EVOLUTION_POLICY_ID = 'atomic-real-self-expansion-admission-v1';;
+const SELF_EVOLUTION_POLICY_ID = 'atomic-real-self-expansion-admission-v1';
+const SELF_EVOLUTION_DISPROOF_CORPUS_REL = path.join('.atomic', 'disproof-corpus.jsonl');
+const DISPROOF_CORPUS_HARNESS_REL = path.join('scripts/mcp/atomic-edit-evolution', 'disproof-corpus-harness.mjs');
 
 function parseFileOps(raw: unknown[]): SelfFileOp[] {
   return raw.map((entry) => {
@@ -534,6 +537,9 @@ function selfExpansionSemanticOperatorScore(sourceText: string, appliedCount = 0
     'enforceSecurityMonotonicity',
     'buildRealSelfExpansionPromotionReceipt',
     'appendRealSelfExpansionArchive',
+    'recordSelfEvolutionRejection',
+    'appendSelfEvolutionDisproofCorpus',
+    'runDisproofCorpusHarness',
   ];
   return markers.filter((marker) => sourceText.includes(marker)).length + appliedCount;
 }
@@ -618,10 +624,7 @@ function buildRealSelfExpansionPromotionReceipt(args: {
   const candidateGates = proofGateFacts(args.proofs, requiredCommands);
   const passedGateCount = candidateGates.filter((gate) => gate.status === 'passed').length;
   const parentSemanticOperators = selfExpansionSemanticOperatorScore(parentSource);
-  const candidateSemanticOperators = Math.max(
-    parentSemanticOperators,
-    selfExpansionSemanticOperatorScore(candidateSource, args.applied.length),
-  );
+  const candidateSemanticOperators = selfExpansionSemanticOperatorScore(candidateSource, args.applied.length);
   const parent = {
     variantId: `real-self-expansion-parent:${parentDigest}`,
     parentId: null,
@@ -696,6 +699,116 @@ function appendRealSelfExpansionArchive(selfRoot: string, receipt: JsonRecord): 
     archiveEntrySha256: entry.archiveEntrySha256 ?? null,
     receiptSha256: entry.receiptSha256 ?? receipt.receiptSha256 ?? null,
     chain: appended.chain ?? null,
+  };
+}
+
+function runDisproofCorpusHarness(mode: string, input: unknown): JsonRecord {
+  const harnessPath = path.join(REPO_ROOT, DISPROOF_CORPUS_HARNESS_REL);
+  if (!fs.existsSync(harnessPath)) throw new Error(`disproof corpus harness is missing: ${DISPROOF_CORPUS_HARNESS_REL}`);
+  const result = childProcess.spawnSync(process.execPath, [harnessPath, mode], {
+    cwd: REPO_ROOT,
+    input: stableJson(input),
+    encoding: 'utf8',
+    timeout: 30000,
+    maxBuffer: 10 * 1024 * 1024,
+  });
+  if (result.status !== 0) {
+    throw new Error(
+      `disproof corpus harness ${mode} failed: ${(result.stderr || result.stdout || 'unknown').toString().trim()}`,
+    );
+  }
+  const payload = JSON.parse(result.stdout || '{}') as JsonRecord;
+  if (payload.ok === false) throw new Error(`disproof corpus harness ${mode} rejected input: ${String(payload.error ?? 'unknown')}`);
+  return payload;
+}
+
+function appendSelfEvolutionDisproofCorpus(witnessArgs: JsonRecord): JsonRecord {
+  const corpusPath = path.join(REPO_ROOT, SELF_EVOLUTION_DISPROOF_CORPUS_REL);
+  const corpusText = fs.existsSync(corpusPath) ? fs.readFileSync(corpusPath, 'utf8') : '';
+  const appended = runDisproofCorpusHarness('--append-witness-jsonl', { corpusText, witnessArgs });
+  if (typeof appended.corpusText !== 'string') throw new Error('disproof corpus append returned no corpusText');
+  fs.mkdirSync(path.dirname(corpusPath), { recursive: true });
+  atomicWrite(corpusPath, appended.corpusText as string);
+  return {
+    corpusFile: SELF_EVOLUTION_DISPROOF_CORPUS_REL,
+    deduped: appended.deduped ?? false,
+    record: appended.record ?? null,
+    chain: appended.chain ?? null,
+  };
+}
+
+function promotionReceiptRejectionCodes(receipt: JsonRecord): string[] {
+  const codes = Array.isArray(receipt.rejections) ? receipt.rejections.map(String).filter((entry) => entry.length > 0) : [];
+  return codes.length > 0 ? codes : ['self-evolution.reject'];
+}
+
+function recordSelfEvolutionRejection(selfRoot: string, args: {
+  receipt: JsonRecord;
+  reason: string;
+  failedProofs: ProofCommandResult[];
+  effectsBeforeRollback: FileEffect[];
+  intent: string | null;
+}): JsonRecord {
+  const archive = appendRealSelfExpansionArchive(selfRoot, args.receipt);
+  const rejectionCodes = promotionReceiptRejectionCodes(args.receipt);
+  const invariantId = rejectionCodes[0] ?? 'self-evolution.reject';
+  const firstEffect = args.effectsBeforeRollback.find((effect) => typeof effect.file === 'string');
+  const locusFile = firstEffect ? selfRootRelativeEffectPath(firstEffect.file) : 'scripts/mcp/atomic-edit';
+  const candidateId = typeof args.receipt.candidateId === 'string' ? args.receipt.candidateId : 'unknown-candidate';
+  const archiveEntrySha256 = typeof archive.archiveEntrySha256 === 'string' ? archive.archiveEntrySha256 : sha256(stableJson(archive));
+  const failedProofFacts = args.failedProofs.map((proof) => ({
+    command: proof.command,
+    stdoutSha256: sha256(proof.stdout),
+    stderrSha256: sha256(proof.stderr),
+    stdoutSummary: proofFailureStdoutSummary(proof.stdout),
+    stderrSummary: proofFailureSnippet(proof.stderr, 400),
+  }));
+  const proposalDigest = sha256(stableJson({
+    candidateId,
+    intent: args.intent,
+    rejections: rejectionCodes,
+    failedProofFacts,
+    effects: args.effectsBeforeRollback,
+  }));
+  const negativeBefore = stableJson({
+    candidateId,
+    reason: args.reason,
+    rejections: rejectionCodes,
+    failedProofFacts,
+    effects: args.effectsBeforeRollback,
+  });
+  const negativeActionProof = requireNegativeActionProof({
+    action: 'atomic_expand_self:reject_candidate',
+    target: candidateId,
+    targetUnit: 'self-evolution-candidate',
+    before: negativeBefore,
+    after: '',
+    removedByteCount: Buffer.byteLength(negativeBefore, 'utf8'),
+    proofOfIncorrectness: `Self-evolution candidate rejected by hard gate(s): ${rejectionCodes.join(', ')}. Candidate bytes were reverted and may only persist as negative training evidence.`,
+    disproofWitness: { kind: 'gate-red', gate: invariantId, readLoci: [locusFile] },
+  });
+  const disproofCorpus = appendSelfEvolutionDisproofCorpus({
+    invariantId,
+    locus: { file: locusFile, region: candidateId },
+    counterexample: {
+      reason: args.reason,
+      rejections: rejectionCodes,
+      failedProofFacts,
+      negativeActionProof,
+    },
+    proposalDigest,
+    parentSha: typeof args.receipt.parentId === 'string' ? args.receipt.parentId : null,
+    generation: typeof archive.sequence === 'number' ? archive.sequence : 0,
+    verdictCodes: rejectionCodes,
+    repairHint: args.failedProofs.length > 0 ? 'Repair the named hard gate; this hint is non-trusted and the gate remains the judge.' : undefined,
+    archiveEntrySha256,
+  });
+  return {
+    reason: args.reason,
+    rejections: rejectionCodes,
+    negativeActionProof,
+    archive,
+    disproofCorpus,
   };
 }
 
@@ -961,10 +1074,30 @@ export function registerToolsSelf(server: McpServer): void {
           const proofDurationMs = Date.now() - proofStartedAt;
           const failed = proofs.filter((p) => !p.ok);
           if (failed.length > 0) {
-            const effects = diffEffect(snap);
-            const restored = rollbackEffectStrict(snap, effects, 'atomic_expand_self');
+            const effectsBeforeRejectRollback = diffEffect(snap);
+            const rejectionCandidateSnap = captureEffectSnapshot(selfRoot);
+            const rejectionReceipt = buildRealSelfExpansionPromotionReceipt({
+              parentSnap: snap,
+              candidateSnap: rejectionCandidateSnap,
+              effectsBeforePromotion: effectsBeforeRejectRollback,
+              proofs,
+              proofCommands,
+              proofDurationMs,
+              applied,
+              intent: a.intent ?? null,
+            });
+            const restored = rollbackEffectStrict(snap, effectsBeforeRejectRollback, 'atomic_expand_self');
+            const selfEvolutionReject = recordSelfEvolutionRejection(selfRoot, {
+              receipt: rejectionReceipt,
+              reason: 'proof failed',
+              failedProofs: failed,
+              effectsBeforeRollback: effectsBeforeRejectRollback,
+              intent: a.intent ?? null,
+            });
             return fail(
-              `atomic_expand_self rolled back ${restored} file effect(s): proof failed: ` + formatFailedProofs(failed),
+              `atomic_expand_self rolled back ${restored} candidate file effect(s): proof failed: ` +
+                formatFailedProofs(failed) +
+                `; selfEvolutionReject=${stableJson({ rejections: selfEvolutionReject.rejections, archive: selfEvolutionReject.archive, disproofCorpus: selfEvolutionReject.disproofCorpus })}`,
             );
           }
           const effectsBeforePromotion = diffEffect(snap);
@@ -983,10 +1116,20 @@ export function registerToolsSelf(server: McpServer): void {
           if (promotionReceipt.decision !== 'promote') {
             const effectsBeforeRejectRollback = diffEffect(snap);
             const restored = rollbackEffectStrict(snap, effectsBeforeRejectRollback, 'atomic_expand_self');
+            const selfEvolutionReject = recordSelfEvolutionRejection(selfRoot, {
+              receipt: promotionReceipt,
+              reason: 'promotion rejected',
+              failedProofs: [],
+              effectsBeforeRollback: effectsBeforeRejectRollback,
+              intent: a.intent ?? null,
+            });
             const rejections = Array.isArray(promotionReceipt.rejections)
               ? promotionReceipt.rejections.join(', ')
               : 'unknown rejection';
-            return fail(`atomic_expand_self rolled back ${restored} file effect(s): self-evolution promotion rejected: ${rejections}`);
+            return fail(
+              `atomic_expand_self rolled back ${restored} candidate file effect(s): self-evolution promotion rejected: ${rejections}; ` +
+                `selfEvolutionReject=${stableJson({ rejections: selfEvolutionReject.rejections, archive: selfEvolutionReject.archive, disproofCorpus: selfEvolutionReject.disproofCorpus })}`,
+            );
           }
           const selfEvolutionArchive = appendRealSelfExpansionArchive(selfRoot, promotionReceipt);
           // All proofs passed and the Darwin-Godel admission receipt was archived.

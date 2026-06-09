@@ -237,7 +237,7 @@ async function main() {
     args: [],
     cwd: hostRoot,
     stderr: 'pipe',
-    env: { ...process.env, ATOMIC_HOST_SANDBOX: '', ATOMIC_HOST_ATOMIC_ONLY: '', ATOMIC_HOST_WRITE_ROOT: hostRoot, ATOMIC_EXEC_BROKER_SOCKET: '', CODEX_PROJECT_DIR: hostRoot, TMPDIR: hostRoot, TMP: hostRoot, TEMP: hostRoot, ATOMIC_SINGLE_TOOL_CALL: '', ATOMIC_SINGLE_TOOL_NAME: '', ATOMIC_SINGLE_TOOL_ARGS_JSON: '' },
+    env: { ...process.env, ATOMIC_HOST_SANDBOX: process.env.ATOMIC_HOST_SANDBOX ?? 'macos-sandbox-exec', ATOMIC_HOST_ATOMIC_ONLY: process.env.ATOMIC_HOST_ATOMIC_ONLY ?? '1', ATOMIC_HOST_WRITE_ROOT: process.env.ATOMIC_HOST_WRITE_ROOT ?? hostRoot, ATOMIC_EXEC_BROKER_SOCKET: process.env.ATOMIC_EXEC_BROKER_SOCKET ?? '', CODEX_PROJECT_DIR: hostRoot, TMPDIR: hostRoot, TMP: hostRoot, TEMP: hostRoot, ATOMIC_SINGLE_TOOL_CALL: '', ATOMIC_SINGLE_TOOL_NAME: '', ATOMIC_SINGLE_TOOL_ARGS_JSON: '' },
   });
   const client = new Client({ name: 'compiled-mcp-y-certificate-proof', version: '1.0.0' });
   try {

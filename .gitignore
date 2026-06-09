@@ -203,3 +203,13 @@ scripts/mcp/atomic-edit/.z3venv/
 .atomic-*.out
 .atomic-scratch/
 .atomic-test-tmp/
+
+# Cascas de TMPDIR de builds na raiz — packs webpack ~468MB que o envelope não
+# consegue deletar (rm manual pendente) + scratch transitório de sessões; ignorados
+# para o worktree poder ficar limpo (frontend:build:clean exige porcelain vazio).
+909073dea1f127d9cf0eb420813fc5b9/
+5d406ffa3ef1e36be83c02c976c1772a/
+dfpuXW1uFOqNEd6kFVZHE/
+ecc-mcp-home-*/
+ecc-mcp-health-*/
+ecc-session-recordings/

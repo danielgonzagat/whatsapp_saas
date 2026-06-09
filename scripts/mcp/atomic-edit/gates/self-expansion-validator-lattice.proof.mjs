@@ -34,6 +34,7 @@ const requiredCommands = [
   'node gates/self-expansion-validator-lattice.proof.mjs --json',
   'node gates/self-evolution-harness.proof.mjs --json',
   'node gates/self-evolution-mcp-tool.proof.mjs --json',
+  'node gates/self-evolution-disproof-consumer.proof.mjs --json',
   'node gates/atomic-agent-bench.proof.mjs',
   'node gates/test-execution-gate.proof.mjs --json',
   'node proof-chain.proof.mjs --json',
@@ -73,6 +74,7 @@ const requiredPhases = [
   'self-lattice',
   'self-evolution',
   'self-evolution-tool',
+  'self-evolution-disproof',
   'self-evolution-real',
   'benchmark',
   'test',
@@ -151,6 +153,7 @@ function main() {
       hasMonotonicity: source.includes('monotonicity'),
       hasSelfEvolution: source.includes('self-evolution'),
       hasSelfEvolutionTool: source.includes('self-evolution-tool'),
+      hasSelfEvolutionDisproof: source.includes('self-evolution-disproof'),
       hasUsability: source.includes('usability'),
     },
   );

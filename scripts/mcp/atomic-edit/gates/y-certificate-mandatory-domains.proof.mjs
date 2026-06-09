@@ -149,6 +149,21 @@ function main() {
 
   record(
     results,
+    'compiled MCP certificate proof preserves inherited host broker instead of forcing stale state recovery',
+    !compiledProof.includes("ATOMIC_EXEC_BROKER_SOCKET: ''") &&
+      compiledProof.includes("ATOMIC_EXEC_BROKER_SOCKET: process.env.ATOMIC_EXEC_BROKER_SOCKET ?? ''") &&
+      compiledProof.includes("ATOMIC_HOST_SANDBOX: process.env.ATOMIC_HOST_SANDBOX ?? 'macos-sandbox-exec'") &&
+      compiledProof.includes("ATOMIC_HOST_ATOMIC_ONLY: process.env.ATOMIC_HOST_ATOMIC_ONLY ?? '1'"),
+    {
+      blanksBroker: compiledProof.includes("ATOMIC_EXEC_BROKER_SOCKET: ''"),
+      preservesBroker: compiledProof.includes("ATOMIC_EXEC_BROKER_SOCKET: process.env.ATOMIC_EXEC_BROKER_SOCKET ?? ''"),
+      preservesSandbox: compiledProof.includes("ATOMIC_HOST_SANDBOX: process.env.ATOMIC_HOST_SANDBOX ?? 'macos-sandbox-exec'"),
+      preservesAtomicOnly: compiledProof.includes("ATOMIC_HOST_ATOMIC_ONLY: process.env.ATOMIC_HOST_ATOMIC_ONLY ?? '1'"),
+    },
+  );
+
+  record(
+    results,
     'compiled MCP proof requires all mandatory certificate domains GREEN',
     compiledProof.includes('const mandatoryDomains = [') &&
       compiledProof.includes("'codexEntrypointContract'") &&

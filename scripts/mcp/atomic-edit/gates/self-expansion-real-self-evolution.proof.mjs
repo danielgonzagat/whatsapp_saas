@@ -64,6 +64,15 @@ record(
     source.includes('self-evolution harness did not return a receipt object'),
 );
 record(
+  'candidate semantic operator score is not parent-clamped',
+  source.includes('const candidateSemanticOperators = selfExpansionSemanticOperatorScore(candidateSource, args.applied.length);') &&
+    !source.includes('const candidateSemanticOperators = Math.max('),
+  {
+    directScore: source.includes('const candidateSemanticOperators = selfExpansionSemanticOperatorScore(candidateSource, args.applied.length);'),
+    noMathMax: !source.includes('const candidateSemanticOperators = Math.max('),
+  },
+);
+record(
   'promotion reject is fail-closed and rolls back the edited tree instead of accepting a benchmark-only failure',
   rejectIndex > receiptIndex &&
     source.includes("rollbackEffectStrict(snap, effectsBeforeRejectRollback, 'atomic_expand_self')") &&
