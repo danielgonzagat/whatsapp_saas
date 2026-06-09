@@ -28,5 +28,9 @@
   },
   "line": {
     "no_new_eslint_disable::frontend/src/components/kloel/products/ProductNerveCenterRoot.js": true
+  },
+  "_notes": {
+    "frontend/src/components/kloel/graph/KloelGraphLiteralCanvas.tsx": "Immutable by product-owner decision (graph physics core); must not be split or edited. Grandfathered at its current size via the gate's own ratchet-baseline mechanism; the gate still fails if it grows.",
+    "_lineCountSemantics": "Caps use the gate's count (content.split('\\n').length), which equals wc -l + 1 for newline-terminated files."
   }
 }
