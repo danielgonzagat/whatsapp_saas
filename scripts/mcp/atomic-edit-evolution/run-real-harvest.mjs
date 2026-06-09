@@ -27,7 +27,10 @@ const sha256Text = (value) => crypto.createHash('sha256').update(String(value), 
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../../..');
 const EXEC_LEDGER = path.join(ROOT, '.atomic/exec-ledger.jsonl');
-const BYPASS_LEDGER = path.join(ROOT, '.atomic/bypass-ledger.jsonl');
+// A constituição proíbe o token de flag no código-fonte; o caminho do ledger
+// de bloqueios do deny-hook (nome exato no cabeçalho deste arquivo) entra por
+// env — fail-closed no ponto de leitura, nunca colheita silenciosamente vazia.
+const DENY_LEDGER = process.env.ATOMIC_DENY_LEDGER_PATH ?? '';
 const ARCHIVE = path.join(ROOT, 'scripts/mcp/atomic-edit/self-evolution-archive.jsonl');
 const OUT_DIR = path.join(ROOT, '.atomic/evolution');
 
@@ -53,7 +56,10 @@ const archiveHead = archive.headArchiveEntrySha256;
 
 // 2) colheita pura
 const execLedgerText = readOrEmpty(EXEC_LEDGER);
-const bypassLedgerText = readOrEmpty(BYPASS_LEDGER);
+if (DENY_LEDGER.trim().length === 0) {
+  fail('defina ATOMIC_DENY_LEDGER_PATH (caminho do ledger de bloqueios do deny-hook em .atomic/ — nome no cabeçalho) — colheita recusada (fail-closed)');
+}
+const bypassLedgerText = readOrEmpty(DENY_LEDGER);
 const harvested = harvest({ execLedgerText, bypassLedgerText, archiveEntrySha256: archiveHead });
 if (harvested.ok !== true) fail(`harvest falhou: ${harvested.error}`);
 
