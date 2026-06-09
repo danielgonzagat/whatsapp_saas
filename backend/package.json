@@ -95,9 +95,9 @@
   },
   "devDependencies": {
     "@eslint/js": "9.39.4",
-    "@nestjs/cli": "11.0.21",
+    "@nestjs/cli": "11.0.22",
     "@nestjs/schematics": "11.1.0",
-    "@nestjs/testing": "11.1.24",
+    "@nestjs/testing": "11.1.26",
     "@types/archiver": "^7.0.0",
     "@types/express": "5.0.6",
     "@types/jest": "30.0.0",
@@ -123,7 +123,7 @@
     "ts-node": "10.9.2",
     "tsconfig-paths": "4.2.0",
     "typescript": "5.9.3",
-    "typescript-eslint": "8.60.1"
+    "typescript-eslint": "8.61.0"
   },
   "jest": {
     "moduleFileExtensions": [
