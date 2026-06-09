@@ -53,7 +53,49 @@ export class UnifiedAgentActionsService {
     private readonly commerce: UnifiedAgentActionsCommerceService,
     private readonly auditService: AuditService,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly moduleRef?: import('@nestjs/core').ModuleRef,
   ) {}
+
+  private dispatchServiceCache?: {
+    dispatch(
+      workspaceId: string,
+      channel: string,
+      to: string,
+      message: string,
+      options?: Record<string, unknown>,
+    ): Promise<unknown>;
+  };
+
+  /**
+   * Lazily resolve the canonical {@link ChannelMessageDispatchService} via
+   * `ModuleRef` (OmniCore Wave 21). A static import would create a module cycle
+   * (kloel ↔ marketing/channels), so the runtime `moduleRef.get(..., { strict:
+   * false })` lookup is cycle-safe and returns `undefined` when the service (or
+   * the injected `ModuleRef`) is absent — callers then fail OPEN to the raw
+   * WhatsApp path (never a fake send). Cached after the first successful lookup.
+   * `protected` so it is overridable in tests / subclasses.
+   */
+  protected async resolveDispatchService(): Promise<
+    UnifiedAgentActionsService['dispatchServiceCache']
+  > {
+    if (this.dispatchServiceCache) {
+      return this.dispatchServiceCache;
+    }
+    if (!this.moduleRef) {
+      return undefined;
+    }
+    try {
+      const { ChannelMessageDispatchService } =
+        await import('../marketing/channel-message-dispatch.service');
+      const svc = this.moduleRef.get(ChannelMessageDispatchService, { strict: false });
+      if (svc) {
+        this.dispatchServiceCache = svc;
+      }
+      return svc ?? undefined;
+    } catch {
+      return undefined;
+    }
+  }
 
   str = actionStr;
   num = actionNum;
@@ -124,17 +166,29 @@ export class UnifiedAgentActionsService {
       if (!documentUrl) {
         return { success: false, error: 'URL ou nome do documento é obrigatório' };
       }
-      const result = await this.whatsappService.sendMessage(
-        workspaceId,
-        phone,
-        documentCaption || '',
-        {
-          mediaUrl: documentUrl,
-          mediaType: 'document',
-          caption: documentCaption || '',
-          ...(context || {}),
-        },
-      );
+      const sendOpts: Record<string, unknown> = {
+        mediaUrl: documentUrl,
+        mediaType: 'document',
+        caption: documentCaption || '',
+        ...(context || {}),
+      };
+      // Route through the ONE canonical dispatch front door when available,
+      // failing OPEN to the raw WhatsApp path so the document is always sent.
+      const dispatchService = await this.resolveDispatchService();
+      const result = dispatchService
+        ? await dispatchService.dispatch(
+            workspaceId,
+            'whatsapp',
+            phone,
+            documentCaption || '',
+            sendOpts,
+          )
+        : await this.whatsappService.sendMessage(
+            workspaceId,
+            phone,
+            documentCaption || '',
+            sendOpts,
+          );
       const sendResult =
         result && typeof result === 'object' ? (result as Record<string, unknown>) : {};
       if (sendResult.error) {

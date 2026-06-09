@@ -82,7 +82,50 @@ export class InboundProcessorService {
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly mindHook?: ChannelInboundHookService,
     @Optional() private readonly whatsappEmitter?: WhatsAppEventEmitterService,
+    @Optional() private readonly moduleRef?: import('@nestjs/core').ModuleRef,
   ) {}
+
+  private dispatchServiceCache?: {
+    dispatch(
+      workspaceId: string,
+      channel: string,
+      to: string,
+      message: string,
+      options?: Record<string, unknown>,
+    ): Promise<unknown>;
+  };
+
+  /**
+   * Lazily resolve the canonical {@link ChannelMessageDispatchService} via
+   * `ModuleRef` (OmniCore Wave 21). `MarketingChannelsModule` imports
+   * `WhatsappModule`, so a static import here would create a module cycle; the
+   * runtime `moduleRef.get(..., { strict: false })` lookup is cycle-safe and
+   * returns `undefined` when the service is not in the running graph (the
+   * inline-autopilot then fails OPEN to the raw WhatsApp path — never a fake
+   * send). The resolved instance is cached after the first successful lookup.
+   * `protected` so it is overridable in tests / subclasses.
+   */
+  protected async resolveDispatchService(): Promise<
+    InboundProcessorService['dispatchServiceCache']
+  > {
+    if (this.dispatchServiceCache) {
+      return this.dispatchServiceCache;
+    }
+    if (!this.moduleRef) {
+      return undefined;
+    }
+    try {
+      const { ChannelMessageDispatchService } =
+        await import('../../channel-message-dispatch.service');
+      const svc = this.moduleRef.get(ChannelMessageDispatchService, { strict: false });
+      if (svc) {
+        this.dispatchServiceCache = svc;
+      }
+      return svc ?? undefined;
+    } catch {
+      return undefined;
+    }
+  }
 
   private isWorkspaceSelfInbound(settings: ProviderSettings, from: string, phone: string): boolean {
     return isWorkspaceSelfInboundExt(settings, from, phone);
@@ -286,12 +329,14 @@ export class InboundProcessorService {
         !autonomousEnabled && this.shouldForceLiveAutonomyFallback(settings, ingestMode);
       if (autonomousEnabled || liveFallback) {
         if (this.shouldUseInlineReactiveProcessing(settings, ingestMode)) {
+          const dispatchService = await this.resolveDispatchService();
           await executeInlineAutopilot(
             {
               prisma: this.prisma,
               redis: this.redis,
               unifiedAgent: this.unifiedAgent,
               whatsappService: this.whatsappService,
+              ...(dispatchService ? { dispatchService } : {}),
               ...(this.opsAlert ? { opsAlert: this.opsAlert } : {}),
               logger: this.logger,
               contactDebounceMs: this.contactDebounceMs,
@@ -313,12 +358,14 @@ export class InboundProcessorService {
         }
         const workerAvailable = await this.workerRuntime.isAvailable();
         if (!workerAvailable) {
+          const dispatchService = await this.resolveDispatchService();
           await executeInlineAutopilot(
             {
               prisma: this.prisma,
               redis: this.redis,
               unifiedAgent: this.unifiedAgent,
               whatsappService: this.whatsappService,
+              ...(dispatchService ? { dispatchService } : {}),
               ...(this.opsAlert ? { opsAlert: this.opsAlert } : {}),
               logger: this.logger,
               contactDebounceMs: this.contactDebounceMs,
