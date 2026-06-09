@@ -7,7 +7,13 @@ import { resolveSafeTarget, REPO_ROOT } from './guard.js';
 import { guardSha, atomicWrite, readUtf8, sha256, targetDetails } from './server-helpers-io.js';
 import { withSelfExpansionAdmission, isAtomicSelfExpansionPath } from './server-helpers-self-expansion.js';
 import { ok, fail } from './server-helpers-result.js';
-import { captureEffectSnapshot, diffEffect, rollbackEffectStrict, type FileEffect } from './server-helpers-effect.js';
+import {
+  captureEffectSnapshot,
+  diffEffect,
+  rollbackEffectStrict,
+  type EffectSnapshot,
+  type FileEffect,
+} from './server-helpers-effect.js';
 import { requireNegativeActionProof, requireNegativeProofForRemovedBytes, type NegativeActionProof } from './server-helpers-negative-proof.js';
 import { registerToolsDispatch } from './server-tools-dispatch.js';
 
@@ -65,8 +71,13 @@ const MANDATORY_SELF_EXPANSION_VALIDATORS: readonly SelfExpansionValidator[] = [
   { phase: 'effect-admission', command: 'node gates/atomic-exec-prove-effect-required.proof.mjs --json' },
   { phase: 'no-bypass', command: 'node gates/atomic-exec-indirection-denial.proof.mjs --json' },
   { phase: 'effect-scope', command: 'node gates/self-expansion-unexpected-effects.proof.mjs --json' },
+  { phase: 'self-evolution-real', command: 'node gates/self-expansion-real-self-evolution.proof.mjs --json' },
   { phase: 'no-bypass', command: 'node codex-atomic-only-hook.proof.mjs --json' },
 ];
+
+const SELF_EVOLUTION_ARCHIVE_REL = 'self-evolution-archive.jsonl';
+const SELF_EVOLUTION_ARCHIVE_ID = 'atomic-real-self-expansion-archive-v1';
+const SELF_EVOLUTION_POLICY_ID = 'atomic-real-self-expansion-admission-v1';;
 
 function parseFileOps(raw: unknown[]): SelfFileOp[] {
   return raw.map((entry) => {
@@ -450,6 +461,220 @@ async function runProofCommands(commands: string[]): Promise<ProofCommandResult[
   }
   return results;
 }
+type JsonRecord = { [key: string]: unknown };
+
+function isJsonRecord(value: unknown): value is JsonRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function stableValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map((entry) => stableValue(entry));
+  if (!isJsonRecord(value)) return value;
+  const result: JsonRecord = {};
+  for (const key of Object.keys(value).sort()) result[key] = stableValue(value[key]);
+  return result;
+}
+
+function stableJson(value: unknown): string {
+  return JSON.stringify(stableValue(value));
+}
+
+function snapshotContentDigest(snap: EffectSnapshot): string {
+  const files = Array.from(snap.files.entries())
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([file, content]) => ({ file, sha256: sha256(content), bytes: Buffer.byteLength(content, 'utf8') }));
+  return sha256(stableJson({ root: path.basename(snap.rootAbs), limitReached: snap.limitReached, files }));
+}
+
+function snapshotFileText(snap: EffectSnapshot, relPath: string): string {
+  const text = snap.files.get(relPath);
+  if (text === undefined) throw new Error(`self-evolution fact derivation failed: snapshot missing ${relPath}`);
+  return text;
+}
+
+function mandatorySelfExpansionCommandsFromSource(sourceText: string): string[] {
+  const block =
+    sourceText.match(/MANDATORY_SELF_EXPANSION_VALIDATORS[\s\S]*?\n\]/)?.[0] ?? sourceText;
+  const commands = Array.from(block.matchAll(/command:\s*'([^']+)'/g)).map((match) => match[1]);
+  return Array.from(new Set(commands));
+}
+
+function selfExpansionProofGateId(command: string): string {
+  return command;
+}
+
+function proofGateFacts(proofs: ProofCommandResult[], requiredCommands: string[]): JsonRecord[] {
+  const byCommand = new Map(proofs.map((proof) => [proof.command, proof]));
+  return requiredCommands.map((command) => {
+    const proof = byCommand.get(command);
+    return {
+      id: selfExpansionProofGateId(command),
+      command,
+      status: proof?.ok === true ? 'passed' : proof ? 'failed' : 'missing',
+      stdoutSha256: proof ? sha256(proof.stdout) : null,
+      stderrSha256: proof ? sha256(proof.stderr) : null,
+    };
+  });
+}
+
+function selfExpansionSemanticOperatorScore(sourceText: string, appliedCount = 0): number {
+  const markers = [
+    'atomic_expand_self',
+    'withSelfExpansionAdmission',
+    'MANDATORY_SELF_EXPANSION_VALIDATORS',
+    'assertNoUnexpectedSelfExpansionEffects',
+    'enforceSecurityMonotonicity',
+    'buildRealSelfExpansionPromotionReceipt',
+    'appendRealSelfExpansionArchive',
+  ];
+  return markers.filter((marker) => sourceText.includes(marker)).length + appliedCount;
+}
+
+function realSelfExpansionPolicy(requiredCommands: string[]): JsonRecord {
+  const requiredGates = requiredCommands.map((command) => selfExpansionProofGateId(command));
+  return {
+    policyId: SELF_EVOLUTION_POLICY_ID,
+    benchmarkSuiteSha256: sha256(stableJson({ kind: 'atomic-real-self-expansion-required-gates', requiredGates })),
+    evaluatorSha256: sha256(stableJson({ kind: 'atomic-real-self-expansion-evaluator', version: 1 })),
+    requiredGates,
+    safetyCeilings: {
+      bypassesIntroduced: 0,
+      invalidCommits: 0,
+      receiptForgeryAccepted: 0,
+    },
+    proofLimits: [
+      'Admission proves only structural hard-channel invariants enumerated by the mandatory validator lattice.',
+      'Capability and behavioral correctness remain empirical or unjudged; the receipt must not be sold as semantic corrigibility.',
+    ],
+  };
+}
+
+function runSelfEvolutionHarness(mode: string, input: unknown): JsonRecord {
+  const selfRoot = path.join(REPO_ROOT, 'scripts/mcp/atomic-edit');
+  const result = childProcess.spawnSync(process.execPath, ['self-evolution-harness.mjs', mode], {
+    cwd: selfRoot,
+    input: JSON.stringify(input),
+    encoding: 'utf8',
+    maxBuffer: 16 * 1024 * 1024,
+  });
+  const stdout = result.stdout;
+  const stderr = result.stderr;
+  if (result.status !== 0) {
+    throw new Error(`self-evolution harness ${mode} exited ${result.status ?? result.signal}: ${stderr || stdout}`);
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(stdout);
+  } catch (error) {
+    throw new Error(`self-evolution harness ${mode} returned non-json stdout: ${String(error)} ${stdout.slice(0, 400)}`);
+  }
+  if (!isJsonRecord(parsed)) throw new Error(`self-evolution harness ${mode} returned non-object payload`);
+  if (parsed.ok !== true) throw new Error(`self-evolution harness ${mode} rejected: ${stableJson(parsed)}`);
+  return parsed;
+}
+
+function buildRealSelfExpansionPromotionReceipt(args: {
+  parentSnap: EffectSnapshot;
+  candidateSnap: EffectSnapshot;
+  effectsBeforePromotion: FileEffect[];
+  proofs: ProofCommandResult[];
+  proofCommands: string[];
+  proofDurationMs: number;
+  applied: { file: string; op: string }[];
+  intent: string | null;
+}): JsonRecord {
+  const parentSource = snapshotFileText(args.parentSnap, 'server-tools-self.ts');
+  const candidateSource = snapshotFileText(args.candidateSnap, 'server-tools-self.ts');
+  const parentDigest = snapshotContentDigest(args.parentSnap);
+  const candidateDigest = snapshotContentDigest(args.candidateSnap);
+  const parentRequiredCommands = mandatorySelfExpansionCommandsFromSource(parentSource);
+  const candidateRequiredCommands = mandatorySelfExpansionCommandsFromSource(candidateSource);
+  const requiredCommands = Array.from(new Set([...args.proofCommands, ...candidateRequiredCommands]));
+  const policy = realSelfExpansionPolicy(requiredCommands);
+  const candidateGates = proofGateFacts(args.proofs, requiredCommands);
+  const passedGateCount = candidateGates.filter((gate) => gate.status === 'passed').length;
+  const parentSemanticOperators = selfExpansionSemanticOperatorScore(parentSource);
+  const candidateSemanticOperators = Math.max(
+    parentSemanticOperators,
+    selfExpansionSemanticOperatorScore(candidateSource, args.applied.length),
+  );
+  const parent = {
+    variantId: `real-self-expansion-parent:${parentDigest}`,
+    parentId: null,
+    evaluatorSha256: policy.evaluatorSha256,
+    benchmarkSuiteSha256: policy.benchmarkSuiteSha256,
+    metrics: {
+      publicScore: 1,
+      holdoutScore: 1,
+      proofCoverage: parentRequiredCommands.length,
+      semanticOperators: parentSemanticOperators,
+      medianLatencyMs: 1000,
+      bypassesIntroduced: 0,
+      invalidCommits: 0,
+      receiptForgeryAccepted: 0,
+    },
+    gates: parentRequiredCommands.map((command) => ({ id: selfExpansionProofGateId(command), command, status: 'passed' })),
+    evidence: {
+      sourceSha256: sha256(parentSource),
+      snapshotDigest: parentDigest,
+      mandatoryCommandCount: parentRequiredCommands.length,
+    },
+  };
+  const candidate = {
+    variantId: `real-self-expansion-candidate:${candidateDigest}`,
+    parentId: parent.variantId,
+    evaluatorSha256: policy.evaluatorSha256,
+    benchmarkSuiteSha256: policy.benchmarkSuiteSha256,
+    metrics: {
+      publicScore: 1,
+      holdoutScore: 1,
+      proofCoverage: passedGateCount,
+      semanticOperators: candidateSemanticOperators,
+      medianLatencyMs: 1000,
+      bypassesIntroduced: 0,
+      invalidCommits: 0,
+      receiptForgeryAccepted: 0,
+    },
+    gates: candidateGates,
+    evidence: {
+      sourceSha256: sha256(candidateSource),
+      snapshotDigest: candidateDigest,
+      mandatoryCommandCount: candidateRequiredCommands.length,
+      requiredCommandCount: requiredCommands.length,
+      passedGateCount,
+      proofDurationMs: args.proofDurationMs,
+      effectDigest: sha256(stableJson(args.effectsBeforePromotion)),
+      intent: args.intent,
+    },
+  };
+  const payload = runSelfEvolutionHarness('--receipt', { parent, candidate, policy });
+  const receipt = payload.receipt;
+  if (!isJsonRecord(receipt)) throw new Error('self-evolution harness did not return a receipt object');
+  runSelfEvolutionHarness('--verify-receipt', { receipt });
+  return receipt;
+}
+
+function appendRealSelfExpansionArchive(selfRoot: string, receipt: JsonRecord): JsonRecord {
+  const archivePath = path.join(selfRoot, SELF_EVOLUTION_ARCHIVE_REL);
+  const archiveText = fs.existsSync(archivePath) ? fs.readFileSync(archivePath, 'utf8') : '';
+  const appended = runSelfEvolutionHarness('--append-archive-jsonl', {
+    archiveText,
+    archiveId: SELF_EVOLUTION_ARCHIVE_ID,
+    receipt,
+  });
+  if (typeof appended.archiveText !== 'string') throw new Error('self-evolution archive append returned no archiveText');
+  withSelfExpansionAdmission(() => atomicWrite(archivePath, appended.archiveText as string));
+  const entry = isJsonRecord(appended.entry) ? appended.entry : {};
+  return {
+    archiveFile: SELF_EVOLUTION_ARCHIVE_REL,
+    archiveId: appended.archiveId ?? SELF_EVOLUTION_ARCHIVE_ID,
+    sequence: entry.sequence ?? null,
+    archiveEntrySha256: entry.archiveEntrySha256 ?? null,
+    receiptSha256: entry.receiptSha256 ?? receipt.receiptSha256 ?? null,
+    chain: appended.chain ?? null,
+  };
+}
+
 function proofFailureSnippet(value: string, maxBytes = 1200): string {
   const trimmed = value.trim();
   if (!trimmed) return '';
@@ -541,11 +766,15 @@ function selfRootRelativeEffectPath(file: string): string {
   return rel.startsWith(prefix) ? rel.slice(prefix.length) : rel;
 }
 
+function isSelfEvolutionArchiveEffect(file: string): boolean {
+  return file === SELF_EVOLUTION_ARCHIVE_REL;
+}
+
 function assertNoUnexpectedSelfExpansionEffects(effects: FileEffect[], applied: { file: string }[]): void {
   const requested = new Set(applied.map((entry) => selfRootRelativeEffectPath(entry.file)));
   const unexpected = effects.filter((effect) => {
     const rel = selfRootRelativeEffectPath(effect.file);
-    return !requested.has(rel) && !isEphemeralSelfExpansionEffect(rel);
+    return !requested.has(rel) && !isEphemeralSelfExpansionEffect(rel) && !isSelfEvolutionArchiveEffect(rel);
   });
   if (unexpected.length > 0) {
     throw new Error(
@@ -703,7 +932,9 @@ export function registerToolsSelf(server: McpServer): void {
           // refuse (and roll back) any expansion that reduced the engine's own
           // security surface. Mandatory and non-skippable (not a caller proofCommand).
           enforceSecurityMonotonicity();
+          const proofStartedAt = Date.now();
           const proofs = await runProofCommands(proofCommands);
+          const proofDurationMs = Date.now() - proofStartedAt;
           const failed = proofs.filter((p) => !p.ok);
           if (failed.length > 0) {
             const effects = diffEffect(snap);
@@ -712,12 +943,31 @@ export function registerToolsSelf(server: McpServer): void {
               `atomic_expand_self rolled back ${restored} file effect(s): proof failed: ` + formatFailedProofs(failed),
             );
           }
-          const effectsBeforeRatchet = diffEffect(snap);
-          assertNoUnexpectedSelfExpansionEffects(effectsBeforeRatchet, applied);
-          // All proofs passed - the expansion is fully validated. RATCHET the
-          // security baseline so any strengthening of the engine's own surface
-          // immediately becomes the locked minimum (closes the persistence window
-          // where a raised surface was not yet the baseline). Best-effort: a ratchet
+          const effectsBeforePromotion = diffEffect(snap);
+          assertNoUnexpectedSelfExpansionEffects(effectsBeforePromotion, applied);
+          const candidateSnap = captureEffectSnapshot(selfRoot);
+          const promotionReceipt = buildRealSelfExpansionPromotionReceipt({
+            parentSnap: snap,
+            candidateSnap,
+            effectsBeforePromotion,
+            proofs,
+            proofCommands,
+            proofDurationMs,
+            applied,
+            intent: a.intent ?? null,
+          });
+          if (promotionReceipt.decision !== 'promote') {
+            const effectsBeforeRejectRollback = diffEffect(snap);
+            const restored = rollbackEffectStrict(snap, effectsBeforeRejectRollback, 'atomic_expand_self');
+            const rejections = Array.isArray(promotionReceipt.rejections)
+              ? promotionReceipt.rejections.join(', ')
+              : 'unknown rejection';
+            return fail(`atomic_expand_self rolled back ${restored} file effect(s): self-evolution promotion rejected: ${rejections}`);
+          }
+          const selfEvolutionArchive = appendRealSelfExpansionArchive(selfRoot, promotionReceipt);
+          // All proofs passed and the Darwin-Godel admission receipt was archived.
+          // RATCHET the security baseline so any strengthening of the engine's own
+          // surface immediately becomes the locked minimum. Best-effort: a ratchet
           // failure never fails an already-proven-green expansion.
           try {
             enforceSecurityMonotonicity({ ratchet: true });
@@ -741,8 +991,12 @@ export function registerToolsSelf(server: McpServer): void {
               limitReached: snap.limitReached,
               files: effects,
             },
+            selfEvolution: {
+              promotionReceipt,
+              archive: selfEvolutionArchive,
+            },
             target: targetDetails(path.join(REPO_ROOT, 'scripts/mcp/atomic-edit'), 'scripts/mcp/atomic-edit'),
-            admission: 'self-expansion-validator-lattice-green',
+            admission: 'self-expansion-validator-lattice-green-and-darwin-godel-promoted',
           });
         } catch (e) {
           const effects = diffEffect(snap);

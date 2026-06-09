@@ -1,18 +1,17 @@
 #!/usr/bin/env node
 /**
- * Proof #5 — capability monotonicity. Verifies the security-invariants engine:
- *   1. real engine invariants are all > 0 (the surface is actually measured)
- *   2. measuring a temp copy equals measuring the real engine (stable measure)
- *   3. a STRENGTHENING (extra WRITE_GATE in a temp copy) raises the measured count
- *   4-8. each distinct WEAKENING lowers its measured invariant (so the max()
- *        ratchet would refuse it: cur < stored):
- *        - remove a WRITE_GATES entry
- *        - drop an exec FORBIDDEN law
- *        - drop a native-edit ban
- *        - remove a byte-floor guard call
- *   9. assertSecurityMonotonicity THROWS when current < an injected-high baseline
- *      (the live refusal path), proven by pointing it at a temp engine whose
- *      measured surface is below the real persisted high-water mark.
+ * Proof #5 - capability monotonicity. Verifies the security-invariants engine:
+ *   1. real engine invariant counts are all > 0;
+ *   2. real engine behavior fixtures are all green;
+ *   3. measuring a temp copy equals measuring the real engine;
+ *   4. a STRENGTHENING raises the measured writeGates count;
+ *   5-8. each distinct count weakening lowers its measured invariant;
+ *   9. assertSecurityMonotonicity throws when current < an injected baseline;
+ *   10-13. same-count behavior weakenings are refused by behavior fixtures:
+ *        - inert FORBIDDEN regex with the same `re:/` count;
+ *        - swapped native edit tool with the same set cardinality;
+ *        - swapped WRITE_GATES entry with the same Gate-token count;
+ *        - swapped SYNC_WRITE_GATES entry with the same Gate-token count.
  *
  * Operates on isolated temp copies of the engine files; never writes the real
  * baseline down.
@@ -22,6 +21,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   measureSecurityInvariants,
+  measureSecurityInvariantEvidence,
   assertSecurityMonotonicity,
 } from '../security-invariants.mjs';
 
@@ -37,6 +37,20 @@ function makeTemp() {
   return tmp;
 }
 
+function summarizeEvidence(evidence) {
+  return Object.fromEntries(
+    Object.entries(evidence).map(([key, value]) => [
+      key,
+      {
+        value: value.value,
+        behaviorSha256: value.behaviorSha256,
+        fixtureCount: value.fixtures.length,
+        failures: value.failures.map((f) => f.id),
+      },
+    ]),
+  );
+}
+
 function measureWeakened(file, mutate) {
   const tmp = makeTemp();
   try {
@@ -50,19 +64,66 @@ function measureWeakened(file, mutate) {
   }
 }
 
+function mutateRequiredSource(src, oldText, newText) {
+  if (!src.includes(oldText)) throw new Error(`fixture source did not contain required text: ${oldText}`);
+  return src.replace(oldText, newText);
+}
+
+function sameCountBehaviorRefusal(file, key, mutate) {
+  const tmp = makeTemp();
+  try {
+    const before = measureSecurityInvariants(tmp);
+    assertSecurityMonotonicity(tmp, { persist: true });
+    const p = path.join(tmp, file);
+    fs.writeFileSync(p, mutate(fs.readFileSync(p, 'utf8')));
+    const after = measureSecurityInvariants(tmp);
+    const evidenceAfter = measureSecurityInvariantEvidence(tmp)[key];
+    let threw = false;
+    let msg = '';
+    try {
+      assertSecurityMonotonicity(tmp);
+    } catch (e) {
+      threw = true;
+      msg = e instanceof Error ? e.message : String(e);
+    }
+    return {
+      sameCount: before[key] === after[key],
+      threw,
+      msg: msg.slice(0, 240),
+      before: before[key],
+      after: after[key],
+      failures: evidenceAfter.failures.map((f) => f.id),
+    };
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
 function main() {
   const results = [];
   const rec = (name, ok, detail) => results.push({ name, ok: Boolean(ok), detail });
 
   const real = measureSecurityInvariants(sourceDir);
+  const realEvidence = measureSecurityInvariantEvidence(sourceDir);
   // Count-agnostic: invariants only grow monotonically, so a lower bound is the
   // honest check; every invariant must still be measured > 0.
-  rec('real engine invariants all > 0', Object.values(real).length >= 4 && Object.values(real).every((v) => v > 0), real);
+  rec('real engine invariant counts all > 0', Object.values(real).length >= 4 && Object.values(real).every((v) => v > 0), real);
+  rec(
+    'real engine behavior fixtures all green',
+    Object.values(realEvidence).every((value) => value.failures.length === 0),
+    summarizeEvidence(realEvidence),
+  );
 
   const tmp = makeTemp();
   try {
     const copyMeasure = measureSecurityInvariants(tmp);
+    const copyEvidence = summarizeEvidence(measureSecurityInvariantEvidence(tmp));
     rec('temp copy measures equal to real engine', JSON.stringify(copyMeasure) === JSON.stringify(real), { copyMeasure, real });
+    rec(
+      'temp copy behavior evidence equals real engine',
+      JSON.stringify(copyEvidence) === JSON.stringify(summarizeEvidence(realEvidence)),
+      { copyEvidence, realEvidence: summarizeEvidence(realEvidence) },
+    );
     const regPath = path.join(tmp, 'gates/registry.ts');
     fs.writeFileSync(regPath, fs.readFileSync(regPath, 'utf8').replace(/(WRITE_GATES[^=]*=\s*\[\n)/, `$1  extraStrongGate,\n`));
     rec('strengthening raises measured writeGates', measureSecurityInvariants(tmp).writeGates === real.writeGates + 1);
@@ -79,10 +140,8 @@ function main() {
   const w4 = measureWeakened('server-helpers-io.ts', (s) => s.replace(/assertSelfExpansionAdmission\(/, 'assertSelfExpansionAdmissionDISABLED('));
   rec('removing a byte-floor guard lowers byteFloorGuards', w4.after.byteFloorGuards < w4.before.byteFloorGuards, w4);
 
-  // 9. live refusal path: a temp engine measuring BELOW its own current
-  // high-water baseline throws. The baseline is written inside the temp fixture,
-  // not the repo, so this stays robust when the real lattice has already grown
-  // above the persisted production baseline.
+  // 9. live refusal path: a temp engine measuring BELOW its own current high-water
+  // baseline throws. The baseline is written inside the temp fixture, not the repo.
   {
     const tmp2 = makeTemp();
     try {
@@ -102,6 +161,46 @@ function main() {
       fs.rmSync(tmp2, { recursive: true, force: true });
     }
   }
+
+  const s1 = sameCountBehaviorRefusal('server-tools-exec.ts', 'forbiddenExecLaws', (src) =>
+    mutateRequiredSource(src, 're: /\\bgit\\s+restore\\b/', 're: /__atomic_never_matches__/'),
+  );
+  rec(
+    'same-count inert FORBIDDEN regex is refused by behavior fixtures',
+    s1.sameCount && s1.threw && s1.failures.includes('forbidden-command:git-restore'),
+    s1,
+  );
+
+  const s2 = sameCountBehaviorRefusal('atomic-only-hook.mjs', 'nativeEditBans', (src) =>
+    mutateRequiredSource(src, "'NotebookEdit'", "'NotebookRead'"),
+  );
+  rec(
+    'same-count native edit ban swap is refused by behavior fixtures',
+    s2.sameCount && s2.threw && s2.failures.includes('native-edit-ban:NotebookEdit'),
+    s2,
+  );
+
+  const s3 = sameCountBehaviorRefusal('gates/registry.ts', 'writeGates', (src) =>
+    mutateRequiredSource(src, '  securityGate,', '  securityFloorGate,'),
+  );
+  rec(
+    'same-count WRITE_GATES swap is refused by behavior fixtures',
+    s3.sameCount && s3.threw && s3.failures.includes('write-gate:securityGate'),
+    s3,
+  );
+
+  const s4 = sameCountBehaviorRefusal('server-helpers-io.ts', 'syncByteFloorGates', (src) =>
+    mutateRequiredSource(
+      src,
+      'const SYNC_WRITE_GATES: GateModule[] = [typeSoundnessGate, iacReferenceGate, securityGate];',
+      'const SYNC_WRITE_GATES: GateModule[] = [typeSoundnessGate, iacReferenceGate, securityFloorGate];',
+    ),
+  );
+  rec(
+    'same-count SYNC_WRITE_GATES swap is refused by behavior fixtures',
+    s4.sameCount && s4.threw && s4.failures.includes('sync-write-gate:securityGate'),
+    s4,
+  );
 
   return { ok: results.every((r) => r.ok), results };
 }

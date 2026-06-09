@@ -46,6 +46,7 @@ const requiredCommands = [
   'node gates/atomic-exec-prove-effect-required.proof.mjs --json',
   'node gates/atomic-exec-indirection-denial.proof.mjs --json',
   'node gates/self-expansion-unexpected-effects.proof.mjs --json',
+  'node gates/self-expansion-real-self-evolution.proof.mjs --json',
   'node codex-atomic-only-hook.proof.mjs --json',
 ];
 
@@ -72,6 +73,7 @@ const requiredPhases = [
   'self-lattice',
   'self-evolution',
   'self-evolution-tool',
+  'self-evolution-real',
   'benchmark',
   'test',
   'ledger',
