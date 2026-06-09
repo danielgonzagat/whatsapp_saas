@@ -1,10 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  compareAnticipationRowParity,
-  deriveAnticipationCents,
-} from './wallet.anticipation.cents';
+import { compareAnticipationRowParity, deriveAnticipationCents } from './wallet.anticipation.cents';
 import { isAnticipationCentsBackfillEnabled } from './wallet.anticipation-cents-backfill.flag';
 
 /**

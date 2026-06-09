@@ -22,8 +22,11 @@ const input = {
 describe('buildWalletAnticipationRowData — cents dual-write', () => {
   const prev = process.env[FLAG];
   afterEach(() => {
-    if (prev === undefined) delete process.env[FLAG];
-    else process.env[FLAG] = prev;
+    if (prev === undefined) {
+      delete process.env[FLAG];
+    } else {
+      process.env[FLAG] = prev;
+    }
   });
 
   it('flag OFF (default): payload has no *InCents keys (byte-identical legacy)', () => {

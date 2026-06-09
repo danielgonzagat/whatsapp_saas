@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
 /**
  * Proves the WalletAnticipation Float→cents backfill (Stage 8):
  *   - flag-gated: no-op when KLOEL_ANTICIPATION_CENTS_BACKFILL is OFF;
@@ -41,8 +43,11 @@ function makeBackfillPrisma(pages: Row[][]) {
 describe('WalletAnticipationBackfillService.backfill', () => {
   const prev = process.env[FLAG];
   afterEach(() => {
-    if (prev === undefined) delete process.env[FLAG];
-    else process.env[FLAG] = prev;
+    if (prev === undefined) {
+      delete process.env[FLAG];
+    } else {
+      process.env[FLAG] = prev;
+    }
   });
 
   it('is a no-op when the flag is OFF (default)', async () => {
@@ -80,11 +85,7 @@ describe('WalletAnticipationBackfillService.backfill', () => {
 
   it('is cursor-paginated across pages and resumable', async () => {
     process.env[FLAG] = 'true';
-    const { prisma, findMany } = makeBackfillPrisma([
-      [row('a'), row('b')],
-      [row('c')],
-      [],
-    ]);
+    const { prisma, findMany } = makeBackfillPrisma([[row('a'), row('b')], [row('c')], []]);
     const svc = new WalletAnticipationBackfillService(prisma as never);
     const res = await svc.backfill({ batchSize: 2 });
     expect(res.scanned).toBe(3);

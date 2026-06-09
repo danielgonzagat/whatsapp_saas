@@ -43,10 +43,16 @@ describe('MoneyCutoverBootstrapService', () => {
   const prevA = process.env[A_FLAG];
   const prevL = process.env[L_FLAG];
   afterEach(() => {
-    if (prevA === undefined) delete process.env[A_FLAG];
-    else process.env[A_FLAG] = prevA;
-    if (prevL === undefined) delete process.env[L_FLAG];
-    else process.env[L_FLAG] = prevL;
+    if (prevA === undefined) {
+      delete process.env[A_FLAG];
+    } else {
+      process.env[A_FLAG] = prevA;
+    }
+    if (prevL === undefined) {
+      delete process.env[L_FLAG];
+    } else {
+      process.env[L_FLAG] = prevL;
+    }
   });
 
   it('is a silent no-op when both flags are OFF (default)', async () => {

@@ -5,18 +5,18 @@
  *     the Float when the cents column is NULL (un-backfilled row).
  *   - resolveAnticipationAmounts applies the rule per-field independently.
  */
-import {
-  readAnticipationAmount,
-  resolveAnticipationAmounts,
-} from './wallet.anticipation.read';
+import { readAnticipationAmount, resolveAnticipationAmounts } from './wallet.anticipation.read';
 
 const FLAG = 'KLOEL_ANTICIPATION_CENTS_READ';
 
 describe('readAnticipationAmount', () => {
   const prev = process.env[FLAG];
   afterEach(() => {
-    if (prev === undefined) delete process.env[FLAG];
-    else process.env[FLAG] = prev;
+    if (prev === undefined) {
+      delete process.env[FLAG];
+    } else {
+      process.env[FLAG] = prev;
+    }
   });
 
   describe('flag OFF (default)', () => {
@@ -62,8 +62,11 @@ describe('readAnticipationAmount', () => {
 describe('resolveAnticipationAmounts', () => {
   const prev = process.env[FLAG];
   afterEach(() => {
-    if (prev === undefined) delete process.env[FLAG];
-    else process.env[FLAG] = prev;
+    if (prev === undefined) {
+      delete process.env[FLAG];
+    } else {
+      process.env[FLAG] = prev;
+    }
   });
 
   const row = {

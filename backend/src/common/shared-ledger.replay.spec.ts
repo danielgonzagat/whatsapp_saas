@@ -5,10 +5,7 @@
  * (balanceAfter == prior + signed(direction)*amount), and is positionally
  * aligned with the input sequence.
  */
-import {
-  replayBalanceAfter,
-  type LedgerReplayEntry,
-} from './shared-ledger.port';
+import { replayBalanceAfter, type LedgerReplayEntry } from './shared-ledger.port';
 
 type B = 'available' | 'pending' | 'blocked';
 const BUCKETS: ReadonlyArray<B> = ['available', 'pending', 'blocked'];

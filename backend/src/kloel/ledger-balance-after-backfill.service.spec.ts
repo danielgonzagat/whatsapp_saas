@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
 /**
  * Proves the KloelWalletLedger balanceAfter historical backfill (Stage 5):
  *   - flag-gated: no-op when KLOEL_LEDGER_BALANCE_BACKFILL is OFF;
@@ -40,10 +42,7 @@ function entry(
  * Mock the kloelWalletLedger model. `distinctWallets` answers the DISTINCT
  * walletId keyset pages; `entriesByWallet` answers the per-wallet ordered reads.
  */
-function makePrisma(
-  distinctWallets: string[],
-  entriesByWallet: Record<string, Entry[]>,
-) {
+function makePrisma(distinctWallets: string[], entriesByWallet: Record<string, Entry[]>) {
   const updateMany = jest.fn().mockResolvedValue({ count: 1 });
   const findMany = jest.fn().mockImplementation((args: Record<string, unknown>) => {
     if (args.distinct !== undefined) {
@@ -64,13 +63,18 @@ function makePrisma(
 describe('LedgerBalanceAfterBackfillService.backfill', () => {
   const prev = process.env[FLAG];
   afterEach(() => {
-    if (prev === undefined) delete process.env[FLAG];
-    else process.env[FLAG] = prev;
+    if (prev === undefined) {
+      delete process.env[FLAG];
+    } else {
+      process.env[FLAG] = prev;
+    }
   });
 
   it('is a no-op when the flag is OFF (default)', async () => {
     delete process.env[FLAG];
-    const { prisma, findMany } = makePrisma(['w1'], { w1: [entry('e1', 'available', 'credit', 100n)] });
+    const { prisma, findMany } = makePrisma(['w1'], {
+      w1: [entry('e1', 'available', 'credit', 100n)],
+    });
     const svc = new LedgerBalanceAfterBackfillService(prisma as never);
     const res = await svc.backfill();
     expect(res).toEqual({ enabled: false, wallets: 0, scanned: 0, updated: 0, batches: 0 });
