@@ -186,7 +186,7 @@ describe('mind-runtime helpers', () => {
           ok: false,
           error: 'workspace_required',
         }),
-      ).toBe('Falha ao executar catálogo de produtos: workspace_required.');
+      ).toBe('Falha ao executar list_products: workspace_required.');
     });
 
     it('uses the default error message when no error is supplied', () => {
@@ -195,7 +195,7 @@ describe('mind-runtime helpers', () => {
           intent: 'safe_query',
           ok: false,
         }),
-      ).toBe('Falha ao executar consulta segura: erro desconhecido.');
+      ).toBe('Falha ao executar safe_query: erro desconhecido.');
     });
   });
 
