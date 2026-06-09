@@ -186,9 +186,7 @@ export class MemoryService {
             forgotten: false,
             metadata: {
               slot: mem.slot,
-              sourceRefs: [
-                { type: 'conversation', label: 'Kloel Chat', ref: 'memory-extraction' },
-              ],
+              sourceRefs: [{ type: 'conversation', label: 'Kloel Chat', ref: 'memory-extraction' }],
             },
           },
         });
@@ -418,191 +416,191 @@ export class MemoryService {
    * userId) on every read; best-effort (an error yields an empty graph).
    */
   async recallGraph(workspaceId: string, userId: string): Promise<MemoryGraphPayload> {
-      const empty: MemoryGraphPayload = { nodes: [], edges: [] };
-      if (!workspaceId || !userId) {
-        return empty;
-      }
-
-      try {
-        const now = new Date();
-        const memoryNodes = await this.prisma.memoryNode.findMany({
-          where: {
-            workspaceId,
-            userId,
-            forgotten: false,
-            OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
-          },
-          orderBy: [{ pinned: 'desc' }, { importance: 'desc' }, { createdAt: 'desc' }],
-          take: 160,
-        });
-
-        if (memoryNodes.length === 0) {
-          return empty;
-        }
-
-        type GraphSourceRef = NonNullable<MemoryGraphPayload['nodes'][number]['sourceRefs']>[number];
-        const validSourceRefTypes = new Set<GraphSourceRef['type']>([
-          'conversation',
-          'document',
-          'file',
-          'tool',
-          'manual',
-          'custom',
-        ]);
-        const readMetadata = (metadata: unknown): Record<string, unknown> => {
-          if (typeof metadata === 'object' && metadata !== null && !Array.isArray(metadata)) {
-            return metadata as Record<string, unknown>;
-          }
-          return {};
-        };
-        const readText = (value: unknown): string | null => {
-          if (typeof value !== 'string') {
-            return null;
-          }
-          const text = value.trim();
-          return text.length > 0 ? text : null;
-        };
-        const coerceSourceRefType = (value: unknown): GraphSourceRef['type'] => {
-          const type = readText(value);
-          return type && validSourceRefTypes.has(type as GraphSourceRef['type'])
-            ? (type as GraphSourceRef['type'])
-            : 'custom';
-        };
-        const readSourceRefs = (metadata: Record<string, unknown>): readonly GraphSourceRef[] => {
-          const rawRefs = Array.isArray(metadata['sourceRefs']) ? metadata['sourceRefs'] : [];
-          const refs = rawRefs.flatMap((item): GraphSourceRef[] => {
-            if (typeof item !== 'object' || item === null || Array.isArray(item)) {
-              return [];
-            }
-            const record = item as Record<string, unknown>;
-            const label = readText(record['label']);
-            if (!label) {
-              return [];
-            }
-            const ref = readText(record['ref']);
-            const url = readText(record['url']);
-            return [
-              {
-                type: coerceSourceRefType(record['type']),
-                label,
-                ...(ref ? { ref } : {}),
-                ...(url ? { url } : {}),
-              },
-            ];
-          });
-          return refs.length > 0
-            ? refs.slice(0, 5)
-            : [{ type: 'custom', label: 'Memória do Kloel', ref: 'legacy-memory' }];
-        };
-
-        const ids = memoryNodes.map((node) => node.id);
-        const idSet = new Set(ids);
-        const persistedEdges = await this.prisma.memoryEdge.findMany({
-          where: {
-            workspaceId,
-            fromId: { in: ids },
-            toId: { in: ids },
-          },
-          orderBy: { createdAt: 'desc' },
-          take: 500,
-        });
-
-        const nodes: MemoryGraphPayload['nodes'] = [
-          {
-            id: 'you',
-            label: 'Você',
-            group: 'center',
-            state: 'confirmed',
-          },
-          ...memoryNodes.map((node) => {
-            const metadata = readMetadata(node.metadata);
-            const nodeType = asMemoryNodeType(node.type) ?? 'fact';
-            const sourceRefs = readSourceRefs(metadata);
-            const originLabel = sourceRefs[0]?.label;
-            const sensitive =
-              nodeType === 'sensitive' ||
-              metadata['sensitive'] === true ||
-              metadata['classification'] === 'sensitive';
-            const archived = nodeType === 'expired' || metadata['archived'] === true;
-            const blockedForAgent = metadata['blockedForAgent'] === true;
-            const replaced =
-              metadata['replaced'] === true || typeof metadata['replacedBy'] === 'string';
-            const contradicted = nodeType === 'contradiction' || metadata['contradicted'] === true;
-            const scope: 'user' | 'workspace' | 'shared' =
-              node.scope === 'workspace' || node.scope === 'shared' || node.scope === 'user'
-                ? node.scope
-                : 'user';
-            const summary = node.summary?.trim() || null;
-            const content = node.content.trim();
-            const state: MemoryGraphPayload['nodes'][number]['state'] = archived
-              ? 'archived'
-              : blockedForAgent
-                ? 'blocked'
-                : sensitive
-                  ? 'sensitive'
-                  : node.pinned
-                    ? 'pinned'
-                    : replaced
-                      ? 'replaced'
-                      : contradicted
-                        ? 'contradicted'
-                        : node.confidence < 0.6
-                          ? 'uncertain'
-                          : 'confirmed';
-            return {
-              id: node.id,
-              label: summary || content || 'Memória',
-              group: nodeType,
-              content,
-              summary,
-              scope,
-              updatedAt: node.createdAt.toISOString(),
-              confidence: node.confidence,
-              importance: node.importance,
-              state,
-              originLabel,
-              sourceRefs,
-              pinned: node.pinned,
-              sensitive,
-              archived,
-              blockedForAgent,
-              usableByAgent: !archived && !blockedForAgent && !sensitive,
-            };
-          }),
-        ];
-
-        const edges: Array<MemoryGraphPayload['edges'][number]> = [];
-        const seenEdges = new Set<string>();
-        const pushEdge = (
-          from: string,
-          to: string,
-          relation: MemoryGraphPayload['edges'][number]['relation'],
-        ): void => {
-          const key = `${from}:${relation}:${to}`;
-          if (!seenEdges.has(key)) {
-            seenEdges.add(key);
-            edges.push({ from, to, relation });
-          }
-        };
-
-        for (const nodeId of ids) {
-          pushEdge('you', nodeId, 'belongs_to');
-        }
-        for (const edge of persistedEdges) {
-          if (idSet.has(edge.fromId) && idSet.has(edge.toId)) {
-            pushEdge(edge.fromId, edge.toId, asMemoryEdgeRelation(edge.relation) ?? 'references');
-          }
-        }
-
-        return { nodes, edges };
-      } catch (error: unknown) {
-        this.logger.warn('recallGraph failed', {
-          context: 'MemoryService.recallGraph',
-          error: formatMemoryError(error),
-        });
-        return empty;
-      }
+    const empty: MemoryGraphPayload = { nodes: [], edges: [] };
+    if (!workspaceId || !userId) {
+      return empty;
     }
+
+    try {
+      const now = new Date();
+      const memoryNodes = await this.prisma.memoryNode.findMany({
+        where: {
+          workspaceId,
+          userId,
+          forgotten: false,
+          OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+        },
+        orderBy: [{ pinned: 'desc' }, { importance: 'desc' }, { createdAt: 'desc' }],
+        take: 160,
+      });
+
+      if (memoryNodes.length === 0) {
+        return empty;
+      }
+
+      type GraphSourceRef = NonNullable<MemoryGraphPayload['nodes'][number]['sourceRefs']>[number];
+      const validSourceRefTypes = new Set<GraphSourceRef['type']>([
+        'conversation',
+        'document',
+        'file',
+        'tool',
+        'manual',
+        'custom',
+      ]);
+      const readMetadata = (metadata: unknown): Record<string, unknown> => {
+        if (typeof metadata === 'object' && metadata !== null && !Array.isArray(metadata)) {
+          return metadata as Record<string, unknown>;
+        }
+        return {};
+      };
+      const readText = (value: unknown): string | null => {
+        if (typeof value !== 'string') {
+          return null;
+        }
+        const text = value.trim();
+        return text.length > 0 ? text : null;
+      };
+      const coerceSourceRefType = (value: unknown): GraphSourceRef['type'] => {
+        const type = readText(value);
+        return type && validSourceRefTypes.has(type as GraphSourceRef['type'])
+          ? (type as GraphSourceRef['type'])
+          : 'custom';
+      };
+      const readSourceRefs = (metadata: Record<string, unknown>): readonly GraphSourceRef[] => {
+        const rawRefs = Array.isArray(metadata['sourceRefs']) ? metadata['sourceRefs'] : [];
+        const refs = rawRefs.flatMap((item): GraphSourceRef[] => {
+          if (typeof item !== 'object' || item === null || Array.isArray(item)) {
+            return [];
+          }
+          const record = item as Record<string, unknown>;
+          const label = readText(record['label']);
+          if (!label) {
+            return [];
+          }
+          const ref = readText(record['ref']);
+          const url = readText(record['url']);
+          return [
+            {
+              type: coerceSourceRefType(record['type']),
+              label,
+              ...(ref ? { ref } : {}),
+              ...(url ? { url } : {}),
+            },
+          ];
+        });
+        return refs.length > 0
+          ? refs.slice(0, 5)
+          : [{ type: 'custom', label: 'Memória do Kloel', ref: 'legacy-memory' }];
+      };
+
+      const ids = memoryNodes.map((node) => node.id);
+      const idSet = new Set(ids);
+      const persistedEdges = await this.prisma.memoryEdge.findMany({
+        where: {
+          workspaceId,
+          fromId: { in: ids },
+          toId: { in: ids },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 500,
+      });
+
+      const nodes: MemoryGraphPayload['nodes'] = [
+        {
+          id: 'you',
+          label: 'Você',
+          group: 'center',
+          state: 'confirmed',
+        },
+        ...memoryNodes.map((node) => {
+          const metadata = readMetadata(node.metadata);
+          const nodeType = asMemoryNodeType(node.type) ?? 'fact';
+          const sourceRefs = readSourceRefs(metadata);
+          const originLabel = sourceRefs[0]?.label;
+          const sensitive =
+            nodeType === 'sensitive' ||
+            metadata['sensitive'] === true ||
+            metadata['classification'] === 'sensitive';
+          const archived = nodeType === 'expired' || metadata['archived'] === true;
+          const blockedForAgent = metadata['blockedForAgent'] === true;
+          const replaced =
+            metadata['replaced'] === true || typeof metadata['replacedBy'] === 'string';
+          const contradicted = nodeType === 'contradiction' || metadata['contradicted'] === true;
+          const scope: 'user' | 'workspace' | 'shared' =
+            node.scope === 'workspace' || node.scope === 'shared' || node.scope === 'user'
+              ? node.scope
+              : 'user';
+          const summary = node.summary?.trim() || null;
+          const content = node.content.trim();
+          const state: MemoryGraphPayload['nodes'][number]['state'] = archived
+            ? 'archived'
+            : blockedForAgent
+              ? 'blocked'
+              : sensitive
+                ? 'sensitive'
+                : node.pinned
+                  ? 'pinned'
+                  : replaced
+                    ? 'replaced'
+                    : contradicted
+                      ? 'contradicted'
+                      : node.confidence < 0.6
+                        ? 'uncertain'
+                        : 'confirmed';
+          return {
+            id: node.id,
+            label: summary || content || 'Memória',
+            group: nodeType,
+            content,
+            summary,
+            scope,
+            updatedAt: node.createdAt.toISOString(),
+            confidence: node.confidence,
+            importance: node.importance,
+            state,
+            originLabel,
+            sourceRefs,
+            pinned: node.pinned,
+            sensitive,
+            archived,
+            blockedForAgent,
+            usableByAgent: !archived && !blockedForAgent && !sensitive,
+          };
+        }),
+      ];
+
+      const edges: Array<MemoryGraphPayload['edges'][number]> = [];
+      const seenEdges = new Set<string>();
+      const pushEdge = (
+        from: string,
+        to: string,
+        relation: MemoryGraphPayload['edges'][number]['relation'],
+      ): void => {
+        const key = `${from}:${relation}:${to}`;
+        if (!seenEdges.has(key)) {
+          seenEdges.add(key);
+          edges.push({ from, to, relation });
+        }
+      };
+
+      for (const nodeId of ids) {
+        pushEdge('you', nodeId, 'belongs_to');
+      }
+      for (const edge of persistedEdges) {
+        if (idSet.has(edge.fromId) && idSet.has(edge.toId)) {
+          pushEdge(edge.fromId, edge.toId, asMemoryEdgeRelation(edge.relation) ?? 'references');
+        }
+      }
+
+      return { nodes, edges };
+    } catch (error: unknown) {
+      this.logger.warn('recallGraph failed', {
+        context: 'MemoryService.recallGraph',
+        error: formatMemoryError(error),
+      });
+      return empty;
+    }
+  }
 
   // ─── maintenance  // ─── maintenance ───────────────────────────────────────────────────
 
@@ -620,6 +618,7 @@ export class MemoryService {
     patch: {
       readonly content?: unknown;
       readonly summary?: unknown;
+      readonly scope?: unknown;
       readonly pinned?: unknown;
       readonly archived?: unknown;
       readonly sensitive?: unknown;
@@ -642,6 +641,7 @@ export class MemoryService {
       const data: {
         content?: string;
         summary?: string | null;
+        scope?: 'user' | 'workspace' | 'shared';
         pinned?: boolean;
         forgotten?: boolean;
         metadata?: Record<string, unknown>;
@@ -671,6 +671,10 @@ export class MemoryService {
       } else if (patch.summary === null) {
         data.summary = null;
         changed.push('summary');
+      }
+      if (patch.scope === 'user' || patch.scope === 'workspace' || patch.scope === 'shared') {
+        data.scope = patch.scope;
+        changed.push('scope');
       }
       if (typeof patch.pinned === 'boolean') {
         data.pinned = patch.pinned;

@@ -134,7 +134,6 @@ export interface MemoryGraphSourceRef {
   readonly url?: string;
 }
 
-
 /** Read-model node consumed by the Kloel Graph memory screen. */
 export interface MemoryGraphNodeView {
   readonly id: string;
@@ -160,6 +159,7 @@ export interface MemoryGraphNodeView {
 export interface MemoryGraphNodeUpdateInput {
   readonly content?: string;
   readonly summary?: string | null;
+  readonly scope?: MemoryScope;
   readonly pinned?: boolean;
   readonly archived?: boolean;
   readonly sensitive?: boolean;

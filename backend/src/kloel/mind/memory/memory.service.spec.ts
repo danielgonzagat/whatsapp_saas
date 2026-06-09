@@ -466,8 +466,10 @@ describe('MemoryService', () => {
         },
       ];
       await service.extractFromTurn('ws-1', 'user-1', 'contexto de memória');
-      const blockedId = prisma.nodes.find((node) => node.metadata['slot'] === 'token_operacional')?.id ?? '';
-      const archivedId = prisma.nodes.find((node) => node.metadata['slot'] === 'stack_antiga')?.id ?? '';
+      const blockedId =
+        prisma.nodes.find((node) => node.metadata['slot'] === 'token_operacional')?.id ?? '';
+      const archivedId =
+        prisma.nodes.find((node) => node.metadata['slot'] === 'stack_antiga')?.id ?? '';
 
       await service.updateGraphNode('ws-1', 'user-1', blockedId, { blockedForAgent: true });
       const graph = await service.updateGraphNode('ws-1', 'user-1', archivedId, { archived: true });
@@ -478,6 +480,29 @@ describe('MemoryService', () => {
       expect(ctx.text).not.toContain('O usuário usava PHP em um projeto antigo');
       expect(graph.nodes.find((node) => node.id === blockedId)?.state).toBe('blocked');
       expect(graph.nodes.find((node) => node.id === archivedId)?.state).toBe('archived');
+    });
+
+    it('redacts sensitive memory content at retrieval boundary while preserving a safe signal', async () => {
+      const prisma = new FakePrisma();
+      const service = buildService(prisma);
+      nextMemories = [
+        {
+          type: 'sensitive',
+          slot: 'credencial_privada',
+          content: 'O usuário informou a chave sk-private-raw-secret',
+          confidence: 1,
+          importance: 1,
+        },
+      ];
+      await service.extractFromTurn('ws-1', 'user-1', 'segredo operacional');
+
+      const out = await service.retrieveRelevant('ws-1', 'user-1', 'segredo operacional', 5);
+
+      expect(out).toHaveLength(1);
+      expect(out[0]?.type).toBe('sensitive');
+      expect(out[0]?.content).toBe('Memória sensível bloqueada para exposição.');
+      expect(out[0]?.summary).toBe('Memória sensível bloqueada para exposição.');
+      expect(JSON.stringify(out)).not.toContain('sk-private-raw-secret');
     });
 
     it('supports the full native memory graph ontology without leaking sensitive nodes into normal recall', async () => {
@@ -878,6 +903,31 @@ describe('MemoryService', () => {
       const updWhere = prisma.memoryNode.updateMany.mock.calls.at(-1)?.[0]?.where;
       expect(updWhere?.workspaceId).toBe('ws-1');
       expect(updWhere?.userId).toBe('user-1');
+    });
+
+    it('updates an owned node scope and returns the refreshed graph', async () => {
+      const prisma = new FakePrisma();
+      const service = buildService(prisma);
+      nextMemories = [
+        {
+          type: 'project',
+          slot: 'kloel_memory_graph',
+          content: 'O usuário está trabalhando na memória-grafo do Kloel',
+          confidence: 0.92,
+          importance: 0.85,
+        },
+      ];
+      await service.extractFromTurn('ws-1', 'user-1', 'memoria');
+      const nodeId = prisma.nodes[0]?.id ?? '';
+
+      const graph = await service.updateGraphNode('ws-1', 'user-1', nodeId, { scope: 'workspace' });
+
+      expect(prisma.nodes.find((n) => n.id === nodeId)?.scope).toBe('workspace');
+      expect(graph.nodes.find((n) => n.id === nodeId)?.scope).toBe('workspace');
+      const actions = prisma.nodes.find((n) => n.id === nodeId)?.metadata['userActions'] as Array<
+        Record<string, unknown>
+      >;
+      expect(actions.at(-1)).toMatchObject({ action: 'graph_update', changed: ['scope'] });
     });
 
     it('forgets an owned node and removes it from the returned graph', async () => {
