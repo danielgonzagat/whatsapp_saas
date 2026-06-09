@@ -290,4 +290,123 @@ describe('MemoryGraphView', () => {
     expect(screen.getByRole('button', { name: 'Fixada' })).not.toBeNull();
     expect(screen.queryByRole('button', { name: 'Sensível' })).toBeNull();
   });
+
+  it('filters memory graph by free text across label, summary, and content', async () => {
+    const memoryNodes = [
+      {
+        id: 'mem-project',
+        label: 'Projeto Kloel',
+        group: 'project',
+        summary: 'Frontend grafo imutável',
+        content: 'O usuário quer memória como topologia viva',
+        state: 'confirmed',
+      },
+      {
+        id: 'mem-infra',
+        label: 'Infra atual',
+        group: 'fact',
+        summary: 'Deploy em produção',
+        content: 'O stack usa Railway e Vercel para self-host controlado',
+        state: 'confirmed',
+      },
+      {
+        id: 'mem-pref',
+        label: 'Preferência de entrega',
+        group: 'preference',
+        summary: 'Resposta direta',
+        content: 'O usuário prefere execução autônoma sem pausa artificial',
+        state: 'confirmed',
+      },
+    ];
+    getMemoryGraphMock.mockResolvedValueOnce({
+      nodes: [{ id: 'you', label: 'Você', group: 'center' }, ...memoryNodes],
+      edges: memoryNodes.map((node) => ({ from: 'you', to: node.id, relation: 'belongs_to' })),
+    });
+    const { fireEvent } = await import('@testing-library/react');
+
+    render(<MemoryGraphView />);
+
+    expect(await screen.findByText('4 nodes')).not.toBeNull();
+
+    fireEvent.change(screen.getByLabelText('Buscar memória'), { target: { value: 'railway' } });
+
+    expect(screen.getByText('2 nodes')).not.toBeNull();
+    expect(screen.getByText('1 de 1 memórias visíveis')).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'Infra atual' })).not.toBeNull();
+    expect(screen.queryByRole('button', { name: 'Projeto Kloel' })).toBeNull();
+
+    fireEvent.change(screen.getByLabelText('Buscar memória'), { target: { value: 'grafo imutável' } });
+
+    expect(screen.getByRole('button', { name: 'Projeto Kloel' })).not.toBeNull();
+    expect(screen.queryByRole('button', { name: 'Infra atual' })).toBeNull();
+  });
+
+  it('filters memory graph by auditable origin references', async () => {
+    const memoryNodes = [
+      {
+        id: 'mem-chat',
+        label: 'Decisão do chat',
+        group: 'decision',
+        originLabel: 'Kloel Chat',
+        sourceRefs: [{ type: 'conversation', label: 'Kloel Chat', ref: 'turn-42' }],
+        state: 'confirmed',
+      },
+      {
+        id: 'mem-doc',
+        label: 'Documento importado',
+        group: 'document',
+        originLabel: 'Manual de produto',
+        sourceRefs: [{ type: 'document', label: 'Manual de produto', ref: 'doc-7' }],
+        state: 'confirmed',
+      },
+    ];
+    getMemoryGraphMock.mockResolvedValueOnce({
+      nodes: [{ id: 'you', label: 'Você', group: 'center' }, ...memoryNodes],
+      edges: memoryNodes.map((node) => ({ from: 'you', to: node.id, relation: 'belongs_to' })),
+    });
+    const { fireEvent } = await import('@testing-library/react');
+
+    render(<MemoryGraphView />);
+
+    expect(await screen.findByText('3 nodes')).not.toBeNull();
+
+    fireEvent.change(screen.getByLabelText('Buscar memória'), { target: { value: 'turn-42' } });
+
+    expect(screen.getByText('2 nodes')).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'Decisão do chat' })).not.toBeNull();
+    expect(screen.queryByRole('button', { name: 'Documento importado' })).toBeNull();
+
+    fireEvent.change(screen.getByLabelText('Buscar memória'), { target: { value: 'manual de produto' } });
+
+    expect(screen.getByRole('button', { name: 'Documento importado' })).not.toBeNull();
+    expect(screen.queryByRole('button', { name: 'Decisão do chat' })).toBeNull();
+  });
+
+  it('filters memory graph by confidence band', async () => {
+    const memoryNodes = [
+      { id: 'mem-high', label: 'Confiança alta', group: 'fact', confidence: 0.92, state: 'confirmed' },
+      { id: 'mem-medium', label: 'Confiança média', group: 'decision', confidence: 0.72, state: 'confirmed' },
+      { id: 'mem-low', label: 'Confiança baixa', group: 'preference', confidence: 0.34, state: 'uncertain' },
+    ];
+    getMemoryGraphMock.mockResolvedValueOnce({
+      nodes: [{ id: 'you', label: 'Você', group: 'center' }, ...memoryNodes],
+      edges: memoryNodes.map((node) => ({ from: 'you', to: node.id, relation: 'belongs_to' })),
+    });
+    const { fireEvent } = await import('@testing-library/react');
+
+    render(<MemoryGraphView />);
+
+    expect(await screen.findByText('4 nodes')).not.toBeNull();
+
+    fireEvent.change(screen.getByLabelText('Confiança'), { target: { value: 'low' } });
+
+    expect(screen.getByText('2 nodes')).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'Confiança baixa' })).not.toBeNull();
+    expect(screen.queryByRole('button', { name: 'Confiança alta' })).toBeNull();
+
+    fireEvent.change(screen.getByLabelText('Confiança'), { target: { value: 'high' } });
+
+    expect(screen.getByRole('button', { name: 'Confiança alta' })).not.toBeNull();
+    expect(screen.queryByRole('button', { name: 'Confiança baixa' })).toBeNull();
+  });
 });

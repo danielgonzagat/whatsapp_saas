@@ -149,6 +149,7 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
   const [consumedPendingNodeSequence, setConsumedPendingNodeSequence] = useState<number | null>(
     null,
   );
+  const [dismissedRouteSignature, setDismissedRouteSignature] = useState<string | null>(null);
 
   useEffect(() => {
     if (!shouldHydrateDynamicGraphDataArea(dynamicDataArea)) {
@@ -192,6 +193,7 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
   );
   const activeNode = resolveKloelGraphNodeForPathFromNodes(pathname, params, graphNodes);
   const routeSignature = `${pathname}?${params.toString()}`;
+  const routeOverlayDismissed = dismissedRouteSignature === routeSignature;
   const pendingNodeConsumed = pendingNode
     ? consumedPendingNodeSequence === pendingNode.sequence
     : false;
@@ -207,15 +209,20 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
   const displayArea =
     manualFocus?.routeKey === activeRouteKey ? manualFocus.area : (activeNode?.area ?? 'criar');
   const edges = useMemo(() => buildKloelGraphEdges(graphNodes), [graphNodes]);
-  const activeGraphNodeId = graphOnly
-    ? (pendingNodeId ?? undefined)
-    : (pendingNodeId ?? activeNode?.id);
+  const activeGraphNodeId = routeOverlayDismissed
+    ? undefined
+    : graphOnly
+      ? (pendingNodeId ?? undefined)
+      : (pendingNodeId ?? activeNode?.id);
   const pendingOverlayNode = pendingNodeId
     ? graphNodes.find((node) => node.id === pendingNodeId)
     : undefined;
   const hasRouteOverlay =
-    (!graphOnly && !isCommandPaletteGraphAction) || Boolean(pendingOverlayNode);
-  const overlayNode = pendingOverlayNode ?? (graphOnly ? undefined : activeNode);
+    !routeOverlayDismissed &&
+    ((!graphOnly && !isCommandPaletteGraphAction) || Boolean(pendingOverlayNode));
+  const overlayNode = routeOverlayDismissed
+    ? undefined
+    : (pendingOverlayNode ?? (graphOnly ? undefined : activeNode));
 
   useEffect(() => {
     if (!pendingNode || pendingNode.routeSignature === routeSignature) {
@@ -239,13 +246,14 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
   }, [router]);
 
   const closeOverlay = useCallback(() => {
+    setDismissedRouteSignature(routeSignature);
     setPendingNode(null);
     const nextParams = new URLSearchParams(searchParams.toString());
     nextParams.set('graph', '1');
     nextParams.delete('graphAction');
     const query = nextParams.toString();
     pushGraphOnlyRoute(`${pathname}${query ? `?${query}` : ''}`);
-  }, [pathname, pushGraphOnlyRoute, searchParams]);
+  }, [pathname, pushGraphOnlyRoute, routeSignature, searchParams]);
 
   useEffect(() => {
     if (paletteProps.open || !hasRouteOverlay) {
@@ -264,6 +272,7 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
 
   const openNode = useCallback(
     (node: KloelGraphNode) => {
+      setDismissedRouteSignature(null);
       if (node.id === 'kloel-search') {
         setPendingNode(null);
         setPaletteMode('full');
@@ -304,6 +313,7 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
 
   const focusGalaxy = useCallback(
     (area: KloelGraphArea) => {
+      setDismissedRouteSignature(null);
       const primaryNode = KLOEL_GRAPH_NODES.find((node) => node.area === area && !node.parentId);
 
       startTransition(() => {
@@ -342,7 +352,7 @@ function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) 
 
   useEffect(() => {
     if (graphAction === 'search' || graphAction === 'recents') {
-      openPalette({ initialQuery: '' });
+            openPalette({ initialQuery: '' });
     }
   }, [graphAction, openPalette]);
 

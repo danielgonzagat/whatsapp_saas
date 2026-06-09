@@ -71,6 +71,8 @@ export function MemoryGraphView() {
   const [actionStatus, setActionStatus] = useState<'idle' | 'saving' | 'error'>('idle');
   const [memoryTypeFilter, setMemoryTypeFilter] = useState('all');
   const [memoryStateFilter, setMemoryStateFilter] = useState('all');
+  const [memoryConfidenceFilter, setMemoryConfidenceFilter] = useState('all');
+  const [memoryQuery, setMemoryQuery] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -120,11 +122,34 @@ export function MemoryGraphView() {
     { value: 'contradicted', label: 'Contraditas' },
     { value: 'replaced', label: 'Substituídas' },
   ] as const;
+  const memoryConfidenceFilters = [
+    { value: 'all', label: 'Todas' },
+    { value: 'high', label: 'Alta' },
+    { value: 'medium', label: 'Média' },
+    { value: 'low', label: 'Baixa' },
+  ] as const;
   const memoryLimit = 60;
   const isCenterNode = (node: MemoryGraphPayload['nodes'][number]) =>
     node.id === 'you' || node.group === 'center';
   const rankMemoryNode = (node: MemoryGraphPayload['nodes'][number]) =>
     (node.pinned ? 1_000 : 0) + (node.importance ?? 0) * 100 + (node.confidence ?? 0) * 10;
+  const normalizeMemorySearchText = (value: string) =>
+    value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+  const memoryQueryNeedle = normalizeMemorySearchText(memoryQuery);
+  const matchesMemoryQuery = (node: MemoryGraphPayload['nodes'][number]) => {
+    if (!memoryQueryNeedle) {
+      return true;
+    }
+    return normalizeMemorySearchText(
+      [node.label, node.summary, node.content, node.group, node.scope, node.state]
+        .filter((value): value is string => typeof value === 'string' && value.length > 0)
+        .join(' '),
+    ).includes(memoryQueryNeedle);
+  };
   const matchesMemoryStateFilter = (node: MemoryGraphPayload['nodes'][number]) => {
     if (memoryStateFilter === 'all') {
       return true;
@@ -143,13 +168,31 @@ export function MemoryGraphView() {
     }
     return (node.state ?? 'confirmed') === memoryStateFilter;
   };
+  const matchesMemoryConfidenceFilter = (node: MemoryGraphPayload['nodes'][number]) => {
+    if (memoryConfidenceFilter === 'all') {
+      return true;
+    }
+    if (typeof node.confidence !== 'number') {
+      return false;
+    }
+    if (memoryConfidenceFilter === 'high') {
+      return node.confidence >= 0.8;
+    }
+    if (memoryConfidenceFilter === 'medium') {
+      return node.confidence >= 0.6 && node.confidence < 0.8;
+    }
+    return node.confidence < 0.6;
+  };
   const centerNodes = graphPayload.nodes.filter(isCenterNode);
   const memoryNodes = graphPayload.nodes.filter((node) => !isCenterNode(node));
   const typeFilteredMemoryNodes =
     memoryTypeFilter === 'all'
       ? memoryNodes
       : memoryNodes.filter((node) => node.group === memoryTypeFilter);
-  const filteredMemoryNodes = typeFilteredMemoryNodes.filter(matchesMemoryStateFilter);
+  const filteredMemoryNodes = typeFilteredMemoryNodes.filter(
+    (node) =>
+      matchesMemoryStateFilter(node) && matchesMemoryConfidenceFilter(node) && matchesMemoryQuery(node),
+  );
   const visibleMemoryNodes = [...filteredMemoryNodes]
     .sort((left, right) => rankMemoryNode(right) - rankMemoryNode(left))
     .slice(0, memoryLimit);
@@ -235,7 +278,7 @@ export function MemoryGraphView() {
           alignItems: 'center',
           gap: 10,
           flexWrap: 'wrap',
-          maxWidth: 'min(520px, calc(100% - 36px))',
+          maxWidth: 'min(900px, calc(100% - 36px))',
           border: '1px solid rgba(148,163,184,.2)',
           borderRadius: 16,
           background: 'rgba(9,13,24,.82)',
@@ -245,6 +288,16 @@ export function MemoryGraphView() {
           backdropFilter: 'blur(18px)',
         }}
       >
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+          Buscar memória
+          <input
+            type="search"
+            value={memoryQuery}
+            onChange={(event) => setMemoryQuery(event.target.value)}
+            placeholder="Projeto, tema, origem"
+            style={{ ...filterControlStyle, width: 190 }}
+          />
+        </label>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
           Tipo de memória
           <select
@@ -267,6 +320,20 @@ export function MemoryGraphView() {
             style={filterControlStyle}
           >
             {memoryStateFilters.map((filter) => (
+              <option key={filter.value} value={filter.value}>
+                {filter.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+          Confiança
+          <select
+            value={memoryConfidenceFilter}
+            onChange={(event) => setMemoryConfidenceFilter(event.target.value)}
+            style={filterControlStyle}
+          >
+            {memoryConfidenceFilters.map((filter) => (
               <option key={filter.value} value={filter.value}>
                 {filter.label}
               </option>

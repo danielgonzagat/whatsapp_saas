@@ -429,6 +429,46 @@ describe('KloelGraphShell', () => {
     );
   });
 
+  it('clears the route node ember state immediately when closing the overlay before route hooks update', async () => {
+    const pushState = vi.spyOn(window.history, 'pushState');
+    pathname = '/products';
+    searchParams = new URLSearchParams();
+
+    const { container } = renderShell(<main>ProdutosView real</main>);
+    const getProductsCircle = () =>
+      container.querySelector('circle[data-node-id="criar-products"]') as SVGCircleElement | null;
+
+    await waitFor(() => expect(getProductsCircle()).toBeTruthy());
+    expect(getProductsCircle()?.getAttribute('fill')).toBe('rgb(232,93,48)');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar overlay do grafo' }));
+
+    expect(pushState).toHaveBeenCalledWith(null, '', '/products?graph=1');
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: /Produtos/i })).toBeNull());
+    expect(getProductsCircle()?.getAttribute('fill')).not.toBe('rgb(232,93,48)');
+    expect(getProductsCircle()?.getAttribute('stroke')).toBe('none');
+  });
+
+  it('clears the route node ember state immediately when closing the overlay before route hooks update', async () => {
+    const pushState = vi.spyOn(window.history, 'pushState');
+    pathname = '/products';
+    searchParams = new URLSearchParams();
+
+    const { container } = renderShell(<main>ProdutosView real</main>);
+    const getProductsCircle = () =>
+      container.querySelector('circle[data-node-id="criar-products"]') as SVGCircleElement | null;
+
+    await waitFor(() => expect(getProductsCircle()).toBeTruthy());
+    expect(getProductsCircle()?.getAttribute('fill')).toBe('rgb(232,93,48)');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar overlay do grafo' }));
+
+    expect(pushState).toHaveBeenCalledWith(null, '', '/products?graph=1');
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: /Produtos/i })).toBeNull());
+    expect(getProductsCircle()?.getAttribute('fill')).not.toBe('rgb(232,93,48)');
+    expect(getProductsCircle()?.getAttribute('stroke')).toBe('none');
+  });
+
   it('keeps hidden graph keyboard shortcuts from stealing overlay form input', () => {
     const { container } = renderShell(
       <main>

@@ -127,6 +127,14 @@ export type MemoryGraphNodeState =
   | 'contradicted'
   | 'replaced';
 
+export interface MemoryGraphSourceRef {
+  readonly type: 'conversation' | 'document' | 'file' | 'tool' | 'manual' | 'custom';
+  readonly label: string;
+  readonly ref?: string;
+  readonly url?: string;
+}
+
+
 /** Read-model node consumed by the Kloel Graph memory screen. */
 export interface MemoryGraphNodeView {
   readonly id: string;
@@ -139,6 +147,8 @@ export interface MemoryGraphNodeView {
   readonly confidence?: number;
   readonly importance?: number;
   readonly state?: MemoryGraphNodeState;
+  readonly originLabel?: string;
+  readonly sourceRefs?: readonly MemoryGraphSourceRef[];
   readonly pinned?: boolean;
   readonly sensitive?: boolean;
   readonly archived?: boolean;

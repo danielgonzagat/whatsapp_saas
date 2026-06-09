@@ -72,7 +72,10 @@ describe('MemoryService', () => {
       const firstCreate = prisma.memoryNode.create.mock.calls[0]?.[0];
       expect(firstCreate?.data.workspaceId).toBe('ws-1');
       expect(firstCreate?.data.userId).toBe('user-1');
-      expect(firstCreate?.data.metadata).toEqual({ slot: 'cidade' });
+      expect(firstCreate?.data.metadata).toEqual({
+        slot: 'cidade',
+        sourceRefs: [{ type: 'conversation', label: 'Kloel Chat', ref: 'memory-extraction' }],
+      });
     });
 
     it('coerces an unknown type to "fact" and drops items with no slot', async () => {
@@ -784,6 +787,10 @@ describe('MemoryService', () => {
       expect(userNode?.group).toBe('fact');
       expect(userNode?.state).toBe('confirmed');
       expect(userNode?.usableByAgent).toBe(true);
+      expect(userNode).toMatchObject({
+        originLabel: 'Kloel Chat',
+        sourceRefs: [{ type: 'conversation', label: 'Kloel Chat', ref: 'memory-extraction' }],
+      });
       // scoping: findMany was probed with the caller's (workspaceId, userId)
       const where = prisma.memoryNode.findMany.mock.calls.at(-1)?.[0]?.where;
       expect(where?.workspaceId).toBe('ws-1');
