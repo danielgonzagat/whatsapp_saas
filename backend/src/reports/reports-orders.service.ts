@@ -55,6 +55,50 @@ export class ReportsOrdersService {
 
     const { skip, take } = paginate(f);
 
+    if (f.isFirstPurchase === 'true') {
+      assertValidOrderStatusFilter('PAID', 'ReportsOrdersService.getVendas (isFirstPurchase)');
+      assertValidOrderStatusFilter('PAID', 'ReportsOrdersService.firstPurchaseCheck');
+      const paidStatus = 'PAID' as const;
+      // Filter BEFORE paginating: fetch every order matching the report
+      // filters, resolve each customer's earliest PAID order in one grouped
+      // query, keep only first purchases, then paginate the filtered list.
+      const all = await this.prisma.checkoutOrder.findMany({
+        where: { ...where, workspaceId },
+        select: { id: true, customerEmail: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+      });
+      const emails = [...new Set(all.map((o) => o.customerEmail))];
+      const firstPaid =
+        emails.length > 0
+          ? await this.prisma.checkoutOrder.groupBy({
+              by: ['customerEmail'],
+              where: { workspaceId, customerEmail: { in: emails }, status: paidStatus },
+              _min: { createdAt: true },
+            })
+          : [];
+      const earliestPaidByEmail = new Map(
+        firstPaid.map((g) => [g.customerEmail, g._min.createdAt]),
+      );
+      // First purchase ⇔ no PAID order strictly before this one (same
+      // predicate as the previous per-order `createdAt: { lt }` count).
+      const firstOrders = all.filter((o) => {
+        const earliest = earliestPaidByEmail.get(o.customerEmail);
+        return !earliest || earliest >= o.createdAt;
+      });
+      const total = firstOrders.length;
+      const pageIds = firstOrders.slice(skip, skip + take).map((o) => o.id);
+      const data = await this.prisma.checkoutOrder.findMany({
+        where: { id: { in: pageIds }, workspaceId },
+        include: {
+          payment: {
+            select: { status: true, cardLast4: true, cardBrand: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      return { data, total, page: f.page || 1 };
+    }
+
     const [data, total] = await Promise.all([
       this.prisma.checkoutOrder.findMany({
         take,
@@ -70,30 +114,7 @@ export class ReportsOrdersService {
       this.prisma.checkoutOrder.count({ where: { ...where, workspaceId } }),
     ]);
 
-    let filtered = data;
-    if (f.isFirstPurchase === 'true') {
-      assertValidOrderStatusFilter('PAID', 'ReportsOrdersService.getVendas (isFirstPurchase)');
-      const firstPurchaseChecks = await Promise.all(
-        data.map(async (order) => {
-          assertValidOrderStatusFilter('PAID', 'ReportsOrdersService.firstPurchaseCheck');
-          const paidStatus = 'PAID' as const;
-          // take: 1 — we only need to know if a prior order exists
-          const priorCount = await this.prisma.checkoutOrder.count({
-            where: {
-              workspaceId,
-              customerEmail: order.customerEmail,
-              status: paidStatus,
-              createdAt: { lt: order.createdAt },
-            },
-            take: 1,
-          });
-          return priorCount === 0;
-        }),
-      );
-      filtered = data.filter((_, i) => firstPurchaseChecks[i]);
-    }
-
-    return { data: filtered, total, page: f.page || 1 };
+    return { data, total, page: f.page || 1 };
   }
 
   async getVendasSummary(workspaceId: string, f: ReportFiltersDto) {
