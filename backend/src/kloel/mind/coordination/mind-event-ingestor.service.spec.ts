@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
 import { MindEventIngestor } from './mind-event-ingestor.service';
 import { MindEventSpine } from './mind-event-spine.service';
 import { HebbianService } from '../hebbian.service';
@@ -132,9 +134,7 @@ describe('MindEventIngestor', () => {
 
   describe('processConsolidationScans', () => {
     it('claims pending consolidation scans and marks each dispatched', async () => {
-      const events = [
-        makeClaimedEvent({ id: 'cs-1', eventType: 'cognition.consolidation_scan' }),
-      ];
+      const events = [makeClaimedEvent({ id: 'cs-1', eventType: 'cognition.consolidation_scan' })];
       spine.claimPendingEvents.mockResolvedValue({ events });
       spine.markDispatchSucceeded.mockResolvedValue(undefined);
 

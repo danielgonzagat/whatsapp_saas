@@ -77,9 +77,7 @@ export interface CognitiveConsolidationDeps {
  * `KLOEL_COGNITIVE_CONSOLIDATION_ENABLED=false`.
  */
 export function isCognitiveConsolidationEnabled(): boolean {
-  return (
-    (process.env.KLOEL_COGNITIVE_CONSOLIDATION_ENABLED ?? 'true').toLowerCase() !== 'false'
-  );
+  return (process.env.KLOEL_COGNITIVE_CONSOLIDATION_ENABLED ?? 'true').toLowerCase() !== 'false';
 }
 
 function errMsg(err: unknown): string {

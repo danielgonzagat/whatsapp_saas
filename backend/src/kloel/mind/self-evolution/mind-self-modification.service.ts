@@ -254,7 +254,9 @@ export class MindSelfModificationService {
         }
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
-        this.logger.warn(`bandit-underperformance signal failed workspace=${workspaceId}: ${message}`);
+        this.logger.warn(
+          `bandit-underperformance signal failed workspace=${workspaceId}: ${message}`,
+        );
       }
     }
 

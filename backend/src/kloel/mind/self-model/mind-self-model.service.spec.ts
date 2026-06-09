@@ -1,9 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../../prisma/prisma.service';
-import {
-  MindSelfModelService,
-  SELF_MODEL_RETENTION_VERSIONS,
-} from './mind-self-model.service';
+import { MindSelfModelService, SELF_MODEL_RETENTION_VERSIONS } from './mind-self-model.service';
 import { castMock } from '../../../../test/helpers/cast-mock';
 
 describe('MindSelfModelService', () => {

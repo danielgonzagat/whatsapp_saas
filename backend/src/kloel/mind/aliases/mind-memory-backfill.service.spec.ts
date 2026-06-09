@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
+
 /**
  * Proves the Brain→Mind Phase-2 MEMORY backfill (twin of the message backfill):
  * flag-gated (no-op when OFF), copies legacy RAC_KloelMemory into RAC_MindMemory
@@ -42,17 +44,26 @@ function makePrisma(pages: LegacyRow[][]) {
     call += 1;
     return Promise.resolve(page);
   });
-  const createMany = jest.fn().mockImplementation((args: { data: unknown[] }) =>
-    Promise.resolve({ count: args.data.length }),
-  );
-  return { prisma: { kloelMemory: { findMany }, mindMemory: { createMany } }, findMany, createMany };
+  const createMany = jest
+    .fn()
+    .mockImplementation((args: { data: unknown[] }) =>
+      Promise.resolve({ count: args.data.length }),
+    );
+  return {
+    prisma: { kloelMemory: { findMany }, mindMemory: { createMany } },
+    findMany,
+    createMany,
+  };
 }
 
 describe('MindMemoryBackfillService', () => {
   const prev = process.env[FLAG];
   afterEach(() => {
-    if (prev === undefined) delete process.env[FLAG];
-    else process.env[FLAG] = prev;
+    if (prev === undefined) {
+      delete process.env[FLAG];
+    } else {
+      process.env[FLAG] = prev;
+    }
   });
 
   it('is a no-op when the flag is OFF (default)', async () => {

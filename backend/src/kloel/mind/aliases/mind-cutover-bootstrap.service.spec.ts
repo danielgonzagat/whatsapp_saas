@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unused-expressions */
 /**
  * Proves the cutover bootstrap trigger: no-op when both backfill flags are OFF,
  * runs the enabled backfill + parity on bootstrap, and never throws into boot
@@ -21,8 +23,14 @@ describe('MindCutoverBootstrapService', () => {
   });
 
   function build() {
-    const message = { backfill: jest.fn().mockResolvedValue({ scanned: 5, inserted: 5, batches: 1 }), parity: jest.fn().mockResolvedValue({ legacy: 5, mirrored: 5, missing: 0, coverage: 1 }) };
-    const memory = { backfill: jest.fn().mockResolvedValue({ scanned: 3, inserted: 3, batches: 1 }), parity: jest.fn().mockResolvedValue({ legacy: 3, mirrored: 3, missing: 0, coverage: 1 }) };
+    const message = {
+      backfill: jest.fn().mockResolvedValue({ scanned: 5, inserted: 5, batches: 1 }),
+      parity: jest.fn().mockResolvedValue({ legacy: 5, mirrored: 5, missing: 0, coverage: 1 }),
+    };
+    const memory = {
+      backfill: jest.fn().mockResolvedValue({ scanned: 3, inserted: 3, batches: 1 }),
+      parity: jest.fn().mockResolvedValue({ legacy: 3, mirrored: 3, missing: 0, coverage: 1 }),
+    };
     const service = new MindCutoverBootstrapService(message as never, memory as never);
     return { service, message, memory };
   }
@@ -60,7 +68,10 @@ describe('MindCutoverBootstrapService', () => {
   it('never throws into boot when a backfill rejects', async () => {
     process.env[MEM] = 'true';
     const message = { backfill: jest.fn(), parity: jest.fn() };
-    const memory = { backfill: jest.fn().mockRejectedValue(new Error('db down')), parity: jest.fn() };
+    const memory = {
+      backfill: jest.fn().mockRejectedValue(new Error('db down')),
+      parity: jest.fn(),
+    };
     const service = new MindCutoverBootstrapService(message as never, memory as never);
     expect(() => service.onApplicationBootstrap()).not.toThrow();
     await flush();

@@ -59,14 +59,14 @@ describe('MindSelfModificationService — widened opportunity detection (item 3)
     const prisma = {
       mindPrediction: { findMany: jest.fn().mockResolvedValue([]) },
       mindBelief: {
-        findMany: jest.fn().mockResolvedValue([
-          { predicate: 'P(churn|silence)', variance: 0.4, samples: 30 },
-        ]),
+        findMany: jest
+          .fn()
+          .mockResolvedValue([{ predicate: 'P(churn|silence)', variance: 0.4, samples: 30 }]),
       },
       mindBanditArm: {
-        findMany: jest.fn().mockResolvedValue([
-          { decisionType: 'reply', arm: 'aggressive', pulls: 40, wins: 4 },
-        ]),
+        findMany: jest
+          .fn()
+          .mockResolvedValue([{ decisionType: 'reply', arm: 'aggressive', pulls: 40, wins: 4 }]),
       },
     };
     const service = new MindSelfModificationService(prisma as never);

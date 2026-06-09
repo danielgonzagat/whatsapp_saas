@@ -244,11 +244,7 @@ describe('HebbianService (UTP-MIND-HEB-001/002)', () => {
         }
         return row;
       },
-      create: async ({
-        data,
-      }: {
-        data: { id: string; workspaceId: string; health: unknown };
-      }) => {
+      create: async ({ data }: { data: { id: string; workspaceId: string; health: unknown } }) => {
         store.set(data.workspaceId, { id: data.id, health: data.health });
         return data;
       },
