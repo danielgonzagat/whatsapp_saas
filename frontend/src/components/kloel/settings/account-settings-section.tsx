@@ -193,6 +193,18 @@ export function AccountSettingsSection() {
     }
   };
 
+  const accountInitials = (() => {
+    const source = profile.name?.trim() || profile.email?.trim() || '';
+    if (!source) {
+      return '–';
+    }
+    const words = source.split(/\s+/).filter(Boolean);
+    if (words.length >= 2) {
+      return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+    }
+    return source.slice(0, 2).toUpperCase();
+  })();
+
   return (
     <div className="space-y-6">
       <div>
@@ -210,7 +222,7 @@ export function AccountSettingsSection() {
         <div className="mb-6 flex items-center gap-4">
           <div className="relative">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--app-bg-secondary)] text-xl font-semibold text-[var(--app-text-secondary)]">
-              JD
+              {accountInitials}
             </div>
             <button
               type="button"
@@ -388,7 +400,11 @@ export function AccountSettingsSection() {
                 }
                 setFeedback('Link de redefinição enviado para o seu e-mail.');
               } catch (err: unknown) {
-                setError(err instanceof Error ? err.message : 'Não foi possível enviar o link de redefinição.');
+                setError(
+                  err instanceof Error
+                    ? err.message
+                    : 'Não foi possível enviar o link de redefinição.',
+                );
               } finally {
                 setSendingReset(false);
               }
@@ -525,7 +541,9 @@ export function AccountSettingsSection() {
               type="number"
               min={0}
               value={channels.jitterMin}
-              onChange={(e) => setChannels({ ...channels, jitterMin: coerceJitterInput(e.target.value) })}
+              onChange={(e) =>
+                setChannels({ ...channels, jitterMin: coerceJitterInput(e.target.value) })
+              }
               className={kloelSettingsClass.input}
             />
           </div>
@@ -536,7 +554,9 @@ export function AccountSettingsSection() {
               type="number"
               min={channels.jitterMin}
               value={channels.jitterMax}
-              onChange={(e) => setChannels({ ...channels, jitterMax: coerceJitterInput(e.target.value) })}
+              onChange={(e) =>
+                setChannels({ ...channels, jitterMax: coerceJitterInput(e.target.value) })
+              }
               className={kloelSettingsClass.input}
             />
           </div>

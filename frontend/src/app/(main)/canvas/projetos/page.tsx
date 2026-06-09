@@ -53,8 +53,7 @@ function ProjectSkeletonGrid() {
                 width: '74%',
                 height: 10,
                 borderRadius: 16,
-                background:
-                  colors.canvas.border,
+                background: colors.canvas.border,
               }}
             />
             <div
@@ -111,26 +110,6 @@ export default function CanvasProjetos() {
               fontFamily: S,
             }}
           />
-        </div>
-        <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-          {['Tipo', 'Categoria', 'Data'].map((f) => (
-            <button
-              type="button"
-              key={f}
-              style={{
-                padding: '5px 12px',
-                background: 'none',
-                border: `1px solid ${colors.canvas.border}`,
-                borderRadius: 4,
-                color: 'var(--app-text-secondary)',
-                fontSize: 11,
-                fontFamily: S,
-                cursor: 'pointer',
-              }}
-            >
-              {f}
-            </button>
-          ))}
         </div>
       </div>
 

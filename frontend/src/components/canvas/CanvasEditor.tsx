@@ -57,6 +57,7 @@ export default function CanvasEditor() {
   const designId = params.get('id');
   const tplId = params.get('tpl');
   const aiImage = params.get('aiImage');
+  const uploadKey = params.get('upload');
 
   const [designName, setDesignName] = useState(name);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -65,6 +66,7 @@ export default function CanvasEditor() {
   const initialDesignIdRef = useRef(designId);
   const initialTemplateIdRef = useRef(tplId);
   const initialAiImageRef = useRef(aiImage);
+  const initialUploadKeyRef = useRef(uploadKey);
   const designNameRef = useRef(designName);
 
   useEffect(() => {
@@ -186,6 +188,20 @@ export default function CanvasEditor() {
 
     if (initialAiImageRef.current) {
       editor.image.addImage(decodeURIComponent(initialAiImageRef.current)).catch(() => {});
+    } else if (initialUploadKeyRef.current) {
+      // An uploaded image was stashed in sessionStorage by the canvas upload
+      // panel (data URLs are too large to pass through the query string).
+      try {
+        const stashed = window.sessionStorage.getItem(initialUploadKeyRef.current);
+        if (stashed) {
+          window.sessionStorage.removeItem(initialUploadKeyRef.current);
+          editor.image.addImage(stashed).catch((err) => {
+            console.error('Canvas upload image load failed:', err);
+          });
+        }
+      } catch (err) {
+        console.error('Canvas upload handoff failed:', err);
+      }
     }
 
     const updateZoom = () => setZoom(editor.zoom.getZoom());
