@@ -1,9 +1,13 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { ReportsOrdersService } from './reports-orders.service';
-import type { ReportFiltersDto } from './dto/report-filters.dto';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 type OrderDelegateMock = { findMany: jest.Mock; count: jest.Mock; groupBy: jest.Mock };
+
+const nthCallArg = (mock: jest.Mock, index: number): Record<string, unknown> => {
+  const call = (mock.mock.calls as Array<[Record<string, unknown>]>)[index];
+  return call ? call[0] : {};
+};
 
 describe('ReportsOrdersService.getVendas', () => {
   let service: ReportsOrdersService;
@@ -13,9 +17,17 @@ describe('ReportsOrdersService.getVendas', () => {
   // - o3 (carol): never had a PAID order → first purchase
   // - o2 (bob): earliest PAID order is o2 itself → first purchase
   // - o1 (alice): had a PAID order BEFORE the window → repeat purchase
-  const o1 = { id: 'o1', customerEmail: 'alice@x.com', createdAt: new Date('2026-06-01T00:00:00Z') };
+  const o1 = {
+    id: 'o1',
+    customerEmail: 'alice@x.com',
+    createdAt: new Date('2026-06-01T00:00:00Z'),
+  };
   const o2 = { id: 'o2', customerEmail: 'bob@x.com', createdAt: new Date('2026-06-02T00:00:00Z') };
-  const o3 = { id: 'o3', customerEmail: 'carol@x.com', createdAt: new Date('2026-06-03T00:00:00Z') };
+  const o3 = {
+    id: 'o3',
+    customerEmail: 'carol@x.com',
+    createdAt: new Date('2026-06-03T00:00:00Z'),
+  };
   const allDesc = [o3, o2, o1];
   const earliestPaid = [
     { customerEmail: 'alice@x.com', _min: { createdAt: new Date('2026-01-01T00:00:00Z') } },
@@ -42,12 +54,12 @@ describe('ReportsOrdersService.getVendas', () => {
 
       const result = await service.getVendas('ws-1', {
         isFirstPurchase: 'true',
-      } as ReportFiltersDto);
+      });
 
       expect(result.total).toBe(2);
       expect(result.data.map((o: { id: string }) => o.id)).toEqual(['o3', 'o2']);
       // The candidate fetch must NOT be paginated — take/skip belong after the filter.
-      const candidateCall = orders.findMany.mock.calls[0][0] as Record<string, unknown>;
+      const candidateCall = nthCallArg(orders.findMany, 0);
       expect(candidateCall.take).toBeUndefined();
       expect(candidateCall.skip).toBeUndefined();
       // total comes from the filtered list, never from an unfiltered count.
@@ -55,20 +67,18 @@ describe('ReportsOrdersService.getVendas', () => {
     });
 
     it('excludes a customer whose PAID order predates the window even when they land on the first page', async () => {
-      orders.findMany
-        .mockResolvedValueOnce(allDesc)
-        .mockResolvedValueOnce([
-          { ...o3, payment: null },
-          { ...o2, payment: null },
-        ]);
+      orders.findMany.mockResolvedValueOnce(allDesc).mockResolvedValueOnce([
+        { ...o3, payment: null },
+        { ...o2, payment: null },
+      ]);
       orders.groupBy.mockResolvedValue(earliestPaid);
 
       const result = await service.getVendas('ws-1', {
         isFirstPurchase: 'true',
-      } as ReportFiltersDto);
+      });
 
       // alice (o1) had a PAID order on 2026-01-01 < o1.createdAt → not a first purchase.
-      const pageCall = orders.findMany.mock.calls[1][0] as {
+      const pageCall = nthCallArg(orders.findMany, 1) as {
         where: { id: { in: string[] } };
       };
       expect(pageCall.where.id.in).toEqual(['o3', 'o2']);
@@ -86,10 +96,10 @@ describe('ReportsOrdersService.getVendas', () => {
         isFirstPurchase: 'true',
         page: 2,
         perPage: 1,
-      } as unknown as ReportFiltersDto);
+      });
 
       // filtered list is [o3, o2]; page 2 (skip 1, take 1) → [o2], NOT o1.
-      const pageCall = orders.findMany.mock.calls[1][0] as {
+      const pageCall = nthCallArg(orders.findMany, 1) as {
         where: { id: { in: string[] } };
       };
       expect(pageCall.where.id.in).toEqual(['o2']);
@@ -101,7 +111,7 @@ describe('ReportsOrdersService.getVendas', () => {
       orders.findMany.mockResolvedValueOnce(allDesc).mockResolvedValueOnce([]);
       orders.groupBy.mockResolvedValue(earliestPaid);
 
-      await service.getVendas('ws-1', { isFirstPurchase: 'true' } as ReportFiltersDto);
+      await service.getVendas('ws-1', { isFirstPurchase: 'true' });
 
       expect(orders.groupBy).toHaveBeenCalledTimes(1);
       expect(orders.groupBy).toHaveBeenCalledWith({
@@ -123,13 +133,11 @@ describe('ReportsOrdersService.getVendas', () => {
       orders.findMany.mockResolvedValue(rows);
       orders.count.mockResolvedValue(42);
 
-      const result = await service.getVendas('ws-1', {} as ReportFiltersDto);
+      const result = await service.getVendas('ws-1', {});
 
       expect(result).toEqual({ data: rows, total: 42, page: 1 });
       expect(orders.findMany).toHaveBeenCalledTimes(1);
-      expect(orders.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ take: 10, skip: 0 }),
-      );
+      expect(orders.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 10, skip: 0 }));
       expect(orders.groupBy).not.toHaveBeenCalled();
     });
   });
