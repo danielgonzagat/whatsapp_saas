@@ -3,12 +3,37 @@ import { spawn } from 'child_process';
 import { readFileSync } from 'fs';
 import { resolve, dirname, extname } from 'path';
 import { fileURLToPath } from 'url';
+import { homedir } from 'os';
 
 const PROTO_VERSION = '2024-11-05';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const MESH_PATH = resolve(__dirname, 'lsp-mesh.json');
 const mesh = JSON.parse(readFileSync(MESH_PATH, 'utf8'));
+
+// Portability: expand ${REPO_ROOT} / ${HOME} placeholders in lsp-mesh.json values.
+// REPO_ROOT is derived from this script's own location (tools/lsp-mesh/../../),
+// so the mesh resolves correctly on any machine/checkout. Absolute paths without
+// placeholders are kept as-is (backward compatible).
+const REPO_ROOT = resolve(__dirname, '..', '..');
+const HOME = homedir();
+function expandPlaceholders(value) {
+  if (typeof value === 'string') {
+    return value
+      .replace(/\$\{REPO_ROOT\}/g, REPO_ROOT)
+      .replace(/\$\{HOME\}/g, HOME);
+  }
+  if (Array.isArray(value)) {
+    for (let i = 0; i < value.length; i++) value[i] = expandPlaceholders(value[i]);
+    return value;
+  }
+  if (value && typeof value === 'object') {
+    for (const k of Object.keys(value)) value[k] = expandPlaceholders(value[k]);
+    return value;
+  }
+  return value;
+}
+expandPlaceholders(mesh);
 
 class LspPool {
   constructor() { this.servers = new Map(); this.openedDocs = new Map(); }

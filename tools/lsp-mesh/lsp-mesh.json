@@ -2,13 +2,13 @@
   "version": 1,
   "description": "Kloel LSP Mesh — per-workspace LSP server definitions",
   "workspaces": {
-    "root": {"cwd":"/Users/danielpenin/whatsapp_saas","tsconfig":null,"servers":["json","yaml","bash","markdown","toml","dockerfile","compose"]},
-    "backend": {"cwd":"/Users/danielpenin/whatsapp_saas/backend","tsconfig":"/Users/danielpenin/whatsapp_saas/backend/tsconfig.json","servers":["typescript","eslint","prisma","json","sql","dockerfile"]},
-    "frontend": {"cwd":"/Users/danielpenin/whatsapp_saas/frontend","tsconfig":"/Users/danielpenin/whatsapp_saas/frontend/tsconfig.json","servers":["typescript","eslint","tailwindcss","css","html","json"]},
-    "frontend-admin": {"cwd":"/Users/danielpenin/whatsapp_saas/frontend-admin","tsconfig":"/Users/danielpenin/whatsapp_saas/frontend-admin/tsconfig.json","servers":["typescript","eslint","tailwindcss","css","html","json"]},
-    "worker": {"cwd":"/Users/danielpenin/whatsapp_saas/worker","tsconfig":"/Users/danielpenin/whatsapp_saas/worker/tsconfig.json","servers":["typescript","eslint","prisma","json","dockerfile"]},
-    "e2e": {"cwd":"/Users/danielpenin/whatsapp_saas/e2e","tsconfig":null,"servers":["typescript","json"]},
-    "scripts": {"cwd":"/Users/danielpenin/whatsapp_saas/scripts","tsconfig":null,"servers":["json","bash","yaml","markdown","toml"]}
+    "root": {"cwd":"${REPO_ROOT}","tsconfig":null,"servers":["json","yaml","bash","markdown","toml","dockerfile","compose"]},
+    "backend": {"cwd":"${REPO_ROOT}/backend","tsconfig":"${REPO_ROOT}/backend/tsconfig.json","servers":["typescript","eslint","prisma","json","sql","dockerfile"]},
+    "frontend": {"cwd":"${REPO_ROOT}/frontend","tsconfig":"${REPO_ROOT}/frontend/tsconfig.json","servers":["typescript","eslint","tailwindcss","css","html","json"]},
+    "frontend-admin": {"cwd":"${REPO_ROOT}/frontend-admin","tsconfig":"${REPO_ROOT}/frontend-admin/tsconfig.json","servers":["typescript","eslint","tailwindcss","css","html","json"]},
+    "worker": {"cwd":"${REPO_ROOT}/worker","tsconfig":"${REPO_ROOT}/worker/tsconfig.json","servers":["typescript","eslint","prisma","json","dockerfile"]},
+    "e2e": {"cwd":"${REPO_ROOT}/e2e","tsconfig":null,"servers":["typescript","json"]},
+    "scripts": {"cwd":"${REPO_ROOT}/scripts","tsconfig":null,"servers":["json","bash","yaml","markdown","toml"]}
   },
   "servers": {
     "typescript": {"command":"typescript-language-server","args":["--stdio"],"fileTypes":[".ts",".tsx",".js",".jsx",".mjs",".cjs",".mts",".cts"]},
@@ -22,7 +22,7 @@
     "bash": {"command":"bash-language-server","args":["start"],"fileTypes":[".sh",".bash",".zsh"]},
     "markdown": {"command":"marksman","args":["server"],"fileTypes":[".md",".markdown"]},
     "toml": {"command":"taplo","args":["lsp","stdio"],"fileTypes":[".toml"]},
-    "sql": {"command":"/Users/danielpenin/go/bin/sqls","args":[],"fileTypes":[".sql"]},
+    "sql": {"command":"${HOME}/go/bin/sqls","args":[],"fileTypes":[".sql"]},
     "dockerfile": {"command":"docker-langserver","args":["--stdio"],"fileTypes":["Dockerfile",".dockerfile"]},
     "compose": {"command":"docker-compose-langserver","args":["--stdio"],"fileTypes":[".yml",".yaml"]}
   }
