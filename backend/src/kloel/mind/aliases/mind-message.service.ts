@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import type { KloelMessage, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { StructuredLogger } from '../../../logging/structured-logger';
 import { isMindMessageReadCanonicalEnabled } from './mindmessage-read-canonical.flag';
+import { mirrorMindMessage } from './mindmessage-dualwrite.mirror';
 
 /**
  * Canonical Brain → Mind alias surface for `KloelMessage`.
@@ -21,6 +23,8 @@ export type MindMessage = KloelMessage;
 
 @Injectable()
 export class MindMessageService {
+  private readonly logger = StructuredLogger.from(MindMessageService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   /**
@@ -83,8 +87,14 @@ export class MindMessageService {
     // byte-identical to the legacy-only path.
     if (isMindMessageReadCanonicalEnabled()) {
       try {
+        // Filter to `source='brain'` so the canonical read matches the legacy
+        // RAC_KloelMessage semantics (the Kloel-brain chat). RAC_MindMessage is
+        // the UNIFIED table holding every surface (brain/thread/dashboard/...);
+        // reading it unscoped would mix non-brain surfaces into the brain-chat
+        // history. The historical rows were backfilled as 'brain' and live
+        // appends mirror as 'brain' (see appendToConversation).
         const canonical = await this.prisma.mindMessage.findMany({
-          where: { workspaceId },
+          where: { workspaceId, source: 'brain' },
           orderBy: { createdAt: 'asc' },
           take,
           select: { id: true, role: true, content: true, createdAt: true },
@@ -130,8 +140,22 @@ export class MindMessageService {
     role: string,
     content: string,
   ): Promise<MindMessage> {
-    return this.prisma.kloelMessage.create({
+    const created = await this.prisma.kloelMessage.create({
       data: { workspaceId, role, content },
     });
+    // Mirror the brain-chat write into the canonical RAC_MindMessage as
+    // `source='brain'` so the unified table — and the canonical reader — stay
+    // current with live appends (the backfill only covered history). Flag-gated
+    // (KLOEL_MINDMESSAGE_DUALWRITE) + fail-open: a mirror failure never affects
+    // the legacy write the caller depends on.
+    await mirrorMindMessage(
+      this.prisma,
+      { workspaceId, source: 'brain', role, content },
+      (error) =>
+        this.logger.warn(
+          `mind-message brain mirror failed (workspaceId=${workspaceId}): ${error instanceof Error ? error.message : String(error)}`,
+        ),
+    );
+    return created;
   }
 }

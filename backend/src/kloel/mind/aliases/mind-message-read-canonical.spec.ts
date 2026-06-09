@@ -92,7 +92,7 @@ describe('MindMessageService — RAC_MindMessage canonical read (KLOEL_MINDMESSA
 
     expect(prisma.mindMessage.findMany).toHaveBeenCalledTimes(1);
     expect(prisma.mindMessage.findMany).toHaveBeenCalledWith({
-      where: { workspaceId: 'ws-1' },
+      where: { workspaceId: 'ws-1', source: 'brain' },
       orderBy: { createdAt: 'asc' },
       take: 50,
       select: { id: true, role: true, content: true, createdAt: true },
