@@ -102,7 +102,7 @@ function createAssistantTraceEntryFromStreamEvent(
       id: event.callId ? `${event.callId}:call` : `trace_tool_call_${Date.now()}`,
       kind: 'tool_call',
       phase: 'tool_calling',
-      label: sanitizeAssistantTraceLabel('Consultei contexto operacional relevante antes de responder.'),
+      label: sanitizeAssistantTraceLabel(`Consultei ${toolLabel} antes de responder.`),
       createdAt: new Date().toISOString(),
       tool: toolLabel,
       ...(spanId ? { spanId } : {}),
@@ -118,8 +118,8 @@ function createAssistantTraceEntryFromStreamEvent(
       phase: 'tool_result',
       label: sanitizeAssistantTraceLabel(
         event.success
-          ? 'Incorporei as observações encontradas antes de responder.'
-          : 'Registrei uma limitação operacional antes de responder.',
+          ? `Incorporei as observações de ${toolLabel} antes de responder.`
+          : `Registrei uma limitação ao usar ${toolLabel} antes de responder.`,
       ),
       createdAt: new Date().toISOString(),
       tool: toolLabel,

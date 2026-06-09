@@ -40,13 +40,13 @@ describe('kloel-message-ui trace', () => {
       }),
       expect.objectContaining({
         phase: 'tool_calling',
-        label: 'Consultei contexto operacional relevante antes de responder.',
+        label: 'Consultei search_web antes de responder.',
         tool: 'search_web',
         spanId: 'span-1',
       }),
       expect.objectContaining({
         phase: 'tool_result',
-        label: 'Incorporei as observações encontradas antes de responder.',
+        label: 'Incorporei as observações de search_web antes de responder.',
         tool: 'search_web',
         spanId: 'span-1',
         artifactId: 'artifact-1',
@@ -54,7 +54,7 @@ describe('kloel-message-ui trace', () => {
       }),
     ]);
     expect(summarizeAssistantProcessingTrace(entries)).toBe(
-      'Entendendo sua pergunta e reunindo o contexto da conversa, consultei contexto operacional relevante antes de responder e incorporei as observações encontradas antes de responder.',
+      'Entendendo sua pergunta e reunindo o contexto da conversa, consultei search_web antes de responder e incorporei as observações de search_web antes de responder.',
     );
   });
 
@@ -167,7 +167,7 @@ describe('kloel-message-ui trace', () => {
     });
     const entry = getAssistantProcessingTrace(metadata)[0];
 
-    expect(entry?.label).toBe('Consultei contexto operacional relevante antes de responder.');
+    expect(entry?.label).toBe('Consultei code_outline antes de responder.');
     expect(entry?.tool).toBe('code_outline');
     expect(JSON.stringify(entry)).toContain('code_outline');
   });
@@ -180,7 +180,7 @@ describe('kloel-message-ui trace', () => {
     });
     const entry = getAssistantProcessingTrace(metadata)[0];
 
-    expect(entry?.label).toBe('Consultei contexto operacional relevante antes de responder.');
+    expect(entry?.label).toBe('Consultei run_backend_tests antes de responder.');
     expect(entry?.tool).toBe('run_backend_tests');
     expect(JSON.stringify(entry)).toContain('run_backend_tests');
   });
@@ -201,8 +201,8 @@ describe('kloel-message-ui trace', () => {
 
     const trace = getAssistantProcessingTrace(withImage);
     expect(trace.map((entry) => entry.label)).toEqual([
-      'Consultei contexto operacional relevante antes de responder.',
-      'Registrei uma limitação operacional antes de responder.',
+      'Consultei create_site antes de responder.',
+      'Registrei uma limitação ao usar create_image antes de responder.',
     ]);
     expect(trace.map((entry) => entry.tool)).toEqual(['create_site', 'create_image']);
     expect(JSON.stringify(trace)).toContain('create_site');
@@ -237,17 +237,20 @@ describe('kloel-message-ui trace', () => {
 
     const trace = getAssistantProcessingTrace(withHealth);
     expect(trace.map((entry) => entry.label)).toEqual([
-      'Consultei contexto operacional relevante antes de responder.',
-      'Incorporei as observações encontradas antes de responder.',
-      'Consultei contexto operacional relevante antes de responder.',
+      'Consultei list_products antes de responder.',
+      'Incorporei as observações de get_settings antes de responder.',
+      'Incorporei as observações de get_billing_status antes de responder.',
+      'Consultei self.health antes de responder.',
     ]);
     expect(trace.map((entry) => entry.tool)).toEqual([
       'list_products',
       'get_settings',
+      'get_billing_status',
       'self.health',
     ]);
     expect(JSON.stringify(trace)).toContain('list_products');
     expect(JSON.stringify(trace)).toContain('get_settings');
+    expect(JSON.stringify(trace)).toContain('get_billing_status');
     expect(JSON.stringify(trace)).toContain('self.health');
   });
 
@@ -341,7 +344,7 @@ describe('kloel-message-ui trace', () => {
     expect(getAssistantProcessingTrace(withToolCall)).toEqual([
       expect.objectContaining({
         kind: 'tool_call',
-        label: 'Consultei contexto operacional relevante antes de responder.',
+        label: 'Consultei search_web antes de responder.',
         tool: 'search_web',
       }),
     ]);
@@ -357,7 +360,7 @@ describe('kloel-message-ui trace', () => {
     expect(getAssistantProcessingTrace(metadata)).toEqual([
       expect.objectContaining({
         kind: 'tool_call',
-        label: 'Consultei contexto operacional relevante antes de responder.',
+        label: 'Consultei refine_response antes de responder.',
         tool: 'refine_response',
       }),
     ]);
@@ -372,7 +375,7 @@ describe('kloel-message-ui trace', () => {
 
     const [entry] = getAssistantProcessingTrace(metadata);
 
-    expect(entry?.label).toBe('Consultei contexto operacional relevante antes de responder.');
+    expect(entry?.label).toBe('Consultei delete_user_secret_records antes de responder.');
     expect(entry?.tool).toBe('delete_user_secret_records');
     expect(JSON.stringify(entry)).toContain('delete_user_secret_records');
   });
