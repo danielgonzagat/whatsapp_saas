@@ -21,6 +21,7 @@ const mandatoryDomains = [
   'bypassObserverDenyIntegration',
   'atomicityAudit',
   'selfExpansionValidatorLattice',
+  'selfEvolutionAdmission',
   'capabilityMonotonicity',
   'atomicExecReadOnlyUsability',
   'codexAtomicOnlyProtocol',

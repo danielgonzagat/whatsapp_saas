@@ -16,6 +16,7 @@ const mandatoryDomains = [
   'bypassObserverDenyIntegration',
   'atomicityAudit',
   'selfExpansionValidatorLattice',
+  'selfEvolutionAdmission',
   'capabilityMonotonicity',
   'atomicExecReadOnlyUsability',
   'codexAtomicOnlyProtocol',
@@ -82,6 +83,7 @@ function main() {
       staleReport.statuses.distFreshness === 'MISSING' &&
       staleReport.statuses.codexNoBypassStaticPolicy === 'MISSING' &&
       staleReport.statuses.selfExpansionValidatorLattice === 'MISSING' &&
+      staleReport.statuses.selfEvolutionAdmission === 'MISSING' &&
       staleReport.statuses.capabilityMonotonicity === 'MISSING' &&
       staleReport.statuses.atomicExecReadOnlyUsability === 'MISSING',
     staleReport,
@@ -99,6 +101,9 @@ function main() {
       certificateSource.includes("gates/agent-hook-runtime-boundary.proof.mjs") &&
       certificateSource.includes("'distFreshness'") &&
       certificateSource.includes("'selfExpansionValidatorLattice'") &&
+      certificateSource.includes("'selfEvolutionAdmission'") &&
+      certificateSource.includes("domain: 'selfEvolutionAdmission'") &&
+      certificateSource.includes("gates/self-evolution-mcp-tool.proof.mjs") &&
       certificateSource.includes("'capabilityMonotonicity'") &&
       certificateSource.includes("domain: 'capabilityMonotonicity'") &&
       certificateSource.includes("'atomicExecReadOnlyUsability'") &&
@@ -114,6 +119,8 @@ function main() {
       emitsAgentHookRuntimeBoundaryDomain: certificateSource.includes("domain: 'agentHookRuntimeBoundary'"),
       runsAgentHookRuntimeBoundaryProof: certificateSource.includes("gates/agent-hook-runtime-boundary.proof.mjs"),
       emitsValidatorLatticeDomain: certificateSource.includes("domain: 'selfExpansionValidatorLattice'"),
+      emitsSelfEvolutionAdmissionDomain: certificateSource.includes("domain: 'selfEvolutionAdmission'"),
+      runsSelfEvolutionMcpProof: certificateSource.includes("gates/self-evolution-mcp-tool.proof.mjs"),
       emitsCapabilityMonotonicityDomain: certificateSource.includes("domain: 'capabilityMonotonicity'"),
       emitsReadOnlyUsabilityDomain: certificateSource.includes("domain: 'atomicExecReadOnlyUsability'"),
       runsValidatorLatticeProof: certificateSource.includes("gates/self-expansion-validator-lattice.proof.mjs"),
@@ -147,6 +154,7 @@ function main() {
       compiledProof.includes("'codexEntrypointContract'") &&
       compiledProof.includes("'distFreshness'") &&
       compiledProof.includes("'selfExpansionValidatorLattice'") &&
+      compiledProof.includes("'selfEvolutionAdmission'") &&
       compiledProof.includes("'capabilityMonotonicity'") &&
       compiledProof.includes("'atomicExecReadOnlyUsability'") &&
       compiledProof.includes('mandatoryDomainReport(cert)') &&
@@ -157,6 +165,7 @@ function main() {
       checksEntrypoint: compiledProof.includes("'codexEntrypointContract'"),
       checksDistFreshness: compiledProof.includes("'distFreshness'"),
       checksValidatorLattice: compiledProof.includes("'selfExpansionValidatorLattice'"),
+      checksSelfEvolutionAdmission: compiledProof.includes("'selfEvolutionAdmission'"),
       checksCapabilityMonotonicity: compiledProof.includes("'capabilityMonotonicity'"),
       checksReadOnlyUsability: compiledProof.includes("'atomicExecReadOnlyUsability'"),
     },
@@ -169,6 +178,7 @@ function main() {
       wholeHostProof.includes("'codexEntrypointContract'") &&
       wholeHostProof.includes("'distFreshness'") &&
       wholeHostProof.includes("'selfExpansionValidatorLattice'") &&
+      wholeHostProof.includes("'selfEvolutionAdmission'") &&
       wholeHostProof.includes("'capabilityMonotonicity'") &&
       wholeHostProof.includes("'atomicExecReadOnlyUsability'") &&
       wholeHostProof.includes('mandatoryDomainReport(payload)') &&
@@ -179,6 +189,7 @@ function main() {
       checksEntrypoint: wholeHostProof.includes("'codexEntrypointContract'"),
       checksDistFreshness: wholeHostProof.includes("'distFreshness'"),
       checksValidatorLattice: wholeHostProof.includes("'selfExpansionValidatorLattice'"),
+      checksSelfEvolutionAdmission: wholeHostProof.includes("'selfEvolutionAdmission'"),
       checksCapabilityMonotonicity: wholeHostProof.includes("'capabilityMonotonicity'"),
       checksReadOnlyUsability: wholeHostProof.includes("'atomicExecReadOnlyUsability'"),
     },

@@ -26,16 +26,14 @@ const { makeContext } = await import(path.join(dir, '..', 'dist', 'gates', 'cont
 const gate = (await import(path.join(dir, '..', 'dist', 'gates', 'type-soundness-gate.js')))
   .default;
 
+const jsonMode = process.argv.includes('--json');
+const results = [];
 let pass = 0;
 let fail = 0;
-function check(name, cond) {
-  if (cond) {
-    pass += 1;
-    console.log('  PASS ', name);
-  } else {
-    fail += 1;
-    console.log('  FAIL ', name);
-  }
+function check(name, cond, detail = {}) {
+  const ok = Boolean(cond);
+  results.push({ name, ok, detail });
+  if (ok) { pass += 1; if (!jsonMode) console.log('  PASS ', name); } else { fail += 1; if (!jsonMode) console.log('  FAIL ', name); }
 }
 
 function mkTmp() {
@@ -368,5 +366,6 @@ function writeTypesPkg(d, name, body) {
   fs.rmSync(d, { recursive: true, force: true });
 }
 
-console.log(`\n${pass} passed, ${fail} failed`);
-process.exit(fail === 0 ? 0 : 1);
+function finish() { const payload = { ok: fail === 0, pass, fail, results }; if (jsonMode) { process.stdout.write(JSON.stringify(payload, null, 2) + '\n', () => process.exit(payload.ok ? 0 : 1)); return; } process.stdout.write(`\n${pass} passed, ${fail} failed\n`, () => process.exit(payload.ok ? 0 : 1)); }
+
+finish();

@@ -31,6 +31,7 @@ const MANDATORY_MCP_CONTROLLED_DOMAINS: readonly string[] = [
   'bypassObserverDenyIntegration',
   'atomicityAudit',
   'selfExpansionValidatorLattice',
+  'selfEvolutionAdmission',
   'capabilityMonotonicity',
   'atomicExecReadOnlyUsability',
   'codexAtomicOnlyProtocol',
@@ -261,6 +262,7 @@ function runJsonScriptDirect(
       timeout: timeoutMs,
       stdio: ['ignore', 'pipe', 'pipe'],
       env: jsonScriptEnv(root),
+      maxBuffer: 64 * 1024 * 1024,
     });
     return parseJsonScriptOutput(out);
   } catch (e) {
@@ -285,7 +287,7 @@ function runJsonScriptViaBroker(
     input: JSON.stringify({ command, cwd: root, effectRoot: root, timeoutMs, env }),
     encoding: 'utf8',
     timeout: timeoutMs + 5000,
-    maxBuffer: 16 * 1024 * 1024,
+    maxBuffer: 64 * 1024 * 1024,
   });
   if (result.error) return jsonScriptError(result.error);
 
@@ -709,6 +711,22 @@ export function registerToolsY(server: McpServer): void {
             ? undefined
             : 'Repair atomic_expand_self so every self-expansion runs the mandatory build/type/runtime-freshness/semantic/contract/behavior/security/test/ledger/certificate/runtime/usability/no-bypass validator lattice before acceptance.',
           detail: selfExpansionValidatorLattice.ok ? selfExpansionValidatorLattice.value : undefined,
+        });
+
+        const selfEvolutionAdmission = runJsonScript('gates/self-evolution-mcp-tool.proof.mjs', ['--json'], 120000);
+        const selfEvolutionAdmissionGreen = selfEvolutionAdmission.ok && selfEvolutionAdmission.value.ok === true;
+        domains.push({
+          domain: 'selfEvolutionAdmission',
+          status: selfEvolutionAdmissionGreen ? 'GREEN' : 'RED',
+          evidence: selfEvolutionAdmissionGreen
+            ? 'self-evolution-mcp-tool.proof.mjs passed: atomic_self_evolution is a callable Atomic MCP capability, emits promotion/archive receipts, and rejects self-consistent forged receipts as verifier output.'
+            : selfEvolutionAdmission.ok
+              ? `self-evolution MCP proof reported non-green: ${JSON.stringify(selfEvolutionAdmission.value)}`
+              : `self-evolution MCP proof could not run: ${selfEvolutionAdmission.error}`,
+          requiredChange: selfEvolutionAdmissionGreen
+            ? undefined
+            : 'Repair atomic_self_evolution registration, single-call reachability, promotion receipt verification, or forged-receipt rejection before any Y certificate can claim self-evolution admission.',
+          detail: selfEvolutionAdmission.ok ? selfEvolutionAdmission.value : undefined,
         });
 
         const capabilityMonotonicity = runJsonScript('gates/security-monotonicity.proof.mjs', ['--json'], 120000);

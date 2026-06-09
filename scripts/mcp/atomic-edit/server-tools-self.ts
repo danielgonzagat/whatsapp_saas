@@ -51,6 +51,8 @@ const MANDATORY_SELF_EXPANSION_VALIDATORS: readonly SelfExpansionValidator[] = [
   { phase: 'security', command: 'node gates/chrome-devtools-bridge.proof.mjs --json' },
   { phase: 'monotonicity', command: 'node gates/security-monotonicity.proof.mjs --json' },
   { phase: 'self-lattice', command: 'node gates/self-expansion-validator-lattice.proof.mjs --json' },
+  { phase: 'self-evolution', command: 'node gates/self-evolution-harness.proof.mjs --json' },
+  { phase: 'self-evolution-tool', command: 'node gates/self-evolution-mcp-tool.proof.mjs --json' },
   { phase: 'benchmark', command: 'node gates/atomic-agent-bench.proof.mjs' },
   { phase: 'test', command: 'node gates/test-execution-gate.proof.mjs --json' },
   { phase: 'ledger', command: 'node proof-chain.proof.mjs --json' },
@@ -106,7 +108,16 @@ function normalizeSelfExpansionProofCommands(raw: readonly string[] | undefined)
 
 function proofTimeoutMs(command: string): number {
   if (command === 'node dist/smoke.js') return 240000;
-  if (command.includes('compiled-mcp-y-certificate') || command.includes('codex-entrypoint-contract')) return 120000;
+  if (
+    command.includes('compiled-mcp-y-certificate') ||
+    command.includes('codex-entrypoint-contract') ||
+    command.includes('type-soundness-gate') ||
+    command.includes('algebra.proof.mjs') ||
+    command.includes('contract-edge-gate') ||
+    command.includes('self-evolution-mcp-tool')
+  ) {
+    return 90000;
+  }
   return 60000;
 }
 
@@ -120,30 +131,114 @@ function shellPath(value: string): string {
   return JSON.stringify(String(value));
 }
 
+type ProofCommandResult = { command: string; ok: boolean; stdout: string; stderr: string };
+
+const SELF_EXPANSION_PROOF_CONCURRENCY = 8;
+const SELF_EXPANSION_PROOF_GLOBAL_BUDGET_MS = 105000;
+const SELF_EXPANSION_PROOF_DEADLINE_SAFETY_MS = 3000;
+const PROOF_OUTPUT_MAX_BYTES = 32 * 1024 * 1024;
+
+function appendProofOutput(current: string, chunk: Buffer | string, maxBytes = PROOF_OUTPUT_MAX_BYTES): string {
+  if (current.length >= maxBytes) return current;
+  const next = current + String(chunk);
+  if (next.length <= maxBytes) return next;
+  return next.slice(0, maxBytes) + '\n[atomic proof output truncated]';
+}
+
+function proofCommandConcurrency(): number {
+  const raw = Number(process.env.ATOMIC_SELF_EXPANSION_PROOF_CONCURRENCY ?? '');
+  if (Number.isFinite(raw) && raw > 0) return Math.max(1, Math.min(16, Math.floor(raw)));
+  return SELF_EXPANSION_PROOF_CONCURRENCY;
+}
+
+function proofGlobalBudgetMs(): number {
+  const raw = Number(process.env.ATOMIC_SELF_EXPANSION_PROOF_GLOBAL_BUDGET_MS ?? '');
+  if (Number.isFinite(raw) && raw > 0) {
+    return Math.max(30000, Math.min(115000, Math.floor(raw)));
+  }
+  return SELF_EXPANSION_PROOF_GLOBAL_BUDGET_MS;
+}
+
+function remainingProofBudgetMs(deadlineMs: number): number {
+  return Math.max(1000, deadlineMs - Date.now() - SELF_EXPANSION_PROOF_DEADLINE_SAFETY_MS);
+}
+
+function proofTimeoutForDeadline(command: string, deadlineMs: number): number {
+  return Math.min(proofTimeoutMs(command), remainingProofBudgetMs(deadlineMs));
+}
+
+function proofCommandPriority(command: string): number {
+  const priorities: Array<[string, number]> = [
+    ['compiled-mcp-y-certificate', 0],
+    ['type-soundness-gate', 1],
+    ['algebra.proof.mjs', 2],
+    ['contract-edge-gate', 3],
+    ['self-evolution-mcp-tool', 4],
+    ['codex-entrypoint-contract', 5],
+    ['atomic-exec-readonly-usability', 6],
+    ['property-gate', 7],
+    ['formal-gate', 8],
+  ];
+  return priorities.find(([needle]) => command.includes(needle))?.[1] ?? 100;
+}
+
 function runProofCommandDirect(
   command: string,
   cwd: string,
   timeoutMs: number,
   env: NodeJS.ProcessEnv = process.env,
-): { command: string; ok: boolean; stdout: string; stderr: string } {
-  const res = childProcess.spawnSync('/bin/bash', ['-c', command], {
-    cwd,
-    env,
-    encoding: 'utf8',
-    timeout: timeoutMs,
-    maxBuffer: 32 * 1024 * 1024,
+): Promise<ProofCommandResult> {
+  return new Promise((resolve) => {
+    const child = childProcess.spawn('/bin/bash', ['-c', command], {
+      cwd,
+      env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    let settled = false;
+    let timer: NodeJS.Timeout | undefined;
+    const finish = (result: ProofCommandResult) => {
+      if (settled) return;
+      settled = true;
+      if (timer) clearTimeout(timer);
+      resolve(result);
+    };
+    const forceKill = () => {
+      try {
+        child.kill('SIGKILL');
+      } catch {
+        /* best-effort */
+      }
+    };
+    timer = setTimeout(() => {
+      stderr = appendProofOutput(stderr, '\n[atomic proof timed out after ' + timeoutMs + 'ms]');
+      try {
+        child.kill('SIGTERM');
+      } catch {
+        /* best-effort */
+      }
+      setTimeout(forceKill, 1000).unref();
+      finish({ command, ok: false, stdout, stderr });
+    }, timeoutMs);
+    child.stdout?.on('data', (chunk) => {
+      stdout = appendProofOutput(stdout, chunk);
+    });
+    child.stderr?.on('data', (chunk) => {
+      stderr = appendProofOutput(stderr, chunk);
+    });
+    child.on('error', (error) => {
+      finish({ command, ok: false, stdout, stderr: appendProofOutput(stderr, error.message) });
+    });
+    child.on('close', (code) => {
+      finish({ command, ok: code === 0, stdout, stderr });
+    });
   });
-  return {
-    command,
-    ok: res.status === 0,
-    stdout: res.stdout ?? '',
-    stderr: res.stderr ?? (res.error instanceof Error ? res.error.message : ''),
-  };
 }
 
-function runProofCommandViaBroker(command: string, cwd: string, timeoutMs: number): { command: string; ok: boolean; stdout: string; stderr: string } | null {
+function runProofCommandViaBroker(command: string, cwd: string, timeoutMs: number): Promise<ProofCommandResult | null> {
   const socket = selfExpansionBrokerSocketPath();
-  if (!socket) return null;
+  if (!socket) return Promise.resolve(null);
   const brokerRoot = process.env.ATOMIC_HOST_WRITE_ROOT ?? REPO_ROOT;
   const codexHome = process.env.CODEX_HOME ?? path.join(brokerRoot, '.codex');
   const client = path.join(brokerRoot, 'scripts/mcp/atomic-edit/atomic-exec-broker-client.mjs');
@@ -165,28 +260,64 @@ function runProofCommandViaBroker(command: string, cwd: string, timeoutMs: numbe
       TEMP: brokerRoot,
     },
   };
-  const res = childProcess.spawnSync(process.execPath, [client, socket], {
-    cwd,
-    encoding: 'utf8',
-    input: JSON.stringify(req),
-    maxBuffer: 64 * 1024 * 1024,
-    timeout: timeoutMs + 5000,
+  return new Promise((resolve) => {
+    const child = childProcess.spawn(process.execPath, [client, socket], {
+      cwd,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    let settled = false;
+    let timer: NodeJS.Timeout | undefined;
+    const finish = (result: ProofCommandResult | null) => {
+      if (settled) return;
+      settled = true;
+      if (timer) clearTimeout(timer);
+      resolve(result);
+    };
+    const forceKill = () => {
+      try {
+        child.kill('SIGKILL');
+      } catch {
+        /* best-effort */
+      }
+    };
+    timer = setTimeout(() => {
+      stderr = appendProofOutput(stderr, '\n[atomic proof broker timed out after ' + (timeoutMs + 5000) + 'ms]');
+      try {
+        child.kill('SIGTERM');
+      } catch {
+        /* best-effort */
+      }
+      setTimeout(forceKill, 1000).unref();
+      finish({ command, ok: false, stdout, stderr });
+    }, timeoutMs + 5000);
+    child.stdout?.on('data', (chunk) => {
+      stdout = appendProofOutput(stdout, chunk, 64 * 1024 * 1024);
+    });
+    child.stderr?.on('data', (chunk) => {
+      stderr = appendProofOutput(stderr, chunk, 64 * 1024 * 1024);
+    });
+    child.on('error', (error) => {
+      finish({ command, ok: false, stdout, stderr: appendProofOutput(stderr, error.message) });
+    });
+    child.on('close', () => {
+      let reply: Record<string, unknown>;
+      try {
+        reply = JSON.parse(stdout || '{}') as Record<string, unknown>;
+      } catch {
+        finish({ command, ok: false, stdout, stderr: 'proof broker returned unparseable output: ' + String(stdout).slice(0, 300) });
+        return;
+      }
+      finish({
+        command,
+        ok: reply.ok === true && reply.exitCode === 0,
+        stdout: String(reply.stdout ?? ''),
+        stderr: String(reply.stderr ?? reply.error ?? stderr ?? ''),
+      });
+    });
+    child.stdin?.end(JSON.stringify(req));
   });
-  if (res.error) {
-    return { command, ok: false, stdout: res.stdout ?? '', stderr: res.error instanceof Error ? res.error.message : String(res.error) };
-  }
-  let reply: Record<string, unknown>;
-  try {
-    reply = JSON.parse(res.stdout || '{}') as Record<string, unknown>;
-  } catch {
-    return { command, ok: false, stdout: res.stdout ?? '', stderr: 'proof broker returned unparseable output: ' + String(res.stdout).slice(0, 300) };
-  }
-  return {
-    command,
-    ok: reply.ok === true && reply.exitCode === 0,
-    stdout: String(reply.stdout ?? ''),
-    stderr: String(reply.stderr ?? reply.error ?? res.stderr ?? ''),
-  };
 }
 
 function selfExpansionProofRoot(): string {
@@ -200,6 +331,8 @@ function selfExpansionProofRoot(): string {
     const index = socket.indexOf(marker);
     if (index > 0) candidates.add(socket.slice(0, index));
   }
+  const explicitHostRoot = process.env.ATOMIC_HOST_WRITE_ROOT ? path.resolve(process.env.ATOMIC_HOST_WRITE_ROOT) : '';
+  if (explicitHostRoot) return explicitHostRoot;
   for (const root of candidates) {
     const statePath = path.join(root, '.atomic', 'codex-broker-current.json');
     try {
@@ -221,8 +354,16 @@ function selfExpansionProofRoot(): string {
   return process.env.ATOMIC_HOST_WRITE_ROOT ?? REPO_ROOT;
 }
 
+function selfExpansionProofTempRoot(hostRoot: string): string {
+  const requested = process.env.TMPDIR ? path.resolve(process.env.TMPDIR) : '';
+  const selfRoot = path.join(REPO_ROOT, 'scripts/mcp/atomic-edit');
+  if (requested === selfRoot || requested.startsWith(selfRoot + path.sep)) return requested;
+  return hostRoot;
+}
+
 function selfExpansionHostProofEnv(socket: string, cwd: string): NodeJS.ProcessEnv {
   const hostRoot = selfExpansionProofRoot();
+  const tempRoot = selfExpansionProofTempRoot(hostRoot);
   return {
     ...process.env,
     ATOMIC_BUILD_BROKER: '1',
@@ -233,9 +374,9 @@ function selfExpansionHostProofEnv(socket: string, cwd: string): NodeJS.ProcessE
     ATOMIC_EXEC_BROKER_ROOT: hostRoot,
     CODEX_HOME: process.env.CODEX_HOME ?? path.join(hostRoot, '.codex'),
     CODEX_PROJECT_DIR: hostRoot,
-    TMPDIR: hostRoot,
-    TMP: hostRoot,
-    TEMP: hostRoot,
+    TMPDIR: tempRoot,
+    TMP: tempRoot,
+    TEMP: tempRoot,
   };
 }
 
@@ -257,16 +398,57 @@ function selfExpansionProofMustRunHostDirect(command: string): boolean {
   ].some((name) => command.includes(name));
 }
 
-function runProofCommands(commands: string[]): { command: string; ok: boolean; stdout: string; stderr: string }[] {
+async function runSingleProofCommand(command: string, cwd: string, deadlineMs: number): Promise<ProofCommandResult> {
+  if (Date.now() >= deadlineMs - SELF_EXPANSION_PROOF_DEADLINE_SAFETY_MS) {
+    return { command, ok: false, stdout: '', stderr: 'skipped: self-expansion proof global budget exhausted before start' };
+  }
+  const timeout = proofTimeoutForDeadline(command, deadlineMs);
+  const socket = selfExpansionBrokerSocketPath();
+  if (socket && selfExpansionProofMustRunHostDirect(command)) {
+    return runProofCommandDirect(command, cwd, timeout, selfExpansionHostProofEnv(socket, cwd));
+  }
+  return (await runProofCommandViaBroker(command, cwd, timeout)) ?? runProofCommandDirect(command, cwd, timeout);
+}
+
+async function runProofCommands(commands: string[]): Promise<ProofCommandResult[]> {
   const cwd = selfExpansionProofCwd();
-  return commands.map((command) => {
-    const timeout = proofTimeoutMs(command);
-    const socket = selfExpansionBrokerSocketPath();
-    if (socket && selfExpansionProofMustRunHostDirect(command)) {
-      return runProofCommandDirect(command, cwd, timeout, selfExpansionHostProofEnv(socket, cwd));
+  const deadlineMs = Date.now() + proofGlobalBudgetMs();
+  const results = new Array<ProofCommandResult>(commands.length);
+  let startIndex = 0;
+  if (commands[0] === 'node build.mjs') {
+    results[0] = await runSingleProofCommand(commands[0], cwd, deadlineMs);
+    startIndex = 1;
+    if (!results[0].ok) {
+      for (let index = startIndex; index < commands.length; index += 1) {
+        results[index] = { command: commands[index], ok: false, stdout: '', stderr: 'skipped after node build.mjs failed' };
+      }
+      return results;
     }
-    return runProofCommandViaBroker(command, cwd, timeout) ?? runProofCommandDirect(command, cwd, timeout);
-  });
+  }
+  const queue = commands.slice(startIndex).map((command, offset) => ({
+    command,
+    index: startIndex + offset,
+    priority: proofCommandPriority(command),
+  }));
+  queue.sort((left, right) => left.priority - right.priority || left.index - right.index);
+  let nextIndex = 0;
+  const workerCount = Math.min(proofCommandConcurrency(), queue.length);
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (true) {
+        const item = queue[nextIndex];
+        nextIndex += 1;
+        if (!item) return;
+        results[item.index] = await runSingleProofCommand(item.command, cwd, deadlineMs);
+      }
+    }),
+  );
+  for (let index = 0; index < commands.length; index += 1) {
+    if (!results[index]) {
+      results[index] = { command: commands[index], ok: false, stdout: '', stderr: 'skipped: self-expansion proof global budget exhausted' };
+    }
+  }
+  return results;
 }
 function proofFailureSnippet(value: string, maxBytes = 1200): string {
   const trimmed = value.trim();
@@ -381,12 +563,14 @@ function ensureSelfTarget(absPath: string, relPath: string): void {
   }
 }
 
-function applySelfFileOp(entry: SelfFileOp): { file: string; op: SelfFileOp['op']; beforeSha256: string | null; afterSha256: string | null; negativeActionProof?: NegativeActionProof } {
+function applySelfFileOp(entry: SelfFileOp, guardedRelPaths?: Set<string>): { file: string; op: SelfFileOp['op']; beforeSha256: string | null; afterSha256: string | null; negativeActionProof?: NegativeActionProof } {
   const { absPath, relPath } = resolveSafeTarget(entry.file);
   ensureSelfTarget(absPath, relPath);
   const exists = fs.existsSync(absPath);
   const before = exists && fs.statSync(absPath).isFile() ? readUtf8(absPath) : null;
-  if (before !== null) guardSha(before, entry.expectedSha256);
+  const firstTouch = !guardedRelPaths?.has(relPath);
+  if (firstTouch && before !== null) guardSha(before, entry.expectedSha256);
+  if (firstTouch) guardedRelPaths?.add(relPath);
   if (entry.op === 'create') {
     if (before !== null && before.length > 0) throw new Error(`refused: ${relPath} already exists; use op=replace with sha proof.`);
     atomicWrite(absPath, entry.content ?? '');
@@ -513,12 +697,13 @@ export function registerToolsSelf(server: McpServer): void {
         const selfRoot = path.join(REPO_ROOT, 'scripts/mcp/atomic-edit');
         const snap = captureEffectSnapshot(selfRoot);
         try {
-          const applied = withSelfExpansionAdmission(() => ops.map(applySelfFileOp));
+          const guardedSelfPaths = new Set<string>();
+          const applied = withSelfExpansionAdmission(() => ops.map((op) => applySelfFileOp(op, guardedSelfPaths)));
           // Proof #5 - capability monotonicity: AFTER the bytes land, BEFORE proofs,
           // refuse (and roll back) any expansion that reduced the engine's own
           // security surface. Mandatory and non-skippable (not a caller proofCommand).
           enforceSecurityMonotonicity();
-          const proofs = runProofCommands(proofCommands);
+          const proofs = await runProofCommands(proofCommands);
           const failed = proofs.filter((p) => !p.ok);
           if (failed.length > 0) {
             const effects = diffEffect(snap);

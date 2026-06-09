@@ -25,7 +25,7 @@
  * (default cwd). Prints 'ATOMIC_BROKER_READY <endpoint>' when listening.
  */
 import net from 'node:net';
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -89,13 +89,8 @@ function subpathWriteRule(value) {
   return `(allow file-write* (subpath "${esc(value)}"))`;
 }
 function darwinScratchDir(name) {
-  try {
-    const result = spawnSync('/usr/bin/getconf', [name], { encoding: 'utf8' });
-    const scratch = (result.stdout || '').trim().replace(/\/+$/, '');
-    return scratch || null;
-  } catch {
-    return null;
-  }
+  const scratch = process.env[name];
+  return scratch ? scratch.trim().replace(/\/+$/, '') : null;
 }
 function browserRuntimeWriteRules(effectRoot) {
   const writable = new Set();
@@ -137,6 +132,7 @@ function profile(effectRoot, profileName = 'atomic-exec') {
       '(allow file-write* (literal "/dev/stderr"))',
       '(allow process*)',
       '(allow mach-lookup)',
+      '(allow mach-register)',
       '(allow sysctl-read)',
       '(allow network*)',
     ]
@@ -173,7 +169,67 @@ function within(child, root) {
   return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
 }
 
-function handle(req) {
+function appendCapped(current, chunk, maxBytes = 32 * 1024 * 1024) {
+  if (current.length >= maxBytes) return current;
+  const next = current + String(chunk);
+  if (next.length <= maxBytes) return next;
+  return next.slice(0, maxBytes) + '\n[atomic broker output truncated]';
+}
+
+function runSandboxed(command, runCwd, eRoot, profileName, req) {
+  return new Promise((resolve) => {
+    const tempRoot = eRoot || runCwd;
+    const child = spawn(SANDBOX_EXEC, ['-p', profile(eRoot, profileName), '/bin/bash', '-c', command], {
+      cwd: runCwd,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, ...(req.env || {}), TMPDIR: tempRoot, TMP: tempRoot, TEMP: tempRoot },
+    });
+    let stdout = '';
+    let stderr = '';
+    let settled = false;
+    let timedOut = false;
+    const timeoutMs = req.timeoutMs || 120000;
+    const forceKill = () => {
+      try {
+        child.kill('SIGKILL');
+      } catch {
+        /* best-effort */
+      }
+    };
+    const timer = setTimeout(() => {
+      timedOut = true;
+      stderr = appendCapped(stderr, '\n[atomic broker command timed out after ' + timeoutMs + 'ms]');
+      try {
+        child.kill('SIGTERM');
+      } catch {
+        /* best-effort */
+      }
+      setTimeout(forceKill, 1000).unref();
+    }, timeoutMs);
+    const finish = (reply) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(reply);
+    };
+    child.stdout.on('data', (chunk) => {
+      stdout = appendCapped(stdout, chunk);
+    });
+    child.stderr.on('data', (chunk) => {
+      stderr = appendCapped(stderr, chunk);
+    });
+    child.on('error', (error) => {
+      finish({ ok: false, error: String(error.message || error), exitCode: null, signal: null, stdout, stderr });
+    });
+    child.on('close', (code, signal) => {
+      finish({ ok: !timedOut && code === 0, exitCode: code, signal: signal ?? null, stdout, stderr });
+    });
+    if (typeof req.stdin === 'string') child.stdin.end(req.stdin);
+    else child.stdin.end();
+  });
+}
+
+async function handle(req) {
   if (!req || typeof req.command !== 'string' || !req.command.trim()) {
     return { ok: false, error: 'broker: command required' };
   }
@@ -191,19 +247,7 @@ function handle(req) {
     ? (typeof req.effectRoot === 'string' && req.effectRoot.length > 0 ? path.resolve(req.effectRoot) : null)
     : runCwd;
   if (eRoot && !within(eRoot, allowedRoot)) return { ok: false, error: 'broker: effectRoot escapes allowed root' };
-  const tempRoot = eRoot || runCwd;
-  const res = spawnSync(SANDBOX_EXEC, ['-p', profile(eRoot, profileName), '/bin/bash', '-c', command], {
-    cwd: runCwd,
-    timeout: req.timeoutMs || 120000,
-    encoding: 'utf8',
-    maxBuffer: 32 * 1024 * 1024,
-    env: { ...process.env, ...(req.env || {}), TMPDIR: tempRoot, TMP: tempRoot, TEMP: tempRoot },
-    ...(typeof req.stdin === 'string' ? { input: req.stdin } : {}),
-  });
-  if (res.error) {
-    return { ok: false, error: String(res.error.message || res.error), exitCode: res.status ?? null, signal: res.signal ?? null, stdout: res.stdout ?? '', stderr: res.stderr ?? '' };
-  }
-  return { ok: res.status === 0, exitCode: res.status, signal: res.signal ?? null, stdout: res.stdout ?? '', stderr: res.stderr ?? '' };
+  return runSandboxed(command, runCwd, eRoot, profileName, req);
 }
 
 function frame(obj) {
@@ -234,27 +278,34 @@ function startSocketBroker(socketPath) {
   server = net.createServer((sock) => {
     let buf = Buffer.alloc(0);
     let need = -1;
+    let handled = false;
     sock.on('data', (d) => {
       buf = Buffer.concat([buf, d]);
       if (need < 0 && buf.length >= 4) {
         need = buf.readUInt32BE(0);
         buf = buf.subarray(4);
       }
-      if (need >= 0 && buf.length >= need) {
+      if (need >= 0 && buf.length >= need && !handled) {
+        handled = true;
         let req = null;
         try {
           req = JSON.parse(buf.subarray(0, need).toString('utf8'));
         } catch {
           req = null;
         }
-        let resp;
-        try {
-          resp = req ? handle(req) : { ok: false, error: 'broker: bad request json' };
-        } catch (e) {
-          resp = { ok: false, error: 'broker handler threw: ' + (e instanceof Error ? e.message : String(e)) };
-        }
-        sock.write(frame(resp));
-        sock.end();
+        (async () => {
+          let resp;
+          try {
+            resp = req ? await handle(req) : { ok: false, error: 'broker: bad request json' };
+          } catch (e) {
+            resp = { ok: false, error: 'broker handler threw: ' + (e instanceof Error ? e.message : String(e)) };
+          }
+          sock.write(frame(resp));
+          sock.end();
+        })().catch((e) => {
+          sock.write(frame({ ok: false, error: 'broker async handler threw: ' + (e instanceof Error ? e.message : String(e)) }));
+          sock.end();
+        });
       }
     });
     sock.on('error', () => {});
@@ -290,7 +341,7 @@ function startFileBroker(root) {
   fs.mkdirSync(requests, { recursive: true, mode: 0o700 });
   fs.mkdirSync(responses, { recursive: true, mode: 0o700 });
   const inFlight = new Set();
-  const processRequest = (name) => {
+  const processRequest = async (name) => {
     if (!name.endsWith('.json') || inFlight.has(name)) return;
     inFlight.add(name);
     const requestFile = path.join(requests, name);
@@ -310,7 +361,7 @@ function startFileBroker(root) {
         shutdownRequested = true;
         resp = { ok: true, shutdown: true };
       } else {
-        resp = handle(req);
+        resp = await handle(req);
       }
     } catch (e) {
       resp = { ok: false, error: 'broker handler threw: ' + (e instanceof Error ? e.message : String(e)) };
