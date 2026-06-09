@@ -138,7 +138,7 @@ describe('KloelThinkerService', () => {
       expect(contentEvent?.content).not.toContain('API_KEY');
       expect(events).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ type: 'tool_result', tool: 'criação de site', success: false }),
+          expect.objectContaining({ type: 'tool_result', tool: 'create_site', success: false }),
           expect.objectContaining({ type: 'done' }),
         ]),
       );

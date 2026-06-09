@@ -48,8 +48,9 @@ describe('getThreadMessages metadata sanitization', () => {
           generatedImageUrl,
           generatedImageFilename: 'kloel image.png',
           webSources,
-          // A genuine prose/trace field that SHOULD be rewritten by the sanitizer.
-          processingSummary: 'Capacidade: self.health concluída',
+          // A genuine prose field: the sanitizer still collapses inline
+          // whitespace, while public tool ids inside prose stay verbatim.
+          processingSummary: 'Capacidade:  self.health   concluída',
         },
         createdAt: new Date('2026-06-07T00:00:00.000Z'),
       },
@@ -68,8 +69,8 @@ describe('getThreadMessages metadata sanitization', () => {
     expect(metadata).not.toHaveProperty('capability');
     expect(metadata).not.toHaveProperty('capabilityError');
 
-    // Trace label is still normalized, and prose is still rewritten.
-    expect(metadata.tool).toBe('criação de site');
-    expect(metadata.processingSummary).toBe('Ação operacional: saúde operacional concluída');
+    // Trace label stays the public tool id; prose whitespace is still normalized.
+    expect(metadata.tool).toBe('create_site');
+    expect(metadata.processingSummary).toBe('Capacidade: self.health concluída');
   });
 });

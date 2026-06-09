@@ -231,7 +231,9 @@ describe('KloelToolRouter', () => {
       (e): e is ToolResultSSEEvent =>
         typeof e === 'object' && e !== null && (e as ToolResultSSEEvent).type === 'tool_result',
     );
-    expect(toolCall?.tool).toBe('consulta operacional');
+    // Public-tool-id doctrine (4bd1ce527): SSE trace events expose the raw
+    // public tool id; humanization happens only in status messages.
+    expect(toolCall?.tool).toBe('get_wallet_balance');
     expect(toolCall?.spanId).toBe('call_w');
     expect(toolResult?.spanId).toBe('call_w');
     expect(typeof toolResult?.durationMs).toBe('number');
