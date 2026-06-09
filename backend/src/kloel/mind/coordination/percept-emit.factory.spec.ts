@@ -1,5 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { describe, expect, it, jest } from '@jest/globals';
-import { Prisma } from '@prisma/client';
 import {
   emitPerceptToMindSpine,
   formatUnknownError,
@@ -19,7 +19,7 @@ function makeInput(overrides: Partial<PerceptEmitInput> = {}): PerceptEmitInput 
     workspaceId: 'ws_1',
     subject: 'test:subject:1',
     idempotencyKey: 'cognition.test.event:1',
-    payload: { foo: 'bar' } as Prisma.InputJsonObject,
+    payload: { foo: 'bar' },
     failureLog: (formattedError) => `test percept emit failed: ${formattedError}`,
     ...overrides,
   };
@@ -71,9 +71,7 @@ describe('emitPerceptToMindSpine', () => {
     const { upsert, prisma, logger } = makeDeps();
     upsert.mockRejectedValueOnce(new Error('db down'));
 
-    await expect(
-      emitPerceptToMindSpine(prisma, logger, makeInput()),
-    ).resolves.toBeUndefined();
+    await expect(emitPerceptToMindSpine(prisma, logger, makeInput())).resolves.toBeUndefined();
 
     expect(upsert).toHaveBeenCalledTimes(1);
     expect(logger.warn).toHaveBeenCalledTimes(1);

@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { isMindMessageBackfillEnabled } from './mindmessage-backfill.flag';
@@ -70,10 +69,12 @@ export class MindMessageBackfillService {
    * preserve the legacy createdAt, so the same `before`/`workspaceId` scope
    * applies to both sides. Never writes.
    */
-  public async parity(scope: {
-    readonly before?: Date;
-    readonly workspaceId?: string;
-  } = {}): Promise<MindMessageParityResult> {
+  public async parity(
+    scope: {
+      readonly before?: Date;
+      readonly workspaceId?: string;
+    } = {},
+  ): Promise<MindMessageParityResult> {
     const legacyWhere = {
       ...(scope.before !== undefined ? { createdAt: { lt: scope.before } } : {}),
       ...(scope.workspaceId !== undefined ? { workspaceId: scope.workspaceId } : {}),
@@ -132,9 +133,7 @@ export class MindMessageBackfillService {
           content: r.content,
           sourceId: r.id,
           createdAt: r.createdAt,
-          ...(r.metadata !== null && r.metadata !== undefined
-            ? { metadata: r.metadata as Prisma.InputJsonValue }
-            : {}),
+          ...(r.metadata !== null && r.metadata !== undefined ? { metadata: r.metadata } : {}),
         })),
         skipDuplicates: true,
       });

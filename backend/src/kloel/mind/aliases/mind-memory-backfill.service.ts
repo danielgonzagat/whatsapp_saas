@@ -60,7 +60,9 @@ export class MindMemoryBackfillService {
 
   public constructor(private readonly prisma: PrismaService) {}
 
-  public async backfill(options: MindMemoryBackfillOptions = {}): Promise<MindMemoryBackfillResult> {
+  public async backfill(
+    options: MindMemoryBackfillOptions = {},
+  ): Promise<MindMemoryBackfillResult> {
     if (!isMindMemoryBackfillEnabled()) {
       return { enabled: false, scanned: 0, inserted: 0, batches: 0 };
     }
@@ -107,9 +109,7 @@ export class MindMemoryBackfillService {
           createdAt: r.createdAt,
           ...(r.type !== null ? { type: r.type } : {}),
           ...(r.content !== null ? { content: r.content } : {}),
-          ...(r.metadata !== null && r.metadata !== undefined
-            ? { metadata: r.metadata as Prisma.InputJsonValue }
-            : {}),
+          ...(r.metadata !== null && r.metadata !== undefined ? { metadata: r.metadata } : {}),
         })),
         skipDuplicates: true,
       });
@@ -140,7 +140,9 @@ export class MindMemoryBackfillService {
    * the canonical RAC_MindMemory(namespace='default') store — the gate an
    * operator checks BEFORE flipping KLOEL_MINDMEMORY_READ_CANONICAL. Never writes.
    */
-  public async parity(scope: { readonly workspaceId?: string } = {}): Promise<MindMemoryParityResult> {
+  public async parity(
+    scope: { readonly workspaceId?: string } = {},
+  ): Promise<MindMemoryParityResult> {
     const where = scope.workspaceId !== undefined ? { workspaceId: scope.workspaceId } : {};
     const [legacy, mirrored] = await Promise.all([
       this.prisma.kloelMemory.count({ where }),
