@@ -1,59 +1,14 @@
 'use client';
 
+import { Maximize2, Minimize2, X } from 'lucide-react';
 import { useState } from 'react';
 
-function CloseGlyph({ color }: { readonly color: string }) {
-  return (
-    <svg width="8" height="8" viewBox="0 0 8 8" aria-hidden="true">
-      <path d="M1 1L7 7M7 1L1 7" stroke={color} strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function ExpandGlyph({ color }: { readonly color: string }) {
-  return (
-    <svg width="9" height="9" viewBox="0 0 9 9" aria-hidden="true">
-      <path
-        d="M5.2 0.8H8.2V3.8M3.8 8.2H0.8V5.2"
-        fill="none"
-        stroke={color}
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function RestoreGlyph({ color }: { readonly color: string }) {
-  return (
-    <svg width="9" height="9" viewBox="0 0 9 9" aria-hidden="true">
-      <path
-        d="M8 1L5 4M5 4V1.5M5 4H7.5M1 8L4 5M4 5V7.5M4 5H1.5"
-        fill="none"
-        stroke={color}
-        strokeWidth="1.3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-export function ResizeGripGlyph({ color }: { readonly color: string }) {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-      <path
-        d="M13 7L7 13M13 11L11 13"
-        stroke={color}
-        strokeWidth="1.2"
-        strokeLinecap="round"
-        opacity="0.9"
-      />
-    </svg>
-  );
-}
-
+/**
+ * Canonical Mac-style traffic-light window control for the Kloel graph overlay.
+ * Glyphs are lucide icons to match the production overlay rendering exactly.
+ * NOTE: ArtifactWindowChrome.controls.tsx is a different surface (artifacts
+ * panel) and deliberately keeps its own implementation.
+ */
 export function TrafficLight({
   glyph,
   label,
@@ -107,11 +62,11 @@ export function TrafficLight({
         }}
       >
         {glyph === 'close' ? (
-          <CloseGlyph color={glyphColor} />
+          <X size={8} strokeWidth={2.4} color={glyphColor} aria-hidden="true" />
         ) : glyph === 'restore' ? (
-          <RestoreGlyph color={glyphColor} />
+          <Minimize2 size={9} strokeWidth={2} color={glyphColor} aria-hidden="true" />
         ) : (
-          <ExpandGlyph color={glyphColor} />
+          <Maximize2 size={9} strokeWidth={2} color={glyphColor} aria-hidden="true" />
         )}
       </span>
     </button>

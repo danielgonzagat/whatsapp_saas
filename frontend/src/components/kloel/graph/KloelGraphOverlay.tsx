@@ -2,7 +2,7 @@
 
 import { ErrorBoundary } from '@/components/kloel/ErrorBoundary';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
-import { Grip, Maximize2, Minimize2, X } from 'lucide-react';
+import { Grip } from 'lucide-react';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { getKloelGraphOverlayLabel } from './KloelGraph.routes';
 import type { KloelGraphNode } from './KloelGraph.routes';
 import { useGraphTheme } from './KloelGraphTheme';
+import { TrafficLight } from './KloelGraphWindowControls';
 
 const WINDOW_MIN_WIDTH = 360;
 const WINDOW_MIN_HEIGHT = 280;
@@ -79,70 +80,6 @@ function clampRectToViewport(rect: WindowRect, viewport: ViewportSize): WindowRe
     Math.max(viewport.height - height - VIEWPORT_MARGIN / 2, VIEWPORT_MARGIN / 2),
   );
   return { width, height, left, top };
-}
-
-function TrafficLight({
-  glyph,
-  label,
-  onActivate,
-  fill,
-  border,
-  glyphColor,
-}: {
-  readonly glyph: 'close' | 'fullscreen' | 'restore';
-  readonly label: string;
-  readonly onActivate: () => void;
-  readonly fill: string;
-  readonly border: string;
-  readonly glyphColor: string;
-}) {
-  const [hovered, setHovered] = useState(false);
-
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      onClick={onActivate}
-      onPointerEnter={() => setHovered(true)}
-      onPointerLeave={() => setHovered(false)}
-      onFocus={() => setHovered(true)}
-      onBlur={() => setHovered(false)}
-      style={{
-        width: 14,
-        height: 14,
-        padding: 0,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: 8,
-        background: fill,
-        border: `0.5px solid ${border}`,
-        cursor: 'pointer',
-        lineHeight: 0,
-        transition: 'filter .15s ease',
-        filter: hovered ? 'brightness(0.92)' : 'none',
-        boxShadow: 'inset 0 0 0 0.5px rgba(0,0,0,0.06)',
-      }}
-    >
-      <span
-        aria-hidden="true"
-        style={{
-          opacity: hovered ? 1 : 0,
-          transition: 'opacity .12s ease',
-          display: 'flex',
-        }}
-      >
-        {glyph === 'close' ? (
-          <X size={8} strokeWidth={2.4} color={glyphColor} aria-hidden="true" />
-        ) : glyph === 'restore' ? (
-          <Minimize2 size={9} strokeWidth={2} color={glyphColor} aria-hidden="true" />
-        ) : (
-          <Maximize2 size={9} strokeWidth={2} color={glyphColor} aria-hidden="true" />
-        )}
-      </span>
-    </button>
-  );
 }
 
 export function KloelGraphOverlay({
