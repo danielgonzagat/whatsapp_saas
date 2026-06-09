@@ -60,6 +60,7 @@ const MANDATORY_SELF_EXPANSION_VALIDATORS: readonly SelfExpansionValidator[] = [
   { phase: 'self-evolution', command: 'node gates/self-evolution-harness.proof.mjs --json' },
   { phase: 'self-evolution-tool', command: 'node gates/self-evolution-mcp-tool.proof.mjs --json' },
   { phase: 'self-evolution-disproof', command: 'node gates/self-evolution-disproof-consumer.proof.mjs --json' },
+  { phase: 'self-evolution-disproof-briefing', command: 'node gates/self-evolution-disproof-briefing.proof.mjs --json' },
   { phase: 'benchmark', command: 'node gates/atomic-agent-bench.proof.mjs' },
   { phase: 'test', command: 'node gates/test-execution-gate.proof.mjs --json' },
   { phase: 'ledger', command: 'node proof-chain.proof.mjs --json' },
@@ -611,6 +612,7 @@ function buildRealSelfExpansionPromotionReceipt(args: {
   proofCommands: string[];
   proofDurationMs: number;
   applied: { file: string; op: string }[];
+  preflightDisproofBriefing?: JsonRecord;
   intent: string | null;
 }): JsonRecord {
   const parentSource = snapshotFileText(args.parentSnap, 'server-tools-self.ts');
@@ -671,6 +673,7 @@ function buildRealSelfExpansionPromotionReceipt(args: {
       passedGateCount,
       proofDurationMs: args.proofDurationMs,
       effectDigest: sha256(stableJson(args.effectsBeforePromotion)),
+      preflightDisproofBriefing: args.preflightDisproofBriefing ?? null,
       intent: args.intent,
     },
   };
@@ -735,6 +738,61 @@ function appendSelfEvolutionDisproofCorpus(witnessArgs: JsonRecord): JsonRecord 
     record: appended.record ?? null,
     chain: appended.chain ?? null,
   };
+}
+
+function buildSelfEvolutionNextDisproofBriefing(region: string, mode = 'next-rejection-briefing'): JsonRecord {
+  const limits = [
+    'Briefing remains proposer guidance, not a gate and not a proof of correctness.',
+    'The hard gate remains the only judge; learned lessons may never weaken admission.',
+    'The corpus is verified before selection; forged records are rejected by the harness.',
+  ];
+  try {
+    const corpusPath = path.join(REPO_ROOT, SELF_EVOLUTION_DISPROOF_CORPUS_REL);
+    if (!fs.existsSync(corpusPath)) {
+      return { ok: false, changed: false, mode, region, selectedCount: 0, error: 'missing disproof corpus', proofLimits: limits };
+    }
+    const corpusText = fs.readFileSync(corpusPath, 'utf8');
+    const corpusVerified = runDisproofCorpusHarness('--verify-corpus-jsonl', { corpusText });
+    const selection = runDisproofCorpusHarness('--select-disproofs', {
+      corpusText,
+      region,
+      k: 8,
+      seed: 'atomic-expand-self-next-disproof-briefing',
+    });
+    const selected = Array.isArray(selection.selected) ? selection.selected : [];
+    const briefing = runDisproofCorpusHarness('--build-briefing', {
+      selected,
+      lessons: [],
+      repairTraces: [],
+    });
+    return {
+      ok: true,
+      changed: false,
+      mode,
+      region,
+      corpusFile: SELF_EVOLUTION_DISPROOF_CORPUS_REL,
+      corpusVerified: {
+        ok: corpusVerified.ok === true,
+        recordCount: corpusVerified.recordCount ?? null,
+        wallCount: corpusVerified.wallCount ?? null,
+        headRecordSha256: corpusVerified.headRecordSha256 ?? null,
+      },
+      selectedCount: selected.length,
+      briefingDigest: typeof briefing.briefingDigest === 'string' ? briefing.briefingDigest : null,
+      briefingText: typeof briefing.text === 'string' ? briefing.text : '',
+      proofLimits: limits,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      changed: false,
+      mode,
+      region,
+      selectedCount: 0,
+      error: error instanceof Error ? error.message : String(error),
+      proofLimits: limits,
+    };
+  }
 }
 
 function promotionReceiptRejectionCodes(receipt: JsonRecord): string[] {
@@ -803,12 +861,14 @@ function recordSelfEvolutionRejection(selfRoot: string, args: {
     repairHint: args.failedProofs.length > 0 ? 'Repair the named hard gate; this hint is non-trusted and the gate remains the judge.' : undefined,
     archiveEntrySha256,
   });
+  const nextDisproofBriefing = buildSelfEvolutionNextDisproofBriefing(locusFile);
   return {
     reason: args.reason,
     rejections: rejectionCodes,
     negativeActionProof,
     archive,
     disproofCorpus,
+    nextDisproofBriefing,
   };
 }
 
@@ -1047,6 +1107,7 @@ export function registerToolsSelf(server: McpServer): void {
           .optional()
           .describe('additional allowed proof commands; mandatory validator lattice always runs first'),
         intent: z.string().optional(),
+        preflightDisproofBriefingDigest: z.string().optional(),
       },
     },
     async (a) => {
@@ -1061,6 +1122,29 @@ export function registerToolsSelf(server: McpServer): void {
         }
         const ops = parseFileOps(a.files as unknown[]);
         const selfRoot = path.join(REPO_ROOT, 'scripts/mcp/atomic-edit');
+        const preflightDisproofBriefing = buildSelfEvolutionNextDisproofBriefing(
+          Array.from(new Set(ops.map((op) => op.file))).sort().join('|') || 'scripts/mcp/atomic-edit',
+          'preflight-proposal-briefing',
+        );
+        const claimedPreflightDisproofBriefingDigest = a.preflightDisproofBriefingDigest ?? null;
+        const computedPreflightDisproofBriefingDigest =
+          typeof preflightDisproofBriefing.briefingDigest === 'string' ? preflightDisproofBriefing.briefingDigest : null;
+        if (
+          claimedPreflightDisproofBriefingDigest !== null &&
+          claimedPreflightDisproofBriefingDigest !== computedPreflightDisproofBriefingDigest
+        ) {
+          return fail(
+            `refused: preflight disproof briefing digest mismatch: claimed=${claimedPreflightDisproofBriefingDigest} ` +
+              `computed=${computedPreflightDisproofBriefingDigest ?? 'unavailable'}`,
+          );
+        }
+        const admittedPreflightDisproofBriefing = {
+          ...preflightDisproofBriefing,
+          claimedDigest: claimedPreflightDisproofBriefingDigest,
+          digestClaimAccepted:
+            claimedPreflightDisproofBriefingDigest === null ||
+            claimedPreflightDisproofBriefingDigest === computedPreflightDisproofBriefingDigest,
+        };
         const snap = captureEffectSnapshot(selfRoot);
         try {
           const guardedSelfPaths = new Set<string>();
@@ -1084,6 +1168,7 @@ export function registerToolsSelf(server: McpServer): void {
               proofCommands,
               proofDurationMs,
               applied,
+              preflightDisproofBriefing: admittedPreflightDisproofBriefing,
               intent: a.intent ?? null,
             });
             const restored = rollbackEffectStrict(snap, effectsBeforeRejectRollback, 'atomic_expand_self');
@@ -1097,7 +1182,7 @@ export function registerToolsSelf(server: McpServer): void {
             return fail(
               `atomic_expand_self rolled back ${restored} candidate file effect(s): proof failed: ` +
                 formatFailedProofs(failed) +
-                `; selfEvolutionReject=${stableJson({ rejections: selfEvolutionReject.rejections, archive: selfEvolutionReject.archive, disproofCorpus: selfEvolutionReject.disproofCorpus })}`,
+                `; selfEvolutionReject=${stableJson({ rejections: selfEvolutionReject.rejections, archive: selfEvolutionReject.archive, disproofCorpus: selfEvolutionReject.disproofCorpus, nextDisproofBriefing: selfEvolutionReject.nextDisproofBriefing })}`,
             );
           }
           const effectsBeforePromotion = diffEffect(snap);
@@ -1111,6 +1196,7 @@ export function registerToolsSelf(server: McpServer): void {
             proofCommands,
             proofDurationMs,
             applied,
+            preflightDisproofBriefing: admittedPreflightDisproofBriefing,
             intent: a.intent ?? null,
           });
           if (promotionReceipt.decision !== 'promote') {
@@ -1128,7 +1214,7 @@ export function registerToolsSelf(server: McpServer): void {
               : 'unknown rejection';
             return fail(
               `atomic_expand_self rolled back ${restored} candidate file effect(s): self-evolution promotion rejected: ${rejections}; ` +
-                `selfEvolutionReject=${stableJson({ rejections: selfEvolutionReject.rejections, archive: selfEvolutionReject.archive, disproofCorpus: selfEvolutionReject.disproofCorpus })}`,
+                `selfEvolutionReject=${stableJson({ rejections: selfEvolutionReject.rejections, archive: selfEvolutionReject.archive, disproofCorpus: selfEvolutionReject.disproofCorpus, nextDisproofBriefing: selfEvolutionReject.nextDisproofBriefing })}`,
             );
           }
           const selfEvolutionArchive = appendRealSelfExpansionArchive(selfRoot, promotionReceipt);
@@ -1162,6 +1248,7 @@ export function registerToolsSelf(server: McpServer): void {
               promotionReceipt,
               archive: selfEvolutionArchive,
             },
+            preflightDisproofBriefing: admittedPreflightDisproofBriefing,
             target: targetDetails(path.join(REPO_ROOT, 'scripts/mcp/atomic-edit'), 'scripts/mcp/atomic-edit'),
             admission: 'self-expansion-validator-lattice-green-and-darwin-godel-promoted',
           });

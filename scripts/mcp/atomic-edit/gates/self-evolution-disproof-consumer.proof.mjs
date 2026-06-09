@@ -107,6 +107,25 @@ record(
   },
 );
 
+record(
+  'reject response feeds the next proposer with a recomputed disproof briefing digest',
+  source.includes('function buildSelfEvolutionNextDisproofBriefing') &&
+    source.includes("'--verify-corpus-jsonl'") &&
+    source.includes("'--select-disproofs'") &&
+    source.includes("'--build-briefing'") &&
+    (source.includes("mode = 'next-rejection-briefing'") || source.includes("mode: 'next-rejection-briefing'")) &&
+    source.includes('nextDisproofBriefing: selfEvolutionReject.nextDisproofBriefing') &&
+    source.includes('briefingDigest') &&
+    source.includes('Briefing remains proposer guidance'),
+  {
+    hasHelper: source.includes('function buildSelfEvolutionNextDisproofBriefing'),
+    verifiesCorpus: source.includes("'--verify-corpus-jsonl'"),
+    selectsDisproofs: source.includes("'--select-disproofs'"),
+    buildsBriefing: source.includes("'--build-briefing'"),
+    responseExportsBriefing: source.includes('nextDisproofBriefing: selfEvolutionReject.nextDisproofBriefing'),
+  },
+);
+
 const payload = { ok: results.every((entry) => entry.ok), results };
 if (jsonMode) process.stdout.write(JSON.stringify(payload, null, 2) + '\n');
 else for (const entry of results) process.stdout.write(`${entry.ok ? 'PASS' : 'FAIL'} ${entry.name}\n`);

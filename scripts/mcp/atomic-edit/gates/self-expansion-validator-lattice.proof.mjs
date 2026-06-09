@@ -35,6 +35,7 @@ const requiredCommands = [
   'node gates/self-evolution-harness.proof.mjs --json',
   'node gates/self-evolution-mcp-tool.proof.mjs --json',
   'node gates/self-evolution-disproof-consumer.proof.mjs --json',
+  'node gates/self-evolution-disproof-briefing.proof.mjs --json',
   'node gates/atomic-agent-bench.proof.mjs',
   'node gates/test-execution-gate.proof.mjs --json',
   'node proof-chain.proof.mjs --json',
@@ -75,6 +76,7 @@ const requiredPhases = [
   'self-evolution',
   'self-evolution-tool',
   'self-evolution-disproof',
+  'self-evolution-disproof-briefing',
   'self-evolution-real',
   'benchmark',
   'test',
@@ -134,6 +136,7 @@ function main() {
       source.includes('monotonicity') &&
       source.includes('self-evolution') &&
       source.includes('self-evolution-tool') &&
+      source.includes('self-evolution-disproof-briefing') &&
       source.includes('runtime') &&
       source.includes('agent-runtime') &&
       source.includes('usability'),
@@ -154,6 +157,7 @@ function main() {
       hasSelfEvolution: source.includes('self-evolution'),
       hasSelfEvolutionTool: source.includes('self-evolution-tool'),
       hasSelfEvolutionDisproof: source.includes('self-evolution-disproof'),
+      hasSelfEvolutionDisproofBriefing: source.includes('self-evolution-disproof-briefing'),
       hasUsability: source.includes('usability'),
     },
   );
