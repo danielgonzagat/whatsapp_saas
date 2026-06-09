@@ -372,12 +372,12 @@ describe('KloelThreadService', () => {
           id: '1',
           kind: 'status' as const,
           phase: 'thinking' as const,
-          label: 'Pensando',
+          label: 'Resposta iniciada',
           createdAt: '',
         },
       ];
       const result = service.buildProcessingTraceSummary(entries);
-      expect(result).toContain('Pensando');
+      expect(result).toContain('Resposta iniciada');
     });
 
     it('returns compound label for multiple entries', () => {
@@ -386,7 +386,7 @@ describe('KloelThreadService', () => {
           id: '1',
           kind: 'status' as const,
           phase: 'thinking' as const,
-          label: 'Pensando',
+          label: 'Resposta iniciada',
           createdAt: '',
         },
         {
@@ -405,17 +405,22 @@ describe('KloelThreadService', () => {
         },
       ];
       const result = service.buildProcessingTraceSummary(entries);
-      expect(result).toBe('Pensando, buscando e respondendo.');
+      expect(result).toBe('Resposta iniciada, buscando e respondendo.');
     });
   });
 
   describe('formatTraceToolLabel', () => {
-    it('formats unknown executable tool ids as public readable labels in persisted traces', () => {
-      const result = service.formatTraceToolLabel('delete_user_secret_records');
+    it('keeps real tool ids visible in persisted traces', () => {
+      expect(service.formatTraceToolLabel('delete_user_secret_records')).toBe(
+        'delete_user_secret_records',
+      );
+    });
 
-      expect(result).toBe('delete user secret records');
-      expect(result).toContain('delete');
-      expect(result).toContain('secret');
+    it('still redacts credential-shaped labels and blank ids', () => {
+      expect(service.formatTraceToolLabel('api_key=sk-1234567890abcdef')).toBe(
+        'ferramenta protegida',
+      );
+      expect(service.formatTraceToolLabel('')).toBe('ação operacional');
     });
   });
 

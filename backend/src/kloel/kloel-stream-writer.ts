@@ -1492,10 +1492,9 @@ export class KloelStreamWriter {
           reasoningEmitted = true;
           reasoningStartedAt = Date.now();
         }
-        this.lastReasoningText += reasoningPiece;
-        this.write(
-          createKloelReasoningDeltaEvent(sanitizeAssistantReasoningTextForStorage(reasoningPiece)),
-        );
+        const safeReasoningPiece = sanitizeAssistantReasoningTextForStorage(reasoningPiece);
+        this.lastReasoningText += safeReasoningPiece;
+        this.write(createKloelReasoningDeltaEvent(safeReasoningPiece));
       }
       const content = delta?.content || '';
       if (!content) {

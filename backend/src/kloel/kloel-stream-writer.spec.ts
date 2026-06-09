@@ -539,7 +539,7 @@ describe('detectDeliverableFileCards', () => {
   });
 
   describe('KloelStreamWriter public reasoning stream', () => {
-    it('streams provider reasoning deltas publicly before reasoning_done while retaining text', async () => {
+    it('streams provider reasoning deltas only after internal markers are redacted', async () => {
       const { res, writes } = createResponseMock();
       const llmE2EGuard: KloelLLME2EGuard = {
         isEnabled: () => true,
@@ -569,11 +569,12 @@ describe('detectDeliverableFileCards', () => {
 
       expect(reasoningEvents.map((event) => event.text)).toEqual([
         'Need to inspect ',
-        'runtime context via inspect_self before answering.',
+        'Detalhes internos desta execução foram omitidos com segurança.',
       ]);
       expect(firstReasoningIndex).toBeGreaterThanOrEqual(0);
       expect(doneIndex).toBeGreaterThan(firstReasoningIndex);
-      expect(writer.getLastReasoning().text).toContain('runtime context via inspect_self');
+      expect(writer.getLastReasoning().text).not.toContain('runtime context');
+      expect(writer.getLastReasoning().text).not.toContain('inspect_self');
     });
   });
 });

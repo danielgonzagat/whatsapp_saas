@@ -342,10 +342,14 @@ describe('KloelThinkerService', () => {
         write: jest.Mock<void, [unknown]>;
       };
       expect(streamWriter.write).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'tool_call', tool: 'catálogo de produtos' }),
+        expect.objectContaining({ type: 'tool_call', tool: 'list_products' }),
       );
       expect(streamWriter.write).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'tool_result', tool: 'catálogo de produtos', success: true }),
+        expect.objectContaining({
+          type: 'tool_result',
+          tool: 'list_products',
+          success: true,
+        }),
       );
       expect(
         streamWriter.write.mock.calls.some(([event]) => {

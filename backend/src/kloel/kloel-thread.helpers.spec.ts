@@ -65,18 +65,38 @@ describe('kloel-thread.helpers', () => {
       expect(out).toEqual({ ok: true });
     });
 
-    it('preserves public reasoning metadata with runtime and tool references', () => {
-      const reasoningText =
-        'O runtime context indica que a capacidade inspect_self está disponível.';
+    it('redacts reasoning metadata with private runtime references', () => {
       const out = buildThreadMessageMetadata(undefined, {
-        reasoningText,
+        reasoningText: 'O runtime context indica que a capacidade inspect_self está disponível.',
         reasoningDurationMs: 1500,
       }) as Record<string, unknown>;
 
-      expect(out.reasoningText).toBe(reasoningText);
-      expect(String(out.reasoningText)).toContain('runtime context');
-      expect(String(out.reasoningText)).toContain('inspect_self');
+      expect(out.reasoningText).toBe(
+        'Detalhes internos desta execução foram omitidos com segurança.',
+      );
+      expect(String(out.reasoningText)).not.toContain('runtime context');
       expect(out.reasoningDurationMs).toBe(1500);
+
+      const deliberative = buildThreadMessageMetadata(undefined, {
+        reasoningText:
+          'Probably not needed. I will craft a direct reply, then I will output the final message.',
+      }) as Record<string, unknown>;
+
+      expect(deliberative.reasoningText).toBe(
+        'Detalhes internos desta execução foram omitidos com segurança.',
+      );
+      expect(String(deliberative.reasoningText)).not.toContain('final message');
+    });
+
+    it('preserves public raw reasoning when no private marker is present', () => {
+      const out = buildThreadMessageMetadata(undefined, {
+        reasoningText:
+          'chain-of-thought bruto: comparei list_products com search_web antes de responder.',
+      }) as Record<string, unknown>;
+
+      expect(out.reasoningText).toBe(
+        'chain-of-thought bruto: comparei list_products com search_web antes de responder.',
+      );
     });
   });
 
@@ -89,12 +109,12 @@ describe('kloel-thread.helpers', () => {
     it('synthesizes a fallback entry when no versions present', () => {
       const out = buildStoredResponseVersions(null, 'hello world', 'v-7');
       expect(out).toHaveLength(1);
-      expect(out[0]).toMatchObject({
+      expect(out[0]!).toMatchObject({
         id: 'v-7',
         content: 'hello world',
         source: 'initial',
       });
-      expect(typeof out[0].createdAt).toBe('string');
+      expect(typeof out[0]!.createdAt).toBe('string');
     });
 
     it('synthesizes an id when fallback id is omitted', () => {
@@ -102,8 +122,8 @@ describe('kloel-thread.helpers', () => {
       const out = buildStoredResponseVersions(null, 'content');
       const after = Date.now();
       expect(out).toHaveLength(1);
-      expect(out[0].id.startsWith('resp_')).toBe(true);
-      const ts = Number(out[0].id.slice('resp_'.length));
+      expect(out[0]!.id.startsWith('resp_')).toBe(true);
+      const ts = Number(out[0]!.id.slice('resp_'.length));
       expect(ts).toBeGreaterThanOrEqual(before);
       expect(ts).toBeLessThanOrEqual(after);
     });
@@ -132,32 +152,31 @@ describe('kloel-thread.helpers', () => {
         responseVersions: [{ content: 'hi', createdAt: '2025-06-01T00:00:00Z' }],
       } as unknown as Prisma.JsonValue;
       const out = buildStoredResponseVersions(metadata);
-      expect(out[0].id).toBe('resp_2025-06-01T00:00:00Z');
+      expect(out[0]!.id).toBe('resp_2025-06-01T00:00:00Z');
     });
   });
 
   describe('sanitizeAssistantThreadContentForRead', () => {
-    it('removes legacy mechanical operator success and auth failure text', () => {
+    it('preserves public tool names while sanitizing private operational wording', () => {
       const content = sanitizeAssistantThreadContentForRead(
-        'Acao "list_products" executada com sucesso. Falha ao executar "catálogo de produtos": Missing Authorization header. Tente novamente. Capacidade: self.health. Não exponha camada operacional, acesso à camada operacional, chamada a sistema ou estado oculto da ferramenta.',
+        'Acao "list_products" executada com sucesso. Falha ao executar "list_products": Missing Authorization header. Tente novamente. Capacidade: self.health. Usei list_products e self.health. Não exponha camada operacional, acesso à camada operacional, chamada a sistema ou estado oculto da ferramenta.',
       );
 
-      expect(content).toContain('Consultei seu catálogo real');
-      expect(content).toContain('sessão expirou');
-      expect(content).toContain('Ação operacional: saúde operacional');
+      expect(content).toContain('Acao "list_products" executada com sucesso.');
+      expect(content).toContain('Falha ao executar "list_products": sessão expirada.');
+      expect(content).toContain('Capacidade: self.health.');
+      expect(content).toContain('Usei list_products e self.health.');
       expect(content).toContain('processo privado');
       expect(content).toContain('acesso ao processo privado');
       expect(content).toContain('detalhe privado');
       expect(content).toContain('estado privado');
       expect(content).not.toContain('à processo privado');
-      expect(content).not.toContain('Acao');
-      expect(content).not.toContain('list_products');
-      expect(content).not.toContain('self.health');
       expect(content).not.toContain('camada operacional');
       expect(content).not.toContain('chamada a sistema');
       expect(content).not.toContain('estado oculto da ferramenta');
       expect(content).not.toContain('Missing Authorization header');
-      expect(content).not.toContain('Falha ao executar');
+      expect(content).not.toContain('ferramenta protegida');
+      expect(content).not.toContain('ação operacional');
     });
 
     it('preserves Markdown line breaks while normalizing public whitespace', () => {
@@ -223,36 +242,33 @@ describe('kloel-thread.helpers', () => {
   });
 
   describe('formatTraceToolLabel', () => {
-    it('formats unknown executable names as readable public tool labels', () => {
-      expect(formatTraceToolLabel('Send_Whatsapp-Message')).toBe('send whatsapp message');
-    });
-
-    it('uses product-grade labels for internal code tools', () => {
-      expect(formatTraceToolLabel('code_outline')).toBe('inspeção da arquitetura interna');
-      expect(formatTraceToolLabel('search_codebase')).toBe('busca na arquitetura interna');
-      expect(formatTraceToolLabel('run_backend_tests')).toBe('validação operacional');
-    });
-
-    it('uses product-grade labels for workspace read tools', () => {
-      expect(formatTraceToolLabel('list_products')).toBe('catálogo de produtos');
-      expect(formatTraceToolLabel('create_site')).toBe('criação de site');
-      expect(formatTraceToolLabel('refine_response')).toBe('mesa de refinamento');
-      expect(formatTraceToolLabel('refine response')).toBe('mesa de refinamento');
+    it('preserves public tool and capability names as trace tokens', () => {
+      expect(formatTraceToolLabel('Send_Whatsapp-Message')).toBe('Send_Whatsapp-Message');
+      expect(formatTraceToolLabel('code_outline')).toBe('code_outline');
+      expect(formatTraceToolLabel('search_codebase')).toBe('search_codebase');
+      expect(formatTraceToolLabel('run_backend_tests')).toBe('run_backend_tests');
+      expect(formatTraceToolLabel('list_products')).toBe('list_products');
+      expect(formatTraceToolLabel('create_site')).toBe('create_site');
+      expect(formatTraceToolLabel('refine_response')).toBe('refine_response');
+      expect(formatTraceToolLabel('refine response')).toBe('refine response');
       expect(formatTraceToolLabel('mind.capability.extract_structured_text')).toBe(
-        'extração estruturada',
+        'mind.capability.extract_structured_text',
       );
       expect(formatTraceToolLabel('mind.capability.advise_response_depth')).toBe(
-        'calibração de profundidade',
+        'mind.capability.advise_response_depth',
       );
-      expect(formatTraceToolLabel('mind.capability.refine_prompt')).toBe('refinamento de pedido');
-      expect(formatTraceToolLabel('create image')).toBe('criação de imagem');
-      expect(formatTraceToolLabel('get settings')).toBe('configurações da conta');
-      expect(formatTraceToolLabel('get_billing_status')).toBe('status da assinatura');
-      expect(formatTraceToolLabel('self.health')).toBe('saúde operacional');
+      expect(formatTraceToolLabel('mind.capability.refine_prompt')).toBe(
+        'mind.capability.refine_prompt',
+      );
+      expect(formatTraceToolLabel('self.health')).toBe('self.health');
     });
 
-    it('normalizes unknown dashed or spaced identifiers', () => {
-      expect(formatTraceToolLabel('foo   bar---baz')).toBe('foo bar baz');
+    it('normalizes public whitespace without replacing identifiers', () => {
+      expect(formatTraceToolLabel('foo   bar---baz')).toBe('foo bar---baz');
+    });
+
+    it('redacts credential-shaped tool labels', () => {
+      expect(formatTraceToolLabel('send_email api_key=abc')).toBe('ferramenta protegida');
     });
 
     it('uses the generic operational label when input is null/undefined/blank', () => {
@@ -290,13 +306,13 @@ describe('kloel-thread.helpers', () => {
       const event = {
         type: 'status',
         phase: 'streaming_token',
-        message: 'Pensando...',
+        message: 'Resposta iniciada.',
       } as unknown as KloelStreamEvent;
       const out = buildStoredProcessingTraceEntry(event);
       expect(out).not.toBeNull();
       expect(out.kind).toBe('status');
       expect(out.phase).toBe('streaming');
-      expect(out.label).toBe('Pensando...');
+      expect(out.label).toBe('Resposta iniciada.');
       expect(out.id.startsWith('trace_streaming_')).toBe(true);
     });
 
@@ -331,12 +347,12 @@ describe('kloel-thread.helpers', () => {
         phase: 'tool_calling',
         label: 'Consultei contexto operacional relevante antes de responder.',
         createdAt: matchInstance(String),
-        tool: 'send whatsapp message',
+        tool: 'send_whatsapp_message',
         spanId: 'call-1',
       });
     });
 
-    it('stores public trace tool names as safe product labels', () => {
+    it('stores public trace tool names as normalized public identifiers', () => {
       const call = buildStoredProcessingTraceEntry({
         type: 'tool_call',
         callId: 'health-check',
@@ -349,9 +365,9 @@ describe('kloel-thread.helpers', () => {
         success: true,
       } as unknown as KloelStreamEvent);
 
-      expect(call?.tool).toBe('saúde operacional');
-      expect(result?.tool).toBe('saúde operacional');
-      expect(JSON.stringify([call, result])).not.toContain('self.health');
+      expect(call?.tool).toBe('self.health');
+      expect(result?.tool).toBe('self.health');
+      expect(JSON.stringify([call, result])).toContain('self.health');
     });
 
     it('does not reuse the same stored trace id for a tool call and its result', () => {
@@ -472,32 +488,32 @@ describe('kloel-thread.helpers', () => {
     });
 
     it('returns "First." for a single label', () => {
-      expect(buildProcessingTraceSummary([entry('Pensando')])).toBe('Pensando.');
+      expect(buildProcessingTraceSummary([entry('Resposta iniciada')])).toBe('Resposta iniciada.');
     });
 
     it('joins two labels with " e " and lowercases the second', () => {
-      expect(buildProcessingTraceSummary([entry('Pensando'), entry('Buscando dados')])).toBe(
-        'Pensando e buscando dados.',
-      );
+      expect(
+        buildProcessingTraceSummary([entry('Resposta iniciada'), entry('Buscando dados')]),
+      ).toBe('Resposta iniciada e buscando dados.');
     });
 
     it('joins three labels with comma + " e " on the last', () => {
       const out = buildProcessingTraceSummary([
-        entry('Pensando'),
+        entry('Resposta iniciada'),
         entry('Buscando dados'),
         entry('Respondendo'),
       ]);
-      expect(out).toBe('Pensando, buscando dados e respondendo.');
+      expect(out).toBe('Resposta iniciada, buscando dados e respondendo.');
     });
 
     it('dedupes labels and normalizes whitespace + trailing dots', () => {
       const out = buildProcessingTraceSummary([
-        entry('Pensando..'),
-        entry('Pensando'),
-        entry('  Pensando   '),
+        entry('Resposta iniciada..'),
+        entry('Resposta iniciada'),
+        entry('  Resposta iniciada   '),
         entry('Buscando   dados.'),
       ]);
-      expect(out).toBe('Pensando e buscando dados.');
+      expect(out).toBe('Resposta iniciada e buscando dados.');
     });
   });
 

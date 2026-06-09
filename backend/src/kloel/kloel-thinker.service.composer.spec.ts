@@ -33,7 +33,7 @@ describe('KloelThinkerService', () => {
       expect(streamWriter.write).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'tool_result',
-          tool: 'catálogo de produtos',
+          tool: 'list_products',
           success: false,
         }),
       );
@@ -79,7 +79,7 @@ describe('KloelThinkerService', () => {
           thread: { id: 'thread-trace-1', title: 'Nova conversa' },
           persistedUserMessage: { id: 'msg-user-1' },
           processingTraceEntries: [],
-          safeWrite: (event) => events.push(event),
+          safeWrite: (event: unknown) => events.push(event),
           streamWriter: localStreamWriter,
           replyEngine: { unavailableMessage: 'Indisponível.', openai: null },
           threadService: localThreadService,
@@ -154,7 +154,7 @@ describe('KloelThinkerService', () => {
           kind: 'tool_call' as const,
           phase: 'tool_calling' as const,
           label: 'Consultei contexto operacional relevante antes de responder.',
-          tool: 'busca web',
+          tool: 'search_web',
           spanId: 'req-1',
           createdAt: '2026-06-04T00:00:01.000Z',
         },
@@ -174,7 +174,7 @@ describe('KloelThinkerService', () => {
           thread: { id: 'thread-1', title: 'Nova conversa' },
           persistedUserMessage: { id: 'msg-user-1' },
           processingTraceEntries,
-          safeWrite: (event) => events.push(event),
+          safeWrite: (event: unknown) => events.push(event),
           streamWriter: localStreamWriter,
           replyEngine: { openai: null },
           threadService: localThreadService,
@@ -185,11 +185,17 @@ describe('KloelThinkerService', () => {
 
       expect(events).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ type: 'tool_call', tool: 'pesquisa na web' }),
-          expect.objectContaining({ type: 'tool_result', tool: 'pesquisa na web', success: true }),
+          expect.objectContaining({
+            type: 'status',
+            phase: 'tool_calling',
+            message: 'Executando search_web.',
+          }),
+          expect.objectContaining({ type: 'tool_call', tool: 'search_web' }),
+          expect.objectContaining({ type: 'tool_result', tool: 'search_web', success: true }),
           expect.objectContaining({ type: 'content', content: 'Resultado real da busca web.' }),
         ]),
       );
+      expect(JSON.stringify(events)).toContain('Executando search_web');
       expect(localComposerService.executeComposerCapability).toHaveBeenCalledWith(
         expect.objectContaining({ capability: 'search_web', message: 'Busque referencias atuais' }),
       );
@@ -210,7 +216,7 @@ describe('KloelThinkerService', () => {
             }),
             expect.objectContaining({
               id: 'trace-action',
-              tool: 'busca web',
+              tool: 'search_web',
             }),
           ]) as unknown,
         }),

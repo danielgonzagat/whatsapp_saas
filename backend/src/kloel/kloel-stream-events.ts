@@ -1,3 +1,8 @@
+import {
+  formatTraceToolLabel,
+  sanitizeAssistantReasoningTextForStorage,
+} from './kloel-thread.helpers';
+
 /** Kloel stream status phase type. */
 type KloelStreamStatusPhase = 'thinking' | 'streaming_token' | 'tool_calling' | 'tool_result';
 
@@ -215,7 +220,7 @@ export type KloelStreamEvent =
 export function createKloelPublicThinkingLabel(_message: string): string {
   // Retired facade: the synthesized "thinking" label was a constant-shaped sentence
   // templated from the user's own message. Thinking status now carries no fabricated
-  // text, and provider chain-of-thought stays private.
+  // text; provider reasoning is emitted only when it arrives as a real stream event.
   return '';
 }
 
@@ -303,10 +308,6 @@ const KLOEL_INTERNAL_VERSION_RE = /\bversão\s+\d+(?:\.\d+){1,3}\b/gi;
 const KLOEL_STREAM_TRAILING_WORD_FRAGMENT_RE = /[A-Za-zÀ-ÖØ-öø-ÿ0-9_]{1,32}$/;
 const KLOEL_PRODUCT_LANGUAGE_REPLACEMENTS: Array<[RegExp, string]> = [
   [/\bcertificação interna\b/gi, 'verificação de consistência'],
-  [/\bpassos e ferramentas acionados\b/gi, 'passos e ações executadas'],
-  [/\bferramentas utilizadas\b/gi, 'ações executadas'],
-  [/\bferramentas acionad[ao]s\b/gi, 'ações acionadas'],
-  [/\bnomes de ferramentas\b/gi, 'nomes internos de capacidades'],
   [/\bmódulo principal\b/gi, 'núcleo operacional'],
 ];
 
@@ -551,43 +552,6 @@ const TOOL_RISK_IRREVERSIBLE_RE =
 const TOOL_RISK_SENSITIVE_ARG_RE =
   /(?:email|phone|cpf|cnpj|password|secret|token|key|recipient|customer|message|body|amount|price|payment|address)/i;
 
-const KLOEL_PUBLIC_TOOL_LABELS: Record<string, string> = {
-  'code outline': 'inspeção da arquitetura interna',
-  'search codebase': 'busca na arquitetura interna',
-  'code detect issues': 'auditoria da arquitetura interna',
-  'run backend tests': 'validação operacional',
-  'search web': 'pesquisa na web',
-  'brave search': 'pesquisa na web',
-  'web search': 'pesquisa na web',
-  'local search': 'busca local',
-  'refine response': 'mesa de refinamento',
-  'search agent memory': 'consulta de memória',
-  'search agent sessions': 'consulta de histórico',
-  'get agent artifact': 'consulta de arquivo',
-  'upsert agent skill': 'atualização operacional',
-  'record agent skill outcome': 'registro operacional',
-  'remember user info': 'memória atualizada',
-  'mind.capability.extract structured text': 'extração estruturada',
-  'mind.capability.advise response depth': 'calibração de profundidade',
-  'mind.capability.refine prompt': 'refinamento de pedido',
-  'create site': 'criação de site',
-  'create image': 'criação de imagem',
-  'create document': 'criação de documento',
-  'create artifact': 'criação de artifact',
-  'list products': 'catálogo de produtos',
-  'get settings': 'configurações da conta',
-  'get billing status': 'status da assinatura',
-  'request anticipation': 'antecipação de recebíveis',
-  'request withdrawal': 'solicitação de saque',
-  'list sales': 'consulta de vendas',
-  'create product': 'criação de produto',
-  'send email': 'envio de mensagem',
-  'send message': 'envio de mensagem',
-  'self.health': 'saúde operacional',
-};
-
-const KLOEL_PUBLIC_TOOL_LABEL_SET = new Set(Object.values(KLOEL_PUBLIC_TOOL_LABELS));
-
 function normalizeToolNameForRisk(tool: string): string {
   return String(tool || '')
     .replace(/[_-]+/g, ' ')
@@ -596,23 +560,7 @@ function normalizeToolNameForRisk(tool: string): string {
 }
 
 function createKloelPublicToolLabel(tool: string): string {
-  const raw = String(tool || '').trim();
-  if (!raw) {
-    return 'ação operacional';
-  }
-  if (KLOEL_PUBLIC_TOOL_LABEL_SET.has(raw)) {
-    return raw;
-  }
-
-  const normalized = normalizeToolNameForRisk(raw);
-  const mapped = KLOEL_PUBLIC_TOOL_LABELS[normalized] ?? KLOEL_PUBLIC_TOOL_LABELS[raw];
-  if (mapped) {
-    return mapped;
-  }
-  if (/\b(?:search|query|lookup|get|list|find|memory|session|history)\b/.test(normalized)) {
-    return 'consulta operacional';
-  }
-  return 'ação operacional';
+  return formatTraceToolLabel(tool);
 }
 
 function hasSensitiveToolArgs(args: Record<string, unknown>): boolean {
@@ -633,7 +581,7 @@ export function classifyKloelToolRisk(
   }
   if (TOOL_RISK_VALIDATION_RE.test(normalized)) {
     score = Math.min(score, 1);
-    factors.add('validação operacional');
+    factors.add('validação sem alteração');
   }
   if (TOOL_RISK_MUTATION_RE.test(normalized)) {
     score += 3;
@@ -745,7 +693,7 @@ export function createKloelDoneEvent(metadata?: Record<string, unknown>): KloelD
 export function createKloelReasoningSummaryEvent(text: string): KloelReasoningSummaryEvent {
   return {
     type: 'reasoning_summary',
-    text,
+    text: sanitizeAssistantReasoningTextForStorage(text),
     done: false,
   };
 }
@@ -754,7 +702,7 @@ export function createKloelReasoningSummaryEvent(text: string): KloelReasoningSu
 export function createKloelReasoningDeltaEvent(text: string): KloelReasoningDeltaEvent {
   return {
     type: 'reasoning_delta',
-    text,
+    text: sanitizeAssistantReasoningTextForStorage(text),
     done: false,
   };
 }

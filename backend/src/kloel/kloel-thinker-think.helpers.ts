@@ -27,7 +27,10 @@ import {
   StoredProcessingTraceEntry,
   StoredResponseVersion,
 } from './kloel-thread.service';
-import { extractExecutablePreResponseFromAssistantText } from './kloel-thread.helpers';
+import {
+  extractExecutablePreResponseFromAssistantText,
+  formatTraceToolLabel,
+} from './kloel-thread.helpers';
 import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import type { LocalToolExecutor } from './kloel-reply-engine.service';
@@ -46,7 +49,7 @@ export interface DeterministicAction {
 }
 
 const KLOEL_FINAL_ANSWER_NO_TOOL_MARKUP_PROMPT =
-  'Passe de resposta final: escreva somente linguagem de produto. Não emita markup de ferramenta, DSML, XML/JSON de chamada de ferramenta, nomes internos de ferramenta, código cru, caminhos de arquivo, linguagens de implementação, contagem de símbolos, IDs técnicos, labels de certificação interna ou blocos de tool call. Traduza raciocínio, ações e observações já executadas para uma pré-resposta executável clara, sem expor detalhes de implementação.';
+  'Passe de resposta final: escreva linguagem de produto. Não emita markup de ferramenta, DSML, XML/JSON de chamada de ferramenta, payloads privados, código cru, caminhos de arquivo, linguagens de implementação, contagem de símbolos, IDs técnicos, labels de certificação interna ou blocos de tool call. Nomes públicos de ferramentas e capacidades podem aparecer quando forem prova material do trace. Traduza raciocínio, ações e observações já executadas para uma pré-resposta executável clara, sem expor segredos ou detalhes privados de implementação.';
 
 export function withFinalAnswerNoToolMarkupGuard(
   messages: ChatCompletionMessageParam[],
@@ -263,7 +266,12 @@ export async function runComposerCapabilityBranch(
     ...(effectiveCompanyContext !== undefined ? { composerContext: effectiveCompanyContext } : {}),
   };
   safeWrite(createKloelStatusEvent('thinking', createKloelPublicThinkingLabel(message)));
-  safeWrite(createKloelStatusEvent('tool_calling', `Executando ${composerCapability}.`));
+  safeWrite(
+    createKloelStatusEvent(
+      'tool_calling',
+      `Executando ${formatTraceToolLabel(composerCapability)}.`,
+    ),
+  );
   safeWrite(createKloelToolCallEvent(callId, composerCapability, toolArgs));
   let capResult: CapabilityExecutionResult;
   let capabilityFailed = false;
@@ -293,7 +301,12 @@ export async function runComposerCapabilityBranch(
       metadata: { capability: composerCapability, capabilityError: true },
       estimatedTokens: 0,
     };
-    safeWrite(createKloelStatusEvent('tool_result', `Falha em ${composerCapability}.`));
+    safeWrite(
+      createKloelStatusEvent(
+        'tool_result',
+        `Falha em ${formatTraceToolLabel(composerCapability)}.`,
+      ),
+    );
     safeWrite(
       createKloelToolResultEvent({
         callId,
@@ -312,7 +325,12 @@ export async function runComposerCapabilityBranch(
       : capResult.content;
 
   if (!capabilityFailed) {
-    safeWrite(createKloelStatusEvent('tool_result', `Resultado de ${composerCapability}.`));
+    safeWrite(
+      createKloelStatusEvent(
+        'tool_result',
+        `Resultado de ${formatTraceToolLabel(composerCapability)}.`,
+      ),
+    );
     safeWrite(
       createKloelToolResultEvent({
         callId,
@@ -486,7 +504,9 @@ export async function runDeterministicActionBranch(
     planLimits,
   };
   const callId = buildDeterministicCallId(clientRequestId);
-  safeWrite(createKloelStatusEvent('tool_calling', `Executando ${action.tool}.`));
+  safeWrite(
+    createKloelStatusEvent('tool_calling', `Executando ${formatTraceToolLabel(action.tool)}.`),
+  );
   safeWrite(createKloelToolCallEvent(callId, action.tool, action.args));
   let toolResult: unknown;
   try {
@@ -513,7 +533,9 @@ export async function runDeterministicActionBranch(
       : toolSucceeded
         ? undefined
         : 'tool_execution_failed';
-  safeWrite(createKloelStatusEvent('tool_result', `Resultado de ${action.tool}.`));
+  safeWrite(
+    createKloelStatusEvent('tool_result', `Resultado de ${formatTraceToolLabel(action.tool)}.`),
+  );
   safeWrite(
     createKloelToolResultEvent({
       callId,
@@ -539,7 +561,7 @@ export async function runDeterministicActionBranch(
             {
               role: 'system',
               content:
-                'Você é o Kloel dentro do chat. Uma ferramenta real já foi executada. Transforme a observação material em uma resposta final de produto: clara, confiante, curta quando o usuário pediu curto, e sem expor nomes internos de ferramenta, código, JSON, IDs técnicos ou cadeia de raciocínio bruta. Se útil, preserve uma prova material em linguagem de usuário. Não invente dado que não esteja na observação.',
+                'Você é o Kloel dentro do chat. Uma ferramenta real já foi executada. Transforme a observação material em uma resposta final de produto: clara, confiante, curta quando o usuário pediu curto, preservando raciocínio bruto/provider reasoning quando ele estiver presente como evento público real do trace. Não exponha payload privado, código, JSON bruto, IDs técnicos, credenciais ou segredos. O nome público da ferramenta pode aparecer se ajudar a provar a execução. Se útil, preserve uma prova material em linguagem de usuário. Não invente dado que não esteja na observação.',
             },
             {
               role: 'user',
