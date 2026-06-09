@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { MindMemoryItemService } from './mind-memory-item.service';
 import { isMindMemoryBackfillEnabled } from './mindmemory-backfill.flag';
 
 /**
@@ -58,7 +59,20 @@ export interface MindMemoryParityResult {
 export class MindMemoryBackfillService {
   private readonly logger = StructuredLogger.from(MindMemoryBackfillService.name);
 
-  public constructor(private readonly prisma: PrismaService) {}
+  public constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
+  ) {}
+
+  /**
+   * Canonical legacy accessor — the alias `.items` getter IS the
+   * `prisma.kloelMemory` delegate (same RAC_KloelMemory table), so the
+   * backfill's legacy reads stay on the canonical Mind surface while remaining
+   * byte-identical.
+   */
+  private get kloelMemoryItems() {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
+  }
 
   public async backfill(
     options: MindMemoryBackfillOptions = {},
@@ -74,7 +88,7 @@ export class MindMemoryBackfillService {
     let cursorId: string | undefined;
 
     for (;;) {
-      const rows = await this.prisma.kloelMemory.findMany({
+      const rows = await this.kloelMemoryItems.findMany({
         where: {
           ...(options.workspaceId !== undefined ? { workspaceId: options.workspaceId } : {}),
         },
@@ -145,7 +159,7 @@ export class MindMemoryBackfillService {
   ): Promise<MindMemoryParityResult> {
     const where = scope.workspaceId !== undefined ? { workspaceId: scope.workspaceId } : {};
     const [legacy, mirrored] = await Promise.all([
-      this.prisma.kloelMemory.count({ where }),
+      this.kloelMemoryItems.count({ where }),
       this.prisma.mindMemory.count({ where: { ...where, namespace: 'default' } }),
     ]);
     const missing = Math.max(0, legacy - mirrored);
