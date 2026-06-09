@@ -53,10 +53,14 @@ function skipGeneratedName(name) {
     name.startsWith('.security-mono-proof-') ||
     name.startsWith('.atomic-exec-sandbox') ||
     name.startsWith('atomic-exec-broker-file-') ||
+    name.startsWith('atomic-edit-dist-') ||
     name.startsWith('atomic-universal-') ||
     name.startsWith('.property-proof-') ||
     name.startsWith('.findings-') ||
     name.startsWith('.findings-probe-') ||
+    name.startsWith('property-gate-') ||
+    name.startsWith('probe-gate-') ||
+    name.startsWith('atomic-type-gate-') ||
     name.startsWith('.external-runtime-denial-') ||
     name === '.build-manifest.json'
   );
