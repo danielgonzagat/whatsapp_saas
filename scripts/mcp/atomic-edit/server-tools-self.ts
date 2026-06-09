@@ -61,6 +61,7 @@ const MANDATORY_SELF_EXPANSION_VALIDATORS: readonly SelfExpansionValidator[] = [
   { phase: 'self-evolution-tool', command: 'node gates/self-evolution-mcp-tool.proof.mjs --json' },
   { phase: 'self-evolution-disproof', command: 'node gates/self-evolution-disproof-consumer.proof.mjs --json' },
   { phase: 'self-evolution-disproof-briefing', command: 'node gates/self-evolution-disproof-briefing.proof.mjs --json' },
+  { phase: 'self-evolution-lessons', command: 'node gates/self-evolution-lesson-rules.proof.mjs --json' },
   { phase: 'codex-memory', command: 'node gates/codex-memory-note-tool.proof.mjs --json' },
   { phase: 'benchmark', command: 'node gates/atomic-agent-bench.proof.mjs' },
   { phase: 'test', command: 'node gates/test-execution-gate.proof.mjs --json' },
