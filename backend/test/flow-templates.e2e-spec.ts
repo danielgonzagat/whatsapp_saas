@@ -1,70 +1,21 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any */
-
 process.env.DATABASE_URL =
   process.env.DATABASE_URL || 'postgresql://postgres:password@localhost:5432/whatsapp_saas';
 process.env.REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret';
 process.env.AUTH_OPTIONAL = 'true';
 
-jest.mock('ioredis', () => {
-  const Redis = class {
-    private store = new Map<string, any>();
-    constructor(..._args: any[]) {}
-    get = async (key: string) => this.store.get(key);
-    setex = async (key: string, _ttl: number, value: string) => this.store.set(key, value);
-    incr = async (key: string) => {
-      const v = (this.store.get(key) || 0) + 1;
-      this.store.set(key, v);
-      return v;
-    };
-    incrby = async (key: string, n: number) => {
-      const v = (this.store.get(key) || 0) + n;
-      this.store.set(key, v);
-      return v;
-    };
-    expire = async () => {};
-    lrange = async () => [];
-    rpush = async () => {};
-    psubscribe = async () => {};
-    on = () => {};
-    subscribe = async () => {};
-    publish = async () => 1;
-    duplicate = () => new (Redis as any)();
-    quit = async () => {};
-    disconnect = () => {};
-  };
-  return { __esModule: true, default: Redis };
-});
-
-jest.mock('bullmq', () => {
-  class Dummy {
-    name: string;
-    constructor(name?: string, ..._args: any[]) {
-      this.name = name || 'dummy';
-    }
-    add = async () => {};
-    on = () => {};
-    getJobCounts = async () => ({});
-    getJob = async () => null;
-    getJobs = async () => [];
-    clean = async () => {};
-    drain = async () => {};
-  }
-  return {
-    __esModule: true,
-    Queue: Dummy,
-    Worker: Dummy,
-    QueueEvents: Dummy,
-    Job: class {},
-  };
-});
-
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
+import type { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { PlanLimitsService } from '../src/billing/plan-limits.service';
+
+interface FlowTemplateListItem {
+  id: string;
+  downloads?: number;
+}
 
 describe('Flow Templates (e2e)', () => {
   let app: INestApplication;
@@ -112,18 +63,26 @@ describe('Flow Templates (e2e)', () => {
       },
     });
 
-    const res = await request(app.getHttpServer()).get('/flow-templates/public').expect(200);
+    const res = await request(app.getHttpServer() as App)
+      .get('/flow-templates/public')
+      .expect(200);
 
-    expect(Array.isArray(res.body)).toBe(true);
-    expect(res.body.length).toBeGreaterThan(0);
+    const templates = res.body as FlowTemplateListItem[];
+    expect(Array.isArray(templates)).toBe(true);
+    expect(templates.length).toBeGreaterThan(0);
   });
 
   it('should get a template by ID', async () => {
-    const listRes = await request(app.getHttpServer()).get('/flow-templates/public').expect(200);
-    const templateId = listRes.body[0]?.id;
-    expect(templateId).toBeDefined();
+    const listRes = await request(app.getHttpServer() as App)
+      .get('/flow-templates/public')
+      .expect(200);
+    const templates = listRes.body as FlowTemplateListItem[];
+    const templateId = templates[0]?.id ?? '';
+    expect(templateId).toBeTruthy();
 
-    const res = await request(app.getHttpServer()).get(`/flow-templates/${templateId}`).expect(200);
+    const res = await request(app.getHttpServer() as App)
+      .get(`/flow-templates/${templateId}`)
+      .expect(200);
     expect(res.body).toHaveProperty('id', templateId);
     expect(res.body).toHaveProperty('name');
     expect(res.body).toHaveProperty('category');
@@ -132,12 +91,15 @@ describe('Flow Templates (e2e)', () => {
   });
 
   it('should increment download count on a template', async () => {
-    const listRes = await request(app.getHttpServer()).get('/flow-templates/public').expect(200);
-    const templateId = listRes.body[0]?.id;
-    expect(templateId).toBeDefined();
+    const listRes = await request(app.getHttpServer() as App)
+      .get('/flow-templates/public')
+      .expect(200);
+    const templates = listRes.body as FlowTemplateListItem[];
+    const templateId = templates[0]?.id ?? '';
+    expect(templateId).toBeTruthy();
 
-    const before = listRes.body[0].downloads ?? 0;
-    const res = await request(app.getHttpServer())
+    const before = templates[0]?.downloads ?? 0;
+    const res = await request(app.getHttpServer() as App)
       .post(`/flow-templates/${templateId}/download`)
       .expect(201);
     expect(res.body).toHaveProperty('downloads', before + 1);

@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any */
-
 /**
  * KLOEL Full E2E Test Suite
  *
@@ -15,10 +13,10 @@ process.env.AUTH_OPTIONAL = 'true';
 
 jest.mock('ioredis', () => {
   const Redis = class {
-    private store = new Map<string, any>();
-    constructor(..._args: any[]) {}
+    private store = new Map<string, unknown>();
+    constructor(..._args: unknown[]) {}
     get = async (key: string) => this.store.get(key);
-    set = async (key: string, value: any) => {
+    set = async (key: string, value: unknown) => {
       this.store.set(key, value);
       return 'OK';
     };
@@ -28,12 +26,14 @@ jest.mock('ioredis', () => {
       return keys.length;
     };
     incr = async (key: string) => {
-      const v = (this.store.get(key) || 0) + 1;
+      const current = this.store.get(key);
+      const v = (typeof current === 'number' ? current : 0) + 1;
       this.store.set(key, v);
       return v;
     };
     incrby = async (key: string, n: number) => {
-      const v = (this.store.get(key) || 0) + n;
+      const current = this.store.get(key);
+      const v = (typeof current === 'number' ? current : 0) + n;
       this.store.set(key, v);
       return v;
     };
@@ -43,7 +43,7 @@ jest.mock('ioredis', () => {
     psubscribe = async () => {};
     subscribe = async () => {};
     publish = async () => 1;
-    duplicate = () => new (Redis as any)();
+    duplicate = () => new Redis();
     on = () => {};
     quit = async () => {};
     disconnect = () => {};
@@ -54,7 +54,7 @@ jest.mock('ioredis', () => {
 jest.mock('bullmq', () => {
   class Dummy {
     name: string;
-    constructor(name?: string, ..._args: any[]) {
+    constructor(name?: string, ..._args: unknown[]) {
       this.name = name || 'dummy';
     }
     add = async () => ({});
@@ -77,8 +77,43 @@ jest.mock('bullmq', () => {
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
+import type { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
+
+interface RegisteredUser {
+  id: string;
+  workspaceId?: string;
+}
+
+interface RegisterResponse {
+  access_token: string;
+  user?: RegisteredUser;
+  agent?: RegisteredUser;
+  workspace?: { id: string };
+}
+
+interface ProductSummary {
+  id: string;
+  name: string;
+}
+
+interface PlanSummary {
+  id: string;
+  slug?: string;
+}
+
+interface OrderPayment {
+  id?: string;
+  externalId?: string;
+}
+
+interface OrderSummary {
+  id: string;
+  payments?: OrderPayment[];
+  paymentId?: string;
+  paymentIntentId?: string;
+}
 
 // Full journey can be slow (AI calls, DB operations)
 jest.setTimeout(120_000);
@@ -147,7 +182,7 @@ describe('KLOEL Full User Journey (e2e)', () => {
   // TEST 1: REGISTER
   // ═══════════════════════════════════════════
   it('1. Register new user', async () => {
-    const res = await request(app.getHttpServer())
+    const res = await request(app.getHttpServer() as App)
       .post('/auth/register')
       .send({
         name: TEST_NAME,
@@ -157,13 +192,14 @@ describe('KLOEL Full User Journey (e2e)', () => {
       })
       .expect((r) => expect([200, 201]).toContain(r.status));
 
-    expect(res.body).toHaveProperty('access_token');
-    expect(res.body.user || res.body.agent).toBeDefined();
+    const body = res.body as RegisterResponse;
+    expect(body).toHaveProperty('access_token');
+    const user = body.user || body.agent;
+    expect(user).toBeDefined();
 
-    state.accessToken = res.body.access_token;
-    const user = res.body.user || res.body.agent;
-    state.userId = user.id;
-    state.workspaceId = user.workspaceId || res.body.workspace?.id;
+    state.accessToken = body.access_token;
+    state.userId = user?.id || '';
+    state.workspaceId = user?.workspaceId || body.workspace?.id || '';
 
     expect(state.userId).toBeTruthy();
     expect(state.workspaceId).toBeTruthy();
@@ -179,9 +215,12 @@ describe('KLOEL Full User Journey (e2e)', () => {
       data: { kycStatus: 'approved' },
     });
 
-    const res = await request(app.getHttpServer()).get('/kyc/status').set(auth()).expect(200);
+    const res = await request(app.getHttpServer() as App)
+      .get('/kyc/status')
+      .set(auth())
+      .expect(200);
 
-    expect(res.body.kycStatus).toBe('approved');
+    expect((res.body as { kycStatus: string }).kycStatus).toBe('approved');
     console.log('  -> KYC approved');
   });
 
@@ -189,7 +228,7 @@ describe('KLOEL Full User Journey (e2e)', () => {
   // TEST 3: CREATE PRODUCT
   // ═══════════════════════════════════════════
   it('3. Create product', async () => {
-    const res = await request(app.getHttpServer())
+    const res = await request(app.getHttpServer() as App)
       .post('/products')
       .set(auth())
       .send({
@@ -204,7 +243,8 @@ describe('KLOEL Full User Journey (e2e)', () => {
       })
       .expect((r) => expect([200, 201]).toContain(r.status));
 
-    const product = res.body.product || res.body;
+    const productBody = res.body as { product?: ProductSummary } & Partial<ProductSummary>;
+    const product = (productBody.product || productBody) as ProductSummary;
     expect(product).toHaveProperty('id');
     expect(product.name).toBe(PRODUCT_NAME);
 
@@ -226,20 +266,21 @@ describe('KLOEL Full User Journey (e2e)', () => {
     });
 
     expect(memory).toBeTruthy();
-    expect(memory.content).toContain(PRODUCT_NAME);
-    console.log(`  -> KloelMemory found: key="${memory.key}"`);
+    expect(memory?.content).toContain(PRODUCT_NAME);
+    console.log(`  -> KloelMemory found: key="${memory?.key}"`);
 
     // Now test via the think/sync endpoint (requires OPENAI_API_KEY)
     // If no API key, we skip the AI call but the memory proof is sufficient
     if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'test-openai-key') {
-      const res = await request(app.getHttpServer())
+      const res = await request(app.getHttpServer() as App)
         .post('/kloel/think/sync')
         .set(auth())
         .send({ message: 'Quais produtos eu tenho cadastrados?' })
         .expect(200);
 
-      expect(res.body.response).toBeDefined();
-      console.log(`  -> Kloel response: "${res.body.response?.slice(0, 100)}..."`);
+      const thinkBody = res.body as { response?: string };
+      expect(thinkBody.response).toBeDefined();
+      console.log(`  -> Kloel response: "${thinkBody.response?.slice(0, 100)}..."`);
     } else {
       console.log(
         '  -> OPENAI_API_KEY not set, skipping AI verification (memory proof sufficient)',
@@ -251,12 +292,18 @@ describe('KLOEL Full User Journey (e2e)', () => {
   // TEST 5: LIST PRODUCTS
   // ═══════════════════════════════════════════
   it('5. List products shows our product', async () => {
-    const res = await request(app.getHttpServer()).get('/products').set(auth()).expect(200);
+    const res = await request(app.getHttpServer() as App)
+      .get('/products')
+      .set(auth())
+      .expect(200);
 
-    const products = Array.isArray(res.body) ? res.body : res.body.data || res.body.products || [];
-    const found = products.find((p: any) => p.id === state.productId);
+    const listBody = res.body as
+      | ProductSummary[]
+      | { data?: ProductSummary[]; products?: ProductSummary[] };
+    const products = Array.isArray(listBody) ? listBody : listBody.data || listBody.products || [];
+    const found = products.find((p) => p.id === state.productId);
     expect(found).toBeTruthy();
-    expect(found.name).toBe(PRODUCT_NAME);
+    expect(found?.name).toBe(PRODUCT_NAME);
     console.log(`  -> Found ${products.length} product(s)`);
   });
 
@@ -265,7 +312,7 @@ describe('KLOEL Full User Journey (e2e)', () => {
   // ═══════════════════════════════════════════
   it('6. Create checkout product and plan', async () => {
     // Create checkout product
-    const cpRes = await request(app.getHttpServer())
+    const cpRes = await request(app.getHttpServer() as App)
       .post('/checkout/products')
       .set(auth())
       .send({
@@ -275,11 +322,12 @@ describe('KLOEL Full User Journey (e2e)', () => {
       })
       .expect((r) => expect([200, 201]).toContain(r.status));
 
-    state.checkoutProductId = cpRes.body.id || cpRes.body.product?.id;
+    const cpBody = cpRes.body as { id?: string; product?: { id?: string } };
+    state.checkoutProductId = cpBody.id || cpBody.product?.id || '';
 
     // Create plan
     const slug = `test-serum-${uniqueSuffix}`;
-    const planRes = await request(app.getHttpServer())
+    const planRes = await request(app.getHttpServer() as App)
       .post(`/checkout/products/${state.checkoutProductId}/plans`)
       .set(auth())
       .send({
@@ -290,7 +338,8 @@ describe('KLOEL Full User Journey (e2e)', () => {
       })
       .expect((r) => expect([200, 201]).toContain(r.status));
 
-    const plan = planRes.body.plan || planRes.body;
+    const planBody = planRes.body as { plan?: PlanSummary } & Partial<PlanSummary>;
+    const plan = (planBody.plan || planBody) as PlanSummary;
     state.planId = plan.id;
     state.planSlug = plan.slug || slug;
     console.log(`  -> Plan: ${state.planId}, Slug: ${state.planSlug}`);
@@ -300,7 +349,7 @@ describe('KLOEL Full User Journey (e2e)', () => {
   // TEST 7: SIMULATE PURCHASE (public checkout)
   // ═══════════════════════════════════════════
   it('7. Create order (public checkout)', async () => {
-    const res = await request(app.getHttpServer())
+    const res = await request(app.getHttpServer() as App)
       .post('/checkout/public/order')
       .send({
         planId: state.planId,
@@ -323,7 +372,8 @@ describe('KLOEL Full User Journey (e2e)', () => {
       })
       .expect((r) => expect([200, 201]).toContain(r.status));
 
-    const order = res.body.order || res.body;
+    const orderBody = res.body as { order?: OrderSummary } & Partial<OrderSummary>;
+    const order = (orderBody.order || orderBody) as OrderSummary;
     state.orderId = order.id;
     state.paymentId = order.payments?.[0]?.id || order.paymentId || '';
     state.paymentExternalId =
@@ -337,7 +387,7 @@ describe('KLOEL Full User Journey (e2e)', () => {
   // TEST 8: SIMULATE PAYMENT CONFIRMED (webhook)
   // ═══════════════════════════════════════════
   it('8. Stripe webhook confirms payment', async () => {
-    const res = await request(app.getHttpServer())
+    const res = await request(app.getHttpServer() as App)
       .post('/webhook/payment/stripe')
       .send({
         id: `evt_test_${uniqueSuffix}`,
@@ -362,13 +412,20 @@ describe('KLOEL Full User Journey (e2e)', () => {
   // TEST 9: VERIFY SALES
   // ═══════════════════════════════════════════
   it('9. Sales data reflects the purchase', async () => {
-    const res = await request(app.getHttpServer()).get('/sales').set(auth()).expect(200);
+    const res = await request(app.getHttpServer() as App)
+      .get('/sales')
+      .set(auth())
+      .expect(200);
 
-    const sales = Array.isArray(res.body) ? res.body : res.body.data || [];
+    const salesBody = res.body as unknown[] | { data?: unknown[] };
+    const sales = Array.isArray(salesBody) ? salesBody : salesBody.data || [];
     console.log(`  -> Found ${sales.length} sale(s)`);
 
     // Stats
-    const statsRes = await request(app.getHttpServer()).get('/sales/stats').set(auth()).expect(200);
+    const statsRes = await request(app.getHttpServer() as App)
+      .get('/sales/stats')
+      .set(auth())
+      .expect(200);
 
     console.log(`  -> Stats: ${JSON.stringify(statsRes.body).slice(0, 200)}`);
   });
@@ -377,7 +434,7 @@ describe('KLOEL Full User Journey (e2e)', () => {
   // TEST 10: VERIFY WALLET
   // ═══════════════════════════════════════════
   it('10. Wallet balance updated', async () => {
-    const res = await request(app.getHttpServer())
+    const res = await request(app.getHttpServer() as App)
       .get(`/kloel/wallet/${state.workspaceId}/balance`)
       .set(auth())
       .expect(200);
@@ -392,14 +449,14 @@ describe('KLOEL Full User Journey (e2e)', () => {
   // TEST 11: VERIFY REPORTS
   // ═══════════════════════════════════════════
   it('11. Reports endpoints return data', async () => {
-    const summary = await request(app.getHttpServer())
+    const summary = await request(app.getHttpServer() as App)
       .get('/reports/vendas/summary')
       .set(auth())
       .expect(200);
 
     console.log(`  -> Summary: ${JSON.stringify(summary.body).slice(0, 200)}`);
 
-    const metricas = await request(app.getHttpServer())
+    const metricas = await request(app.getHttpServer() as App)
       .get('/reports/metricas')
       .set(auth())
       .expect(200);
@@ -413,13 +470,13 @@ describe('KLOEL Full User Journey (e2e)', () => {
   // ═══════════════════════════════════════════
   it('12. Order alerts generate and list', async () => {
     // Generate alerts
-    await request(app.getHttpServer())
+    await request(app.getHttpServer() as App)
       .post('/sales/orders/alerts/generate')
       .set(auth())
       .expect((r) => expect([200, 201]).toContain(r.status));
 
     // List alerts
-    const res = await request(app.getHttpServer())
+    const res = await request(app.getHttpServer() as App)
       .get('/sales/orders/alerts')
       .set(auth())
       .expect(200);
@@ -433,7 +490,7 @@ describe('KLOEL Full User Journey (e2e)', () => {
   it('13. Update product syncs to KloelMemory', async () => {
     const newName = `${PRODUCT_NAME} ATUALIZADO`;
 
-    await request(app.getHttpServer())
+    await request(app.getHttpServer() as App)
       .put(`/products/${state.productId}`)
       .set(auth())
       .send({ name: newName, price: 247.0 })
@@ -449,7 +506,7 @@ describe('KLOEL Full User Journey (e2e)', () => {
     });
 
     expect(memory).toBeTruthy();
-    expect(memory.content).toContain('247');
+    expect(memory?.content).toContain('247');
     console.log(`  -> Memory updated with new name and price`);
   });
 });
