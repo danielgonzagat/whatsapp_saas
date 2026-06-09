@@ -8,7 +8,7 @@ import { isMindMessageDualWriteEnabled } from './mindmessage-dualwrite.flag';
 export interface MindMessageMirrorInput {
   workspaceId: string;
   /** Unified-table discriminator: which legacy surface the row came from. */
-  source: 'channel' | 'thread' | 'dashboard' | 'lead_conversation';
+  source: 'brain' | 'channel' | 'thread' | 'dashboard' | 'lead_conversation';
   role: string;
   content: string;
 }
