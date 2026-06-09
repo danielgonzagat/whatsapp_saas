@@ -197,3 +197,9 @@ scripts/mcp/atomic-edit/.z3venv/
 .z3venv/
 .elan/
 .elan-init.sh
+
+# Atomic exec/gate scratch — stdout/stderr captures and sandbox effect-roots (regenerable)
+.atomic-*.err
+.atomic-*.out
+.atomic-scratch/
+.atomic-test-tmp/
