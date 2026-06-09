@@ -128,6 +128,39 @@ describe('useCheckoutFormState', () => {
     });
   });
 
+  it('does not carry a previous product draft into the next product key', async () => {
+    const nextProductId = 'prod-456';
+    localStorage.setItem(
+      `kloel:product-checkout-form-draft:${productId}`,
+      JSON.stringify({
+        version: 1,
+        productId,
+        savedAt: new Date().toISOString(),
+        form: { name: 'Original Product', paymentMethods: ['PIX'], active: true },
+        editingCheckoutId: 'checkout-original',
+        showModal: true,
+      }),
+    );
+
+    const { result, rerender } = renderHook(
+      ({ currentProductId }) => useCheckoutFormState(currentProductId),
+      { initialProps: { currentProductId: productId } },
+    );
+
+    expect(result.current.form.name).toBe('Original Product');
+    expect(result.current.showModal).toBe(true);
+
+    rerender({ currentProductId: nextProductId });
+
+    await vi.waitFor(() => {
+      expect(result.current.draftKey).toBe(`kloel:product-checkout-form-draft:${nextProductId}`);
+      expect(result.current.form.name).toBe('');
+      expect(result.current.showModal).toBe(false);
+    });
+
+    expect(localStorage.getItem(`kloel:product-checkout-form-draft:${nextProductId}`)).toBeNull();
+  });
+
   it('ignores draft with wrong version', () => {
     const key = `kloel:product-checkout-form-draft:${productId}`;
     localStorage.setItem(

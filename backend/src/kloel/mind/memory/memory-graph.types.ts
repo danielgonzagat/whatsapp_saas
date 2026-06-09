@@ -19,7 +19,11 @@ export const MEMORY_NODE_TYPES = [
   'decision',
   'entity',
   'document',
+  'conversation',
+  'task',
   'summary',
+  'sensitive',
+  'expired',
   'contradiction',
 ] as const;
 
@@ -31,9 +35,15 @@ export const MEMORY_EDGE_RELATIONS = [
   'contradicts',
   'updates',
   'extends',
+  'summarizes',
   'belongs_to',
   'references',
+  'derived_from',
+  'used_by',
+  'similar_to',
   'replaces',
+  'expires',
+  'protects',
 ] as const;
 
 export type MemoryEdgeRelation = (typeof MEMORY_EDGE_RELATIONS)[number];

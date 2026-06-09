@@ -21,7 +21,6 @@ import { formatMemoryError, slugifyMemorySlot } from './memory.service.utils';
 import type { MemoryServicePrisma } from './memory.service.prisma';
 type MemoryVectorClient = Pick<VectorService, 'getEmbedding'>;
 
-
 /**
  * Track m3-memory-graph — per-USER typed memory graph + extract→retrieve→inject
  * loop, the in-repo equivalent of an external supermemory/Mem0 deployment.
@@ -464,13 +463,15 @@ export class MemoryService {
         },
         ...memoryNodes.map((node) => {
           const metadata = readMetadata(node.metadata);
+          const nodeType = asMemoryNodeType(node.type) ?? 'fact';
           const sensitive =
-            metadata['sensitive'] === true || metadata['classification'] === 'sensitive';
-          const archived = metadata['archived'] === true;
+            nodeType === 'sensitive' ||
+            metadata['sensitive'] === true ||
+            metadata['classification'] === 'sensitive';
+          const archived = nodeType === 'expired' || metadata['archived'] === true;
           const blockedForAgent = metadata['blockedForAgent'] === true;
           const replaced =
             metadata['replaced'] === true || typeof metadata['replacedBy'] === 'string';
-          const nodeType = asMemoryNodeType(node.type) ?? 'fact';
           const contradicted = nodeType === 'contradiction' || metadata['contradicted'] === true;
           const scope: 'user' | 'workspace' | 'shared' =
             node.scope === 'workspace' || node.scope === 'shared' || node.scope === 'user'
@@ -592,7 +593,7 @@ export class MemoryService {
         typeof existing.metadata === 'object' &&
         existing.metadata !== null &&
         !Array.isArray(existing.metadata)
-          ? { ...(existing.metadata as Record<string, unknown>) }
+          ? { ...existing.metadata }
           : {};
       const changed: string[] = [];
       const setBoolean = (key: 'archived' | 'sensitive' | 'blockedForAgent', value: unknown) => {

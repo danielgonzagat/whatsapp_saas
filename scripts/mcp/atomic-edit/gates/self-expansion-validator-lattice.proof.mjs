@@ -26,14 +26,23 @@ const requiredCommands = [
   'node dist/gates/contract-edge-gate.proof.js',
   'node gates/public-contract-gate.proof.mjs --json',
   'node gates/behavior-contract-gate.proof.mjs --json',
+  'node gates/atomic-product-locks.proof.mjs --json',
   'node gates/security-gate.proof.mjs --json',
+  'node gates/chrome-devtools-bridge.proof.mjs --json',
   'node gates/security-monotonicity.proof.mjs --json',
+  'node gates/self-expansion-validator-lattice.proof.mjs --json',
+  'node gates/atomic-agent-bench.proof.mjs',
   'node gates/test-execution-gate.proof.mjs --json',
   'node proof-chain.proof.mjs --json',
   'node gates/y-certificate-mandatory-domains.proof.mjs --json',
   'node gates/codex-entrypoint-contract.proof.mjs --json',
+  'node gates/agent-hook-runtime-boundary.proof.mjs --json',
   'node gates/compiled-mcp-y-certificate.proof.mjs --json',
   'node gates/atomic-exec-readonly-usability.proof.mjs --json',
+  'node gates/effect-metadata-mode.proof.mjs --json',
+  'node gates/atomic-exec-prove-effect-required.proof.mjs --json',
+  'node gates/atomic-exec-indirection-denial.proof.mjs --json',
+  'node gates/self-expansion-unexpected-effects.proof.mjs --json',
   'node codex-atomic-only-hook.proof.mjs --json',
 ];
 
@@ -54,13 +63,20 @@ const requiredPhases = [
   'contract-edge',
   'public-contract',
   'behavior',
+  'coordination',
   'security',
   'monotonicity',
+  'self-lattice',
+  'benchmark',
   'test',
   'ledger',
   'certificate',
   'runtime',
+  'agent-runtime',
   'usability',
+  'effect-metadata',
+  'effect-admission',
+  'effect-scope',
   'no-bypass',
 ];
 
@@ -108,6 +124,7 @@ function main() {
       source.includes('security') &&
       source.includes('monotonicity') &&
       source.includes('runtime') &&
+      source.includes('agent-runtime') &&
       source.includes('usability'),
     {
       hasReceipt: source.includes('validatorLattice: MANDATORY_SELF_EXPANSION_VALIDATORS'),

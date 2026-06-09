@@ -70,6 +70,7 @@ export function MemoryGraphView() {
   const [draftSummary, setDraftSummary] = useState('');
   const [actionStatus, setActionStatus] = useState<'idle' | 'saving' | 'error'>('idle');
   const [memoryTypeFilter, setMemoryTypeFilter] = useState('all');
+  const [memoryStateFilter, setMemoryStateFilter] = useState('all');
 
   useEffect(() => {
     let active = true;
@@ -108,17 +109,47 @@ export function MemoryGraphView() {
     { value: 'summary', label: 'Resumos' },
     { value: 'contradiction', label: 'Contradições' },
   ] as const;
+  const memoryStateFilters = [
+    { value: 'all', label: 'Todos' },
+    { value: 'confirmed', label: 'Confirmadas' },
+    { value: 'uncertain', label: 'Incertas' },
+    { value: 'pinned', label: 'Fixadas' },
+    { value: 'sensitive', label: 'Sensíveis' },
+    { value: 'blocked', label: 'Bloqueadas' },
+    { value: 'archived', label: 'Arquivadas' },
+    { value: 'contradicted', label: 'Contraditas' },
+    { value: 'replaced', label: 'Substituídas' },
+  ] as const;
   const memoryLimit = 60;
   const isCenterNode = (node: MemoryGraphPayload['nodes'][number]) =>
     node.id === 'you' || node.group === 'center';
   const rankMemoryNode = (node: MemoryGraphPayload['nodes'][number]) =>
     (node.pinned ? 1_000 : 0) + (node.importance ?? 0) * 100 + (node.confidence ?? 0) * 10;
+  const matchesMemoryStateFilter = (node: MemoryGraphPayload['nodes'][number]) => {
+    if (memoryStateFilter === 'all') {
+      return true;
+    }
+    if (memoryStateFilter === 'pinned') {
+      return node.pinned === true || node.state === 'pinned';
+    }
+    if (memoryStateFilter === 'sensitive') {
+      return node.sensitive === true || node.state === 'sensitive';
+    }
+    if (memoryStateFilter === 'blocked') {
+      return node.blockedForAgent === true || node.state === 'blocked';
+    }
+    if (memoryStateFilter === 'archived') {
+      return node.archived === true || node.state === 'archived';
+    }
+    return (node.state ?? 'confirmed') === memoryStateFilter;
+  };
   const centerNodes = graphPayload.nodes.filter(isCenterNode);
   const memoryNodes = graphPayload.nodes.filter((node) => !isCenterNode(node));
-  const filteredMemoryNodes =
+  const typeFilteredMemoryNodes =
     memoryTypeFilter === 'all'
       ? memoryNodes
       : memoryNodes.filter((node) => node.group === memoryTypeFilter);
+  const filteredMemoryNodes = typeFilteredMemoryNodes.filter(matchesMemoryStateFilter);
   const visibleMemoryNodes = [...filteredMemoryNodes]
     .sort((left, right) => rankMemoryNode(right) - rankMemoryNode(left))
     .slice(0, memoryLimit);
@@ -222,6 +253,20 @@ export function MemoryGraphView() {
             style={filterControlStyle}
           >
             {memoryTypeFilters.map((filter) => (
+              <option key={filter.value} value={filter.value}>
+                {filter.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+          Estado da memória
+          <select
+            value={memoryStateFilter}
+            onChange={(event) => setMemoryStateFilter(event.target.value)}
+            style={filterControlStyle}
+          >
+            {memoryStateFilters.map((filter) => (
               <option key={filter.value} value={filter.value}>
                 {filter.label}
               </option>

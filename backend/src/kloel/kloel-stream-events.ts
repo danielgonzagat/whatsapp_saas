@@ -6,7 +6,7 @@ export type KloelToolRiskLevel = 'low' | 'medium' | 'high';
 export interface KloelPublicToolRisk {
   /** Public risk tier, safe to show in the execution trace. */
   level: KloelToolRiskLevel;
-  /** Product-facing label; never contains raw tool names. */
+  /** Product-facing label; may include a normalized public tool name, never private payloads. */
   label: string;
   /** Compact score derived from tool intent, sensitivity, blast radius and reversibility. */
   score: number;

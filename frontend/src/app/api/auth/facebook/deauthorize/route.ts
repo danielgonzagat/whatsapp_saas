@@ -11,7 +11,6 @@ export async function POST(request: NextRequest) {
   try {
     const backendUrl = getBackendUrl();
     if (!backendUrl) {
-      console.error('[Auth Proxy] facebook/deauthorize: BACKEND_URL not configured');
       return NextResponse.json({ message: 'Servidor não configurado.' }, { status: 503 });
     }
 

@@ -18,7 +18,8 @@ export function ToolCard({ icon, title, desc, badge, disabled, onClick }: ToolCa
   const [hovered, setHovered] = useState(false);
   const effectiveBadge = resolveBadgeLabel(badge, disabled);
   const interactive = typeof onClick === 'function';
-  const isHot = hovered && interactive;
+  const isDisabled = Boolean(disabled);
+  const isHot = hovered && interactive && !isDisabled;
   const sharedStyle = {
     position: 'relative' as const,
     display: 'flex',
@@ -105,12 +106,13 @@ export function ToolCard({ icon, title, desc, badge, disabled, onClick }: ToolCa
     return (
       <button
         type="button"
-        onClick={onClick}
+        onClick={isDisabled ? undefined : onClick}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        aria-disabled={disabled || undefined}
+        disabled={isDisabled || undefined}
+        aria-disabled={isDisabled || undefined}
         style={sharedStyle}
-        onKeyDown={triggerClickOnActivation}
+        onKeyDown={isDisabled ? undefined : triggerClickOnActivation}
       >
         {content}
       </button>

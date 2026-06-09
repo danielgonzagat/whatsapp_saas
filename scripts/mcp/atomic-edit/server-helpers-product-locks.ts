@@ -337,11 +337,27 @@ export function lockFile(frontId: string): string {
 
 export function autoLockFile(relPath: string): string | null {
   const sanitized = relPath.replace(/[\\/:*?"<>|]/g, '-');
-  const lockId = safeLockId(sanitized + '-' + Date.now());
+  const nowMs = Date.now();
+  const now = new Date(nowMs).toISOString();
+  const lockId = safeLockId(sanitized + '-' + nowMs);
   const d = lockDir(lockId);
   try {
     fs.mkdirSync(d);
-    fs.writeFileSync(path.join(d, 'heartbeat'), String(Date.now()));
+    const record = {
+      frontId: lockId,
+      owner: 'atomic-auto-lock',
+      objective: `serialize atomic materialization for ${relPath}`,
+      startedAt: now,
+      heartbeatAt: now,
+      heartbeatTimestampMs: nowMs,
+      allowedFiles: [relPath],
+      blockedFiles: [],
+      acceptanceCriteria: ['prevent concurrent byte materialization for this path'],
+      status: 'auto-claimed',
+      lockKind: 'auto-file',
+    };
+    fs.writeFileSync(path.join(d, 'heartbeat'), String(nowMs));
+    fs.writeFileSync(path.join(d, 'lock'), JSON.stringify(record, null, 2));
     return lockId;
   } catch {
     return null;
@@ -366,19 +382,79 @@ export function autoLockCleanup(relPath: string, maxAgeMs = 30000): void {
   }
 }
 
-export function readLockRecord(id: string): Record<string, unknown> | null {
+type LockReadDiagnostic = {
+  ok: boolean;
+  format?: 'json' | 'legacy-key-value' | 'heartbeat-only';
+  record?: Record<string, unknown>;
+  reason?: 'missing-lock-file' | 'empty-lock-file' | 'invalid-lock-record';
+  heartbeatRaw?: string | null;
+};
+
+function heartbeatMetadata(raw: string | null): Record<string, unknown> {
+  const trimmed = raw?.trim() ?? '';
+  const ts = trimmed.length > 0 ? Number(trimmed) : NaN;
+  if (!Number.isFinite(ts)) {
+    return { heartbeatRaw: raw, heartbeatTimestampMs: null, heartbeatAt: null, heartbeatAgeMs: null };
+  }
+  return {
+    heartbeatRaw: raw,
+    heartbeatTimestampMs: ts,
+    heartbeatAt: new Date(ts).toISOString(),
+    heartbeatAgeMs: Math.max(0, Date.now() - ts),
+  };
+}
+
+export function readLockRecordWithDiagnostics(id: string): LockReadDiagnostic {
   const relPath = `.atomic-edit-locks/${id}/lock`;
-  const json = readJsonOptional<Record<string, unknown>>(relPath);
-  if (json) return json;
   const text = readTextOptional(relPath);
-  if (!text) return null;
+  if (text === null) {
+    const heartbeatRaw = readTextOptional(`.atomic-edit-locks/${id}/heartbeat`);
+    if (heartbeatRaw !== null) {
+      return {
+        ok: true,
+        format: 'heartbeat-only',
+        record: {
+          frontId: id,
+          owner: 'atomic-auto-lock-legacy',
+          objective: 'legacy auto lock created before lock metadata receipts',
+          status: 'heartbeat-only',
+          lockKind: 'auto-file-legacy',
+          metadataMissing: true,
+          recoverableByForceRelease: true,
+          ...heartbeatMetadata(heartbeatRaw),
+        },
+      };
+    }
+    return { ok: false, reason: 'missing-lock-file', heartbeatRaw: null };
+  }
+  if (text.trim().length === 0) {
+    return { ok: false, reason: 'empty-lock-file', heartbeatRaw: readTextOptional(`.atomic-edit-locks/${id}/heartbeat`) };
+  }
+  try {
+    const parsed = JSON.parse(text) as unknown;
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return { ok: true, format: 'json', record: parsed as Record<string, unknown> };
+    }
+  } catch {
+    // Fall through to legacy key=value parsing.
+  }
   const record: Record<string, unknown> = {};
   for (const line of text.split(/\r?\n/)) {
     const eq = line.indexOf('=');
     if (eq <= 0) continue;
     record[line.slice(0, eq)] = line.slice(eq + 1);
   }
-  return Object.keys(record).length > 0 ? record : null;
+  if (Object.keys(record).length > 0) return { ok: true, format: 'legacy-key-value', record };
+  return {
+    ok: false,
+    reason: 'invalid-lock-record',
+    heartbeatRaw: readTextOptional(`.atomic-edit-locks/${id}/heartbeat`),
+  };
+}
+
+export function readLockRecord(id: string): Record<string, unknown> | null {
+  const diagnostic = readLockRecordWithDiagnostics(id);
+  return diagnostic.ok && diagnostic.record ? diagnostic.record : null;
 }
 
 export function listLocks(): Record<string, unknown>[] {
@@ -389,8 +465,17 @@ export function listLocks(): Record<string, unknown>[] {
     .filter((entry) => entry.isDirectory())
     .map((entry) => {
       const id = entry.name;
-      const data = readLockRecord(id);
-      return data ? { frontId: id, ...data } : { frontId: id, status: 'unreadable' };
+      const diagnostic = readLockRecordWithDiagnostics(id);
+      if (diagnostic.ok && diagnostic.record) {
+        return { ...diagnostic.record, frontId: id, lockReadOk: true, lockFormat: diagnostic.format };
+      }
+      return {
+        frontId: id,
+        status: 'unreadable',
+        lockReadOk: false,
+        lockError: diagnostic.reason ?? 'unknown-lock-read-failure',
+        heartbeatRaw: diagnostic.heartbeatRaw ?? null,
+      };
     });
 }
 

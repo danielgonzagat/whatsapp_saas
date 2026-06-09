@@ -200,29 +200,117 @@ function sessionContent(session: PositiveByteSession): string {
   return parts.join('');
 }
 
+function buildPositiveByteRejectionReceipt(args: {
+  session: PositiveByteSession;
+  message: string;
+  failedGate: string;
+  chunkCount: number;
+  stagedBytes: number;
+  targetWrite: 'not-attempted' | 'unknown';
+  cleanup: 'session-dropped' | 'session-drop-failed';
+  cleanupError?: string;
+}): Record<string, unknown> {
+  const gateBody = {
+    kind: 'positive-byte-gate-decision-tree',
+    schemaVersion: 1,
+    decision: 'rejected',
+    proofScope: 'positive-byte-materialization',
+    gates: [
+      {
+        id: 'session.lookup',
+        status: 'passed',
+        facts: {
+          sessionId: args.session.sessionId,
+          file: args.session.relPath,
+          chunkCount: args.chunkCount,
+          stagedBytes: args.stagedBytes,
+        },
+      },
+      {
+        id: args.failedGate,
+        status: 'failed',
+        facts: {
+          error: args.message,
+          targetWrite: args.targetWrite,
+        },
+      },
+      {
+        id: 'session.cleanup',
+        status: args.cleanup === 'session-dropped' ? 'passed' : 'failed',
+        facts: {
+          cleanup: args.cleanup,
+          ...(args.cleanupError ? { cleanupError: args.cleanupError } : {}),
+        },
+      },
+    ],
+    proofLimits: [
+      'Rejection receipt proves the Atomic gate that refused materialization and the cleanup outcome.',
+      'If targetWrite is unknown, the receipt requires an external target hash check before retrying.',
+    ],
+  };
+  const gateDecisionTree = { ...gateBody, gateRunId: sha256(JSON.stringify(gateBody)) };
+  const body = {
+    kind: 'positive-byte-materialization-rejection-receipt',
+    schemaVersion: 1,
+    sessionId: args.session.sessionId,
+    file: args.session.relPath,
+    absPath: args.session.absPath,
+    intent: args.session.intent,
+    failedGate: args.failedGate,
+    error: args.message,
+    chunkCount: args.chunkCount,
+    stagedBytes: args.stagedBytes,
+    targetWrite: args.targetWrite,
+    targetMaterialized: args.targetWrite === 'unknown' ? 'unknown' : false,
+    cleanup: args.cleanup,
+    gateDecisionTree,
+  };
+  return { ...body, receiptSha256: positiveByteReceiptHash(body) };
+}
+
 function failCommitAndDropSession(
   session: PositiveByteSession,
   message: string,
-  options: { targetWrite?: 'not-attempted' | 'unknown' } = {},
+  options: { targetWrite?: 'not-attempted' | 'unknown'; failedGate?: string } = {},
 ): ReturnType<typeof fail> {
   const chunkCount = session.chunks.length;
   const stagedBytes = session.bytes;
+  const targetWrite = options.targetWrite ?? 'not-attempted';
   const targetState =
-    options.targetWrite === 'unknown'
+    targetWrite === 'unknown'
       ? 'target materialization state is unknown after the exception; verify the target by sha256 before retrying.'
       : 'no target bytes were materialized.';
+  let cleanup: 'session-dropped' | 'session-drop-failed' = 'session-dropped';
+  let cleanupError: string | undefined;
   try {
     removeSession(session.sessionId);
   } catch (e) {
-    const cleanupError = e instanceof Error ? e.message : String(e);
-    return fail(
-      `${message} Additionally failed to drop positive-byte session ${session.sessionId}: ${cleanupError}.`,
-    );
+    cleanup = 'session-drop-failed';
+    cleanupError = e instanceof Error ? e.message : String(e);
   }
-  return fail(
+  const fullMessage =
     `${message} Staged positive-byte session ${session.sessionId} was dropped ` +
-      `(${chunkCount} chunk(s), ${stagedBytes} byte(s)); ${targetState}`,
-  );
+    `(${chunkCount} chunk(s), ${stagedBytes} byte(s)); ${targetState}` +
+    (cleanupError ? ` Additionally failed to drop positive-byte session: ${cleanupError}.` : '');
+  const rejectionReceipt = buildPositiveByteRejectionReceipt({
+    session,
+    message,
+    failedGate: options.failedGate ?? (targetWrite === 'unknown' ? 'target.materialization' : 'commit.admission'),
+    chunkCount,
+    stagedBytes,
+    targetWrite,
+    cleanup,
+    ...(cleanupError ? { cleanupError } : {}),
+  });
+  return {
+    content: [
+      {
+        type: 'text',
+        text: JSON.stringify({ ok: false, error: fullMessage, rejectionReceipt }, null, 2),
+      },
+    ],
+    isError: true,
+  };
 }
 
 function negativeProofForCommit(
@@ -239,6 +327,109 @@ function negativeProofForCommit(
     preview: session.preview,
     proofOfIncorrectness: session.proofOfIncorrectness,
   });
+}
+
+function buildPositiveByteGateDecisionTree(args: {
+  session: PositiveByteSession;
+  before: string;
+  content: string;
+  result: ReturnType<typeof applyEdits>;
+  contentSha256: string;
+  materialization: Record<string, unknown>;
+  finalTargetState: 'not-written-preview' | 'written';
+  targetExisted: boolean;
+}): Record<string, unknown> {
+  const beforeSha256 = sha256(args.before);
+  const chunkHashes = args.session.chunks.map((chunk) => chunk.sha256);
+  const declaredMerkleRoot = merkleRoot(chunkHashes);
+  const expectedSha256Declared = typeof args.session.expectedSha256 === 'string' && args.session.expectedSha256.length > 0;
+  const expectedContentSha256Declared =
+    typeof args.session.expectedContentSha256 === 'string' && args.session.expectedContentSha256.length > 0;
+  const gates = [
+    {
+      id: 'target.resolve',
+      status: 'passed',
+      facts: {
+        file: args.session.relPath,
+        targetExisted: args.targetExisted,
+        created: !args.targetExisted,
+        overwrite: args.session.overwrite,
+        finalTargetState: args.finalTargetState,
+      },
+    },
+    {
+      id: 'target.concurrency',
+      status: expectedSha256Declared ? 'passed' : 'unjudged',
+      facts: {
+        expectedSha256Declared,
+        expectedSha256: args.session.expectedSha256 ?? null,
+        beforeSha256,
+      },
+    },
+    {
+      id: 'chunk.sequence',
+      status: 'passed',
+      facts: {
+        chunkCount: args.session.chunks.length,
+        indexes: args.session.chunks.map((chunk) => chunk.index),
+      },
+    },
+    {
+      id: 'chunk.integrity',
+      status: 'passed',
+      facts: {
+        chunkCount: args.session.chunks.length,
+        stagedBytes: args.session.bytes,
+        merkleRoot: declaredMerkleRoot,
+      },
+    },
+    {
+      id: 'content.integrity',
+      status: 'passed',
+      facts: {
+        expectedContentSha256Declared,
+        contentSha256: args.contentSha256,
+        contentBytes: Buffer.byteLength(args.content, 'utf8'),
+        contentChars: args.content.length,
+      },
+    },
+    {
+      id: 'syntax.pre_disk',
+      status: 'passed',
+      facts: {
+        language: args.result.validation.language,
+        syntaxErrorsBefore: args.result.validation.before,
+        syntaxErrorsAfter: args.result.validation.after,
+      },
+    },
+    {
+      id: 'target.materialization',
+      status: 'passed',
+      facts: {
+        finalTargetState: args.finalTargetState,
+        preview: args.session.preview,
+      },
+    },
+    {
+      id: 'trace.independence',
+      status: 'passed',
+      facts: {
+        receiptReturnedInBand: true,
+      },
+    },
+  ];
+  const body = {
+    kind: 'positive-byte-gate-decision-tree',
+    schemaVersion: 1,
+    decision: 'accepted',
+    proofScope: 'positive-byte-materialization',
+    gates,
+    proofLimits: [
+      'Gate tree records the declared Atomic validation battery for this materialization.',
+      'Unjudged means no fact was declared for that gate, not an implicit pass.',
+    ],
+  };
+  return { ...body, gateRunId: sha256(JSON.stringify(body)) };
 }
 
 function buildPositiveByteProofReceipt(args: {
@@ -284,6 +475,7 @@ function buildPositiveByteProofReceipt(args: {
       preDisk: true,
     },
     materialization: args.materialization,
+    gateDecisionTree: buildPositiveByteGateDecisionTree(args),
     positiveByteProof: {
       chunkSequence: 'contiguous-zero-based-indexes',
       chunkIntegrity: 'sha256-and-byte-count-reverified-before-target-materialization',
@@ -363,6 +555,8 @@ function validatePositiveByteReceiptDomainInvariants(
     throw new Error(`invalid positive-byte receipt: stagedBytes ${declaredStagedBytes} does not match chunk bytes ${stagedBytes}`);
   }
 
+  const beforeSha256 = requireReceiptString(receipt, 'beforeSha256');
+
   const expectedContentSha256 = receipt.expectedContentSha256;
   if (expectedContentSha256 !== null && expectedContentSha256 !== undefined) {
     if (typeof expectedContentSha256 !== 'string' || !/^[0-9a-f]{64}$/.test(expectedContentSha256)) {
@@ -428,7 +622,280 @@ function validatePositiveByteReceiptDomainInvariants(
   }
   if (after > before) throw new Error('invalid positive-byte receipt: validation records a syntax regression');
 
+  const gateDecisionTree = receipt.gateDecisionTree;
+  if (!isRecord(gateDecisionTree)) {
+    throw new Error('invalid positive-byte receipt: gateDecisionTree must be an object');
+  }
+  if (gateDecisionTree.kind !== 'positive-byte-gate-decision-tree') {
+    throw new Error('invalid positive-byte receipt: gateDecisionTree kind is invalid');
+  }
+  if (gateDecisionTree.schemaVersion !== 1) {
+    throw new Error('invalid positive-byte receipt: gateDecisionTree schemaVersion must be 1');
+  }
+  if (gateDecisionTree.decision !== 'accepted') {
+    throw new Error('invalid positive-byte receipt: gateDecisionTree decision must be accepted');
+  }
+  const declaredGateRunId = requireReceiptString(gateDecisionTree, 'gateRunId');
+  if (!/^[0-9a-f]{64}$/.test(declaredGateRunId)) {
+    throw new Error('invalid positive-byte receipt: gateDecisionTree gateRunId must be a sha256 hex digest');
+  }
+  const { gateRunId: _gateRunId, ...gateDecisionTreeBody } = gateDecisionTree;
+  const recomputedGateRunId = sha256(JSON.stringify(gateDecisionTreeBody));
+  if (declaredGateRunId !== recomputedGateRunId) {
+    throw new Error(
+      `invalid positive-byte receipt: gateDecisionTree gateRunId mismatch; declared ${declaredGateRunId}, recomputed ${recomputedGateRunId}`,
+    );
+  }
+  const gates = gateDecisionTree.gates;
+  if (!Array.isArray(gates)) {
+    throw new Error('invalid positive-byte receipt: gateDecisionTree.gates must be an array');
+  }
+  const gatesById = new Map<string, Record<string, unknown>>();
+  for (const gate of gates) {
+    if (!isRecord(gate)) throw new Error('invalid positive-byte receipt: every gateDecisionTree gate must be an object');
+    const id = gate.id;
+    const status = gate.status;
+    if (typeof id !== 'string' || id.length === 0) {
+      throw new Error('invalid positive-byte receipt: gateDecisionTree gate id must be a non-empty string');
+    }
+    if (status !== 'passed' && status !== 'unjudged') {
+      throw new Error(`invalid positive-byte receipt: gateDecisionTree gate ${id} has invalid status ${String(status)}`);
+    }
+    if (gatesById.has(id)) {
+      throw new Error(`invalid positive-byte receipt: gateDecisionTree gate ${id} is duplicated`);
+    }
+    gatesById.set(id, gate);
+  }
+
+  function requireGate(id: string, status: 'passed' | 'unjudged'): Record<string, unknown> {
+    const gate = gatesById.get(id);
+    if (!gate) throw new Error(`invalid positive-byte receipt: gateDecisionTree is missing ${id}`);
+    if (gate.status !== status) {
+      throw new Error(`invalid positive-byte receipt: gateDecisionTree ${id} status must be ${status}`);
+    }
+    return gate;
+  }
+
+  function requireGateFacts(id: string): Record<string, unknown> {
+    const gate = gatesById.get(id);
+    if (!gate) throw new Error(`invalid positive-byte receipt: gateDecisionTree is missing ${id}`);
+    if (!isRecord(gate.facts)) {
+      throw new Error(`invalid positive-byte receipt: gateDecisionTree ${id} facts must be an object`);
+    }
+    return gate.facts;
+  }
+
+  requireGate('target.resolve', 'passed');
+  const expectedSha256 = receipt.expectedSha256;
+  if (expectedSha256 !== null && expectedSha256 !== undefined) {
+    if (typeof expectedSha256 !== 'string' || !/^[0-9a-f]{64}$/.test(expectedSha256)) {
+      throw new Error('invalid positive-byte receipt: expectedSha256 must be null or a sha256 hex digest');
+    }
+    if (expectedSha256 !== beforeSha256) {
+      throw new Error(
+        `invalid positive-byte receipt: expectedSha256 ${expectedSha256} does not match beforeSha256 ${beforeSha256}`,
+      );
+    }
+  }
+  requireGate(
+    'target.concurrency',
+    typeof expectedSha256 === 'string' && expectedSha256.length > 0 ? 'passed' : 'unjudged',
+  );
+  requireGate('chunk.sequence', 'passed');
+  requireGate('chunk.integrity', 'passed');
+  requireGate('content.integrity', 'passed');
+  requireGate('syntax.pre_disk', 'passed');
+  requireGate('target.materialization', 'passed');
+  requireGate('trace.independence', 'passed');
+
+  const resolveFacts = requireGateFacts('target.resolve');
+  if (
+    resolveFacts.file !== receipt.file ||
+    resolveFacts.targetExisted !== targetExisted ||
+    resolveFacts.created !== created ||
+    resolveFacts.overwrite !== overwrite ||
+    resolveFacts.finalTargetState !== finalTargetState
+  ) {
+    throw new Error('invalid positive-byte receipt: gateDecisionTree target.resolve facts mismatch');
+  }
+  const concurrencyFacts = requireGateFacts('target.concurrency');
+  const expectedShaDeclared = typeof expectedSha256 === 'string' && expectedSha256.length > 0;
+  const expectedShaFact = expectedShaDeclared ? expectedSha256 : null;
+  if (
+    concurrencyFacts.expectedSha256Declared !== expectedShaDeclared ||
+    concurrencyFacts.expectedSha256 !== expectedShaFact ||
+    concurrencyFacts.beforeSha256 !== beforeSha256
+  ) {
+    throw new Error('invalid positive-byte receipt: gateDecisionTree target.concurrency facts mismatch');
+  }
+  const chunkSequenceFacts = requireGateFacts('chunk.sequence');
+  const indexes = chunkSequenceFacts.indexes;
+  if (
+    chunkSequenceFacts.chunkCount !== chunks.length ||
+    !Array.isArray(indexes) ||
+    indexes.length !== chunks.length ||
+    indexes.some((index, position) => index !== position)
+  ) {
+    throw new Error('invalid positive-byte receipt: gateDecisionTree chunk.sequence facts mismatch');
+  }
+  const chunkIntegrityFacts = requireGateFacts('chunk.integrity');
+  if (chunkIntegrityFacts.stagedBytes !== stagedBytes || chunkIntegrityFacts.merkleRoot !== declaredMerkleRoot) {
+    throw new Error('invalid positive-byte receipt: gateDecisionTree chunk.integrity facts mismatch');
+  }
+  const contentIntegrityFacts = requireGateFacts('content.integrity');
+  const expectedContentDeclared = typeof expectedContentSha256 === 'string' && expectedContentSha256.length > 0;
+  if (
+    contentIntegrityFacts.contentSha256 !== contentSha256 ||
+    contentIntegrityFacts.contentBytes !== receipt.contentBytes ||
+    contentIntegrityFacts.contentChars !== receipt.contentChars ||
+    contentIntegrityFacts.expectedContentSha256Declared !== expectedContentDeclared
+  ) {
+    throw new Error('invalid positive-byte receipt: gateDecisionTree content.integrity facts mismatch');
+  }
+  const syntaxFacts = requireGateFacts('syntax.pre_disk');
+  if (
+    syntaxFacts.language !== validation.language ||
+    syntaxFacts.syntaxErrorsBefore !== before ||
+    syntaxFacts.syntaxErrorsAfter !== after
+  ) {
+    throw new Error('invalid positive-byte receipt: gateDecisionTree syntax.pre_disk facts mismatch');
+  }
+  const targetFacts = requireGateFacts('target.materialization');
+  if (targetFacts.finalTargetState !== finalTargetState || targetFacts.preview !== receipt.preview) {
+    throw new Error('invalid positive-byte receipt: gateDecisionTree target.materialization facts mismatch');
+  }
+
   return { stagedBytes };
+}
+
+function validatePositiveByteRejectionReceiptDomainInvariants(receipt: Record<string, unknown>): {
+  failedGate: string;
+  cleanup: string;
+  targetWrite: string;
+  chunkCount: number;
+  stagedBytes: number;
+} {
+  if (receipt.schemaVersion !== 1) throw new Error('invalid positive-byte rejection receipt: schemaVersion must be 1');
+  const sessionId = requireReceiptString(receipt, 'sessionId');
+  if (!SESSION_ID_RE.test(sessionId)) {
+    throw new Error('invalid positive-byte rejection receipt: sessionId is invalid');
+  }
+  const file = requireReceiptString(receipt, 'file');
+  requireReceiptString(receipt, 'absPath');
+  requireReceiptString(receipt, 'intent');
+  const failedGate = requireReceiptString(receipt, 'failedGate');
+  if (failedGate.length === 0 || failedGate === 'session.lookup' || failedGate === 'session.cleanup') {
+    throw new Error('invalid positive-byte rejection receipt: failedGate is invalid');
+  }
+  const error = requireReceiptString(receipt, 'error');
+  const chunkCount = requireReceiptSafeInteger(receipt, 'chunkCount');
+  const stagedBytes = requireReceiptSafeInteger(receipt, 'stagedBytes');
+  const targetWrite = requireReceiptString(receipt, 'targetWrite');
+  if (targetWrite !== 'not-attempted' && targetWrite !== 'unknown') {
+    throw new Error('invalid positive-byte rejection receipt: targetWrite is invalid');
+  }
+  const expectedTargetMaterialized = targetWrite === 'unknown' ? 'unknown' : false;
+  if (receipt.targetMaterialized !== expectedTargetMaterialized) {
+    throw new Error('invalid positive-byte rejection receipt: targetMaterialized contradicts targetWrite');
+  }
+  const cleanup = requireReceiptString(receipt, 'cleanup');
+  if (cleanup !== 'session-dropped' && cleanup !== 'session-drop-failed') {
+    throw new Error('invalid positive-byte rejection receipt: cleanup is invalid');
+  }
+
+  const gateDecisionTree = receipt.gateDecisionTree;
+  if (!isRecord(gateDecisionTree)) {
+    throw new Error('invalid positive-byte rejection receipt: gateDecisionTree must be an object');
+  }
+  if (gateDecisionTree.kind !== 'positive-byte-gate-decision-tree') {
+    throw new Error('invalid positive-byte rejection receipt: gateDecisionTree kind is invalid');
+  }
+  if (gateDecisionTree.schemaVersion !== 1) {
+    throw new Error('invalid positive-byte rejection receipt: gateDecisionTree schemaVersion must be 1');
+  }
+  if (gateDecisionTree.decision !== 'rejected') {
+    throw new Error('invalid positive-byte rejection receipt: gateDecisionTree decision must be rejected');
+  }
+  const declaredGateRunId = requireReceiptString(gateDecisionTree, 'gateRunId');
+  if (!/^[0-9a-f]{64}$/.test(declaredGateRunId)) {
+    throw new Error('invalid positive-byte rejection receipt: gateDecisionTree gateRunId must be a sha256 hex digest');
+  }
+  const { gateRunId: _gateRunId, ...gateDecisionTreeBody } = gateDecisionTree;
+  const recomputedGateRunId = sha256(JSON.stringify(gateDecisionTreeBody));
+  if (declaredGateRunId !== recomputedGateRunId) {
+    throw new Error(
+      `invalid positive-byte rejection receipt: gateDecisionTree gateRunId mismatch; declared ${declaredGateRunId}, recomputed ${recomputedGateRunId}`,
+    );
+  }
+  const gates = gateDecisionTree.gates;
+  if (!Array.isArray(gates)) {
+    throw new Error('invalid positive-byte rejection receipt: gateDecisionTree.gates must be an array');
+  }
+  const gatesById = new Map<string, Record<string, unknown>>();
+  for (const gate of gates) {
+    if (!isRecord(gate)) {
+      throw new Error('invalid positive-byte rejection receipt: every gateDecisionTree gate must be an object');
+    }
+    const id = gate.id;
+    const status = gate.status;
+    if (typeof id !== 'string' || id.length === 0) {
+      throw new Error('invalid positive-byte rejection receipt: gateDecisionTree gate id must be a non-empty string');
+    }
+    if (status !== 'passed' && status !== 'failed' && status !== 'unjudged') {
+      throw new Error(
+        `invalid positive-byte rejection receipt: gateDecisionTree gate ${id} has invalid status ${String(status)}`,
+      );
+    }
+    if (gatesById.has(id)) {
+      throw new Error(`invalid positive-byte rejection receipt: gateDecisionTree gate ${id} is duplicated`);
+    }
+    gatesById.set(id, gate);
+  }
+
+  function requireGate(id: string, status: 'passed' | 'failed' | 'unjudged'): Record<string, unknown> {
+    const gate = gatesById.get(id);
+    if (!gate) throw new Error(`invalid positive-byte rejection receipt: gateDecisionTree is missing ${id}`);
+    if (gate.status !== status) {
+      throw new Error(`invalid positive-byte rejection receipt: gateDecisionTree ${id} status must be ${status}`);
+    }
+    return gate;
+  }
+
+  function requireGateFacts(id: string): Record<string, unknown> {
+    const gate = gatesById.get(id);
+    if (!gate) throw new Error(`invalid positive-byte rejection receipt: gateDecisionTree is missing ${id}`);
+    if (!isRecord(gate.facts)) {
+      throw new Error(`invalid positive-byte rejection receipt: gateDecisionTree ${id} facts must be an object`);
+    }
+    return gate.facts;
+  }
+
+  requireGate('session.lookup', 'passed');
+  requireGate(failedGate, 'failed');
+  requireGate('session.cleanup', cleanup === 'session-dropped' ? 'passed' : 'failed');
+
+  const lookupFacts = requireGateFacts('session.lookup');
+  if (
+    lookupFacts.sessionId !== sessionId ||
+    lookupFacts.file !== file ||
+    lookupFacts.chunkCount !== chunkCount ||
+    lookupFacts.stagedBytes !== stagedBytes
+  ) {
+    throw new Error('invalid positive-byte rejection receipt: gateDecisionTree session.lookup facts mismatch');
+  }
+  const failedFacts = requireGateFacts(failedGate);
+  if (failedFacts.error !== error || failedFacts.targetWrite !== targetWrite) {
+    throw new Error('invalid positive-byte rejection receipt: gateDecisionTree failed gate facts mismatch');
+  }
+  const cleanupFacts = requireGateFacts('session.cleanup');
+  if (cleanupFacts.cleanup !== cleanup) {
+    throw new Error('invalid positive-byte rejection receipt: gateDecisionTree session.cleanup facts mismatch');
+  }
+  if (cleanup === 'session-drop-failed' && typeof cleanupFacts.cleanupError !== 'string') {
+    throw new Error('invalid positive-byte rejection receipt: cleanup failure must include cleanupError');
+  }
+
+  return { failedGate, cleanup, targetWrite, chunkCount, stagedBytes };
 }
 
 export function registerToolsPositiveBytes(server: McpServer): void {
@@ -449,7 +916,10 @@ export function registerToolsPositiveBytes(server: McpServer): void {
           .describe("optimistic-concurrency guard for the target's current bytes"),
         overwrite: z.boolean().optional().describe('allow wholesale replacement of an existing non-empty file'),
         preview: z.boolean().optional().describe('validate final materialization without writing the target'),
-        verify: z.enum(['typecheck', 'lint']).optional(),
+        verify: z
+          .enum(['typecheck', 'lint'])
+          .optional()
+          .describe('currently refused: positive-byte verify must become pre-disk before it can be admitted'),
         lock: z.boolean().optional(),
         proofOfIncorrectness: z
           .string()
@@ -461,6 +931,13 @@ export function registerToolsPositiveBytes(server: McpServer): void {
       try {
         pruneExpiredSessions();
         const { absPath, relPath } = resolveSafeTarget(a.file);
+        if (a.verify) {
+          return fail(
+            `refused: positive-byte verify:${a.verify} would currently run after target materialization via commit(); ` +
+              `pre-disk ${a.verify} validation for staged positive bytes is not implemented yet. ` +
+              `Use preview plus an explicit proof command until the materializer can prove ${a.verify} before write.`,
+          );
+        }
         const sessionId = newSessionId();
         const now = nowMs();
         const session: PositiveByteSession = {
@@ -593,7 +1070,9 @@ export function registerToolsPositiveBytes(server: McpServer): void {
         try {
           content = sessionContent(session);
         } catch (e) {
-          return failCommitAndDropSession(session, e instanceof Error ? e.message : String(e));
+          return failCommitAndDropSession(session, e instanceof Error ? e.message : String(e), {
+            failedGate: 'chunk.integrity',
+          });
         }
         const contentSha256 = sha256(content);
         if (session.expectedContentSha256 && session.expectedContentSha256 !== contentSha256) {
@@ -614,6 +1093,7 @@ export function registerToolsPositiveBytes(server: McpServer): void {
             session,
             `rejected: positive-byte materialization would introduce a ${r.validation.language} syntax error ` +
               `(${r.validation.before} -> ${r.validation.after}). ${r.validation.introduced ?? ''} - file NOT modified.`,
+            { failedGate: 'syntax.pre_disk' },
           );
         }
         const materialization = {
@@ -704,20 +1184,28 @@ export function registerToolsPositiveBytes(server: McpServer): void {
   server.registerTool(
     'atomic_positive_bytes_verify_receipt',
     {
-      title: 'Verify a positive-byte proof receipt',
+      title: 'Verify a positive-byte proof or rejection receipt',
       description:
-        'Recomputes the receipt body hash, validates the chunk Merkle root, and optionally proves the current target bytes still match the receipt content hash.',
+        'Recomputes the receipt body hash, validates accepted materialization receipts, and independently validates rejection receipts.',
       inputSchema: {
-        receipt: z.record(z.string(), z.unknown()).describe('proofReceipt returned by atomic_positive_bytes_commit'),
-        requireCurrentTarget: z.boolean().optional().describe('also require the current target file sha256 to match the receipt'),
+        receipt: z
+          .record(z.string(), z.unknown())
+          .describe('proofReceipt or rejectionReceipt returned by atomic_positive_bytes_commit'),
+        requireCurrentTarget: z.boolean().optional().describe('also require the current target file sha256 to match accepted written receipts'),
       },
     },
     async (a) => {
       try {
         const receipt = a.receipt;
         if (!isRecord(receipt)) return fail('invalid positive-byte receipt: receipt must be an object');
-        if (receipt.kind !== 'positive-byte-materialization-receipt') {
-          return fail('invalid positive-byte receipt: kind must be positive-byte-materialization-receipt');
+        const kind = receipt.kind;
+        if (
+          kind !== 'positive-byte-materialization-receipt' &&
+          kind !== 'positive-byte-materialization-rejection-receipt'
+        ) {
+          return fail(
+            'invalid positive-byte receipt: kind must be positive-byte-materialization-receipt or positive-byte-materialization-rejection-receipt',
+          );
         }
         const declaredReceiptSha256 = requireReceiptString(receipt, 'receiptSha256');
         const recomputedReceiptSha256 = positiveByteReceiptHash(receipt);
@@ -726,6 +1214,27 @@ export function registerToolsPositiveBytes(server: McpServer): void {
             `refused: positive-byte receipt sha256 mismatch; ` +
               `declared ${declaredReceiptSha256}, recomputed ${recomputedReceiptSha256}`,
           );
+        }
+        if (kind === 'positive-byte-materialization-rejection-receipt') {
+          const rejection = validatePositiveByteRejectionReceiptDomainInvariants(receipt);
+          if (a.requireCurrentTarget) {
+            return fail('refused: current target verification is only supported for accepted written positive-byte receipts');
+          }
+          return ok({
+            ok: true,
+            changed: false,
+            rejected: true,
+            receiptHashValid: true,
+            receiptSha256: declaredReceiptSha256,
+            failedGate: rejection.failedGate,
+            targetWrite: rejection.targetWrite,
+            targetMaterialized: receipt.targetMaterialized,
+            cleanup: rejection.cleanup,
+            chunkCount: rejection.chunkCount,
+            stagedBytes: rejection.stagedBytes,
+            file: receipt.file,
+            summaryForHuman: 'Verified positive-byte rejection receipt hash, gate decision tree, failed gate, and cleanup facts.',
+          });
         }
         const chunks = receiptChunks(receipt);
         const declaredMerkleRoot = requireReceiptString(receipt, 'merkleRoot');

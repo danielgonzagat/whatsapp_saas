@@ -136,8 +136,13 @@ export default function NewProductPage() {
       if (uploadedUrl) {
         updateForm({ imageUrl: uploadedUrl });
       }
-    } catch (e) {
-      console.error('Upload failed:', e);
+    } catch (error) {
+      void error;
+      clearLocalPreview();
+      updateForm({ imageUrl: '' });
+      const message = 'Nao foi possivel enviar a imagem do produto.';
+      setValidationMessage(message);
+      showToast(message, 'error');
     } finally {
       setUploading(false);
     }
@@ -181,7 +186,6 @@ export default function NewProductPage() {
 
       router.push('/products');
     } catch (error: unknown) {
-      console.error('Erro ao salvar produto', error);
       const message = error instanceof Error ? error.message : 'Nao foi possivel salvar o produto.';
       setValidationMessage(message);
       showToast(message, 'error');

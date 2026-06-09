@@ -64,6 +64,20 @@ describe('kloel-thread.helpers', () => {
       });
       expect(out).toEqual({ ok: true });
     });
+
+    it('preserves public reasoning metadata with runtime and tool references', () => {
+      const reasoningText =
+        'O runtime context indica que a capacidade inspect_self está disponível.';
+      const out = buildThreadMessageMetadata(undefined, {
+        reasoningText,
+        reasoningDurationMs: 1500,
+      }) as Record<string, unknown>;
+
+      expect(out.reasoningText).toBe(reasoningText);
+      expect(String(out.reasoningText)).toContain('runtime context');
+      expect(String(out.reasoningText)).toContain('inspect_self');
+      expect(out.reasoningDurationMs).toBe(1500);
+    });
   });
 
   describe('buildStoredResponseVersions', () => {
@@ -209,7 +223,7 @@ describe('kloel-thread.helpers', () => {
   });
 
   describe('formatTraceToolLabel', () => {
-    it('replaces separators with spaces and lowercases each word', () => {
+    it('formats unknown executable names as readable public tool labels', () => {
       expect(formatTraceToolLabel('Send_Whatsapp-Message')).toBe('send whatsapp message');
     });
 
@@ -237,20 +251,18 @@ describe('kloel-thread.helpers', () => {
       expect(formatTraceToolLabel('self.health')).toBe('saúde operacional');
     });
 
-    it('collapses contiguous whitespace and dashes', () => {
+    it('normalizes unknown dashed or spaced identifiers', () => {
       expect(formatTraceToolLabel('foo   bar---baz')).toBe('foo bar baz');
     });
 
-    it('falls back to "ferramenta" when input is null/undefined/blank', () => {
-      expect(formatTraceToolLabel(null)).toBe('ferramenta');
-      expect(formatTraceToolLabel(undefined)).toBe('ferramenta');
-      expect(formatTraceToolLabel('')).toBe('ferramenta');
+    it('uses the generic operational label when input is null/undefined/blank', () => {
+      expect(formatTraceToolLabel(null)).toBe('ação operacional');
+      expect(formatTraceToolLabel(undefined)).toBe('ação operacional');
+      expect(formatTraceToolLabel('')).toBe('ação operacional');
     });
 
-    it('falls back to "a ferramenta" when input collapses to empty after trim', () => {
-      // whitespace-only input is truthy so `||` fallback does not apply; the
-      // post-trim empty string triggers the explicit "a ferramenta" branch
-      expect(formatTraceToolLabel('   ')).toBe('a ferramenta');
+    it('uses the generic operational label when input collapses to empty after trim', () => {
+      expect(formatTraceToolLabel('   ')).toBe('ação operacional');
     });
   });
 
@@ -286,6 +298,24 @@ describe('kloel-thread.helpers', () => {
       expect(out.phase).toBe('streaming');
       expect(out.label).toBe('Pensando...');
       expect(out.id.startsWith('trace_streaming_')).toBe(true);
+    });
+
+    it('persists memory_loaded as a safe thinking status entry', () => {
+      const out = buildStoredProcessingTraceEntry({
+        type: 'memory_loaded',
+        signalCount: 1,
+        message: '1 memória relevante encontrada.',
+        done: false,
+      } as unknown as KloelStreamEvent);
+
+      expect(out).toEqual({
+        id: matchInstance(String),
+        kind: 'status',
+        phase: 'thinking',
+        label: '1 memória relevante encontrada.',
+        createdAt: matchInstance(String),
+      });
+      expect(out?.id.startsWith('trace_memory_')).toBe(true);
     });
 
     it('builds a tool_call entry with formatted label and stable call-specific id', () => {

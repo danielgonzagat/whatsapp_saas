@@ -98,6 +98,7 @@ describe('navigateCurrentWindow', () => {
   it('creates an anchor, clicks it, and removes it from the DOM', () => {
     const created: HTMLAnchorElement[] = [];
     const realCreateElement = document.createElement.bind(document);
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
     const createSpy = vi
       .spyOn(document, 'createElement')
       .mockImplementation((tagName: string) => {
@@ -111,6 +112,7 @@ describe('navigateCurrentWindow', () => {
     navigateCurrentWindow('https://example.com/path');
 
     expect(createSpy).toHaveBeenCalledWith('a');
+    expect(clickSpy).toHaveBeenCalledTimes(1);
     expect(created).toHaveLength(1);
     const anchor = created[0];
     expect(anchor.href).toBe('https://example.com/path');

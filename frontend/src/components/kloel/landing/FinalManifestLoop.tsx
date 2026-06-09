@@ -26,8 +26,6 @@ export function FinalManifestLoop() {
 
   useEffect(() => {
     if (prefersReducedMotion) {
-      queueMicrotask(() => setTone('ember'));
-      queueMicrotask(() => setText(FINAL_MANIFEST_SECOND));
       return;
     }
 
@@ -109,22 +107,25 @@ export function FinalManifestLoop() {
     };
   }, [prefersReducedMotion]);
 
+  const manifestText = prefersReducedMotion ? FINAL_MANIFEST_SECOND : text;
+  const manifestTone: Tone = prefersReducedMotion ? 'ember' : tone;
+
   const renderManifest = () => {
-    if (!text) {
+    if (!manifestText) {
       return null;
     }
 
-    if (tone === 'light') {
-      return <span style={{ color: colors.text.silver }}>{text}</span>;
+    if (manifestTone === 'light') {
+      return <span style={{ color: colors.text.silver }}>{manifestText}</span>;
     }
 
     const prefix = FINAL_MANIFEST_SECOND_PREFIX.slice(
       0,
-      Math.min(text.length, FINAL_MANIFEST_SECOND_PREFIX.length),
+      Math.min(manifestText.length, FINAL_MANIFEST_SECOND_PREFIX.length),
     );
     const emphasis =
-      text.length > FINAL_MANIFEST_SECOND_PREFIX.length
-        ? text.slice(FINAL_MANIFEST_SECOND_PREFIX.length)
+      manifestText.length > FINAL_MANIFEST_SECOND_PREFIX.length
+        ? manifestText.slice(FINAL_MANIFEST_SECOND_PREFIX.length)
         : '';
 
     return (
@@ -136,7 +137,9 @@ export function FinalManifestLoop() {
   };
 
   const cursorColor =
-    tone === 'ember' && text.length > FINAL_MANIFEST_SECOND_PREFIX.length ? E : colors.text.silver;
+    manifestTone === 'ember' && manifestText.length > FINAL_MANIFEST_SECOND_PREFIX.length
+      ? E
+      : colors.text.silver;
 
   return (
     <div

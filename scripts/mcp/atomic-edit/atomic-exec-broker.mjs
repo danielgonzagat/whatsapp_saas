@@ -85,8 +85,64 @@ function canonicalPathForContainment(target) {
   }
   return path.join(realOr(cursor), ...suffix);
 }
-function profile(effectRoot) {
-  const writeRule = effectRoot ? `(allow file-write* (subpath "${esc(realOr(effectRoot))}"))` : '';
+function subpathWriteRule(value) {
+  return `(allow file-write* (subpath "${esc(value)}"))`;
+}
+function darwinScratchDir(name) {
+  try {
+    const result = spawnSync('/usr/bin/getconf', [name], { encoding: 'utf8' });
+    const scratch = (result.stdout || '').trim().replace(/\/+$/, '');
+    return scratch || null;
+  } catch {
+    return null;
+  }
+}
+function browserRuntimeWriteRules(effectRoot) {
+  const writable = new Set();
+  if (effectRoot) {
+    writable.add(effectRoot);
+    writable.add(realOr(effectRoot));
+  }
+  for (const name of ['DARWIN_USER_TEMP_DIR', 'DARWIN_USER_CACHE_DIR']) {
+    const scratch = darwinScratchDir(name);
+    if (scratch) {
+      writable.add(scratch);
+      writable.add(realOr(scratch));
+    }
+  }
+  const homeDir = process.env.HOME || '';
+  if (homeDir) {
+    for (const crashpadDir of [
+      path.join(homeDir, 'Library', 'Application Support', 'Google', 'Chrome', 'Crashpad'),
+      path.join(homeDir, 'Library', 'Application Support', 'Chromium', 'Crashpad'),
+    ]) {
+      writable.add(crashpadDir);
+      writable.add(realOr(crashpadDir));
+    }
+  }
+  return [...writable].map(subpathWriteRule);
+}
+function profile(effectRoot, profileName = 'atomic-exec') {
+  const writeRule = effectRoot ? subpathWriteRule(realOr(effectRoot)) : '';
+  if (profileName === 'chrome-devtools') {
+    return [
+      '(version 1)',
+      '(deny default)',
+      '(allow file-read*)',
+      ...browserRuntimeWriteRules(effectRoot),
+      '(allow file-write* (subpath "/var/folders"))',
+      '(allow file-write* (subpath "/private/var/folders"))',
+      '(allow file-write* (literal "/dev/null"))',
+      '(allow file-write* (literal "/dev/stdout"))',
+      '(allow file-write* (literal "/dev/stderr"))',
+      '(allow process*)',
+      '(allow mach-lookup)',
+      '(allow sysctl-read)',
+      '(allow network*)',
+    ]
+      .filter(Boolean)
+      .join(' ');
+  }
   return [
     '(version 1)',
     '(deny default)',
@@ -103,6 +159,15 @@ function profile(effectRoot) {
     .filter(Boolean)
     .join(' ');
 }
+function requestedProfile(req, command) {
+  if (!req.profile || req.profile === 'atomic-exec') return 'atomic-exec';
+  if (req.profile !== 'chrome-devtools') return null;
+  const normalized = command.replace(/\\/g, '/');
+  if (!normalized.includes('scripts/mcp/chrome-devtools-cdp-browser.sh') || !/\bstart\b/.test(normalized)) {
+    return null;
+  }
+  return 'chrome-devtools';
+}
 function within(child, root) {
   const rel = path.relative(canonicalPathForContainment(root), canonicalPathForContainment(child));
   return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
@@ -117,6 +182,8 @@ function handle(req) {
   for (const re of FORBIDDEN) {
     if (re.test(c)) return { ok: false, error: 'broker invariant denial: ' + re.toString() };
   }
+  const profileName = requestedProfile(req, c);
+  if (!profileName) return { ok: false, error: 'broker: unsupported execution profile' };
   const runCwd = req.cwd ? path.resolve(req.cwd) : allowedRoot;
   if (!within(runCwd, allowedRoot)) return { ok: false, error: 'broker: cwd escapes allowed root' };
   const hasEffectRoot = Object.prototype.hasOwnProperty.call(req, 'effectRoot');
@@ -125,7 +192,7 @@ function handle(req) {
     : runCwd;
   if (eRoot && !within(eRoot, allowedRoot)) return { ok: false, error: 'broker: effectRoot escapes allowed root' };
   const tempRoot = eRoot || runCwd;
-  const res = spawnSync(SANDBOX_EXEC, ['-p', profile(eRoot), '/bin/bash', '-c', command], {
+  const res = spawnSync(SANDBOX_EXEC, ['-p', profile(eRoot, profileName), '/bin/bash', '-c', command], {
     cwd: runCwd,
     timeout: req.timeoutMs || 120000,
     encoding: 'utf8',

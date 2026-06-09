@@ -229,6 +229,28 @@ async function main(): Promise<void> {
     fs.rmSync(root, { recursive: true, force: true });
   }
 
+  // CASE 10: Atomic CLI and executable GateModules are roots, but ordinary
+  // helper modules under scripts/ still need a real importer or build manifest.
+  {
+    const root = mkrepo({
+      'scripts/mcp/atomic-edit/atomic-cli.mjs': '#!/usr/bin/env node\nconsole.log("atomic cli");\n',
+      'scripts/mcp/atomic-edit/gates/insecure-transport-gate.mjs': 'export async function gate(){ return { green: true, reds: [], note: "ok" }; }\n',
+      'scripts/mcp/atomic-edit/advanced-diff.ts': 'export const helper = 1;\n',
+    });
+    const ctx = makeContext(root, new Map(), [
+      'scripts/mcp/atomic-edit/atomic-cli.mjs',
+      'scripts/mcp/atomic-edit/gates/insecure-transport-gate.mjs',
+      'scripts/mcp/atomic-edit/advanced-diff.ts',
+    ]);
+    const r = (await gate.run(ctx)) as GateResult;
+    const redFiles = new Set(r.reds.map((x) => x.file));
+    show('CASE 10 (Atomic CLI + executable GateModule roots)', r);
+    expect(!redFiles.has('scripts/mcp/atomic-edit/atomic-cli.mjs'), 'atomic-cli.mjs is an operational CLI root');
+    expect(!redFiles.has('scripts/mcp/atomic-edit/gates/insecure-transport-gate.mjs'), 'gates/*-gate.mjs is an executable GateModule root');
+    expect(redFiles.has('scripts/mcp/atomic-edit/advanced-diff.ts'), 'ordinary advanced helper remains RED without importer or manifest');
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+
   console.log('');
   if (failures === 0) {
     console.log('PROOF PASS');

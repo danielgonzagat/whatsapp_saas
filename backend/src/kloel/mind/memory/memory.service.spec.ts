@@ -198,14 +198,26 @@ describe('MemoryService', () => {
       const service = buildService(prisma);
 
       nextMemories = [
-        { type: 'fact', slot: 'cidade', content: 'O usuário mora no RJ', confidence: 0.9, importance: 0.7 },
+        {
+          type: 'fact',
+          slot: 'cidade',
+          content: 'O usuário mora no RJ',
+          confidence: 0.9,
+          importance: 0.7,
+        },
       ];
       await service.extractFromTurn('ws-1', 'user-1', 'moro no rio');
       // Clear the create-path lookups so we count only the supersession turn.
       prisma.memoryNode.findFirst.mockClear();
 
       nextMemories = [
-        { type: 'fact', slot: 'cidade', content: 'O usuário mora em SP', confidence: 0.95, importance: 0.7 },
+        {
+          type: 'fact',
+          slot: 'cidade',
+          content: 'O usuário mora em SP',
+          confidence: 0.95,
+          importance: 0.7,
+        },
       ];
       const result = await service.extractFromTurn('ws-1', 'user-1', 'mudei pra sampa');
 
@@ -225,19 +237,30 @@ describe('MemoryService', () => {
       const service = buildService(prisma);
 
       nextMemories = [
-        { type: 'fact', slot: 'cidade', content: 'O usuário mora no RJ', confidence: 0.9, importance: 0.7 },
+        {
+          type: 'fact',
+          slot: 'cidade',
+          content: 'O usuário mora no RJ',
+          confidence: 0.9,
+          importance: 0.7,
+        },
       ];
       await service.extractFromTurn('ws-1', 'user-1', 'moro no rio');
 
       // Force the ownership probe to report an unowned endpoint at edge-write time
       // (simulates cross-tenant drift the slot lookup alone would not catch).
-      prisma.memoryNode.findFirst.mockImplementation(
-        (args: { where: { id?: string } }) =>
-          Promise.resolve(args.where.id === undefined ? prisma.nodes[0] ?? null : null),
+      prisma.memoryNode.findFirst.mockImplementation((args: { where: { id?: string } }) =>
+        Promise.resolve(args.where.id === undefined ? (prisma.nodes[0] ?? null) : null),
       );
 
       nextMemories = [
-        { type: 'fact', slot: 'cidade', content: 'O usuário mora em SP', confidence: 0.95, importance: 0.7 },
+        {
+          type: 'fact',
+          slot: 'cidade',
+          content: 'O usuário mora em SP',
+          confidence: 0.95,
+          importance: 0.7,
+        },
       ];
       const result = await service.extractFromTurn('ws-1', 'user-1', 'mudei pra sampa');
 
@@ -412,6 +435,107 @@ describe('MemoryService', () => {
       expect(ctx.text).toBe('');
       expect(ctx.relevantMemories).toHaveLength(0);
     });
+
+    it('excludes graph-blocked and archived nodes from the next model context', async () => {
+      const prisma = new FakePrisma();
+      const service = buildService(prisma);
+      nextMemories = [
+        {
+          type: 'fact',
+          slot: 'stack_atual',
+          content: 'O usuário usa TypeScript',
+          confidence: 0.9,
+          importance: 0.9,
+        },
+        {
+          type: 'fact',
+          slot: 'token_operacional',
+          content: 'O usuário citou um token operacional que não deve orientar respostas',
+          confidence: 0.8,
+          importance: 1,
+        },
+        {
+          type: 'fact',
+          slot: 'stack_antiga',
+          content: 'O usuário usava PHP em um projeto antigo',
+          confidence: 0.8,
+          importance: 1,
+        },
+      ];
+      await service.extractFromTurn('ws-1', 'user-1', 'contexto de memória');
+      const blockedId = prisma.nodes.find((node) => node.metadata['slot'] === 'token_operacional')?.id ?? '';
+      const archivedId = prisma.nodes.find((node) => node.metadata['slot'] === 'stack_antiga')?.id ?? '';
+
+      await service.updateGraphNode('ws-1', 'user-1', blockedId, { blockedForAgent: true });
+      const graph = await service.updateGraphNode('ws-1', 'user-1', archivedId, { archived: true });
+      const ctx = await service.buildMemoryContextForModel('ws-1', 'user-1', 'qual stack usar?');
+
+      expect(ctx.text).toContain('O usuário usa TypeScript');
+      expect(ctx.text).not.toContain('O usuário citou um token operacional');
+      expect(ctx.text).not.toContain('O usuário usava PHP em um projeto antigo');
+      expect(graph.nodes.find((node) => node.id === blockedId)?.state).toBe('blocked');
+      expect(graph.nodes.find((node) => node.id === archivedId)?.state).toBe('archived');
+    });
+
+    it('supports the full native memory graph ontology without leaking sensitive nodes into normal recall', async () => {
+      const prisma = new FakePrisma();
+      const service = buildService(prisma);
+      nextMemories = [
+        {
+          type: 'conversation',
+          slot: 'ultima_conversa_relevante',
+          content: 'O usuário discutiu memória-grafo nativa no Kloel Chat',
+          confidence: 0.8,
+          importance: 0.7,
+        },
+        {
+          type: 'task',
+          slot: 'tarefa_atual',
+          content: 'O usuário quer fechar o ciclo conversa-memória-grafo-recuperação',
+          confidence: 0.9,
+          importance: 0.9,
+        },
+        {
+          type: 'sensitive',
+          slot: 'credencial_privada',
+          content: 'O usuário informou um segredo que não pode ser usado no contexto normal',
+          confidence: 1,
+          importance: 1,
+        },
+        {
+          type: 'expired',
+          slot: 'objetivo_antigo',
+          content: 'O usuário tinha um objetivo antigo que não deve influenciar respostas novas',
+          confidence: 0.8,
+          importance: 0.6,
+        },
+      ];
+      await service.extractFromTurn('ws-1', 'user-1', 'memoria grafo');
+
+      const ctx = await service.buildMemoryContextForModel('ws-1', 'user-1', 'memoria grafo');
+      const graph = await service.recallGraph('ws-1', 'user-1');
+
+      expect(ctx.relevantMemories).toContain(
+        'O usuário discutiu memória-grafo nativa no Kloel Chat',
+      );
+      expect(ctx.userProfileDynamic).toContain(
+        'O usuário quer fechar o ciclo conversa-memória-grafo-recuperação',
+      );
+      expect(ctx.constraints).toContain(
+        'Há memória sensível relevante bloqueada para exposição; não revele conteúdo sensível nem use sem permissão explícita.',
+      );
+      expect(ctx.text).toContain('RESTRIÇÕES DE MEMÓRIA DO USUÁRIO');
+      expect(ctx.text).not.toContain(
+        'O usuário informou um segredo que não pode ser usado no contexto normal',
+      );
+      expect(ctx.text).not.toContain(
+        'O usuário tinha um objetivo antigo que não deve influenciar respostas novas',
+      );
+      expect(graph.nodes.find((node) => String(node.group) === 'sensitive')?.state).toBe(
+        'sensitive',
+      );
+      expect(graph.nodes.find((node) => String(node.group) === 'expired')?.state).toBe('archived');
+    });
   });
 
   describe('embedding write path (writeEmbedding)', () => {
@@ -436,15 +560,20 @@ describe('MemoryService', () => {
       expect(prisma.$executeRaw).toHaveBeenCalledTimes(1);
 
       const newId = prisma.nodes[0]?.id;
-      const call = prisma.$executeRaw.mock.calls[0] ?? [];
+      const rawCalls = prisma.$executeRaw.mock.calls as Array<
+        [TemplateStringsArray, string, string | undefined, string, string]
+      >;
+      const call = rawCalls[0];
+      if (!call) {
+        throw new Error('expected embedding UPDATE call');
+      }
       // Tagged template: [stringsArray, vectorString, id, workspaceId, userId]
-      const sqlText = (call[0] as string[]).join('');
+      const [strings, vectorString, boundId, boundWs, boundUser] = call;
+      const sqlText = Array.from(strings).join('');
       expect(sqlText).toContain('UPDATE "RAC_MemoryNode"');
       expect(sqlText).toContain('SET "embedding"');
       expect(sqlText).toContain('::vector');
-      const [, vectorString, boundId, boundWs, boundUser] = call;
-      expect(typeof vectorString).toBe('string');
-      expect(vectorString as string).toMatch(/^\[0\.001(,0\.001)*\]$/);
+      expect(vectorString).toMatch(/^\[0\.001(,0\.001)*\]$/);
       expect(boundId).toBe(newId);
       expect(boundWs).toBe('ws-emb');
       expect(boundUser).toBe('user-emb');
@@ -455,7 +584,13 @@ describe('MemoryService', () => {
       const vectors = new FakeVectors([0.1, 0.2, 0.3]); // wrong dimensionality
       const service = buildServiceWithVectors(prisma, vectors);
       nextMemories = [
-        { type: 'fact', slot: 'cidade', content: 'O usuário mora no RJ', confidence: 0.9, importance: 0.7 },
+        {
+          type: 'fact',
+          slot: 'cidade',
+          content: 'O usuário mora no RJ',
+          confidence: 0.9,
+          importance: 0.7,
+        },
       ];
 
       const result = await service.extractFromTurn('ws-emb', 'user-emb', 'moro no rio');
@@ -471,7 +606,13 @@ describe('MemoryService', () => {
       vectors.getEmbedding.mockRejectedValueOnce(new Error('embedding provider down'));
       const service = buildServiceWithVectors(prisma, vectors);
       nextMemories = [
-        { type: 'fact', slot: 'cidade', content: 'O usuário mora no RJ', confidence: 0.9, importance: 0.7 },
+        {
+          type: 'fact',
+          slot: 'cidade',
+          content: 'O usuário mora no RJ',
+          confidence: 0.9,
+          importance: 0.7,
+        },
       ];
 
       const result = await service.extractFromTurn('ws-emb', 'user-emb', 'moro no rio');
@@ -484,7 +625,13 @@ describe('MemoryService', () => {
       const prisma = new FakePrisma();
       const service = buildService(prisma); // no vectors
       nextMemories = [
-        { type: 'fact', slot: 'cidade', content: 'O usuário mora no RJ', confidence: 0.9, importance: 0.7 },
+        {
+          type: 'fact',
+          slot: 'cidade',
+          content: 'O usuário mora no RJ',
+          confidence: 0.9,
+          importance: 0.7,
+        },
       ];
 
       const result = await service.extractFromTurn('ws-emb', 'user-emb', 'moro no rio');
@@ -520,7 +667,13 @@ describe('MemoryService', () => {
       const service = buildService(prisma);
       // A user memory so the context is non-empty even without beliefs.
       nextMemories = [
-        { type: 'fact', slot: 'nome', content: 'O usuário se chama Ana', confidence: 0.9, importance: 0.8 },
+        {
+          type: 'fact',
+          slot: 'nome',
+          content: 'O usuário se chama Ana',
+          confidence: 0.9,
+          importance: 0.8,
+        },
       ];
       await service.extractFromTurn('ws-1', 'user-1', 'sou a ana');
 
@@ -544,7 +697,13 @@ describe('MemoryService', () => {
       const prisma = new FakePrisma();
       const service = buildService(prisma);
       nextMemories = [
-        { type: 'fact', slot: 'nome', content: 'O usuário se chama Ana', confidence: 0.9, importance: 0.8 },
+        {
+          type: 'fact',
+          slot: 'nome',
+          content: 'O usuário se chama Ana',
+          confidence: 0.9,
+          importance: 0.8,
+        },
       ];
       await service.extractFromTurn('ws-1', 'user-1', 'sou a ana');
 
@@ -637,14 +796,26 @@ describe('MemoryService', () => {
       const prisma = new FakePrisma();
       const service = buildService(prisma);
       nextMemories = [
-        { type: 'fact', slot: 'cidade', content: 'O usuário mora no RJ', confidence: 0.9, importance: 0.7 },
+        {
+          type: 'fact',
+          slot: 'cidade',
+          content: 'O usuário mora no RJ',
+          confidence: 0.9,
+          importance: 0.7,
+        },
       ];
       await service.extractFromTurn('ws-1', 'user-1', 'rio');
       // NOTE: supersession marks the prior node forgotten, so it is excluded
       // from the graph; the replaces edge is dropped because one endpoint is
       // no longer an active (visible) node — the graph never resurrects it.
       nextMemories = [
-        { type: 'fact', slot: 'cidade', content: 'O usuário mora em SP', confidence: 0.95, importance: 0.7 },
+        {
+          type: 'fact',
+          slot: 'cidade',
+          content: 'O usuário mora em SP',
+          confidence: 0.95,
+          importance: 0.7,
+        },
       ];
       await service.extractFromTurn('ws-1', 'user-1', 'sampa');
 
@@ -678,7 +849,13 @@ describe('MemoryService', () => {
       const prisma = new FakePrisma();
       const service = buildService(prisma);
       nextMemories = [
-        { type: 'fact', slot: 'cidade', content: 'O usuário mora no RJ', confidence: 0.9, importance: 0.7 },
+        {
+          type: 'fact',
+          slot: 'cidade',
+          content: 'O usuário mora no RJ',
+          confidence: 0.9,
+          importance: 0.7,
+        },
       ];
       await service.extractFromTurn('ws-1', 'user-1', 'rio');
       const nodeId = prisma.nodes[0]?.id ?? '';
@@ -700,7 +877,13 @@ describe('MemoryService', () => {
       const prisma = new FakePrisma();
       const service = buildService(prisma);
       nextMemories = [
-        { type: 'fact', slot: 'cidade', content: 'O usuário mora no RJ', confidence: 0.9, importance: 0.7 },
+        {
+          type: 'fact',
+          slot: 'cidade',
+          content: 'O usuário mora no RJ',
+          confidence: 0.9,
+          importance: 0.7,
+        },
       ];
       await service.extractFromTurn('ws-1', 'user-1', 'rio');
       const nodeId = prisma.nodes[0]?.id ?? '';

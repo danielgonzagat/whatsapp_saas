@@ -24,6 +24,12 @@ export function buildMemoryContextFromRetrieved(
   const preferences: string[] = [];
   const constraints: string[] = [];
 
+  const pushUnique = (items: string[], line: string): void => {
+    if (!items.includes(line)) {
+      items.push(line);
+    }
+  };
+
   for (const mem of relevant) {
     const line = mem.summary?.trim() ? mem.summary.trim() : mem.content;
     switch (mem.type) {
@@ -34,14 +40,26 @@ export function buildMemoryContextFromRetrieved(
       case 'project':
       case 'goal':
       case 'decision':
+      case 'task':
         userProfileDynamic.push(line);
         break;
       case 'preference':
         preferences.push(line);
         break;
+      case 'sensitive':
+        pushUnique(
+          constraints,
+          'Há memória sensível relevante bloqueada para exposição; não revele conteúdo sensível nem use sem permissão explícita.',
+        );
+        break;
       case 'contradiction':
         constraints.push(line);
         break;
+      case 'expired':
+        break;
+      case 'conversation':
+      case 'document':
+      case 'summary':
       default:
         relevantMemories.push(line);
         break;
@@ -55,9 +73,9 @@ export function buildMemoryContextFromRetrieved(
     }
   };
   pushSection('PERFIL DO USUÁRIO (estável)', userProfileStatic);
-  pushSection('ESTADO ATUAL DO USUÁRIO (projetos/objetivos/decisões)', userProfileDynamic);
+  pushSection('ESTADO ATUAL DO USUÁRIO (projetos/objetivos/decisões/tarefas)', userProfileDynamic);
   pushSection('PREFERÊNCIAS DO USUÁRIO', preferences);
-  pushSection('RESTRIÇÕES', constraints);
+  pushSection('RESTRIÇÕES DE MEMÓRIA DO USUÁRIO', constraints);
   pushSection('MEMÓRIAS RELEVANTES PARA ESTA CONVERSA', relevantMemories);
   // Workspace-level learnings consolidated by mind-bg (RAC_MindBelief). Only
   // rendered when non-empty, so an absent set stays a byte-identical no-op.

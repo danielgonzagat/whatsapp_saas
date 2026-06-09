@@ -23,6 +23,17 @@ function withReceiptHash(receipt) {
   return { ...body, receiptSha256: receiptHash(body) };
 }
 
+function gateRunHash(tree) {
+  const { gateRunId, ...body } = tree;
+  return sha(JSON.stringify(body));
+}
+
+function withReceiptAndGateHashes(receipt) {
+  const next = structuredClone(receipt);
+  if (next.gateDecisionTree) next.gateDecisionTree.gateRunId = gateRunHash(next.gateDecisionTree);
+  return withReceiptHash(next);
+}
+
 function record(name, ok, detail = {}) {
   results.push({ name, ok: Boolean(ok), detail });
 }
@@ -37,6 +48,47 @@ function lastJson(result) {
   } catch {
     return {};
   }
+}
+
+function receiptGate(receipt, id) {
+  const gates = receipt?.gateDecisionTree?.gates;
+  return Array.isArray(gates) ? gates.find((gate) => gate?.id === id) : undefined;
+}
+
+function hasPositiveByteGateDecisionTree(receipt) {
+  const tree = receipt?.gateDecisionTree;
+  const gates = tree?.gates;
+  return (
+    tree?.kind === 'positive-byte-gate-decision-tree' &&
+    tree?.decision === 'accepted' &&
+    typeof tree?.gateRunId === 'string' &&
+    /^[0-9a-f]{64}$/.test(tree.gateRunId) &&
+    Array.isArray(gates) &&
+    receiptGate(receipt, 'chunk.sequence')?.status === 'passed' &&
+    receiptGate(receipt, 'chunk.integrity')?.status === 'passed' &&
+    receiptGate(receipt, 'content.integrity')?.status === 'passed' &&
+    receiptGate(receipt, 'syntax.pre_disk')?.status === 'passed' &&
+    receiptGate(receipt, 'target.materialization')?.status === 'passed' &&
+    receiptGate(receipt, 'trace.independence')?.status === 'passed' &&
+    Boolean(receiptGate(receipt, 'target.concurrency'))
+  );
+}
+
+function hasPositiveByteRejectionGateDecisionTree(receipt, failedGate) {
+  const tree = receipt?.gateDecisionTree;
+  const gates = tree?.gates;
+  return (
+    receipt?.kind === 'positive-byte-materialization-rejection-receipt' &&
+    receipt?.failedGate === failedGate &&
+    tree?.kind === 'positive-byte-gate-decision-tree' &&
+    tree?.decision === 'rejected' &&
+    typeof tree?.gateRunId === 'string' &&
+    /^[0-9a-f]{64}$/.test(tree.gateRunId) &&
+    Array.isArray(gates) &&
+    receiptGate(receipt, 'session.lookup')?.status === 'passed' &&
+    receiptGate(receipt, failedGate)?.status === 'failed' &&
+    receiptGate(receipt, 'session.cleanup')?.status === 'passed'
+  );
 }
 
 async function main() {
@@ -90,6 +142,22 @@ async function main() {
       { names: [...names].filter((name) => name.includes('positive_bytes')) },
     );
 
+    const rejectedPostWriteVerifyBegin = await client.callTool({
+      name: 'atomic_positive_bytes_begin',
+      arguments: {
+        file: path.join(baseRel, 'post-write-verify.ts'),
+        intent: 'refuse verify modes that would run after positive-byte materialization',
+        verify: 'typecheck',
+        preview: true,
+      },
+    });
+    const rejectedPostWriteVerifyBeginBody = lastJson(rejectedPostWriteVerifyBegin);
+    record(
+      'begin refuses verify until positive-byte validation is pre-disk',
+      rejectedPostWriteVerifyBeginBody.ok !== true && /pre-disk|post-write|after target materialization/i.test(texts(rejectedPostWriteVerifyBegin)),
+      rejectedPostWriteVerifyBeginBody,
+    );
+
     const previewBegin = await client.callTool({
       name: 'atomic_positive_bytes_begin',
       arguments: {
@@ -135,7 +203,9 @@ async function main() {
         previewReceipt.receiptSha256 === receiptHash(previewReceipt) &&
         Array.isArray(previewReceipt.chunks) &&
         previewReceipt.chunks.length === chunks.length &&
-        previewReceipt.chunks.every((chunk, index) => chunk.index === index && chunk.sha256 === sha(chunks[index])),
+        previewReceipt.chunks.every((chunk, index) => chunk.index === index && chunk.sha256 === sha(chunks[index])) &&
+        hasPositiveByteGateDecisionTree(previewReceipt) &&
+        receiptGate(previewReceipt, 'target.concurrency')?.status === 'unjudged',
       { previewReceipt },
     );
 
@@ -144,6 +214,7 @@ async function main() {
       arguments: {
         file: commitRel,
         intent: 'commit a large generated file as one positive-byte transaction',
+        expectedSha256: sha(''),
         expectedContentSha256: contentSha256,
       },
     });
@@ -186,13 +257,19 @@ async function main() {
         commitReceipt.intent === 'commit a large generated file as one positive-byte transaction' &&
         commitReceipt.file === commitRel &&
         commitReceipt.contentSha256 === contentSha256 &&
+        commitReceipt.expectedSha256 === sha('') &&
+        commitReceipt.beforeSha256 === sha('') &&
         commitReceipt.finalTargetState === 'written' &&
         commitReceipt.validation?.syntaxErrorsAfter === 0 &&
         commitReceipt.receiptSha256 === receiptHash(commitReceipt) &&
         commitReceipt.merkleRoot === commitBody.materialization?.merkleRoot &&
         Array.isArray(commitReceipt.chunks) &&
         commitReceipt.chunks.length === chunks.length &&
-        commitReceipt.chunks.every((chunk, index) => chunk.index === index && chunk.sha256 === sha(chunks[index])),
+        commitReceipt.chunks.every((chunk, index) => chunk.index === index && chunk.sha256 === sha(chunks[index])) &&
+        hasPositiveByteGateDecisionTree(commitReceipt) &&
+        receiptGate(commitReceipt, 'target.concurrency')?.status === 'passed' &&
+        receiptGate(commitReceipt, 'target.concurrency')?.facts?.expectedSha256 === sha('') &&
+        receiptGate(commitReceipt, 'target.concurrency')?.facts?.beforeSha256 === sha(''),
       { commitReceipt },
     );
     if (names.has('atomic_positive_bytes_verify_receipt')) {
@@ -267,12 +344,77 @@ async function main() {
           /receipt.*(created|targetExisted|creation)/i.test(texts(rejectedInvalidCreationFactsReceipt)),
         rejectedInvalidCreationFactsReceiptBody,
       );
+      const { gateDecisionTree: _missingGateDecisionTree, ...receiptWithoutGateDecisionTree } = commitReceipt;
+      const missingGateTreeReceipt = withReceiptHash(receiptWithoutGateDecisionTree);
+      const rejectedMissingGateTreeReceipt = await client.callTool({
+        name: 'atomic_positive_bytes_verify_receipt',
+        arguments: { receipt: missingGateTreeReceipt, requireCurrentTarget: false },
+      });
+      const rejectedMissingGateTreeReceiptBody = lastJson(rejectedMissingGateTreeReceipt);
+      record(
+        'receipt verifier rejects self-consistent receipts without a gate decision tree',
+        rejectedMissingGateTreeReceiptBody.ok !== true && /gateDecisionTree/i.test(texts(rejectedMissingGateTreeReceipt)),
+        rejectedMissingGateTreeReceiptBody,
+      );
+      const forgedExpectedShaReceipt = withReceiptAndGateHashes({
+        ...commitReceipt,
+        expectedSha256: sha('forged-before-world'),
+        gateDecisionTree: {
+          ...commitReceipt.gateDecisionTree,
+          gates: commitReceipt.gateDecisionTree.gates.map((gate) =>
+            gate.id === 'target.concurrency'
+              ? {
+                  ...gate,
+                  facts: {
+                    ...gate.facts,
+                    expectedSha256Declared: true,
+                    expectedSha256: sha('forged-before-world'),
+                  },
+                }
+              : gate,
+          ),
+        },
+      });
+      const rejectedForgedExpectedShaReceipt = await client.callTool({
+        name: 'atomic_positive_bytes_verify_receipt',
+        arguments: { receipt: forgedExpectedShaReceipt, requireCurrentTarget: false },
+      });
+      const rejectedForgedExpectedShaReceiptBody = lastJson(rejectedForgedExpectedShaReceipt);
+      record(
+        'receipt verifier rejects self-consistent receipts with forged expected world hash',
+        rejectedForgedExpectedShaReceiptBody.ok !== true && /expectedSha256.*beforeSha256/i.test(texts(rejectedForgedExpectedShaReceipt)),
+        rejectedForgedExpectedShaReceiptBody,
+      );
+      const forgedTargetGateReceipt = withReceiptAndGateHashes({
+        ...commitReceipt,
+        gateDecisionTree: {
+          ...commitReceipt.gateDecisionTree,
+          gates: commitReceipt.gateDecisionTree.gates.map((gate) =>
+            gate.id === 'target.resolve'
+              ? { ...gate, facts: { ...gate.facts, created: false, targetExisted: true } }
+              : gate,
+          ),
+        },
+      });
+      const rejectedForgedTargetGateReceipt = await client.callTool({
+        name: 'atomic_positive_bytes_verify_receipt',
+        arguments: { receipt: forgedTargetGateReceipt, requireCurrentTarget: false },
+      });
+      const rejectedForgedTargetGateReceiptBody = lastJson(rejectedForgedTargetGateReceipt);
+      record(
+        'receipt verifier rejects self-consistent receipts with forged gate target facts',
+        rejectedForgedTargetGateReceiptBody.ok !== true && /gateDecisionTree.*target\.resolve/i.test(texts(rejectedForgedTargetGateReceipt)),
+        rejectedForgedTargetGateReceiptBody,
+      );
     } else {
       record('receipt verifier independently validates receipt hash, Merkle root, and current target bytes', false, { reason: 'atomic_positive_bytes_verify_receipt is not registered' });
       record('receipt verifier rejects tampered receipt bodies', false, { reason: 'atomic_positive_bytes_verify_receipt is not registered' });
       record('receipt verifier rejects self-consistent receipts with broken domain invariants', false, { reason: 'atomic_positive_bytes_verify_receipt is not registered' });
       record('receipt verifier rejects self-consistent receipts with inconsistent final target state', false, { reason: 'atomic_positive_bytes_verify_receipt is not registered' });
       record('receipt verifier rejects self-consistent receipts with inconsistent creation facts', false, { reason: 'atomic_positive_bytes_verify_receipt is not registered' });
+      record('receipt verifier rejects self-consistent receipts without a gate decision tree', false, { reason: 'atomic_positive_bytes_verify_receipt is not registered' });
+      record('receipt verifier rejects self-consistent receipts with forged expected world hash', false, { reason: 'atomic_positive_bytes_verify_receipt is not registered' });
+      record('receipt verifier rejects self-consistent receipts with forged gate target facts', false, { reason: 'atomic_positive_bytes_verify_receipt is not registered' });
     }
     record(
       'commit response stays compact instead of echoing generated bytes',
@@ -311,6 +453,12 @@ async function main() {
       tamperBody.ok !== true &&
         /chunk.*(mismatch|changed|tamper|sha256)/i.test(tamperText) &&
         /session .* dropped/i.test(tamperText) &&
+        tamperBody.rejectionReceipt?.kind === 'positive-byte-materialization-rejection-receipt' &&
+        tamperBody.rejectionReceipt?.failedGate === 'chunk.integrity' &&
+        tamperBody.rejectionReceipt?.receiptSha256 === receiptHash(tamperBody.rejectionReceipt) &&
+        tamperBody.rejectionReceipt?.gateDecisionTree?.decision === 'rejected' &&
+        tamperBody.rejectionReceipt?.gateDecisionTree?.gateRunId === gateRunHash(tamperBody.rejectionReceipt.gateDecisionTree) &&
+        hasPositiveByteRejectionGateDecisionTree(tamperBody.rejectionReceipt, 'chunk.integrity') &&
         !fs.existsSync(tamperAbs) &&
         !fs.existsSync(tamperSessionDir),
       {
@@ -320,6 +468,49 @@ async function main() {
         sessionDirExists: fs.existsSync(tamperSessionDir),
       },
     );
+    const tamperRejectionReceipt = tamperBody.rejectionReceipt ?? {};
+    if (names.has('atomic_positive_bytes_verify_receipt')) {
+      const verifiedTamperRejection = await client.callTool({
+        name: 'atomic_positive_bytes_verify_receipt',
+        arguments: { receipt: tamperRejectionReceipt, requireCurrentTarget: false },
+      });
+      const verifiedTamperRejectionBody = lastJson(verifiedTamperRejection);
+      record(
+        'rejection receipt verifier independently validates chunk-integrity refusal and cleanup facts',
+        verifiedTamperRejectionBody.ok === true &&
+          verifiedTamperRejectionBody.rejected === true &&
+          verifiedTamperRejectionBody.failedGate === 'chunk.integrity' &&
+          verifiedTamperRejectionBody.targetWrite === 'not-attempted' &&
+          verifiedTamperRejectionBody.cleanup === 'session-dropped',
+        verifiedTamperRejectionBody,
+      );
+      const forgedRejectionGateReceipt = hasPositiveByteRejectionGateDecisionTree(tamperRejectionReceipt, 'chunk.integrity')
+        ? withReceiptAndGateHashes({
+            ...tamperRejectionReceipt,
+            gateDecisionTree: {
+              ...tamperRejectionReceipt.gateDecisionTree,
+              gates: tamperRejectionReceipt.gateDecisionTree.gates.map((gate) =>
+                gate.id === 'session.lookup'
+                  ? { ...gate, facts: { ...gate.facts, chunkCount: gate.facts.chunkCount + 1 } }
+                  : gate,
+              ),
+            },
+          })
+        : {};
+      const rejectedForgedRejectionReceipt = await client.callTool({
+        name: 'atomic_positive_bytes_verify_receipt',
+        arguments: { receipt: forgedRejectionGateReceipt, requireCurrentTarget: false },
+      });
+      const rejectedForgedRejectionReceiptBody = lastJson(rejectedForgedRejectionReceipt);
+      record(
+        'rejection receipt verifier rejects self-consistent receipts with forged session facts',
+        rejectedForgedRejectionReceiptBody.ok !== true && /rejection receipt.*session\.lookup/i.test(texts(rejectedForgedRejectionReceipt)),
+        rejectedForgedRejectionReceiptBody,
+      );
+    } else {
+      record('rejection receipt verifier independently validates chunk-integrity refusal and cleanup facts', false, { reason: 'atomic_positive_bytes_verify_receipt is not registered' });
+      record('rejection receipt verifier rejects self-consistent receipts with forged session facts', false, { reason: 'atomic_positive_bytes_verify_receipt is not registered' });
+    }
 
     const invalidChunks = [chunks[0], 'export function BROKEN_POSITIVE_BYTE( {\n'];
     const invalidContent = invalidChunks.join('');
@@ -357,6 +548,12 @@ async function main() {
       invalidBody.ok !== true &&
         /syntax error/i.test(invalidText) &&
         /session .* dropped/i.test(invalidText) &&
+        invalidBody.rejectionReceipt?.kind === 'positive-byte-materialization-rejection-receipt' &&
+        invalidBody.rejectionReceipt?.failedGate === 'syntax.pre_disk' &&
+        invalidBody.rejectionReceipt?.receiptSha256 === receiptHash(invalidBody.rejectionReceipt) &&
+        invalidBody.rejectionReceipt?.gateDecisionTree?.decision === 'rejected' &&
+        invalidBody.rejectionReceipt?.gateDecisionTree?.gateRunId === gateRunHash(invalidBody.rejectionReceipt.gateDecisionTree) &&
+        hasPositiveByteRejectionGateDecisionTree(invalidBody.rejectionReceipt, 'syntax.pre_disk') &&
         !fs.existsSync(invalidAbs) &&
         !fs.existsSync(invalidSessionDir),
       {

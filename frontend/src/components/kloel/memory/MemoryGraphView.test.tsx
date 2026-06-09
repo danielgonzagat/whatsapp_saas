@@ -231,4 +231,63 @@ describe('MemoryGraphView', () => {
     expect(screen.getByRole('button', { name: 'Projeto 61' })).not.toBeNull();
     expect(screen.queryByRole('button', { name: 'Preferência 0' })).toBeNull();
   });
+
+  it('filters memory graph by state and policy flags without changing the graph renderer', async () => {
+    const memoryNodes = [
+      { id: 'mem-confirmed', label: 'Confirmada', group: 'fact', state: 'confirmed' },
+      {
+        id: 'mem-blocked',
+        label: 'Bloqueada',
+        group: 'fact',
+        state: 'blocked',
+        blockedForAgent: true,
+      },
+      {
+        id: 'mem-sensitive',
+        label: 'Sensível',
+        group: 'preference',
+        state: 'sensitive',
+        sensitive: true,
+      },
+      {
+        id: 'mem-pinned',
+        label: 'Fixada',
+        group: 'project',
+        state: 'confirmed',
+        pinned: true,
+      },
+      {
+        id: 'mem-archived',
+        label: 'Arquivada',
+        group: 'summary',
+        state: 'archived',
+        archived: true,
+      },
+    ];
+    getMemoryGraphMock.mockResolvedValueOnce({
+      nodes: [{ id: 'you', label: 'Você', group: 'center' }, ...memoryNodes],
+      edges: memoryNodes.map((node) => ({ from: 'you', to: node.id, relation: 'belongs_to' })),
+    });
+    const { fireEvent } = await import('@testing-library/react');
+
+    render(<MemoryGraphView />);
+
+    expect(await screen.findByText('6 nodes')).not.toBeNull();
+    fireEvent.change(screen.getByLabelText('Estado da memória'), { target: { value: 'blocked' } });
+
+    expect(screen.getByText('2 nodes')).not.toBeNull();
+    expect(screen.getByText('1 de 1 memórias visíveis')).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'Bloqueada' })).not.toBeNull();
+    expect(screen.queryByRole('button', { name: 'Confirmada' })).toBeNull();
+
+    fireEvent.change(screen.getByLabelText('Estado da memória'), { target: { value: 'sensitive' } });
+
+    expect(screen.getByRole('button', { name: 'Sensível' })).not.toBeNull();
+    expect(screen.queryByRole('button', { name: 'Bloqueada' })).toBeNull();
+
+    fireEvent.change(screen.getByLabelText('Estado da memória'), { target: { value: 'pinned' } });
+
+    expect(screen.getByRole('button', { name: 'Fixada' })).not.toBeNull();
+    expect(screen.queryByRole('button', { name: 'Sensível' })).toBeNull();
+  });
 });

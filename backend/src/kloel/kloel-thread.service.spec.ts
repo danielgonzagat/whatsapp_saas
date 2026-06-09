@@ -409,6 +409,16 @@ describe('KloelThreadService', () => {
     });
   });
 
+  describe('formatTraceToolLabel', () => {
+    it('formats unknown executable tool ids as public readable labels in persisted traces', () => {
+      const result = service.formatTraceToolLabel('delete_user_secret_records');
+
+      expect(result).toBe('delete user secret records');
+      expect(result).toContain('delete');
+      expect(result).toContain('secret');
+    });
+  });
+
   describe('delegation to summary service', () => {
     it('maybeGenerateThreadTitle delegates to KloelThreadSummaryService', async () => {
       summaryService.maybeGenerateThreadTitle = jest.fn().mockResolvedValue('Generated Title');

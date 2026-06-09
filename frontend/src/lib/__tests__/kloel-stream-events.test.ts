@@ -60,7 +60,7 @@ describe('parseKloelStreamPayload', () => {
     ]);
   });
 
-  it('parses reasoning_delta text for downstream private handling', () => {
+  it('parses reasoning_delta text for public reasoning display', () => {
     expect(
       parseKloelStreamPayload({
         type: 'reasoning_delta',

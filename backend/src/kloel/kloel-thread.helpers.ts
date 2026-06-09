@@ -13,6 +13,18 @@ const MECHANICAL_PRODUCT_SUCCESS_RE =
 const MECHANICAL_PRODUCT_AUTH_FAILURE_RE =
   /\bFalha ao executar\s+"?(?:list_products|catálogo de produtos)"?:\s*Missing Authorization header\.?\s*Tente novamente\.?/gi;
 const AUTH_HEADER_ERROR_RE = /\bMissing Authorization header\b/gi;
+export const ASSISTANT_REASONING_REDACTED_TEXT =
+  'Detalhes internos desta execução foram omitidos com segurança.';
+const PRIVATE_CREDENTIAL_REASONING_RE =
+  /(?:sk-[a-z0-9_-]{16,}|AKIA[0-9A-Z]{16}|api[_ -]?key\s*[:=]|authorization\s*[:=]|bearer\s+[a-z0-9._-]{20,}|password\s*[:=]|secret\s*[:=])/i;
+
+export function sanitizeAssistantReasoningTextForStorage(value: string): string {
+  const text = String(value || '');
+  if (!text) {
+    return '';
+  }
+  return PRIVATE_CREDENTIAL_REASONING_RE.test(text) ? ASSISTANT_REASONING_REDACTED_TEXT : text;
+}
 
 export function sanitizeAssistantThreadContentForRead(value: string): string {
   return String(value || '')
@@ -88,6 +100,14 @@ export function buildThreadMessageMetadata(
     Object.entries(extraFields || {}).filter(([, v]) => v !== undefined),
   );
   const merged = { ...normalizedBase, ...normalizedExtra };
+  if (typeof merged.reasoningText === 'string') {
+    const safeReasoningText = sanitizeAssistantReasoningTextForStorage(merged.reasoningText);
+    if (safeReasoningText) {
+      merged.reasoningText = safeReasoningText;
+    } else {
+      delete merged.reasoningText;
+    }
+  }
   return Object.keys(merged).length > 0 ? (merged as Prisma.InputJsonValue) : undefined;
 }
 
@@ -165,6 +185,19 @@ export function buildStoredProcessingTraceEntry(
       id: buildTimestampedRuntimeId(`trace_${phase}`),
       kind: 'status',
       phase,
+      label,
+      createdAt: new Date().toISOString(),
+    };
+  }
+  if (event.type === 'memory_loaded') {
+    const label = String(event.message || '').trim();
+    if (!label) {
+      return null;
+    }
+    return {
+      id: buildTimestampedRuntimeId('trace_memory'),
+      kind: 'status',
+      phase: 'thinking',
       label,
       createdAt: new Date().toISOString(),
     };
@@ -298,11 +331,11 @@ export function lowercaseLeadingCharacter(value: string): string {
 }
 
 /**
- * Pretty-format a raw tool identifier (e.g. "send_whatsapp-message") into a
- * spaced lowercase phrase usable in PT-BR trace labels.
+ * Map known tool identifiers to polished PT-BR product labels. Unknown tool
+ * names are normalized and shown publicly instead of being hidden.
  */
 export function formatTraceToolLabel(toolName?: string | null): string {
-  const raw = String(toolName || 'ferramenta').trim();
+  const raw = String(toolName || '').trim();
   const normalized = raw.replace(SEPARATOR_G_RE, ' ').replace(WHITESPACE_G_RE, ' ').toLowerCase();
   const productLabels: Record<string, string> = {
     code_outline: 'inspeção da arquitetura interna',
@@ -336,13 +369,7 @@ export function formatTraceToolLabel(toolName?: string | null): string {
     return productLabel;
   }
 
-  if (!normalized) {
-    return 'a ferramenta';
-  }
-  return normalized
-    .split(' ')
-    .map((s) => s.toLowerCase())
-    .join(' ');
+  return normalized || 'ação operacional';
 }
 
 /**

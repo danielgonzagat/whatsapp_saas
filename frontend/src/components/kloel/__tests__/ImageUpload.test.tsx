@@ -1,5 +1,4 @@
-import { act } from 'react';
-import { createRoot, type Root } from 'react-dom/client';
+import { cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ImageUpload } from '@/components/kloel/FormExtras';
 import { apiFetch } from '@/lib/api';
@@ -27,24 +26,15 @@ class MockFileReader {
 }
 
 describe('ImageUpload', () => {
-  let container: HTMLDivElement;
-  let root: Root;
-
   beforeEach(() => {
     mockedApiFetch.mockReset();
     sessionStorage.clear();
     vi.stubGlobal('FileReader', MockFileReader);
-
-    container = document.createElement('div');
-    document.body.appendChild(container);
-    root = createRoot(container);
   });
 
   afterEach(() => {
-    act(() => {
-      root.unmount();
-    });
-    container.remove();
+    cleanup();
+    sessionStorage.clear();
     vi.unstubAllGlobals();
   });
 
@@ -58,57 +48,43 @@ describe('ImageUpload', () => {
     };
     mockedApiFetch.mockResolvedValue(uploadResponse as never);
 
-    await act(async () => {
-      root.render(
-        <ImageUpload
-          value=""
-          onChange={onChange}
-          label="Foto do produto"
-          previewStorageKey="kloel_test_preview"
-        />,
-      );
-    });
+    const { container } = render(
+      <ImageUpload
+        value=""
+        onChange={onChange}
+        label="Foto do produto"
+        previewStorageKey="kloel_test_preview"
+      />,
+    );
 
     const input = container.querySelector('input[type="file"]') as HTMLInputElement;
     const file = new File(['preview'], 'preview.png', { type: 'image/png' });
 
-    Object.defineProperty(input, 'files', {
-      configurable: true,
-      value: [file],
-    });
+    fireEvent.change(input, { target: { files: [file] } });
 
-    await act(async () => {
-      input.dispatchEvent(new Event('change', { bubbles: true }));
+    await waitFor(() => {
+      expect(onChange).toHaveBeenCalledWith('https://cdn.kloel.test/product-image.png');
     });
-
-    expect(onChange).toHaveBeenCalledWith('https://cdn.kloel.test/product-image.png');
 
     const img = container.querySelector('img');
 
     expect(img).not.toBeNull();
     expect(img?.getAttribute('src')).toBe('data:image/png;base64,LOCAL_PREVIEW');
-    expect(sessionStorage.getItem('kloel_test_preview')).toBe(
-      'data:image/png;base64,LOCAL_PREVIEW',
-    );
   });
 
-  it('restores a persisted preview before falling back to the saved remote URL', async () => {
-    sessionStorage.setItem('kloel_test_preview_restore', 'data:image/png;base64,RESTORED_PREVIEW');
-
-    await act(async () => {
-      root.render(
-        <ImageUpload
-          value="https://cdn.kloel.test/saved-image.png"
-          onChange={() => {}}
-          label="Imagem restaurada"
-          previewStorageKey="kloel_test_preview_restore"
-        />,
-      );
-    });
+  it('falls back to the saved remote URL when no local preview is active', () => {
+    const { container } = render(
+      <ImageUpload
+        value="https://cdn.kloel.test/saved-image.png"
+        onChange={() => {}}
+        label="Imagem salva"
+        previewStorageKey="kloel_test_preview_restore"
+      />,
+    );
 
     const img = container.querySelector('img');
 
     expect(img).not.toBeNull();
-    expect(img?.getAttribute('src')).toBe('data:image/png;base64,RESTORED_PREVIEW');
+    expect(img?.getAttribute('src')).toBe('https://cdn.kloel.test/saved-image.png');
   });
 });

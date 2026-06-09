@@ -11,14 +11,15 @@ export async function extractMemoriesFromTurnText(
     'Você extrai MEMÓRIAS DURÁVEIS e TIPADAS sobre o USUÁRIO a partir da mensagem dele. ' +
     'Responda APENAS JSON {"memories": [{"type": "...", "slot": "...", "content": "...", ' +
     '"confidence": 0.8, "importance": 0.6, "forget": false}]}. ' +
-    'Campos: "type" ∈ {fact, preference, project, goal, decision, entity, document, summary, ' +
-    'contradiction}; "slot" = chave curta snake_case do ASPECTO (ex.: nome, cidade, profissao, ' +
-    'empresa, stack, preferencia_formato, idioma, objetivo, projeto_atual, decisao); memórias do ' +
+    'Campos: "type" ∈ {fact, preference, project, goal, decision, entity, document, conversation, task, summary, ' +
+    'sensitive, expired, contradiction}; "slot" = chave curta snake_case do ASPECTO (ex.: nome, cidade, profissao, ' +
+    'empresa, stack, preferencia_formato, idioma, objetivo, projeto_atual, tarefa_atual, decisao); memórias do ' +
     'MESMO aspecto DEVEM usar o MESMO slot (ex.: "mora no RJ" e "mora em SP" usam slot "cidade"); ' +
     '"content" = frase curta e atômica em 3a pessoa ("O usuário ..."); "confidence" e "importance" ' +
     'são números em [0,1]; "forget" = true SOMENTE quando o usuário pede explicitamente para ' +
     'esquecer/remover aquele aspecto (content pode ser ""). Capture só o que é durável e útil; NÃO ' +
-    'inclua perguntas, conteúdo efêmero, nem dados sensíveis (senha, cartão, token). Sem nada ' +
+    'inclua perguntas nem conteúdo efêmero. Dados sensíveis (senha, cartão, token) só podem virar ' +
+    'type="sensitive" quando forem necessários para política/segurança, sem guardar o segredo bruto. Sem nada ' +
     'durável, responda {"memories": []}.';
   const parsed = await completeJson(system, turnText.slice(0, 6000), 700);
   const raw = (parsed as { memories?: unknown })?.memories;

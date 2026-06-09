@@ -52,6 +52,8 @@ function skipGeneratedName(name) {
     name.startsWith('.self-expansion-') ||
     name.startsWith('.security-mono-proof-') ||
     name.startsWith('.atomic-exec-sandbox') ||
+    name.startsWith('atomic-exec-broker-file-') ||
+    name.startsWith('atomic-universal-') ||
     name.startsWith('.property-proof-') ||
     name.startsWith('.findings-') ||
     name.startsWith('.findings-probe-') ||

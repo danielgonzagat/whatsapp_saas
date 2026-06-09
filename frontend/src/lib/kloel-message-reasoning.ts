@@ -7,7 +7,7 @@ export const ASSISTANT_REASONING_REDACTED_TEXT =
   'Detalhes internos desta execução foram omitidos com segurança.';
 
 const PRIVATE_CREDENTIAL_REASONING_RE =
-  /(?:sk-[a-z0-9_-]{16,}|AKIA[0-9A-Z]{16}|api[_ -]?key\s*[:=]|authorization\s*[:=]|bearer\s+[a-z0-9._-]{20,}|password\s*[:=]|secret\s*[:=])/i;
+  /(?:sk-[a-z0-9_-]{8,}|AKIA[0-9A-Z]{16}|api[_ -]?key\s*[:=]|authorization\s*[:=]|bearer\s+[a-z0-9._-]{20,}|password\s*[:=]|secret\s*[:=])/i;
 
 export function sanitizeAssistantReasoningTextForDisplay(value: string): string {
   const text = String(value || '');
@@ -91,7 +91,10 @@ export interface AssistantReasoning {
 /** Get public-safe reasoning metadata for an assistant message. */
 export function getAssistantReasoning(metadata: unknown): AssistantReasoning {
   const normalized = normalizeAssistantMessageMetadata(metadata);
-  const text = '';
+  const text =
+    typeof normalized?.reasoningText === 'string'
+      ? sanitizeAssistantReasoningTextForDisplay(normalized.reasoningText)
+      : '';
   const summary =
     typeof normalized?.reasoningSummary === 'string' ? normalized.reasoningSummary : '';
   const durationMs =
@@ -129,14 +132,13 @@ export function applyReasoningStreamEventToMetadata(
   event: KloelStreamEvent,
 ): Record<string, unknown> | null {
   if (event.type === 'reasoning_delta') {
-    // Provider reasoning deltas are private provider internals. Keep timing only
-    // so live/reloaded UI can show real processing state without exposing text.
     const startedAt =
       typeof metadata.reasoningStartedAt === 'number' ? metadata.reasoningStartedAt : Date.now();
+    const currentText = typeof metadata.reasoningText === 'string' ? metadata.reasoningText : '';
+    const nextText = sanitizeAssistantReasoningTextForDisplay(currentText + event.text);
     const safeMetadata = { ...metadata };
-    delete safeMetadata.reasoningText;
     delete safeMetadata.streamedReasoning;
-    return { ...safeMetadata, reasoningStartedAt: startedAt };
+    return { ...safeMetadata, reasoningStartedAt: startedAt, reasoningText: nextText };
   }
   if (event.type === 'reasoning_summary') {
     return { ...metadata, reasoningSummary: event.text };

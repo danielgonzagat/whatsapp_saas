@@ -1,48 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 interface UsePersistentImagePreviewOptions {
   storageKey?: string;
 }
 
-/** Use persistent image preview. */
-export function usePersistentImagePreview(options: UsePersistentImagePreviewOptions = {}) {
-  const { storageKey } = options;
+/** Use image preview state while the durable URL is saved by the backend. */
+export function usePersistentImagePreview(_options: UsePersistentImagePreviewOptions = {}) {
   const [previewUrl, setPreviewUrlState] = useState('');
-  const [hasLocalPreview, setHasLocalPreview] = useState(false);
-
-  useEffect(() => {
-    if (!storageKey || typeof window === 'undefined') {
-      return;
-    }
-
-    const storedPreview = window.sessionStorage.getItem(storageKey);
-    if (!storedPreview) {
-      return;
-    }
-
-    queueMicrotask(() => setPreviewUrlState(storedPreview));
-    queueMicrotask(() => setHasLocalPreview(true));
-  }, [storageKey]);
+  const hasLocalPreview = Boolean(previewUrl);
 
   const setPreviewUrl = (nextPreviewUrl: string) => {
-    const normalizedPreviewUrl = nextPreviewUrl || '';
-    const nextHasLocalPreview = Boolean(normalizedPreviewUrl);
-
-    setPreviewUrlState(normalizedPreviewUrl);
-    setHasLocalPreview(nextHasLocalPreview);
-
-    if (!storageKey || typeof window === 'undefined') {
-      return;
-    }
-
-    if (nextHasLocalPreview) {
-      window.sessionStorage.setItem(storageKey, normalizedPreviewUrl);
-      return;
-    }
-
-    window.sessionStorage.removeItem(storageKey);
+    setPreviewUrlState(nextPreviewUrl || '');
   };
 
   const clearPreview = () => {

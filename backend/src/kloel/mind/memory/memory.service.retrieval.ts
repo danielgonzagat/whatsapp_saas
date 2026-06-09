@@ -10,6 +10,7 @@ type MemoryRetrievedRow = {
   confidence: number;
   pinned: boolean;
   createdAt: Date;
+  metadata: Record<string, unknown> | null;
 };
 
 type MemoryNodeFindManyWhere = {
@@ -91,6 +92,7 @@ export async function retrieveRelevantMemories({
     });
 
     return rows
+      .filter(isAgentUsableMemoryRow)
       .map((row) => {
         const recency = decayRecency(row.createdAt.getTime(), now, recencyHalfLifeMs);
         const dist = semanticDistance.get(row.id);
@@ -118,6 +120,26 @@ export async function retrieveRelevantMemories({
     });
     return [];
   }
+}
+
+function isAgentUsableMemoryRow(row: MemoryRetrievedRow): boolean {
+  const metadata = readMemoryMetadata(row.metadata);
+  const type = asMemoryNodeType(row.type) ?? 'fact';
+  if (type === 'expired') {
+    return false;
+  }
+  return (
+    metadata['archived'] !== true &&
+    metadata['blockedForAgent'] !== true &&
+    metadata['usableByAgent'] !== false
+  );
+}
+
+function readMemoryMetadata(metadata: unknown): Record<string, unknown> {
+  if (typeof metadata === 'object' && metadata !== null && !Array.isArray(metadata)) {
+    return metadata as Record<string, unknown>;
+  }
+  return {};
 }
 
 async function semanticDistances({

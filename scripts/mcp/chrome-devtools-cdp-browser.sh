@@ -9,9 +9,12 @@ RUNTIME_DIR="${KLOEL_CHROME_DEVTOOLS_RUNTIME:-$BASE_DIR/runtime}"
 CHROME_BIN="${CHROME_BIN:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
 CHROME_APP="${CHROME_APP:-/Applications/Google Chrome.app}"
 LAUNCH_MODE="${KLOEL_CHROME_DEVTOOLS_LAUNCH_MODE:-auto}"
-PORTS=(9222 9223)
+PORTS=(9222 9223 9333)
 if [[ -n "${KLOEL_CHROME_DEVTOOLS_PORTS:-}" ]]; then
-  read -r -a PORTS <<< "$KLOEL_CHROME_DEVTOOLS_PORTS"
+  PORTS=()
+  for port in ${KLOEL_CHROME_DEVTOOLS_PORTS}; do
+    PORTS+=("$port")
+  done
 fi
 
 mkdir -p "$BASE_DIR" "$HOME_DIR" "$RUNTIME_DIR"
@@ -33,6 +36,11 @@ profile_dir() {
 
 log_file() {
   printf '%s/chrome-cdp-%s.log' "$BASE_DIR" "$1"
+}
+
+cleanup_profile_singleton() {
+  local profile="$1"
+  rm -f "$profile/SingletonCookie" "$profile/SingletonLock" "$profile/SingletonSocket"
 }
 
 is_running() {
@@ -60,11 +68,19 @@ launch_chrome() {
   local os_name pid
 
   os_name="$(uname -s 2>/dev/null || printf unknown)"
-  if [[ "$LAUNCH_MODE" != "direct" && "$os_name" == "Darwin" && -d "$CHROME_APP" ]]; then
+  # NOTE: `open -na "Google Chrome"` is unreliable while the user's normal Chrome
+  # is already running: macOS routes to the existing process, ignores
+  # --user-data-dir, and lands on the multi-profile picker — so the debug port
+  # never binds. The direct binary always forks a fresh process that honors
+  # --user-data-dir, so it is the default. `open` is opt-in via
+  # KLOEL_CHROME_DEVTOOLS_LAUNCH_MODE=open only. --profile-directory=Default
+  # pins a single profile and suppresses the picker in every case.
+  if [[ "${KLOEL_CHROME_DEVTOOLS_ALLOW_OPEN:-0}" == "1" && "$LAUNCH_MODE" == "open" && "$os_name" == "Darwin" && -d "$CHROME_APP" ]]; then
     /usr/bin/open -na "$CHROME_APP" --args \
       --remote-debugging-address=127.0.0.1 \
       --remote-debugging-port="$port" \
       --user-data-dir="$profile" \
+      --profile-directory=Default \
       --no-first-run \
       --no-default-browser-check \
       --disable-crash-reporter \
@@ -82,6 +98,7 @@ launch_chrome() {
     --remote-debugging-address=127.0.0.1 \
     --remote-debugging-port="$port" \
     --user-data-dir="$profile" \
+    --profile-directory=Default \
     --no-first-run \
     --no-default-browser-check \
     --disable-crash-reporter \
@@ -108,25 +125,16 @@ start_one() {
 
   if [[ -f "$pid_path" ]]; then
     pid="$(cat "$pid_path" 2>/dev/null || true)"
-    if is_running "$pid"; then
+    if is_running "$pid" && curl -fsS "http://127.0.0.1:${port}/json/version" >/dev/null 2>&1; then
       printf 'chrome-devtools CDP %s already running pid=%s\n' "$port" "$pid"
       return 0
     fi
   fi
 
   mkdir -p "$profile"
-  "$CHROME_BIN" \
-    --remote-debugging-port="$port" \
-    --user-data-dir="$profile" \
-    --no-first-run \
-    --no-default-browser-check \
-    --disable-crash-reporter \
-    --disable-crashpad \
-    --disable-breakpad \
-    --headless=new \
-    about:blank >"$log" 2>&1 &
-  pid="$!"
-  printf '%s\n' "$pid" >"$pid_path"
+  cleanup_profile_singleton "$profile"
+  launch_chrome "$port" "$profile" "$log" "$pid_path"
+  pid="$(cat "$pid_path" 2>/dev/null || true)"
 
   if wait_ready "$port"; then
     printf 'chrome-devtools CDP %s ready pid=%s\n' "$port" "$pid"

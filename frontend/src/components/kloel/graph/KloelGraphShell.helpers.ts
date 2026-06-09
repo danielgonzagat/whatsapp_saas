@@ -22,6 +22,7 @@ export const DEFAULT_ZOOM = 1;
 
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 const MAX_CHECKOUT_GRAPH_PRODUCTS = 80;
+const MAX_CHECKOUT_GRAPH_PRODUCT_DETAILS = 12;
 
 export interface GraphPoint {
   readonly x: number;
@@ -57,12 +58,9 @@ export async function loadCheckoutGraphProducts(): Promise<KloelGraphProductLike
   const rawList = await swrFetcher<CheckoutProductItem[] | CheckoutProductListResponse>(
     '/checkout/products',
   );
-  const checkoutProducts = extractCheckoutProductList(rawList).slice(
-    0,
-    MAX_CHECKOUT_GRAPH_PRODUCTS,
-  );
+  const checkoutProducts = extractCheckoutProductList(rawList).slice(0, MAX_CHECKOUT_GRAPH_PRODUCTS);
   return Promise.all(
-    checkoutProducts.map(async (product) => {
+    checkoutProducts.map(async (product, index) => {
       const baseProduct = {
         id: product.id,
         name: product.name,
@@ -72,6 +70,10 @@ export async function loadCheckoutGraphProducts(): Promise<KloelGraphProductLike
         checkoutPlans: [],
         checkouts: [],
       } satisfies KloelGraphProductLike;
+
+      if (index >= MAX_CHECKOUT_GRAPH_PRODUCT_DETAILS) {
+        return baseProduct;
+      }
 
       try {
         const detail = await swrFetcher<CheckoutProductDetailShape>(

@@ -13,6 +13,47 @@ import { cleanPayload, getErrorMessage, initialsFromName } from './ContaHelpers'
 import { Field, SaveActions, SectionCard } from './ContaShared';
 import type { KycProfile } from './ContaTypes';
 
+const INSTAGRAM_HANDLE_RE = /^@[A-Za-z0-9._]{1,30}$/;
+const WHITESPACE_RE = /\s/;
+
+function normalizePublicWebsite(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed || WHITESPACE_RE.test(trimmed)) {
+    return '';
+  }
+
+  const candidate = HTTPS_RE.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    const url = new URL(candidate);
+    const hostname = url.hostname.toLowerCase();
+    if (!['http:', 'https:'].includes(url.protocol) || !hostname.includes('.') || hostname.endsWith('.')) {
+      return '';
+    }
+
+    if (url.pathname === '/' && !url.search && !url.hash) {
+      return `${url.protocol}//${hostname}`;
+    }
+
+    return url.toString();
+  } catch {
+    return '';
+  }
+}
+
+function normalizeInstagramHandle(value: string) {
+  const trimmed = value
+    .trim()
+    .replace(/^https?:\/\/(?:www\.)?instagram\.com\//i, '')
+    .replace(/^instagram\.com\//i, '')
+    .replace(/\/+$/, '');
+  if (!trimmed) {
+    return '';
+  }
+
+  const handle = trimmed.startsWith('@') ? trimmed : `@${trimmed}`;
+  return INSTAGRAM_HANDLE_RE.test(handle) && !handle.includes('..') ? handle : '';
+}
+
 export default function PerfilPublicoSection({
   profile,
   mutate,
@@ -82,14 +123,26 @@ export default function PerfilPublicoSection({
       return;
     }
 
+    const website = normalizePublicWebsite(form.website);
+    if (form.website.trim() && !website) {
+      showValidationError('Informe um website valido.');
+      return;
+    }
+
+    const instagram = normalizeInstagramHandle(form.instagram);
+    if (form.instagram.trim() && !instagram) {
+      showValidationError('Informe um Instagram valido.');
+      return;
+    }
+
     setSaving(true);
     try {
       await updateProfile(
         cleanPayload({
           publicName,
           bio: form.bio.trim(),
-          website: form.website.trim(),
-          instagram: form.instagram.trim(),
+          website,
+          instagram,
         }),
       );
       showToast('Perfil público salvo', 'success');

@@ -234,6 +234,72 @@ describe('validateProductCreateStep', () => {
     ).toEqual({ ok: true });
   });
 
+  it('blocks physical package step when required logistics details are missing or invalid', () => {
+    expect(validateProductCreateStep({ ...initialForm, format: 'PHYSICAL' }, 3)).toEqual({
+      ok: false,
+      step: 3,
+      message: 'Informe o tipo de embalagem antes de continuar.',
+    });
+
+    expect(
+      validateProductCreateStep(
+        { ...initialForm, format: 'PHYSICAL', packageType: 'Caixa', width: '10', height: '0', depth: '5' },
+        3,
+      ),
+    ).toEqual({
+      ok: false,
+      step: 3,
+      message: 'Informe dimensoes validas da embalagem antes de continuar.',
+    });
+
+    expect(
+      validateProductCreateStep(
+        {
+          ...initialForm,
+          format: 'PHYSICAL',
+          packageType: 'Caixa',
+          width: '10',
+          height: '5',
+          depth: '5',
+          weight: '0',
+        },
+        3,
+      ),
+    ).toEqual({
+      ok: false,
+      step: 3,
+      message: 'Informe um peso valido da embalagem antes de continuar.',
+    });
+  });
+
+  it('blocks physical delivery step without dispatch time or carrier coverage', () => {
+    expect(
+      validateProductCreateStep(
+        { ...initialForm, format: 'PHYSICAL', dispatchTime: '', carriers: ['SEDEX'] },
+        4,
+      ),
+    ).toEqual({
+      ok: false,
+      step: 4,
+      message: 'Informe o prazo de postagem antes de continuar.',
+    });
+
+    expect(
+      validateProductCreateStep({ ...initialForm, format: 'PHYSICAL', dispatchTime: '3', carriers: [] }, 4),
+    ).toEqual({
+      ok: false,
+      step: 4,
+      message: 'Selecione ao menos uma transportadora antes de continuar.',
+    });
+
+    expect(
+      validateProductCreateStep(
+        { ...initialForm, format: 'PHYSICAL', dispatchTime: '3', carriers: ['SEDEX'] },
+        4,
+      ),
+    ).toEqual({ ok: true });
+  });
+
   it('allows details step when required fields are present', () => {
     expect(
       validateProductCreateStep(
@@ -280,6 +346,27 @@ describe('NewProductPage validation feedback', () => {
     );
     expect(pageMocks.showToast).toHaveBeenCalledWith(
       'Informe o nome do produto antes de continuar.',
+      'error',
+    );
+  });
+
+  it('clears the local image preview and shows feedback when upload fails', async () => {
+    pageMocks.readFileAsDataUrl.mockResolvedValueOnce('data:image/png;base64,audit');
+    pageMocks.uploadGenericMedia.mockRejectedValueOnce(new Error('upload offline'));
+
+    render(createElement(NewProductPage));
+
+    fireEvent.change(screen.getByLabelText('Imagem do produto'), {
+      target: { files: [new File(['cover'], 'cover.png', { type: 'image/png' })] },
+    });
+
+    expect((await screen.findByRole('alert')).textContent).toContain(
+      'Nao foi possivel enviar a imagem do produto.',
+    );
+    expect(pageMocks.setPreviewUrl).toHaveBeenCalledWith('data:image/png;base64,audit');
+    expect(pageMocks.clearPreview).toHaveBeenCalled();
+    expect(pageMocks.showToast).toHaveBeenCalledWith(
+      'Nao foi possivel enviar a imagem do produto.',
       'error',
     );
   });

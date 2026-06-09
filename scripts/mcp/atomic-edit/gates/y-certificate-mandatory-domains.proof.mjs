@@ -20,6 +20,7 @@ const mandatoryDomains = [
   'atomicExecReadOnlyUsability',
   'codexAtomicOnlyProtocol',
   'codexEntrypointContract',
+  'agentHookRuntimeBoundary',
   'codexHostWiring',
   'mcpLauncherHostBoundary',
   'universalStructuralEngine',
@@ -93,6 +94,9 @@ function main() {
       certificateSource.includes('function mandatoryDomainCoverage(') &&
       certificateSource.includes("domain: 'certificateMandatoryDomainCoverage'") &&
       certificateSource.includes("'codexEntrypointContract'") &&
+      certificateSource.includes("'agentHookRuntimeBoundary'") &&
+      certificateSource.includes("domain: 'agentHookRuntimeBoundary'") &&
+      certificateSource.includes("gates/agent-hook-runtime-boundary.proof.mjs") &&
       certificateSource.includes("'distFreshness'") &&
       certificateSource.includes("'selfExpansionValidatorLattice'") &&
       certificateSource.includes("'capabilityMonotonicity'") &&
@@ -107,6 +111,8 @@ function main() {
       hasMandatoryList: certificateSource.includes('const MANDATORY_MCP_CONTROLLED_DOMAINS'),
       hasCoverageFunction: certificateSource.includes('function mandatoryDomainCoverage('),
       emitsCoverageDomain: certificateSource.includes("domain: 'certificateMandatoryDomainCoverage'"),
+      emitsAgentHookRuntimeBoundaryDomain: certificateSource.includes("domain: 'agentHookRuntimeBoundary'"),
+      runsAgentHookRuntimeBoundaryProof: certificateSource.includes("gates/agent-hook-runtime-boundary.proof.mjs"),
       emitsValidatorLatticeDomain: certificateSource.includes("domain: 'selfExpansionValidatorLattice'"),
       emitsCapabilityMonotonicityDomain: certificateSource.includes("domain: 'capabilityMonotonicity'"),
       emitsReadOnlyUsabilityDomain: certificateSource.includes("domain: 'atomicExecReadOnlyUsability'"),

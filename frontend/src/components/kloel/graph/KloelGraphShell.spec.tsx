@@ -379,6 +379,25 @@ describe('KloelGraphShell', () => {
     );
   });
 
+  it('clears ember hover immediately when the graph background is clicked', async () => {
+    pathname = '/products';
+    searchParams = new URLSearchParams('graph=1');
+
+    const { container } = renderShell(<main>ProdutosView hidden</main>);
+    const getProductsCircle = () =>
+      container.querySelector('circle[data-node-id="criar-products"]') as SVGCircleElement | null;
+
+    await waitFor(() => expect(getProductsCircle()).toBeTruthy());
+    const productsNode = screen.getByRole('button', { name: 'Abrir Meus produtos' });
+    fireEvent.pointerEnter(productsNode);
+    expect(getProductsCircle()?.getAttribute('stroke')).toBe('rgb(232,93,48)');
+
+    const svg = container.querySelector('svg') as SVGSVGElement;
+    fireEvent.click(svg);
+
+    await waitFor(() => expect(getProductsCircle()?.getAttribute('stroke')).toBe('none'));
+  });
+
   it('clears ember hover when a route overlay hides and then reveals the graph', async () => {
     pathname = '/products';
     searchParams = new URLSearchParams('graph=1');

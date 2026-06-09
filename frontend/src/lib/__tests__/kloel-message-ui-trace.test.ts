@@ -366,7 +366,7 @@ describe('kloel-message-ui trace', () => {
     expect(entry?.tool).toContain('secret');
   });
 
-  it('tracks streamed reasoning deltas as private timing metadata only', () => {
+  it('tracks streamed reasoning deltas as public thinking text with timing metadata', () => {
     const first = appendAssistantTraceFromEvent(
       { clientRequestId: 'req-live-reasoning' },
       {
@@ -383,13 +383,13 @@ describe('kloel-message-ui trace', () => {
       expect.objectContaining({
         clientRequestId: 'req-live-reasoning',
         reasoningStartedAt: expect.any(Number),
+        reasoningText: 'Analisando os dados da conta.',
       }),
     );
-    expect(second).not.toHaveProperty('reasoningText');
-    expect(getAssistantReasoning(second).text).toBe('');
+    expect(getAssistantReasoning(second).text).toBe('Analisando os dados da conta.');
   });
 
-  it('does not expose streamed reasoning that mentions runtime or capability references', () => {
+  it('exposes streamed reasoning that mentions public runtime or capability references', () => {
     const metadata = appendAssistantTraceFromEvent(
       { clientRequestId: 'req-live-reasoning-safe' },
       {
@@ -400,14 +400,21 @@ describe('kloel-message-ui trace', () => {
 
     const reasoning = getAssistantReasoning(metadata);
 
-    expect(metadata).not.toHaveProperty('reasoningText');
-    expect(reasoning.text).toBe('');
-    expect(reasoning.text).not.toContain('runtime context');
-    expect(reasoning.text).not.toContain('inspect_self');
+    expect(metadata).toHaveProperty(
+      'reasoningText',
+      'O runtime context indica que a capacidade inspect_self está disponível.',
+    );
+    expect(reasoning.text).toContain('runtime context');
+    expect(reasoning.text).toContain('inspect_self');
   });
 
-  it('does not render persisted reasoningText as public thinking text', () => {
-    expect(getAssistantReasoning({ reasoningText: 'legacy provider reasoning' }).text).toBe('');
+  it('renders persisted reasoningText as public thinking text and redacts credentials', () => {
+    expect(getAssistantReasoning({ reasoningText: 'legacy provider reasoning' }).text).toBe(
+      'legacy provider reasoning',
+    );
+    expect(getAssistantReasoning({ reasoningText: 'token sk-live-secret' }).text).toBe(
+      'Detalhes internos desta execução foram omitidos com segurança.',
+    );
   });
 
   it('derives a real reasoning duration when the provider reports a non-positive value', () => {

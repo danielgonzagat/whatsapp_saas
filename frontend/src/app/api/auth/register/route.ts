@@ -87,7 +87,6 @@ export async function POST(request: NextRequest) {
 
     const backendUrl = getBackendUrl();
     if (!backendUrl) {
-      console.error('[Register] BACKEND_URL e NEXT_PUBLIC_API_URL não configurados');
       return NextResponse.json(
         { message: 'Servidor não configurado corretamente. Contate o suporte.' },
         { status: 500 },

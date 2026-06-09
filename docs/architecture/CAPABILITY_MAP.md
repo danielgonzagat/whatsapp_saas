@@ -105,7 +105,7 @@ No implementation detected. May not be a feature of this codebase.
 - `buildCheckoutProjection` (function) — `backend/src/kloel/kloel-product-sub-resource-tools.service.helpers.ts:266`
 - `buildCheckoutStartFeatures` (function) — `backend/src/kloel/mind/runtime/mind-event-processor.service.helpers.ts:74`
 - `buildCheckoutData` (function) — `backend/src/kloel/product-sub-resources/helpers/plan.serialize-helpers.ts:4`
-- `CheckoutPaymentSection` (function) — `frontend/src/app/(checkout)/components/CheckoutPaymentSection.tsx:69`
+- `CheckoutPaymentSection` (function) — `frontend/src/app/(checkout)/components/CheckoutPaymentSection.tsx:68`
 - `buildCheckoutFormDraftKey` (function) — `frontend/src/app/(checkout)/hooks/useCheckoutExperience.utils.ts:37`
 - `buildCheckoutFormDraftKey` (function) — `frontend/src/app/(checkout)/hooks/useCheckoutExperienceSocial.draft.ts:15`
 - `createCheckoutForm` (function) — `frontend/src/components/products/ProductCheckoutsTab.helpers.ts:80`

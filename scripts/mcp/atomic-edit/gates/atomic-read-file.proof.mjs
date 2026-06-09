@@ -46,6 +46,14 @@ async function main() {
     args: fs.existsSync(compiledServer) ? [compiledServer] : ['--yes', 'tsx', path.join(sourceDir, 'server.ts')],
     cwd: repoRoot,
     stderr: 'inherit',
+    env: {
+      ...process.env,
+      ATOMIC_DISABLE_HOT_RELOAD: '1',
+      CODEX_PROJECT_DIR: repoRoot,
+      TMPDIR: sourceDir,
+      TMP: sourceDir,
+      TEMP: sourceDir,
+    },
   });
   const client = new Client({ name: 'atomic-read-file-proof', version: '1.0.0' });
   const baseRel = path.join('scripts', 'mcp', 'atomic-edit', `.smoke-atomic-read-proof-${process.pid}`);
@@ -53,8 +61,10 @@ async function main() {
   const positiveRel = path.join('scripts', 'mcp', 'atomic-edit', 'server.ts');
   const badRel = path.join(baseRel, 'read-bad.ts');
   const mdRel = path.join(baseRel, 'read-notes.md');
+  const dockerRel = path.join(baseRel, 'Dockerfile');
   const goRel = path.join(baseRel, 'read-main.go');
   const badGoRel = path.join(baseRel, 'read-broken.go');
+  const badJsonRel = path.join(baseRel, 'read-broken.json');
   const positiveSource = fs.readFileSync(path.join(repoRoot, positiveRel), 'utf8');
   const missingSpecifier = './missing-read-target';
   const badSource = [
@@ -67,15 +77,19 @@ async function main() {
     'export const READ_BAD = MissingReadTarget;\n',
   ].join('');
   const mdSource = '# Atomic read proof\nThis file is outside the TS/JS lens battery.\n';
+  const dockerSource = 'FROM scratch\n# Atomic direct text battery\n';
   const goSource = 'package main\nfunc main() { println("atomic") }\n';
   const badGoSource = 'package main\nfunc main() { println("atomic" \n';
+  const badJsonSource = '{"atomic": ';
 
   try {
     fs.mkdirSync(baseAbs, { recursive: true });
     fs.writeFileSync(path.join(repoRoot, badRel), badSource);
     fs.writeFileSync(path.join(repoRoot, mdRel), mdSource);
+    fs.writeFileSync(path.join(repoRoot, dockerRel), dockerSource);
     fs.writeFileSync(path.join(repoRoot, goRel), goSource);
     fs.writeFileSync(path.join(repoRoot, badGoRel), badGoSource);
+    fs.writeFileSync(path.join(repoRoot, badJsonRel), badJsonSource);
 
     await client.connect(transport);
     const listed = await client.listTools();
@@ -133,6 +147,25 @@ async function main() {
       mdBody,
     );
 
+    const dockerfile = await client.callTool({
+      name: 'atomic_read_file',
+      arguments: { file: dockerRel, includeContent: false },
+    });
+    const dockerBody = lastJson(dockerfile);
+    record(
+      'direct-file read applies text battery to Dockerfile bytes',
+      dockerBody.ok === true &&
+        dockerBody.verdict === 'POSITIVE_WITHIN_DECLARED_BATTERY' &&
+        dockerBody.sourceLensApplied === false &&
+        dockerBody.directFileBatteryApplied === true &&
+        dockerBody.contentIncluded === false &&
+        dockerBody.content === undefined &&
+        dockerBody.zones?.[0]?.classification === 'positive-within-declared-battery' &&
+        dockerBody.proofDebt?.length === 0 &&
+        /Dockerfile text is UTF-8 readable/.test(dockerBody.zones?.[0]?.reason ?? ''),
+      dockerBody,
+    );
+
     const go = await client.callTool({
       name: 'atomic_read_file',
       arguments: { file: goRel, includeContent: false },
@@ -172,13 +205,35 @@ async function main() {
       badGoBody,
     );
 
+    const badJson = await client.callTool({
+      name: 'atomic_read_file',
+      arguments: { file: badJsonRel, includeContent: false },
+    });
+    const badJsonBody = lastJson(badJson);
+    record(
+      'direct-file read marks invalid JSON bytes as negative',
+      badJsonBody.ok === true &&
+        badJsonBody.verdict === 'HAS_NEGATIVE_BYTES' &&
+        badJsonBody.sourceLensApplied === false &&
+        badJsonBody.directFileBatteryApplied === true &&
+        badJsonBody.contentIncluded === false &&
+        badJsonBody.content === undefined &&
+        badJsonBody.zones?.[0]?.classification === 'negative' &&
+        badJsonBody.negativeByteEvidenceCount > 0 &&
+        badJsonBody.proofDebt?.length === 0 &&
+        /JSON failed Atomic direct-file battery/.test(badJsonBody.zones?.[0]?.reason ?? ''),
+      badJsonBody,
+    );
+
     record(
       'atomic_read_file is read-only on disk fixtures',
       fs.readFileSync(path.join(repoRoot, positiveRel), 'utf8') === positiveSource &&
         fs.readFileSync(path.join(repoRoot, badRel), 'utf8') === badSource &&
         fs.readFileSync(path.join(repoRoot, mdRel), 'utf8') === mdSource &&
+        fs.readFileSync(path.join(repoRoot, dockerRel), 'utf8') === dockerSource &&
         fs.readFileSync(path.join(repoRoot, goRel), 'utf8') === goSource &&
-        fs.readFileSync(path.join(repoRoot, badGoRel), 'utf8') === badGoSource,
+        fs.readFileSync(path.join(repoRoot, badGoRel), 'utf8') === badGoSource &&
+        fs.readFileSync(path.join(repoRoot, badJsonRel), 'utf8') === badJsonSource,
       {},
     );
   } finally {

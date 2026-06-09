@@ -79,10 +79,14 @@ function main() {
   const w4 = measureWeakened('server-helpers-io.ts', (s) => s.replace(/assertSelfExpansionAdmission\(/, 'assertSelfExpansionAdmissionDISABLED('));
   rec('removing a byte-floor guard lowers byteFloorGuards', w4.after.byteFloorGuards < w4.before.byteFloorGuards, w4);
 
-  // 9. live refusal path: a temp engine measuring BELOW the real persisted baseline throws.
+  // 9. live refusal path: a temp engine measuring BELOW its own current
+  // high-water baseline throws. The baseline is written inside the temp fixture,
+  // not the repo, so this stays robust when the real lattice has already grown
+  // above the persisted production baseline.
   {
     const tmp2 = makeTemp();
     try {
+      fs.writeFileSync(path.join(tmp2, '.security-baseline.json'), JSON.stringify(real, null, 2) + '\n');
       const execPath = path.join(tmp2, 'server-tools-exec.ts');
       fs.writeFileSync(execPath, fs.readFileSync(execPath, 'utf8').replace(/re:\s*\//, 'xx: /'));
       let threw = false;

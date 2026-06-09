@@ -65,6 +65,30 @@ function readInitialDraft(productId: string): ProductCheckoutFormDraft | null {
   return readCheckoutFormDraft(localStorage.getItem(key), productId);
 }
 
+type CheckoutFormDraftState = Pick<
+  ProductCheckoutFormDraft,
+  'form' | 'editingCheckoutId' | 'showModal'
+>;
+
+type CheckoutFormStateByProduct = Record<string, CheckoutFormDraftState>;
+
+function resolveCheckoutFormDraftState(productId: string): CheckoutFormDraftState {
+  const draft = readInitialDraft(productId);
+  if (draft) {
+    return {
+      form: draft.form,
+      editingCheckoutId: draft.editingCheckoutId,
+      showModal: draft.showModal,
+    };
+  }
+
+  return {
+    form: createDefaultCheckoutForm(),
+    editingCheckoutId: null,
+    showModal: false,
+  };
+}
+
 interface CheckoutFormStateHook {
   form: CheckoutFormState;
   showModal: boolean;
@@ -78,37 +102,12 @@ interface CheckoutFormStateHook {
 }
 
 export function useCheckoutFormState(productId: string): CheckoutFormStateHook {
-  const [form, setForm] = useState<CheckoutFormState>(() => {
-    const draft = readInitialDraft(productId);
-    return draft ? draft.form : createDefaultCheckoutForm();
-  });
-
-  const [showModal, setShowModal] = useState(() => {
-    const draft = readInitialDraft(productId);
-    return draft ? draft.showModal : false;
-  });
-
-  const [editingCheckoutId, setEditingCheckoutId] = useState<string | null>(() => {
-    const draft = readInitialDraft(productId);
-    return draft ? draft.editingCheckoutId : null;
-  });
-
+  const [checkoutStates, setCheckoutStates] = useState<CheckoutFormStateByProduct>(() => ({
+    [productId]: resolveCheckoutFormDraftState(productId),
+  }));
+  const checkoutState = checkoutStates[productId] ?? resolveCheckoutFormDraftState(productId);
+  const { form, showModal, editingCheckoutId } = checkoutState;
   const draftKey = buildCheckoutFormDraftKey(productId);
-
-  useEffect(() => {
-    const draft = readInitialDraft(productId);
-    if (draft) {
-      queueMicrotask(() => setForm(draft.form));
-      queueMicrotask(() => setShowModal(draft.showModal));
-      queueMicrotask(() => {
-        setEditingCheckoutId(draft.editingCheckoutId);
-      });
-      return;
-    }
-    queueMicrotask(() => setForm(createDefaultCheckoutForm()));
-    queueMicrotask(() => setShowModal(false));
-    queueMicrotask(() => setEditingCheckoutId(null));
-  }, [productId]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !showModal) {
@@ -129,14 +128,57 @@ export function useCheckoutFormState(productId: string): CheckoutFormStateHook {
     }
   }, [draftKey, form, editingCheckoutId, showModal, productId]);
 
-  const handleSetForm = useCallback((newForm: CheckoutFormState) => {
-    setForm(newForm);
-  }, []);
+  const updateCheckoutState = useCallback(
+    (updater: (current: CheckoutFormDraftState) => CheckoutFormDraftState) => {
+      setCheckoutStates((currentByProduct) => {
+        const currentState =
+          currentByProduct[productId] ?? resolveCheckoutFormDraftState(productId);
+        return {
+          ...currentByProduct,
+          [productId]: updater(currentState),
+        };
+      });
+    },
+    [productId],
+  );
+
+  const handleSetForm = useCallback(
+    (newForm: CheckoutFormState) => {
+      updateCheckoutState((current) => ({
+        ...current,
+        form: newForm,
+      }));
+    },
+    [updateCheckoutState],
+  );
+
+  const handleSetShowModal = useCallback(
+    (show: boolean) => {
+      updateCheckoutState((current) => ({
+        ...current,
+        showModal: show,
+      }));
+    },
+    [updateCheckoutState],
+  );
+
+  const handleSetEditingCheckoutId = useCallback(
+    (id: string | null) => {
+      updateCheckoutState((current) => ({
+        ...current,
+        editingCheckoutId: id,
+      }));
+    },
+    [updateCheckoutState],
+  );
 
   const handleResetForm = useCallback(() => {
-    handleSetForm(createDefaultCheckoutForm());
-    setEditingCheckoutId(null);
-  }, [handleSetForm]);
+    updateCheckoutState((current) => ({
+      ...current,
+      form: createDefaultCheckoutForm(),
+      editingCheckoutId: null,
+    }));
+  }, [updateCheckoutState]);
 
   const clearDraft = useCallback(() => {
     if (typeof window === 'undefined') {
@@ -155,8 +197,8 @@ export function useCheckoutFormState(productId: string): CheckoutFormStateHook {
     editingCheckoutId,
     draftKey,
     setForm: handleSetForm,
-    setShowModal,
-    setEditingCheckoutId,
+    setShowModal: handleSetShowModal,
+    setEditingCheckoutId: handleSetEditingCheckoutId,
     resetForm: handleResetForm,
     clearDraft,
   };

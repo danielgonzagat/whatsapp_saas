@@ -26,6 +26,7 @@ const mandatoryDomains = [
   'atomicExecReadOnlyUsability',
   'codexAtomicOnlyProtocol',
   'codexEntrypointContract',
+  'agentHookRuntimeBoundary',
   'codexHostWiring',
   'mcpLauncherHostBoundary',
   'universalStructuralEngine',

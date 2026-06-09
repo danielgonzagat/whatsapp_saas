@@ -52,7 +52,8 @@ const ROOT_BASENAME_RE = /^(index|main|server|app|cli|bootstrap|setup)\.(ts|tsx|
 const TEST_SURFACE_RE = /\.(spec|test|proof|e2e|stories|bench)\.(ts|tsx|js|jsx|mjs|cjs)$/;
 const NEST_ROOT_RE = /\.(controller|module|gateway|resolver|processor|consumer|cron|command|seed)\.(ts|tsx|js|jsx|mjs|cjs)$/;
 const OPERATIONAL_SCRIPT_DIR_RE = /(^|\/)(scripts|bin|tools)\//;
-const OPERATIONAL_SCRIPT_BASENAME_RE = /^(build|smoke(?:[-.].*)?|benchmark|bench|operational-use|demo(?:[-.].*)?|trace-coverage-audit|worker-scope-check|audit-atomicity|bypass-report|.*(?:-hook|-launcher|-broker)(?:[-.].*)?)\.(ts|tsx|js|jsx|mjs|cjs)$/;
+const OPERATIONAL_SCRIPT_BASENAME_RE = /^(build|smoke(?:[-.].*)?|benchmark|bench|operational-use|demo(?:[-.].*)?|atomic-cli|trace-coverage-audit|worker-scope-check|audit-atomicity|bypass-report|.*(?:-hook|-launcher|-broker)(?:[-.].*)?)\.(ts|tsx|js|jsx|mjs|cjs)$/;
+const GATE_MODULE_RE = /(^|\/)gates\/[^/]+-gate\.(ts|tsx|js|jsx|mjs|cjs)$/;
 // Next.js routing roots: a segment file that the framework loads by convention.
 const NEXT_ROUTE_BASENAME_RE = /^(page|layout|route|loading|error|not-found|template|default|middleware|head|sitemap|robots|opengraph-image|icon|apple-icon|manifest)\.(ts|tsx|js|jsx|mjs)$/;
 const NEXT_ROUTE_DIR_RE = /(^|\/)(app|pages)\//;
@@ -68,6 +69,7 @@ function isRoot(rel: string): boolean {
   if (TEST_SURFACE_RE.test(base)) return true; // the test/proof harness IS a root
   if (ROOT_BASENAME_RE.test(base)) return true; // index/main/server/app entrypoints
   if (isOperationalScriptRoot(norm, base)) return true; // scripts/bin/tools operational roots
+  if (GATE_MODULE_RE.test(norm)) return true; // executable GateModules loaded by the lattice/registry
   if (NEST_ROOT_RE.test(base)) return true; // NestJS DI roots (loaded by the framework, never imported by app code)
   if (NEXT_ROUTE_DIR_RE.test(norm) && NEXT_ROUTE_BASENAME_RE.test(base)) return true; // Next.js file-system routes
   return false;

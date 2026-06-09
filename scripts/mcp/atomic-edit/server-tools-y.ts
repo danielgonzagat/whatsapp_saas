@@ -35,6 +35,7 @@ const MANDATORY_MCP_CONTROLLED_DOMAINS: readonly string[] = [
   'atomicExecReadOnlyUsability',
   'codexAtomicOnlyProtocol',
   'codexEntrypointContract',
+  'agentHookRuntimeBoundary',
   'codexHostWiring',
   'mcpLauncherHostBoundary',
   'universalStructuralEngine',
@@ -768,6 +769,22 @@ export function registerToolsY(server: McpServer): void {
             ? undefined
             : 'Repair Codex config, workspace hook chain, no-bypass proof, or host launcher contract before accepting any Y certificate as no-bypass capable.',
           detail: codexEntrypointProof.ok ? codexEntrypointProof.value : undefined,
+        });
+
+        const agentHookRuntimeProof = runJsonScript('gates/agent-hook-runtime-boundary.proof.mjs', ['--json'], 120000);
+        const agentHookRuntimeGreen = agentHookRuntimeProof.ok && agentHookRuntimeProof.value.ok === true;
+        domains.push({
+          domain: 'agentHookRuntimeBoundary',
+          status: agentHookRuntimeGreen ? 'GREEN' : 'RED',
+          evidence: agentHookRuntimeGreen
+            ? 'agent-hook-runtime-boundary.proof.mjs passed: Codex and Claude Stop hooks launch through absolute wrappers, lint under empty PATH, reject PATH-dependent fixtures, and keep trace coverage visible.'
+            : agentHookRuntimeProof.ok
+              ? `agent hook runtime-boundary proof reported non-green: ${JSON.stringify(agentHookRuntimeProof.value)}`
+              : `agent hook runtime-boundary proof could not run: ${agentHookRuntimeProof.error}`,
+          requiredChange: agentHookRuntimeGreen
+            ? undefined
+            : 'Repair Codex/Claude Stop hook commands and wrappers so they are absolute, PATH-independent, shell-syntax-valid under empty PATH, and covered by trace audit before accepting Y.',
+          detail: agentHookRuntimeProof.ok ? agentHookRuntimeProof.value : undefined,
         });
 
         const userConfigPath = path.join(process.env.HOME ?? '', '.codex/config.toml');
