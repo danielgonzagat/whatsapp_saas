@@ -25,10 +25,7 @@ function readBrokerState(repoRoot) {
 export function inheritedAtomicHostEnv(repoRoot) {
   const state = readBrokerState(repoRoot);
   const explicitSocket = process.env.ATOMIC_EXEC_BROKER_SOCKET || '';
-  const explicitHostMode =
-    process.env.ATOMIC_HOST_ATOMIC_ONLY === '1' || process.env.ATOMIC_HOST_SANDBOX === 'macos-sandbox-exec';
-  const stateSocket =
-    explicitHostMode && typeof state?.socket === 'string' && fs.existsSync(state.socket) ? state.socket : '';
+  const stateSocket = typeof state?.socket === 'string' && fs.existsSync(state.socket) ? state.socket : '';
   const socket = explicitSocket || stateSocket;
   const stateRoot = typeof state?.repoRoot === 'string' ? state.repoRoot : '';
   const hostRoot = path.resolve(stateRoot || process.env.ATOMIC_HOST_WRITE_ROOT || repoRoot);

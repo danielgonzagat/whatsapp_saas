@@ -133,9 +133,17 @@ function proofTimeoutMs(command: string): number {
 }
 
 function selfExpansionBrokerSocketPath(): string | null {
-  const value = process.env.ATOMIC_EXEC_BROKER_SOCKET?.trim();
-  if (!value) return null;
-  return fs.existsSync(value) ? value : null;
+  const explicit = process.env.ATOMIC_EXEC_BROKER_SOCKET?.trim();
+  if (explicit && fs.existsSync(explicit)) return explicit;
+  const statePath = path.join(REPO_ROOT, '.atomic', 'codex-broker-current.json');
+  try {
+    const state = JSON.parse(fs.readFileSync(statePath, 'utf8')) as { socket?: unknown };
+    const stateSocket = typeof state.socket === 'string' ? state.socket.trim() : '';
+    if (stateSocket && fs.existsSync(stateSocket)) return stateSocket;
+  } catch {
+    // Broker state is optional outside host-admitted sessions.
+  }
+  return null;
 }
 
 function shellPath(value: string): string {
@@ -551,26 +559,42 @@ function realSelfExpansionPolicy(requiredCommands: string[]): JsonRecord {
 
 function runSelfEvolutionHarness(mode: string, input: unknown): JsonRecord {
   const selfRoot = path.join(REPO_ROOT, 'scripts/mcp/atomic-edit');
-  const result = childProcess.spawnSync(process.execPath, ['self-evolution-harness.mjs', mode], {
-    cwd: selfRoot,
-    input: JSON.stringify(input),
-    encoding: 'utf8',
-    maxBuffer: 16 * 1024 * 1024,
-  });
-  const stdout = result.stdout;
-  const stderr = result.stderr;
-  if (result.status !== 0) {
-    throw new Error(`self-evolution harness ${mode} exited ${result.status ?? result.signal}: ${stderr || stdout}`);
-  }
-  let parsed: unknown;
+  const outputFile = path.join(
+    selfRoot,
+    '.self-evolution-harness-output.' + process.pid + '.' + Date.now() + '.' + Math.random().toString(16).slice(2) + '.json',
+  );
   try {
-    parsed = JSON.parse(stdout);
-  } catch (error) {
-    throw new Error(`self-evolution harness ${mode} returned non-json stdout: ${String(error)} ${stdout.slice(0, 400)}`);
+    const result = childProcess.spawnSync(process.execPath, ['self-evolution-harness.mjs', mode], {
+      cwd: selfRoot,
+      input: JSON.stringify(input),
+      encoding: 'utf8',
+      maxBuffer: 16 * 1024 * 1024,
+      env: { ...process.env, ATOMIC_SELF_EVOLUTION_OUTPUT_FILE: outputFile },
+    });
+    const stdout = result.stdout;
+    const stderr = result.stderr;
+    const payloadText = fs.existsSync(outputFile) ? fs.readFileSync(outputFile, 'utf8') : stdout;
+    if (result.status !== 0) {
+      throw new Error(
+        'self-evolution harness ' + mode + ' exited ' + (result.status ?? result.signal) + ': ' + (stderr || payloadText || stdout),
+      );
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(payloadText);
+    } catch (error) {
+      throw new Error('self-evolution harness ' + mode + ' returned non-json payload: ' + String(error) + ' ' + payloadText.slice(0, 400));
+    }
+    if (!isJsonRecord(parsed)) throw new Error('self-evolution harness ' + mode + ' returned non-object payload');
+    if (parsed.ok !== true) throw new Error('self-evolution harness ' + mode + ' rejected: ' + stableJson(parsed));
+    return parsed;
+  } finally {
+    try {
+      fs.unlinkSync(outputFile);
+    } catch {
+      /* best-effort temp cleanup */
+    }
   }
-  if (!isJsonRecord(parsed)) throw new Error(`self-evolution harness ${mode} returned non-object payload`);
-  if (parsed.ok !== true) throw new Error(`self-evolution harness ${mode} rejected: ${stableJson(parsed)}`);
-  return parsed;
 }
 
 function buildRealSelfExpansionPromotionReceipt(args: {

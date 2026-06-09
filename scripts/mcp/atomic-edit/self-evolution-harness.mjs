@@ -520,6 +520,15 @@ if (isCliMain()) {
   const needsInput = !['--help', '--self-test'].includes(mode);
   const stdinText = needsInput ? fs.readFileSync(0, 'utf8') : '';
   const result = runCli([mode], stdinText);
-  process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+  const rendered = JSON.stringify(result, null, 2) + '\n';
+  const outputFile = process.env.ATOMIC_SELF_EVOLUTION_OUTPUT_FILE;
+  if (outputFile) {
+    fs.writeFileSync(outputFile, rendered);
+    process.stdout.write(
+      JSON.stringify({ ok: result.ok !== false, outputFile, bytes: Buffer.byteLength(rendered, 'utf8') }) + '\n',
+    );
+  } else {
+    process.stdout.write(rendered);
+  }
   process.exit(result.ok === false ? 1 : 0);
 }
