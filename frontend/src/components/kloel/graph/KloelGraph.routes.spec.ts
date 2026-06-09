@@ -75,6 +75,7 @@ describe('KloelGraph route contract', () => {
       'KloelGraph.product-nodes.ts',
       'KloelGraphShell.tsx',
       'KloelGraphShell.helpers.ts',
+      'KloelGraphPendingOverlay.tsx',
       'KloelGraphNodeButton.tsx',
       'KloelGraphFloatingNav.tsx',
       'KloelGraphOverlay.tsx',

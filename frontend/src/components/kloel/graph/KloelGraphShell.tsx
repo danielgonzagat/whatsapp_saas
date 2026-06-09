@@ -16,12 +16,12 @@ import {
   KloelGraphLiteralCanvas,
 } from './KloelGraphLiteralCanvas';
 import { KloelGraphOverlay } from './KloelGraphOverlay';
+import { KloelGraphPendingOverlay } from './KloelGraphPendingOverlay';
 import { KloelGraphSettingsPanel } from './KloelGraphSettingsPanel';
 import {
   KLOEL_GRAPH_NODES,
   KLOEL_GRAPH_PRIMARY_NODES,
   buildKloelGraphProductNodes,
-  getKloelGraphOverlayLabel,
   resolveKloelGraphNodeForPathFromNodes,
 } from './KloelGraph.routes';
 import type { KloelGraphArea, KloelGraphNode } from './KloelGraph.routes';
@@ -32,7 +32,7 @@ import {
   loadCheckoutGraphProducts,
   mergeGraphProducts,
 } from './KloelGraphShell.helpers';
-import { GRAPH_FONT, GRAPH_MONO, GraphThemeProvider, useGraphTheme } from './KloelGraphTheme';
+import { GRAPH_FONT, GraphThemeProvider, useGraphTheme } from './KloelGraphTheme';
 
 const GRAPH_ONLY_DYNAMIC_DATA_DELAY_MS = 160;
 
@@ -40,57 +40,6 @@ function shouldHydrateDynamicGraphDataArea(
   area: KloelGraphArea | null,
 ): area is 'criar' | 'educar' {
   return area === 'criar' || area === 'educar';
-}
-
-function KloelGraphPendingOverlay({ node }: { readonly node: KloelGraphNode }) {
-  const { C } = useGraphTheme();
-  const label = getKloelGraphOverlayLabel(node);
-
-  return (
-    <div
-      role="status"
-      aria-live="polite"
-      style={{
-        minHeight: '100%',
-        display: 'grid',
-        placeItems: 'center',
-        padding: 32,
-        color: C.text,
-      }}
-    >
-      <div
-        style={{
-          display: 'grid',
-          justifyItems: 'center',
-          gap: 10,
-          textAlign: 'center',
-        }}
-      >
-        <span
-          aria-hidden="true"
-          style={{
-            width: 34,
-            height: 2,
-            borderRadius: 6,
-            background: C.ember,
-          }}
-        />
-        <p
-          style={{
-            margin: 0,
-            fontFamily: GRAPH_MONO,
-            fontSize: 12,
-            fontWeight: 700,
-            letterSpacing: 1.1,
-            textTransform: 'uppercase',
-            color: C.text,
-          }}
-        >
-          Carregando {label}
-        </p>
-      </div>
-    </div>
-  );
 }
 
 function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) {
