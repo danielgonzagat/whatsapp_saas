@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 import { PrismaService } from '../prisma/prisma.service';
 import { normalizeCheckoutOrderQuantity } from './checkout-order-pricing.util';
-import { extractAsciiDigits } from '../common/phone/phone-normalization.util';
+import { digitsOnly } from '../common/phone';
 type CheckoutLineItem = {
   id: string;
   title: string;
@@ -63,9 +63,20 @@ export class CheckoutOrderSupport {
     private readonly logger: Logger,
   ) {}
 
-  /** Normalize phone digits. */
+  /**
+   * Normalize phone digits to digits-only, empty-string-when-missing.
+   *
+   * Delegates to the canonical {@link digitsOnly} facet so this checkout call
+   * site shares one normalization implementation with the rest of the backend.
+   * Returns `''` (never `null`) on empty input: callers either filter by
+   * `Boolean(...)` (:186) / `if (!phone)` (:258) or assign the result to a
+   * string-typed `qualityGate.phoneDigits` field (checkout-order.service.ts),
+   * all of which require the empty-string (not nullable) semantic.
+   *
+   * @see backend/src/common/phone.ts
+   */
   normalizePhoneDigits(value?: string | null) {
-    return extractAsciiDigits(value);
+    return digitsOnly(value);
   }
 
   /** Normalize email. */
