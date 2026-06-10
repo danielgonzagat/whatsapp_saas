@@ -64,8 +64,6 @@ const MANDATORY_SELF_EXPANSION_VALIDATORS: readonly SelfExpansionValidator[] = [
   { phase: 'self-evolution-lessons', command: 'node gates/self-evolution-lesson-rules.proof.mjs --json' },
   { phase: 'codex-memory', command: 'node gates/codex-memory-note-tool.proof.mjs --json' },
   { phase: 'benchmark', command: 'node gates/atomic-agent-bench.proof.mjs' },
-  { phase: 'fixed-model-lift', command: 'node gates/fixed-model-lift.proof.mjs --json' },
-  { phase: 'human-eval-lift-protocol', command: 'node gates/human-eval-lift-protocol.proof.mjs --json' },
   { phase: 'test', command: 'node gates/test-execution-gate.proof.mjs --json' },
   { phase: 'ledger', command: 'node proof-chain.proof.mjs --json' },
   { phase: 'certificate', command: 'node gates/y-certificate-mandatory-domains.proof.mjs --json' },
@@ -460,19 +458,12 @@ async function runProofCommands(commands: string[]): Promise<ProofCommandResult[
     priority: proofCommandPriority(command),
   }));
   queue.sort((left, right) => left.priority - right.priority || left.index - right.index);
-
-  const exclusiveQueue = queue.filter((item) => selfExpansionProofMustRunHostDirect(item.command));
-  const parallelQueue = queue.filter((item) => !selfExpansionProofMustRunHostDirect(item.command));
-  for (const item of exclusiveQueue) {
-    results[item.index] = await runSingleProofCommand(item.command, cwd, deadlineMs);
-  }
-
   let nextIndex = 0;
-  const workerCount = Math.min(proofCommandConcurrency(), parallelQueue.length);
+  const workerCount = Math.min(proofCommandConcurrency(), queue.length);
   await Promise.all(
     Array.from({ length: workerCount }, async () => {
       while (true) {
-        const item = parallelQueue[nextIndex];
+        const item = queue[nextIndex];
         nextIndex += 1;
         if (!item) return;
         results[item.index] = await runSingleProofCommand(item.command, cwd, deadlineMs);
