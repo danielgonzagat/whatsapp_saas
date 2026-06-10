@@ -84,9 +84,23 @@ function isAuthBoundaryError(message: string): boolean {
   return /missing authorization header|unauthorized|\b401\b|jwt|bearer/i.test(message);
 }
 
+function isTechnicalShapedError(message: string): boolean {
+  return (
+    message.includes('\n') ||
+    /\bat [A-Za-z_$][\w.$<>[\]]* ?\(/.test(message) ||
+    /Unexpected (?:token|end of (?:JSON )?input)/i.test(message) ||
+    /\b(?:TypeError|ReferenceError|SyntaxError|RangeError)\b/.test(message) ||
+    /\.(?:ts|tsx|js|mjs|cjs):\d+/.test(message) ||
+    message.length > 220
+  );
+}
+
 function sanitizeBrainOperatorErrorMessage(message: string): string {
   if (isAuthBoundaryError(message)) {
     return 'sessão expirada';
+  }
+  if (isTechnicalShapedError(message)) {
+    return 'erro inesperado';
   }
   return message.replace(/[_-]+/g, ' ').trim() || 'erro inesperado';
 }

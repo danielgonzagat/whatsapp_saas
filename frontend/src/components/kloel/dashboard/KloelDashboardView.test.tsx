@@ -344,13 +344,15 @@ describe('KloelDashboardView trace', () => {
       isReplyInFlight: true,
     });
 
+    // The collapsed header now derives its gist from the REAL reasoning, so
+    // the merged trace summary no longer doubles as the header text.
     expect(
-      screen.getByText(
+      screen.queryByText(
         'Consultei contexto operacional relevante antes de responder e incorporei as observações encontradas e descartei detalhes privados.',
       ),
-    ).toBeTruthy();
-    expect(screen.getByText(/We are in a chat conversation/)).toBeTruthy();
-    expect(screen.getByText(/must decide what answer to show/)).toBeTruthy();
+    ).toBeNull();
+    expect(screen.getAllByText(/We are in a chat conversation/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/must decide what answer to show/).length).toBeGreaterThan(0);
     expect(screen.getAllByText('list_products').length).toBeGreaterThan(0);
     expect(screen.queryByText('catálogo de produtos')).toBeNull();
     expect(screen.queryByText('Pré-resposta executável')).toBeNull();
