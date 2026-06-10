@@ -11,7 +11,11 @@ import { WelcomeAndOnboardingEmailService } from './welcome-onboarding-email.ser
 @Module({
   imports: [PrismaModule, ConfigModule, forwardRef(() => AuthModule)],
   controllers: [NotificationsController],
-  providers: [NotificationsService, NotificationPreferencesService, WelcomeAndOnboardingEmailService],
+  providers: [
+    NotificationsService,
+    NotificationPreferencesService,
+    WelcomeAndOnboardingEmailService,
+  ],
   exports: [NotificationsService, NotificationPreferencesService, WelcomeAndOnboardingEmailService],
 })
 export class NotificationsModule {}

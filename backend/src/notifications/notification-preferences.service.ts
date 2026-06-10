@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { MindMemoryItemService } from '../kloel/mind/aliases/mind-memory-item.service';
 
 /**
  * Per-user e-mail notification preferences, persisted in the EXISTING
@@ -65,14 +66,26 @@ export function sanitizeNotificationPreferencesUpdate(
 export class NotificationPreferencesService {
   private readonly logger = new Logger(NotificationPreferencesService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
+  ) {}
+
+  /**
+   * Canonical memory accessor — the alias `.items` getter IS the
+   * `prisma.kloelMemory` delegate (same RAC_KloelMemory table), so reads and
+   * writes stay on the canonical Mind surface while remaining byte-identical.
+   */
+  private get kloelMemoryItems() {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
+  }
 
   /** Current preferences for one user (defaults when never saved). */
   async getPreferences(
     workspaceId: string,
     agentId: string,
   ): Promise<EmailNotificationPreferences> {
-    const row = await this.prisma.kloelMemory.findUnique({
+    const row = await this.kloelMemoryItems.findUnique({
       where: { workspaceId_key: { workspaceId, key: notificationPreferencesKey(agentId) } },
       select: { value: true },
     });
@@ -94,7 +107,7 @@ export class NotificationPreferencesService {
       ...sanitizeNotificationPreferencesUpdate(partial),
     };
     const key = notificationPreferencesKey(agentId);
-    await this.prisma.kloelMemory.upsert({
+    await this.kloelMemoryItems.upsert({
       where: { workspaceId_key: { workspaceId, key } },
       update: { value: next as unknown as Prisma.InputJsonValue },
       create: {
@@ -118,10 +131,7 @@ export class NotificationPreferencesService {
    * a behavior change nobody asked for); the toggle's OFF state is only
    * honored when it was actually read.
    */
-  async isOnboardingEmailAllowed(
-    workspaceId: string | undefined,
-    email: string,
-  ): Promise<boolean> {
+  async isOnboardingEmailAllowed(workspaceId: string | undefined, email: string): Promise<boolean> {
     try {
       const agent = await this.prisma.agent.findFirst({
         where: workspaceId ? { workspaceId, email } : { email },

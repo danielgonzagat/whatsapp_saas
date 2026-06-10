@@ -42,7 +42,14 @@ vi.mock('../providers/health-monitor', () => ({
 // ── Subject ────────────────────────────────────────────────────────────
 
 type SendMessageFn = (
-  deps: { log: { info: ReturnType<typeof vi.fn>; warn: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn> }; sleep: (ms: number) => Promise<void> },
+  deps: {
+    log: {
+      info: ReturnType<typeof vi.fn>;
+      warn: ReturnType<typeof vi.fn>;
+      error: ReturnType<typeof vi.fn>;
+    };
+    sleep: (ms: number) => Promise<void>;
+  },
   user: string,
   text: string,
   workspaceId?: string,

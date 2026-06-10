@@ -14,13 +14,15 @@ jest.mock('bullmq', () => {
       add: _add,
       close: _queueClose,
     })),
-    Worker: jest.fn().mockImplementation((_name: string, processor: (job: unknown) => Promise<void>) => {
-      _processorRef.current = processor;
-      return {
-        close: _workerClose,
-        on: jest.fn(),
-      };
-    }),
+    Worker: jest
+      .fn()
+      .mockImplementation((_name: string, processor: (job: unknown) => Promise<void>) => {
+        _processorRef.current = processor;
+        return {
+          close: _workerClose,
+          on: jest.fn(),
+        };
+      }),
     __add: _add,
     __queueClose: _queueClose,
     __workerClose: _workerClose,

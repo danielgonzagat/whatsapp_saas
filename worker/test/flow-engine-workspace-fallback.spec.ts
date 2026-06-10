@@ -137,9 +137,7 @@ describe('FlowEngineGlobal workspace fallback telemetry (F3-A passo 2)', () => {
       expect(mockPrisma.flowExecution.create).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ workspaceId: 'default' }) }),
       );
-      expect(queuePush).toHaveBeenCalledWith(
-        expect.objectContaining({ workspaceId: 'default' }),
-      );
+      expect(queuePush).toHaveBeenCalledWith(expect.objectContaining({ workspaceId: 'default' }));
     });
 
     it('does not log the fallback when flow.workspaceId is present', async () => {
