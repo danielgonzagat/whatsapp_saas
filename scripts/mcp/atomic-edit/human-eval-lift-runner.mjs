@@ -247,6 +247,72 @@ function runPython(task, sample, timeoutMs) {
   };
 }
 
+function buildProofFeedbackRecord(task, sample, attempt, sourceArm) {
+  const failureKind = attempt.failureKind ?? 'unknown';
+  const proofFeedbackPackage = {
+    version: 'atomic-proof-feedback-v1',
+    task_id: task.task_id,
+    invariantId: `humaneval.${failureKind}`,
+    counterexample: task.test,
+    lessonLine: `The ${sourceArm} completion failed ${failureKind}; preserve entry point ${task.entry_point} and satisfy the check(candidate) contract.`,
+    proposalDigest: sha256(`${task.task_id}\n${sample.completion ?? ''}`),
+    failureKind,
+    rejectedCompletionSha256: sha256(sample.completion ?? ''),
+    stdoutSha256: attempt.stdoutSha256 ?? null,
+    stderrSha256: attempt.stderrSha256 ?? null,
+  };
+  return {
+    task_id: task.task_id,
+    source_arm: sourceArm,
+    model_id: sample.model_id ?? null,
+    attempt_budget: Number(sample.attempt_budget ?? 1),
+    feedback_source: 'atomic-proof-feedback',
+    proof_feedback_package: proofFeedbackPackage,
+    proof_feedback_package_sha256: proofFeedbackPackageDigest(proofFeedbackPackage),
+    atomic_receipt_sha256: sample.atomic_receipt_sha256 ?? null,
+  };
+}
+
+export function buildProofFeedbackPackages(options = {}) {
+  const timeoutMs = Number.isFinite(Number(options.timeoutMs)) ? Number(options.timeoutMs) : 2000;
+  const sourceArm = typeof options.sourceArm === 'string' && options.sourceArm.trim() ? options.sourceArm.trim() : 'baseline';
+  const input = loadInputs(options);
+  const tasks = input.tasks;
+  const samplesByKey = new Map(input.samples.map((sample) => [sampleKey(sample), sample]));
+  const missingSamples = [];
+  const packages = [];
+  for (const task of tasks) {
+    const sample = samplesByKey.get(`${sourceArm}\u0000${task.task_id}`);
+    if (!sample) {
+      missingSamples.push(task.task_id);
+      continue;
+    }
+    const attempt = runPython(task, sample, timeoutMs);
+    if (!attempt.passed) packages.push(buildProofFeedbackRecord(task, sample, attempt, sourceArm));
+  }
+  const validation = packages.map((entry) => ({ taskId: entry.task_id, ...validateProofFeedbackPackage(entry) }));
+  const allPackagesValid = validation.every((entry) => entry.ok);
+  return {
+    ok: missingSamples.length === 0 && allPackagesValid,
+    mode: 'emit-proof-feedback-packages',
+    datasetKind: input.datasetKind,
+    sourceArm,
+    taskCount: tasks.length,
+    failedSampleCount: packages.length,
+    missingSampleCount: missingSamples.length,
+    missingSamples,
+    packagesSha256: sha256(canonical(packages)),
+    allPackagesValid,
+    validation,
+    packages,
+    proofLimits: [
+      'Feedback packages are proposer guidance, not an evaluator and not a raw HumanEval claim.',
+      'Hidden or held-out tests must never be leaked into a package intended for raw-score reporting.',
+      'A package supports an Atomic tool-augmented claim only when the later sample also carries an Atomic receipt sha256.',
+    ],
+  };
+}
+
 function summarizeArm(arm, tasks, samplesByKey, timeoutMs) {
   const attempts = tasks.map((task) => {
     const sample = samplesByKey.get(`${arm}\u0000${task.task_id}`);
@@ -371,6 +437,8 @@ function parseArgs(argv) {
     else if (arg === '--dataset') options.datasetFile = argv[++i];
     else if (arg === '--samples') options.samplesFile = argv[++i];
     else if (arg === '--claim-official-humaneval') options.claimOfficialHumanEval = true;
+    else if (arg === '--emit-feedback-packages') options.emitFeedbackPackages = true;
+    else if (arg === '--source-arm') options.sourceArm = argv[++i];
     else if (arg === '--timeout-ms') options.timeoutMs = Number(argv[++i]);
     else throw new Error(`unknown argument: ${arg}`);
   }
@@ -380,9 +448,13 @@ function parseArgs(argv) {
 if (import.meta.url === `file://${process.argv[1]}`) {
   try {
     const options = parseArgs(process.argv.slice(2));
-    const report = runHumanEvalLiftBench(options);
+    const report = options.emitFeedbackPackages ? buildProofFeedbackPackages(options) : runHumanEvalLiftBench(options);
     if (options.json) process.stdout.write(JSON.stringify(report, null, 2) + '\n');
-    else {
+    else if (options.emitFeedbackPackages) {
+      process.stdout.write(
+        `HumanEvalFeedbackPackages ${report.datasetKind}: sourceArm=${report.sourceArm} packages=${report.failedSampleCount} valid=${report.allPackagesValid}\n`,
+      );
+    } else {
       process.stdout.write(
         `HumanEvalLiftProtocol ${report.datasetKind}: baseline=${report.arms.baseline.passAt1.toFixed(3)} ` +
           `scalar=${report.arms.scalar.passAt1.toFixed(3)} proof=${report.arms.proof.passAt1.toFixed(3)} ` +

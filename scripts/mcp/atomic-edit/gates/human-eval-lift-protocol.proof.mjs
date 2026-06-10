@@ -6,11 +6,12 @@
  * about official-score limits, and detects a proof-feedback Pass@1 lift for
  * the same frozen fixture model under the same task/budget controls.
  */
-import { runHumanEvalLiftBench, validateProofFeedbackPackage } from '../human-eval-lift-runner.mjs';
+import { buildProofFeedbackPackages, runHumanEvalLiftBench, validateProofFeedbackPackage } from '../human-eval-lift-runner.mjs';
 
 const jsonMode = process.argv.includes('--json');
 const report = runHumanEvalLiftBench();
 const forgedOfficial = runHumanEvalLiftBench({ claimOfficialHumanEval: true });
+const emittedFeedbackPackages = buildProofFeedbackPackages({ sourceArm: 'baseline' });
 const forgedFeedbackPackage = validateProofFeedbackPackage({
   task_id: 'HumanEval/fixture_add',
   arm: 'proof',
@@ -50,6 +51,12 @@ check('forged official HumanEval claim is refused on fixture data', forgedOffici
 });
 check('claim taxonomy separates raw HumanEval from Atomic tool-augmented HumanEval', report.claimTaxonomy.rawAndToolAugmentedAreDistinct === true && report.claimTaxonomy.rawHumanEvalClaim === false && report.claimTaxonomy.toolAugmentedHumanEvalClaim === false, report.claimTaxonomy);
 check('proof-feedback samples carry recomputable proof package digests', report.proofFeedbackPackages.feedbackSampleCount === 3 && report.proofFeedbackPackages.validFeedbackPackageCount === 3 && report.proofFeedbackPackages.allFeedbackPackagesValid === true, report.proofFeedbackPackages);
+check('runner emits valid proof-feedback packages from real failing baseline attempts', emittedFeedbackPackages.ok === true && emittedFeedbackPackages.failedSampleCount === 3 && emittedFeedbackPackages.allPackagesValid === true, {
+  failedSampleCount: emittedFeedbackPackages.failedSampleCount,
+  packagesSha256: emittedFeedbackPackages.packagesSha256,
+  validation: emittedFeedbackPackages.validation,
+});
+check('emitted feedback packages are digest-bound tool guidance, not raw HumanEval evidence', /^[a-f0-9]{64}$/.test(emittedFeedbackPackages.packagesSha256) && emittedFeedbackPackages.proofLimits.some((line) => line.includes('not a raw HumanEval claim')), emittedFeedbackPackages.proofLimits);
 check('forged proof-feedback package digests are rejected before they can support tool-augmented claims', forgedFeedbackPackage.ok === false && forgedFeedbackPackage.reason === 'proof-feedback-package-digest-mismatch', forgedFeedbackPackage);
 check('proof-feedback samples block raw HumanEval claims unless explicit Atomic receipts and feedback packages support the tool-augmented claim', report.claimTaxonomy.feedbackDerived === true && report.claimTaxonomy.allFeedbackReceiptsBound === false && report.claimTaxonomy.allFeedbackPackagesValid === true && forgedOfficial.claimTaxonomy.rawHumanEvalClaim === false, {
   fixture: report.claimTaxonomy,
