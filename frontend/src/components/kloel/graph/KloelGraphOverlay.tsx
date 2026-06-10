@@ -94,7 +94,14 @@ export function KloelGraphOverlay({
   const { C, mode } = useGraphTheme();
   const { isMobile } = useResponsiveViewport();
 
-  const [rect, setRect] = useState<WindowRect>(() => computeDefaultRect(readViewportSize()));
+  // Initialize from an SSR-deterministic fallback viewport so server and
+  // client render identical HTML (reading window here caused a hydration
+  // mismatch). The mount effect below recenters on the real viewport and
+  // only re-clamps once the user has moved/resized the window themselves.
+  const [rect, setRect] = useState<WindowRect>(() =>
+    computeDefaultRect({ width: 1280, height: 800 }),
+  );
+  const userAdjustedRef = useRef(false);
   const [fullscreen, setFullscreen] = useState(false);
   const dragStateRef = useRef<{
     readonly mode: 'move' | 'resize';
@@ -110,7 +117,9 @@ export function KloelGraphOverlay({
     }
     const sync = () => {
       const next = readViewportSize();
-      setRect((current) => clampRectToViewport(current, next));
+      setRect((current) =>
+        userAdjustedRef.current ? clampRectToViewport(current, next) : computeDefaultRect(next),
+      );
     };
     sync();
     window.addEventListener('resize', sync, { passive: true });
@@ -172,6 +181,7 @@ export function KloelGraphOverlay({
         return;
       }
       event.preventDefault();
+      userAdjustedRef.current = true;
       dragStateRef.current = {
         mode: dragMode,
         pointerId: event.pointerId,
