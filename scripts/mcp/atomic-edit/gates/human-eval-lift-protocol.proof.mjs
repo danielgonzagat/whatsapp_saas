@@ -6,12 +6,13 @@
  * about official-score limits, and detects a proof-feedback Pass@1 lift for
  * the same frozen fixture model under the same task/budget controls.
  */
-import { buildProofFeedbackPackages, runHumanEvalLiftBench, validateProofFeedbackPackage } from '../human-eval-lift-runner.mjs';
+import { buildProofFeedbackPackages, buildProofFeedbackRepairPrompts, runHumanEvalLiftBench, validateProofFeedbackPackage } from '../human-eval-lift-runner.mjs';
 
 const jsonMode = process.argv.includes('--json');
 const report = runHumanEvalLiftBench();
 const forgedOfficial = runHumanEvalLiftBench({ claimOfficialHumanEval: true });
 const emittedFeedbackPackages = buildProofFeedbackPackages({ sourceArm: 'baseline' });
+const emittedRepairPrompts = buildProofFeedbackRepairPrompts({ sourceArm: 'baseline' });
 const forgedFeedbackPackage = validateProofFeedbackPackage({
   task_id: 'HumanEval/fixture_add',
   arm: 'proof',
@@ -57,6 +58,12 @@ check('runner emits valid proof-feedback packages from real failing baseline att
   validation: emittedFeedbackPackages.validation,
 });
 check('emitted feedback packages are digest-bound tool guidance, not raw HumanEval evidence', /^[a-f0-9]{64}$/.test(emittedFeedbackPackages.packagesSha256) && emittedFeedbackPackages.proofLimits.some((line) => line.includes('not a raw HumanEval claim')), emittedFeedbackPackages.proofLimits);
+check('runner emits digest-bound repair prompts for the fixed model second pass', emittedRepairPrompts.ok === true && emittedRepairPrompts.promptCount === 3 && /^[a-f0-9]{64}$/.test(emittedRepairPrompts.promptsSha256), {
+  promptCount: emittedRepairPrompts.promptCount,
+  promptsSha256: emittedRepairPrompts.promptsSha256,
+});
+check('repair prompts are linked one-to-one to proof-feedback package digests', emittedRepairPrompts.prompts.every((prompt) => emittedFeedbackPackages.packages.some((entry) => entry.proof_feedback_package_sha256 === prompt.proof_feedback_package_sha256)), emittedRepairPrompts.prompts.map((prompt) => ({ taskId: prompt.task_id, packageSha256: prompt.proof_feedback_package_sha256, promptSha256: prompt.repair_prompt_sha256 })));
+check('repair prompts declare tool-augmented scope and zero hidden model calls', emittedRepairPrompts.proofLimits.some((line) => line.includes('not raw HumanEval evidence')) && emittedRepairPrompts.proofLimits.some((line) => line.includes('zero model calls')), emittedRepairPrompts.proofLimits);
 check('forged proof-feedback package digests are rejected before they can support tool-augmented claims', forgedFeedbackPackage.ok === false && forgedFeedbackPackage.reason === 'proof-feedback-package-digest-mismatch', forgedFeedbackPackage);
 check('proof-feedback samples block raw HumanEval claims unless explicit Atomic receipts and feedback packages support the tool-augmented claim', report.claimTaxonomy.feedbackDerived === true && report.claimTaxonomy.allFeedbackReceiptsBound === false && report.claimTaxonomy.allFeedbackPackagesValid === true && forgedOfficial.claimTaxonomy.rawHumanEvalClaim === false, {
   fixture: report.claimTaxonomy,

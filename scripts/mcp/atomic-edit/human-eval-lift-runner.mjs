@@ -313,6 +313,62 @@ export function buildProofFeedbackPackages(options = {}) {
   };
 }
 
+function buildRepairPrompt(task, feedbackRecord) {
+  const feedback = feedbackRecord.proof_feedback_package;
+  return [
+    'Atomic proof-feedback repair prompt (tool-augmented; not raw HumanEval evidence).',
+    `task_id: ${task.task_id}`,
+    `entry_point: ${task.entry_point}`,
+    'Return only the Python completion body that follows the given HumanEval prompt.',
+    '',
+    'HUMANEVAL_PROMPT:',
+    task.prompt,
+    '',
+    'ATOMIC_PROOF_FEEDBACK:',
+    `package_sha256: ${feedbackRecord.proof_feedback_package_sha256}`,
+    `invariant: ${feedback.invariantId}`,
+    `lesson: ${feedback.lessonLine}`,
+    `proposal_digest: ${feedback.proposalDigest}`,
+    `rejected_completion_sha256: ${feedback.rejectedCompletionSha256}`,
+    'counterexample:',
+    feedback.counterexample,
+  ].join('\n');
+}
+
+export function buildProofFeedbackRepairPrompts(options = {}) {
+  const input = loadInputs(options);
+  const tasksById = new Map(input.tasks.map((task) => [task.task_id, task]));
+  const packageReport = buildProofFeedbackPackages(options);
+  const prompts = packageReport.packages.map((feedbackRecord) => {
+    const task = tasksById.get(feedbackRecord.task_id);
+    const repairPrompt = buildRepairPrompt(task, feedbackRecord);
+    return {
+      task_id: feedbackRecord.task_id,
+      mode: 'atomic-proof-feedback-repair-prompt-v1',
+      source_arm: feedbackRecord.source_arm,
+      feedback_source: feedbackRecord.feedback_source,
+      proof_feedback_package_sha256: feedbackRecord.proof_feedback_package_sha256,
+      repair_prompt: repairPrompt,
+      repair_prompt_sha256: sha256(repairPrompt),
+    };
+  });
+  return {
+    ok: packageReport.ok && prompts.every((entry) => /^[a-f0-9]{64}$/.test(entry.repair_prompt_sha256)),
+    mode: 'emit-proof-feedback-repair-prompts',
+    datasetKind: input.datasetKind,
+    sourceArm: packageReport.sourceArm,
+    promptCount: prompts.length,
+    packagesSha256: packageReport.packagesSha256,
+    promptsSha256: sha256(canonical(prompts)),
+    prompts,
+    proofLimits: [
+      'Repair prompts are model inputs for Atomic tool-augmented runs, not raw HumanEval evidence.',
+      'Every repair prompt is digest-bound to a proof-feedback package emitted from an evaluated failure.',
+      'The runner still makes zero model calls; an external fixed model must consume these prompts and return samples with Atomic receipts.',
+    ],
+  };
+}
+
 function summarizeArm(arm, tasks, samplesByKey, timeoutMs) {
   const attempts = tasks.map((task) => {
     const sample = samplesByKey.get(`${arm}\u0000${task.task_id}`);
@@ -438,6 +494,7 @@ function parseArgs(argv) {
     else if (arg === '--samples') options.samplesFile = argv[++i];
     else if (arg === '--claim-official-humaneval') options.claimOfficialHumanEval = true;
     else if (arg === '--emit-feedback-packages') options.emitFeedbackPackages = true;
+    else if (arg === '--emit-repair-prompts') options.emitRepairPrompts = true;
     else if (arg === '--source-arm') options.sourceArm = argv[++i];
     else if (arg === '--timeout-ms') options.timeoutMs = Number(argv[++i]);
     else throw new Error(`unknown argument: ${arg}`);
@@ -448,9 +505,17 @@ function parseArgs(argv) {
 if (import.meta.url === `file://${process.argv[1]}`) {
   try {
     const options = parseArgs(process.argv.slice(2));
-    const report = options.emitFeedbackPackages ? buildProofFeedbackPackages(options) : runHumanEvalLiftBench(options);
+    const report = options.emitRepairPrompts
+      ? buildProofFeedbackRepairPrompts(options)
+      : options.emitFeedbackPackages
+        ? buildProofFeedbackPackages(options)
+        : runHumanEvalLiftBench(options);
     if (options.json) process.stdout.write(JSON.stringify(report, null, 2) + '\n');
-    else if (options.emitFeedbackPackages) {
+    else if (options.emitRepairPrompts) {
+      process.stdout.write(
+        `HumanEvalRepairPrompts ${report.datasetKind}: sourceArm=${report.sourceArm} prompts=${report.promptCount} digest=${report.promptsSha256}\n`,
+      );
+    } else if (options.emitFeedbackPackages) {
       process.stdout.write(
         `HumanEvalFeedbackPackages ${report.datasetKind}: sourceArm=${report.sourceArm} packages=${report.failedSampleCount} valid=${report.allPackagesValid}\n`,
       );
