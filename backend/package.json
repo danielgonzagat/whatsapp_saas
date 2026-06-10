@@ -44,7 +44,7 @@
     "backfill:person-lead-to-contact": "ts-node src/prisma/backfills/person-kloel-lead-to-contact.backfill.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.1064.0",
+    "@aws-sdk/client-s3": "3.1065.0",
     "@nestjs-modules/ioredis": "2.2.1",
     "@nestjs/common": "11.1.26",
     "@nestjs/config": "4.0.4",
@@ -58,8 +58,8 @@
     "@nestjs/throttler": "6.5.0",
     "@nestjs/websockets": "11.1.26",
     "@prisma/client": "5.22.0",
-    "@sentry/nestjs": "10.56.0",
-    "@sentry/node": "10.56.0",
+    "@sentry/nestjs": "10.57.0",
+    "@sentry/node": "10.57.0",
     "@types/bcrypt": "6.0.0",
     "@types/cookie-parser": "1.4.10",
     "archiver": "^8.0.0",
