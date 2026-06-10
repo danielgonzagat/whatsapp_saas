@@ -74,6 +74,26 @@ describe('KloelMarkdown render parity', () => {
       expect(container.querySelector('.kloel-math-inline')).toBeNull();
       expect(container.textContent).toContain('$5');
     });
+
+    it('never treats Brazilian currency runs as inline math', () => {
+      const { container } = render(
+        <KloelMarkdown
+          content={
+            'E2E Smoke Product · R$ 79,50 · inativo; E2E Recovery Proof Product · R$ 99,90 · inativo.'
+          }
+        />,
+      );
+      expect(container.querySelector('.kloel-math-inline')).toBeNull();
+      expect(container.textContent).toContain('R$ 79,50');
+      expect(container.textContent).toContain('R$ 99,90');
+    });
+
+    it('keeps paired plain dollar amounts literal', () => {
+      const { container } = render(<KloelMarkdown content={'Custa $10 hoje e $20 amanha.'} />);
+      expect(container.querySelector('.kloel-math-inline')).toBeNull();
+      expect(container.textContent).toContain('$10');
+      expect(container.textContent).toContain('$20');
+    });
   });
 
   describe('Mermaid (b)', () => {
