@@ -38,7 +38,7 @@ describe('MindSelfModificationService', () => {
       [{ eventName?: string; workspaceId?: string; truthMode?: string }]
     >;
     const emitArg = emitCalls[0]?.[0];
-    expect(emitArg?.eventName).toBe('cognition.self.modification_proposed');
+    expect(emitArg?.eventName).toBe('cognition.self_modification.proposed');
     expect(emitArg?.workspaceId).toBe('ws-1');
     expect(emitArg?.truthMode).toBe('inferred');
   });

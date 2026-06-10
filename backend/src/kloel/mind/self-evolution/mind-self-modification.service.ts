@@ -317,7 +317,7 @@ export class MindSelfModificationService {
     }
     try {
       await this.spine.emit({
-        eventName: 'cognition.self.modification_proposed',
+        eventName: SELF_EVOLUTION_EVENT_TYPE,
         workspaceId,
         truthMode: 'inferred',
         provenance: {
