@@ -48,7 +48,10 @@ function deriveReasoningGist(text: string): string {
   if (!flattened) {
     return '';
   }
-  const sentenceEnd = flattened.search(/(?<=[.!?…])\s/);
+  // A list-enumeration period ("três coisas: 1. uma tabela") is not a sentence
+  // boundary: require a non-digit before the punctuation and an uppercase
+  // letter after the space, so the gist never collapses to "...: 1.".
+  const sentenceEnd = flattened.search(/(?<=[^\s0-9][.!?…])\s+(?=\p{Lu})/u);
   const sentence = sentenceEnd > 0 ? flattened.slice(0, sentenceEnd) : flattened;
   if (sentence.length <= 96) {
     return sentence;

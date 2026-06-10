@@ -473,11 +473,16 @@ export default function KloelDashboard() {
       const timeoutId = window.setTimeout(() => setShowSlowHint(false), 0);
       return () => window.clearTimeout(timeoutId);
     }
+    // Activity-aware: every streamed delta updates `messages`, re-arming this
+    // timer. The slow hint therefore fires only after true stream silence —
+    // an actively-thinking long turn (reasoning is unlimited in time) never
+    // alarms the user.
+    setShowSlowHint(false);
     const timeoutId = window.setTimeout(() => {
       setShowSlowHint(true);
     }, SLOW_HINT_DELAY_MS);
     return () => window.clearTimeout(timeoutId);
-  }, [isReplyInFlight]);
+  }, [isReplyInFlight, messages]);
 
   useEffect(() => {
     return () => {
