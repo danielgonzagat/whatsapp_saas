@@ -48,9 +48,9 @@ describe('ProviderRegistry tenant filter', () => {
   it('rejects email targets without workspaceId (fail-closed, no synthetic tenant)', async () => {
     const { ProviderRegistry } = await import('../providers/registry');
 
-    await expect(ProviderRegistry.getProviderForUser('lead@example.com', undefined)).rejects.toThrow(
-      /workspaceId is required/,
-    );
+    await expect(
+      ProviderRegistry.getProviderForUser('lead@example.com', undefined),
+    ).rejects.toThrow(/workspaceId is required/);
     expect(mockContactFindFirst).not.toHaveBeenCalled();
     expect(mockContactFindUnique).not.toHaveBeenCalled();
   });

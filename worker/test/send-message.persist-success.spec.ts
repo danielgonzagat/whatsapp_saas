@@ -6,7 +6,9 @@ type Mock = ReturnType<typeof vi.fn>;
 
 const buildDeps = (overrides?: { findFirst?: Mock; create?: Mock }) => {
   const findFirst = overrides?.findFirst ?? vi.fn().mockResolvedValue(null);
-  const create = overrides?.create ?? vi.fn().mockResolvedValue({ id: 'msg-1', createdAt: new Date('2026-06-10T00:00:00Z') });
+  const create =
+    overrides?.create ??
+    vi.fn().mockResolvedValue({ id: 'msg-1', createdAt: new Date('2026-06-10T00:00:00Z') });
   const updateMany = vi.fn().mockResolvedValue({ count: 1 });
   const publish = vi.fn().mockResolvedValue(1);
   const log = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
