@@ -1,5 +1,4 @@
 import { Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { MindEventSpine } from '../kloel/mind/coordination';
@@ -20,7 +19,6 @@ import {
   type ShippingConfig,
   type UpdatePlanDto,
 } from './plan.service.helpers';
-import { emitCommerceAlias } from '../kloel/event-taxonomy.canonical-aliases';
 
 export type {
   AffiliateConfig,
@@ -37,7 +35,6 @@ export class PlanService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly eventEmitter: EventEmitter2,
     private readonly audit: AuditService,
     @Optional() private readonly brainSpine?: MindEventSpine,
   ) {}
@@ -68,15 +65,6 @@ export class PlanService {
         }),
         active: true,
       },
-    });
-
-    this.eventEmitter.emit('mind.plan.observed', {
-      planId: plan.id,
-      productId: dto.productId,
-      workspaceId,
-      actorId: actor?.id,
-      name: plan.name,
-      price: plan.price,
     });
 
     if (actor) {
@@ -148,13 +136,6 @@ export class PlanService {
     const { updates, changes } = patch;
     const plan = await this.prisma.productPlan.update({ where: { id: planId }, data: updates });
 
-    emitCommerceAlias((name, payload) => this.eventEmitter.emit(name, payload), 'plan.updated', {
-      planId: plan.id,
-      workspaceId,
-      actorId: actor?.id,
-      changes,
-    });
-
     if (actor) {
       await this.audit.log({
         workspaceId,
@@ -207,13 +188,6 @@ export class PlanService {
     }
 
     await this.prisma.productPlan.delete({ where: { id: planId } });
-
-    emitCommerceAlias((name, payload) => this.eventEmitter.emit(name, payload), 'plan.deleted', {
-      planId,
-      workspaceId,
-      actorId: actor?.id,
-      planName: plan.name,
-    });
 
     if (actor) {
       await this.audit.log({

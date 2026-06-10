@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { ProductService } from './product.service';
@@ -55,7 +54,6 @@ describe('ProductService.update (resolver-compatible 2-arg)', () => {
       providers: [
         ProductService,
         { provide: PrismaService, useValue: prisma },
-        { provide: EventEmitter2, useValue: { emit: jest.fn() } },
         { provide: AuditService, useValue: { log: jest.fn() } },
         {
           provide: MindEventSpine,

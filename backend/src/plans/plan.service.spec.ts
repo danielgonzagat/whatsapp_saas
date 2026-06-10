@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { PlanService } from './plan.service';
+import { MindEventSpine } from '../kloel/mind/coordination/mind-event-spine.service';
 
 function objectContaining<T extends object>(sample: T): T {
   const matcher: unknown = expect.objectContaining(sample);
@@ -22,8 +22,8 @@ describe('PlanService', () => {
       delete: jest.Mock;
     };
   };
-  let events: { emit: jest.Mock };
   let audit: { log: jest.Mock };
+  let brainSpine: { recordCommercial: jest.Mock };
   const ws = 'ws-1';
 
   beforeEach(async () => {
@@ -37,14 +37,14 @@ describe('PlanService', () => {
         delete: jest.fn(),
       },
     };
-    events = { emit: jest.fn() };
     audit = { log: jest.fn().mockResolvedValue(undefined) };
+    brainSpine = { recordCommercial: jest.fn().mockResolvedValue('event-1') };
     const m: TestingModule = await Test.createTestingModule({
       providers: [
         PlanService,
         { provide: PrismaService, useValue: prisma },
-        { provide: EventEmitter2, useValue: events },
         { provide: AuditService, useValue: audit },
+        { provide: MindEventSpine, useValue: brainSpine },
       ],
     }).compile();
     service = m.get(PlanService);
@@ -99,13 +99,16 @@ describe('PlanService', () => {
       );
     });
 
-    it('emits mind.plan.observed event', async () => {
+    it('records mind.plan.observed on the Mind spine', async () => {
       prisma.product.findFirst.mockResolvedValue({ id: 'prod-1', workspaceId: ws });
       prisma.productPlan.create.mockResolvedValue({ id: 'p1', name: 'Pro', price: 49.9 });
       await service.create(ws, dto);
-      expect(events.emit).toHaveBeenCalledWith(
-        'mind.plan.observed',
-        expect.objectContaining({ planId: 'p1', workspaceId: ws }),
+      expect(brainSpine.recordCommercial).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventType: 'mind.plan.observed',
+          subject: 'plan:p1',
+          workspaceId: ws,
+        }),
       );
     });
 
@@ -128,7 +131,8 @@ describe('PlanService', () => {
     it('survives when cognitive spine is unavailable (optional dep)', async () => {
       prisma.product.findFirst.mockResolvedValue({ id: 'prod-1', workspaceId: ws });
       prisma.productPlan.create.mockResolvedValue({ id: 'p1', name: 'Pro', price: 49.9 });
-      const r = await service.create(ws, dto);
+      const bare = new PlanService(prisma as never, audit as never);
+      const r = await bare.create(ws, dto);
       expect(r.success).toBe(true);
     });
   });
@@ -182,13 +186,16 @@ describe('PlanService', () => {
       expect(prisma.productPlan.update).not.toHaveBeenCalled();
     });
 
-    it('emits plan.updated event', async () => {
+    it('records plan.updated on the Mind spine', async () => {
       prisma.productPlan.findFirst.mockResolvedValue(existing);
       prisma.productPlan.update.mockResolvedValue(existing);
       await service.update(ws, 'p1', { name: 'X' });
-      expect(events.emit).toHaveBeenCalledWith(
-        'plan.updated',
-        expect.objectContaining({ planId: 'p1' }),
+      expect(brainSpine.recordCommercial).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventType: 'plan.updated',
+          subject: 'plan:p1',
+          workspaceId: ws,
+        }),
       );
     });
 
@@ -218,14 +225,10 @@ describe('PlanService', () => {
       await expect(service.delete(ws, 'nx')).rejects.toThrow(NotFoundException);
     });
 
-    it('emits plan.deleted + audits', async () => {
+    it('audits plan deletion', async () => {
       prisma.productPlan.findFirst.mockResolvedValue(plan);
       prisma.productPlan.delete.mockResolvedValue(plan);
       await service.delete(ws, 'p1', { id: 'actor-1' });
-      expect(events.emit).toHaveBeenCalledWith(
-        'plan.deleted',
-        expect.objectContaining({ planId: 'p1' }),
-      );
       expect(audit.log).toHaveBeenCalledWith(expect.objectContaining({ action: 'plan.delete' }));
     });
   });
