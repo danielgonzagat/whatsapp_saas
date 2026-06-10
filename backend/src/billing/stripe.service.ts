@@ -23,6 +23,45 @@ export class StripeService {
 
   constructor(private readonly config: ConfigService) {}
 
+  private resolveEnv(name: string): string | undefined {
+    return this.config.get<string>(name) ?? process.env[name];
+  }
+
+  /**
+   * Production must never run on a test-mode key: charges would silently
+   * succeed against Stripe's sandbox and no real money would move (issue
+   * #412). Fires on NODE_ENV=production OR RAILWAY_ENVIRONMENT=production so
+   * a misconfigured NODE_ENV on Railway cannot mask the problem. Throwing
+   * here (instead of at app bootstrap) blocks every payment-touching code
+   * path with a clear message while keeping the rest of the app alive, and
+   * because the client is never cached on failure the structured
+   * `stripe_test_key_in_production` error re-fires on every attempt —
+   * a persistent alarm until the live key is swapped in (operational).
+   */
+  private assertTestKeyNotInProduction(secretKey: string): void {
+    if (!secretKey.startsWith('sk_test_')) {
+      return;
+    }
+
+    const nodeEnv = this.resolveEnv('NODE_ENV');
+    const railwayEnv = this.resolveEnv('RAILWAY_ENVIRONMENT');
+    if (nodeEnv !== 'production' && railwayEnv !== 'production') {
+      return;
+    }
+
+    this.logger.error('stripe_test_key_in_production', {
+      event: 'stripe_test_key_in_production',
+      nodeEnv,
+      railwayEnv,
+      keyPrefix: 'sk_test_',
+    });
+    throw new Error(
+      'STRIPE_SECRET_KEY is a test-mode key (sk_test_*) while running in production — ' +
+        'real charges are blocked. Swap STRIPE_SECRET_KEY to the live key (sk_live_*) ' +
+        'in the production environment (operational action).',
+    );
+  }
+
   private assertLiveModeGuard(secretKey: string): void {
     if (!secretKey.startsWith('sk_live_')) {
       return;
@@ -53,6 +92,7 @@ export class StripeService {
         'STRIPE_SECRET_KEY is not configured. Set it in env (sk_test_* in dev, sk_live_* only in production).',
       );
     }
+    this.assertTestKeyNotInProduction(secretKey);
     this.assertLiveModeGuard(secretKey);
 
     this.client = new StripeRuntime(secretKey, {
