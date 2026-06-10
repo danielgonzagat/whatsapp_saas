@@ -34,6 +34,11 @@ check('forged official HumanEval claim is refused on fixture data', forgedOffici
   officialClaimRefused: forgedOfficial.officialClaimRefused,
   fullHumanEvalClaim: forgedOfficial.fullHumanEvalClaim,
 });
+check('claim taxonomy separates raw HumanEval from Atomic tool-augmented HumanEval', report.claimTaxonomy.rawAndToolAugmentedAreDistinct === true && report.claimTaxonomy.rawHumanEvalClaim === false && report.claimTaxonomy.toolAugmentedHumanEvalClaim === false, report.claimTaxonomy);
+check('proof-feedback samples block raw HumanEval claims unless explicit Atomic receipts support the tool-augmented claim', report.claimTaxonomy.feedbackDerived === true && report.claimTaxonomy.allFeedbackReceiptsBound === false && forgedOfficial.claimTaxonomy.rawHumanEvalClaim === false, {
+  fixture: report.claimTaxonomy,
+  forged: forgedOfficial.claimTaxonomy,
+});
 check('all arms use the same fixed model id and one-shot budget', report.controls.sameFixedModel && report.controls.sameAttemptBudget, report.controls);
 check('runner performs no model or network calls during evaluation', report.controls.externalModelCalls === 0 && report.controls.networkRequired === false, report.controls);
 check('structured proof feedback lifts Pass@1 over baseline on HumanEval-format Python tasks', proof.passAt1 > baseline.passAt1 && report.deltas.proofMinusBaselinePassAt1 > 0, {
@@ -58,7 +63,7 @@ check('dataset and sample digests bind the benchmark artifacts', /^[a-f0-9]{64}$
   datasetSha256: report.datasetSha256,
   samplesSha256: report.samplesSha256,
 });
-check('proof limits require external dataset/model samples before any official HumanEval claim', report.proofLimits.some((line) => line.includes('Official HumanEval claims require an external JSONL dataset')), report.proofLimits);
+check('proof limits require external data and separate raw/tool-augmented HumanEval claims', report.proofLimits.some((line) => line.includes('Raw HumanEval claims require an external JSONL dataset')) && report.proofLimits.some((line) => line.includes('Atomic tool-augmented HumanEval claims require')), report.proofLimits);
 
 const payload = { ok: results.every((entry) => entry.ok), pass: results.filter((entry) => entry.ok).length, fail: results.filter((entry) => !entry.ok).length, report, results };
 if (jsonMode) process.stdout.write(JSON.stringify(payload, null, 2) + '\n');

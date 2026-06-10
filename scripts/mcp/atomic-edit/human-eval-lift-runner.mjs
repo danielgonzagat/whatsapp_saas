@@ -145,6 +145,15 @@ function sampleKey(sample) {
   return `${sample.arm ?? 'proof'}\u0000${sample.task_id}`;
 }
 
+function feedbackSource(sample) {
+  if (typeof sample.feedback_source === 'string' && sample.feedback_source.trim()) return sample.feedback_source.trim();
+  return sample.arm === 'proof' ? 'atomic-proof-feedback' : 'none';
+}
+
+function isExplicitReceiptSha(value) {
+  return typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
+}
+
 function pythonSource(task, sample) {
   return `${task.prompt}${sample.completion}\n${task.test}\ncheck(${task.entry_point})\n`;
 }
@@ -228,8 +237,13 @@ export function runHumanEvalLiftBench(options = {}) {
   const armReports = Object.fromEntries(arms.map((arm) => [arm, summarizeArm(arm, tasks, samplesByKey, timeoutMs)]));
   const external = input.datasetKind === 'external-jsonl';
   const requestedOfficialClaim = Boolean(options.claimOfficialHumanEval);
-  const fullHumanEvalClaim =
-    requestedOfficialClaim && external && tasks.length >= 164 && tasks.every((task) => String(task.task_id).startsWith('HumanEval/'));
+  const officialShape = external && tasks.length >= 164 && tasks.every((task) => String(task.task_id).startsWith('HumanEval/'));
+  const feedbackSamples = samples.filter((sample) => feedbackSource(sample) !== 'none');
+  const feedbackDerived = feedbackSamples.length > 0;
+  const allFeedbackReceiptsBound = feedbackSamples.length > 0 && feedbackSamples.every((sample) => isExplicitReceiptSha(sample.atomic_receipt_sha256));
+  const rawHumanEvalClaim = requestedOfficialClaim && officialShape && !feedbackDerived;
+  const toolAugmentedHumanEvalClaim = requestedOfficialClaim && officialShape && feedbackDerived && allFeedbackReceiptsBound;
+  const fullHumanEvalClaim = rawHumanEvalClaim;
   const pythonProbe = childProcess.spawnSync('python3', ['--version'], { encoding: 'utf8', timeout: 1000 });
   return {
     ok: shapeErrors.length === 0,
@@ -240,7 +254,16 @@ export function runHumanEvalLiftBench(options = {}) {
     datasetSha256: sha256(input.datasetDigestSource),
     samplesSha256: sha256(input.samplesDigestSource),
     fullHumanEvalClaim,
-    officialClaimRefused: requestedOfficialClaim && !fullHumanEvalClaim,
+    officialClaimRefused: requestedOfficialClaim && !rawHumanEvalClaim && !toolAugmentedHumanEvalClaim,
+    claimTaxonomy: {
+      officialShape,
+      feedbackDerived,
+      feedbackSampleCount: feedbackSamples.length,
+      allFeedbackReceiptsBound,
+      rawHumanEvalClaim,
+      toolAugmentedHumanEvalClaim,
+      rawAndToolAugmentedAreDistinct: true,
+    },
     pythonAvailable: pythonProbe.status === 0,
     controls: {
       sameFixedModel: modelIds.length === 1,
@@ -258,7 +281,8 @@ export function runHumanEvalLiftBench(options = {}) {
     },
     proofLimits: [
       'Bundled fixture proves only a HumanEval-format runner and fixed-model lift protocol, not the official HumanEval score.',
-      'Official HumanEval claims require an external JSONL dataset, external fixed-model samples, >=164 HumanEval/* tasks, and archived receipts.',
+      'Raw HumanEval claims require an external JSONL dataset, external fixed-model samples, >=164 HumanEval/* tasks, and no proof-feedback-derived samples.',
+      'Atomic tool-augmented HumanEval claims require the same external shape plus explicit Atomic receipt sha256 values for feedback-derived samples.',
       'The runner evaluates submitted samples; it does not call or improve a model by itself.',
     ],
   };
@@ -287,7 +311,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       process.stdout.write(
         `HumanEvalLiftProtocol ${report.datasetKind}: baseline=${report.arms.baseline.passAt1.toFixed(3)} ` +
           `scalar=${report.arms.scalar.passAt1.toFixed(3)} proof=${report.arms.proof.passAt1.toFixed(3)} ` +
-          `(official=${report.fullHumanEvalClaim})\n`,
+          `(rawOfficial=${report.claimTaxonomy.rawHumanEvalClaim} toolOfficial=${report.claimTaxonomy.toolAugmentedHumanEvalClaim})\n`,
       );
     }
     process.exit(report.ok ? 0 : 1);
