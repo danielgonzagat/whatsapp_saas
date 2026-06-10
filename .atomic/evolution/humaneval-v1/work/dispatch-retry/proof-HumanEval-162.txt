@@ -1,0 +1,44 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+Atomic proof-feedback repair prompt (tool-augmented; not raw HumanEval evidence).
+task_id: HumanEval/162
+entry_point: string_to_md5
+Return only the Python completion body that follows the given HumanEval prompt.
+
+HUMANEVAL_PROMPT:
+
+def string_to_md5(text):
+    """
+    Given a string 'text', return its md5 hash equivalent string.
+    If 'text' is an empty string, return None.
+
+    >>> string_to_md5('Hello world') == '3e25960a79dbc69b674cd4ec67a72c62'
+    """
+
+
+ATOMIC_PROOF_FEEDBACK:
+package_sha256: 3f4873af04de2db57ae93155b0b9abae914c72e998ed074ca3b8e192bec08e61
+invariant: humaneval.runtime
+lesson: The baseline completion failed runtime; preserve entry point string_to_md5 and satisfy the check(candidate) contract.
+proposal_digest: 322a485a6a2aa502ec3bb4abc985b5ba3fda447703b6ea1159118b16cabe5a3f
+rejected_completion_sha256: 4f86502adb529496662be45992d20c8d2b9aa54869e2f2e27e45d61064ca790c
+counterexample:
+def check(candidate):
+
+    # Check some simple cases
+    assert candidate('Hello world') == '3e25960a79dbc69b674cd4ec67a72c62'
+    assert candidate('') == None
+    assert candidate('A B C') == '0ef78513b0cb8cef12743f5aeb35f888'
+    assert candidate('password') == '5f4dcc3b5aa765d61d8327deb882cf99'
+
+    # Check some edge cases that are easy to work out by hand.
+    assert True
+
+
+--- FIM DA TAREFA ---

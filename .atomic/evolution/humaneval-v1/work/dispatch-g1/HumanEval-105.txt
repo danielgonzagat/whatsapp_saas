@@ -1,0 +1,33 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+
+def by_length(arr):
+    """
+    Given an array of integers, sort the integers that are between 1 and 9 inclusive,
+    reverse the resulting array, and then replace each digit by its corresponding name from
+    "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine".
+
+    For example:
+      arr = [2, 1, 1, 4, 5, 8, 2, 3]   
+            -> sort arr -> [1, 1, 2, 2, 3, 4, 5, 8] 
+            -> reverse arr -> [8, 5, 4, 3, 2, 2, 1, 1]
+      return ["Eight", "Five", "Four", "Three", "Two", "Two", "One", "One"]
+    
+      If the array is empty, return an empty array:
+      arr = []
+      return []
+    
+      If the array has any strange number ignore it:
+      arr = [1, -1 , 55] 
+            -> sort arr -> [-1, 1, 55]
+            -> reverse arr -> [55, 1, -1]
+      return = ['One']
+    """
+
+--- FIM DA TAREFA ---

@@ -1,0 +1,51 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+Atomic proof-feedback repair prompt (tool-augmented; not raw HumanEval evidence).
+task_id: HumanEval/91
+entry_point: is_bored
+Return only the Python completion body that follows the given HumanEval prompt.
+
+HUMANEVAL_PROMPT:
+
+def is_bored(S):
+    """
+    You'll be given a string of words, and your task is to count the number
+    of boredoms. A boredom is a sentence that starts with the word "I".
+    Sentences are delimited by '.', '?' or '!'.
+   
+    For example:
+    >>> is_bored("Hello world")
+    0
+    >>> is_bored("The sky is blue. The sun is shining. I love this weather")
+    1
+    """
+
+
+ATOMIC_PROOF_FEEDBACK:
+package_sha256: a078a4856b92e908b9f9fbf658cd4462cd13d8db9f0fc100a71ea9f3c58b8afb
+invariant: humaneval.runtime
+lesson: The baseline completion failed runtime; preserve entry point is_bored and satisfy the check(candidate) contract.
+proposal_digest: 76c74e4080dde0a886657871ec66db6d8197d8ed3023eeea23b868db5bbbc5b8
+rejected_completion_sha256: 8a9e7ed95a96aa50dfebc8c5c8df29f31a54e66ddee6725fefcb597614fe30b7
+counterexample:
+def check(candidate):
+
+    # Check some simple cases
+    assert candidate("Hello world") == 0, "Test 1"
+    assert candidate("Is the sky blue?") == 0, "Test 2"
+    assert candidate("I love It !") == 1, "Test 3"
+    assert candidate("bIt") == 0, "Test 4"
+    assert candidate("I feel good today. I will be productive. will kill It") == 2, "Test 5"
+    assert candidate("You and I are going for a walk") == 0, "Test 6"
+
+    # Check some edge cases that are easy to work out by hand.
+    assert True, "This prints if this assert fails 2 (also good for debugging!)"
+
+
+--- FIM DA TAREFA ---

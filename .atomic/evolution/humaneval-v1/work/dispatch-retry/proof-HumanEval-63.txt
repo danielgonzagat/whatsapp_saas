@@ -1,0 +1,55 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+Atomic proof-feedback repair prompt (tool-augmented; not raw HumanEval evidence).
+task_id: HumanEval/63
+entry_point: fibfib
+Return only the Python completion body that follows the given HumanEval prompt.
+
+HUMANEVAL_PROMPT:
+
+
+def fibfib(n: int):
+    """The FibFib number sequence is a sequence similar to the Fibbonacci sequnece that's defined as follows:
+    fibfib(0) == 0
+    fibfib(1) == 0
+    fibfib(2) == 1
+    fibfib(n) == fibfib(n-1) + fibfib(n-2) + fibfib(n-3).
+    Please write a function to efficiently compute the n-th element of the fibfib number sequence.
+    >>> fibfib(1)
+    0
+    >>> fibfib(5)
+    4
+    >>> fibfib(8)
+    24
+    """
+
+
+ATOMIC_PROOF_FEEDBACK:
+package_sha256: 0bca557254e5872c02902aef5773e902d301b9c7b8c5ffbd7cd4fd492cbf24d0
+invariant: humaneval.runtime
+lesson: The baseline completion failed runtime; preserve entry point fibfib and satisfy the check(candidate) contract.
+proposal_digest: 954e05801505b872cd717bf5b5e56970e8c4ee4708eedd2cc1f97c3011fe0ed6
+rejected_completion_sha256: 23b2be1cbe7ac6d38cbc2abcaaa0e2271f75801e16ed7cfad7450de2e971016c
+counterexample:
+
+
+METADATA = {}
+
+
+def check(candidate):
+    assert candidate(2) == 1
+    assert candidate(1) == 0
+    assert candidate(5) == 4
+    assert candidate(8) == 24
+    assert candidate(10) == 81
+    assert candidate(12) == 274
+    assert candidate(14) == 927
+
+
+--- FIM DA TAREFA ---

@@ -1,0 +1,669 @@
+{
+  "ok": true,
+  "mode": "emit-proof-feedback-packages",
+  "datasetKind": "external-jsonl",
+  "sourceArm": "baseline",
+  "taskCount": 164,
+  "failedSampleCount": 24,
+  "missingSampleCount": 0,
+  "missingSamples": [],
+  "packagesSha256": "92839ff25adf68e5ff456cbbb7aaeb56f3c90349227932f883fbbc8703b0fada",
+  "allPackagesValid": true,
+  "validation": [
+    {
+      "taskId": "HumanEval/0",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "af3bdd4f0bc3148df74e8708e73d10ec9574e98e0c449ec3e716742b84f0191e"
+    },
+    {
+      "taskId": "HumanEval/32",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "26df0f7a7284890e68abeef144a970a62266069e1382078feb79de720381b4bd"
+    },
+    {
+      "taskId": "HumanEval/36",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "ebf13bfe422482428b011d55d9fc34c1157a89759fe0c7613ae26dee535259a2"
+    },
+    {
+      "taskId": "HumanEval/63",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "0bca557254e5872c02902aef5773e902d301b9c7b8c5ffbd7cd4fd492cbf24d0"
+    },
+    {
+      "taskId": "HumanEval/64",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "4332cb9d90a98d0d72e118fa70905c79c90d07aab94bf4078f917e02829933d3"
+    },
+    {
+      "taskId": "HumanEval/65",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "a18f8d772095d13259c2949b270c77b7d00122ef051fdcf0fdd4724e332a378d"
+    },
+    {
+      "taskId": "HumanEval/70",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "f8c532bd8aa1c6f37332e7b821e4349212cf2dbef6ea97e4d97829728aae7c34"
+    },
+    {
+      "taskId": "HumanEval/77",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "a274f9e40b023f20a9a6ad3ff34e409be7b31c7d5e2143781869420c5a44a4e2"
+    },
+    {
+      "taskId": "HumanEval/83",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "df0dd9fa584bcc3b190cc25be888588a9939b4db330347f93826ce3fe0a84375"
+    },
+    {
+      "taskId": "HumanEval/91",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "a078a4856b92e908b9f9fbf658cd4462cd13d8db9f0fc100a71ea9f3c58b8afb"
+    },
+    {
+      "taskId": "HumanEval/93",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "57ef50f4ca309bff007d82a18d7e7a98b4d4d6b1e3d07fc64317a4cf820aca00"
+    },
+    {
+      "taskId": "HumanEval/101",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "412eac8eedbbdb360cde976a2f38939d8af4869936db5bd4a5202c73cb2a7cef"
+    },
+    {
+      "taskId": "HumanEval/107",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "c63fecbf7bf979ae3f6a9b3087d7037aff10caa3cf0821c0e4b9b0a8d73bba8e"
+    },
+    {
+      "taskId": "HumanEval/115",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "51f0c51333b649ac550e1152eb38eacd9b8a6e4ad605b157fbe4caf00a8bdc74"
+    },
+    {
+      "taskId": "HumanEval/129",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "b419fd6d61c13176c02e4ff91a4a3fb54258c1a61eb23034f8156a58830f7e65"
+    },
+    {
+      "taskId": "HumanEval/130",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "daca6c3dbd34bbc61610dd0e734e8bfa504a434a3f7a24e4af04159da300602b"
+    },
+    {
+      "taskId": "HumanEval/132",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "a911024d3a23727e410901bfb71cc699c02da8702fe0f2ea6b9661df7035ffc9"
+    },
+    {
+      "taskId": "HumanEval/133",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "570a26358e5ca0f13f86c3d2941db3a478353ff3580600f0349fd14827bb7cd6"
+    },
+    {
+      "taskId": "HumanEval/135",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "f732349d0ef8aa0c3d6c6ab251170757923ccb294b3406cc92ca11154b223a40"
+    },
+    {
+      "taskId": "HumanEval/138",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "7a3d38e495d9838d047df4c1d14dca61da0de4977f9957a1e48ccf1214ceec0c"
+    },
+    {
+      "taskId": "HumanEval/145",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "2e534928783c665bac6d739664d8f1fa0b61132e20b1a419b5f5ab2676c32894"
+    },
+    {
+      "taskId": "HumanEval/160",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "b6c0ddf4128928cee25cd6181131572a366e2415c58df67ce92dc8968868d21f"
+    },
+    {
+      "taskId": "HumanEval/162",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "3f4873af04de2db57ae93155b0b9abae914c72e998ed074ca3b8e192bec08e61"
+    },
+    {
+      "taskId": "HumanEval/163",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "3cf4064a3f841b973b7f2185b048d34517ed3a0069e5016d9880677a3c2a3861"
+    }
+  ],
+  "packages": [
+    {
+      "task_id": "HumanEval/0",
+      "source_arm": "baseline",
+      "model_id": "haiku",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/0",
+        "invariantId": "humaneval.runtime",
+        "counterexample": "\n\nMETADATA = {\n    'author': 'jt',\n    'dataset': 'test'\n}\n\n\ndef check(candidate):\n    assert candidate([1.0, 2.0, 3.9, 4.0, 5.0, 2.2], 0.3) == True\n    assert candidate([1.0, 2.0, 3.9, 4.0, 5.0, 2.2], 0.05) == False\n    assert candidate([1.0, 2.0, 5.9, 4.0, 5.0], 0.95) == True\n    assert candidate([1.0, 2.0, 5.9, 4.0, 5.0], 0.8) == False\n    assert candidate([1.0, 2.0, 3.0, 4.0, 5.0, 2.0], 0.1) == True\n    assert candidate([1.1, 2.2, 3.1, 4.1, 5.1], 1.0) == True\n    assert candidate([1.1, 2.2, 3.1, 4.1, 5.1], 0.5) == False\n\n",
+        "lessonLine": "The baseline completion failed runtime; preserve entry point has_close_elements and satisfy the check(candidate) contract.",
+        "proposalDigest": "4019c5cb7d4eb0289bffe33786b64ef1185a43e0cdfef5777acd80b94a412d7b",
+        "failureKind": "runtime",
+        "rejectedCompletionSha256": "550d0a78f27600e9a77c070d99332ea33cf051413975f7ef6f0dd38a0375cef2",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "06f6fa6be819168451af715d543dbb04989e987b00b1451da73afbf6ef1e9523"
+      },
+      "proof_feedback_package_sha256": "af3bdd4f0bc3148df74e8708e73d10ec9574e98e0c449ec3e716742b84f0191e",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/32",
+      "source_arm": "baseline",
+      "model_id": "haiku",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/32",
+        "invariantId": "humaneval.assertion",
+        "counterexample": "\n\nMETADATA = {}\n\n\ndef check(candidate):\n    import math\n    import random\n    rng = random.Random(42)\n    import copy\n    for _ in range(100):\n        ncoeff = 2 * rng.randint(1, 4)\n        coeffs = []\n        for _ in range(ncoeff):\n            coeff = rng.randint(-10, 10)\n            if coeff == 0:\n                coeff = 1\n            coeffs.append(coeff)\n        solution = candidate(copy.deepcopy(coeffs))\n        assert math.fabs(poly(coeffs, solution)) < 1e-4\n\n",
+        "lessonLine": "The baseline completion failed assertion; preserve entry point find_zero and satisfy the check(candidate) contract.",
+        "proposalDigest": "3a9e51bddedbce7cae74672ae5a6777538454342a6f654e3232b06e8c9ebea43",
+        "failureKind": "assertion",
+        "rejectedCompletionSha256": "5c124ecb0a79dbfb29e14065049f8448c450f0105117d713ce5344e466eaaa95",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "c9a954bd3a10f18b48695f94a38d5ec890b1cf092484fa5b276b2ffb116a3396"
+      },
+      "proof_feedback_package_sha256": "26df0f7a7284890e68abeef144a970a62266069e1382078feb79de720381b4bd",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/36",
+      "source_arm": "baseline",
+      "model_id": "haiku",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/36",
+        "invariantId": "humaneval.runtime",
+        "counterexample": "\n\nMETADATA = {}\n\n\ndef check(candidate):\n    assert candidate(50) == 0\n    assert candidate(78) == 2\n    assert candidate(79) == 3\n    assert candidate(100) == 3\n    assert candidate(200) == 6\n    assert candidate(4000) == 192\n    assert candidate(10000) == 639\n    assert candidate(100000) == 8026\n\n",
+        "lessonLine": "The baseline completion failed runtime; preserve entry point fizz_buzz and satisfy the check(candidate) contract.",
+        "proposalDigest": "12d77e6ae8b538aa56173d22384d57275919d962c869cc09c15c67bc7b1ef567",
+        "failureKind": "runtime",
+        "rejectedCompletionSha256": "3853b6084c4f6e5f8fd7d1d959e1fe56ebdf7372477b30251c32be3d93643ddd",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "5ae91e4f01bcb195bb7fefb6442966f7423fb919fb87fd30401c2f9a580fe83d"
+      },
+      "proof_feedback_package_sha256": "ebf13bfe422482428b011d55d9fc34c1157a89759fe0c7613ae26dee535259a2",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/63",
+      "source_arm": "baseline",
+      "model_id": "haiku",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/63",
+        "invariantId": "humaneval.runtime",
+        "counterexample": "\n\nMETADATA = {}\n\n\ndef check(candidate):\n    assert candidate(2) == 1\n    assert candidate(1) == 0\n    assert candidate(5) == 4\n    assert candidate(8) == 24\n    assert candidate(10) == 81\n    assert candidate(12) == 274\n    assert candidate(14) == 927\n\n",
+        "lessonLine": "The baseline completion failed runtime; preserve entry point fibfib and satisfy the check(candidate) contract.",
+        "proposalDigest": "954e05801505b872cd717bf5b5e56970e8c4ee4708eedd2cc1f97c3011fe0ed6",
+        "failureKind": "runtime",
+        "rejectedCompletionSha256": "23b2be1cbe7ac6d38cbc2abcaaa0e2271f75801e16ed7cfad7450de2e971016c",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "8d320da0d310b57c368bfdfd0ea55f74e5369b657a3d30ce9f4da8ef95fa4a67"
+      },
+      "proof_feedback_package_sha256": "0bca557254e5872c02902aef5773e902d301b9c7b8c5ffbd7cd4fd492cbf24d0",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/64",
+      "source_arm": "baseline",
+      "model_id": "haiku",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/64",
+        "invariantId": "humaneval.assertion",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate(\"abcde\") == 2, \"Test 1\"\n    assert candidate(\"Alone\") == 3, \"Test 2\"\n    assert candidate(\"key\") == 2, \"Test 3\"\n    assert candidate(\"bye\") == 1, \"Test 4\"\n    assert candidate(\"keY\") == 2, \"Test 5\"\n    assert candidate(\"bYe\") == 1, \"Test 6\"\n    assert candidate(\"ACEDY\") == 3, \"Test 7\"\n\n    # Check some edge cases that are easy to work out by hand.\n    assert True, \"This prints if this assert fails 2 (also good for debugging!)\"\n\n",
+        "lessonLine": "The baseline completion failed assertion; preserve entry point vowels_count and satisfy the check(candidate) contract.",
+        "proposalDigest": "2203ce065197940ada25e0d609be936b8d3954e84319b544525e308c166183ca",
+        "failureKind": "assertion",
+        "rejectedCompletionSha256": "a7dcd76ecfc3190de1dc542a9a25be59c4795c96eef8a7c0977c88a18ba2f5a1",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "bea49b62fda6c1008fe271f862b0bffb632594731cd1e924f5ed2468b912719f"
+      },
+      "proof_feedback_package_sha256": "4332cb9d90a98d0d72e118fa70905c79c90d07aab94bf4078f917e02829933d3",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/65",
+      "source_arm": "baseline",
+      "model_id": "haiku",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/65",
+        "invariantId": "humaneval.runtime",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate(100, 2) == \"001\"\n    assert candidate(12, 2) == \"12\"\n    assert candidate(97, 8) == \"79\"\n    assert candidate(12, 1) == \"21\", \"This prints if this assert fails 1 (good for debugging!)\"\n\n    # Check some edge cases that are easy to work out by hand.\n    assert candidate(11, 101) == \"11\", \"This prints if this assert fails 2 (also good for debugging!)\"\n\n",
+        "lessonLine": "The baseline completion failed runtime; preserve entry point circular_shift and satisfy the check(candidate) contract.",
+        "proposalDigest": "e768f74ccf17b72886b344da4089d02999851387eed30b2afae23391bec31dfa",
+        "failureKind": "runtime",
+        "rejectedCompletionSha256": "b35bf5b182e6ea91232d04dcd0e6a8c9a500b0b10ef41cec46ee9ba4e5a8992a",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "2bf4d1792bbb78d6f1bd5102f883a36174018fe08eb65e565249eb246acafa4f"
+      },
+      "proof_feedback_package_sha256": "a18f8d772095d13259c2949b270c77b7d00122ef051fdcf0fdd4724e332a378d",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/70",
+      "source_arm": "baseline",
+      "model_id": "haiku",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/70",
+        "invariantId": "humaneval.runtime",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate([1, 2, 3, 4]) == [1, 4, 2, 3]\n    assert candidate([5, 6, 7, 8, 9]) == [5, 9, 6, 8, 7]\n    assert candidate([1, 2, 3, 4, 5]) == [1, 5, 2, 4, 3]\n    assert candidate([5, 6, 7, 8, 9, 1]) == [1, 9, 5, 8, 6, 7]\n    assert candidate([5, 5, 5, 5]) == [5, 5, 5, 5]\n    assert candidate([]) == []\n    assert candidate([1,2,3,4,5,6,7,8]) == [1, 8, 2, 7, 3, 6, 4, 5]\n    assert candidate([0,2,2,2,5,5,-5,-5]) == [-5, 5, -5, 5, 0, 2, 2, 2]\n    assert candidate([111111]) == [111111]\n\n    # Check some edge cases that are easy to work out by hand.\n    assert True\n\n",
+        "lessonLine": "The baseline completion failed runtime; preserve entry point strange_sort_list and satisfy the check(candidate) contract.",
+        "proposalDigest": "be66b4cb97d8239b62e199e5a5da6242b446e5fde584128e3b01efe7f52c91bd",
+        "failureKind": "runtime",
+        "rejectedCompletionSha256": "ec6ecd0502690de68d1d9e618b08f66aa6132f62b881cb00ca73dc1c06d246f8",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "2214cd13dd7c15594bcc039f197db187a22540a009c317cdda07d1a93ad5b399"
+      },
+      "proof_feedback_package_sha256": "f8c532bd8aa1c6f37332e7b821e4349212cf2dbef6ea97e4d97829728aae7c34",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/77",
+      "source_arm": "baseline",
+      "model_id": "haiku",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/77",
+        "invariantId": "humaneval.assertion",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate(1) == True, \"First test error: \" + str(candidate(1))\n    assert candidate(2) == False, \"Second test error: \" + str(candidate(2))\n    assert candidate(-1) == True, \"Third test error: \" + str(candidate(-1))\n    assert candidate(64) == True, \"Fourth test error: \" + str(candidate(64))\n    assert candidate(180) == False, \"Fifth test error: \" + str(candidate(180))\n    assert candidate(1000) == True, \"Sixth test error: \" + str(candidate(1000))\n\n\n    # Check some edge cases that are easy to work out by hand.\n    assert candidate(0) == True, \"1st edge test error: \" + str(candidate(0))\n    assert candidate(1729) == False, \"2nd edge test error: \" + str(candidate(1728))\n\n",
+        "lessonLine": "The baseline completion failed assertion; preserve entry point iscube and satisfy the check(candidate) contract.",
+        "proposalDigest": "a3a4ab73e39b3eb95aff247fdb688881db711a2b83924ece88ea6341935ce2bd",
+        "failureKind": "assertion",
+        "rejectedCompletionSha256": "5c7ecff4051f7b9c83f3a80d8c1ab58b604b39ba0a9ef10750d085baa9a03f8b",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "919c9e07acb57972aab2978a83691477431ee7b33ae2a8b112b9778bfbc56e5c"
+      },
+      "proof_feedback_package_sha256": "a274f9e40b023f20a9a6ad3ff34e409be7b31c7d5e2143781869420c5a44a4e2",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/83",
+      "source_arm": "baseline",
+      "model_id": "haiku",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/83",
+        "invariantId": "humaneval.assertion",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    assert True, \"This prints if this assert fails 1 (good for debugging!)\"\n    assert candidate(1) == 1\n    assert candidate(2) == 18\n    assert candidate(3) == 180\n    assert candidate(4) == 1800\n    assert candidate(5) == 18000\n\n    # Check some edge cases that are easy to work out by hand.\n    assert True, \"This prints if this assert fails 2 (also good for debugging!)\"\n\n",
+        "lessonLine": "The baseline completion failed assertion; preserve entry point starts_one_ends and satisfy the check(candidate) contract.",
+        "proposalDigest": "02ea6b85a26f88a3c86d8bea3d15b96855b6b7bb09aa10d0e8ae5050444fb772",
+        "failureKind": "assertion",
+        "rejectedCompletionSha256": "84578e2a83cf94aafd4be314022e1fa8e3898acb5bc75a171cdf72a41def586d",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "5f9b73fd429140e0d7108dbd95ea612db3e420cd8aa5fcbc02ed635ef9789a27"
+      },
+      "proof_feedback_package_sha256": "df0dd9fa584bcc3b190cc25be888588a9939b4db330347f93826ce3fe0a84375",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/91",
+      "source_arm": "baseline",
+      "model_id": "haiku",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/91",
+        "invariantId": "humaneval.runtime",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate(\"Hello world\") == 0, \"Test 1\"\n    assert candidate(\"Is the sky blue?\") == 0, \"Test 2\"\n    assert candidate(\"I love It !\") == 1, \"Test 3\"\n    assert candidate(\"bIt\") == 0, \"Test 4\"\n    assert candidate(\"I feel good today. I will be productive. will kill It\") == 2, \"Test 5\"\n    assert candidate(\"You and I are going for a walk\") == 0, \"Test 6\"\n\n    # Check some edge cases that are easy to work out by hand.\n    assert True, \"This prints if this assert fails 2 (also good for debugging!)\"\n\n",
+        "lessonLine": "The baseline completion failed runtime; preserve entry point is_bored and satisfy the check(candidate) contract.",
+        "proposalDigest": "76c74e4080dde0a886657871ec66db6d8197d8ed3023eeea23b868db5bbbc5b8",
+        "failureKind": "runtime",
+        "rejectedCompletionSha256": "8a9e7ed95a96aa50dfebc8c5c8df29f31a54e66ddee6725fefcb597614fe30b7",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "340b2ede54ea080329ca054a4e5be8a6ded0e7dac210282b18c0d3edb0fdbdf6"
+      },
+      "proof_feedback_package_sha256": "a078a4856b92e908b9f9fbf658cd4462cd13d8db9f0fc100a71ea9f3c58b8afb",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/93",
+      "source_arm": "baseline",
+      "model_id": "haiku",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/93",
+        "invariantId": "humaneval.assertion",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate('TEST') == 'tgst', \"This prints if this assert fails 1 (good for debugging!)\"\n    assert candidate('Mudasir') == 'mWDCSKR', \"This prints if this assert fails 2 (good for debugging!)\"\n    assert candidate('YES') == 'ygs', \"This prints if this assert fails 3 (good for debugging!)\"\n    \n    # Check some edge cases that are easy to work out by hand.\n    assert candidate('This is a message') == 'tHKS KS C MGSSCGG', \"This prints if this assert fails 2 (also good for debugging!)\"\n    assert candidate(\"I DoNt KnOw WhAt tO WrItE\") == 'k dQnT kNqW wHcT Tq wRkTg', \"This prints if this assert fails 2 (also good for debugging!)\"\n\n",
+        "lessonLine": "The baseline completion failed assertion; preserve entry point encode and satisfy the check(candidate) contract.",
+        "proposalDigest": "89d8935e322c396e285bced0ed89611a3a8882c717b8a2611c2dfe6c304a3727",
+        "failureKind": "assertion",
+        "rejectedCompletionSha256": "9d46b881d036b2fe6d9bcc3568a904dd200cd8b03a8099711aaf85987b0d3c6d",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "ce0a53f847888214520f879aabcf612f6615b64661e1c914c90bbbac5ccd99f6"
+      },
+      "proof_feedback_package_sha256": "57ef50f4ca309bff007d82a18d7e7a98b4d4d6b1e3d07fc64317a4cf820aca00",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/101",
+      "source_arm": "baseline",
+      "model_id": "haiku",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/101",
+        "invariantId": "humaneval.assertion",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    assert True, \"This prints if this assert fails 1 (good for debugging!)\"\n    assert candidate(\"Hi, my name is John\") == [\"Hi\", \"my\", \"name\", \"is\", \"John\"]\n    assert candidate(\"One, two, three, four, five, six\") == [\"One\", \"two\", \"three\", \"four\", \"five\", \"six\"]\n    assert candidate(\"Hi, my name\") == [\"Hi\", \"my\", \"name\"]\n    assert candidate(\"One,, two, three, four, five, six,\") == [\"One\", \"two\", \"three\", \"four\", \"five\", \"six\"]\n\n    # Check some edge cases that are easy to work out by hand.\n    assert True, \"This prints if this assert fails 2 (also good for debugging!)\"\n    assert candidate(\"\") == []\n    assert candidate(\"ahmed     , gamal\") == [\"ahmed\", \"gamal\"]\n\n",
+        "lessonLine": "The baseline completion failed assertion; preserve entry point words_string and satisfy the check(candidate) contract.",
+        "proposalDigest": "92c1338aa56da576d6d2cbec1bfd3c8b4bc39f8a0a72ba36de2737d4b5dd5ae6",
+        "failureKind": "assertion",
+        "rejectedCompletionSha256": "6585c78c58b4db33ad0b75eb33ecddd9a8b9867dd62ecb50dfe39dbd92237667",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "2a1b2c1beb015e76fcef4b4074c7f903247c6bc5229ab2a5bc2f67c2dbcbe156"
+      },
+      "proof_feedback_package_sha256": "412eac8eedbbdb360cde976a2f38939d8af4869936db5bd4a5202c73cb2a7cef",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/107",
+      "source_arm": "baseline",
+      "model_id": "haiku",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/107",
+        "invariantId": "humaneval.assertion",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate(123) == (8, 13)\n    assert candidate(12) == (4, 6)\n    assert candidate(3) == (1, 2)\n    assert candidate(63) == (6, 8)\n    assert candidate(25) == (5, 6)\n    assert candidate(19) == (4, 6)\n    assert candidate(9) == (4, 5), \"This prints if this assert fails 1 (good for debugging!)\"\n\n    # Check some edge cases that are easy to work out by hand.\n    assert candidate(1) == (0, 1), \"This prints if this assert fails 2 (also good for debugging!)\"\n\n",
+        "lessonLine": "The baseline completion failed assertion; preserve entry point even_odd_palindrome and satisfy the check(candidate) contract.",
+        "proposalDigest": "d3bfaa5200c90f676dfc4625592ef0754caf1b9d1cb44bb1f55b1e9762b82d43",
+        "failureKind": "assertion",
+        "rejectedCompletionSha256": "c4ced21a2a877fe232ace38dfca3b806dbdcc3d98dcb3a01d83833b17a1d7cc3",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "c896dab9d56c29d03d40c3339194bfe2fec34acceb00c49f1c50f96d56c413c4"
+      },
+      "proof_feedback_package_sha256": "c63fecbf7bf979ae3f6a9b3087d7037aff10caa3cf0821c0e4b9b0a8d73bba8e",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/115",
+      "source_arm": "baseline",
+      "model_id": "haiku",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/115",
+        "invariantId": "humaneval.assertion",
+        "counterexample": "def check(candidate):\n\n\n    # Check some simple cases\n    assert True, \"This prints if this assert fails 1 (good for debugging!)\"\n    assert candidate([[0,0,1,0], [0,1,0,0], [1,1,1,1]], 1) == 6, \"Error\"\n    assert candidate([[0,0,1,1], [0,0,0,0], [1,1,1,1], [0,1,1,1]], 2) == 5, \"Error\"\n    assert candidate([[0,0,0], [0,0,0]], 5) == 0, \"Error\"\n\n    # Check some edge cases that are easy to work out by hand.\n    assert True, \"This prints if this assert fails 2 (also good for debugging!)\"\n    assert candidate([[1,1,1,1], [1,1,1,1]], 2) == 4, \"Error\"\n    assert candidate([[1,1,1,1], [1,1,1,1]], 9) == 2, \"Error\"\n\n",
+        "lessonLine": "The baseline completion failed assertion; preserve entry point max_fill and satisfy the check(candidate) contract.",
+        "proposalDigest": "318a1cc5cfeb9c5d025617fa3eba992aa1b235b901707df09e53c4bc96741d38",
+        "failureKind": "assertion",
+        "rejectedCompletionSha256": "b11f92dfb775370b7173d22d0185ff3c86c430f94409156982a2b515ee8cd179",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "a1a82c0e8ee6043371000eef524c229003be251cce1a640772d54ef2d67db42c"
+      },
+      "proof_feedback_package_sha256": "51f0c51333b649ac550e1152eb38eacd9b8a6e4ad605b157fbe4caf00a8bdc74",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/129",
+      "source_arm": "baseline",
+      "model_id": "haiku",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/129",
+        "invariantId": "humaneval.assertion",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    print\n    assert candidate([[1, 2, 3], [4, 5, 6], [7, 8, 9]], 3) == [1, 2, 1]\n    assert candidate([[5, 9, 3], [4, 1, 6], [7, 8, 2]], 1) == [1]\n    assert candidate([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16]], 4) == [1, 2, 1, 2]\n    assert candidate([[6, 4, 13, 10], [5, 7, 12, 1], [3, 16, 11, 15], [8, 14, 9, 2]], 7) == [1, 10, 1, 10, 1, 10, 1]\n    assert candidate([[8, 14, 9, 2], [6, 4, 13, 15], [5, 7, 1, 12], [3, 10, 11, 16]], 5) == [1, 7, 1, 7, 1]\n    assert candidate([[11, 8, 7, 2], [5, 16, 14, 4], [9, 3, 15, 6], [12, 13, 10, 1]], 9) == [1, 6, 1, 6, 1, 6, 1, 6, 1]\n    assert candidate([[12, 13, 10, 1], [9, 3, 15, 6], [5, 16, 14, 4], [11, 8, 7, 2]], 12) == [1, 6, 1, 6, 1, 6, 1, 6, 1, 6, 1, 6]\n    assert candidate([[2, 7, 4], [3, 1, 5], [6, 8, 9]], 8) == [1, 3, 1, 3, 1, 3, 1, 3]\n    assert candidate([[6, 1, 5], [3, 8, 9], [2, 7, 4]], 8) == [1, 5, 1, 5, 1, 5, 1, 5]\n\n    # Check some edge cases that are easy to work out by hand.\n    assert candidate([[1, 2], [3, 4]], 10) == [1, 2, 1, 2, 1, 2, 1, 2, 1, 2]\n    assert candidate([[1, 3], [3, 2]], 10) == [1, 3, 1, 3, 1, 3, 1, 3, 1, 3]\n\n",
+        "lessonLine": "The baseline completion failed assertion; preserve entry point minPath and satisfy the check(candidate) contract.",
+        "proposalDigest": "20d6f93b6d23c812213734dfd70e02fe08200ea0b99f70366dcc7b4bd7ba6825",
+        "failureKind": "assertion",
+        "rejectedCompletionSha256": "551e849b2eff0c38b783e9e6a2e671ed0c5e88a4afd0a6fb41cf4cce75d16c46",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "9bfe3cff91f8e9a4be4f941d4d94c08f4dd876549722e0a6e9d0e18cb389e904"
+      },
+      "proof_feedback_package_sha256": "b419fd6d61c13176c02e4ff91a4a3fb54258c1a61eb23034f8156a58830f7e65",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/130",
+      "source_arm": "baseline",
+      "model_id": "haiku",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/130",
+        "invariantId": "humaneval.runtime",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    \n    assert candidate(3) == [1, 3, 2.0, 8.0]\n    assert candidate(4) == [1, 3, 2.0, 8.0, 3.0]\n    assert candidate(5) == [1, 3, 2.0, 8.0, 3.0, 15.0]\n    assert candidate(6) == [1, 3, 2.0, 8.0, 3.0, 15.0, 4.0]\n    assert candidate(7) == [1, 3, 2.0, 8.0, 3.0, 15.0, 4.0, 24.0]\n    assert candidate(8) == [1, 3, 2.0, 8.0, 3.0, 15.0, 4.0, 24.0, 5.0]\n    assert candidate(9) == [1, 3, 2.0, 8.0, 3.0, 15.0, 4.0, 24.0, 5.0, 35.0]\n    assert candidate(20) == [1, 3, 2.0, 8.0, 3.0, 15.0, 4.0, 24.0, 5.0, 35.0, 6.0, 48.0, 7.0, 63.0, 8.0, 80.0, 9.0, 99.0, 10.0, 120.0, 11.0]\n\n    # Check some edge cases that are easy to work out by hand.\n    assert candidate(0) == [1]\n    assert candidate(1) == [1, 3]\n",
+        "lessonLine": "The baseline completion failed runtime; preserve entry point tri and satisfy the check(candidate) contract.",
+        "proposalDigest": "9b10446cf9c7fc9e2c76c1ab740c513310f6e291bb2a7a2983f21756a7bd3fac",
+        "failureKind": "runtime",
+        "rejectedCompletionSha256": "f6ee69073302d355512ad2f3b77b89a6d2ed26170980ea8cb3a6609d0fecf3d2",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "d48f9b3b10661e046d5eef7217937795007b3b8db4a1c2c7caec9d3ba3e48163"
+      },
+      "proof_feedback_package_sha256": "daca6c3dbd34bbc61610dd0e734e8bfa504a434a3f7a24e4af04159da300602b",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/132",
+      "source_arm": "baseline",
+      "model_id": "haiku",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/132",
+        "invariantId": "humaneval.assertion",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate('[[]]') == True, \"This prints if this assert fails 1 (good for debugging!)\"\n    assert candidate('[]]]]]]][[[[[]') == False\n    assert candidate('[][]') == False\n    assert candidate(('[]')) == False\n    assert candidate('[[[[]]]]') == True\n    assert candidate('[]]]]]]]]]]') == False\n    assert candidate('[][][[]]') == True\n    assert candidate('[[]') == False\n    assert candidate('[]]') == False\n    assert candidate('[[]][[') == True\n    assert candidate('[[][]]') == True\n\n    # Check some edge cases that are easy to work out by hand.\n    assert candidate('') == False, \"This prints if this assert fails 2 (also good for debugging!)\"\n    assert candidate('[[[[[[[[') == False\n    assert candidate(']]]]]]]]') == False\n\n",
+        "lessonLine": "The baseline completion failed assertion; preserve entry point is_nested and satisfy the check(candidate) contract.",
+        "proposalDigest": "f64ed3c77cbc046654103db2e2845d2f9acec369668ceea2f2d36dcbf30e672e",
+        "failureKind": "assertion",
+        "rejectedCompletionSha256": "360a1b26a7afdd0ed0901c0592a7aec3ee2d663234ff0af4619e19d7cfbe0881",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "01e45781c3f541bd78e303c90a75033144fefd5de4d0d68784683ee747b16721"
+      },
+      "proof_feedback_package_sha256": "a911024d3a23727e410901bfb71cc699c02da8702fe0f2ea6b9661df7035ffc9",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/133",
+      "source_arm": "baseline",
+      "model_id": "haiku",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/133",
+        "invariantId": "humaneval.runtime",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate([1,2,3])==14, \"This prints if this assert fails 1 (good for debugging!)\"\n    assert candidate([1.0,2,3])==14, \"This prints if this assert fails 1 (good for debugging!)\"\n    assert candidate([1,3,5,7])==84, \"This prints if this assert fails 1 (good for debugging!)\"\n    assert candidate([1.4,4.2,0])==29, \"This prints if this assert fails 1 (good for debugging!)\"\n    assert candidate([-2.4,1,1])==6, \"This prints if this assert fails 1 (good for debugging!)\"\n\n    assert candidate([100,1,15,2])==10230, \"This prints if this assert fails 1 (good for debugging!)\"\n    assert candidate([10000,10000])==200000000, \"This prints if this assert fails 1 (good for debugging!)\"\n    assert candidate([-1.4,4.6,6.3])==75, \"This prints if this assert fails 1 (good for debugging!)\"\n    assert candidate([-1.4,17.9,18.9,19.9])==1086, \"This prints if this assert fails 1 (good for debugging!)\"\n\n\n    # Check some edge cases that are easy to work out by hand.\n    assert candidate([0])==0, \"This prints if this assert fails 2 (also good for debugging!)\"\n    assert candidate([-1])==1, \"This prints if this assert fails 2 (also good for debugging!)\"\n    assert candidate([-1,1,0])==2, \"This prints if this assert fails 2 (also good for debugging!)\"\n\n",
+        "lessonLine": "The baseline completion failed runtime; preserve entry point sum_squares and satisfy the check(candidate) contract.",
+        "proposalDigest": "9f3a11369f1ac90212cf90a27d02a2d237c60fdbf1c9929f9705d002572a5559",
+        "failureKind": "runtime",
+        "rejectedCompletionSha256": "880ac7381c4ad62c4172c236bfd2c713ad8694bf1ca1e34a5075a68a2b842a82",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "265bd6734941d72c0048e51cccaf5dd8e033793bd4585e743a3b04d8bc42b8e3"
+      },
+      "proof_feedback_package_sha256": "570a26358e5ca0f13f86c3d2941db3a478353ff3580600f0349fd14827bb7cd6",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/135",
+      "source_arm": "baseline",
+      "model_id": "haiku",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/135",
+        "invariantId": "humaneval.assertion",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate([1,2,4,3,5])==3\n    assert candidate([1,2,4,5])==-1\n    assert candidate([1,4,2,5,6,7,8,9,10])==2\n    assert candidate([4,8,5,7,3])==4\n\n    # Check some edge cases that are easy to work out by hand.\n    assert candidate([])==-1\n\n",
+        "lessonLine": "The baseline completion failed assertion; preserve entry point can_arrange and satisfy the check(candidate) contract.",
+        "proposalDigest": "bdae7ec8472a74f1aca710ab9a244aa75a186e7ae72d3d66ecb6d5c90831d2ef",
+        "failureKind": "assertion",
+        "rejectedCompletionSha256": "cfbfa1206841c0d35ec0bb0f40643d1965aec0deb3c9c54ae987e82d3af05ba4",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "d433c71df01a34379057c0ee73de5af6c951913607dc51f08c10a5865a605b0d"
+      },
+      "proof_feedback_package_sha256": "f732349d0ef8aa0c3d6c6ab251170757923ccb294b3406cc92ca11154b223a40",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/138",
+      "source_arm": "baseline",
+      "model_id": "haiku",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/138",
+        "invariantId": "humaneval.assertion",
+        "counterexample": "def check(candidate):\n    assert candidate(4) == False\n    assert candidate(6) == False\n    assert candidate(8) == True\n    assert candidate(10) == True\n    assert candidate(11) == False\n    assert candidate(12) == True\n    assert candidate(13) == False\n    assert candidate(16) == True\n",
+        "lessonLine": "The baseline completion failed assertion; preserve entry point is_equal_to_sum_even and satisfy the check(candidate) contract.",
+        "proposalDigest": "176b1744587cc1ac7244ed11317334c8de19adf7392ace4d06d59b65e14dcb68",
+        "failureKind": "assertion",
+        "rejectedCompletionSha256": "403e542de39bc7a9594da7782a0c5ec44ec5971111f3b76b712bf63b070b1e6a",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "c969fca1311cc2c2ceb1eeeee9342ed8b023afa2cb59486d874c58f6c582c2d1"
+      },
+      "proof_feedback_package_sha256": "7a3d38e495d9838d047df4c1d14dca61da0de4977f9957a1e48ccf1214ceec0c",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/145",
+      "source_arm": "baseline",
+      "model_id": "haiku",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/145",
+        "invariantId": "humaneval.assertion",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate([1, 11, -1, -11, -12]) == [-1, -11, 1, -12, 11]\n    assert candidate([1234,423,463,145,2,423,423,53,6,37,3457,3,56,0,46]) == [0, 2, 3, 6, 53, 423, 423, 423, 1234, 145, 37, 46, 56, 463, 3457]\n    assert candidate([]) == []\n    assert candidate([1, -11, -32, 43, 54, -98, 2, -3]) == [-3, -32, -98, -11, 1, 2, 43, 54]\n    assert candidate([1,2,3,4,5,6,7,8,9,10,11]) == [1, 10, 2, 11, 3, 4, 5, 6, 7, 8, 9]\n    assert candidate([0,6,6,-76,-21,23,4]) == [-76, -21, 0, 4, 23, 6, 6]\n\n    # Check some edge cases that are easy to work out by hand.\n    assert True, \"This prints if this assert fails 2 (also good for debugging!)\"\n\n",
+        "lessonLine": "The baseline completion failed assertion; preserve entry point order_by_points and satisfy the check(candidate) contract.",
+        "proposalDigest": "fe43263544632738f4bb40cce8738b2d5fad80d4589da940d2bb84ad92fa0c6f",
+        "failureKind": "assertion",
+        "rejectedCompletionSha256": "92986bc8abf9aed4d4cacc7c6d2ca0c564810aeb4d35c3a1275ed412e1061a94",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "e18597dceaf7ba8ce6ca80f05baeadf5b0475def7cdb152531118936dac0eb29"
+      },
+      "proof_feedback_package_sha256": "2e534928783c665bac6d739664d8f1fa0b61132e20b1a419b5f5ab2676c32894",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/160",
+      "source_arm": "baseline",
+      "model_id": "haiku",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/160",
+        "invariantId": "humaneval.assertion",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate(['**', '*', '+'], [2, 3, 4, 5]) == 37\n    assert candidate(['+', '*', '-'], [2, 3, 4, 5]) == 9\n    assert candidate(['//', '*'], [7, 3, 4]) == 8, \"This prints if this assert fails 1 (good for debugging!)\"\n\n    # Check some edge cases that are easy to work out by hand.\n    assert True, \"This prints if this assert fails 2 (also good for debugging!)\"\n\n",
+        "lessonLine": "The baseline completion failed assertion; preserve entry point do_algebra and satisfy the check(candidate) contract.",
+        "proposalDigest": "21ffcf2dcdcab11c7c3c2059e7644c1dc5b245b8254712d8b007910cfb518d5a",
+        "failureKind": "assertion",
+        "rejectedCompletionSha256": "469475a6b51de859f533c89fbb420414f547d302d4c4221df220d6438bb3daf9",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "771e6ac6c9789858a8ecc35700270990a42430dc8e5ec53353568dd89c578230"
+      },
+      "proof_feedback_package_sha256": "b6c0ddf4128928cee25cd6181131572a366e2415c58df67ce92dc8968868d21f",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/162",
+      "source_arm": "baseline",
+      "model_id": "haiku",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/162",
+        "invariantId": "humaneval.runtime",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate('Hello world') == '3e25960a79dbc69b674cd4ec67a72c62'\n    assert candidate('') == None\n    assert candidate('A B C') == '0ef78513b0cb8cef12743f5aeb35f888'\n    assert candidate('password') == '5f4dcc3b5aa765d61d8327deb882cf99'\n\n    # Check some edge cases that are easy to work out by hand.\n    assert True\n\n",
+        "lessonLine": "The baseline completion failed runtime; preserve entry point string_to_md5 and satisfy the check(candidate) contract.",
+        "proposalDigest": "322a485a6a2aa502ec3bb4abc985b5ba3fda447703b6ea1159118b16cabe5a3f",
+        "failureKind": "runtime",
+        "rejectedCompletionSha256": "4f86502adb529496662be45992d20c8d2b9aa54869e2f2e27e45d61064ca790c",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "c060109acd18b7f0796126e9e4dd86a94160a64cb2ae011c0346c175e527ba1a"
+      },
+      "proof_feedback_package_sha256": "3f4873af04de2db57ae93155b0b9abae914c72e998ed074ca3b8e192bec08e61",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/163",
+      "source_arm": "baseline",
+      "model_id": "haiku",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/163",
+        "invariantId": "humaneval.runtime",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate(2, 10) == [2, 4, 6, 8], \"Test 1\"\n    assert candidate(10, 2) == [2, 4, 6, 8], \"Test 2\"\n    assert candidate(132, 2) == [2, 4, 6, 8], \"Test 3\"\n    assert candidate(17,89) == [], \"Test 4\"\n\n    # Check some edge cases that are easy to work out by hand.\n    assert True, \"This prints if this assert fails 2 (also good for debugging!)\"\n\n",
+        "lessonLine": "The baseline completion failed runtime; preserve entry point generate_integers and satisfy the check(candidate) contract.",
+        "proposalDigest": "ab9b336ec4e8b558e425d7d29e2180cf3d8ca65563a39343f155bbf1df933169",
+        "failureKind": "runtime",
+        "rejectedCompletionSha256": "00130b89dac9c9a0f207fcd671bd9c29fb5c0d9baa5139e0353a9f5a46a6864d",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "101a56506d7dd26bb22caf497413a387c947870b4e87824b9ea5f829f4fa48bc"
+      },
+      "proof_feedback_package_sha256": "3cf4064a3f841b973b7f2185b048d34517ed3a0069e5016d9880677a3c2a3861",
+      "atomic_receipt_sha256": null
+    }
+  ],
+  "proofLimits": [
+    "Feedback packages are proposer guidance, not an evaluator and not a raw HumanEval claim.",
+    "Hidden or held-out tests must never be leaked into a package intended for raw-score reporting.",
+    "A package supports an Atomic tool-augmented claim only when the later sample also carries an Atomic receipt sha256."
+  ]
+}

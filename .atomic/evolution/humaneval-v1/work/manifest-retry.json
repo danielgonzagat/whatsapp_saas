@@ -1,0 +1,394 @@
+{
+  "kind": "humaneval-retry-manifest",
+  "wrapperSha256": "7cf2b96edb371ad9f48f9410ace062fb927c171a8b111e48843f7096d4db675c",
+  "repairPromptsSha256": "f1c89095faa50d3123a1a760db03fcf9a4d9faee549ab6df5b325d3a67c09cfa",
+  "failures": [
+    "HumanEval/0",
+    "HumanEval/32",
+    "HumanEval/36",
+    "HumanEval/63",
+    "HumanEval/64",
+    "HumanEval/65",
+    "HumanEval/70",
+    "HumanEval/77",
+    "HumanEval/83",
+    "HumanEval/91",
+    "HumanEval/93",
+    "HumanEval/101",
+    "HumanEval/107",
+    "HumanEval/115",
+    "HumanEval/129",
+    "HumanEval/130",
+    "HumanEval/132",
+    "HumanEval/133",
+    "HumanEval/135",
+    "HumanEval/138",
+    "HumanEval/145",
+    "HumanEval/160",
+    "HumanEval/162",
+    "HumanEval/163"
+  ],
+  "count": 24,
+  "entries": [
+    {
+      "task_id": "HumanEval/0",
+      "proof": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/proof-HumanEval-0.txt",
+        "dispatchedSha256": "b29e5df77960e359a073531e7a9af4b0023a6cfd7ae4b9bf5c95489e1aed02a6"
+      },
+      "scalar": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/scalar-HumanEval-0.txt",
+        "dispatchedSha256": "7c34fdce0c3476264af247b74b142a7677b549897af0a3a0bf9e35b9c59bec38"
+      },
+      "cego": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/cego-HumanEval-0.txt",
+        "dispatchedSha256": "48a2ed023d4dc60a2613952571af61a6b1397aa22e5fbf8f65703cf72ba42509"
+      }
+    },
+    {
+      "task_id": "HumanEval/32",
+      "proof": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/proof-HumanEval-32.txt",
+        "dispatchedSha256": "fab09ea26412e3ebcf1328c82c9ac19c48220454c4fd52183ccb11652dbe9ac8"
+      },
+      "scalar": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/scalar-HumanEval-32.txt",
+        "dispatchedSha256": "1c7b7f9ce66f71df08fbbb8d5b3d492bf97b9052e240af8a9631e7bd85428377"
+      },
+      "cego": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/cego-HumanEval-32.txt",
+        "dispatchedSha256": "84d8b8247ada454adb364b40e374d5b261c9361a958409c9383638877f32e437"
+      }
+    },
+    {
+      "task_id": "HumanEval/36",
+      "proof": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/proof-HumanEval-36.txt",
+        "dispatchedSha256": "97513976a47b84a1b6c29d863675e9b0c48302e852fb756c4ba32676ae690d47"
+      },
+      "scalar": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/scalar-HumanEval-36.txt",
+        "dispatchedSha256": "7c9b84a9eb195b63f1ed760586f06258bce10ef1e9c40e200575888b54e3cfc0"
+      },
+      "cego": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/cego-HumanEval-36.txt",
+        "dispatchedSha256": "8a0fe39d5edbae1a5a79230457496fa372a725643129e48df8b722cd2b1be210"
+      }
+    },
+    {
+      "task_id": "HumanEval/63",
+      "proof": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/proof-HumanEval-63.txt",
+        "dispatchedSha256": "2ebaf9332a0b833f7b78fc27fddf70367bf80557e525d0f5b303e931cd55ebfc"
+      },
+      "scalar": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/scalar-HumanEval-63.txt",
+        "dispatchedSha256": "d2c4d3917000accff6745d388b8ea111d04b62040e065c9cc4f2660373a2c238"
+      },
+      "cego": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/cego-HumanEval-63.txt",
+        "dispatchedSha256": "06690f72e0a46b06b2e1c0b1ed9cadd52b4bed3fe57d94f09337411376ebb442"
+      }
+    },
+    {
+      "task_id": "HumanEval/64",
+      "proof": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/proof-HumanEval-64.txt",
+        "dispatchedSha256": "ae935285927de91fe8a78dce1c33f417e71a991cab44f444f7bcac104e509169"
+      },
+      "scalar": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/scalar-HumanEval-64.txt",
+        "dispatchedSha256": "1e2c4431cb74bbcd127716e67dec59e177d554f47cf8e67ad09ca0ef38fa9988"
+      },
+      "cego": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/cego-HumanEval-64.txt",
+        "dispatchedSha256": "bfca2312336c1321545d546b185219aedf6fd8fc7f68599d607b2f2372852ccd"
+      }
+    },
+    {
+      "task_id": "HumanEval/65",
+      "proof": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/proof-HumanEval-65.txt",
+        "dispatchedSha256": "de6eef583981a9431189f0df349878595b2090ee4ffe6b0b3de11284208f1a4e"
+      },
+      "scalar": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/scalar-HumanEval-65.txt",
+        "dispatchedSha256": "f5fe403c18ab4cd8e5af793efd13e33d3cfe86b36bb8db5a5a8d9a5e1d9e2242"
+      },
+      "cego": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/cego-HumanEval-65.txt",
+        "dispatchedSha256": "ae332016494d2b4cdf1632e7719f79d7a082766340f5f404c1a467b64ee96f69"
+      }
+    },
+    {
+      "task_id": "HumanEval/70",
+      "proof": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/proof-HumanEval-70.txt",
+        "dispatchedSha256": "793ba9da0646fa39ea057e99772a28341a8f1b5f5430f4b6403e2f3910cc1ab4"
+      },
+      "scalar": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/scalar-HumanEval-70.txt",
+        "dispatchedSha256": "c88bff3af00e01ab21ce6cf7d13172f60d46128c82c03570705d8e7d7d292458"
+      },
+      "cego": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/cego-HumanEval-70.txt",
+        "dispatchedSha256": "8232ff2d8b3666eee7a3de83825347309a59f046e6ce0ef015a158eb9b5c9817"
+      }
+    },
+    {
+      "task_id": "HumanEval/77",
+      "proof": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/proof-HumanEval-77.txt",
+        "dispatchedSha256": "fb796a374b0be3aa5264d5749cf8e9ccf2b93f3a09261834dd333079d073fdf0"
+      },
+      "scalar": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/scalar-HumanEval-77.txt",
+        "dispatchedSha256": "1eb2379ce9b0b75e3450dc6cbea76e17a0819fd94f240bd236792a0d54208a65"
+      },
+      "cego": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/cego-HumanEval-77.txt",
+        "dispatchedSha256": "183a983022720ca8940887b212495f2c684a85342750a3d12674492b4a7b88a8"
+      }
+    },
+    {
+      "task_id": "HumanEval/83",
+      "proof": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/proof-HumanEval-83.txt",
+        "dispatchedSha256": "75cc20e509ebf3ecbdaffc6dde4cf9005a9ef0514c95a236f4ad2782b0f46c6a"
+      },
+      "scalar": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/scalar-HumanEval-83.txt",
+        "dispatchedSha256": "e11aec0b786d6a9c2c3844488a357a042cbc16c5b1017fe0335e4cc1b76d1d5c"
+      },
+      "cego": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/cego-HumanEval-83.txt",
+        "dispatchedSha256": "41dd0c8c341904d749c279e29ffb23a5989431994a7755cea2ba6afefe95f4e1"
+      }
+    },
+    {
+      "task_id": "HumanEval/91",
+      "proof": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/proof-HumanEval-91.txt",
+        "dispatchedSha256": "e8c95566b4ee10c98d53ace9389206d94825c1c0e891094abddbeb8d7cad1b4c"
+      },
+      "scalar": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/scalar-HumanEval-91.txt",
+        "dispatchedSha256": "0d9529ce5f7200f11b35e58eb75aacd2051117d8e8f5f607096702d05284d298"
+      },
+      "cego": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/cego-HumanEval-91.txt",
+        "dispatchedSha256": "4b3a85594cde41f03e9cc3a5c107b1f3606d4edaaf34524679cfc75c83e8b8db"
+      }
+    },
+    {
+      "task_id": "HumanEval/93",
+      "proof": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/proof-HumanEval-93.txt",
+        "dispatchedSha256": "1c5c71d4952f2272e0ffd71e13b60a06707a02f4248cc8a23815d68122c2d9ab"
+      },
+      "scalar": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/scalar-HumanEval-93.txt",
+        "dispatchedSha256": "85f20e2149f50ffe6935367ae27704e22d1639a170df72e8747f7f49e6e1b06f"
+      },
+      "cego": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/cego-HumanEval-93.txt",
+        "dispatchedSha256": "4fc077ed1c735f1cf4ffb30528151b4a931f8fb5055abd51b54475552a80c9af"
+      }
+    },
+    {
+      "task_id": "HumanEval/101",
+      "proof": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/proof-HumanEval-101.txt",
+        "dispatchedSha256": "575e04a120e68ba4e51b225b8164cc7f69bc003b908baaf1dea7f89436448af7"
+      },
+      "scalar": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/scalar-HumanEval-101.txt",
+        "dispatchedSha256": "47e1d89b14b2a191f5cf173bdba1009988eaaff76523a837d19c43cdb2c03c28"
+      },
+      "cego": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/cego-HumanEval-101.txt",
+        "dispatchedSha256": "25c7b5c5552467d5babe032a1140cc1dec5c0b84a6d0b47d371e96d22af82af7"
+      }
+    },
+    {
+      "task_id": "HumanEval/107",
+      "proof": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/proof-HumanEval-107.txt",
+        "dispatchedSha256": "e7a27db1671cfbb7c01c92de6b1c9697ff953293e394b5ea6ba0e9e260d77656"
+      },
+      "scalar": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/scalar-HumanEval-107.txt",
+        "dispatchedSha256": "83b8056590ea3703ddb368b123ae2aa0dfbed3c88ddfe3f22621117dae373812"
+      },
+      "cego": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/cego-HumanEval-107.txt",
+        "dispatchedSha256": "444d330dc677263b388dc0f18654c3fb02f7cccc4ea876ad3f79cf48dd4c3502"
+      }
+    },
+    {
+      "task_id": "HumanEval/115",
+      "proof": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/proof-HumanEval-115.txt",
+        "dispatchedSha256": "58cba7954d02215f257f422c9abe5f161ef01ec5f10ef9258be2d2580e9ee504"
+      },
+      "scalar": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/scalar-HumanEval-115.txt",
+        "dispatchedSha256": "ca885a6feb38edf1c1c7a2d25aa1de6af75f66eae0faaad122951d3f7ffc2d2d"
+      },
+      "cego": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/cego-HumanEval-115.txt",
+        "dispatchedSha256": "e8c0246b7085943e7443c3b9ea15c905882c125245da0e70542ecd9ce9052aab"
+      }
+    },
+    {
+      "task_id": "HumanEval/129",
+      "proof": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/proof-HumanEval-129.txt",
+        "dispatchedSha256": "7ff462342166ef34a72cec394da77548de4b0102b35599c35e557ff61ae23970"
+      },
+      "scalar": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/scalar-HumanEval-129.txt",
+        "dispatchedSha256": "2e8763f5beaf0e94c3671aee00a9ebca7745123a05eafd80a481d58800018227"
+      },
+      "cego": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/cego-HumanEval-129.txt",
+        "dispatchedSha256": "eafe1407dd6939d0036845a9ef15ef2d1d8a78b5bce76d189dd87d141bac6274"
+      }
+    },
+    {
+      "task_id": "HumanEval/130",
+      "proof": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/proof-HumanEval-130.txt",
+        "dispatchedSha256": "d683673cd345548be8c1100c17d1e31f1b9860fd820d11082275913604231107"
+      },
+      "scalar": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/scalar-HumanEval-130.txt",
+        "dispatchedSha256": "b2e084b388a08cc08967df11abcd756c7778f391667371afbbfee4b56b990227"
+      },
+      "cego": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/cego-HumanEval-130.txt",
+        "dispatchedSha256": "b497c16871e8f605698d3f0d0016b077c65476a53e1fbcc4ab1d423612205efd"
+      }
+    },
+    {
+      "task_id": "HumanEval/132",
+      "proof": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/proof-HumanEval-132.txt",
+        "dispatchedSha256": "8f885315003c0abdcd58345bba057e21c2c3ef13e02858ffa02de95d95b880b1"
+      },
+      "scalar": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/scalar-HumanEval-132.txt",
+        "dispatchedSha256": "10574cdd9fcc8ea2fbb6118c37998b7b6426c39c503a10e61ea0befc0461f254"
+      },
+      "cego": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/cego-HumanEval-132.txt",
+        "dispatchedSha256": "af27cca5566bdda934f712e5a851d548c72bacfa797d7cbca9c886a0fc69cfab"
+      }
+    },
+    {
+      "task_id": "HumanEval/133",
+      "proof": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/proof-HumanEval-133.txt",
+        "dispatchedSha256": "826c8a628486df9933fbebf0be3d6aec8666e9ab935e98c56267d9c7e9ccb73f"
+      },
+      "scalar": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/scalar-HumanEval-133.txt",
+        "dispatchedSha256": "07c235426b451fdf1708f2dc59ac2364eab66acbf86b0a231395c5f5f094bd08"
+      },
+      "cego": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/cego-HumanEval-133.txt",
+        "dispatchedSha256": "5d23debe5a98c86aa3fecc942bb9b2a7d2c954462be2d7c679ef80c23b02b7a5"
+      }
+    },
+    {
+      "task_id": "HumanEval/135",
+      "proof": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/proof-HumanEval-135.txt",
+        "dispatchedSha256": "6d8407074c08f606026c133f9faac8d9ec4997ac82d50a835809f22e1024e44d"
+      },
+      "scalar": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/scalar-HumanEval-135.txt",
+        "dispatchedSha256": "3d9ce4ba25302a11b3264b09f0d1dea135f0b416ba68812fa47453f1e6f430a9"
+      },
+      "cego": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/cego-HumanEval-135.txt",
+        "dispatchedSha256": "d9f61aa4e181db2728be8f1630c4435bbc76aa4266c35c470b1922094264dffd"
+      }
+    },
+    {
+      "task_id": "HumanEval/138",
+      "proof": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/proof-HumanEval-138.txt",
+        "dispatchedSha256": "21f8e90d7d54895130465911fd160e68d7409a1757a42b875efe16de72429afa"
+      },
+      "scalar": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/scalar-HumanEval-138.txt",
+        "dispatchedSha256": "44da351b2b05ef33c79b7042d5462880546e044f61d3567567a66c80b0b32812"
+      },
+      "cego": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/cego-HumanEval-138.txt",
+        "dispatchedSha256": "8f1b2a97783562d136e051a5456f6f9c4d6747474f2c50ca2a6b185bc83a3515"
+      }
+    },
+    {
+      "task_id": "HumanEval/145",
+      "proof": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/proof-HumanEval-145.txt",
+        "dispatchedSha256": "55fa3fad1cc1c03a9b941969481c4aecbe73fd1f54970cba746fd753a4f095a2"
+      },
+      "scalar": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/scalar-HumanEval-145.txt",
+        "dispatchedSha256": "ae2a1d32b0f31e2838ebd367375cae3805e4381ac137b322dea47e088f881928"
+      },
+      "cego": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/cego-HumanEval-145.txt",
+        "dispatchedSha256": "e15dbbbefc50a38e07f360d3a276c4feaba52695d7f32fb468c269fe97b9d79c"
+      }
+    },
+    {
+      "task_id": "HumanEval/160",
+      "proof": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/proof-HumanEval-160.txt",
+        "dispatchedSha256": "2d6eeaa7e80e115bb82bd850adcee01335d77ef5483f76d3b88351f0e9bec352"
+      },
+      "scalar": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/scalar-HumanEval-160.txt",
+        "dispatchedSha256": "16b3142d249c4a011f5f1e7063b9a1306b0a78611b4e648718056d8198980e23"
+      },
+      "cego": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/cego-HumanEval-160.txt",
+        "dispatchedSha256": "65110b016a8e65d01a1ce4aef31d5b5efc11c08ed6ab2550e238042c46cc9772"
+      }
+    },
+    {
+      "task_id": "HumanEval/162",
+      "proof": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/proof-HumanEval-162.txt",
+        "dispatchedSha256": "eb55df6d68fb9e5cb062ef0a4b18b73c110cc53c088b6151f67426bcb0c8cc58"
+      },
+      "scalar": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/scalar-HumanEval-162.txt",
+        "dispatchedSha256": "d39508337cfdcbbab6198934d9e5753258ca9b85b64081a545bfc34307a1c0c2"
+      },
+      "cego": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/cego-HumanEval-162.txt",
+        "dispatchedSha256": "fac954ff3af922a2eb8b006d0e145f28b52f001e12be2c7ec8b6c91d13a49701"
+      }
+    },
+    {
+      "task_id": "HumanEval/163",
+      "proof": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/proof-HumanEval-163.txt",
+        "dispatchedSha256": "a7db9d1725c561117370a0091d4caf531e6e7b4ed14a3ca1923c79e7b79f2f20"
+      },
+      "scalar": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/scalar-HumanEval-163.txt",
+        "dispatchedSha256": "bc93d1d1bba031dcaacd58a3bdea433b53dbc775a2f994baaf5ec6baba775ba4"
+      },
+      "cego": {
+        "file": ".atomic/evolution/humaneval-v1/work/dispatch-retry/cego-HumanEval-163.txt",
+        "dispatchedSha256": "e5553bb5c81b4f9111ae6c61666bb8a271cda4d775c65a9a8ae7072b60ec2b51"
+      }
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+Atomic proof-feedback repair prompt (tool-augmented; not raw HumanEval evidence).
+task_id: HumanEval/101
+entry_point: words_string
+Return only the Python completion body that follows the given HumanEval prompt.
+
+HUMANEVAL_PROMPT:
+
+def words_string(s):
+    """
+    You will be given a string of words separated by commas or spaces. Your task is
+    to split the string into words and return an array of the words.
+    
+    For example:
+    words_string("Hi, my name is John") == ["Hi", "my", "name", "is", "John"]
+    words_string("One, two, three, four, five, six") == ["One", "two", "three", "four", "five", "six"]
+    """
+
+
+ATOMIC_PROOF_FEEDBACK:
+package_sha256: 412eac8eedbbdb360cde976a2f38939d8af4869936db5bd4a5202c73cb2a7cef
+invariant: humaneval.assertion
+lesson: The baseline completion failed assertion; preserve entry point words_string and satisfy the check(candidate) contract.
+proposal_digest: 92c1338aa56da576d6d2cbec1bfd3c8b4bc39f8a0a72ba36de2737d4b5dd5ae6
+rejected_completion_sha256: 6585c78c58b4db33ad0b75eb33ecddd9a8b9867dd62ecb50dfe39dbd92237667
+counterexample:
+def check(candidate):
+
+    # Check some simple cases
+    assert True, "This prints if this assert fails 1 (good for debugging!)"
+    assert candidate("Hi, my name is John") == ["Hi", "my", "name", "is", "John"]
+    assert candidate("One, two, three, four, five, six") == ["One", "two", "three", "four", "five", "six"]
+    assert candidate("Hi, my name") == ["Hi", "my", "name"]
+    assert candidate("One,, two, three, four, five, six,") == ["One", "two", "three", "four", "five", "six"]
+
+    # Check some edge cases that are easy to work out by hand.
+    assert True, "This prints if this assert fails 2 (also good for debugging!)"
+    assert candidate("") == []
+    assert candidate("ahmed     , gamal") == ["ahmed", "gamal"]
+
+
+--- FIM DA TAREFA ---

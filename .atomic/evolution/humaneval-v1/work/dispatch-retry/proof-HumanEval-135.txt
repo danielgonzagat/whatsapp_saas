@@ -1,0 +1,47 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+Atomic proof-feedback repair prompt (tool-augmented; not raw HumanEval evidence).
+task_id: HumanEval/135
+entry_point: can_arrange
+Return only the Python completion body that follows the given HumanEval prompt.
+
+HUMANEVAL_PROMPT:
+
+def can_arrange(arr):
+    """Create a function which returns the largest index of an element which
+    is not greater than or equal to the element immediately preceding it. If
+    no such element exists then return -1. The given array will not contain
+    duplicate values.
+
+    Examples:
+    can_arrange([1,2,4,3,5]) = 3
+    can_arrange([1,2,3]) = -1
+    """
+
+
+ATOMIC_PROOF_FEEDBACK:
+package_sha256: f732349d0ef8aa0c3d6c6ab251170757923ccb294b3406cc92ca11154b223a40
+invariant: humaneval.assertion
+lesson: The baseline completion failed assertion; preserve entry point can_arrange and satisfy the check(candidate) contract.
+proposal_digest: bdae7ec8472a74f1aca710ab9a244aa75a186e7ae72d3d66ecb6d5c90831d2ef
+rejected_completion_sha256: cfbfa1206841c0d35ec0bb0f40643d1965aec0deb3c9c54ae987e82d3af05ba4
+counterexample:
+def check(candidate):
+
+    # Check some simple cases
+    assert candidate([1,2,4,3,5])==3
+    assert candidate([1,2,4,5])==-1
+    assert candidate([1,4,2,5,6,7,8,9,10])==2
+    assert candidate([4,8,5,7,3])==4
+
+    # Check some edge cases that are easy to work out by hand.
+    assert candidate([])==-1
+
+
+--- FIM DA TAREFA ---

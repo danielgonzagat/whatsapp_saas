@@ -1,0 +1,46 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+Atomic proof-feedback repair prompt (tool-augmented; not raw HumanEval evidence).
+task_id: HumanEval/65
+entry_point: circular_shift
+Return only the Python completion body that follows the given HumanEval prompt.
+
+HUMANEVAL_PROMPT:
+
+def circular_shift(x, shift):
+    """Circular shift the digits of the integer x, shift the digits right by shift
+    and return the result as a string.
+    If shift > number of digits, return digits reversed.
+    >>> circular_shift(12, 1)
+    "21"
+    >>> circular_shift(12, 2)
+    "12"
+    """
+
+
+ATOMIC_PROOF_FEEDBACK:
+package_sha256: a18f8d772095d13259c2949b270c77b7d00122ef051fdcf0fdd4724e332a378d
+invariant: humaneval.runtime
+lesson: The baseline completion failed runtime; preserve entry point circular_shift and satisfy the check(candidate) contract.
+proposal_digest: e768f74ccf17b72886b344da4089d02999851387eed30b2afae23391bec31dfa
+rejected_completion_sha256: b35bf5b182e6ea91232d04dcd0e6a8c9a500b0b10ef41cec46ee9ba4e5a8992a
+counterexample:
+def check(candidate):
+
+    # Check some simple cases
+    assert candidate(100, 2) == "001"
+    assert candidate(12, 2) == "12"
+    assert candidate(97, 8) == "79"
+    assert candidate(12, 1) == "21", "This prints if this assert fails 1 (good for debugging!)"
+
+    # Check some edge cases that are easy to work out by hand.
+    assert candidate(11, 101) == "11", "This prints if this assert fails 2 (also good for debugging!)"
+
+
+--- FIM DA TAREFA ---

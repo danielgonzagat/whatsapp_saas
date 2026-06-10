@@ -1,0 +1,63 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+Atomic proof-feedback repair prompt (tool-augmented; not raw HumanEval evidence).
+task_id: HumanEval/107
+entry_point: even_odd_palindrome
+Return only the Python completion body that follows the given HumanEval prompt.
+
+HUMANEVAL_PROMPT:
+
+def even_odd_palindrome(n):
+    """
+    Given a positive integer n, return a tuple that has the number of even and odd
+    integer palindromes that fall within the range(1, n), inclusive.
+
+    Example 1:
+
+        Input: 3
+        Output: (1, 2)
+        Explanation:
+        Integer palindrome are 1, 2, 3. one of them is even, and two of them are odd.
+
+    Example 2:
+
+        Input: 12
+        Output: (4, 6)
+        Explanation:
+        Integer palindrome are 1, 2, 3, 4, 5, 6, 7, 8, 9, 11. four of them are even, and 6 of them are odd.
+
+    Note:
+        1. 1 <= n <= 10^3
+        2. returned tuple has the number of even and odd integer palindromes respectively.
+    """
+
+
+ATOMIC_PROOF_FEEDBACK:
+package_sha256: c63fecbf7bf979ae3f6a9b3087d7037aff10caa3cf0821c0e4b9b0a8d73bba8e
+invariant: humaneval.assertion
+lesson: The baseline completion failed assertion; preserve entry point even_odd_palindrome and satisfy the check(candidate) contract.
+proposal_digest: d3bfaa5200c90f676dfc4625592ef0754caf1b9d1cb44bb1f55b1e9762b82d43
+rejected_completion_sha256: c4ced21a2a877fe232ace38dfca3b806dbdcc3d98dcb3a01d83833b17a1d7cc3
+counterexample:
+def check(candidate):
+
+    # Check some simple cases
+    assert candidate(123) == (8, 13)
+    assert candidate(12) == (4, 6)
+    assert candidate(3) == (1, 2)
+    assert candidate(63) == (6, 8)
+    assert candidate(25) == (5, 6)
+    assert candidate(19) == (4, 6)
+    assert candidate(9) == (4, 5), "This prints if this assert fails 1 (good for debugging!)"
+
+    # Check some edge cases that are easy to work out by hand.
+    assert candidate(1) == (0, 1), "This prints if this assert fails 2 (also good for debugging!)"
+
+
+--- FIM DA TAREFA ---

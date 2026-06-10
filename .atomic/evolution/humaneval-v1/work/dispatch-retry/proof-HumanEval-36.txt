@@ -1,0 +1,51 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+Atomic proof-feedback repair prompt (tool-augmented; not raw HumanEval evidence).
+task_id: HumanEval/36
+entry_point: fizz_buzz
+Return only the Python completion body that follows the given HumanEval prompt.
+
+HUMANEVAL_PROMPT:
+
+
+def fizz_buzz(n: int):
+    """Return the number of times the digit 7 appears in integers less than n which are divisible by 11 or 13.
+    >>> fizz_buzz(50)
+    0
+    >>> fizz_buzz(78)
+    2
+    >>> fizz_buzz(79)
+    3
+    """
+
+
+ATOMIC_PROOF_FEEDBACK:
+package_sha256: ebf13bfe422482428b011d55d9fc34c1157a89759fe0c7613ae26dee535259a2
+invariant: humaneval.runtime
+lesson: The baseline completion failed runtime; preserve entry point fizz_buzz and satisfy the check(candidate) contract.
+proposal_digest: 12d77e6ae8b538aa56173d22384d57275919d962c869cc09c15c67bc7b1ef567
+rejected_completion_sha256: 3853b6084c4f6e5f8fd7d1d959e1fe56ebdf7372477b30251c32be3d93643ddd
+counterexample:
+
+
+METADATA = {}
+
+
+def check(candidate):
+    assert candidate(50) == 0
+    assert candidate(78) == 2
+    assert candidate(79) == 3
+    assert candidate(100) == 3
+    assert candidate(200) == 6
+    assert candidate(4000) == 192
+    assert candidate(10000) == 639
+    assert candidate(100000) == 8026
+
+
+--- FIM DA TAREFA ---
