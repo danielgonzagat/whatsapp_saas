@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { MindMessageService } from './mind-message.service';
 import { isMindMessageBackfillEnabled } from './mindmessage-backfill.flag';
 
 /**
@@ -61,7 +61,20 @@ export interface MindMessageParityResult {
 export class MindMessageBackfillService {
   private readonly logger = StructuredLogger.from(MindMessageBackfillService.name);
 
-  public constructor(private readonly prisma: PrismaService) {}
+  public constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly mindMessage?: MindMessageService,
+  ) {}
+
+  /**
+   * Canonical legacy accessor — the alias `.items` getter IS the
+   * `prisma.kloelMessage` delegate (same RAC_KloelMessage table), so the
+   * backfill's legacy reads stay on the canonical Mind surface while remaining
+   * byte-identical.
+   */
+  private get kloelMessageItems() {
+    return this.mindMessage?.items ?? this.prisma.kloelMessage;
+  }
 
   /**
    * READ-ONLY parity report comparing legacy RAC_KloelMessage coverage against
@@ -70,16 +83,18 @@ export class MindMessageBackfillService {
    * preserve the legacy createdAt, so the same `before`/`workspaceId` scope
    * applies to both sides. Never writes.
    */
-  public async parity(scope: {
-    readonly before?: Date;
-    readonly workspaceId?: string;
-  } = {}): Promise<MindMessageParityResult> {
+  public async parity(
+    scope: {
+      readonly before?: Date;
+      readonly workspaceId?: string;
+    } = {},
+  ): Promise<MindMessageParityResult> {
     const legacyWhere = {
       ...(scope.before !== undefined ? { createdAt: { lt: scope.before } } : {}),
       ...(scope.workspaceId !== undefined ? { workspaceId: scope.workspaceId } : {}),
     };
     const [legacy, mirrored] = await Promise.all([
-      this.prisma.kloelMessage.count({ where: legacyWhere }),
+      this.kloelMessageItems.count({ where: legacyWhere }),
       this.prisma.mindMessage.count({
         where: { ...legacyWhere, source: 'brain', sourceId: { not: null } },
       }),
@@ -101,7 +116,7 @@ export class MindMessageBackfillService {
     let cursorId: string | undefined;
 
     for (;;) {
-      const rows = await this.prisma.kloelMessage.findMany({
+      const rows = await this.kloelMessageItems.findMany({
         where: {
           createdAt: { lt: options.before },
           ...(options.workspaceId !== undefined ? { workspaceId: options.workspaceId } : {}),
@@ -132,9 +147,7 @@ export class MindMessageBackfillService {
           content: r.content,
           sourceId: r.id,
           createdAt: r.createdAt,
-          ...(r.metadata !== null && r.metadata !== undefined
-            ? { metadata: r.metadata as Prisma.InputJsonValue }
-            : {}),
+          ...(r.metadata !== null && r.metadata !== undefined ? { metadata: r.metadata } : {}),
         })),
         skipDuplicates: true,
       });

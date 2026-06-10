@@ -11,9 +11,9 @@ jest.mock('../../../queue/queue', () => ({
   autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) },
 }));
 
-async function expectMetaOnlyGone(promise: Promise<unknown>, feature: string) {
+async function expectMetaOnlyGone(operation: () => unknown, feature: string) {
   try {
-    await promise;
+    await operation();
   } catch (error) {
     expect(error).toBeInstanceOf(GoneException);
     const response = error instanceof GoneException ? error.getResponse() : null;
@@ -210,13 +210,13 @@ describe('WhatsappSessionService', () => {
 
   describe('getQrCode', () => {
     it('rejects legacy QR requests with Meta-only guidance', async () => {
-      await expectMetaOnlyGone(service.getQrCode('ws-1'), 'legacy_session_qr');
+      await expectMetaOnlyGone(() => service.getQrCode('ws-1'), 'legacy_session_qr');
     });
   });
 
   describe('disconnect', () => {
     it('rejects legacy disconnect requests with Meta-only guidance', async () => {
-      await expectMetaOnlyGone(service.disconnect('ws-1'), 'legacy_session_disconnect');
+      await expectMetaOnlyGone(() => service.disconnect('ws-1'), 'legacy_session_disconnect');
       expect(providerRegistry.disconnect).not.toHaveBeenCalled();
     });
   });

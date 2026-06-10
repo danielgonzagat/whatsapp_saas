@@ -10,7 +10,6 @@ export async function POST(request: NextRequest) {
     const backendUrl = getBackendUrl();
 
     if (!backendUrl) {
-      console.error('[Auth Proxy] magic-link/verify: BACKEND_URL not configured');
       return NextResponse.json({ message: 'Servidor não configurado.' }, { status: 503 });
     }
 

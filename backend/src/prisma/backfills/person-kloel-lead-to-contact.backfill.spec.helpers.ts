@@ -64,7 +64,7 @@ export class MockPrisma implements BackfillPrismaClient {
   }
 
   readonly workspace = {
-    findMany: async (args: {
+    findMany: (args: {
       orderBy: { id: 'asc' };
       cursor?: { id: string };
       skip?: number;
@@ -75,12 +75,12 @@ export class MockPrisma implements BackfillPrismaClient {
         const idx = this.workspaces.indexOf(args.cursor.id);
         start = idx >= 0 ? idx + (args.skip ?? 0) : this.workspaces.length;
       }
-      return this.workspaces.slice(start, start + args.take).map((id) => ({ id }));
+      return Promise.resolve(this.workspaces.slice(start, start + args.take).map((id) => ({ id })));
     },
   };
 
   readonly kloelLead = {
-    findMany: async (args: {
+    findMany: (args: {
       where: { workspaceId: string };
       orderBy: { id: 'asc' };
       cursor?: { id: string };
@@ -93,18 +93,18 @@ export class MockPrisma implements BackfillPrismaClient {
         const idx = all.findIndex((l) => l.id === args.cursor?.id);
         start = idx >= 0 ? idx + (args.skip ?? 0) : all.length;
       }
-      return all.slice(start, start + args.take);
+      return Promise.resolve(all.slice(start, start + args.take));
     },
   };
 
   readonly contact = {
-    findUnique: async (args: {
+    findUnique: (args: {
       where: { workspaceId_phone: { workspaceId: string; phone: string } };
     }): Promise<BackfillContact | null> => {
       const { workspaceId, phone } = args.where.workspaceId_phone;
-      return this.contacts.get(`${workspaceId}::${phone}`) ?? null;
+      return Promise.resolve(this.contacts.get(`${workspaceId}::${phone}`) ?? null);
     },
-    upsert: async (args: {
+    upsert: (args: {
       where: { workspaceId_phone: { workspaceId: string; phone: string } };
       create: Record<string, unknown>;
       update: Record<string, unknown>;
@@ -119,7 +119,7 @@ export class MockPrisma implements BackfillPrismaClient {
           ...(args.update as Partial<BackfillContact>),
         };
         this.contacts.set(key, merged);
-        return { id: merged.id };
+        return Promise.resolve({ id: merged.id });
       }
       this.contactSeq += 1;
       const id = `contact-${this.contactSeq}`;
@@ -135,12 +135,12 @@ export class MockPrisma implements BackfillPrismaClient {
         totalMessages: (args.create.totalMessages as number | undefined) ?? 0,
       };
       this.contacts.set(key, created);
-      return { id };
+      return Promise.resolve({ id });
     },
   };
 
   readonly auditLog = {
-    findFirst: async (args: {
+    findFirst: (args: {
       where: { workspaceId: string; action: string; resource: string; resourceId: string };
     }): Promise<{ id: string } | null> => {
       const match = this.audits.find(
@@ -150,9 +150,9 @@ export class MockPrisma implements BackfillPrismaClient {
           a.resource === args.where.resource &&
           a.resourceId === args.where.resourceId,
       );
-      return match ? { id: match.id } : null;
+      return Promise.resolve(match ? { id: match.id } : null);
     },
-    create: async (args: { data: Record<string, unknown> }): Promise<{ id: string }> => {
+    create: (args: { data: Record<string, unknown> }): Promise<{ id: string }> => {
       this.auditSeq += 1;
       const id = `audit-${this.auditSeq}`;
       this.audits.push({
@@ -163,7 +163,7 @@ export class MockPrisma implements BackfillPrismaClient {
         resourceId: args.data.resourceId as string,
         details: args.data.details as Record<string, unknown>,
       });
-      return { id };
+      return Promise.resolve({ id });
     },
   };
 

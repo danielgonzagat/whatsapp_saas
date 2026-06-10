@@ -279,6 +279,31 @@ describe('UnifiedAgentActionsService', () => {
 
       expect(result.success).toBe(false);
     });
+
+    it('routes the document through the canonical dispatch service when available', async () => {
+      const dispatch = jest.fn().mockResolvedValue({ success: true, messageId: 'm-1' });
+      jest
+        .spyOn(
+          service as unknown as { resolveDispatchService: () => Promise<unknown> },
+          'resolveDispatchService',
+        )
+        .mockResolvedValue({ dispatch });
+
+      const result = await service.actionSendDocument(wsId, phone, {
+        url: 'https://example.com/doc.pdf',
+        caption: 'Aqui',
+      });
+
+      expect(result.success).toBe(true);
+      expect(dispatch).toHaveBeenCalledWith(
+        wsId,
+        'whatsapp',
+        phone,
+        'Aqui',
+        expect.objectContaining({ mediaUrl: 'https://example.com/doc.pdf', mediaType: 'document' }),
+      );
+      expect(whatsappService.sendMessage).not.toHaveBeenCalled();
+    });
   });
 
   describe('workspace isolation', () => {

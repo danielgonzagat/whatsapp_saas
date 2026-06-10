@@ -20,6 +20,13 @@ function makeClaimedEvent(
     lastError: null,
   };
 }
+
+type SpineSurface = Pick<MindEventSpine, 'claimPendingEvents' | 'markDispatchSucceeded'>;
+
+function asMindEventSpine(partial: SpineSurface): MindEventSpine {
+  return partial as MindEventSpine;
+}
+
 describe('MindEventIngestor', () => {
   let ingestor: MindEventIngestor;
   let spine: jest.Mocked<Pick<MindEventSpine, 'claimPendingEvents' | 'markDispatchSucceeded'>>;
@@ -31,8 +38,11 @@ describe('MindEventIngestor', () => {
       claimPendingEvents: jest.fn(),
       markDispatchSucceeded: jest.fn(),
     };
-    ingestor = new MindEventIngestor(spine as unknown as MindEventSpine, hebbian, {
-      mindOutboxEvent: { findMany: jest.fn().mockResolvedValue([]) },
+    ingestor = new MindEventIngestor(asMindEventSpine(spine), hebbian, {
+      mindOutboxEvent: {
+        findMany: jest.fn().mockResolvedValue([]),
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
     } as never);
   });
   describe('processDecisions', () => {
@@ -97,58 +107,134 @@ describe('MindEventIngestor', () => {
       ingestSpy.mockRestore();
     });
   });
+  describe('processSelfModifications', () => {
+    it('claims pending self-modification proposals and marks each dispatched', async () => {
+      const events = [
+        makeClaimedEvent({ id: 'sm-1', eventType: 'cognition.self_modification.proposed' }),
+        makeClaimedEvent({ id: 'sm-2', eventType: 'cognition.self_modification.proposed' }),
+      ];
+      spine.claimPendingEvents.mockResolvedValue({ events });
+      spine.markDispatchSucceeded.mockResolvedValue(undefined);
+
+      const consumed = await ingestor.processSelfModifications('ws-1');
+
+      expect(consumed).toBe(2);
+      expect(spine.claimPendingEvents).toHaveBeenCalledWith({
+        workspaceId: 'ws-1',
+        eventType: 'cognition.self_modification.proposed',
+        limit: 100,
+      });
+      expect(spine.markDispatchSucceeded).toHaveBeenCalledTimes(2);
+      expect(spine.markDispatchSucceeded).toHaveBeenCalledWith('sm-1', 'ws-1');
+      expect(spine.markDispatchSucceeded).toHaveBeenCalledWith('sm-2', 'ws-1');
+    });
+
+    it('returns 0 and does not mark anything when no proposals are pending', async () => {
+      spine.claimPendingEvents.mockResolvedValue({ events: [] });
+      const consumed = await ingestor.processSelfModifications('ws-1');
+      expect(consumed).toBe(0);
+      expect(spine.markDispatchSucceeded).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('processConsolidationScans', () => {
+    it('claims pending consolidation scans and marks each dispatched', async () => {
+      const events = [makeClaimedEvent({ id: 'cs-1', eventType: 'cognition.consolidation_scan' })];
+      spine.claimPendingEvents.mockResolvedValue({ events });
+      spine.markDispatchSucceeded.mockResolvedValue(undefined);
+
+      const consumed = await ingestor.processConsolidationScans('ws-1');
+
+      expect(consumed).toBe(1);
+      expect(spine.claimPendingEvents).toHaveBeenCalledWith({
+        workspaceId: 'ws-1',
+        eventType: 'cognition.consolidation_scan',
+        limit: 100,
+      });
+      expect(spine.markDispatchSucceeded).toHaveBeenCalledWith('cs-1', 'ws-1');
+    });
+  });
+
+  describe('expireStaleSelfModifications', () => {
+    it('marks pending proposals older than the TTL as expired (not deleted)', async () => {
+      const updateMany = jest.fn().mockResolvedValue({ count: 5 });
+      ingestor = new MindEventIngestor(asMindEventSpine(spine), hebbian, {
+        mindOutboxEvent: { findMany: jest.fn(), updateMany },
+      } as never);
+
+      const expired = await ingestor.expireStaleSelfModifications();
+
+      expect(expired).toBe(5);
+      type ExpireUpdateManyArg = {
+        where: { eventType: string; status: string; occurredAt: { lt: Date } };
+        data: { status: string };
+      };
+      const call = (updateMany.mock.calls as Array<[ExpireUpdateManyArg]>)[0];
+      if (!call) {
+        throw new Error('expected updateMany to have been called');
+      }
+      const arg = call[0];
+      expect(arg.where.eventType).toBe('cognition.self_modification.proposed');
+      expect(arg.where.status).toBe('pending');
+      expect(arg.where.occurredAt.lt).toBeInstanceOf(Date);
+      expect(arg.data.status).toBe('expired');
+    });
+  });
+
   describe('tickAllWorkspaces', () => {
-    it('processes each workspace with pending decisions', async () => {
+    it('finds workspaces across all consumed event types and drains each', async () => {
       const prisma = {
         mindOutboxEvent: {
           findMany: jest.fn().mockResolvedValue([{ workspaceId: 'ws-1' }, { workspaceId: 'ws-2' }]),
+          updateMany: jest.fn().mockResolvedValue({ count: 0 }),
         },
       };
-      ingestor = new MindEventIngestor(
-        spine as unknown as MindEventSpine,
-        hebbian,
-        prisma as never,
-      );
+      ingestor = new MindEventIngestor(asMindEventSpine(spine), hebbian, prisma as never);
 
       spine.claimPendingEvents.mockResolvedValue({ events: [] });
 
       await ingestor.tickAllWorkspaces();
 
-      expect(prisma.mindOutboxEvent.findMany).toHaveBeenCalledWith({
-        where: {
-          eventType: 'cognition.decision_made',
-          status: 'pending',
-        },
-        distinct: ['workspaceId'],
-        select: { workspaceId: true },
-      });
-      expect(spine.claimPendingEvents).toHaveBeenCalledTimes(2);
+      type FindManyArg = {
+        where: { eventType: { in: string[] }; status: string };
+        distinct: string[];
+      };
+      const findCall = (prisma.mindOutboxEvent.findMany.mock.calls as Array<[FindManyArg]>)[0];
+      if (!findCall) {
+        throw new Error('expected findMany to have been called');
+      }
+      const findArg = findCall[0];
+      expect(findArg.where.eventType.in).toEqual([
+        'cognition.decision_made',
+        'cognition.self_modification.proposed',
+        'cognition.consolidation_scan',
+      ]);
+      expect(findArg.where.status).toBe('pending');
+      expect(findArg.distinct).toEqual(['workspaceId']);
+      // 3 consumers per workspace (decisions + self-mod + consolidation) x 2 ws.
+      expect(spine.claimPendingEvents).toHaveBeenCalledTimes(6);
+      // TTL sweep ran once.
+      expect(prisma.mindOutboxEvent.updateMany).toHaveBeenCalledTimes(1);
     });
-    it('continues to next workspace when one fails', async () => {
+
+    it('continues to next workspace when one consumer fails', async () => {
       const prisma = {
         mindOutboxEvent: {
           findMany: jest.fn().mockResolvedValue([{ workspaceId: 'ws-1' }, { workspaceId: 'ws-2' }]),
+          updateMany: jest.fn().mockResolvedValue({ count: 0 }),
         },
       };
-      ingestor = new MindEventIngestor(
-        spine as unknown as MindEventSpine,
-        hebbian,
-        prisma as never,
-      );
+      ingestor = new MindEventIngestor(asMindEventSpine(spine), hebbian, prisma as never);
 
+      // First claim (ws-1 decisions) throws; all other claims resolve empty.
       spine.claimPendingEvents
         .mockRejectedValueOnce(new Error('boom'))
-        .mockResolvedValueOnce({ events: [] });
+        .mockResolvedValue({ events: [] });
 
       await ingestor.tickAllWorkspaces();
 
-      // Both workspaces processed despite ws-1 failure
-      expect(spine.claimPendingEvents).toHaveBeenCalledTimes(2);
-      expect(spine.claimPendingEvents).toHaveBeenNthCalledWith(2, {
-        workspaceId: 'ws-2',
-        eventType: 'cognition.decision_made',
-        limit: 100,
-      });
+      // ws-2 still processed despite ws-1 failure: 3 consumers x 2 ws = 6 claims.
+      expect(spine.claimPendingEvents).toHaveBeenCalledTimes(6);
     });
   });
 });

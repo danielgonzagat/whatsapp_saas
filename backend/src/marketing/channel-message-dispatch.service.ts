@@ -42,6 +42,7 @@ import {
   buildFacebook,
   buildInstagram,
   buildMessenger,
+  buildTikTok,
   buildWhatsApp,
   coerceArgString,
   type DispatchChannel,
@@ -161,6 +162,8 @@ export class ChannelMessageDispatchService {
         return buildEmail(workspaceId, to, message, opts);
       case ChannelKind.EMAIL_TRANSACTIONAL:
         return buildEmailTransactional(workspaceId, to, message, opts);
+      case ChannelKind.TIKTOK:
+        return buildTikTok(workspaceId, to, message);
       default:
         throw new Error('channel_not_supported');
     }

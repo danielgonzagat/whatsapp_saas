@@ -1,0 +1,14 @@
+haiku haiku|ESCALAR|s1 promote 13
+haiku haiku|ESCALAR|s2 promote 7
+haiku haiku|ESCALAR|s3 promote 14
+haiku haiku|GRADIENTE|s1 promote 14
+haiku haiku|GRADIENTE|s2 promote 4
+haiku haiku|GRADIENTE|s3 promote 7
+haiku records=18
+opus opus|ESCALAR|s1 promote -17
+opus opus|ESCALAR|s2 promote 13
+opus opus|ESCALAR|s3 promote -4
+opus opus|GRADIENTE|s1 promote -7
+opus opus|GRADIENTE|s2 promote 10
+opus opus|GRADIENTE|s3 promote -17
+opus records=18

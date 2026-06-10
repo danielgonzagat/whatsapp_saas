@@ -153,12 +153,14 @@ describe('KLOEL_CAPABILITY_TURN_LEARN — capability-turn observability closure'
           chosenAction: 'search_web',
           baselineAction: 'reply_engine',
           expectedWindow: 1,
-          outcomeKey: expect.stringMatching(/^capability:ws-capability-1:\d+:[0-9a-f]{6}$/),
+          outcomeKey: expect.stringMatching(
+            /^capability:ws-capability-1:\d+:[0-9a-f]{6}$/,
+          ) as string,
           contextSnapshot: expect.objectContaining({
             surface: 'chat',
             capability: 'search_web',
             replyLength: CAPABILITY_CONTENT.length,
-          }),
+          }) as Record<string, unknown>,
         }),
       );
       // The reply itself is UNCHANGED — still the verbatim capability content.

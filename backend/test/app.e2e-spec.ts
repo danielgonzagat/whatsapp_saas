@@ -1,16 +1,20 @@
 jest.mock('ioredis', () => {
-  const Redis = class {
-    private store = new Map<string, any>();
-    constructor(..._args: any[]) {}
+  const Redis = class RedisMock {
+    private store = new Map<string, unknown>();
+    constructor(..._args: unknown[]) {}
+    getMaxListeners = () => 10;
+    setMaxListeners = (_n: number) => this;
     get = async (key: string) => this.store.get(key);
     setex = async (key: string, _ttl: number, value: string) => this.store.set(key, value);
     incr = async (key: string) => {
-      const v = (this.store.get(key) || 0) + 1;
+      const current = this.store.get(key);
+      const v = (typeof current === 'number' ? current : 0) + 1;
       this.store.set(key, v);
       return v;
     };
     incrby = async (key: string, n: number) => {
-      const v = (this.store.get(key) || 0) + n;
+      const current = this.store.get(key);
+      const v = (typeof current === 'number' ? current : 0) + n;
       this.store.set(key, v);
       return v;
     };
@@ -21,7 +25,7 @@ jest.mock('ioredis', () => {
     on = () => {};
     subscribe = async () => {};
     publish = async () => 1;
-    duplicate = () => new (Redis as any)();
+    duplicate = () => new RedisMock();
     quit = async () => {};
     disconnect = () => {};
   };
@@ -31,7 +35,7 @@ jest.mock('ioredis', () => {
 jest.mock('bullmq', () => {
   class Dummy {
     name: string;
-    constructor(name?: string, ..._args: any[]) {
+    constructor(name?: string, ..._args: unknown[]) {
       this.name = name || 'dummy';
     }
     add = async () => {};
@@ -60,6 +64,7 @@ process.env.AUTH_OPTIONAL = 'true';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import type { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { NeuroCrmService } from './../src/crm/neuro-crm.service';
 
@@ -83,6 +88,9 @@ describe('AppController (e2e)', () => {
   });
 
   it('/ (GET)', () => {
-    return request(app.getHttpServer()).get('/').expect(200).expect('Hello World!');
+    return request(app.getHttpServer() as App)
+      .get('/')
+      .expect(200)
+      .expect('Hello World!');
   });
 });

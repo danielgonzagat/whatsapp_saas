@@ -7,14 +7,18 @@ export const ASSISTANT_REASONING_REDACTED_TEXT =
   'Detalhes internos desta execução foram omitidos com segurança.';
 
 const PRIVATE_CREDENTIAL_REASONING_RE =
-  /(?:sk-[a-z0-9_-]{16,}|AKIA[0-9A-Z]{16}|api[_ -]?key\s*[:=]|authorization\s*[:=]|bearer\s+[a-z0-9._-]{20,}|password\s*[:=]|secret\s*[:=])/i;
+  /(?:sk-[a-z0-9_-]{8,}|AKIA[0-9A-Z]{16}|api[_ -]?key\s*[:=]|authorization\s*[:=]|bearer\s+[a-z0-9._-]{20,}|password\s*[:=]|secret\s*[:=])/i;
+const PRIVATE_INTERNAL_REASONING_RE =
+  /\b(?:runtime context|developer prompt|system prompt|hidden runtime)\b|\bskill\s*=|<[^>]*(?:tool_calls|invoke)\b|<[\uFF5C|]{2}DSML/i;
 
 export function sanitizeAssistantReasoningTextForDisplay(value: string): string {
   const text = String(value || '');
   if (!text) {
     return '';
   }
-  return PRIVATE_CREDENTIAL_REASONING_RE.test(text) ? ASSISTANT_REASONING_REDACTED_TEXT : text;
+  return PRIVATE_CREDENTIAL_REASONING_RE.test(text) || PRIVATE_INTERNAL_REASONING_RE.test(text)
+    ? ASSISTANT_REASONING_REDACTED_TEXT
+    : text;
 }
 
 export type AssistantReasoningFileKind =
@@ -73,11 +77,11 @@ export interface AssistantReasoningFile {
   persistent?: boolean | undefined;
 }
 
-/** Public-safe reasoning UI shape. Raw provider reasoning is never exposed. */
+/** Public-safe reasoning UI shape. Provider reasoning deltas are user-visible after sanitization. */
 export interface AssistantReasoning {
   /**
-   * Public reasoning text. Raw provider reasoning from reasoning_delta and the
-   * legacy private `reasoningText` metadata field are never read here.
+   * Public reasoning text accumulated from reasoning_delta or persisted metadata.
+   * Secret-like payloads are redacted before display.
    */
   text: string;
   /** Summary property. */
@@ -91,7 +95,10 @@ export interface AssistantReasoning {
 /** Get public-safe reasoning metadata for an assistant message. */
 export function getAssistantReasoning(metadata: unknown): AssistantReasoning {
   const normalized = normalizeAssistantMessageMetadata(metadata);
-  const text = '';
+  const text =
+    typeof normalized?.reasoningText === 'string'
+      ? sanitizeAssistantReasoningTextForDisplay(normalized.reasoningText)
+      : '';
   const summary =
     typeof normalized?.reasoningSummary === 'string' ? normalized.reasoningSummary : '';
   const durationMs =
@@ -129,14 +136,13 @@ export function applyReasoningStreamEventToMetadata(
   event: KloelStreamEvent,
 ): Record<string, unknown> | null {
   if (event.type === 'reasoning_delta') {
-    // Provider reasoning deltas are private provider internals. Keep timing only
-    // so live/reloaded UI can show real processing state without exposing text.
     const startedAt =
       typeof metadata.reasoningStartedAt === 'number' ? metadata.reasoningStartedAt : Date.now();
+    const currentText = typeof metadata.reasoningText === 'string' ? metadata.reasoningText : '';
+    const nextText = sanitizeAssistantReasoningTextForDisplay(currentText + event.text);
     const safeMetadata = { ...metadata };
-    delete safeMetadata.reasoningText;
     delete safeMetadata.streamedReasoning;
-    return { ...safeMetadata, reasoningStartedAt: startedAt };
+    return { ...safeMetadata, reasoningStartedAt: startedAt, reasoningText: nextText };
   }
   if (event.type === 'reasoning_summary') {
     return { ...metadata, reasoningSummary: event.text };

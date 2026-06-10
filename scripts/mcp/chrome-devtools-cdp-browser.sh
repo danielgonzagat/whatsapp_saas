@@ -9,9 +9,12 @@ RUNTIME_DIR="${KLOEL_CHROME_DEVTOOLS_RUNTIME:-$BASE_DIR/runtime}"
 CHROME_BIN="${CHROME_BIN:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
 CHROME_APP="${CHROME_APP:-/Applications/Google Chrome.app}"
 LAUNCH_MODE="${KLOEL_CHROME_DEVTOOLS_LAUNCH_MODE:-auto}"
-PORTS=(9222 9223)
+PORTS=(9222 9223 9333)
 if [[ -n "${KLOEL_CHROME_DEVTOOLS_PORTS:-}" ]]; then
-  read -r -a PORTS <<< "$KLOEL_CHROME_DEVTOOLS_PORTS"
+  PORTS=()
+  for port in ${KLOEL_CHROME_DEVTOOLS_PORTS}; do
+    PORTS+=("$port")
+  done
 fi
 
 mkdir -p "$BASE_DIR" "$HOME_DIR" "$RUNTIME_DIR"
@@ -35,9 +38,49 @@ log_file() {
   printf '%s/chrome-cdp-%s.log' "$BASE_DIR" "$1"
 }
 
+cleanup_profile_singleton() {
+  local profile="$1"
+  rm -f "$profile/SingletonCookie" "$profile/SingletonLock" "$profile/SingletonSocket"
+}
+
 is_running() {
   local pid="$1"
   [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null
+}
+
+terminate_pid() {
+  local pid="$1"
+  local label="$2"
+  local attempt
+  if ! is_running "$pid"; then
+    return 0
+  fi
+  kill "$pid" 2>/dev/null || true
+  for attempt in {1..20}; do
+    if ! is_running "$pid"; then
+      return 0
+    fi
+    sleep 0.25
+  done
+  if is_running "$pid"; then
+    kill -9 "$pid" 2>/dev/null || true
+    printf 'force-stopped %s pid=%s\n' "$label" "$pid"
+  fi
+}
+
+pid_for_port() {
+  local port="$1"
+  if [[ "${KLOEL_CHROME_DEVTOOLS_ALLOW_PS:-1}" != "1" ]]; then
+    return 1
+  fi
+  ps ax -o pid= -o command= 2>/dev/null \
+    | awk -v needle="--remote-debugging-port=${port}" '
+        index($0, needle) && index($0, "Google Chrome") && !index($0, "Helper") {
+          print $1;
+          exit;
+        }
+      ' \
+    || true
 }
 
 wait_ready() {
@@ -60,28 +103,32 @@ launch_chrome() {
   local os_name pid
 
   os_name="$(uname -s 2>/dev/null || printf unknown)"
-  if [[ "$LAUNCH_MODE" != "direct" && "$os_name" == "Darwin" && -d "$CHROME_APP" ]]; then
+  # `open -na "Google Chrome"` can fail under automation or route to an
+  # existing user session. Use it only when explicitly requested; the direct
+  # binary path is the default because it honors --user-data-dir and binds CDP.
+  if [[ "${KLOEL_CHROME_DEVTOOLS_ALLOW_OPEN:-0}" == "1" && "$LAUNCH_MODE" == "open" && "$os_name" == "Darwin" && -d "$CHROME_APP" && -x /usr/bin/open ]]; then
+    : >"$log"
     /usr/bin/open -na "$CHROME_APP" --args \
       --remote-debugging-address=127.0.0.1 \
       --remote-debugging-port="$port" \
       --user-data-dir="$profile" \
+      --profile-directory=Default \
       --no-first-run \
       --no-default-browser-check \
-      --disable-crash-reporter \
-      --disable-crashpad \
-      --disable-breakpad \
-      --disable-dev-shm-usage \
-      --headless=new \
-      about:blank >"$log" 2>&1 &
+      about:blank >>"$log" 2>&1 &
     pid="$!"
+    sleep 0.5
+    pid="$(pid_for_port "$port" || true)"
     printf '%s\n' "$pid" >"$pid_path"
     return 0
   fi
 
-  "$CHROME_BIN" \
+  : >"$log"
+  nohup "$CHROME_BIN" \
     --remote-debugging-address=127.0.0.1 \
     --remote-debugging-port="$port" \
     --user-data-dir="$profile" \
+    --profile-directory=Default \
     --no-first-run \
     --no-default-browser-check \
     --disable-crash-reporter \
@@ -89,7 +136,7 @@ launch_chrome() {
     --disable-breakpad \
     --disable-dev-shm-usage \
     --headless=new \
-    about:blank >"$log" 2>&1 &
+    about:blank </dev/null >>"$log" 2>&1 &
   pid="$!"
   printf '%s\n' "$pid" >"$pid_path"
 }
@@ -102,34 +149,37 @@ start_one() {
   log="$(log_file "$port")"
 
   if curl -fsS "http://127.0.0.1:${port}/json/version" >/dev/null 2>&1; then
-    printf 'chrome-devtools CDP %s ready\n' "$port"
+    pid="$(pid_for_port "$port" || true)"
+    [[ -n "$pid" ]] && printf '%s\n' "$pid" >"$pid_path"
+    printf 'chrome-devtools CDP %s ready pid=%s\n' "$port" "${pid:-unknown}"
     return 0
   fi
 
   if [[ -f "$pid_path" ]]; then
     pid="$(cat "$pid_path" 2>/dev/null || true)"
-    if is_running "$pid"; then
+    if is_running "$pid" && curl -fsS "http://127.0.0.1:${port}/json/version" >/dev/null 2>&1; then
       printf 'chrome-devtools CDP %s already running pid=%s\n' "$port" "$pid"
       return 0
     fi
+    if is_running "$pid"; then
+      terminate_pid "$pid" "stale chrome-devtools CDP ${port}"
+    fi
+  fi
+
+  pid="$(pid_for_port "$port" || true)"
+  if is_running "$pid"; then
+    terminate_pid "$pid" "stale chrome-devtools CDP ${port}"
   fi
 
   mkdir -p "$profile"
-  "$CHROME_BIN" \
-    --remote-debugging-port="$port" \
-    --user-data-dir="$profile" \
-    --no-first-run \
-    --no-default-browser-check \
-    --disable-crash-reporter \
-    --disable-crashpad \
-    --disable-breakpad \
-    --headless=new \
-    about:blank >"$log" 2>&1 &
-  pid="$!"
-  printf '%s\n' "$pid" >"$pid_path"
+  cleanup_profile_singleton "$profile"
+  launch_chrome "$port" "$profile" "$log" "$pid_path"
+  pid="$(cat "$pid_path" 2>/dev/null || true)"
 
   if wait_ready "$port"; then
-    printf 'chrome-devtools CDP %s ready pid=%s\n' "$port" "$pid"
+    pid="$(pid_for_port "$port" || true)"
+    [[ -n "$pid" ]] && printf '%s\n' "$pid" >"$pid_path"
+    printf 'chrome-devtools CDP %s ready pid=%s\n' "$port" "${pid:-unknown}"
   else
     printf 'chrome-devtools CDP %s did not become ready; see %s\n' "$port" "$log" >&2
     return 1
@@ -140,16 +190,16 @@ stop_one() {
   local port="$1"
   local pid_path pid
   pid_path="$(pid_file "$port")"
-  if [[ ! -f "$pid_path" ]]; then
-    printf 'chrome-devtools CDP %s not tracked\n' "$port"
-    return 0
+  pid=""
+  [[ -f "$pid_path" ]] && pid="$(cat "$pid_path" 2>/dev/null || true)"
+  if ! is_running "$pid"; then
+    pid="$(pid_for_port "$port" || true)"
   fi
-  pid="$(cat "$pid_path" 2>/dev/null || true)"
   if is_running "$pid"; then
-    kill "$pid"
+    terminate_pid "$pid" "chrome-devtools CDP ${port}"
     printf 'stopped chrome-devtools CDP %s pid=%s\n' "$port" "$pid"
   else
-    printf 'chrome-devtools CDP %s pid=%s not running\n' "$port" "$pid"
+    printf 'chrome-devtools CDP %s pid=%s not running\n' "$port" "${pid:-unknown}"
   fi
   rm -f "$pid_path"
 }
@@ -160,8 +210,12 @@ status_one() {
   pid_path="$(pid_file "$port")"
   pid=""
   [[ -f "$pid_path" ]] && pid="$(cat "$pid_path" 2>/dev/null || true)"
-  if is_running "$pid" && curl -fsS "http://127.0.0.1:${port}/json/version" >/dev/null 2>&1; then
-    printf 'chrome-devtools CDP %s running pid=%s\n' "$port" "$pid"
+  if ! is_running "$pid"; then
+    pid="$(pid_for_port "$port" || true)"
+  fi
+  if curl -fsS "http://127.0.0.1:${port}/json/version" >/dev/null 2>&1; then
+    [[ -n "$pid" ]] && printf '%s\n' "$pid" >"$pid_path"
+    printf 'chrome-devtools CDP %s running pid=%s\n' "$port" "${pid:-unknown}"
   else
     printf 'chrome-devtools CDP %s stopped\n' "$port"
   fi

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Optional, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -6,6 +6,8 @@ import { AuthenticatedRequest } from '../common/interfaces/authenticated-request
 import { RouteClass } from '../common/throttler/route-class.decorator';
 import { TikTokInboxService } from './tiktok-inbox.service';
 import { TikTokSendMessageDto } from './dto/tiktok-send-message.dto';
+import { ChannelMessageDispatchService } from './channel-message-dispatch.service';
+import { isTikTokInboxCanonicalDispatchEnabled } from './tiktok-inbox-canonical-dispatch.flag';
 
 /**
  * TikTok inbox controller. Brings TikTok backend surface to parity with
@@ -28,7 +30,11 @@ import { TikTokSendMessageDto } from './dto/tiktok-send-message.dto';
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('mutate')
 export class TikTokInboxController {
-  constructor(private readonly tiktokInbox: TikTokInboxService) {}
+  constructor(
+    private readonly tiktokInbox: TikTokInboxService,
+    @Optional()
+    private readonly canonicalDispatch?: ChannelMessageDispatchService,
+  ) {}
 
   @Get('status')
   async getStatus(@Req() req: AuthenticatedRequest) {
@@ -51,6 +57,26 @@ export class TikTokInboxController {
   @Post('send')
   async sendMessage(@Req() req: AuthenticatedRequest, @Body() body: TikTokSendMessageDto) {
     const workspaceId = resolveWorkspaceId(req);
+
+    // ADDITIVE + flag-gated (KLOEL_TIKTOK_INBOX_CANONICAL_DISPATCH, DEFAULT
+    // OFF): route the send through the canonical cross-channel dispatch front
+    // door so it traverses the registry → TikTokDispatchAdapter, which returns
+    // the HONEST blocked result (TikTok has no outbound API). No API is
+    // invented. Any throw or missing canonical service falls through to the
+    // existing honest-pending tiktokInbox.sendMessage path, unchanged.
+    if (isTikTokInboxCanonicalDispatchEnabled() && this.canonicalDispatch) {
+      try {
+        return await this.canonicalDispatch.dispatch(
+          workspaceId,
+          'tiktok',
+          body.recipientId,
+          body.text,
+        );
+      } catch {
+        // DI/build/dispatch failure: fall through to the honest-pending path.
+      }
+    }
+
     return this.tiktokInbox.sendMessage(workspaceId, body.recipientId, body.text);
   }
 }

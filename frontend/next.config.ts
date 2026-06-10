@@ -31,8 +31,14 @@ if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_API_URL) {
 // ci-cd.yml both run `next build --webpack`, so bundle stats upload there.
 // Local dev without the token is a no-op (plugin is not added to the chain).
 const codecovBundleAnalysisEnabled = Boolean(process.env.CODECOV_TOKEN);
+const buildDistDir = process.env.KLOEL_FRONTEND_DIST_DIR?.trim();
+const buildWorkerThreads = process.env.KLOEL_FRONTEND_BUILD_WORKER_THREADS === '1';
+const skipNextBuildTypecheck = process.env.KLOEL_FRONTEND_BUILD_SKIP_NEXT_TYPECHECK === '1';
 
 const nextConfig: NextConfig = {
+  ...(buildDistDir ? { distDir: buildDistDir } : {}),
+  ...(buildWorkerThreads ? { experimental: { workerThreads: true } } : {}),
+  ...(skipNextBuildTypecheck ? { typescript: { ignoreBuildErrors: true } } : {}),
   reactCompiler: true,
   allowedDevOrigins: [
     'root.localhost',

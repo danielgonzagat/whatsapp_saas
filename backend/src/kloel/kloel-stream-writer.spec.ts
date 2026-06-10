@@ -2,8 +2,13 @@ import {
   detectDeliverableFileCards,
   detectRequestedDeliverableFileCards,
 } from './kloel-stream-writer';
+import { Response } from 'express';
+import OpenAI from 'openai';
+import { KloelStreamWriter } from './kloel-stream-writer';
+import type { KloelLLME2EGuard } from './kloel-llm-e2e-guard';
 
 const fence = '```';
+type ParsedStreamPayload = { type?: string; text?: string };
 
 function buildLongBlock(title: string, marker: string): string {
   return [
@@ -15,6 +20,41 @@ function buildLongBlock(title: string, marker: string): string {
         `${marker} item ${index + 1}: conteudo operacional suficiente para virar um arquivo real.`,
     ),
   ].join('\n');
+}
+async function* streamChunks(
+  chunks: Array<{ reasoning_content?: string; content?: string }>,
+): AsyncIterable<OpenAI.ChatCompletionChunk> {
+  for (const delta of chunks) {
+    yield { choices: [{ delta }] } as OpenAI.ChatCompletionChunk;
+  }
+}
+
+function createResponseMock() {
+  const writes: string[] = [];
+  const res = {
+    write: jest.fn((chunk: string) => {
+      writes.push(chunk);
+      return true;
+    }),
+    end: jest.fn(),
+    setHeader: jest.fn(),
+  } as unknown as Response;
+
+  return { res, writes };
+}
+
+function parseStreamPayloads(writes: readonly string[]): ParsedStreamPayload[] {
+  const payloads: ParsedStreamPayload[] = [];
+  for (const chunk of writes) {
+    if (!chunk.startsWith('data: ')) {
+      continue;
+    }
+    const parsed: unknown = JSON.parse(chunk.slice('data: '.length).trim());
+    if (parsed && typeof parsed === 'object') {
+      payloads.push(parsed);
+    }
+  }
+  return payloads;
 }
 
 describe('detectDeliverableFileCards', () => {
@@ -496,5 +536,45 @@ describe('detectDeliverableFileCards', () => {
       'plano-b.md',
       'plano-c.md',
     ]);
+  });
+
+  describe('KloelStreamWriter public reasoning stream', () => {
+    it('streams provider reasoning deltas only after internal markers are redacted', async () => {
+      const { res, writes } = createResponseMock();
+      const llmE2EGuard: KloelLLME2EGuard = {
+        isEnabled: () => true,
+        buildStream: () =>
+          streamChunks([
+            { reasoning_content: 'Need to inspect ' },
+            { reasoning_content: 'runtime context via inspect_self before answering.' },
+            { content: 'Resposta final segura.' },
+          ]),
+      };
+      const writer = new KloelStreamWriter(res, {
+        logger: { warn: jest.fn() },
+        llmE2EGuard,
+      });
+
+      await writer.streamModelResponse({
+        openai: {} as OpenAI,
+        writerMessages: [],
+        temperature: 0.2,
+        responseMaxTokens: 512,
+      });
+
+      const payloads = parseStreamPayloads(writes);
+      const reasoningEvents = payloads.filter((event) => event.type === 'reasoning_delta');
+      const firstReasoningIndex = payloads.findIndex((event) => event.type === 'reasoning_delta');
+      const doneIndex = payloads.findIndex((event) => event.type === 'reasoning_done');
+
+      expect(reasoningEvents.map((event) => event.text)).toEqual([
+        'Need to inspect ',
+        'Detalhes internos desta execução foram omitidos com segurança.',
+      ]);
+      expect(firstReasoningIndex).toBeGreaterThanOrEqual(0);
+      expect(doneIndex).toBeGreaterThan(firstReasoningIndex);
+      expect(writer.getLastReasoning().text).not.toContain('runtime context');
+      expect(writer.getLastReasoning().text).not.toContain('inspect_self');
+    });
   });
 });

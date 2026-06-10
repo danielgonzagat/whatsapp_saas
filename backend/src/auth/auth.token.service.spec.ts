@@ -1,6 +1,6 @@
 import { ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Agent, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { AuthTokenService } from './auth.token.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {

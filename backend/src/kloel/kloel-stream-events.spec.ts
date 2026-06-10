@@ -68,7 +68,7 @@ describe('kloel-stream-events', () => {
     });
   });
 
-  it('streams the real provider reasoning as reasoning_delta text', () => {
+  it('streams provider reasoning only after public-safety redaction', () => {
     const buildThinkingLabel = (streamEvents as Record<string, unknown>)[
       'createKloelPublicThinkingLabel'
     ] as (message: string) => string;
@@ -79,11 +79,20 @@ describe('kloel-stream-events', () => {
     expect(buildThinkingLabel('Eu quero validar o raciocínio do chat.')).toBe('');
     expect(buildStreamingLabel('Eu quero validar o raciocínio do chat.')).toBe('');
 
-    const reasoning = 'We are in a chat conversation with the user and must decide what to answer.';
-    const event = createKloelReasoningDeltaEvent(reasoning);
+    const safeReasoning = 'Comparei os dados públicos antes de responder.';
+    const safeEvent = createKloelReasoningDeltaEvent(safeReasoning);
 
-    expect(event).toEqual({ type: 'reasoning_delta', text: reasoning, done: false });
-    expect(event.text).toContain('We are in a chat conversation');
+    expect(safeEvent).toEqual({ type: 'reasoning_delta', text: safeReasoning, done: false });
+
+    const internalEvent = createKloelReasoningDeltaEvent(
+      'Vou usar skill=artifact e runtime context via inspect_self antes de responder.',
+    );
+
+    expect(internalEvent).toEqual({
+      type: 'reasoning_delta',
+      text: 'Detalhes internos desta execução foram omitidos com segurança.',
+      done: false,
+    });
   });
 
   it('omits empty public status messages instead of streaming facade text', () => {
@@ -129,7 +138,7 @@ describe('kloel-stream-events', () => {
       type: 'tool_call',
       callId: 'call-1',
       spanId: 'call-1',
-      tool: 'pesquisa na web',
+      tool: 'search_web',
       risk: {
         level: 'low',
         label: 'consulta segura',
@@ -139,7 +148,7 @@ describe('kloel-stream-events', () => {
       done: false,
     });
     expect(JSON.stringify(callEvent)).not.toContain('lead@example.test');
-    expect(JSON.stringify(callEvent)).not.toContain('search_web');
+    expect(JSON.stringify(callEvent)).toContain('search_web');
 
     const resultEvent = createKloelToolResultEvent({
       callId: 'call-1',
@@ -153,7 +162,7 @@ describe('kloel-stream-events', () => {
       type: 'tool_result',
       callId: 'call-1',
       spanId: 'call-1',
-      tool: 'pesquisa na web',
+      tool: 'search_web',
       success: true,
       durationMs: 42,
       risk: {
@@ -166,7 +175,7 @@ describe('kloel-stream-events', () => {
     });
     expect(JSON.stringify(resultEvent)).not.toContain('rawHtml');
     expect(JSON.stringify(resultEvent)).not.toContain('secret');
-    expect(JSON.stringify(resultEvent)).not.toContain('search_web');
+    expect(JSON.stringify(resultEvent)).toContain('search_web');
   });
 
   it('classifies outbound payment-like tools as controlled sensitive actions', () => {
@@ -246,11 +255,11 @@ describe('kloel-stream-events', () => {
     expect(sanitize('Intermediate steps — alegação acima do observadoos intermediários.')).toBe(
       'Intermediate steps — passos intermediários.',
     );
-    expect(sanitize('sem exibir ferramentas utilizadas ou nomes de ferramentas.')).toBe(
-      'sem exibir ações executadas ou nomes internos de capacidades.',
+    expect(sanitize('mostrando tool ids públicos no trace.')).toBe(
+      'mostrando tool ids públicos no trace.',
     );
     expect(sanitize('registro operacional completo dos passos e ferramentas acionados.')).toBe(
-      'registro operacional completo dos passos e ações executadas.',
+      'registro operacional completo dos passos e ferramentas acionados.',
     );
     expect(
       sanitize('Tool/function calling — capacidade de invocar ferramentas ou funções externas.'),

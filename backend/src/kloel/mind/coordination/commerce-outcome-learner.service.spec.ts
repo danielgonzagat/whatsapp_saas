@@ -2,6 +2,12 @@ import { Prisma } from '@prisma/client';
 import { CommerceOutcomeLearnerService } from './commerce-outcome-learner.service';
 import type { SpineEventEnvelope } from '../../spine/spine-event.types';
 
+const nthCallArg = (mock: jest.Mock, i: number): Record<string, unknown> => {
+  const calls = mock.mock.calls as Array<[Record<string, unknown>]>;
+  const call = calls[i];
+  return call ? call[0] : {};
+};
+
 function envelope(overrides: Partial<SpineEventEnvelope> = {}): SpineEventEnvelope {
   return {
     eventId: 'evt-1',
@@ -182,7 +188,8 @@ describe('CommerceOutcomeLearnerService', () => {
       await service.handle(envelope());
 
       expect(create).toHaveBeenCalledTimes(1);
-      expect(create.mock.calls[0][0].data.idempotencyKey).toBe('commerce-learn:evt-1');
+      const markerData = nthCallArg(create, 0).data as Record<string, unknown>;
+      expect(markerData.idempotencyKey).toBe('commerce-learn:evt-1');
       expect(belief.observeBinary).toHaveBeenCalledTimes(1);
     });
 

@@ -15,12 +15,21 @@ export type MemoryGraphNodeState =
   | 'contradicted'
   | 'replaced';
 
+export interface MemoryGraphSourceRef {
+  readonly type: 'conversation' | 'document' | 'file' | 'tool' | 'manual' | 'custom';
+  readonly label: string;
+  readonly ref?: string;
+  readonly url?: string;
+}
+
 export interface MemoryGraphNode {
   readonly id: string;
   readonly label: string;
   readonly group: string;
   readonly content?: string;
   readonly summary?: string | null;
+  readonly originLabel?: string;
+  readonly sourceRefs?: readonly MemoryGraphSourceRef[];
   readonly scope?: 'user' | 'workspace' | 'shared';
   readonly updatedAt?: string;
   readonly confidence?: number;
@@ -36,6 +45,7 @@ export interface MemoryGraphNode {
 export interface MemoryGraphNodePatch {
   readonly content?: string;
   readonly summary?: string | null;
+  readonly scope?: 'user' | 'workspace' | 'shared';
   readonly pinned?: boolean;
   readonly archived?: boolean;
   readonly sensitive?: boolean;

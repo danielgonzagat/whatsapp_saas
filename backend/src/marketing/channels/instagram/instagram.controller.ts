@@ -4,6 +4,7 @@ import {
   Controller,
   Get,
   Param,
+  Optional,
   Post,
   Query,
   Req,
@@ -18,6 +19,8 @@ import { MetaWhatsAppService } from '../../../meta/meta-whatsapp.service';
 import { InstagramService } from './instagram.service';
 import { RouteClass } from '../../../common/throttler/route-class.decorator';
 import { PaginationLimitPipe } from '../../../common/pagination-clamp.pipe';
+import { ChannelMessageDispatchService } from '../../channel-message-dispatch.service';
+import { isInstagramControllerCanonicalDispatchEnabled } from './instagram-controller-canonical-dispatch.flag';
 
 /** Instagram controller. */
 @Controller('meta/instagram')
@@ -27,6 +30,8 @@ export class InstagramController {
   constructor(
     private readonly instagramService: InstagramService,
     private readonly metaWhatsApp: MetaWhatsAppService,
+    @Optional()
+    private readonly canonicalDispatch?: ChannelMessageDispatchService,
   ) {}
 
   private async resolveInstagramConnection(
@@ -183,9 +188,40 @@ export class InstagramController {
       body.igAccountId,
       body.accessToken,
     );
+    const recipientId = normalizeMetaGraphSegment(body.recipientId, 'Instagram recipient id');
+
+    // ADDITIVE + flag-gated (KLOEL_INSTAGRAM_CONTROLLER_CANONICAL_DISPATCH,
+    // DEFAULT OFF): route the outbound DM through the canonical cross-channel
+    // dispatch front door. The already-resolved igAccountId + access token are
+    // passed as explicit credential overrides so the canonical path uses the
+    // EXACT same credentials this controller resolved. Any blocked/failed/empty
+    // canonical result (or a missing/throwing canonical service) falls through
+    // to the existing raw instagramService.sendMessage path, unchanged.
+    if (isInstagramControllerCanonicalDispatchEnabled() && this.canonicalDispatch) {
+      try {
+        const result = await this.canonicalDispatch.dispatch(
+          workspaceId,
+          'instagram',
+          recipientId,
+          body.text,
+          {
+            igAccountId: channelSession.igAccountId,
+            accessToken: channelSession.accessToken,
+          },
+        );
+        if (result.success) {
+          return { message_id: result.messageId ?? result.externalId ?? null };
+        }
+        // Honest blocked/failed canonical result: fall through to the raw path
+        // below, which surfaces the real Meta failure semantics.
+      } catch {
+        // DI/build/dispatch failure: fall through to the raw path unchanged.
+      }
+    }
+
     return this.instagramService.sendMessage(
       channelSession.igAccountId,
-      normalizeMetaGraphSegment(body.recipientId, 'Instagram recipient id'),
+      recipientId,
       body.text,
       channelSession.accessToken,
     );

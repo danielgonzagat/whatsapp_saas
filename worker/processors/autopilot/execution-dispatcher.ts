@@ -18,6 +18,11 @@ import {
   finishAutonomyExecution,
 } from './cognition';
 import { persistFallbackMessage } from './execution-audit';
+import { prisma } from '../../db';
+import { WorkerLogger } from '../../logger';
+import { emitAutopilotActionExecutedPercept } from './autopilot-percept-emit.helper';
+
+const dispatchPerceptLog = new WorkerLogger('autopilot:dispatch-percept');
 
 export interface DispatchInput {
   workspaceId: string;
@@ -127,6 +132,27 @@ export async function dispatchAutopilotAction(input: DispatchInput): Promise<Dis
     },
   });
 
+  // ADDITIVE, flag-gated (KLOEL_AUTOPILOT_PERCEPT_ENABLED, DEFAULT OFF):
+  // fire ONE cognition percept into the Mind spine for every terminal outcome
+  // of this canonical autopilot dispatch site. No-op when the flag is OFF;
+  // best-effort + try/catch so it can NEVER alter dispatch behavior/outcome.
+  const emitDispatchPercept = async (
+    perceptOutcome: 'SENT' | 'FAILED' | 'SKIPPED',
+  ): Promise<void> => {
+    try {
+      await emitAutopilotActionExecutedPercept(prisma, dispatchPerceptLog, {
+        workspaceId,
+        actionType: action,
+        outcome: perceptOutcome,
+        contactId: contactId || (contactRecord?.id as string | undefined) || null,
+        conversationId: input.conversationId ?? null,
+        conversationProofId: (idemCtx.conversationProofId as string | null) ?? null,
+      });
+    } catch {
+      // swallow: the spine percept is non-load-bearing for dispatch
+    }
+  };
+
   if (!execution.allowed) {
     await logAutopilotAction({
       workspaceId,
@@ -138,6 +164,7 @@ export async function dispatchAutopilotAction(input: DispatchInput): Promise<Dis
       meta: { duplicateExecution: true, idempotencyKey },
     });
     autopilotPipelineCounter.inc({ workspaceId, stage: 'reply', result: 'duplicate_execution' });
+    await emitDispatchPercept('SKIPPED');
     return { status: 'skipped' };
   }
 
@@ -169,6 +196,7 @@ export async function dispatchAutopilotAction(input: DispatchInput): Promise<Dis
       stage: 'reply',
       result: 'recent_duplicate_outbound',
     });
+    await emitDispatchPercept('SKIPPED');
     return { status: 'skipped' };
   }
 
@@ -345,6 +373,7 @@ export async function dispatchAutopilotAction(input: DispatchInput): Promise<Dis
       error: sendError || 'dispatch_failed',
       response: executionResponse,
     });
+    await emitDispatchPercept('FAILED');
     return { status: 'failed', error: sendError || 'dispatch_failed' };
   }
 
@@ -370,5 +399,6 @@ export async function dispatchAutopilotAction(input: DispatchInput): Promise<Dis
       cycleProofId: (idempotencyContext?.cycleProofId as string | null) || null,
     },
   });
+  await emitDispatchPercept('SENT');
   return { status: 'executed' };
 }

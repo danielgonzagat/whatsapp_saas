@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "description": "Kloel LSP Mesh — per-workspace LSP server definitions",
+  "workspaces": {
+    "root": {"cwd":"${REPO_ROOT}","tsconfig":null,"servers":["json","yaml","bash","markdown","toml","dockerfile","compose"]},
+    "backend": {"cwd":"${REPO_ROOT}/backend","tsconfig":"${REPO_ROOT}/backend/tsconfig.json","servers":["typescript","eslint","prisma","json","sql","dockerfile"]},
+    "frontend": {"cwd":"${REPO_ROOT}/frontend","tsconfig":"${REPO_ROOT}/frontend/tsconfig.json","servers":["typescript","eslint","tailwindcss","css","html","json"]},
+    "frontend-admin": {"cwd":"${REPO_ROOT}/frontend-admin","tsconfig":"${REPO_ROOT}/frontend-admin/tsconfig.json","servers":["typescript","eslint","tailwindcss","css","html","json"]},
+    "worker": {"cwd":"${REPO_ROOT}/worker","tsconfig":"${REPO_ROOT}/worker/tsconfig.json","servers":["typescript","eslint","prisma","json","dockerfile"]},
+    "e2e": {"cwd":"${REPO_ROOT}/e2e","tsconfig":null,"servers":["typescript","json"]},
+    "scripts": {"cwd":"${REPO_ROOT}/scripts","tsconfig":null,"servers":["json","bash","yaml","markdown","toml"]}
+  },
+  "servers": {
+    "typescript": {"command":"typescript-language-server","args":["--stdio"],"fileTypes":[".ts",".tsx",".js",".jsx",".mjs",".cjs",".mts",".cts"]},
+    "eslint": {"command":"vscode-eslint-language-server","args":["--stdio"],"fileTypes":[".ts",".tsx",".js",".jsx",".mjs",".cjs"]},
+    "prisma": {"command":"prisma-language-server","args":["--stdio"],"fileTypes":[".prisma"]},
+    "tailwindcss": {"command":"tailwindcss-language-server","args":["--stdio"],"fileTypes":[".ts",".tsx",".js",".jsx",".css",".html"]},
+    "css": {"command":"vscode-css-language-server","args":["--stdio"],"fileTypes":[".css"]},
+    "html": {"command":"vscode-html-language-server","args":["--stdio"],"fileTypes":[".html",".htm"]},
+    "json": {"command":"vscode-json-language-server","args":["--stdio"],"fileTypes":[".json"]},
+    "yaml": {"command":"yaml-language-server","args":["--stdio"],"fileTypes":[".yaml",".yml"]},
+    "bash": {"command":"bash-language-server","args":["start"],"fileTypes":[".sh",".bash",".zsh"]},
+    "markdown": {"command":"marksman","args":["server"],"fileTypes":[".md",".markdown"]},
+    "toml": {"command":"taplo","args":["lsp","stdio"],"fileTypes":[".toml"]},
+    "sql": {"command":"${HOME}/go/bin/sqls","args":[],"fileTypes":[".sql"]},
+    "dockerfile": {"command":"docker-langserver","args":["--stdio"],"fileTypes":["Dockerfile",".dockerfile"]},
+    "compose": {"command":"docker-compose-langserver","args":["--stdio"],"fileTypes":[".yml",".yaml"]}
+  }
+}

@@ -315,11 +315,8 @@ export function formatToolResult(tool: string, result: unknown): string {
       const diff = typeof r.diff === 'string' ? r.diff : '';
       return `Git diff: ${diff.slice(0, 200)}`;
     }
-    case 'code_outline': {
-      const symbols = Array.isArray(r.symbols) ? (r.symbols as Array<Record<string, unknown>>) : [];
-      const file = typeof r.file === 'string' ? r.file : '';
-      return `Codigo ${file}: ${symbols.length} simbolos.`;
-    }
+    case 'code_outline':
+      return 'Checagem privada concluída.';
     case 'build_status': {
       const results = (r.results as Record<string, string> | undefined) ?? {};
       const parts = Object.entries(results).map(

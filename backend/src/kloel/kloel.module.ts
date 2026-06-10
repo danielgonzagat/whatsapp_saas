@@ -93,6 +93,9 @@ import { PdfProcessorService } from './pdf-processor.service';
 import { WalletLedgerService } from './wallet-ledger.service';
 import { WalletController } from './wallet.controller';
 import { SellerWalletService } from './wallet.service';
+import { WalletAnticipationBackfillService } from './wallet-anticipation-backfill.service';
+import { LedgerBalanceAfterBackfillService } from './ledger-balance-after-backfill.service';
+import { MoneyCutoverBootstrapService } from './money-cutover-bootstrap.service';
 
 import { AuditModule } from '../audit/audit.module';
 import { BillingModule } from '../billing/billing.module';
@@ -391,6 +394,9 @@ import { CrmModule } from '../crm/crm.module';
     PdfProcessorService,
     SellerWalletService,
     WalletLedgerService,
+    WalletAnticipationBackfillService,
+    LedgerBalanceAfterBackfillService,
+    MoneyCutoverBootstrapService,
     ReportService,
     LLMBudgetService,
     UnifiedAgentService,

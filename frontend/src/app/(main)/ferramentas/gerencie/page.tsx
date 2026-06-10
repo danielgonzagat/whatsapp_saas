@@ -100,6 +100,7 @@ export default function GerenciePage() {
                 title={tool.title}
                 desc={tool.desc}
                 badge={getCapabilityBadge(tool)}
+                disabled={tool.status === 'planned'}
                 onClick={(() => {
                   const href = getCapabilityHref(tool);
                   return href ? () => router.push(href) : undefined;

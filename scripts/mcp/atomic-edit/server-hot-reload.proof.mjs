@@ -14,8 +14,11 @@ const repoRoot = path.resolve(dir, '..', '..', '..');
 const {
   DISABLE_HOT_RELOAD_ENV,
   FORCE_HOT_RELOAD_ENV,
+  FRESH_TOOL_TIMEOUT_ENV,
   installHotReloadingToolCallbacks,
   shouldDelegateToFreshRuntimeState,
+  isNonDelegatableTool,
+  freshToolTimeoutMs,
 } = await import(path.join(dir, 'dist', 'server-helpers-hot-reload.js'));
 const results = [];
 

@@ -337,7 +337,7 @@ describe('KloelGraphShell', () => {
     expect(openPalette).toHaveBeenCalledWith({ initialQuery: '' });
   });
 
-  it('closes the overlay on outside click while preserving clicks inside the real screen', () => {
+  it('does NOT close the overlay on outside click — only the explicit close control closes it', () => {
     const pushState = vi.spyOn(window.history, 'pushState');
     const { container } = renderShell(<main>ProdutosView real</main>);
 
@@ -346,8 +346,11 @@ describe('KloelGraphShell', () => {
     expect(pushState).not.toHaveBeenCalled();
 
     fireEvent.click(container.querySelector('[role="dialog"]')?.parentElement as Element);
-    expect(pushState).toHaveBeenCalledWith(null, '', '/products?graph=1');
+    expect(pushState).not.toHaveBeenCalled();
     expect(push).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog', { name: /Produtos/i }).textContent).toContain(
+      'ProdutosView real',
+    );
   });
 
   it('closes the overlay back to graph-only mode on the current node route', () => {

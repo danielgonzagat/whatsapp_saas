@@ -95,9 +95,26 @@ const FORBIDDEN: { re: RegExp; reason: string }[] = [
       'the locked PULSE auditor (no-hardcoded-reality-audit.ts) must not be moved/chmod/overwritten.',
   },
   // Catchable evasions surfaced by the closeout audit. A flat regex over a
-  // `/bin/bash -c` string is best-effort DEFENSE-IN-DEPTH, NOT a boundary —
-  // env-var/eval/alias indirection can still hide a banned verb. Run risky
+  // `/bin/bash -c` string is best-effort DEFENSE-IN-DEPTH, NOT a boundary.
+  // Explicit shell eval, alias definitions, and source/dot script execution
+  // are refused because they hide command text from simple admission.
+  // Env-var/function indirection can still hide a banned verb; run risky
   // mutations inside an isolated git worktree for real reversibility.
+  {
+    re: /(?:^|[;&|])\s*eval\b/,
+    reason:
+      'explicit shell eval re-parses runtime text and can hide mutable commands from the invariant denylist; refused.',
+  },
+  {
+    re: /(?:^|[;&|])\s*alias\s+[^\s=]+\s*=/,
+    reason:
+      'shell alias definitions can smuggle mutable commands past the invariant denylist; refused.',
+  },
+  {
+    re: /(?:^|[;&|])\s*(?:source\b|\.\s+[^;&|]+)/,
+    reason:
+      'shell source/dot indirection executes a separate script after admission and can hide mutable commands; refused.',
+  },
   {
     re: /\bgit\s+push\b[^\n]*\s\+[^\s:]+(?::|\s|$)/,
     reason:
@@ -577,7 +594,8 @@ export function registerToolsExec(server: McpServer): void {
         'per-command sandbox-exec, allows read-only commands with no write permission, and fails closed if the broker socket is absent), plus a ' +
         'best-effort denylist (DEFENSE-IN-DEPTH — refuses git ' +
         'tags, prisma db push, force-push, pipe-to-shell, disk/auditor destroyers, and shell writes to ' +
-        'governance-protected files; env-var/eval/alias indirection can still evade it), a trace receipt ' +
+        'governance-protected files, explicit shell eval, shell alias definitions, and source/dot scripts; ' +
+        'env-var/function indirection can still evade it), a trace receipt ' +
         'to .atomic/exec-ledger.jsonl, secret ' +
         'redaction on every returned/traced surface, and a hard timeout. Returns the REAL exit code (never ' +
         'fakes success): a non-zero exit comes back as {ok:false, exitCode, stdout, stderr}. Commands are ' +

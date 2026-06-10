@@ -29,7 +29,9 @@ jest.mock('./billing-webhook.cancel', () => ({
   cancelSubscriptionByStripeId: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock('./billing-subscription-status.helper', () => ({
-  ...jest.requireActual('./billing-subscription-status.helper'),
+  ...jest.requireActual<typeof import('./billing-subscription-status.helper')>(
+    './billing-subscription-status.helper',
+  ),
   markSubscriptionStatusHelper: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock('./billing-webhook.helpers', () => ({

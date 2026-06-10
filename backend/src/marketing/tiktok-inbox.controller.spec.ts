@@ -98,4 +98,70 @@ describe('TikTokInboxController', () => {
       await expect(controller.getStatus(req)).rejects.toThrow('prisma offline');
     });
   });
+
+  describe('POST send — canonical dispatch routing (flag-gated)', () => {
+    const FLAG = 'KLOEL_TIKTOK_INBOX_CANONICAL_DISPATCH';
+    const prev = process.env[FLAG];
+
+    afterEach(() => {
+      if (prev === undefined) {
+        delete process.env[FLAG];
+      } else {
+        process.env[FLAG] = prev;
+      }
+    });
+
+    it('flag OFF (default): uses the raw honest-pending service path', async () => {
+      delete process.env[FLAG];
+      const dispatch = jest.fn();
+      const routed = new TikTokInboxController(
+        { sendMessage } as unknown as TikTokInboxService,
+        { dispatch } as never,
+      );
+      sendMessage.mockResolvedValueOnce({ ok: false, reason: 'channel_pending' });
+
+      const result = await routed.sendMessage(req, { recipientId: 'user-42', text: 'oi' });
+
+      expect(dispatch).not.toHaveBeenCalled();
+      expect(sendMessage).toHaveBeenCalledWith('ws-1', 'user-42', 'oi');
+      expect(result).toMatchObject({ ok: false, reason: 'channel_pending' });
+    });
+
+    it('flag ON + dispatch present: routes through canonical dispatch (honest-blocked)', async () => {
+      process.env[FLAG] = 'true';
+      const blocked = {
+        success: false,
+        provider: 'tiktok',
+        blocked: true,
+        blockedReason: 'channel_tiktok_outbound_unsupported',
+      };
+      const dispatch = jest.fn().mockResolvedValue(blocked);
+      const routed = new TikTokInboxController(
+        { sendMessage } as unknown as TikTokInboxService,
+        { dispatch } as never,
+      );
+
+      const result = await routed.sendMessage(req, { recipientId: 'user-42', text: 'oi' });
+
+      expect(dispatch).toHaveBeenCalledWith('ws-1', 'tiktok', 'user-42', 'oi');
+      expect(sendMessage).not.toHaveBeenCalled();
+      expect(result).toMatchObject({ blocked: true, success: false });
+    });
+
+    it('flag ON + dispatch throws: falls back to the raw honest-pending path', async () => {
+      process.env[FLAG] = 'true';
+      const dispatch = jest.fn().mockRejectedValue(new Error('di boom'));
+      const routed = new TikTokInboxController(
+        { sendMessage } as unknown as TikTokInboxService,
+        { dispatch } as never,
+      );
+      sendMessage.mockResolvedValueOnce({ ok: false, reason: 'channel_pending' });
+
+      const result = await routed.sendMessage(req, { recipientId: 'user-42', text: 'oi' });
+
+      expect(dispatch).toHaveBeenCalledTimes(1);
+      expect(sendMessage).toHaveBeenCalledWith('ws-1', 'user-42', 'oi');
+      expect(result).toMatchObject({ ok: false, reason: 'channel_pending' });
+    });
+  });
 });

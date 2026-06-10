@@ -80,7 +80,6 @@ export function useCoprodState(productId: string) {
         );
       })
       .catch((e: unknown) => {
-        console.error(e);
         showToast(e instanceof Error ? e.message : 'Erro ao carregar comissões', 'error');
       })
       .finally(() => setLoading(false));
@@ -119,7 +118,6 @@ export function useCoprodState(productId: string) {
       fetchCommissions();
       showToast(`Convite do ${selectedRoleLabel} enviado`, 'success');
     } catch (e) {
-      console.error(e);
       showToast(e instanceof Error ? e.message : `Erro ao adicionar ${selectedRoleLabel}`, 'error');
     } finally {
       setCreating(false);
@@ -139,7 +137,6 @@ export function useCoprodState(productId: string) {
       fetchCommissions();
       showToast('Coprodutor removido', 'success');
     } catch (e) {
-      console.error(e);
       showToast(e instanceof Error ? e.message : 'Erro ao remover coprodutor', 'error');
     } finally {
       setDeleteTarget(null);

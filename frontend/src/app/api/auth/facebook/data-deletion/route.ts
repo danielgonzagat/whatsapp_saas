@@ -3,7 +3,6 @@ import { legalConstants } from '@/lib/legal-constants';
 import { type NextRequest, NextResponse } from 'next/server';
 
 function buildUnavailableResponse() {
-  console.error('[Auth Proxy] facebook/data-deletion: BACKEND_URL not configured');
   return NextResponse.json({ message: 'Servidor não configurado.' }, { status: 503 });
 }
 

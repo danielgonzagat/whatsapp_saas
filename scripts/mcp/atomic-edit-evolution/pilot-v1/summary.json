@@ -1,0 +1,119 @@
+{
+  "ok": true,
+  "pilot": true,
+  "disclaimer": "PILOTO sintético: políticas scriptadas; curvas validam a máquina, NÃO a tese.",
+  "generations": 10,
+  "seeds": [
+    "s1",
+    "s2",
+    "s3"
+  ],
+  "ledger": {
+    "records": 90,
+    "head": "0d38c59e69cb046ae9586d11799a3f0917339f62840ac006c5c09efe4beee39e",
+    "ok": true
+  },
+  "corpora": {
+    "ESCALAR-s1": {
+      "ok": true,
+      "records": 8,
+      "walls": 2
+    },
+    "ESCALAR-s2": {
+      "ok": true,
+      "records": 7,
+      "walls": 2
+    },
+    "ESCALAR-s3": {
+      "ok": true,
+      "records": 8,
+      "walls": 2
+    },
+    "GRADIENTE-s1": {
+      "ok": true,
+      "records": 7,
+      "walls": 2
+    },
+    "GRADIENTE-s2": {
+      "ok": true,
+      "records": 7,
+      "walls": 2
+    },
+    "GRADIENTE-s3": {
+      "ok": true,
+      "records": 7,
+      "walls": 2
+    },
+    "GRADIENTE_SOMBRA-s1": {
+      "ok": true,
+      "records": 7,
+      "walls": 1
+    },
+    "GRADIENTE_SOMBRA-s2": {
+      "ok": true,
+      "records": 7,
+      "walls": 1
+    },
+    "GRADIENTE_SOMBRA-s3": {
+      "ok": true,
+      "records": 7,
+      "walls": 1
+    }
+  },
+  "finalGenByArm": {
+    "ESCALAR": {
+      "generation": 10,
+      "m1": {
+        "mean": 0,
+        "std": 0,
+        "n": 3
+      },
+      "m2": {
+        "mean": 1,
+        "std": 0,
+        "n": 3
+      },
+      "m3": {
+        "mean": 13,
+        "std": 0,
+        "n": 3
+      }
+    },
+    "GRADIENTE": {
+      "generation": 10,
+      "m1": {
+        "mean": 0,
+        "std": 0,
+        "n": 3
+      },
+      "m2": {
+        "mean": 1,
+        "std": 0,
+        "n": 3
+      },
+      "m3": {
+        "mean": 13,
+        "std": 0,
+        "n": 3
+      }
+    },
+    "GRADIENTE_SOMBRA": {
+      "generation": 10,
+      "m1": {
+        "mean": 0,
+        "std": 0,
+        "n": 3
+      },
+      "m2": {
+        "mean": 1,
+        "std": 0,
+        "n": 3
+      },
+      "m3": {
+        "mean": 13,
+        "std": 0,
+        "n": 3
+      }
+    }
+  }
+}

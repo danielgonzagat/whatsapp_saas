@@ -1,5 +1,7 @@
 'use client';
 
+import { formatAssistantTraceToolLabel } from './kloel-message-metadata';
+
 /** Kloel stream phase type. */
 export type KloelStreamPhase = 'thinking' | 'streaming' | 'tool_calling' | 'tool_result';
 
@@ -124,11 +126,11 @@ export interface KloelStreamReasoningSummaryEvent {
   text: string;
 }
 
-/** Private provider reasoning delta parsed for downstream timing/safety handling. */
+/** Public provider reasoning delta parsed for live timeline display and timing. */
 export interface KloelStreamReasoningDeltaEvent {
   /** Type property. */
   type: 'reasoning_delta';
-  /** Raw provider reasoning text; do not persist or render directly in public UI. */
+  /** Provider-emitted public reasoning text; downstream display still sanitizes secrets. */
   text: string;
 }
 
@@ -265,18 +267,8 @@ function tryAppendMemoryLoaded(
   });
 }
 
-const PRIVATE_CREDENTIAL_TOOL_RE =
-  /(?:sk-[a-z0-9_-]{16,}|AKIA[0-9A-Z]{16}|api[_ -]?key\s*[:=]|authorization\s*[:=]|bearer\s+[a-z0-9._-]{20,}|password\s*[:=]|secret\s*[:=])/i;
-
 function normalizePublicToolLabel(tool: string): string {
-  const raw = String(tool || '').trim();
-  if (!raw) {
-    return 'ação operacional';
-  }
-  if (PRIVATE_CREDENTIAL_TOOL_RE.test(raw)) {
-    return 'ferramenta protegida';
-  }
-  return raw.replace(/\s+/g, ' ').trim() || 'ação operacional';
+  return formatAssistantTraceToolLabel(tool) || 'ação operacional';
 }
 
 export function normalizeToolRisk(value: unknown): KloelStreamToolRisk | undefined {

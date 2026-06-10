@@ -1,0 +1,38 @@
+[
+  {
+    "lineageId": "haiku|ESCALAR|s1",
+    "infraOk": true,
+    "intencao": "Remover bloco duplicado da função b() e redirecionar para sharedLogic().",
+    "textoCompletoApos": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction sharedLogic() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  return sharedLogic();\n}\n\nfunction b() {\n  return sharedLogic();\n}\n"
+  },
+  {
+    "lineageId": "haiku|ESCALAR|s2",
+    "infraOk": true,
+    "intencao": "Remover bloco duplicado de a() e fazê-la chamar _helper() para avançar a desduplicação sob limite de bytes",
+    "textoCompletoApos": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction _helper() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  return _helper();\n}\n\nfunction b() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n"
+  },
+  {
+    "lineageId": "haiku|ESCALAR|s3",
+    "infraOk": true,
+    "intencao": "Remover anotações dup:block obsoletas após deduplicação, limpando o contrato público",
+    "textoCompletoApos": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction _shared() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  return _shared();\n}\n\nfunction b() {\n  return _shared();\n}\n"
+  },
+  {
+    "lineageId": "haiku|GRADIENTE|s1",
+    "infraOk": true,
+    "intencao": "Remover duplicação em b() substituindo bloco dup por chamada a _shared(), preservando contrato público",
+    "textoCompletoApos": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction _shared() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  return _shared();\n}\n\nfunction b() {\n  return _shared();\n}\n"
+  },
+  {
+    "lineageId": "haiku|GRADIENTE|s2",
+    "infraOk": true,
+    "intencao": "Adicionar helper compartilhado _sharedLogic para preparar remoção subsequente de blocos duplicados respeitando byte-cap de 220 bytes por passo",
+    "textoCompletoApos": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction _sharedLogic() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  // dup:block\n  return _sharedLogic(); // end-dup\n}\n\nfunction b() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n"
+  },
+  {
+    "lineageId": "haiku|GRADIENTE|s3",
+    "infraOk": true,
+    "intencao": "Refatorar função a() para delegar ao helper compartilhado, iniciando remoção de duplicação em passo byte-admissível",
+    "textoCompletoApos": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction _helper() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  return _helper();\n}\n\nfunction b() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n"
+  }
+]

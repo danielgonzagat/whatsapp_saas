@@ -5,7 +5,7 @@
  * corpus against an INDEPENDENT oracle (the real commute + recomputeDisproof), on two metrics no edit
  * benchmark scores today: FALSE-INDEPENDENCE (agent calls two coupled edits independent) and
  * SILENT-ERASURE (agent admits a byte-removal the oracle refuses). Proves the bench DISCRIMINATES:
- * a correct reference agent scores perfect; a broken always-yes agent is caught.
+ * a correct reference agent scores perfect; unsafe always-yes and useless always-no agents are caught.
  * HONEST RESIDUAL: the full public >=100k-edit OSS dataset is the named next step (t3_corpus.mjs is
  * the harness); this is the runnable scaffold + reference agent + discrimination proof.
  * Run: node build.mjs && node gates/atomic-agent-bench.proof.mjs
@@ -44,15 +44,31 @@ const REMOVAL_TASKS = [
 const oracleIndependent = (t) => commute(t.a, t.b).commute;
 const oracleAdmitRemoval = (t) => recomputeDisproof(t.witness, t.before, t.after).ok;
 
-// SCORER: run an agent over the corpus, measure false-independence + silent-erasure.
+function truthProfile() {
+  const independence = INDEP_TASKS.map(oracleIndependent);
+  const removals = REMOVAL_TASKS.map(oracleAdmitRemoval);
+  return {
+    independenceTrue: independence.filter(Boolean).length,
+    independenceFalse: independence.filter((v) => !v).length,
+    removalTrue: removals.filter(Boolean).length,
+    removalFalse: removals.filter((v) => !v).length,
+  };
+}
+
+const profile = truthProfile();
+check('independence corpus has both independent and coupled oracle facts', profile.independenceTrue > 0 && profile.independenceFalse > 0);
+check('removal corpus has both admissible and refused oracle facts', profile.removalTrue > 0 && profile.removalFalse > 0);
+
+// SCORER: run an agent over the corpus, measuring unsafe admits and useless refusals.
 function score(agent) {
-  let falseIndependence = 0, silentErasure = 0, correct = 0, total = 0;
+  let falseIndependence = 0, falseCoupling = 0, silentErasure = 0, falseRefusal = 0, correct = 0, total = 0;
   for (const t of INDEP_TASKS) {
     total += 1;
     const agentSays = agent.judgeIndependence(t.a, t.b);
     const truth = oracleIndependent(t);
     if (agentSays === truth) correct += 1;
     if (agentSays && !truth) falseIndependence += 1; // said independent but actually coupled
+    if (!agentSays && truth) falseCoupling += 1; // refused parallelism the oracle allows
   }
   for (const t of REMOVAL_TASKS) {
     total += 1;
@@ -60,8 +76,9 @@ function score(agent) {
     const truth = oracleAdmitRemoval(t);
     if (agentAdmits === truth) correct += 1;
     if (agentAdmits && !truth) silentErasure += 1; // admitted a removal the oracle refuses
+    if (!agentAdmits && truth) falseRefusal += 1; // refused a removal the oracle proves negative
   }
-  return { falseIndependence, silentErasure, accuracy: correct / total };
+  return { falseIndependence, falseCoupling, silentErasure, falseRefusal, accuracy: correct / total };
 }
 
 // reference (correct) agent: uses the real engine — should be perfect.
@@ -69,17 +86,25 @@ const refAgent = {
   judgeIndependence: (a, b) => commute(a, b).commute,
   judgeRemoval: (before, after, witness) => recomputeDisproof(witness, before, after).ok,
 };
-// broken agent: always says independent + always admits removals — must be CAUGHT.
-const brokenAgent = { judgeIndependence: () => true, judgeRemoval: () => true };
+// unsafe agent: always says independent + always admits removals — must be CAUGHT.
+const alwaysYesAgent = { judgeIndependence: () => true, judgeRemoval: () => true };
+// useless agent: always refuses parallelism + removals — safe-looking but not useful.
+const alwaysNoAgent = { judgeIndependence: () => false, judgeRemoval: () => false };
 
 const ref = score(refAgent);
-check('reference agent: 0 false-independence, 0 silent-erasure, 100% accuracy', ref.falseIndependence === 0 && ref.silentErasure === 0 && ref.accuracy === 1);
-const broken = score(brokenAgent);
-check('broken always-yes agent is CAUGHT: false-independence > 0', broken.falseIndependence > 0);
-check('broken always-yes agent is CAUGHT: silent-erasure > 0', broken.silentErasure > 0);
-check('the benchmark DISCRIMINATES (reference accuracy > broken accuracy)', ref.accuracy > broken.accuracy);
+check(
+  'reference agent: zero unsafe admits, zero useless refusals, 100% accuracy',
+  ref.falseIndependence === 0 && ref.falseCoupling === 0 && ref.silentErasure === 0 && ref.falseRefusal === 0 && ref.accuracy === 1,
+);
+const alwaysYes = score(alwaysYesAgent);
+check('unsafe always-yes agent is CAUGHT: false-independence > 0', alwaysYes.falseIndependence > 0);
+check('unsafe always-yes agent is CAUGHT: silent-erasure > 0', alwaysYes.silentErasure > 0);
+const alwaysNo = score(alwaysNoAgent);
+check('useless always-no agent is CAUGHT: false-coupling > 0', alwaysNo.falseCoupling > 0);
+check('useless always-no agent is CAUGHT: false-refusal > 0', alwaysNo.falseRefusal > 0);
+check('the benchmark DISCRIMINATES unsafe and useless agents from reference', ref.accuracy > alwaysYes.accuracy && ref.accuracy > alwaysNo.accuracy);
 
-console.log(`        (reference: ${JSON.stringify(ref)}; broken: ${JSON.stringify(broken)})`);
-console.log('  UNJUDGED  the full public >=100k-edit OSS dataset — named next step (t3_corpus.mjs is the harness); scaffold + discrimination proven here.');
+console.log(`        (reference: ${JSON.stringify(ref)}; alwaysYes: ${JSON.stringify(alwaysYes)}; alwaysNo: ${JSON.stringify(alwaysNo)})`);
+console.log('  UNJUDGED  the full public >=100k-edit OSS dataset — named next step (t3_corpus.mjs is the harness); scaffold + bidirectional discrimination proven here.');
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail === 0 ? 0 : 1);

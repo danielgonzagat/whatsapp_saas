@@ -1,8 +1,10 @@
+import '@testing-library/jest-dom/vitest';
 import { createElement } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { colors } from '@/lib/design-tokens';
 import { Button, IconButton, Badge, Chip, Skeleton, Avatar } from '../Primitives';
+import { ToolCard } from '../ToolCard';
 
 vi.mock('next/image', () => ({
   default: ({ src, alt = '', ...props }: React.ImgHTMLAttributes<HTMLImageElement>) =>
@@ -155,6 +157,8 @@ describe('Chip', () => {
         Both
       </Chip>,
     );
+    expect(screen.getByText('Both').closest('button')).toBeNull();
+
     fireEvent.click(screen.getByText('\xd7'));
     expect(onRemove).toHaveBeenCalledTimes(1);
     expect(onClick).not.toHaveBeenCalled();
@@ -234,5 +238,31 @@ describe('Avatar', () => {
     const innerAvatar = container.querySelector('.w-16.h-16');
     expect(innerAvatar).toBeInTheDocument();
     expect(innerAvatar).toHaveClass('rounded-full');
+  });
+});
+
+describe('ToolCard', () => {
+  it('does not activate disabled cards even when an onClick handler is present', () => {
+    const onClick = vi.fn();
+
+    render(
+      <ToolCard
+        icon="*"
+        title="Ferramenta planejada"
+        desc="Ainda no roadmap"
+        badge="Roadmap"
+        disabled
+        onClick={onClick}
+      />,
+    );
+
+    const card = screen.getByRole('button', { name: /Ferramenta planejada/i });
+    expect(card).toBeDisabled();
+
+    fireEvent.click(card);
+    fireEvent.keyDown(card, { key: 'Enter' });
+    fireEvent.keyDown(card, { key: ' ' });
+
+    expect(onClick).not.toHaveBeenCalled();
   });
 });

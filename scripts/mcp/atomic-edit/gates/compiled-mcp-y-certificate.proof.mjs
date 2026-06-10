@@ -22,10 +22,12 @@ const mandatoryDomains = [
   'bypassObserverDenyIntegration',
   'atomicityAudit',
   'selfExpansionValidatorLattice',
+  'selfEvolutionAdmission',
   'capabilityMonotonicity',
   'atomicExecReadOnlyUsability',
   'codexAtomicOnlyProtocol',
   'codexEntrypointContract',
+  'agentHookRuntimeBoundary',
   'codexHostWiring',
   'mcpLauncherHostBoundary',
   'universalStructuralEngine',
@@ -51,6 +53,7 @@ function runProof(name, timeout = 90000) {
     cwd: sourceDir,
     encoding: 'utf8',
     timeout,
+    maxBuffer: 64 * 1024 * 1024,
   });
   return { status: result.status, stdout: result.stdout, stderr: result.stderr, parsed: parseJson(result.stdout) };
 }
@@ -228,109 +231,32 @@ async function main() {
     return { ok: false, entrypoint, assertion: { entrypointGreen } };
   }
 
-  let broker;
-  const inheritedBroker = inheritedBrokerEndpoint();
+  const hostRoot = repoRoot;
+  const transport = new StdioClientTransport({
+    command: launcher,
+    args: [],
+    cwd: hostRoot,
+    stderr: 'pipe',
+    env: { ...process.env, ATOMIC_HOST_SANDBOX: process.env.ATOMIC_HOST_SANDBOX ?? 'macos-sandbox-exec', ATOMIC_HOST_ATOMIC_ONLY: process.env.ATOMIC_HOST_ATOMIC_ONLY ?? '1', ATOMIC_HOST_WRITE_ROOT: process.env.ATOMIC_HOST_WRITE_ROOT ?? hostRoot, ATOMIC_EXEC_BROKER_SOCKET: process.env.ATOMIC_EXEC_BROKER_SOCKET ?? '', CODEX_PROJECT_DIR: hostRoot, TMPDIR: hostRoot, TMP: hostRoot, TEMP: hostRoot, ATOMIC_SINGLE_TOOL_CALL: '', ATOMIC_SINGLE_TOOL_NAME: '', ATOMIC_SINGLE_TOOL_ARGS_JSON: '' },
+  });
+  const client = new Client({ name: 'compiled-mcp-y-certificate-proof', version: '1.0.0' });
   try {
-    broker = inheritedBroker ? { endpoint: inheritedBroker, inherited: true } : await startBroker();
-    const hostRoot = brokerStateHostRoot(broker.endpoint);
-    const transport = new StdioClientTransport({
-      command: launcher,
-      args: [],
-      cwd: hostRoot,
-      stderr: 'pipe',
-      env: {
-        ...process.env,
-        ATOMIC_HOST_SANDBOX: 'macos-sandbox-exec',
-        ATOMIC_HOST_ATOMIC_ONLY: '1',
-        ATOMIC_HOST_WRITE_ROOT: hostRoot,
-        ATOMIC_EXEC_BROKER_SOCKET: broker.endpoint,
-        CODEX_PROJECT_DIR: hostRoot,
-        TMPDIR: hostRoot,
-        TMP: hostRoot,
-        TEMP: hostRoot,
-        ATOMIC_SINGLE_TOOL_CALL: '',
-        ATOMIC_SINGLE_TOOL_NAME: '',
-        ATOMIC_SINGLE_TOOL_ARGS_JSON: '',
-      },
-    });
-    const client = new Client({ name: 'compiled-mcp-y-certificate-proof', version: '1.0.0' });
-    try {
-      await client.connect(transport);
-      const cert = parseToolJson(await client.callTool({ name: 'atomic_y_certificate', arguments: { scope: 'mcp-controlled', includeAudits: true } }));
-      const bypass = domain(cert, 'bypassLedger');
-      const staticPolicy = domain(cert, 'codexNoBypassStaticPolicy');
-      const entrypointDomain = domain(cert, 'codexEntrypointContract');
-      const mandatory = mandatoryDomainReport(cert);
-      const bypassReportStatus = String(bypass?.detail?.status ?? 'missing');
-      const blockerDomains = Array.isArray(cert?.blockers)
-        ? cert.blockers.map((entry) => entry.domain).sort()
-        : [];
-      const bypassIsHonestBlock =
-        bypass?.status === 'UNJUDGED' &&
-        bypassReportStatus !== 'observed-clean' &&
-        blockerDomains.includes('bypassLedger');
-      const onlyBypassLedgerBlocks = blockerDomains.length === 1 && blockerDomains[0] === 'bypassLedger';
-      const certificateEntrypointGreen = entrypointDomain?.status === 'GREEN';
-      const completeState =
-        cert?.ok === true &&
-        cert?.yComplete === true &&
-        cert?.verdict === 'Y_COMPLETE' &&
-        blockerDomains.length === 0 &&
-        bypass?.status === 'GREEN' &&
-        staticPolicy?.status === 'GREEN' &&
-        certificateEntrypointGreen &&
-        mandatory.ok;
-      const honestBlockedState =
-        cert?.ok === true &&
-        cert?.yComplete === false &&
-        cert?.verdict === 'Y_BLOCKED' &&
-        bypassIsHonestBlock &&
-        onlyBypassLedgerBlocks &&
-        certificateEntrypointGreen &&
-        mandatory.ok;
-      return {
-        ok: entrypointGreen && (completeState || honestBlockedState),
-        entrypoint,
-        certificate: cert,
-        assertion: {
-          entrypointGreen,
-          certificateEntrypointGreen,
-          mandatoryDomainsGreen: mandatory.ok,
-          mandatoryDomainStatuses: mandatory.statuses,
-          nonGreenDomainDetails: nonGreenDomainDetails(cert),
-          bypassStatus: bypass?.status,
-          bypassReportStatus,
-          staticPolicyStatus: staticPolicy?.status,
-          entrypointDomainStatus: entrypointDomain?.status,
-          bypassIsHonestBlock,
-          blockerDomains,
-          onlyBypassLedgerBlocks,
-          completeState,
-          honestBlockedState,
-        },
-      };
-    } finally {
-      try {
-        await client.close();
-      } catch {
-        // best effort
-      }
-    }
-  } finally {
-    if (!broker?.inherited) {
-      await stopBroker(broker);
-      if (broker?.proc) {
-        try {
-          broker.proc.kill('SIGTERM');
-        } catch {
-          // best effort; file-mode broker can shut itself down in-band
-        }
-      }
-      if (broker?.brokerDir) fs.rmSync(broker.brokerDir, { recursive: true, force: true });
-    }
-  }
+    await client.connect(transport);
+    const cert = parseToolJson(await client.callTool({ name: 'atomic_y_certificate', arguments: { scope: 'mcp-controlled', includeAudits: true } }, undefined, { timeout: 300000 }));
+    const bypass = domain(cert, 'bypassLedger');
+    const staticPolicy = domain(cert, 'codexNoBypassStaticPolicy');
+    const entrypointDomain = domain(cert, 'codexEntrypointContract');
+    const mandatory = mandatoryDomainReport(cert);
+    const bypassReportStatus = String(bypass?.detail?.status ?? 'missing');
+    const blockerDomains = Array.isArray(cert?.blockers) ? cert.blockers.map((entry) => entry.domain).sort() : [];
+    const bypassIsHonestBlock = bypass?.status === 'UNJUDGED' && bypassReportStatus !== 'observed-clean' && blockerDomains.includes('bypassLedger');
+    const onlyBypassLedgerBlocks = blockerDomains.length === 1 && blockerDomains[0] === 'bypassLedger';
+    const certificateEntrypointGreen = entrypointDomain?.status === 'GREEN';
+    const completeState = cert?.ok === true && cert?.yComplete === true && cert?.verdict === 'Y_COMPLETE' && blockerDomains.length === 0 && bypass?.status === 'GREEN' && staticPolicy?.status === 'GREEN' && certificateEntrypointGreen && mandatory.ok;
+    const honestBlockedState = cert?.ok === true && cert?.yComplete === false && cert?.verdict === 'Y_BLOCKED' && bypassIsHonestBlock && onlyBypassLedgerBlocks && certificateEntrypointGreen && mandatory.ok;
+    return { ok: entrypointGreen && (completeState || honestBlockedState), entrypoint, certificate: cert, assertion: { entrypointGreen, certificateEntrypointGreen, mandatoryDomainsGreen: mandatory.ok, mandatoryDomainStatuses: mandatory.statuses, nonGreenDomainDetails: nonGreenDomainDetails(cert), bypassStatus: bypass?.status, bypassReportStatus, staticPolicyStatus: staticPolicy?.status, entrypointDomainStatus: entrypointDomain?.status, bypassIsHonestBlock, blockerDomains, onlyBypassLedgerBlocks, completeState, honestBlockedState } };
+  } finally { try { await client.close(); } catch { /* best effort */ } }
 }
-
 main()
   .then(finish)
   .catch((error) => {

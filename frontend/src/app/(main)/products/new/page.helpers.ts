@@ -108,6 +108,45 @@ export function validateProductCreateStep(
     }
   }
 
+  const needsPhysicalLogistics = form.format === 'PHYSICAL' || form.format === 'HYBRID';
+
+  if (needsPhysicalLogistics && step === 3) {
+    if (!form.packageType.trim()) {
+      return { ok: false, step: 3, message: 'Informe o tipo de embalagem antes de continuar.' };
+    }
+
+    const dimensions = [form.width, form.height, form.depth].map((value) =>
+      parseNumberOrFallback(value, Number.NaN),
+    );
+    if (!dimensions.every((value) => Number.isFinite(value) && value > 0)) {
+      return {
+        ok: false,
+        step: 3,
+        message: 'Informe dimensoes validas da embalagem antes de continuar.',
+      };
+    }
+
+    const weight = parseNumberOrFallback(form.weight, Number.NaN);
+    if (!Number.isFinite(weight) || weight <= 0) {
+      return {
+        ok: false,
+        step: 3,
+        message: 'Informe um peso valido da embalagem antes de continuar.',
+      };
+    }
+  }
+
+  if (needsPhysicalLogistics && step === 4) {
+    const dispatchTime = parseIntOrFallback(form.dispatchTime, Number.NaN);
+    if (!Number.isFinite(dispatchTime) || dispatchTime <= 0) {
+      return { ok: false, step: 4, message: 'Informe o prazo de postagem antes de continuar.' };
+    }
+
+    if (form.carriers.length === 0) {
+      return { ok: false, step: 4, message: 'Selecione ao menos uma transportadora antes de continuar.' };
+    }
+  }
+
   if (step === 5 && form.affiliatesEnabled) {
     const commissionText = form.affiliateCommissionPercent.trim();
 

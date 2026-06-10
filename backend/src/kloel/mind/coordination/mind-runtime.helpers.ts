@@ -50,22 +50,8 @@ export function readRecord(value: unknown): Record<string, unknown> {
     : {};
 }
 
-const OPERATOR_INTENT_LABELS: Record<string, string> = {
-  list_products: 'catálogo de produtos',
-  search_contact: 'busca de contatos',
-  list_conversations: 'histórico de conversas',
-  send_message_via_channel: 'envio por canal',
-  query_revenue_summary: 'resumo financeiro',
-  inspect_self: 'autoinspeção do Kloel',
-  inspect_runtime: 'saúde operacional',
-  search_code: 'busca no código',
-  read_source_file: 'leitura de fonte',
-  safe_query: 'consulta segura',
-  list_capabilities_detail: 'catálogo de capacidades',
-};
-
 function publicOperatorLabel(intent: string): string {
-  return OPERATOR_INTENT_LABELS[intent] ?? 'operação solicitada';
+  return String(intent || '').trim() || 'operação solicitada';
 }
 
 function readResultRows(result: unknown, keys: string[] = []): Array<Record<string, unknown>> {

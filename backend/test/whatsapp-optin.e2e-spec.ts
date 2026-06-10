@@ -1,3 +1,14 @@
+// Unifica a identidade dos pacotes Nest no jest-e2e local: o resolver do jest resolve
+// '@nestjs/core' a partir de '@nestjs/testing' para a cópia instalada na RAIZ do repo,
+// enquanto src/** resolve para backend/node_modules — duas classes Reflector/HttpException
+// distintas quebram a DI do AuditInterceptor e transformam respostas HTTP em 500.
+jest.mock('@nestjs/core', () =>
+  jest.requireActual<typeof import('@nestjs/core')>('../../node_modules/@nestjs/core'),
+);
+jest.mock('../../node_modules/@nestjs/common', () =>
+  jest.requireActual<typeof import('@nestjs/common')>('@nestjs/common'),
+);
+
 process.env.DATABASE_URL =
   process.env.DATABASE_URL || 'postgresql://postgres:password@localhost:5432/whatsapp_saas';
 process.env.REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
@@ -6,18 +17,22 @@ process.env.AUTH_OPTIONAL = 'true';
 process.env.ENFORCE_OPTIN = 'true';
 
 jest.mock('ioredis', () => {
-  const Redis = class {
-    private store = new Map<string, any>();
-    constructor(..._args: any[]) {}
+  const Redis = class RedisMock {
+    private store = new Map<string, unknown>();
+    constructor(..._args: unknown[]) {}
+    getMaxListeners = () => 10;
+    setMaxListeners = (_n: number) => this;
     get = async (key: string) => this.store.get(key);
     setex = async (key: string, _ttl: number, value: string) => this.store.set(key, value);
     incr = async (key: string) => {
-      const v = (this.store.get(key) || 0) + 1;
+      const current = this.store.get(key);
+      const v = (typeof current === 'number' ? current : 0) + 1;
       this.store.set(key, v);
       return v;
     };
     incrby = async (key: string, n: number) => {
-      const v = (this.store.get(key) || 0) + n;
+      const current = this.store.get(key);
+      const v = (typeof current === 'number' ? current : 0) + n;
       this.store.set(key, v);
       return v;
     };
@@ -28,7 +43,7 @@ jest.mock('ioredis', () => {
     on = () => {};
     subscribe = async () => {};
     publish = async () => 1;
-    duplicate = () => new (Redis as any)();
+    duplicate = () => new RedisMock();
     quit = async () => {};
     disconnect = () => {};
   };
@@ -38,9 +53,10 @@ jest.mock('ioredis', () => {
 jest.mock('bullmq', () => {
   class Dummy {
     name: string;
-    constructor(name?: string, ..._args: any[]) {
+    constructor(name?: string, ..._args: unknown[]) {
       this.name = name || 'dummy';
     }
+    close = async () => {};
     add = async () => {};
     on = () => {};
     getJobCounts = async () => ({});
@@ -61,6 +77,7 @@ jest.mock('bullmq', () => {
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
+import type { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 
@@ -91,29 +108,31 @@ describe('WhatsApp Opt-in (e2e)', () => {
   });
 
   it('should opt-in bulk and return status true', async () => {
-    await request(app.getHttpServer())
+    await request(app.getHttpServer() as App)
       .post(`/whatsapp/${workspaceId}/opt-in/bulk`)
       .send({ phones: [phone] })
       .expect(201);
 
-    const res = await request(app.getHttpServer())
+    const res = await request(app.getHttpServer() as App)
       .get(`/whatsapp/${workspaceId}/opt-status/${phone}`)
       .expect(200);
 
-    expect(res.body.optIn).toBe(true);
-    expect(res.body.contactExists).toBe(true);
+    const body = res.body as { optIn?: boolean; contactExists?: boolean };
+    expect(body.optIn).toBe(true);
+    expect(body.contactExists).toBe(true);
   });
 
   it('should opt-out bulk and return status false', async () => {
-    await request(app.getHttpServer())
+    await request(app.getHttpServer() as App)
       .post(`/whatsapp/${workspaceId}/opt-out/bulk`)
       .send({ phones: [phone] })
       .expect(201);
 
-    const res = await request(app.getHttpServer())
+    const res = await request(app.getHttpServer() as App)
       .get(`/whatsapp/${workspaceId}/opt-status/${phone}`)
       .expect(200);
 
-    expect(res.body.optIn).toBe(false);
+    const body = res.body as { optIn?: boolean };
+    expect(body.optIn).toBe(false);
   });
 });

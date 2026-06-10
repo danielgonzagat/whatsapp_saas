@@ -2870,6 +2870,16 @@ model WalletAnticipation {
   feePercent     Float     @default(3.0)
   feeAmount      Float
   netAmount      Float
+  // Money-ledgers migration (Stage 2): additive, nullable BigInt cents
+  // columns mirroring the Float amounts above. Populated on NEW rows only
+  // when KLOEL_ANTICIPATION_CENTS_DUALWRITE is enabled, and on historical
+  // rows by the guarded KLOEL_ANTICIPATION_CENTS_BACKFILL. NULL otherwise —
+  // the Float columns remain the source of truth until the reader cut-over
+  // (KLOEL_ANTICIPATION_CENTS_READ) and the Float DROP (a later, supervised
+  // destructive stage). No column is dropped here.
+  originalAmountInCents BigInt?
+  feeAmountInCents      BigInt?
+  netAmountInCents      BigInt?
   installments   Int?
   status         String    @default("COMPLETED")
   transactionId  String?

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next typegen && tsc --noEmit && KLOEL_FRONTEND_BUILD_SKIP_NEXT_TYPECHECK=1 KLOEL_FRONTEND_BUILD_WORKER_THREADS=1 next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",

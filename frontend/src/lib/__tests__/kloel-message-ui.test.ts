@@ -68,18 +68,20 @@ describe('kloel-message-ui', () => {
       sanitizeAssistantVisibleContent('Ele está no arquivo backend/src/kloel/x.ts.'),
     ).not.toContain('backend/src');
     expect(
-      sanitizeAssistantVisibleContent('Respondo sem expor código interno ou nomes de ferramentas.'),
-    ).toBe('Respondo sem expor processo privado ou nomes internos de capacidades.');
+      sanitizeAssistantVisibleContent(
+        'Respondo mostrando nomes públicos de ferramentas sem expor código interno.',
+      ),
+    ).toBe('Respondo mostrando nomes públicos de ferramentas sem expor processo privado.');
     expect(
       sanitizeAssistantVisibleContent(
         'Agent trace: registro operacional completo dos passos e ferramentas acionados.',
       ),
-    ).toBe('Agent trace: registro operacional completo dos passos e ações executadas.');
+    ).toBe('Agent trace: registro operacional completo dos passos e ferramentas acionados.');
     expect(
       sanitizeAssistantVisibleContent(
-        'Reasoning summary: sem exibir ferramentas utilizadas ou hipóteses internas.',
+        'Reasoning summary: exibindo ferramentas utilizadas e hipóteses públicas.',
       ),
-    ).toBe('Reasoning summary: sem exibir ações executadas ou hipóteses internas.');
+    ).toBe('Reasoning summary: exibindo ferramentas utilizadas e hipóteses públicas.');
     expect(
       sanitizeAssistantVisibleContent(
         'Tool/function calling — capacidade de invocar ferramentas ou funções externas.',
@@ -124,9 +126,9 @@ describe('kloel-message-ui', () => {
     );
 
     expect(versions[0]?.content).toContain('processo privado');
+    expect(versions[0]?.content).toContain('code_outline');
     expect(versions[0]?.content).not.toContain('camada operacional');
     expect(versions[0]?.content).not.toContain('arquitetura interna');
-    expect(versions[0]?.content).not.toContain('code_outline');
     expect(versions[0]?.content).not.toContain('DSML');
     expect(versions[0]?.content).not.toContain('backend/src');
     expect(versions[0]?.content).not.toContain('TypeScript');
@@ -153,13 +155,11 @@ describe('kloel-message-ui', () => {
     );
 
     const content = versions[0]?.content || '';
-    expect(content).toContain('catálogo de produtos');
-    expect(content).toContain('consultar planos do produto');
+    expect(content).toContain('list_products');
+    expect(content).toContain('get_product_plans');
     expect(content).toContain('memória de trabalho');
     expect(content).toContain('foco de atenção');
     expect(content).toContain('arquitetura cognitiva');
-    expect(content).not.toContain('list_products');
-    expect(content).not.toContain('get_product_plans');
     expect(content).not.toContain('workingMemory');
     expect(content).not.toContain('attention.candidates');
     expect(content).not.toContain('Runtime');
@@ -195,12 +195,12 @@ describe('kloel-message-ui', () => {
     expect(content).not.toContain('chave');
   });
 
-  it('sanitizes raw capability labels from persisted assistant output', () => {
+  it('preserves public capability ids from persisted assistant output', () => {
     const versions = getAssistantResponseVersions(
       {
         responseVersions: [
           {
-            id: 'resp-capability-label-leaky',
+            id: 'resp-capability-label-public',
             content:
               'Saúde do Kloel: consultada. Prova material: Capacidade: self.health. Capacidade: sales.create_pix.',
             source: 'initial',
@@ -208,15 +208,16 @@ describe('kloel-message-ui', () => {
         ],
       },
       'fallback',
-      'message-capability-label-legacy',
+      'message-capability-label-public',
     );
 
     const content = versions[0]?.content || '';
     expect(content).toContain('Saúde do Kloel');
-    expect(content).toContain('Ação operacional');
-    expect(content).not.toContain('Capacidade:');
-    expect(content).not.toContain('self.health');
-    expect(content).not.toContain('sales.create_pix');
+    expect(content).toContain('Capacidade: self.health');
+    expect(content).toContain('Capacidade: sales.create_pix');
+    expect(content).toContain('self.health');
+    expect(content).toContain('sales.create_pix');
+    expect(content).not.toContain('Registrei uma etapa operacional privada.');
   });
 
   it('sanitizes historical mechanical operator success and auth failures', () => {
@@ -226,7 +227,7 @@ describe('kloel-message-ui', () => {
           {
             id: 'resp-operator-mechanical-leaky',
             content:
-              'Acao "catálogo de produtos" executada com sucesso. Falha ao executar "catálogo de produtos": Missing Authorization header. Tente novamente. Erro: Venda nao encontrada.',
+              'Acao "list_products" executada com sucesso. Falha ao executar "list_products": Missing Authorization header. Tente novamente. Erro: Venda nao encontrada.',
             source: 'initial',
           },
         ],
@@ -236,13 +237,14 @@ describe('kloel-message-ui', () => {
     );
 
     const content = versions[0]?.content || '';
-    expect(content).toContain('Consultei seu catálogo real');
-    expect(content).toContain('sessão expirou');
+    expect(content).toContain('Ação "list_products" executada com sucesso.');
+    expect(content).toContain('Falha ao executar "list_products": sessão expirada.');
+    expect(content).toContain('Tente novamente.');
     expect(content).toContain('Não encontrei uma venda correspondente para essa consulta.');
+    expect(content).toContain('list_products');
     expect(content).not.toContain('Acao');
-    expect(content).not.toContain('Falha ao executar');
-    expect(content).not.toContain('Erro: Venda nao encontrada');
     expect(content).not.toContain('Missing Authorization header');
+    expect(content).not.toContain('Erro: Venda nao encontrada');
   });
 
   it('sanitizes historical assistant product copy with internal status labels and debug metrics', () => {

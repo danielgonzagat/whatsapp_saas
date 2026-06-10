@@ -55,14 +55,17 @@ process.env.AUTH_OPTIONAL = 'true';
 process.env.RATE_LIMIT_DISABLED = 'true';
 
 jest.mock('ioredis', () => {
-  const Redis = class {
-    private store = new Map<string, any>();
-    constructor(..._args: any[]) {}
+  const Redis = class RedisMock {
+    private store = new Map<string, unknown>();
+    constructor(..._args: unknown[]) {}
+    getMaxListeners = () => 10;
+    setMaxListeners = (_n: number) => this;
     get = async (key: string) => this.store.get(key);
-    set = async (key: string, value: any) => this.store.set(key, value);
+    set = async (key: string, value: unknown) => this.store.set(key, value);
     setex = async (key: string, _ttl: number, value: string) => this.store.set(key, value);
     incr = async (key: string) => {
-      const v = (this.store.get(key) || 0) + 1;
+      const current = this.store.get(key);
+      const v = (typeof current === 'number' ? current : 0) + 1;
       this.store.set(key, v);
       return v;
     };
@@ -71,7 +74,7 @@ jest.mock('ioredis', () => {
       const had = this.store.delete(key);
       return had ? 1 : 0;
     };
-    duplicate = () => new (Redis as any)();
+    duplicate = () => new RedisMock();
     on = () => {};
     quit = async () => {};
     disconnect = () => {};
@@ -82,7 +85,7 @@ jest.mock('ioredis', () => {
 jest.mock('bullmq', () => {
   class Dummy {
     name: string;
-    constructor(name?: string, ..._args: any[]) {
+    constructor(name?: string, ..._args: unknown[]) {
       this.name = name || 'dummy';
     }
     add = async () => {};
@@ -106,6 +109,7 @@ jest.mock('bullmq', () => {
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
+import type { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 
@@ -179,7 +183,7 @@ describe('Cross-tenant denial matrix (I4 runtime)', () => {
 
   describe('contact data does not bleed across tenants', () => {
     it('inbox conversations endpoint scoped to A does not return B contacts', async () => {
-      const res = await request(app.getHttpServer())
+      const res = await request(app.getHttpServer() as App)
         .get(`/inbox/${workspaceAId}/conversations`)
         .expect((r) => {
           expect([200, 404]).toContain(r.status);
@@ -193,7 +197,7 @@ describe('Cross-tenant denial matrix (I4 runtime)', () => {
     });
 
     it('inbox conversations endpoint scoped to B does not return A contacts', async () => {
-      const res = await request(app.getHttpServer())
+      const res = await request(app.getHttpServer() as App)
         .get(`/inbox/${workspaceBId}/conversations`)
         .expect((r) => {
           expect([200, 404]).toContain(r.status);
@@ -229,7 +233,7 @@ describe('Cross-tenant denial matrix (I4 runtime)', () => {
       // URL. Cross-tenant attack: pass workspace A in path, but a
       // resource ID owned by workspace B. The handler must look up
       // the resource scoped by workspaceId and return 404.
-      const res = await request(app.getHttpServer())
+      const res = await request(app.getHttpServer() as App)
         .get(`/inbox/${workspaceAId}/conversations`)
         .query({ contactId: contactBId });
 

@@ -8,6 +8,8 @@ const TRAILING_DOTS_RE = /[.]+$/;
 
 const PRIVATE_CREDENTIAL_TOOL_RE =
   /(?:sk-[a-z0-9_-]{16,}|AKIA[0-9A-Z]{16}|api[_ -]?key\s*[:=]|authorization\s*[:=]|bearer\s+[a-z0-9._-]{20,}|password\s*[:=]|secret\s*[:=])/i;
+const TOOL_SHAPED_LABEL_RE =
+  /\b(?:executando|ação enviada para|observação recebida de|falha observada em|resultado de|concluiu)\b.*\b(?:[a-z]+[_-][a-z0-9_-]+|[a-z]+\s+(?:web|products|settings|billing|outline|details|tests|status)|self\.health)\b/i;
 
 export function formatAssistantTraceToolLabel(toolName?: string | null): string | undefined {
   const raw = String(toolName || '').trim();
@@ -22,21 +24,20 @@ export function formatAssistantTraceToolLabel(toolName?: string | null): string 
 }
 
 export function sanitizeAssistantTraceLabel(value: string): string {
-  return sanitizeAssistantVisibleContent(value)
-    .replace(
-      /\bAção enviada para [^.]+\.?/gi,
-      'Consultei contexto operacional relevante antes de responder.',
-    )
-    .replace(
-      /\bObservação recebida de [^.]+\.?/gi,
-      'Incorporei as observações encontradas antes de responder.',
-    )
-    .replace(
-      /\bFalha observada em [^.]+\.?/gi,
-      'Registrei uma limitação operacional antes de responder.',
-    )
-    .replace(/[ \t]{2,}/g, ' ')
-    .trim();
+  const raw = String(value || '');
+  const sanitized = sanitizeAssistantVisibleContent(raw).replace(/[ \t]{2,}/g, ' ').trim();
+  if (!sanitized) {
+    return '';
+  }
+
+  const toolShaped = TOOL_SHAPED_LABEL_RE.test(raw) || TOOL_SHAPED_LABEL_RE.test(sanitized);
+  if (/\b(?:falha|erro|limitação)\b/i.test(sanitized) && toolShaped) {
+    return 'Registrei uma limitação operacional antes de responder.';
+  }
+  if (toolShaped) {
+    return 'Consultei contexto operacional relevante antes de responder.';
+  }
+  return sanitized;
 }
 
 export function createMessageUiId(prefix: string) {

@@ -16,6 +16,7 @@ import {
 } from './kloel-stream-events';
 import { chatCompletionStreamWithRetry } from './openai-wrapper';
 import { KloelLLME2EGuard } from './kloel-llm-e2e-guard';
+import { sanitizeAssistantReasoningTextForStorage } from './kloel-thread.helpers';
 
 const U2028_U2029_RE = /[<>&\u2028\u2029]/g;
 type ChatCompletionStream = AsyncIterable<OpenAI.ChatCompletionChunk>;
@@ -258,7 +259,8 @@ function asObjectRecord(value: unknown): Record<string, unknown> | null {
 }
 
 function warnArtifactProtocolPayloadFailure(error: unknown): void {
-  const detail = error instanceof Error ? error.message : String(error || 'unknown_error');
+  const detail =
+    error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown_error';
   console.warn(`[KloelStreamWriter] Ignoring invalid artifact protocol payload: ${detail}`);
 }
 
@@ -1235,10 +1237,9 @@ export class KloelStreamWriter {
   // ("Perdi acesso ao motor de conversa"). close() uses this to guarantee a
   // terminal `done` is always emitted before the socket is ended.
   private terminalSent = false;
-  // Tracks the real provider reasoning streamed during the current turn. The
-  // product streams reasoning to the UI (reasoning_delta) and persists it into
-  // assistant metadata — it is no longer suppressed. Duration is tracked
-  // alongside the accumulated text.
+  // Tracks provider reasoning captured during the current turn. The same public
+  // provider tokens stream as reasoning_delta events and remain available for
+  // metadata/artifact recovery.
   private lastReasoningDurationMs: number | null = null;
   private lastReasoningText = '';
   private deliveredFileCards: DeliverableFileCard[] = [];
@@ -1393,8 +1394,9 @@ export class KloelStreamWriter {
   async streamModelResponse(
     input: StreamWriterModelResponseInput,
   ): Promise<StreamWriterModelResponseResult | null> {
-    // Flip the UI into a private thinking phase without emitting provider
-    // reasoning. Chain-of-thought stays server-side and never becomes SSE text.
+    // Start the execution phase before provider deltas arrive. If provider
+    // reasoning arrives, every emitted token is forwarded publicly as a live
+    // reasoning_delta event.
     this.write(createKloelStatusEvent('thinking'));
 
     // before delegating to the stream writer; this helper only opens the already-approved stream.
@@ -1435,9 +1437,9 @@ export class KloelStreamWriter {
     let hasStreamedContent = false;
     const visibleTextFilter = createKloelAssistantVisibleTextStreamFilter();
 
-    // DeepSeek can emit reasoning_content before the public answer. Measure that
-    // phase AND stream the real reasoning tokens (reasoning_delta) to the UI; the
-    // accumulated text is also persisted into assistant metadata downstream.
+    // DeepSeek can emit reasoning_content before the public answer. Forward it
+    // as public live reasoning tokens while also retaining the same text for
+    // metadata/artifact recovery.
     let reasoningStartedAt = 0;
     let reasoningEmitted = false;
     let reasoningDoneEmitted = false;
@@ -1490,8 +1492,9 @@ export class KloelStreamWriter {
           reasoningEmitted = true;
           reasoningStartedAt = Date.now();
         }
-        this.lastReasoningText += reasoningPiece;
-        this.write(createKloelReasoningDeltaEvent(reasoningPiece));
+        const safeReasoningPiece = sanitizeAssistantReasoningTextForStorage(reasoningPiece);
+        this.lastReasoningText += safeReasoningPiece;
+        this.write(createKloelReasoningDeltaEvent(safeReasoningPiece));
       }
       const content = delta?.content || '';
       if (!content) {

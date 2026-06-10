@@ -154,11 +154,12 @@ describe('BillingCheckoutHelperService', () => {
       }[][]) {
         expect(call[0].where?.workspaceId).not.toMatch(/^cus_/);
       }
-      const auditCall = prisma.auditLog.create.mock.calls[0][0] as {
-        data: { workspaceId: string };
-      };
-      expect(auditCall.data.workspaceId).toBe('ws-real-owner');
-      expect(auditCall.data.workspaceId).not.toMatch(/^cus_/);
+      const auditCalls = prisma.auditLog.create.mock.calls as Array<
+        [{ data: { workspaceId: string } }]
+      >;
+      const auditCall = auditCalls[0]?.[0];
+      expect(auditCall?.data.workspaceId).toBe('ws-real-owner');
+      expect(auditCall?.data.workspaceId).not.toMatch(/^cus_/);
     });
 
     it('no-ops when the Stripe customer id maps to no workspace and no local subscription exists', async () => {

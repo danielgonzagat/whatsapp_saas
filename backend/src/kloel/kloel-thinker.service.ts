@@ -10,6 +10,7 @@ import { KloelConversationStore } from './kloel-conversation-store';
 import { KLOEL_LLM_E2E_GUARD, KloelLLME2EGuard } from './kloel-llm-e2e-guard';
 import {
   createKloelErrorEvent,
+  createKloelMemoryLoadedEvent,
   createKloelPublicStreamingLabel,
   createKloelPublicThinkingLabel,
   createKloelThreadEvent,
@@ -404,6 +405,12 @@ export class KloelThinkerService {
 
       if (thread?.id) {
         safeWrite(createKloelThreadEvent(thread.id, thread.title));
+      }
+
+      if (wireContextBlock.memoryChecked) {
+        safeWrite(
+          createKloelMemoryLoadedEvent({ signalCount: wireContextBlock.memorySignalCount }),
+        );
       }
 
       const persistedUserMessage = thread?.id

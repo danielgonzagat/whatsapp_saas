@@ -221,7 +221,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
                 openEditor={openEditor}
               />
             ) : cat === 'upload' ? (
-              <UploadPanel />
+              <UploadPanel onUploaded={onClose} />
             ) : (
               <FormatGrid cat={cat} sf={sf} setSf={setSf} fmts={fmts()} openEditor={openEditor} />
             )}

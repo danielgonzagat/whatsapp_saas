@@ -148,13 +148,10 @@ export class MindMessageService {
     // current with live appends (the backfill only covered history). Flag-gated
     // (KLOEL_MINDMESSAGE_DUALWRITE) + fail-open: a mirror failure never affects
     // the legacy write the caller depends on.
-    await mirrorMindMessage(
-      this.prisma,
-      { workspaceId, source: 'brain', role, content },
-      (error) =>
-        this.logger.warn(
-          `mind-message brain mirror failed (workspaceId=${workspaceId}): ${error instanceof Error ? error.message : String(error)}`,
-        ),
+    await mirrorMindMessage(this.prisma, { workspaceId, source: 'brain', role, content }, (error) =>
+      this.logger.warn(
+        `mind-message brain mirror failed (workspaceId=${workspaceId}): ${error instanceof Error ? error.message : String(error)}`,
+      ),
     );
     return created;
   }

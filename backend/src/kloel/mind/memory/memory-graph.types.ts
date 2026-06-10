@@ -19,7 +19,11 @@ export const MEMORY_NODE_TYPES = [
   'decision',
   'entity',
   'document',
+  'conversation',
+  'task',
   'summary',
+  'sensitive',
+  'expired',
   'contradiction',
 ] as const;
 
@@ -31,9 +35,15 @@ export const MEMORY_EDGE_RELATIONS = [
   'contradicts',
   'updates',
   'extends',
+  'summarizes',
   'belongs_to',
   'references',
+  'derived_from',
+  'used_by',
+  'similar_to',
   'replaces',
+  'expires',
+  'protects',
 ] as const;
 
 export type MemoryEdgeRelation = (typeof MEMORY_EDGE_RELATIONS)[number];
@@ -117,6 +127,13 @@ export type MemoryGraphNodeState =
   | 'contradicted'
   | 'replaced';
 
+export interface MemoryGraphSourceRef {
+  readonly type: 'conversation' | 'document' | 'file' | 'tool' | 'manual' | 'custom';
+  readonly label: string;
+  readonly ref?: string;
+  readonly url?: string;
+}
+
 /** Read-model node consumed by the Kloel Graph memory screen. */
 export interface MemoryGraphNodeView {
   readonly id: string;
@@ -129,6 +146,8 @@ export interface MemoryGraphNodeView {
   readonly confidence?: number;
   readonly importance?: number;
   readonly state?: MemoryGraphNodeState;
+  readonly originLabel?: string;
+  readonly sourceRefs?: readonly MemoryGraphSourceRef[];
   readonly pinned?: boolean;
   readonly sensitive?: boolean;
   readonly archived?: boolean;
@@ -140,6 +159,7 @@ export interface MemoryGraphNodeView {
 export interface MemoryGraphNodeUpdateInput {
   readonly content?: string;
   readonly summary?: string | null;
+  readonly scope?: MemoryScope;
   readonly pinned?: boolean;
   readonly archived?: boolean;
   readonly sensitive?: boolean;

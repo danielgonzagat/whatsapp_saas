@@ -4,6 +4,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { CheckoutContactSections } from './CheckoutLeadSections';
 import { buildBlancTheme } from './checkout-theme-tokens';
 
+function createUpdateFieldMock() {
+  return vi.fn(() =>
+    vi.fn((event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => event),
+  );
+}
+
 describe('CheckoutContactSections', () => {
   it('keeps name and email editable after quick social identification', () => {
     const updateField = vi.fn(() =>
@@ -93,7 +99,7 @@ describe('CheckoutContactSections', () => {
           destinatario: '',
         }}
         submitError=""
-        updateField={vi.fn()}
+        updateField={createUpdateFieldMock()}
         loadingStep={false}
         goStep={vi.fn()}
         socialIdentity={null}
@@ -138,7 +144,7 @@ describe('CheckoutContactSections', () => {
           destinatario: '',
         }}
         submitError=""
-        updateField={vi.fn()}
+        updateField={createUpdateFieldMock()}
         loadingStep={false}
         goStep={vi.fn()}
         socialIdentity={{
@@ -185,7 +191,7 @@ describe('CheckoutContactSections', () => {
           destinatario: '',
         }}
         submitError=""
-        updateField={vi.fn()}
+        updateField={createUpdateFieldMock()}
         loadingStep={false}
         goStep={vi.fn()}
         socialIdentity={{
@@ -234,7 +240,7 @@ describe('CheckoutContactSections', () => {
           destinatario: '',
         }}
         submitError=""
-        updateField={vi.fn()}
+        updateField={createUpdateFieldMock()}
         loadingStep={false}
         goStep={vi.fn()}
         socialIdentity={null}
@@ -278,7 +284,7 @@ describe('CheckoutContactSections', () => {
           destinatario: '',
         }}
         submitError=""
-        updateField={vi.fn()}
+        updateField={createUpdateFieldMock()}
         loadingStep={false}
         goStep={vi.fn()}
         socialIdentity={null}
@@ -320,7 +326,7 @@ describe('CheckoutContactSections', () => {
           destinatario: '',
         }}
         submitError=""
-        updateField={vi.fn()}
+        updateField={createUpdateFieldMock()}
         loadingStep={false}
         goStep={vi.fn()}
         socialIdentity={null}
@@ -364,7 +370,7 @@ describe('CheckoutContactSections', () => {
           destinatario: '',
         }}
         submitError=""
-        updateField={vi.fn()}
+        updateField={createUpdateFieldMock()}
         loadingStep={false}
         goStep={vi.fn()}
         socialIdentity={null}
@@ -410,7 +416,7 @@ describe('CheckoutContactSections', () => {
           destinatario: '',
         }}
         submitError=""
-        updateField={vi.fn()}
+        updateField={createUpdateFieldMock()}
         loadingStep={false}
         goStep={vi.fn()}
         socialIdentity={null}
@@ -456,7 +462,7 @@ describe('CheckoutContactSections', () => {
           destinatario: '',
         }}
         submitError=""
-        updateField={vi.fn()}
+        updateField={createUpdateFieldMock()}
         loadingStep={false}
         goStep={vi.fn()}
         socialIdentity={null}
@@ -501,7 +507,7 @@ describe('CheckoutContactSections', () => {
           destinatario: '',
         }}
         submitError=""
-        updateField={vi.fn()}
+        updateField={createUpdateFieldMock()}
         loadingStep={false}
         goStep={vi.fn()}
         socialIdentity={null}

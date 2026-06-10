@@ -18,7 +18,7 @@
  * @see backend/src/webhooks/payment-ledger-tx.flag.ts
  * @see docs/architecture/MIGRATION_PLAYBOOK.md (sale-payment STEP 1 + STEP 3)
  */
-import { beforeEach, afterEach, describe, expect, it, jest } from '@jest/globals';
+import { beforeEach, afterEach, describe, expect, it } from '@jest/globals';
 import { buildPaymentWebhookController as buildController } from '../../test/payment-webhook-controller-harness';
 
 const FLAG = 'KLOEL_PAYMENT_LEDGER_TX';
@@ -137,10 +137,10 @@ describe('PaymentWebhookController — KLOEL_PAYMENT_LEDGER_TX flag gating', () 
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
       expect(prisma.payment.updateMany).toHaveBeenCalledTimes(1);
       expect(prisma.kloelSale.updateMany).toHaveBeenCalledTimes(1);
-      const saleUpdate = prisma.kloelSale.updateMany.mock.calls[0]?.[0] as {
-        data: { status?: string };
-      };
-      expect(saleUpdate.data.status).toBe('paid');
+      const saleUpdateCalls = prisma.kloelSale.updateMany.mock.calls as Array<
+        [{ data: { status?: string } }]
+      >;
+      expect(saleUpdateCalls[0]?.[0]?.data.status).toBe('paid');
     });
 
     it('flag ON: a partial failure inside the tx surfaces (Stripe retry) and rolls back', async () => {
@@ -222,10 +222,10 @@ describe('PaymentWebhookController — KLOEL_PAYMENT_LEDGER_TX flag gating', () 
 
       expect(prisma.$transaction).toHaveBeenCalled();
       expect(prisma.kloelSale.updateMany).toHaveBeenCalledTimes(1);
-      const saleUpdate = prisma.kloelSale.updateMany.mock.calls[0]?.[0] as {
-        data: { status?: string };
-      };
-      expect(saleUpdate.data.status).toBe('paid');
+      const saleUpdateCalls = prisma.kloelSale.updateMany.mock.calls as Array<
+        [{ data: { status?: string } }]
+      >;
+      expect(saleUpdateCalls[0]?.[0]?.data.status).toBe('paid');
     });
   });
 });

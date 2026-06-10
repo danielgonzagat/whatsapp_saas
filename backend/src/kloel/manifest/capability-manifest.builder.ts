@@ -37,9 +37,9 @@ const FACTORY_OBLIGATIONS: readonly CapabilityManifestObligation[] = [
   {
     id: 'obligation.hidden-internals',
     instruction:
-      'Não exponha nomes internos de ferramentas, ids de capacidade ou detalhes de implementação ao usuário. Fale em termos do que foi feito, não de como o sistema chama a ação.',
+      'Nomes públicos de ferramentas e capacidades podem aparecer como prova material do trace. Não exponha payloads privados, credenciais, prompts internos, IDs técnicos ou detalhes de implementação ao usuário.',
     rationale:
-      'Enforces hiddenFromUser: internalName / capability ids must never leak into user-visible text.',
+      'Preserves public trace tokens while enforcing hiddenFromUser for private payloads, prompts, credentials and implementation details.',
   },
   {
     id: 'obligation.confirm-sensitive',

@@ -4,62 +4,10 @@ process.env.REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret';
 process.env.AUTH_OPTIONAL = 'true';
 
-jest.mock('ioredis', () => {
-  const Redis = class {
-    private store = new Map<string, any>();
-    constructor(..._args: any[]) {}
-    get = async (key: string) => this.store.get(key);
-    setex = async (key: string, _ttl: number, value: string) => this.store.set(key, value);
-    incr = async (key: string) => {
-      const v = (this.store.get(key) || 0) + 1;
-      this.store.set(key, v);
-      return v;
-    };
-    incrby = async (key: string, n: number) => {
-      const v = (this.store.get(key) || 0) + n;
-      this.store.set(key, v);
-      return v;
-    };
-    expire = async () => {};
-    lrange = async () => [];
-    rpush = async () => {};
-    psubscribe = async () => {};
-    subscribe = async () => {};
-    publish = async () => 1;
-    duplicate = () => new (Redis as any)();
-    on = () => {};
-    quit = async () => {};
-    disconnect = () => {};
-  };
-  return { __esModule: true, default: Redis };
-});
-
-jest.mock('bullmq', () => {
-  class Dummy {
-    name: string;
-    constructor(name?: string, ..._args: any[]) {
-      this.name = name || 'dummy';
-    }
-    add = async () => {};
-    on = () => {};
-    getJobCounts = async () => ({});
-    getJob = async () => null;
-    getJobs = async () => [];
-    clean = async () => {};
-    drain = async () => {};
-  }
-  return {
-    __esModule: true,
-    Queue: Dummy,
-    Worker: Dummy,
-    QueueEvents: Dummy,
-    Job: class {},
-  };
-});
-
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
+import type { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 
@@ -90,16 +38,17 @@ describe('Inbox/Incoming (e2e)', () => {
   });
 
   it('should create conversation on incoming webhook', async () => {
-    await request(app.getHttpServer())
+    await request(app.getHttpServer() as App)
       .post(`/whatsapp/${workspaceId}/incoming`)
       .send({ from: phone, message: 'hello there' })
       .expect(201);
 
-    const convs = await request(app.getHttpServer())
+    const convs = await request(app.getHttpServer() as App)
       .get(`/inbox/${workspaceId}/conversations`)
       .expect(200);
 
-    expect(Array.isArray(convs.body)).toBe(true);
-    expect(convs.body.length).toBeGreaterThan(0);
+    const conversations = convs.body as Array<{ id?: string }>;
+    expect(Array.isArray(conversations)).toBe(true);
+    expect(conversations.length).toBeGreaterThan(0);
   });
 });

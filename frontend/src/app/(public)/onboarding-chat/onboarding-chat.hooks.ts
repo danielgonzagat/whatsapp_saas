@@ -150,7 +150,7 @@ export function useOnboardingChat(): UseOnboardingChat {
         }
       }
     } catch (error) {
-      console.error('Erro ao iniciar onboarding:', error);
+      void error;
       addMessage(
         'assistant',
         'Olá! Eu sou a Kloel, sua inteligência artificial de vendas. Vamos configurar sua conta? Me conte sobre seu negócio!',
@@ -236,7 +236,7 @@ export function useOnboardingChat(): UseOnboardingChat {
         }
       }
     } catch (error) {
-      console.error('Erro ao enviar mensagem:', error);
+      void error;
       addMessage('assistant', 'Desculpe, tive um problema. Pode repetir?');
     }
 

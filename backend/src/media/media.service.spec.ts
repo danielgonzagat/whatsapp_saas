@@ -170,7 +170,7 @@ describe('MediaService', () => {
 
       expect(result).toMatchObject({ success: true });
       expect(result.data?.url).toBe('https://s3.example.com/doc.pdf');
-      const [buffer, opts] = storage.upload.mock.calls[0];
+      const [buffer, opts] = storage.upload.mock.calls[0] as [Buffer, Record<string, unknown>];
       expect(Buffer.isBuffer(buffer)).toBe(true);
       expect(buffer.toString()).toBe('png-bytes');
       expect(opts.folder).toBe('media/ws-1');
@@ -185,7 +185,10 @@ describe('MediaService', () => {
 
       expect(result).toMatchObject({ success: true });
       expect(result.data?.url).toBe('https://s3.example.com/remote.jpg');
-      const [sourceUrl, opts] = storage.uploadFromUrl.mock.calls[0];
+      const [sourceUrl, opts] = storage.uploadFromUrl.mock.calls[0] as [
+        string,
+        Record<string, unknown>,
+      ];
       expect(sourceUrl).toBe('https://cdn.example.com/cover.jpg');
       expect(opts.folder).toBe('media/ws-1');
       expect(opts.workspaceId).toBe('ws-1');

@@ -4,6 +4,7 @@ import { InboxModule } from '../inbox/inbox.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WebhooksModule } from '../webhooks/webhooks.module';
 import { WhatsappModule } from '../marketing/channels/whatsapp/whatsapp.module';
+import { MarketingChannelsModule } from '../marketing/channels/marketing-channels.module';
 import { MetaAdsController } from './ads/meta-ads.controller';
 import { MetaAdsService } from './ads/meta-ads.service';
 import { InstagramController } from '../marketing/channels/instagram/instagram.controller';
@@ -25,6 +26,10 @@ import { MetaCoreWebhookController } from './meta-webhook.controller';
     PrismaModule,
     forwardRef(() => InboxModule),
     WebhooksModule,
+    // Provides ChannelMessageDispatchService for the InstagramController's
+    // flag-gated canonical-dispatch route (P2). forwardRef because
+    // MarketingChannelsModule imports MetaModule (bidirectional).
+    forwardRef(() => MarketingChannelsModule),
     forwardRef(() => WhatsappModule),
   ],
   controllers: [

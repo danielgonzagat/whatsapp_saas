@@ -154,6 +154,16 @@ describe('KloelMarkdown render parity', () => {
     expect(container.textContent).toContain('const x');
     expect(container.querySelector('iframe')).toBeNull();
   });
+
+  it('tokenizes fenced code via rehype-highlight (hljs-* classes reach the DOM)', () => {
+    const content = ['```ts', 'const x: number = 1;', '```'].join('\n');
+    const { container } = render(<KloelMarkdown content={content} />);
+    // rehype-highlight must emit token spans; color is applied by the
+    // .kloel-markdown .hljs-* rules in globals.css.
+    const keyword = container.querySelector('code .hljs-keyword');
+    expect(keyword).not.toBeNull();
+    expect(keyword?.textContent).toBe('const');
+  });
 });
 
 describe('KloelMarkdown real CDN rendering (KaTeX + Mermaid)', () => {

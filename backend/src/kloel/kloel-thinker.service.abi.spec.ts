@@ -134,6 +134,16 @@ describe('KloelThinkerService', () => {
       expect(typeof lastBuild?.dynamicContext).toBe('string');
       expect(lastBuild?.dynamicContext as string).toContain('O usuário se chama Daniel');
       expect(lastBuild?.dynamicContext as string).toContain('CAPACIDADES DISPONÍVEIS');
+      const streamWriter = (KloelStreamWriter as jest.Mock).mock.results.at(-1)?.value as {
+        write: jest.Mock<void, [unknown]>;
+      };
+      expect(streamWriter.write).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'memory_loaded',
+          signalCount: 1,
+          message: '1 memória relevante encontrada.',
+        }),
+      );
     });
 
     it('still completes the turn when the memory + manifest services throw (degrades to empty)', async () => {
@@ -161,6 +171,19 @@ describe('KloelThinkerService', () => {
       const buildChatMessagesMock = jest.mocked(replyEngine.buildChatModelMessages);
       const [lastBuild] = buildChatMessagesMock.mock.calls.at(-1) ?? [];
       expect(lastBuild?.dynamicContext as string).not.toContain('CAPACIDADES DISPONÍVEIS');
+      const streamWriter = (KloelStreamWriter as jest.Mock).mock.results.at(-1)?.value as {
+        write: jest.Mock<void, [unknown]>;
+      };
+      expect(
+        streamWriter.write.mock.calls.some(([event]) => {
+          return (
+            event !== null &&
+            typeof event === 'object' &&
+            !Array.isArray(event) &&
+            (event as { type?: unknown }).type === 'memory_loaded'
+          );
+        }),
+      ).toBe(false);
     });
 
     it('does not throw when request is aborted before start', async () => {

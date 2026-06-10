@@ -145,6 +145,7 @@ export class KloelController {
     dto: {
       readonly content?: unknown;
       readonly summary?: unknown;
+      readonly scope?: unknown;
       readonly pinned?: unknown;
       readonly archived?: unknown;
       readonly sensitive?: unknown;

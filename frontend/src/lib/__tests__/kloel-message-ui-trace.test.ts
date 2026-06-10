@@ -40,19 +40,21 @@ describe('kloel-message-ui trace', () => {
       }),
       expect.objectContaining({
         phase: 'tool_calling',
-        label: 'Consultei contexto operacional relevante antes de responder.',
+        label: 'Consultei search_web antes de responder.',
+        tool: 'search_web',
         spanId: 'span-1',
       }),
       expect.objectContaining({
         phase: 'tool_result',
-        label: 'Incorporei as observações encontradas antes de responder.',
+        label: 'Incorporei as observações de search_web antes de responder.',
+        tool: 'search_web',
         spanId: 'span-1',
         artifactId: 'artifact-1',
         durationMs: 42,
       }),
     ]);
     expect(summarizeAssistantProcessingTrace(entries)).toBe(
-      'Entendendo sua pergunta e reunindo o contexto da conversa, consultei contexto operacional relevante antes de responder e incorporei as observações encontradas antes de responder.',
+      'Entendendo sua pergunta e reunindo o contexto da conversa, consultei search_web antes de responder e incorporei as observações de search_web antes de responder.',
     );
   });
 
@@ -116,7 +118,7 @@ describe('kloel-message-ui trace', () => {
       }),
     ).toEqual([
       expect.objectContaining({
-        label: 'Executando search web.',
+        label: 'Consultei contexto operacional relevante antes de responder.',
         phase: 'tool_calling',
       }),
     ]);
@@ -157,32 +159,33 @@ describe('kloel-message-ui trace', () => {
     ]);
   });
 
-  it('renders internal code tool traces with product-grade labels', () => {
+  it('keeps public code tool names in trace entries', () => {
     const metadata = appendAssistantTraceFromEvent(undefined, {
       type: 'tool_call',
       tool: 'code_outline',
       callId: 'call-code',
     });
+    const entry = getAssistantProcessingTrace(metadata)[0];
 
-    expect(getAssistantProcessingTrace(metadata)[0]?.label).toBe(
-      'Consultei contexto operacional relevante antes de responder.',
-    );
+    expect(entry?.label).toBe('Consultei code_outline antes de responder.');
+    expect(entry?.tool).toBe('code_outline');
+    expect(JSON.stringify(entry)).toContain('code_outline');
   });
 
-  it('renders backend validation tool traces with mapped product labels', () => {
+  it('keeps public backend validation tool names in trace entries', () => {
     const metadata = appendAssistantTraceFromEvent(undefined, {
       type: 'tool_call',
       tool: 'run_backend_tests',
       callId: 'call-tests',
     });
-    const label = getAssistantProcessingTrace(metadata)[0]?.label;
+    const entry = getAssistantProcessingTrace(metadata)[0];
 
-    expect(label).toBe('Consultei contexto operacional relevante antes de responder.');
-    expect(label).not.toContain('run backend tests');
-    expect(label).not.toContain('run_backend_tests');
+    expect(entry?.label).toBe('Consultei run_backend_tests antes de responder.');
+    expect(entry?.tool).toBe('run_backend_tests');
+    expect(JSON.stringify(entry)).toContain('run_backend_tests');
   });
 
-  it('renders composer capability traces with product-grade labels', () => {
+  it('keeps public composer capability tool names in trace entries', () => {
     const withSite = appendAssistantTraceFromEvent(undefined, {
       type: 'tool_call',
       tool: 'create_site',
@@ -196,13 +199,17 @@ describe('kloel-message-ui trace', () => {
       error: 'provider missing',
     });
 
-    expect(getAssistantProcessingTrace(withImage).map((entry) => entry.label)).toEqual([
-      'Consultei contexto operacional relevante antes de responder.',
-      'Registrei uma limitação operacional antes de responder.',
+    const trace = getAssistantProcessingTrace(withImage);
+    expect(trace.map((entry) => entry.label)).toEqual([
+      'Consultei create_site antes de responder.',
+      'Registrei uma limitação ao usar create_image antes de responder.',
     ]);
+    expect(trace.map((entry) => entry.tool)).toEqual(['create_site', 'create_image']);
+    expect(JSON.stringify(trace)).toContain('create_site');
+    expect(JSON.stringify(trace)).toContain('create_image');
   });
 
-  it('renders commerce and workspace tool traces with product-grade labels', () => {
+  it('keeps public commerce and workspace tool names in trace entries', () => {
     const withProducts = appendAssistantTraceFromEvent(undefined, {
       type: 'tool_call',
       tool: 'list_products',
@@ -228,14 +235,26 @@ describe('kloel-message-ui trace', () => {
       callId: 'call-health',
     });
 
-    expect(getAssistantProcessingTrace(withHealth).map((entry) => entry.label)).toEqual([
-      'Consultei contexto operacional relevante antes de responder.',
-      'Incorporei as observações encontradas antes de responder.',
-      'Consultei contexto operacional relevante antes de responder.',
+    const trace = getAssistantProcessingTrace(withHealth);
+    expect(trace.map((entry) => entry.label)).toEqual([
+      'Consultei list_products antes de responder.',
+      'Incorporei as observações de get_settings antes de responder.',
+      'Incorporei as observações de get_billing_status antes de responder.',
+      'Consultei self.health antes de responder.',
     ]);
+    expect(trace.map((entry) => entry.tool)).toEqual([
+      'list_products',
+      'get_settings',
+      'get_billing_status',
+      'self.health',
+    ]);
+    expect(JSON.stringify(trace)).toContain('list_products');
+    expect(JSON.stringify(trace)).toContain('get_settings');
+    expect(JSON.stringify(trace)).toContain('get_billing_status');
+    expect(JSON.stringify(trace)).toContain('self.health');
   });
 
-  it('sanitizes persisted status trace labels from legacy internal tool wording', () => {
+  it('redacts raw executable identifiers in persisted status trace labels', () => {
     const trace = getAssistantProcessingTrace({
       processingTrace: [
         {
@@ -247,14 +266,12 @@ describe('kloel-message-ui trace', () => {
       ],
     });
 
-    expect(trace[0]?.label).toBe(
-      'Executando checagem privada, executando checagem privada e concluiu checagem privada.',
-    );
+    expect(trace[0]?.label).toBe('Consultei contexto operacional relevante antes de responder.');
     expect(trace[0]?.label).not.toContain('code_outline');
     expect(trace[0]?.label).not.toContain('code outline');
   });
 
-  it('sanitizes persisted status trace labels from legacy business tool wording', () => {
+  it('redacts legacy tool-shaped persisted status trace labels', () => {
     const trace = getAssistantProcessingTrace({
       processingTrace: [
         {
@@ -267,15 +284,13 @@ describe('kloel-message-ui trace', () => {
       ],
     });
 
-    expect(trace[0]?.label).toBe(
-      'Consultei contexto operacional relevante antes de responder. Incorporei as observações encontradas antes de responder. Incorporei as observações encontradas antes de responder.',
-    );
+    expect(trace[0]?.label).toBe('Consultei contexto operacional relevante antes de responder.');
     expect(trace[0]?.label).not.toContain('list products');
     expect(trace[0]?.label).not.toContain('get settings');
     expect(trace[0]?.label).not.toContain('get billing status');
   });
 
-  it('normalizes persisted sales trace tool names from legacy executable traces', () => {
+  it('keeps persisted sales trace tool names from legacy executable traces', () => {
     const trace = getAssistantProcessingTrace({
       processingTrace: [
         {
@@ -300,21 +315,18 @@ describe('kloel-message-ui trace', () => {
       'Consultei contexto operacional relevante antes de responder.',
       'Registrei uma limitação operacional antes de responder.',
     ]);
-    expect(trace.map((entry) => entry.label).join(' ')).not.toContain('get order details');
-    expect(trace.map((entry) => entry.label).join(' ')).not.toContain('get_order_details');
+    expect(trace.map((entry) => entry.tool)).toEqual(['get_order_details', 'get_order_details']);
+    expect(JSON.stringify(trace)).toContain('get_order_details');
   });
 
-  it('sanitizes persisted processing summaries from legacy internal tool wording', () => {
+  it('redacts raw executable identifiers in persisted processing summaries', () => {
     const summary = summarizeAssistantProcessingTrace(
       [],
       'Executando code_outline, executando code outline e concluiu code outline.',
     );
 
-    expect(summary).toBe(
-      'Executando checagem privada, executando checagem privada e concluiu checagem privada.',
-    );
+    expect(summary).toBe('Consultei contexto operacional relevante antes de responder.');
     expect(summary).not.toContain('code_outline');
-    expect(summary).not.toContain('code outline');
   });
 
   it('ignores tool status events when typed tool events provide the executable trace', () => {
@@ -332,12 +344,13 @@ describe('kloel-message-ui trace', () => {
     expect(getAssistantProcessingTrace(withToolCall)).toEqual([
       expect.objectContaining({
         kind: 'tool_call',
-        label: 'Consultei contexto operacional relevante antes de responder.',
+        label: 'Consultei search_web antes de responder.',
+        tool: 'search_web',
       }),
     ]);
   });
 
-  it('labels refinement traces with product-grade display names', () => {
+  it('labels refinement traces with public tool names', () => {
     const metadata = appendAssistantTraceFromEvent(undefined, {
       type: 'tool_call',
       tool: 'refine_response',
@@ -347,12 +360,13 @@ describe('kloel-message-ui trace', () => {
     expect(getAssistantProcessingTrace(metadata)).toEqual([
       expect.objectContaining({
         kind: 'tool_call',
-        label: 'Consultei contexto operacional relevante antes de responder.',
+        label: 'Consultei refine_response antes de responder.',
+        tool: 'refine_response',
       }),
     ]);
   });
 
-  it('formats unknown executable tool ids in live trace chips', () => {
+  it('keeps unknown executable tool ids public in trace chips', () => {
     const metadata = appendAssistantTraceFromEvent(undefined, {
       type: 'tool_call',
       tool: 'delete_user_secret_records',
@@ -361,12 +375,12 @@ describe('kloel-message-ui trace', () => {
 
     const [entry] = getAssistantProcessingTrace(metadata);
 
+    expect(entry?.label).toBe('Consultei delete_user_secret_records antes de responder.');
     expect(entry?.tool).toBe('delete_user_secret_records');
-    expect(entry?.tool).toContain('delete');
-    expect(entry?.tool).toContain('secret');
+    expect(JSON.stringify(entry)).toContain('delete_user_secret_records');
   });
 
-  it('tracks streamed reasoning deltas as private timing metadata only', () => {
+  it('tracks streamed reasoning deltas as public thinking text with timing metadata', () => {
     const first = appendAssistantTraceFromEvent(
       { clientRequestId: 'req-live-reasoning' },
       {
@@ -383,31 +397,74 @@ describe('kloel-message-ui trace', () => {
       expect.objectContaining({
         clientRequestId: 'req-live-reasoning',
         reasoningStartedAt: expect.any(Number),
+        reasoningText: 'Analisando os dados da conta.',
       }),
     );
-    expect(second).not.toHaveProperty('reasoningText');
-    expect(getAssistantReasoning(second).text).toBe('');
+    expect(getAssistantReasoning(second).text).toBe('Analisando os dados da conta.');
   });
 
-  it('does not expose streamed reasoning that mentions runtime or capability references', () => {
+  it('redacts streamed reasoning with private runtime prompt markers', () => {
     const metadata = appendAssistantTraceFromEvent(
-      { clientRequestId: 'req-live-reasoning-safe' },
+      { clientRequestId: 'req-live-reasoning-private' },
       {
         type: 'reasoning_delta',
-        text: 'O runtime context indica que a capacidade inspect_self está disponível.',
+        text: 'O runtime context inclui system prompt e developer prompt.',
       },
     );
 
     const reasoning = getAssistantReasoning(metadata);
 
-    expect(metadata).not.toHaveProperty('reasoningText');
-    expect(reasoning.text).toBe('');
+    expect(metadata).toHaveProperty(
+      'reasoningText',
+      'Detalhes internos desta execução foram omitidos com segurança.',
+    );
+    expect(reasoning.text).toBe('Detalhes internos desta execução foram omitidos com segurança.');
     expect(reasoning.text).not.toContain('runtime context');
-    expect(reasoning.text).not.toContain('inspect_self');
+    expect(reasoning.text).not.toContain('system prompt');
+    expect(reasoning.text).not.toContain('developer prompt');
   });
 
-  it('does not render persisted reasoningText as public thinking text', () => {
-    expect(getAssistantReasoning({ reasoningText: 'legacy provider reasoning' }).text).toBe('');
+  it('keeps public raw reasoning and tool names visible in streamed reasoning', () => {
+    const publicText =
+      'chain-of-thought bruto: usei inspect_self e tool_call search_web antes de responder.';
+    const metadata = appendAssistantTraceFromEvent(
+      { clientRequestId: 'req-live-reasoning-public' },
+      {
+        type: 'reasoning_delta',
+        text: publicText,
+      },
+    );
+
+    const reasoning = getAssistantReasoning(metadata);
+
+    expect(metadata).toHaveProperty('reasoningText', publicText);
+    expect(reasoning.text).toBe(publicText);
+    expect(reasoning.text).toContain('inspect_self');
+    expect(reasoning.text).toContain('tool_call search_web');
+  });
+
+  it('renders persisted reasoningText as public thinking text and redacts private markers', () => {
+    expect(getAssistantReasoning({ reasoningText: 'legacy provider reasoning' }).text).toBe(
+      'legacy provider reasoning',
+    );
+    expect(getAssistantReasoning({ reasoningText: 'token sk-live-secret' }).text).toBe(
+      'Detalhes internos desta execução foram omitidos com segurança.',
+    );
+    expect(getAssistantReasoning({ reasoningText: 'Vou usar skill=artifact.' }).text).toBe(
+      'Detalhes internos desta execução foram omitidos com segurança.',
+    );
+    expect(getAssistantReasoning({ reasoningText: 'system prompt: resposta interna.' }).text).toBe(
+      'Detalhes internos desta execução foram omitidos com segurança.',
+    );
+    expect(getAssistantReasoning({ reasoningText: 'Vou usar tool_call search_web e inspect_self.' }).text).toBe(
+      'Vou usar tool_call search_web e inspect_self.',
+    );
+    expect(
+      getAssistantReasoning({
+        reasoningText:
+          'Probably not needed. I will craft a direct reply, then I will output the final message.',
+      }).text,
+    ).toBe('Probably not needed. I will craft a direct reply, then I will output the final message.');
   });
 
   it('derives a real reasoning duration when the provider reports a non-positive value', () => {

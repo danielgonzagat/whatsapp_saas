@@ -17,6 +17,7 @@ import { MindGlobalPriorService } from '../kloel/mind/memory/mind-global-prior.s
 import { MindPredictorService } from '../kloel/mind/inference/mind-predictor.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
+import { emitCopilotChatReplyPercept } from './copilot-percept-emit.helper';
 
 const PRE_O_VALOR_QUANTO_CUSTA_RE = /preço|valor|quanto|custa/i;
 const PAGO_PAGUEI_COMPRO_QUERO_RE = /pago|paguei|compro|quero/i;
@@ -160,6 +161,18 @@ export class CopilotService {
         // fallback text instead of a real reply. Mirrors the sync path's
         // `assistantMessage.length > 0 ? 1 : 0`. Fire-and-forget; null-safe.
         closeCopilotLoopSuccess(this.copilotLoopServices, this.loopLogger, copilotLoop, 0);
+        // ADDITIVE, flag-gated (KLOEL_COPILOT_PERCEPT_ENABLED, DEFAULT ON),
+        // fire-and-forget: after the learning loop closes, emit ONE canonical
+        // `cognition.copilot.chat_reply` percept into the Mind spine outbox so the
+        // cognition loop perceives this Copilot turn (degraded outcome). Never
+        // blocks or breaks the suggestion — mirrors the Voice/CIA percept wiring.
+        void emitCopilotChatReplyPercept(this.prisma, this.logger, {
+          workspaceId,
+          conversationId: contact.id,
+          turn: msgs.length,
+          replyLength: suggestion.length,
+          replyOutcome: 0,
+        });
         return {
           suggestion:
             'Vi sua mensagem! Posso te ajudar a decidir e já te enviar os próximos passos agora.',
@@ -169,6 +182,18 @@ export class CopilotService {
       // is produced — mirrors the sync path's success arm. Fire-and-forget;
       // no-op when the handle is null (flag OFF).
       closeCopilotLoopSuccess(this.copilotLoopServices, this.loopLogger, copilotLoop, 1);
+      // ADDITIVE, flag-gated (KLOEL_COPILOT_PERCEPT_ENABLED, DEFAULT ON),
+      // fire-and-forget: after the learning loop closes, emit ONE canonical
+      // `cognition.copilot.chat_reply` percept into the Mind spine outbox so the
+      // cognition loop perceives this Copilot turn (real reply). Never blocks or
+      // breaks the suggestion — mirrors the Voice/CIA percept wiring.
+      void emitCopilotChatReplyPercept(this.prisma, this.logger, {
+        workspaceId,
+        conversationId: contact.id,
+        turn: msgs.length,
+        replyLength: suggestion.length,
+        replyOutcome: 1,
+      });
       return { suggestion };
     } catch (error: unknown) {
       // Reply FAILED before producing an answer → close as a failed outcome

@@ -88,7 +88,6 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
       const prdData = productsResponse.data;
       setAffiliateProducts(Array.isArray(prdData) ? prdData : []);
     } catch (error) {
-      console.error(error);
       setAffiliateLoadError(error instanceof Error ? error.message : 'Erro ao carregar afiliacao');
     } finally {
       setAffiliateLoading(false);
@@ -174,8 +173,8 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
       try {
         await deleteProduct(id);
         mutateProducts();
-      } catch (e) {
-        console.error(e);
+      } catch (error) {
+        void error;
       }
     },
     [deleteProduct, mutateProducts],

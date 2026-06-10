@@ -13,9 +13,11 @@ function record(name, ok, detail = {}) {
 }
 
 const guardIndex = source.indexOf('function assertNoUnexpectedSelfExpansionEffects');
-const beforeRatchetIndex = source.indexOf('assertNoUnexpectedSelfExpansionEffects(effectsBeforeRatchet, applied);');
+const prePromotionIndex = source.indexOf('assertNoUnexpectedSelfExpansionEffects(effectsBeforePromotion, applied);');
+const promotionIndex = source.indexOf('const promotionReceipt = buildRealSelfExpansionPromotionReceipt');
+const archiveIndex = source.indexOf('const selfEvolutionArchive = appendRealSelfExpansionArchive');
 const ratchetIndex = source.indexOf('enforceSecurityMonotonicity({ ratchet: true })');
-const finalEffectIndex = source.indexOf('const effects = diffEffect(snap);', beforeRatchetIndex + 1);
+const finalEffectIndex = source.indexOf('const effects = diffEffect(snap);', archiveIndex + 1);
 const finalGuardIndex = source.indexOf('assertNoUnexpectedSelfExpansionEffects(effects, applied);');
 const returnOkIndex = source.indexOf('return ok({', finalEffectIndex);
 
@@ -34,20 +36,24 @@ record(
     source.includes('selfRootRelativeEffectPath(effect.file)'),
 );
 record(
-  'guard allows only ephemeral proof fixtures outside requested files',
+  'guard allows only ephemeral proof fixtures outside requested files plus the named self-evolution archive',
   source.includes("rel.startsWith('.proof-')") &&
     source.includes("rel.startsWith('.atomic-exec-sandbox-')") &&
-    source.includes("rel.startsWith('.external-runtime-denial-')"),
+    source.includes("rel.startsWith('.external-runtime-denial-')") &&
+    source.includes('function isSelfEvolutionArchiveEffect') &&
+    source.includes("return file === SELF_EVOLUTION_ARCHIVE_REL") &&
+    source.includes('!isSelfEvolutionArchiveEffect(rel)'),
 );
 record(
-  'successful path checks effects before ratchet persistence',
-  beforeRatchetIndex > guardIndex && ratchetIndex > beforeRatchetIndex,
-  { guardIndex, beforeRatchetIndex, ratchetIndex },
-);
-record(
-  'final receipt checks effects before acceptance',
-  finalEffectIndex > beforeRatchetIndex && finalGuardIndex > finalEffectIndex && returnOkIndex > finalGuardIndex,
-  { finalEffectIndex, finalGuardIndex, returnOkIndex },
+  'successful path checks requested effects before promotion, then builds receipt, archives it, ratchets, and checks final effects before acceptance',
+  prePromotionIndex > guardIndex &&
+    promotionIndex > prePromotionIndex &&
+    archiveIndex > promotionIndex &&
+    ratchetIndex > archiveIndex &&
+    finalEffectIndex > ratchetIndex &&
+    finalGuardIndex > finalEffectIndex &&
+    returnOkIndex > finalGuardIndex,
+  { guardIndex, prePromotionIndex, promotionIndex, archiveIndex, ratchetIndex, finalEffectIndex, finalGuardIndex, returnOkIndex },
 );
 record(
   'mandatory validator lattice includes this proof',

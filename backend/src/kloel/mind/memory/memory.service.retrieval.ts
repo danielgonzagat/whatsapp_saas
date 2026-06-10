@@ -10,6 +10,7 @@ type MemoryRetrievedRow = {
   confidence: number;
   pinned: boolean;
   createdAt: Date;
+  metadata: Record<string, unknown> | null;
 };
 
 type MemoryNodeFindManyWhere = {
@@ -91,6 +92,7 @@ export async function retrieveRelevantMemories({
     });
 
     return rows
+      .filter(isAgentUsableMemoryRow)
       .map((row) => {
         const recency = decayRecency(row.createdAt.getTime(), now, recencyHalfLifeMs);
         const dist = semanticDistance.get(row.id);
@@ -99,11 +101,18 @@ export async function retrieveRelevantMemories({
         const pinBoost = row.pinned ? 0.25 : 0;
         const score =
           similarity * 0.5 + row.importance * 0.25 + recency * 0.15 + scopeBoost * 0.1 + pinBoost;
+        const type = asMemoryNodeType(row.type) ?? 'fact';
+        const safeContent =
+          type === 'sensitive' ? 'Memória sensível bloqueada para exposição.' : row.content;
+        const safeSummary =
+          type === 'sensitive'
+            ? 'Memória sensível bloqueada para exposição.'
+            : (row.summary ?? null);
         return {
           id: row.id,
-          type: asMemoryNodeType(row.type) ?? 'fact',
-          content: row.content,
-          summary: row.summary ?? null,
+          type,
+          content: safeContent,
+          summary: safeSummary,
           importance: row.importance,
           confidence: row.confidence,
           score,
@@ -118,6 +127,26 @@ export async function retrieveRelevantMemories({
     });
     return [];
   }
+}
+
+function isAgentUsableMemoryRow(row: MemoryRetrievedRow): boolean {
+  const metadata = readMemoryMetadata(row.metadata);
+  const type = asMemoryNodeType(row.type) ?? 'fact';
+  if (type === 'expired') {
+    return false;
+  }
+  return (
+    metadata['archived'] !== true &&
+    metadata['blockedForAgent'] !== true &&
+    metadata['usableByAgent'] !== false
+  );
+}
+
+function readMemoryMetadata(metadata: unknown): Record<string, unknown> {
+  if (typeof metadata === 'object' && metadata !== null && !Array.isArray(metadata)) {
+    return metadata as Record<string, unknown>;
+  }
+  return {};
 }
 
 async function semanticDistances({

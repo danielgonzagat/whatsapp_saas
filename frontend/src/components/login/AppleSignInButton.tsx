@@ -33,12 +33,6 @@ export function AppleSignInButton({
   const { ready } = useAppleDiagnostic();
 
   if (!ready) {
-    if (typeof window !== 'undefined') {
-      console.warn(
-        '[AppleSignInButton] Apple Sign-In disabled: diagnostic not ready. ' +
-          'Verify /auth/apple/diagnostic for configuration status.',
-      );
-    }
     return null;
   }
 

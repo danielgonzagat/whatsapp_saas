@@ -2,6 +2,12 @@ import { DecisionSweepScheduler } from './decision-sweep.scheduler';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { DecisionOutcomeService } from './decision-outcome.service';
 
+const nthCallArg = (mock: jest.Mock, i: number): Record<string, unknown> => {
+  const calls = mock.mock.calls as Array<[Record<string, unknown>]>;
+  const call = calls[i];
+  return call ? call[0] : {};
+};
+
 /**
  * Covers the ADDITIVE, flag-gated runnable surface that wires the otherwise-DEAD
  * `DecisionOutcomeService.sweepExpired` (the chat_reply TIMEOUT-LOSS learner)
@@ -120,8 +126,8 @@ describe('DecisionSweepScheduler (flag-gated timeout-loss sweep surface)', () =>
 
       // Enumeration is a distinct read of OPEN decisions only.
       expect(prisma.decisionOutcome.findMany).toHaveBeenCalledTimes(1);
-      const enumArgs = prisma.decisionOutcome.findMany.mock.calls[0][0] as {
-        where: { outcomeAt: null | unknown };
+      const enumArgs = nthCallArg(prisma.decisionOutcome.findMany, 0) as {
+        where: { outcomeAt: unknown };
         distinct: string[];
       };
       expect(enumArgs.where.outcomeAt).toBeNull();

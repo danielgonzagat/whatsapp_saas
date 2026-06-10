@@ -21,10 +21,44 @@ function readSendResult(result: unknown): { error: boolean; message: string | nu
     return { error: false, message: null };
   }
   const record = result as Record<string, unknown>;
-  return {
-    error: record.error === true,
-    message: typeof record.message === 'string' ? record.message : null,
-  };
+  // Normalize across both the raw WhatsApp shape ({ error: true, message }) and
+  // the canonical ChannelSendResult shape ({ success: false, error: string }).
+  const error = record.error === true || record.success === false;
+  const message =
+    typeof record.message === 'string'
+      ? record.message
+      : typeof record.error === 'string'
+        ? record.error
+        : typeof record.blockedReason === 'string'
+          ? record.blockedReason
+          : null;
+  return { error, message };
+}
+
+/**
+ * Send a WhatsApp reply through the ONE canonical dispatch front door
+ * (`dispatch(workspaceId, 'whatsapp', to, message, options)`), failing OPEN to
+ * the raw `whatsappService.sendMessage` path when the dispatch service is
+ * unavailable or throws. The same message + options are delivered either way —
+ * additive routing, never a behavior change for the customer.
+ *
+ * @internal exported only so the routing contract is unit-testable.
+ */
+export async function sendInlineReply(
+  deps: Pick<InlineAutopilotDeps, 'whatsappService' | 'dispatchService'>,
+  workspaceId: string,
+  phone: string,
+  text: string,
+  opts: Record<string, unknown>,
+): Promise<unknown> {
+  if (deps.dispatchService) {
+    try {
+      return await deps.dispatchService.dispatch(workspaceId, 'whatsapp', phone, text, opts);
+    } catch {
+      // fail-open: fall through to the raw WhatsApp path below
+    }
+  }
+  return deps.whatsappService.sendMessage(workspaceId, phone, text, opts);
 }
 import type { ProviderSettings } from './provider-settings.types';
 import {
@@ -91,11 +125,34 @@ export interface InlineAutopilotInput {
   settings?: ProviderSettings;
 }
 
+/**
+ * Minimal projection of `ChannelMessageDispatchService` consumed here — only
+ * the canonical `dispatch(workspaceId, channel, to, message, options)` front
+ * door. Kept as a structural interface so the inline-autopilot stays a pure
+ * function (no NestJS DI symbols) and the caller can inject either the real
+ * service or `undefined` (fail-open to the raw WhatsApp path).
+ */
+interface MinimalDispatchService {
+  dispatch(
+    workspaceId: string,
+    channel: string,
+    to: string,
+    message: string,
+    options?: Record<string, unknown>,
+  ): Promise<unknown>;
+}
+
 export interface InlineAutopilotDeps {
   prisma: PrismaService;
   redis: Redis;
   unifiedAgent: UnifiedAgentService;
   whatsappService: MinimalWhatsappService;
+  /**
+   * Canonical cross-channel dispatch front door (OmniCore Wave 21). When
+   * present, inline replies route through `dispatch(ws, 'whatsapp', …)`; when
+   * absent the send fails OPEN to the raw `whatsappService.sendMessage` path.
+   */
+  dispatchService?: MinimalDispatchService;
   opsAlert?: OpsAlertService;
   logger: Logger;
   contactDebounceMs: number;
@@ -227,7 +284,7 @@ export async function executeInlineAutopilot(
       ],
     });
     await forEachSequential(replyPlan, async (plan, index) => {
-      const r = await deps.whatsappService.sendMessage(input.workspaceId, input.phone, plan.text, {
+      const r = await sendInlineReply(deps, input.workspaceId, input.phone, plan.text, {
         externalId: `inline:${input.messageId}:${index + 1}`,
         complianceMode: 'reactive',
         forceDirect: true,
@@ -257,17 +314,12 @@ export async function executeInlineAutopilot(
     const fallbackReply = buildInlineFallbackReplyExt(aggMsg);
     if (fallbackReply) {
       try {
-        const r = await deps.whatsappService.sendMessage(
-          input.workspaceId,
-          input.phone,
-          fallbackReply,
-          {
-            externalId: `inline:${input.messageId}:fallback`,
-            complianceMode: 'reactive',
-            forceDirect: true,
-            quotedMessageId: latestQid,
-          },
-        );
+        const r = await sendInlineReply(deps, input.workspaceId, input.phone, fallbackReply, {
+          externalId: `inline:${input.messageId}:fallback`,
+          complianceMode: 'reactive',
+          forceDirect: true,
+          quotedMessageId: latestQid,
+        });
         if (!readSendResult(r).error) {
           keepReplyLock = true;
         }

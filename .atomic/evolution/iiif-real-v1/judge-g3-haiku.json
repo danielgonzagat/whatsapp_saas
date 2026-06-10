@@ -1,0 +1,65 @@
+{
+  "ok": true,
+  "model": "haiku",
+  "judged": [
+    {
+      "lineageId": "haiku|ESCALAR|s1",
+      "generation": 3,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 13,
+      "bestScore": 13
+    },
+    {
+      "lineageId": "haiku|ESCALAR|s2",
+      "generation": 3,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 7,
+      "bestScore": 7
+    },
+    {
+      "lineageId": "haiku|ESCALAR|s3",
+      "generation": 3,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 14,
+      "bestScore": 14
+    },
+    {
+      "lineageId": "haiku|GRADIENTE|s1",
+      "generation": 3,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 14,
+      "bestScore": 14
+    },
+    {
+      "lineageId": "haiku|GRADIENTE|s2",
+      "generation": 3,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 4,
+      "bestScore": 5
+    },
+    {
+      "lineageId": "haiku|GRADIENTE|s3",
+      "generation": 3,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 7,
+      "bestScore": 7
+    }
+  ],
+  "ledger": {
+    "ok": true,
+    "recordCount": 18,
+    "headRecordSha256": "7ef377410ef0f75c86b291424d7cd758066ed0c2e23dbb63d1f57c5d493727fd"
+  }
+}

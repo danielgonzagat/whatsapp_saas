@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 const jsonMode = process.argv.includes('--json');
 const sourceDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const source = fs.readFileSync(path.join(sourceDir, 'server-tools-self.ts'), 'utf8');
+const brokerSource = fs.readFileSync(path.join(sourceDir, 'atomic-exec-broker.mjs'), 'utf8');
 
 const requiredCommands = [
   'node build.mjs',
@@ -26,14 +27,30 @@ const requiredCommands = [
   'node dist/gates/contract-edge-gate.proof.js',
   'node gates/public-contract-gate.proof.mjs --json',
   'node gates/behavior-contract-gate.proof.mjs --json',
+  'node gates/atomic-product-locks.proof.mjs --json',
   'node gates/security-gate.proof.mjs --json',
+  'node gates/chrome-devtools-bridge.proof.mjs --json',
   'node gates/security-monotonicity.proof.mjs --json',
+  'node gates/self-expansion-validator-lattice.proof.mjs --json',
+  'node gates/self-evolution-harness.proof.mjs --json',
+  'node gates/self-evolution-mcp-tool.proof.mjs --json',
+  'node gates/self-evolution-disproof-consumer.proof.mjs --json',
+  'node gates/self-evolution-disproof-briefing.proof.mjs --json',
+  'node gates/self-evolution-lesson-rules.proof.mjs --json',
+  'node gates/codex-memory-note-tool.proof.mjs --json',
+  'node gates/atomic-agent-bench.proof.mjs',
   'node gates/test-execution-gate.proof.mjs --json',
   'node proof-chain.proof.mjs --json',
   'node gates/y-certificate-mandatory-domains.proof.mjs --json',
   'node gates/codex-entrypoint-contract.proof.mjs --json',
+  'node gates/agent-hook-runtime-boundary.proof.mjs --json',
   'node gates/compiled-mcp-y-certificate.proof.mjs --json',
   'node gates/atomic-exec-readonly-usability.proof.mjs --json',
+  'node gates/effect-metadata-mode.proof.mjs --json',
+  'node gates/atomic-exec-prove-effect-required.proof.mjs --json',
+  'node gates/atomic-exec-indirection-denial.proof.mjs --json',
+  'node gates/self-expansion-unexpected-effects.proof.mjs --json',
+  'node gates/self-expansion-real-self-evolution.proof.mjs --json',
   'node codex-atomic-only-hook.proof.mjs --json',
 ];
 
@@ -54,13 +71,27 @@ const requiredPhases = [
   'contract-edge',
   'public-contract',
   'behavior',
+  'coordination',
   'security',
   'monotonicity',
+  'self-lattice',
+  'self-evolution',
+  'self-evolution-tool',
+  'self-evolution-disproof',
+  'self-evolution-disproof-briefing',
+  'self-evolution-lessons',
+  'codex-memory',
+  'self-evolution-real',
+  'benchmark',
   'test',
   'ledger',
   'certificate',
   'runtime',
+  'agent-runtime',
   'usability',
+  'effect-metadata',
+  'effect-admission',
+  'effect-scope',
   'no-bypass',
 ];
 
@@ -107,7 +138,11 @@ function main() {
       source.includes('contract-edge') &&
       source.includes('security') &&
       source.includes('monotonicity') &&
+      source.includes('self-evolution') &&
+      source.includes('self-evolution-tool') &&
+      source.includes('self-evolution-disproof-briefing') &&
       source.includes('runtime') &&
+      source.includes('agent-runtime') &&
       source.includes('usability'),
     {
       hasReceipt: source.includes('validatorLattice: MANDATORY_SELF_EXPANSION_VALIDATORS'),
@@ -123,7 +158,107 @@ function main() {
       hasFindingsDelta: source.includes('findings-delta'),
       hasContractEdge: source.includes('contract-edge'),
       hasMonotonicity: source.includes('monotonicity'),
+      hasSelfEvolution: source.includes('self-evolution'),
+      hasSelfEvolutionTool: source.includes('self-evolution-tool'),
+      hasSelfEvolutionDisproof: source.includes('self-evolution-disproof'),
+      hasSelfEvolutionDisproofBriefing: source.includes('self-evolution-disproof-briefing'),
       hasUsability: source.includes('usability'),
+    },
+  );
+  record(
+    results,
+    'self-expansion proof runner runs build first, then bounded parallel validators, and the handler awaits the proof promise',
+    source.includes('const SELF_EXPANSION_PROOF_CONCURRENCY') &&
+      source.includes('async function runProofCommands') &&
+      source.includes('await runProofCommands(proofCommands)') &&
+      source.includes('Promise.all') &&
+      source.includes('runSingleProofCommand') &&
+      /commands\[0\]\s*===\s*'node build\.mjs'/.test(source) &&
+      source.includes('skipped after node build.mjs failed'),
+    {
+      hasConcurrencyConstant: source.includes('const SELF_EXPANSION_PROOF_CONCURRENCY'),
+      runProofCommandsAsync: source.includes('async function runProofCommands'),
+      handlerAwaitsProofs: source.includes('await runProofCommands(proofCommands)'),
+      hasParallelBatch: source.includes('Promise.all'),
+      hasSingleProofRunner: source.includes('runSingleProofCommand'),
+      buildFirst: /commands\[0\]\s*===\s*'node build\.mjs'/.test(source),
+      hasBuildFailureSkip: source.includes('skipped after node build.mjs failed'),
+    },
+  );
+  const directTimeoutResolves = /setTimeout\(\(\) => \{[\s\S]*atomic proof timed out after[\s\S]*setTimeout\(forceKill, 1000\)\.unref\(\);\n\s*finish\(\{ command, ok: false[\s\S]*\}, timeoutMs\);/.test(source);
+  const brokerTimeoutResolves = /setTimeout\(\(\) => \{[\s\S]*atomic proof broker timed out after[\s\S]*setTimeout\(forceKill, 1000\)\.unref\(\);\n\s*finish\(\{ command, ok: false[\s\S]*\}, timeoutMs \+ 5000\);/.test(source);
+  record(
+    results,
+    'self-expansion has a global proof deadline that resolves before client timeout instead of waiting for abandoned child processes',
+    source.includes('const SELF_EXPANSION_PROOF_GLOBAL_BUDGET_MS') &&
+      source.includes('remainingProofBudgetMs') &&
+      source.includes('proofTimeoutForDeadline') &&
+      source.includes('self-expansion proof global budget exhausted') &&
+      directTimeoutResolves &&
+      brokerTimeoutResolves,
+    {
+      hasGlobalBudget: source.includes('const SELF_EXPANSION_PROOF_GLOBAL_BUDGET_MS'),
+      hasRemainingBudget: source.includes('remainingProofBudgetMs'),
+      hasDeadlineTimeout: source.includes('proofTimeoutForDeadline'),
+      hasBudgetFailureText: source.includes('self-expansion proof global budget exhausted'),
+      directTimeoutResolves,
+      brokerTimeoutResolves,
+    },
+  );
+  record(
+    results,
+    'self-expansion gives liveness-critical validators explicit sub-client timeout budgets',
+    source.includes("command.includes('type-soundness-gate')") &&
+      source.includes("command.includes('algebra.proof.mjs')") &&
+      source.includes("command.includes('contract-edge-gate')") &&
+      source.includes("command.includes('self-evolution-mcp-tool')") &&
+      source.includes("command.includes('compiled-mcp-y-certificate')") &&
+      source.includes('return 90000'),
+    {
+      hasTypeBudget: source.includes("command.includes('type-soundness-gate')"),
+      hasAlgebraBudget: source.includes("command.includes('algebra.proof.mjs')"),
+      hasContractEdgeBudget: source.includes("command.includes('contract-edge-gate')"),
+      hasSelfEvolutionToolBudget: source.includes("command.includes('self-evolution-mcp-tool')"),
+      hasCompiledCertificateBudget: source.includes("command.includes('compiled-mcp-y-certificate')"),
+      hasNinetySecondBudget: source.includes('return 90000'),
+    },
+  );
+  record(
+    results,
+    'self-expansion schedules historically slow validators first while preserving original receipt order',
+    source.includes('function proofCommandPriority') &&
+      source.includes('compiled-mcp-y-certificate') &&
+      source.includes('type-soundness-gate') &&
+      source.includes('contract-edge-gate') &&
+      source.includes('self-evolution-mcp-tool') &&
+      source.includes('queue.sort') &&
+      source.includes('results[item.index]'),
+    {
+      hasPriorityFunction: source.includes('function proofCommandPriority'),
+      prioritizesCompiledCertificate: source.includes('compiled-mcp-y-certificate'),
+      prioritizesType: source.includes('type-soundness-gate'),
+      prioritizesContractEdge: source.includes('contract-edge-gate'),
+      prioritizesSelfEvolutionTool: source.includes('self-evolution-mcp-tool'),
+      sortsQueue: source.includes('queue.sort'),
+      preservesReceiptOrder: source.includes('results[item.index]'),
+    },
+  );
+  record(
+    results,
+    'atomic exec broker handles concurrent proof clients asynchronously while preserving per-command sandbox execution',
+    brokerSource.includes("import { spawn } from 'node:child_process';") &&
+      !brokerSource.includes("import { spawnSync } from 'node:child_process';") &&
+      /async function handle\(/.test(brokerSource) &&
+      /await handle\(/.test(brokerSource) &&
+      brokerSource.includes('function runSandboxed') &&
+      brokerSource.includes('new Promise'),
+    {
+      importsSpawn: brokerSource.includes("import { spawn } from 'node:child_process';"),
+      removedSpawnSyncImport: !brokerSource.includes("import { spawnSync } from 'node:child_process';"),
+      hasAsyncHandle: /async function handle\(/.test(brokerSource),
+      awaitsHandle: /await handle\(/.test(brokerSource),
+      hasSandboxRunner: brokerSource.includes('function runSandboxed'),
+      hasPromiseRunner: brokerSource.includes('new Promise'),
     },
   );
   return { ok: results.every((entry) => entry.ok), results };

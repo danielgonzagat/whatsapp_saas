@@ -154,10 +154,7 @@ export class CommerceOutcomeLearnerService {
           },
         });
       } catch (error: unknown) {
-        if (
-          error instanceof Prisma.PrismaClientKnownRequestError &&
-          error.code === 'P2002'
-        ) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
           // Durable marker already exists → another path/instance/run learned
           // from this event. Skip (at-most-once).
           this.remember(eventId);

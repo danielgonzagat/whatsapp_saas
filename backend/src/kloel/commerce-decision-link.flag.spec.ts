@@ -39,6 +39,13 @@ function makeDecisionOutcome(
   } as unknown as DecisionOutcomeService & DecisionOutcomeMock;
 }
 
+/** Typed accessor for the first argument of a mock's first call (no unsafe `any` access). */
+function firstCallArg(mock: jest.Mock): unknown {
+  const calls = mock.mock.calls as Array<[unknown]>;
+  const call = calls[0];
+  return call ? call[0] : undefined;
+}
+
 /** Flush the fire-and-forget promise chains inside the producer/closer. */
 async function flush(): Promise<void> {
   await Promise.resolve();
@@ -140,7 +147,7 @@ describe('flag ON — producer opens a commerce_decision_link decision', () => {
     await flush();
 
     expect(decisionOutcome.recordDecision).toHaveBeenCalledTimes(1);
-    const recordArg = decisionOutcome.recordDecision.mock.calls[0][0] as {
+    const recordArg = firstCallArg(decisionOutcome.recordDecision) as {
       workspaceId: string;
       decisionType: string;
       chosenAction: string;
@@ -202,7 +209,7 @@ describe('flag ON — closer resolves the originating chat decision as a WIN', (
     await flush();
 
     expect(decisionOutcome.closeOutcome).toHaveBeenCalledTimes(1);
-    const closeArg = decisionOutcome.closeOutcome.mock.calls[0][0] as {
+    const closeArg = firstCallArg(decisionOutcome.closeOutcome) as {
       outcomeKey: string;
       outcomeName: string;
       wonVsBaseline: boolean;
@@ -270,7 +277,7 @@ describe('end-to-end loop closure (producer key === closer key)', () => {
     await flush();
 
     // The loop CLOSES: the close targets the EXACT key the producer opened.
-    const closeArg = closeOutcome.mock.calls[0][0] as {
+    const closeArg = firstCallArg(closeOutcome) as {
       outcomeKey: string;
       wonVsBaseline: boolean;
     };
@@ -295,7 +302,7 @@ describe('end-to-end loop closure (producer key === closer key)', () => {
     });
     await flush();
 
-    const closeArg = closeOutcome.mock.calls[0][0] as { outcomeKey: string };
+    const closeArg = firstCallArg(closeOutcome) as { outcomeKey: string };
     expect(closeArg.outcomeKey).not.toBe(openedKey);
   });
 });

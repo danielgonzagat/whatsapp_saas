@@ -1,6 +1,18 @@
+// Unifica a identidade dos pacotes Nest no jest-e2e local: o resolver do jest resolve
+// '@nestjs/core' a partir de '@nestjs/testing' para a cópia instalada na RAIZ do repo,
+// enquanto src/** resolve para backend/node_modules — duas classes Reflector/HttpException
+// distintas quebram a DI do AuditInterceptor e transformam respostas HTTP em 500.
+jest.mock('@nestjs/core', () =>
+  jest.requireActual<typeof import('@nestjs/core')>('../../node_modules/@nestjs/core'),
+);
+jest.mock('../../node_modules/@nestjs/common', () =>
+  jest.requireActual<typeof import('@nestjs/common')>('@nestjs/common'),
+);
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import type { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 
@@ -40,7 +52,7 @@ describe('UnifiedAgent (e2e)', () => {
 
   describe('POST /kloel/agent/:workspaceId/process', () => {
     it('should process a simple greeting', async () => {
-      const response = await request(app.getHttpServer())
+      const response = await request(app.getHttpServer() as App)
         .post(`/kloel/agent/${testWorkspaceId}/process`)
         .send({
           phone: '+5511999999999',
@@ -55,7 +67,7 @@ describe('UnifiedAgent (e2e)', () => {
     });
 
     it('should detect buying intent', async () => {
-      const response = await request(app.getHttpServer())
+      const response = await request(app.getHttpServer() as App)
         .post(`/kloel/agent/${testWorkspaceId}/process`)
         .send({
           phone: '+5511999999999',
@@ -63,12 +75,13 @@ describe('UnifiedAgent (e2e)', () => {
         })
         .expect(201);
 
-      expect(response.body).toHaveProperty('success', true);
-      expect(response.body.actions).toBeDefined();
+      const body = response.body as { success?: boolean; actions?: unknown };
+      expect(body).toHaveProperty('success', true);
+      expect(body.actions).toBeDefined();
     });
 
     it('should handle scheduling requests', async () => {
-      const response = await request(app.getHttpServer())
+      const response = await request(app.getHttpServer() as App)
         .post(`/kloel/agent/${testWorkspaceId}/process`)
         .send({
           phone: '+5511999999999',
@@ -80,7 +93,7 @@ describe('UnifiedAgent (e2e)', () => {
     });
 
     it('should detect churn risk', async () => {
-      const response = await request(app.getHttpServer())
+      const response = await request(app.getHttpServer() as App)
         .post(`/kloel/agent/${testWorkspaceId}/process`)
         .send({
           phone: '+5511999999999',
@@ -94,17 +107,21 @@ describe('UnifiedAgent (e2e)', () => {
 
   describe('GET /kloel/agent/:workspaceId/tools', () => {
     it('should list available tools', async () => {
-      const response = await request(app.getHttpServer())
+      const response = await request(app.getHttpServer() as App)
         .get(`/kloel/agent/${testWorkspaceId}/tools`)
         .expect(200);
 
-      expect(response.body).toHaveProperty('workspaceId');
-      expect(response.body).toHaveProperty('tools');
-      expect(Array.isArray(response.body.tools)).toBe(true);
-      expect(response.body.tools.length).toBeGreaterThan(0);
+      const body = response.body as {
+        workspaceId?: string;
+        tools: Array<Record<string, unknown>>;
+      };
+      expect(body).toHaveProperty('workspaceId');
+      expect(body).toHaveProperty('tools');
+      expect(Array.isArray(body.tools)).toBe(true);
+      expect(body.tools.length).toBeGreaterThan(0);
 
       // Verificar estrutura de uma tool
-      const tool = response.body.tools[0];
+      const tool = body.tools[0];
       expect(tool).toHaveProperty('name');
       expect(tool).toHaveProperty('category');
       expect(tool).toHaveProperty('description');
@@ -113,7 +130,7 @@ describe('UnifiedAgent (e2e)', () => {
 
   describe('POST /kloel/agent/:workspaceId/simulate', () => {
     it('should simulate without executing actions', async () => {
-      const response = await request(app.getHttpServer())
+      const response = await request(app.getHttpServer() as App)
         .post(`/kloel/agent/${testWorkspaceId}/simulate`)
         .send({
           phone: '+5511999999999',
@@ -158,7 +175,7 @@ describe('SmartPayment (e2e)', () => {
 
   describe('POST /kloel/payment/:workspaceId/create', () => {
     it('should create a smart payment', async () => {
-      const response = await request(app.getHttpServer())
+      const response = await request(app.getHttpServer() as App)
         .post(`/kloel/payment/${testWorkspaceId}/create`)
         .send({
           phone: '+5511999999999',
@@ -177,7 +194,7 @@ describe('SmartPayment (e2e)', () => {
 
   describe('POST /kloel/payment/:workspaceId/negotiate', () => {
     it('should handle discount negotiation', async () => {
-      const response = await request(app.getHttpServer())
+      const response = await request(app.getHttpServer() as App)
         .post(`/kloel/payment/${testWorkspaceId}/negotiate`)
         .send({
           contactId: 'test-contact-id',
@@ -197,7 +214,7 @@ describe('SmartPayment (e2e)', () => {
 
   describe('GET /kloel/payment/:workspaceId/recovery/:paymentId', () => {
     it('should suggest recovery action', async () => {
-      const response = await request(app.getHttpServer())
+      const response = await request(app.getHttpServer() as App)
         .get(`/kloel/payment/${testWorkspaceId}/recovery/pay_123456`)
         .query({ daysPending: '2' })
         .expect(200);
@@ -240,7 +257,7 @@ describe('Audio (e2e)', () => {
 
   describe('POST /audio/synthesize', () => {
     it('should synthesize speech from text', async () => {
-      const response = await request(app.getHttpServer())
+      const response = await request(app.getHttpServer() as App)
         .post('/audio/synthesize')
         .send({
           text: 'Olá, como posso ajudar?',

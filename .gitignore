@@ -197,3 +197,22 @@ scripts/mcp/atomic-edit/.z3venv/
 .z3venv/
 .elan/
 .elan-init.sh
+
+# Atomic exec/gate scratch — stdout/stderr captures and sandbox effect-roots (regenerable)
+.atomic-*.err
+.atomic-*.out
+.atomic-scratch/
+.atomic-test-tmp/
+
+# Cascas de TMPDIR de builds na raiz — packs webpack ~468MB que o envelope não
+# consegue deletar (rm manual pendente) + scratch transitório de sessões; ignorados
+# para o worktree poder ficar limpo (frontend:build:clean exige porcelain vazio).
+909073dea1f127d9cf0eb420813fc5b9/
+5d406ffa3ef1e36be83c02c976c1772a/
+dfpuXW1uFOqNEd6kFVZHE/
+ecc-mcp-home-*/
+ecc-mcp-health-*/
+ecc-session-recordings/
+
+# PID files de dev-boot do harness atomic — runtime puro, nunca versionar
+.atomic-devboot/

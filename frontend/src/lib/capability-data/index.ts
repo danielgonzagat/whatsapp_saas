@@ -63,6 +63,9 @@ export function getCapabilityBadge(capability: FrontendCapability) {
   if (capability.status === 'partial') {
     return 'Parcial';
   }
+  if (capability.status === 'planned') {
+    return 'Roadmap';
+  }
   return undefined;
 }
 

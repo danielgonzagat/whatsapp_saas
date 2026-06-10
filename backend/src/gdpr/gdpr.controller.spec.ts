@@ -9,13 +9,13 @@ import { Test } from '@nestjs/testing';
 import { GdprStatus, GdprType } from '@prisma/client';
 import type { Server } from 'node:http';
 import { type Response } from 'express';
-import * as request from 'supertest';
 import { EmailService } from '../auth/email.service';
 import { StorageService } from '../common/storage/storage.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { GdprController } from './gdpr.controller';
 import { GdprService } from './gdpr.service';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
+import { injectHttpRequest } from '../../test/helpers/in-process-http';
 
 jest.mock('../common/redis/redis.util', () => {
   const actual = jest.requireActual<typeof import('../common/redis/redis.util')>(
@@ -193,11 +193,13 @@ describe('GdprController', () => {
 
   describe('getStatus', () => {
     it('returns status for a valid code', async () => {
-      const response = await request(app.getHttpServer() as Server)
-        .get('/gdpr/status/abc123')
-        .expect(200);
+      const response = await injectHttpRequest(app.getHttpServer() as Server, {
+        method: 'GET',
+        path: '/gdpr/status/abc123',
+      });
 
-      expect(response.body).toEqual(
+      expect(response.status).toBe(200);
+      expect(response.json()).toEqual(
         expect.objectContaining({
           code: 'abc123',
           type: 'EXPORT',
@@ -209,21 +211,26 @@ describe('GdprController', () => {
     it('returns 404 for unknown code', async () => {
       prismaMock.gdprRequest.findFirst.mockResolvedValueOnce(null);
 
-      await request(app.getHttpServer() as Server)
-        .get('/gdpr/status/unknown')
-        .expect(404);
+      const response = await injectHttpRequest(app.getHttpServer() as Server, {
+        method: 'GET',
+        path: '/gdpr/status/unknown',
+      });
+
+      expect(response.status).toBe(404);
     });
   });
 
   describe('facebook-callback', () => {
     it('returns 400 when signed_request is empty', async () => {
-      const response = await request(app.getHttpServer() as Server)
-        .post('/gdpr/facebook-callback')
-        .type('form')
-        .send({ signed_request: '' })
-        .expect(400);
+      const response = await injectHttpRequest(app.getHttpServer() as Server, {
+        method: 'POST',
+        path: '/gdpr/facebook-callback',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ signed_request: '' }).toString(),
+      });
 
-      expect(response.body).toEqual(
+      expect(response.status).toBe(400);
+      expect(response.json()).toEqual(
         expect.objectContaining({
           message: 'signed_request inválido.',
         }),
@@ -240,20 +247,21 @@ describe('GdprController', () => {
         JSON.stringify({ user_id: 'fb_user_1', algorithm: 'HMAC-SHA256', issued_at: 1713000000 }),
       ).toString('base64');
 
-      const response = await request(app.getHttpServer() as Server)
-        .post('/gdpr/facebook-callback')
-        .type('form')
-        .send({ signed_request: `sig.${encodedPayload}` })
-        .expect(200);
+      const response = await injectHttpRequest(app.getHttpServer() as Server, {
+        method: 'POST',
+        path: '/gdpr/facebook-callback',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ signed_request: `sig.${encodedPayload}` }).toString(),
+      });
 
-      expect(response.body).toEqual(
+      expect(response.status).toBe(200);
+      const body = response.json<{ confirmation_code?: unknown }>();
+      expect(body).toEqual(
         expect.objectContaining({
           url: expect.stringContaining('/data-deletion/status/') as unknown,
         }),
       );
-      expect(typeof (response.body as { confirmation_code?: unknown }).confirmation_code).toBe(
-        'string',
-      );
+      expect(typeof body.confirmation_code).toBe('string');
     });
 
     it('returns not_found when facebook user is not in the system', async () => {
@@ -263,13 +271,15 @@ describe('GdprController', () => {
         JSON.stringify({ user_id: 'unknown_fb_user', algorithm: 'HMAC-SHA256' }),
       ).toString('base64');
 
-      const response = await request(app.getHttpServer() as Server)
-        .post('/gdpr/facebook-callback')
-        .type('form')
-        .send({ signed_request: `sig.${encodedPayload}` })
-        .expect(200);
+      const response = await injectHttpRequest(app.getHttpServer() as Server, {
+        method: 'POST',
+        path: '/gdpr/facebook-callback',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ signed_request: `sig.${encodedPayload}` }).toString(),
+      });
 
-      expect(response.body).toEqual(
+      expect(response.status).toBe(200);
+      expect(response.json()).toEqual(
         expect.objectContaining({
           confirmation_code: 'not_found',
         }),

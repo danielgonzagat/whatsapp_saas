@@ -25,7 +25,21 @@ import { repairScope } from './gates/repair.js';
 import { calls } from './gates/perception.js';
 import { structuralErrors } from './engine-structural.js';
 
-const SKIP = new Set(['node_modules', '.git', '.atomic', '.claude', '.mcp-cache', '.next', '.turbo', '.cache', 'build', 'coverage', 'dist', 'vendor']);
+const SKIP = new Set([
+  'node_modules',
+  '.git',
+  '.atomic',
+  '.claude',
+  '.mcp-cache',
+  '.next',
+  '.turbo',
+  '.cache',
+  'build',
+  'coverage',
+  'dist',
+  'vendor',
+  'node-compile-cache',
+]);
 const SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
 const DIRECT_STRUCTURAL_FILE_EXTS = new Set([
   '.py', '.rb', '.sh', '.bash', '.zsh', '.yaml', '.yml', '.toml',
@@ -59,6 +73,24 @@ const DIRECT_STRUCTURAL_LABELS: Record<string, string> = {
   '.less': 'Less',
   '.sql': 'SQL',
 };
+const DIRECT_TEXT_FILE_BASENAMES = new Set(['.dockerignore', '.gitignore', 'Containerfile', 'Dockerfile', 'Makefile']);
+const DIRECT_TEXT_FILE_LABELS: Record<string, string> = {
+  '.dockerignore': 'Dockerignore',
+  '.gitignore': 'Gitignore',
+  Containerfile: 'Containerfile',
+  Dockerfile: 'Dockerfile',
+  Makefile: 'Makefile',
+};
+
+function hasSkippedPathSegment(relPath: string): boolean {
+  return relPath.split('/').some((segment) => SKIP.has(segment));
+}
+
+function directTextFileLabel(relPath: string): string | null {
+  const base = path.basename(relPath);
+  if (!DIRECT_TEXT_FILE_BASENAMES.has(base)) return null;
+  return DIRECT_TEXT_FILE_LABELS[base] ?? base;
+}
 
 function directStructuralLanguageName(ext: string): string {
   return DIRECT_STRUCTURAL_LABELS[ext] ?? ext.slice(1).toUpperCase();
@@ -86,12 +118,15 @@ function enumerateScope(repoRoot: string, scopeRel: string, cap = 8000): string[
       const abs = path.join(absDir, e.name);
       if (e.isDirectory()) walk(abs);
       else if (SOURCE_RE.test(e.name)) {
-        out.add(path.relative(repoRoot, abs).replaceAll('\\', '/'));
+        const rel = path.relative(repoRoot, abs).replaceAll('\\', '/');
+        if (!hasSkippedPathSegment(rel)) out.add(rel);
       }
     }
   };
   for (const part of scopeRel.split(',').map((s) => s.trim()).filter(Boolean)) {
     const abs = path.resolve(repoRoot, part);
+    const rel = path.relative(repoRoot, abs).replaceAll('\\', '/');
+    if (rel.startsWith('..') || path.isAbsolute(rel) || hasSkippedPathSegment(rel)) continue;
     let st: fs.Stats | null = null;
     try {
       st = fs.statSync(abs);
@@ -100,7 +135,7 @@ function enumerateScope(repoRoot: string, scopeRel: string, cap = 8000): string[
     }
     if (st.isDirectory()) walk(abs);
     else if (SOURCE_RE.test(abs) && !abs.endsWith('.proof.ts')) {
-      out.add(path.relative(repoRoot, abs).replaceAll('\\', '/'));
+      out.add(rel);
     }
   }
   return [...out];
@@ -111,7 +146,7 @@ function enumerateDirectNonSourceFiles(repoRoot: string, scopeRel: string, cap =
   const addFile = (abs: string): void => {
     if (out.size >= cap) return;
     const rel = path.relative(repoRoot, abs).replaceAll('\\', '/');
-    if (rel.startsWith('..') || path.isAbsolute(rel)) return;
+    if (rel.startsWith('..') || path.isAbsolute(rel) || hasSkippedPathSegment(rel)) return;
     if (SOURCE_RE.test(abs)) return;
     out.add(rel);
   };
@@ -135,7 +170,7 @@ function enumerateDirectNonSourceFiles(repoRoot: string, scopeRel: string, cap =
     if (out.size >= cap) break;
     const abs = path.resolve(repoRoot, part);
     const rel = path.relative(repoRoot, abs).replaceAll('\\', '/');
-    if (rel.startsWith('..') || path.isAbsolute(rel)) continue;
+    if (rel.startsWith('..') || path.isAbsolute(rel) || hasSkippedPathSegment(rel)) continue;
     let st: fs.Stats | null = null;
     try {
       st = fs.statSync(abs);
@@ -228,11 +263,12 @@ function truncateUtf8(text: string, maxBytes: number): { text: string; truncated
 }
 
 function directKnownFileBatteryApplies(relPath: string, ext: string): boolean {
-  return ext === '.json' || ext === '.md' || path.basename(relPath) === '.gitignore' || DIRECT_STRUCTURAL_FILE_EXTS.has(ext);
+  return ext === '.json' || ext === '.md' || directTextFileLabel(relPath) !== null || DIRECT_STRUCTURAL_FILE_EXTS.has(ext);
 }
 
 function directFileBatteryLabel(relPath: string, ext: string): string {
-  if (path.basename(relPath) === '.gitignore') return 'Gitignore';
+  const textLabel = directTextFileLabel(relPath);
+  if (textLabel) return textLabel;
   if (ext === '.json') return 'JSON';
   if (ext === '.md') return 'Markdown';
   if (DIRECT_STRUCTURAL_FILE_EXTS.has(ext)) return directStructuralLanguageName(ext);
@@ -258,8 +294,9 @@ function directNonSourcePositiveReason(relPath: string, content: string): string
   if (ext === '.md') {
     return 'Markdown text is UTF-8 readable and contains no NUL bytes under Atomic direct-file text battery; no prose correctness claim is made.';
   }
-  if (path.basename(relPath) === '.gitignore') {
-    return 'Gitignore text is UTF-8 readable and contains no NUL bytes under Atomic direct-file text battery.';
+  const textLabel = directTextFileLabel(relPath);
+  if (textLabel) {
+    return `${textLabel} text is UTF-8 readable and contains no NUL bytes under Atomic direct-file text battery; no syntax/runtime claim is made.`;
   }
   return null;
 }

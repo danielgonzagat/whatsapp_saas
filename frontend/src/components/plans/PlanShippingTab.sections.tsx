@@ -1,7 +1,6 @@
 'use client';
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
-import { Plus } from 'lucide-react';
 import React from 'react';
 import {
   PACKAGE_TYPES,
@@ -136,13 +135,6 @@ export function PlanShippingSections(p: SectionProps) {
               id={`${p.fid}-weight`}
             />
           </div>
-          <button
-            type="button"
-            className="flex h-10 w-10 items-center justify-center rounded-full text-white transition-all"
-            style={{ backgroundColor: colors.accent.webb }}
-          >
-            <Plus className="h-4 w-4" aria-hidden="true" />
-          </button>
         </div>
       </div>
       {/* Logistics */}

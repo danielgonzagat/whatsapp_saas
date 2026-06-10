@@ -4,29 +4,33 @@ import { buildTimestampedRuntimeId } from './kloel-id.util';
 import { type KloelStreamEvent } from './kloel-stream-events';
 
 const TRAILING_DOTS_RE = /[.]+$/;
-const SEPARATOR_G_RE = /[_-]+/g;
 const INLINE_WHITESPACE_G_RE = /[^\S\r\n]+/g;
 const LINE_PADDING_G_RE = /[ \t]*\r?\n[ \t]*/g;
 const EXCESS_BLANK_LINES_G_RE = /\n{3,}/g;
-const MECHANICAL_PRODUCT_SUCCESS_RE =
-  /\bA[cç][aã]o\s+"?(?:list_products|catálogo de produtos)"?\s+executada com sucesso\.?/gi;
-const MECHANICAL_PRODUCT_AUTH_FAILURE_RE =
-  /\bFalha ao executar\s+"?(?:list_products|catálogo de produtos)"?:\s*Missing Authorization header\.?\s*Tente novamente\.?/gi;
 const AUTH_HEADER_ERROR_RE = /\bMissing Authorization header\b/gi;
+export const ASSISTANT_REASONING_REDACTED_TEXT =
+  'Detalhes internos desta execução foram omitidos com segurança.';
+const PRIVATE_CREDENTIAL_REASONING_RE =
+  /(?:sk-[a-z0-9_-]{16,}|AKIA[0-9A-Z]{16}|api[_ -]?key\s*[:=]|authorization\s*[:=]|bearer\s+[a-z0-9._-]{20,}|password\s*[:=]|secret\s*[:=])/i;
+const PRIVATE_INTERNAL_REASONING_RE =
+  /\b(?:runtime context|developer prompt|system prompt|hidden runtime)\b|\bskill\s*=|<[^>]*(?:tool_calls|invoke)\b|<[\uFF5C|]{2}DSML/i;
+const PRIVATE_DELIBERATIVE_REASONING_RE =
+  /\b(?:probably not needed|i(?:'|’)ll\s+(?:craft|reply|output|answer|respond)|i\s+will\s+(?:craft|reply|output|answer|respond)|final message)\b/i;
+
+export function sanitizeAssistantReasoningTextForStorage(value: string): string {
+  const text = String(value || '');
+  if (!text) {
+    return '';
+  }
+  return PRIVATE_CREDENTIAL_REASONING_RE.test(text) ||
+    PRIVATE_INTERNAL_REASONING_RE.test(text) ||
+    PRIVATE_DELIBERATIVE_REASONING_RE.test(text)
+    ? ASSISTANT_REASONING_REDACTED_TEXT
+    : text;
+}
 
 export function sanitizeAssistantThreadContentForRead(value: string): string {
   return String(value || '')
-    .replace(
-      MECHANICAL_PRODUCT_SUCCESS_RE,
-      'Consultei seu catálogo real e registrei a observação operacional.',
-    )
-    .replace(
-      MECHANICAL_PRODUCT_AUTH_FAILURE_RE,
-      'Não consegui consultar o catálogo de produtos agora porque sua sessão expirou. Faça login novamente para continuar.',
-    )
-    .replace(/\bCapacidade:\s*self\.health\b/gi, 'Ação operacional: saúde operacional')
-    .replace(/\bself\.health\b/gi, 'saúde operacional')
-    .replace(/\blist_products\b/gi, 'catálogo de produtos')
     .replace(/\bestado oculto da ferramenta\b/gi, 'estado privado')
     .replace(/\bchamada a sistema\b/gi, 'detalhe privado')
     .replace(/\bcamada operacional\b/gi, 'processo privado')
@@ -39,7 +43,6 @@ export function sanitizeAssistantThreadContentForRead(value: string): string {
     .replace(EXCESS_BLANK_LINES_G_RE, '\n\n')
     .trim();
 }
-
 export interface StoredProcessingTraceEntry {
   id: string;
   kind: 'status' | 'tool_call' | 'tool_result';
@@ -88,6 +91,14 @@ export function buildThreadMessageMetadata(
     Object.entries(extraFields || {}).filter(([, v]) => v !== undefined),
   );
   const merged = { ...normalizedBase, ...normalizedExtra };
+  if (typeof merged.reasoningText === 'string') {
+    const safeReasoningText = sanitizeAssistantReasoningTextForStorage(merged.reasoningText);
+    if (safeReasoningText) {
+      merged.reasoningText = safeReasoningText;
+    } else {
+      delete merged.reasoningText;
+    }
+  }
   return Object.keys(merged).length > 0 ? (merged as Prisma.InputJsonValue) : undefined;
 }
 
@@ -165,6 +176,19 @@ export function buildStoredProcessingTraceEntry(
       id: buildTimestampedRuntimeId(`trace_${phase}`),
       kind: 'status',
       phase,
+      label,
+      createdAt: new Date().toISOString(),
+    };
+  }
+  if (event.type === 'memory_loaded') {
+    const label = String(event.message || '').trim();
+    if (!label) {
+      return null;
+    }
+    return {
+      id: buildTimestampedRuntimeId('trace_memory'),
+      kind: 'status',
+      phase: 'thinking',
       label,
       createdAt: new Date().toISOString(),
     };
@@ -297,52 +321,18 @@ export function lowercaseLeadingCharacter(value: string): string {
   return value.charAt(0).toLowerCase() + value.slice(1);
 }
 
-/**
- * Pretty-format a raw tool identifier (e.g. "send_whatsapp-message") into a
- * spaced lowercase phrase usable in PT-BR trace labels.
- */
-export function formatTraceToolLabel(toolName?: string | null): string {
-  const raw = String(toolName || 'ferramenta').trim();
-  const normalized = raw.replace(SEPARATOR_G_RE, ' ').replace(WHITESPACE_G_RE, ' ').toLowerCase();
-  const productLabels: Record<string, string> = {
-    code_outline: 'inspeção da arquitetura interna',
-    search_codebase: 'busca na arquitetura interna',
-    code_detect_issues: 'auditoria da arquitetura interna',
-    run_backend_tests: 'validação operacional',
-    'run backend tests': 'validação operacional',
-    search_web: 'pesquisa na web',
-    refine_response: 'mesa de refinamento',
-    'refine response': 'mesa de refinamento',
-    'mind.capability.extract_structured_text': 'extração estruturada',
-    'mind.capability.extract structured text': 'extração estruturada',
-    'mind.capability.advise_response_depth': 'calibração de profundidade',
-    'mind.capability.advise response depth': 'calibração de profundidade',
-    'mind.capability.refine_prompt': 'refinamento de pedido',
-    'mind.capability.refine prompt': 'refinamento de pedido',
-    create_site: 'criação de site',
-    'create site': 'criação de site',
-    create_image: 'criação de imagem',
-    'create image': 'criação de imagem',
-    list_products: 'catálogo de produtos',
-    'list products': 'catálogo de produtos',
-    get_settings: 'configurações da conta',
-    'get settings': 'configurações da conta',
-    get_billing_status: 'status da assinatura',
-    'get billing status': 'status da assinatura',
-    'self.health': 'saúde operacional',
-  };
-  const productLabel = productLabels[raw] ?? productLabels[normalized];
-  if (productLabel) {
-    return productLabel;
-  }
+const PRIVATE_CREDENTIAL_TOOL_RE =
+  /(?:sk-[a-z0-9_-]{16,}|AKIA[0-9A-Z]{16}|api[_ -]?key\s*[:=]|authorization\s*[:=]|bearer\s+[a-z0-9._-]{20,}|password\s*[:=]|secret\s*[:=])/i;
 
-  if (!normalized) {
-    return 'a ferramenta';
+export function formatTraceToolLabel(toolName?: string | null): string {
+  const raw = String(toolName || '').trim();
+  if (!raw) {
+    return 'ação operacional';
   }
-  return normalized
-    .split(' ')
-    .map((s) => s.toLowerCase())
-    .join(' ');
+  if (PRIVATE_CREDENTIAL_TOOL_RE.test(raw)) {
+    return 'ferramenta protegida';
+  }
+  return raw.replace(WHITESPACE_G_RE, ' ').trim() || 'ação operacional';
 }
 
 /**

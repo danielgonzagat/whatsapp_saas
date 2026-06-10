@@ -75,6 +75,7 @@ describe('KloelGraph route contract', () => {
       'KloelGraph.product-nodes.ts',
       'KloelGraphShell.tsx',
       'KloelGraphShell.helpers.ts',
+      'KloelGraphPendingOverlay.tsx',
       'KloelGraphNodeButton.tsx',
       'KloelGraphFloatingNav.tsx',
       'KloelGraphOverlay.tsx',
@@ -393,5 +394,32 @@ describe('KloelGraph route contract', () => {
     ]);
     expect(swrFetcherMock).toHaveBeenNthCalledWith(1, '/checkout/products');
     expect(swrFetcherMock).toHaveBeenNthCalledWith(2, '/checkout/products/checkout_prod_real');
+  });
+
+  it('keeps checkout graph enrichment bounded while preserving base product nodes', async () => {
+    const checkoutProducts = Array.from({ length: 14 }, (_, index) => ({
+      id: `checkout_prod_${index}`,
+      name: `Produto ${index}`,
+    }));
+
+    swrFetcherMock.mockImplementation(async (url) => {
+      if (url === '/checkout/products') {
+        return checkoutProducts;
+      }
+      const productId = String(url).split('/').at(-1) ?? 'unknown';
+      return {
+        checkouts: [{ id: `${productId}_checkout`, name: 'Checkout', active: true }],
+      };
+    });
+
+    const result = await loadCheckoutGraphProducts();
+
+    expect(result).toHaveLength(14);
+    expect(swrFetcherMock).toHaveBeenCalledTimes(13);
+    expect(result[11].checkouts).toEqual([
+      { id: 'checkout_prod_11_checkout', name: 'Checkout', active: true },
+    ]);
+    expect(result[12].checkouts).toEqual([]);
+    expect(result[13]).toMatchObject({ id: 'checkout_prod_13', name: 'Produto 13' });
   });
 });

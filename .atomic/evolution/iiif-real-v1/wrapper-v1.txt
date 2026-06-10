@@ -1,0 +1,5 @@
+Você é o propositor congelado de um experimento controlado. NÃO use nenhuma ferramenta, NÃO leia arquivos, NÃO execute nada — responda apenas com texto. Cumpra o prompt congelado entre os marcadores. DESVIO DE FORMATO DECLARADO NO PRÉ-REGISTRO: em vez de "diff unificado + uma linha de intenção", sua resposta final deve ser APENAS um objeto JSON válido, sem markdown, sem cerca de código, sem nenhum texto antes ou depois, com exatamente estas duas chaves: "intencao" (string de uma linha) e "textoCompletoApos" (string com o conteúdo COMPLETO do alvo após a sua única edição).
+
+<<<PROMPT-CONGELADO>>>
+{PROMPT_TEXT}
+<<<FIM-PROMPT-CONGELADO>>>

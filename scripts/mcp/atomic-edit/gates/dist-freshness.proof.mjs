@@ -7,7 +7,8 @@
  *   4. mutating dist after the manifest -> fresh=false (STALE detected)
  *   5. no manifest -> fresh=false (never green-by-absence)
  *   6. generated proof/smoke/self-expansion/cache fixtures do not affect source freshness
- *   7. a process boot dist hash detects the already-running stale runtime case
+ *   7. .gitignore excludes the same generated runtime/proof artifact classes
+ *   8. a process boot dist hash detects the already-running stale runtime case
  * Uses an isolated temp root so the real dist manifest is never touched.
  */
 import * as fs from 'node:fs';
@@ -18,6 +19,29 @@ import { computeSourceHash, computeDistHash, writeManifest, isDistFresh, readMan
 const jsonMode = process.argv.includes('--json');
 const results = [];
 const rec = (name, ok, detail) => results.push({ name, ok: Boolean(ok), detail });
+const REQUIRED_GENERATED_GITIGNORE_PATTERNS = Object.freeze([
+  ".proof-*",
+  ".smoke-*",
+  ".self-expansion-*",
+  ".security-mono-proof-*",
+  ".atomic-exec-sandbox*/",
+  ".external-runtime-denial-*/",
+  ".positive-byte-sessions/",
+  "atomic-exec-broker-file-*/",
+  "atomic-edit-dist-*",
+  "atomic-universal-*",
+  ".property-proof-*",
+  ".findings-*",
+  ".findings-probe-*",
+  "property-gate-*/",
+  "probe-gate-*/",
+  "atomic-type-gate-*/",
+  "node-compile-cache/",
+  ".mcp-cache/",
+  ".turbo/",
+  ".cache/",
+  "build/",
+]);
 
 function makeRoot() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dist-fresh-'));
@@ -98,7 +122,26 @@ function makeRoot() {
     writeManifest(root);
     fs.mkdirSync(path.join(root, '.proof-generated', 'src'), { recursive: true });
     fs.mkdirSync(path.join(root, '.positive-byte-sessions', 'session'), { recursive: true });
-    for (const dir of ['.mcp-cache', '.claude', '.turbo', '.cache', 'build']) {
+    for (const dir of [
+      ".mcp-cache",
+      ".claude",
+      ".turbo",
+      ".cache",
+      "build",
+      "node-compile-cache",
+      "atomic-exec-broker-file-123",
+      ".atomic-exec-sandbox-123",
+      ".external-runtime-denial-123",
+      "atomic-edit-dist-123",
+      "atomic-universal-123",
+      ".property-proof-123",
+      ".findings-123",
+      ".findings-probe-123",
+      "property-gate-123",
+      "probe-gate-123",
+      "atomic-type-gate-123",
+      ".security-mono-proof-123",
+    ]) {
       fs.mkdirSync(path.join(root, dir), { recursive: true });
       fs.writeFileSync(path.join(root, dir, 'temp.ts'), 'export const cacheTemp = 1;\n');
     }
@@ -107,7 +150,7 @@ function makeRoot() {
     fs.writeFileSync(path.join(root, '.smoke-anchor.123.ts'), 'export const smokeTemp = 1;\n');
     fs.writeFileSync(path.join(root, '.self-expansion-denied.123.ts'), 'export const expansionTemp = 1;\n');
     const files = sourceFiles(root);
-    const leaked = files.filter((file) => /(^|\/)(\.proof-|\.smoke-|\.self-expansion-|\.positive-byte-sessions|\.mcp-cache|\.claude|\.turbo|\.cache|build)(\/|$)/.test(file));
+    const leaked = files.filter((file) => /(^|\/)(\.proof-|\.smoke-|\.self-expansion-|\.security-mono-proof-|\.atomic-exec-sandbox|\.external-runtime-denial-|\.positive-byte-sessions|\.mcp-cache|\.claude|\.turbo|\.cache|build|node-compile-cache|atomic-exec-broker-file-|atomic-edit-dist-|atomic-universal-|\.property-proof-|\.findings-|\.findings-probe-|property-gate-|probe-gate-|atomic-type-gate-)(\/|$)/.test(file));
     const r = isDistFresh(root);
     rec(
       'generated proof/smoke/self-expansion/cache fixtures do not affect source freshness',
@@ -118,7 +161,23 @@ function makeRoot() {
     fs.rmSync(root, { recursive: true, force: true });
   }
 }
-// 7. already-running process after rebuild: disk is fresh, boot hash is stale.
+// 7. git hygiene ignores the same generated runtime/proof artifact classes.
+{
+  const gitignoreText = fs.readFileSync(new URL("../.gitignore", import.meta.url), "utf8");
+  const patterns = new Set(
+    gitignoreText
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith("#")),
+  );
+  const missing = REQUIRED_GENERATED_GITIGNORE_PATTERNS.filter((pattern) => !patterns.has(pattern));
+  rec(
+    "gitignore excludes generated runtime/proof artifacts that freshness excludes",
+    missing.length === 0,
+    { missing, required: REQUIRED_GENERATED_GITIGNORE_PATTERNS, patternCount: patterns.size },
+  );
+}
+// 8. already-running process after rebuild: disk is fresh, boot hash is stale.
 {
   const root = makeRoot();
   try {

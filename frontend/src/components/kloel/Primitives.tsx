@@ -207,34 +207,54 @@ export function Chip({
 }: ChipProps) {
   const style = CHIP_VARIANTS[variant];
   const Component = onClick ? 'button' : 'span';
+  const chipClassName = cn(
+    'inline-flex items-center gap-1.5 font-medium rounded-full',
+    size === 'sm' ? 'px-2 py-0.5 text-xs' : 'px-3 py-1 text-sm',
+    onClick && 'cursor-pointer hover:opacity-80',
+    className,
+  );
+  const chipStyle = {
+    backgroundColor: style.bg,
+    color: style.text,
+  };
+  const removeButton = onRemove ? (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onRemove();
+      }}
+      className="ml-0.5 hover:opacity-70"
+    >
+      ×
+    </button>
+  ) : null;
+
+  if (onClick && onRemove) {
+    return (
+      <span
+        role="button"
+        tabIndex={0}
+        onClick={onClick}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onClick();
+          }
+        }}
+        className={chipClassName}
+        style={chipStyle}
+      >
+        {children}
+        {removeButton}
+      </span>
+    );
+  }
 
   return (
-    <Component
-      onClick={onClick}
-      className={cn(
-        'inline-flex items-center gap-1.5 font-medium rounded-full',
-        size === 'sm' ? 'px-2 py-0.5 text-xs' : 'px-3 py-1 text-sm',
-        onClick && 'cursor-pointer hover:opacity-80',
-        className,
-      )}
-      style={{
-        backgroundColor: style.bg,
-        color: style.text,
-      }}
-    >
+    <Component onClick={onClick} className={chipClassName} style={chipStyle}>
       {children}
-      {onRemove && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove();
-          }}
-          className="ml-0.5 hover:opacity-70"
-        >
-          ×
-        </button>
-      )}
+      {removeButton}
     </Component>
   );
 }
@@ -316,6 +336,7 @@ export function Avatar({ src, alt, name, size = 'md', status, className }: Avata
         .join('')
         .toUpperCase()
     : '?';
+  const imageSize = { sm: 32, md: 40, lg: 48, xl: 64 }[size];
 
   return (
     <div className={cn('relative inline-flex', className)}>
@@ -331,7 +352,13 @@ export function Avatar({ src, alt, name, size = 'md', status, className }: Avata
         }}
       >
         {src ? (
-          <NextImage src={src} alt={alt || name || 'Avatar'} fill className="object-cover" />
+          <NextImage
+            src={src}
+            alt={alt || name || 'Avatar'}
+            width={imageSize}
+            height={imageSize}
+            className="h-full w-full object-cover"
+          />
         ) : (
           initials
         )}

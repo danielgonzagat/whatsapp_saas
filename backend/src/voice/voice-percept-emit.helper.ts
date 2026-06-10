@@ -1,7 +1,10 @@
-import { randomUUID } from 'node:crypto';
 import type { Logger } from '@nestjs/common';
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { isVoicePerceptEmitEnabled } from './voice-percept-emit.flag';
+import {
+  emitPerceptToMindSpine,
+  type OutboxPrismaDelegate,
+} from '../kloel/mind/coordination/percept-emit.factory';
 
 /**
  * Canonical cognition event type for a Voice *clone/profile creation* — a
@@ -15,11 +18,6 @@ export const VOICE_CLONE_CREATED_EVENT_TYPE = 'cognition.voice.clone_created';
  * a text-to-speech generation by dispatching a voice job.
  */
 export const VOICE_ACTION_EXECUTED_EVENT_TYPE = 'cognition.voice.action_executed';
-
-/** Minimal Prisma surface this helper needs — only the outbox delegate. */
-interface OutboxPrismaDelegate {
-  mindOutboxEvent: PrismaClient['mindOutboxEvent'];
-}
 
 export interface VoiceCloneCreatedPerceptParams {
   readonly workspaceId: string;
@@ -37,25 +35,6 @@ export interface VoiceActionExecutedPerceptParams {
   readonly profileId: string;
   /** Length of the text the action rendered (best-effort metric). */
   readonly textLength: number;
-}
-
-function formatUnknownError(err: unknown): string {
-  if (err instanceof Error) {
-    return err.message;
-  }
-  if (typeof err === 'string') {
-    return err;
-  }
-  try {
-    const serialized: unknown = JSON.stringify(err);
-    if (typeof serialized === 'string') {
-      return serialized;
-    }
-  } catch {
-    // fall through to Object.prototype.toString
-  }
-  const fallback: unknown = Object.prototype.toString.call(err);
-  return typeof fallback === 'string' ? fallback : 'unknown error';
 }
 
 /**
@@ -85,43 +64,22 @@ export async function emitVoiceCloneCreatedPercept(
 
   const idempotencyKey = `cognition.voice.clone_created:${params.profileId}`;
   const subject = `voice:profile:${params.profileId}`;
-  const occurredAt = new Date();
   const payload: Prisma.InputJsonObject = {
     profileId: params.profileId,
     provider: params.provider,
   };
 
-  try {
-    await prisma.mindOutboxEvent.upsert({
-      where: {
-        workspaceId_idempotencyKey: {
-          workspaceId: params.workspaceId,
-          idempotencyKey,
-        },
-      },
-      update: {
-        eventType: VOICE_CLONE_CREATED_EVENT_TYPE,
-        subject,
-        payload,
-        occurredAt,
-      },
-      create: {
-        id: randomUUID(),
-        workspaceId: params.workspaceId,
-        eventType: VOICE_CLONE_CREATED_EVENT_TYPE,
-        subject,
-        payload,
-        idempotencyKey,
-        occurredAt,
-      },
-    });
-  } catch (err: unknown) {
-    logger.warn(
+  await emitPerceptToMindSpine(prisma, logger, {
+    eventType: VOICE_CLONE_CREATED_EVENT_TYPE,
+    workspaceId: params.workspaceId,
+    subject,
+    idempotencyKey,
+    payload,
+    failureLog: (formattedError) =>
       `Voice clone percept emit failed (workspaceId=${params.workspaceId}, ` +
-        `profileId=${params.profileId}); the voice-profile write succeeded and ` +
-        `is unaffected: ${formatUnknownError(err)}`,
-    );
-  }
+      `profileId=${params.profileId}); the voice-profile write succeeded and ` +
+      `is unaffected: ${formattedError}`,
+  });
 
   return true;
 }
@@ -143,44 +101,23 @@ export async function emitVoiceActionExecutedPercept(
 
   const idempotencyKey = `cognition.voice.action_executed:${params.jobId}`;
   const subject = `voice:job:${params.jobId}`;
-  const occurredAt = new Date();
   const payload: Prisma.InputJsonObject = {
     jobId: params.jobId,
     profileId: params.profileId,
     textLength: params.textLength,
   };
 
-  try {
-    await prisma.mindOutboxEvent.upsert({
-      where: {
-        workspaceId_idempotencyKey: {
-          workspaceId: params.workspaceId,
-          idempotencyKey,
-        },
-      },
-      update: {
-        eventType: VOICE_ACTION_EXECUTED_EVENT_TYPE,
-        subject,
-        payload,
-        occurredAt,
-      },
-      create: {
-        id: randomUUID(),
-        workspaceId: params.workspaceId,
-        eventType: VOICE_ACTION_EXECUTED_EVENT_TYPE,
-        subject,
-        payload,
-        idempotencyKey,
-        occurredAt,
-      },
-    });
-  } catch (err: unknown) {
-    logger.warn(
+  await emitPerceptToMindSpine(prisma, logger, {
+    eventType: VOICE_ACTION_EXECUTED_EVENT_TYPE,
+    workspaceId: params.workspaceId,
+    subject,
+    idempotencyKey,
+    payload,
+    failureLog: (formattedError) =>
       `Voice action percept emit failed (workspaceId=${params.workspaceId}, ` +
-        `jobId=${params.jobId}); the voice-job dispatch succeeded and is ` +
-        `unaffected: ${formatUnknownError(err)}`,
-    );
-  }
+      `jobId=${params.jobId}); the voice-job dispatch succeeded and is ` +
+      `unaffected: ${formattedError}`,
+  });
 
   return true;
 }

@@ -6,23 +6,24 @@ import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { StepDot, ThinkingDots, formatDuration } from './ReasoningTimeline.parts';
 import { kloelT } from '@/lib/i18n/t';
 import { E, F, TEXT, MUTED, SURFACE, DIVIDER } from './KloelDashboard.subcomponents';
-import { sanitizeAssistantReasoningTextForDisplay } from '@/lib/kloel-message-ui';
+import {
+  formatAssistantTraceToolLabel,
+  sanitizeAssistantReasoningTextForDisplay,
+} from '@/lib/kloel-message-ui';
 import type { AssistantProcessingTraceEntry, AssistantReasoning } from '@/lib/kloel-message-ui';
 
 /**
  * Real pre-response execution timeline for the Kloel chat.
  *
  * Visible values are public, sanitized model/agent execution context:
- * - reasoning.text       — public processing detail, never raw provider reasoning
+ * - reasoning.text       — provider-emitted reasoning detail, sanitized for secrets
  * - reasoning.summary    — optional public summary (collapses the header)
  * - reasoning.durationMs — measured thinking time
  * - steps                — real tool_call/tool_result events (entry.tool + durationMs)
  * - reasoning.files      — real delivered artifacts
  *
- * Private reasoning_delta text is stripped before this component receives data.
- * When there is no public reasoning text, summary, tool activity, file, duration
- * or active processing, the block does not render (honest empty state — never a
- * fabricated thinking line).
+ * When there is no reasoning text, summary, tool activity, file, or duration,
+ * the block does not render (honest empty state, never a fabricated thinking line).
  */
 interface ReasoningTimelineProps {
   reasoning: AssistantReasoning;
@@ -67,9 +68,9 @@ export function ReasoningTimeline({
   const [collapseOverride, setCollapseOverride] = useState<boolean | null>(null);
   const collapsed = collapseOverride ?? isComplete;
 
-  // Honest empty state: if the model emitted no reasoning and ran no tools and is not
-  // working, there is nothing real to show — render nothing rather than fabricate.
-  if (!hasContent && !isProcessing) {
+  // Honest empty state: if the model emitted no reasoning and the agent produced no
+  // operational trace, there is nothing real to show — even while the turn is pending.
+  if (!hasContent) {
     return null;
   }
 
@@ -83,10 +84,9 @@ export function ReasoningTimeline({
     reasoning.durationMs && reasoning.durationMs > 0
       ? `${kloelT(`Pensou por`)} ${formatDuration(reasoning.durationMs)}`
       : '';
-  // Render the thinking step while processing, or whenever there is public
-  // processing detail to show (so the trace stays visible inside the
-  // collapsible after completion).
-  const shouldRenderThinkingStep = isProcessing || hasPublicReasoningDetail;
+  // Render a thinking step only when the provider exposed public reasoning text.
+  // Operational trace without reasoning stays under execution steps.
+  const shouldRenderThinkingStep = hasPublicReasoningDetail;
 
   return (
     <div style={{ marginBottom: 14, fontFamily: F }}>
@@ -191,7 +191,7 @@ export function ReasoningTimeline({
                     : step.kind === 'tool_call'
                       ? kloelT(`Ação`)
                       : step.label}
-                  {step.tool ? (
+                  {formatAssistantTraceToolLabel(step.tool) ? (
                     <span
                       style={{
                         display: 'inline-flex',
@@ -207,7 +207,7 @@ export function ReasoningTimeline({
                       }}
                     >
                       <FileText size={11} strokeWidth={1.9} aria-hidden="true" />
-                      {step.tool}
+                      {formatAssistantTraceToolLabel(step.tool)}
                     </span>
                   ) : null}
                   {step.riskLabel ? (

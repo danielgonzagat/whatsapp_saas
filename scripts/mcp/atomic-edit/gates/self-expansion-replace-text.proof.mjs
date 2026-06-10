@@ -43,6 +43,16 @@ const checks = [
       source.includes('before.slice(0, start) + entry.newText + before.slice(start + entry.oldText.length)') &&
       source.includes('atomicWrite(absPath, after)'),
   },
+  {
+    name: 'self-expansion guards expectedSha256 once per target across multi-op transactions',
+    ok:
+      source.includes('guardedRelPaths?: Set<string>') &&
+      source.includes('const firstTouch = !guardedRelPaths?.has(relPath)') &&
+      source.includes('if (firstTouch && before !== null) guardSha(before, entry.expectedSha256)') &&
+      source.includes('if (firstTouch) guardedRelPaths?.add(relPath)') &&
+      source.includes('const guardedSelfPaths = new Set<string>()') &&
+      source.includes('applySelfFileOp(op, guardedSelfPaths)'),
+  },
 ];
 
 const failed = checks.filter((check) => !check.ok);

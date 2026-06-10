@@ -22,10 +22,7 @@ export function resolveBadgeLabel(
   badge: string | undefined,
   disabled: boolean | undefined,
 ): string | null {
-  if (disabled) {
-    return null;
-  }
-  return badge ?? null;
+  return badge ?? (disabled ? 'Indisponivel' : null);
 }
 
 /** Resolve cursor. */
@@ -33,11 +30,11 @@ export function resolveCursor(
   interactive: boolean,
   disabled: boolean | undefined,
 ): 'pointer' | 'not-allowed' | 'default' {
-  if (interactive) {
-    return 'pointer';
-  }
   if (disabled) {
     return 'not-allowed';
+  }
+  if (interactive) {
+    return 'pointer';
   }
   return 'default';
 }

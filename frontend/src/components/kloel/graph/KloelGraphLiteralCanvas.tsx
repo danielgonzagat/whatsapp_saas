@@ -531,6 +531,7 @@ export function KloelGraphLiteralCanvas({
     if ((event.target as HTMLElement | SVGElement).dataset?.nodeId) {
       return;
     }
+    setHoveredNode(null);
     cancelAnimationFrame(focusAnimRef.current);
     setIsPanning(true);
     const currentPan = panRef.current;
@@ -680,6 +681,7 @@ export function KloelGraphLiteralCanvas({
         onWheel={onWheel}
         onClick={(event) => {
           if (!(event.target as HTMLElement | SVGElement).dataset?.nodeId) {
+            setHoveredNode(null);
             onClearSelection();
           }
         }}

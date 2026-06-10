@@ -70,6 +70,9 @@ export function MemoryGraphView() {
   const [draftSummary, setDraftSummary] = useState('');
   const [actionStatus, setActionStatus] = useState<'idle' | 'saving' | 'error'>('idle');
   const [memoryTypeFilter, setMemoryTypeFilter] = useState('all');
+  const [memoryStateFilter, setMemoryStateFilter] = useState('all');
+  const [memoryConfidenceFilter, setMemoryConfidenceFilter] = useState('all');
+  const [memoryQuery, setMemoryQuery] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -108,17 +111,97 @@ export function MemoryGraphView() {
     { value: 'summary', label: 'Resumos' },
     { value: 'contradiction', label: 'Contradições' },
   ] as const;
+  const memoryStateFilters = [
+    { value: 'all', label: 'Todos' },
+    { value: 'confirmed', label: 'Confirmadas' },
+    { value: 'uncertain', label: 'Incertas' },
+    { value: 'pinned', label: 'Fixadas' },
+    { value: 'sensitive', label: 'Sensíveis' },
+    { value: 'blocked', label: 'Bloqueadas' },
+    { value: 'archived', label: 'Arquivadas' },
+    { value: 'contradicted', label: 'Contraditas' },
+    { value: 'replaced', label: 'Substituídas' },
+  ] as const;
+  const memoryConfidenceFilters = [
+    { value: 'all', label: 'Todas' },
+    { value: 'high', label: 'Alta' },
+    { value: 'medium', label: 'Média' },
+    { value: 'low', label: 'Baixa' },
+  ] as const;
   const memoryLimit = 60;
   const isCenterNode = (node: MemoryGraphPayload['nodes'][number]) =>
     node.id === 'you' || node.group === 'center';
   const rankMemoryNode = (node: MemoryGraphPayload['nodes'][number]) =>
     (node.pinned ? 1_000 : 0) + (node.importance ?? 0) * 100 + (node.confidence ?? 0) * 10;
+  const normalizeMemorySearchText = (value: string) =>
+    value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+  const memoryQueryNeedle = normalizeMemorySearchText(memoryQuery);
+  const matchesMemoryQuery = (node: MemoryGraphPayload['nodes'][number]) => {
+    if (!memoryQueryNeedle) {
+      return true;
+    }
+    return normalizeMemorySearchText(
+      [
+        node.label,
+        node.summary,
+        node.content,
+        node.group,
+        node.scope,
+        node.state,
+        node.originLabel,
+        ...(node.sourceRefs?.flatMap((ref) => [ref.type, ref.label, ref.ref, ref.url]) ?? []),
+      ]
+        .filter((value): value is string => typeof value === 'string' && value.length > 0)
+        .join(' '),
+    ).includes(memoryQueryNeedle);
+  };
+  const matchesMemoryStateFilter = (node: MemoryGraphPayload['nodes'][number]) => {
+    if (memoryStateFilter === 'all') {
+      return true;
+    }
+    if (memoryStateFilter === 'pinned') {
+      return node.pinned === true || node.state === 'pinned';
+    }
+    if (memoryStateFilter === 'sensitive') {
+      return node.sensitive === true || node.state === 'sensitive';
+    }
+    if (memoryStateFilter === 'blocked') {
+      return node.blockedForAgent === true || node.state === 'blocked';
+    }
+    if (memoryStateFilter === 'archived') {
+      return node.archived === true || node.state === 'archived';
+    }
+    return (node.state ?? 'confirmed') === memoryStateFilter;
+  };
+  const matchesMemoryConfidenceFilter = (node: MemoryGraphPayload['nodes'][number]) => {
+    if (memoryConfidenceFilter === 'all') {
+      return true;
+    }
+    if (typeof node.confidence !== 'number') {
+      return false;
+    }
+    if (memoryConfidenceFilter === 'high') {
+      return node.confidence >= 0.8;
+    }
+    if (memoryConfidenceFilter === 'medium') {
+      return node.confidence >= 0.6 && node.confidence < 0.8;
+    }
+    return node.confidence < 0.6;
+  };
   const centerNodes = graphPayload.nodes.filter(isCenterNode);
   const memoryNodes = graphPayload.nodes.filter((node) => !isCenterNode(node));
-  const filteredMemoryNodes =
+  const typeFilteredMemoryNodes =
     memoryTypeFilter === 'all'
       ? memoryNodes
       : memoryNodes.filter((node) => node.group === memoryTypeFilter);
+  const filteredMemoryNodes = typeFilteredMemoryNodes.filter(
+    (node) =>
+      matchesMemoryStateFilter(node) && matchesMemoryConfidenceFilter(node) && matchesMemoryQuery(node),
+  );
   const visibleMemoryNodes = [...filteredMemoryNodes]
     .sort((left, right) => rankMemoryNode(right) - rankMemoryNode(left))
     .slice(0, memoryLimit);
@@ -204,7 +287,7 @@ export function MemoryGraphView() {
           alignItems: 'center',
           gap: 10,
           flexWrap: 'wrap',
-          maxWidth: 'min(520px, calc(100% - 36px))',
+          maxWidth: 'min(900px, calc(100% - 36px))',
           border: '1px solid rgba(148,163,184,.2)',
           borderRadius: 16,
           background: 'rgba(9,13,24,.82)',
@@ -215,6 +298,16 @@ export function MemoryGraphView() {
         }}
       >
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+          Buscar memória
+          <input
+            type="search"
+            value={memoryQuery}
+            onChange={(event) => setMemoryQuery(event.target.value)}
+            placeholder="Projeto, tema, origem"
+            style={{ ...filterControlStyle, width: 190 }}
+          />
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
           Tipo de memória
           <select
             value={memoryTypeFilter}
@@ -222,6 +315,34 @@ export function MemoryGraphView() {
             style={filterControlStyle}
           >
             {memoryTypeFilters.map((filter) => (
+              <option key={filter.value} value={filter.value}>
+                {filter.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+          Estado da memória
+          <select
+            value={memoryStateFilter}
+            onChange={(event) => setMemoryStateFilter(event.target.value)}
+            style={filterControlStyle}
+          >
+            {memoryStateFilters.map((filter) => (
+              <option key={filter.value} value={filter.value}>
+                {filter.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+          Confiança
+          <select
+            value={memoryConfidenceFilter}
+            onChange={(event) => setMemoryConfidenceFilter(event.target.value)}
+            style={filterControlStyle}
+          >
+            {memoryConfidenceFilters.map((filter) => (
               <option key={filter.value} value={filter.value}>
                 {filter.label}
               </option>
@@ -288,6 +409,44 @@ export function MemoryGraphView() {
               Fechar
             </button>
           </div>
+          {selectedNode.originLabel ? (
+            <div style={{ marginTop: 10, color: 'rgb(148,163,184)', fontSize: 12 }}>
+              Origem · {selectedNode.originLabel}
+            </div>
+          ) : null}
+          {selectedNode.sourceRefs?.length ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+              {selectedNode.sourceRefs.slice(0, 3).map((ref, index) => (
+                <span
+                  key={`${ref.type}:${ref.ref ?? ref.label}:${index}`}
+                  style={{
+                    border: '1px solid rgba(148,163,184,.22)',
+                    borderRadius: 6,
+                    color: 'rgb(203,213,225)',
+                    fontSize: 11,
+                    padding: '4px 8px',
+                  }}
+                >
+                  {ref.type} · {ref.ref ?? ref.url ?? ref.label}
+                </span>
+              ))}
+            </div>
+          ) : null}
+          <label style={{ display: 'block', marginTop: 14, fontSize: 12, color: 'rgb(203,213,225)' }}>
+            Escopo
+            <select
+              value={selectedNode.scope ?? 'user'}
+              onChange={(event) =>
+                updateSelectedNode({ scope: event.target.value as 'user' | 'workspace' | 'shared' })
+              }
+              disabled={actionStatus === 'saving'}
+              style={{ ...filterControlStyle, width: '100%', marginTop: 6 }}
+            >
+              <option value="user">Usuário</option>
+              <option value="workspace">Workspace</option>
+              <option value="shared">Compartilhada</option>
+            </select>
+          </label>
           <label style={{ display: 'block', marginTop: 14, fontSize: 12, color: 'rgb(203,213,225)' }}>
             Resumo
             <textarea

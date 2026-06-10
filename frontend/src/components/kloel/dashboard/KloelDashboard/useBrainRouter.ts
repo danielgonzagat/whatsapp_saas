@@ -2,9 +2,10 @@
 
 import { useCallback } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import { brainDecide } from '@/lib/api/brain';
+import { brainDecide, type BrainDecideAction } from '@/lib/api/brain';
 import { api } from '@/lib/api/core';
 import { KLOEL_CHAT_ROUTE } from '@/lib/kloel-dashboard-context';
+import { formatAssistantTraceToolLabel } from '@/lib/kloel-message-metadata';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import type { DashboardMessage } from '../KloelDashboard.message';
 
@@ -28,18 +29,45 @@ type PublicBrainIntentCopy = {
   target: string;
 };
 
-const PUBLIC_BRAIN_INTENT_COPY: Record<string, PublicBrainIntentCopy> = {
-  list_products: { action: 'consultar', target: 'o catálogo de produtos' },
-  search_contact: { action: 'consultar', target: 'os contatos' },
-  list_conversations: { action: 'consultar', target: 'as conversas recentes' },
-  send_message_via_channel: { action: 'preparar', target: 'o envio de mensagem' },
-  query_revenue_summary: { action: 'consultar', target: 'o resumo financeiro' },
-  inspect_self: { action: 'verificar', target: 'a própria operação' },
-  inspect_runtime: { action: 'verificar', target: 'a saúde do sistema' },
-};
-
 function publicBrainIntentCopy(intent: string): PublicBrainIntentCopy {
-  return PUBLIC_BRAIN_INTENT_COPY[intent] ?? { action: 'executar', target: 'a ação operacional' };
+  const target = formatAssistantTraceToolLabel(intent) || 'ação operacional';
+  return { action: 'executar', target };
+}
+
+function isBrainActionSuccessful(action: BrainDecideAction): boolean {
+  const result = action.result;
+  if (!result || typeof result !== 'object' || Array.isArray(result)) {
+    return true;
+  }
+  return (result as { ok?: unknown }).ok !== false;
+}
+
+function buildBrainActionTrace(actions: BrainDecideAction[] | undefined, requestId: string) {
+  const safeRequestId = requestId || `brain_${Date.now()}`;
+  return (actions ?? []).flatMap((action, index) => {
+    const tool = formatAssistantTraceToolLabel(action.tool) || 'ação operacional';
+    const spanId = `${safeRequestId}_action_${index}`;
+    const success = isBrainActionSuccessful(action);
+    return [
+      {
+        id: `${spanId}_call`,
+        kind: 'tool_call' as const,
+        phase: 'tool_calling' as const,
+        label: `Ação enviada para ${tool}.`,
+        tool,
+        spanId,
+      },
+      {
+        id: `${spanId}_result`,
+        kind: 'tool_result' as const,
+        phase: 'tool_result' as const,
+        label: success ? `Observação recebida de ${tool}.` : `Falha observada em ${tool}.`,
+        tool,
+        spanId,
+        success,
+      },
+    ];
+  });
 }
 
 function readBrainOperatorErrorMessage(error: unknown): string {
@@ -135,6 +163,7 @@ export function useBrainRouter(deps: UseBrainRouterDeps) {
               brainIntent: intent,
               brainResult: resultData ?? null,
               ok: !!(resultData && resultData.ok !== false),
+              processingTrace: buildBrainActionTrace(output.actions, output.requestId),
             },
           },
         ]);

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { MindSelfModelService } from './mind-self-model.service';
+import { MindSelfModelService, SELF_MODEL_RETENTION_VERSIONS } from './mind-self-model.service';
 import { castMock } from '../../../../test/helpers/cast-mock';
 
 describe('MindSelfModelService', () => {
@@ -8,7 +8,12 @@ describe('MindSelfModelService', () => {
   let prisma: {
     mindWorkspaceState: { findUnique: jest.Mock };
     mindDailyReport: { findFirst: jest.Mock };
-    mindSelfModel: { findFirst: jest.Mock; create: jest.Mock; findMany: jest.Mock };
+    mindSelfModel: {
+      findFirst: jest.Mock;
+      create: jest.Mock;
+      findMany: jest.Mock;
+      deleteMany: jest.Mock;
+    };
   };
 
   const baseState = {
@@ -41,6 +46,7 @@ describe('MindSelfModelService', () => {
         findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ ...data })),
         findMany: jest.fn().mockResolvedValue([]),
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
     };
     const module: TestingModule = await Test.createTestingModule({
@@ -186,6 +192,63 @@ describe('MindSelfModelService', () => {
         derivedFrom: {},
       };
       expect(service.detectContradictions(null, next)).toEqual([]);
+    });
+  });
+
+  describe('prune (retention)', () => {
+    it('no-ops on empty workspaceId', async () => {
+      const result = await service.prune('');
+      expect(result.deleted).toBe(0);
+      expect(prisma.mindSelfModel.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it('no-ops when fewer than keepVersions rows exist (no boundary row)', async () => {
+      prisma.mindSelfModel.findMany.mockResolvedValue([]); // boundary lookup empty
+      const result = await service.prune('ws-1', { keepVersions: 200 });
+      expect(result.deleted).toBe(0);
+      expect(prisma.mindSelfModel.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it('deletes rows below the version cutoff AND older than the age floor', async () => {
+      // The Nth-newest version is 50 -> anything strictly below 50 AND older
+      // than the 90-day floor gets reaped.
+      prisma.mindSelfModel.findMany.mockResolvedValue([{ version: 50 }]);
+      prisma.mindSelfModel.deleteMany.mockResolvedValue({ count: 17 });
+
+      const result = await service.prune('ws-1', { keepVersions: 200, maxAgeDays: 90 });
+
+      expect(result.deleted).toBe(17);
+      const where = castMock<[{ where: { workspaceId: string; version: { lt: number } } }]>(
+        prisma.mindSelfModel.deleteMany.mock.calls[0],
+      )[0].where;
+      expect(where.workspaceId).toBe('ws-1');
+      expect(where.version.lt).toBe(50);
+      expect(where).toHaveProperty('snapshotAt');
+    });
+
+    it('uses the SELF_MODEL_RETENTION_VERSIONS default for the boundary skip', async () => {
+      prisma.mindSelfModel.findMany.mockResolvedValue([{ version: 5 }]);
+      prisma.mindSelfModel.deleteMany.mockResolvedValue({ count: 0 });
+
+      await service.prune('ws-1');
+
+      const findArgs = castMock<[{ skip: number; take: number }]>(
+        prisma.mindSelfModel.findMany.mock.calls[0],
+      )[0];
+      // boundary lookup skips keepVersions-1 to land on the Nth-newest row.
+      expect(findArgs.skip).toBe(SELF_MODEL_RETENTION_VERSIONS - 1);
+      expect(findArgs.take).toBe(1);
+    });
+
+    it('snapshot triggers a best-effort prune that never breaks the append', async () => {
+      prisma.mindSelfModel.findMany.mockResolvedValue([{ version: 10 }]);
+      prisma.mindSelfModel.deleteMany.mockRejectedValue(new Error('db down'));
+
+      // snapshot must still resolve with the appended row despite a prune throw.
+      const row = await service.snapshot('ws-1');
+      expect(row.version).toBe(1);
+      // allow the fire-and-forget prune promise to settle.
+      await new Promise((resolve) => setImmediate(resolve));
     });
   });
 });

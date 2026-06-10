@@ -6,7 +6,7 @@ export class Job {}
 class DummyQueue {
   name: string;
 
-  constructor(name?: string, ..._args: any[]) {
+  constructor(name?: string, ..._args: unknown[]) {
     this.name = name || 'dummy';
   }
 

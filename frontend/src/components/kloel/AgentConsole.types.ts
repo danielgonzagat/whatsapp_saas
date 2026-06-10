@@ -118,7 +118,7 @@ export const ACTIVITY_CONFIG: Record<
   agent_thinking: {
     icon: Brain,
     color: colors.text.secondary,
-    label: 'Processando',
+    label: 'Em execução',
   },
   error: {
     icon: AlertCircle,

@@ -154,14 +154,17 @@ describe('sale-ledger-reconcile (KLOEL_SALE_LEDGER_RECONCILE)', () => {
       const out = await reconcileSaleLedger(prisma as unknown as SaleLedgerReconcileClient, 'ws-1');
 
       expect(prisma.kloelSale.updateMany).toHaveBeenCalledTimes(1);
-      const call = prisma.kloelSale.updateMany.mock.calls[0][0];
-      expect(call.where).toEqual({
+      const updateManyCalls = prisma.kloelSale.updateMany.mock.calls as Array<
+        [{ where: Record<string, unknown>; data: { status?: string; paidAt?: Date } }]
+      >;
+      const call = updateManyCalls[0]?.[0];
+      expect(call?.where).toEqual({
         workspaceId: 'ws-1',
         id: 'sale-1',
         status: { not: 'paid' },
       });
-      expect(call.data.status).toBe('paid');
-      expect(call.data.paidAt).toBeInstanceOf(Date);
+      expect(call?.data.status).toBe('paid');
+      expect(call?.data.paidAt).toBeInstanceOf(Date);
       expect(out.flipped).toBe(1);
       expect(out.reconciled).toBe(true);
     });

@@ -97,32 +97,32 @@ function createAssistantTraceEntryFromStreamEvent(
 
   if (event.type === 'tool_call') {
     const spanId = event.spanId || event.callId;
+    const toolLabel = formatLiveTraceToolLabel(event.tool);
     return {
       id: event.callId ? `${event.callId}:call` : `trace_tool_call_${Date.now()}`,
       kind: 'tool_call',
       phase: 'tool_calling',
-      label: sanitizeAssistantTraceLabel(
-        'Consultei contexto operacional relevante antes de responder.',
-      ),
+      label: sanitizeAssistantTraceLabel(`Consultei ${toolLabel} antes de responder.`),
       createdAt: new Date().toISOString(),
-      tool: formatLiveTraceToolLabel(event.tool),
+      tool: toolLabel,
       ...(spanId ? { spanId } : {}),
     };
   }
 
   if (event.type === 'tool_result') {
     const spanId = event.spanId || event.callId;
+    const toolLabel = formatLiveTraceToolLabel(event.tool);
     return {
       id: event.callId ? `${event.callId}:result` : `trace_tool_result_${Date.now()}`,
       kind: 'tool_result',
       phase: 'tool_result',
       label: sanitizeAssistantTraceLabel(
         event.success
-          ? 'Incorporei as observações encontradas antes de responder.'
-          : 'Registrei uma limitação operacional antes de responder.',
+          ? `Incorporei as observações de ${toolLabel} antes de responder.`
+          : `Registrei uma limitação ao usar ${toolLabel} antes de responder.`,
       ),
       createdAt: new Date().toISOString(),
-      tool: formatLiveTraceToolLabel(event.tool),
+      tool: toolLabel,
       success: event.success,
       ...(spanId ? { spanId } : {}),
       ...(event.artifactId ? { artifactId: event.artifactId } : {}),

@@ -47,13 +47,19 @@ describe('SocialButtons', () => {
     expect(screen.getByText('Continuar com Apple')).toBeInTheDocument();
   });
 
-  it('hides Apple button when diagnostic is not ready', () => {
+  it('hides Apple button without logging when diagnostic is not ready', () => {
     mockUseAppleDiagnostic.mockReturnValue(notReadyState);
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
-    const ref = createRef<HTMLDivElement>();
-    render(<SocialButtons googleButtonRef={ref} isLoading={false} onAppleClick={vi.fn()} onFacebookClick={vi.fn()} facebookAvailable={false} facebookSdkReady={false} onTikTokClick={vi.fn()} tikTokAvailable={false} />);
+    try {
+      const ref = createRef<HTMLDivElement>();
+      render(<SocialButtons googleButtonRef={ref} isLoading={false} onAppleClick={vi.fn()} onFacebookClick={vi.fn()} facebookAvailable={false} facebookSdkReady={false} onTikTokClick={vi.fn()} tikTokAvailable={false} />);
 
-    expect(screen.queryByText('Continuar com Apple')).not.toBeInTheDocument();
+      expect(screen.queryByText('Continuar com Apple')).not.toBeInTheDocument();
+      expect(warnSpy).not.toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 
   it('does NOT render Facebook or TikTok buttons', () => {

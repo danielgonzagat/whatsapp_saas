@@ -1,9 +1,10 @@
 # Atomic-edit enforcement — owner wiring (paste-ready)
 
-The atomic-edit MCP ships two PreToolUse hooks. They are **inert until wired**
-into `.claude/settings.json` (a governance-protected file — only the repo owner
-may edit it). This doc is the paste-ready snippet so wiring is a copy/paste, not
-a build.
+The atomic-edit MCP ships host-boundary hooks for Claude and Codex. Claude hooks
+are **inert until wired** into `.claude/settings.json` (a governance-protected
+file — only the repo owner may edit it). Codex strict mode is wired through
+`.codex/hooks.json` or an equivalent host policy. This doc is the paste-ready
+operator surface; the live truth is still the certificate, not this prose.
 
 | Hook | File | Purpose |
 |---|---|---|
@@ -25,7 +26,7 @@ Proof:
 node scripts/mcp/atomic-edit/codex-atomic-only-hook.proof.mjs
 ```
 
-Host wiring still has to happen at the Codex boundary. Until that hook is wired into Codex PreToolUse or an equivalent host policy, `atomic_y_certificate` must keep `codexHostWiring` as `UNJUDGED` instead of pretending whole-host Y is green.
+In this workspace, Codex host wiring is no longer a prose TODO: `atomic_y_certificate` must prove `codexHostWiring`, `codexNoBypassStaticPolicy`, `codexEntrypointContract`, `mcpLauncherHostBoundary`, and `wholeHostActionSpace` GREEN before it may return `Y_COMPLETE`. On a new host or checkout where those domains are not green, the certificate must stay `UNJUDGED` or `RED`; never copy this workspace's result by documentation.
 
 ## Convergence is built in — no wiring, no flag, no toggle
 

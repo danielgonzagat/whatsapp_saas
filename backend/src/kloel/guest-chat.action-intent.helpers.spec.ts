@@ -66,6 +66,20 @@ describe('guest chat action intent helpers', () => {
     });
   });
 
+  it('formats code outline tool results without exposing internal file details', () => {
+    const text = formatToolResult('code_outline', {
+      success: true,
+      file: 'backend/src/kloel/kloel.service.ts',
+      symbols: [{ name: 'KloelService' }, { name: 'think' }],
+    });
+
+    expect(text).toBe('Checagem privada concluída.');
+    expect(text).not.toContain('backend/src');
+    expect(text).not.toContain('KloelService');
+    expect(text).not.toContain('simbolos');
+    expect(text).not.toContain('símbolos');
+  });
+
   it('routes URL deletion with the URL payload preserved', () => {
     const action = detectActionIntent('remove a url https://example.com/oferta no produto Serum?');
 

@@ -7,8 +7,35 @@ export const SINGLE_TOOL_NAME_ENV = 'ATOMIC_SINGLE_TOOL_NAME';
 export const SINGLE_TOOL_ARGS_ENV = 'ATOMIC_SINGLE_TOOL_ARGS_JSON';
 export const DISABLE_HOT_RELOAD_ENV = 'ATOMIC_DISABLE_HOT_RELOAD';
 export const FORCE_HOT_RELOAD_ENV = 'ATOMIC_FORCE_HOT_RELOAD';
+export const FRESH_TOOL_TIMEOUT_ENV = 'ATOMIC_FRESH_TOOL_TIMEOUT_MS';
 
 const MAX_CHILD_OUTPUT = 50 * 1024 * 1024;
+
+// A delegated tool call runs in a child `node dist/server.js` via the BLOCKING
+// spawnSync in defaultCallFreshTool. Without a ceiling, a child that never
+// returns (e.g. a wedged browser launch) blocks this server's event loop
+// forever — the exact failure this guard prevents. Cap it so a delegated call
+// that blows the cap fails loudly instead of hanging the whole MCP. Generous
+// default so legitimate slow tools (large edits, audits) are unaffected;
+// override via env when needed.
+const DEFAULT_FRESH_TOOL_TIMEOUT_MS = 180_000;
+export function freshToolTimeoutMs(env: NodeJS.ProcessEnv = process.env): number {
+  const raw = Number(env[FRESH_TOOL_TIMEOUT_ENV]);
+  return Number.isFinite(raw) && raw >= 1_000 ? Math.trunc(raw) : DEFAULT_FRESH_TOOL_TIMEOUT_MS;
+}
+
+// Tools that own long-lived OS resources must NEVER be delegated to a fresh,
+// single-shot runtime. The Chrome DevTools bridge keeps a persistent headless
+// browser alive in-process across calls; delegating it would (a) spawn a brand-
+// new browser per call (destroying page/session continuity) and (b) risk a
+// browser-launch hang inside the blocking spawnSync, wedging the whole MCP
+// server. These always run in-process against the boot-time dist; edits to them
+// take effect on the next MCP restart — the correct tradeoff for a
+// resource-owning bridge.
+const NON_DELEGATABLE_TOOL_PREFIXES = ['chrome_devtools_'];
+export function isNonDelegatableTool(name: string): boolean {
+  return NON_DELEGATABLE_TOOL_PREFIXES.some((prefix) => name.startsWith(prefix));
+}
 
 type ToolCallback = (args: unknown, extra: unknown) => unknown | Promise<unknown>;
 type RegisterTool = (name: string, config: unknown, callback: ToolCallback) => unknown;
@@ -108,7 +135,19 @@ async function defaultCallFreshTool(atomicRoot: string, env: NodeJS.ProcessEnv, 
     },
     encoding: 'utf8',
     maxBuffer: MAX_CHILD_OUTPUT,
+    timeout: freshToolTimeoutMs(env),
+    killSignal: 'SIGKILL',
   });
+
+  if (child.error) {
+    const code = (child.error as NodeJS.ErrnoException).code;
+    if (code === 'ETIMEDOUT') {
+      throw new Error(
+        `fresh Atomic tool call for ${toolName} timed out after ${freshToolTimeoutMs(env)}ms (delegated runtime hung); refusing to block the server further`,
+      );
+    }
+    throw child.error;
+  }
 
   const parsed = parseJsonObject(child.stdout.trim());
   if (child.status !== 0 || !parsed || parsed.ok !== true) {
@@ -154,6 +193,10 @@ export function installHotReloadingToolCallbacks(
   target.registerTool = ((name: string, config: unknown, callback: ToolCallback): unknown => {
     registry.set(name, callback);
     const wrapped: ToolCallback = async (args, extra) => {
+      // Resource-owning bridges (e.g. chrome_devtools_*) always run in-process —
+      // delegating them would break session continuity and risk wedging the
+      // server on a blocking child spawn. See isNonDelegatableTool.
+      if (isNonDelegatableTool(name)) return callback(args, extra);
       const delegate = options.shouldDelegate
         ? options.shouldDelegate(name)
         : shouldDelegateToFreshRuntime(atomicRoot, bootDistHash, env);

@@ -76,7 +76,9 @@ describe('GdprService', () => {
     workspaceId: 'ws_1',
   };
 
-  const requestedAt = new Date('2026-05-10T12:00:00.000Z');
+  // Relative to wall clock so the request always sits inside the 30-day deletion window
+  // (a hardcoded date rots: once >30 days old, processDeletion takes the FAILED branch).
+  const requestedAt = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
 
   const gdprRecord = {
     id: 'gdpr_1',

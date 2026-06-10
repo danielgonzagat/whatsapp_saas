@@ -51,6 +51,19 @@ function buildMessageResponse(
   };
 }
 
+type MailboxUpdateArg = {
+  where: unknown;
+  data: { lastSyncAt?: Date; metadata?: { syncedMessageIds?: string[] } };
+};
+
+const firstUpdateArg = (mock: jest.Mock): MailboxUpdateArg => {
+  const call = (mock.mock.calls as Array<[MailboxUpdateArg]>)[0];
+  if (!call) {
+    throw new Error('mailboxConnection.update was not called');
+  }
+  return call[0];
+};
+
 describe('GmailSyncService', () => {
   let prismaMock: ReturnType<typeof createPartialPrismaMock>;
   let omnichannelMock: { handleIncomingMessage: jest.Mock<Promise<void>, [unknown]> };
@@ -111,16 +124,7 @@ describe('GmailSyncService', () => {
           from: 'sender@example.com',
         }),
       );
-      const [updateCall] = (
-        prismaMock.mailboxConnection.update.mock.calls as Array<
-          [
-            {
-              where: unknown;
-              data: { lastSyncAt: Date; metadata?: { syncedMessageIds?: string[] } };
-            },
-          ]
-        >
-      )[0];
+      const updateCall = firstUpdateArg(prismaMock.mailboxConnection.update as jest.Mock);
       expect(updateCall.where).toEqual({ id: 'mb-1', workspaceId: 'ws-1' });
       expect(updateCall.data.lastSyncAt).toBeInstanceOf(Date);
       expect(updateCall.data.metadata?.syncedMessageIds).toEqual(
@@ -181,11 +185,7 @@ describe('GmailSyncService', () => {
       await service.syncLatestInbox(connection);
 
       expect(omnichannelMock.handleIncomingMessage).not.toHaveBeenCalled();
-      const [updateCall] = (
-        prismaMock.mailboxConnection.update.mock.calls as Array<
-          [{ where: unknown; data: { metadata?: { syncedMessageIds?: string[] } } }]
-        >
-      )[0];
+      const updateCall = firstUpdateArg(prismaMock.mailboxConnection.update as jest.Mock);
       expect(updateCall.where).toEqual({ id: 'mb-1', workspaceId: 'ws-1' });
       expect(updateCall.data.metadata?.syncedMessageIds).toEqual(
         expect.arrayContaining(['msg-1', 'msg-2']),

@@ -210,7 +210,7 @@ describe('KloelComposerService', () => {
 
       const result = await service.executeComposerCapability({
         capability: 'refine_response',
-        message: 'Refine a resposta sobre o produto sem expor raciocínio bruto.',
+        message: 'Refine a resposta sobre o produto expondo raciocínio bruto real quando existir.',
         workspaceId: 'ws-refine',
         composerContext: 'Produto vinculado: Serum Graph Proof.',
       });
@@ -219,8 +219,8 @@ describe('KloelComposerService', () => {
       const prompt = request?.messages?.[0]?.content || '';
       expect(prompt).toContain('Mesa de refinamento');
       expect(prompt).toContain('Produto vinculado: Serum Graph Proof.');
-      expect(prompt).toContain('ações executadas');
-      expect(prompt).toContain('não escreva “ferramentas utilizadas”');
+      expect(prompt).toContain('preserve o raciocínio bruto/provider reasoning');
+      expect(prompt).toContain('nomes públicos de ferramentas e capacidades podem aparecer');
       expect(prompt).toContain('tool/function calling');
       expect(prompt).toContain('Use Markdown real e respirado');
       expect(prompt).toContain('## Diagnóstico executivo');

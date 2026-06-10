@@ -74,14 +74,14 @@ describe('KloelThinkerService', () => {
 
       // The composer observation event is the public SSE wire: it must never
       // carry the raw generated-site HTML. The hardened tool_result event no
-      // longer ships ANY raw result payload over the wire (only a sanitized
-      // PT-BR tool label + risk summary), which is a strictly stronger guarantee
+      // longer ships ANY raw result payload over the wire (only the public
+      // tool id + risk summary), which is a strictly stronger guarantee
       // than the previous omitted-bytes summary.
       expect(JSON.stringify(resultEvent)).not.toContain(generatedSiteHtml);
       expect(resultEvent).toEqual(
         expect.objectContaining({
           type: 'tool_result',
-          tool: 'criação de site',
+          tool: 'create_site',
           success: true,
         }),
       );

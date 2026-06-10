@@ -27,6 +27,11 @@ jest.mock('../auth/email.service', () => ({
   })),
 }));
 
+// expect.objectContaining returns `any` in jest's typings; this typed wrapper keeps
+// nested matcher property assignments lint-safe without suppressions.
+const objectShape = (shape: Record<string, unknown>): Record<string, unknown> =>
+  expect.objectContaining(shape) as Record<string, unknown>;
+
 /**
  * P0-B — campaigns bulk-blast compliance/billing leak.
  *
@@ -124,9 +129,9 @@ describe('CampaignsService — compliant WhatsApp bulk send flag', () => {
     // stats reflect a successful send
     expect(mockPrisma.campaign.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
+        data: objectShape({
           status: 'COMPLETED',
-          stats: expect.objectContaining({ sent: 1, failed: 0 }),
+          stats: objectShape({ sent: 1, failed: 0 }),
         }),
       }),
     );
@@ -143,9 +148,9 @@ describe('CampaignsService — compliant WhatsApp bulk send flag', () => {
 
     expect(mockPrisma.campaign.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
+        data: objectShape({
           status: 'COMPLETED',
-          stats: expect.objectContaining({ sent: 1, failed: 0 }),
+          stats: objectShape({ sent: 1, failed: 0 }),
         }),
       }),
     );
@@ -164,9 +169,9 @@ describe('CampaignsService — compliant WhatsApp bulk send flag', () => {
     expect(mockMetaWhatsApp.sendTextMessage).not.toHaveBeenCalled();
     expect(mockPrisma.campaign.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
+        data: objectShape({
           status: 'COMPLETED',
-          stats: expect.objectContaining({ sent: 0, failed: 1 }),
+          stats: objectShape({ sent: 0, failed: 1 }),
         }),
       }),
     );

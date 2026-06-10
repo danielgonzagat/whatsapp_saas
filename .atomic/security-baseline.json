@@ -1,7 +1,65 @@
 {
   "writeGates": 14,
-  "forbiddenExecLaws": 15,
+  "forbiddenExecLaws": 18,
   "nativeEditBans": 4,
   "syncByteFloorGates": 3,
-  "byteFloorGuards": 4
+  "byteFloorGuards": 4,
+  "writeGatesBehaviorFixtures": [
+    "write-gate:bindingGate",
+    "write-gate:configKeyGate",
+    "write-gate:contractEdgeGate",
+    "write-gate:findingsDeltaGate",
+    "write-gate:iacReferenceGate",
+    "write-gate:prismaReferenceGate",
+    "write-gate:publicContractGate",
+    "write-gate:reexportSymbolGate",
+    "write-gate:renderConformanceGate",
+    "write-gate:securityGate",
+    "write-gate:structuralLintGate",
+    "write-gate:supplyChainGate",
+    "write-gate:telemetryEmissionGate",
+    "write-gate:typeSoundnessGate"
+  ],
+  "writeGatesBehaviorSha256": "511fe7def943bf025cdf23dfca11d60251ec868ad39cde2c60bcb9d95d878a5d",
+  "forbiddenExecLawsBehaviorFixtures": [
+    "forbidden-command:disk-destructive",
+    "forbidden-command:find-delete",
+    "forbidden-command:fork-bomb",
+    "forbidden-command:git-config-alias",
+    "forbidden-command:git-restore",
+    "forbidden-command:locked-auditor-mutation",
+    "forbidden-command:long-rm-recursive",
+    "forbidden-command:no-verify",
+    "forbidden-command:pipe-to-shell",
+    "forbidden-command:plain-force-push",
+    "forbidden-command:plus-refspec-push",
+    "forbidden-command:prisma-db-push",
+    "forbidden-command:root-rm-rf",
+    "forbidden-command:shell-alias",
+    "forbidden-command:shell-eval",
+    "forbidden-command:shell-source",
+    "forbidden-command:short-force-push",
+    "forbidden-command:skip-ci-tag"
+  ],
+  "forbiddenExecLawsBehaviorSha256": "7e4ef899acf1e3e56747851f1ff148eb1a2e9c1a3c28e26b74e0a8574ccc22ae",
+  "nativeEditBansBehaviorFixtures": [
+    "native-edit-ban:Edit",
+    "native-edit-ban:MultiEdit",
+    "native-edit-ban:NotebookEdit",
+    "native-edit-ban:Write"
+  ],
+  "nativeEditBansBehaviorSha256": "95bc433f1f7c39d35391c2d607243c6cc19a77494d3cc8c02403d95b9ad834b6",
+  "syncByteFloorGatesBehaviorFixtures": [
+    "sync-write-gate:iacReferenceGate",
+    "sync-write-gate:securityGate",
+    "sync-write-gate:typeSoundnessGate"
+  ],
+  "syncByteFloorGatesBehaviorSha256": "3ac5154794241861dd6f73e93d4c4f4b3341a7fba4a8abddc3c6784dd586583a",
+  "byteFloorGuardsBehaviorFixtures": [
+    "byte-floor-guard:assertSelfExpansionAdmission",
+    "byte-floor-guard:checkConnectionByteFloor",
+    "byte-floor-guard:checkSupplyChainByteFloor",
+    "byte-floor-guard:runSyncWriteGatesAt"
+  ],
+  "byteFloorGuardsBehaviorSha256": "2185b0deb0a469e97682f2336f728d7d72e890cb889686acb3da6e8bcf027405"
 }

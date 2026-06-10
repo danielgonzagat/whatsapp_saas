@@ -190,7 +190,9 @@ export class FakePrisma {
         const fromIn = args.where.fromId?.in;
         const toIn = args.where.toId?.in;
         const filtered = this.edges
-          .filter((e) => args.where.workspaceId === undefined || e.workspaceId === args.where.workspaceId)
+          .filter(
+            (e) => args.where.workspaceId === undefined || e.workspaceId === args.where.workspaceId,
+          )
           .filter((e) => fromIn === undefined || fromIn.includes(e.fromId))
           .filter((e) => toIn === undefined || toIn.includes(e.toId))
           .map((e) => ({ fromId: e.fromId, toId: e.toId, relation: e.relation }));
@@ -242,7 +244,9 @@ export class FakePrisma {
         take?: number;
       }): Promise<BeliefRow[]> => {
         const filtered = this.beliefs
-          .filter((b) => args.where.workspaceId === undefined || b.workspaceId === args.where.workspaceId)
+          .filter(
+            (b) => args.where.workspaceId === undefined || b.workspaceId === args.where.workspaceId,
+          )
           .filter((b) => {
             const gte = args.where.updatedAt?.gte;
             return gte === undefined || b.updatedAt.getTime() >= gte.getTime();
@@ -274,13 +278,10 @@ export class FakeVectors {
       Promise.resolve({ embedding: this.nextEmbedding, tokensUsed: 7 }),
   );
 
-  constructor(public nextEmbedding: number[] = new Array(1536).fill(0.001)) {}
+  constructor(public nextEmbedding: number[] = Array.from({ length: 1536 }, () => 0.001)) {}
 }
 
-export function buildServiceWithVectors(
-  prisma: FakePrisma,
-  vectors: FakeVectors,
-): MemoryService {
+export function buildServiceWithVectors(prisma: FakePrisma, vectors: FakeVectors): MemoryService {
   const config = new ConfigService();
   return new MemoryService(config, prisma, vectors);
 }

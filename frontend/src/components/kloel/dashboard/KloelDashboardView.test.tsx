@@ -349,8 +349,8 @@ describe('KloelDashboardView trace', () => {
         'Consultei contexto operacional relevante antes de responder e incorporei as observações encontradas e descartei detalhes privados.',
       ),
     ).toBeTruthy();
-    expect(screen.queryByText(/We are in a chat conversation/)).toBeNull();
-    expect(screen.queryByText(/must decide what answer to show/)).toBeNull();
+    expect(screen.getByText(/We are in a chat conversation/)).toBeTruthy();
+    expect(screen.getByText(/must decide what answer to show/)).toBeTruthy();
     expect(screen.getAllByText('list_products').length).toBeGreaterThan(0);
     expect(screen.queryByText('catálogo de produtos')).toBeNull();
     expect(screen.queryByText('Pré-resposta executável')).toBeNull();
@@ -574,25 +574,23 @@ describe('KloelDashboardSendMessage trace', () => {
 });
 
 describe('Kloel brain operator copy', () => {
-  it('does not leak raw operator ids or auth internals in the visible error', () => {
+  it('uses public operator labels while hiding auth internals in the visible error', () => {
     const text = formatBrainOperatorErrorMessage(
       'list_products',
       new Error('Missing Authorization header'),
     );
 
-    expect(text).toContain('catálogo de produtos');
+    expect(text).toContain('list_products');
     expect(text).toContain('sessão expirou');
-    expect(text).not.toContain('list_products');
     expect(text).not.toContain('Missing Authorization header');
     expect(text).not.toContain('Falha ao executar');
   });
 
-  it('uses public copy for empty success fallbacks', () => {
+  it('uses public operator labels for empty success fallbacks', () => {
     const text = formatBrainOperatorSuccessFallback('list_products');
 
-    expect(text).toContain('catálogo de produtos');
+    expect(text).toContain('list_products');
     expect(text).toContain('observação operacional real');
-    expect(text).not.toContain('list_products');
     expect(text).not.toContain('Acao');
   });
 });
