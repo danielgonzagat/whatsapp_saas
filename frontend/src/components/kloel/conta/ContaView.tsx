@@ -180,6 +180,7 @@ export default function ContaView() {
     { key: 'equipe', label: 'Equipe', icon: Icons.users, statusKey: null },
     { key: 'apps', label: 'Apps', icon: Icons.globe, statusKey: null },
     { key: 'seguranca', label: 'Seguranca', icon: Icons.shield, statusKey: null },
+    { key: 'notificacoes', label: 'Notificacoes', icon: Icons.bell, statusKey: null },
     { key: 'idiomas', label: 'Idiomas', icon: Icons.language, statusKey: null },
     { key: 'sair', label: 'Sair', icon: Icons.logout, statusKey: null },
   ];

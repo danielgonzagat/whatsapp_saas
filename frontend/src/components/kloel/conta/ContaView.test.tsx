@@ -97,6 +97,7 @@ describe('ContaView', () => {
       'Equipe',
       'Apps',
       'Seguranca',
+      'Notificacoes',
       'Idiomas',
     ]) {
       expect(screen.getByRole('button', { name: new RegExp(name, 'i') })).toBeTruthy();
