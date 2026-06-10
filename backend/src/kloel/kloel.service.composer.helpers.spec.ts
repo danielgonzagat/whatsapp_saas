@@ -5,6 +5,14 @@ import {
   resolveComposerCapability,
 } from './kloel.service.composer.helpers';
 
+/** Convertible document attachment (mirrors a real composer upload row). */
+const DOCX_ATTACHMENT = {
+  name: 'contrato.docx',
+  mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  kind: 'document',
+  url: 'https://app.kloel.test/storage/local/tok-1.sig',
+};
+
 describe('kloel.service.composer.helpers', () => {
   describe('extractComposerMetadata', () => {
     it('returns nulls when metadata is missing or invalid', () => {
@@ -35,6 +43,9 @@ describe('kloel.service.composer.helpers', () => {
       expect(extractComposerMetadata({ capability: 'search_web' }).capability).toBe('search_web');
       expect(extractComposerMetadata({ capability: 'refine_response' }).capability).toBe(
         'refine_response',
+      );
+      expect(extractComposerMetadata({ capability: 'document_to_markdown' }).capability).toBe(
+        'document_to_markdown',
       );
       expect(extractComposerMetadata({ capability: 'unknown' }).capability).toBe(null);
     });
@@ -81,6 +92,61 @@ describe('kloel.service.composer.helpers', () => {
       expect(inferImplicitComposerCapability('landing page bonita', 'chat')).toBe(null);
       expect(inferImplicitComposerCapability('crie um relatorio', 'chat')).toBe(null);
     });
+
+    it('fires document_to_markdown with a convertible attachment AND conversion intent', () => {
+      expect(
+        inferImplicitComposerCapability('converta esse contrato para markdown', 'chat', [
+          DOCX_ATTACHMENT,
+        ]),
+      ).toBe('document_to_markdown');
+      expect(
+        inferImplicitComposerCapability('extraia o texto deste documento', 'chat', [
+          DOCX_ATTACHMENT,
+        ]),
+      ).toBe('document_to_markdown');
+    });
+
+    it('does NOT fire document_to_markdown without an attachment', () => {
+      expect(inferImplicitComposerCapability('converta esse contrato para markdown', 'chat')).toBe(
+        null,
+      );
+      expect(
+        inferImplicitComposerCapability('converta esse contrato para markdown', 'chat', []),
+      ).toBe(null);
+    });
+
+    it('does NOT fire document_to_markdown with an attachment but no conversion intent', () => {
+      expect(
+        inferImplicitComposerCapability('resuma esse contrato por favor', 'chat', [
+          DOCX_ATTACHMENT,
+        ]),
+      ).toBe(null);
+      // A conversion verb without a markdown target is not enough.
+      expect(
+        inferImplicitComposerCapability('converta esse contrato', 'chat', [DOCX_ATTACHMENT]),
+      ).toBe(null);
+    });
+
+    it('does NOT fire document_to_markdown for url-less or image attachments', () => {
+      expect(
+        inferImplicitComposerCapability('converta esse contrato para markdown', 'chat', [
+          { ...DOCX_ATTACHMENT, url: null },
+        ]),
+      ).toBe(null);
+      expect(
+        inferImplicitComposerCapability('converta esse arquivo para markdown', 'chat', [
+          { name: 'foto.png', mimeType: 'image/png', kind: 'image', url: 'https://x.test/f.png' },
+        ]),
+      ).toBe(null);
+    });
+
+    it('does NOT fire document_to_markdown outside chat mode', () => {
+      expect(
+        inferImplicitComposerCapability('converta esse contrato para markdown', 'sales', [
+          DOCX_ATTACHMENT,
+        ]),
+      ).toBe(null);
+    });
   });
 
   describe('resolveComposerCapability', () => {
@@ -97,6 +163,14 @@ describe('kloel.service.composer.helpers', () => {
 
     it('returns null when no explicit and nothing to infer', () => {
       expect(resolveComposerCapability('oi tudo bem', 'chat', null)).toBe(null);
+    });
+
+    it('forwards attachments so the implicit document conversion can fire', () => {
+      expect(
+        resolveComposerCapability('converta esse contrato para markdown', 'chat', null, [
+          DOCX_ATTACHMENT,
+        ]),
+      ).toBe('document_to_markdown');
     });
   });
 

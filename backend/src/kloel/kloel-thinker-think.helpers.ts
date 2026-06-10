@@ -188,7 +188,14 @@ export async function finalizeSuccessfulReply(
   streamWriter.close();
 }
 
-function buildComposerCapabilityTraceResult(
+/**
+ * Redact heavyweight capability payloads (generated site HTML, converted
+ * document markdown) from the public tool_result trace: the body is replaced
+ * by its byte count plus an explicit omission flag, while public fields
+ * (capability id, filenames, download URLs) pass through. Exported so specs
+ * can verify the zero-leak contract directly.
+ */
+export function buildComposerCapabilityTraceResult(
   composerCapability: ComposerCapability,
   metadata: Record<string, unknown> | undefined,
 ): Record<string, unknown> {
@@ -230,9 +237,7 @@ function isComposerConfigurationError(error: unknown): boolean {
   return message === ERR_IMAGE_API_KEY_MISSING || message === ERR_SITE_API_KEY_MISSING;
 }
 
-function buildComposerCapabilityFailureContent(
-  composerCapability: ComposerCapability,
-): string {
+function buildComposerCapabilityFailureContent(composerCapability: ComposerCapability): string {
   if (composerCapability === 'create_site') {
     return 'A criação de site está conectada, mas a configuração de geração de sites ainda não foi concluída neste ambiente. Finalize a configuração e tente novamente.';
   }
