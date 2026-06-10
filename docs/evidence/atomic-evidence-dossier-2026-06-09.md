@@ -77,7 +77,23 @@ faz). Mora em `scripts/mcp/atomic-edit/**` — sob lock do front `darwin-godel-t
 no momento da descoberta; este dossiê + repro são o handoff. Quando consertado, o
 repro imprime `defectPresent:false` e vira regression-proof.
 
-## 4. Leitura honesta do conjunto
+## 4. AtomicBench v2 — as refutações viraram correções (mesma janela)
+
+O v2 (`mutation-bench-v2.mjs`, commit `e66b95bd7`) responde ao painel ponto a ponto:
+
+- **Determinismo agora é TEOREMA DE HASH, não alegação**: corpus lido de
+  `git ls-tree/show` no commit ancorado `e3a2c948` (working tree nunca é tocado);
+  duas execuções produziram JSONs **sha256 byte-idênticos** (`361eb5fa…`). A
+  auto-minagem do v1 morreu por construção.
+- **Acurácia (não só enforcement) verificada onde há árbitro independente**: braço
+  JSON julgado também por `JSON.parse` — 160 propostas, **0 desacordos** juiz×árbitro.
+- **Numeradores limpos**: gramáticas cegas (derivadas da evidência, não de sonda)
+  fora de TODOS os numeradores; benigno real = 95/135 (os 40 FP seguem 100% SQL =
+  mis-routing da §3); check de base vácuo removido.
+- Resultado ancorado: 643 quebradoras — controle persistiu **410** inválidos, atomic
+  **0** vazamentos do juiz; acoplamento recusa↔persistência-inválida 1:1 nos 643.
+
+## 5. Leitura honesta do conjunto
 
 O que este dossiê demonstra não é "o atomic é perfeito" — é o contrário e melhor: **o
 processo encontra e localiza as próprias mentiras**. Em uma janela: a produção provou
