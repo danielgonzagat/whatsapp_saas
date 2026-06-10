@@ -227,4 +227,208 @@ export const KLOEL_CHAT_TOOLS_CODE: ChatCompletionTool[] = [
       },
     },
   },
+  // ── CodeGraph (grafo de conhecimento do código) ──
+  {
+    type: 'function',
+    function: {
+      name: 'codegraph_status',
+      description:
+        'Mostra o status do grafo de conhecimento do código (disponibilidade, contagem de nós/arestas, frescor). ' +
+        'Use antes de consultas codegraph_* para saber se o grafo está pronto.',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'codegraph_search',
+      description:
+        'Busca semântica no grafo de conhecimento do código: encontra símbolos, arquivos e relações por descrição. ' +
+        'Prefira sobre search_codebase quando a pergunta for conceitual ("como X funciona", "o que toca Y").',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: {
+            type: 'string',
+            description: 'Pergunta ou termos de busca sobre o código',
+          },
+        },
+        required: ['query'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'codegraph_context',
+      description:
+        'Monta um pacote de contexto do grafo de código para uma tarefa (visão geral, módulo, fluxo). ' +
+        'Use para se orientar antes de mudanças amplas.',
+      parameters: {
+        type: 'object',
+        properties: {
+          task: {
+            type: 'string',
+            description: 'Tarefa-alvo do contexto (opcional, default: overview)',
+          },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'codegraph_callers',
+      description:
+        'Lista quem CHAMA um símbolo (funções/métodos que dependem dele), via o grafo de chamadas. ' +
+        'Use para avaliar quem quebra se o símbolo mudar.',
+      parameters: {
+        type: 'object',
+        properties: {
+          symbol: {
+            type: 'string',
+            description: 'Nome do símbolo (função, método ou classe)',
+          },
+        },
+        required: ['symbol'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'codegraph_callees',
+      description:
+        'Lista o que um símbolo CHAMA (dependências de saída), via o grafo de chamadas. ' +
+        'Use para entender o que uma função usa por baixo.',
+      parameters: {
+        type: 'object',
+        properties: {
+          symbol: {
+            type: 'string',
+            description: 'Nome do símbolo (função, método ou classe)',
+          },
+        },
+        required: ['symbol'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'codegraph_impact',
+      description:
+        'Analisa o raio de impacto de mudar um símbolo: dependentes diretos e transitivos no grafo do código.',
+      parameters: {
+        type: 'object',
+        properties: {
+          symbol: {
+            type: 'string',
+            description: 'Nome do símbolo a avaliar',
+          },
+        },
+        required: ['symbol'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'codegraph_node',
+      description:
+        'Detalha um nó do grafo de código: arquivo, assinatura, vizinhos e metadados do símbolo.',
+      parameters: {
+        type: 'object',
+        properties: {
+          symbol: {
+            type: 'string',
+            description: 'Nome do símbolo a detalhar',
+          },
+        },
+        required: ['symbol'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'codegraph_files',
+      description:
+        'Lista os arquivos indexados no grafo de conhecimento do código com seus papéis no sistema.',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  // ── Cognitive Bridge (LSP / OpenAPI / AsyncAPI / análise estática) ──
+  {
+    type: 'function',
+    function: {
+      name: 'lsp_diagnostics',
+      description:
+        'Roda diagnósticos de linguagem (erros/avisos de tipo e sintaxe nível LSP) em um arquivo do repositório.',
+      parameters: {
+        type: 'object',
+        properties: {
+          file: {
+            type: 'string',
+            description: 'Caminho relativo do arquivo a diagnosticar',
+          },
+        },
+        required: ['file'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'openapi_route',
+      description:
+        'Consulta o contrato OpenAPI do backend: encontra rotas HTTP, métodos, parâmetros e schemas por termo.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: {
+            type: 'string',
+            description: 'Rota, método ou termo a procurar (ex: /kloel/think)',
+          },
+        },
+        required: ['query'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'asyncapi_events',
+      description:
+        'Lista os eventos assíncronos (spine/filas) de um domínio: nomes, payloads e produtores/consumidores.',
+      parameters: {
+        type: 'object',
+        properties: {
+          domain: {
+            type: 'string',
+            description: 'Domínio de eventos (ex: commerce, mind, whatsapp)',
+          },
+        },
+        required: ['domain'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'static_analysis',
+      description:
+        'Executa análise estática consolidada (complexidade, padrões de risco, métricas) sobre um arquivo.',
+      parameters: {
+        type: 'object',
+        properties: {
+          file: {
+            type: 'string',
+            description: 'Caminho relativo do arquivo a analisar',
+          },
+        },
+        required: ['file'],
+      },
+    },
+  },
 ];
