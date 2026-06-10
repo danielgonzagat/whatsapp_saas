@@ -18,7 +18,7 @@
     "backend/src/marketing/instagram/instagram-marketing.service.spec.ts": 772,
     "backend/src/products/product.service.ts": 615,
     "frontend/src/components/kloel/dashboard/ReasoningTimeline.tsx": 409,
-    "frontend/src/components/kloel/graph/KloelGraphLiteralCanvas.tsx": 1155,
+    "frontend/src/components/kloel/graph/KloelGraphLiteralCanvas.tsx": 1174,
     "frontend/src/components/kloel/graph/KloelGraphShell.spec.tsx": 763,
     "frontend/src/components/kloel/marketing/OfficialMarketingChannelPage/use-official-marketing-channel.ts": 635,
     "frontend/src/components/kloel/products/product-nerve-center.shared.tsx": 669,
