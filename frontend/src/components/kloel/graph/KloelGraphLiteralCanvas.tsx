@@ -159,11 +159,15 @@ export function KloelGraphLiteralCanvas({
   // Ember hover emphasis is transient BY DERIVATION: the hovered id is stored
   // together with the selection/galaxy context it was set in and reads as null
   // the moment that context changes (incl. ariaHidden covering the canvas).
-  // No reset effect (the hooks compiler forbids synchronous setState inside
-  // effects), no captured flags, no deferred timeouts — those raced with
-  // renders and left nodes stuck ember.
-  const hoverContext = `${activeNodeId ?? ''}|${String(ariaHidden)}|${focusedArea ?? ''}`;
-  const [hoveredEntry, setHoveredEntry] = useState<{ id: string; ctx: string } | null>(null);
+  // The context is object identity, not a string value: if the canvas hides and
+  // later returns to the same visible values, the old hover still cannot revive.
+  const hoverContext = useMemo(
+    () => ({ activeNodeId, ariaHidden, focusedArea }),
+    [activeNodeId, ariaHidden, focusedArea],
+  );
+  const [hoveredEntry, setHoveredEntry] = useState<{ id: string; ctx: typeof hoverContext } | null>(
+    null,
+  );
   const setHoveredNode = (id: string | null) =>
     setHoveredEntry(id === null ? null : { id, ctx: hoverContext });
   const hoveredId = hoveredEntry && hoveredEntry.ctx === hoverContext ? hoveredEntry.id : null;

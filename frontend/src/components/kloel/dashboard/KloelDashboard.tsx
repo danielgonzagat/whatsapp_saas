@@ -477,11 +477,14 @@ export default function KloelDashboard() {
     // timer. The slow hint therefore fires only after true stream silence —
     // an actively-thinking long turn (reasoning is unlimited in time) never
     // alarms the user.
-    setShowSlowHint(false);
-    const timeoutId = window.setTimeout(() => {
+    const resetTimeoutId = window.setTimeout(() => setShowSlowHint(false), 0);
+    const showTimeoutId = window.setTimeout(() => {
       setShowSlowHint(true);
     }, SLOW_HINT_DELAY_MS);
-    return () => window.clearTimeout(timeoutId);
+    return () => {
+      window.clearTimeout(resetTimeoutId);
+      window.clearTimeout(showTimeoutId);
+    };
   }, [isReplyInFlight, messages]);
 
   useEffect(() => {

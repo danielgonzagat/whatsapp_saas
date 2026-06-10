@@ -201,7 +201,7 @@ describe('per-step rendering + handlers', () => {
     expect(screen.getByText(/R\$\s*197/)).toBeTruthy();
     fireEvent.click(screen.getByText('Alpha'));
     expect(data.toggleProduct).toHaveBeenCalledWith('p1');
-    fireEvent.click(screen.getByRole('button', { name: /Salvar produtos/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Avançar/ }));
     await act(async () => undefined);
     expect(data.saveSelectedProducts).toHaveBeenCalledTimes(1);
     expect(data.persistSetup).not.toHaveBeenCalled();

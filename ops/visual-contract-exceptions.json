@@ -4,5 +4,29 @@
     "rule": "hex",
     "reason": "Server-rendered standalone HTML error page (a raw HTML string returned in a Response) for the public Kloel Sites slug route. It cannot import the React design tokens, so the brand colors (#0A0A0C / #E5E5E5 / #E85D30 / #B8B8B8) are baked inline into the static error document. Owner-approved.",
     "expires": "2026-12-31"
+  },
+  {
+    "file": "frontend/src/components/kloel/graph/KloelGraphPrototype.jsx",
+    "rule": "hex",
+    "reason": "Owner-authored Kloel Graph prototype imported verbatim as the primary visual surface; literal palette values are preserved for locked visual parity until the prototype is tokenized without changing output.",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "frontend/src/components/kloel/graph/KloelGraphPrototype.jsx",
+    "rule": "borderRadius",
+    "reason": "Owner-authored Kloel Graph prototype imported verbatim as the primary visual surface; literal radii are preserved for locked visual parity until the prototype is tokenized without changing output.",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "frontend/src/components/kloel/graph/KloelGraphPrototype.jsx",
+    "rule": "emoji",
+    "reason": "Owner-authored Kloel Graph prototype imported verbatim as the primary visual surface; existing glyph text is preserved for locked visual parity until the prototype is tokenized without changing output.",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "frontend/src/components/kloel/graph/KloelGraphPrototype.jsx",
+    "rule": "gradient",
+    "reason": "Owner-authored Kloel Graph prototype imported verbatim as the primary visual surface; the existing gradient is preserved for locked visual parity until the prototype is tokenized without changing output.",
+    "expires": "2026-12-31"
   }
 ]

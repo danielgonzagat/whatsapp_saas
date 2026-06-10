@@ -24,15 +24,17 @@ function readBrokerState(repoRoot) {
 
 export function inheritedAtomicHostEnv(repoRoot) {
   const state = readBrokerState(repoRoot);
-  const explicitSocket = process.env.ATOMIC_EXEC_BROKER_SOCKET || '';
-  const stateSocket = typeof state?.socket === 'string' && fs.existsSync(state.socket) ? state.socket : '';
+  const nestedBrokerCommand = Boolean(process.env.ATOMIC_EXEC_BROKER_ROOT);
+  const suppressInheritedBroker = nestedBrokerCommand && process.env.ATOMIC_ALLOW_NESTED_PROOF_BROKER !== '1';
+  const explicitSocket = suppressInheritedBroker ? '' : process.env.ATOMIC_EXEC_BROKER_SOCKET || '';
+  const stateSocket = !suppressInheritedBroker && typeof state?.socket === 'string' && fs.existsSync(state.socket) ? state.socket : '';
   const socket = explicitSocket || stateSocket;
   const stateRoot = typeof state?.repoRoot === 'string' ? state.repoRoot : '';
   const hostRoot = path.resolve(stateRoot || process.env.ATOMIC_HOST_WRITE_ROOT || repoRoot);
   const tempRoot = socket ? hostRoot : process.cwd();
   return {
-    ATOMIC_HOST_SANDBOX: process.env.ATOMIC_HOST_SANDBOX || (socket ? 'macos-sandbox-exec' : ''),
-    ATOMIC_HOST_ATOMIC_ONLY: process.env.ATOMIC_HOST_ATOMIC_ONLY || (socket ? '1' : ''),
+    ATOMIC_HOST_SANDBOX: suppressInheritedBroker ? '' : process.env.ATOMIC_HOST_SANDBOX || (socket ? 'macos-sandbox-exec' : ''),
+    ATOMIC_HOST_ATOMIC_ONLY: suppressInheritedBroker ? '' : process.env.ATOMIC_HOST_ATOMIC_ONLY || (socket ? '1' : ''),
     ATOMIC_HOST_WRITE_ROOT: hostRoot,
     ATOMIC_EXEC_BROKER_SOCKET: socket,
     CODEX_PROJECT_DIR: hostRoot,

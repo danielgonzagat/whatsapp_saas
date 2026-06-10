@@ -1,20 +1,3 @@
-// Unifica a identidade de '@nestjs/core' e '@nestjs/common' no ambiente jest-e2e:
-// o resolver do jest resolve '@nestjs/core' a partir de '@nestjs/testing' para a cópia
-// instalada na RAIZ do repo, enquanto src/** resolve para backend/node_modules — duas
-// classes Reflector/HttpException distintas quebram a DI do AuditInterceptor e fazem
-// um 401 virar 500. Intercepta os caminhos da raiz e devolve as cópias do backend.
-// '@nestjs/core': o @nestjs/testing usa imports profundos (core/injector/*) da cópia da
-// raiz, que não passam pelo registry de mocks — então o nome do pacote (resolvido para a
-// cópia do backend) é redirecionado para a cópia da raiz, unificando o Reflector.
-jest.mock('@nestjs/core', () =>
-  jest.requireActual<typeof import('@nestjs/core')>('../../node_modules/@nestjs/core'),
-);
-// '@nestjs/common': direção oposta — o caminho da raiz é interceptado e devolve a cópia
-// do backend, para que HttpException tenha identidade única E o class-validator seja
-// resolvido a partir de backend/node_modules (na raiz ele não existe).
-jest.mock('../../node_modules/@nestjs/common', () =>
-  jest.requireActual<typeof import('@nestjs/common')>('@nestjs/common'),
-);
 
 jest.mock('ioredis', () => {
   const Redis = class RedisMock {

@@ -7,7 +7,8 @@
 // with zero suppressions. Phase 2 wires its internal seeds to the real Kloel APIs while
 // keeping the rendered result 100% identical to this file. Do NOT alter visuals.
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState, useEffect, useRef, useReducer, useCallback, useMemo, useContext, createContext } from "react";
+import Image from "next/image";
+import { useState, useEffect, useRef, useCallback, useMemo, useContext, createContext } from "react";
 import { sendAuthenticatedKloelMessage } from "@/lib/kloel-conversations";
 import { useProducts } from "@/hooks/useProducts";
 import { useWalletBalance, useWalletWithdrawals, useWalletAnticipations } from "@/hooks/useWallet";
@@ -90,7 +91,7 @@ const CHANNEL_META = {
   email:     { name: "Email",     provider: "Domínio próprio",     step1Verb: "Verificar domínio", step1Sub: "DKIM · SPF · DMARC" },
 };
 const CHANNEL_KEYS = ["whatsapp", "instagram", "tiktok", "facebook", "email"];
-const AREA_KEYS = ["criar", "afiliar", "educar"];
+const _AREA_KEYS = ["criar", "afiliar", "educar"];
 
 /* Categorias de produto cadastráveis (lista completa selecionável) */
 const PRODUCT_CATEGORIES = [
@@ -277,7 +278,7 @@ function defaultProductEditor(seed = {}) {
 }
 
 /* Catálogo inicial — 2 produtos reais com editor completo materializado */
-const PRODUCTS = [
+const _PRODUCTS = [
   {
     id: "p1", label: "GHK-CU", status: "analysis", tags: ["dermocosmetico", "analise"],
     meta: { category: "Dermocosméticos", price: 197, revenue: 0, sales: 0, subtitle: "em análise · ANVISA" },
@@ -335,9 +336,9 @@ function planView(pl) {
 function checkoutView(ck) {
   const cfg = ck.checkoutConfig || {};
   const mt = [];
-  if (cfg.enablePix !== false) mt.push("PIX");
-  if (cfg.enableCreditCard !== false) mt.push("CARTÃO");
-  if (cfg.enableBoleto === true) mt.push("BOLETO");
+  if (cfg.enablePix !== false) {mt.push("PIX");}
+  if (cfg.enableCreditCard !== false) {mt.push("CARTÃO");}
+  if (cfg.enableBoleto === true) {mt.push("BOLETO");}
   return {
     id: ck.id, code: ck.referenceCode || ck.slug || String(ck.id).slice(0, 8),
     desc: ck.name || "Checkout", mt,
@@ -355,7 +356,7 @@ function checkoutView(ck) {
 
 /* Formatação BRL a partir de centavos */
 const brl = (cents) => `R$ ${(Number(cents || 0) / 100).toFixed(2).replace(".", ",")}`;
-const pct = (n) => `${Number(n || 0)}%`;
+const _pct = (n) => `${Number(n || 0)}%`;
 
 /* Constrói os sub-nós de um produto a partir das 10 abas + contadores reais */
 function buildProductSubnodes(p) {
@@ -395,7 +396,7 @@ const TAB_SUN = {
   carteira: "sun-carteira",
 };
 
-const AREA_KEYS_ALL = ["criar", "afiliar", "educar"];
+const _AREA_KEYS_ALL = ["criar", "afiliar", "educar"];
 
 /* ════════════════════════════════════════════════════════════════════════
    AFILIAR · DOMÍNIO REAL · extraído de produtos/ProdutosAfiliarSeTab + parcerias
@@ -417,21 +418,21 @@ const AFFILIATE_BRANCHES = [
    Affiliate: type affiliate|producer, status, totalSales, revenue,
    commission %, commissionEarned = revenue*commission/100, temperature,
    joined, products[], monthlyPerformance[]. + colaboradores + chat. */
-const MY_AFFILIATES_SEED = [
+const _MY_AFFILIATES_SEED = [
   { id: "af1", name: "Marina Costa", email: "marina@vendas.co", type: "affiliate", status: "active", totalSales: 84, revenue: 41580, commission: 40, temperature: 88, joined: "2026-02-10", products: ["GHK-Cu Sérum"], monthlyPerformance: [12, 18, 9, 22, 14, 9] },
   { id: "af2", name: "Studio Belle", email: "contato@studiobelle.com", type: "producer", status: "active", totalSales: 210, revenue: 188400, commission: 30, temperature: 95, joined: "2025-11-22", products: ["Curso Skincare", "Kit Anti-Idade"], monthlyPerformance: [30, 28, 41, 35, 39, 37] },
   { id: "af3", name: "Pedro Alves", email: "pedro.alves@gmail.com", type: "affiliate", status: "pending", totalSales: 0, revenue: 0, commission: 35, temperature: 0, joined: "2026-05-25", products: [], monthlyPerformance: [0, 0, 0, 0, 0, 0] },
 ];
-const PARTNER_CHATS_SEED = [
+const _PARTNER_CHATS_SEED = [
   { id: "pc1", name: "Marina Costa", type: "affiliate", unread: 2, lastMessage: "Os criativos novos já estão no ar!", online: true, time: "09:42", messages: [{ id: "m1", text: "Oi! Posso pegar mais materiais do GHK-Cu?", isMe: false, time: "09:30" }, { id: "m2", text: "Claro, acabei de subir 4 criativos novos na aba Arsenal.", isMe: true, time: "09:38" }, { id: "m3", text: "Os criativos novos já estão no ar!", isMe: false, time: "09:42" }] },
   { id: "pc2", name: "Studio Belle", type: "producer", unread: 0, lastMessage: "Fechamos o mês com 210 vendas 🚀", online: false, time: "ontem", messages: [{ id: "m1", text: "Fechamos o mês com 210 vendas 🚀", isMe: false, time: "ontem" }] },
 ];
-const COLLABORATORS_SEED = [
+const _COLLABORATORS_SEED = [
   { id: "co1", name: "Ana Suporte", email: "ana@kloel.com", role: "SUPPORT", status: "active", lastActive: "há 5 min" },
 ];
 
 /* Marketplace inicial — produtos de OUTROS produtores, disponíveis p/ afiliar */
-const MARKETPLACE_SEED = [
+const _MARKETPLACE_SEED = [
   { id: "mk1", name: "Método Pele de Vidro", producer: "Dra. Helena R.", category: "Dermocosméticos", price: 49700, commission: 50, sales: 1240, rating: 4.8, temperature: 92, cookieDays: 90, totalAffiliates: 340, totalReviews: 210, materials: ["Criativos", "Copy pronta", "VSL"], requestStatus: null, affiliateLink: null, isSaved: false },
   { id: "mk2", name: "Protocolo Colágeno 40+", producer: "Lab Vitalitá", category: "Suplementos", price: 29700, commission: 40, sales: 870, rating: 4.6, temperature: 78, cookieDays: 60, totalAffiliates: 190, totalReviews: 132, materials: ["Criativos", "E-mails"], requestStatus: null, affiliateLink: null, isSaved: false },
   { id: "mk3", name: "Curso Skincare Profissional", producer: "Studio Belle", category: "Cursos", price: 89700, commission: 60, sales: 540, rating: 4.9, temperature: 85, cookieDays: 120, totalAffiliates: 95, totalReviews: 88, materials: ["Criativos", "Copy", "Bônus afiliado"], requestStatus: null, affiliateLink: null, isSaved: false },
@@ -456,9 +457,9 @@ function buildAffiliateNodesEdges(affiliate) {
     nodes.push({ id, type: "affProduct", area: "afiliar", label: m.name, parentId: "af-market", tags: [m.category?.toLowerCase()].filter(Boolean), meta: { subtitle: `${m.commission}% · ${m.producer}`, marketId: m.id, status: m.requestStatus, approved } });
     edges.push({ from: "af-market", to: id, directed: true, kind: "attachment" });
     // se aprovado, também conecta ao ramo "minhas"
-    if (approved) edges.push({ from: "af-mine", to: id, directed: false, kind: "channel-product" });
+    if (approved) {edges.push({ from: "af-mine", to: id, directed: false, kind: "channel-product" });}
     // se salvo, conecta ao ramo "salvos"
-    if (m.isSaved) edges.push({ from: "af-saved", to: id, directed: false, kind: "channel-product" });
+    if (m.isSaved) {edges.push({ from: "af-saved", to: id, directed: false, kind: "channel-product" });}
   }
   // lado produtor → cada afiliado/produtor parceiro vira nó sob "Meus afiliados"
   for (const a of (affiliate.myAffiliates || [])) {
@@ -474,7 +475,7 @@ function buildAffiliateNodesEdges(affiliate) {
    Ramo "Ensinar": cada MemberArea vira um nó com módulos→aulas, alunos,
    certificados e overview. Ramo "Aprender": cursos comprados.
    ════════════════════════════════════════════════════════════════════════ */
-const MEMBER_AREAS_SEED = [
+const _MEMBER_AREAS_SEED = [
   {
     id: "ma1", name: "Skincare Profissional", slug: "skincare-pro", description: "Formação completa em cuidados com a pele", type: "course", template: "classic",
     logoUrl: "", coverUrl: "", primaryColor: "#E85D30", customDomain: "",
@@ -535,13 +536,13 @@ const CRM_MODULES = [
 /* AUTOPILOT (AutopilotEvent/FollowUp): a IA agindo sozinha.
    Eventos: intent → action, status (executed/error/skipped), latência.
    Follow-ups: agendados, motivo, status. */
-const AUTOPILOT_EVENTS_SEED = [
+const _AUTOPILOT_EVENTS_SEED = [
   { id: "ae1", contactName: "Marina Costa", intent: "INTERESSE_PRODUTO", action: "Enviar link checkout", status: "executed", messageSent: "Aqui está seu link com 10% OFF 🎁", latencyMs: 820, time: "09:41" },
   { id: "ae2", contactName: "João Pedro", intent: "OBJECAO_PRECO", action: "Oferecer parcelamento", status: "executed", messageSent: "Dá pra parcelar em 12x sem juros!", latencyMs: 640, time: "ontem" },
   { id: "ae3", contactName: "Lead #4821", intent: "DUVIDA_ENTREGA", action: "Responder prazo", status: "skipped", reason: "Fora do horário comercial", latencyMs: null, time: "ontem" },
   { id: "ae4", contactName: "Carlos M.", intent: "CARRINHO_ABANDONADO", action: "Recuperar carrinho", status: "error", reason: "Número inválido", latencyMs: 1200, time: "2 dias" },
 ];
-const FOLLOWUPS_SEED = [
+const _FOLLOWUPS_SEED = [
   { id: "fu1", contactName: "João Pedro", scheduledFor: "amanhã 10:00", reason: "Sem resposta há 24h", message: "Oi João, ainda pensando no kit?", status: "scheduled" },
   { id: "fu2", contactName: "Lead #4821", scheduledFor: "hoje 18:00", reason: "Carrinho abandonado", message: "", status: "scheduled" },
   { id: "fu3", contactName: "Marina Costa", scheduledFor: "27/05 14:00", reason: "Pós-venda (NPS)", message: "Como está sendo sua experiência?", status: "sent" },
@@ -550,13 +551,13 @@ const FOLLOWUPS_SEED = [
    Métricas reais: spend, revenue, ROAS, conversions, impressions, clicks, CTR, CPC.
    Regras de IA: condição → ação, alerta, fireCount. */
 const AD_PLATFORMS = { meta: "Meta Ads", google: "Google Ads", tiktok: "TikTok Ads" };
-const AD_CAMPAIGNS_SEED = [
+const _AD_CAMPAIGNS_SEED = [
   { id: "ac1", platform: "meta", campaignName: "GHK-Cu · Conversão", status: "ACTIVE", spend: 1240.50, revenue: 4980.00, roas: 4.01, conversions: 38, impressions: 92400, clicks: 1840, ctr: 1.99, cpc: 0.67 },
   { id: "ac2", platform: "meta", campaignName: "Remarketing · Carrinho", status: "ACTIVE", spend: 380.00, revenue: 2140.00, roas: 5.63, conversions: 18, impressions: 24100, clicks: 720, ctr: 2.99, cpc: 0.53 },
   { id: "ac3", platform: "google", campaignName: "Search · Sérum facial", status: "ACTIVE", spend: 890.00, revenue: 2670.00, roas: 3.00, conversions: 22, impressions: 41200, clicks: 1320, ctr: 3.20, cpc: 0.67 },
   { id: "ac4", platform: "tiktok", campaignName: "VSL · Antes/Depois", status: "PAUSED", spend: 560.00, revenue: 1120.00, roas: 2.00, conversions: 9, impressions: 138000, clicks: 2200, ctr: 1.59, cpc: 0.25 },
 ];
-const AD_RULES_SEED = [
+const _AD_RULES_SEED = [
   { id: "rl1", name: "Pausar ROAS baixo", condition: "ROAS < 1.5 por 2 dias", action: "Pausar campanha", alertMethod: "whatsapp", active: true, fireCount: 3 },
   { id: "rl2", name: "Escalar vencedora", condition: "ROAS > 4 e gasto > R$500", action: "Aumentar orçamento 20%", alertMethod: "email", active: true, fireCount: 1 },
   { id: "rl3", name: "Alerta CPC alto", condition: "CPC > R$2", action: "Notificar apenas", alertMethod: "whatsapp", active: false, fireCount: 0 },
@@ -571,7 +572,7 @@ const ORDERS_SEED = [
 ];
 const ORDER_STATUS = { PAID: ["pago", "green"], PENDING: ["pendente", "amber"], REFUNDED: ["estornado", "red"], CANCELED: ["cancelado", "dim"], CHARGEBACK: ["chargeback", "red"] };
 const PAYMENT_LABEL = { PIX: "PIX", CREDIT_CARD: "Cartão", BOLETO: "Boleto" };
-const CRM_SEED = {
+const _CRM_SEED = {
   pipeline: { id: "pp1", name: "Pipeline de Vendas", isDefault: true },
   stages: [
     { id: "st1", name: "Lead", color: "#6B7280", order: 0 },
@@ -586,12 +587,12 @@ const CRM_SEED = {
     { id: "dl4", title: "PDRN · Lead novo", value: 197, priority: "LOW", status: "OPEN", stageId: "st1", contact: { name: "Carlos M.", phone: "5564966660000" } },
   ],
 };
-const CONTACTS_SEED = [
+const _CONTACTS_SEED = [
   { id: "ct1", name: "Marina Costa", phone: "5564999990000", email: "marina@ex.com", optIn: true, tags: ["cliente", "vip"], leadScore: 88, sentiment: "positive", purchaseProbability: "HIGH", nextBestAction: "Enviar oferta upsell", aiSummary: "Compradora recorrente, alto engajamento. Respondeu bem a desconto.", insights: [{ id: "i1", type: "SENTIMENT_CHANGE", description: "Sentimento subiu após entrega", scoreChange: 12 }] },
   { id: "ct2", name: "João Pedro", phone: "5564988880000", email: "joao@ex.com", optIn: true, tags: ["lead"], leadScore: 54, sentiment: "neutral", purchaseProbability: "MEDIUM", nextBestAction: "Aguardar 2 dias", aiSummary: "Demonstrou interesse no kit, mas citou preço.", insights: [{ id: "i2", type: "OBJECTION_RAISED", description: "Objeção de preço detectada", scoreChange: -5 }] },
   { id: "ct3", name: "Ana Lima", phone: "5564977770000", email: "ana@ex.com", optIn: true, tags: ["cliente"], leadScore: 95, sentiment: "positive", purchaseProbability: "HIGH", nextBestAction: "Pedir indicação", aiSummary: "Concluiu o curso, NPS alto.", insights: [] },
 ];
-const CONVERSATIONS_SEED = [
+const _CONVERSATIONS_SEED = [
   { id: "cs1", contactName: "Marina Costa", channel: "WHATSAPP", status: "OPEN", priority: "HIGH", unreadCount: 2, lastMessageAt: "09:42", messages: [
     { id: "m1", direction: "INBOUND", type: "TEXT", content: "Oi, o sérum já chegou! Amei 😍", status: "READ", time: "09:30" },
     { id: "m2", direction: "OUTBOUND", type: "TEXT", content: "Que ótimo, Marina! Posso te mostrar o protocolo de 3 meses?", status: "READ", time: "09:35" },
@@ -608,7 +609,7 @@ const priorityColor = (p, C) => ({ HIGH: C.red, MEDIUM: C.amber, LOW: C.dim }[p]
 
 function buildConversarNodesEdges(conversar) {
   const nodes = [], edges = [];
-  if (!conversar) return { nodes, edges };
+  if (!conversar) {return { nodes, edges };}
   for (const b of CONVERSAR_BRANCHES) {
     nodes.push({ id: b.id, type: "convBranch", area: "conectar", label: b.label, parentId: "sun-conectar", tags: [], meta: { subtitle: `conversar · ${b.label}`, branchKey: b.key } });
     edges.push({ from: "sun-conectar", to: b.id, directed: true, kind: "attachment" });
@@ -616,34 +617,34 @@ function buildConversarNodesEdges(conversar) {
   const mods = conversar.crmModules || {};
   // módulos do CRM: viram sub-nós do CRM só quando ativados/conectados
   for (const m of CRM_MODULES) {
-    if (!mods[m.key]) continue;
+    if (!mods[m.key]) {continue;}
     nodes.push({ id: m.id, type: "convBranch", area: "conectar", label: m.label, parentId: "cv-crm", tags: [], meta: { subtitle: `CRM · ${m.label}`, branchKey: m.key } });
     edges.push({ from: "cv-crm", to: m.id, directed: true, kind: "attachment" });
   }
   // conversas → sob Inbox (se ativado)
-  if (mods.inbox) for (const c of (conversar.conversations || [])) {
+  if (mods.inbox) {for (const c of (conversar.conversations || [])) {
     const id = `cv-conv-${c.id}`;
     nodes.push({ id, type: "conversation", area: "conectar", label: c.contactName, parentId: "cv-inbox", tags: [c.channel?.toLowerCase()].filter(Boolean), meta: { subtitle: `${c.channel} · ${c.status}${c.unreadCount ? ` · ${c.unreadCount} novas` : ""}`, convId: c.id } });
     edges.push({ from: "cv-inbox", to: id, directed: true, kind: "attachment" });
-  }
+  }}
   // contatos → sob Contatos (se ativado)
-  if (mods.contatos) for (const ct of (conversar.contacts || [])) {
+  if (mods.contatos) {for (const ct of (conversar.contacts || [])) {
     const id = `cv-ct-${ct.id}`;
     nodes.push({ id, type: "contact", area: "conectar", label: ct.name, parentId: "cv-contatos", tags: ct.tags || [], meta: { subtitle: `score ${ct.leadScore} · ${ct.sentiment}`, contactId: ct.id } });
     edges.push({ from: "cv-contatos", to: id, directed: true, kind: "attachment" });
-  }
+  }}
   // vendas → sob Vendas (se ativado)
-  if (mods.vendas) for (const o of (conversar.orders || [])) {
+  if (mods.vendas) {for (const o of (conversar.orders || [])) {
     const id = `cv-or-${o.id}`;
     nodes.push({ id, type: "order", area: "conectar", label: o.orderNumber, parentId: "cv-vendas", tags: [o.kind].filter(Boolean), meta: { subtitle: `${o.customerName} · ${(ORDER_STATUS[o.status] || ["",""])[0]}`, orderId: o.id, status: o.status } });
     edges.push({ from: "cv-vendas", to: id, directed: true, kind: "attachment" });
-  }
+  }}
   // anúncios → campanhas sob Anúncios (se ativado)
-  if (mods.anuncios) for (const ad of (conversar.adCampaigns || [])) {
+  if (mods.anuncios) {for (const ad of (conversar.adCampaigns || [])) {
     const id = `cv-ad-${ad.id}`;
     nodes.push({ id, type: "adCampaign", area: "conectar", label: ad.campaignName, parentId: "cv-anuncios", tags: [ad.platform].filter(Boolean), meta: { subtitle: `${AD_PLATFORMS[ad.platform] || ad.platform} · ROAS ${ad.roas}`, adId: ad.id, status: ad.status } });
     edges.push({ from: "cv-anuncios", to: id, directed: true, kind: "attachment" });
-  }
+  }}
   return { nodes, edges };
 }
 
@@ -681,7 +682,7 @@ const PROFILE_SECTIONS = [
 
 function buildProfileNodesEdges(accountData) {
   const nodes = [], edges = [];
-  if (!accountData) return { nodes, edges };
+  if (!accountData) {return { nodes, edges };}
   for (const s of PROFILE_SECTIONS) {
     nodes.push({ id: s.id, type: "profileSection", area: "perfil", label: s.label, parentId: "core", tags: [], meta: { subtitle: `perfil · ${s.label}`, sectionKey: s.key } });
     edges.push({ from: "core", to: s.id, directed: true, kind: "attachment" });
@@ -691,15 +692,15 @@ function buildProfileNodesEdges(accountData) {
     edges.push({ from: parentId, to: id, directed: true, kind: "attachment" });
   };
   const p = accountData.pessoal || {};
-  if (p.nome)       addField("pf-pessoal", "pf-nome",    p.nome,       "nome");
-  if (p.email)      addField("pf-pessoal", "pf-email",   p.email,      "e-mail");
-  if (p.celular)    addField("pf-pessoal", "pf-celular", p.celular,    "celular");
-  if (p.nascimento) addField("pf-pessoal", "pf-nasc",    p.nascimento, "nascimento");
+  if (p.nome)       {addField("pf-pessoal", "pf-nome",    p.nome,       "nome");}
+  if (p.email)      {addField("pf-pessoal", "pf-email",   p.email,      "e-mail");}
+  if (p.celular)    {addField("pf-pessoal", "pf-celular", p.celular,    "celular");}
+  if (p.nascimento) {addField("pf-pessoal", "pf-nasc",    p.nascimento, "nascimento");}
   const f = accountData.fiscal || {};
-  if (f.cnpj)     addField("pf-fiscal", "pf-cnpj",     f.cnpj,     "CNPJ");
-  if (f.razao)    addField("pf-fiscal", "pf-razao",    f.razao,    "razão social");
-  if (f.fantasia) addField("pf-fiscal", "pf-fantasia", f.fantasia, "nome fantasia");
-  if (f.nomeResp) addField("pf-fiscal", "pf-resp",     f.nomeResp, "responsável");
+  if (f.cnpj)     {addField("pf-fiscal", "pf-cnpj",     f.cnpj,     "CNPJ");}
+  if (f.razao)    {addField("pf-fiscal", "pf-razao",    f.razao,    "razão social");}
+  if (f.fantasia) {addField("pf-fiscal", "pf-fantasia", f.fantasia, "nome fantasia");}
+  if (f.nomeResp) {addField("pf-fiscal", "pf-resp",     f.nomeResp, "responsável");}
   if (f.cep || f.rua) {
     const loc = [f.cidade, f.uf].filter(Boolean).join("/") || "Endereço fiscal";
     addField("pf-fiscal", "pf-endereco", loc, "endereço fiscal");
@@ -711,13 +712,13 @@ function buildProfileNodesEdges(accountData) {
     edges.push({ from: "pf-docs", to: id, directed: true, kind: "attachment" });
   }
   const b = accountData.bancario || {};
-  if (b.banco)    addField("pf-banco", "pf-banco-nome", b.banco,    "banco");
-  if (b.pixChave) addField("pf-banco", "pf-banco-pix",  b.pixChave, "chave PIX");
+  if (b.banco)    {addField("pf-banco", "pf-banco-nome", b.banco,    "banco");}
+  if (b.pixChave) {addField("pf-banco", "pf-banco-pix",  b.pixChave, "chave PIX");}
   // perfil público
   const pp = accountData.perfilPublico || {};
-  if (pp.publicName) addField("pf-publico", "pf-pub-name", pp.publicName, "nome público");
-  if (pp.instagram)  addField("pf-publico", "pf-pub-ig",   `@${pp.instagram.replace("@", "")}`, "instagram");
-  if (pp.website)    addField("pf-publico", "pf-pub-web",  pp.website, "site");
+  if (pp.publicName) {addField("pf-publico", "pf-pub-name", pp.publicName, "nome público");}
+  if (pp.instagram)  {addField("pf-publico", "pf-pub-ig",   `@${pp.instagram.replace("@", "")}`, "instagram");}
+  if (pp.website)    {addField("pf-publico", "pf-pub-web",  pp.website, "site");}
   // equipe → cada membro vira nó
   for (const m of (accountData.team?.members || [])) {
     const id = `pf-tm-${m.id}`;
@@ -731,7 +732,7 @@ function buildProfileNodesEdges(accountData) {
   }
   // apps conectados → nó por app conectado
   for (const [ak, app] of Object.entries(accountData.apps || {})) {
-    if (!app.connected) continue;
+    if (!app.connected) {continue;}
     const id = `pf-app-${ak}`;
     const lbl = { meta: "Meta", google: "Google Ads", tiktok: "TikTok", zapier: "Zapier" }[ak] || ak;
     nodes.push({ id, type: "appNode", area: "perfil", label: lbl, parentId: "pf-apps", tags: [], meta: { subtitle: app.pageName || `${lbl} conectado`, appKey: ak } });
@@ -754,7 +755,7 @@ const WALLET_BRANCHES = [
   { id: "wl-aband",   key: "abandonos",    label: "Abandonos" },
   { id: "wl-estorno", key: "estornos",     label: "Estornos" },
 ];
-const DEFAULT_WALLET = {
+const _DEFAULT_WALLET = {
   balance: { available: 1284050, pending: 320000, blocked: 0, total: 1604050 }, // centavos
   withdrawals: [
     { id: "wd1", amount: 500000, status: "completed", date: "20/05/2026", method: "PIX", bank: "Nubank" },
@@ -771,7 +772,7 @@ const DEFAULT_WALLET = {
 };
 function buildWalletNodesEdges(wallet) {
   const nodes = [], edges = [];
-  if (!wallet) return { nodes, edges };
+  if (!wallet) {return { nodes, edges };}
   for (const b of WALLET_BRANCHES) {
     nodes.push({ id: b.id, type: "walletBranch", area: "carteira", label: b.label, parentId: "sun-carteira", tags: [], meta: { subtitle: `consultar · ${b.label}`, branchKey: b.key } });
     edges.push({ from: "sun-carteira", to: b.id, directed: true, kind: "attachment" });
@@ -805,7 +806,7 @@ const dzStartOfDay = (d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); ret
 const DAY_MS = 86400000;
 
 /* Dados operacionais diários (≈60 dias) — gerados uma vez de forma determinística */
-function buildOperationalDays() {
+function _buildOperationalDays() {
   const days = [];
   const today = dzStartOfDay(new Date());
   let seed = 1337;
@@ -917,7 +918,7 @@ function buildKloelNodesEdges(kloel) {
     const id = `kli-${img.id}`;
     nodes.push({ id, type: "kloelImageAsset", area: "kloel", label: img.name || "imagem", parentId: "kl-images", tags: [], meta: { subtitle: img.source || "upload", imageId: img.id, url: img.url } });
     edges.push({ from: "kl-images", to: id, directed: true, kind: "attachment" });
-    for (const nid of (img.linkedNodeIds || [])) edges.push({ from: id, to: nid, directed: false, kind: "channel-product" });
+    for (const nid of (img.linkedNodeIds || [])) {edges.push({ from: id, to: nid, directed: false, kind: "channel-product" });}
   }
   return { nodes, edges };
 }
@@ -930,8 +931,8 @@ function buildGraph(products, channelsState, accountData, affiliate, wallet, edu
   const edges = [];
 
   // massas fixas
-  for (const s of BASE_SUNS) nodes.push({ ...s, tags: [] });
-  for (const b of STATIC_BRANCHES) nodes.push({ ...b, tags: [] });
+  for (const s of BASE_SUNS) {nodes.push({ ...s, tags: [] });}
+  for (const b of STATIC_BRANCHES) {nodes.push({ ...b, tags: [] });}
   edges.push({ from: "sun-educar", to: "eu-aprender", directed: true, kind: "attachment" });
   edges.push({ from: "sun-educar", to: "eu-ensinar",  directed: true, kind: "attachment" });
 
@@ -1005,9 +1006,9 @@ function buildGraph(products, channelsState, accountData, affiliate, wallet, edu
   // canais conectados → arsenal + voz + edges p/ produtos
   for (const k of CHANNEL_KEYS) {
     const ch = channelsState[k];
-    if (!ch?.connected) continue;
+    if (!ch?.connected) {continue;}
     const chNodeId = `ch-${k}`;
-    for (const pid of ch.products || []) edges.push({ from: chNodeId, to: pid, directed: false, kind: "channel-product" });
+    for (const pid of ch.products || []) {edges.push({ from: chNodeId, to: pid, directed: false, kind: "channel-product" });}
     for (let i = 0; i < (ch.arsenal || 0); i++) {
       const proofId = `${chNodeId}-proof-${i}`;
       nodes.push({ id: proofId, type: "proof", area: "conectar", label: `prova ${i + 1}`, parentId: chNodeId, tags: [], meta: { subtitle: `arsenal de ${CHANNEL_META[k].name}`, channelKey: k } });
@@ -1063,17 +1064,17 @@ const NODE_LABEL_KIND = {
    QUERIES, FILTERS, COLOR, LAYOUT, PHYSICS  (preservado do original)
    ════════════════════════════════════════════════════════════════════════ */
 function matchQuery(node, query) {
-  if (!query || !query.trim()) return false;
+  if (!query || !query.trim()) {return false;}
   const q = query.trim().toLowerCase();
-  if (q.startsWith("type:")) return node.type === q.slice(5);
-  if (q.startsWith("tag:")) return (node.tags || []).includes(q.slice(4));
-  if (q.startsWith("area:")) return node.area === q.slice(5);
+  if (q.startsWith("type:")) {return node.type === q.slice(5);}
+  if (q.startsWith("tag:")) {return (node.tags || []).includes(q.slice(4));}
+  if (q.startsWith("area:")) {return node.area === q.slice(5);}
   return (node.label || "").toLowerCase().includes(q);
 }
 
 function isPrincipalForTab(node, tab) {
   const sun = TAB_SUN[tab];
-  if (!sun) return false;
+  if (!sun) {return false;}
   return node.parentId === sun;
 }
 
@@ -1083,49 +1084,49 @@ function docColor(status, C) {
 
 function colorForNode(node, groups, C, channels, tab, focusSet) {
   for (const g of groups) {
-    if (!g.enabled) continue;
-    if (matchQuery(node, g.query)) return g.color;
+    if (!g.enabled) {continue;}
+    if (matchQuery(node, g.query)) {return g.color;}
   }
-  if (node.type === "doc") return docColor(node.meta?.status, C);
-  if (node.type === "metric" && node.meta?.deltaDir) return node.meta.deltaDir === "up" ? C.green : C.red;
-  if (node.type === "desempenho") return C.ember;
-  if (node.id === TAB_SUN[tab]) return C.silver;
-  if (focusSet) return focusSet.has(node.id) ? C.ember : C.dim;
-  if (isPrincipalForTab(node, tab)) return C.ember;
+  if (node.type === "doc") {return docColor(node.meta?.status, C);}
+  if (node.type === "metric" && node.meta?.deltaDir) {return node.meta.deltaDir === "up" ? C.green : C.red;}
+  if (node.type === "desempenho") {return C.ember;}
+  if (node.id === TAB_SUN[tab]) {return C.silver;}
+  if (focusSet) {return focusSet.has(node.id) ? C.ember : C.dim;}
+  if (isPrincipalForTab(node, tab)) {return C.ember;}
   return C.dim;
 }
 
 function applyFilters(nodes, edges, filters) {
   let visible = new Set(nodes.map(n => n.id));
-  if (!filters.showTags) nodes.forEach(n => { if (n.type === "tag") visible.delete(n.id); });
+  if (!filters.showTags) {nodes.forEach(n => { if (n.type === "tag") {visible.delete(n.id);} });}
   if (!filters.showAttachments) {
     const ATTACH = [...PRODUCT_SUBNODE_TYPES, "proof", "voice", "profileField", "doc"];
-    nodes.forEach(n => { if (ATTACH.includes(n.type)) visible.delete(n.id); });
+    nodes.forEach(n => { if (ATTACH.includes(n.type)) {visible.delete(n.id);} });
   }
-  if (filters.existingOnly) nodes.forEach(n => { if (n.type === "ghost") visible.delete(n.id); });
+  if (filters.existingOnly) {nodes.forEach(n => { if (n.type === "ghost") {visible.delete(n.id);} });}
   if (filters.search?.trim()) {
     const matching = new Set();
-    nodes.forEach(n => { if (matchQuery(n, filters.search)) matching.add(n.id); });
-    nodes.forEach(n => { if (!matching.has(n.id) && n.id !== "core") visible.delete(n.id); });
+    nodes.forEach(n => { if (matchQuery(n, filters.search)) {matching.add(n.id);} });
+    nodes.forEach(n => { if (!matching.has(n.id) && n.id !== "core") {visible.delete(n.id);} });
   }
   let visibleEdges = edges.filter(e => visible.has(e.from) && visible.has(e.to));
-  if (!filters.incomingLinks && !filters.outgoingLinks) visibleEdges = [];
+  if (!filters.incomingLinks && !filters.outgoingLinks) {visibleEdges = [];}
   if (!filters.showOrphans) {
     const connected = new Set();
     visibleEdges.forEach(e => { connected.add(e.from); connected.add(e.to); });
-    nodes.forEach(n => { if (!connected.has(n.id) && n.id !== "core") visible.delete(n.id); });
+    nodes.forEach(n => { if (!connected.has(n.id) && n.id !== "core") {visible.delete(n.id);} });
     visibleEdges = visibleEdges.filter(e => visible.has(e.from) && visible.has(e.to));
   }
   return { nodes: nodes.filter(n => visible.has(n.id)), edges: visibleEdges };
 }
 
-function computeLayout(nodes) {
+function _computeLayout(nodes) {
   const result = new Map();
   const byId = new Map(nodes.map(n => [n.id, n]));
   const childrenMap = new Map();
   for (const n of nodes) {
     if (n.parentId && byId.has(n.parentId)) {
-      if (!childrenMap.has(n.parentId)) childrenMap.set(n.parentId, []);
+      if (!childrenMap.has(n.parentId)) {childrenMap.set(n.parentId, []);}
       childrenMap.get(n.parentId).push(n);
     }
   }
@@ -1134,14 +1135,14 @@ function computeLayout(nodes) {
   const info = new Map();
   function subtreeRadius(n) {
     const kids = childrenMap.get(n.id) || [];
-    if (!kids.length) return pad(n);
+    if (!kids.length) {return pad(n);}
     const childRs = kids.map(subtreeRadius);
     const maxCr = Math.max(...childRs);
     let orbit = pad(n) + maxCr;
     for (let it = 0; it < 80; it++) {
       let sum = 0;
-      for (const cr of childRs) sum += 2 * Math.asin(Math.min(0.999, cr / orbit));
-      if (sum <= Math.PI * 2 * 0.86) break;
+      for (const cr of childRs) {sum += 2 * Math.asin(Math.min(0.999, cr / orbit));}
+      if (sum <= Math.PI * 2 * 0.86) {break;}
       orbit *= 1.07;
     }
     info.set(n.id, { orbit, childRs, kids });
@@ -1150,7 +1151,7 @@ function computeLayout(nodes) {
   function place(node, x, y, startAngle) {
     result.set(node.id, { x, y });
     const it = info.get(node.id);
-    if (!it) return;
+    if (!it) {return;}
     const { orbit, childRs, kids } = it;
     const widths = childRs.map(cr => 2 * Math.asin(Math.min(0.999, cr / orbit)));
     const totalW = widths.reduce((a, b) => a + b, 0);
@@ -1163,14 +1164,14 @@ function computeLayout(nodes) {
     }
   }
   const rootRs = roots.map(subtreeRadius);
-  if (roots.length === 1) place(roots[0], 0, 0, -Math.PI / 2);
+  if (roots.length === 1) {place(roots[0], 0, 0, -Math.PI / 2);}
   else if (roots.length > 1) {
     const maxR = Math.max(...rootRs);
     let orbit = maxR * 1.3;
     for (let it = 0; it < 80; it++) {
       let sum = 0;
-      for (const rr of rootRs) sum += 2 * Math.asin(Math.min(0.999, rr / orbit));
-      if (sum <= Math.PI * 2 * 0.82) break;
+      for (const rr of rootRs) {sum += 2 * Math.asin(Math.min(0.999, rr / orbit));}
+      if (sum <= Math.PI * 2 * 0.82) {break;}
       orbit *= 1.05;
     }
     const widths = rootRs.map(rr => 2 * Math.asin(Math.min(0.999, rr / orbit)));
@@ -1192,10 +1193,10 @@ const GALAXY_RADIUS = { perfil: 240, kloel: 220, criar: 340, afiliar: 260, educa
 function computeGalaxyAnchors(nodes) {
   const ids = new Set(nodes.map(n => n.id));
   const galaxies = Object.entries(SUN_OF_AREA)
-    .filter(([area, sunId]) => ids.has(sunId))
+    .filter(([_area, sunId]) => ids.has(sunId))
     .map(([area, sunId]) => ({ sunId, r: GALAXY_RADIUS[area] || 120 }));
   const result = new Map();
-  if (!galaxies.length) return result;
+  if (!galaxies.length) {return result;}
   if (galaxies.length === 1) { result.set(galaxies[0].sunId, { x: 0, y: 0 }); return result; }
   const MARGIN = 70;
   const eff = galaxies.map(g => g.r + MARGIN);
@@ -1203,8 +1204,8 @@ function computeGalaxyAnchors(nodes) {
   let orbit = maxR * 1.15 + 90;
   for (let it = 0; it < 90; it++) {
     let sum = 0;
-    for (const r of eff) sum += 2 * Math.asin(Math.min(0.999, r / orbit));
-    if (sum <= Math.PI * 2 * 0.92) break;
+    for (const r of eff) {sum += 2 * Math.asin(Math.min(0.999, r / orbit));}
+    if (sum <= Math.PI * 2 * 0.92) {break;}
     orbit *= 1.04;
   }
   const widths = eff.map(r => 2 * Math.asin(Math.min(0.999, r / orbit)));
@@ -1235,19 +1236,19 @@ function physicsTick(nodes, edges, forces, alpha, degreeMap) {
   const deg = (id) => degreeMap.get(id) || 1;
   for (let i = 0; i < n; i++) {
     const a = nodes[i];
-    if (a.fixed || a.dragging) continue;
+    if (a.fixed || a.dragging) {continue;}
     for (let j = 0; j < n; j++) {
-      if (i === j) continue;
+      if (i === j) {continue;}
       const b = nodes[j];
       const dx = a.x - b.x, dy = a.y - b.y;
-      let d2 = dx * dx + dy * dy; if (d2 < 1) d2 = 1;
+      let d2 = dx * dx + dy * dy; if (d2 < 1) {d2 = 1;}
       const f = (REPULSION / d2) * alpha;
       a.vx += dx * f; a.vy += dy * f;
     }
   }
   for (const e of edges) {
     const a = idMap.get(e.from), b = idMap.get(e.to);
-    if (!a || !b) continue;
+    if (!a || !b) {continue;}
     const ca = deg(e.from), cb = deg(e.to);
     const strength = LINK_FORCE * (1 / Math.min(ca, cb));
     const bias = ca / (ca + cb);
@@ -1261,13 +1262,13 @@ function physicsTick(nodes, edges, forces, alpha, degreeMap) {
   }
   if (CENTER) {
     for (const node of nodes) {
-      if (node.fixed || node.dragging) continue;
+      if (node.fixed || node.dragging) {continue;}
       node.vx += (0 - node.x) * CENTER * alpha;
       node.vy += (0 - node.y) * CENTER * alpha;
     }
   }
   for (const node of nodes) {
-    if (node.fixed || node.dragging) continue;
+    if (node.fixed || node.dragging) {continue;}
     node.vx *= VELOCITY_DECAY;
     node.vy *= VELOCITY_DECAY;
     node.x += node.vx;
@@ -1298,7 +1299,7 @@ function physicsTick(nodes, edges, forces, alpha, degreeMap) {
   }
 }
 
-const defaultSettings = (C) => ({
+const defaultSettings = (_C) => ({
   filters: { search: "", showTags: true, showAttachments: true, existingOnly: false, showOrphans: true, incomingLinks: true, outgoingLinks: true },
   groups: [],
   display: { arrows: false, textFade: 0.55, nodeSize: 1, linkThickness: 1 },
@@ -1377,8 +1378,8 @@ function CTA({ children, onClick, variant = "ember", small, disabled, fullWidth 
       opacity: disabled ? 0.35 : 1, outline: "none", transition: "all .15s ease",
       display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
     }}
-    onMouseEnter={e => { if (disabled) return; if (variant === "ember") e.currentTarget.style.background = v.hover; if (variant === "line") e.currentTarget.style.borderColor = v.hover; if (variant === "ghost") e.currentTarget.style.color = C.silver; }}
-    onMouseLeave={e => { if (disabled) return; if (variant === "ember") e.currentTarget.style.background = v.bg; if (variant === "line") e.currentTarget.style.borderColor = C.border; if (variant === "ghost") e.currentTarget.style.color = v.color; }}>
+    onMouseEnter={e => { if (disabled) {return;} if (variant === "ember") {e.currentTarget.style.background = v.hover;} if (variant === "line") {e.currentTarget.style.borderColor = v.hover;} if (variant === "ghost") {e.currentTarget.style.color = C.silver;} }}
+    onMouseLeave={e => { if (disabled) {return;} if (variant === "ember") {e.currentTarget.style.background = v.bg;} if (variant === "line") {e.currentTarget.style.borderColor = C.border;} if (variant === "ghost") {e.currentTarget.style.color = v.color;} }}>
       {children}
     </button>
   );
@@ -1541,7 +1542,7 @@ function EmptyState({ children }) {
 }
 function SavedFlash({ saved }) {
   const { C } = useTheme();
-  if (!saved) return null;
+  if (!saved) {return null;}
   return <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontFamily: MONO, fontSize: 10, color: C.green, letterSpacing: 1 }}>{Icon.check(11)} salvo</span>;
 }
 function Banner({ tone = "info", icon, children }) {
@@ -1566,8 +1567,8 @@ function Banner({ tone = "info", icon, children }) {
    ════════════════════════════════════════════════════════════════════════ */
 
 /* ── DADOS GERAIS ── */
-function TabDados({ ed, patch, product }) {
-  const { C } = useTheme();
+function TabDados({ ed, patch, _product }) {
+  const { _C } = useTheme();
   const d = ed.dados;
   const set = (k, v) => patch(e => ({ ...e, dados: { ...e.dados, [k]: v } }));
   const isPhysical = d.format !== "DIGITAL";
@@ -1627,17 +1628,17 @@ function TabPlanos({ ed, patch }) {
   const setPlans = (fn) => patch(e => ({ ...e, plans: fn(e.plans) }));
 
   const create = () => {
-    if (!name.trim()) return;
+    if (!name.trim()) {return;}
     const id = `pl-${Date.now()}`;
     setPlans(plans => [...plans, { id, name: name.trim(), priceInCents: Math.round(parseFloat(price.replace(",", ".") || "0") * 100), quantity: 1, maxInstallments: 12, isActive: true, salesCount: 0, visibleToAffiliates: true, freeShipping: false, referenceCode: name.trim().slice(0, 6).toUpperCase(), planLinks: [] }]);
     setName(""); setPrice(""); setCreating(false);
   };
-  const dup = (pl) => setPlans(plans => [...plans, { ...pl, id: `pl-${Date.now()}`, name: `${pl.name} (cópia)`, salesCount: 0 }]);
-  const del = (id) => { setPlans(plans => plans.filter(p => p.id !== id)); if (sel === id) setSel(null); };
+  const _dup = (pl) => setPlans(plans => [...plans, { ...pl, id: `pl-${Date.now()}`, name: `${pl.name} (cópia)`, salesCount: 0 }]);
+  const _del = (id) => { setPlans(plans => plans.filter(p => p.id !== id)); if (sel === id) {setSel(null);} };
 
   if (sel) {
     const pl = ed.plans.find(p => p.id === sel);
-    if (pl) return <PlanDetail pl={pl} setPlans={setPlans} ed={ed} patch={patch} onBack={() => setSel(null)} />;
+    if (pl) {return <PlanDetail pl={pl} setPlans={setPlans} ed={ed} patch={patch} onBack={() => setSel(null)} />;}
   }
 
   return (
@@ -1677,7 +1678,7 @@ function TabPlanos({ ed, patch }) {
   );
 }
 
-function PlanDetail({ pl, setPlans, ed, patch, onBack }) {
+function PlanDetail({ pl, setPlans, ed, _patch, onBack }) {
   const { C } = useTheme();
   const [subtab, setSubtab] = useState("Pagamento");
   const v = planView(pl);
@@ -1805,12 +1806,12 @@ function TabCheckouts({ ed, patch }) {
     const id = `ck-${Date.now()}`;
     setCks(cks => [...cks, { id, name: "Novo checkout", slug: `checkout-${cks.length + 1}`, referenceCode: `CK-${cks.length + 1}`, salesCount: 0, isActive: true, maxInstallments: 12, quantity: 1, checkoutLinks: [], checkoutConfig: defaultCheckoutConfig() }]);
   };
-  const dup = (ck) => setCks(cks => [...cks, { ...ck, id: `ck-${Date.now()}`, name: `${ck.name} (cópia)`, salesCount: 0 }]);
-  const del = (id) => { setCks(cks => cks.filter(c => c.id !== id)); if (sel === id) setSel(null); };
+  const _dup = (ck) => setCks(cks => [...cks, { ...ck, id: `ck-${Date.now()}`, name: `${ck.name} (cópia)`, salesCount: 0 }]);
+  const del = (id) => { setCks(cks => cks.filter(c => c.id !== id)); if (sel === id) {setSel(null);} };
 
   if (sel) {
     const ck = ed.checkouts.find(c => c.id === sel);
-    if (ck) return <CheckoutEditor ck={ck} setCks={setCks} onBack={() => setSel(null)} onDelete={() => del(ck.id)} plans={ed.plans} />;
+    if (ck) {return <CheckoutEditor ck={ck} setCks={setCks} onBack={() => setSel(null)} onDelete={() => del(ck.id)} plans={ed.plans} />;}
   }
   return (
     <div>
@@ -1851,11 +1852,11 @@ function CheckoutEditor({ ck, setCks, onBack, onDelete, plans = [] }) {
   const cfg = ck.checkoutConfig || {};
   const setCfg = (k, v) => setCks(cks => cks.map(c => c.id === ck.id ? { ...c, checkoutConfig: { ...c.checkoutConfig, [k]: v } } : c));
   const setName = (v) => setCks(cks => cks.map(c => c.id === ck.id ? { ...c, name: v } : c));
-  const mut = (fn) => setCks(cks => cks.map(c => c.id === ck.id ? fn(c) : c));
+  const _mut = (fn) => setCks(cks => cks.map(c => c.id === ck.id ? fn(c) : c));
   const flash = () => { setSaved(true); setTimeout(() => setSaved(false), 1800); };
 
   // managers de bump/upsell/pixel
-  const bumps = cfg.__bumps || ck.orderBumps || (ck.checkoutConfig?.orderBumps) || [];
+  const _bumps = cfg.__bumps || ck.orderBumps || (ck.checkoutConfig?.orderBumps) || [];
   const addBump = () => setCfg("orderBumps", [...(cfg.orderBumps || []), { id: `ob-${Date.now()}`, title: "Novo bump", description: "", productName: "", priceInCents: 0, compareAtPrice: null, highlightColor: "#E85D30", checkboxLabel: "Sim, adicionar!", position: "after-payment", isActive: true, sortOrder: (cfg.orderBumps || []).length }]);
   const setBump = (id, k, v) => setCfg("orderBumps", (cfg.orderBumps || []).map(b => b.id === id ? { ...b, [k]: v } : b));
   const delBump = (id) => setCfg("orderBumps", (cfg.orderBumps || []).filter(b => b.id !== id));
@@ -2264,7 +2265,7 @@ function CoproductionPanel({ coproducers, setCoprod }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ role: "COPRODUCER", percentage: "", agentName: "", agentEmail: "" });
   const add = () => {
-    if (!form.agentName.trim()) return;
+    if (!form.agentName.trim()) {return;}
     setCoprod(cs => [...cs, { id: `co-${Date.now()}`, ...form, percentage: parseFloat(form.percentage) || 0, status: "pending" }]);
     setForm({ role: "COPRODUCER", percentage: "", agentName: "", agentEmail: "" }); setShowForm(false);
   };
@@ -2310,7 +2311,7 @@ function TabCupons({ ed, patch }) {
   const [form, setForm] = useState({ code: "", type: "%", val: "", max: "", expiresAt: "" });
   const setCoupons = (fn) => patch(e => ({ ...e, coupons: fn(e.coupons) }));
   const add = () => {
-    if (!form.code.trim()) return;
+    if (!form.code.trim()) {return;}
     setCoupons(cs => [...cs, { id: `cp-${Date.now()}`, code: form.code.trim().toUpperCase(), type: form.type, val: parseFloat(form.val.replace(",", ".")) || 0, on: true, used: 0, max: form.max ? parseInt(form.max) : null, expiresAt: form.expiresAt || null }]);
     setForm({ code: "", type: "%", val: "", max: "", expiresAt: "" }); setShowForm(false);
   };
@@ -2368,7 +2369,7 @@ function TabCampanhas({ ed, patch }) {
   const [form, setForm] = useState({ name: "", pixelId: "", messageTemplate: "" });
   const setCamps = (fn) => patch(e => ({ ...e, campaigns: fn(e.campaigns) }));
   const add = () => {
-    if (!form.name.trim()) return;
+    if (!form.name.trim()) {return;}
     setCamps(cs => [...cs, { id: `cm-${Date.now()}`, name: form.name.trim(), pixelId: form.pixelId.trim() || null, messageTemplate: form.messageTemplate.trim() || null, status: "draft", sent: 0 }]);
     setForm({ name: "", pixelId: "", messageTemplate: "" }); setShowForm(false);
   };
@@ -2426,7 +2427,7 @@ function TabAvaliacoes({ ed, patch }) {
   const [form, setForm] = useState({ name: "", rating: 5, text: "", verified: false });
   const setReviews = (fn) => patch(e => ({ ...e, reviews: fn(e.reviews) }));
   const add = () => {
-    if (!form.name.trim()) return;
+    if (!form.name.trim()) {return;}
     setReviews(rs => [{ id: `rv-${Date.now()}`, authorName: form.name.trim(), rating: form.rating, comment: form.text.trim(), verified: form.verified }, ...rs]);
     setForm({ name: "", rating: 5, text: "", verified: false }); setShowForm(false);
   };
@@ -2483,7 +2484,7 @@ function TabAfterpay({ ed, patch }) {
   const [form, setForm] = useState({ name: "", kind: "upsell", priceInCents: "" });
   const setAP = (fn) => patch(e => ({ ...e, afterpay: fn(e.afterpay) }));
   const add = () => {
-    if (!form.name.trim()) return;
+    if (!form.name.trim()) {return;}
     setAP(a => [...a, { id: `ap-${Date.now()}`, name: form.name.trim(), kind: form.kind, priceInCents: Math.round(parseFloat(form.priceInCents.replace(",", ".") || "0") * 100), accepted: 0, shown: 0 }]);
     setForm({ name: "", kind: "upsell", priceInCents: "" }); setShowForm(false);
   };
@@ -2579,7 +2580,7 @@ function TabIA({ ed, patch }) {
 }
 
 /* ── URLs ── (links de checkout por plano, copiáveis) */
-function TabUrls({ ed, patch, product }) {
+function TabUrls({ ed, patch, _product }) {
   const { C } = useTheme();
   const [copied, setCopied] = useState(null);
   const [sel, setSel] = useState(null);
@@ -2591,12 +2592,12 @@ function TabUrls({ ed, patch, product }) {
   const urls = ed.urls || [];
   const addUrl = () => { const id = `u-${Date.now()}`; setUrls(u => [...u, { id, description: "Nova URL", url: "", isPrivate: false, active: true, aiLearning: false, aiLearnFreq: "manual", aiLearnStatus: "pending", chatEnabled: false, salesFromUrl: 0 }]); setSel(id); };
   const setU = (id, k, v) => setUrls(u => u.map(x => x.id === id ? { ...x, [k]: v } : x));
-  const delU = (id) => { setUrls(u => u.filter(x => x.id !== id)); if (sel === id) setSel(null); };
+  const delU = (id) => { setUrls(u => u.filter(x => x.id !== id)); if (sel === id) {setSel(null);} };
   const statusColor = (s) => ({ learned: C.green, learning: C.blue, error: C.red, pending: C.amber }[s] || C.dim);
 
   if (sel) {
     const u = urls.find(x => x.id === sel);
-    if (u) return (
+    if (u) {return (
       <div>
         <button onClick={() => setSel(null)} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "transparent", border: "none", color: C.muted, cursor: "pointer", fontFamily: FONT, fontSize: 12, marginBottom: 12, padding: 0 }}>{Icon.back(13)} URLs</button>
         <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
@@ -2614,7 +2615,7 @@ function TabUrls({ ed, patch, product }) {
           <button onClick={() => delU(u.id)} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 6, color: C.dim, display: "flex", alignSelf: "flex-start" }} onMouseEnter={e => e.currentTarget.style.color = C.red} onMouseLeave={e => e.currentTarget.style.color = C.dim}>{Icon.trash(14)} remover</button>
         </div>
       </div>
-    );
+    );}
   }
 
   return (
@@ -2673,7 +2674,7 @@ function AffiliateOverview({ affiliate }) {
         <div style={{ fontFamily: MONO, fontSize: 11, color: earnings > 0 ? C.green : C.dim, marginTop: 2 }}>{earnings > 0 ? `${approved.length} links ativos` : "sem ganhos ainda"}</div>
       </div>
       <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-        {[["Marketplace", affiliate.marketplace.length, "disponíveis"], ["Aprovadas", approved.length, "links ativos"], ["Salvos", saved.length, "p/ depois"]].map(([l, v, s]) => (
+        {[["Marketplace", affiliate.marketplace.length, "disponíveis"], ["Aprovadas", approved.length, "links ativos"], ["Salvos", saved.length, "p/ depois"]].map(([l, v, _s]) => (
           <div key={l} style={{ flex: 1, padding: "12px 10px", background: C.raised, border: `1px solid ${C.divider}`, borderRadius: 8, textAlign: "center" }}>
             <div style={{ fontFamily: MONO, fontSize: 20, fontWeight: 700, color: C.silver }}>{v}</div>
             <div style={{ fontFamily: MONO, fontSize: 8.5, color: C.dim, letterSpacing: 0.5, marginTop: 2 }}>{l}</div>
@@ -2689,10 +2690,10 @@ function AffiliateOverview({ affiliate }) {
 function AffiliateBranchPanel({ node, affiliate, patchMyAffiliate }) {
   const { C } = useTheme();
   const key = node.meta?.branchKey;
-  if (key === "produtor") return <MyAffiliatesPanel affiliate={affiliate} patchMyAffiliate={patchMyAffiliate} />;
+  if (key === "produtor") {return <MyAffiliatesPanel affiliate={affiliate} patchMyAffiliate={patchMyAffiliate} />;}
   let items = affiliate.marketplace;
-  if (key === "minhas") items = items.filter(m => m.requestStatus === "APPROVED" || m.affiliateLink);
-  else if (key === "salvos") items = items.filter(m => m.isSaved);
+  if (key === "minhas") {items = items.filter(m => m.requestStatus === "APPROVED" || m.affiliateLink);}
+  else if (key === "salvos") {items = items.filter(m => m.isSaved);}
   const desc = { marketplace: "Todos os produtos de outros produtores disponíveis para você afiliar. Clique num nó-produto para ver comissão, materiais e solicitar.", minhas: "Produtos cuja afiliação foi aprovada. Cada um tem um link rastreável com cliques, vendas e receita.", salvos: "Produtos que você marcou para analisar depois." }[key];
   return (
     <>
@@ -2719,7 +2720,7 @@ function AffiliateProductPanel({ node, affiliate, patchAffiliate }) {
   const { C } = useTheme();
   const m = affiliate.marketplace.find(x => x.id === node.meta?.marketId);
   const [copied, setCopied] = useState(false);
-  if (!m) return null;
+  if (!m) {return null;}
   const cps = (m.price * m.commission) / 100; // comissão por venda (centavos)
   const approved = m.requestStatus === "APPROVED" || m.affiliateLink;
   const pending = m.requestStatus === "PENDING";
@@ -2792,7 +2793,7 @@ function AffiliateProductPanel({ node, affiliate, patchAffiliate }) {
    Lista + aprovar pendentes + detalhe (performance mensal, links, chat).
    ════════════════════════════════════════════════════════════════════════ */
 function Sparkline({ data, color }) {
-  const { C } = useTheme();
+  const { _C } = useTheme();
   const max = Math.max(1, ...data);
   const w = 100, h = 34, n = data.length;
   const pts = data.map((v, i) => [(i / (n - 1)) * w, h - (v / max) * (h - 4) - 2]);
@@ -2875,12 +2876,12 @@ function AffiliatePartnerPanel({ node, affiliate, patchMyAffiliate }) {
   const a = (affiliate.myAffiliates || []).find(x => x.id === node.meta?.affId);
   const chat = (affiliate.partnerChats || []).find(c => c.name === a?.name);
   const [msg, setMsg] = useState("");
-  if (!a) return null;
+  if (!a) {return null;}
   const commEarned = ((a.revenue || 0) * (a.commission || 0)) / 100;
   const pending = a.status === "pending";
   const months = ["jan", "fev", "mar", "abr", "mai", "jun"];
   const send = () => {
-    if (!msg.trim() || !chat) return;
+    if (!msg.trim() || !chat) {return;}
     patchMyAffiliate(a.id, x => x, false, { chatName: a.name, text: msg.trim() });
     setMsg("");
   };
@@ -2955,10 +2956,10 @@ const LESSON_TYPES = [["video", "Vídeo"], ["text", "Texto"], ["quiz", "Quiz"], 
 function ConversarBranchPanel({ node, conversar, patchConversar }) {
   const { C } = useTheme();
   const key = node.meta?.branchKey;
-  if (key === "crm") return <CrmPanel conversar={conversar} patchConversar={patchConversar} />;
-  if (key === "vendas") return <VendasPanel conversar={conversar} />;
-  if (key === "anuncios") return <AnunciosPanel conversar={conversar} patchConversar={patchConversar} />;
-  if (key === "autopilot") return <AutopilotPanel conversar={conversar} />;
+  if (key === "crm") {return <CrmPanel conversar={conversar} patchConversar={patchConversar} />;}
+  if (key === "vendas") {return <VendasPanel conversar={conversar} />;}
+  if (key === "anuncios") {return <AnunciosPanel conversar={conversar} patchConversar={patchConversar} />;}
+  if (key === "autopilot") {return <AutopilotPanel conversar={conversar} />;}
   if (key === "inbox") {
     const convs = conversar.conversations || [];
     const unread = convs.reduce((s, c) => s + (c.unreadCount || 0), 0);
@@ -3018,7 +3019,7 @@ function CrmPanel({ conversar, patchConversar }) {
   const advance = (dealId) => patchConversar(c => {
     const stages = c.crm.stages;
     return { ...c, crm: { ...c.crm, deals: c.crm.deals.map(d => {
-      if (d.id !== dealId) return d;
+      if (d.id !== dealId) {return d;}
       const idx = stages.findIndex(s => s.id === d.stageId);
       const next = stages[Math.min(stages.length - 1, idx + 1)];
       return { ...d, stageId: next.id, status: next.order === stages.length - 1 ? "WON" : "OPEN" };
@@ -3084,7 +3085,7 @@ function VendasPanel({ conversar }) {
   const paid = orders.filter(o => o.status === "PAID");
   const revenue = paid.reduce((s, o) => s + o.totalInCents, 0);
   const filtered = filter === "all" ? orders : orders.filter(o => o.kind === filter);
-  const kindLabel = { single: "Avulso", subscription: "Assinatura", physical: "Físico" };
+  const _kindLabel = { single: "Avulso", subscription: "Assinatura", physical: "Físico" };
   return (
     <>
       <PanelDescription>Todas as vendas realizadas: avulsas, assinaturas e produtos físicos. Cada pedido é um nó; clique para ver pagamento, cliente e rastreio.</PanelDescription>
@@ -3128,7 +3129,7 @@ function VendasPanel({ conversar }) {
 function OrderPanel({ node, conversar, patchConversar }) {
   const { C } = useTheme();
   const o = (conversar.orders || []).find(x => x.id === node.meta?.orderId);
-  if (!o) return null;
+  if (!o) {return null;}
   const [sl, sc] = ORDER_STATUS[o.status] || ["", "dim"];
   const kindLabel = { single: "Avulso", subscription: "Assinatura", physical: "Físico" };
   return (
@@ -3165,7 +3166,7 @@ function AnunciosPanel({ conversar, patchConversar }) {
   const spend = camps.reduce((s, c) => s + c.spend, 0);
   const revenue = camps.reduce((s, c) => s + c.revenue, 0);
   const roas = spend > 0 ? (revenue / spend) : 0;
-  const conv = camps.reduce((s, c) => s + c.conversions, 0);
+  const _conv = camps.reduce((s, c) => s + c.conversions, 0);
   const toggleRule = (id) => patchConversar(c => ({ ...c, adRules: (c.adRules || []).map(r => r.id === id ? { ...r, active: !r.active } : r) }));
   const byPlat = {};
   for (const c of camps) { byPlat[c.platform] = byPlat[c.platform] || { spend: 0, revenue: 0 }; byPlat[c.platform].spend += c.spend; byPlat[c.platform].revenue += c.revenue; }
@@ -3216,7 +3217,7 @@ function AnunciosPanel({ conversar, patchConversar }) {
 function AdCampaignPanel({ node, conversar, patchConversar }) {
   const { C } = useTheme();
   const ad = (conversar.adCampaigns || []).find(x => x.id === node.meta?.adId);
-  if (!ad) return null;
+  if (!ad) {return null;}
   const on = ad.status === "ACTIVE";
   const toggle = () => patchConversar(c => ({ ...c, adCampaigns: c.adCampaigns.map(x => x.id === ad.id ? { ...x, status: x.status === "ACTIVE" ? "PAUSED" : "ACTIVE" } : x) }));
   const profit = ad.revenue - ad.spend;
@@ -3251,7 +3252,7 @@ function AutopilotPanel({ conversar }) {
   const events = conversar.autopilotEvents || [];
   const followups = conversar.followups || [];
   const executed = events.filter(e => e.status === "executed").length;
-  const errors = events.filter(e => e.status === "error").length;
+  const _errors = events.filter(e => e.status === "error").length;
   const pending = followups.filter(f => f.status === "scheduled").length;
   const statusMap = { executed: ["executada", C.green], skipped: ["pulada", C.amber], error: ["erro", C.red] };
   return (
@@ -3310,10 +3311,10 @@ function ContactPanel({ node, conversar, patchConversar }) {
   const { C } = useTheme();
   const ct = (conversar.contacts || []).find(x => x.id === node.meta?.contactId);
   const [tagInput, setTagInput] = useState("");
-  if (!ct) return null;
+  if (!ct) {return null;}
   const probColor = { HIGH: C.green, MEDIUM: C.amber, LOW: C.dim }[ct.purchaseProbability] || C.dim;
   const upd = (k, v) => patchConversar && patchConversar(c => ({ ...c, contacts: c.contacts.map(x => x.id === ct.id ? { ...x, [k]: v } : x) }));
-  const addTag = () => { const t = tagInput.trim(); if (t && !(ct.tags || []).includes(t)) upd("tags", [...(ct.tags || []), t]); setTagInput(""); };
+  const addTag = () => { const t = tagInput.trim(); if (t && !(ct.tags || []).includes(t)) {upd("tags", [...(ct.tags || []), t]);} setTagInput(""); };
   return (
     <>
       <div style={{ textAlign: "center", padding: "6px 0 14px" }}>
@@ -3363,9 +3364,9 @@ function ConversationPanel({ node, conversar, patchConversar }) {
   const { C } = useTheme();
   const conv = (conversar.conversations || []).find(x => x.id === node.meta?.convId);
   const [msg, setMsg] = useState("");
-  if (!conv) return null;
+  if (!conv) {return null;}
   const send = () => {
-    if (!msg.trim()) return;
+    if (!msg.trim()) {return;}
     patchConversar(c => ({ ...c, conversations: c.conversations.map(x => x.id === conv.id ? { ...x, messages: [...x.messages, { id: `m-${Date.now()}`, direction: "OUTBOUND", type: "TEXT", content: msg.trim(), status: "SENT", time: "agora" }], unreadCount: 0, lastMessageAt: "agora" } : x) }));
     setMsg("");
   };
@@ -3404,7 +3405,7 @@ function MemberAreaPanel({ node, educar, patchArea }) {
   const a = (educar?.areas || []).find(x => x.id === node.meta?.areaId);
   const [sec, setSec] = useState("overview");
   const [openMod, setOpenMod] = useState(null);
-  if (!a) return null;
+  if (!a) {return null;}
   const st = areaStats(a);
 
   // mutators
@@ -3533,7 +3534,7 @@ function MemberAreaPanel({ node, educar, patchArea }) {
 }
 
 
-function WalletOverview({ wallet, patchWallet }) {
+function WalletOverview({ wallet, _patchWallet }) {
   const { C } = useTheme();
   const b = wallet.balance;
   return (
@@ -3556,16 +3557,16 @@ function WalletOverview({ wallet, patchWallet }) {
 }
 
 function WalletBranchPanel({ node, wallet, patchWallet }) {
-  const { C } = useTheme();
+  const { _C } = useTheme();
   const key = node.meta?.branchKey;
-  if (key === "saldo") return <WalletOverview wallet={wallet} patchWallet={patchWallet} />;
-  if (key === "saques") return <WalletWithdraw wallet={wallet} patchWallet={patchWallet} />;
-  if (key === "antecipacoes") return <WalletAnticipate wallet={wallet} patchWallet={patchWallet} />;
-  if (key === "extrato") return <WalletExtrato wallet={wallet} />;
-  if (key === "vendas") return <WalletVendas />;
-  if (key === "assinaturas") return <WalletAssinaturas />;
-  if (key === "abandonos") return <WalletAbandonos />;
-  if (key === "estornos") return <WalletEstornos />;
+  if (key === "saldo") {return <WalletOverview wallet={wallet} patchWallet={patchWallet} />;}
+  if (key === "saques") {return <WalletWithdraw wallet={wallet} patchWallet={patchWallet} />;}
+  if (key === "antecipacoes") {return <WalletAnticipate wallet={wallet} patchWallet={patchWallet} />;}
+  if (key === "extrato") {return <WalletExtrato wallet={wallet} />;}
+  if (key === "vendas") {return <WalletVendas />;}
+  if (key === "assinaturas") {return <WalletAssinaturas />;}
+  if (key === "abandonos") {return <WalletAbandonos />;}
+  if (key === "estornos") {return <WalletEstornos />;}
   return <PanelDescription>Consultar.</PanelDescription>;
 }
 
@@ -3754,7 +3755,7 @@ function WalletWithdraw({ wallet, patchWallet }) {
   const avail = wallet.balance.available;
   const cents = Math.round(parseFloat(String(amount).replace(",", ".") || "0") * 100);
   const submit = () => {
-    if (cents <= 0 || cents > avail) return;
+    if (cents <= 0 || cents > avail) {return;}
     patchWallet(w => ({ ...w, balance: { ...w.balance, available: w.balance.available - cents, total: w.balance.total - cents }, withdrawals: [{ id: `wd-${Date.now()}`, amount: cents, status: "processing", date: new Date().toLocaleDateString("pt-BR"), method, bank: "Conta principal" }, ...w.withdrawals] }));
     setAmount("");
   };
@@ -3796,7 +3797,7 @@ function WalletAnticipate({ wallet, patchWallet }) {
   const net = cents - fee;
   const pending = wallet.balance.pending;
   const submit = () => {
-    if (cents <= 0 || cents > pending) return;
+    if (cents <= 0 || cents > pending) {return;}
     patchWallet(w => ({ ...w, balance: { ...w.balance, pending: w.balance.pending - cents, available: w.balance.available + net }, anticipations: [{ id: `an-${Date.now()}`, originalAmount: cents, feePct: FEE_PCT, netAmount: net, status: "completed", date: new Date().toLocaleDateString("pt-BR"), installments: parseInt(installments) || 1 }, ...w.anticipations] }));
     setAmount("");
   };
@@ -3887,7 +3888,7 @@ function TeamMemberPanel({ node }) {
     </>
   );
 }
-function AppNodePanel({ node }) {
+function AppNodePanel({ _node }) {
   const { C } = useTheme();
   return (
     <>
@@ -4001,9 +4002,13 @@ function GraphCanvas({ tab, recenterNonce, selectedId, onSelectNode, settings, d
   const [size, setSize] = useState({ w: 1200, h: 700 });
   const sizeRef = useRef(size);
   useEffect(() => { sizeRef.current = size; }, [size]);
-  const [, forceRender] = useReducer(x => x + 1, 0);
+  const [renderNodes, setRenderNodes] = useState([]);
+  const publishRenderNodes = useCallback(() => {
+    setRenderNodes(nodesRef.current.map(n => ({ ...n })));
+  }, []);
 
   const { nodes: visibleNodes, edges: visibleEdges } = useMemo(() => applyFilters(dynamicGraph.nodes, dynamicGraph.edges, settings.filters), [settings.filters, dynamicGraph]);
+  const renderNodeById = useMemo(() => new Map(renderNodes.map(n => [n.id, n])), [renderNodes]);
 
   useEffect(() => {
     const existingIds = new Set(nodesRef.current.map(n => n.id));
@@ -4014,7 +4019,7 @@ function GraphCanvas({ tab, recenterNonce, selectedId, onSelectNode, settings, d
     const sunPosOf = (node) => anchors.get(SUN_OF_AREA[node.area]) || { x: 0, y: 0 };
     let added = false;
     for (const n of dynamicGraph.nodes) {
-      if (!sunIds.has(n.id)) continue;
+      if (!sunIds.has(n.id)) {continue;}
       const a = anchors.get(n.id) || { x: 0, y: 0 };
       const existing = nodesRef.current.find(rn => rn.id === n.id);
       if (existing) { existing.x = a.x; existing.y = a.y; existing.vx = 0; existing.vy = 0; existing.fixed = true; }
@@ -4022,7 +4027,7 @@ function GraphCanvas({ tab, recenterNonce, selectedId, onSelectNode, settings, d
     }
     const galCount = {};
     for (const n of dynamicGraph.nodes) {
-      if (sunIds.has(n.id) || existingIds.has(n.id)) continue;
+      if (sunIds.has(n.id) || existingIds.has(n.id)) {continue;}
       added = true;
       const g = n.area;
       const i = (galCount[g] = (galCount[g] || 0) + 1);
@@ -4034,11 +4039,15 @@ function GraphCanvas({ tab, recenterNonce, selectedId, onSelectNode, settings, d
       nodesRef.current.push({ ...n, x: cx + Math.cos(ang) * r, y: cy + Math.sin(ang) * r, vx: 0, vy: 0 });
     }
     const metaById = new Map(dynamicGraph.nodes.map(n => [n.id, n.meta]));
-    for (const rn of nodesRef.current) { const m = metaById.get(rn.id); if (m) rn.meta = m; }
+    nodesRef.current = nodesRef.current.map(rn => {
+      const m = metaById.get(rn.id);
+      return m ? { ...rn, meta: m } : rn;
+    });
     targetsRef.current = anchors;
-    if (added || existingIds.size === 0) alphaRef.current = 1;
-    forceRender();
-  }, [dynamicGraph.nodes]);
+    if (added || existingIds.size === 0) {alphaRef.current = 1;}
+    const publishId = requestAnimationFrame(publishRenderNodes);
+    return () => cancelAnimationFrame(publishId);
+  }, [dynamicGraph.nodes, publishRenderNodes]);
 
   useEffect(() => {
     let raf;
@@ -4049,21 +4058,21 @@ function GraphCanvas({ tab, recenterNonce, selectedId, onSelectNode, settings, d
       if (a > 0.004) {
         physicsTick(visNodesInRef, visibleEdges, settings.forces, a, connectionCount);
         alphaRef.current = a + (0 - a) * 0.0228;
-        forceRender();
+        publishRenderNodes();
       } else if (draggingId) {
         physicsTick(visNodesInRef, visibleEdges, settings.forces, 0.3, connectionCount);
-        forceRender();
+        publishRenderNodes();
       }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [visibleNodes, visibleEdges, settings.forces, connectionCount, draggingId]);
+  }, [visibleNodes, visibleEdges, settings.forces, connectionCount, draggingId, publishRenderNodes]);
 
   useEffect(() => { alphaRef.current = 0.6; }, [settings.forces.centerForce, settings.forces.repelForce, settings.forces.linkForce, settings.forces.linkDistance]);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current) {return;}
     const ro = new ResizeObserver(entries => { const r = entries[0].contentRect; setSize({ w: r.width, h: r.height }); });
     ro.observe(containerRef.current);
     return () => ro.disconnect();
@@ -4072,12 +4081,12 @@ function GraphCanvas({ tab, recenterNonce, selectedId, onSelectNode, settings, d
   useEffect(() => {
     const onKey = (e) => {
       const step = e.shiftKey ? 40 : 16;
-      if (e.key === "ArrowLeft")  setPan(p => ({ x: p.x + step, y: p.y }));
-      if (e.key === "ArrowRight") setPan(p => ({ x: p.x - step, y: p.y }));
-      if (e.key === "ArrowUp")    setPan(p => ({ x: p.x, y: p.y + step }));
-      if (e.key === "ArrowDown")  setPan(p => ({ x: p.x, y: p.y - step }));
-      if (e.key === "+" || e.key === "=") setZoom(z => Math.min(3, z + 0.1));
-      if (e.key === "-" || e.key === "_") setZoom(z => Math.max(0.3, z - 0.1));
+      if (e.key === "ArrowLeft")  {setPan(p => ({ x: p.x + step, y: p.y }));}
+      if (e.key === "ArrowRight") {setPan(p => ({ x: p.x - step, y: p.y }));}
+      if (e.key === "ArrowUp")    {setPan(p => ({ x: p.x, y: p.y + step }));}
+      if (e.key === "ArrowDown")  {setPan(p => ({ x: p.x, y: p.y - step }));}
+      if (e.key === "+" || e.key === "=") {setZoom(z => Math.min(3, z + 0.1));}
+      if (e.key === "-" || e.key === "_") {setZoom(z => Math.max(0.3, z - 0.1));}
       if (e.key === "0") { setZoom(1); setPan({ x: 0, y: 0 }); }
     };
     window.addEventListener("keydown", onKey);
@@ -4144,30 +4153,30 @@ function GraphCanvas({ tab, recenterNonce, selectedId, onSelectNode, settings, d
 
   const screenToWorld = useCallback((sx, sy) => {
     const rect = svgRef.current?.getBoundingClientRect();
-    if (!rect) return { x: 0, y: 0 };
+    if (!rect) {return { x: 0, y: 0 };}
     const ccx = rect.width / 2, ccy = rect.height / 2;
     return { x: (sx - rect.left - ccx - pan.x) / zoom, y: (sy - rect.top - ccy - pan.y) / zoom };
   }, [pan, zoom]);
 
-  const onSvgMouseDown = (e) => { if (e.target.dataset.nodeId) return; cancelAnimationFrame(focusAnimRef.current); setIsPanning(true); panStartRef.current = { x: e.clientX, y: e.clientY, panX: pan.x, panY: pan.y }; };
+  const onSvgMouseDown = (e) => { if (e.target.dataset.nodeId) {return;} cancelAnimationFrame(focusAnimRef.current); setIsPanning(true); panStartRef.current = { x: e.clientX, y: e.clientY, panX: pan.x, panY: pan.y }; };
   const onNodeMouseDown = (id, e) => { e.stopPropagation(); movedRef.current = false; downPosRef.current = { x: e.clientX, y: e.clientY }; setDraggingId(id); const n = nodesRef.current.find(n => n.id === id); if (n) { n.dragging = true; n.vx = 0; n.vy = 0; } reheat(0.4); };
   const onMouseMove = (e) => {
     if (isPanning) { const dx = e.clientX - panStartRef.current.x; const dy = e.clientY - panStartRef.current.y; setPan({ x: panStartRef.current.panX + dx, y: panStartRef.current.panY + dy }); return; }
     if (draggingId) {
       const mdx = e.clientX - downPosRef.current.x, mdy = e.clientY - downPosRef.current.y;
-      if (mdx * mdx + mdy * mdy > 16) movedRef.current = true; // moved > 4px → treat as drag, not click
+      if (mdx * mdx + mdy * mdy > 16) {movedRef.current = true;} // moved > 4px → treat as drag, not click
       const { x, y } = screenToWorld(e.clientX, e.clientY); const n = nodesRef.current.find(n => n.id === draggingId); if (n) { n.x = x; n.y = y; n.vx = 0; n.vy = 0; } reheat(0.4);
     }
   };
-  const onMouseUp = () => { setIsPanning(false); if (draggingId) { const n = nodesRef.current.find(n => n.id === draggingId); if (n) n.dragging = false; reheat(0.5); } setDraggingId(null); };
+  const onMouseUp = () => { setIsPanning(false); if (draggingId) { const n = nodesRef.current.find(n => n.id === draggingId); if (n) {n.dragging = false;} reheat(0.5); } setDraggingId(null); };
   const onWheel = (e) => { e.preventDefault(); cancelAnimationFrame(focusAnimRef.current); const delta = -e.deltaY * 0.0015; setZoom(z => Math.max(0.3, Math.min(3, z + delta))); };
-  const onCanvasClick = (e) => { if (e.target.dataset.nodeId) return; onSelectNode(null); };
+  const onCanvasClick = (e) => { if (e.target.dataset.nodeId) {return;} onSelectNode(null); };
 
   const connectedIds = useMemo(() => {
     const target = hoveredId || selectedId;
-    if (!target) return null;
+    if (!target) {return null;}
     const set = new Set([target]);
-    for (const e of visibleEdges) { if (e.from === target) set.add(e.to); if (e.to === target) set.add(e.from); }
+    for (const e of visibleEdges) { if (e.from === target) {set.add(e.to);} if (e.to === target) {set.add(e.from);} }
     return set;
   }, [hoveredId, selectedId, visibleEdges]);
 
@@ -4181,14 +4190,14 @@ function GraphCanvas({ tab, recenterNonce, selectedId, onSelectNode, settings, d
         <defs><marker id="arrow-ember" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill={C.ember} /></marker></defs>
         <g transform={`translate(${cx + pan.x}, ${cy + pan.y}) scale(${zoom})`}>
           {visibleEdges.map((e, i) => {
-            const a = nodesRef.current.find(n => n.id === e.from);
-            const b = nodesRef.current.find(n => n.id === e.to);
-            if (!a || !b) return null;
+            const a = renderNodeById.get(e.from);
+            const b = renderNodeById.get(e.to);
+            if (!a || !b) {return null;}
             const isHighlighted = focusSet && focusSet.has(e.from) && focusSet.has(e.to);
             const isDimmed = focusSet && !isHighlighted;
             let stroke = C.hi, strokeWidth = (0.55 * settings.display.linkThickness) / zoom, opacity = 0.30;
             if (isHighlighted) { stroke = C.ember; strokeWidth = (1.2 * settings.display.linkThickness) / zoom; opacity = 0.9; }
-            else if (isDimmed) opacity = 0.04;
+            else if (isDimmed) {opacity = 0.04;}
             const useArrows = settings.display.arrows && e.directed !== false;
             const aRadius = nodeRadius(a, connectionCount, settings.display.nodeSize);
             const bRadius = nodeRadius(b, connectionCount, settings.display.nodeSize);
@@ -4197,15 +4206,15 @@ function GraphCanvas({ tab, recenterNonce, selectedId, onSelectNode, settings, d
             return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={stroke} strokeWidth={strokeWidth} opacity={opacity} strokeLinecap="round" markerEnd={useArrows && isHighlighted ? "url(#arrow-ember)" : undefined} style={{ transition: "opacity .28s ease, stroke .28s ease, stroke-width .28s ease" }} />;
           })}
           {visibleNodes.map(n => {
-            const node = nodesRef.current.find(rn => rn.id === n.id);
-            if (!node) return null;
+            const node = renderNodeById.get(n.id);
+            if (!node) {return null;}
             const isHovered = hoveredId === n.id;
             const isSelected = selectedId === n.id;
             const inFocus = focusSet && focusSet.has(n.id);
             const isDimmed = focusSet && !inFocus;
             const radius = nodeRadius(n, connectionCount, settings.display.nodeSize);
             const fill = colorForNode(n, settings.groups, C, channels, tab, focusSet);
-            let opacity = 1; if (isDimmed) opacity = 0.13;
+            let opacity = 1; if (isDimmed) {opacity = 0.13;}
             return (
               <g key={n.id} transform={`translate(${node.x}, ${node.y})`} style={{ cursor: draggingId === n.id ? "grabbing" : "grab", transition: "opacity .28s ease" }} opacity={opacity}>
                 <circle cx="0" cy="0" r={radius} fill={fill} stroke={isHovered || isSelected ? C.ember : "none"} strokeWidth={isHovered || isSelected ? 2 / zoom : 0} data-node-id={n.id}
@@ -4214,9 +4223,9 @@ function GraphCanvas({ tab, recenterNonce, selectedId, onSelectNode, settings, d
             );
           })}
           {visibleNodes.map(n => {
-            if (!n.label) return null;
-            const node = nodesRef.current.find(rn => rn.id === n.id);
-            if (!node) return null;
+            if (!n.label) {return null;}
+            const node = renderNodeById.get(n.id);
+            if (!node) {return null;}
             const isHovered = hoveredId === n.id;
             const isSelected = selectedId === n.id;
             const inFocus = focusSet && focusSet.has(n.id);
@@ -4225,10 +4234,10 @@ function GraphCanvas({ tab, recenterNonce, selectedId, onSelectNode, settings, d
             const isPrincipal = isPrincipalForTab(n, tab);
             const tier = isMass ? 0 : (isPrincipal ? 1 : 2);
             let baseOp = labelOpacityFor(tier);
-            if (isHovered || isSelected) baseOp = 1;
-            else if (inFocus) baseOp = Math.max(baseOp, 0.9);
-            else if (isDimmed) baseOp *= 0.12;
-            if (baseOp < 0.02) return null;
+            if (isHovered || isSelected) {baseOp = 1;}
+            else if (inFocus) {baseOp = Math.max(baseOp, 0.9);}
+            else if (isDimmed) {baseOp *= 0.12;}
+            if (baseOp < 0.02) {return null;}
             const radius = nodeRadius(n, connectionCount, settings.display.nodeSize);
             const offset = radius + 11 / zoom;
             const fontSize = (isMass ? 12 : isPrincipal ? 11 : 9.5) / zoom;
@@ -4249,7 +4258,7 @@ function GraphCanvas({ tab, recenterNonce, selectedId, onSelectNode, settings, d
 /* ════════════════════════════════════════════════════════════════════════
    CONTROLES FLUTUANTES
    ════════════════════════════════════════════════════════════════════════ */
-function RefreshButton({ onRefresh }) {
+const _RefreshButton = function RefreshButton({ onRefresh }) {
   const { C } = useTheme();
   const [spinning, setSpinning] = useState(false);
   const [hover, setHover] = useState(false);
@@ -4262,7 +4271,7 @@ function RefreshButton({ onRefresh }) {
       </button>
     </div>
   );
-}
+};
 
 function SettingsButton({ open, onClick }) {
   const { C } = useTheme();
@@ -4335,11 +4344,11 @@ function ChannelOnboardingWizard({ channelKey, channels, setChannels, onClose, p
       </div>
     </>
   );
-  if (embedded) return (
+  if (embedded) {return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
       <div style={{ width: "100%", maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>{inner}</div>
     </div>
-  );
+  );}
   return (
     <div style={{ position: "fixed", inset: 0, margin: "auto", width: "80vw", height: "80vh", maxWidth: 1320, maxHeight: 900, background: C.paper, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: "0 16px 50px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", zIndex: 40, animation: "panelSlide .3s cubic-bezier(.2,.7,.2,1) both", overflow: "hidden" }}>{inner}</div>
   );
@@ -4409,7 +4418,11 @@ function StepVoice({ ch, update, onDone, onBack }) {
   const EDGES = ["Paciente", "Firme", "Incisivo"];
   const setTone = (i) => update({ voice: { ...voice, tone: i } });
   const setEdge = (i) => update({ voice: { ...voice, edge: i } });
-  useEffect(() => { if (!ch.voice) update({ voice: { tone: 1, edge: 1 } }); }, []);
+  useEffect(() => {
+    if (ch.voice) {return undefined;}
+    const timeoutId = window.setTimeout(() => update({ voice: { tone: 1, edge: 1 } }), 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [ch.voice, update]);
   return (
     <div>
       <h3 style={{ margin: "0 0 8px 0", fontFamily: FONT, fontSize: 17, fontWeight: 400, color: C.silver, letterSpacing: -0.3 }}>Calibre sua voz</h3>
@@ -4442,9 +4455,9 @@ function Dial({ label, value, onChange, labels }) {
 /* ════════════════════════════════════════════════════════════════════════
    NODE PANEL · roteia para os painéis ricos (inclui as 10 abas de produto)
    ════════════════════════════════════════════════════════════════════════ */
-function NodePanel({ node, onClose, onAction, onSelectNode, onNewProduct, onAskKloel, channels, products, patchProductEditor, affiliate, patchAffiliate, patchMyAffiliate, wallet, patchWallet, educar, patchArea, conversar, patchConversar }) {
+function NodePanel({ node, onClose, _onAction, onSelectNode, onNewProduct, onAskKloel, channels, products, patchProductEditor, affiliate, patchAffiliate, patchMyAffiliate, wallet, patchWallet, educar, patchArea, conversar, patchConversar }) {
   const { C } = useTheme();
-  if (!node) return null;
+  if (!node) {return null;}
 
   // produto e editor associados (para sub-nós de produto)
   const productId = node.meta?.productId || (node.type === "product" ? node.id : null);
@@ -4453,8 +4466,8 @@ function NodePanel({ node, onClose, onAction, onSelectNode, onNewProduct, onAskK
   const patch = (fn) => productId && patchProductEditor(productId, fn);
 
   const isProductTab = PRODUCT_SUBNODE_TYPES.includes(node.type);
-  const isAffiliate = node.type === "affProduct" || node.type === "affBranch";
-  const wide = isProductTab || node.type === "product";
+  const _isAffiliate = node.type === "affProduct" || node.type === "affBranch";
+  const _wide = isProductTab || node.type === "product";
 
   return (
     <div style={{ position: "fixed", inset: 0, margin: "auto", width: "80vw", height: "80vh", maxWidth: 1320, maxHeight: 900, background: C.paper, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: "0 16px 50px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", zIndex: 40, animation: "panelSlide .3s cubic-bezier(.2,.7,.2,1) both", overflow: "hidden" }}>
@@ -4520,7 +4533,7 @@ function NodePanel({ node, onClose, onAction, onSelectNode, onNewProduct, onAskK
 }
 
 /* Overview do produto: cabeçalho + grade de atalhos para as 10 abas */
-function ProductOverview({ product, ed, patch, onAskKloel, onOpenTab, onBack }) {
+function ProductOverview({ product, ed, patch, onAskKloel, _onOpenTab, onBack }) {
   const { C } = useTheme();
   const [tab, setTab] = useState("dados");
   const isActive = product.status === "active";
@@ -4568,7 +4581,7 @@ function ProductOverview({ product, ed, patch, onAskKloel, onOpenTab, onBack }) 
       </div>
       <div style={{ display: "flex", gap: 20, alignItems: "center", padding: 20, background: C.paper, border: `1px solid ${C.border}`, borderRadius: 12, marginBottom: 20, flexWrap: "wrap" }}>
         <div style={{ width: 80, height: 80, borderRadius: 8, background: C.raised, border: `1px solid ${C.divider}`, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: 6, flexShrink: 0 }}>
-          {img ? <img src={img} alt="" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", borderRadius: 4 }} /> : <span style={{ color: C.dim, display: "flex" }}>{Icon.box(22)}</span>}
+          {img ? <Image src={img} alt="" width={80} height={80} unoptimized style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", borderRadius: 4 }} /> : <span style={{ color: C.dim, display: "flex" }}>{Icon.box(22)}</span>}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <h1 style={{ fontFamily: FONT, fontSize: 18, fontWeight: 700, color: C.silver, margin: "0 0 4px" }}>{product.label}</h1>
@@ -4650,7 +4663,7 @@ function CriarProdutosScreen({ products, educar, onOpenNode, onNewProduct }) {
   const statusOf = (p) => p.status === "active" ? [C.ember, "Ativo"] : (p.status === "analysis" || p.status === "pending") ? [C.muted, "Em análise"] : [C.faint, "Rascunho"];
   const priceLabelOf = (p) => {
     const prices = (p.editor?.plans || []).map(pl => pl.priceInCents || 0).filter(v => v > 0);
-    if (!prices.length) return "Sem preço";
+    if (!prices.length) {return "Sem preço";}
     const mn = Math.min(...prices), mx = Math.max(...prices);
     return mn === mx ? brlFromCents(mn) : `${brlFromCents(mn)} – ${brlFromCents(mx)}`;
   };
@@ -4859,7 +4872,7 @@ function MassPanelBody({ node, products, affiliate, educar, onCreateArea, onNewP
         <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
           {products.map(p => (
             <button key={p.id} onClick={() => onOpenNode && onOpenNode(p.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", background: C.raised, border: `1px solid ${C.divider}`, borderRadius: 6, cursor: onOpenNode ? "pointer" : "default", textAlign: "left", width: "100%", transition: "border-color .15s ease" }}
-              onMouseEnter={e => { if (onOpenNode) e.currentTarget.style.borderColor = C.ember; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.divider; }}>
+              onMouseEnter={e => { if (onOpenNode) {e.currentTarget.style.borderColor = C.ember;} }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.divider; }}>
               <span style={{ width: 5, height: 5, borderRadius: 99, background: C.ember }} />
               <span style={{ flex: 1, fontFamily: FONT, fontSize: 12, color: C.text }}>{p.label}</span>
               <Tag color={C.dim}>R$ {p.meta?.price}</Tag>
@@ -4870,8 +4883,8 @@ function MassPanelBody({ node, products, affiliate, educar, onCreateArea, onNewP
       </>
     );
   }
-  if (node.id === "sun-afiliar" && affiliate) return <AffiliateOverview affiliate={affiliate} />;
-  if (node.id === "sun-carteira") return null; // tratado pela linha dedicada (WalletOverview)
+  if (node.id === "sun-afiliar" && affiliate) {return <AffiliateOverview affiliate={affiliate} />;}
+  if (node.id === "sun-carteira") {return null;} // tratado pela linha dedicada (WalletOverview)
   if (node.id === "eu-ensinar") {
     const areas = educar?.areas || [];
     return (
@@ -4968,7 +4981,7 @@ function ChannelConnectedPanel({ node, channels, products }) {
 /* ════════════════════════════════════════════════════════════════════════
    CORE SETTINGS (PERFIL) · preservado do original — conta/fiscal/docs/banco
    ════════════════════════════════════════════════════════════════════════ */
-const DEFAULT_ACCOUNT_DATA = {
+const _DEFAULT_ACCOUNT_DATA = {
   pessoal: { nome: "Daniel Gonzaga", email: "danielgonzagatj@gmail.com", celular: "64993128506", nascimento: "11/04/1999" },
   fiscal: { tipo: "cnpj", cnpj: "47.889.955/0001-05", razao: "BRANDING CAPS LTDA", fantasia: "BRANDING CAPS", ie: "", im: "", cpfResp: "***289971**", nomeResp: "DANIEL GONZAGA PENIN", cep: "37270000", rua: "COMENDADOR FRANCISCO RODRIGUES NEVES", numero: "295", complemento: "LETRA A SALA 02", bairro: "CENTRO", cidade: "CAMPO BELO", uf: "MG" },
   documentos: { identidade: { status: "pendente", enviado: "30/03/2026", name: "Documento de identidade", fileName: "rg-frente.jpg", rejectedReason: null, reviewedAt: null }, contrato: { status: "pendente", enviado: "30/03/2026", name: "Contrato social ou cartão CNPJ", fileName: "contrato-social.pdf", rejectedReason: null, reviewedAt: null } },
@@ -4992,8 +5005,8 @@ const ACCOUNT_SECTIONS = [
 ];
 function sectionStatus(section, data) {
   if (section === "pessoal") { const p = data.pessoal; return (p.nome && p.email && p.celular && p.nascimento) ? "complete" : "partial"; }
-  if (section === "fiscal") { const f = data.fiscal; if (f.tipo === "cnpj" && f.cnpj && f.razao && f.cep) return "complete"; if (f.tipo === "cpf" && f.cpfResp && f.cep) return "complete"; return "partial"; }
-  if (section === "documentos") { const all = Object.values(data.documentos); if (all.every(x => x.status === "aprovado")) return "complete"; if (all.some(x => x.status === "rejeitado")) return "error"; return "pending"; }
+  if (section === "fiscal") { const f = data.fiscal; if (f.tipo === "cnpj" && f.cnpj && f.razao && f.cep) {return "complete";} if (f.tipo === "cpf" && f.cpfResp && f.cep) {return "complete";} return "partial"; }
+  if (section === "documentos") { const all = Object.values(data.documentos); if (all.every(x => x.status === "aprovado")) {return "complete";} if (all.some(x => x.status === "rejeitado")) {return "error";} return "pending"; }
   if (section === "bancario") { const b = data.bancario; return (b.banco && b.agencia && b.conta) ? "complete" : "incomplete"; }
   if (section === "perfilPublico") { const p = data.perfilPublico; return (p.publicName && p.bio) ? "complete" : "partial"; }
   if (section === "team") { return (data.team.invites.length === 0) ? "complete" : "pending"; }
@@ -5009,7 +5022,7 @@ function CoreAvatar({ avatarUrl, onUpload, initial = "D" }) {
   const [hover, setHover] = useState(false);
   const handleFile = (e) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) {return;}
     const reader = new FileReader();
     reader.onload = () => onUpload?.(String(reader.result));
     reader.readAsDataURL(file);
@@ -5082,7 +5095,7 @@ function SectionFiscal({ data, onChange }) {
     </div>
   );
 }
-function DocumentRow({ doc, onRemove }) {
+function DocumentRow({ doc, _onRemove }) {
   const { C } = useTheme();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "12px 14px", background: C.raised, border: `1px solid ${doc.status === "rejeitado" ? C.red + "55" : C.divider}`, borderRadius: 6 }}>
@@ -5100,7 +5113,7 @@ function DocumentRow({ doc, onRemove }) {
     </div>
   );
 }
-function SectionDocumentos({ data, onChange }) {
+function SectionDocumentos({ data, _onChange }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <Banner tone="info" icon={Icon.clock(14)}>A análise dos documentos pode levar até 48 horas úteis. Você será notificado por e-mail.</Banner>
@@ -5127,7 +5140,7 @@ function SectionBancario({ data, onChange }) {
 
 /* ── perfil público (KycProfile) ── */
 function SectionPerfilPublico({ data, onChange }) {
-  const { C } = useTheme();
+  const { _C } = useTheme();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <Banner tone="info" icon={Icon.user(13)}>Estes dados aparecem na sua página de produtor e nos checkouts.</Banner>
@@ -5149,7 +5162,7 @@ function SectionTeam({ data, onChange }) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("ANALYST");
   const invite = () => {
-    if (!email.trim()) return;
+    if (!email.trim()) {return;}
     onChange({ invites: [...data.invites, { id: `inv-${Date.now()}`, email: email.trim(), role, status: "pending" }] });
     setEmail(""); setShowInvite(false);
   };
@@ -5207,8 +5220,8 @@ function SectionApps({ data, onChange }) {
   const { C } = useTheme();
   const toggle = (key) => {
     const app = data[key] || {};
-    if (key === "meta" && !app.connected) onChange({ meta: { connected: true, pageName: "Kloel Oficial", instagramUsername: "kloel.oficial", adAccountId: "act_1029", whatsappPhoneNumberId: "5564993128506", catalogId: "cat_8841", pixelId: "1029384756" } });
-    else onChange({ [key]: { ...app, connected: !app.connected } });
+    if (key === "meta" && !app.connected) {onChange({ meta: { connected: true, pageName: "Kloel Oficial", instagramUsername: "kloel.oficial", adAccountId: "act_1029", whatsappPhoneNumberId: "5564993128506", catalogId: "cat_8841", pixelId: "1029384756" } });}
+    else {onChange({ [key]: { ...app, connected: !app.connected } });}
   };
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -5243,7 +5256,7 @@ function SectionApps({ data, onChange }) {
 
 /* ── segurança ── */
 function SectionSeguranca({ data, onChange }) {
-  const { C } = useTheme();
+  const { _C } = useTheme();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <Toggle label="Autenticação em 2 fatores (2FA)" value={data.twoFactor} onChange={v => onChange({ twoFactor: v })} desc="Camada extra de proteção no login" />
@@ -5403,7 +5416,7 @@ function DzCard({ card, big, onClick }) {
   const arrowColor = card.deltaDir === "up" ? C.green : C.red;
   return (
     <button onClick={onClick} style={{ textAlign: "left", padding: "14px 15px", background: C.paper, border: `1px solid ${C.border}`, borderRadius: 8, cursor: onClick ? "pointer" : "default", display: "flex", flexDirection: "column", gap: 6, transition: "border-color .15s ease" }}
-      onMouseEnter={e => { if (onClick) e.currentTarget.style.borderColor = C.ember; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
+      onMouseEnter={e => { if (onClick) {e.currentTarget.style.borderColor = C.ember;} }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
       <span style={{ fontFamily: MONO, fontSize: 8.5, color: C.dim, fontWeight: 600, letterSpacing: 1.2, textTransform: "uppercase", lineHeight: 1.3 }}>{card.name}</span>
       <span style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
         <span style={{ fontFamily: FONT, fontSize: big ? 25 : 19, fontWeight: 300, color: C.silver, letterSpacing: -0.5 }}>{card.value}</span>
@@ -5476,7 +5489,7 @@ function MetricDetailPanel({ node, data, onClose }) {
   const totalSrc = sources.reduce((s, [, v]) => s + v, 0) || 1;
   const maxSrc = Math.max(1, ...sources.map(s => s[1]));
   const byMethod = {};
-  for (const o of paid) byMethod[o.paymentMethod] = (byMethod[o.paymentMethod] || 0) + o.totalInCents;
+  for (const o of paid) {byMethod[o.paymentMethod] = (byMethod[o.paymentMethod] || 0) + o.totalInCents;}
   const methods = Object.entries(byMethod).sort((a, b) => b[1] - a[1]);
   const showBreakdown = REVENUE_METRICS.includes(key);
   return (
@@ -5540,7 +5553,7 @@ function PhotoUpload({ label, value, onChange, hint = "JPG, PNG ou WebP — máx
   const inputRef = useRef(null);
   const onFile = (e) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) {return;}
     const reader = new FileReader();
     reader.onload = () => onChange?.(String(reader.result));
     reader.readAsDataURL(file);
@@ -5552,7 +5565,7 @@ function PhotoUpload({ label, value, onChange, hint = "JPG, PNG ou WebP — máx
       <button type="button" onClick={() => inputRef.current?.click()} style={{ width: "100%", padding: value ? 8 : "22px 14px", borderRadius: 6, background: "transparent", border: `1px dashed ${C.border}`, color: C.muted, fontSize: 12.5, fontFamily: FONT, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, transition: "all .15s ease" }}
         onMouseEnter={e => { e.currentTarget.style.borderColor = C.ember; e.currentTarget.style.color = C.text; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.muted; }}>
         {value
-          ? <img src={value} alt="" style={{ maxHeight: 120, maxWidth: "100%", borderRadius: 4, objectFit: "contain" }} />
+          ? <Image src={value} alt="" width={160} height={120} unoptimized style={{ maxHeight: 120, maxWidth: "100%", borderRadius: 4, objectFit: "contain" }} />
           : <span style={{ display: "flex", alignItems: "center", gap: 10 }}>{Icon.upload(14)} Arraste ou clique para enviar</span>}
       </button>
       {value
@@ -5576,11 +5589,11 @@ function kloelDayBucket(iso) {
 function kloelSystemPrompt({ products, conversar, desempenho, contextRefs }) {
   const L = [];
   L.push("Você é o Kloel, a IA central de operação de uma plataforma de marketing e vendas (Kloel). Responda em português do Brasil, direto, prático e acionável. Use o resumo do estado real da operação abaixo para responder sobre vendas, produtos, checkouts, campanhas, leads e finanças, e para ajudar a criar campanhas, mensagens e configurações.");
-  if (desempenho) L.push(`DESEMPENHO (${desempenho.label}): receita ${brlFromCents(desempenho.active.revenueInCents)}, ${desempenho.active.paidOrders} vendas, conversão ${desempenho.active.conversionRatePct.toFixed(1)}%, ticket médio ${brlFromCents(desempenho.active.averageTicketInCents)}. Saldo disponível ${brlFromCents(desempenho.available)}, a receber ${brlFromCents(desempenho.pending)}.`);
-  if (products?.length) L.push("PRODUTOS: " + products.map(p => `${p.label} (${p.editor?.dados?.status || "?"}, ${p.editor?.plans?.length || 0} planos, ${p.editor?.checkouts?.length || 0} checkouts)`).join("; ") + ".");
-  if (conversar?.contacts?.length) L.push(`CRM: ${conversar.contacts.length} contatos, ${(conversar.conversations || []).length} conversas.`);
-  if (conversar?.adCampaigns?.length) L.push("CAMPANHAS: " + conversar.adCampaigns.map(a => `${a.campaignName} ROAS ${a.roas}`).join("; ") + ".");
-  if (contextRefs?.length) L.push("CONTEXTO EM FOCO: " + contextRefs.map(r => `${r.type}: ${r.label}`).join("; ") + ".");
+  if (desempenho) {L.push(`DESEMPENHO (${desempenho.label}): receita ${brlFromCents(desempenho.active.revenueInCents)}, ${desempenho.active.paidOrders} vendas, conversão ${desempenho.active.conversionRatePct.toFixed(1)}%, ticket médio ${brlFromCents(desempenho.active.averageTicketInCents)}. Saldo disponível ${brlFromCents(desempenho.available)}, a receber ${brlFromCents(desempenho.pending)}.`);}
+  if (products?.length) {L.push("PRODUTOS: " + products.map(p => `${p.label} (${p.editor?.dados?.status || "?"}, ${p.editor?.plans?.length || 0} planos, ${p.editor?.checkouts?.length || 0} checkouts)`).join("; ") + ".");}
+  if (conversar?.contacts?.length) {L.push(`CRM: ${conversar.contacts.length} contatos, ${(conversar.conversations || []).length} conversas.`);}
+  if (conversar?.adCampaigns?.length) {L.push("CAMPANHAS: " + conversar.adCampaigns.map(a => `${a.campaignName} ROAS ${a.roas}`).join("; ") + ".");}
+  if (contextRefs?.length) {L.push("CONTEXTO EM FOCO: " + contextRefs.map(r => `${r.type}: ${r.label}`).join("; ") + ".");}
   L.push("Se não tiver um dado específico, seja honesto e indique onde encontrá-lo no sistema.");
   return L.join("\n");
 }
@@ -5815,7 +5828,7 @@ function KloelOverlay({ title, subtitle, onClose, children, footer, hideHeader }
   );
 }
 
-function KloelChatScreen({ kloel, setKloel, conversationId, context, onClose }) {
+function KloelChatScreen({ kloel, setKloel, conversationId, context, _onClose }) {
   const { C } = useTheme();
   const [localId, setLocalId] = useState(conversationId || null);
   const conv = (kloel.conversations || []).find(c => c.id === localId) || null;
@@ -5823,10 +5836,10 @@ function KloelChatScreen({ kloel, setKloel, conversationId, context, onClose }) 
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef(null);
-  useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [messages.length, loading]);
+  useEffect(() => { if (scrollRef.current) {scrollRef.current.scrollTop = scrollRef.current.scrollHeight;} }, [messages.length, loading]);
 
   const send = async () => {
-    const text = input.trim(); if (!text || loading) return;
+    const text = input.trim(); if (!text || loading) {return;}
     let id = localId;
     const prev = messages;
     if (!id) {
@@ -5845,14 +5858,14 @@ function KloelChatScreen({ kloel, setKloel, conversationId, context, onClose }) 
       const reply = String(res?.response ?? res?.reply ?? res?.content ?? res?.message ?? "").trim() || "(sem resposta)";
       const aiMsg = { id: `m-${Date.now() + 1}`, role: "assistant", content: reply, createdAt: nowISO() };
       setKloel(k => ({ ...k, conversations: k.conversations.map(c => c.id === id ? { ...c, messages: [...c.messages, aiMsg], updatedAt: nowISO() } : c) }));
-    } catch (e) {
+    } catch {
       const errMsg = { id: `m-${Date.now() + 2}`, role: "assistant", content: "Não consegui falar com o modelo neste ambiente agora. Sua conversa foi salva e aparece em Recentes — tente novamente em instantes.", createdAt: nowISO() };
       setKloel(k => ({ ...k, conversations: k.conversations.map(c => c.id === id ? { ...c, messages: [...c.messages, errMsg] } : c) }));
     } finally { setLoading(false); }
   };
 
   const hasMessages = messages.length > 0;
-  const greeting = (() => { const h = new Date().getHours(); if (h >= 5 && h < 12) return "Bom dia"; if (h >= 12 && h < 18) return "Boa tarde"; if (h >= 18) return "Boa noite"; return "Boa madrugada"; })();
+  const greeting = (() => { const h = new Date().getHours(); if (h >= 5 && h < 12) {return "Bom dia";} if (h >= 12 && h < 18) {return "Boa tarde";} if (h >= 18) {return "Boa noite";} return "Boa madrugada"; })();
   const greetingLine = context?.userName ? `${greeting}, ${context.userName}` : greeting;
   const renderComposer = () => (
     <div style={{ width: "100%", maxWidth: 720, margin: "0 auto" }}>
@@ -5905,22 +5918,22 @@ function buildKloelSearchIndex({ products, conversar, affiliate, educar, wallet,
   const push = (label, kind, nodeId) => label && idx.push({ label: String(label), kind, nodeId });
   for (const p of (products || [])) {
     push(p.label, "Produto", p.id);
-    for (const pl of (p.editor?.plans || [])) push(`${pl.name || "Plano"} · ${p.label}`, "Plano", `${p.id}-planos`);
-    for (const ck of (p.editor?.checkouts || [])) push(`${ck.name || "Checkout"} · ${p.label}`, "Checkout", `${p.id}-planos`);
-    for (const cp of (p.editor?.coupons || [])) push(`${cp.code} · ${p.label}`, "Cupom", `${p.id}-cupons`);
-    for (const u of (p.editor?.urls || [])) push(`${u.description || u.url} · ${p.label}`, "URL", `${p.id}-urls`);
+    for (const pl of (p.editor?.plans || [])) {push(`${pl.name || "Plano"} · ${p.label}`, "Plano", `${p.id}-planos`);}
+    for (const ck of (p.editor?.checkouts || [])) {push(`${ck.name || "Checkout"} · ${p.label}`, "Checkout", `${p.id}-planos`);}
+    for (const cp of (p.editor?.coupons || [])) {push(`${cp.code} · ${p.label}`, "Cupom", `${p.id}-cupons`);}
+    for (const u of (p.editor?.urls || [])) {push(`${u.description || u.url} · ${p.label}`, "URL", `${p.id}-urls`);}
   }
   const mods = conversar?.crmModules || {};
-  if (mods.inbox) for (const c of (conversar?.conversations || [])) push(c.contactName, "Conversa", `cv-conv-${c.id}`);
-  if (mods.contatos) for (const ct of (conversar?.contacts || [])) push(ct.name, "Contato", `cv-ct-${ct.id}`);
-  if (mods.vendas) for (const o of (conversar?.orders || [])) push(`${o.orderNumber} · ${o.customerName}`, "Venda", `cv-or-${o.id}`);
-  if (mods.anuncios) for (const ad of (conversar?.adCampaigns || [])) push(ad.campaignName, "Campanha", `cv-ad-${ad.id}`);
-  for (const m of (affiliate?.marketplace || [])) push(m.name, "Marketplace", `mk-${m.id}`);
-  for (const a of (affiliate?.myAffiliates || [])) push(a.name, "Afiliado", `aff-${a.id}`);
-  for (const ar of (educar?.areas || [])) push(ar.name, "Área de membros", `ma-${ar.id}`);
-  for (const w of (wallet?.withdrawals || [])) push(`Saque ${brlFromCents(w.amount)}`, "Carteira", `wl-wd-${w.id}`);
-  for (const img of (kloel?.images || [])) push(img.name, "Imagem", `kli-${img.id}`);
-  for (const c of (kloel?.conversations || [])) push(c.title, "Chat Kloel", `klc-${c.id}`);
+  if (mods.inbox) {for (const c of (conversar?.conversations || [])) {push(c.contactName, "Conversa", `cv-conv-${c.id}`);}}
+  if (mods.contatos) {for (const ct of (conversar?.contacts || [])) {push(ct.name, "Contato", `cv-ct-${ct.id}`);}}
+  if (mods.vendas) {for (const o of (conversar?.orders || [])) {push(`${o.orderNumber} · ${o.customerName}`, "Venda", `cv-or-${o.id}`);}}
+  if (mods.anuncios) {for (const ad of (conversar?.adCampaigns || [])) {push(ad.campaignName, "Campanha", `cv-ad-${ad.id}`);}}
+  for (const m of (affiliate?.marketplace || [])) {push(m.name, "Marketplace", `mk-${m.id}`);}
+  for (const a of (affiliate?.myAffiliates || [])) {push(a.name, "Afiliado", `aff-${a.id}`);}
+  for (const ar of (educar?.areas || [])) {push(ar.name, "Área de membros", `ma-${ar.id}`);}
+  for (const w of (wallet?.withdrawals || [])) {push(`Saque ${brlFromCents(w.amount)}`, "Carteira", `wl-wd-${w.id}`);}
+  for (const img of (kloel?.images || [])) {push(img.name, "Imagem", `kli-${img.id}`);}
+  for (const c of (kloel?.conversations || [])) {push(c.title, "Chat Kloel", `klc-${c.id}`);}
   return idx;
 }
 
@@ -5928,17 +5941,17 @@ function KloelSearchScreen({ data, onOpenNode, onClose }) {
   const { C } = useTheme();
   const [q, setQ] = useState("");
   const inputRef = useRef(null);
-  useEffect(() => { inputRef.current?.focus(); const onKey = (e) => { if (e.key === "Escape") onClose(); }; window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey); }, [onClose]);
+  useEffect(() => { inputRef.current?.focus(); const onKey = (e) => { if (e.key === "Escape") {onClose();} }; window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey); }, [onClose]);
   const index = useMemo(() => buildKloelSearchIndex(data), [data]);
   const results = useMemo(() => {
     const query = q.trim().toLowerCase();
-    if (!query) return [];
+    if (!query) {return [];}
     const terms = query.split(/\s+/);
     return index.filter(r => terms.every(t => r.label.toLowerCase().includes(t) || r.kind.toLowerCase().includes(t))).slice(0, 80);
   }, [q, index]);
   const groups = useMemo(() => {
     const g = {};
-    for (const r of results) (g[r.kind] = g[r.kind] || []).push(r);
+    for (const r of results) {(g[r.kind] = g[r.kind] || []).push(r);}
     return Object.entries(g).map(([label, items]) => ({ label, items }));
   }, [results]);
   const pill = { minWidth: 26, height: 26, padding: "0 9px", border: `1px solid ${C.border}`, borderRadius: 7, background: C.void, color: C.muted, fontFamily: MONO, fontSize: 10, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer" };
@@ -6038,8 +6051,8 @@ function KloelRecentsScreen({ kloel, onOpenChat, onOpenNode }) {
   const { C } = useTheme();
   const items = useMemo(() => {
     const arr = [];
-    for (const c of (kloel.conversations || [])) arr.push({ ts: c.updatedAt || c.createdAt, kind: "Chat", label: c.title || "Conversa", onClick: () => onOpenChat(c.id) });
-    for (const im of (kloel.images || [])) arr.push({ ts: im.createdAt, kind: "Imagem", label: im.name, onClick: () => onOpenNode(`kli-${im.id}`) });
+    for (const c of (kloel.conversations || [])) {arr.push({ ts: c.updatedAt || c.createdAt, kind: "Chat", label: c.title || "Conversa", onClick: () => onOpenChat(c.id) });}
+    for (const im of (kloel.images || [])) {arr.push({ ts: im.createdAt, kind: "Imagem", label: im.name, onClick: () => onOpenNode(`kli-${im.id}`) });}
     return arr.sort((a, b) => new Date(b.ts) - new Date(a.ts));
   }, [kloel, onOpenChat, onOpenNode]);
   const groups = useMemo(() => { const g = {}; for (const it of items) { const b = kloelDayBucket(it.ts); (g[b] = g[b] || []).push(it); } return g; }, [items]);
@@ -6070,14 +6083,14 @@ function KloelRecentsScreen({ kloel, onOpenChat, onOpenNode }) {
   );
 }
 
-function KloelOverlayRouter({ node, kloel, setKloel, context, searchData, products, linkTargets, onAskContext, onClose, onOpenNode }) {
+function KloelOverlayRouter({ node, kloel, setKloel, context, searchData, _products, linkTargets, _onAskContext, onClose, onOpenNode }) {
   const action = node.type === "kloelConversation" ? "newChat" : node.type === "kloelImageAsset" ? "images" : node.meta?.action;
   const convId = node.type === "kloelConversation" ? node.meta?.conversationId : null;
   const openChat = (cid) => onOpenNode(`klc-${cid}`);
-  if (action === "newChat") return <KloelOverlay hideHeader onClose={onClose}><KloelChatScreen kloel={kloel} setKloel={setKloel} conversationId={convId} context={context} onClose={onClose} /></KloelOverlay>;
-  if (action === "search") return <KloelSearchScreen data={searchData} onOpenNode={onOpenNode} onClose={onClose} />;
-  if (action === "images") return <KloelOverlay title="Imagens" subtitle="memória visual" onClose={onClose}><KloelImagesScreen kloel={kloel} setKloel={setKloel} linkTargets={linkTargets} onOpenNode={onOpenNode} /></KloelOverlay>;
-  if (action === "recents") return <KloelOverlay hideHeader onClose={onClose}><KloelRecentsScreen kloel={kloel} onOpenChat={openChat} onOpenNode={onOpenNode} /></KloelOverlay>;
+  if (action === "newChat") {return <KloelOverlay hideHeader onClose={onClose}><KloelChatScreen kloel={kloel} setKloel={setKloel} conversationId={convId} context={context} onClose={onClose} /></KloelOverlay>;}
+  if (action === "search") {return <KloelSearchScreen data={searchData} onOpenNode={onOpenNode} onClose={onClose} />;}
+  if (action === "images") {return <KloelOverlay title="Imagens" subtitle="memória visual" onClose={onClose}><KloelImagesScreen kloel={kloel} setKloel={setKloel} linkTargets={linkTargets} onOpenNode={onOpenNode} /></KloelOverlay>;}
+  if (action === "recents") {return <KloelOverlay hideHeader onClose={onClose}><KloelRecentsScreen kloel={kloel} onOpenChat={openChat} onOpenNode={onOpenNode} /></KloelOverlay>;}
   return null;
 }
 
@@ -6125,7 +6138,7 @@ function NewProductModal({ onClose, onCreate }) {
   const [form, setForm] = useState(initialForm);
   const [tagInput, setTagInput] = useState("");
   const set = (partial) => setForm(f => ({ ...f, ...partial }));
-  const isPhysical = form.format !== "DIGITAL";
+  const _isPhysical = form.format !== "DIGITAL";
   const canNext = step !== 0 || form.name.trim().length > 0;
 
   const next = () => setStep(s => Math.min(WIZARD_STEPS.length - 1, s + 1));
@@ -6346,7 +6359,7 @@ function mergeRealAccount(base, profile, fiscal, bank, docs) {
     for (const d of docs) {
       const type = s(d && (d.type ?? d.kind)).toLowerCase();
       const key = type.includes("ident") || type.includes("rg") ? "identidade" : type.includes("contr") || type.includes("cnpj") ? "contrato" : null;
-      if (key && out.documentos[key]) out.documentos[key] = { ...out.documentos[key], status: s(d.status) || "pendente", fileName: s(d.fileName ?? d.name) };
+      if (key && out.documentos[key]) {out.documentos[key] = { ...out.documentos[key], status: s(d.status) || "pendente", fileName: s(d.fileName ?? d.name) };}
     }
   }
   return out;
@@ -6392,7 +6405,7 @@ function adaptRealPipeline(pipelines) {
   return { pipeline, stages };
 }
 function adaptRealWalletBalance(b) {
-  if (!b) return { available: 0, pending: 0, blocked: 0, total: 0 };
+  if (!b) {return { available: 0, pending: 0, blocked: 0, total: 0 };}
   const available = Number(b.available ?? b.availableInCents ?? 0);
   const pending = Number(b.pending ?? b.pendingInCents ?? 0);
   const blocked = Number(b.blocked ?? b.blockedInCents ?? 0);
@@ -6431,21 +6444,30 @@ function KloelInner() {
   const { documents: realDocs } = useKycDocuments();
   const { bankAccount: realBank } = useBankAccount();
   useEffect(() => {
-    setAccountData(base => mergeRealAccount(base, realProfile, realFiscal, realBank, realDocs));
+    const timeoutId = window.setTimeout(() => {
+      setAccountData(base => mergeRealAccount(base, realProfile, realFiscal, realBank, realDocs));
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
   }, [realProfile, realFiscal, realBank, realDocs]);
   // Produtos REAIS via useProducts (GET /products). Honest-empty: backend ausente/
   // loading/erro → []. Patches locais (optimistic) continuam via setProducts.
   const { products: realProducts } = useProducts();
   const [products, setProducts] = useState([]);
   useEffect(() => {
-    setProducts(Array.isArray(realProducts) ? realProducts.map(adaptRealProduct) : []);
+    const timeoutId = window.setTimeout(() => {
+      setProducts(Array.isArray(realProducts) ? realProducts.map(adaptRealProduct) : []);
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
   }, [realProducts]);
   // Afiliar REAL via useAffiliates (GET /partnerships/affiliates). myAffiliates =
   // parceiros reais; marketplace/partnerChats/collaborators honest-empty até endpoint.
   const { affiliates: realAffiliates } = useAffiliates();
   const [affiliate, setAffiliate] = useState({ marketplace: [], myAffiliates: [], partnerChats: [], collaborators: [] });
   useEffect(() => {
-    setAffiliate(prev => ({ ...prev, myAffiliates: (Array.isArray(realAffiliates) ? realAffiliates : []).map(adaptRealAffiliate) }));
+    const timeoutId = window.setTimeout(() => {
+      setAffiliate(prev => ({ ...prev, myAffiliates: (Array.isArray(realAffiliates) ? realAffiliates : []).map(adaptRealAffiliate) }));
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
   }, [realAffiliates]);
   // Carteira REAL via useWallet* (GET /kloel/wallet/...). Honest-empty: backend
   // ausente/loading/erro → saldos zerados + listas vazias (nunca DEFAULT_WALLET fake).
@@ -6454,18 +6476,24 @@ function KloelInner() {
   const { anticipations: realAnticipations } = useWalletAnticipations();
   const [wallet, setWallet] = useState({ balance: { available: 0, pending: 0, blocked: 0, total: 0 }, withdrawals: [], anticipations: [], transactions: [] });
   useEffect(() => {
-    setWallet({
-      balance: adaptRealWalletBalance(realBalance),
-      withdrawals: Array.isArray(realWithdrawals) ? realWithdrawals : [],
-      anticipations: Array.isArray(realAnticipations) ? realAnticipations : [],
-      transactions: [],
-    });
+    const timeoutId = window.setTimeout(() => {
+      setWallet({
+        balance: adaptRealWalletBalance(realBalance),
+        withdrawals: Array.isArray(realWithdrawals) ? realWithdrawals : [],
+        anticipations: Array.isArray(realAnticipations) ? realAnticipations : [],
+        transactions: [],
+      });
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
   }, [realBalance, realWithdrawals, realAnticipations]);
   // Educar REAL via useMemberAreas (GET /member-areas). Honest-empty: sem dado → [].
   const { areas: realAreas } = useMemberAreas();
   const [educar, setEducar] = useState({ areas: [] });
   useEffect(() => {
-    setEducar({ areas: (Array.isArray(realAreas) ? realAreas : []).map(adaptRealArea) });
+    const timeoutId = window.setTimeout(() => {
+      setEducar({ areas: (Array.isArray(realAreas) ? realAreas : []).map(adaptRealArea) });
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
   }, [realAreas]);
   // Conversar honest-empty (sem CRM/contatos/conversas/pedidos/anúncios fake). crm
   // mantém só o scaffold do pipeline (sem deals). Dados reais via useCRM/conversations/
@@ -6478,12 +6506,15 @@ function KloelInner() {
   const { pipelines: realPipelines } = usePipelines();
   const [conversar, setConversar] = useState({ crm: { pipeline: { id: "pp1", name: "Pipeline de Vendas", isDefault: true }, stages: [], deals: [] }, contacts: [], conversations: [], orders: [], adCampaigns: [], adRules: [], autopilotEvents: [], followups: [], crmModules: { inbox: false, contatos: false, vendas: false, anuncios: false, autopilot: false } });
   useEffect(() => {
-    const { pipeline, stages } = adaptRealPipeline(realPipelines);
-    setConversar(prev => ({
-      ...prev,
-      contacts: (Array.isArray(realContacts) ? realContacts : []).map(adaptRealContact),
-      crm: { pipeline, stages, deals: (Array.isArray(realDeals) ? realDeals : []).map(adaptRealDeal) },
-    }));
+    const timeoutId = window.setTimeout(() => {
+      const { pipeline, stages } = adaptRealPipeline(realPipelines);
+      setConversar(prev => ({
+        ...prev,
+        contacts: (Array.isArray(realContacts) ? realContacts : []).map(adaptRealContact),
+        crm: { pipeline, stages, deals: (Array.isArray(realDeals) ? realDeals : []).map(adaptRealDeal) },
+      }));
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
   }, [realContacts, realDeals, realPipelines]);
   const [desempenho, setDesempenho] = useState({ period: "30d", customFrom: "", customTo: "" });
   const [kloel, setKloel] = useState({ conversations: [], images: [] });
@@ -6505,8 +6536,8 @@ function KloelInner() {
   const patchMyAffiliate = useCallback((id, fn, remove = false, chatMsg = null) => {
     setAffiliate(prev => {
       let myAffiliates = prev.myAffiliates;
-      if (remove) myAffiliates = myAffiliates.filter(a => a.id !== id);
-      else if (fn) myAffiliates = myAffiliates.map(a => a.id === id ? fn(a) : a);
+      if (remove) {myAffiliates = myAffiliates.filter(a => a.id !== id);}
+      else if (fn) {myAffiliates = myAffiliates.map(a => a.id === id ? fn(a) : a);}
       let partnerChats = prev.partnerChats;
       if (chatMsg) {
         partnerChats = partnerChats.map(c => c.name === chatMsg.chatName
@@ -6565,12 +6596,15 @@ function KloelInner() {
   }, []);
 
   useEffect(() => {
-    setSettings(s => ({ ...s, groups: s.groups.map(g => {
-      if (g.query === "type:product") return { ...g, color: C.ember };
-      if (g.query === "type:p_ia") return { ...g, color: C.blue };
-      return g;
-    }) }));
-  }, [mode]);
+    const timeoutId = window.setTimeout(() => {
+      setSettings(s => ({ ...s, groups: s.groups.map(g => {
+        if (g.query === "type:product") {return { ...g, color: C.ember };}
+        if (g.query === "type:p_ia") {return { ...g, color: C.blue };}
+        return g;
+      }) }));
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [mode, C.ember, C.blue]);
 
   const desempenhoData = useMemo(() => computeDesempenho(OPERATIONAL_DAYS, desempenho.period, desempenho.customFrom, desempenho.customTo, wallet), [desempenho, wallet]);
   const dynamicGraph = useMemo(() => buildGraph(products, channels, accountData, affiliate, wallet, educar, conversar, desempenhoData, kloel), [products, channels, accountData, affiliate, wallet, educar, conversar, desempenhoData, kloel]);
@@ -6578,18 +6612,18 @@ function KloelInner() {
     const t = [];
     for (const p of products) {
       t.push({ id: p.id, label: p.label, group: "Produtos" });
-      for (const ck of (p.editor?.checkouts || [])) t.push({ id: `${p.id}-planos`, label: `${ck.name || "Checkout"} · ${p.label}`, group: "Checkouts" });
+      for (const ck of (p.editor?.checkouts || [])) {t.push({ id: `${p.id}-planos`, label: `${ck.name || "Checkout"} · ${p.label}`, group: "Checkouts" });}
     }
-    for (const ad of (conversar?.adCampaigns || [])) t.push({ id: `cv-ad-${ad.id}`, label: ad.campaignName, group: "Campanhas" });
-    for (const c of (conversar?.conversations || [])) t.push({ id: `cv-conv-${c.id}`, label: c.contactName, group: "Conversas" });
-    for (const ar of (educar?.areas || [])) t.push({ id: `ma-${ar.id}`, label: ar.name, group: "Áreas de membros" });
+    for (const ad of (conversar?.adCampaigns || [])) {t.push({ id: `cv-ad-${ad.id}`, label: ad.campaignName, group: "Campanhas" });}
+    for (const c of (conversar?.conversations || [])) {t.push({ id: `cv-conv-${c.id}`, label: c.contactName, group: "Conversas" });}
+    for (const ar of (educar?.areas || [])) {t.push({ id: `ma-${ar.id}`, label: ar.name, group: "Áreas de membros" });}
     return t;
   }, [products, conversar, educar]);
   const productsForWizard = useMemo(() => products.map(p => ({ id: p.id, label: p.label, type: "product", meta: p.meta })), [products]);
 
   useEffect(() => {
     const id = "kloel-graph-fonts";
-    if (document.getElementById(id)) return;
+    if (document.getElementById(id)) {return;}
     const link = document.createElement("link");
     link.id = id; link.rel = "stylesheet";
     link.href = "https://fonts.googleapis.com/css2?family=Sora:wght@200;300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap";
@@ -6622,11 +6656,11 @@ function KloelInner() {
   const isMemberArea = selectedNode?.type === "memberArea";
 
   const coreInitialSection = useMemo(() => {
-    if (!selectedNode || !isCorePanel) return "pessoal";
-    if (selectedNode.type === "core") return "pessoal";
-    if (selectedNode.type === "profileSection") return selectedNode.meta?.sectionKey || "pessoal";
-    if (selectedNode.type === "teamMember") return "team";
-    if (selectedNode.type === "appNode") return "apps";
+    if (!selectedNode || !isCorePanel) {return "pessoal";}
+    if (selectedNode.type === "core") {return "pessoal";}
+    if (selectedNode.type === "profileSection") {return selectedNode.meta?.sectionKey || "pessoal";}
+    if (selectedNode.type === "teamMember") {return "team";}
+    if (selectedNode.type === "appNode") {return "apps";}
     const map = { "pf-pessoal": "pessoal", "pf-fiscal": "fiscal", "pf-docs": "documentos", "pf-banco": "bancario", "pf-publico": "perfilPublico", "pf-team": "team", "pf-apps": "apps", "pf-seg": "seguranca" };
     return map[selectedNode.parentId] || "pessoal";
   }, [selectedNode, isCorePanel]);
@@ -6687,7 +6721,7 @@ function KloelInner() {
 
       {selectedNode && isProductEditor && (() => {
         const prod = products.find(p => p.id === selectedNode.id);
-        if (!prod || !prod.editor) return null;
+        if (!prod || !prod.editor) {return null;}
         return (
           <KloelOverlay hideHeader onClose={() => setSelectedId(null)}>
             <div style={{ flex: 1, overflow: "auto", padding: "28px 28px 48px" }}>

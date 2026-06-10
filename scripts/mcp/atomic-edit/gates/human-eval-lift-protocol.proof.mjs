@@ -1,0 +1,35 @@
+#!/usr/bin/env node
+import * as fs from 'node:fs';
+import { sha256Text, proofFeedbackPackageSha256, validateProofFeedbackPackage, buildProofFeedbackPackage, emitRepairPrompts, evaluateSamples, evaluateLiftClaim, analyzeReplicas, fixture, selfTest } from '../human-eval-lift-runner.mjs';
+const jsonMode = process.argv.includes('--json');
+const results = [];
+function rec(name, ok, detail = {}) { results.push({ name, ok: Boolean(ok), detail }); }
+const built = buildProofFeedbackPackage({ task_id: 'HumanEval/0', invariantId: 'humaneval.minimal-counterexample', locus: { file: 'HumanEval/0', startByte: 0, endByte: 12 }, counterexample: { kind: 'minimal-disproof', input: [2, 3], expected: 5, observed: 6 }, proposalDigest: sha256Text('candidate returns a-b'), lessonLine: 'The function must satisfy the byte-exact minimal counterexample.' });
+const validRow = { task_id: 'HumanEval/0', feedback_source: 'atomic-proof-feedback', ...built };
+rec('digest-bound proof feedback package validates', validateProofFeedbackPackage(validRow).ok, validateProofFeedbackPackage(validRow));
+rec('forged package digest is refused', validateProofFeedbackPackage({ ...validRow, proof_feedback_package_sha256: sha256Text('forged') }).ok === false);
+rec('pass-through proof rows remain accepted for non-proof arms', validateProofFeedbackPackage({ task_id: 'HumanEval/0', feedback_source: 'none' }).ok);
+const leaky = { ...built.proof_feedback_package, counterexample: { kind: 'full-evaluator', text: 'FULL_EVALUATOR canonical_solution METADATA = {} assert a assert b assert c assert d assert e assert f assert g assert h assert i' } };
+const leakyRow = { task_id: 'HumanEval/0', feedback_source: 'atomic-proof-feedback', proof_feedback_package: leaky, proof_feedback_package_sha256: proofFeedbackPackageSha256(leaky) };
+rec('full evaluator leakage is refused even with valid digest', validateProofFeedbackPackage(leakyRow).ok === false, validateProofFeedbackPackage(leakyRow));
+const v1 = evaluateLiftClaim(fixture('v1-report'));
+rec('v1 fixed-model lift established for tool-augmented claim', v1.fixedModelLiftClaim.verdict === 'established' && v1.liftCount === 14, v1.fixedModelLiftClaim);
+rec('raw HumanEval claim is false for proof-feedback-derived arm', v1.rawHumanEvalClaim === false && v1.toolAugmentedHumanEvalClaim === true);
+const changedModel = evaluateLiftClaim({ ...fixture('v1-report'), proof: { ...fixture('v1-report').proof, model_id: 'other-model' } });
+rec('changed model cannot establish fixed-model lift', changedModel.fixedModelLiftClaim.verdict === 'not-established', changedModel.fixedModelLiftClaim);
+const reps = analyzeReplicas(fixture('v1-replicas'));
+rec('replicas remain directional at alpha .05 while proof wins blind 5/5', reps.verdict === 'directional' && reps.proofWinsBlindReplicas === 5 && reps.pValue === 0.05572, reps);
+const prompts = emitRepairPrompts({ failures: [{ task_id: 'HumanEval/0', prompt: 'def add(a,b):\n', observed: 6, expected: 5, proposalDigest: sha256Text('bad') }] });
+rec('repair prompt emission binds package and prompt digest', prompts.ok === true && prompts.prompts.length === 1 && /^[0-9a-f]{64}$/.test(prompts.prompts[0].repair_prompt_sha256), prompts);
+const toy = evaluateSamples(fixture('toy-eval'));
+rec('toy evaluator executes sample and counts pass', toy.ok === true && toy.passed === 1 && toy.total === 1, toy);
+const st = selfTest();
+rec('runner self-test is green', st.ok === true && st.checks.length >= 7, st);
+rec('canonical package digest is stable under key reorder', proofFeedbackPackageSha256({ b: 1, a: 2 }) === proofFeedbackPackageSha256({ a: 2, b: 1 }));
+const source = fs.readFileSync(new URL('../human-eval-lift-runner.mjs', import.meta.url), 'utf8');
+rec('runner source separates raw and tool-augmented claims', source.includes('rawHumanEvalClaim') && source.includes('toolAugmentedHumanEvalClaim') && source.includes('rawAndToolAugmentedAreDistinct'));
+const ok = results.every((entry) => entry.ok);
+const payload = { ok, results };
+if (jsonMode) console.log(JSON.stringify(payload, null, 2));
+else for (const result of results) console.log((result.ok ? 'PASS ' : 'FAIL ') + result.name);
+process.exit(ok ? 0 : 1);

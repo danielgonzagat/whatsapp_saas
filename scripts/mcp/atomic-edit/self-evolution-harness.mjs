@@ -518,7 +518,8 @@ function isCliMain() {
 if (isCliMain()) {
   const mode = process.argv[2] ?? '--help';
   const needsInput = !['--help', '--self-test'].includes(mode);
-  const stdinText = needsInput ? fs.readFileSync(0, 'utf8') : '';
+  const inputFile = process.env.ATOMIC_SELF_EVOLUTION_INPUT_FILE;
+  const stdinText = needsInput ? (inputFile ? fs.readFileSync(inputFile, 'utf8') : fs.readFileSync(0, 'utf8')) : '';
   const result = runCli([mode], stdinText);
   const rendered = JSON.stringify(result, null, 2) + '\n';
   const outputFile = process.env.ATOMIC_SELF_EVOLUTION_OUTPUT_FILE;

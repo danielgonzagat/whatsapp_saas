@@ -63,6 +63,7 @@ const MANDATORY_SELF_EXPANSION_VALIDATORS: readonly SelfExpansionValidator[] = [
   { phase: 'self-evolution-disproof-briefing', command: 'node gates/self-evolution-disproof-briefing.proof.mjs --json' },
   { phase: 'self-evolution-lessons', command: 'node gates/self-evolution-lesson-rules.proof.mjs --json' },
   { phase: 'codex-memory', command: 'node gates/codex-memory-note-tool.proof.mjs --json' },
+  { phase: 'fixed-model-lift', command: 'node gates/fixed-model-lift.proof.mjs --json' },
   { phase: 'benchmark', command: 'node gates/atomic-agent-bench.proof.mjs' },
   { phase: 'test', command: 'node gates/test-execution-gate.proof.mjs --json' },
   { phase: 'ledger', command: 'node proof-chain.proof.mjs --json' },
@@ -388,16 +389,27 @@ function selfExpansionProofTempRoot(hostRoot: string): string {
   return hostRoot;
 }
 
-function selfExpansionHostProofEnv(socket: string, cwd: string): NodeJS.ProcessEnv {
+function selfExpansionProofSuppressesNestedBroker(command: string): boolean {
+  return [
+    'atomic-exec-readonly-usability.proof.mjs',
+    'atomic-exec-sandbox.proof.mjs',
+    'external-runtime-denial.proof.mjs',
+    'mcp-launcher-host-boundary.proof.mjs',
+    'compiled-mcp-y-certificate.proof.mjs',
+  ].some((name) => command.includes(name));
+}
+
+function selfExpansionHostProofEnv(socket: string, cwd: string, command: string): NodeJS.ProcessEnv {
   const hostRoot = selfExpansionProofRoot();
   const tempRoot = selfExpansionProofTempRoot(hostRoot);
+  const suppressNestedBroker = selfExpansionProofSuppressesNestedBroker(command);
   return {
     ...process.env,
     ATOMIC_BUILD_BROKER: '1',
-    ATOMIC_HOST_ATOMIC_ONLY: process.env.ATOMIC_HOST_ATOMIC_ONLY ?? '1',
-    ATOMIC_HOST_SANDBOX: process.env.ATOMIC_HOST_SANDBOX ?? 'macos-sandbox-exec',
+    ATOMIC_HOST_ATOMIC_ONLY: suppressNestedBroker ? '' : process.env.ATOMIC_HOST_ATOMIC_ONLY ?? '1',
+    ATOMIC_HOST_SANDBOX: suppressNestedBroker ? '' : process.env.ATOMIC_HOST_SANDBOX ?? 'macos-sandbox-exec',
     ATOMIC_HOST_WRITE_ROOT: hostRoot,
-    ATOMIC_EXEC_BROKER_SOCKET: socket,
+    ATOMIC_EXEC_BROKER_SOCKET: suppressNestedBroker ? '' : socket,
     ATOMIC_EXEC_BROKER_ROOT: hostRoot,
     CODEX_HOME: process.env.CODEX_HOME ?? path.join(hostRoot, '.codex'),
     CODEX_PROJECT_DIR: hostRoot,
@@ -432,7 +444,7 @@ async function runSingleProofCommand(command: string, cwd: string, deadlineMs: n
   const timeout = proofTimeoutForDeadline(command, deadlineMs);
   const socket = selfExpansionBrokerSocketPath();
   if (socket && selfExpansionProofMustRunHostDirect(command)) {
-    return runProofCommandDirect(command, cwd, timeout, selfExpansionHostProofEnv(socket, cwd));
+    return runProofCommandDirect(command, cwd, timeout, selfExpansionHostProofEnv(socket, cwd, command));
   }
   return (await runProofCommandViaBroker(command, cwd, timeout)) ?? runProofCommandDirect(command, cwd, timeout);
 }

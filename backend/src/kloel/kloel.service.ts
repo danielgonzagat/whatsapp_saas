@@ -1,4 +1,4 @@
-import { Injectable, Optional } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Optional } from '@nestjs/common';
 import {
   runListFollowups,
   runListPersonas,
@@ -53,6 +53,10 @@ export class KloelService {
     private readonly leadBrainService: LeadMindCoordinator,
     private readonly thinkerService: KloelThinkerService,
     private readonly replyEngineService: KloelReplyEngineService,
+    // forwardRef: o grafo de imports do dispatcher fecha um ciclo transitivo de
+    // volta neste arquivo; sem ele a classe chega undefined no metadata do DI
+    // (o dual-package @nestjs mascarava isso mudando a ordem de avaliação).
+    @Inject(forwardRef(() => KloelToolDispatcherService))
     private readonly toolDispatcher: KloelToolDispatcherService,
     @Optional() private readonly agentRuntime?: AgentRuntimeContextService,
     @Optional() private readonly mindMessage?: MindMessageService,
