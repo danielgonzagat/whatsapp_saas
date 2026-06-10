@@ -16,8 +16,12 @@ import { swarmFetch } from './swarm-fetch.mjs';
 import { swarmWebSearch } from './swarm-search.mjs';
 import { skillList, skillLoad, skillRegister, skillVerify } from './swarm-skills.mjs';
 import { brokerEndpoint, swarmExecBatch } from './swarm-batch.mjs';
+import path from 'node:path';
+import { sendToBroker } from './swarm-batch.mjs';
+import { lockAcquire, lockHeartbeat, lockRelease, lockStatus, lockSteal } from './swarm-locks.mjs';
+import { taskCreate, taskList, taskUpdate } from './swarm-tasks.mjs';
 
-const server = new McpServer({ name: 'atomic-swarm', version: '1.0.0' });
+const server = new McpServer({ name: 'atomic-swarm', version: '1.1.0' });
 
 function ok(payload) {
   return { content: [{ type: 'text', text: JSON.stringify(payload, null, 2) }] };
@@ -181,6 +185,186 @@ server.registerTool(
 );
 
 server.registerTool(
+  'swarm_lock_acquire',
+  {
+    title: 'Acquire a lease-aware front lock (TTL + heartbeat, audited)',
+    description:
+      'Acquire a front lock in the same .atomic-edit-locks/ directory the atomic-edit tools use (atomic mkdir anti-TOCTOU). The lock carries a lease TTL and MUST be renewed via swarm_lock_heartbeat: a lock whose heartbeat age exceeds its lease is EXPIRED and only then becomes stealable via swarm_lock_steal — there is no force flag, stealing a live lock is structurally impossible. Every acquire/steal/release is audited in .atomic/swarm-locks-ledger.jsonl.',
+    inputSchema: {
+      frontId: z.string().min(1),
+      owner: z.string().min(1),
+      objective: z.string().min(1),
+      leaseMs: z.number().int().positive().optional(),
+      allowedFiles: z.array(z.string()).optional(),
+      blockedFiles: z.array(z.string()).optional(),
+      acceptanceCriteria: z.array(z.string()).optional(),
+    },
+  },
+  async (args) => {
+    try {
+      return ok(lockAcquire(args));
+    } catch (error) {
+      return fail(error);
+    }
+  },
+);
+
+server.registerTool(
+  'swarm_lock_heartbeat',
+  {
+    title: 'Renew the lease of a front lock you own',
+    description:
+      'Heartbeat-renew a lease-aware lock. The heartbeat is the promise of life: a lock whose heartbeat age exceeds its lease TTL is EXPIRED and becomes stealable via swarm_lock_steal (staleness-proven only, no force flag). Owner mismatch is a fail-closed refusal. Transitions are audited in .atomic/swarm-locks-ledger.jsonl.',
+    inputSchema: {
+      frontId: z.string().min(1),
+      owner: z.string().min(1),
+    },
+  },
+  async (args) => {
+    try {
+      return ok(lockHeartbeat(args));
+    } catch (error) {
+      return fail(error);
+    }
+  },
+);
+
+server.registerTool(
+  'swarm_lock_status',
+  {
+    title: 'List all front locks with live lease verdicts',
+    description:
+      'List every front lock with its record, heartbeat age and expiry verdict (heartbeat age vs lease TTL). Expired locks are the only ones swarm_lock_steal may take — no force flag exists. Read-only; the audited history lives in .atomic/swarm-locks-ledger.jsonl.',
+    inputSchema: {},
+  },
+  async () => {
+    try {
+      return ok(lockStatus());
+    } catch (error) {
+      return fail(error);
+    }
+  },
+);
+
+server.registerTool(
+  'swarm_lock_steal',
+  {
+    title: 'Take over a front lock ONLY with proven staleness',
+    description:
+      'Steal a front lock ONLY when staleness is proven: heartbeat age must exceed the lease TTL. There is no force flag — stealing a live lock, or a legacy lock without lease/heartbeat evidence, is structurally impossible. The steal receipt (including the full prior record and the proven-stale margin) is audited in .atomic/swarm-locks-ledger.jsonl.',
+    inputSchema: {
+      frontId: z.string().min(1),
+      newOwner: z.string().min(1),
+      objective: z.string().optional(),
+      leaseMs: z.number().int().positive().optional(),
+    },
+  },
+  async (args) => {
+    try {
+      return ok(lockSteal(args));
+    } catch (error) {
+      return fail(error);
+    }
+  },
+);
+
+server.registerTool(
+  'swarm_lock_release',
+  {
+    title: 'Release a front lock you own',
+    description:
+      'Release a lease-aware front lock. Releasing a lock owned by someone else is refused — there is no force flag; takeover requires swarm_lock_steal with staleness proven against the lease TTL + heartbeat. The release is audited in .atomic/swarm-locks-ledger.jsonl.',
+    inputSchema: {
+      frontId: z.string().min(1),
+      owner: z.string().min(1),
+    },
+  },
+  async (args) => {
+    try {
+      return ok(lockRelease(args));
+    } catch (error) {
+      return fail(error);
+    }
+  },
+);
+
+server.registerTool(
+  'swarm_task_create',
+  {
+    title: 'Create a persistent task (optionally acceptance-gated)',
+    description:
+      'Create a task in the persistent store .atomic/swarm-tasks.json. A task may carry an acceptanceCommand: completing such a gated task later REQUIRES that command to exit 0 through the governed atomic broker (fail-closed without a broker). Every transition lands in .atomic/swarm-tasks-ledger.jsonl.',
+    inputSchema: {
+      subject: z.string().min(1),
+      description: z.string().optional(),
+      acceptanceCommand: z.string().optional(),
+      acceptanceCwd: z.string().optional(),
+    },
+  },
+  async (args) => {
+    try {
+      return ok(taskCreate(args));
+    } catch (error) {
+      return fail(error);
+    }
+  },
+);
+
+server.registerTool(
+  'swarm_task_list',
+  {
+    title: 'List persisted swarm tasks',
+    description:
+      'List every task in .atomic/swarm-tasks.json with status and completion receipts (verified flag, acceptance exit code, output hashes). Read-only.',
+    inputSchema: {},
+  },
+  async () => {
+    try {
+      return ok(taskList());
+    } catch (error) {
+      return fail(error);
+    }
+  },
+);
+
+server.registerTool(
+  'swarm_task_update',
+  {
+    title: 'Update a task; gated completion requires a green acceptance run',
+    description:
+      'Update a task subject/description/status. Completing a task gated by an acceptanceCommand REQUIRES that command to exit 0 through the governed atomic broker (fresh deny-by-default sandbox, real exit code); when no broker is reachable the completion is refused — fail-closed, never an unsandboxed spawn. Ungated completions are recorded as unverified. Every transition is audited in .atomic/swarm-tasks-ledger.jsonl.',
+    inputSchema: {
+      id: z.number().int().positive(),
+      status: z.enum(['pending', 'in_progress', 'completed', 'cancelled']).optional(),
+      subject: z.string().optional(),
+      description: z.string().optional(),
+    },
+  },
+  async (args) => {
+    try {
+      const endpoint = brokerEndpoint();
+      const runAcceptance = endpoint
+        ? async (command, cwd) =>
+            sendToBroker(
+              endpoint,
+              {
+                command,
+                cwd: path.resolve(REPO_ROOT, cwd ?? '.'),
+                effectRoot: path.resolve(REPO_ROOT, cwd ?? '.'),
+                timeoutMs: 60000,
+                env: {},
+              },
+              60000,
+            )
+        : undefined;
+      return ok(await taskUpdate(args, { runAcceptance }));
+    } catch (error) {
+      return fail(error);
+    }
+  },
+);
+
+server.registerTool(
   'swarm_status',
   {
     title: 'Swarm surface status',
@@ -200,6 +384,8 @@ server.registerTool(
           '.atomic/swarm-search-ledger.jsonl',
           '.atomic/swarm-skills-ledger.jsonl',
           '.atomic/swarm-batch-ledger.jsonl',
+          '.atomic/swarm-locks-ledger.jsonl',
+          '.atomic/swarm-tasks-ledger.jsonl',
         ],
         skillCount: skills.skills.length,
       });

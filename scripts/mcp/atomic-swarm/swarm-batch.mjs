@@ -35,7 +35,7 @@ export function brokerEndpoint() {
   return null;
 }
 
-function sendToBroker(endpoint, request, timeoutMs) {
+export function sendToBroker(endpoint, request, timeoutMs) {
   return new Promise((resolve) => {
     if (endpoint.startsWith('file://')) {
       resolve({ ok: false, brokerUnreachable: true, error: 'file:// broker endpoint not supported by swarm v1' });
