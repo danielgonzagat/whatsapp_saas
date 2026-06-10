@@ -34,9 +34,14 @@ export async function sendMessage(
     throw new Error('Nenhum provider para este usuário');
   }
 
-  const workspace = ((provider as never as Record<string, unknown>).workspace as {
-    id: string;
-  }) || { id: 'default' };
+  const workspace = (provider as never as Record<string, unknown>).workspace as
+    | { id: string }
+    | undefined;
+  if (!workspace?.id) {
+    // Fail-closed (F3-A): nunca despachar com tenant sintético.
+    deps.log.error('send_blocked_missing_workspace', { user });
+    throw new Error('Envio bloqueado: workspace não resolvido para o destinatário (isolamento de tenant)');
+  }
   let contactId: string | null = null;
   let conversationId: string | null = null;
 

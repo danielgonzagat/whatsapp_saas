@@ -35,14 +35,49 @@ describe('ProviderRegistry tenant filter', () => {
     vi.clearAllMocks();
   });
 
-  it('does not query contact without workspaceId for phone lookups', async () => {
+  it('rejects phone targets without workspaceId (fail-closed, no synthetic tenant)', async () => {
     const { ProviderRegistry } = await import('../providers/registry');
 
-    const result = await ProviderRegistry.getProviderForUser('+5511999999999', undefined);
-
-    expect(result.name).toBe('auto');
+    await expect(ProviderRegistry.getProviderForUser('+5511999999999', undefined)).rejects.toThrow(
+      /workspaceId is required/,
+    );
     expect(mockContactFindFirst).not.toHaveBeenCalled();
     expect(mockContactFindUnique).not.toHaveBeenCalled();
+  });
+
+  it('rejects email targets without workspaceId (fail-closed, no synthetic tenant)', async () => {
+    const { ProviderRegistry } = await import('../providers/registry');
+
+    await expect(ProviderRegistry.getProviderForUser('lead@example.com', undefined)).rejects.toThrow(
+      /workspaceId is required/,
+    );
+    expect(mockContactFindFirst).not.toHaveBeenCalled();
+    expect(mockContactFindUnique).not.toHaveBeenCalled();
+  });
+
+  it('scopes email contact lookup to the provided workspaceId', async () => {
+    mockContactFindFirst.mockResolvedValueOnce({ workspace: { id: 'ws_1' } });
+    const { ProviderRegistry } = await import('../providers/registry');
+
+    const result = await ProviderRegistry.getProviderForUser('lead@example.com', 'ws_1');
+
+    expect(mockContactFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ email: 'lead@example.com', workspaceId: 'ws_1' }),
+      }),
+    );
+    expect(result.name).toBe('email');
+    expect(result.workspace).toEqual({ id: 'ws_1' });
+  });
+
+  it('falls back to the provided workspaceId (never default) when email contact is missing', async () => {
+    mockContactFindFirst.mockResolvedValueOnce(null);
+    const { ProviderRegistry } = await import('../providers/registry');
+
+    const result = await ProviderRegistry.getProviderForUser('lead@example.com', 'ws_2');
+
+    expect(result.name).toBe('email');
+    expect(result.workspace).toEqual({ id: 'ws_2' });
   });
 
   it('uses findUnique with workspaceId_phone compound key when workspaceId is provided', async () => {
