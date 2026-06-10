@@ -63,7 +63,8 @@ export const TIER_1_PRODUCTS_CAPABILITIES_PART2: CapabilityDefinition[] = [
       { key: 'price', type: 'number', label: 'Preço (R$)', required: true },
     ],
     domainService: 'ProductService.create',
-    emits: ['product.created'],
+    // runtime truth: ProductService.create records mind.product.observed on the spine
+    emits: ['mind.product.observed'],
     surface: ['dashboard-chat'],
     maturity: 'deprecated',
     dependsOn: ['products.create'],
@@ -81,7 +82,7 @@ export const TIER_1_PRODUCTS_CAPABILITIES_PART2: CapabilityDefinition[] = [
       { key: 'price', type: 'number', label: 'Preço (R$)', required: true },
     ],
     domainService: 'ProductService.create',
-    emits: ['product.created'],
+    emits: ['mind.product.observed'],
     surface: ['dashboard-chat'],
     maturity: 'deprecated',
     dependsOn: ['products.create'],

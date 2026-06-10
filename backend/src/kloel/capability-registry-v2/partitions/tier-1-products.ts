@@ -47,7 +47,8 @@ export const TIER_1_PRODUCTS_CAPABILITIES: CapabilityDefinition[] = [
       },
     ],
     domainService: 'ProductService.create',
-    emits: ['product.created'],
+    // runtime truth: ProductService.create records mind.product.observed on the spine
+    emits: ['mind.product.observed'],
     evidenceUrlBuilder: '/produtos/${productId}',
     surface: ['dashboard-chat'],
   },
