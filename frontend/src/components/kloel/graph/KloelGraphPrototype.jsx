@@ -6330,7 +6330,7 @@ function adaptRealArea(a) {
 }
 function adaptRealAffiliate(a) {
   return {
-    id: String((a && (a.id ?? a._id)) ?? `aff-${Math.random().toString(36).slice(2, 8)}`),
+    id: String((a && (a.id ?? a._id)) ?? `aff-${randomIdSegment(6)}`),
     name: (a && (a.name ?? a.agentName ?? a.email)) ? String(a.name ?? a.agentName ?? a.email) : "Parceiro",
     email: (a && a.email) ? String(a.email) : "",
     type: (a && a.type) ? String(a.type) : "affiliate",
@@ -6367,7 +6367,7 @@ function mergeRealAccount(base, profile, fiscal, bank, docs) {
 }
 function adaptRealContact(ct) {
   return {
-    id: String((ct && (ct.id ?? ct._id ?? ct.phone)) ?? `ct-${Math.random().toString(36).slice(2, 8)}`),
+    id: String((ct && (ct.id ?? ct._id ?? ct.phone)) ?? `ct-${randomIdSegment(6)}`),
     name: (ct && (ct.name ?? ct.fullName ?? ct.displayName ?? ct.phone)) ? String(ct.name ?? ct.fullName ?? ct.displayName ?? ct.phone) : "Contato",
     phone: (ct && ct.phone) ? String(ct.phone) : "",
     email: (ct && ct.email) ? String(ct.email) : "",
@@ -6384,7 +6384,7 @@ function adaptRealContact(ct) {
 function adaptRealDeal(d) {
   const contact = (d && d.contact) || {};
   return {
-    id: String((d && (d.id ?? d._id)) ?? `dl-${Math.random().toString(36).slice(2, 8)}`),
+    id: String((d && (d.id ?? d._id)) ?? `dl-${randomIdSegment(6)}`),
     title: (d && (d.title ?? d.name)) ? String(d.title ?? d.name) : "Negócio",
     value: Number((d && (d.value ?? d.amount)) || 0),
     priority: (d && d.priority) ? String(d.priority) : "MEDIUM",
