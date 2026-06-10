@@ -1,0 +1,330 @@
+% part2.tex --- sections 3-11 + appendices (input by main.tex)
+
+\section{The formal core: (a) and (e), integrated}\label{sec:core}
+
+\paragraph{(a) Inverted byte-default.} Conventional verified-mutation systems
+require a proof of \emph{correctness} to keep a change, or deny-list dangerous
+operations. \textsc{Atomic} inverts the burden: bytes belonging to a state that
+passed the declared battery are \emph{immutable to negative actions}. To delete
+or replace them the agent must supply a \texttt{DisproofWitness} that the gate
+\textbf{re-computes} against the actual removed bytes: \texttt{duplicate} (the
+removed region still occurs in the result) or \texttt{gate-red} (a named
+decidable gate returns red over the removed bytes, SHA-linked to the receipt).
+A witness that does not hold is refused. A free-text rationale is still accepted
+for ergonomics, but the receipt then records \texttt{witnessKind:asserted},
+\texttt{recomputed:false} --- the system never claims a disproof was verified
+when it was merely asserted.
+
+\paragraph{(e) Commute-modulo-invariant algebra.} Two verified edits
+\emph{commute} iff their spans are byte-disjoint \emph{and} neither edit modifies
+a locus the other's gate \emph{read} to discharge its obligation. The read-set is
+the resolution closure $\mathit{Cl}$ (file plus transitive import closure,
+including re-export edges; per-span identifier sets for the same-file fragment).
+When the closure is capped, the verdict is \textsc{Unjudged} --- the algebra
+refuses to guess rather than risk false independence.
+
+\paragraph{The integration --- one property, not two features.} The
+\texttt{EditFact} carries the negative-proof's \texttt{readLoci}, and
+\texttt{commute()} reads them as a coupling surface. The disproof's read-set and
+the gate's read-set are the \emph{same object}: a commuting merge therefore
+provably preserves the \emph{negative-action justification} --- the right to have
+deleted --- not only the positive gate verdict. This is what makes (a)+(e) a
+conjunction rather than two adjacent subsystems, and it is the cell our prior-art
+survey (\S\ref{sec:related}) finds empty.
+
+\section{The theorem, machine-checked}\label{sec:theorem}
+
+\texttt{formal/atomic-algebra/confluence\_z3.py} discharges in Z3, over an
+abstract model (uninterpreted bytes, array states, functions
+$\mathit{mod}/\mathit{read}/\mathit{apply}/\mathit{verdict}$) and for \emph{all}
+configurations (UNSAT-of-negation, not bounded enumeration):
+
+\[
+\mathit{commute}(P_1,P_2) \wedge \mathit{verified}(P_1) \wedge \mathit{verified}(P_2)
+\;\Longrightarrow\;
+\underbrace{\mathit{verdict}_1(m) \wedge \mathit{verdict}_2(m)}_{\textbf{L1, L2}}
+\;\wedge\;
+\underbrace{a_2(a_1(s)) = a_1(a_2(s))}_{\textbf{L3}}
+\]
+
+\textbf{L1/L2 are the differentiator.} Byte-confluence (L3) is the classical
+diamond lemma already mechanized by Darcs, Pijul, OT and CRDT patch theory. The
+\emph{obligation-preservation} result --- a gate verdict, once green,
+\emph{survives} a commuting concurrent edit because that edit provably touches no
+locus the gate read --- is, to our knowledge, unstated in agent or patch-theory
+prior art. Every guided proof hint is itself audited (entailment from the model
+axioms checked UNSAT), so no spurious assumption can manufacture the result. An
+N-way inductive generalization is formalized in
+\texttt{nway\_induction\_z3.py} and \texttt{NwayConfluence.lean}.
+
+\paragraph{Refinement, not restatement.} \texttt{gates/algebra-refinement.proof.mjs}
+proves the \emph{runtime} \texttt{commute()} equals the proven predicate
+exhaustively over all $73{,}728$ cross-file and all $73{,}728$ same-file
+configurations. Same-file independence is decided over per-span identifier sets
+(a shared identifier --- e.g.\ a rename in one span, a use in the other --- is
+def-use coupling and is refused; unreadable identifiers yield \textsc{Unjudged}).
+The single named residual is positional/non-identifier coupling, the same-file
+analogue of dynamic imports: undecidable in general, named, never hidden.
+
+\paragraph{Scope.} The theorem quantifies over a \emph{decidable} gate fragment
+in which a verdict is a function of its read-set. It is a statement about the
+edit algebra --- never ``edits are correct for all computation.'' Rice's theorem
+is not defeated and \textsc{Unjudged} remains first-class
+(\texttt{gates/formal-gate.ts} concedes this in code).
+
+\section{External demonstration: 169k real edit-pairs}\label{sec:t3}
+
+\texttt{t3\_corpus.mjs} ran the algebra over \textbf{169{,}171} real edit-pairs
+drawn from the histories of three open-source repositories the author did not
+write (\texttt{zod}, \texttt{type-fest}, \texttt{zustand}), cross-checking every
+independence verdict against a \emph{separately written} import-reachability
+oracle. Soundness direction: false independence $=\mathbf{0}/169{,}171$.
+Notably, the run \emph{found} a real soundness bug --- re-export edges
+(\texttt{export \ldots\ from}) were missed by the per-symbol closure, producing
+242 false-independent pairs on a re-export hub --- which was fixed and locked by
+a regression test before the final result. The loop the paper is about operated
+on the paper's own experiment. Raw numbers: \texttt{t3\_result.json}.
+
+\section{Production evidence, adversarially verified}\label{sec:production}
+
+\textsc{Atomic} has been the sole mutation path of a production monorepo. We
+report only numbers that survived an adversarial panel of five independent
+verifiers instructed to refute them by recomputing from raw ledgers with their
+own parsers (no shared code with the measurement harness):
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Claim & Independent recompute & Verdict\\
+\midrule
+9{,}314 persisted ops, 0 introduced syntax errors &
+$\max(\Delta\mathit{errors})=0$ over the population &
+\textbf{confirmed, strengthened}\\
+6{,}508+ pre-spawn refusals with recorded reason &
+6{,}531/6{,}531 with reason, zero execution markers &
+\textbf{confirmed}\\
+judge latency $p_{50}\!\approx\!1$\,ms (ts/js/json) &
+208\,ms $p_{50}$ envelope / 1\,ms judge, exact &
+\textbf{confirmed}\\
+1{,}020+ native-mutation blocks, 0 silent &
+1{,}088 \texttt{blockedByDenyHook:true} live (T7) &
+\textbf{confirmed}\\
+benchmark determinism &
+378 $\to$ 376 $\to$ 382 across live trees &
+\textbf{refuted as stated}\\
+``persisted 0 invalid states'' (as accuracy) &
+judge-circular; enforcement only &
+\textbf{refuted as stated}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The two refutations were incorporated, not contested: determinism was rebuilt as
+a \emph{hash-anchored} property (\S\ref{sec:bench}), and all enforcement claims
+are now stated relative to the declared battery. We consider
+``our own panel refuted us twice and the numbers improved'' part of the
+methodology, not an embarrassment. Additional production deltas: 4{,}226
+deletions carried negative-action proofs; 1{,}959 operations avoided a
+$\geq\!2\times$ line-rewrite expansion (316 $\geq\!10\times$, 14
+$\geq\!100\times$).
+
+\section{Controlled benchmark: enforcement vs.\ accuracy}\label{sec:bench}
+
+\textsc{AtomicBench} v2 draws its corpus from \texttt{git ls-tree} at an anchored
+commit (the working tree is never read), making two runs byte-identical by
+SHA-256 --- determinism as a hash theorem, not a claim. The same 643
+syntax-breaking mutations (unbalance, truncation, mid-span deletion, garbage
+injection; deterministic offsets) plus 135 benign edits are fed to two arms: the
+\textsc{Atomic} judge pre-disk, and an unconditional writer. Result: the writer
+persisted \textbf{410} battery-invalid states; \textsc{Atomic} persisted
+\textbf{0} judge-refused states, with refusals coupled 1:1 to the control arm's
+invalid persists. Benign edits: 95/135 admitted. Two design honesties are
+explicit: the bench measures \emph{enforcement} (the judge's verdict is applied
+before disk without leakage), not judge \emph{accuracy} --- except for the JSON
+arm, where an independent arbiter (\texttt{JSON.parse}) agreed with the judge on
+160/160 proposals; and the control arm is a ceiling versus a no-feedback writer,
+not a model of human workflows.
+
+The bench also \emph{earned its keep}: it discovered that the classic validate
+path routed \texttt{.sql}/\texttt{.css} to the \emph{JavaScript} grammar
+(valid \texttt{SELECT} refused as a ``JS error''; an entire SQL migration
+replaceable by JavaScript code and admitted as an improvement --- an 87\%
+false-negative rate; a CSS file truncated by half, admitted; and a
+${\sim}180\times$ latency tax from enumerating pseudo-errors). The defect was
+localized to two mapping tables, reproduced by a 3/3 executable witness, and the
+in-node wasm judge for the real grammars was admitted by the self-expansion
+lattice itself (\S\ref{sec:cases}).
+
+\section{Disproof as gradient: closing the loop}\label{sec:gradient}
+
+Every surveyed system treats proof as downstream filtration. The unoccupied slot
+is feeding the \emph{proof artifact} back into generation. Two pre-registered
+experiments (commit-stamped before any dispatch; hash-chained run ledgers;
+pre-declared death conditions) measured it:
+
+\paragraph{Experiment 1 --- III.f (synthetic stepping-stone arena).} Frozen LLM
+proposers on two capability tiers, arms \textsc{Scalar} (pass/fail + score)
+versus \textsc{Gradient} (wall briefing from the lineage's own disproof corpus),
+60 fresh proposals. Recorded without reinterpretation: the geometry-only
+briefing did \emph{not} reduce wall repetition (P1 died by its declared death
+condition); the \emph{stronger} proposer underperformed the weaker in both arms
+while violating zero invariants (goal misinterpretation under perfect gate
+compliance); and the scalar channel was \emph{actively harmful} to the strong
+proposer (``PASSED score$=-3$'' read as approval). A concurrent-dispatcher
+contamination of v1 was detected mid-run, structurally fixed (stale-dispatch
+refusal: the judge recomputes the expected prompt hash and refuses divergent
+dispatches without advancing state --- concurrency became compare-and-swap), and
+the clean v1.1 re-run. The experiment about disproof-gradients was itself saved
+by a disproof.
+
+\paragraph{Experiment 2 --- HumanEval lift.} Full canonical HumanEval (164
+tasks, official dataset SHA), frozen weak proposer, the engine executing the
+checks inside the sandboxed envelope, four arms:
+
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+Arm & pass@final & paired recovery (24 baseline failures)\\
+\midrule
+baseline (1 attempt) & 85.4\% & ---\\
+blind resample & 92.1\% & 11\\
+scalar (``FAILED'') & 92.7\% & 12\\
+\textbf{proof (digest-bound disproof)} & \textbf{93.9\%} & \textbf{14}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Every feedback package carries a recomputable digest (24/24 verified; forged
+digests refused), and the headline claim is itself machine-validated by a claim
+taxonomy gate (\texttt{toolAugmentedHumanEvalClaim=true},
+\texttt{rawHumanEvalClaim=false}) --- to our knowledge the first full
+canonical-HumanEval run where the feedback channel and the claim are both
+gate-verified. Pre-declared limits: retry-arm margins are directional at
+$n{=}24$ (a replication amendment with a pre-fixed permutation test is registered
+and running); a strong proposer saturates this arena (98.2\% baseline). The
+honest sentence is \emph{``the gate's disproof raises the model that uses it''}
+--- not ``it makes a weak model strong.''
+
+\section{The system improving itself: three live episodes}\label{sec:cases}
+
+The property that distinguishes \textsc{Atomic} from a verification pipeline is
+that failure is converted into permanent structure, autonomously. Three episodes
+from a single 24-hour window, all receipt-backed in-repo:
+
+\begin{enumerate}
+\item \textbf{Contamination $\to$ gate $\to$ cross-agent adoption.} A second
+  dispatcher contaminated generation 4 of Experiment 1. The error was
+  self-declared, converted into the stale-dispatch refusal (a world-hash check
+  in the judge), and the \emph{concurrent} agent --- a different model vendor ---
+  rebuilt its v1.1 protocol on top of the fix, citing it. Four such cross-agent
+  adoptions occurred in the window with zero human coordination.
+\item \textbf{The corpus choked its own channel $\to$ cure $\to$ first
+  promotion.} The disproof corpus grew past 64\,KiB and every self-expansion
+  began failing with a truncated-JSON parse at exactly position 65{,}536. The
+  cause was hunted experimentally (three hypotheses refuted by isolated
+  experiment), proven mechanically
+  (\texttt{write+exit()} $=65{,}536$ bytes; \texttt{write+exitCode} $=$
+  complete), fixed across the six CLI harnesses --- and the first act of the
+  cured channel was to \emph{promote}, through the full 41-validator lattice,
+  the wasm judge of episode 3. The learning channel was unblocked by the
+  learning loop itself.
+\item \textbf{The bench caught the judge lying $\to$ the lattice admitted the
+  fix.} The benchmark of \S\ref{sec:bench} exposed the SQL/CSS grammar
+  mis-routing; the fix's first half (the in-node wasm judge) was admitted by the
+  self-expansion lattice with a promotion receipt; the second half is a
+  committed, fully-specified candidate. During the attempts, the lattice
+  \emph{correctly refused} an edit ordering that used a declaration before its
+  definition, and byte-exactly rolled back a collateral fix when its parent
+  transaction failed --- the system defending its own modification protocol
+  against its own author.
+\end{enumerate}
+
+\section{Related work}\label{sec:related}
+
+\begin{center}
+\small
+\begin{tabular}{lcccc}
+\toprule
+System & (a) inverted default & (e) commute-mod-invariant & machine-checked & scale\\
+\midrule
+\textbf{This work} & \textbf{yes} (recomputed disproof) & \textbf{yes} (read-set, Z3) & \textbf{yes} & 169k external pairs\\
+Nidus (arXiv 2604.05080) & no (positive proofs) & no (Git-as-WAL) & yes & 100k-LOC self-host\\
+Microsoft MXC / AGT & no (kernel deny) & no & n/a (OS) & commercial\\
+SEVerA (arXiv 2603.25111) & no (white-list, Dafny) & no & yes & subset\\
+CompCert / KeY & no & no & yes & ---\\
+Coccinelle & no & no (syntactic) & partial & wide\\
+Hazel / Hazelnut & no & no & yes (Agda) & ---\\
+Darcs / Pijul / OT / CRDT & no & bytes/ops only, no proof-gating & some & wide\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+No surveyed system delivers both (a) and (e); none feeds the proof artifact back
+to the proposer. Two properties \textsc{Atomic} also has --- a sole-mutation-path
+no-bypass envelope and self-extension under a monotonic proof lattice --- are no
+longer novel after Nidus and MXC shipped them independently; we explicitly do
+\emph{not} claim them as contributions. On the self-improvement side, DGM
+(arXiv 2505.22954) shows capability gains by \emph{dropping} proof gates for
+permissive empirical ones; SAHOO (arXiv 2603.06333) holds hard invariants
+fail-closed while soft objectives vary; Mohri et al.\ (arXiv 2511.08440) prove
+robust-improvement mechanisms are coherence-locked. Our position is the
+scope-bounded verifier escape (arXiv 2603.28650): the gate certifies
+\emph{structural admissibility}, never behavioral safety, and the disproof
+feedback is how the filter begins contributing to generation without weakening
+admission.
+
+\section{Honest limits}\label{sec:limits}
+
+(1) \textbf{Rice stands.} All guarantees are relative to the declared decidable
+battery; semantic correctness for all computation is not claimed, and 252/643
+bench mutations that remained parseable passed both arms --- the battery's
+boundary, stated. (2) \textbf{Structural, not behavioral.} Balanced braces and
+preserved obligations do not prove the program does what the user wants; the
+founder block says so on every receipt. (3) \textbf{Enforcement scope.} The
+deny-hook binds the agent tool surface (1{,}088 live blocks); processes outside
+the harness need OS-level enforcement for a kernel-grade floor. (4)
+\textbf{Experiment power.} HumanEval retry margins are directional at $n{=}24$
+pending the registered permutation replication; the III.f strong-tier result is
+an inversion, not a confirmation. (5) \textbf{Recognition is not correctness.}
+This document is a priority record; peer review, independent replication, and
+external adoption are the field's to confer and are not claimed. (6)
+\textbf{Known open defects} are tracked as committed, executable witnesses
+(e.g.\ the second half of the grammar-routing fix) rather than hidden.
+
+\section{Conclusion}
+
+\textsc{Atomic} demonstrates that the action space of autonomous code agents can
+be replaced wholesale: transactions instead of patches, proofs before disk
+instead of rollbacks after damage, an inverted default in which deletion requires
+a recomputed disproof, an edit algebra whose independence is machine-checked to
+preserve obligations, and --- the step we believe matters most --- refusals that
+return to the proposer as structured gradient. The measured result is a system
+that has not written one invalid state in 9{,}314 production operations, proved
+its concurrency algebra on 169k external edit-pairs, lifted a frozen model by
+8.5\,pp on canonical HumanEval through its own disproof artifacts, and repeatedly
+converted its own failures --- including the ones we, its authors and operators,
+caused --- into permanent structural strength. The thesis, in one sentence:
+\emph{text patches are the wrong action space for autonomous code agents;
+verified, non-bypassable, proof-carrying program transactions --- whose refusals
+teach the proposer --- are the right primitive.}
+
+\subsection*{Reproducibility}
+
+The formal artifacts (\texttt{confluence\_z3.py}, \texttt{nway\_induction\_z3.py},
+\texttt{NwayConfluence.lean}, refinement proofs), the T3 corpus harness and
+results, the benchmark harnesses with hash-anchored outputs, the production
+ledgers' aggregators, and the pre-registration documents of both experiments are
+re-runnable from a clean checkout with \texttt{node} and \texttt{z3-solver}; the
+HumanEval run uses the official dataset (SHA recorded in the pre-registration).
+A public artifact repository is being prepared
+(\texttt{github.com/danielgonzagat/atomic-os}).
+
+\subsection*{Disclosure}
+
+The system described here was implemented, measured, and stress-tested by
+autonomous coding agents (Claude, Codex) operating under the author's direction
+and inside the very enforcement layer this paper describes; the paper itself was
+drafted with AI assistance. The author assumes full responsibility for all
+claims. Every number in this paper is backed by a receipt, ledger, or
+machine-checked artifact in the repository, and the adversarial-verification
+methodology of \S\ref{sec:production} was applied to the paper's own claims.
