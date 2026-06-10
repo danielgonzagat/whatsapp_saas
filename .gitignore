@@ -220,3 +220,6 @@ ecc-session-recordings/
 
 # PID files de dev-boot do harness atomic — runtime puro, nunca versionar
 .atomic-devboot/
+
+# Atomic swarm runtime workspace (sibling of .atomic-devboot)
+.atomic-run3/
