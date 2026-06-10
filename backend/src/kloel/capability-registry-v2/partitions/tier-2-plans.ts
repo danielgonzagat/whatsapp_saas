@@ -295,7 +295,9 @@ export const TIER_2_PLANS_CAPABILITIES: CapabilityDefinition[] = [
     requiredPermissions: ['product:write'],
     inputSchema: [{ key: 'planId', type: 'string', label: 'Plano', required: true }],
     domainService: 'PlanService.delete',
-    emits: ['plan.deleted'],
+    // Runtime truth: PlanService.delete records no spine event; the bus-only
+    // 'plan.deleted' emit died in 6e8ce118.
+    emits: [],
     surface: ['dashboard-chat'],
     maturity: 'deprecated',
   },

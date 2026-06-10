@@ -208,7 +208,9 @@ export const TIER_1_PRODUCTS_CAPABILITIES: CapabilityDefinition[] = [
       { key: 'available', type: 'boolean', label: 'Disponível para venda', required: true },
     ],
     domainService: 'ProductService.toggleAvailabilityFor',
-    emits: ['product.activated', 'product.deactivated'],
+    // Runtime truth: toggleAvailability records spine eventType 'product.updated'
+    // (changes: ['active']); the bus-only activated/deactivated emits died in 6e8ce118.
+    emits: ['product.updated'],
     evidenceUrlBuilder: '/produtos/${productId}',
     surface: ['dashboard-chat'],
   },

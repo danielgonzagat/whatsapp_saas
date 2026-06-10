@@ -1,5 +1,4 @@
 import { Test } from '@nestjs/testing';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ModuleRef } from '@nestjs/core';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuditService } from '../../../audit/audit.service';
@@ -105,7 +104,6 @@ describe('tier-1 fine-grained product capabilities (Wave7 L1)', () => {
         providers: [
           ProductService,
           { provide: PrismaService, useValue: prisma },
-          { provide: EventEmitter2, useValue: { emit: jest.fn() } },
           { provide: AuditService, useValue: { log: jest.fn() } },
           {
             provide: MindEventSpine,
