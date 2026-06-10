@@ -87,9 +87,9 @@ export function buildPrismaDatasourceUrl(
  * PrismaClient constructor options carrying the pooled datasource URL.
  * Empty object when DATABASE_URL is unset (Prisma resolves env itself).
  */
-export function buildPrismaClientOptions(
-  env: NodeJS.ProcessEnv = process.env,
-): { datasourceUrl?: string } {
+export function buildPrismaClientOptions(env: NodeJS.ProcessEnv = process.env): {
+  datasourceUrl?: string;
+} {
   const url = buildPrismaDatasourceUrl(env.DATABASE_URL, env);
   return url === undefined ? {} : { datasourceUrl: url };
 }

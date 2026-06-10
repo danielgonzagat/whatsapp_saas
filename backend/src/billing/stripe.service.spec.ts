@@ -105,7 +105,9 @@ describe('StripeService', () => {
       });
       const service = moduleRef.get(StripeService);
 
-      expect(() => service.stripe).toThrow(/test-mode key \(sk_test_\*\).*real charges are blocked/s);
+      expect(() => service.stripe).toThrow(
+        /test-mode key \(sk_test_\*\).*real charges are blocked/s,
+      );
       expect(errorSpy).toHaveBeenCalledWith(
         'stripe_test_key_in_production',
         expect.objectContaining({ event: 'stripe_test_key_in_production' }),
