@@ -144,6 +144,22 @@ try {
     const msg = threw(() => atomicWrite(cAbs, 'export const y: number = nope();\n'));
     check('(5) UNJUDGED at floor: no-tsconfig write is refused before disk', !!msg && /UNJUDGED|unjudged/.test(msg) && !fs.existsSync(cAbs));
   }
+
+  // (5) PATH ALIAS @/ at the byte floor — the new alias resolution (closes the #2 TODO).
+  //     Self-contained temp <proj>/frontend/src so the <pkg>/src convention regex matches.
+  {
+    const fsroot = path.join(proj, 'frontend', 'src');
+    fs.mkdirSync(path.join(fsroot, 'lib'), { recursive: true });
+    fs.writeFileSync(path.join(fsroot, 'lib', 'real.ts'), 'export const r = 1;\n');
+    const probe = path.join(fsroot, 'x.tsx'); // non-existent → every import is a new wire
+    const vReds = conn.checkConnectionByteFloor(probe, "import { r } from '@/lib/ghost';\nexport const a = r;\n");
+    check('(5a) ALIAS: a dangling @/ import reds at the byte floor', vReds.green === false && vReds.reds.includes('@/lib/ghost'));
+    const vGreen = conn.checkConnectionByteFloor(probe, "import { r } from '@/lib/real';\nexport const a = r;\n");
+    check('(5b) ALIAS: a resolvable @/ import passes', vGreen.green === true);
+    const outside = path.join(proj, 'scripts', 'y.ts'); // no <pkg>/src segment → unjudged
+    const vSkip = conn.checkConnectionByteFloor(outside, "import { r } from '@/lib/ghost';\nexport const a = r;\n");
+    check('(5c) ALIAS: a non-locatable src root is NOT judged (honest skip, not red)', vSkip.green === true);
+  }
 } finally {
   fs.rmSync(proj, { recursive: true, force: true });
 }
