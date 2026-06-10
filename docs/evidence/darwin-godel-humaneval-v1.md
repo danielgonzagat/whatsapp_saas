@@ -153,3 +153,32 @@ Deltas: proof−baseline = **+8.5pp**; proof−cego = +1.8pp; proof−scalar = +
 são subagentes Claude Code (scaffolding idêntico entre braços; nível absoluto não comparável a
 leaderboards — e o pass@1 do opus aqui, 98.2%, reflete isso); margens entre braços de retry
 pequenas com n=24.
+
+---
+
+## PRÉ-REGISTRO DA EMENDA v1.1 — réplicas de seed dos braços de retry (carimbo = commit desta seção, ANTES de qualquer despacho de réplica)
+
+**Objetivo:** converter os sinais direcionais P1/P2 em teste com poder estatístico, sem mudar
+NADA do desenho: mesmas 24 falhas fixas de g1, mesmos arquivos de despacho congelados
+(`work/dispatch-retry/`, invólucro `7cf2b96e…`), mesmos pacotes/repair-prompts digest-bound.
+
+- **K = 4 réplicas novas** (r2–r5; a rodada original é r1), cada uma = 72 chamadas haiku
+  (24 tarefas × 3 braços), re-amostragem independente (mesma definição de "seed" do iiif).
+- **Julgamento por réplica:** mesma esteira (--collect-retry ×3 → --assemble → runner lift
+  report + cego via --emit-feedback-packages); artefatos salvos como `lift-report-r{k}.json`,
+  `packages-cego-r{k}.json`, `samples-haiku-lift-r{k}.jsonl`.
+- **Análise primária (pré-fixada):** por tarefa t∈F (|F|=24) e braço a, taxa de recuperação
+  r(t,a) = média de pass sobre as 5 réplicas. Teste de permutação pareado unilateral
+  (H1: proof > cego), estatística = média_t[r(t,proof) − r(t,cego)], 100.000 permutações de
+  sinal por tarefa, gerador determinístico LCG semente 42, α = 0.05.
+- **Secundária:** idem para proof − scalar. Terciária (descritiva): média±dp de recuperações
+  por braço entre réplicas.
+- **Morte/confirmação:** p < 0.05 na primária ⇒ P1 sobe de "direção" para CONFIRMADA;
+  p ≥ 0.05 ⇒ registrar "não separável com K=5 nesta arena" sem reinterpretar; proof médio ≤
+  cego médio ⇒ D1 dispara de fato (disprova não vence resample) — registrar e voltar ao desenho.
+- **Sem mudanças retroativas:** nada acima desta seção é editado; resultados das réplicas
+  entram abaixo dela.
+
+### Resultados das réplicas
+
+(preenchidos abaixo desta linha após as réplicas r2–r5.)
