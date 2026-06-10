@@ -13,7 +13,7 @@ export const ASSISTANT_REASONING_REDACTED_TEXT =
 const PRIVATE_CREDENTIAL_REASONING_RE =
   /(?:sk-[a-z0-9_-]{16,}|AKIA[0-9A-Z]{16}|api[_ -]?key\s*[:=]|authorization\s*[:=]|bearer\s+[a-z0-9._-]{20,}|password\s*[:=]|secret\s*[:=])/i;
 const PRIVATE_INTERNAL_REASONING_RE =
-  /\b(?:runtime context|developer prompt|system prompt|hidden runtime)\b|\bskill\s*=|<[^>]*(?:tool_calls|invoke)\b|<[\uFF5C|]{2}DSML/i;
+  /\b(?:runtime context|developer prompt|system prompt|hidden runtime|dynamic context|contexto din[âa]mico)\b|\bskill\s*=|<[^>]*(?:tool_calls|invoke)\b|<[｜|]{2}DSML|mem[óo]ria do usu[áa]rio\s*\(|bio do operador\s*:|nome do usu[áa]rio\s*:/i;
 const PRIVATE_DELIBERATIVE_REASONING_RE =
   /\b(?:probably not needed|i(?:'|’)ll\s+(?:craft|reply|output|answer|respond)|i\s+will\s+(?:craft|reply|output|answer|respond)|final message)\b/i;
 
