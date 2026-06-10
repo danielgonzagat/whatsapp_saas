@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
-
 /**
  * Proves the Brain→Mind Phase-2 backfill: flag-gated (no-op when OFF), copies
  * legacy RAC_KloelMessage rows into RAC_MindMessage with source='brain' +
@@ -10,6 +8,11 @@ import { MindMessageBackfillService } from './mind-message-backfill.service';
 
 const FLAG = 'KLOEL_MINDMESSAGE_BACKFILL';
 const BEFORE = new Date('2026-06-01T00:00:00.000Z');
+
+const nthCallArg = (mock: jest.Mock, i: number): Record<string, unknown> => {
+  const c = (mock.mock.calls as Array<[Record<string, unknown>]>)[i];
+  return c ? c[0] : {};
+};
 
 type LegacyRow = {
   id: string;
@@ -81,7 +84,7 @@ describe('MindMessageBackfillService', () => {
     expect(result.enabled).toBe(true);
     expect(result.scanned).toBe(2);
     expect(result.inserted).toBe(2);
-    const data = createMany.mock.calls[0][0].data;
+    const data = nthCallArg(createMany, 0).data as Array<Record<string, unknown>>;
     expect(data[0]).toMatchObject({
       workspaceId: 'ws-1',
       source: 'brain',
@@ -90,7 +93,7 @@ describe('MindMessageBackfillService', () => {
       createdAt: row('a').createdAt,
     });
     // skipDuplicates makes the re-run idempotent.
-    expect(createMany.mock.calls[0][0].skipDuplicates).toBe(true);
+    expect(nthCallArg(createMany, 0).skipDuplicates).toBe(true);
   });
 
   it('applies the before cutoff in the legacy query', async () => {
@@ -100,8 +103,9 @@ describe('MindMessageBackfillService', () => {
 
     await service.backfill({ before: BEFORE, workspaceId: 'ws-1' });
 
-    expect(findMany.mock.calls[0][0].where.createdAt).toEqual({ lt: BEFORE });
-    expect(findMany.mock.calls[0][0].where.workspaceId).toBe('ws-1');
+    const where = nthCallArg(findMany, 0).where as { createdAt?: unknown; workspaceId?: string };
+    expect(where.createdAt).toEqual({ lt: BEFORE });
+    expect(where.workspaceId).toBe('ws-1');
   });
 
   it('paginates by cursor across multiple batches', async () => {
@@ -114,7 +118,7 @@ describe('MindMessageBackfillService', () => {
     expect(result.batches).toBe(2);
     expect(result.scanned).toBe(2);
     // Second page used the cursor from the first page's last row.
-    expect(findMany.mock.calls[1][0].cursor).toEqual({ id: 'a' });
+    expect(nthCallArg(findMany, 1).cursor).toEqual({ id: 'a' });
     expect(createMany).toHaveBeenCalledTimes(2);
   });
 
@@ -136,7 +140,7 @@ describe('MindMessageBackfillService', () => {
 
       expect(result).toEqual({ legacy: 100, mirrored: 75, missing: 25, coverage: 0.75 });
       // Only counts the backfilled rows (source=brain, sourceId set).
-      expect(mindCount.mock.calls[0][0].where).toMatchObject({
+      expect(nthCallArg(mindCount, 0).where).toMatchObject({
         source: 'brain',
         sourceId: { not: null },
       });

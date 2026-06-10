@@ -1,0 +1,5 @@
+recuperações por réplica (cego/scalar/proof): 11/12/14 | 16/16/18 | 11/16/15 | 15/11/17 | 13/11/15
+médias (de 24): cego=13.2 scalar=13.2 proof=15.8
+PRIMÁRIA proof-cego: estatística=0.1083 p=0.05572 => não separável (p>=0.05)
+SECUNDÁRIA proof-scalar: estatística=0.1083 p=0.08713 => não separável (p>=0.05)
+pass@final médio proof: 155.8/164 (95.0%)

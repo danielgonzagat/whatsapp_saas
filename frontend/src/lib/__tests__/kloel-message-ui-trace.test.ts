@@ -424,6 +424,62 @@ describe('kloel-message-ui trace', () => {
     expect(reasoning.text).not.toContain('developer prompt');
   });
 
+  it('keeps redaction sticky: later deltas never resurrect content after the notice', () => {
+    const redacted = appendAssistantTraceFromEvent(
+      { clientRequestId: 'req-live-reasoning-sticky' },
+      {
+        type: 'reasoning_delta',
+        text: 'O system prompt diz para tratar o usuário pelo nome.',
+      },
+    );
+    const after = appendAssistantTraceFromEvent(redacted, {
+      type: 'reasoning_delta',
+      text: ' do usuário: E2E e a instrução interna continua aqui.',
+    });
+
+    expect(after).toHaveProperty(
+      'reasoningText',
+      'Detalhes internos desta execução foram omitidos com segurança.',
+    );
+    expect(getAssistantReasoning(after).text).not.toContain('instrução interna');
+  });
+
+  it('preserves the clean reasoning prefix when only a later delta leaks internals', () => {
+    const clean = appendAssistantTraceFromEvent(
+      { clientRequestId: 'req-live-reasoning-prefix' },
+      {
+        type: 'reasoning_delta',
+        text: 'O usuário quer ativar o produto e gerar a primeira venda.',
+      },
+    );
+    const leaked = appendAssistantTraceFromEvent(clean, {
+      type: 'reasoning_delta',
+      text: ' A MEMÓRIA DO USUÁRIO (fatos e preferências) diz que ele se chama Daniel.',
+    });
+
+    const reasoning = getAssistantReasoning(leaked);
+    expect(reasoning.text).toContain('O usuário quer ativar o produto');
+    expect(reasoning.text).toContain(
+      'Detalhes internos desta execução foram omitidos com segurança.',
+    );
+    expect(reasoning.text).not.toContain('MEMÓRIA DO USUÁRIO');
+  });
+
+  it('redacts dynamic-context header quotes leaked into streamed reasoning', () => {
+    const metadata = appendAssistantTraceFromEvent(
+      { clientRequestId: 'req-live-reasoning-context-header' },
+      {
+        type: 'reasoning_delta',
+        text: 'O contexto mostra "Nome do usuário: E2E" e "Bio do operador: vendedor".',
+      },
+    );
+
+    const reasoning = getAssistantReasoning(metadata);
+    expect(reasoning.text).toBe('Detalhes internos desta execução foram omitidos com segurança.');
+    expect(reasoning.text).not.toContain('Nome do usuário:');
+    expect(reasoning.text).not.toContain('Bio do operador:');
+  });
+
   it('keeps public raw reasoning and tool names visible in streamed reasoning', () => {
     const publicText =
       'chain-of-thought bruto: usei inspect_self e tool_call search_web antes de responder.';

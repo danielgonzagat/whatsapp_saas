@@ -1,0 +1,102 @@
+{
+  "ok": true,
+  "mode": "emit-proof-feedback-packages",
+  "datasetKind": "external-jsonl",
+  "sourceArm": "baseline",
+  "taskCount": 164,
+  "failedSampleCount": 3,
+  "missingSampleCount": 0,
+  "missingSamples": [],
+  "packagesSha256": "a581b497a84ed7aa04d33c71e439797ba936b46c581c65844211c14399f5458e",
+  "allPackagesValid": true,
+  "validation": [
+    {
+      "taskId": "HumanEval/30",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "22a0cbd4006a259a12bccefb7c8c2713f73d1f4aa16c7600b033fe01dc2684c7"
+    },
+    {
+      "taskId": "HumanEval/41",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "9fdf608cef47ecdb11b8968ea043f6b609aa4d5672e170f27bc001d2daee456c"
+    },
+    {
+      "taskId": "HumanEval/91",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "401bc4be7ab75b180f1b5402df2c3e9914f9d1a31d620152def831e0b426ba63"
+    }
+  ],
+  "packages": [
+    {
+      "task_id": "HumanEval/30",
+      "source_arm": "baseline",
+      "model_id": "opus",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/30",
+        "invariantId": "humaneval.assertion",
+        "counterexample": "\n\nMETADATA = {}\n\n\ndef check(candidate):\n    assert candidate([-1, -2, 4, 5, 6]) == [4, 5, 6]\n    assert candidate([5, 3, -5, 2, 3, 3, 9, 0, 123, 1, -10]) == [5, 3, 2, 3, 3, 9, 123, 1]\n    assert candidate([-1, -2]) == []\n    assert candidate([]) == []\n\n",
+        "lessonLine": "The baseline completion failed assertion; preserve entry point get_positive and satisfy the check(candidate) contract.",
+        "proposalDigest": "57f9f69e2191ba26998214690aa29260e37c735e5ac0f8fc54c6c8ea1e86003c",
+        "failureKind": "assertion",
+        "rejectedCompletionSha256": "97dbee70f6e34d70949624d874f547175512367bc9b6733f51044821f3a345a9",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "db946a5e8fddbbff602c5d4d3080ab41200bcac7f7791c3f9fec8dc5ed5fb8c4"
+      },
+      "proof_feedback_package_sha256": "22a0cbd4006a259a12bccefb7c8c2713f73d1f4aa16c7600b033fe01dc2684c7",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/41",
+      "source_arm": "baseline",
+      "model_id": "opus",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/41",
+        "invariantId": "humaneval.assertion",
+        "counterexample": "\n\nMETADATA = {}\n\n\ndef check(candidate):\n    assert candidate(2) == 4\n    assert candidate(3) == 9\n    assert candidate(4) == 16\n    assert candidate(8) == 64\n    assert candidate(10) == 100\n\n",
+        "lessonLine": "The baseline completion failed assertion; preserve entry point car_race_collision and satisfy the check(candidate) contract.",
+        "proposalDigest": "34e70f60b9d3c9edd763a2bdbfab359a647bc866ce731d595cfd42eb674c532f",
+        "failureKind": "assertion",
+        "rejectedCompletionSha256": "11dc24779a3591fd7ed5352b3f9b2e6a8fb3877116cdc1458353f08893c73f40",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "d37f639bf4255fdbec9ea00eee42544a1eafcc064d74f632f20c77ba1f59b902"
+      },
+      "proof_feedback_package_sha256": "9fdf608cef47ecdb11b8968ea043f6b609aa4d5672e170f27bc001d2daee456c",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/91",
+      "source_arm": "baseline",
+      "model_id": "opus",
+      "attempt_budget": 1,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/91",
+        "invariantId": "humaneval.runtime",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate(\"Hello world\") == 0, \"Test 1\"\n    assert candidate(\"Is the sky blue?\") == 0, \"Test 2\"\n    assert candidate(\"I love It !\") == 1, \"Test 3\"\n    assert candidate(\"bIt\") == 0, \"Test 4\"\n    assert candidate(\"I feel good today. I will be productive. will kill It\") == 2, \"Test 5\"\n    assert candidate(\"You and I are going for a walk\") == 0, \"Test 6\"\n\n    # Check some edge cases that are easy to work out by hand.\n    assert True, \"This prints if this assert fails 2 (also good for debugging!)\"\n\n",
+        "lessonLine": "The baseline completion failed runtime; preserve entry point is_bored and satisfy the check(candidate) contract.",
+        "proposalDigest": "74ebe0d1a1dd3511b6a5470d255f408c8f16ad0fcf1e1fc0351c501851c79f4a",
+        "failureKind": "runtime",
+        "rejectedCompletionSha256": "3ca84f20c913cd72390ac6aeeddd1ece707bc23dede2e9751aae6cb03ee32eed",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "0dea52d2d768300956aa4fecd1d28ca98ddaec5cb24b2b8fd9854217b67bb07e"
+      },
+      "proof_feedback_package_sha256": "401bc4be7ab75b180f1b5402df2c3e9914f9d1a31d620152def831e0b426ba63",
+      "atomic_receipt_sha256": null
+    }
+  ],
+  "proofLimits": [
+    "Feedback packages are proposer guidance, not an evaluator and not a raw HumanEval claim.",
+    "Hidden or held-out tests must never be leaked into a package intended for raw-score reporting.",
+    "A package supports an Atomic tool-augmented claim only when the later sample also carries an Atomic receipt sha256."
+  ]
+}

@@ -1,0 +1,21 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+from typing import List, Tuple
+
+
+def find_closest_elements(numbers: List[float]) -> Tuple[float, float]:
+    """ From a supplied list of numbers (of length at least two) select and return two that are the closest to each
+    other and return them in order (smaller number, larger number).
+    >>> find_closest_elements([1.0, 2.0, 3.0, 4.0, 5.0, 2.2])
+    (2.0, 2.2)
+    >>> find_closest_elements([1.0, 2.0, 3.0, 4.0, 5.0, 2.0])
+    (2.0, 2.0)
+    """
+
+--- FIM DA TAREFA ---

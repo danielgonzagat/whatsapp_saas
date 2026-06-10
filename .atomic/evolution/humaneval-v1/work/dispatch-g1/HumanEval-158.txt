@@ -1,0 +1,21 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+
+def find_max(words):
+    """Write a function that accepts a list of strings.
+    The list contains different words. Return the word with maximum number
+    of unique characters. If multiple strings have maximum number of unique
+    characters, return the one which comes first in lexicographical order.
+
+    find_max(["name", "of", "string"]) == "string"
+    find_max(["name", "enam", "game"]) == "enam"
+    find_max(["aaaaaaa", "bb" ,"cc"]) == ""aaaaaaa"
+    """
+
+--- FIM DA TAREFA ---

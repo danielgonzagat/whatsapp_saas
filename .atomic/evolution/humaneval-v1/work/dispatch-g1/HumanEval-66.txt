@@ -1,0 +1,24 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+
+def digitSum(s):
+    """Task
+    Write a function that takes a string as input and returns the sum of the upper characters only'
+    ASCII codes.
+
+    Examples:
+        digitSum("") => 0
+        digitSum("abAB") => 131
+        digitSum("abcCd") => 67
+        digitSum("helloE") => 69
+        digitSum("woArBld") => 131
+        digitSum("aAaaaXa") => 153
+    """
+
+--- FIM DA TAREFA ---

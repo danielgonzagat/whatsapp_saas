@@ -1,0 +1,75 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+Atomic proof-feedback repair prompt (tool-augmented; not raw HumanEval evidence).
+task_id: HumanEval/115
+entry_point: max_fill
+Return only the Python completion body that follows the given HumanEval prompt.
+
+HUMANEVAL_PROMPT:
+
+def max_fill(grid, capacity):
+    import math
+    """
+    You are given a rectangular grid of wells. Each row represents a single well,
+    and each 1 in a row represents a single unit of water.
+    Each well has a corresponding bucket that can be used to extract water from it, 
+    and all buckets have the same capacity.
+    Your task is to use the buckets to empty the wells.
+    Output the number of times you need to lower the buckets.
+
+    Example 1:
+        Input: 
+            grid : [[0,0,1,0], [0,1,0,0], [1,1,1,1]]
+            bucket_capacity : 1
+        Output: 6
+
+    Example 2:
+        Input: 
+            grid : [[0,0,1,1], [0,0,0,0], [1,1,1,1], [0,1,1,1]]
+            bucket_capacity : 2
+        Output: 5
+    
+    Example 3:
+        Input: 
+            grid : [[0,0,0], [0,0,0]]
+            bucket_capacity : 5
+        Output: 0
+
+    Constraints:
+        * all wells have the same length
+        * 1 <= grid.length <= 10^2
+        * 1 <= grid[:,1].length <= 10^2
+        * grid[i][j] -> 0 | 1
+        * 1 <= capacity <= 10
+    """
+
+
+ATOMIC_PROOF_FEEDBACK:
+package_sha256: 51f0c51333b649ac550e1152eb38eacd9b8a6e4ad605b157fbe4caf00a8bdc74
+invariant: humaneval.assertion
+lesson: The baseline completion failed assertion; preserve entry point max_fill and satisfy the check(candidate) contract.
+proposal_digest: 318a1cc5cfeb9c5d025617fa3eba992aa1b235b901707df09e53c4bc96741d38
+rejected_completion_sha256: b11f92dfb775370b7173d22d0185ff3c86c430f94409156982a2b515ee8cd179
+counterexample:
+def check(candidate):
+
+
+    # Check some simple cases
+    assert True, "This prints if this assert fails 1 (good for debugging!)"
+    assert candidate([[0,0,1,0], [0,1,0,0], [1,1,1,1]], 1) == 6, "Error"
+    assert candidate([[0,0,1,1], [0,0,0,0], [1,1,1,1], [0,1,1,1]], 2) == 5, "Error"
+    assert candidate([[0,0,0], [0,0,0]], 5) == 0, "Error"
+
+    # Check some edge cases that are easy to work out by hand.
+    assert True, "This prints if this assert fails 2 (also good for debugging!)"
+    assert candidate([[1,1,1,1], [1,1,1,1]], 2) == 4, "Error"
+    assert candidate([[1,1,1,1], [1,1,1,1]], 9) == 2, "Error"
+
+
+--- FIM DA TAREFA ---

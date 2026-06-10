@@ -1,0 +1,21 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+
+
+def derivative(xs: list):
+    """ xs represent coefficients of a polynomial.
+    xs[0] + xs[1] * x + xs[2] * x^2 + ....
+     Return derivative of this polynomial in the same form.
+    >>> derivative([3, 1, 2, 4, 5])
+    [1, 4, 12, 20]
+    >>> derivative([1, 2, 3])
+    [2, 6]
+    """
+
+--- FIM DA TAREFA ---

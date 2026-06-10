@@ -9,7 +9,7 @@ export const ASSISTANT_REASONING_REDACTED_TEXT =
 const PRIVATE_CREDENTIAL_REASONING_RE =
   /(?:sk-[a-z0-9_-]{8,}|AKIA[0-9A-Z]{16}|api[_ -]?key\s*[:=]|authorization\s*[:=]|bearer\s+[a-z0-9._-]{20,}|password\s*[:=]|secret\s*[:=])/i;
 const PRIVATE_INTERNAL_REASONING_RE =
-  /\b(?:runtime context|developer prompt|system prompt|hidden runtime)\b|\bskill\s*=|<[^>]*(?:tool_calls|invoke)\b|<[\uFF5C|]{2}DSML/i;
+  /\b(?:runtime context|developer prompt|system prompt|hidden runtime|dynamic context|contexto din[âa]mico)\b|\bskill\s*=|<[^>]*(?:tool_calls|invoke)\b|<[｜|]{2}DSML|mem[óo]ria do usu[áa]rio\s*\(|bio do operador\s*:|nome do usu[áa]rio\s*:/i;
 
 export function sanitizeAssistantReasoningTextForDisplay(value: string): string {
   const text = String(value || '');
@@ -139,9 +139,24 @@ export function applyReasoningStreamEventToMetadata(
     const startedAt =
       typeof metadata.reasoningStartedAt === 'number' ? metadata.reasoningStartedAt : Date.now();
     const currentText = typeof metadata.reasoningText === 'string' ? metadata.reasoningText : '';
-    const nextText = sanitizeAssistantReasoningTextForDisplay(currentText + event.text);
     const safeMetadata = { ...metadata };
     delete safeMetadata.streamedReasoning;
+    // Sticky redaction: once the visible reasoning hit a privacy stop, later
+    // deltas must never resurrect content after the redaction notice (the old
+    // append-after-redaction path leaked system-prompt quotes live).
+    if (currentText.endsWith(ASSISTANT_REASONING_REDACTED_TEXT)) {
+      return { ...safeMetadata, reasoningStartedAt: startedAt, reasoningText: currentText };
+    }
+    const candidate = currentText + event.text;
+    let nextText = sanitizeAssistantReasoningTextForDisplay(candidate);
+    if (nextText !== candidate && currentText) {
+      // Only the new tail tripped the guard: keep the clean prefix and close
+      // the visible reasoning with a single redaction notice.
+      nextText =
+        sanitizeAssistantReasoningTextForDisplay(currentText) === currentText
+          ? `${currentText.trimEnd()}\n\n${ASSISTANT_REASONING_REDACTED_TEXT}`
+          : ASSISTANT_REASONING_REDACTED_TEXT;
+    }
     return { ...safeMetadata, reasoningStartedAt: startedAt, reasoningText: nextText };
   }
   if (event.type === 'reasoning_summary') {

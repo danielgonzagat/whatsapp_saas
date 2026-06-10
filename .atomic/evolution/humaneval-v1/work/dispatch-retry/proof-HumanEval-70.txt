@@ -1,0 +1,53 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+Atomic proof-feedback repair prompt (tool-augmented; not raw HumanEval evidence).
+task_id: HumanEval/70
+entry_point: strange_sort_list
+Return only the Python completion body that follows the given HumanEval prompt.
+
+HUMANEVAL_PROMPT:
+
+def strange_sort_list(lst):
+    '''
+    Given list of integers, return list in strange order.
+    Strange sorting, is when you start with the minimum value,
+    then maximum of the remaining integers, then minimum and so on.
+
+    Examples:
+    strange_sort_list([1, 2, 3, 4]) == [1, 4, 2, 3]
+    strange_sort_list([5, 5, 5, 5]) == [5, 5, 5, 5]
+    strange_sort_list([]) == []
+    '''
+
+
+ATOMIC_PROOF_FEEDBACK:
+package_sha256: f8c532bd8aa1c6f37332e7b821e4349212cf2dbef6ea97e4d97829728aae7c34
+invariant: humaneval.runtime
+lesson: The baseline completion failed runtime; preserve entry point strange_sort_list and satisfy the check(candidate) contract.
+proposal_digest: be66b4cb97d8239b62e199e5a5da6242b446e5fde584128e3b01efe7f52c91bd
+rejected_completion_sha256: ec6ecd0502690de68d1d9e618b08f66aa6132f62b881cb00ca73dc1c06d246f8
+counterexample:
+def check(candidate):
+
+    # Check some simple cases
+    assert candidate([1, 2, 3, 4]) == [1, 4, 2, 3]
+    assert candidate([5, 6, 7, 8, 9]) == [5, 9, 6, 8, 7]
+    assert candidate([1, 2, 3, 4, 5]) == [1, 5, 2, 4, 3]
+    assert candidate([5, 6, 7, 8, 9, 1]) == [1, 9, 5, 8, 6, 7]
+    assert candidate([5, 5, 5, 5]) == [5, 5, 5, 5]
+    assert candidate([]) == []
+    assert candidate([1,2,3,4,5,6,7,8]) == [1, 8, 2, 7, 3, 6, 4, 5]
+    assert candidate([0,2,2,2,5,5,-5,-5]) == [-5, 5, -5, 5, 0, 2, 2, 2]
+    assert candidate([111111]) == [111111]
+
+    # Check some edge cases that are easy to work out by hand.
+    assert True
+
+
+--- FIM DA TAREFA ---

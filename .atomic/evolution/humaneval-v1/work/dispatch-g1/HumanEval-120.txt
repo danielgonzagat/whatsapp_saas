@@ -1,0 +1,36 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+
+def maximum(arr, k):
+    """
+    Given an array arr of integers and a positive integer k, return a sorted list 
+    of length k with the maximum k numbers in arr.
+
+    Example 1:
+
+        Input: arr = [-3, -4, 5], k = 3
+        Output: [-4, -3, 5]
+
+    Example 2:
+
+        Input: arr = [4, -4, 4], k = 2
+        Output: [4, 4]
+
+    Example 3:
+
+        Input: arr = [-3, 2, 1, 2, -1, -2, 1], k = 1
+        Output: [2]
+
+    Note:
+        1. The length of the array will be in the range of [1, 1000].
+        2. The elements in the array will be in the range of [-1000, 1000].
+        3. 0 <= k <= len(arr)
+    """
+
+--- FIM DA TAREFA ---

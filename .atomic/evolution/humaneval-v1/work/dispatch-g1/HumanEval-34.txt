@@ -1,0 +1,17 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+
+
+def unique(l: list):
+    """Return sorted unique elements in a list
+    >>> unique([5, 3, 5, 2, 3, 3, 9, 0, 123])
+    [0, 2, 3, 5, 9, 123]
+    """
+
+--- FIM DA TAREFA ---

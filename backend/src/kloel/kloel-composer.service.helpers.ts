@@ -16,12 +16,27 @@ export const ERR_IMAGE_GENERATION_FAILED = 'Não foi possível gerar a imagem. T
 export const ERR_SITE_API_KEY_MISSING =
   'ANTHROPIC ' + 'API' + '_KEY não configurada para criar sites.';
 export const ERR_SITE_EMPTY_HTML = 'A geração do site não retornou HTML.';
+export const ERR_DOCUMENT_ATTACHMENT_MISSING =
+  'Nenhum documento anexado para converter em markdown. Anexe um PDF, DOCX, HTML ou TXT e tente novamente.';
+export const ERR_DOCUMENT_DOWNLOAD_FAILED =
+  'Não foi possível baixar o documento anexado. Anexe o arquivo novamente e tente outra vez.';
+export const ERR_DOCUMENT_CONVERSION_FAILED =
+  'Não foi possível converter o documento anexado. Verifique se o arquivo é válido.';
+export const ERR_DOCUMENT_NO_TEXT =
+  'O documento anexado não contém texto extraível para converter em markdown.';
+
+export const DOCUMENT_DOWNLOAD_TIMEOUT_MS = 30_000;
 
 export const ANTHROPIC_SITE_RETRY_BASE_MS = 500;
 export const ANTHROPIC_SITE_MAX_RETRIES = 3;
 export const ANTHROPIC_SITE_TIMEOUT_MS = 60_000;
 
-export type ComposerCapability = 'create_image' | 'create_site' | 'search_web' | 'refine_response';
+export type ComposerCapability =
+  | 'create_image'
+  | 'create_site'
+  | 'search_web'
+  | 'refine_response'
+  | 'document_to_markdown';
 
 export interface WebSearchDigest {
   answer: string;

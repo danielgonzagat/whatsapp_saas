@@ -1,0 +1,19 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+
+
+def string_sequence(n: int) -> str:
+    """ Return a string containing space-delimited numbers starting from 0 upto n inclusive.
+    >>> string_sequence(0)
+    '0'
+    >>> string_sequence(5)
+    '0 1 2 3 4 5'
+    """
+
+--- FIM DA TAREFA ---

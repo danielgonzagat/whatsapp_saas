@@ -395,6 +395,18 @@ export function MessageBlock({
               >
                 {message.text}
               </div>
+              {message.metadata?.sendStatus === 'failed' ? (
+                <div
+                  style={{
+                    marginTop: 4,
+                    fontSize: 12,
+                    color: KLOEL_THEME.error,
+                    textAlign: 'right',
+                  }}
+                >
+                  {kloelT(`Falha ao enviar — use Reenviar.`)}
+                </div>
+              ) : null}
               <MessageActionBar
                 content={message.text}
                 align="right"

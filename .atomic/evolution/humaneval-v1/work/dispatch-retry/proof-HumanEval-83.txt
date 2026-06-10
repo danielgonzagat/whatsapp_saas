@@ -1,0 +1,44 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+Atomic proof-feedback repair prompt (tool-augmented; not raw HumanEval evidence).
+task_id: HumanEval/83
+entry_point: starts_one_ends
+Return only the Python completion body that follows the given HumanEval prompt.
+
+HUMANEVAL_PROMPT:
+
+def starts_one_ends(n):
+    """
+    Given a positive integer n, return the count of the numbers of n-digit
+    positive integers that start or end with 1.
+    """
+
+
+ATOMIC_PROOF_FEEDBACK:
+package_sha256: df0dd9fa584bcc3b190cc25be888588a9939b4db330347f93826ce3fe0a84375
+invariant: humaneval.assertion
+lesson: The baseline completion failed assertion; preserve entry point starts_one_ends and satisfy the check(candidate) contract.
+proposal_digest: 02ea6b85a26f88a3c86d8bea3d15b96855b6b7bb09aa10d0e8ae5050444fb772
+rejected_completion_sha256: 84578e2a83cf94aafd4be314022e1fa8e3898acb5bc75a171cdf72a41def586d
+counterexample:
+def check(candidate):
+
+    # Check some simple cases
+    assert True, "This prints if this assert fails 1 (good for debugging!)"
+    assert candidate(1) == 1
+    assert candidate(2) == 18
+    assert candidate(3) == 180
+    assert candidate(4) == 1800
+    assert candidate(5) == 18000
+
+    # Check some edge cases that are easy to work out by hand.
+    assert True, "This prints if this assert fails 2 (also good for debugging!)"
+
+
+--- FIM DA TAREFA ---

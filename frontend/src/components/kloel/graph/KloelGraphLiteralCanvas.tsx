@@ -156,27 +156,27 @@ export function KloelGraphLiteralCanvas({
   }, []);
 
   const [snapshot, setSnapshot] = useState<LiveNode[]>([]);
-  const [hoveredNode, setHoveredNode] = useState<{
-    id: string;
-    hasActiveSelection: boolean;
-  } | null>(null);
-  const hasActiveSelection = Boolean(activeNodeId);
-  const hoveredId =
-    !ariaHidden && hoveredNode && hoveredNode.hasActiveSelection === hasActiveSelection
-      ? hoveredNode.id
-      : null;
+  // Ember hover emphasis is transient by construction: a plain hovered id,
+  // gated out of rendering whenever the canvas is covered (ariaHidden) and
+  // cleared whenever the selection/galaxy context changes. No captured flags,
+  // no deferred timeouts — those raced with renders and left nodes stuck ember.
+  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  const hoveredId = ariaHidden ? null : hoveredNode;
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => setHoveredNode(null), 0);
-    return () => window.clearTimeout(timeoutId);
+    setHoveredNode(null);
   }, [activeNodeId, ariaHidden, focusedArea]);
 
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [isPanning, setIsPanning] = useState(false);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
+  // Viewport pan/zoom live in refs and are applied straight to the SVG
+  // transform attribute. React renders read the same refs, so the camera
+  // animation, pan dragging and physics-driven re-renders can never fight
+  // over the transform (the old state-driven transform snapped the camera
+  // back one frame on every physics tick during galaxy transitions).
   const [zoom, setZoom] = useState(1);
   const [size, setSize] = useState<GraphSize>({ w: 1200, h: 700 });
-  const panRef = useRef(pan);
+  const panRef = useRef<GraphPoint>({ x: 0, y: 0 });
   const zoomRef = useRef(zoom);
   const sizeRef = useRef(size);
   const panStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
@@ -187,14 +187,22 @@ export function KloelGraphLiteralCanvas({
       `translate(${w / 2 + nextPan.x}, ${h / 2 + nextPan.y}) scale(${nextZoom})`,
     );
   }, []);
-
-
-  useEffect(() => {
-    panRef.current = pan;
-  }, [pan]);
-  useEffect(() => {
-    zoomRef.current = zoom;
-  }, [zoom]);
+  const setPanDirect = useCallback(
+    (next: GraphPoint) => {
+      panRef.current = next;
+      applyViewportTransform(next, zoomRef.current);
+    },
+    [applyViewportTransform],
+  );
+  const setZoomDirect = useCallback(
+    (update: (current: number) => number) => {
+      const next = update(zoomRef.current);
+      zoomRef.current = next;
+      applyViewportTransform(panRef.current, next);
+      setZoom(next);
+    },
+    [applyViewportTransform],
+  );
   useEffect(() => {
     sizeRef.current = size;
   }, [size]);
@@ -419,31 +427,31 @@ export function KloelGraphLiteralCanvas({
 
       const step = event.shiftKey ? 40 : 16;
       if (event.key === 'ArrowLeft') {
-        setPan((current) => ({ x: current.x + step, y: current.y }));
+        setPanDirect({ x: panRef.current.x + step, y: panRef.current.y });
       }
       if (event.key === 'ArrowRight') {
-        setPan((current) => ({ x: current.x - step, y: current.y }));
+        setPanDirect({ x: panRef.current.x - step, y: panRef.current.y });
       }
       if (event.key === 'ArrowUp') {
-        setPan((current) => ({ x: current.x, y: current.y + step }));
+        setPanDirect({ x: panRef.current.x, y: panRef.current.y + step });
       }
       if (event.key === 'ArrowDown') {
-        setPan((current) => ({ x: current.x, y: current.y - step }));
+        setPanDirect({ x: panRef.current.x, y: panRef.current.y - step });
       }
       if (event.key === '+' || event.key === '=') {
-        setZoom((current) => Math.min(3, current + 0.1));
+        setZoomDirect((current) => Math.min(3, current + 0.1));
       }
       if (event.key === '-' || event.key === '_') {
-        setZoom((current) => Math.max(0.3, current - 0.1));
+        setZoomDirect((current) => Math.max(0.3, current - 0.1));
       }
       if (event.key === '0') {
-        setZoom(1);
-        setPan({ x: 0, y: 0 });
+        setZoomDirect(() => 1);
+        setPanDirect({ x: 0, y: 0 });
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [ariaHidden]);
+  }, [ariaHidden, setPanDirect, setZoomDirect]);
 
   useEffect(() => {
     if (ariaHidden) {
@@ -492,7 +500,6 @@ export function KloelGraphLiteralCanvas({
         panRef.current = finalPan;
         applyViewportTransform(finalPan, targetZoom);
         setZoom(targetZoom);
-        setPan(finalPan);
         return;
       }
       frames += 1;
@@ -542,7 +549,7 @@ export function KloelGraphLiteralCanvas({
     if (isPanning) {
       const dx = event.clientX - panStartRef.current.x;
       const dy = event.clientY - panStartRef.current.y;
-      setPan({ x: panStartRef.current.panX + dx, y: panStartRef.current.panY + dy });
+      setPanDirect({ x: panStartRef.current.panX + dx, y: panStartRef.current.panY + dy });
       return;
     }
     if (!draggingId) {
@@ -645,7 +652,7 @@ export function KloelGraphLiteralCanvas({
     event.preventDefault();
     cancelAnimationFrame(focusAnimRef.current);
     const delta = -event.deltaY * 0.0015;
-    setZoom((current) => Math.max(0.3, Math.min(3, current + delta)));
+    setZoomDirect((current) => Math.max(0.3, Math.min(3, current + delta)));
   };
 
   const cx = size.w / 2;
@@ -701,7 +708,7 @@ export function KloelGraphLiteralCanvas({
         </defs>
         <g
           ref={viewportRef}
-          transform={`translate(${cx + pan.x}, ${cy + pan.y}) scale(${zoom})`}
+          transform={`translate(${cx + panRef.current.x}, ${cy + panRef.current.y}) scale(${zoomRef.current})`}
         >
           {visibleEdges.map((edge, index) => {
             const a = snapshotById.get(edge.from);
@@ -775,9 +782,7 @@ export function KloelGraphLiteralCanvas({
                 onPointerDown={(event) => onNodePointerDown(node.id, event)}
                 onPointerUp={(event) => onNodePointerUp(node, event)}
                 onClick={(event) => onNodeClick(node, event)}
-                onPointerEnter={() =>
-                  setHoveredNode({ id: node.id, hasActiveSelection: Boolean(activeNodeId) })
-                }
+                onPointerEnter={() => setHoveredNode(node.id)}
                 onPointerLeave={() => setHoveredNode(null)}
                 onKeyDown={(event) => onNodeKeyDown(node, event)}
                 style={{
@@ -1117,13 +1122,19 @@ function physicsTick(
     node.y += node.vy;
   }
 
+  // Collision radii are pure per-node values; computing them inside the
+  // O(n²) pair loops multiplied label-metric work by the node count every
+  // frame. Hoist to one pass per tick.
+  const collisionRadii = nodes.map((node) =>
+    nodeHitboxCollisionRadius(node, degreeMap, focusedArea, nodeSize, zoom),
+  );
   for (let pass = 0; pass < 2; pass += 1) {
     for (let i = 0; i < nodes.length; i += 1) {
       const a = nodes[i];
-      const ra = nodeHitboxCollisionRadius(a, degreeMap, focusedArea, nodeSize, zoom);
+      const ra = collisionRadii[i];
       for (let j = i + 1; j < nodes.length; j += 1) {
         const b = nodes[j];
-        const rb = nodeHitboxCollisionRadius(b, degreeMap, focusedArea, nodeSize, zoom);
+        const rb = collisionRadii[j];
         const minDistance = ra + rb + 8;
         const dx = b.x - a.x;
         const dy = b.y - a.y;

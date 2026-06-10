@@ -1,0 +1,69 @@
+{
+  "ok": true,
+  "model": "haiku",
+  "judged": [
+    {
+      "lineageId": "haiku|ESCALAR|s1",
+      "generation": 1,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 1,
+      "bestScore": 5
+    },
+    {
+      "lineageId": "haiku|ESCALAR|s2",
+      "generation": 1,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 1,
+      "bestScore": 5
+    },
+    {
+      "lineageId": "haiku|ESCALAR|s3",
+      "generation": 1,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 1,
+      "bestScore": 5
+    },
+    {
+      "lineageId": "haiku|GRADIENTE|s1",
+      "generation": 1,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 0,
+      "bestScore": 5
+    },
+    {
+      "lineageId": "haiku|GRADIENTE|s2",
+      "generation": 1,
+      "decision": "reject",
+      "rejections": [
+        "gate.sandbox.byte-floor"
+      ],
+      "wallKey": "sandbox.byte-floor::sandbox/task1-dedup-under-byte-cap.txt#single-step-removal",
+      "publicScore": null,
+      "bestScore": 5
+    },
+    {
+      "lineageId": "haiku|GRADIENTE|s3",
+      "generation": 1,
+      "decision": "reject",
+      "rejections": [
+        "gate.sandbox.byte-floor"
+      ],
+      "wallKey": "sandbox.byte-floor::sandbox/task1-dedup-under-byte-cap.txt#single-step-removal",
+      "publicScore": null,
+      "bestScore": 5
+    }
+  ],
+  "ledger": {
+    "ok": true,
+    "recordCount": 6,
+    "headRecordSha256": "c9d912460d1115d889d53d1a9386611ef2670633ee2368bb2e6987fc69feb679"
+  }
+}

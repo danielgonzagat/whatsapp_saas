@@ -1,0 +1,26 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+
+
+def fibfib(n: int):
+    """The FibFib number sequence is a sequence similar to the Fibbonacci sequnece that's defined as follows:
+    fibfib(0) == 0
+    fibfib(1) == 0
+    fibfib(2) == 1
+    fibfib(n) == fibfib(n-1) + fibfib(n-2) + fibfib(n-3).
+    Please write a function to efficiently compute the n-th element of the fibfib number sequence.
+    >>> fibfib(1)
+    0
+    >>> fibfib(5)
+    4
+    >>> fibfib(8)
+    24
+    """
+
+--- FIM DA TAREFA ---

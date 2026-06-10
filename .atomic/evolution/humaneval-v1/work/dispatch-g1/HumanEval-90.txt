@@ -1,0 +1,22 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+
+def next_smallest(lst):
+    """
+    You are given a list of integers.
+    Write a function next_smallest() that returns the 2nd smallest element of the list.
+    Return None if there is no such element.
+    
+    next_smallest([1, 2, 3, 4, 5]) == 2
+    next_smallest([5, 1, 4, 3, 2]) == 2
+    next_smallest([]) == None
+    next_smallest([1, 1]) == None
+    """
+
+--- FIM DA TAREFA ---

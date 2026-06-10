@@ -1,0 +1,61 @@
+{
+  "kind": "iiif-dispatch-manifest",
+  "model": "opus",
+  "wrapperSha256": "c79d175f303d52270f3485993f1eb7340b41d4b6345c978f056a92499ca754e2",
+  "entries": [
+    {
+      "lineageId": "opus|ESCALAR|s1",
+      "generation": 5,
+      "file": ".atomic/evolution/iiif-real-v1.1/dispatch/opus-ESCALAR-s1-g5.txt",
+      "promptSha256": "82c96d500d7e7f085efdb9872241da3fb0f193b3af34bbb392152ab85680f49d",
+      "skeletonSha256": "2c031365a33d92855512e1912c189f81f719bd5bc8475fb90510981738b1c83c",
+      "briefingDigest": null,
+      "dispatchedSha256": "88087b9cb241d91000a9273db8d0f616cc0ebbebabf2b56dce015fd31abe4ad4"
+    },
+    {
+      "lineageId": "opus|ESCALAR|s2",
+      "generation": 5,
+      "file": ".atomic/evolution/iiif-real-v1.1/dispatch/opus-ESCALAR-s2-g5.txt",
+      "promptSha256": "47204a685fbf74be3e68c0209e7d829947fedfe225bbdd715c3f0cad3ee2c406",
+      "skeletonSha256": "de0c86c1e050e15f555a33368547243b329838d83523105282d0f3f16c50a12c",
+      "briefingDigest": null,
+      "dispatchedSha256": "c21765f243958f4d50941cc9102eeb36ac624fc3edccd34f823ba751a13cdfca"
+    },
+    {
+      "lineageId": "opus|ESCALAR|s3",
+      "generation": 5,
+      "file": ".atomic/evolution/iiif-real-v1.1/dispatch/opus-ESCALAR-s3-g5.txt",
+      "promptSha256": "d9c4371085364cf66b75ab7a7ae9e4dee994240e5af674363eb280de7225ea68",
+      "skeletonSha256": "88058a40d87c2b345c1160914d1d298d55afea7fcb3f7af4f5b0858f09d1a7ec",
+      "briefingDigest": null,
+      "dispatchedSha256": "a7aa88fb79abb311344dff907794dea230739f744ddcee407b98c63e498a7187"
+    },
+    {
+      "lineageId": "opus|GRADIENTE|s1",
+      "generation": 5,
+      "file": ".atomic/evolution/iiif-real-v1.1/dispatch/opus-GRADIENTE-s1-g5.txt",
+      "promptSha256": "8cf962832347b6c354bdc123557e2db8b1c31c82314ba0a27f7218f4d2689531",
+      "skeletonSha256": "2c1f804499ca9dbbfd6fc11c28c044c416d1eff978c240509c91583050126bc0",
+      "briefingDigest": "2897f5141f212b57cde3910b739af0ab5b6a096ed79ac6004ab29943fb5ef6c4",
+      "dispatchedSha256": "4aaa91fb8603c094dacdd587ce66985a642d81a73fd7a477b51f55a83b8843aa"
+    },
+    {
+      "lineageId": "opus|GRADIENTE|s2",
+      "generation": 5,
+      "file": ".atomic/evolution/iiif-real-v1.1/dispatch/opus-GRADIENTE-s2-g5.txt",
+      "promptSha256": "6cf1feb6ca10aee6cad6a51df368dd6779839993fc3b13bb6b3aeba6863fd776",
+      "skeletonSha256": "39e2b853a82752b7399e59905543d5cd4a8e591c8ef794d8273714646b805986",
+      "briefingDigest": "2897f5141f212b57cde3910b739af0ab5b6a096ed79ac6004ab29943fb5ef6c4",
+      "dispatchedSha256": "dfd6371da0977f5bbc51dba021418dbef749333080406f6abc6106e346f6fce4"
+    },
+    {
+      "lineageId": "opus|GRADIENTE|s3",
+      "generation": 5,
+      "file": ".atomic/evolution/iiif-real-v1.1/dispatch/opus-GRADIENTE-s3-g5.txt",
+      "promptSha256": "fa383d9ed6734b61ef068c70e107f658cca3a2cc944652744233fbe1e2092b8f",
+      "skeletonSha256": "773c2e94b1ca2b249bb9ef57f854f74778263a43283d4d6404ce6624b880401c",
+      "briefingDigest": "2897f5141f212b57cde3910b739af0ab5b6a096ed79ac6004ab29943fb5ef6c4",
+      "dispatchedSha256": "e46dc93a3f93705ddce60c242d00461da2a7551708f905f38d6c75aa854918cd"
+    }
+  ]
+}

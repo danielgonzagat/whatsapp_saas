@@ -145,6 +145,7 @@ export class KloelService {
       message,
       mode,
       composerMetadata.capability,
+      composerMetadata.attachments,
     );
     const enrichedCompanyContext = await this.buildComposerContext({
       ...(workspaceId !== undefined ? { workspaceId } : {}),
@@ -239,6 +240,7 @@ export class KloelService {
       message,
       mode,
       composerMetadata.capability,
+      composerMetadata.attachments,
     );
     const enrichedCompanyContext = await this.buildComposerContext({
       ...(workspaceId !== undefined ? { workspaceId } : {}),

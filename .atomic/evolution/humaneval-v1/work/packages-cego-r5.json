@@ -1,0 +1,318 @@
+{
+  "ok": true,
+  "mode": "emit-proof-feedback-packages",
+  "datasetKind": "external-jsonl",
+  "sourceArm": "cego",
+  "taskCount": 164,
+  "failedSampleCount": 11,
+  "missingSampleCount": 0,
+  "missingSamples": [],
+  "packagesSha256": "6f58a7f88facdc44da419af2e9a738c1e4381f6d6ac12179ddecc7291b05b93c",
+  "allPackagesValid": true,
+  "validation": [
+    {
+      "taskId": "HumanEval/32",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "bd0864ff7688a9574fba061ffc935d5fe7794aa722b4aaad1c4e99c7c8d5ac9c"
+    },
+    {
+      "taskId": "HumanEval/64",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "e14a8129cbb434ee9ba99ec6a9920f0b58eea4b6c0054c102803187638c5ab7e"
+    },
+    {
+      "taskId": "HumanEval/65",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "782cc6a1f74434bf237b851ccd8c2ba8a031ae88148f0373e61b0d1664c621d9"
+    },
+    {
+      "taskId": "HumanEval/83",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "621ac1289f6d3db1daa2e94ecf3a27e4d4d4467d81c14e46cb9e12a15ae29d92"
+    },
+    {
+      "taskId": "HumanEval/93",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "87ebf948e153e1d7529ca472538e39efaeda25fa981a5afcc7811553394fc2b8"
+    },
+    {
+      "taskId": "HumanEval/115",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "e2263464270746d75bd7ba93aafe17677204ca78256d111efb13d1f5fbef735f"
+    },
+    {
+      "taskId": "HumanEval/132",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "965e449edc65d678aae6cd1ab7c6b665b5c81574e307f67a8daa98651c6328f8"
+    },
+    {
+      "taskId": "HumanEval/133",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "adb8b364fa8f790fa52f443ee0c062520e33a3b7fb25b679f24ce030da9611d9"
+    },
+    {
+      "taskId": "HumanEval/145",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "b99149ce051a83a739c1c0d40cf387850fe296cd0e3eede49c573d9fde538eb8"
+    },
+    {
+      "taskId": "HumanEval/162",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "be9808566128073565dc1650684e9115438b66e426c4459d21193d0b1bccb5e2"
+    },
+    {
+      "taskId": "HumanEval/163",
+      "ok": true,
+      "reason": "valid-proof-feedback-package",
+      "digest": "981a2d467f0fb1a2e709340161f31d17a0557e6a4dd45bb045eb7c415b3d6297"
+    }
+  ],
+  "packages": [
+    {
+      "task_id": "HumanEval/32",
+      "source_arm": "cego",
+      "model_id": "haiku",
+      "attempt_budget": 2,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/32",
+        "invariantId": "humaneval.assertion",
+        "counterexample": "\n\nMETADATA = {}\n\n\ndef check(candidate):\n    import math\n    import random\n    rng = random.Random(42)\n    import copy\n    for _ in range(100):\n        ncoeff = 2 * rng.randint(1, 4)\n        coeffs = []\n        for _ in range(ncoeff):\n            coeff = rng.randint(-10, 10)\n            if coeff == 0:\n                coeff = 1\n            coeffs.append(coeff)\n        solution = candidate(copy.deepcopy(coeffs))\n        assert math.fabs(poly(coeffs, solution)) < 1e-4\n\n",
+        "lessonLine": "The cego completion failed assertion; preserve entry point find_zero and satisfy the check(candidate) contract.",
+        "proposalDigest": "effd4fbea571a56be3055b9dc7fc18f9b08a75d632405929c085d3c45b45437c",
+        "failureKind": "assertion",
+        "rejectedCompletionSha256": "615f10cf0a83a593cc9c63050187e2d822ccfadd19d9bfd20fc0d292e2d54bd7",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "77c20596d8878c4c1e200e8d492b5a38d0e1e9bd941b534b8e43c8d1acd6a3e5"
+      },
+      "proof_feedback_package_sha256": "bd0864ff7688a9574fba061ffc935d5fe7794aa722b4aaad1c4e99c7c8d5ac9c",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/64",
+      "source_arm": "cego",
+      "model_id": "haiku",
+      "attempt_budget": 2,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/64",
+        "invariantId": "humaneval.runtime",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate(\"abcde\") == 2, \"Test 1\"\n    assert candidate(\"Alone\") == 3, \"Test 2\"\n    assert candidate(\"key\") == 2, \"Test 3\"\n    assert candidate(\"bye\") == 1, \"Test 4\"\n    assert candidate(\"keY\") == 2, \"Test 5\"\n    assert candidate(\"bYe\") == 1, \"Test 6\"\n    assert candidate(\"ACEDY\") == 3, \"Test 7\"\n\n    # Check some edge cases that are easy to work out by hand.\n    assert True, \"This prints if this assert fails 2 (also good for debugging!)\"\n\n",
+        "lessonLine": "The cego completion failed runtime; preserve entry point vowels_count and satisfy the check(candidate) contract.",
+        "proposalDigest": "f539852d05eb2b68dad72c6c9135df217df317f9d91f21ea34c4d5955f9c193a",
+        "failureKind": "runtime",
+        "rejectedCompletionSha256": "603d46e23590bfd2f44a526a9703e4793ec0d37d1edaac4057a5f91a01fdbd94",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "369c7d434a94461874c8121c346ac50494a73cf9d8c6e65e9843d753179a2704"
+      },
+      "proof_feedback_package_sha256": "e14a8129cbb434ee9ba99ec6a9920f0b58eea4b6c0054c102803187638c5ab7e",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/65",
+      "source_arm": "cego",
+      "model_id": "haiku",
+      "attempt_budget": 2,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/65",
+        "invariantId": "humaneval.assertion",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate(100, 2) == \"001\"\n    assert candidate(12, 2) == \"12\"\n    assert candidate(97, 8) == \"79\"\n    assert candidate(12, 1) == \"21\", \"This prints if this assert fails 1 (good for debugging!)\"\n\n    # Check some edge cases that are easy to work out by hand.\n    assert candidate(11, 101) == \"11\", \"This prints if this assert fails 2 (also good for debugging!)\"\n\n",
+        "lessonLine": "The cego completion failed assertion; preserve entry point circular_shift and satisfy the check(candidate) contract.",
+        "proposalDigest": "c6ddc36372a9724ac7e0009b40274f836c63593e3ad95e71af88f91a19c6773e",
+        "failureKind": "assertion",
+        "rejectedCompletionSha256": "1ab5b63cc96ce56ac655e27f5737eff875e981c318817c45f092eb55ef1e17d6",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "693649f4e33f1ca4a35e5113bb349ce57b4c8c70d341e73f29daa7fa6bc98141"
+      },
+      "proof_feedback_package_sha256": "782cc6a1f74434bf237b851ccd8c2ba8a031ae88148f0373e61b0d1664c621d9",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/83",
+      "source_arm": "cego",
+      "model_id": "haiku",
+      "attempt_budget": 2,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/83",
+        "invariantId": "humaneval.assertion",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    assert True, \"This prints if this assert fails 1 (good for debugging!)\"\n    assert candidate(1) == 1\n    assert candidate(2) == 18\n    assert candidate(3) == 180\n    assert candidate(4) == 1800\n    assert candidate(5) == 18000\n\n    # Check some edge cases that are easy to work out by hand.\n    assert True, \"This prints if this assert fails 2 (also good for debugging!)\"\n\n",
+        "lessonLine": "The cego completion failed assertion; preserve entry point starts_one_ends and satisfy the check(candidate) contract.",
+        "proposalDigest": "6ca740679c6bf73d0ddf362483c2625f8abd7b8ac0104f040b8cbb28f9e283c6",
+        "failureKind": "assertion",
+        "rejectedCompletionSha256": "a9c63bf68fa81d8067eaccd19af4b6e707315e7d107187946ebc913e9c5b93ba",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "fd3a7e0db56726cbb2525a50840272d3d5450b0c4de676fdc8bc2d9a18d14bde"
+      },
+      "proof_feedback_package_sha256": "621ac1289f6d3db1daa2e94ecf3a27e4d4d4467d81c14e46cb9e12a15ae29d92",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/93",
+      "source_arm": "cego",
+      "model_id": "haiku",
+      "attempt_budget": 2,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/93",
+        "invariantId": "humaneval.assertion",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate('TEST') == 'tgst', \"This prints if this assert fails 1 (good for debugging!)\"\n    assert candidate('Mudasir') == 'mWDCSKR', \"This prints if this assert fails 2 (good for debugging!)\"\n    assert candidate('YES') == 'ygs', \"This prints if this assert fails 3 (good for debugging!)\"\n    \n    # Check some edge cases that are easy to work out by hand.\n    assert candidate('This is a message') == 'tHKS KS C MGSSCGG', \"This prints if this assert fails 2 (also good for debugging!)\"\n    assert candidate(\"I DoNt KnOw WhAt tO WrItE\") == 'k dQnT kNqW wHcT Tq wRkTg', \"This prints if this assert fails 2 (also good for debugging!)\"\n\n",
+        "lessonLine": "The cego completion failed assertion; preserve entry point encode and satisfy the check(candidate) contract.",
+        "proposalDigest": "89d8935e322c396e285bced0ed89611a3a8882c717b8a2611c2dfe6c304a3727",
+        "failureKind": "assertion",
+        "rejectedCompletionSha256": "9d46b881d036b2fe6d9bcc3568a904dd200cd8b03a8099711aaf85987b0d3c6d",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "ce0a53f847888214520f879aabcf612f6615b64661e1c914c90bbbac5ccd99f6"
+      },
+      "proof_feedback_package_sha256": "87ebf948e153e1d7529ca472538e39efaeda25fa981a5afcc7811553394fc2b8",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/115",
+      "source_arm": "cego",
+      "model_id": "haiku",
+      "attempt_budget": 2,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/115",
+        "invariantId": "humaneval.assertion",
+        "counterexample": "def check(candidate):\n\n\n    # Check some simple cases\n    assert True, \"This prints if this assert fails 1 (good for debugging!)\"\n    assert candidate([[0,0,1,0], [0,1,0,0], [1,1,1,1]], 1) == 6, \"Error\"\n    assert candidate([[0,0,1,1], [0,0,0,0], [1,1,1,1], [0,1,1,1]], 2) == 5, \"Error\"\n    assert candidate([[0,0,0], [0,0,0]], 5) == 0, \"Error\"\n\n    # Check some edge cases that are easy to work out by hand.\n    assert True, \"This prints if this assert fails 2 (also good for debugging!)\"\n    assert candidate([[1,1,1,1], [1,1,1,1]], 2) == 4, \"Error\"\n    assert candidate([[1,1,1,1], [1,1,1,1]], 9) == 2, \"Error\"\n\n",
+        "lessonLine": "The cego completion failed assertion; preserve entry point max_fill and satisfy the check(candidate) contract.",
+        "proposalDigest": "96af29cf3e1412e81348fbc3630dca5807d020deabd4913d4ada2d92c103c454",
+        "failureKind": "assertion",
+        "rejectedCompletionSha256": "2826ff54f9e4162a11ec6483c350a9724f4d66b922c7aaa9ca568d7d327ee381",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "6154d8cfdfcb894a9101559973a8ce84b43e3f1fcc192c8c0303106ceabd7a4f"
+      },
+      "proof_feedback_package_sha256": "e2263464270746d75bd7ba93aafe17677204ca78256d111efb13d1f5fbef735f",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/132",
+      "source_arm": "cego",
+      "model_id": "haiku",
+      "attempt_budget": 2,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/132",
+        "invariantId": "humaneval.assertion",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate('[[]]') == True, \"This prints if this assert fails 1 (good for debugging!)\"\n    assert candidate('[]]]]]]][[[[[]') == False\n    assert candidate('[][]') == False\n    assert candidate(('[]')) == False\n    assert candidate('[[[[]]]]') == True\n    assert candidate('[]]]]]]]]]]') == False\n    assert candidate('[][][[]]') == True\n    assert candidate('[[]') == False\n    assert candidate('[]]') == False\n    assert candidate('[[]][[') == True\n    assert candidate('[[][]]') == True\n\n    # Check some edge cases that are easy to work out by hand.\n    assert candidate('') == False, \"This prints if this assert fails 2 (also good for debugging!)\"\n    assert candidate('[[[[[[[[') == False\n    assert candidate(']]]]]]]]') == False\n\n",
+        "lessonLine": "The cego completion failed assertion; preserve entry point is_nested and satisfy the check(candidate) contract.",
+        "proposalDigest": "44221889af4a79b3c0438ea7175a3e54300b8fa07deb79eab73210d118723394",
+        "failureKind": "assertion",
+        "rejectedCompletionSha256": "71ddde43bc0017b87da6a677dd41e15a565935a7c42a6efe58414edc8697cffc",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "7d8c389f32395981d207ed93e6c1a95e68036b8aff890201b988042ab9e0dc94"
+      },
+      "proof_feedback_package_sha256": "965e449edc65d678aae6cd1ab7c6b665b5c81574e307f67a8daa98651c6328f8",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/133",
+      "source_arm": "cego",
+      "model_id": "haiku",
+      "attempt_budget": 2,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/133",
+        "invariantId": "humaneval.runtime",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate([1,2,3])==14, \"This prints if this assert fails 1 (good for debugging!)\"\n    assert candidate([1.0,2,3])==14, \"This prints if this assert fails 1 (good for debugging!)\"\n    assert candidate([1,3,5,7])==84, \"This prints if this assert fails 1 (good for debugging!)\"\n    assert candidate([1.4,4.2,0])==29, \"This prints if this assert fails 1 (good for debugging!)\"\n    assert candidate([-2.4,1,1])==6, \"This prints if this assert fails 1 (good for debugging!)\"\n\n    assert candidate([100,1,15,2])==10230, \"This prints if this assert fails 1 (good for debugging!)\"\n    assert candidate([10000,10000])==200000000, \"This prints if this assert fails 1 (good for debugging!)\"\n    assert candidate([-1.4,4.6,6.3])==75, \"This prints if this assert fails 1 (good for debugging!)\"\n    assert candidate([-1.4,17.9,18.9,19.9])==1086, \"This prints if this assert fails 1 (good for debugging!)\"\n\n\n    # Check some edge cases that are easy to work out by hand.\n    assert candidate([0])==0, \"This prints if this assert fails 2 (also good for debugging!)\"\n    assert candidate([-1])==1, \"This prints if this assert fails 2 (also good for debugging!)\"\n    assert candidate([-1,1,0])==2, \"This prints if this assert fails 2 (also good for debugging!)\"\n\n",
+        "lessonLine": "The cego completion failed runtime; preserve entry point sum_squares and satisfy the check(candidate) contract.",
+        "proposalDigest": "9f3a11369f1ac90212cf90a27d02a2d237c60fdbf1c9929f9705d002572a5559",
+        "failureKind": "runtime",
+        "rejectedCompletionSha256": "880ac7381c4ad62c4172c236bfd2c713ad8694bf1ca1e34a5075a68a2b842a82",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "265bd6734941d72c0048e51cccaf5dd8e033793bd4585e743a3b04d8bc42b8e3"
+      },
+      "proof_feedback_package_sha256": "adb8b364fa8f790fa52f443ee0c062520e33a3b7fb25b679f24ce030da9611d9",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/145",
+      "source_arm": "cego",
+      "model_id": "haiku",
+      "attempt_budget": 2,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/145",
+        "invariantId": "humaneval.assertion",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate([1, 11, -1, -11, -12]) == [-1, -11, 1, -12, 11]\n    assert candidate([1234,423,463,145,2,423,423,53,6,37,3457,3,56,0,46]) == [0, 2, 3, 6, 53, 423, 423, 423, 1234, 145, 37, 46, 56, 463, 3457]\n    assert candidate([]) == []\n    assert candidate([1, -11, -32, 43, 54, -98, 2, -3]) == [-3, -32, -98, -11, 1, 2, 43, 54]\n    assert candidate([1,2,3,4,5,6,7,8,9,10,11]) == [1, 10, 2, 11, 3, 4, 5, 6, 7, 8, 9]\n    assert candidate([0,6,6,-76,-21,23,4]) == [-76, -21, 0, 4, 23, 6, 6]\n\n    # Check some edge cases that are easy to work out by hand.\n    assert True, \"This prints if this assert fails 2 (also good for debugging!)\"\n\n",
+        "lessonLine": "The cego completion failed assertion; preserve entry point order_by_points and satisfy the check(candidate) contract.",
+        "proposalDigest": "d34dbd251b83fed532da8a9e52e7439ffb021bafa42e3154e75cdee531706555",
+        "failureKind": "assertion",
+        "rejectedCompletionSha256": "eccf85261fc18974f7534730c0ea3fd90a8fc591553cf7bc6281e9a1c361b647",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "f57d1ee3d63cf6949b20897ef2e98787e6c8322401f0a3d772d8564719080992"
+      },
+      "proof_feedback_package_sha256": "b99149ce051a83a739c1c0d40cf387850fe296cd0e3eede49c573d9fde538eb8",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/162",
+      "source_arm": "cego",
+      "model_id": "haiku",
+      "attempt_budget": 2,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/162",
+        "invariantId": "humaneval.runtime",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate('Hello world') == '3e25960a79dbc69b674cd4ec67a72c62'\n    assert candidate('') == None\n    assert candidate('A B C') == '0ef78513b0cb8cef12743f5aeb35f888'\n    assert candidate('password') == '5f4dcc3b5aa765d61d8327deb882cf99'\n\n    # Check some edge cases that are easy to work out by hand.\n    assert True\n\n",
+        "lessonLine": "The cego completion failed runtime; preserve entry point string_to_md5 and satisfy the check(candidate) contract.",
+        "proposalDigest": "9d100aa1c33c0b064b44c8c277de395666d37d59c2a0297febd04bf94250457e",
+        "failureKind": "runtime",
+        "rejectedCompletionSha256": "6f8f35e718cfe5c9dc13fcb971a62ccb5668be8f0e7cf816f42cb47c31ae92e0",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "8f1128d8de4758d243360ab2c40f1ba05b4a1379a2a0b8d68cbb925267ab92e0"
+      },
+      "proof_feedback_package_sha256": "be9808566128073565dc1650684e9115438b66e426c4459d21193d0b1bccb5e2",
+      "atomic_receipt_sha256": null
+    },
+    {
+      "task_id": "HumanEval/163",
+      "source_arm": "cego",
+      "model_id": "haiku",
+      "attempt_budget": 2,
+      "feedback_source": "atomic-proof-feedback",
+      "proof_feedback_package": {
+        "version": "atomic-proof-feedback-v1",
+        "task_id": "HumanEval/163",
+        "invariantId": "humaneval.assertion",
+        "counterexample": "def check(candidate):\n\n    # Check some simple cases\n    assert candidate(2, 10) == [2, 4, 6, 8], \"Test 1\"\n    assert candidate(10, 2) == [2, 4, 6, 8], \"Test 2\"\n    assert candidate(132, 2) == [2, 4, 6, 8], \"Test 3\"\n    assert candidate(17,89) == [], \"Test 4\"\n\n    # Check some edge cases that are easy to work out by hand.\n    assert True, \"This prints if this assert fails 2 (also good for debugging!)\"\n\n",
+        "lessonLine": "The cego completion failed assertion; preserve entry point generate_integers and satisfy the check(candidate) contract.",
+        "proposalDigest": "c29a0d12792e0ad5d9aaa5ad456aabf5480cd6f0e36f3746d9276e42cb33cd0d",
+        "failureKind": "assertion",
+        "rejectedCompletionSha256": "c68b85d437e93b5f8f21a538861efa2cc3c21be736bc52bf2931bbaf10beb88b",
+        "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderrSha256": "7717bf28c3bf4013ef83c1efac6e6fdb7edc43591b8ae458424efa512cca1c3b"
+      },
+      "proof_feedback_package_sha256": "981a2d467f0fb1a2e709340161f31d17a0557e6a4dd45bb045eb7c415b3d6297",
+      "atomic_receipt_sha256": null
+    }
+  ],
+  "proofLimits": [
+    "Feedback packages are proposer guidance, not an evaluator and not a raw HumanEval claim.",
+    "Hidden or held-out tests must never be leaked into a package intended for raw-score reporting.",
+    "A package supports an Atomic tool-augmented claim only when the later sample also carries an Atomic receipt sha256."
+  ]
+}

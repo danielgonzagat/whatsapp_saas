@@ -47,8 +47,18 @@ const MAX_GENERATIONS = 5;
 const REGION = 'sandbox/task1';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
-const STATE_DIR = path.join(ROOT, '.atomic/evolution/iiif-real-v1');
-const STATE_FILE = path.join(STATE_DIR, 'state.json');
+// v1.1: reinício limpo pós-contaminação g4 da v1 (ver iiif-real-v1/CONTAMINATION-NOTICE.md);
+// a v1 fica preservada byte-intacta como arquivo-morto. Despachante único: lock iiif-real-v1.1-dispatcher.
+const REAL_STATE_DIR = path.join(ROOT, '.atomic/evolution/iiif-real-v1.1');
+// STATE_DIR é mutável APENAS para o self-test, que opera num diretório irmão
+// isolado (-selftest) — rodar --self-test jamais toca os ledgers/estado reais.
+let STATE_DIR = REAL_STATE_DIR;
+let STATE_FILE = path.join(STATE_DIR, 'state.json');
+
+function setStateDir(dir) {
+  STATE_DIR = dir;
+  STATE_FILE = path.join(dir, 'state.json');
+}
 
 const sha256Text = (value) => crypto.createHash('sha256').update(String(value), 'utf8').digest('hex');
 
@@ -334,8 +344,20 @@ function cmdAggregate({ model }) {
   return { ok: true, model, baselineScore: state.baselineScore, chain, arms, lineages, csv: path.relative(ROOT, csvPath) };
 }
 
-/** Self-test: 2 linhagens em dir temporário NÃO — usa o STATE_DIR real? Não: valida funções puras + um ciclo init→prompts→judge em modo dry com força, depois limpa. */
+/** Self-test ISOLADO: opera em <REAL_STATE_DIR>-selftest (init→prompts→judge→limpa); nunca toca o estado/ledgers reais do experimento. */
 function cmdSelfTest() {
+  // subdiretório oculto DENTRO do state-dir real: gravável sob o sandbox do
+  // atomic_exec (writeRoot = state-dir) e removido por inteiro no finally.
+  setStateDir(path.join(REAL_STATE_DIR, '.selftest-scratch'));
+  try {
+    return cmdSelfTestBody();
+  } finally {
+    fs.rmSync(STATE_DIR, { recursive: true, force: true });
+    setStateDir(REAL_STATE_DIR);
+  }
+}
+
+function cmdSelfTestBody() {
   const tmpInit = cmdInit({ force: true });
   if (tmpInit.ok !== true) return { ok: false, error: `init falhou: ${tmpInit.error}` };
   const prompts = cmdPrompts({ model: 'haiku' });

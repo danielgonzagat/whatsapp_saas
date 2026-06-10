@@ -1,0 +1,67 @@
+{
+  "ok": true,
+  "model": "haiku",
+  "judged": [
+    {
+      "lineageId": "haiku|ESCALAR|s1",
+      "generation": 3,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 14,
+      "bestScore": 14
+    },
+    {
+      "lineageId": "haiku|ESCALAR|s2",
+      "generation": 3,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 13,
+      "bestScore": 13
+    },
+    {
+      "lineageId": "haiku|ESCALAR|s3",
+      "generation": 3,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 13,
+      "bestScore": 13
+    },
+    {
+      "lineageId": "haiku|GRADIENTE|s1",
+      "generation": 3,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 12,
+      "bestScore": 12
+    },
+    {
+      "lineageId": "haiku|GRADIENTE|s2",
+      "generation": 3,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 7,
+      "bestScore": 7
+    },
+    {
+      "lineageId": "haiku|GRADIENTE|s3",
+      "generation": 3,
+      "decision": "reject",
+      "rejections": [
+        "gate.sandbox.byte-floor"
+      ],
+      "wallKey": "sandbox.byte-floor::sandbox/task1-dedup-under-byte-cap.txt#single-step-removal",
+      "publicScore": null,
+      "bestScore": 5
+    }
+  ],
+  "ledger": {
+    "ok": true,
+    "recordCount": 18,
+    "headRecordSha256": "b2d2e1b309006eacdc7b60059ee1e59a8cb553e4442ed12e65f4786c8fc7979b"
+  }
+}

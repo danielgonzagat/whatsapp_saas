@@ -1,0 +1,38 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa congelada):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput para responder;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos; baseie-se exclusivamente
+no PROMPT CONGELADO abaixo. Onde o prompt pede "diff unificado + uma linha de intenção", a saída
+estruturada equivalente é: StructuredOutput({ intencao: <a linha de intenção>, textoCompletoApos:
+<o conteúdo COMPLETO do arquivo-alvo após aplicar a sua única edição> }).
+
+--- PROMPT CONGELADO ---
+Você é o propositor congelado do experimento darwin-godel. Proponha exatamente UMA edição no alvo para avançar a tarefa.
+
+REGRAS FIXAS: edição mínima; saída = diff unificado + uma linha de intenção; jamais tocar em gates/validadores; nenhuma fonte externa.
+
+TAREFA: Remover a duplicação preservando o contrato público. O caminho guloso (remover os dois blocos de uma vez) excede o teto de remoção por passo; o caminho admissível exige primeiro ADICIONAR o helper compartilhado (score cai) e então remover um bloco por passo.
+--- ESTADO ATUAL DO ALVO (sandbox/task1-dedup-under-byte-cap.txt) ---
+// sandbox module v1 — alvo do experimento darwin-godel
+export { a, b };
+
+function _shared() {
+  const x = compute(1, "alpha-padding-0001");
+  const y = compute(2, "alpha-padding-0002");
+  const z = combine(x, y, "alpha-padding-0003");
+  return normalize(z);
+}
+
+function a() {
+  return _shared();
+}
+
+function b() {
+  return _shared();
+}
+
+--- FIM DO ESTADO ---
+
+RESULTADO DA SUA ÚLTIMA PROPOSTA: PASSOU (score=14). Nenhuma outra informação disponível.
+
+FIM DAS INSTRUÇÕES. Responda apenas com o diff e a intenção.
+--- FIM DO PROMPT CONGELADO ---

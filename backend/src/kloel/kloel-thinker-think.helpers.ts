@@ -3,7 +3,11 @@ import { Prisma } from '@prisma/client';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { LLMBudgetService } from './llm-budget.service';
-import { KloelComposerService, type CapabilityExecutionResult } from './kloel-composer.service';
+import {
+  KloelComposerService,
+  type CapabilityExecutionResult,
+  type ComposerCapability,
+} from './kloel-composer.service';
 import {
   ERR_IMAGE_API_KEY_MISSING,
   ERR_SITE_API_KEY_MISSING,
@@ -12,6 +16,7 @@ import { KloelConversationStore } from './kloel-conversation-store';
 import {
   createKloelContentEvent,
   createKloelDoneEvent,
+  createKloelFileEvent,
   createKloelPublicStreamingLabel,
   createKloelPublicThinkingLabel,
   createKloelStatusEvent,
@@ -184,21 +189,29 @@ export async function finalizeSuccessfulReply(
 }
 
 function buildComposerCapabilityTraceResult(
-  composerCapability: 'create_image' | 'create_site' | 'search_web' | 'refine_response',
+  composerCapability: ComposerCapability,
   metadata: Record<string, unknown> | undefined,
 ): Record<string, unknown> {
-  const normalizedMetadata = metadata ? { ...metadata } : {};
-  const generatedSiteHtml = normalizedMetadata.generatedSiteHtml;
-  if (typeof generatedSiteHtml !== 'string') {
-    return { ...normalizedMetadata, capability: composerCapability };
+  let traceMetadata: Record<string, unknown> = metadata ? { ...metadata } : {};
+  const generatedSiteHtml = traceMetadata.generatedSiteHtml;
+  if (typeof generatedSiteHtml === 'string') {
+    const { generatedSiteHtml: _generatedSiteHtml, ...rest } = traceMetadata;
+    traceMetadata = {
+      ...rest,
+      generatedSiteHtmlBytes: generatedSiteHtml.length,
+      generatedSiteHtmlOmitted: true,
+    };
   }
-  const { generatedSiteHtml: _generatedSiteHtml, ...traceMetadata } = normalizedMetadata;
-  return {
-    ...traceMetadata,
-    capability: composerCapability,
-    generatedSiteHtmlBytes: generatedSiteHtml.length,
-    generatedSiteHtmlOmitted: true,
-  };
+  const convertedMarkdown = traceMetadata.convertedMarkdown;
+  if (typeof convertedMarkdown === 'string') {
+    const { convertedMarkdown: _convertedMarkdown, ...rest } = traceMetadata;
+    traceMetadata = {
+      ...rest,
+      convertedMarkdownBytes: convertedMarkdown.length,
+      convertedMarkdownOmitted: true,
+    };
+  }
+  return { ...traceMetadata, capability: composerCapability };
 }
 
 /**
@@ -218,7 +231,7 @@ function isComposerConfigurationError(error: unknown): boolean {
 }
 
 function buildComposerCapabilityFailureContent(
-  composerCapability: 'create_image' | 'create_site' | 'search_web' | 'refine_response',
+  composerCapability: ComposerCapability,
 ): string {
   if (composerCapability === 'create_site') {
     return 'A criação de site está conectada, mas a configuração de geração de sites ainda não foi concluída neste ambiente. Finalize a configuração e tente novamente.';
@@ -229,12 +242,15 @@ function buildComposerCapabilityFailureContent(
   if (composerCapability === 'refine_response') {
     return 'A mesa de refinamento está conectada, mas a configuração de IA para refinamento ainda não foi concluída neste ambiente. Finalize a configuração e tente novamente.';
   }
+  if (composerCapability === 'document_to_markdown') {
+    return 'A conversão de documentos está conectada, mas o documento anexado não pôde ser processado neste ambiente. Anexe o arquivo novamente e tente outra vez.';
+  }
   return 'A busca na web está conectada, mas a configuração de pesquisa ainda não foi concluída neste ambiente. Finalize a configuração e tente novamente.';
 }
 
-/** Runs the composer-capability SSE branch (create_image / create_site / search_web / refine_response). */
+/** Runs the composer-capability SSE branch (create_image / create_site / search_web / refine_response / document_to_markdown). */
 export async function runComposerCapabilityBranch(
-  composerCapability: 'create_image' | 'create_site' | 'search_web' | 'refine_response',
+  composerCapability: ComposerCapability,
   effectiveCompanyContext: string | undefined,
   signal: AbortSignal | undefined,
   composerService: KloelComposerService,
@@ -339,6 +355,35 @@ export async function runComposerCapabilityBranch(
         result: buildComposerCapabilityTraceResult(composerCapability, capResult.metadata),
       }),
     );
+    const capabilityMetadata = capResult.metadata || {};
+    const convertedMarkdown =
+      typeof capabilityMetadata.convertedMarkdown === 'string'
+        ? capabilityMetadata.convertedMarkdown
+        : '';
+    const convertedDocumentFilename =
+      typeof capabilityMetadata.convertedDocumentFilename === 'string'
+        ? capabilityMetadata.convertedDocumentFilename
+        : '';
+    if (
+      composerCapability === 'document_to_markdown' &&
+      convertedMarkdown &&
+      convertedDocumentFilename
+    ) {
+      const convertedDocumentUrl =
+        typeof capabilityMetadata.convertedDocumentUrl === 'string'
+          ? capabilityMetadata.convertedDocumentUrl
+          : undefined;
+      safeWrite(
+        createKloelFileEvent({
+          name: convertedDocumentFilename,
+          kind: 'markdown',
+          content: convertedMarkdown,
+          ...(convertedDocumentUrl !== undefined ? { downloadUrl: convertedDocumentUrl } : {}),
+          editable: false,
+          persistent: true,
+        }),
+      );
+    }
   }
   safeWrite(createKloelStatusEvent('streaming_token', createKloelPublicStreamingLabel(message)));
   safeWrite(createKloelContentEvent(capabilityContent));

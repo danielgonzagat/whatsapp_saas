@@ -1,0 +1,42 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+Atomic proof-feedback repair prompt (tool-augmented; not raw HumanEval evidence).
+task_id: HumanEval/138
+entry_point: is_equal_to_sum_even
+Return only the Python completion body that follows the given HumanEval prompt.
+
+HUMANEVAL_PROMPT:
+
+def is_equal_to_sum_even(n):
+    """Evaluate whether the given number n can be written as the sum of exactly 4 positive even numbers
+    Example
+    is_equal_to_sum_even(4) == False
+    is_equal_to_sum_even(6) == False
+    is_equal_to_sum_even(8) == True
+    """
+
+
+ATOMIC_PROOF_FEEDBACK:
+package_sha256: 7a3d38e495d9838d047df4c1d14dca61da0de4977f9957a1e48ccf1214ceec0c
+invariant: humaneval.assertion
+lesson: The baseline completion failed assertion; preserve entry point is_equal_to_sum_even and satisfy the check(candidate) contract.
+proposal_digest: 176b1744587cc1ac7244ed11317334c8de19adf7392ace4d06d59b65e14dcb68
+rejected_completion_sha256: 403e542de39bc7a9594da7782a0c5ec44ec5971111f3b76b712bf63b070b1e6a
+counterexample:
+def check(candidate):
+    assert candidate(4) == False
+    assert candidate(6) == False
+    assert candidate(8) == True
+    assert candidate(10) == True
+    assert candidate(11) == False
+    assert candidate(12) == True
+    assert candidate(13) == False
+    assert candidate(16) == True
+
+--- FIM DA TAREFA ---

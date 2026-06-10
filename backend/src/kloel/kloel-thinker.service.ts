@@ -407,7 +407,7 @@ export class KloelThinkerService {
         safeWrite(createKloelThreadEvent(thread.id, thread.title));
       }
 
-      if (wireContextBlock.memoryChecked) {
+      if (wireContextBlock.memoryChecked && wireContextBlock.memorySignalCount > 0) {
         safeWrite(
           createKloelMemoryLoadedEvent({ signalCount: wireContextBlock.memorySignalCount }),
         );

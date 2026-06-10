@@ -1,0 +1,20 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+
+def prime_length(string):
+    """Write a function that takes a string and returns True if the string
+    length is a prime number or False otherwise
+    Examples
+    prime_length('Hello') == True
+    prime_length('abcdcba') == True
+    prime_length('kittens') == True
+    prime_length('orange') == False
+    """
+
+--- FIM DA TAREFA ---

@@ -106,19 +106,23 @@ describe('parseKloelStreamPayload', () => {
       },
     ]);
 
+    // Gate 12: a zero/negative-count memory event is never surfaced — the
+    // memory trace only exists when memories were actually loaded.
     expect(
       parseKloelStreamPayload({
         type: 'memory_loaded',
         signalCount: -3,
         message: '',
       }),
-    ).toEqual([
-      {
+    ).toEqual([]);
+
+    expect(
+      parseKloelStreamPayload({
         type: 'memory_loaded',
         signalCount: 0,
-        label: 'Nada relevante encontrado na memória.',
-      },
-    ]);
+        message: 'Nada relevante encontrado na memória.',
+      }),
+    ).toEqual([]);
   });
 
   it('preserves rich public file artifact metadata from stream payloads', () => {

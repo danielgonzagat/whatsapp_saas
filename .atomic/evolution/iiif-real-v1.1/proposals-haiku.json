@@ -1,0 +1,38 @@
+[
+  {
+    "lineageId": "haiku|ESCALAR|s1",
+    "infraOk": true,
+    "intencao": "remover comentário de metadados para reduzir byte-footprint sem quebrar contrato público",
+    "textoCompletoApos": "export { a, b };\n\nfunction _shared() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  return _shared();\n}\n\nfunction b() {\n  return _shared();\n}"
+  },
+  {
+    "lineageId": "haiku|ESCALAR|s2",
+    "infraOk": true,
+    "intencao": "Validar o estado final: duplicação removida, contrato público preservado, nenhuma edição adicional necessária.",
+    "textoCompletoApos": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction _sharedCompute() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  return _sharedCompute();\n}\n\nfunction b() {\n  return _sharedCompute();\n}"
+  },
+  {
+    "lineageId": "haiku|ESCALAR|s3",
+    "infraOk": true,
+    "intencao": "Remove função b() redundante; a já exporta a lógica compartilhada.",
+    "textoCompletoApos": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a };\n\nfunction _sharedLogic() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  return _sharedLogic();\n}"
+  },
+  {
+    "lineageId": "haiku|GRADIENTE|s1",
+    "infraOk": true,
+    "intencao": "O arquivo já está no estado admissível (duplicação removida via helper compartilhado computeAndNormalize); nenhuma edição adicional necessária dentro do limite de byte-cap.",
+    "textoCompletoApos": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction computeAndNormalize() {\n  // shared logic extracted\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  return computeAndNormalize();\n}\n\nfunction b() {\n  return computeAndNormalize();\n}"
+  },
+  {
+    "lineageId": "haiku|GRADIENTE|s2",
+    "infraOk": true,
+    "intencao": "Estado intermediário já resolvido: helper compartilhado adicionado, ambas as funções refatoradas para chamar _sharedLogic(), duplicação eliminada dentro do limite de bytes do passo",
+    "textoCompletoApos": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction _sharedLogic() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  return _sharedLogic();\n}\n\nfunction b() {\n  return _sharedLogic();\n}"
+  },
+  {
+    "lineageId": "haiku|GRADIENTE|s3",
+    "infraOk": true,
+    "intencao": "Fazer b() chamar helper() para eliminar a duplicação de código sob o byte-cap",
+    "textoCompletoApos": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction helper() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  return helper();\n}\n\nfunction b() {\n  return helper();\n}\n"
+  }
+]

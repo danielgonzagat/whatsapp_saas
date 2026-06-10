@@ -1,0 +1,5 @@
+collect opus ok=true rows=164
+OPUS baseline pass@1 = 161/164 (98.2%)
+HAIKU proof pass@2  = 154/164 (93.9%)
+P3 (haiku+proof >= opus baseline): REFUTADA (154 vs 161)
+falhas opus: HumanEval/30,HumanEval/41,HumanEval/91

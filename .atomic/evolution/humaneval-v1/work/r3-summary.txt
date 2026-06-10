@@ -1,0 +1,3 @@
+r3: baseline=140 cego=151 scalar=156 proof=155 toolAug=true
+bypass-ledger: 1095 linhas, blockedByDenyHook:true=1088
+{"bypass-ledger.jsonl":{"blockedTrue":1088,"denyDecisions":0},"bypass-observer-heartbeat.jsonl":{"blockedTrue":1088,"denyDecisions":0}}

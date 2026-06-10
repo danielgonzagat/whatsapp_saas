@@ -253,6 +253,11 @@ function tryAppendMemoryLoaded(
     ? event.signalCount
     : 0;
   const signalCount = Math.max(0, Math.floor(rawCount));
+  // Memory trace only exists when memories were actually loaded — a zero-count
+  // event is never surfaced, even if an older backend still emits it.
+  if (signalCount <= 0) {
+    return;
+  }
   const label = typeof event.message === 'string' ? event.message.trim() : '';
   events.push({
     type: 'memory_loaded',
@@ -261,9 +266,7 @@ function tryAppendMemoryLoaded(
       label ||
       (signalCount === 1
         ? '1 memória relevante encontrada.'
-        : signalCount > 1
-          ? `${signalCount} memórias relevantes encontradas.`
-          : 'Nada relevante encontrado na memória.'),
+        : `${signalCount} memórias relevantes encontradas.`),
   });
 }
 

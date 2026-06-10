@@ -16,6 +16,7 @@ import {
   extractWrappedPayload,
   isRecord,
   normalizeThreadSearchQuery,
+  sanitizeStreamErrorMessageForChat,
   toErrorMessage,
 } from './kloel-conversations.helpers';
 import {
@@ -367,7 +368,9 @@ export function streamAuthenticatedKloelMessage(
                 }
               } catch (error: unknown) {
                 finishIdleTimeout();
-                options.onError?.(toErrorMessage(error, 'stream_parse_failed'));
+                options.onError?.(
+                  sanitizeStreamErrorMessageForChat(toErrorMessage(error, 'stream_parse_failed')),
+                );
                 return true;
               }
             }
@@ -385,7 +388,9 @@ export function streamAuthenticatedKloelMessage(
             }
           } catch (error: unknown) {
             finishIdleTimeout();
-            options.onError?.(toErrorMessage(error, 'stream_parse_failed'));
+            options.onError?.(
+              sanitizeStreamErrorMessageForChat(toErrorMessage(error, 'stream_parse_failed')),
+            );
             return;
           }
         }
@@ -408,7 +413,7 @@ export function streamAuthenticatedKloelMessage(
         options.onError?.(message);
         return;
       }
-
+      options.onError?.(sanitizeStreamErrorMessageForChat(toErrorMessage(error, 'stream_failed')));
       options.onError?.(toErrorMessage(error, 'stream_failed'));
     }
   };

@@ -1,0 +1,65 @@
+{
+  "ok": true,
+  "model": "opus",
+  "judged": [
+    {
+      "lineageId": "opus|ESCALAR|s1",
+      "generation": 3,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": -3,
+      "bestScore": 5
+    },
+    {
+      "lineageId": "opus|ESCALAR|s2",
+      "generation": 3,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": -17,
+      "bestScore": 5
+    },
+    {
+      "lineageId": "opus|ESCALAR|s3",
+      "generation": 3,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 1,
+      "bestScore": 5
+    },
+    {
+      "lineageId": "opus|GRADIENTE|s1",
+      "generation": 3,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": -7,
+      "bestScore": 5
+    },
+    {
+      "lineageId": "opus|GRADIENTE|s2",
+      "generation": 3,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 3,
+      "bestScore": 5
+    },
+    {
+      "lineageId": "opus|GRADIENTE|s3",
+      "generation": 3,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 14,
+      "bestScore": 14
+    }
+  ],
+  "ledger": {
+    "ok": true,
+    "recordCount": 18,
+    "headRecordSha256": "569be6e931b8111093c02c268e45ccda0727078bf32aa5469f2c26677bc43b42"
+  }
+}

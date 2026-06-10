@@ -1,0 +1,56 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+Atomic proof-feedback repair prompt (tool-augmented; not raw HumanEval evidence).
+task_id: HumanEval/64
+entry_point: vowels_count
+Return only the Python completion body that follows the given HumanEval prompt.
+
+HUMANEVAL_PROMPT:
+
+FIX = """
+Add more test cases.
+"""
+
+def vowels_count(s):
+    """Write a function vowels_count which takes a string representing
+    a word as input and returns the number of vowels in the string.
+    Vowels in this case are 'a', 'e', 'i', 'o', 'u'. Here, 'y' is also a
+    vowel, but only when it is at the end of the given word.
+
+    Example:
+    >>> vowels_count("abcde")
+    2
+    >>> vowels_count("ACEDY")
+    3
+    """
+
+
+ATOMIC_PROOF_FEEDBACK:
+package_sha256: 4332cb9d90a98d0d72e118fa70905c79c90d07aab94bf4078f917e02829933d3
+invariant: humaneval.assertion
+lesson: The baseline completion failed assertion; preserve entry point vowels_count and satisfy the check(candidate) contract.
+proposal_digest: 2203ce065197940ada25e0d609be936b8d3954e84319b544525e308c166183ca
+rejected_completion_sha256: a7dcd76ecfc3190de1dc542a9a25be59c4795c96eef8a7c0977c88a18ba2f5a1
+counterexample:
+def check(candidate):
+
+    # Check some simple cases
+    assert candidate("abcde") == 2, "Test 1"
+    assert candidate("Alone") == 3, "Test 2"
+    assert candidate("key") == 2, "Test 3"
+    assert candidate("bye") == 1, "Test 4"
+    assert candidate("keY") == 2, "Test 5"
+    assert candidate("bYe") == 1, "Test 6"
+    assert candidate("ACEDY") == 3, "Test 7"
+
+    # Check some edge cases that are easy to work out by hand.
+    assert True, "This prints if this assert fails 2 (also good for debugging!)"
+
+
+--- FIM DA TAREFA ---

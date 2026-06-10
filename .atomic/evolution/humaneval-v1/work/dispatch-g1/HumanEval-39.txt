@@ -1,0 +1,26 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+
+
+def prime_fib(n: int):
+    """
+    prime_fib returns n-th number that is a Fibonacci number and it's also prime.
+    >>> prime_fib(1)
+    2
+    >>> prime_fib(2)
+    3
+    >>> prime_fib(3)
+    5
+    >>> prime_fib(4)
+    13
+    >>> prime_fib(5)
+    89
+    """
+
+--- FIM DA TAREFA ---

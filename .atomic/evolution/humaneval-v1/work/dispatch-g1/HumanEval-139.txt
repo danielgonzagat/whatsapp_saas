@@ -1,0 +1,23 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+
+def special_factorial(n):
+    """The Brazilian factorial is defined as:
+    brazilian_factorial(n) = n! * (n-1)! * (n-2)! * ... * 1!
+    where n > 0
+
+    For example:
+    >>> special_factorial(4)
+    288
+
+    The function will receive an integer as input and should return the special
+    factorial of this integer.
+    """
+
+--- FIM DA TAREFA ---

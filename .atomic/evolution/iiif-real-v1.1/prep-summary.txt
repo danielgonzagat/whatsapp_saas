@@ -1,0 +1,2 @@
+haiku gen=5 briefados=haiku|GRADIENTE|s2:1|haiku|GRADIENTE|s3:1
+opus gen=5 briefados=-

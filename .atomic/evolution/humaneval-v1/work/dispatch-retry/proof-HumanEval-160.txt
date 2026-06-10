@@ -1,0 +1,61 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+Atomic proof-feedback repair prompt (tool-augmented; not raw HumanEval evidence).
+task_id: HumanEval/160
+entry_point: do_algebra
+Return only the Python completion body that follows the given HumanEval prompt.
+
+HUMANEVAL_PROMPT:
+
+def do_algebra(operator, operand):
+    """
+    Given two lists operator, and operand. The first list has basic algebra operations, and 
+    the second list is a list of integers. Use the two given lists to build the algebric 
+    expression and return the evaluation of this expression.
+
+    The basic algebra operations:
+    Addition ( + ) 
+    Subtraction ( - ) 
+    Multiplication ( * ) 
+    Floor division ( // ) 
+    Exponentiation ( ** ) 
+
+    Example:
+    operator['+', '*', '-']
+    array = [2, 3, 4, 5]
+    result = 2 + 3 * 4 - 5
+    => result = 9
+
+    Note:
+        The length of operator list is equal to the length of operand list minus one.
+        Operand is a list of of non-negative integers.
+        Operator list has at least one operator, and operand list has at least two operands.
+
+    """
+
+
+ATOMIC_PROOF_FEEDBACK:
+package_sha256: b6c0ddf4128928cee25cd6181131572a366e2415c58df67ce92dc8968868d21f
+invariant: humaneval.assertion
+lesson: The baseline completion failed assertion; preserve entry point do_algebra and satisfy the check(candidate) contract.
+proposal_digest: 21ffcf2dcdcab11c7c3c2059e7644c1dc5b245b8254712d8b007910cfb518d5a
+rejected_completion_sha256: 469475a6b51de859f533c89fbb420414f547d302d4c4221df220d6438bb3daf9
+counterexample:
+def check(candidate):
+
+    # Check some simple cases
+    assert candidate(['**', '*', '+'], [2, 3, 4, 5]) == 37
+    assert candidate(['+', '*', '-'], [2, 3, 4, 5]) == 9
+    assert candidate(['//', '*'], [7, 3, 4]) == 8, "This prints if this assert fails 1 (good for debugging!)"
+
+    # Check some edge cases that are easy to work out by hand.
+    assert True, "This prints if this assert fails 2 (also good for debugging!)"
+
+
+--- FIM DA TAREFA ---

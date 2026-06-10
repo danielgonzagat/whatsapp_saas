@@ -1,0 +1,26 @@
+g5 haiku haiku|ESCALAR|s1 reject  sandbox.byte-floor
+g5 haiku haiku|ESCALAR|s2 promote 13 
+g5 haiku haiku|ESCALAR|s3 reject  sandbox.public-contract
+g5 haiku haiku|GRADIENTE|s1 promote 12 
+g5 haiku haiku|GRADIENTE|s2 promote 13 
+g5 haiku haiku|GRADIENTE|s3 promote 14 
+haiku chain ok records=30 head=fdccabbf0fcb
+FINAL haiku ESCALAR s1 promotes=3 rejects=2 best=14 last=14
+FINAL haiku ESCALAR s2 promotes=5 rejects=0 best=13 last=13
+FINAL haiku ESCALAR s3 promotes=4 rejects=1 best=13 last=13
+FINAL haiku GRADIENTE s1 promotes=5 rejects=0 best=12 last=12
+FINAL haiku GRADIENTE s2 promotes=4 rejects=1 best=13 last=13
+FINAL haiku GRADIENTE s3 promotes=2 rejects=3 best=14 last=14
+g5 opus opus|ESCALAR|s1 promote 10 
+g5 opus opus|ESCALAR|s2 promote -4 
+g5 opus opus|ESCALAR|s3 promote 3 
+g5 opus opus|GRADIENTE|s1 promote -14 
+g5 opus opus|GRADIENTE|s2 promote 9 
+g5 opus opus|GRADIENTE|s3 promote 15 
+opus chain ok records=30 head=d12941ef602b
+FINAL opus ESCALAR s1 promotes=5 rejects=0 best=10 last=10
+FINAL opus ESCALAR s2 promotes=5 rejects=0 best=5 last=-4
+FINAL opus ESCALAR s3 promotes=5 rejects=0 best=5 last=3
+FINAL opus GRADIENTE s1 promotes=5 rejects=0 best=5 last=-14
+FINAL opus GRADIENTE s2 promotes=5 rejects=0 best=10 last=9
+FINAL opus GRADIENTE s3 promotes=5 rejects=0 best=15 last=15

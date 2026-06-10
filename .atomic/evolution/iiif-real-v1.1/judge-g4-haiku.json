@@ -1,0 +1,67 @@
+{
+  "ok": true,
+  "model": "haiku",
+  "judged": [
+    {
+      "lineageId": "haiku|ESCALAR|s1",
+      "generation": 4,
+      "decision": "reject",
+      "rejections": [
+        "gate.sandbox.padding-contract"
+      ],
+      "wallKey": "sandbox.padding-contract::sandbox/task1-dedup-under-byte-cap.txt#padding-fixtures",
+      "publicScore": null,
+      "bestScore": 14
+    },
+    {
+      "lineageId": "haiku|ESCALAR|s2",
+      "generation": 4,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 13,
+      "bestScore": 13
+    },
+    {
+      "lineageId": "haiku|ESCALAR|s3",
+      "generation": 4,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 13,
+      "bestScore": 13
+    },
+    {
+      "lineageId": "haiku|GRADIENTE|s1",
+      "generation": 4,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 12,
+      "bestScore": 12
+    },
+    {
+      "lineageId": "haiku|GRADIENTE|s2",
+      "generation": 4,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 13,
+      "bestScore": 13
+    },
+    {
+      "lineageId": "haiku|GRADIENTE|s3",
+      "generation": 4,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 7,
+      "bestScore": 7
+    }
+  ],
+  "ledger": {
+    "ok": true,
+    "recordCount": 24,
+    "headRecordSha256": "c41f7a4516957d34d38284dc77c053f2a4f7522b14fe20bc00b1499ea035cbb2"
+  }
+}

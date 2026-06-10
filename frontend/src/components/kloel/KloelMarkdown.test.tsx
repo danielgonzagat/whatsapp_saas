@@ -74,9 +74,39 @@ describe('KloelMarkdown render parity', () => {
       expect(container.querySelector('.kloel-math-inline')).toBeNull();
       expect(container.textContent).toContain('$5');
     });
+
+    it('never treats Brazilian currency runs as inline math', () => {
+      const { container } = render(
+        <KloelMarkdown
+          content={
+            'E2E Smoke Product · R$ 79,50 · inativo; E2E Recovery Proof Product · R$ 99,90 · inativo.'
+          }
+        />,
+      );
+      expect(container.querySelector('.kloel-math-inline')).toBeNull();
+      expect(container.textContent).toContain('R$ 79,50');
+      expect(container.textContent).toContain('R$ 99,90');
+    });
+
+    it('keeps paired plain dollar amounts literal', () => {
+      const { container } = render(<KloelMarkdown content={'Custa $10 hoje e $20 amanha.'} />);
+      expect(container.querySelector('.kloel-math-inline')).toBeNull();
+      expect(container.textContent).toContain('$10');
+      expect(container.textContent).toContain('$20');
+    });
   });
 
   describe('Mermaid (b)', () => {
+    it('recovers a fence glued to prose with no closing fence (live-observed model output)', async () => {
+      const content =
+        'Diagrama do fluxo de compra:```mermaid\ngraph TD\nA[Cliente compra] --> B[Acesso liberado]';
+      const { container } = render(<KloelMarkdown content={content} />);
+      await waitFor(() => {
+        expect(container.querySelector('.kloel-artifact-mermaid svg')).not.toBeNull();
+      });
+      expect(container.textContent).not.toContain('```');
+    });
+
     it('renders a ```mermaid graph as an SVG diagram', async () => {
       const content = ['```mermaid', 'graph TD', 'A[Início] --> B[Fim]', '```'].join('\n');
       const { container } = render(<KloelMarkdown content={content} />);
