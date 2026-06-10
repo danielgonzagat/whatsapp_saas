@@ -381,6 +381,60 @@ export function buildProofFeedbackRepairPrompts(options = {}) {
   };
 }
 
+export function verifyToolAugmentedSamples(options = {}) {
+  const input = loadInputs(options);
+  const promptReport = buildProofFeedbackRepairPrompts(options);
+  const promptByTaskId = new Map(promptReport.prompts.map((prompt) => [prompt.task_id, prompt]));
+  const feedbackSamples = input.samples.filter((sample) => feedbackSource(sample) !== 'none');
+  const checks = feedbackSamples.map((sample) => {
+    const prompt = promptByTaskId.get(sample.task_id);
+    const packageCheck = validateProofFeedbackPackage(sample);
+    const receiptBound = isExplicitReceiptSha(sample.atomic_receipt_sha256);
+    const repairPromptBound = isExplicitReceiptSha(sample.repair_prompt_sha256);
+    const repairPromptMatches = Boolean(prompt) && sample.repair_prompt_sha256 === prompt.repair_prompt_sha256;
+    const packageMatches = Boolean(prompt) && sample.proof_feedback_package_sha256 === prompt.proof_feedback_package_sha256;
+    const ok = packageCheck.ok && receiptBound && repairPromptBound && repairPromptMatches && packageMatches;
+    let reason = 'valid-tool-augmented-sample-binding';
+    if (!packageCheck.ok) reason = packageCheck.reason;
+    else if (!receiptBound) reason = 'missing-atomic-receipt-sha256';
+    else if (!repairPromptBound) reason = 'missing-repair-prompt-sha256';
+    else if (!repairPromptMatches) reason = 'repair-prompt-digest-mismatch';
+    else if (!packageMatches) reason = 'proof-feedback-package-not-in-repair-prompt-manifest';
+    return {
+      taskId: sample.task_id,
+      arm: sample.arm ?? 'proof',
+      ok,
+      reason,
+      receiptBound,
+      repairPromptBound,
+      repairPromptMatches,
+      packageMatches,
+      expectedRepairPromptSha256: prompt?.repair_prompt_sha256 ?? null,
+      actualRepairPromptSha256: sample.repair_prompt_sha256 ?? null,
+      expectedProofFeedbackPackageSha256: prompt?.proof_feedback_package_sha256 ?? null,
+      actualProofFeedbackPackageSha256: sample.proof_feedback_package_sha256 ?? null,
+      packageCheck,
+    };
+  });
+  return {
+    ok: promptReport.ok && feedbackSamples.length > 0 && checks.every((entry) => entry.ok),
+    mode: 'verify-tool-augmented-samples',
+    datasetKind: input.datasetKind,
+    sourceArm: promptReport.sourceArm,
+    promptManifestSha256: promptReport.promptsSha256,
+    packageManifestSha256: promptReport.packagesSha256,
+    promptCount: promptReport.promptCount,
+    feedbackSampleCount: feedbackSamples.length,
+    validSampleCount: checks.filter((entry) => entry.ok).length,
+    checks,
+    proofLimits: [
+      'This verifier binds proof-feedback samples to the emitted repair prompt manifest; it does not call the model.',
+      'Atomic receipt digests are checked for explicit sha256 form here; full receipt replay remains the caller archive verifier boundary.',
+      'A tool-augmented HumanEval claim still requires an external dataset, fixed-model samples, and archived Atomic receipts.',
+    ],
+  };
+}
+
 function summarizeArm(arm, tasks, samplesByKey, timeoutMs) {
   const attempts = tasks.map((task) => {
     const sample = samplesByKey.get(`${arm}\u0000${task.task_id}`);
