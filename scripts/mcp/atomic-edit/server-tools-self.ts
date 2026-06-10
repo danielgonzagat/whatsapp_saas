@@ -458,12 +458,19 @@ async function runProofCommands(commands: string[]): Promise<ProofCommandResult[
     priority: proofCommandPriority(command),
   }));
   queue.sort((left, right) => left.priority - right.priority || left.index - right.index);
+
+  const exclusiveQueue = queue.filter((item) => selfExpansionProofMustRunHostDirect(item.command));
+  const parallelQueue = queue.filter((item) => !selfExpansionProofMustRunHostDirect(item.command));
+  for (const item of exclusiveQueue) {
+    results[item.index] = await runSingleProofCommand(item.command, cwd, deadlineMs);
+  }
+
   let nextIndex = 0;
-  const workerCount = Math.min(proofCommandConcurrency(), queue.length);
+  const workerCount = Math.min(proofCommandConcurrency(), parallelQueue.length);
   await Promise.all(
     Array.from({ length: workerCount }, async () => {
       while (true) {
-        const item = queue[nextIndex];
+        const item = parallelQueue[nextIndex];
         nextIndex += 1;
         if (!item) return;
         results[item.index] = await runSingleProofCommand(item.command, cwd, deadlineMs);
