@@ -1,0 +1,77 @@
+{
+  "ok": true,
+  "model": "opus",
+  "judged": [
+    {
+      "lineageId": "opus|ESCALAR|s1",
+      "generation": 4,
+      "decision": "reject",
+      "rejections": [
+        "gate.sandbox.byte-floor"
+      ],
+      "wallKey": "sandbox.byte-floor::sandbox/task1-dedup-under-byte-cap.txt#single-step-removal",
+      "publicScore": null,
+      "bestScore": 5
+    },
+    {
+      "lineageId": "opus|ESCALAR|s2",
+      "generation": 4,
+      "decision": "reject",
+      "rejections": [
+        "gate.sandbox.byte-floor"
+      ],
+      "wallKey": "sandbox.byte-floor::sandbox/task1-dedup-under-byte-cap.txt#single-step-removal",
+      "publicScore": null,
+      "bestScore": 13
+    },
+    {
+      "lineageId": "opus|ESCALAR|s3",
+      "generation": 4,
+      "decision": "reject",
+      "rejections": [
+        "gate.sandbox.byte-floor"
+      ],
+      "wallKey": "sandbox.byte-floor::sandbox/task1-dedup-under-byte-cap.txt#single-step-removal",
+      "publicScore": null,
+      "bestScore": 5
+    },
+    {
+      "lineageId": "opus|GRADIENTE|s1",
+      "generation": 4,
+      "decision": "reject",
+      "rejections": [
+        "gate.sandbox.byte-floor"
+      ],
+      "wallKey": "sandbox.byte-floor::sandbox/task1-dedup-under-byte-cap.txt#single-step-removal",
+      "publicScore": null,
+      "bestScore": 5
+    },
+    {
+      "lineageId": "opus|GRADIENTE|s2",
+      "generation": 4,
+      "decision": "reject",
+      "rejections": [
+        "gate.sandbox.byte-floor"
+      ],
+      "wallKey": "sandbox.byte-floor::sandbox/task1-dedup-under-byte-cap.txt#single-step-removal",
+      "publicScore": null,
+      "bestScore": 10
+    },
+    {
+      "lineageId": "opus|GRADIENTE|s3",
+      "generation": 4,
+      "decision": "reject",
+      "rejections": [
+        "gate.sandbox.byte-floor"
+      ],
+      "wallKey": "sandbox.byte-floor::sandbox/task1-dedup-under-byte-cap.txt#single-step-removal",
+      "publicScore": null,
+      "bestScore": 5
+    }
+  ],
+  "ledger": {
+    "ok": true,
+    "recordCount": 24,
+    "headRecordSha256": "1a422e51f4ec0fc63946c76e8d52560e5cb2ceb534b8e6a7143d8783c346a814"
+  }
+}

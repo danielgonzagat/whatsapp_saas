@@ -1,0 +1,38 @@
+[
+  {
+    "lineageId": "opus|ESCALAR|s1",
+    "infraOk": true,
+    "intencao": "Passo admissível 1/N: ADICIONAR o helper compartilhado (sem remover nada ainda) para habilitar a remoção subsequente de um bloco por passo sob o teto de remoção, preservando o contrato público export { a, b }.",
+    "textoCompletoApos": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction dupHelper() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction sharedBlock() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction dupBlock() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction a() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction b() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n"
+  },
+  {
+    "lineageId": "opus|ESCALAR|s2",
+    "infraOk": true,
+    "intencao": "Remover um bloco duplicado por passo: substituir a duplicação inline em b() por chamada ao helper sharedCompute() já existente, preservando o contrato público export { a, b }.",
+    "textoCompletoApos": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction sharedCompute() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  return sharedCompute();\n}\n\nfunction b() {\n  return sharedCompute();\n}\n"
+  },
+  {
+    "lineageId": "opus|ESCALAR|s3",
+    "infraOk": true,
+    "intencao": "Remover um bloco duplicado por passo: delegar dupBlock() ao helper compartilhado dupHelper(), preservando o contrato público (a, b inalterados).",
+    "textoCompletoApos": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction dupHelper() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction dupBlock() {\n  return dupHelper();\n}\n\nfunction a() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction b() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n"
+  },
+  {
+    "lineageId": "opus|GRADIENTE|s1",
+    "infraOk": true,
+    "intencao": "Passo admissível 1/N: ADICIONAR o helper compartilhado `dupBlock` (edição puramente aditiva, abaixo do teto de remoção) para habilitar a posterior remoção de um bloco por passo sem violar o teto nem o contrato público {a, b}.",
+    "textoCompletoApos": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction dupBlock() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction shared() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction dedup() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction b() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n"
+  },
+  {
+    "lineageId": "opus|GRADIENTE|s2",
+    "infraOk": true,
+    "intencao": "Remover um único bloco duplicado por passo: fazer b() delegar ao helper compartilhado shared() já existente, preservando o contrato público (export { a, b }) e respeitando o teto de remoção por passo.",
+    "textoCompletoApos": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction shared() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction a() {\n  return shared();\n}\n\nfunction b() {\n  return shared();\n}\n"
+  },
+  {
+    "lineageId": "opus|GRADIENTE|s3",
+    "infraOk": true,
+    "intencao": "Adicionar o helper compartilhado dupShared (passo admissível: ADIÇÃO primeiro) sem tocar no contrato público nem remover blocos ainda, evitando o teto de remoção por passo do caminho guloso.",
+    "textoCompletoApos": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction dupShared() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction dupBody() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction dup() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction a() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction b() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n"
+  }
+]

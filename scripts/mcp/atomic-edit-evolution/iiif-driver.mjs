@@ -30,7 +30,6 @@ import {
   appendProposalJsonl,
   verifyRunLedgerJsonl,
   aggregateArm,
-  ARMS,
 } from './experiment-harness.mjs';
 import {
   appendWitnessJsonl,
@@ -162,19 +161,31 @@ function cmdInit({ force = false } = {}) {
   return { ok: true, baselineScore: base, lineageCount: Object.keys(lineages).length, stateFile: path.relative(ROOT, STATE_FILE) };
 }
 
+/**
+ * Reconstrói o prompt congelado esperado para a geração CORRENTE da linhagem.
+ * Fonte única de verdade do promptSha256 — usada por cmdPrompts (emissão) e por
+ * judgeOne (recusa-estaleira): um dispatch construído contra outra geração tem
+ * sha divergente e é recusado sem julgamento (ver CONTAMINATION-NOTICE.md).
+ */
+function expectedPromptFor(state, model, arm, seed) {
+  const task = TASKS[state.taskId];
+  const lineage = state.lineages[lineageId(model, arm, seed)];
+  const { feedback, briefingDigest, selectedCount } = buildFeedback(state, model, arm, seed);
+  const taskText = `${task.description}\n--- ESTADO ATUAL DO ALVO (sandbox/${state.taskId}.txt) ---\n${lineage.currentText}\n--- FIM DO ESTADO ---`;
+  const prompt = buildFrozenPrompt({ arm, taskText, feedback });
+  return { prompt, briefingDigest: briefingDigest ?? null, selectedCount: selectedCount ?? 0 };
+}
+
 function cmdPrompts({ model }) {
   if (!MODELS.includes(model)) return { ok: false, error: `modelo desconhecido: ${String(model)}` };
   const state = loadState();
-  const task = TASKS[state.taskId];
   const out = [];
   for (const arm of state.arms) {
     for (const seed of state.seeds) {
       const id = lineageId(model, arm, seed);
       const lineage = state.lineages[id];
       if (lineage.generation > state.maxGenerations) continue;
-      const { feedback, briefingDigest, selectedCount } = buildFeedback(state, model, arm, seed);
-      const taskText = `${task.description}\n--- ESTADO ATUAL DO ALVO (sandbox/${state.taskId}.txt) ---\n${lineage.currentText}\n--- FIM DO ESTADO ---`;
-      const prompt = buildFrozenPrompt({ arm, taskText, feedback });
+      const { prompt, briefingDigest, selectedCount } = expectedPromptFor(state, model, arm, seed);
       out.push({
         lineageId: id,
         arm,
@@ -195,6 +206,19 @@ function judgeOne(state, model, proposal) {
   const lineage = state.lineages[proposal.lineageId];
   if (!lineage) throw new Error(`linhagem desconhecida: ${proposal.lineageId}`);
   if (lineage.generation > state.maxGenerations) throw new Error(`linhagem ${proposal.lineageId} já completou G=${state.maxGenerations}`);
+  // RECUSA-ESTALEIRA (classe stale-world-hash): um dispatch cujo promptSha256
+  // não bate com o prompt da geração corrente foi construído contra outro
+  // estado — recusado por construção, sem julgamento, sem ledger, sem avanço.
+  const expected = expectedPromptFor(state, model, lineage.arm, lineage.seed);
+  if (String(proposal.promptSha256 ?? '') !== expected.prompt.promptSha256) {
+    return {
+      lineageId: proposal.lineageId,
+      generation: lineage.generation,
+      decision: 'refused-stale-dispatch',
+      expectedPromptSha256: expected.prompt.promptSha256,
+      receivedPromptSha256: proposal.promptSha256 ?? null,
+    };
+  }
   const proposedText = String(proposal.textoCompletoApos ?? '');
   const verdict = evaluateProposal({ taskId: state.taskId, previousText: lineage.currentText, proposedText });
   if (verdict.ok !== true) throw new Error(`evaluateProposal falhou: ${verdict.error}`);
@@ -324,20 +348,25 @@ function cmdSelfTest() {
     return { ok: false, error: 'slots de braço errados no self-test' };
   }
   // proposta degenerada (vazia) → reject por public-contract; proposta idêntica → promote (score = baseline)
+  const esc2 = prompts.prompts.find((p) => p.arm === 'ESCALAR' && p.seed === 's2');
   const judged = cmdJudge({
     model: 'haiku',
     proposals: [
       { lineageId: esc.lineageId, textoCompletoApos: '', promptSha256: esc.promptSha256, briefingDigest: null },
       { lineageId: grad.lineageId, textoCompletoApos: TASKS[TASK_ID].baselineText, promptSha256: grad.promptSha256, briefingDigest: grad.briefingDigest },
+      // dispatch estaleiro: promptSha256 de outra geração/estado → recusado sem ledger e sem avanço
+      { lineageId: esc2.lineageId, textoCompletoApos: TASKS[TASK_ID].baselineText, promptSha256: 'stale-dispatch-sha', briefingDigest: null },
     ],
   });
   if (judged.ok !== true) return { ok: false, error: `judge falhou: ${judged.error}` };
-  const [r1, r2] = judged.judged;
+  const [r1, r2, r3] = judged.judged;
   const checks = [
     r1.decision === 'reject' && r1.rejections.includes('gate.sandbox.public-contract'),
     typeof r1.wallKey === 'string' && r1.wallKey.includes('sandbox.public-contract'),
     r2.decision === 'promote' && r2.publicScore === loadState().baselineScore,
+    r3.decision === 'refused-stale-dispatch' && r3.expectedPromptSha256 === esc2.promptSha256,
     judged.ledger.recordCount === 2,
+    loadState().lineages[esc2.lineageId].generation === 1,
   ];
   // briefing da próxima geração do GRADIENTE rejeitado? (o reject foi do ESCALAR; o corpus do GRADIENTE segue vazio)
   const after = cmdPrompts({ model: 'haiku' });
