@@ -6,12 +6,17 @@ import { NotificationsController } from './notifications.controller';
 
 describe('NotificationsController', () => {
   const registerDevice = jest.fn();
+  const getPreferences = jest.fn();
+  const updatePreferences = jest.fn();
 
   let controller: NotificationsController;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    controller = new NotificationsController({ registerDevice } as never);
+    controller = new NotificationsController(
+      { registerDevice } as never,
+      { getPreferences, updatePreferences } as never,
+    );
   });
 
   describe('registerDevice', () => {
@@ -61,6 +66,41 @@ describe('NotificationsController', () => {
       await expect(controller.registerDevice(mockReq, body)).rejects.toThrow(
         'Firebase registration failed',
       );
+    });
+  });
+
+  describe('preferences endpoints', () => {
+    const mockReq = {
+      user: { sub: 'u-1', workspaceId: 'ws-1' },
+      headers: {},
+    } as never;
+
+    it('GET preferences delegates with workspaceId and userId from the JWT', async () => {
+      getPreferences.mockResolvedValueOnce({ emailTips: true });
+
+      const result = await controller.getPreferences(mockReq);
+
+      expect(getPreferences).toHaveBeenCalledWith('ws-1', 'u-1');
+      expect(result).toEqual({ emailTips: true });
+    });
+
+    it('PUT preferences sanitizes the body and persists only known boolean toggles', async () => {
+      updatePreferences.mockResolvedValueOnce({ emailTips: false });
+
+      const result = await controller.updatePreferences(mockReq, {
+        emailTips: false,
+        unknownKey: true,
+      });
+
+      expect(updatePreferences).toHaveBeenCalledWith('ws-1', 'u-1', { emailTips: false });
+      expect(result).toEqual({ emailTips: false });
+    });
+
+    it('PUT preferences rejects a body without any valid toggle', async () => {
+      await expect(
+        controller.updatePreferences(mockReq, { emailTips: 'not-a-boolean' }),
+      ).rejects.toThrow(/preferência de notificação válida/);
+      expect(updatePreferences).not.toHaveBeenCalled();
     });
   });
 });
