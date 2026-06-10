@@ -6,7 +6,7 @@ import type {
   PointerEvent as ReactPointerEvent,
   WheelEvent as ReactWheelEvent,
 } from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { getKloelGraphNodeActionLabel, type KloelGraphArea, type KloelGraphNode } from './KloelGraph.routes';
 import type { GraphEdge } from './KloelGraphShell.helpers';
@@ -156,16 +156,17 @@ export function KloelGraphLiteralCanvas({
   }, []);
 
   const [snapshot, setSnapshot] = useState<LiveNode[]>([]);
-  // Ember hover emphasis is transient by construction: a plain hovered id,
-  // gated out of rendering whenever the canvas is covered (ariaHidden) and
-  // cleared whenever the selection/galaxy context changes. No captured flags,
-  // no deferred timeouts — those raced with renders and left nodes stuck ember.
-  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
-  const hoveredId = ariaHidden ? null : hoveredNode;
-
-  useEffect(() => {
-    setHoveredNode(null);
-  }, [activeNodeId, ariaHidden, focusedArea]);
+  // Ember hover emphasis is transient BY DERIVATION: the hovered id is stored
+  // together with the selection/galaxy context it was set in and reads as null
+  // the moment that context changes (incl. ariaHidden covering the canvas).
+  // No reset effect (the hooks compiler forbids synchronous setState inside
+  // effects), no captured flags, no deferred timeouts — those raced with
+  // renders and left nodes stuck ember.
+  const hoverContext = `${activeNodeId ?? ''}|${String(ariaHidden)}|${focusedArea ?? ''}`;
+  const [hoveredEntry, setHoveredEntry] = useState<{ id: string; ctx: string } | null>(null);
+  const setHoveredNode = (id: string | null) =>
+    setHoveredEntry(id === null ? null : { id, ctx: hoverContext });
+  const hoveredId = hoveredEntry && hoveredEntry.ctx === hoverContext ? hoveredEntry.id : null;
 
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [isPanning, setIsPanning] = useState(false);
@@ -206,6 +207,14 @@ export function KloelGraphLiteralCanvas({
   useEffect(() => {
     sizeRef.current = size;
   }, [size]);
+
+  // React used to read panRef/zoomRef straight in the <g transform> attribute;
+  // the hooks compiler forbids ref reads during render, so the exact same
+  // transform is re-applied after every commit instead (layout effect runs
+  // before paint, so physics re-renders still cannot fight the camera).
+  useLayoutEffect(() => {
+    applyViewportTransform(panRef.current, zoomRef.current);
+  });
 
   const { nodes: visibleNodes, edges: visibleEdges } = useMemo(
     () => applyFilters(nodes, edges, settings.filters, focusedArea),
@@ -655,8 +664,6 @@ export function KloelGraphLiteralCanvas({
     setZoomDirect((current) => Math.max(0.3, Math.min(3, current + delta)));
   };
 
-  const cx = size.w / 2;
-  const cy = size.h / 2;
   const labelOpacityFor = (tier: number) => {
     const base = [0.34, 0.72, 1.15][tier] - settings.display.textFade * 0.35;
     return Math.max(0, Math.min(1, (zoom - base) * 3));
@@ -706,10 +713,7 @@ export function KloelGraphLiteralCanvas({
             <path d="M 0 0 L 10 5 L 0 10 z" fill={C.ember} />
           </marker>
         </defs>
-        <g
-          ref={viewportRef}
-          transform={`translate(${cx + panRef.current.x}, ${cy + panRef.current.y}) scale(${zoomRef.current})`}
-        >
+        <g ref={viewportRef}>
           {visibleEdges.map((edge, index) => {
             const a = snapshotById.get(edge.from);
             const b = snapshotById.get(edge.to);
