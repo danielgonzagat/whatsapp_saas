@@ -76,7 +76,11 @@ describe('KloelToolDispatcherService — products.* aliases', () => {
           actorId: 'user-42',
           inputs: args,
           outputs: objectContaining({ productId: 'prod-1' }),
-          domainEvents: ['product.created'],
+          // Registry runtime truth (capability-registry-v2/partitions/tier-1-products.ts):
+          // ProductService.create records mind.product.observed on the spine — not product.created.
+          domainEvents: ['mind.product.observed'],
+          workspaceId: DEFAULT_WS_ID,
+          auditLogId: `audit_products.create:${DEFAULT_WS_ID}:user-42`,
           evidenceUrl: '/produtos/prod-1',
           success: true,
         }),
