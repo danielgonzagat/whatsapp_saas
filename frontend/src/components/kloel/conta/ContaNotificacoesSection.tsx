@@ -100,12 +100,14 @@ export default function NotificacoesSection() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // O effect de mount não seta estado sincronamente (react-hooks/set-state-in-effect):
+  // `loading` já nasce true e `loadError` nasce vazio; os resets síncronos só
+  // existem no retry, que é disparado por evento de clique.
   const load = useCallback(async () => {
-    setLoading(true);
-    setLoadError('');
     try {
       const prefs = await getNotificationPreferences();
       setPreferences(prefs);
+      setLoadError('');
     } catch (e) {
       setLoadError(getErrorMessage(e) || 'Nao foi possivel carregar as preferencias.');
     } finally {
@@ -113,9 +115,20 @@ export default function NotificacoesSection() {
     }
   }, []);
 
-  useEffect(() => {
+  const retry = useCallback(() => {
+    setLoading(true);
+    setLoadError('');
     void load();
+  }, [load]);
+
+  useEffect(() => {
+    // Timer-0 kickoff (padrão do repo p/ react-hooks/set-state-in-effect):
+    // o fetch dispara fora do ciclo síncrono do effect, com cancel no cleanup.
+    const kickoff = window.setTimeout(() => {
+      void load();
+    }, 0);
     return () => {
+      window.clearTimeout(kickoff);
       if (successTimer.current) {
         clearTimeout(successTimer.current);
       }
@@ -167,7 +180,7 @@ export default function NotificacoesSection() {
             </span>
             <button
               type="button"
-              onClick={() => void load()}
+              onClick={retry}
               style={{
                 marginTop: 10,
                 padding: '8px 16px',
