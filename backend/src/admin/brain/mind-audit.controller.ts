@@ -5,7 +5,7 @@ import { RequireAdminPermission } from '../auth/decorators/admin-permission.deco
 import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { RouteClass } from '../../common/throttler/route-class.decorator';
-import { MindSpineAudit } from '../../kloel/mind/observability';
+import { MindSpineAudit } from '../../kloel/mind/observability/mind-spine-audit.service';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 

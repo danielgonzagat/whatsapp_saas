@@ -9,7 +9,7 @@ export const KNOWLEDGE_BASE_CHUNK_SIZE = 1000;
 export const KNOWLEDGE_BASE_CHUNK_OVERLAP = 200;
 
 /** Sentence-ending punctuation patterns used to find clean split points. */
-export const SENTENCE_ENDINGS = ['. ', '? ', '! '];
+const SENTENCE_ENDINGS = ['. ', '? ', '! '];
 
 const isSplitCandidate = (
   idx: number,

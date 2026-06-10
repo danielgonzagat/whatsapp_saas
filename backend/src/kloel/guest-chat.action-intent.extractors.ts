@@ -1,4 +1,10 @@
-import { extractProductName } from './guest-chat.product-args.helpers';
+import { extractProductName } from './guest-chat.action-intent.product-plan.extractors';
+
+export {
+  extractPlanArgs,
+  extractProductArgs,
+  extractProductName,
+} from './guest-chat.action-intent.product-plan.extractors';
 
 export function extractPaymentArgs(msg: string): Record<string, unknown> {
   const args: Record<string, unknown> = {};
@@ -7,7 +13,7 @@ export function extractPaymentArgs(msg: string): Record<string, unknown> {
     args.productName = name;
     args.description = name; // for smart-payment compatibility
   }
-  const am = msg.match(/R\$\s*(\d+[.,]?\d*)/);
+  const am = msg.match(/R\$\s*(\d+[.,]?\d*)/i);
   if (am && am[1]) {
     const val = parseFloat(am[1].replace(',', '.'));
     args.amount = val;
@@ -21,7 +27,7 @@ export function extractPaymentArgs(msg: string): Record<string, unknown> {
     }
   }
   const nm = msg.match(
-    /para\s+(?:o\s+|a\s+)?(?:comprador[a]?|client[e]?|lead\s+)?([A-Z][a-zÀ-ÿ]{2,25}(?:\s+[A-Z][a-zÀ-ÿ]{2,25})?)(?:\s+(?:comprar|adquirir|pagar|para)\b|$)/i,
+    /para\s+(?:o\s+|a\s+)?(?:comprador[a]?|client[e]?|lead\s+)?([A-Za-zÀ-ÿ]{2,25}(?:\s+[A-Za-zÀ-ÿ]{2,25})?)(?:\s+(?:comprar|adquirir|pagar|para)\b|$)/i,
   );
   if (nm && nm[1]) {
     args.customerName = nm[1].trim();
@@ -70,7 +76,7 @@ export function extractUrlArgs(msg: string): Record<string, unknown> {
   const args: Record<string, unknown> = {};
   args.productName = extractProductName(msg);
   const labelMatch = msg.match(
-    /(?:descri[cç][aã]o|label|nome)\s*:?\s*['"]?([A-Za-zÀ-ÿ0-9\s\-.]{2,40}?)(?:\s*(?:,|\.|url|https?|$))/i,
+    /(?:descri[cç][aã]o|label|nome)\s*:?\s*['"]?([A-Za-zÀ-ÿ0-9\s.-]{2,40}?)(?:\s*(?:,|\.|url|https?|$))/i,
   );
   if (labelMatch?.[1]) {
     args.label = labelMatch[1].trim();

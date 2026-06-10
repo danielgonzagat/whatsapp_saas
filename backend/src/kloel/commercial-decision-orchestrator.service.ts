@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
-import { MindEventSpine } from './mind/coordination';
+import { MindEventSpine } from './mind/coordination/mind-event-spine.service';
 import { ChannelSetupService } from './channel-setup.service';
 import { MindConceptService } from './mind/memory/mind-concepts.service';
 import { MindService } from './mind.service';

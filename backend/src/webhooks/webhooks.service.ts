@@ -2,11 +2,9 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
   BadRequestException,
   ForbiddenException,
-  Inject,
   Injectable,
   Logger,
-  Optional,
-  forwardRef,
+  Optional
 } from '@nestjs/common';
 import type { Redis } from 'ioredis';
 import { getCorrelationId } from '../common/observability/correlation-store';
@@ -55,13 +53,13 @@ type InstagramWebhookBody = Record<string, unknown>;
 @Injectable()
 export class WebhooksService {
   private readonly logger = new Logger(WebhooksService.name);
+  private inboxGateway?: InboxGateway;
+  private omnichannelService?: OmnichannelService;
 
   constructor(
     private prisma: PrismaService,
-    private inboxGateway: InboxGateway,
+    private readonly moduleRef: ModuleRef,
     @InjectRedis() private readonly redis: Redis,
-    @Inject(forwardRef(() => OmnichannelService))
-    private readonly omnichannelService: OmnichannelService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
@@ -268,6 +266,16 @@ export class WebhooksService {
     });
   }
 
+  private getInboxGateway(): InboxGateway {
+    this.inboxGateway ??= this.moduleRef.get(InboxGateway, { strict: false });
+    return this.inboxGateway;
+  }
+
+  private getOmnichannelService(): OmnichannelService {
+    this.omnichannelService ??= this.moduleRef.get(OmnichannelService, { strict: false });
+    return this.omnichannelService;
+  }
+
   private async publishMessageStatus(
     workspaceId: string,
     m: MessageStatusTarget,
@@ -379,7 +387,7 @@ export class WebhooksService {
     this.logger.log(`[INSTAGRAM] Processing message for workspace ${workspaceId}`);
 
     try {
-      const result = await this.omnichannelService.processInstagramWebhook(workspaceId, payload);
+      const result = await this.getOmnichannelService().processInstagramWebhook(workspaceId, payload);
       return result;
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'WebhooksService.processInstagramWebhook');

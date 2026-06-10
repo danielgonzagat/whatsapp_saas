@@ -25,7 +25,7 @@ import {
   sendPlainTextResponse,
 } from '../common/utils/webhook-challenge-response.util';
 import { WebhooksService } from '../webhooks/webhooks.service';
-import { WhatsAppMindCoordinator } from './mind/coordination';
+import { WhatsAppMindCoordinator } from './mind/coordination/whatsapp-mind-coordinator.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Whats app mind controller. */

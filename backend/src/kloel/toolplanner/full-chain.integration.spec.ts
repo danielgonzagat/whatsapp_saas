@@ -178,7 +178,7 @@ import { ToolPlannerService } from '../toolplanner/toolplanner.service';
       Date.now() - 100,
     );
     const verbalized = planner.verbalizeReceipt(receipt);
-    expect(verbalized).toContain('✅');
+    expect(verbalized).toContain('executado com sucesso.');
     expect(verbalized).toContain('Criar produto');
     expect(verbalized).toContain('prod-abc');
     expect(verbalized).toContain('Duração:');

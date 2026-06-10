@@ -60,7 +60,7 @@ export class MindBackgroundScheduler implements OnModuleInit, OnModuleDestroy {
     private readonly processor: MindBackgroundProcessor,
     private readonly spine: SpineEmitterService,
     private readonly prisma: PrismaService,
-    @Optional() private readonly cognitiveHealth?: CiaCognitiveHealthService,
+    private readonly moduleRef: ModuleRef,
   ) {
     const explicit = process.env['KLOEL_MIND_BG_ENABLED'];
     if (explicit !== undefined) {
@@ -161,6 +161,18 @@ export class MindBackgroundScheduler implements OnModuleInit, OnModuleDestroy {
    */
   public deregisterWorkspace(workspaceId: string): void {
     this.registered.delete(workspaceId);
+  }
+
+  private resolveCognitiveHealth(): CiaCognitiveHealthService | undefined {
+    if (!this.cognitiveHealthResolved) {
+      this.cognitiveHealthResolved = true;
+      try {
+        this.cognitiveHealth = this.moduleRef.get(CiaCognitiveHealthService, { strict: false });
+      } catch {
+        this.cognitiveHealth = undefined;
+      }
+    }
+    return this.cognitiveHealth;
   }
 
   async executeTick(): Promise<void> {

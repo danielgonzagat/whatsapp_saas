@@ -46,20 +46,19 @@ export class WisdomPatternExtractorService {
    * pipeline, use extractPatterns() instead.
    */
   public extract(sets: readonly WorkspaceEventSet[]): CandidatePattern[] {
-    if (sets.length < MIN_WORKSPACES) {
-      return [];
-    }
-    const signals = sets.map((s) => aggregateSignals(s.events, s.workspaceId));
     const patterns: CandidatePattern[] = [];
-    patterns.push(...emitRatePatterns(signals, 'conversion_rate', conversionRate, 0));
-    patterns.push(...emitRatePatterns(signals, 'reply_rate', replyRate, 0));
-    patterns.push(...emitRatePatterns(signals, 'refund_rate', refundRate, 0));
-    patterns.push(...emitRatePatterns(signals, 'handoff_rate', handoffRate, 0));
-    patterns.push(...emitRatePatterns(signals, 'deal_close_rate', dealCloseRate, 0));
-    patterns.push(...emitVolumePatterns(signals));
-    patterns.push(...emitCampaignPatterns(signals));
-    patterns.push(...emitStagePatterns(signals));
-    patterns.push(...emitProductConcentrationPatterns(signals));
+    if (sets.length >= MIN_WORKSPACES) {
+      const signals = sets.map((s) => aggregateSignals(s.events, s.workspaceId));
+      patterns.push(...emitRatePatterns(signals, 'conversion_rate', conversionRate, 0));
+      patterns.push(...emitRatePatterns(signals, 'reply_rate', replyRate, 0));
+      patterns.push(...emitRatePatterns(signals, 'refund_rate', refundRate, 0));
+      patterns.push(...emitRatePatterns(signals, 'handoff_rate', handoffRate, 0));
+      patterns.push(...emitRatePatterns(signals, 'deal_close_rate', dealCloseRate, 0));
+      patterns.push(...emitVolumePatterns(signals));
+      patterns.push(...emitCampaignPatterns(signals));
+      patterns.push(...emitStagePatterns(signals));
+      patterns.push(...emitProductConcentrationPatterns(signals));
+    }
     return patterns;
   }
   /**
@@ -74,17 +73,16 @@ export class WisdomPatternExtractorService {
    *   - offer_objection_correlation (offer types linked to objections)
    */
   public extractPatterns(sets: readonly WorkspaceEventSet[]): ExtractedPattern[] {
-    if (sets.length < MIN_WORKSPACES) {
-      return [];
-    }
-    const signals = sets.map((s) => aggregateSignals(s.events, s.workspaceId));
-    const enriched = signals.map((sig, i) => enrichSignal(sets[i]?.events ?? [], sig));
     const patterns: ExtractedPattern[] = [];
-    patterns.push(...extractObjectionPatterns(this.privacyGuard, enriched));
-    patterns.push(...extractChannelEfficiencyPatterns(this.privacyGuard, enriched));
-    patterns.push(...extractConversionDecayPatterns(this.privacyGuard, enriched));
-    patterns.push(...extractEngagementPeakPatterns(this.privacyGuard, signals));
-    patterns.push(...extractOfferObjectionCorrelationPatterns(this.privacyGuard, enriched));
+    if (sets.length >= MIN_WORKSPACES) {
+      const signals = sets.map((s) => aggregateSignals(s.events, s.workspaceId));
+      const enriched = signals.map((sig, i) => enrichSignal(sets[i]?.events ?? [], sig));
+      patterns.push(...extractObjectionPatterns(this.privacyGuard, enriched));
+      patterns.push(...extractChannelEfficiencyPatterns(this.privacyGuard, enriched));
+      patterns.push(...extractConversionDecayPatterns(this.privacyGuard, enriched));
+      patterns.push(...extractEngagementPeakPatterns(this.privacyGuard, signals));
+      patterns.push(...extractOfferObjectionCorrelationPatterns(this.privacyGuard, enriched));
+    }
     return patterns;
   }
 }

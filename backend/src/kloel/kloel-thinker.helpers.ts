@@ -12,7 +12,7 @@ import {
 import type { ChatMessage, ThinkRequest, ThinkSyncResult } from './kloel-thinker.types';
 import { type PrismaService } from '../prisma/prisma.service';
 import { type AbiBuilderService } from './abi/abi-builder.service';
-import { type MindCapabilityExecutor } from './mind/coordination';
+import { type MindCapabilityExecutor } from './mind/coordination/mind-capability-executor.service';
 import { type LocalToolExecutor } from './kloel-reply-engine.types';
 import {
   AI_KEY_MISSING_MESSAGE,

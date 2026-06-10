@@ -21,7 +21,7 @@ import {
   buildPredecidedActionDraft,
   executePredecidedAgentActions,
 } from './unified-agent-predecided-actions.part';
-import { MindCapabilityExecutor } from './mind/coordination';
+import { MindCapabilityExecutor } from './mind/coordination/mind-capability-executor.service';
 import { UnifiedAgentToolExecutorService } from './unified-agent-tool-executor';
 import { buildAgentCognitiveState } from './unified-agent.cognitive-state.helpers';
 import {

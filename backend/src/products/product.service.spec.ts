@@ -4,7 +4,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { ProductService } from './product.service';
-import { MindEventSpine } from '../kloel/mind/coordination';
+import { MindEventSpine } from '../kloel/mind/coordination/mind-event-spine.service';
 
 type ProductCreateArgs = { data: Record<string, unknown> };
 type ProductUpdateArgs = { where: { id: string }; data: Record<string, unknown> };

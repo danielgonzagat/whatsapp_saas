@@ -5,13 +5,13 @@ import {
   resolveHumanTransferBaseline,
   resolveProductOfferBaseline,
 } from './mind-decision-baselines';
-import type { MindPolicyChooser, PolicyDecisionResult } from './mind-catalog-decision-resolvers';
+import type { MindPolicyChooser } from './mind-catalog-decision-resolvers';
 import { decisionConfidence } from './mind-catalog-decision-resolvers';
 
 // Canonical MindPolicyChooser + PolicyDecisionResult + decisionConfidence live
 // in mind-catalog-decision-resolvers — re-export the type for commercial-side
 // consumers and use the imported impl for decisionConfidence.
-export type { MindPolicyChooser, PolicyDecisionResult };
+export type { MindPolicyChooser };
 
 export async function resolveHumanTransferDecision(
   policy: MindPolicyChooser,
