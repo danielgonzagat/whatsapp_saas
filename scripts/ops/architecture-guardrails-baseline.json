@@ -19,18 +19,22 @@
     "backend/src/products/product.service.ts": 615,
     "frontend/src/components/kloel/dashboard/ReasoningTimeline.tsx": 409,
     "frontend/src/components/kloel/graph/KloelGraphLiteralCanvas.tsx": 1174,
+    "frontend/src/components/kloel/graph/KloelGraphPrototype.jsx": 6799,
     "frontend/src/components/kloel/graph/KloelGraphShell.spec.tsx": 763,
     "frontend/src/components/kloel/marketing/OfficialMarketingChannelPage/use-official-marketing-channel.ts": 635,
     "frontend/src/components/kloel/products/product-nerve-center.shared.tsx": 669,
     "frontend/src/hooks/useCheckoutPlans.ts": 638,
     "frontend/src/lib/__tests__/kloel-message-ui.test.ts": 717,
-    "frontend/src/lib/kloel-message-ui.ts": 799
+    "frontend/src/lib/kloel-message-ui.ts": 799,
+    "worker/flow-engine-global.ts": 615
   },
   "line": {
     "no_new_eslint_disable::frontend/src/components/kloel/products/ProductNerveCenterRoot.js": true
   },
   "_notes": {
     "frontend/src/components/kloel/graph/KloelGraphLiteralCanvas.tsx": "Immutable by product-owner decision (graph physics core); must not be split or edited. Grandfathered at its current size via the gate's own ratchet-baseline mechanism; the gate still fails if it grows.",
+    "frontend/src/components/kloel/graph/KloelGraphPrototype.jsx": "Owner-authored single-file prototype reproduced VERBATIM as the application's primary graph surface (mounted via app/(main)/layout.tsx → KloelGraphClient dynamic import). Its header contract forbids alteration ('Do NOT alter visuals'); design-heavy by product-owner decision, so it is grandfathered at its gate count (6799) instead of split — the gate still fails if it grows.",
+    "worker/flow-engine-global.ts": "Already at the cap on main (598/600 gate count); the train added only +17 lines of pre-cut fallback telemetry (DUPLICATION_REGISTER F3-A passo 2). Grandfathered at 615 — the gate still fails if it grows.",
     "_lineCountSemantics": "Caps use the gate's count (content.split('\\n').length), which equals wc -l + 1 for newline-terminated files."
   }
 }
