@@ -141,6 +141,18 @@ const FIXTURE_SAMPLES = [
   },
 ];
 
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+export function getFixtureHumanEvalLiftInputs() {
+  return {
+    datasetKind: 'fixture-humaneval-format',
+    tasks: cloneJson(FIXTURE_TASKS),
+    samples: cloneJson(FIXTURE_SAMPLES),
+  };
+}
+
 function sha256(value) {
   return crypto.createHash('sha256').update(String(value)).digest('hex');
 }
