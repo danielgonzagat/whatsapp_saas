@@ -83,6 +83,17 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
     };
 
     ctx.setMessages((current) => [...current, userMessage]);
+    // Honest delivery state: when the turn fails, the user bubble must say so
+    // instead of silently looking delivered.
+    const markUserMessageFailed = () => {
+      ctx.setMessages((current) =>
+        current.map((message) =>
+          message.id === userMessage.id
+            ? { ...message, metadata: { ...(message.metadata ?? {}), sendStatus: 'failed' } }
+            : message,
+        ),
+      );
+    };
     ctx.clearComposerContext();
     ctx.setIsThinking(true);
 
@@ -344,6 +355,7 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
           onError: (error) => {
             flushReasoning();
             finalError = error || 'Desculpe, ocorreu uma instabilidade ao continuar sua conversa.';
+            markUserMessageFailed();
             if (!streamedReply.trim() && !renderBuffer.trim()) {
               renderBuffer = finalError;
             }
@@ -358,6 +370,7 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
       ctx.activeStreamRef.current = null;
       ctx.setIsThinking(false);
       ctx.setStreamingMessageId(null);
+      markUserMessageFailed();
       ctx.setMessages((current) => [
         ...current,
         {
