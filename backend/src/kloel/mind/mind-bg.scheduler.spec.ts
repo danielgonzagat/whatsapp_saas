@@ -97,7 +97,12 @@ function buildScheduler(opts?: {
     get: jest.fn().mockReturnValue(cognitiveHealth),
   };
   return {
-    scheduler: new MindBackgroundScheduler(processor, spine, undefined as never, moduleRef as never),
+    scheduler: new MindBackgroundScheduler(
+      processor,
+      spine,
+      undefined as never,
+      moduleRef as never,
+    ),
     spine,
     processor,
     cognitiveHealth,

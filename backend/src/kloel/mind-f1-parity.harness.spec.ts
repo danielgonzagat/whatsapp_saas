@@ -60,9 +60,7 @@ function matchesWhere(row: Row, where: Record<string, unknown>): boolean {
         return Array.isArray(op.in) && (op.in as unknown[]).includes(value);
       }
       if ('lt' in op) {
-        return (
-          value instanceof Date && op.lt instanceof Date && value.getTime() < op.lt.getTime()
-        );
+        return value instanceof Date && op.lt instanceof Date && value.getTime() < op.lt.getTime();
       }
       throw new Error(`harness: unsupported where operator on "${field}": ${JSON.stringify(cond)}`);
     }
@@ -433,7 +431,12 @@ describe('MIND F0–F1 parity harness (flags ON only via test env — never flip
 
       const summary = await h.scheduler.sweepActiveWorkspaces();
 
-      expect(summary).toEqual({ skipped: true, scannedWorkspaces: 0, sweptCount: 0, byWorkspace: [] });
+      expect(summary).toEqual({
+        skipped: true,
+        scannedWorkspaces: 0,
+        sweptCount: 0,
+        byWorkspace: [],
+      });
       expect(h.decisionOutcome.findMany).not.toHaveBeenCalled();
       expect((h.decisionOutcome.rows[0] as Row).outcomeAt).toBeNull();
     });
