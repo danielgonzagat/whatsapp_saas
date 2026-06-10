@@ -1,10 +1,10 @@
 import { randomInt } from 'node:crypto';
 import { prisma } from './db';
 import { extractExternalId } from './flow-engine-external-id';
+import type { WorkerLogger as WorkerLoggerClass } from './logger';
 import { createOutboundMessageDeduped } from './outbound-message-dedup';
 import { ProviderRegistry } from './providers/registry';
 import { redisPub } from './redis-client';
-import type { WorkerLogger as WorkerLoggerClass } from './logger';
 
 export interface FlowMessageSenderDeps {
   log: WorkerLoggerClass;
