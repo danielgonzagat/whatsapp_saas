@@ -98,3 +98,58 @@ NUNCA reivindicar `rawHumanEvalClaim` para braços com feedback).
 ## Resultados
 
 (preenchidos abaixo desta linha após a rodada; nada acima será editado retroativamente.)
+
+### Rodada completa (2026-06-09/10, despachante único, lock `humaneval-v1-dispatcher`)
+
+**Integridade:** 164/164 propostas haiku g1 + 72/72 retries (3 braços × 24) + 164/164 opus g1
+(colhido em 6 lotes por rate limit do servidor; falha de infra NUNCA julgada — re-despachada);
+juiz = runner engine-side em todas as execuções (zero execução de teste fora do envelope);
+invólucro `7cf2b96e…` byte-idêntico; dataset sha `1d49078b…` (canônico).
+
+**Números (todos recomputáveis de `work/lift-report-haiku.json` e `work/packages-*.json`):**
+
+| braço (haiku congelado) | pass | % |
+|---|---|---|
+| baseline (1 tentativa) | 140/164 | 85.4% |
+| cego (retry sem informação) | 151/164 | 92.1% |
+| scalar (retry com "FALHOU") | 152/164 | 92.7% |
+| **proof (retry com disprova digest-bound)** | **154/164** | **93.9%** |
+| opus baseline (1 tentativa) | 161/164 | 98.2% |
+
+Recuperação pareada no conjunto F (24 falhas de g1): **proof 14/24 > scalar 12/24 > cego 11/24**.
+Deltas: proof−baseline = **+8.5pp**; proof−cego = +1.8pp; proof−scalar = +1.2pp.
+
+**Vereditos pré-registrados:**
+
+- **P1 (proof > cego): CONFIRMADA EM DIREÇÃO** (14 vs 11 recuperações; 93.9% vs 92.1%).
+  HONESTIDADE ESTATÍSTICA: com n=24 pareado, a margem de 3 tarefas NÃO atinge significância
+  convencional — é sinal direcional, não veredito definitivo. Réplicas (seeds) ficam para o v2.
+- **P2 (proof > scalar): CONFIRMADA EM DIREÇÃO** (14 vs 12; mesma ressalva de n).
+- **P3 (haiku+proof ≥ opus baseline): REFUTADA.** 154 < 161. O opus quase satura a arena
+  (98.2%, 3 falhas: HumanEval/30, 41, 91) — o degrau entre tiers (12.8pp) excede o lift (+8.5pp).
+  Registrado sem reinterpretação. Para uma tese-forte testável, a arena v2 precisa de headroom
+  no modelo forte (benchmark mais difícil) — não desta arena.
+- **P4 (bookkeeping/honestidade): CONFIRMADA.** Report final: `toolAugmentedHumanEvalClaim=true`,
+  `rawHumanEvalClaim=false`, 24/24 pacotes `validateProofFeedbackPackage` ok, 100% receipts
+  (`f1c89095…`) e repair-prompt-shas vinculados, `sameFixedModel=true`.
+- **D1 não disparou** (proof > cego); **D2 não disparou** (|F|=24 ≥ 8).
+
+**O que esta rodada estabelece (sem inflar):**
+
+1. **O laço completo existe e é honesto por construção**: modelo congelado → juiz formal
+   engine-side → disprova recomputável digest-bound → repair prompt vinculado → re-julgamento —
+   com taxonomia que RECUSA estruturalmente confundir "raw HumanEval" com "tool-augmented".
+   Até onde sabemos, é a primeira execução do HumanEval canônico inteiro onde cada item de
+   feedback ao modelo carrega um digest recomputável e o claim final é validado por um gate.
+2. **+8.5pp de lift verificado no modelo fraco com UMA rodada de disprova** (85.4→93.9),
+   recuperando 14/24 falhas — e o ranking proof > scalar > cego bate com a predição do III.f
+   v1.1 (canal escalar ≠ neutro; conteúdo de disprova > sinal escalar > resample), agora em
+   benchmark real, ainda que com margem pequena.
+3. **Limite honesto**: o lift não cruza o degrau entre tiers nesta arena saturada (P3 refutada).
+   A alegação verdadeira é "atomic eleva o modelo que o utiliza", NÃO "atomic torna um modelo
+   fraco equivalente a um forte".
+
+**Caveats finais (além dos pré-declarados):** 1 amostra/braço (sem réplicas de seed); proposers
+são subagentes Claude Code (scaffolding idêntico entre braços; nível absoluto não comparável a
+leaderboards — e o pass@1 do opus aqui, 98.2%, reflete isso); margens entre braços de retry
+pequenas com n=24.
