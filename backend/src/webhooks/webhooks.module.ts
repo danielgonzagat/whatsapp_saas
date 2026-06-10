@@ -1,7 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { CiaModule } from '../kloel/mind/cia/cia.module';
 import { InboxModule } from '../inbox/inbox.module';
-import { PrismaService } from '../prisma/prisma.service';
 import { WorkspaceService } from '../workspaces/workspace.service';
 import { WebhooksController } from './webhooks.controller';
 import { WebhooksService } from './webhooks.service';
@@ -24,8 +23,10 @@ import { SaleLedgerReconcileScheduler } from './sale-ledger-reconcile.scheduler'
     TikTokWebhookController,
   ],
   providers: [
+    // PrismaService intentionally NOT re-provided here — re-providing it creates
+    // a second PrismaClient (own connection pool). The @Global PrismaModule
+    // supplies the singleton (issue #413: pool exhaustion).
     WebhooksService,
-    PrismaService,
     WorkspaceService,
     WebhookDispatcherService,
     SaleLedgerReconcileScheduler,

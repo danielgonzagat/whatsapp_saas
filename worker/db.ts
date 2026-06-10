@@ -3,11 +3,15 @@
  * @domain prisma
  */
 import { Prisma, PrismaClient } from '@prisma/client';
+import { buildPrismaClientOptions } from './utils/prisma-datasource-url';
 
 const enableQueryLogs = process.env.PRISMA_QUERY_LOGS === 'true';
 
 /** Prisma. */
 export const prisma = new PrismaClient({
+  // Canonical pool bounds (connection_limit/pool_timeout) applied in ONE place
+  // for the worker runtime — see utils/prisma-datasource-url.ts (issue #413).
+  ...buildPrismaClientOptions(process.env),
   log: enableQueryLogs ? [{ emit: 'event', level: 'query' }, 'warn', 'error'] : ['warn', 'error'],
 });
 
