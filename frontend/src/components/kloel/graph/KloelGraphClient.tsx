@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import { usePathname, useSearchParams } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { KLOEL_GRAPH_NODES } from './KloelGraph.static-nodes';
 import { resolveKloelGraphNodeForPathFromNodes } from './KloelGraph.routes';
@@ -28,11 +28,6 @@ export function KloelGraphClient({ children }: { readonly children?: ReactNode }
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const graphOnly = searchParams.get('graph') === '1';
-  const [dismissedPath, setDismissedPath] = useState<string | null>(null);
-
-  useEffect(() => {
-    setDismissedPath(null);
-  }, [pathname]);
 
   const routeNode = useMemo(
     () =>
@@ -45,14 +40,14 @@ export function KloelGraphClient({ children }: { readonly children?: ReactNode }
   );
 
   const closeScreen = useCallback(() => {
-    setDismissedPath(pathname);
+    // Next 16 propagates pushState into useSearchParams, so graph=1 alone hides the screen.
     const next = new URLSearchParams(searchParams.toString());
     next.set('graph', '1');
     window.history.pushState(null, '', `${pathname}?${next.toString()}`);
   }, [pathname, searchParams]);
 
   const showScreen =
-    Boolean(children) && !graphOnly && pathname !== '/' && dismissedPath !== pathname;
+    Boolean(children) && !graphOnly && pathname !== '/';
 
   return (
     <>
