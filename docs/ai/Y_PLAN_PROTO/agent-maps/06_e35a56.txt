@@ -1,0 +1,136 @@
+{
+  "domain": "Afiliar (afiliados / parcerias / marketplace de afiliação) — re-point Y to the LITERAL KloelGraphPrototype.jsx (Opção C), branch feat/kloelgraph-prototype-engine",
+  "decompositionModule": "frontend/src/components/kloel/graph/KloelGraphPrototype.jsx — afiliar (sun-afiliar) slice. FULLY VERIFIED ARCHITECTURE: the LIVE runtime today is the OVERLAY-ROUTE shell (MainAppLayoutShell.tsx → KloelGraphShell.tsx → KloelGraphShellSurface). It builds nodes from KLOEL_GRAPH_NODES (KloelGraph.static-nodes.ts) and renders the REAL route screen as `children` inside KloelGraphOverlay (a deliberately almost-invisible 80vw×80vh dialog; route-based, NO node.type switch, NO seed). KloelGraphPrototype.jsx is the 672-line owner-authored LITERAL prototype (pure constants + buildXNodesEdges fns, zero JSX/components) and is NOT imported by the live shell — its afiliar seeds are DEAD code in runtime. The afiliar domain is ALREADY route-wired in static-nodes.ts to the real screens (see filesToEdit).",
+  "protoSeeds": [
+    "MARKETPLACE_SEED (L357-362) — 4 fake affiliate-marketplace products {id,name,producer,category,price(cents),commission,sales,rating,temperature,cookieDays,totalAffiliates,totalReviews,materials[],requestStatus,affiliateLink,isSaved}. DEAD in live runtime (live shell never imports the prototype).",
+    "MY_AFFILIATES_SEED (L344-348) — 3 fake {id,name,email,type:'affiliate'|'producer',status,totalSales,revenue,commission,temperature,joined,products[],monthlyPerformance[6]}",
+    "PARTNER_CHATS_SEED (L349-352) — 2 fake partner chat threads {id,name,type,unread,lastMessage,online,time,messages[]}",
+    "AFFILIATE_BRANCHES (L337-342) — 4 STATIC scaffold branch nodes: af-market/marketplace, af-mine/minhas, af-saved/salvos, af-prod/produtor. KEEP if shape B (scaffold, not entity data).",
+    "COLLABORATORS_SEED (L353-355) — 1 fake collaborator (Parcerias>Colaboradores; adjacent)"
+  ],
+  "protoBuilders": [
+    "buildAffiliateNodesEdges(affiliate) L368-388 — PURE function (no hooks/JSX). Reads affiliate.marketplace + affiliate.myAffiliates ONLY. Emits 4 affBranch nodes (AFFILIATE_BRANCHES, parent sun-afiliar); one affProduct node per marketplace item (parent af-market; +edge af-mine if requestStatus==='APPROVED'||affiliateLink; +edge af-saved if isSaved); one affPartner node per myAffiliates item (parent af-prod). The {marketplace,myAffiliates} STATE that seeds it is NOT defined in the file and is NOT held anywhere — the live shell never calls this builder. Shape B (resurrecting the prototype graph) must introduce the consumer/state."
+  ],
+  "protoInlineScreens": [
+    "CONFIRMED across the whole graph dir: NO inline screen components exist. Brief names (AfiliarScreen/AffiliateOverview/BranchPanel/ProductPanel/PartnerPanel/MyAffiliatesPanel) do NOT exist verbatim. KloelGraphPrototype.jsx = 672 lines constants+builders, no JSX. KloelGraphOverlay.tsx (L18) is a generic dialog {activeNode, children, onClose} rendering route `children` — NO node.type switch, NO per-domain panels. The prototype's affiliate node TYPES are: 'affBranch' (L371), 'affProduct' (L377, meta.marketId/status/approved), 'affPartner' (L384, meta.affId/status/ptype). Any type→component mapping does NOT exist today and would have to be ADDED in shape B."
+  ],
+  "realScreens": [
+    {
+      "name": "ProdutosView (route /produtos/afiliar-se) -> AfiliarSe (ProdutosAfiliarSeTab) + MarketplaceProductGrid",
+      "path": "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/produtos/ProdutosAfiliarSeTab.tsx",
+      "componentLine": 29,
+      "props": "AfiliarSe: { marketplace: MarketplaceItem[]; earnings: number; marketplaceStats?: MarketplaceStats; affiliateLinks: AffiliateLink[]; affiliateProducts: AffiliateProductItem[]; onRefresh: ()=>void } — prop-heavy; parent ProdutosView (frontend/src/components/kloel/produtos/ProdutosView.tsx) owns the fetch. Grid = MarketplaceProductGrid (produtos/MarketplaceProductGrid.tsx:17).",
+      "role": "Real screen for af-market / affProduct (MARKETPLACE_SEED). Already the live target of afiliar-marketplace node (route /produtos/afiliar-se). Reuse ProdutosView; do not mount AfiliarSe bare.",
+      "page": "/Users/danielpenin/whatsapp_saas/frontend/src/app/(main)/produtos/afiliar-se/page.tsx"
+    },
+    {
+      "name": "ParceriasShell (route /parcerias[/afiliados|/chat|/colaboradores])",
+      "path": "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/parcerias/ParceriasShell.tsx",
+      "componentLine": 21,
+      "props": "{ defaultTab?: string } (default 'colaboradores'; 'afiliados'/'chat'/'colaboradores'). Self-contained, tab-driven; NO onClose/onNavigate. Re-exported as default by ParceriasView.tsx.",
+      "role": "Real screen for af-prod / affPartner directory + partner chat (MY_AFFILIATES_SEED + PARTNER_CHATS_SEED + COLLABORATORS_SEED). Already the live target of afiliar-parcerias/afiliados/chat/colaboradores nodes."
+    },
+    {
+      "name": "AffiliateDetailSheet",
+      "path": "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/parcerias/AffiliateDetailSheet.tsx",
+      "componentLine": 16,
+      "props": "{ affiliate: Affiliate; onClose: ()=>void; onChat: ()=>void; onRevoke: ()=>void }",
+      "role": "Real per-affPartner detail (single MY_AFFILIATES_SEED item). Seed `affiliate` from useAffiliateDetail(meta.affId). Used in shape B only."
+    },
+    {
+      "name": "AffiliateProductDetail",
+      "path": "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/produtos/AffiliateProductDetail.tsx",
+      "componentLine": 45,
+      "props": "{ item: MarketplaceItem; onBack: ()=>void; requestingId: string|null; copiedAffiliate: boolean; onRequestAffiliation: (productId)=>void; onCopyLink: (link)=>void }",
+      "role": "Real per-affProduct detail (single MARKETPLACE_SEED item). Used in shape B only."
+    }
+  ],
+  "realHooks": [
+    {
+      "hook": "useAffiliates",
+      "path": "/Users/danielpenin/whatsapp_saas/frontend/src/hooks/usePartnerships.ts",
+      "line": 145,
+      "signature": "(params?: { type?: string; search?: string })",
+      "client": "partnershipsApi.listAffiliates (lib/api/partnerships.ts:79)",
+      "endpoint": "GET /partnerships/affiliates",
+      "feeds": "MY_AFFILIATES_SEED → affPartner nodes"
+    },
+    {
+      "hook": "useAffiliateStats",
+      "path": "/Users/danielpenin/whatsapp_saas/frontend/src/hooks/usePartnerships.ts",
+      "line": 167,
+      "client": "partnershipsApi.getAffiliateStats (partnerships.ts:88)",
+      "endpoint": "GET /partnerships/affiliates/stats",
+      "feeds": "sun-afiliar / branch KPI"
+    },
+    {
+      "hook": "useAffiliateDetail",
+      "path": "/Users/danielpenin/whatsapp_saas/frontend/src/hooks/usePartnerships.ts",
+      "line": 188,
+      "signature": "(id: string|null)",
+      "client": "partnershipsApi.getAffiliateDetail (partnerships.ts:90)",
+      "endpoint": "GET /partnerships/affiliates/:id",
+      "feeds": "affPartner detail → AffiliateDetailSheet.affiliate"
+    },
+    {
+      "hook": "usePartnerChatContacts (+ usePartnerMessages/sendPartnerMessage/markPartnerAsRead)",
+      "path": "/Users/danielpenin/whatsapp_saas/frontend/src/hooks/usePartnerships.ts",
+      "line": 198,
+      "client": "partnershipsApi.getChatContacts/getMessages/sendMessage/markAsRead (partnerships.ts:124-148)",
+      "endpoint": "GET /partnerships/chat/contacts ; GET/POST /partnerships/chat/:partnerId/messages ; PUT .../read",
+      "feeds": "PARTNER_CHATS_SEED → partner chat"
+    },
+    {
+      "hook": "useCollaborators (+ useCollaboratorStats)",
+      "path": "/Users/danielpenin/whatsapp_saas/frontend/src/hooks/usePartnerships.ts",
+      "line": 129,
+      "client": "partnershipsApi.listCollaborators (partnerships.ts:44)",
+      "endpoint": "GET /partnerships/collaborators",
+      "feeds": "COLLABORATORS_SEED (adjacent)"
+    },
+    {
+      "hook": "affiliateApi (affiliate-marketplace + links)",
+      "path": "/Users/danielpenin/whatsapp_saas/frontend/src/lib/api/affiliate.ts",
+      "line": 31,
+      "endpoint": "backed by AffiliateMarketplaceController (backend/src/affiliate/affiliate-marketplace.controller.ts) + AffiliateController (backend/src/affiliate/affiliate.controller.ts). DTO interfaces AffiliateProduct/AffiliateLink/AffiliateLinksResponse at affiliate.ts L4-20.",
+      "feeds": "MARKETPLACE_SEED → affProduct nodes. CANONICAL marketplace source. Used by AffiliateMarketplaceSearch/AffiliateProductSuggestions/AffiliateLinkManager. VERIFY affiliateApi's exact list-method name before use (affiliate.ts L31+ read blocked by transient tool degradation)."
+    },
+    {
+      "hook": "listMarketplaceTemplates",
+      "path": "/Users/danielpenin/whatsapp_saas/frontend/src/lib/api/marketplace.ts",
+      "line": 15,
+      "endpoint": "GET /marketplace/templates (backend MarketplaceController)",
+      "note": "WRONG source for this slice — flow/template marketplace, not affiliate products. Do NOT use for MARKETPLACE_SEED."
+    }
+  ],
+  "overlaySwapStrategy": "The repo ALREADY implements the route-based overlay for this domain — prefer it (shape A). (A) ROUTE-BASED (current live mechanism, lowest risk, already wired): KloelGraphShell + KloelGraphOverlay render the real route screen as `children` (80vw×80vh, no header, no inner re-theming, only a close button — KloelGraphOverlay.tsx:11-16 = casca quase invisível, ZERO restyle). The afiliar nodes in static-nodes.ts already route to the real screens: afiliar-marketplace→/produtos/afiliar-se (ProdutosView/AfiliarSe), afiliar-parcerias→/parcerias, afiliar-afiliados→/parcerias/afiliados, afiliar-chat→/parcerias/chat, afiliar-colaboradores→/parcerias/colaboradores (all ParceriasShell). Those screens fetch via SWR and already show honest loading/empty/error. So for shape A the wiring is DONE — verify the screens render honest-empty (no internal seed) and adjust routes only if labels/tabs are off. (B) PROTOTYPE TYPE-SWITCH (only if Opção C wants the literal prototype's own seed-driven graph as the surface): build a new overlay layer that imports buildAffiliateNodesEdges, holds {marketplace,myAffiliates} state from the adapter, and switches node.type→real component (affProduct→AffiliateProductDetail, affPartner→AffiliateDetailSheet, affBranch→ParceriasShell/AfiliarSe grid) inside the existing KloelGraphOverlay chrome. Either way: import-direct (no new route for the components), data via the SWR hooks, honest-empty (never the seed). Shell already under SWRConfig + auth/workspace via MainAppLayoutShell.tsx.",
+  "wiringSteps": [
+    "STEP 0 (decision gate — the real blocker): confirm what Opção C 're-point Y to the LITERAL prototype' means against the as-built code. The live shell is ALREADY route-based and the prototype is NOT imported. Either: shape A = keep route-based, the afiliar nodes already point at real screens (near-zero edit); or shape B = resurrect the prototype's seed-driven type-switch graph as the surface (build builder-consumer + type→component overlay).",
+    "STEP 1 (read blocked file when tools recover): frontend/src/lib/api/affiliate.ts (affiliateApi L31 — marketplace list method name, REAL affProduct source). KloelGraph.static-nodes.ts, KloelGraph.routes.ts, KloelGraphShell.tsx, KloelGraphOverlay.tsx, KloelGraphPrototype.jsx L1-672, partnerships.ts, affiliates.ts(partnershipsApi), marketplace.ts are all FULLY read this session.",
+    "STEP 2A (shape A — verify honest-empty, minimal/no edit): confirm ProdutosView (/produtos/afiliar-se) and ParceriasShell (/parcerias*) render loading/empty/error from their SWR hooks with NO internal hardcoded seed (the prototype seeds are dead; check the screens themselves). If a route/label/tab is wrong, adjust the matching seed tuple in KloelGraph.static-nodes.ts (afiliar-marketplace L89-97, afiliar-parcerias L98, afiliar-afiliados L99-107, afiliar-chat L108-116, afiliar-colaboradores L117-125). No prototype edit needed.",
+    "STEP 2B (shape B — seed→hook in NEW state, honest-empty): seed afiliar slice state from the adapter — marketplace ← affiliateApi marketplace list; myAffiliates ← useAffiliates().data.affiliates; partnerChats ← usePartnerChatContacts().data. Pass into buildAffiliateNodesEdges (keep it pure). honest-empty: loading→[] (only 4 static AFFILIATE_BRANCHES render w/ loading affordance); error→[] + error chip (NEVER the seed); empty→[] + empty copy. Delete the 3 entity seeds once proven; KEEP AFFILIATE_BRANCHES.",
+    "STEP 3B (panel swap by node.type): 'affProduct'→<AffiliateProductDetail .../> (wire request+copy to affiliateApi); 'affPartner'→<AffiliateDetailSheet affiliate={useAffiliateDetail(meta.affId).data} .../>; 'affBranch'(af-market)→real af-market grid (AfiliarSe via ProdutosView data, or ParceriasShell defaultTab='afiliados'). Render inside existing KloelGraphOverlay chrome; swap only body; do not restyle.",
+    "STEP 4 (map seed shape→DTO, shape B): MARKETPLACE_SEED keys (m.name,m.producer,m.commission,m.category,m.requestStatus,m.affiliateLink,m.isSaved) ← MarketplaceItem/AffiliateProduct DTO. MY_AFFILIATES_SEED keys (a.name,a.type,a.status,a.totalSales) ← Affiliate (partnerships.ts:4-18: partnerName/type/status/totalSales/totalRevenue/commissionRate/temperature). Keep keys in the adapter so the pure builder is untouched.",
+    "STEP 5 (proof, both shapes): cd frontend && npm run lint && npm run build; smoke the shell → open Afiliar sun → open each afiliar node/branch → verify loading/empty/error with ZERO seed leakage and the right real screen mounts in the overlay."
+  ],
+  "filesToCreate": [
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/domains/afiliar.tsx — (shape B ONLY) decomposed Afiliar module: re-exports buildAffiliateNodesEdges + AFFILIATE_BRANCHES + the node.type→component switch (affBranch/affProduct/affPartner → AffiliateProductDetail/AffiliateDetailSheet/ParceriasShell)",
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/domains/afiliar.data.ts — (shape B ONLY) data adapter: useAffiliates/useAffiliateStats/useAffiliateDetail/usePartnerChatContacts/affiliateApi marketplace → honest-empty {loading,empty,error,marketplace,myAffiliates,partnerChats}. (Shape A needs NO new files.)"
+  ],
+  "filesToEdit": [
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/KloelGraph.static-nodes.ts — (shape A, the actual lever for the LIVE shell) afiliar node seed tuples already route to real screens: afiliar-marketplace (L89-97)→/produtos/afiliar-se, afiliar-parcerias (L98)→/parcerias, afiliar-afiliados (L99-107)→/parcerias/afiliados, afiliar-chat (L108-116)→/parcerias/chat, afiliar-colaboradores (L117-125)→/parcerias/colaboradores. Edit only if a route/label/tab needs correction.",
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/produtos/ProdutosAfiliarSeTab.tsx (+ ProdutosView.tsx) and /Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/parcerias/ParceriasShell.tsx — (shape A) only if these real screens still carry internal hardcoded data instead of honest-empty SWR states.",
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/KloelGraphPrototype.jsx — (shape B) remove the 3 ENTITY seeds from runtime once the adapter supplies data; keep AFFILIATE_BRANCHES + buildAffiliateNodesEdges. 672-line shared multi-domain file — touch ONLY afiliar region (L337-388).",
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/KloelGraphShell.tsx — (shape B ONLY) if introducing the type-switch graph + state."
+  ],
+  "collisionRisk": "HIGH. The graph dir files (KloelGraph.static-nodes.ts, KloelGraph.routes.ts, KloelGraphShell.tsx, KloelGraphOverlay.tsx, KloelGraphPrototype.jsx) are the SINGLE shared surface for ALL 7 domains (perfil/kloel/criar/afiliar/educar/conectar/consultar) — every per-domain wiring agent in this wave edits these same files (especially static-nodes.ts in shape A, where each domain owns adjacent seed tuples in one array). ~6 sibling worktrees on near-identical kloelgraph branches (whatsapp_saas-kg @ feat/kloelgraph-literal-prototype, whatsapp_saas-kloelgraph-primary @ fix/kloelgraph-primary-shell, wg-kloelgraph @ feat/kloelgraph-foundation-criar) + 8 locked .claude/worktrees agents + a LIVE .atomic-edit-locks entry on KloelGraphShell.spec.tsx (concurrent activity on this dir right now). Shape A confines the afiliar change to ~5 adjacent tuples in static-nodes.ts (low blast radius, append-friendly); shape B touches the shared shell. Decompose per-domain and coordinate the landing. Also: backend marketplace product workspace-scope just changed (uncommitted git status) — pin the affiliate adapter to controller method names, not response internals.",
+  "feasibility": "FEASIBLE; for shape A largely ALREADY DONE. Fully verified this session: (1) KloelGraphPrototype.jsx = 671-line pure constants+builder module, NO JSX/components/panels; afiliar slice = AFFILIATE_BRANCHES (L337-342) + 3 seeds (L344-362) + buildAffiliateNodesEdges (L368-388). (2) The LIVE shell (KloelGraphShell.tsx, full read) does NOT import the prototype — it builds nodes from KLOEL_GRAPH_NODES (static-nodes.ts, full read) and renders the REAL route screen as `children` in KloelGraphOverlay (full read: generic 80vw×80vh dialog, no type-switch). (3) The afiliar nodes in static-nodes.ts ALREADY point at the real screens (/produtos/afiliar-se, /parcerias/*). (4) Every seed has a real counterpart with confirmed hooks/endpoints (useAffiliates/useAffiliateDetail/usePartnerChatContacts + affiliateApi marketplace) and real screens (ProdutosView/AfiliarSe, ParceriasShell, AffiliateDetailSheet, AffiliateProductDetail). No invented behavior. DECISION GATE remains: shape A (route-based, near-trivial — verify honest-empty in the real screens) vs shape B (resurrect prototype seed-driven graph — larger build). Honest caveats: brief panel names don't exist verbatim (map by node TYPE affBranch/affProduct/affPartner); affiliate.ts marketplace method name still unread (transient tool degradation).",
+  "blockers": [
+    "DECISION GATE (primary blocker): 'Opção C — re-point Y to the LITERAL prototype' is ambiguous vs the as-built code. The live shell is ALREADY route-based; the prototype is NOT imported and its afiliar seeds are dead; the afiliar nodes already route to the real screens. Owner must confirm: shape A (keep route-based overlay; afiliar already wired — just verify honest-empty) OR shape B (make the prototype's seed-driven type-switch graph the surface).",
+    "ENV (transient, recurring): twice this session Bash returned empty on every call and Read returned empty for some files. Solid reads captured: KloelGraphPrototype.jsx L1-671, KloelGraphOverlay.tsx full, KloelGraphShell.tsx full, KloelGraph.routes.ts full, KloelGraph.static-nodes.ts full, partnerships.ts, affiliates.ts(partnershipsApi), marketplace.ts, full worktree list. STILL UNREAD: frontend/src/lib/api/affiliate.ts (affiliateApi marketplace method) and the real screens' bodies (ProdutosView/ParceriasShell internals) — re-read before editing.",
+    "VERIFY (shape A): whether ProdutosView (/produtos/afiliar-se) and ParceriasShell (/parcerias*) already render honest loading/empty/error from SWR, or still carry internal hardcoded data — read their bodies before declaring shape A complete.",
+    "NAME MISMATCH: AfiliarScreen/AffiliateOverview/BranchPanel/ProductPanel/PartnerPanel/MyAffiliatesPanel do NOT exist verbatim. Map prototype node TYPES affBranch/affProduct/affPartner → real components (ProdutosView/AfiliarSe, ParceriasShell, AffiliateDetailSheet, AffiliateProductDetail).",
+    "COORDINATION: shared single-file graph surface across ~6 active kloelgraph worktrees + 8 locked agents + a live .atomic-edit-locks entry on the graph dir — decompose per-domain and coordinate landing to avoid collisions.",
+    "DUAL MARKETPLACE SOURCE: affiliateApi marketplace (correct) vs marketplaceApi.listMarketplaceTemplates (flow templates, WRONG). Pin to affiliateApi."
+  ]
+}

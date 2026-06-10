@@ -1,0 +1,93 @@
+{
+  "domain": "Educar (Área de Membros / Member Areas)",
+  "feasibility": "HIGH. Caso mais favorável da fase Y. CORREÇÃO sobre análise anterior: o KloelGraphPrototype.jsx do worktree atual NÃO está quebrado e NÃO importa módulos inexistentes — é um arquivo auto-contido de 671 linhas (43KB) com 'use client' + @ts-nocheck que contém SÓ os builders de nós/edges + static nodes (sem componentes de tela inline, sem render tree). O protótipo LITERAL completo é /Users/danielpenin/Desktop/KloelGraph.jsx (4909 linhas) — é dele que vêm as telas inline. O lado real já está 100% pronto: hook useMemberAreas → GET /member-areas, useMemberAreaStats → GET /member-areas/stats, e a família completa de painéis (ProdutosAreaMembrosTab + List/Overview/Students/Editor/Certificate, todos com empty/loading/error). A casca de overlay (KloelGraphOverlay) já é genérica (recebe children). O nó educar do routes.ts JÁ mapeia /produtos/area-membros. Y = (a) builder honest-empty consumindo useMemberAreas; (b) montar a família AreaMembros real como children do overlay no lugar do MemberAreaPanel inline do protótipo.",
+  "protoSeeds": [
+    "MEMBER_AREAS_SEED — array literal estático (1 área 'Skincare Profissional': 2 módulos, 5 aulas, 3 enrollments fake Marina/João/Ana). No worktree atual está INLINE em KloelGraphPrototype.jsx:390 mas NÃO é consumido (o arquivo termina antes de qualquer componente). No protótipo LITERAL (Desktop/KloelGraph.jsx:452) é consumido em useState({ areas: MEMBER_AREAS_SEED }) na linha 4731 (var de estado `educar`, setter `setEducar`)."
+  ],
+  "protoBuilders": [
+    "buildEducarNodesEdges(educar) — KloelGraphPrototype.jsx (worktree):421 e Desktop literal. Itera educar.areas; por área cria 1 nó { type:'memberArea', area:'educar', parentId:'eu-ensinar', label:a.name, meta:{ subtitle:`${st.totalStudents} alunos · ${st.totalLessons} aulas`, areaId:a.id, active:a.active } } + edge eu-ensinar->ma-<id>. Stats via areaStats(a).",
+    "areaStats(a) — KloelGraphPrototype.jsx (worktree):414. Computa { totalModules, totalLessons, totalStudents, avgCompletion } de a.modules/a.enrollments do seed. Consumido por buildEducarNodesEdges (subtitle) E pela tela MemberAreaPanel."
+  ],
+  "protoInlineScreens": [
+    "MemberAreaPanel({ node, educar, patchArea }) — Desktop/KloelGraph.jsx:3073. ESTE é o painel de overlay do domínio Educar (NÃO existe símbolo 'EducarScreen' no protótipo: grep count = 0; a tarefa citou 'EducarScreen' mas o nome real é MemberAreaPanel). Renderiza seleção de área, cards de stats (areaStats), árvore módulo/aula, tabela de enrollments. Despachado via NodePanel (Desktop:3930) que recebe { node, ..., educar, patchArea, ... } e monta o painel conforme node.type; instanciado em Desktop:4887 dentro do render principal. No worktree atual NÃO existe nenhum componente de tela inline (o port ainda não trouxe a render tree)."
+  ],
+  "realHooks": [
+    {
+      "hook": "useMemberAreas()",
+      "file": "/Users/danielpenin/whatsapp_saas/frontend/src/hooks/useMemberAreas.ts",
+      "endpoint": "GET /member-areas (swrFetcher, key '/member-areas')",
+      "returns": "{ areas: unknown[], isLoading, error, mutate } — normaliza data.areas | array",
+      "note": "Mutations em useMemberAreaMutations (POST/PUT/DELETE /member-areas[/:id][/modules][/lessons]). Students em useMemberAreaStudents(areaId,q) -> GET /member-areas/:id/students."
+    },
+    {
+      "hook": "useMemberAreaStats()",
+      "file": "/Users/danielpenin/whatsapp_saas/frontend/src/hooks/useMemberAreas.ts",
+      "endpoint": "GET /member-areas/stats (key '/member-areas/stats')",
+      "returns": "{ stats: { totalAreas, totalStudents, avgCompletion, avgRating }, isLoading, error } — default-zero (honest-empty já embutido)",
+      "note": "ATENÇÃO: é stats AGREGADO (sem areaId), não por-área. O subtitle por-nó deve vir dos counts do próprio list item, não deste hook."
+    }
+  ],
+  "realScreens": [
+    {
+      "component": "ProdutosAreaMembrosTab (default export 'AreaMembros')",
+      "file": "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/produtos/ProdutosAreaMembrosTab.tsx",
+      "props_REQUIRED": "{ totalStudents:number, displayAreas:DisplayArea[], avgCompletion:number, mutateAreas:()=>void, productOptions:DisplayProduct[] }",
+      "note": "Orquestrador completo de sub-tabs (overview/list/editor/students/certificates). NÃO é auto-contido: NÃO chama useMemberAreas para listar — RECEBE displayAreas/totalStudents/avgCompletion como props (de ProdutosView). USA useMemberAreaMutations internamente. Para montar no overlay precisa de um wrapper que alimente essas props via useMemberAreas + useMemberAreaStats."
+    },
+    {
+      "component": "AreaMembrosListPanel",
+      "file": "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/produtos/AreaMembrosListPanel.tsx",
+      "props": "{ displayAreas, expandedAreas, toggleArea, onEditArea, onDeleteArea, onOpenStudents, generatingAreaId, onGenerateStructure }",
+      "note": "Empty-state honesto já implementado (AreaMembrosListPanel.empty.tsx -> AreaMembrosEmptyState quando displayAreas.length===0)."
+    },
+    {
+      "component": "AreaMembrosOverviewPanel",
+      "file": "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/produtos/AreaMembrosOverviewPanel.tsx",
+      "props": "{ totalStudents, displayAreas, avgCompletion }"
+    },
+    {
+      "component": "AreaMembrosStudentsPanel",
+      "file": "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/produtos/AreaMembrosStudentsPanel.tsx",
+      "props": "muitas (studentAreaId, students, handlers de add/edit/remove, onClose) — controlado por estado externo"
+    },
+    {
+      "component": "AreaMembrosEditorPanel",
+      "file": "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/produtos/AreaMembrosEditorPanel.tsx",
+      "props": "EditorPanelProps (~30 props de estado/handlers de área/módulo/aula)"
+    },
+    {
+      "realRoute": "/produtos/area-membros",
+      "file": "/Users/danielpenin/whatsapp_saas/frontend/src/app/(main)/produtos/area-membros/page.tsx",
+      "note": "Rota Next.js real. KloelGraph.routes.ts:174 JÁ mapeia ['/produtos/area-membros','educar']. Fonte das props (displayAreas etc.) vive em ProdutosView — verificar onde displayAreas é montado para reusar o mesmo adapter."
+    }
+  ],
+  "decompositionModule": "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/domains/educar/ (NOVO). Pré-condição leve: trazer/registrar o builder Educar onde o shell o consome (hoje o builder vive no .jsx auto-contido KloelGraphPrototype.jsx, mas o shell de trabalho monta nós via KloelGraph.static-nodes.ts + KloelGraph.product-nodes.ts — confirmar QUAL caminho de build de nós o KloelGraphShell.tsx realmente usa antes de decidir onde plugar buildEducarNodesEdges). Criar: educar.builder.ts (build real honest-empty), educar.data.ts (adapter useMemberAreas/useMemberAreaStats → DisplayArea[]+totais), EducarOverlayPanel.tsx (wrapper que monta a família AreaMembros real com as props derivadas).",
+  "overlaySwapStrategy": "IMPORT DIRETO (não rota) como children do overlay genérico já existente. (1) KloelGraphOverlay (KloelGraphOverlay.tsx) já recebe { activeNode, children, onClose } e renderiza children dentro de <ErrorBoundary> num painel 80vw×80vh sem reestilizar o conteúdo (casca quase invisível, contrato #473 preservado). KloelGraphShell.tsx:324 já faz <KloelGraphOverlay activeNode={activeNode} onClose={closeOverlay}>{...}</KloelGraphOverlay>. (2) Criar EducarOverlayPanel.tsx ('use client') que: chama useMemberAreas()+useMemberAreaStats(), adapta para DisplayArea[]/totalStudents/avgCompletion/productOptions, e renderiza <ProdutosAreaMembrosTab .../> passando essas props (incl. mutateAreas=mutate). ProdutosAreaMembrosTab NÃO é auto-contido — exige essas props; por isso o wrapper é obrigatório. (3) No render do overlay, despachar por activeNode.area==='educar' (ou node.type==='memberArea') => <EducarOverlayPanel/>. (4) Providers: todos 'use client' sob SWRConfig do (main) app shell (mesma árvore) — OK. (5) Manter o nó educar apontando para /produtos/area-membros (routes.ts:174) como deep-link/fallback; primário é o painel inline no overlay.",
+  "wiringSteps": [
+    "VERIFICAR primeiro (não-bloqueante) qual caminho de montagem de nós o KloelGraphShell.tsx realmente usa: KloelGraph.static-nodes.ts/KloelGraph.product-nodes.ts (TS, no shell) vs buildEducarNodesEdges do KloelGraphPrototype.jsx (.jsx auto-contido). O shell de trabalho parece NÃO importar o .jsx — confirmar antes de plugar o builder.",
+    "(a) BUILDER honest-empty: em educar.builder.ts portar buildEducarNodesEdges para receber `areas` do useMemberAreas (via educar.data.ts), NÃO MEMBER_AREAS_SEED. Por área: id=`ma-${a.id}`, label=a.name, subtitle dos counts REAIS do list item (a.modulesCount/a.lessonsCount/enrollment count) — NÃO usar useMemberAreaStats (é agregado). loading/empty/error ⇒ ZERO nós de entidade (só o pai eu-ensinar permanece). NUNCA cair no seed.",
+    "(a2) Abandonar MEMBER_AREAS_SEED e areaStats no caminho Educar: counts vêm do list item; stats agregados (avgCompletion/avgRating) vão para o painel Overview, não para o nó.",
+    "(b) TELA: criar EducarOverlayPanel.tsx que adapta useMemberAreas()→DisplayArea[] + totalStudents/avgCompletion (de useMemberAreaStats) + productOptions, e renderiza <ProdutosAreaMembrosTab/> com TODAS as props obrigatórias (totalStudents, displayAreas, avgCompletion, mutateAreas=mutate, productOptions). Substitui o MemberAreaPanel inline do protótipo literal.",
+    "(b2) PROVIDERS/PROPS: garantir SWRConfig do (main) (já provido). Reusar o adapter de displayAreas que ProdutosView já usa (localizar onde DisplayArea[] é montado a partir de useMemberAreas para não duplicar shape).",
+    "(c) DISPATCH no overlay/shell: onde activeNode.area==='educar', renderizar <EducarOverlayPanel/> como children do KloelGraphOverlay (em vez do painel do protótipo).",
+    "(d) Manter routes.ts:174 ['/produtos/area-membros','educar'] como deep-link; interação primária é inline no overlay."
+  ],
+  "filesToCreate": [
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/domains/educar/educar.builder.ts (builder real honest-empty sobre areas reais)",
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/domains/educar/educar.data.ts (adapter useMemberAreas/useMemberAreaStats -> DisplayArea[] + totalStudents/avgCompletion/productOptions; reusar shape de ProdutosView)",
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/domains/educar/EducarOverlayPanel.tsx (monta ProdutosAreaMembrosTab real dentro do overlay com props derivadas dos hooks)"
+  ],
+  "filesToEdit": [
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/KloelGraphShell.tsx (despachar <EducarOverlayPanel/> como children do KloelGraphOverlay quando activeNode.area==='educar')",
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/KloelGraph.static-nodes.ts (apenas SE for o caminho real de montagem de nós e precisar plugar o builder Educar honest-empty; caso o shell use o .jsx, editar lá)",
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/KloelGraphPrototype.jsx (somente se o shell de trabalho realmente consumir este .jsx; substituir uso de MEMBER_AREAS_SEED+buildEducarNodesEdges pelo módulo educar)"
+  ],
+  "collisionRisk": "ALTO. ≥6 worktrees kloelgraph concorrentes sobre os MESMOS arquivos do grafo: este worktree /Users/danielpenin/whatsapp_saas [feat/kloelgraph-prototype-engine, HEAD a84a8ba63 'port prototype visual engine onto real-route shell']; whatsapp_saas-kg [feat/kloelgraph-literal-prototype, tem KloelGraphPrototype.jsx + KloelGraphClient.tsx]; whatsapp_saas-kloelgraph-primary [fix/kloelgraph-primary-shell, base do PR #473 já mergeado]; wg-kloelgraph [feat/kloelgraph-foundation-criar]; whatsapp_saas-pr472; e .claude/worktrees/* travados. PR #473 já mergeou a abordagem 'KloelGraph como default app shell'. O codegraph index está STALE para este arquivo (reportou EducarScreen e linhas que NÃO batem com o disco — não confiar em line:offset do codegraph para este domínio; ler arquivo direto). Coordenar landing: confirmar com o dono qual worktree é canônico para a Opção C e travar os arquivos do grafo via task-graph antes de editar.",
+  "blockers": [
+    "BLOCKER #1 (coordenação, principal): múltiplos worktrees/branches kloelgraph concorrentes editando os mesmos arquivos do grafo; PR #473 já mergeado mudou a base. Confirmar worktree canônico da Opção C e travar via task-graph antes de editar.",
+    "BLOCKER #2 (ambiguidade arquitetural a resolver por leitura, não por invenção): existem DOIS caminhos de montagem de nós — o .jsx auto-contido (KloelGraphPrototype.jsx, com buildEducarNodesEdges) e o TS do shell de trabalho (KloelGraph.static-nodes.ts + KloelGraph.product-nodes.ts). Precisa confirmar qual o KloelGraphShell.tsx realmente consome antes de decidir onde plugar o builder honest-empty (filesToEdit depende disso).",
+    "RESSALVA #1 (NÃO bloqueia, corrige a tarefa): não existe símbolo 'EducarScreen' no protótipo (grep=0). O painel de overlay do domínio é 'MemberAreaPanel' (Desktop:3073), despachado por NodePanel. Onde a tarefa diz EducarScreen/MemberAreaPanel, o equivalente real é a família AreaMembros* (List/Overview/Students/Editor/Certificate) orquestrada por ProdutosAreaMembrosTab.",
+    "RESSALVA #2 (NÃO bloqueia): ProdutosAreaMembrosTab NÃO é auto-contido (exige displayAreas/totalStudents/avgCompletion/mutateAreas/productOptions como props; usa useMemberAreaMutations mas não useMemberAreas para listar). Por isso EducarOverlayPanel.tsx (wrapper que deriva props dos hooks) é obrigatório — não dá para montar o Tab direto no overlay.",
+    "RESSALVA #3 (NÃO bloqueia): useMemberAreaStats é AGREGADO (sem areaId); usar counts do list item para subtitle por-nó, e o stats agregado só no Overview."
+  ]
+}
