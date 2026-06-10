@@ -405,6 +405,16 @@ function summarizeArm(arm, tasks, samplesByKey, timeoutMs) {
 }
 
 function loadInputs(options) {
+  if (Array.isArray(options.tasks) || Array.isArray(options.samples)) {
+    if (!Array.isArray(options.tasks) || !Array.isArray(options.samples)) throw new Error('in-memory HumanEval lift requires both tasks and samples arrays');
+    return {
+      datasetKind: typeof options.datasetKind === 'string' && options.datasetKind.trim() ? options.datasetKind.trim() : 'in-memory-humaneval-format',
+      tasks: options.tasks,
+      samples: options.samples,
+      datasetDigestSource: canonical(options.tasks),
+      samplesDigestSource: canonical(options.samples),
+    };
+  }
   if (options.datasetFile || options.samplesFile) {
     if (!options.datasetFile || !options.samplesFile) throw new Error('external HumanEval lift requires both datasetFile and samplesFile');
     return {
