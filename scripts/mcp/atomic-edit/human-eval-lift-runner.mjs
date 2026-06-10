@@ -431,8 +431,10 @@ export function runHumanEvalLiftBench(options = {}) {
   const feedbackDerived = feedbackSamples.length > 0;
   const allFeedbackReceiptsBound = feedbackSamples.length > 0 && feedbackSamples.every((sample) => isExplicitReceiptSha(sample.atomic_receipt_sha256));
   const allFeedbackPackagesValid = feedbackSamples.length > 0 && feedbackPackageChecks.every((entry) => entry.ok);
+  const allRepairPromptsBound = feedbackSamples.length > 0 && feedbackSamples.every((sample) => isExplicitReceiptSha(sample.repair_prompt_sha256));
   const rawHumanEvalClaim = requestedOfficialClaim && officialShape && !feedbackDerived;
-  const toolAugmentedHumanEvalClaim = requestedOfficialClaim && officialShape && feedbackDerived && allFeedbackReceiptsBound && allFeedbackPackagesValid;
+  const toolAugmentedHumanEvalClaim =
+    requestedOfficialClaim && officialShape && feedbackDerived && allFeedbackReceiptsBound && allFeedbackPackagesValid && allRepairPromptsBound;
   const fullHumanEvalClaim = rawHumanEvalClaim;
   const pythonProbe = childProcess.spawnSync('python3', ['--version'], { encoding: 'utf8', timeout: 1000 });
   return {
@@ -451,6 +453,7 @@ export function runHumanEvalLiftBench(options = {}) {
       feedbackSampleCount: feedbackSamples.length,
       allFeedbackReceiptsBound,
       allFeedbackPackagesValid,
+      allRepairPromptsBound,
       rawHumanEvalClaim,
       toolAugmentedHumanEvalClaim,
       rawAndToolAugmentedAreDistinct: true,
@@ -479,7 +482,7 @@ export function runHumanEvalLiftBench(options = {}) {
     proofLimits: [
       'Bundled fixture proves only a HumanEval-format runner and fixed-model lift protocol, not the official HumanEval score.',
       'Raw HumanEval claims require an external JSONL dataset, external fixed-model samples, >=164 HumanEval/* tasks, and no proof-feedback-derived samples.',
-      'Atomic tool-augmented HumanEval claims require the same external shape plus explicit Atomic receipt sha256 values and recomputable proof-feedback package digests for feedback-derived samples.',
+      'Atomic tool-augmented HumanEval claims require the same external shape plus explicit Atomic receipt sha256 values, recomputable proof-feedback package digests, and repair prompt sha256 values for feedback-derived samples.',
       'The runner evaluates submitted samples; it does not call or improve a model by itself.',
     ],
   };

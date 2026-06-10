@@ -65,7 +65,7 @@ check('runner emits digest-bound repair prompts for the fixed model second pass'
 check('repair prompts are linked one-to-one to proof-feedback package digests', emittedRepairPrompts.prompts.every((prompt) => emittedFeedbackPackages.packages.some((entry) => entry.proof_feedback_package_sha256 === prompt.proof_feedback_package_sha256)), emittedRepairPrompts.prompts.map((prompt) => ({ taskId: prompt.task_id, packageSha256: prompt.proof_feedback_package_sha256, promptSha256: prompt.repair_prompt_sha256 })));
 check('repair prompts declare tool-augmented scope and zero hidden model calls', emittedRepairPrompts.proofLimits.some((line) => line.includes('not raw HumanEval evidence')) && emittedRepairPrompts.proofLimits.some((line) => line.includes('zero model calls')), emittedRepairPrompts.proofLimits);
 check('forged proof-feedback package digests are rejected before they can support tool-augmented claims', forgedFeedbackPackage.ok === false && forgedFeedbackPackage.reason === 'proof-feedback-package-digest-mismatch', forgedFeedbackPackage);
-check('proof-feedback samples block raw HumanEval claims unless explicit Atomic receipts and feedback packages support the tool-augmented claim', report.claimTaxonomy.feedbackDerived === true && report.claimTaxonomy.allFeedbackReceiptsBound === false && report.claimTaxonomy.allFeedbackPackagesValid === true && forgedOfficial.claimTaxonomy.rawHumanEvalClaim === false, {
+check('proof-feedback samples block raw HumanEval claims unless explicit Atomic receipts, feedback packages, and repair prompts support the tool-augmented claim', report.claimTaxonomy.feedbackDerived === true && report.claimTaxonomy.allFeedbackReceiptsBound === false && report.claimTaxonomy.allFeedbackPackagesValid === true && report.claimTaxonomy.allRepairPromptsBound === false && forgedOfficial.claimTaxonomy.rawHumanEvalClaim === false, {
   fixture: report.claimTaxonomy,
   forged: forgedOfficial.claimTaxonomy,
 });
@@ -93,7 +93,7 @@ check('dataset and sample digests bind the benchmark artifacts', /^[a-f0-9]{64}$
   datasetSha256: report.datasetSha256,
   samplesSha256: report.samplesSha256,
 });
-check('proof limits require external data and receipt-bound raw/tool-augmented HumanEval claims', report.proofLimits.some((line) => line.includes('Raw HumanEval claims require an external JSONL dataset')) && report.proofLimits.some((line) => line.includes('recomputable proof-feedback package digests')), report.proofLimits);
+check('proof limits require external data and receipt/prompt-bound raw/tool-augmented HumanEval claims', report.proofLimits.some((line) => line.includes('Raw HumanEval claims require an external JSONL dataset')) && report.proofLimits.some((line) => line.includes('repair prompt sha256 values')), report.proofLimits);
 
 const payload = { ok: results.every((entry) => entry.ok), pass: results.filter((entry) => entry.ok).length, fail: results.filter((entry) => !entry.ok).length, report, results };
 if (jsonMode) process.stdout.write(JSON.stringify(payload, null, 2) + '\n');
