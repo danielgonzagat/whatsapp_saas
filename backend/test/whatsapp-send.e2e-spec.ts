@@ -1,14 +1,3 @@
-// Unifica a identidade dos pacotes Nest no jest-e2e local: o resolver do jest resolve
-// '@nestjs/core' a partir de '@nestjs/testing' para a cópia instalada na RAIZ do repo,
-// enquanto src/** resolve para backend/node_modules — duas classes Reflector/HttpException
-// distintas quebram a DI do AuditInterceptor e transformam respostas HTTP em 500.
-jest.mock('@nestjs/core', () =>
-  jest.requireActual<typeof import('@nestjs/core')>('../../node_modules/@nestjs/core'),
-);
-jest.mock('../../node_modules/@nestjs/common', () =>
-  jest.requireActual<typeof import('@nestjs/common')>('@nestjs/common'),
-);
-
 process.env.DATABASE_URL =
   process.env.DATABASE_URL || 'postgresql://postgres:password@localhost:5432/whatsapp_saas';
 process.env.REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
