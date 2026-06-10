@@ -1,0 +1,321 @@
+{
+  "kind": "atomic-mutation-bench-v1",
+  "design": "mesmas propostas nos 2 braços; atomic = engine.validate pré-disco; controle = writeFileSync incondicional; inválido é relativo à bateria declarada (parser real por gramática); mutações determinísticas por sha256 — re-executável byte-idêntico",
+  "perGrammar": {
+    "json": {
+      "files": 40,
+      "parserBlind": false,
+      "classes": {
+        "unbalance": {
+          "proposals": 40,
+          "atomicAdmitted": 0,
+          "atomicRefused": 40,
+          "controlPersistedInvalid": 40,
+          "controlPersistedValid": 0
+        },
+        "truncate": {
+          "proposals": 40,
+          "atomicAdmitted": 0,
+          "atomicRefused": 40,
+          "controlPersistedInvalid": 40,
+          "controlPersistedValid": 0
+        },
+        "midspanDelete": {
+          "proposals": 40,
+          "atomicAdmitted": 25,
+          "atomicRefused": 15,
+          "controlPersistedInvalid": 15,
+          "controlPersistedValid": 25
+        },
+        "garbageInsert": {
+          "proposals": 40,
+          "atomicAdmitted": 32,
+          "atomicRefused": 8,
+          "controlPersistedInvalid": 8,
+          "controlPersistedValid": 32
+        },
+        "benign": {
+          "proposals": 40,
+          "atomicAdmitted": 40,
+          "atomicRefused": 0,
+          "controlPersistedInvalid": 0,
+          "controlPersistedValid": 40
+        }
+      }
+    },
+    "js": {
+      "files": 40,
+      "parserBlind": false,
+      "classes": {
+        "unbalance": {
+          "proposals": 40,
+          "atomicAdmitted": 0,
+          "atomicRefused": 40,
+          "controlPersistedInvalid": 40,
+          "controlPersistedValid": 0
+        },
+        "truncate": {
+          "proposals": 40,
+          "atomicAdmitted": 1,
+          "atomicRefused": 39,
+          "controlPersistedInvalid": 39,
+          "controlPersistedValid": 1
+        },
+        "midspanDelete": {
+          "proposals": 40,
+          "atomicAdmitted": 14,
+          "atomicRefused": 26,
+          "controlPersistedInvalid": 26,
+          "controlPersistedValid": 14
+        },
+        "garbageInsert": {
+          "proposals": 40,
+          "atomicAdmitted": 18,
+          "atomicRefused": 22,
+          "controlPersistedInvalid": 22,
+          "controlPersistedValid": 18
+        },
+        "benign": {
+          "proposals": 40,
+          "atomicAdmitted": 40,
+          "atomicRefused": 0,
+          "controlPersistedInvalid": 0,
+          "controlPersistedValid": 40
+        }
+      }
+    },
+    "sql": {
+      "files": 40,
+      "parserBlind": false,
+      "classes": {
+        "unbalance": {
+          "proposals": 35,
+          "atomicAdmitted": 23,
+          "atomicRefused": 12,
+          "controlPersistedInvalid": 12,
+          "controlPersistedValid": 23
+        },
+        "truncate": {
+          "proposals": 40,
+          "atomicAdmitted": 40,
+          "atomicRefused": 0,
+          "controlPersistedInvalid": 0,
+          "controlPersistedValid": 40
+        },
+        "midspanDelete": {
+          "proposals": 40,
+          "atomicAdmitted": 39,
+          "atomicRefused": 1,
+          "controlPersistedInvalid": 1,
+          "controlPersistedValid": 39
+        },
+        "garbageInsert": {
+          "proposals": 40,
+          "atomicAdmitted": 33,
+          "atomicRefused": 7,
+          "controlPersistedInvalid": 7,
+          "controlPersistedValid": 33
+        },
+        "benign": {
+          "proposals": 40,
+          "atomicAdmitted": 0,
+          "atomicRefused": 40,
+          "controlPersistedInvalid": 40,
+          "controlPersistedValid": 0
+        }
+      }
+    },
+    "ts": {
+      "files": 40,
+      "parserBlind": false,
+      "classes": {
+        "unbalance": {
+          "proposals": 40,
+          "atomicAdmitted": 0,
+          "atomicRefused": 40,
+          "controlPersistedInvalid": 40,
+          "controlPersistedValid": 0
+        },
+        "truncate": {
+          "proposals": 40,
+          "atomicAdmitted": 1,
+          "atomicRefused": 39,
+          "controlPersistedInvalid": 39,
+          "controlPersistedValid": 1
+        },
+        "midspanDelete": {
+          "proposals": 40,
+          "atomicAdmitted": 16,
+          "atomicRefused": 24,
+          "controlPersistedInvalid": 24,
+          "controlPersistedValid": 16
+        },
+        "garbageInsert": {
+          "proposals": 40,
+          "atomicAdmitted": 15,
+          "atomicRefused": 25,
+          "controlPersistedInvalid": 25,
+          "controlPersistedValid": 15
+        },
+        "benign": {
+          "proposals": 40,
+          "atomicAdmitted": 40,
+          "atomicRefused": 0,
+          "controlPersistedInvalid": 0,
+          "controlPersistedValid": 40
+        }
+      }
+    },
+    "html": {
+      "files": 20,
+      "parserBlind": true,
+      "classes": {
+        "unbalance": {
+          "proposals": 20,
+          "atomicAdmitted": 20,
+          "atomicRefused": 0,
+          "controlPersistedInvalid": 0,
+          "controlPersistedValid": 20
+        },
+        "truncate": {
+          "proposals": 20,
+          "atomicAdmitted": 20,
+          "atomicRefused": 0,
+          "controlPersistedInvalid": 0,
+          "controlPersistedValid": 20
+        },
+        "midspanDelete": {
+          "proposals": 20,
+          "atomicAdmitted": 20,
+          "atomicRefused": 0,
+          "controlPersistedInvalid": 0,
+          "controlPersistedValid": 20
+        },
+        "garbageInsert": {
+          "proposals": 20,
+          "atomicAdmitted": 20,
+          "atomicRefused": 0,
+          "controlPersistedInvalid": 0,
+          "controlPersistedValid": 20
+        },
+        "benign": {
+          "proposals": 20,
+          "atomicAdmitted": 20,
+          "atomicRefused": 0,
+          "controlPersistedInvalid": 0,
+          "controlPersistedValid": 20
+        }
+      }
+    },
+    "css": {
+      "files": 2,
+      "parserBlind": true,
+      "classes": {
+        "unbalance": {
+          "proposals": 2,
+          "atomicAdmitted": 2,
+          "atomicRefused": 0,
+          "controlPersistedInvalid": 0,
+          "controlPersistedValid": 2
+        },
+        "truncate": {
+          "proposals": 2,
+          "atomicAdmitted": 2,
+          "atomicRefused": 0,
+          "controlPersistedInvalid": 0,
+          "controlPersistedValid": 2
+        },
+        "midspanDelete": {
+          "proposals": 2,
+          "atomicAdmitted": 2,
+          "atomicRefused": 0,
+          "controlPersistedInvalid": 0,
+          "controlPersistedValid": 2
+        },
+        "garbageInsert": {
+          "proposals": 2,
+          "atomicAdmitted": 0,
+          "atomicRefused": 2,
+          "controlPersistedInvalid": 2,
+          "controlPersistedValid": 0
+        },
+        "benign": {
+          "proposals": 2,
+          "atomicAdmitted": 2,
+          "atomicRefused": 0,
+          "controlPersistedInvalid": 0,
+          "controlPersistedValid": 2
+        }
+      }
+    }
+  },
+  "totals": {
+    "proposals": 635,
+    "atomicAdmitted": 257,
+    "atomicRefused": 378,
+    "controlPersistedInvalid": 378,
+    "controlPersistedValid": 257
+  },
+  "benign": {
+    "proposals": 182,
+    "atomicAdmitted": 142,
+    "atomicRefused": 40,
+    "falsePositiveExamples": [
+      {
+        "file": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+        "grammar": "sql",
+        "introduced": "parse error at 2:4: unexpected 'init_baseline — Topologically sorted DDL so every FK referen'"
+      },
+      {
+        "file": "backend/prisma/migrations/20251211193956_add_external_payment_links/down.sql",
+        "grammar": "sql",
+        "introduced": "parse error at 1:4: unexpected 'Rollback: 20251211193956'"
+      },
+      {
+        "file": "backend/prisma/migrations/20260319170000_autonomy_runtime_ledger/down.sql",
+        "grammar": "sql",
+        "introduced": "parse error at 1:4: unexpected 'Rollback: 20260319170000'"
+      },
+      {
+        "file": "backend/prisma/migrations/20260320183000_account_agency_canonical_models/down.sql",
+        "grammar": "sql",
+        "introduced": "parse error at 1:4: unexpected 'Rollback: 20260320183000'"
+      },
+      {
+        "file": "backend/prisma/migrations/20260327200000_add_kloel_sites_designs_subscriptions_orders/down.sql",
+        "grammar": "sql",
+        "introduced": "parse error at 1:4: unexpected 'Rollback: 20260327200000'"
+      },
+      {
+        "file": "backend/prisma/migrations/20260328010000_add_partnerships_payment_relations_enums/down.sql",
+        "grammar": "sql",
+        "introduced": "parse error at 1:4: unexpected 'Rollback: 20260328010000'"
+      },
+      {
+        "file": "backend/prisma/migrations/20260328020000_add_bank_accounts_anticipations/down.sql",
+        "grammar": "sql",
+        "introduced": "parse error at 1:4: unexpected 'Rollback: 20260328020000'"
+      },
+      {
+        "file": "backend/prisma/migrations/20260328030000_add_converted_status/down.sql",
+        "grammar": "sql",
+        "introduced": "parse error at 1:4: unexpected 'Rollback: 20260328030000'"
+      },
+      {
+        "file": "backend/prisma/migrations/20260328040000_add_missing_product_member_affiliate_tables/migration.sql",
+        "grammar": "sql",
+        "introduced": "parse error at 1:4: unexpected 'CreateTable:'"
+      },
+      {
+        "file": "backend/prisma/migrations/20260328050000_add_checkout_system/migration.sql",
+        "grammar": "sql",
+        "introduced": "parse error at 1:4: unexpected 'CreateEnum:'"
+      }
+    ]
+  },
+  "parserBlindGrammars": [
+    "html",
+    "css"
+  ],
+  "skippedNotApplicable": 5
+}
