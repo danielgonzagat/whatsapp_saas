@@ -1,0 +1,38 @@
+[
+  {
+    "lineageId": "opus|ESCALAR|s1",
+    "infraOk": true,
+    "intencao": "Remover um bloco duplicado por passo: substituir o corpo duplicado de b() por uma chamada ao helper compartilhado dupBlockShared(), espelhando a(), preservando o contrato público.",
+    "textoCompletoApos": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction dupBlockShared() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction a() {\n  return dupBlockShared();\n}\n\nfunction b() {\n  return dupBlockShared();\n}\n"
+  },
+  {
+    "lineageId": "opus|ESCALAR|s2",
+    "infraOk": true,
+    "intencao": "Remover uma duplicação por passo (sob o teto): substituir o bloco inline de dedup() por chamada ao helper compartilhado _shared(), preservando o contrato público.",
+    "textoCompletoApos": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction _shared() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction _dupBlock() {\n  return _shared();\n}\n\nfunction dedup() {\n  return _shared();\n}\n\nfunction a() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction b() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n"
+  },
+  {
+    "lineageId": "opus|ESCALAR|s3",
+    "infraOk": true,
+    "intencao": "Remover um bloco duplicado por passo: fazer a() delegar ao helper compartilhado sharedBlock(), preservando o contrato público export { a, b }.",
+    "textoCompletoApos": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction sharedBlock() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction dupBlock() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  return sharedBlock();\n}\n\nfunction b() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n"
+  },
+  {
+    "lineageId": "opus|GRADIENTE|s1",
+    "infraOk": true,
+    "intencao": "Passo admissível 1/N: ADICIONAR o helper compartilhado (edição puramente aditiva, score cai sem exceder o teto de remoção) antes de remover qualquer bloco duplicado, preservando o contrato público export { a, b }.",
+    "textoCompletoApos": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction dupHelper() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction dupBody() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction sharedBlock() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction dupBlock() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction dedup() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction b() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n"
+  },
+  {
+    "lineageId": "opus|GRADIENTE|s2",
+    "infraOk": true,
+    "intencao": "Passo admissível 1: ADICIONAR o helper compartilhado (computeShared) e rotear sharedBlock através dele — bytes sobem, score cai — preservando o contrato público (a, b) sem ainda remover nenhum bloco (remoção por passo virá depois).",
+    "textoCompletoApos": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction computeShared() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction sharedBlock() {\n  return computeShared();\n}\n\nfunction dupBlock() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  return sharedBlock();\n}\n\nfunction b() {\n  return sharedBlock();\n}\n"
+  },
+  {
+    "lineageId": "opus|GRADIENTE|s3",
+    "infraOk": true,
+    "intencao": "Caminho admissível: com o helper _shared já presente, removo um bloco de indireção por passo colapsando a() ao helper compartilhado, preservando o contrato público export { a, b }.",
+    "textoCompletoApos": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction _shared() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nconst a = _shared;\n\nconst b = a;\n"
+  }
+]

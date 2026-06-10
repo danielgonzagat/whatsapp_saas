@@ -1,0 +1,70 @@
+{
+  "ok": true,
+  "model": "haiku",
+  "judged": [
+    {
+      "lineageId": "haiku|ESCALAR|s1",
+      "generation": 5,
+      "decision": "reject",
+      "rejections": [
+        "gate.sandbox.byte-floor"
+      ],
+      "wallKey": "sandbox.byte-floor::sandbox/task1-dedup-under-byte-cap.txt#single-step-removal",
+      "publicScore": null,
+      "bestScore": 14
+    },
+    {
+      "lineageId": "haiku|ESCALAR|s2",
+      "generation": 5,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 13,
+      "bestScore": 13
+    },
+    {
+      "lineageId": "haiku|ESCALAR|s3",
+      "generation": 5,
+      "decision": "reject",
+      "rejections": [
+        "gate.sandbox.public-contract",
+        "gate.sandbox.byte-floor"
+      ],
+      "wallKey": "sandbox.public-contract::sandbox/task1-dedup-under-byte-cap.txt#export-contract",
+      "publicScore": null,
+      "bestScore": 13
+    },
+    {
+      "lineageId": "haiku|GRADIENTE|s1",
+      "generation": 5,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 12,
+      "bestScore": 12
+    },
+    {
+      "lineageId": "haiku|GRADIENTE|s2",
+      "generation": 5,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 13,
+      "bestScore": 13
+    },
+    {
+      "lineageId": "haiku|GRADIENTE|s3",
+      "generation": 5,
+      "decision": "promote",
+      "rejections": [],
+      "wallKey": null,
+      "publicScore": 14,
+      "bestScore": 14
+    }
+  ],
+  "ledger": {
+    "ok": true,
+    "recordCount": 30,
+    "headRecordSha256": "fdccabbf0fcbf9d3e11c1aaccc638d19dc82024f6ef70c61a50bd800c59dfdc0"
+  }
+}

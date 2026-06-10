@@ -1,0 +1,371 @@
+{
+  "ok": true,
+  "model": "opus",
+  "baselineScore": 5,
+  "chain": {
+    "ok": true,
+    "recordCount": 30,
+    "headRecordSha256": "d12941ef602bd06a4f7c38f16b8bc6c4bfaf06e287c877a375667f5baf62e052"
+  },
+  "arms": {
+    "ESCALAR": {
+      "ok": true,
+      "arm": "ESCALAR",
+      "seeds": [
+        "s1",
+        "s2",
+        "s3"
+      ],
+      "perGeneration": [
+        {
+          "generation": 1,
+          "m1": {
+            "mean": 1,
+            "std": 0,
+            "n": 3
+          },
+          "m2": {
+            "mean": null,
+            "std": null,
+            "n": 0
+          },
+          "m3": {
+            "mean": 0.3333333333333333,
+            "std": 0.4714045207910317,
+            "n": 3
+          },
+          "m5": {
+            "mean": null,
+            "std": null,
+            "n": 0
+          },
+          "unjudged": {
+            "mean": 0,
+            "std": 0,
+            "n": 3
+          }
+        },
+        {
+          "generation": 2,
+          "m1": {
+            "mean": 1,
+            "std": 0,
+            "n": 3
+          },
+          "m2": {
+            "mean": null,
+            "std": null,
+            "n": 0
+          },
+          "m3": {
+            "mean": 0.3333333333333333,
+            "std": 0.4714045207910317,
+            "n": 3
+          },
+          "m5": {
+            "mean": null,
+            "std": null,
+            "n": 0
+          },
+          "unjudged": {
+            "mean": 0,
+            "std": 0,
+            "n": 3
+          }
+        },
+        {
+          "generation": 3,
+          "m1": {
+            "mean": 1,
+            "std": 0,
+            "n": 3
+          },
+          "m2": {
+            "mean": null,
+            "std": null,
+            "n": 0
+          },
+          "m3": {
+            "mean": 0.3333333333333333,
+            "std": 0.4714045207910317,
+            "n": 3
+          },
+          "m5": {
+            "mean": null,
+            "std": null,
+            "n": 0
+          },
+          "unjudged": {
+            "mean": 0,
+            "std": 0,
+            "n": 3
+          }
+        },
+        {
+          "generation": 4,
+          "m1": {
+            "mean": 1,
+            "std": 0,
+            "n": 3
+          },
+          "m2": {
+            "mean": null,
+            "std": null,
+            "n": 0
+          },
+          "m3": {
+            "mean": 1.6666666666666667,
+            "std": 1.699673171197595,
+            "n": 3
+          },
+          "m5": {
+            "mean": null,
+            "std": null,
+            "n": 0
+          },
+          "unjudged": {
+            "mean": 0,
+            "std": 0,
+            "n": 3
+          }
+        },
+        {
+          "generation": 5,
+          "m1": {
+            "mean": 1,
+            "std": 0,
+            "n": 3
+          },
+          "m2": {
+            "mean": null,
+            "std": null,
+            "n": 0
+          },
+          "m3": {
+            "mean": 4.333333333333333,
+            "std": 4.189935029992178,
+            "n": 3
+          },
+          "m5": {
+            "mean": null,
+            "std": null,
+            "n": 0
+          },
+          "unjudged": {
+            "mean": 0,
+            "std": 0,
+            "n": 3
+          }
+        }
+      ]
+    },
+    "GRADIENTE": {
+      "ok": true,
+      "arm": "GRADIENTE",
+      "seeds": [
+        "s1",
+        "s2",
+        "s3"
+      ],
+      "perGeneration": [
+        {
+          "generation": 1,
+          "m1": {
+            "mean": 1,
+            "std": 0,
+            "n": 3
+          },
+          "m2": {
+            "mean": null,
+            "std": null,
+            "n": 0
+          },
+          "m3": {
+            "mean": 1,
+            "std": 0,
+            "n": 3
+          },
+          "m5": {
+            "mean": null,
+            "std": null,
+            "n": 0
+          },
+          "unjudged": {
+            "mean": 0,
+            "std": 0,
+            "n": 3
+          }
+        },
+        {
+          "generation": 2,
+          "m1": {
+            "mean": 1,
+            "std": 0,
+            "n": 3
+          },
+          "m2": {
+            "mean": null,
+            "std": null,
+            "n": 0
+          },
+          "m3": {
+            "mean": 3,
+            "std": 2.8284271247461903,
+            "n": 3
+          },
+          "m5": {
+            "mean": null,
+            "std": null,
+            "n": 0
+          },
+          "unjudged": {
+            "mean": 0,
+            "std": 0,
+            "n": 3
+          }
+        },
+        {
+          "generation": 3,
+          "m1": {
+            "mean": 1,
+            "std": 0,
+            "n": 3
+          },
+          "m2": {
+            "mean": null,
+            "std": null,
+            "n": 0
+          },
+          "m3": {
+            "mean": 6,
+            "std": 5.715476066494082,
+            "n": 3
+          },
+          "m5": {
+            "mean": null,
+            "std": null,
+            "n": 0
+          },
+          "unjudged": {
+            "mean": 0,
+            "std": 0,
+            "n": 3
+          }
+        },
+        {
+          "generation": 4,
+          "m1": {
+            "mean": 1,
+            "std": 0,
+            "n": 3
+          },
+          "m2": {
+            "mean": null,
+            "std": null,
+            "n": 0
+          },
+          "m3": {
+            "mean": 8.333333333333334,
+            "std": 5.436502143433364,
+            "n": 3
+          },
+          "m5": {
+            "mean": null,
+            "std": null,
+            "n": 0
+          },
+          "unjudged": {
+            "mean": 0,
+            "std": 0,
+            "n": 3
+          }
+        },
+        {
+          "generation": 5,
+          "m1": {
+            "mean": 1,
+            "std": 0,
+            "n": 3
+          },
+          "m2": {
+            "mean": null,
+            "std": null,
+            "n": 0
+          },
+          "m3": {
+            "mean": 8.666666666666666,
+            "std": 5.792715732327589,
+            "n": 3
+          },
+          "m5": {
+            "mean": null,
+            "std": null,
+            "n": 0
+          },
+          "unjudged": {
+            "mean": 0,
+            "std": 0,
+            "n": 3
+          }
+        }
+      ]
+    }
+  },
+  "lineages": [
+    {
+      "model": "opus",
+      "arm": "ESCALAR",
+      "seed": "s1",
+      "promotes": 5,
+      "rejects": 0,
+      "bestScore": 10,
+      "lastScore": 10
+    },
+    {
+      "model": "opus",
+      "arm": "ESCALAR",
+      "seed": "s2",
+      "promotes": 5,
+      "rejects": 0,
+      "bestScore": 5,
+      "lastScore": -4
+    },
+    {
+      "model": "opus",
+      "arm": "ESCALAR",
+      "seed": "s3",
+      "promotes": 5,
+      "rejects": 0,
+      "bestScore": 5,
+      "lastScore": 3
+    },
+    {
+      "model": "opus",
+      "arm": "GRADIENTE",
+      "seed": "s1",
+      "promotes": 5,
+      "rejects": 0,
+      "bestScore": 5,
+      "lastScore": -14
+    },
+    {
+      "model": "opus",
+      "arm": "GRADIENTE",
+      "seed": "s2",
+      "promotes": 5,
+      "rejects": 0,
+      "bestScore": 10,
+      "lastScore": 9
+    },
+    {
+      "model": "opus",
+      "arm": "GRADIENTE",
+      "seed": "s3",
+      "promotes": 5,
+      "rejects": 0,
+      "bestScore": 15,
+      "lastScore": 15
+    }
+  ],
+  "csv": ".atomic/evolution/iiif-real-v1.1/curves-opus.csv"
+}
