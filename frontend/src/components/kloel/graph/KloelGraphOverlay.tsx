@@ -94,14 +94,16 @@ export function KloelGraphOverlay({
   const { C, mode } = useGraphTheme();
   const { isMobile } = useResponsiveViewport();
 
-  // Initialize from an SSR-deterministic fallback viewport so server and
-  // client render identical HTML (reading window here caused a hydration
-  // mismatch). The mount effect below recenters on the real viewport and
-  // only re-clamps once the user has moved/resized the window themselves.
+  // The default (un-adjusted) window geometry is pure CSS — identical strings
+  // on the server and on every client viewport, so hydration can never
+  // mismatch and the window adapts to resizes natively. Pixel geometry only
+  // exists after the user moves/resizes the window (necessarily post-mount):
+  // beginDrag captures the live rect and flips pxMode on.
   const [rect, setRect] = useState<WindowRect>(() =>
     computeDefaultRect({ width: 1280, height: 800 }),
   );
-  const userAdjustedRef = useRef(false);
+  const [pxMode, setPxMode] = useState(false);
+  const panelRef = useRef<HTMLElement | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
   const dragStateRef = useRef<{
     readonly mode: 'move' | 'resize';
@@ -112,19 +114,15 @@ export function KloelGraphOverlay({
   } | null>(null);
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
+    if (typeof window === 'undefined' || !pxMode) {
       return undefined;
     }
     const sync = () => {
-      const next = readViewportSize();
-      setRect((current) =>
-        userAdjustedRef.current ? clampRectToViewport(current, next) : computeDefaultRect(next),
-      );
+      setRect((current) => clampRectToViewport(current, readViewportSize()));
     };
-    sync();
     window.addEventListener('resize', sync, { passive: true });
     return () => window.removeEventListener('resize', sync);
-  }, []);
+  }, [pxMode]);
 
   const toggleFullscreen = useCallback(() => {
     setFullscreen((current) => !current);
@@ -181,19 +179,26 @@ export function KloelGraphOverlay({
         return;
       }
       event.preventDefault();
-      userAdjustedRef.current = true;
+      const live = panelRef.current?.getBoundingClientRect();
+      const startRect: WindowRect = live
+        ? { width: live.width, height: live.height, left: live.left, top: live.top }
+        : rect;
+      if (!pxMode) {
+        setRect(startRect);
+        setPxMode(true);
+      }
       dragStateRef.current = {
         mode: dragMode,
         pointerId: event.pointerId,
         originX: event.clientX,
         originY: event.clientY,
-        startRect: rect,
+        startRect,
       };
       window.addEventListener('pointermove', onPointerMove);
       window.addEventListener('pointerup', endDrag);
       window.addEventListener('pointercancel', endDrag);
     },
-    [endDrag, fullscreen, isMobile, onPointerMove, rect],
+    [endDrag, fullscreen, isMobile, onPointerMove, pxMode, rect],
   );
 
   const windowed = !isMobile && !fullscreen;
@@ -206,13 +211,25 @@ export function KloelGraphOverlay({
         width: 'auto',
         height: 'auto',
       }
-    : {
-        position: 'fixed',
-        left: rect.left,
-        top: rect.top,
-        width: rect.width,
-        height: rect.height,
-      };
+    : pxMode
+      ? {
+          position: 'fixed',
+          left: rect.left,
+          top: rect.top,
+          width: rect.width,
+          height: rect.height,
+        }
+      : {
+          // Viewport-agnostic default: identical CSS on server and any client.
+          position: 'fixed',
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: `min(${DEFAULT_WIDTH_RATIO * 100}vw, ${DEFAULT_MAX_WIDTH}px)`,
+          height: `min(${DEFAULT_HEIGHT_RATIO * 100}vh, ${DEFAULT_MAX_HEIGHT}px)`,
+          minWidth: WINDOW_MIN_WIDTH,
+          minHeight: WINDOW_MIN_HEIGHT,
+        };
 
   const glyphColor = mode === 'light' ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.6)';
   // macOS traffic-light hues, tuned to the warm Kloel palette: ember-red close,
@@ -235,6 +252,9 @@ export function KloelGraphOverlay({
       }}
     >
       <section
+        ref={(node) => {
+          panelRef.current = node;
+        }}
         aria-label={getKloelGraphOverlayLabel(activeNode)}
         onClick={(event) => event.stopPropagation()}
         role="dialog"
