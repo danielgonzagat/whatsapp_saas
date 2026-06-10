@@ -842,7 +842,7 @@ function dzSumRange(days, fromTs, toTs) {
   return { revenueInCents, paidOrders, totalOrders, checkoutStarts, conversations, conversionRatePct, averageTicketInCents, series: sel.map(x => x.revenueInCents) };
 }
 
-/* Calcula TODO o painel a partir do período ativo + saldo real da carteira */
+/* Calcula o painel inteiro a partir do período ativo + saldo real da carteira */
 function computeDesempenho(days, period, customFrom, customTo, wallet) {
   const now = new Date();
   const t0 = dzStartOfDay(now).getTime();

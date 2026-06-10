@@ -33,9 +33,7 @@ export function parseProvider(provider: string): CheckoutSocialProvider {
 }
 
 /** Serialize provider enum to string. */
-function serializeProvider(
-  provider: CheckoutSocialProvider,
-): CaptureSocialLeadDto['provider'] {
+function serializeProvider(provider: CheckoutSocialProvider): CaptureSocialLeadDto['provider'] {
   if (provider === CheckoutSocialProvider.GOOGLE) {
     return 'google';
   }

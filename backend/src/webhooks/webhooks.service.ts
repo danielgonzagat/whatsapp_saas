@@ -4,7 +4,7 @@ import {
   ForbiddenException,
   Injectable,
   Logger,
-  Optional
+  Optional,
 } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import type { Redis } from 'ioredis';
@@ -277,7 +277,8 @@ export class WebhooksService {
   }
 
   private getOmnichannelService(): OmnichannelService {
-    const service = this.omnichannelService ?? this.moduleRef.get(OmnichannelService, { strict: false });
+    const service =
+      this.omnichannelService ?? this.moduleRef.get(OmnichannelService, { strict: false });
     if (!service) {
       throw new Error('OmnichannelService provider is not available');
     }
@@ -397,7 +398,10 @@ export class WebhooksService {
     this.logger.log(`[INSTAGRAM] Processing message for workspace ${workspaceId}`);
 
     try {
-      const result = await this.getOmnichannelService().processInstagramWebhook(workspaceId, payload);
+      const result = await this.getOmnichannelService().processInstagramWebhook(
+        workspaceId,
+        payload,
+      );
       return result;
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'WebhooksService.processInstagramWebhook');

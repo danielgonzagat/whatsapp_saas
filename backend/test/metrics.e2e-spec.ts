@@ -1,4 +1,3 @@
-
 jest.mock('ioredis', () => {
   const Redis = class RedisMock {
     private store = new Map<string, unknown>();

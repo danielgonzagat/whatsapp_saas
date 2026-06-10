@@ -1,5 +1,3 @@
-
-
 export function centsFromUnknown(value: unknown): number {
   if (typeof value === 'bigint') {
     return Number(value);

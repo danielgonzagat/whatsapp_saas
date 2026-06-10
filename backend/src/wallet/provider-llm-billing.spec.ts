@@ -1,3 +1,4 @@
+import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
 import {
   estimateAnthropicMessageQuoteCostCents,
   estimateOpenAiChatQuoteCostCents,
@@ -38,28 +39,28 @@ describe('provider-llm-billing', () => {
       const messages = [{ role: 'user', content: 'olá' }];
 
       const cost = estimateOpenAiChatQuoteCostCents({
-        model: 'gpt-4o-mini',
+        model: CANONICAL_MODEL_IDS.openAiTextMini,
         messages,
         maxOutputTokens: 256,
       });
 
       expect(cost).toBe(11n);
       expect(mockedEstimateOpenAi).toHaveBeenCalledWith({
-        model: 'gpt-4o-mini',
+        model: CANONICAL_MODEL_IDS.openAiTextMini,
         inputChars: JSON.stringify(messages).length,
         maxOutputTokens: 256,
       });
     });
 
     it('falls back to LLM_MAX_COMPLETION_TOKENS when the cap is absent or invalid', () => {
-      estimateOpenAiChatQuoteCostCents({ model: 'gpt-4o-mini', messages: [] });
+      estimateOpenAiChatQuoteCostCents({ model: CANONICAL_MODEL_IDS.openAiTextMini, messages: [] });
       estimateOpenAiChatQuoteCostCents({
-        model: 'gpt-4o-mini',
+        model: CANONICAL_MODEL_IDS.openAiTextMini,
         messages: [],
         maxOutputTokens: -5,
       });
       estimateOpenAiChatQuoteCostCents({
-        model: 'gpt-4o-mini',
+        model: CANONICAL_MODEL_IDS.openAiTextMini,
         messages: [],
         maxOutputTokens: Number.NaN,
       });
@@ -70,7 +71,10 @@ describe('provider-llm-billing', () => {
     });
 
     it('treats a null/undefined payload as an empty serialized string', () => {
-      estimateOpenAiChatQuoteCostCents({ model: 'gpt-4o-mini', messages: undefined });
+      estimateOpenAiChatQuoteCostCents({
+        model: CANONICAL_MODEL_IDS.openAiTextMini,
+        messages: undefined,
+      });
 
       expect(mockedEstimateOpenAi).toHaveBeenCalledWith(
         expect.objectContaining({ inputChars: JSON.stringify('').length }),
@@ -85,7 +89,7 @@ describe('provider-llm-billing', () => {
       const expectedChars = JSON.stringify({ system, messages }).length;
 
       const cost = estimateAnthropicMessageQuoteCostCents({
-        model: 'claude-sonnet-4-5',
+        model: CANONICAL_MODEL_IDS.anthropicSonnetTest,
         system,
         messages,
         maxOutputTokens: 512,
@@ -93,7 +97,7 @@ describe('provider-llm-billing', () => {
 
       expect(cost).toBe(22n);
       expect(mockedAnthropicUsage).toHaveBeenCalledWith({
-        model: 'claude-sonnet-4-5',
+        model: CANONICAL_MODEL_IDS.anthropicSonnetTest,
         inputTokens: Math.ceil(expectedChars / 4),
         outputTokens: 512,
       });
@@ -103,7 +107,7 @@ describe('provider-llm-billing', () => {
   describe('quoteOpenAiChatActualCostCents', () => {
     it('bills prompt, cached, and completion tokens from the usage block', () => {
       const cost = quoteOpenAiChatActualCostCents({
-        model: 'gpt-4o',
+        model: CANONICAL_MODEL_IDS.openAiTextOmni,
         usage: {
           prompt_tokens: 1000,
           completion_tokens: 200,
@@ -113,7 +117,7 @@ describe('provider-llm-billing', () => {
 
       expect(cost).toBe(33n);
       expect(mockedOpenAiUsage).toHaveBeenCalledWith({
-        model: 'gpt-4o',
+        model: CANONICAL_MODEL_IDS.openAiTextOmni,
         inputTokens: 1000,
         cachedInputTokens: 400,
         outputTokens: 200,
@@ -121,10 +125,10 @@ describe('provider-llm-billing', () => {
     });
 
     it('bills zero tokens when the provider returns no usage', () => {
-      quoteOpenAiChatActualCostCents({ model: 'gpt-4o', usage: null });
+      quoteOpenAiChatActualCostCents({ model: CANONICAL_MODEL_IDS.openAiTextOmni, usage: null });
 
       expect(mockedOpenAiUsage).toHaveBeenCalledWith({
-        model: 'gpt-4o',
+        model: CANONICAL_MODEL_IDS.openAiTextOmni,
         inputTokens: 0,
         cachedInputTokens: 0,
         outputTokens: 0,
@@ -135,7 +139,7 @@ describe('provider-llm-billing', () => {
   describe('quoteAnthropicMessageActualCostCents', () => {
     it('counts cache-creation tokens as billable input and cache-read as cached', () => {
       const cost = quoteAnthropicMessageActualCostCents({
-        model: 'claude-sonnet-4-5',
+        model: CANONICAL_MODEL_IDS.anthropicSonnetTest,
         usage: {
           input_tokens: 800,
           output_tokens: 150,
@@ -146,7 +150,7 @@ describe('provider-llm-billing', () => {
 
       expect(cost).toBe(22n);
       expect(mockedAnthropicUsage).toHaveBeenCalledWith({
-        model: 'claude-sonnet-4-5',
+        model: CANONICAL_MODEL_IDS.anthropicSonnetTest,
         inputTokens: 850, // input + cache_creation
         cachedInputTokens: 300,
         outputTokens: 150,
@@ -155,12 +159,12 @@ describe('provider-llm-billing', () => {
 
     it('is null-safe for partial usage blocks', () => {
       quoteAnthropicMessageActualCostCents({
-        model: 'claude-sonnet-4-5',
+        model: CANONICAL_MODEL_IDS.anthropicSonnetTest,
         usage: { input_tokens: null, output_tokens: undefined },
       });
 
       expect(mockedAnthropicUsage).toHaveBeenCalledWith({
-        model: 'claude-sonnet-4-5',
+        model: CANONICAL_MODEL_IDS.anthropicSonnetTest,
         inputTokens: 0,
         cachedInputTokens: 0,
         outputTokens: 0,

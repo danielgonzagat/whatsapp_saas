@@ -59,7 +59,8 @@ export function mockDeps() {
 export type MockDeps = ReturnType<typeof mockDeps>;
 
 export function asDeps(deps: MockDeps): StripeHandlerDeps {
-  return deps as unknown as StripeHandlerDeps;
+  // Repo test-harness convention (`as never`): fixtures mirror the spec surface.
+  return deps as never;
 }
 
 export function makeRefundEvent(overrides: Record<string, unknown> = {}) {

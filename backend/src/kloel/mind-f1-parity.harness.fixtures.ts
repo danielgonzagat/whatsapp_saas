@@ -15,7 +15,6 @@
 import { DecisionOutcomeService } from './decision-outcome.service';
 import { DecisionSweepScheduler } from './decision-sweep.scheduler';
 import type { PrismaService } from '../prisma/prisma.service';
-import type { MindBanditService } from './mind/policy/mind-bandit.service';
 
 // ---------------------------------------------------------------------------
 // Stateful in-memory Prisma fake (only the query shapes these services use).
@@ -104,12 +103,14 @@ export interface Harness {
 export function buildHarness(): Harness {
   const decisionOutcome = new FakeTable();
   const mindPolicy = new FakeTable();
-  const prisma = { decisionOutcome, mindPolicy } as unknown as PrismaService;
+  // Repo test-harness convention (`as never`): fixtures sit outside the build
+  // tsconfig like specs; the fake exposes exactly the prisma slice exercised.
+  const prisma: PrismaService = { decisionOutcome, mindPolicy } as never;
   const bandit = {
     register: jest.fn().mockResolvedValue(undefined),
     recordOutcome: jest.fn().mockResolvedValue(undefined),
   };
-  const service = new DecisionOutcomeService(prisma, bandit as unknown as MindBanditService);
+  const service = new DecisionOutcomeService(prisma, bandit as never);
   const scheduler = new DecisionSweepScheduler(prisma, service);
   return { decisionOutcome, mindPolicy, bandit, service, scheduler };
 }
