@@ -558,7 +558,7 @@ export function runHumanEvalLiftBench(options = {}) {
     proofLimits: [
       'Bundled fixture proves only a HumanEval-format runner and fixed-model lift protocol, not the official HumanEval score.',
       'Raw HumanEval claims require an external JSONL dataset, external fixed-model samples, >=164 HumanEval/* tasks, and no proof-feedback-derived samples.',
-      'Atomic tool-augmented HumanEval claims require the same external shape plus explicit Atomic receipt sha256 values, recomputable proof-feedback package digests, and repair prompt sha256 values for feedback-derived samples.',
+      'Atomic tool-augmented HumanEval claims require the same external shape plus explicit Atomic receipt sha256 values, recomputable proof-feedback package digests, and repair prompt sha256 values bound to the emitted prompt manifest for feedback-derived samples.',
       'The runner evaluates submitted samples; it does not call or improve a model by itself.',
     ],
   };
@@ -574,6 +574,7 @@ function parseArgs(argv) {
     else if (arg === '--claim-official-humaneval') options.claimOfficialHumanEval = true;
     else if (arg === '--emit-feedback-packages') options.emitFeedbackPackages = true;
     else if (arg === '--emit-repair-prompts') options.emitRepairPrompts = true;
+    else if (arg === '--verify-tool-augmented-samples') options.verifyToolAugmentedSamples = true;
     else if (arg === '--source-arm') options.sourceArm = argv[++i];
     else if (arg === '--timeout-ms') options.timeoutMs = Number(argv[++i]);
     else throw new Error(`unknown argument: ${arg}`);
@@ -584,13 +585,19 @@ function parseArgs(argv) {
 if (import.meta.url === `file://${process.argv[1]}`) {
   try {
     const options = parseArgs(process.argv.slice(2));
-    const report = options.emitRepairPrompts
-      ? buildProofFeedbackRepairPrompts(options)
-      : options.emitFeedbackPackages
-        ? buildProofFeedbackPackages(options)
-        : runHumanEvalLiftBench(options);
+    const report = options.verifyToolAugmentedSamples
+      ? verifyToolAugmentedSamples(options)
+      : options.emitRepairPrompts
+        ? buildProofFeedbackRepairPrompts(options)
+        : options.emitFeedbackPackages
+          ? buildProofFeedbackPackages(options)
+          : runHumanEvalLiftBench(options);
     if (options.json) process.stdout.write(JSON.stringify(report, null, 2) + '\n');
-    else if (options.emitRepairPrompts) {
+    else if (options.verifyToolAugmentedSamples) {
+      process.stdout.write(
+        `HumanEvalToolSamples ${report.datasetKind}: sourceArm=${report.sourceArm} samples=${report.feedbackSampleCount} valid=${report.validSampleCount} promptManifest=${report.promptManifestSha256}\n`,
+      );
+    } else if (options.emitRepairPrompts) {
       process.stdout.write(
         `HumanEvalRepairPrompts ${report.datasetKind}: sourceArm=${report.sourceArm} prompts=${report.promptCount} digest=${report.promptsSha256}\n`,
       );
