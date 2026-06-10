@@ -187,6 +187,18 @@ export class MindBackgroundScheduler implements OnModuleInit, OnModuleDestroy {
     return this.cognitiveHealth;
   }
 
+  private resolveCognitiveHealth(): CiaCognitiveHealthService | undefined {
+    if (!this.cognitiveHealthResolved) {
+      this.cognitiveHealthResolved = true;
+      try {
+        this.cognitiveHealth = this.moduleRef.get(CiaCognitiveHealthService, { strict: false });
+      } catch {
+        this.cognitiveHealth = undefined;
+      }
+    }
+    return this.cognitiveHealth;
+  }
+
   async executeTick(): Promise<void> {
     const workspaceIds = await this.resolveWorkspaceIds();
     // Primary: spine ring (in-memory, real-time) — a single global ring shared

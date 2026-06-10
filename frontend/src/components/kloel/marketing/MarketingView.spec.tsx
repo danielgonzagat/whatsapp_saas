@@ -45,19 +45,20 @@ afterEach(() => {
   mockPathname = '/marketing/whatsapp';
 });
 
-describe('MarketingView — six-channel PreviewBar (canonical anexo contract)', () => {
+describe('MarketingView — five-channel PreviewBar (canonical anexo contract)', () => {
   it('keeps Marketing as one sidebar entry without redundant channel subitems', () => {
     const marketingItem = NAV.find((item) => item.key === 'marketing');
     expect(marketingItem?.label).toBe('Marketing');
     expect(marketingItem?.sub).toEqual([]);
   });
 
-  it('renders exactly six channel buttons (lowercase tokens, CSS uppercase-transformed)', () => {
+  it('renders exactly five channel buttons (lowercase tokens, CSS uppercase-transformed)', () => {
     render(<MarketingView defaultTab="whatsapp" />);
     // The reference JSX uses lowercase tokens with CSS text-transform.
-    for (const k of ['whatsapp', 'instagram', 'tiktok', 'google-ads', 'facebook', 'email']) {
+    for (const k of ['whatsapp', 'instagram', 'tiktok', 'facebook', 'email']) {
       expect(screen.getByText(k)).toBeTruthy();
     }
+    expect(screen.queryByText('google-ads')).toBeNull();
     // Conversas must not appear (spec §15).
     expect(screen.queryByText(/Conversas/i)).toBeNull();
   });

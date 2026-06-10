@@ -115,6 +115,8 @@ describe('ChannelOnboarding container — palette + theme', () => {
     expect(screen.getByText('LOGIN META · OAUTH OFICIAL')).toBeTruthy();
     // Step 0 vignette ships the "Dê um corpo" headline + verb button.
     expect(screen.getByText(/Vincular número/)).toBeTruthy();
+    // The supplied diamond snippet has only provider + four traces above the glyph.
+    expect(screen.queryByText(/Passo \d+ de 4/)).toBeNull();
     // Use the resolved palette to assert the void background is in the tree.
     expect(paletteFor('dark').void).toBe('rgb(10, 10, 12)');
   });
