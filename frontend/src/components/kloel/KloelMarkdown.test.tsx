@@ -97,6 +97,16 @@ describe('KloelMarkdown render parity', () => {
   });
 
   describe('Mermaid (b)', () => {
+    it('recovers a fence glued to prose with no closing fence (live-observed model output)', async () => {
+      const content =
+        'Diagrama do fluxo de compra:```mermaid\ngraph TD\nA[Cliente compra] --> B[Acesso liberado]';
+      const { container } = render(<KloelMarkdown content={content} />);
+      await waitFor(() => {
+        expect(container.querySelector('.kloel-artifact-mermaid svg')).not.toBeNull();
+      });
+      expect(container.textContent).not.toContain('```');
+    });
+
     it('renders a ```mermaid graph as an SVG diagram', async () => {
       const content = ['```mermaid', 'graph TD', 'A[Início] --> B[Fim]', '```'].join('\n');
       const { container } = render(<KloelMarkdown content={content} />);

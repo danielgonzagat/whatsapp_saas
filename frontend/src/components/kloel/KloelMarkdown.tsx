@@ -64,9 +64,25 @@ function KloelMarkdownInput(inputProps: KloelMarkdownInputProps) {
 const MATH_INLINE_CLASS_RE = new RegExp(`(?:^|\\s)${MATH_INLINE_CLASS}(?:\\s|$)`);
 const MATH_DISPLAY_CLASS_RE = new RegExp(`(?:^|\\s)${MATH_DISPLAY_CLASS}(?:\\s|$)`);
 
+/**
+ * Models sometimes glue a fence to the prose line ("…fluxo:```mermaid") or
+ * drop the closing fence; CommonMark then renders the whole block as plain
+ * text instead of code/diagram. Normalize before parsing: (1) a fence opener
+ * stuck mid-line moves to its own line; (2) an odd fence count gets a closing
+ * fence appended so the trailing block still renders.
+ */
+export function normalizeFencedBlocks(markdown: string): string {
+  let normalized = markdown.replace(/([^\n`])(```[A-Za-z0-9_+-]*)(?=\r?\n|$)/g, '$1\n$2');
+  const fenceCount = (normalized.match(/^[ \t]{0,3}```/gm) || []).length;
+  if (fenceCount % 2 === 1) {
+    normalized = `${normalized.replace(/\s*$/, '')}\n\`\`\``;
+  }
+  return normalized;
+}
+
 /** Kloel markdown. */
 export function KloelMarkdown({ content }: { content: string }) {
-  const sanitizedContent = sanitizeAssistantMarkdown(String(content || ''));
+  const sanitizedContent = normalizeFencedBlocks(sanitizeAssistantMarkdown(String(content || '')));
 
 
   return (
