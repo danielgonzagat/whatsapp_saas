@@ -95,7 +95,45 @@ check('dataset and sample digests bind the benchmark artifacts', /^[a-f0-9]{64}$
 });
 check('proof limits require external data and receipt/prompt-bound raw/tool-augmented HumanEval claims', report.proofLimits.some((line) => line.includes('Raw HumanEval claims require an external JSONL dataset')) && report.proofLimits.some((line) => line.includes('repair prompt sha256 values')), report.proofLimits);
 
-const payload = { ok: results.every((entry) => entry.ok), pass: results.filter((entry) => entry.ok).length, fail: results.filter((entry) => !entry.ok).length, report, results };
+function compactArm(arm) {
+  return {
+    total: arm.total,
+    passed: arm.passed,
+    failed: arm.failed,
+    passAt1: arm.passAt1,
+    wallRepeatRate: arm.wallRepeatRate,
+    costPerPass: arm.costPerPass,
+    noveltyIndex: arm.noveltyIndex,
+  };
+}
+
+const payload = {
+  ok: results.every((entry) => entry.ok),
+  pass: results.filter((entry) => entry.ok).length,
+  fail: results.filter((entry) => !entry.ok).length,
+  report: {
+    ok: report.ok,
+    benchmarkId: report.benchmarkId,
+    datasetKind: report.datasetKind,
+    formatCompatible: report.formatCompatible,
+    taskCount: report.taskCount,
+    datasetSha256: report.datasetSha256,
+    samplesSha256: report.samplesSha256,
+    fullHumanEvalClaim: report.fullHumanEvalClaim,
+    officialClaimRefused: report.officialClaimRefused,
+    claimTaxonomy: report.claimTaxonomy,
+    pythonAvailable: report.pythonAvailable,
+    controls: report.controls,
+    arms: {
+      baseline: compactArm(baseline),
+      scalar: compactArm(scalar),
+      proof: compactArm(proof),
+    },
+    deltas: report.deltas,
+    proofLimits: report.proofLimits,
+  },
+  results: results.map((entry) => ({ name: entry.name, ok: entry.ok })),
+};
 if (jsonMode) process.stdout.write(JSON.stringify(payload, null, 2) + '\n');
 else for (const entry of results) process.stdout.write(`${entry.ok ? 'PASS' : 'FAIL'} ${entry.name}\n`);
 process.exit(payload.ok ? 0 : 1);
