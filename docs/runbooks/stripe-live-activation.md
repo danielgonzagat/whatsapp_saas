@@ -13,8 +13,9 @@
 # Use mcp__sentry-bridge__sentry_recent_issues since_minutes=60 — must NOT show
 # STARTUP FATAL events.
 
-# 2. Confirm production-startup-guard has the sk_live_ assertion wired
+# 2. Confirm production-startup-guard has the live Stripe prefix assertions wired
 grep "sk_live_" backend/src/config/production-startup-guard.ts
+grep "pk_live_" backend/src/config/production-startup-guard.ts
 
 # 3. Confirm Kloel Tecnologia LTDA passed Stripe KYC
 #    https://dashboard.stripe.com/settings/account — should say "Verified"
@@ -28,13 +29,13 @@ grep "sk_live_" backend/src/config/production-startup-guard.ts
 1. Sign in to https://dashboard.stripe.com with the Kloel owner account
 2. Toggle "Live mode" in the top-right (was "Test mode")
 3. Verify the account name = "Kloel Tecnologia LTDA" and CNPJ is correct
-4. Note the live publishable key (`pk_live_*`) — not needed in this runbook but useful for frontend `NEXT_PUBLIC_STRIPE_PUBLIC_KEY` later
+4. Note the live publishable key (`pk_live_*`) — set as `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` on Vercel (kloel-frontend) in Step 4
 
 ## Step 2 — Create the live webhook endpoint
 
 1. Go to https://dashboard.stripe.com/webhooks (in live mode)
 2. Click "Add endpoint"
-3. Endpoint URL: `https://api.kloel.com/webhook/payment`
+3. Endpoint URL: `https://api.kloel.com/webhook/payment/stripe`
 4. Description: `kloel-backend payment webhook (Stripe Connect)`
 5. Events to send: at minimum
    - `payment_intent.succeeded`
@@ -62,13 +63,32 @@ railway login
 # Link to the kloel backend project
 railway link
 
-# Push the 2 new live values + 0 changes to others
+# Push the live Stripe values + the explicit live-mode confirmation to backend
 railway variables set \
   STRIPE_SECRET_KEY="sk_live_xxxxxxxxxxxxxxxxxxxxxxx" \
+  STRIPE_PUBLISHABLE_KEY="pk_live_xxxxxxxxxxxxxxxxxxxxxxx" \
   STRIPE_WEBHOOK_SECRET="whsec_xxxxxxxxxxxxxxxxxxxxxx" \
+  KLOEL_LIVE_MODE="confirmed" \
   --service backend
 
-# Railway will redeploy automatically
+# Mirror the SAME values to the worker — it shares the backend's Stripe secrets
+# (docs/PRODUCTION_DEPLOY.md: "Worker ... Same secrets as backend").
+railway variables set \
+  STRIPE_SECRET_KEY="sk_live_xxxxxxxxxxxxxxxxxxxxxxx" \
+  STRIPE_PUBLISHABLE_KEY="pk_live_xxxxxxxxxxxxxxxxxxxxxxx" \
+  STRIPE_WEBHOOK_SECRET="whsec_xxxxxxxxxxxxxxxxxxxxxx" \
+  KLOEL_LIVE_MODE="confirmed" \
+  --service worker
+
+# Railway will redeploy backend + worker automatically.
+
+# Update the browser publishable key on Vercel for the checkout app. Only the
+# frontend (kloel-frontend) reads NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY; the admin
+# app (kloel-admin) uses Stripe Connect via the backend and has no NEXT_PUBLIC key.
+# In the kloel-frontend project (Settings -> Environment Variables, or via the
+# Vercel CLI after `vercel link` to kloel-frontend):
+#   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = pk_live_xxxxxxxxxxxxxxxxxxxxxxx   (Production)
+# Then redeploy kloel-frontend so the live key is baked into the client bundle.
 ```
 
 ## Step 5 — Verify boot
@@ -120,8 +140,22 @@ If anything fails:
 ```sh
 railway variables set \
   STRIPE_SECRET_KEY="sk_test_xxxxxxxxxxxxxxxxxxx" \
+  STRIPE_PUBLISHABLE_KEY="pk_test_xxxxxxxxxxxxxxxxxxx" \
   STRIPE_WEBHOOK_SECRET="whsec_test_xxxxxxxxxxxxxxx" \
+  KLOEL_LIVE_MODE="development" \
   --service backend
+
+# Mirror the rollback to the worker (same shared secrets).
+railway variables set \
+  STRIPE_SECRET_KEY="sk_test_xxxxxxxxxxxxxxxxxxx" \
+  STRIPE_PUBLISHABLE_KEY="pk_test_xxxxxxxxxxxxxxxxxxx" \
+  STRIPE_WEBHOOK_SECRET="whsec_test_xxxxxxxxxxxxxxx" \
+  KLOEL_LIVE_MODE="development" \
+  --service worker
+
+# Revert the Vercel frontend publishable key back to test mode:
+#   kloel-frontend -> NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = pk_test_xxxxxxxxxxxxxxxxxxx   (Production)
+# Then redeploy kloel-frontend.
 ```
 
 Stripe live charges already taken before rollback continue to flow webhooks to the production endpoint — they will fail signature verification once the secret is reverted. Process them manually via the Stripe dashboard if needed.
