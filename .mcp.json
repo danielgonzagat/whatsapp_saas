@@ -6,6 +6,11 @@
       "args": ["scripts/mcp/atomic-edit-mcp-launcher.sh"],
       "description": "Structured code action space for atomic, validated code edits."
     },
+    "atomic-swarm": {
+      "command": "node",
+      "args": ["scripts/mcp/atomic-swarm/server.mjs"],
+      "description": "Governed swarm surface: receipted web fetch/search, hash-verified skills, parallel read-only job fan-out through the atomic broker."
+    },
     "chrome-devtools": {
       "command": "bash",
       "args": ["scripts/mcp/chrome-devtools-open-mcp-launcher.sh", "--browserUrl=http://127.0.0.1:9222"],
