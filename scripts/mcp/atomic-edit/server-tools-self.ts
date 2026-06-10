@@ -570,17 +570,17 @@ function realSelfExpansionPolicy(requiredCommands: string[]): JsonRecord {
 
 function runSelfEvolutionHarness(mode: string, input: unknown): JsonRecord {
   const selfRoot = path.join(REPO_ROOT, 'scripts/mcp/atomic-edit');
-  const outputFile = path.join(
-    selfRoot,
-    '.self-evolution-harness-output.' + process.pid + '.' + Date.now() + '.' + Math.random().toString(16).slice(2) + '.json',
-  );
+  const token = process.pid + '.' + Date.now() + '.' + Math.random().toString(16).slice(2);
+  const outputFile = path.join(selfRoot, '.self-evolution-harness-output.' + token + '.json');
+  const inputFile = path.join(selfRoot, '.self-evolution-harness-input.' + token + '.json');
   try {
+    fs.writeFileSync(inputFile, JSON.stringify(input));
     const result = childProcess.spawnSync(process.execPath, ['self-evolution-harness.mjs', mode], {
       cwd: selfRoot,
-      input: JSON.stringify(input),
+      input: '',
       encoding: 'utf8',
       maxBuffer: 16 * 1024 * 1024,
-      env: { ...process.env, ATOMIC_SELF_EVOLUTION_OUTPUT_FILE: outputFile },
+      env: { ...process.env, ATOMIC_SELF_EVOLUTION_OUTPUT_FILE: outputFile, ATOMIC_SELF_EVOLUTION_INPUT_FILE: inputFile },
     });
     const stdout = result.stdout;
     const stderr = result.stderr;
@@ -600,10 +600,12 @@ function runSelfEvolutionHarness(mode: string, input: unknown): JsonRecord {
     if (parsed.ok !== true) throw new Error('self-evolution harness ' + mode + ' rejected: ' + stableJson(parsed));
     return parsed;
   } finally {
-    try {
-      fs.unlinkSync(outputFile);
-    } catch {
-      /* best-effort temp cleanup */
+    for (const tempFile of [outputFile, inputFile]) {
+      try {
+        fs.unlinkSync(tempFile);
+      } catch {
+        /* best-effort temp cleanup */
+      }
     }
   }
 }

@@ -1,4 +1,5 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger, Optional } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Queue, Worker } from 'bullmq';
 import { MindBackgroundProcessor } from './mind-bg.processor';
@@ -48,6 +49,10 @@ export class MindBackgroundScheduler implements OnModuleInit, OnModuleDestroy {
   private readonly registered = new Set<string>();
   /** Per-workspace last-emit clock for the cognitive consolidation pass. */
   private readonly cognitiveConsolidationThrottle = new Map<string, number>();
+
+  private cognitiveHealthResolved = false;
+
+  private cognitiveHealth: CiaCognitiveHealthService | undefined;
 
   /**
    * Dev/bootstrap workspace ticked only when no real workspace is discoverable
@@ -175,30 +180,6 @@ export class MindBackgroundScheduler implements OnModuleInit, OnModuleDestroy {
     return this.cognitiveHealth;
   }
 
-  private resolveCognitiveHealth(): CiaCognitiveHealthService | undefined {
-    if (!this.cognitiveHealthResolved) {
-      this.cognitiveHealthResolved = true;
-      try {
-        this.cognitiveHealth = this.moduleRef.get(CiaCognitiveHealthService, { strict: false });
-      } catch {
-        this.cognitiveHealth = undefined;
-      }
-    }
-    return this.cognitiveHealth;
-  }
-
-  private resolveCognitiveHealth(): CiaCognitiveHealthService | undefined {
-    if (!this.cognitiveHealthResolved) {
-      this.cognitiveHealthResolved = true;
-      try {
-        this.cognitiveHealth = this.moduleRef.get(CiaCognitiveHealthService, { strict: false });
-      } catch {
-        this.cognitiveHealth = undefined;
-      }
-    }
-    return this.cognitiveHealth;
-  }
-
   async executeTick(): Promise<void> {
     const workspaceIds = await this.resolveWorkspaceIds();
     // Primary: spine ring (in-memory, real-time) — a single global ring shared
@@ -297,7 +278,7 @@ export class MindBackgroundScheduler implements OnModuleInit, OnModuleDestroy {
     // Wave 15: cognitive health on-tick scan (flag-gated, shipped off by default)
     if (process.env['CIA_COGNITIVE_HEALTH_TICK_ENABLED'] === 'true') {
       try {
-        await this.cognitiveHealth?.scanAndEscalate(workspaceId);
+        await this.resolveCognitiveHealth()?.scanAndEscalate(workspaceId);
       } catch (err: unknown) {
         this.logger.warn(
           `Cognitive health scan failed for ${workspaceId}: ${err instanceof Error ? err.message : String(err)}`,

@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { buildTimestampedRuntimeId } from './kloel-id.util';
-import { KloelComposerService } from './kloel-composer.service';
+import { KloelComposerService, type ComposerCapability } from './kloel-composer.service';
 import { KloelConversationStore } from './kloel-conversation-store';
 import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import {
@@ -44,7 +44,7 @@ function buildRegenerationError(message: string) {
 /** Sync think loop — extracted to keep KloelThinkerService under 400 lines. */
 export async function thinkSyncImpl(
   request: ThinkRequest,
-  composerCapability: 'create_image' | 'create_site' | 'search_web' | 'refine_response' | null,
+  composerCapability: ComposerCapability | null,
   effectiveCompanyContext: string | undefined,
   deps: {
     replyEngine: KloelReplyEngineService;

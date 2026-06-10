@@ -69,8 +69,9 @@ export function extractProductArgs(msg: string): Record<string, unknown> {
     args.price = parseFloat(pm[1].replace(',', '.'));
   }
   // Format: físico, digital, híbrido
-  if (/\b(f[ií]sico|digital|h[ií]brido)\b/i.test(msg)) {
-    const fmt = msg.match(/\b(f[ií]sico|digital|h[ií]brido)\b/i)?.[1].toLowerCase() || '';
+  const formatMatch = msg.match(/\b(f[ií]sico|digital|h[ií]brido)\b/i);
+  if (formatMatch?.[1]) {
+    const fmt = formatMatch[1].toLowerCase();
     args.format =
       fmt === 'físico' || fmt === 'fisico' ? 'PHYSICAL' : fmt === 'digital' ? 'DIGITAL' : 'HYBRID';
   }

@@ -3,7 +3,7 @@ import type { UnknownRecord } from '../../common/types';
 /**
  * Categories for capability classification.
  */
-type CapabilityCategory =
+export type CapabilityCategory =
   | 'SELF_AWARENESS' // Auto-consciência
   | 'MUTATION_SENSITIVE' // Ações que mexem com dinheiro, documentos, etc.
   | 'MUTATION_SAFE' // Criação/edição não sensível
@@ -44,7 +44,7 @@ export interface CapabilityExecutionRail {
 /**
  * Input schema definition for a capability.
  */
-interface CapabilityInputField {
+export interface CapabilityInputField {
   key: string;
   type: 'string' | 'number' | 'boolean' | 'select' | 'file';
   label: string;

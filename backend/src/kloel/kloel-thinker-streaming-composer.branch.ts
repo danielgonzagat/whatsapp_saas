@@ -10,7 +10,12 @@ import type { KloelStreamWriter } from './kloel-stream-writer';
 import type { KloelThreadService, StoredProcessingTraceEntry } from './kloel-thread.service';
 import { runComposerCapabilityBranch } from './kloel-thinker-think.helpers';
 
-export type ComposerCapability = 'create_image' | 'create_site' | 'search_web' | 'refine_response';
+export type ComposerCapability =
+  | 'create_image'
+  | 'create_site'
+  | 'search_web'
+  | 'refine_response'
+  | 'document_to_markdown';
 
 export interface StreamingComposerCapabilityBranchParams {
   composerCapability: ComposerCapability;

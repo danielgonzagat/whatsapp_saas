@@ -6,6 +6,7 @@ import {
   Logger,
   Optional
 } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import type { Redis } from 'ioredis';
 import { getCorrelationId } from '../common/observability/correlation-store';
 import { InboxGateway } from '../inbox/inbox.gateway';
@@ -267,13 +268,21 @@ export class WebhooksService {
   }
 
   private getInboxGateway(): InboxGateway {
-    this.inboxGateway ??= this.moduleRef.get(InboxGateway, { strict: false });
-    return this.inboxGateway;
+    const gateway = this.inboxGateway ?? this.moduleRef.get(InboxGateway, { strict: false });
+    if (!gateway) {
+      throw new Error('InboxGateway provider is not available');
+    }
+    this.inboxGateway = gateway;
+    return gateway;
   }
 
   private getOmnichannelService(): OmnichannelService {
-    this.omnichannelService ??= this.moduleRef.get(OmnichannelService, { strict: false });
-    return this.omnichannelService;
+    const service = this.omnichannelService ?? this.moduleRef.get(OmnichannelService, { strict: false });
+    if (!service) {
+      throw new Error('OmnichannelService provider is not available');
+    }
+    this.omnichannelService = service;
+    return service;
   }
 
   private async publishMessageStatus(
@@ -284,10 +293,11 @@ export class WebhooksService {
   ): Promise<void> {
     const statusPayload = buildStatusEventPayload(m, status, errorCode);
     const conversationPayload = buildConversationUpdatePayload(m, status, errorCode);
+    const inboxGateway = this.getInboxGateway();
 
-    this.inboxGateway.emitToWorkspace(workspaceId, 'message:status', statusPayload);
+    inboxGateway.emitToWorkspace(workspaceId, 'message:status', statusPayload);
     if (conversationPayload) {
-      this.inboxGateway.emitToWorkspace(workspaceId, 'conversation:update', conversationPayload);
+      inboxGateway.emitToWorkspace(workspaceId, 'conversation:update', conversationPayload);
     }
     try {
       await this.redis.publish('ws:inbox', buildStatusPubSubEnvelope(workspaceId, statusPayload));

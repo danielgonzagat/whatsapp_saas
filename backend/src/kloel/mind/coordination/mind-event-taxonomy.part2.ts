@@ -88,6 +88,18 @@ export interface ProductEventPayload extends CommercialEventPayload {
   };
 }
 
+export interface CouponEventPayload extends CommercialEventPayload {
+  eventType: 'coupon.created' | 'coupon.updated' | 'coupon.deleted';
+  payload: {
+    couponId: string;
+    code?: string;
+    productId?: string;
+    discountType?: string;
+    discountValue?: number;
+    status?: string;
+    active?: boolean;
+  };
+}
 
 export interface ConceptEventPayload extends CommercialEventPayload {
   eventType: 'concept.detected';

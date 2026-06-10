@@ -15,11 +15,11 @@
  * @see docs/adr/0012-kloel-omnicore-channel-unification.md
  * @see backend/src/common/channel-dispatch/channel-dispatch.port.ts
  */
-export { WhatsAppDispatchAdapter } from './whatsapp';
-export { InstagramDispatchAdapter } from './instagram';
-export { MessengerDispatchAdapter } from './messenger';
-export { FacebookDispatchAdapter } from './facebook';
+export { WhatsAppDispatchAdapter } from './whatsapp/whatsapp-dispatch.adapter';
+export { InstagramDispatchAdapter } from './instagram/instagram-dispatch.adapter';
+export { MessengerDispatchAdapter } from './messenger/messenger-dispatch.adapter';
+export { FacebookDispatchAdapter } from './facebook/facebook-dispatch.adapter';
 export { EmailDispatchAdapter, TransactionalEmailDispatchAdapter } from './email';
 export { TikTokDispatchAdapter } from './tiktok';
-export { InternalPartnershipDispatchAdapter } from './internal-partnership';
+export { InternalPartnershipDispatchAdapter } from './internal-partnership/internal-partnership-dispatch.adapter';
 export { MarketingChannelsModule } from './marketing-channels.module';

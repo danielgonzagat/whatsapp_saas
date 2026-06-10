@@ -88,7 +88,7 @@ interface FacebookSendInput {
   pageAccessToken: string;
 }
 
-interface EmailSendInput {
+export interface EmailSendInput {
   channelKind: ChannelKind.EMAIL;
   workspaceId: string;
   toEmail: string;
@@ -207,7 +207,7 @@ export interface ChannelDispatchPort {
 
 // ─── Channel capability shape ──────────────────────────────
 
-interface ChannelCapability {
+export interface ChannelCapability {
   channel: ChannelKind;
   sendAvailable: boolean;
   sendBlockedReason: string | null;
