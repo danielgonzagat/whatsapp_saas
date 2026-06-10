@@ -182,3 +182,27 @@ NADA do desenho: mesmas 24 falhas fixas de g1, mesmos arquivos de despacho conge
 ### Resultados das réplicas
 
 (preenchidos abaixo desta linha após as réplicas r2–r5.)
+
+**Execução:** r2–r5 completas, 72/72 cada (288 chamadas haiku novas; 360 retries julgados no
+total com r1), mesmos despachos congelados, `toolAugmentedHumanEvalClaim=true` em todas.
+Análise EXATAMENTE como pré-fixada (`work/permutation-analysis.json`; LCG 42, 100k permutações).
+
+**Recuperações por réplica (cego/scalar/proof, de 24):**
+r1 11/12/14 · r2 16/16/18 · r3 11/16/15 · r4 15/11/17 · r5 13/11/15
+**Médias: cego 13.2 · scalar 13.2 · proof 15.8** → pass@final médio do braço proof =
+**155.8/164 (95.0%)** vs baseline 85.4% (+9.6pp médio).
+
+**Vereditos (pela regra pré-fixada, sem reinterpretação):**
+
+- **PRIMÁRIA (proof > cego): estatística +0.1083, p = 0.05572 ≥ 0.05 → NÃO SEPARÁVEL com K=5
+  nesta arena.** Registrado como o pré-registro manda. Fatos descritivos que permanecem: proof
+  recuperou mais que cego em **5/5 réplicas** e a diferença média é +2.6 recuperações (+10.8pp
+  de taxa); D1 NÃO disparou (disprova ≥ resample em todas as réplicas). A separação exigiria
+  K maior (poder) ou arena com falhas mais difíceis — fica para um v2, pré-registrado.
+- **SECUNDÁRIA (proof > scalar): p = 0.08713 ≥ 0.05 → não separável** (proof venceu scalar em
+  4/5 réplicas, empate de médias do scalar com o cego).
+- **Nota de honestidade:** p=0.056 não vira "confirmado" por estar perto — é exatamente o tipo
+  de resultado que a lei pré-fixada existe para proteger. O que o experimento ESTABELECE com
+  solidez é o lift baseline→retry-verificado (+9.6pp médio, presente nas 5 réplicas e nos dois
+  modelos de feedback informativos); a ATRIBUIÇÃO do excedente ao CONTEÚDO da disprova (acima
+  do resample) é direcionalmente consistente (5/5) mas não estatisticamente separável com K=5.

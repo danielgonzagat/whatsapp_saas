@@ -1,0 +1,65 @@
+{
+  "fails": [
+    "HumanEval/0",
+    "HumanEval/32",
+    "HumanEval/36",
+    "HumanEval/63",
+    "HumanEval/64",
+    "HumanEval/65",
+    "HumanEval/70",
+    "HumanEval/77",
+    "HumanEval/83",
+    "HumanEval/91",
+    "HumanEval/93",
+    "HumanEval/101",
+    "HumanEval/107",
+    "HumanEval/115",
+    "HumanEval/129",
+    "HumanEval/130",
+    "HumanEval/132",
+    "HumanEval/133",
+    "HumanEval/135",
+    "HumanEval/138",
+    "HumanEval/145",
+    "HumanEval/160",
+    "HumanEval/162",
+    "HumanEval/163"
+  ],
+  "perReplica": [
+    {
+      "proof": 14,
+      "scalar": 12,
+      "cego": 11
+    },
+    {
+      "proof": 18,
+      "scalar": 16,
+      "cego": 16
+    },
+    {
+      "proof": 15,
+      "scalar": 16,
+      "cego": 11
+    },
+    {
+      "proof": 17,
+      "scalar": 11,
+      "cego": 15
+    },
+    {
+      "proof": 15,
+      "scalar": 11,
+      "cego": 13
+    }
+  ],
+  "primary": {
+    "obs": 0.10833333333333334,
+    "p": 0.05571944280557194
+  },
+  "secondary": {
+    "obs": 0.10833333333333332,
+    "p": 0.08712912870871291
+  },
+  "lcgSeed": 42,
+  "permutations": 100000
+}

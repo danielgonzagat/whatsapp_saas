@@ -1,7 +1,16 @@
 import type { Prisma } from '@prisma/client';
+import {
+  pickConvertibleDocumentAttachment,
+  type ConvertibleDocumentAttachment,
+} from './kloel-composer.document.helpers';
 
 /** Composer capability tags surfaced from chat metadata or inferred from intent. */
-export type ComposerCapability = 'create_image' | 'create_site' | 'search_web' | 'refine_response';
+export type ComposerCapability =
+  | 'create_image'
+  | 'create_site'
+  | 'search_web'
+  | 'refine_response'
+  | 'document_to_markdown';
 
 /** Attachment metadata persisted alongside composer messages. */
 export interface ComposerAttachmentMetadata {
@@ -62,6 +71,23 @@ const CREATION_INTENT_TOKENS = [
   'preciso criar',
 ] as const;
 
+const DOCUMENT_CONVERSION_VERB_TOKENS = [
+  'converta',
+  'converter',
+  'converte',
+  'transforme',
+  'transformar',
+  'transforma',
+  'vire',
+  'virar',
+] as const;
+
+const DOCUMENT_EXTRACTION_VERB_TOKENS = ['extraia', 'extrair', 'extrai'] as const;
+
+const MARKDOWN_TARGET_TOKENS = ['markdown', '.md'] as const;
+
+const TEXT_TARGET_TOKENS = ['texto', 'conteúdo', 'conteudo'] as const;
+
 /**
  * Pure metadata coerce — same shape used by KloelThreadService.normalizeThreadMessageMetadataRecord.
  * Returns an empty object when the input is not a plain object.
@@ -86,7 +112,8 @@ export function extractComposerMetadata(
     normalized.capability === 'create_image' ||
     normalized.capability === 'create_site' ||
     normalized.capability === 'search_web' ||
-    normalized.capability === 'refine_response'
+    normalized.capability === 'refine_response' ||
+    normalized.capability === 'document_to_markdown'
       ? normalized.capability
       : null;
   const attachments = Array.isArray(normalized.attachments)
@@ -103,11 +130,13 @@ export function extractComposerMetadata(
 
 /**
  * Infer composer capability from the user message when no explicit capability is tagged.
- * Currently only detects implicit "create_site" intent in chat mode. Pure.
+ * Detects implicit "create_site" intent and — when a convertible document is
+ * attached — implicit "document_to_markdown" intent in chat mode. Pure.
  */
 export function inferImplicitComposerCapability(
   message: string,
   mode: ThinkMode | undefined,
+  attachments?: ConvertibleDocumentAttachment[] | null,
 ): ComposerCapability | null {
   if (mode !== 'chat') {
     return null;
@@ -123,6 +152,15 @@ export function inferImplicitComposerCapability(
   if (wantsSite && wantsCreation) {
     return 'create_site';
   }
+  if (pickConvertibleDocumentAttachment(attachments)) {
+    const wantsConversion = DOCUMENT_CONVERSION_VERB_TOKENS.some((t) => normalized.includes(t));
+    const wantsExtraction = DOCUMENT_EXTRACTION_VERB_TOKENS.some((t) => normalized.includes(t));
+    const wantsMarkdown = MARKDOWN_TARGET_TOKENS.some((t) => normalized.includes(t));
+    const wantsText = TEXT_TARGET_TOKENS.some((t) => normalized.includes(t));
+    if ((wantsConversion && wantsMarkdown) || (wantsExtraction && (wantsMarkdown || wantsText))) {
+      return 'document_to_markdown';
+    }
+  }
   return null;
 }
 
@@ -133,8 +171,9 @@ export function resolveComposerCapability(
   message: string,
   mode: ThinkMode | undefined,
   explicitCapability?: ComposerCapability | null,
+  attachments?: ConvertibleDocumentAttachment[] | null,
 ): ComposerCapability | null {
-  return explicitCapability || inferImplicitComposerCapability(message, mode);
+  return explicitCapability || inferImplicitComposerCapability(message, mode, attachments);
 }
 
 /**

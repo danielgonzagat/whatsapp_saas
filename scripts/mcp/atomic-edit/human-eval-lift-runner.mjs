@@ -435,6 +435,59 @@ export function verifyToolAugmentedSamples(options = {}) {
   };
 }
 
+function countToken(text, token) {
+  return (String(text ?? '').match(new RegExp(token, 'g')) ?? []).length;
+}
+
+function classifyCounterexampleLeakage(task, entry) {
+  const feedback = entry.proof_feedback_package ?? {};
+  const counterexample = String(feedback.counterexample ?? '');
+  const taskTest = String(task?.test ?? '');
+  const counterexampleEqualsFullTest = Boolean(taskTest) && counterexample === taskTest;
+  const counterexampleContainsCheckFunction = /def\s+check\s*\(\s*candidate\s*\)/.test(counterexample);
+  const assertCount = countToken(counterexample, '\\bassert\\b');
+  const counterexampleLineCount = counterexample.split(/\r?\n/).length;
+  const leakClass = counterexampleEqualsFullTest || counterexampleContainsCheckFunction ? 'full-evaluator-test-leak' : assertCount > 1 ? 'multi-assert-counterexample' : 'minimal-or-opaque-counterexample';
+  return {
+    taskId: entry.task_id,
+    leakClass,
+    counterexampleSha256: sha256(counterexample),
+    counterexampleEqualsFullTest,
+    counterexampleContainsCheckFunction,
+    assertCount,
+    counterexampleLineCount,
+    packageSha256: entry.proof_feedback_package_sha256 ?? null,
+  };
+}
+
+export function classifyProofFeedbackLeakage(options = {}) {
+  const input = loadInputs(options);
+  const taskById = new Map(input.tasks.map((task) => [task.task_id, task]));
+  const feedbackSamples = input.samples.filter((sample) => feedbackSource(sample) !== 'none' && sample.proof_feedback_package);
+  const packages = feedbackSamples.length > 0 ? feedbackSamples : buildProofFeedbackPackages(options).packages;
+  const checks = packages.map((entry) => classifyCounterexampleLeakage(taskById.get(entry.task_id), entry));
+  const fullEvaluatorLeakCount = checks.filter((entry) => entry.leakClass === 'full-evaluator-test-leak').length;
+  const multiAssertCounterexampleCount = checks.filter((entry) => entry.leakClass === 'multi-assert-counterexample').length;
+  const minimalCounterexampleCount = checks.filter((entry) => entry.leakClass === 'minimal-or-opaque-counterexample').length;
+  return {
+    ok: checks.length > 0,
+    mode: 'classify-proof-feedback-leakage',
+    datasetKind: input.datasetKind,
+    packageCount: checks.length,
+    fullEvaluatorLeakCount,
+    multiAssertCounterexampleCount,
+    minimalCounterexampleCount,
+    supportsMinimalDisproofFeedbackClaim: checks.length > 0 && fullEvaluatorLeakCount === 0,
+    requiresTestInformedCaveat: fullEvaluatorLeakCount > 0,
+    checks,
+    proofLimits: [
+      'This classifier does not judge correctness; it classifies what information the proof feedback exposed to the proposer.',
+      'A full-evaluator-test-leak can still support an Atomic tool-augmented claim, but not a minimal-disproof-feedback intelligence claim.',
+      'Raw HumanEval claims remain distinct from any feedback-derived, tool-augmented claim.',
+    ],
+  };
+}
+
 function summarizeArm(arm, tasks, samplesByKey, timeoutMs) {
   const attempts = tasks.map((task) => {
     const sample = samplesByKey.get(`${arm}\u0000${task.task_id}`);

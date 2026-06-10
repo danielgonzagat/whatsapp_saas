@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access */
-
 /**
  * Proves the Brain→Mind Phase-2 MEMORY backfill (twin of the message backfill):
  * flag-gated (no-op when OFF), copies legacy RAC_KloelMemory into RAC_MindMemory
@@ -10,6 +8,11 @@
 import { MindMemoryBackfillService } from './mind-memory-backfill.service';
 
 const FLAG = 'KLOEL_MINDMEMORY_BACKFILL';
+
+const nthCallArg = (mock: jest.Mock, i: number): Record<string, unknown> => {
+  const c = (mock.mock.calls as Array<[Record<string, unknown>]>)[i];
+  return c ? c[0] : {};
+};
 
 type LegacyRow = {
   id: string;
@@ -85,7 +88,7 @@ describe('MindMemoryBackfillService', () => {
     const result = await service.backfill({ batchSize: 500 });
 
     expect(result).toMatchObject({ enabled: true, scanned: 2, inserted: 2 });
-    const data = createMany.mock.calls[0][0].data;
+    const data = nthCallArg(createMany, 0).data as Array<Record<string, unknown>>;
     expect(data[0]).toMatchObject({
       workspaceId: 'ws-1',
       namespace: 'default',
@@ -94,7 +97,7 @@ describe('MindMemoryBackfillService', () => {
       createdAt: row('a').createdAt,
     });
     expect(data[0]).not.toHaveProperty('embedding');
-    expect(createMany.mock.calls[0][0].skipDuplicates).toBe(true);
+    expect(nthCallArg(createMany, 0).skipDuplicates).toBe(true);
   });
 
   it('paginates by cursor across multiple batches', async () => {
@@ -105,7 +108,7 @@ describe('MindMemoryBackfillService', () => {
     const result = await service.backfill({ batchSize: 1 });
 
     expect(result.batches).toBe(2);
-    expect(findMany.mock.calls[1][0].cursor).toEqual({ id: 'a' });
+    expect(nthCallArg(findMany, 1).cursor).toEqual({ id: 'a' });
   });
 
   describe('parity', () => {
@@ -118,7 +121,7 @@ describe('MindMemoryBackfillService', () => {
       const result = await service.parity({ workspaceId: 'ws-1' });
 
       expect(result).toEqual({ legacy: 80, mirrored: 60, missing: 20, coverage: 0.75 });
-      expect(mindCount.mock.calls[0][0].where).toMatchObject({ namespace: 'default' });
+      expect(nthCallArg(mindCount, 0).where).toMatchObject({ namespace: 'default' });
     });
   });
 });
