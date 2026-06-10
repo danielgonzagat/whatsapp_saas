@@ -550,5 +550,10 @@ if (isCliMain()) {
   const stdinText = needsInput ? fs.readFileSync(0, 'utf8') : '';
   const result = runCli([mode], stdinText);
   process.stdout.write(JSON.stringify(result, null, 2) + '\n');
-  process.exit(result.ok === false ? 1 : 0);
+  // exitCode (não exit()): write em pipe >64KiB bufferiza além do 1º chunk e
+  // exit() descarta o restante — o pai recebia EXATAMENTE 65536 bytes e o
+  // JSON.parse upstream morria ('Unterminated string at position 65536'),
+  // bloqueando todo atomic_expand_self. Provado: write+exit()=65536 bytes,
+  // write+exitCode=completo (exec-ledger 2026-06-10).
+  process.exitCode = result.ok === false ? 1 : 0;
 }
