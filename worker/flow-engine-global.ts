@@ -112,6 +112,15 @@ export class FlowEngineGlobal {
     this.log.info('start_flow', { user: normalizedUser, flowId: flow.id, executionId });
     // Carrega dados do CRM
     const workspaceId = flow.workspaceId || 'default';
+    if (!flow.workspaceId) {
+      // Pre-cut telemetry before removing the 'default' fallback (DUPLICATION_REGISTER F3-A passo 2).
+      this.log.error('flow_workspace_fallback_default', {
+        site: 'startFlow',
+        flowId: flow.id,
+        user: normalizedUser,
+        executionId,
+      });
+    }
     let contact = await CRM.getContact(workspaceId, normalizedUser);
     if (!contact) {
       await CRM.addContact(workspaceId, { phone: normalizedUser, name: normalizedUser });
@@ -217,6 +226,14 @@ export class FlowEngineGlobal {
     try {
       const { memoryQueue } = await import('./queue');
       const triggerWorkspaceId = state?.workspaceId || workspaceId || 'default';
+      if (!state?.workspaceId && !workspaceId) {
+        // Pre-cut telemetry before removing the 'default' fallback (DUPLICATION_REGISTER F3-A passo 2).
+        this.log.error('flow_workspace_fallback_default', {
+          site: 'onUserResponse',
+          flowId: state?.flowId,
+          user: normalizedUser,
+        });
+      }
       (async () => {
         const contact = await prisma.contact.findUnique({
           where: { workspaceId_phone: { workspaceId: triggerWorkspaceId, phone: normalizedUser } },
