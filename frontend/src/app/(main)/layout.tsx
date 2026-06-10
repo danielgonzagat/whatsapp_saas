@@ -21,7 +21,7 @@ function isKloelGraphEnabled(): boolean {
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   if (isKloelGraphEnabled()) {
-    return <KloelGraphClient />;
+    return <KloelGraphClient>{children}</KloelGraphClient>;
   }
   return <MainAppLayoutShell>{children}</MainAppLayoutShell>;
 }
