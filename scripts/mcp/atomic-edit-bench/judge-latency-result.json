@@ -1,0 +1,80 @@
+{
+  "kind": "atomic-judge-latency",
+  "anchorCommit": "d33b634ca8c3ebf120fc49833b47fe32ed578321",
+  "caveat": "mede apenas o juiz sintatico classico (engine.validate) no caminho benigno; gates adicionais custam mais; tempos sao fisicos (variam por maquina), corpus e determinístico pela ancora",
+  "overall": {
+    "n": 182,
+    "p50": 1.028541,
+    "p90": 188.32675,
+    "p99": 294.55475,
+    "maxMs": 340.132959
+  },
+  "perGrammar": {
+    "json": {
+      "n": 40,
+      "p50": 0.013125,
+      "p90": 0.124916,
+      "p99": 0.257459,
+      "maxMs": 0.257459
+    },
+    "js": {
+      "n": 40,
+      "p50": 1.352209,
+      "p90": 4.787334,
+      "p99": 12.241708,
+      "maxMs": 12.241708
+    },
+    "ts": {
+      "n": 40,
+      "p50": 1.142042,
+      "p90": 3.193916,
+      "p99": 4.509042,
+      "maxMs": 4.509042
+    },
+    "sql": {
+      "n": 40,
+      "p50": 181.42075,
+      "p90": 213.458958,
+      "p99": 340.132959,
+      "maxMs": 340.132959
+    },
+    "html": {
+      "n": 20,
+      "p50": 0.000833,
+      "p90": 0.002125,
+      "p99": 0.063459,
+      "maxMs": 0.063459
+    },
+    "css": {
+      "n": 2,
+      "p50": 289.791083,
+      "p90": 294.55475,
+      "p99": 294.55475,
+      "maxMs": 294.55475
+    }
+  },
+  "sizeBuckets": {
+    "ate-2KB": {
+      "n": 75,
+      "p50": 0.018875,
+      "p90": 181.42075,
+      "p99": 213.458958,
+      "maxMs": 213.458958
+    },
+    "2-16KB": {
+      "n": 94,
+      "p50": 1.722,
+      "p90": 187.036625,
+      "p99": 242.004584,
+      "maxMs": 242.004584
+    },
+    "16-120KB": {
+      "n": 13,
+      "p50": 0.257459,
+      "p90": 294.55475,
+      "p99": 340.132959,
+      "maxMs": 340.132959
+    }
+  },
+  "corpusSha256": "b22faa1b484b53eb895f11fbe0ad4e84e0ad3f3a346a4bdbaa68c31874fa51ac"
+}
