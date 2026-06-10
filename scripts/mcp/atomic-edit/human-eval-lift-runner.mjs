@@ -41,10 +41,39 @@ const FIXTURE_TASKS = [
   },
 ];
 
+function fixtureFeedbackFields(taskId, invariantId, counterexample, lessonLine, rejectedCompletion) {
+  const proofFeedbackPackage = {
+    version: 'atomic-proof-feedback-v1',
+    task_id: taskId,
+    invariantId,
+    counterexample,
+    lessonLine,
+    proposalDigest: sha256(`${taskId}\n${rejectedCompletion}`),
+  };
+  return {
+    feedback_source: 'atomic-proof-feedback',
+    proof_feedback_package: proofFeedbackPackage,
+    proof_feedback_package_sha256: sha256(canonical(proofFeedbackPackage)),
+  };
+}
+
 const FIXTURE_SAMPLES = [
   { task_id: 'HumanEval/fixture_add', arm: 'baseline', model_id: 'fixed-model-fixture-v1', attempt_budget: 1, completion: 'return a\n' },
   { task_id: 'HumanEval/fixture_add', arm: 'scalar', model_id: 'fixed-model-fixture-v1', attempt_budget: 1, completion: 'return a\n' },
-  { task_id: 'HumanEval/fixture_add', arm: 'proof', model_id: 'fixed-model-fixture-v1', attempt_budget: 1, completion: 'return a + b\n' },
+  {
+    task_id: 'HumanEval/fixture_add',
+    arm: 'proof',
+    model_id: 'fixed-model-fixture-v1',
+    attempt_budget: 1,
+    completion: 'return a + b\n',
+    ...fixtureFeedbackFields(
+      'HumanEval/fixture_add',
+      'unit.counterexample.add',
+      'candidate returned only the first operand; check requires add(2, 3) == 5',
+      'Use both operands when the tests prove the function is binary addition.',
+      'return a\n',
+    ),
+  },
   {
     task_id: 'HumanEval/fixture_below_zero',
     arm: 'baseline',
@@ -71,6 +100,13 @@ const FIXTURE_SAMPLES = [
       '        if balance < 0:\n' +
       '            return True\n' +
       '    return False\n',
+    ...fixtureFeedbackFields(
+      'HumanEval/fixture_below_zero',
+      'unit.counterexample.below_zero',
+      'candidate checked individual operations instead of the running balance; [1, 2, -2] must stay nonnegative',
+      'Track the cumulative balance and fail only when the prefix sum drops below zero.',
+      'return any(op < 0 for op in operations)\n',
+    ),
   },
   {
     task_id: 'HumanEval/fixture_has_close_elements',
@@ -95,6 +131,13 @@ const FIXTURE_SAMPLES = [
     attempt_budget: 1,
     completion:
       'return any(abs(a - b) < threshold for i, a in enumerate(numbers) for b in numbers[i + 1:])\n',
+    ...fixtureFeedbackFields(
+      'HumanEval/fixture_has_close_elements',
+      'unit.counterexample.has_close_elements',
+      'candidate used <= threshold; check requires has_close_elements([1, 3], 2) is False',
+      'Use strict distance when the counterexample proves equality at the threshold must be rejected.',
+      'return any(abs(a - b) <= threshold for i, a in enumerate(numbers) for b in numbers[i + 1:])\n',
+    ),
   },
 ];
 
@@ -152,6 +195,29 @@ function feedbackSource(sample) {
 
 function isExplicitReceiptSha(value) {
   return typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
+}
+
+function proofFeedbackPackageDigest(feedbackPackage) {
+  return sha256(canonical(feedbackPackage));
+}
+
+export function validateProofFeedbackPackage(sample) {
+  if (feedbackSource(sample) === 'none') return { ok: true, reason: 'no-feedback' };
+  const feedbackPackage = sample.proof_feedback_package;
+  if (!feedbackPackage || typeof feedbackPackage !== 'object' || Array.isArray(feedbackPackage)) {
+    return { ok: false, reason: 'missing-proof-feedback-package' };
+  }
+  if (feedbackPackage.version !== 'atomic-proof-feedback-v1') return { ok: false, reason: 'unsupported-proof-feedback-package-version' };
+  if (feedbackPackage.task_id !== sample.task_id) return { ok: false, reason: 'task-id-mismatch' };
+  if (typeof feedbackPackage.invariantId !== 'string' || !feedbackPackage.invariantId) return { ok: false, reason: 'missing-invariant-id' };
+  if (typeof feedbackPackage.counterexample !== 'string' || !feedbackPackage.counterexample) return { ok: false, reason: 'missing-counterexample' };
+  if (typeof feedbackPackage.lessonLine !== 'string' || !feedbackPackage.lessonLine) return { ok: false, reason: 'missing-lesson-line' };
+  if (!isExplicitReceiptSha(feedbackPackage.proposalDigest)) return { ok: false, reason: 'missing-proposal-digest' };
+  const expectedDigest = proofFeedbackPackageDigest(feedbackPackage);
+  if (sample.proof_feedback_package_sha256 !== expectedDigest) {
+    return { ok: false, reason: 'proof-feedback-package-digest-mismatch', expectedDigest, actualDigest: sample.proof_feedback_package_sha256 ?? null };
+  }
+  return { ok: true, reason: 'valid-proof-feedback-package', digest: expectedDigest };
 }
 
 function pythonSource(task, sample) {
@@ -239,10 +305,12 @@ export function runHumanEvalLiftBench(options = {}) {
   const requestedOfficialClaim = Boolean(options.claimOfficialHumanEval);
   const officialShape = external && tasks.length >= 164 && tasks.every((task) => String(task.task_id).startsWith('HumanEval/'));
   const feedbackSamples = samples.filter((sample) => feedbackSource(sample) !== 'none');
+  const feedbackPackageChecks = feedbackSamples.map((sample) => ({ taskId: sample.task_id, arm: sample.arm ?? 'proof', ...validateProofFeedbackPackage(sample) }));
   const feedbackDerived = feedbackSamples.length > 0;
   const allFeedbackReceiptsBound = feedbackSamples.length > 0 && feedbackSamples.every((sample) => isExplicitReceiptSha(sample.atomic_receipt_sha256));
+  const allFeedbackPackagesValid = feedbackSamples.length > 0 && feedbackPackageChecks.every((entry) => entry.ok);
   const rawHumanEvalClaim = requestedOfficialClaim && officialShape && !feedbackDerived;
-  const toolAugmentedHumanEvalClaim = requestedOfficialClaim && officialShape && feedbackDerived && allFeedbackReceiptsBound;
+  const toolAugmentedHumanEvalClaim = requestedOfficialClaim && officialShape && feedbackDerived && allFeedbackReceiptsBound && allFeedbackPackagesValid;
   const fullHumanEvalClaim = rawHumanEvalClaim;
   const pythonProbe = childProcess.spawnSync('python3', ['--version'], { encoding: 'utf8', timeout: 1000 });
   return {
@@ -260,11 +328,18 @@ export function runHumanEvalLiftBench(options = {}) {
       feedbackDerived,
       feedbackSampleCount: feedbackSamples.length,
       allFeedbackReceiptsBound,
+      allFeedbackPackagesValid,
       rawHumanEvalClaim,
       toolAugmentedHumanEvalClaim,
       rawAndToolAugmentedAreDistinct: true,
     },
     pythonAvailable: pythonProbe.status === 0,
+    proofFeedbackPackages: {
+      feedbackSampleCount: feedbackSamples.length,
+      validFeedbackPackageCount: feedbackPackageChecks.filter((entry) => entry.ok).length,
+      allFeedbackPackagesValid,
+      checks: feedbackPackageChecks,
+    },
     controls: {
       sameFixedModel: modelIds.length === 1,
       modelIds,
@@ -282,7 +357,7 @@ export function runHumanEvalLiftBench(options = {}) {
     proofLimits: [
       'Bundled fixture proves only a HumanEval-format runner and fixed-model lift protocol, not the official HumanEval score.',
       'Raw HumanEval claims require an external JSONL dataset, external fixed-model samples, >=164 HumanEval/* tasks, and no proof-feedback-derived samples.',
-      'Atomic tool-augmented HumanEval claims require the same external shape plus explicit Atomic receipt sha256 values for feedback-derived samples.',
+      'Atomic tool-augmented HumanEval claims require the same external shape plus explicit Atomic receipt sha256 values and recomputable proof-feedback package digests for feedback-derived samples.',
       'The runner evaluates submitted samples; it does not call or improve a model by itself.',
     ],
   };

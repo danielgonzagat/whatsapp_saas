@@ -6,11 +6,25 @@
  * about official-score limits, and detects a proof-feedback Pass@1 lift for
  * the same frozen fixture model under the same task/budget controls.
  */
-import { runHumanEvalLiftBench } from '../human-eval-lift-runner.mjs';
+import { runHumanEvalLiftBench, validateProofFeedbackPackage } from '../human-eval-lift-runner.mjs';
 
 const jsonMode = process.argv.includes('--json');
 const report = runHumanEvalLiftBench();
 const forgedOfficial = runHumanEvalLiftBench({ claimOfficialHumanEval: true });
+const forgedFeedbackPackage = validateProofFeedbackPackage({
+  task_id: 'HumanEval/fixture_add',
+  arm: 'proof',
+  feedback_source: 'atomic-proof-feedback',
+  proof_feedback_package: {
+    version: 'atomic-proof-feedback-v1',
+    task_id: 'HumanEval/fixture_add',
+    invariantId: 'unit.counterexample.add',
+    counterexample: 'candidate returned only the first operand',
+    lessonLine: 'Use both operands.',
+    proposalDigest: '0'.repeat(64),
+  },
+  proof_feedback_package_sha256: 'f'.repeat(64),
+});
 const results = [];
 
 function check(name, ok, detail = undefined) {
@@ -35,7 +49,9 @@ check('forged official HumanEval claim is refused on fixture data', forgedOffici
   fullHumanEvalClaim: forgedOfficial.fullHumanEvalClaim,
 });
 check('claim taxonomy separates raw HumanEval from Atomic tool-augmented HumanEval', report.claimTaxonomy.rawAndToolAugmentedAreDistinct === true && report.claimTaxonomy.rawHumanEvalClaim === false && report.claimTaxonomy.toolAugmentedHumanEvalClaim === false, report.claimTaxonomy);
-check('proof-feedback samples block raw HumanEval claims unless explicit Atomic receipts support the tool-augmented claim', report.claimTaxonomy.feedbackDerived === true && report.claimTaxonomy.allFeedbackReceiptsBound === false && forgedOfficial.claimTaxonomy.rawHumanEvalClaim === false, {
+check('proof-feedback samples carry recomputable proof package digests', report.proofFeedbackPackages.feedbackSampleCount === 3 && report.proofFeedbackPackages.validFeedbackPackageCount === 3 && report.proofFeedbackPackages.allFeedbackPackagesValid === true, report.proofFeedbackPackages);
+check('forged proof-feedback package digests are rejected before they can support tool-augmented claims', forgedFeedbackPackage.ok === false && forgedFeedbackPackage.reason === 'proof-feedback-package-digest-mismatch', forgedFeedbackPackage);
+check('proof-feedback samples block raw HumanEval claims unless explicit Atomic receipts and feedback packages support the tool-augmented claim', report.claimTaxonomy.feedbackDerived === true && report.claimTaxonomy.allFeedbackReceiptsBound === false && report.claimTaxonomy.allFeedbackPackagesValid === true && forgedOfficial.claimTaxonomy.rawHumanEvalClaim === false, {
   fixture: report.claimTaxonomy,
   forged: forgedOfficial.claimTaxonomy,
 });
@@ -63,7 +79,7 @@ check('dataset and sample digests bind the benchmark artifacts', /^[a-f0-9]{64}$
   datasetSha256: report.datasetSha256,
   samplesSha256: report.samplesSha256,
 });
-check('proof limits require external data and separate raw/tool-augmented HumanEval claims', report.proofLimits.some((line) => line.includes('Raw HumanEval claims require an external JSONL dataset')) && report.proofLimits.some((line) => line.includes('Atomic tool-augmented HumanEval claims require')), report.proofLimits);
+check('proof limits require external data and receipt-bound raw/tool-augmented HumanEval claims', report.proofLimits.some((line) => line.includes('Raw HumanEval claims require an external JSONL dataset')) && report.proofLimits.some((line) => line.includes('recomputable proof-feedback package digests')), report.proofLimits);
 
 const payload = { ok: results.every((entry) => entry.ok), pass: results.filter((entry) => entry.ok).length, fail: results.filter((entry) => !entry.ok).length, report, results };
 if (jsonMode) process.stdout.write(JSON.stringify(payload, null, 2) + '\n');
