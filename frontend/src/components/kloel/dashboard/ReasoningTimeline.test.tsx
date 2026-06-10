@@ -26,7 +26,7 @@ describe('ReasoningTimeline', () => {
       />,
     );
 
-    expect(screen.getByText('Delta público do provedor.')).toBeTruthy();
+    expect(screen.getAllByText('Delta público do provedor.').length).toBeGreaterThan(0);
   });
 
   it('keeps public processing detail visible after completion', () => {
@@ -44,8 +44,29 @@ describe('ReasoningTimeline', () => {
     );
 
     expect(
-      screen.getByText('Comparei os planos disponíveis e escolhi a melhor recomendação.'),
-    ).toBeTruthy();
+      screen.getAllByText('Comparei os planos disponíveis e escolhi a melhor recomendação.')
+        .length,
+    ).toBeGreaterThan(0);
+  });
+
+  it('derives the collapsed-header gist from the first sentence of the real reasoning', () => {
+    render(
+      <ReasoningTimeline
+        reasoning={makeReasoning({
+          text: 'Analisei o pedido do usuário com calma. Depois listei os produtos.',
+          durationMs: 1200,
+        })}
+        steps={[]}
+        fallbackSummary="resumo operacional do trace"
+        isProcessing={false}
+        isComplete
+      />,
+    );
+
+    expect(screen.getAllByText('Analisei o pedido do usuário com calma.').length).toBeGreaterThan(
+      0,
+    );
+    expect(screen.queryByText('resumo operacional do trace')).toBeNull();
   });
 
   it('redacts private prompt/runtime markers from provider reasoning', () => {
@@ -63,8 +84,9 @@ describe('ReasoningTimeline', () => {
     );
 
     expect(
-      screen.getByText('Detalhes internos desta execução foram omitidos com segurança.'),
-    ).toBeTruthy();
+      screen.getAllByText('Detalhes internos desta execução foram omitidos com segurança.')
+        .length,
+    ).toBeGreaterThan(0);
     expect(screen.queryByText(/runtime context/)).toBeNull();
     expect(screen.queryByText(/system prompt/)).toBeNull();
     expect(screen.queryByText(/skill=artifact/)).toBeNull();
@@ -85,10 +107,10 @@ describe('ReasoningTimeline', () => {
     );
 
     expect(
-      screen.getByText(
+      screen.getAllByText(
         'chain-of-thought bruto: usei tool_call search_web e inspect_self antes de responder.',
-      ),
-    ).toBeTruthy();
+      ).length,
+    ).toBeGreaterThan(0);
     expect(screen.queryByText('Detalhes internos desta execução foram omitidos com segurança.')).toBeNull();
   });
 

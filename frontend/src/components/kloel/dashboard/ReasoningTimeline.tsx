@@ -38,6 +38,26 @@ interface ReasoningTimelineProps {
 const TERTIARY = KLOEL_THEME.textTertiary;
 const NESTED = KLOEL_THEME.bgSecondary;
 
+/**
+ * First sentence of the REAL reasoning emitted this turn, flattened and
+ * truncated for the collapsed header. Empty when no reasoning text exists —
+ * never fabricated.
+ */
+function deriveReasoningGist(text: string): string {
+  const flattened = text.replace(/\s+/g, ' ').trim();
+  if (!flattened) {
+    return '';
+  }
+  const sentenceEnd = flattened.search(/(?<=[.!?…])\s/);
+  const sentence = sentenceEnd > 0 ? flattened.slice(0, sentenceEnd) : flattened;
+  if (sentence.length <= 96) {
+    return sentence;
+  }
+  const cut = sentence.slice(0, 96);
+  const lastSpace = cut.lastIndexOf(' ');
+  return `${cut.slice(0, lastSpace > 40 ? lastSpace : 96).trimEnd()}…`;
+}
+
 /** Real pre-response execution timeline (props-driven, theme-aware). */
 export function ReasoningTimeline({
   reasoning,
@@ -53,7 +73,10 @@ export function ReasoningTimeline({
   const hasPublicReasoningDetail = publicReasoningDetail.trim().length > 0;
   const safeReasoningSummary = reasoning.summary.trim();
   const visibleFallbackSummary = fallbackSummary.trim();
-  const publicReasoningText = safeReasoningSummary || visibleFallbackSummary;
+  // Collapsed-header gist priority: provider summary > first sentence of the
+  // REAL reasoning emitted this turn > operational-trace summary.
+  const publicReasoningText =
+    safeReasoningSummary || deriveReasoningGist(publicReasoningDetail) || visibleFallbackSummary;
   const hasPublicReasoningText = publicReasoningText.length > 0;
   const hasReasoningDuration = Boolean(reasoning.durationMs && reasoning.durationMs > 0);
   const hasRealReasoningSignal =
