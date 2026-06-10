@@ -102,8 +102,12 @@ them as contributions.
 - **Rice is not defeated.** The theorem is about the edit algebra's confluence over a *decidable*
   gate fragment, never "edits are correct for all computation." `UNJUDGED` remains a first-class
   verdict (`gates/formal-gate.ts:80` already concedes this).
-- **Open residuals (engineering):** the no-bypass deny-hook is logic-real but has not yet fired on
-  live traffic (`blockedByDenyHook` = 0 — a launch/harness condition, empirically confirmed dormant);
+- **Open residuals (engineering):** ~~the no-bypass deny-hook has not yet fired on live traffic~~ —
+  **closed 2026-06-10**: in a host-launched session the PreToolUse deny-hook blocked **1,088 real
+  native mutation attempts** (`.atomic/bypass-ledger.jsonl`, `blockedByDenyHook:true`), satisfying
+  the T7 bar (`blockedByDenyHook > 0` in live traffic). Remaining enforcement residual is the
+  harness-layer scope: the hook binds the agent tool surface; cron workers/spawned subprocesses
+  outside PreToolUse still require OS-level enforcement (MXC tier) for a kernel-grade floor;
   the `DisproofWitness` is not yet wired through every MCP tool entry point; same-file independence is
   now proven for the identifier-coupling fragment, leaving only positional/non-identifier coupling
   (the cross-file dynamic-import analogue) undecidable.
