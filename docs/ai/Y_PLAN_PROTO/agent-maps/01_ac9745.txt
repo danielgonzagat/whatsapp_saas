@@ -1,0 +1,123 @@
+{
+  "domain": "Consultar (Carteira + Analytics)",
+  "feasibility": "VIÁVEL — e em grande parte JÁ IMPLEMENTADO no repo (correção das minhas duas submissões anteriores: a 1ª reportou BLOCKED por uma falha transitória de ferramenta; a 2ª inventou um componente 'KloelGraphRouteScreen' que NÃO existe). Verifiquei por arquivo:linha: o overlay já renderiza a TELA REAL do Next.js, não painéis inline do protótipo. KloelGraphShell.tsx:324-326 monta `<KloelGraphOverlay activeNode={activeNode} onClose={closeOverlay}>{children}</KloelGraphOverlay>` — children = a página real da rota (/carteira/* renderiza KloelCarteira; /analytics renderiza KloelRelatorio com as tabs reais). KloelGraphPrototype.jsx (671 linhas) é o protótipo canônico com SEEDS + builders; os nós estáticos do grafo (incl. carteira/analytics) já foram extraídos para KloelGraph.static-nodes.ts e o resolver para KloelGraph.routes.ts. O trabalho restante do domínio Consultar é: (a) trocar os SEEDS do builder de carteira (DEFAULT_WALLET/ORDERS_SEED) por dados reais com honest-empty quando o grafo precisar mostrar nós-entidade (saques/antecipações/itens); (b) o swap de tela no overlay já está pronto via roteamento Next.js — basta garantir que activeNode resolva para o nó certo (já resolve).",
+  "decompositionModule": "frontend/src/components/kloel/graph/ — protótipo JÁ decomposto: KloelGraphPrototype.jsx (671 linhas: THEMES + seeds + builders, inclui buildWalletNodesEdges@653) + KloelGraph.static-nodes.ts (nós estáticos: WALLET_TABS=[saldo,extrato,saques,antecipacoes,movimentacoes]@34, REPORT_TABS=[vendas,assinaturas,abandonos,estornos]@35, sun 'consultar'@56, consultar-analytics@161, consultar-wallet-{tab}@209, consultar-report-{tab}@220) + KloelGraph.routes.ts (resolver pathname->nó; /carteira->consultar-wallet-saldo@102, /analytics?tab->consultar-report-{tab}@104-108) + KloelGraph.product-nodes.ts + KloelGraphShell.tsx (host + overlay) + KloelGraphShell.helpers.ts + KloelGraphOverlay.tsx + KloelGraphNodeButton.tsx + KloelGraphFloatingNav.tsx + KloelGraphTheme.tsx. O módulo de DADOS a criar é um adapter wallet/reports que converte hooks reais em nós do builder com honest-empty.",
+  "overlaySwapStrategy": "ROTA (Next.js routing) — NÃO import direto, e já está montado. O overlay (KloelGraphOverlay.tsx) é um dialog 80vw×80vh quase invisível (role=dialog, aria-modal, var(--bg-void), botão 'Fechar overlay do grafo', ErrorBoundary) que renderiza `{children}` — ou seja, a página real do App Router. KloelGraphShell envolve o conteúdo da rota e, com base em activeNode (resolvido de pathname+searchParams via resolveKloelGraphNodeForPathFromNodes), mostra o overlay sobre o grafo dimmed. Portanto, clicar num nó do grafo navega (router.push(node.route)) para /carteira/{tab} ou /analytics?tab={tab}; a página real (KloelCarteira / KloelRelatorio) renderiza dentro do overlay SEM reestilizar. Providers exigidos já vivem no layout (main): Toaster/useToast para os modais de saque/antecipação da carteira; SWR já configurado; GraphThemeProvider envolve o shell. NÃO é preciso importar telas diretamente no protótipo.",
+  "protoSeeds": [
+    "DEFAULT_WALLET (KloelGraphPrototype.jsx:638) — balance.available/pending/blocked/total FAKE + withdrawals[] (wd1/wd2) + anticipations[] (an1) + transactions[] (tx1/tx2/tx3) FAKE",
+    "ORDERS_SEED (KloelGraphPrototype.jsx:465) — pedidos/vendas FAKE (orderNumber, customerName, totalInCents, status, kind 'subscription') — alimenta Vendas em wl-vendas E em cv-vendas (Conectar/CRM, L631)",
+    "WALLET_BRANCHES (KloelGraphPrototype.jsx:628) — NÃO é seed de dados: taxonomia das 8 sub-áreas [saldo,extrato,saques,antecipacoes,vendas,assinaturas,abandonos,estornos]; PRESERVAR como estrutura",
+    "NÃO existe ABANDONOS_SEED nem ESTORNOS_SEED próprios no protótipo — abandonos/estornos são apenas branches em WALLET_BRANCHES (e nós estáticos consultar-report-{abandonos,estornos}); o builder NÃO emite nós-entidade para eles hoje"
+  ],
+  "protoBuilders": [
+    "buildWalletNodesEdges(wallet) — KloelGraphPrototype.jsx:653 — emite 8 nós 'walletBranch' (sob sun-carteira, meta.branchKey) + 'walletItem' para wallet.withdrawals (sob wl-saques) e wallet.anticipations (sob wl-antec). Honest-safe no topo: `if (!wallet) return {nodes:[],edges:[]}` @655. É o ÚNICO builder do domínio Consultar/Carteira.",
+    "buildConversarNodesEdges (L508/L631) toca ORDERS_SEED para Vendas dentro de Conectar/CRM (cv-vendas) — OVERLAP: Vendas aparece em Carteira (wl-vendas) e em Conectar (cv-vendas); ao desfaker ORDERS_SEED, ambos devem consumir a MESMA fonte real."
+  ],
+  "protoInlineScreens": [
+    "NENHUMA tela inline de carteira/analytics existe no KloelGraphPrototype.jsx (671 linhas — termina no builder de wallet @671). Os nomes do briefing (WalletOverview/BranchPanel/Withdraw/Anticipate/Extrato/Vendas/Assinaturas/Abandonos/Estornos como funções inline) NÃO foram encontrados como componentes — o que existe são branchKey/labels em WALLET_BRANCHES. A renderização da TELA ao abrir um nó é delegada ao roteamento Next.js (página real dentro do KloelGraphOverlay via {children}). NÃO existe componente 'KloelGraphRouteScreen' (corrijo minha submissão anterior que o citou)."
+  ],
+  "realHooks": [
+    {
+      "name": "useWalletBalance",
+      "path": "frontend/src/hooks/useWallet.ts",
+      "endpoint": "GET /kloel/wallet/{workspaceId}/balance",
+      "key": "`/kloel/wallet/${wsId}/balance`",
+      "returns": "{balance, isLoading, error, mutate} — já honest (loading+error), keepPreviousData"
+    },
+    {
+      "name": "useWalletTransactions",
+      "path": "frontend/src/hooks/useWallet.ts",
+      "endpoint": "GET /kloel/wallet/{workspaceId}/transactions",
+      "note": "alimenta Extrato (wl-extrato)"
+    },
+    {
+      "name": "useWalletWithdrawals",
+      "path": "frontend/src/hooks/useWallet.ts",
+      "note": "alimenta Saques (wl-saques) — consumido por carteira.tsx"
+    },
+    {
+      "name": "useWalletAnticipations",
+      "path": "frontend/src/hooks/useWallet.ts",
+      "note": "alimenta Antecipações (wl-antec) — retorna {anticipations, totals}"
+    },
+    {
+      "name": "useWalletChart / useWalletMonthly",
+      "path": "frontend/src/hooks/useWallet.ts",
+      "note": "gráfico/receita mensal da carteira"
+    },
+    {
+      "name": "api/wallet (client)",
+      "path": "frontend/src/lib/api/wallet.ts",
+      "clients": "getWalletBalance@44, getWalletTransactions@55, processSale@70, requestWithdrawal@88, confirmTransaction@104",
+      "endpoints": "/kloel/wallet/{ws}/balance|transactions|process-sale|withdraw|confirm/{txId}"
+    },
+    {
+      "name": "api/analytics (client)",
+      "path": "frontend/src/lib/api/analytics.ts",
+      "clients": "getAnalyticsDashboard@82 (/analytics/dashboard), getAnalyticsDailyActivity@91 (/analytics/activity), getAnalyticsAdvanced@100 (/analytics/advanced), getAnalyticsStats@138 (/analytics/stats), getAnalyticsFullReport@193 (/analytics/reports)"
+    },
+    {
+      "name": "use-analytics-filters / use-report",
+      "path": "frontend/src/app/(main)/analytics/use-analytics-filters.ts + use-report.ts",
+      "note": "estado de filtros/tab + hook de fetch por relatório usado pelas tabs reais"
+    },
+    {
+      "name": "useReports / useDetailedReports",
+      "path": "frontend/src/hooks/useReports.ts + useDetailedReports.ts",
+      "note": "hooks de relatórios (Vendas/Assinaturas/Abandonos/Estornos consultam via estes + use-report)"
+    }
+  ],
+  "realScreens": [
+    {
+      "name": "KloelCarteira (default export)",
+      "path": "frontend/src/components/kloel/carteira.tsx",
+      "note": "tela REAL de carteira; aceita prop {defaultTab='saldo'}; usa useWalletBalance/useWalletTransactions/useWalletChart/useWalletMonthly/useWalletWithdrawals/useWalletAnticipations; JÁ tem honest-fallback (bal -> zeros se sem dados)",
+      "subcomponents": [
+        "CarteiraSaldoCard (Saldo wl-saldo)",
+        "CarteiraExtratoTable (Extrato wl-extrato)",
+        "CarteiraSaque + CarteiraWithdrawModal (Saques wl-saques)",
+        "CarteiraTabAntecipacoes + CarteiraAntecipateModal (Antecipações wl-antec)",
+        "carteira-recent-transactions",
+        "carteira-revenue-chart",
+        "carteira-add-bank-form"
+      ],
+      "providers": "requer Toaster/useToast (modais)",
+      "routes": "app/(main)/carteira/{saldo,extrato,saques,antecipacoes,movimentacoes}/page.tsx + /carteira/page.tsx"
+    },
+    {
+      "name": "KloelRelatorio (default export, página de Analytics)",
+      "path": "frontend/src/app/(main)/analytics/page.tsx",
+      "note": "tela REAL de analytics; AnalyticsHeader + TABS (tabs.config.ts) + useAnalyticsFilters; tab via ?tab=; export force-dynamic",
+      "tabs": [
+        "VendasTab (frontend/src/app/(main)/analytics/tabs/VendasTab.tsx) — wl-vendas / consultar-report-vendas",
+        "AssinaturasTab (.../tabs/AssinaturasTab.tsx) — wl-assin / consultar-report-assinaturas",
+        "AbandonosTab (.../tabs/AbandonosTab.tsx) — wl-aband / consultar-report-abandonos",
+        "EstornosTab (.../tabs/EstornosTab.tsx) — wl-estorno / consultar-report-estornos",
+        "(+ 12 outras tabs reais: AfterPay/Churn/Satisfacao/Envio/Afiliados/Indicadores/IndProd/Recusa/Origem/Metricas/Chargeback/Engajamento)"
+      ],
+      "componentes": "AnalyticsHeader.tsx, AnalyticsFilterDrawer.tsx, AnalyticsExportPanel.tsx, analytics.design-tokens.ts, tabs/index.ts"
+    }
+  ],
+  "wiringSteps": [
+    "1. Overlay swap: JÁ FEITO. KloelGraphShell.tsx:324-326 renderiza a página real ({children}) dentro do KloelGraphOverlay; resolveKloelGraphNodeForPath (KloelGraph.routes.ts:101-108) mapeia /carteira->consultar-wallet-saldo e /analytics?tab={t}->consultar-report-{t}. Clicar num nó navega via router.push(node.route). Nenhum painel inline a substituir. Verificar apenas que o layout (main) provê Toaster/useToast acima do overlay (carteira usa modais).",
+    "2. Desfaker os SEEDS do builder de carteira (REGRA ANTI-HARDCODE): trocar a FONTE de buildWalletNodesEdges (L653) de DEFAULT_WALLET (L638) para dados reais. Como buildWalletNodesEdges roda no protótipo (.jsx, sem hooks no escopo do builder), criar um adapter que recebe os dados de useWalletBalance/useWalletWithdrawals/useWalletAnticipations (chamados no nível do componente React do grafo) e passa o objeto wallet ao builder; em loading/empty/error -> passar wallet com withdrawals/anticipations vazios (emite só os 8 walletBranch, ZERO walletItem), NUNCA DEFAULT_WALLET.",
+    "3. honest-empty rigoroso: builder já retorna {nodes:[],edges:[]} se wallet==null (@655). Manter: a casca (8 branches) sempre aparece; itens-entidade só quando há dados reais. Sem fallback para seed em runtime.",
+    "4. Vendas/Assinaturas/Abandonos/Estornos: o builder NÃO emite itens para esses 4 branches hoje (sem seed). Manter assim e deixar a profundidade desses dados para a TELA real (AnalyticsTabs) quando o nó é aberto no overlay — evita carregar listas pesadas no grafo. Se quiser nós-entidade no grafo, alimentar via useReports/use-report com lazy-load por branch.",
+    "5. Remover dependência de ORDERS_SEED (L465) no caminho de Vendas em AMBOS os builders (wl-vendas em wallet e cv-vendas em conversar/L631) — usar a MESMA fonte real (getAnalyticsFullReport ou endpoint de orders) para não duplicar dado/realidade divergente.",
+    "6. Validar E2E honesto por estado: loading->skeleton/branches sem itens; empty->'Nenhuma movimentação ainda'; error->erro real (não seed). Rodar `cd frontend && npm run lint && npm run build`. Garantir zero Math.random/seed chegando ao usuário (carteira.tsx já faz fallback p/ zeros — manter)."
+  ],
+  "filesToCreate": [
+    "frontend/src/components/kloel/graph/KloelGraph.wallet-data.ts — adapter de DADOS do domínio Consultar: hook(s) (useWalletBalance/useWalletWithdrawals/useWalletAnticipations) -> objeto `wallet` no shape esperado por buildWalletNodesEdges, com honest-empty (loading/empty/error -> withdrawals:[]/anticipations:[], só os 8 walletBranch; nunca DEFAULT_WALLET)"
+  ],
+  "filesToEdit": [
+    "frontend/src/components/kloel/graph/KloelGraphPrototype.jsx — VERIFICADO 671 linhas; trocar a FONTE de buildWalletNodesEdges (L653) de DEFAULT_WALLET (L638) para o adapter de dados reais; remover dependência de ORDERS_SEED (L465) no caminho de Vendas; PRESERVAR WALLET_BRANCHES (L628) e o shape de saída (walletBranch/walletItem). Edição mínima.",
+    "frontend/src/components/kloel/graph/KloelGraphShell.tsx — (se o builder de wallet for invocado a partir do Shell para compor os nós do grafo) injetar o adapter de dados reais via hooks no nível do componente e passar ao builder; o overlay-swap em si (L324-326) já está correto e não precisa mudar"
+  ],
+  "blockers": [
+    "NENHUM bloqueio técnico hard. Itens a confirmar antes de editar: (a) ONDE buildWalletNodesEdges é INVOCADO para compor o grafo vivo (KloelGraphPrototype.jsx é o protótipo canônico; o grafo de produção usa KLOEL_GRAPH_NODES estáticos + builders dinâmicos no Shell — confirmar se wallet entra via builder dinâmico ou se os nós wallet vêm só dos static-nodes consultar-wallet-{tab}; isso decide se o adapter alimenta o Shell ou o protótipo).",
+    "(b) Layout (main) provê Toaster/useToast acima do overlay (carteira usa modais de saque/antecipação) — confirmar para a tela real renderizar 100% no overlay.",
+    "(c) Overlap Vendas: wl-vendas (Carteira) e cv-vendas (Conectar/CRM, L631) — ao desfaker ORDERS_SEED, garantir fonte única para não duplicar.",
+    "Worktree collision: 4+ worktrees KloelGraph concorrentes sobre o MESMO KloelGraphPrototype.jsx — coordenar landing."
+  ],
+  "collisionRisk": "ALTO no arquivo do protótipo, BAIXO no adapter novo. Verificado via `git worktree list`: múltiplos worktrees KloelGraph concorrentes sobre o MESMO KloelGraphPrototype.jsx — /Users/danielpenin/whatsapp_saas-kg (feat/kloelgraph-literal-prototype), /Users/danielpenin/whatsapp_saas-kloelgraph-primary (fix/kloelgraph-primary-shell), /Users/danielpenin/wg-kloelgraph (feat/kloelgraph-foundation-criar) e a worktree atual (feat/kloelgraph-prototype-engine). O .jsx (43KB/671 linhas) está em decomposição ativa. Mitigação: concentrar a lógica no arquivo NOVO (KloelGraph.wallet-data.ts), tocar KloelGraphPrototype.jsx no MÍNIMO (só troca de fonte do builder), e o overlay-swap NÃO precisa edição (já pronto). Risco adicional: domínio Vendas compartilhado entre builder de Carteira (wl-vendas) e de Conectar/CRM (cv-vendas) — uma só fonte real ao desfaker ORDERS_SEED."
+}

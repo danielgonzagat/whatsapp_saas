@@ -1,9 +1,10 @@
 import { randomInt } from 'node:crypto';
 import { prisma } from './db';
 import { extractExternalId } from './flow-engine-external-id';
+import type { WorkerLogger as WorkerLoggerClass } from './logger';
+import { createOutboundMessageDeduped } from './outbound-message-dedup';
 import { ProviderRegistry } from './providers/registry';
 import { redisPub } from './redis-client';
-import type { WorkerLogger as WorkerLoggerClass } from './logger';
 
 export interface FlowMessageSenderDeps {
   log: WorkerLoggerClass;
@@ -34,9 +35,16 @@ export async function sendMessage(
     throw new Error('Nenhum provider para este usuário');
   }
 
-  const workspace = ((provider as never as Record<string, unknown>).workspace as {
-    id: string;
-  }) || { id: 'default' };
+  const workspace = (provider as never as Record<string, unknown>).workspace as
+    | { id: string }
+    | undefined;
+  if (!workspace?.id) {
+    // Fail-closed (F3-A): nunca despachar com tenant sintético.
+    deps.log.error('send_blocked_missing_workspace', { user });
+    throw new Error(
+      'Envio bloqueado: workspace não resolvido para o destinatário (isolamento de tenant)',
+    );
+  }
   let contactId: string | null = null;
   let conversationId: string | null = null;
 
@@ -101,7 +109,19 @@ export async function sendMessage(
         }
         conversationId = conversation.id;
 
-        const created = await prisma.message.create({
+        // F1-B (P0): flow/campaign sends route through providers that POST the
+        // backend HTTP path (/internal/whatsapp-runtime/send-text), which
+        // already persists the OUTBOUND row via inbox.saveMessageByPhone.
+        // Dedupe on the (workspaceId, externalId) unique pair (shared recipe
+        // in outbound-message-dedup.ts) so we never create (and re-broadcast)
+        // a second row for the same send. When externalId is absent we keep
+        // the legacy create-always behavior.
+        const created = await createOutboundMessageDeduped<{ id: string; createdAt: Date }>({
+          messages: prisma.message,
+          log: deps.log,
+          workspaceId: workspace.id,
+          conversationId: conversation.id,
+          externalId: externalId || null,
           data: {
             workspaceId: workspace.id,
             contactId: contact.id,
@@ -114,57 +134,59 @@ export async function sendMessage(
           },
         });
 
-        await prisma.conversation.updateMany({
-          where: { id: conversation.id, workspaceId: workspace.id },
-          data: { lastMessageAt: new Date(), unreadCount: 0 },
-        });
+        if (created) {
+          await prisma.conversation.updateMany({
+            where: { id: conversation.id, workspaceId: workspace.id },
+            data: { lastMessageAt: new Date(), unreadCount: 0 },
+          });
 
-        // Notifica realtime (via Redis → backend WebSocket)
-        try {
-          await redisPub.publish(
-            'ws:inbox',
-            JSON.stringify({
-              type: 'message:new',
-              workspaceId: workspace.id,
-              message: created,
-            }),
-          );
-          await redisPub.publish(
-            'ws:inbox',
-            JSON.stringify({
-              type: 'conversation:update',
-              workspaceId: workspace.id,
-              conversation: {
-                id: conversation.id,
-                lastMessageStatus: 'SENT',
-                lastMessageAt: created.createdAt,
-              },
-            }),
-          );
-        } catch (pubErr) {
-          deps.log.warn('ws_publish_failed', {
-            error: pubErr instanceof Error ? pubErr.message : String(pubErr),
-          });
-        }
-        try {
-          await redisPub.publish(
-            'ws:inbox',
-            JSON.stringify({
-              type: 'message:status',
-              workspaceId: workspace.id,
-              payload: {
-                id: created.id,
-                conversationId: conversation.id,
-                contactId: contact.id,
-                externalId: externalId || null,
-                status: 'SENT',
-              },
-            }),
-          );
-        } catch (pubErr) {
-          deps.log.warn('ws_publish_failed_status', {
-            error: pubErr instanceof Error ? pubErr.message : String(pubErr),
-          });
+          // Notifica realtime (via Redis → backend WebSocket)
+          try {
+            await redisPub.publish(
+              'ws:inbox',
+              JSON.stringify({
+                type: 'message:new',
+                workspaceId: workspace.id,
+                message: created,
+              }),
+            );
+            await redisPub.publish(
+              'ws:inbox',
+              JSON.stringify({
+                type: 'conversation:update',
+                workspaceId: workspace.id,
+                conversation: {
+                  id: conversation.id,
+                  lastMessageStatus: 'SENT',
+                  lastMessageAt: created.createdAt,
+                },
+              }),
+            );
+          } catch (pubErr) {
+            deps.log.warn('ws_publish_failed', {
+              error: pubErr instanceof Error ? pubErr.message : String(pubErr),
+            });
+          }
+          try {
+            await redisPub.publish(
+              'ws:inbox',
+              JSON.stringify({
+                type: 'message:status',
+                workspaceId: workspace.id,
+                payload: {
+                  id: created.id,
+                  conversationId: conversation.id,
+                  contactId: contact.id,
+                  externalId: externalId || null,
+                  status: 'SENT',
+                },
+              }),
+            );
+          } catch (pubErr) {
+            deps.log.warn('ws_publish_failed_status', {
+              error: pubErr instanceof Error ? pubErr.message : String(pubErr),
+            });
+          }
         }
       } catch (err) {
         deps.log.warn('persist_outbound_failed', {

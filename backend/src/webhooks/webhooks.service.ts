@@ -2,12 +2,11 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
   BadRequestException,
   ForbiddenException,
-  Inject,
   Injectable,
   Logger,
   Optional,
-  forwardRef,
 } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import type { Redis } from 'ioredis';
 import { getCorrelationId } from '../common/observability/correlation-store';
 import { InboxGateway } from '../inbox/inbox.gateway';
@@ -55,13 +54,13 @@ type InstagramWebhookBody = Record<string, unknown>;
 @Injectable()
 export class WebhooksService {
   private readonly logger = new Logger(WebhooksService.name);
+  private inboxGateway?: InboxGateway;
+  private omnichannelService?: OmnichannelService;
 
   constructor(
     private prisma: PrismaService,
-    private inboxGateway: InboxGateway,
+    private readonly moduleRef: ModuleRef,
     @InjectRedis() private readonly redis: Redis,
-    @Inject(forwardRef(() => OmnichannelService))
-    private readonly omnichannelService: OmnichannelService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
@@ -268,6 +267,25 @@ export class WebhooksService {
     });
   }
 
+  private getInboxGateway(): InboxGateway {
+    const gateway = this.inboxGateway ?? this.moduleRef.get(InboxGateway, { strict: false });
+    if (!gateway) {
+      throw new Error('InboxGateway provider is not available');
+    }
+    this.inboxGateway = gateway;
+    return gateway;
+  }
+
+  private getOmnichannelService(): OmnichannelService {
+    const service =
+      this.omnichannelService ?? this.moduleRef.get(OmnichannelService, { strict: false });
+    if (!service) {
+      throw new Error('OmnichannelService provider is not available');
+    }
+    this.omnichannelService = service;
+    return service;
+  }
+
   private async publishMessageStatus(
     workspaceId: string,
     m: MessageStatusTarget,
@@ -276,10 +294,11 @@ export class WebhooksService {
   ): Promise<void> {
     const statusPayload = buildStatusEventPayload(m, status, errorCode);
     const conversationPayload = buildConversationUpdatePayload(m, status, errorCode);
+    const inboxGateway = this.getInboxGateway();
 
-    this.inboxGateway.emitToWorkspace(workspaceId, 'message:status', statusPayload);
+    inboxGateway.emitToWorkspace(workspaceId, 'message:status', statusPayload);
     if (conversationPayload) {
-      this.inboxGateway.emitToWorkspace(workspaceId, 'conversation:update', conversationPayload);
+      inboxGateway.emitToWorkspace(workspaceId, 'conversation:update', conversationPayload);
     }
     try {
       await this.redis.publish('ws:inbox', buildStatusPubSubEnvelope(workspaceId, statusPayload));
@@ -379,7 +398,10 @@ export class WebhooksService {
     this.logger.log(`[INSTAGRAM] Processing message for workspace ${workspaceId}`);
 
     try {
-      const result = await this.omnichannelService.processInstagramWebhook(workspaceId, payload);
+      const result = await this.getOmnichannelService().processInstagramWebhook(
+        workspaceId,
+        payload,
+      );
       return result;
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'WebhooksService.processInstagramWebhook');

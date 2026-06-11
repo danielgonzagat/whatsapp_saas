@@ -120,6 +120,62 @@
       "method": "updateMany",
       "kind": "SCOPED_VIA_HELPER",
       "reason": "where = buildKloelSaleStripeWhere(workspaceId, intent.id, orderId) which ALWAYS returns `{ workspaceId, ... }`; runs inside the approved-sale $transaction guarded by `if (workspaceId)`. Workspace-isolated."
+    },
+    {
+      "file": "backend/src/kloel/ledger-balance-after-backfill.service.ts",
+      "line": 103,
+      "model": "kloelWalletLedger",
+      "method": "findMany",
+      "kind": "INTENTIONAL_GLOBAL",
+      "reason": "Admin backfill recomputing balanceAfter across the WHOLE ledger by design; iterates every workspace ordered by (workspaceId, createdAt) and is operator-triggered, not request-scoped."
+    },
+    {
+      "file": "backend/src/kloel/ledger-balance-after-backfill.service.ts",
+      "line": 134,
+      "model": "kloelWalletLedger",
+      "method": "updateMany",
+      "kind": "INTENTIONAL_GLOBAL",
+      "reason": "Same admin backfill: bulk-writes recomputed balanceAfter by globally-unique ledger row ids gathered in the same pass."
+    },
+    {
+      "file": "backend/src/kloel/ledger-balance-after-backfill.service.ts",
+      "line": 189,
+      "model": "kloelWalletLedger",
+      "method": "findMany",
+      "kind": "INTENTIONAL_GLOBAL",
+      "reason": "Same admin backfill: verification re-read across all workspaces to assert the recompute converged."
+    },
+    {
+      "file": "backend/src/kloel/mind/aliases/mind-memory-backfill.service.ts",
+      "line": 163,
+      "model": "mindMemory",
+      "method": "count",
+      "kind": "INTENTIONAL_GLOBAL",
+      "reason": "Global progress counter for the MindMemory dual-write backfill (ADR-0013 alias slice); intentionally counts rows across all workspaces to report completion."
+    },
+    {
+      "file": "backend/src/kloel/mind/aliases/mind-message-backfill.service.ts",
+      "line": 98,
+      "model": "mindMessage",
+      "method": "count",
+      "kind": "INTENTIONAL_GLOBAL",
+      "reason": "Global progress counter for the MindMessage dual-write backfill (ADR-0013 alias slice); intentionally counts across all workspaces."
+    },
+    {
+      "file": "backend/src/kloel/mind/coordination/mind-event-ingestor.service.ts",
+      "line": 135,
+      "model": "mindOutboxEvent",
+      "method": "updateMany",
+      "kind": "INTENTIONAL_GLOBAL",
+      "reason": "Outbox drainer marks processed events by globally-unique cuid ids it just fetched; the poll is a cross-workspace drainer by design and ids cannot collide across tenants."
+    },
+    {
+      "file": "backend/src/kloel/wallet-anticipation-backfill.service.ts",
+      "line": 117,
+      "model": "walletAnticipation",
+      "method": "updateMany",
+      "kind": "INTENTIONAL_GLOBAL",
+      "reason": "Admin backfill writing the new *InCents columns by globally-unique anticipation ids gathered in the same global pass (money-ledgers Stage 2)."
     }
   ]
 }

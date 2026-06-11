@@ -1,0 +1,177 @@
+{
+  "kind": "iiif-real-v1-state",
+  "taskId": "task1-dedup-under-byte-cap",
+  "baselineScore": 5,
+  "maxGenerations": 5,
+  "models": [
+    "haiku",
+    "opus"
+  ],
+  "arms": [
+    "ESCALAR",
+    "GRADIENTE"
+  ],
+  "seeds": [
+    "s1",
+    "s2",
+    "s3"
+  ],
+  "lineages": {
+    "haiku|ESCALAR|s1": {
+      "model": "haiku",
+      "arm": "ESCALAR",
+      "seed": "s1",
+      "generation": 5,
+      "currentText": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction sharedLogic() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  return sharedLogic();\n}\n\nfunction b() {\n  return sharedLogic();\n}\n",
+      "lastDecision": "reject",
+      "lastScore": 13,
+      "anchor": "85da9865b470c28fde2cf42c0f5eea617bf777a41b34e8e93f011b8d360cfb30",
+      "promotes": 3,
+      "rejects": 1,
+      "bestScore": 13
+    },
+    "haiku|ESCALAR|s2": {
+      "model": "haiku",
+      "arm": "ESCALAR",
+      "seed": "s2",
+      "generation": 5,
+      "currentText": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction _sharedLogic() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction b() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n",
+      "lastDecision": "promote",
+      "lastScore": 1,
+      "anchor": "d2db6712dca407cf5dc8c4028bfa5d9d000ab111379a5bcc5c05e001b0200a89",
+      "promotes": 3,
+      "rejects": 1,
+      "bestScore": 7
+    },
+    "haiku|ESCALAR|s3": {
+      "model": "haiku",
+      "arm": "ESCALAR",
+      "seed": "s3",
+      "generation": 5,
+      "currentText": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction _shared() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  return _shared();\n}\n\nfunction b() {\n  return _shared();\n}\n",
+      "lastDecision": "reject",
+      "lastScore": 14,
+      "anchor": "3d933fb2018c7fce2ebdce9e4693dfa894f7d230a068da36a8aae9d1c226bc9b",
+      "promotes": 3,
+      "rejects": 1,
+      "bestScore": 14
+    },
+    "haiku|GRADIENTE|s1": {
+      "model": "haiku",
+      "arm": "GRADIENTE",
+      "seed": "s1",
+      "generation": 5,
+      "currentText": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction _shared() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  return _shared();\n}\n\nfunction b() {\n  return _shared();\n}\n",
+      "lastDecision": "reject",
+      "lastScore": 14,
+      "anchor": "ee400c0a820c892dd81685ecb2720e265aa44d5459135d65f7c7cd0b917e0e24",
+      "promotes": 3,
+      "rejects": 1,
+      "bestScore": 14
+    },
+    "haiku|GRADIENTE|s2": {
+      "model": "haiku",
+      "arm": "GRADIENTE",
+      "seed": "s2",
+      "generation": 5,
+      "currentText": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction _sharedLogic() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  // dup:block\n  return _sharedLogic(); // end-dup\n}\n\nfunction b() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n",
+      "lastDecision": "reject",
+      "lastScore": 4,
+      "anchor": "15d197473f8e66f1f584d398248251b1c07d4a0280ed5626793c8bf4b8eab811",
+      "promotes": 1,
+      "rejects": 3,
+      "bestScore": 5
+    },
+    "haiku|GRADIENTE|s3": {
+      "model": "haiku",
+      "arm": "GRADIENTE",
+      "seed": "s3",
+      "generation": 5,
+      "currentText": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction _computeNormalized() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction b() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n",
+      "lastDecision": "promote",
+      "lastScore": 1,
+      "anchor": "f3e4ca5217b8162a82638d113f5124ca25682eaa326abae47a3a3a241f63a818",
+      "promotes": 3,
+      "rejects": 1,
+      "bestScore": 7
+    },
+    "opus|ESCALAR|s1": {
+      "model": "opus",
+      "arm": "ESCALAR",
+      "seed": "s1",
+      "generation": 5,
+      "currentText": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction dupHelper() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction sharedBlock() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction dupBlock() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction a() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction b() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n",
+      "lastDecision": "reject",
+      "lastScore": -17,
+      "anchor": "843574557a3b070a626a0f4c8ec34dd97c130be62e5810013a8ece9ada6d2288",
+      "promotes": 3,
+      "rejects": 1,
+      "bestScore": 5
+    },
+    "opus|ESCALAR|s2": {
+      "model": "opus",
+      "arm": "ESCALAR",
+      "seed": "s2",
+      "generation": 5,
+      "currentText": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction sharedCompute() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  return sharedCompute();\n}\n\nfunction b() {\n  return sharedCompute();\n}\n",
+      "lastDecision": "reject",
+      "lastScore": 13,
+      "anchor": "65b9f84277d406df3b91d6e9410a0ea88340c2628bea16259120e4392d8fd182",
+      "promotes": 3,
+      "rejects": 1,
+      "bestScore": 13
+    },
+    "opus|ESCALAR|s3": {
+      "model": "opus",
+      "arm": "ESCALAR",
+      "seed": "s3",
+      "generation": 5,
+      "currentText": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction dupHelper() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction dupBlock() {\n  return dupHelper();\n}\n\nfunction a() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction b() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n",
+      "lastDecision": "reject",
+      "lastScore": -4,
+      "anchor": "2f468501a7162e3e70746a8b15156c0d7fc48b5e7c1aa28af79766298ed5279f",
+      "promotes": 3,
+      "rejects": 1,
+      "bestScore": 5
+    },
+    "opus|GRADIENTE|s1": {
+      "model": "opus",
+      "arm": "GRADIENTE",
+      "seed": "s1",
+      "generation": 5,
+      "currentText": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction dupBlock() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction shared() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction dedup() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction b() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n",
+      "lastDecision": "reject",
+      "lastScore": -7,
+      "anchor": "9c24bba2d922debb71a9b1359fa971ce67783f6a294326de136dfb1bd3e0d40e",
+      "promotes": 3,
+      "rejects": 1,
+      "bestScore": 5
+    },
+    "opus|GRADIENTE|s2": {
+      "model": "opus",
+      "arm": "GRADIENTE",
+      "seed": "s2",
+      "generation": 5,
+      "currentText": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction shared() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction a() {\n  return shared();\n}\n\nfunction b() {\n  return shared();\n}\n",
+      "lastDecision": "reject",
+      "lastScore": 10,
+      "anchor": "92c38beae17f4c9a15ad3a4f3b7ecb76d8c83d4321a1d342f942188b073ee6cc",
+      "promotes": 3,
+      "rejects": 1,
+      "bestScore": 10
+    },
+    "opus|GRADIENTE|s3": {
+      "model": "opus",
+      "arm": "GRADIENTE",
+      "seed": "s3",
+      "generation": 5,
+      "currentText": "// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction dupShared() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction dupBody() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction dup() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction a() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction b() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n",
+      "lastDecision": "reject",
+      "lastScore": -17,
+      "anchor": "fd8846c87ba82c986e02ef3421925cf8ec9c043d05891bf644c43fe27f4e7693",
+      "promotes": 3,
+      "rejects": 1,
+      "bestScore": 5
+    }
+  }
+}

@@ -1,18 +1,19 @@
 import { Prisma } from '@prisma/client';
+import { safeStr } from '../common/string';
 import type { StructuredLogger } from '../logging/structured-logger';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { SmartPaymentService } from './smart-payment.service';
 import type { ToolResult } from './kloel-chat-tools.agent-runtime.helpers';
-import {
-  centsFromUnknown,
-  NON_SLUG_CHAR_RE,
-  safeStr,
-  type ToolCreateFlowArgs,
-  type ToolDashboardSummaryArgs,
-  type ToolRememberUserInfoArgs,
-  type ToolSetBrandVoiceArgs,
-  type ToolSetSalesPolicyArgs,
-} from './kloel-chat-tools.types';
+import type { ToolDashboardSummaryArgs } from './kloel-chat-tools.dashboard-payments.helpers';
+import type {
+  ToolRememberUserInfoArgs,
+  ToolSetBrandVoiceArgs,
+  ToolSetSalesPolicyArgs,
+} from './kloel-chat-tools.settings-policy.helpers';
+import { centsFromUnknown } from './kloel-chat-tools.types';
+import type { ToolCreateFlowArgs } from './kloel-tool-executor.types';
+
+const NON_SLUG_CHAR_RE = /[^a-z0-9_:-]+/g;
 
 export async function runSetBrandVoice(
   prisma: PrismaService,

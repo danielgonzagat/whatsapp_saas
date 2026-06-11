@@ -89,17 +89,28 @@ describe('createKloelStreamError', () => {
     expect(err.code).toBe('code_x');
   });
 
-  it('falls back to event.error when content is empty', () => {
+  it('masks a bare error code into generic chat copy, keeping the raw code on .code', () => {
     const ev: KloelStreamErrorEvent = { type: 'error', content: '', error: 'code_y' };
     const err = createKloelStreamError(ev);
-    expect(err.message).toBe('code_y');
+    expect(err.message).toBe('Não consegui concluir esta resposta agora. Tente novamente.');
     expect(err.code).toBe('code_y');
   });
 
-  it('uses default sentinel when both content and error are missing', () => {
+  it('masks the default sentinel when both content and error are missing', () => {
     const ev = { type: 'error' } as unknown as KloelStreamErrorEvent;
     const err = createKloelStreamError(ev);
-    expect(err.message).toBe('stream_failed');
+    expect(err.message).toBe('Não consegui concluir esta resposta agora. Tente novamente.');
+    expect(err.code).toBe('stream_failed');
+  });
+
+  it('masks stack-trace-shaped content into generic chat copy', () => {
+    const ev: KloelStreamErrorEvent = {
+      type: 'error',
+      content: 'TypeError: x is not a function\n    at doThing (kloel-stream.ts:42:1)',
+      error: 'stream_failed',
+    };
+    const err = createKloelStreamError(ev);
+    expect(err.message).toBe('Não consegui concluir esta resposta agora. Tente novamente.');
     expect(err.code).toBe('stream_failed');
   });
 });

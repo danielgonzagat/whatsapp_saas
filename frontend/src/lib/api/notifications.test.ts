@@ -5,13 +5,52 @@ vi.mock('./core', () => ({
 }));
 
 import { apiFetch } from './core';
-import { registerNotificationDevice } from './notifications';
+import {
+  getNotificationPreferences,
+  registerNotificationDevice,
+  updateNotificationPreferences,
+} from './notifications';
 
 const apiFetchMock = vi.mocked(apiFetch);
 
 describe('notifications API', () => {
   beforeEach(() => {
     apiFetchMock.mockReset();
+  });
+
+  describe('notification preferences', () => {
+    it('returns the loaded preferences from GET /notifications/preferences', async () => {
+      apiFetchMock.mockResolvedValue({ data: { emailTips: false }, status: 200 });
+
+      await expect(getNotificationPreferences()).resolves.toEqual({ emailTips: false });
+      expect(apiFetchMock).toHaveBeenCalledWith('/notifications/preferences');
+    });
+
+    it('rejects malformed preference payloads instead of fabricating defaults', async () => {
+      apiFetchMock.mockResolvedValue({ data: { emailTips: 'yes' }, status: 200 });
+
+      await expect(getNotificationPreferences()).rejects.toThrow(
+        'Resposta de preferências de notificação inválida.',
+      );
+    });
+
+    it('persists a partial update via PUT and returns the confirmed state', async () => {
+      apiFetchMock.mockResolvedValue({ data: { emailTips: false }, status: 200 });
+
+      await expect(updateNotificationPreferences({ emailTips: false })).resolves.toEqual({
+        emailTips: false,
+      });
+      expect(apiFetchMock).toHaveBeenCalledWith('/notifications/preferences', {
+        method: 'PUT',
+        body: { emailTips: false },
+      });
+    });
+
+    it('surfaces backend errors on save instead of pretending success', async () => {
+      apiFetchMock.mockResolvedValue({ error: 'boom', status: 400 });
+
+      await expect(updateNotificationPreferences({ emailTips: true })).rejects.toThrow('boom');
+    });
   });
 
   it('surfaces device registration backend errors', async () => {

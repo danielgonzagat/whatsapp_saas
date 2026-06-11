@@ -6,7 +6,6 @@ import {
   ForbiddenException,
   Optional,
 } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import type { Prisma, Product } from '@prisma/client';
@@ -25,7 +24,6 @@ import type {
   ProductResult,
   ProductListResult,
 } from './product.types';
-import { emitCommerceAlias } from '../kloel/event-taxonomy.canonical-aliases';
 
 // Re-export DTOs / result shapes to preserve the historical import surface.
 export type {
@@ -42,14 +40,13 @@ export class ProductService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly eventEmitter: EventEmitter2,
     private readonly audit: AuditService,
     @Optional() private readonly brainSpine?: MindEventSpine,
   ) {}
 
   /**
    * Create a new product under the given workspace.
-   * Emits `mind.product.observed` and writes an audit entry.
+   * Records `mind.product.observed` on the Mind spine and writes an audit entry.
    */
   async create(
     workspaceId: string,
@@ -64,15 +61,6 @@ export class ProductService {
 
     const product = await this.prisma.product.create({
       data: { ...normalizeProductCreateInput(dto), workspaceId },
-    });
-
-    this.eventEmitter.emit('mind.product.observed', {
-      productId: product.id,
-      workspaceId,
-      agentId: resolvedActor.id,
-      name: product.name,
-      price: product.price,
-      format: product.format,
     });
 
     await this.audit.log({
@@ -133,13 +121,6 @@ export class ProductService {
     const product = await this.prisma.product.update({
       where: { id: productId, workspaceId },
       data: dto,
-    });
-
-    emitCommerceAlias((name, payload) => this.eventEmitter.emit(name, payload), 'product.updated', {
-      productId: product.id,
-      workspaceId,
-      agentId: actor.id,
-      changes: Object.keys(dto),
     });
 
     await this.audit.log({
@@ -221,13 +202,6 @@ export class ProductService {
       data: { imageUrl },
     });
 
-    emitCommerceAlias((name, payload) => this.eventEmitter.emit(name, payload), 'product.updated', {
-      productId: product.id,
-      workspaceId,
-      agentId: actor.id,
-      changes: ['imageUrl'],
-    });
-
     await this.audit.log({
       workspaceId,
       agentId: actor.id,
@@ -263,16 +237,6 @@ export class ProductService {
       where: { id: productId, workspaceId },
       data: { status: 'APPROVED', active: true },
     });
-
-    emitCommerceAlias(
-      (name, payload) => this.eventEmitter.emit(name, payload),
-      'product.published',
-      {
-        productId: product.id,
-        workspaceId,
-        agentId: actor.id,
-      },
-    );
 
     await this.audit.log({
       workspaceId,
@@ -310,12 +274,6 @@ export class ProductService {
       data: { active: available },
     });
 
-    this.eventEmitter.emit(available ? 'product.activated' : 'product.deactivated', {
-      productId: product.id,
-      workspaceId,
-      agentId: actor.id,
-    });
-
     await this.audit.log({
       workspaceId,
       agentId: actor.id,
@@ -349,12 +307,6 @@ export class ProductService {
     const product = await this.prisma.product.update({
       where: { id: productId, workspaceId },
       data: { status: 'DELETED', active: false },
-    });
-
-    emitCommerceAlias((name, payload) => this.eventEmitter.emit(name, payload), 'product.deleted', {
-      productId: product.id,
-      workspaceId,
-      agentId: actor.id,
     });
 
     await this.audit.log({

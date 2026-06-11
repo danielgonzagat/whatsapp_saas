@@ -2,8 +2,8 @@
 
 import { kloelT } from '@/lib/i18n/t';
 import { Button } from '@/components/ui/button';
-import type { LucideIcon } from 'lucide-react';
-import { Laptop, Monitor, Smartphone } from 'lucide-react';
+import { useState } from 'react';
+import { useSecurityMutations, useSecurityState } from '@/hooks/useKyc';
 import { kloelSettingsClass } from './contract';
 
 const A_Z_RE = /[A-Z]/;
@@ -52,81 +52,68 @@ export function PasswordStrengthBar({ strength }: { strength: PasswordStrength }
   );
 }
 
-interface SessionEntry {
-  device: string;
-  location: string;
-  time: string;
-  icon: LucideIcon;
-  current: boolean;
-}
-
-export const DEFAULT_SESSIONS: SessionEntry[] = [
-  {
-    device: 'Chrome em MacBook Pro',
-    location: 'São Paulo, Brasil',
-    time: 'Agora (sessão atual)',
-    icon: Laptop,
-    current: true,
-  },
-  {
-    device: 'Safari em iPhone 15',
-    location: 'São Paulo, Brasil',
-    time: 'Há 2 dias',
-    icon: Smartphone,
-    current: false,
-  },
-  {
-    device: 'Firefox em Windows',
-    location: 'Rio de Janeiro, Brasil',
-    time: 'Há 5 dias',
-    icon: Monitor,
-    current: false,
-  },
-];
-
-export function SessionsList({ sessions }: { sessions?: SessionEntry[] }) {
-  const list = sessions ?? DEFAULT_SESSIONS;
+export function SessionsList() {
+  const { security, isLoading, mutate } = useSecurityState();
+  const { revokeSession } = useSecurityMutations();
+  const [busyId, setBusyId] = useState('');
+  const sessions = security?.sessions ?? [];
+  const formatDate = (value: string) => {
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      return value;
+    }
+    return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(
+      parsed,
+    );
+  };
   return (
     <div>
       <h5 className="mb-3 text-sm font-medium text-[var(--app-text-primary)]">
         {kloelT(`Sessões ativas`)}
       </h5>
-      <div className="space-y-2">
-        {list.map((session) => {
-          const Icon = session.icon;
-          return (
+      {isLoading ? (
+        <p className="text-sm text-[var(--app-text-secondary)]">
+          {kloelT(`Carregando sessões...`)}
+        </p>
+      ) : sessions.length === 0 ? (
+        <p className="text-sm text-[var(--app-text-secondary)]">
+          {kloelT(`Nenhuma sessão ativa encontrada.`)}
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {sessions.map((session) => (
             <div
-              key={session.device}
-              className={`flex items-center justify-between rounded-md p-3 ${session.current ? 'bg-[var(--app-accent-light)]' : 'bg-[var(--app-bg-secondary)]'}`}
+              key={session.id}
+              className="flex items-center justify-between rounded-md bg-[var(--app-bg-secondary)] p-3"
             >
-              <div className="flex items-center gap-3">
-                <Icon
-                  className={`h-5 w-5 ${session.current ? 'text-[var(--app-accent)]' : 'text-[var(--app-text-secondary)]'}`}
-                />
-                <div>
-                  <p className="text-sm font-medium text-[var(--app-text-primary)]">
-                    {session.device}
-                  </p>
-                  <p className="text-xs text-[var(--app-text-secondary)]">
-                    {session.location} · {session.time}
-                  </p>
-                </div>
+              <div>
+                <p className="text-sm font-medium text-[var(--app-text-primary)]">
+                  {kloelT(`Sessão iniciada em`)} {formatDate(session.createdAt)}
+                </p>
+                <p className="text-xs text-[var(--app-text-secondary)]">
+                  {kloelT(`Expira em`)} {formatDate(session.expiresAt)}
+                </p>
               </div>
-              {session.current && (
-                <span className="rounded-full bg-[var(--app-accent-light)] px-2 py-0.5 text-xs font-medium text-[var(--app-accent)]">
-                  {kloelT(`Atual`)}
-                </span>
-              )}
+              <Button
+                variant="outline"
+                className={`text-xs ${kloelSettingsClass.dangerButton}`}
+                disabled={busyId === session.id}
+                onClick={async () => {
+                  setBusyId(session.id);
+                  try {
+                    await revokeSession(session.id);
+                    await mutate();
+                  } finally {
+                    setBusyId('');
+                  }
+                }}
+              >
+                {busyId === session.id ? kloelT(`Encerrando...`) : kloelT(`Encerrar`)}
+              </Button>
             </div>
-          );
-        })}
-      </div>
-      <Button
-        variant="outline"
-        className={`mt-3 w-full text-sm ${kloelSettingsClass.dangerButton}`}
-      >
-        {kloelT(`Encerrar outras sessões`)}
-      </Button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

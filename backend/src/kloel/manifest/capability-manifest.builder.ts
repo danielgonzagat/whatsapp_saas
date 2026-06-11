@@ -162,5 +162,6 @@ export class CapabilityManifestBuilderService {
       case 'META':
         return 'read_only';
     }
+    return 'read_only';
   }
 }

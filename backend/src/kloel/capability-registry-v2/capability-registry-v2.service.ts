@@ -9,7 +9,11 @@ import {
   type ConfirmationRequest,
   type CapabilityContext,
 } from './capability-registry-v2.types';
-import { CAPABILITY_DEFINITIONS, CAPABILITY_MAP } from './capability-registry-v2.const';
+import {
+  CAPABILITIES_BY_TIER,
+  CAPABILITY_DEFINITIONS,
+  CAPABILITY_MAP,
+} from './capability-registry-v2.const';
 
 function confirmationValue(value: unknown): string {
   if (typeof value === 'string') {
@@ -92,16 +96,12 @@ export class CapabilityRegistryV2Service {
   }
 
   groupedByTier(): Record<number, CapabilityDefinition[]> {
-    const groups: Record<number, CapabilityDefinition[]> = {};
-    for (const cap of CAPABILITY_DEFINITIONS) {
-      const entry = groups[cap.tier];
-      if (entry) {
-        entry.push(cap);
-      } else {
-        groups[cap.tier] = [cap];
-      }
-    }
-    return groups;
+    return Object.fromEntries(
+      Object.entries(CAPABILITIES_BY_TIER).map(([tier, capabilities]) => [
+        Number(tier),
+        [...capabilities],
+      ]),
+    );
   }
 
   /**

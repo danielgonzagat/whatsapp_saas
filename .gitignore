@@ -83,6 +83,10 @@ scripts/mcp/atomic-edit/atomic-*-gate-*/
 .atomic/artifacts/
 .atomic/prove/
 .atomic/snapshots/
+# atomic_exec effectRoots de verificação (logs/pids/caches de validação por sessão)
+.atomic-run/
+.atomic-run2/
+.atomic-devboot/
 .codex-artifacts/
 .codex-hook-tmp/
 backend/artifacts/
@@ -216,3 +220,6 @@ ecc-session-recordings/
 
 # PID files de dev-boot do harness atomic — runtime puro, nunca versionar
 .atomic-devboot/
+
+# Atomic swarm runtime workspace (sibling of .atomic-devboot)
+.atomic-run3/

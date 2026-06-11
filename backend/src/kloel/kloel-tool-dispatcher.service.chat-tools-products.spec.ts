@@ -96,8 +96,10 @@ describe('KloelToolDispatcherService — chat tools routing (products)', () => {
         actorId: 'user-42',
         inputs: { name: 'PDRN', price: 197 },
         outputs: objectContaining({ productId: 'prod-123' }),
-        domainEvents: ['product.created'],
-        auditLogId: stringMatching(/^audit_/),
+        // Registry runtime truth (capability-registry-v2/partitions/tier-1-products.ts):
+        // ProductService.create records mind.product.observed on the spine — not product.created.
+        domainEvents: ['mind.product.observed'],
+        auditLogId: `audit_products.create:${DEFAULT_WS_ID}:user-42`,
         evidenceUrl: '/produtos/prod-123',
         idempotencyKey: stringContaining('products.create'),
         success: true,

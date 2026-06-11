@@ -1,0 +1,25 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+
+
+def sum_squares(lst):
+    """You are given a list of numbers.
+    You need to return the sum of squared numbers in the given list,
+    round each element in the list to the upper int(Ceiling) first.
+    Examples:
+    For lst = [1,2,3] the output should be 14
+    For lst = [1,4,9] the output should be 98
+    For lst = [1,3,5,7] the output should be 84
+    For lst = [1.4,4.2,0] the output should be 29
+    For lst = [-2.4,1,1] the output should be 6
+    
+
+    """
+
+--- FIM DA TAREFA ---

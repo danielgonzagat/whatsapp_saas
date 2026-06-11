@@ -1,7 +1,20 @@
-import { Body, Controller, Post, Request, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Post,
+  Put,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { NotificationsService } from './notifications.service';
+import {
+  NotificationPreferencesService,
+  sanitizeNotificationPreferencesUpdate,
+} from './notification-preferences.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Notifications controller. */
@@ -9,7 +22,10 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 @UseGuards(JwtAuthGuard)
 @RouteClass('mutate')
 export class NotificationsController {
-  constructor(private readonly notificationsService: NotificationsService) {}
+  constructor(
+    private readonly notificationsService: NotificationsService,
+    private readonly notificationPreferences: NotificationPreferencesService,
+  ) {}
 
   /** Register device. */
   @Post('register-device')
@@ -18,5 +34,30 @@ export class NotificationsController {
     @Body() body: { token: string; platform: string },
   ) {
     return this.notificationsService.registerDevice(req.user.sub, body.token, body.platform);
+  }
+
+  /** Current user's e-mail notification preferences (workspaceId+userId from the JWT). */
+  @Get('preferences')
+  async getPreferences(@Request() req: AuthenticatedRequest) {
+    return this.notificationPreferences.getPreferences(req.user.workspaceId, req.user.sub);
+  }
+
+  /** Update the current user's e-mail notification preferences. */
+  @Put('preferences')
+  async updatePreferences(
+    @Request() req: AuthenticatedRequest,
+    @Body() body: Record<string, unknown>,
+  ) {
+    const updates = sanitizeNotificationPreferencesUpdate(body);
+    if (Object.keys(updates).length === 0) {
+      throw new BadRequestException(
+        'Nenhuma preferência de notificação válida informada (esperado: emailTips boolean).',
+      );
+    }
+    return this.notificationPreferences.updatePreferences(
+      req.user.workspaceId,
+      req.user.sub,
+      updates,
+    );
   }
 }

@@ -102,8 +102,12 @@ them as contributions.
 - **Rice is not defeated.** The theorem is about the edit algebra's confluence over a *decidable*
   gate fragment, never "edits are correct for all computation." `UNJUDGED` remains a first-class
   verdict (`gates/formal-gate.ts:80` already concedes this).
-- **Open residuals (engineering):** the no-bypass deny-hook is logic-real but has not yet fired on
-  live traffic (`blockedByDenyHook` = 0 — a launch/harness condition, empirically confirmed dormant);
+- **Open residuals (engineering):** ~~the no-bypass deny-hook has not yet fired on live traffic~~ —
+  **closed 2026-06-10**: in a host-launched session the PreToolUse deny-hook blocked **1,088 real
+  native mutation attempts** (`.atomic/bypass-ledger.jsonl`, `blockedByDenyHook:true`), satisfying
+  the T7 bar (`blockedByDenyHook > 0` in live traffic). Remaining enforcement residual is the
+  harness-layer scope: the hook binds the agent tool surface; cron workers/spawned subprocesses
+  outside PreToolUse still require OS-level enforcement (MXC tier) for a kernel-grade floor;
   the `DisproofWitness` is not yet wired through every MCP tool entry point; same-file independence is
   now proven for the identifier-coupling fragment, leaving only positional/non-identifier coupling
   (the cross-file dynamic-import analogue) undecidable.
@@ -116,3 +120,42 @@ them as contributions.
 
 See `README.md` (Z3 theorem, refinement link, T3 corpus). Everything in §2–§3 is re-runnable from a
 clean checkout with `node` and `z3-solver`.
+
+## 7. Live demonstrations (2026-06-09/10): the disproof artifact as a proposer signal
+
+The escalation dossier identified one mechanism slot no surveyed system occupies: **feeding the
+proof artifact (the disproof) back into the proposer** — every instantiated system treats proof as
+downstream filtration. Two pre-registered experiments (commit-stamped before any dispatch; full
+protocols, ledgers and raw artifacts in-repo) made that slot measurable:
+
+**Experiment 1 — III.f REAL v1.1** (`docs/evidence/darwin-godel-iiif-real-v1.md`,
+`.atomic/evolution/iiif-real-v1.1/`): frozen LLM proposers (haiku/opus tiers), synthetic
+stepping-stone arena with anti-Goodhart invariants, arms SCALAR (pass/fail+score) × GRADIENT
+(wall briefing), 60 fresh proposals, hash-chained run ledgers. Pre-registered verdicts, recorded
+without reinterpretation: the geometry-only briefing did **not** reduce wall repetition (P1 died by
+its declared death condition); the **stronger** proposer underperformed the weaker in *both* arms
+while violating zero invariants (P3 refuted with inversion — perfect gate compliance under goal
+misinterpretation); and, exploratorily, the **scalar feedback channel was actively harmful** to the
+strong proposer ("PASSED score=-3" read as approval). A concurrent-dispatcher contamination of v1
+was detected, structurally fixed (stale-dispatch refusal in the judge, compare-and-swap semantics)
+and the clean v1.1 re-run — the experiment about disproof-gradients was itself saved by a disproof.
+
+**Experiment 2 — HumanEval lift v1** (`docs/evidence/darwin-godel-humaneval-v1.md`,
+`.atomic/evolution/humaneval-v1/`): full canonical HumanEval (164 tasks, official dataset sha
+`1d49078b…`), frozen haiku proposer, engine-side judge executing the Python checks inside the
+atomic envelope, four arms — baseline (1 attempt), blind resample, scalar ("FAILED"), and **proof**
+(the judge's digest-bound disproof package: invariant id, recomputable counterexample, lesson,
+proposal digest, receipt sha). Result: baseline 85.4% → blind 92.1% → scalar 92.7% → **proof 93.9%**
+(+8.5pp; paired recovery on the 24 baseline failures: proof 14 > scalar 12 > blind 11), reproducing
+Experiment 1's channel ranking on a real benchmark. The final report is **claim-taxonomy-validated**:
+`toolAugmentedHumanEvalClaim=true`, `rawHumanEvalClaim=false`, 24/24 feedback packages
+digest-verified, forged digests refused — to our knowledge the first full canonical-HumanEval run in
+which every piece of model feedback carries a recomputable digest and the headline claim itself is
+machine-validated by a gate. Honest limits, pre-declared: retry-arm margins are directional at
+n=24 (a replication amendment r2–r5 with a pre-fixed permutation test is registered and running);
+the strong-tier bar was not crossed (opus baseline 98.2% saturates this arena — the true sentence is
+"the gate's disproof raises the model that uses it", not "it makes a weak model strong").
+
+These are demonstrations of the **mechanism**, not of capability records: they show the (a)-style
+disproof object of §1 functioning as a *generation-side* signal — the first measured step from
+"reliable self-improvement licenses capability search" toward the proof artifact contributing to it.

@@ -12,6 +12,10 @@ import { Prisma } from '@prisma/client';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { StorageService } from '../common/storage/storage.service';
 import { getTraceHeaders } from '../common/trace-headers';
+import {
+  convertAttachedDocumentToMarkdown,
+  type DocumentConversionDeps,
+} from './kloel-composer.document-conversion.helpers';
 import { createTextLlmClient } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { KloelComposerE2EGuard, KLOEL_COMPOSER_E2E_GUARD } from './kloel-composer-e2e-guard';
@@ -443,6 +447,23 @@ export class KloelComposerService {
       };
     }
 
+    if (capability === 'document_to_markdown') {
+      return convertAttachedDocumentToMarkdown(this.documentConversionDeps(), {
+        ...(input.metadata !== undefined ? { metadata: input.metadata } : {}),
+        ...(workspaceId !== undefined ? { workspaceId } : {}),
+        ...(signal !== undefined ? { signal } : {}),
+      });
+    }
+
     throw new BadRequestException(ERR_UNSUPPORTED_CAPABILITY);
+  }
+
+  /** Collaborators handed to the deps-injected document→markdown flow. */
+  private documentConversionDeps(): DocumentConversionDeps {
+    return {
+      storageService: this.storageService,
+      logger: this.logger,
+      formatUnknownError: (error: unknown) => this.formatUnknownError(error),
+    };
   }
 }

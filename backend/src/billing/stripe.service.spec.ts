@@ -1,6 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 
+import { StructuredLogger } from '../logging/structured-logger';
 import { STRIPE_API_VERSION } from './stripe.constants';
 import { StripeService } from './stripe.service';
 
@@ -74,6 +75,93 @@ describe('StripeService', () => {
       const service = moduleRef.get(StripeService);
 
       expect(service.stripe).toBe(service.stripe);
+    });
+  });
+
+  describe('test-key-in-production guard (issue #412)', () => {
+    const savedRailwayEnv = process.env.RAILWAY_ENVIRONMENT;
+    let errorSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      // Hermetic: a CI runner exporting RAILWAY_ENVIRONMENT must not leak
+      // into the process.env fallback used by the guard.
+      delete process.env.RAILWAY_ENVIRONMENT;
+      errorSpy = jest.spyOn(StructuredLogger.prototype, 'error');
+    });
+
+    afterEach(() => {
+      errorSpy.mockRestore();
+      if (savedRailwayEnv === undefined) {
+        delete process.env.RAILWAY_ENVIRONMENT;
+      } else {
+        process.env.RAILWAY_ENVIRONMENT = savedRailwayEnv;
+      }
+    });
+
+    it('blocks sk_test_* keys when NODE_ENV=production and logs stripe_test_key_in_production', async () => {
+      const moduleRef = await buildModule({
+        STRIPE_SECRET_KEY: 'sk_test_dummy_for_unit_test',
+        NODE_ENV: 'production',
+      });
+      const service = moduleRef.get(StripeService);
+
+      expect(() => service.stripe).toThrow(
+        /test-mode key \(sk_test_\*\).*real charges are blocked/s,
+      );
+      expect(errorSpy).toHaveBeenCalledWith(
+        'stripe_test_key_in_production',
+        expect.objectContaining({ event: 'stripe_test_key_in_production' }),
+      );
+    });
+
+    it('blocks sk_test_* keys when RAILWAY_ENVIRONMENT=production even if NODE_ENV is not production', async () => {
+      const moduleRef = await buildModule({
+        STRIPE_SECRET_KEY: 'sk_test_dummy_for_unit_test',
+        NODE_ENV: 'development',
+        RAILWAY_ENVIRONMENT: 'production',
+      });
+      const service = moduleRef.get(StripeService);
+
+      expect(() => service.stripe).toThrow(/real charges are blocked/);
+      expect(errorSpy).toHaveBeenCalledWith(
+        'stripe_test_key_in_production',
+        expect.objectContaining({ event: 'stripe_test_key_in_production' }),
+      );
+    });
+
+    it('re-fires the alarm on every access while misconfigured (no client caching on failure)', async () => {
+      const moduleRef = await buildModule({
+        STRIPE_SECRET_KEY: 'sk_test_dummy_for_unit_test',
+        NODE_ENV: 'production',
+      });
+      const service = moduleRef.get(StripeService);
+
+      expect(() => service.stripe).toThrow(/real charges are blocked/);
+      expect(() => service.stripe).toThrow(/real charges are blocked/);
+      expect(errorSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('stays silent for sk_test_* keys outside production (dev)', async () => {
+      const moduleRef = await buildModule({
+        STRIPE_SECRET_KEY: 'sk_test_dummy_for_unit_test',
+        NODE_ENV: 'development',
+      });
+      const service = moduleRef.get(StripeService);
+
+      expect(service.stripe).toBeDefined();
+      expect(errorSpy).not.toHaveBeenCalled();
+    });
+
+    it('stays silent for sk_live_* keys in confirmed production', async () => {
+      const moduleRef = await buildModule({
+        STRIPE_SECRET_KEY: 'sk_live_dummy_for_unit_test',
+        NODE_ENV: 'production',
+        KLOEL_LIVE_MODE: 'confirmed',
+      });
+      const service = moduleRef.get(StripeService);
+
+      expect(service.stripe).toBeDefined();
+      expect(errorSpy).not.toHaveBeenCalled();
     });
   });
 

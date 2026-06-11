@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-
 /**
  * Proves the KloelWalletLedger balanceAfter historical backfill (Stage 5):
  *   - flag-gated: no-op when KLOEL_LEDGER_BALANCE_BACKFILL is OFF;
@@ -138,10 +136,10 @@ describe('LedgerBalanceAfterBackfillService.backfill', () => {
     const res = await svc.backfill({ walletBatchSize: 1 });
     expect(res.wallets).toBe(2);
     // a later distinct page must filter walletId gt the last processed
-    const distinctCalls = findMany.mock.calls.filter((c) => c[0].distinct !== undefined);
-    const sawGtCursor = distinctCalls.some(
-      (c) => (c[0].where as { walletId?: { gt?: string } }).walletId?.gt === 'w1',
-    );
+    type DistinctArgs = { distinct?: unknown; where?: { walletId?: { gt?: string } } };
+    const calls = findMany.mock.calls as Array<[DistinctArgs]>;
+    const distinctCalls = calls.filter((c) => c[0].distinct !== undefined);
+    const sawGtCursor = distinctCalls.some((c) => c[0].where?.walletId?.gt === 'w1');
     expect(sawGtCursor).toBe(true);
   });
 });

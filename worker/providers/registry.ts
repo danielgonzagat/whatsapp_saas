@@ -3,50 +3,44 @@
  * @domain integrations
  */
 import { prisma } from '../db';
+import { WorkerLogger } from '../logger';
 import { autoProvider } from './auto-provider';
 import { emailProvider } from './email-provider';
 import { type WhatsAppProvider, getWhatsAppProviderFromEnv } from './whatsapp-provider-resolver';
 
 const D_RE = /\D/g;
+const log = new WorkerLogger('ProviderRegistry');
 
 function getDefaultWhatsAppProvider(): WhatsAppProvider {
   return getWhatsAppProviderFromEnv();
 }
 
 async function getProviderForUser(user: string, workspaceId?: string) {
+  // Fail-closed tenant isolation (F3-A): external dispatch without an explicit
+  // tenant is never allowed — no synthetic 'default' workspace fallback.
+  if (!workspaceId) {
+    log.error('provider_resolution_rejected_missing_workspace', { user });
+    throw new Error(
+      'getProviderForUser: workspaceId is required — refusing to dispatch without tenant context (fail-closed)',
+    );
+  }
+
   // 1. Check Channel Heuristics
   if (user.includes('@')) {
-    // It's an email target
-    // Prefer explicit workspace context to avoid crossing tenants.
+    // It's an email target — contact lookup MUST be scoped to the tenant.
     const contact = await prisma.contact.findFirst({
-      where: { email: user, ...(workspaceId ? { workspaceId } : {}) },
+      where: { email: user, workspaceId },
       include: { workspace: true },
     });
 
-    const workspaceConfig = contact
-      ? { id: contact.workspace.id }
-      : workspaceId
-        ? { id: workspaceId }
-        : { id: 'default' };
-
     return {
       ...emailProvider,
-      workspace: workspaceConfig,
+      workspace: { id: contact ? contact.workspace.id : workspaceId },
     };
   }
 
   // 2. Default: WhatsApp (Phone)
   const normalized = (user || '').replace(D_RE, '');
-
-  if (!workspaceId) {
-    return {
-      ...autoProvider,
-      workspace: {
-        id: 'default',
-        whatsappProvider: getDefaultWhatsAppProvider(),
-      },
-    };
-  }
 
   const contact = await prisma.contact.findUnique({
     where: {
@@ -62,7 +56,7 @@ async function getProviderForUser(user: string, workspaceId?: string) {
     return {
       ...autoProvider,
       workspace: {
-        id: workspaceId || 'default',
+        id: workspaceId,
         whatsappProvider: getDefaultWhatsAppProvider(),
       },
     };

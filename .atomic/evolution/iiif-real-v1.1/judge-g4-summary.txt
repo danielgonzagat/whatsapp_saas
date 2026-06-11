@@ -1,0 +1,14 @@
+haiku haiku|ESCALAR|s1 reject  sandbox.padding-contract
+haiku haiku|ESCALAR|s2 promote 13 
+haiku haiku|ESCALAR|s3 promote 13 
+haiku haiku|GRADIENTE|s1 promote 12 
+haiku haiku|GRADIENTE|s2 promote 13 
+haiku haiku|GRADIENTE|s3 promote 7 
+haiku records=24
+opus opus|ESCALAR|s1 promote 4 
+opus opus|ESCALAR|s2 promote -11 
+opus opus|ESCALAR|s3 promote -3 
+opus opus|GRADIENTE|s1 promote -10 
+opus opus|GRADIENTE|s2 promote 10 
+opus opus|GRADIENTE|s3 promote 14 
+opus records=24

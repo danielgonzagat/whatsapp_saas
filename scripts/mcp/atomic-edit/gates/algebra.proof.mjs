@@ -182,6 +182,27 @@ const npFact = (file, spans, closure, negativeProof) => ({ file, spans, closure:
   check('EMPIRICAL corpus contains both commuting and coupled pairs (not degenerate)', pairs > 0 && comm > 0 && comm < pairs);
 }
 
+// ── UNIVERSAL PROVIDER: B5 injection — buildEditFact accepts a ClosureProvider ─
+// The default path (no provider) is byte-identical (the band assertion above proves
+// it). With makeUniversalClosureProvider() injected, commute becomes language-universal
+// (py/go/...) — a sound superset over-approximation, on demand.
+{
+  const U = await import(path.join(dir, '..', 'dist', 'gates', 'closure-universal.js'));
+  const provider = U.makeUniversalClosureProvider();
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'atomic-univ-'));
+  fs.writeFileSync(path.join(tmp, 'a.ts'), 'export const foo = 1;\n');
+  fs.writeFileSync(path.join(tmp, 'b.ts'), "import { foo } from './a';\nexport const bar = foo + 1;\n");
+  fs.writeFileSync(path.join(tmp, 'util.py'), 'def helper():\n    return 1\n');
+  fs.writeFileSync(path.join(tmp, 'm.py'), 'from .util import helper\nx = helper()\n');
+  const fDefault = buildEditFact(tmp, { file: 'b.ts', modifiedZones: [{ byteStart: 46, byteEnd: 49 }] });
+  const fProvTs = buildEditFact(tmp, { file: 'b.ts', modifiedZones: [{ byteStart: 46, byteEnd: 49 }] }, new Map(), provider);
+  const fProvPy = buildEditFact(tmp, { file: 'm.py', modifiedZones: [{ byteStart: 0, byteEnd: 4 }] }, new Map(), provider);
+  check('UNIVERSAL default path (no provider) still a valid EditFact', fDefault.closure instanceof Set && fDefault.closure.has('b.ts'));
+  check('UNIVERSAL provider param yields a valid TS EditFact', fProvTs.closure instanceof Set && fProvTs.closure.has('b.ts'));
+  check('UNIVERSAL provider makes commute language-universal (py closure reflexive+)', fProvPy.closure instanceof Set && fProvPy.closure.size >= 1);
+  fs.rmSync(tmp, { recursive: true, force: true });
+}
+
 // ── PER-SYMBOL: precision tightening that removes a FALSE per-file coupling ────
 // A hub file imports `foo` from a.ts and `bar` from b.ts. An edit to the hub that
 // only touches the `foo` usage is, at PER-FILE granularity, coupled to BOTH a.ts and

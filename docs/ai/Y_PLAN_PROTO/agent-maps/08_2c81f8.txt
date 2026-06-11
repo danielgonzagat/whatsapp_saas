@@ -1,0 +1,147 @@
+{
+  "domain": "ENGINE + DECOMPOSIÇÃO — o seam compartilhado do KloelGraph (engine física/layout + GraphCanvas + KloelInner estado-raiz + KloelOverlay + NodePanel router de overlay por node.type). Alvo do re-apontamento de Y (Opção C): a casca canônica renderiza BYTE-IDÊNTICO ao protótipo literal COMPLETO do dono. FONTE CANÔNICA COMPLETA IDENTIFICADA: NÃO é o .jsx do checkout atual (671 linhas, data-only, truncado) — é o de 6576 linhas em /Users/danielpenin/whatsapp_saas-kg/frontend/src/components/kloel/graph/KloelGraphPrototype.jsx (branch feat/kloelgraph-literal-prototype @172c924ae) e seu espelho docs/ai/assets/kloelgraph-harness.html (6593 linhas), que contêm TODO o engine+overlay+router+estado com line numbers exatos.",
+  "feasibility": "FEASIBLE e bem-definido (corrige os 2 outputs anteriores). DESCOBERTA-CHAVE: o KloelGraphPrototype.jsx do checkout atual (671 linhas/43KB) é uma EXTRAÇÃO PARCIAL data-only — termina mid-data em buildWalletNodesEdges, com 0 símbolos de engine (grep confirmou). O protótipo LITERAL COMPLETO existe em DOIS lugares idênticos em escopo: (1) worktree whatsapp_saas-kg = 6576 linhas (9/9 símbolos de engine presentes), (2) docs/ai/assets/kloelgraph-harness.html = 6593 linhas, com offsets exatos: buildGraph@924, applyFilters@1094, computeLayout@1118, computeGalaxyAnchors@1188, nodeRadius@1218, physicsTick@1223, GraphCanvas@3968, SettingsPanel@3902, ThemeToggle@4271, FloatingNav@4281, NodePanel@4441 (router por node.type), KloelOverlay@5796, KloelOverlayRouter@6077, KloelInner@6287 (estado-raiz: products/channels/accountData/affiliate/wallet/educar/conversar/desempenhoData/kloel + patch*), AppNodePanel@3886, CoreSettingsPanel@5258. A casca route-based real (KloelGraphShell.tsx + helpers.ts) JÁ implementa um engine paralelo (computeKloelGraphLayout/AREA_POSITIONS/relaxLayout/radiusForNode/GOLDEN_ANGLE@helpers:23). Logo o re-apontamento de Y é viável e bem-mapeado; a única decisão pendente é arquitetural (state-based do protótipo vs route-based atual — ver overlaySwapStrategy/blockers). RESSALVA RUNTIME: tool calls intermitentemente retornaram vazio/cancelaram; offsets vêm de grep que SIM renderizou.",
+  "collisionRisk": "ALTO e ATIVO. O dono da FONTE COMPLETA é o worktree concorrente /Users/danielpenin/whatsapp_saas-kg (feat/kloelgraph-literal-prototype @172c924ae 'render owner-authored KloelGraph prototype as the (main) surface') — esse agente já tem o protótipo de 6576 linhas como surface. Em paralelo: branch atual feat/kloelgraph-prototype-engine (a84a8ba63 'port prototype visual engine onto real-route shell') + wg-kloelgraph (feat/kloelgraph-foundation-criar) + whatsapp_saas-kloelgraph-primary. QUATRO worktrees no mesmo seam. O .jsx parcial está UNTRACKED no checkout atual + 9 stashes (stash@{0}='kloelgraph-session park concurrent dirt') + 838 dirs .atomic/traces. Decompor cria N módulos re-importando no seam único (NodePanel router + KloelInner estado-raiz) → colisão garantida. MITIGAÇÃO OBRIGATÓRIA: coordenar com o agente do whatsapp_saas-kg (que já É o dono natural da fonte completa) ANTES de qualquer edit; eleger 1 worktree dono do arquivo-engine; nunca git restore.",
+  "filesToEdit": [
+    "frontend/src/components/kloel/graph/KloelGraphShell.tsx",
+    "frontend/src/components/kloel/graph/KloelGraphShell.helpers.ts",
+    "frontend/src/components/kloel/graph/KloelGraph.routes.ts",
+    "frontend/src/components/kloel/graph/KloelGraph.static-nodes.ts",
+    "frontend/src/components/kloel/graph/KloelGraph.product-nodes.ts",
+    "frontend/src/components/kloel/graph/KloelGraphOverlay.tsx",
+    "frontend/src/components/kloel/graph/KloelGraphNodeButton.tsx",
+    "frontend/src/components/kloel/graph/KloelGraphFloatingNav.tsx",
+    "frontend/src/components/kloel/graph/KloelGraphTheme.tsx",
+    "frontend/src/components/kloel/graph/KloelGraphShell.spec.tsx",
+    "frontend/src/components/kloel/graph/KloelGraph.routes.spec.ts"
+  ],
+  "filesToCreate": [
+    "frontend/src/components/kloel/graph/seeds/KloelGraph.seeds.ts (extrair do .jsx data-only OU do completo: BASE_SUNS@544, STATIC_BRANCHES@554, PRODUCTS@222, todos os *_SEED)",
+    "frontend/src/components/kloel/graph/seeds/KloelGraph.builders.ts (buildProductSubnodes@300, buildAffiliateNodesEdges@368, buildEducarNodesEdges@421, buildConversarNodesEdges@508, buildProfileNodesEdges@570, buildWalletNodesEdges@653)",
+    "frontend/src/components/kloel/graph/seeds/KloelGraph.domain-constants.ts (CHANNEL_META@58, PRODUCT_NERVE_TABS@76, AFFILIATE_BRANCHES@337, CONVERSAR_BRANCHES@432, CRM_MODULES@435, WALLET_BRANCHES@628, PROFILE_SECTIONS@559, TAB_SUN@325, defaults)",
+    "frontend/src/components/kloel/graph/engine/KloelGraphEngine.ts (PORTAR DO COMPLETO harness.html: buildGraph@924, applyFilters@1094, computeLayout@1118, computeGalaxyAnchors@1188, nodeRadius@1218, physicsTick@1223 — núcleo puro)",
+    "frontend/src/components/kloel/graph/engine/KloelGraphCanvas.tsx (PORTAR: GraphCanvas@3968 + ThemeToggle@4271 + FloatingNav@4281 + SettingsPanel@3902)",
+    "frontend/src/components/kloel/graph/overlays/KloelGraphNodePanel.tsx (PORTAR: NodePanel@4441 router por node.type + AppNodePanel@3886 + KloelOverlayRouter@6077 + CoreSettingsPanel@5258)",
+    "frontend/src/components/kloel/graph/overlays/KloelGraphOverlayChrome.tsx (PORTAR: KloelOverlay@5796 chrome do overlay)",
+    "frontend/src/components/kloel/graph/state/useKloelGraphState.ts (PORTAR: KloelInner@6287 estado-raiz products/channels/accountData/affiliate/wallet/educar/conversar/desempenhoData/kloel + todos os patch* via dynamicGraph=buildGraph(...)@6392)",
+    "frontend/src/components/kloel/graph/overlays/screens/* (telas-inline por domínio extraídas do bloco 4441-6287: products p_*, affiliate, wallet, educar, conversar, profile, kloel)",
+    "frontend/src/components/kloel/graph/__tests__/KloelGraph.byte-identity.spec.ts (gate de serialização por nó)"
+  ],
+  "decompositionModule": "O arquivo-engine final fica SÓ com: [1] engine compartilhado → engine/KloelGraphEngine.ts (buildGraph@924, computeLayout@1118, computeGalaxyAnchors@1188, physicsTick@1223, applyFilters@1094, nodeRadius@1218) + engine/KloelGraphCanvas.tsx (GraphCanvas@3968, FloatingNav@4281, SettingsPanel@3902, ThemeToggle@4271) + THEMES/ThemeProvider/FONT/MONO@12-53; [2] KloelOverlay@5796 → overlays/KloelGraphOverlayChrome.tsx; [3] NodePanel@4441 (ROUTER por node.type) + KloelOverlayRouter@6077 → overlays/KloelGraphNodePanel.tsx (importa as telas por domínio via mapa type→Componente); [4] KloelInner@6287 (estado-raiz + patch* + dynamicGraph=buildGraph@6392) → state/useKloelGraphState.ts; [5] export default Kloel. POR DOMÍNIO extrai-se o triplo {seed (fatia de BASE_SUNS@544+STATIC_BRANCHES@554 + *_SEED), builder (um dos 6 build*NodesEdges@300-653), tela-inline (corpo dentro de NodePanel@4441→5258 que casa node.type)}. ORDEM: (a) extrair seeds+builders+domain-constants (data, byte-neutro pela SAÍDA dos builders); (b) extrair engine puro (sem JSX → provar byte-identity do GRAFO); (c) extrair Canvas/chrome (visual); (d) extrair telas-inline 1 por domínio, gate após cada; (e) por último KloelInner→state (maior blast radius); (f) NodePanel passa a usar mapa SCREEN_BY_TYPE. Gate byte-identity após cada passo.",
+  "overlaySwapStrategy": "DECISÃO ARQUITETURAL pendente do dono (não inventável). O protótipo completo é STATE-BASED: KloelInner@6287 mantém selectedId/selectedNode local; NodePanel@4441 + KloelOverlayRouter@6077 decidem o painel por node.type (ex.: linha 4512 'node.type===appNode && <AppNodePanel>'; 6431 isKloelOverlay para kloelAction/kloelConversation/kloelImageAsset; 6489-6508 ramos de KloelOverlay). A casca ATUAL (KloelGraphShell.tsx) é ROUTE-BASED: openNode@113→router.push(node.route); overlay = tela real da rota como children dentro de KloelGraphOverlay (80vw×80vh, role=dialog, closeOverlay@90 preserva ?graph=1 — contrato PR#473). 'render byte-idêntico ao protótipo' ⇒ adotar o NodePanel state-based como router de overlay. Estratégia byte-neutra: portar NodePanel@4441 verbatim, trocar SÓ os corpos das telas-inline por um mapa estático SCREEN_BY_TYPE (mesma árvore React, mesmas props patch*, mesma ordem), preservar lifecycle abrir/fechar e a regra preserve-?graph= do PR#473. CONFIRMAR com o dono se Y deve virar state-based (protótipo) ou manter route-based replicando só o visual.",
+  "protoSeeds": [
+    "BASE_SUNS @ KloelGraphPrototype.jsx:544 (7 sóis: core/perfil 'Perfil'; sun-kloel 'Kloel'; sun-criar 'Criar'; sun-afiliar 'Afiliar'; sun-educar 'Educar'; sun-conectar 'Conversar'; sun-carteira 'Consultar')",
+    "STATIC_BRANCHES @ :554 (eu-aprender 'Aprender', eu-ensinar 'Ensinar', parentId sun-educar)",
+    "PRODUCTS @ :222 (p1 GHK-CU analysis, p2 PDRN Coreamy draft)",
+    "MY_AFFILIATES_SEED@344, PARTNER_CHATS_SEED@349, COLLABORATORS_SEED@353, MARKETPLACE_SEED@357",
+    "MEMBER_AREAS_SEED@390",
+    "AUTOPILOT_EVENTS_SEED@442, FOLLOWUPS_SEED@448, AD_CAMPAIGNS_SEED@454, AD_RULES_SEED@460, ORDERS_SEED@465, CRM_SEED@473, CONTACTS_SEED@488, CONVERSATIONS_SEED@493",
+    "DEFAULT_WALLET@638",
+    "(no COMPLETO 6576-linhas/harness ha tambem os seeds de desempenho/kloel apos a linha 671 do parcial)"
+  ],
+  "protoBuilders": [
+    "buildGraph @ harness:924 (AGREGADOR raiz: buildGraph(products, channelsState, accountData, affiliate, wallet, educar, conversar, desempenho, kloel) — chamado em KloelInner@6392)",
+    "computeLayout @ harness:1118",
+    "computeGalaxyAnchors @ harness:1188 (usa GOLDEN_ANGLE)",
+    "physicsTick @ harness:1223 (usa nodeRadius@1218; force sim)",
+    "applyFilters @ harness:1094",
+    "nodeRadius @ harness:1218",
+    "buildProductSubnodes @ jsx:300",
+    "buildAffiliateNodesEdges @ jsx:368",
+    "buildEducarNodesEdges @ jsx:421",
+    "buildConversarNodesEdges @ jsx:508",
+    "buildProfileNodesEdges @ jsx:570",
+    "buildWalletNodesEdges @ jsx:653"
+  ],
+  "protoInlineScreens": [
+    "NodePanel @ harness:4441 é o router de overlay (props: node,onClose,onAction,onSelectNode,onNewProduct,onAskKloel,channels,products,patchProductEditor,affiliate,patchAffiliate,patchMyAffiliate,wallet,patchWallet,educar,patchArea,conversar,patchConversar) — resolve as telas por node.type",
+    "AppNodePanel @ harness:3886 (node.type=appNode, ref 4512)",
+    "CoreSettingsPanel @ harness:5258 (overlay de perfil/settings, ref 6474)",
+    "KloelOverlayRouter @ harness:6077 (kloelAction/kloelConversation/kloelImageAsset: KloelChatScreen/KloelImagesScreen/KloelRecentsScreen, refs 6081-6084/6489)",
+    "telas-inline por domínio dentro de NodePanel@4441..5258: products (p_dados/p_planos/p_urls/p_comissao/p_cupons/p_campanhas/p_avaliacoes/p_afterpay/p_ia), affiliate (affBranch/affProduct/affPartner), wallet (walletBranch/walletItem), educar (memberArea), conversar (convBranch/conversation/contact/order/adCampaign), profile (profileSection/profileField/doc/teamMember/appNode) — todas presentes no COMPLETO, AUSENTES no parcial 671-linhas"
+  ],
+  "realHooks": [
+    {
+      "domain": "products/criar",
+      "hook": "useProducts (@/hooks/useProducts) — JÁ em KloelGraphShell.tsx:47; + loadCheckoutGraphProducts/mergeGraphProducts/buildKloelGraphProductNodes (helpers.ts) — a fonte real para o patchProductEditor do protótipo",
+      "note": "rota /products"
+    },
+    {
+      "domain": "command/search/recents",
+      "hook": "useCommandPalette (@/hooks/useCommandPalette) — JÁ em KloelGraphShell.tsx:53; equivalente do KloelOverlayRouter recents/search do protótipo (jsx kloel-search/kloel-recents @routes.ts:75,77)"
+    },
+    {
+      "domain": "layout/engine real",
+      "hook": "computeKloelGraphLayout + buildKloelGraphEdges + relaxLayout + AREA_POSITIONS + radiusForNode + GOLDEN_ANGLE@helpers:23 (KloelGraphShell.helpers.ts) — engine route-based JÁ existente; comparar/unificar com computeLayout@1118+computeGalaxyAnchors@1188+physicsTick@1223 do protótipo"
+    },
+    {
+      "domain": "estado-raiz",
+      "hook": "KloelInner@6287 (state-based) — estado products/channels/accountData/affiliate/wallet/educar/conversar/desempenhoData/kloel + patch*; AUSENTE de qualquer .tsx do shell (route-based usa router/SWR). Portar para state/useKloelGraphState.ts; wire posterior a useProducts/useWallet/etc reais"
+    },
+    {
+      "domain": "wallet/conversar/etc",
+      "hook": "rotas reais via KLOEL_GRAPH_NODES (routes.ts: WALLET_TABS@34/207, /inbox@135, /vendas/pipeline@136, /autopilot@145, /anuncios@138)"
+    }
+  ],
+  "realScreens": [
+    {
+      "file": "frontend/src/components/kloel/graph/KloelGraphShell.tsx",
+      "role": "ENGINE REAL ATUAL (route-based, default app shell desde PR#473). KloelGraphShellSurface@42: zoom/pan/drag, SVG edges inline@269-294, graphNodes=[KLOEL_GRAPH_NODES,productNodes]@69, layout=computeKloelGraphLayout@76, overlay=children da rota@324. ALVO do re-apontamento de Y."
+    },
+    {
+      "file": "frontend/src/components/kloel/graph/KloelGraphShell.helpers.ts",
+      "role": "engine real route-based: computeKloelGraphLayout@133, buildKloelGraphEdges@126, relaxLayout@238, resolveLayoutPoint@187, AREA_POSITIONS@45, radiusForNode@283, GOLDEN_ANGLE@23, DEFAULT/MIN/MAX_ZOOM@18-21, loadCheckoutGraphProducts@55, mergeGraphProducts@81 — contraparte do engine do protótipo"
+    },
+    {
+      "file": "frontend/src/components/kloel/graph/KloelGraph.routes.ts",
+      "role": "seeds route-based: KLOEL_GRAPH_PRIMARY_NODES@59 (7 sóis com route+overlayLabel), KLOEL_GRAPH_ROUTE_NODES@231, dynamicRouteSeeds (channels/wallet/report) — equivalente route-based do BASE_SUNS+builders do protótipo"
+    },
+    {
+      "file": "frontend/src/components/kloel/graph/KloelGraphOverlay.tsx",
+      "role": "chrome do overlay 80vw×80vh, role=dialog, botão 'Fechar overlay do grafo'@62, ErrorBoundary@86 (90 linhas) — contraparte de KloelOverlay@5796"
+    },
+    {
+      "file": "frontend/src/components/kloel/graph/KloelGraphTheme.tsx",
+      "role": "GraphThemeProvider/useGraphTheme/GRAPH_FONT/GRAPH_MONO — contraparte de THEMES/ThemeProvider@12-53/FONT@40/MONO@41 do protótipo"
+    },
+    {
+      "file": "frontend/src/components/kloel/graph/KloelGraphNodeButton.tsx",
+      "role": "botão de nó (100 linhas)"
+    },
+    {
+      "file": "frontend/src/components/kloel/graph/KloelGraphFloatingNav.tsx",
+      "role": "FloatingNav real (96 linhas) — contraparte de FloatingNav@4281"
+    },
+    {
+      "file": "/Users/danielpenin/whatsapp_saas-kg/frontend/src/components/kloel/graph/KloelGraphPrototype.jsx",
+      "role": "FONTE CANONICA COMPLETA (6576 linhas, 9/9 símbolos de engine) na branch concorrente feat/kloelgraph-literal-prototype @172c924ae"
+    },
+    {
+      "file": "docs/ai/assets/kloelgraph-harness.html",
+      "role": "ESPELHO COMPLETO (6593 linhas) com offsets exatos do engine — base natural do gate byte-identity"
+    },
+    {
+      "file": "docs/ai/KLOELGRAPH_CANONICAL_SCREEN_MAP.md",
+      "role": "mapa canônico de telas (ler antes do router)"
+    }
+  ],
+  "wiringSteps": [
+    "DECISÃO do dono (anti-invenção, primeiro): Y deve virar STATE-BASED (adotar NodePanel@4441 + KloelInner@6287 do protótipo como router/estado) ou manter ROUTE-BASED (KloelGraphShell.tsx atual, PR#473) replicando só o visual? 'byte-idêntico ao protótipo' aponta para state-based, mas isso troca o modelo já em produção.",
+    "Confirmar a FONTE CANONICA: usar o COMPLETO de 6576 linhas (whatsapp_saas-kg @172c924ae) e/ou o espelho harness.html (6593 linhas) como verdade — NÃO o .jsx parcial de 671 linhas do checkout atual (data-only, truncado).",
+    "Coordenar com o agente do whatsapp_saas-kg (dono natural da fonte completa) ANTES de editar — colisão ativa de 4 worktrees no seam.",
+    "GATE byte-identity: serializar o grafo por nó {id, parentId, type, label, subtitle, area, pos:{x,y}} ORDENADO por (area, parentId, id) estável; rodar buildGraph@924+computeLayout@1118+computeGalaxyAnchors@1188 com SEED FIXO (zerar Math.random — defaultPlan@123 usa Math.random no id → normalizar/seed; fixar alpha/t do physicsTick@1223) sobre (a) protótipo completo e (b) casca decomposta; diff byte-a-byte. __tests__/KloelGraph.byte-identity.spec.ts.",
+    "Extrair Metade-A do .jsx (data): seeds/ (BASE_SUNS@544/STATIC_BRANCHES@554/PRODUCTS@222/*_SEED) + builders/ (6 build*NodesEdges@300-653) + domain-constants/; provar byte-identity da saída dos builders; gate.",
+    "Portar Metade-B do COMPLETO: engine/KloelGraphEngine.ts (buildGraph/computeLayout/computeGalaxyAnchors/physicsTick/applyFilters/nodeRadius) → unificar/decidir vs helpers.ts route-based; engine/KloelGraphCanvas.tsx (GraphCanvas@3968+FloatingNav@4281+SettingsPanel@3902+ThemeToggle@4271); overlays/KloelGraphNodePanel.tsx (NodePanel@4441+AppNodePanel@3886+KloelOverlayRouter@6077+CoreSettingsPanel@5258) com mapa SCREEN_BY_TYPE; state/useKloelGraphState.ts (KloelInner@6287). Gate após cada.",
+    "Re-apontar KloelGraphShell.tsx para consumir engine/+state/+NodePanel; rodar npm --prefix frontend test (specs do graph) + typecheck + build; manter data-testid kloel-graph-shell + rewrite /→/products?graph=1 (PR#473) + closeOverlay preserve-?graph=.",
+    "Atualizar KloelGraphShell.spec.tsx + KloelGraph.routes.spec.ts (sem afrouxar asserções).",
+    "NÃO tocar arquivos protegidos; NÃO git restore; commits pequenos byte-neutros por passo."
+  ],
+  "blockers": [
+    "DECISÃO ARQUITETURAL pendente do dono (não inventável): o protótipo é STATE-BASED (KloelInner@6287 + NodePanel@4441 router por node.type), a casca ATUAL é ROUTE-BASED (KloelGraphShell.tsx, default desde PR#473, openNode→router.push). 'render byte-idêntico' ⇒ trocar o modelo de navegação de overlay já em produção. Parar e pedir a decisão antes de portar NodePanel.",
+    "FONTE PARCIAL no checkout atual: KloelGraphPrototype.jsx aqui tem 671 linhas (data-only, termina mid-data em buildWalletNodesEdges, 0 símbolos de engine — grep confirmou). A fonte COMPLETA (6576 linhas, 9/9 símbolos) está no worktree CONCORRENTE whatsapp_saas-kg + no espelho docs/ai/assets/kloelgraph-harness.html (6593 linhas). Re-apontar Y exige usar a completa, não a do checkout.",
+    "COLISÃO CONCORRENTE ATIVA: 4 worktrees no seam KloelGraph; o DONO da fonte completa é o agente concorrente do whatsapp_saas-kg (@172c924ae 'render as main surface'). .jsx UNTRACKED + 9 stashes (stash@{0}=park concurrent dirt) + 838 .atomic traces. Editar o seam sem coordenar colide.",
+    "Math.random em defaultPlan@123 (id de plano) e no physicsTick (alpha/jitter) — o gate byte-identity precisa de seed determinístico/normalização de ids+posições para não falsear diffs.",
+    "RUNTIME INSTÁVEL nesta sessão: várias tool calls retornaram vazio/foram canceladas em paralelo. NÃO confirmei o conteúdo integral de NodePanel@4441 (só a assinatura+refs por grep) nem se o .jsx de whatsapp_saas-kg é byte-igual ao harness.html. Re-rodar leitura focada (NodePanel 4441-5258, KloelInner 6287-fim) quando o runtime estabilizar, antes de portar.",
+    "ARQUIVOS PROTEGIDOS + git restore proibido (CLAUDE.md) — respeitar na fase de edição; esta tarefa é read-only."
+  ]
+}

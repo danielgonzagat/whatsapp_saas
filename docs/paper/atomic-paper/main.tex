@@ -1,0 +1,172 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1.1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{microtype}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\setlist{nosep}
+
+\title{ATOMIC: Proof-Carrying Program Transactions with an Inverted Byte-Default,\\
+a Machine-Checked Commute Algebra, and Disproof-as-Gradient Feedback\\
+\large A verified, non-bypassable action space for autonomous code agents}
+
+\author{Daniel Gonzaga Penin\\
+\small \texttt{danielgonzagapenin@live.com}}
+
+\date{June 2026 --- priority record v1}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Text patches are the wrong action space for autonomous code agents: they permit
+syntactically invalid states on disk, provide no proof of what was preserved, and
+treat verification as an afterthought. We present \textsc{Atomic}, a deployed
+system that replaces the patch with a \emph{proof-carrying program transaction}
+judged \emph{before} any byte reaches disk. \textsc{Atomic} combines two mechanisms
+absent, in conjunction, from all surveyed prior art: \textbf{(a)} an
+\emph{inverted byte-default} --- bytes that ever passed the declared gate battery
+are immutable to negative actions unless the agent supplies a SHA-bound,
+\emph{machine-recomputed} proof-of-incorrectness for exactly the removed bytes ---
+and \textbf{(e)} a \emph{commute-modulo-invariant} edit algebra whose independence
+relation is judged over the same semantic read-set the verification gates consult.
+We give a machine-checked soundness theorem (Z3, all configurations by
+UNSAT-of-negation; an N-way induction is additionally formalized in Lean): if two
+verified edits commute, both gate obligations --- including the \emph{negative}
+(disproof) obligations of (a) --- remain discharged in the merge, and both
+application orders are byte-identical. A refinement proof shows the runtime
+predicate equals the proven one on all $2{\times}73{,}728$ configurations. We
+demonstrate the algebra on 169{,}171 real edit-pairs from three external
+open-source repositories with zero unsound independence verdicts. In production
+use the enforcement layer logged 9{,}314 persisted operations with \emph{zero}
+introduced syntax errors (independently re-derived: $\max(\mathit{errors}_{\mathit{after}}
+- \mathit{errors}_{\mathit{before}}) = 0$ over the entire population), 6{,}531
+pre-spawn refusals of shell effects, and 1{,}088 live-traffic blocks of native
+mutation attempts, at a median judge latency of ${\sim}1$\,ms. Finally, we close
+the loop that no surveyed system closes: the refusal artifact itself is fed back
+to the proposer. On full canonical HumanEval (164 tasks) with a frozen weak
+proposer, digest-bound disproof feedback lifts pass rate from 85.4\% (baseline)
+to \textbf{93.9\%} --- above blind resampling (92.1\%) and scalar feedback
+(92.7\%) --- with every feedback package digest-verified and the headline claim
+itself machine-validated by a gate. We do not defeat Rice's theorem; all
+guarantees are explicitly relative to a declared, growing, decidable battery, and
+unverified regions are first-class \textsc{Unjudged}, never silently green.
+\end{abstract}
+
+\section{Introduction}
+
+Autonomous coding agents today act through a primitive inherited from human
+workflows: the textual patch. The patch is applied first and judged later, if at
+all. The consequences are structural, not incidental: broken intermediate states
+reach disk; concurrent agents collide invisibly; deletions carry no evidence that
+the deleted bytes were wrong; and ``the tests passed'' substitutes for proof while
+measuring something else entirely. As agents gain autonomy, the cost of this
+action space compounds: every error becomes a rollback, a debugging session, or a
+silent regression.
+
+\textsc{Atomic} starts from an epistemic inversion rather than a tooling
+improvement: \emph{no byte has the right to exist until it proves it deserves to}.
+Concretely:
+
+\begin{itemize}
+\item \textbf{Verification precedes disk.} A mutation is a transaction
+  (intention, target, expected pre-state hash, validation plan); the resulting
+  state is judged by a battery of gates and is materialized only if it
+  converges green. There is no corrective rollback in the normal flow because
+  invalid states are never written.
+\item \textbf{Not-proven equals negative.} Regions the battery cannot judge are
+  \textsc{Unjudged} and treated as negative for admission purposes. The system
+  is honest about the boundary of its own knowledge; optimism is not proof.
+\item \textbf{Asymmetric action law.} Positive actions (create/edit) may only
+  materialize gate-positive bytes; negative actions (delete/replace) only take
+  effect against bytes \emph{proven} negative --- the inverted byte-default of
+  contribution (a).
+\item \textbf{No bypass.} Within the controlled environment every mutation ---
+  and shell execution, via a sandboxed broker --- flows through the layer. Where
+  a capability is missing, the agent must first extend the layer \emph{through
+  the layer itself}, under a mandatory validator lattice with monotonic safety:
+  coverage may grow; no guarantee may weaken.
+\item \textbf{Refusal is signal.} Every refusal emits a verifiable
+  \emph{disproof witness} into an append-only, hash-chained corpus; a briefing
+  built from these witnesses is returned to the proposer on its next attempt.
+  The proof artifact is thereby an input to generation, not merely a filter ---
+  the mechanism slot our survey finds unoccupied (\S\ref{sec:gradient}).
+\end{itemize}
+
+\paragraph{Contributions.} (1) The integrated pair (a)+(e): an inverted
+byte-default whose disproof read-set is the \emph{same} object over which edit
+independence is judged (\S\ref{sec:core}); (2) a machine-checked
+obligation-preservation theorem strictly stronger than classical byte-confluence,
+with a full refinement link to the runtime (\S\ref{sec:theorem}); (3) an external
+demonstration on 169k real edit-pairs with an independent oracle and zero unsound
+verdicts (\S\ref{sec:t3}); (4) production evidence --- adversarially re-derived by
+independent verifiers, with two of the authors' own claims refuted and the
+refutations incorporated (\S\ref{sec:production}); (5) a hash-anchored controlled
+benchmark separating \emph{enforcement} from \emph{accuracy} claims
+(\S\ref{sec:bench}); (6) the first measured demonstrations that the refusal
+artifact functions as a generation-side signal, including a $+8.5$\,pp lift on
+full canonical HumanEval with digest-verified feedback and a gate-validated
+headline claim (\S\ref{sec:gradient}); and (7) an honest-limits section that we
+consider part of the contribution, not an appendix (\S\ref{sec:limits}).
+
+\section{System overview}\label{sec:system}
+
+\textsc{Atomic} is implemented as an MCP (Model Context Protocol) server of
+${\sim}96$ TypeScript modules exposing ${\sim}80$ tools, deployed inside a
+production monorepo where it has judged every code mutation for weeks. Its
+components:
+
+\paragraph{Mutation firewall.} Every edit operator (sub-line text replacement,
+AST/symbol operations, file creation/deletion, multi-file transactions) shares one
+pipeline: governance guard $\to$ optimistic concurrency (SHA-256 of the expected
+pre-state; stale world is refused, not merged) $\to$ syntax-regression validation
+against real grammars $\to$ atomic write $\to$ char-level trace receipt. Receipts
+form a hash chain (\texttt{chainHash}) and include a founder-readable block
+stating what changed, what is provably untouched, and --- crucially --- what is
+\emph{not} proven (a trust score with an explicit ceiling: structural validity is
+never sold as behavioral correctness).
+
+\paragraph{Gate lattice.} 105 executable proof scripts (\texttt{gates/*.proof.mjs})
+cover parse/type/binding/import integrity, public-contract preservation, security
+baselines (ratcheted: the invariant count may not silently drop, and ratchet
+checks bind to gate \emph{behavior} via recomputable fixtures, not cardinality),
+convergence, reachability, and the formal artifacts of \S\ref{sec:theorem}.
+A \emph{lens} exposes the exact red-set the gates see --- per-byte
+classification \{positive-within-declared-battery, negative (with gate, locus,
+reason), unjudged (with the honest reason)\} --- so any agent can read the world
+through the same eye that judges it.
+
+\paragraph{No-bypass envelope.} Shell execution flows through
+\texttt{atomic\_exec}: command classification (read-only runs trace-only;
+mutable-or-unknown requires \texttt{proveEffect}, which snapshots the byte-effect
+root and yields an exact per-file effect diff with byte-exact reversal), a macOS
+\texttt{sandbox-exec} profile (writes confined to the declared effect root,
+network denied), a defense-in-depth denylist, and secret redaction on every traced
+surface. In host-launched sessions a PreToolUse deny-hook additionally blocks
+native (non-\textsc{Atomic}) mutation tools; \S\ref{sec:production} reports its
+live-traffic record. Exit codes are never faked: failure returns the real code
+and is itself evidence.
+
+\paragraph{Self-expansion under monotonic safety.} The only legal way to modify
+\textsc{Atomic}'s own source is \texttt{atomic\_expand\_self}: a scoped admission
+window that applies the candidate bytes, rebuilds, runs a \emph{mandatory}
+validator lattice (41 validators spanning build, types, semantics, security
+monotonicity, behavior contracts, ledger integrity, no-bypass) plus
+caller-supplied proof commands, and rolls back byte-exactly on any red. Each
+decision --- promote or reject --- is recorded in an append-only, hash-chained
+\emph{self-evolution archive} (43 entries at the time of writing: 20 promotions,
+23 rejections) whose promotion receipts re-derive their facts from the actual
+tree rather than trusting caller-supplied numbers.
+
+\paragraph{Disproof corpus and briefing.} Every rejection emits a
+\texttt{DisproofWitness} (invariant id, locus, counterexample, proposal digest,
+verdict codes) appended to a verified, deduplicated corpus. A briefing builder
+selects relevant walls and returns them --- with an anti-leakage discipline and a
+digest recorded in the proposal ledger --- to whichever proposer attempts the
+region next. Guidance is constitutionally subordinate: lessons may never weaken
+admission; the hard gate remains the only judge.
+
+\input{part2}
+\end{document}

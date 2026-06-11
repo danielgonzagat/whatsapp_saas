@@ -1,0 +1,19 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+
+def minSubArraySum(nums):
+    """
+    Given an array of integers nums, find the minimum sum of any non-empty sub-array
+    of nums.
+    Example
+    minSubArraySum([2, 3, 4, 1, 2, 4]) == 1
+    minSubArraySum([-1, -2, -3]) == -6
+    """
+
+--- FIM DA TAREFA ---

@@ -1,11 +1,17 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { Prisma } from '@prisma/client';
 import { InboxService } from './inbox.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { InboxGateway } from './inbox.gateway';
-import { WebhookDispatcherService } from '../webhooks/webhook-dispatcher.service';
-import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
-import { type FlexMock } from '../../test/helpers/prisma.mock';
+import {
+  buildTxClient,
+  createInboxTestContext,
+  messageStub,
+  type ConversationUpdateArgs,
+  type MessageCreateArgs,
+  type MockChannelTransports,
+  type MockDispatcher,
+  type MockGateway,
+  type MockPrisma,
+  type TxClientMock,
+} from './inbox.service.spec.fixtures';
 
 /**
  * P6-6 (I14 + I15) coverage for the inbox service.
@@ -19,174 +25,20 @@ import { type FlexMock } from '../../test/helpers/prisma.mock';
  * here verify that the `$transaction` callback is invoked with a single
  * `tx` object and that all three Prisma calls (findFirst, message.create,
  * conversation.update) happen against the SAME client.
+ *
+ * Shared harness: `inbox.service.spec.fixtures.ts`. Read-path and
+ * conversation-management describes live in
+ * `inbox.service.operations.spec.ts` (architecture size guardrail).
  */
-type MockPrisma = {
-  conversation: {
-    findFirst: FlexMock;
-    findFirstOrThrow: FlexMock;
-    findUnique: FlexMock;
-    create: FlexMock;
-    update: FlexMock;
-    updateMany: FlexMock;
-  };
-  message: { create: FlexMock };
-  mindMessage: { create: FlexMock };
-  $transaction: FlexMock;
-};
-
-type MockGateway = { emitToWorkspace: jest.Mock };
-
-type MockDispatcher = { dispatch: jest.Mock };
-
-/** Shape returned by `saveMessage` — mirrors the Prisma Message model fields. */
-interface SaveMessageResult {
-  id: string;
-  status: string;
-  contactId: string;
-  workspaceId: string;
-  createdAt: Date;
-  updatedAt: Date;
-  externalId: string | null;
-  direction: string;
-  type: string;
-  content: string | null;
-  mediaUrl: string | null;
-  errorCode: string | null;
-  conversationId: string | null;
-  agentId: string | null;
-}
-
-const messageStub: SaveMessageResult = {
-  id: 'msg-1',
-  status: 'DELIVERED',
-  contactId: 'contact-1',
-  workspaceId: 'ws-1',
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  externalId: null,
-  direction: 'OUTBOUND',
-  type: 'TEXT',
-  content: null,
-  mediaUrl: null,
-  errorCode: null,
-  conversationId: null,
-  agentId: null,
-};
-
-type TxOverrides = Partial<{
-  findFirst: jest.Mock;
-  create: jest.Mock;
-  messageCreate: jest.Mock;
-  conversationUpdate: jest.Mock;
-}>;
-
-interface TxClientMock {
-  conversation: {
-    findFirst: jest.Mock;
-    create: jest.Mock;
-    update: jest.Mock;
-    updateMany: jest.Mock;
-    findFirstOrThrow: jest.Mock;
-  };
-  message: { create: jest.Mock };
-}
-
-/** Payload received by `message.create` inside `saveMessage`. */
-interface MessageCreateArgs {
-  data: Record<string, unknown>;
-}
-
-/** Payload received by `conversation.updateMany` inside `saveMessage`. */
-interface ConversationUpdateArgs {
-  data: Record<string, unknown>;
-  where: Record<string, unknown>;
-}
-
-function buildTxClient(overrides: TxOverrides = {}): TxClientMock {
-  return {
-    conversation: {
-      findFirst: overrides.findFirst ?? jest.fn().mockResolvedValue(null),
-      create:
-        overrides.create ??
-        jest.fn().mockResolvedValue({
-          id: 'conv-1',
-          workspaceId: 'ws-1',
-          contactId: 'contact-1',
-          channel: 'WHATSAPP',
-          status: 'OPEN',
-          lastMessageAt: new Date('2026-04-08T00:00:00Z'),
-          unreadCount: 0,
-        }),
-      update:
-        overrides.conversationUpdate ??
-        jest.fn().mockResolvedValue({
-          id: 'conv-1',
-          status: 'OPEN',
-          unreadCount: 1,
-          lastMessageAt: new Date(),
-          contact: { id: 'contact-1', name: null, phone: '5511999999999' },
-        }),
-      updateMany: overrides.conversationUpdate ?? jest.fn().mockResolvedValue({ count: 1 }),
-      findFirstOrThrow: jest.fn().mockResolvedValue({
-        id: 'conv-1',
-        status: 'OPEN',
-        unreadCount: 1,
-        lastMessageAt: new Date(),
-        contact: { id: 'contact-1', name: null, phone: '5511999999999' },
-      }),
-    },
-    message: {
-      create:
-        overrides.messageCreate ??
-        jest.fn().mockResolvedValue({
-          id: 'msg-1',
-          conversationId: 'conv-1',
-          workspaceId: 'ws-1',
-          contactId: 'contact-1',
-          content: 'hi',
-          direction: 'INBOUND',
-          status: 'DELIVERED',
-        }),
-    },
-  };
-}
-
 describe('InboxService', () => {
   let service: InboxService;
   let prisma: MockPrisma;
   let gateway: MockGateway;
   let dispatcher: MockDispatcher;
-  let channelTransports: { send: jest.Mock };
+  let channelTransports: MockChannelTransports;
 
   beforeEach(async () => {
-    prisma = {
-      conversation: {
-        findFirst: jest.fn() as FlexMock,
-        findFirstOrThrow: jest.fn() as FlexMock,
-        findUnique: jest.fn() as FlexMock,
-        create: jest.fn() as FlexMock,
-        update: jest.fn() as FlexMock,
-        updateMany: jest.fn().mockResolvedValue({ count: 1 }) as FlexMock,
-      },
-      message: { create: jest.fn() as FlexMock },
-      mindMessage: { create: jest.fn().mockResolvedValue({ id: 'mind-1' }) as FlexMock },
-      $transaction: jest.fn() as FlexMock,
-    };
-    gateway = { emitToWorkspace: jest.fn() };
-    dispatcher = { dispatch: jest.fn().mockResolvedValue(undefined) };
-    channelTransports = { send: jest.fn().mockResolvedValue({ success: true }) };
-
-    const testingModule: TestingModule = await Test.createTestingModule({
-      providers: [
-        InboxService,
-        { provide: PrismaService, useValue: prisma },
-        { provide: InboxGateway, useValue: gateway },
-        { provide: WebhookDispatcherService, useValue: dispatcher },
-        { provide: ChannelTransportRegistry, useValue: channelTransports },
-      ],
-    }).compile();
-
-    service = testingModule.get(InboxService);
+    ({ service, prisma, gateway, dispatcher, channelTransports } = await createInboxTestContext());
   });
 
   describe('getOrCreateConversation (I14 — Conversation Singleton-Open)', () => {
@@ -273,6 +125,70 @@ describe('InboxService', () => {
       await expect(
         service.getOrCreateConversation('ws-1', 'contact-1', 'WHATSAPP'),
       ).rejects.toThrow(/failed to resolve conversation/);
+    });
+  });
+
+  describe('saveMessageByPhone', () => {
+    it('uses an existing contact and forwards optional message fields', async () => {
+      const createdAt = new Date('2026-04-08T12:00:00Z');
+      prisma.contact.findUnique.mockResolvedValue({ id: 'contact-existing' });
+      const saveMessageSpy = jest.spyOn(service, 'saveMessage').mockResolvedValue(messageStub);
+
+      await service.saveMessageByPhone({
+        workspaceId: 'ws-1',
+        phone: '5511999999999',
+        content: 'hi',
+        direction: 'INBOUND',
+        externalId: 'wamid-1',
+        type: 'IMAGE',
+        channel: 'WHATSAPP',
+        mediaUrl: 'https://cdn.example/image.png',
+        status: 'DELIVERED',
+        createdAt,
+        countAsUnread: false,
+        resetUnreadOnOutbound: true,
+        silent: true,
+      });
+
+      expect(prisma.contact.create).not.toHaveBeenCalled();
+      expect(saveMessageSpy).toHaveBeenCalledWith({
+        workspaceId: 'ws-1',
+        contactId: 'contact-existing',
+        content: 'hi',
+        direction: 'INBOUND',
+        externalId: 'wamid-1',
+        type: 'IMAGE',
+        channel: 'WHATSAPP',
+        mediaUrl: 'https://cdn.example/image.png',
+        status: 'DELIVERED',
+        createdAt,
+        countAsUnread: false,
+        resetUnreadOnOutbound: true,
+        silent: true,
+      });
+    });
+
+    it('creates a contact for a new phone and omits undefined options', async () => {
+      prisma.contact.findUnique.mockResolvedValue(null);
+      prisma.contact.create.mockResolvedValue({ id: 'contact-new' });
+      const saveMessageSpy = jest.spyOn(service, 'saveMessage').mockResolvedValue(messageStub);
+
+      await service.saveMessageByPhone({
+        workspaceId: 'ws-1',
+        phone: '5511888888888',
+        content: 'new lead',
+        direction: 'OUTBOUND',
+      });
+
+      expect(prisma.contact.create).toHaveBeenCalledWith({
+        data: { workspaceId: 'ws-1', phone: '5511888888888', name: null },
+      });
+      expect(saveMessageSpy).toHaveBeenCalledWith({
+        workspaceId: 'ws-1',
+        contactId: 'contact-new',
+        content: 'new lead',
+        direction: 'OUTBOUND',
+      });
     });
   });
 
@@ -443,6 +359,50 @@ describe('InboxService', () => {
         channel: 'WHATSAPP',
         status: 'PENDING',
       });
+    });
+
+    it('throws when the conversation cannot be found in the workspace', async () => {
+      prisma.conversation.findFirst.mockResolvedValue(null);
+
+      await expect(service.replyToConversation('ws-1', 'conv-1', 'oi')).rejects.toThrow(
+        'Conversação não encontrada',
+      );
+
+      expect(channelTransports.send).not.toHaveBeenCalled();
+    });
+
+    it('throws when the contact has no phone number', async () => {
+      prisma.conversation.findFirst.mockResolvedValue({
+        id: 'conv-1',
+        workspaceId: 'ws-1',
+        contactId: 'contact-1',
+        channel: 'WHATSAPP',
+        contact: { phone: null },
+      });
+
+      await expect(service.replyToConversation('ws-1', 'conv-1', 'oi')).rejects.toThrow(
+        'Contato sem telefone associado',
+      );
+
+      expect(channelTransports.send).not.toHaveBeenCalled();
+    });
+
+    it('surfaces transport blocks without persisting a reply', async () => {
+      prisma.conversation.findFirst.mockResolvedValue({
+        id: 'conv-1',
+        workspaceId: 'ws-1',
+        contactId: 'contact-1',
+        channel: null,
+        contact: { phone: '5511999999999' },
+      });
+      channelTransports.send.mockResolvedValue({ success: false, blockedReason: 'policy_block' });
+      const saveMessageSpy = jest.spyOn(service, 'saveMessage').mockResolvedValue(messageStub);
+
+      await expect(service.replyToConversation('ws-1', 'conv-1', 'oi')).rejects.toThrow(
+        'policy_block',
+      );
+
+      expect(saveMessageSpy).not.toHaveBeenCalled();
     });
   });
 

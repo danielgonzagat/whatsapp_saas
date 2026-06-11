@@ -119,8 +119,13 @@ export function KloelMath({ source, display }: { source: string; display: boolea
  */
 export const remarkKloelMath: Plugin<[]> = () => {
   const BLOCK_RE = /\$\$([\s\S]+?)\$\$/;
-  // Inline: a single $, not escaped, not a $$, closed by a single $ on the same logical run.
-  const INLINE_RE = /(?<![\\$])\$(?!\$)((?:\\.|[^$\\])+?)\$(?!\$)/;
+  // Inline: a single $, not escaped, not a $$, closed by a single $ on the same
+  // logical run — hardened against currency (Pandoc-style rules). The opening $
+  // must not follow a letter (blocks "R$"/"US$"), must be immediately followed
+  // by a non-space; the closing $ must be immediately preceded by a non-space
+  // and must not be followed by a digit (blocks "R$ 79,50 ... R$ 99,90" runs).
+  const INLINE_RE =
+    /(?<![\\$\p{L}])\$(?!\$)(?=\S)((?:\\.|[^$\\])+?)(?<=\S)\$(?!\$)(?!\p{N})/u;
 
   return (tree) => {
     visit(tree, 'text', (node, index, parent) => {

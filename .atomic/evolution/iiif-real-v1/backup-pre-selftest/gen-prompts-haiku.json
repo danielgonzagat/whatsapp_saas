@@ -1,0 +1,72 @@
+{
+  "ok": true,
+  "model": "haiku",
+  "prompts": [
+    {
+      "lineageId": "haiku|ESCALAR|s1",
+      "arm": "ESCALAR",
+      "seed": "s1",
+      "generation": 5,
+      "promptText": "Você é o propositor congelado do experimento darwin-godel. Proponha exatamente UMA edição no alvo para avançar a tarefa.\n\nREGRAS FIXAS: edição mínima; saída = diff unificado + uma linha de intenção; jamais tocar em gates/validadores; nenhuma fonte externa.\n\nTAREFA: Remover a duplicação preservando o contrato público. O caminho guloso (remover os dois blocos de uma vez) excede o teto de remoção por passo; o caminho admissível exige primeiro ADICIONAR o helper compartilhado (score cai) e então remover um bloco por passo.\n--- ESTADO ATUAL DO ALVO (sandbox/task1-dedup-under-byte-cap.txt) ---\n// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction sharedLogic() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  return sharedLogic();\n}\n\nfunction b() {\n  return sharedLogic();\n}\n\n--- FIM DO ESTADO ---\n\nRESULTADO DA SUA ÚLTIMA PROPOSTA: FALHOU (score=13). Nenhuma outra informação disponível.\n\nFIM DAS INSTRUÇÕES. Responda apenas com o diff e a intenção.",
+      "promptSha256": "e0ebc9f69fec06ef2118d78eb37b0eb1516d3eed848d09b3a0bf19b865ffa9be",
+      "skeletonSha256": "119181fc845e3cec86de753fc76d3ceeb38fc915abb49c138e5956277cd98389",
+      "briefingDigest": null,
+      "briefingWallCount": 0
+    },
+    {
+      "lineageId": "haiku|ESCALAR|s2",
+      "arm": "ESCALAR",
+      "seed": "s2",
+      "generation": 5,
+      "promptText": "Você é o propositor congelado do experimento darwin-godel. Proponha exatamente UMA edição no alvo para avançar a tarefa.\n\nREGRAS FIXAS: edição mínima; saída = diff unificado + uma linha de intenção; jamais tocar em gates/validadores; nenhuma fonte externa.\n\nTAREFA: Remover a duplicação preservando o contrato público. O caminho guloso (remover os dois blocos de uma vez) excede o teto de remoção por passo; o caminho admissível exige primeiro ADICIONAR o helper compartilhado (score cai) e então remover um bloco por passo.\n--- ESTADO ATUAL DO ALVO (sandbox/task1-dedup-under-byte-cap.txt) ---\n// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction _sharedLogic() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction b() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\n--- FIM DO ESTADO ---\n\nRESULTADO DA SUA ÚLTIMA PROPOSTA: PASSOU (score=1). Nenhuma outra informação disponível.\n\nFIM DAS INSTRUÇÕES. Responda apenas com o diff e a intenção.",
+      "promptSha256": "35aa1b8b1605b9af7adc99c67dd898b9fd55cc341204fd7b7db07427ebbe2b00",
+      "skeletonSha256": "6735bbe9ea0079cd5774405e0e72ad9d7e4e1cf004dc1c50201f8774cda2549c",
+      "briefingDigest": null,
+      "briefingWallCount": 0
+    },
+    {
+      "lineageId": "haiku|ESCALAR|s3",
+      "arm": "ESCALAR",
+      "seed": "s3",
+      "generation": 5,
+      "promptText": "Você é o propositor congelado do experimento darwin-godel. Proponha exatamente UMA edição no alvo para avançar a tarefa.\n\nREGRAS FIXAS: edição mínima; saída = diff unificado + uma linha de intenção; jamais tocar em gates/validadores; nenhuma fonte externa.\n\nTAREFA: Remover a duplicação preservando o contrato público. O caminho guloso (remover os dois blocos de uma vez) excede o teto de remoção por passo; o caminho admissível exige primeiro ADICIONAR o helper compartilhado (score cai) e então remover um bloco por passo.\n--- ESTADO ATUAL DO ALVO (sandbox/task1-dedup-under-byte-cap.txt) ---\n// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction _shared() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  return _shared();\n}\n\nfunction b() {\n  return _shared();\n}\n\n--- FIM DO ESTADO ---\n\nRESULTADO DA SUA ÚLTIMA PROPOSTA: FALHOU (score=14). Nenhuma outra informação disponível.\n\nFIM DAS INSTRUÇÕES. Responda apenas com o diff e a intenção.",
+      "promptSha256": "314a8a7fc811f66ac67df9fd2d7d6fd9f6c62135d6a2c3b50f66f6548cac8434",
+      "skeletonSha256": "924dc463e47d52054b82ee09203b56aad11be6033abf005e1da4ce1127670ecb",
+      "briefingDigest": null,
+      "briefingWallCount": 0
+    },
+    {
+      "lineageId": "haiku|GRADIENTE|s1",
+      "arm": "GRADIENTE",
+      "seed": "s1",
+      "generation": 5,
+      "promptText": "Você é o propositor congelado do experimento darwin-godel. Proponha exatamente UMA edição no alvo para avançar a tarefa.\n\nREGRAS FIXAS: edição mínima; saída = diff unificado + uma linha de intenção; jamais tocar em gates/validadores; nenhuma fonte externa.\n\nTAREFA: Remover a duplicação preservando o contrato público. O caminho guloso (remover os dois blocos de uma vez) excede o teto de remoção por passo; o caminho admissível exige primeiro ADICIONAR o helper compartilhado (score cai) e então remover um bloco por passo.\n--- ESTADO ATUAL DO ALVO (sandbox/task1-dedup-under-byte-cap.txt) ---\n// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction _shared() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  return _shared();\n}\n\nfunction b() {\n  return _shared();\n}\n\n--- FIM DO ESTADO ---\n\n## BRIEFING DE PAREDES (disprovas formais; aprenda a geometria, não os loci)\nPAREDE: sandbox.byte-floor @ sandbox/task1-dedup-under-byte-cap.txt#single-step-removal — 1 colisões, ger. 4-4 [gate.sandbox.byte-floor]\nCONTRA-EXEMPLO sandbox.byte-floor::sandbox/task1-dedup-under-byte-cap.txt#single-step-removal: {\"removedByteCount\":244,\"byteCap\":220}\n\nFIM DAS INSTRUÇÕES. Responda apenas com o diff e a intenção.",
+      "promptSha256": "0ed59d8efcd8db3292b897c079a6bd4581b41ee4479a3a8769bd016b16263d3a",
+      "skeletonSha256": "924dc463e47d52054b82ee09203b56aad11be6033abf005e1da4ce1127670ecb",
+      "briefingDigest": "c934702af3b7b03da2ba96a6c28538e800450ec8f8e0a4f259b4a4b5fb311981",
+      "briefingWallCount": 1
+    },
+    {
+      "lineageId": "haiku|GRADIENTE|s2",
+      "arm": "GRADIENTE",
+      "seed": "s2",
+      "generation": 5,
+      "promptText": "Você é o propositor congelado do experimento darwin-godel. Proponha exatamente UMA edição no alvo para avançar a tarefa.\n\nREGRAS FIXAS: edição mínima; saída = diff unificado + uma linha de intenção; jamais tocar em gates/validadores; nenhuma fonte externa.\n\nTAREFA: Remover a duplicação preservando o contrato público. O caminho guloso (remover os dois blocos de uma vez) excede o teto de remoção por passo; o caminho admissível exige primeiro ADICIONAR o helper compartilhado (score cai) e então remover um bloco por passo.\n--- ESTADO ATUAL DO ALVO (sandbox/task1-dedup-under-byte-cap.txt) ---\n// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction _sharedLogic() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  // dup:block\n  return _sharedLogic(); // end-dup\n}\n\nfunction b() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\n--- FIM DO ESTADO ---\n\n## BRIEFING DE PAREDES (disprovas formais; aprenda a geometria, não os loci)\nPAREDE: sandbox.byte-floor @ sandbox/task1-dedup-under-byte-cap.txt#single-step-removal — 3 colisões, ger. 1-4 [gate.sandbox.byte-floor]\nCONTRA-EXEMPLO sandbox.byte-floor::sandbox/task1-dedup-under-byte-cap.txt#single-step-removal: {\"removedByteCount\":406,\"byteCap\":220}\n\nFIM DAS INSTRUÇÕES. Responda apenas com o diff e a intenção.",
+      "promptSha256": "01c9563eec89907753e83b1e54d4c95922106ed7ab10015943a3ca5d19155a2f",
+      "skeletonSha256": "8121c382b9e52fb5a1af32462996487d5c28bfc962fa68adbdf2b93d73373703",
+      "briefingDigest": "776d3352a9a260ff7e3e4a3201d180edfd11fb6bffbf39950eba0c6b12c61aee",
+      "briefingWallCount": 1
+    },
+    {
+      "lineageId": "haiku|GRADIENTE|s3",
+      "arm": "GRADIENTE",
+      "seed": "s3",
+      "generation": 5,
+      "promptText": "Você é o propositor congelado do experimento darwin-godel. Proponha exatamente UMA edição no alvo para avançar a tarefa.\n\nREGRAS FIXAS: edição mínima; saída = diff unificado + uma linha de intenção; jamais tocar em gates/validadores; nenhuma fonte externa.\n\nTAREFA: Remover a duplicação preservando o contrato público. O caminho guloso (remover os dois blocos de uma vez) excede o teto de remoção por passo; o caminho admissível exige primeiro ADICIONAR o helper compartilhado (score cai) e então remover um bloco por passo.\n--- ESTADO ATUAL DO ALVO (sandbox/task1-dedup-under-byte-cap.txt) ---\n// sandbox module v1 — alvo do experimento darwin-godel\nexport { a, b };\n\nfunction _computeNormalized() {\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z);\n}\n\nfunction a() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\nfunction b() {\n  // dup:block\n  const x = compute(1, \"alpha-padding-0001\");\n  const y = compute(2, \"alpha-padding-0002\");\n  const z = combine(x, y, \"alpha-padding-0003\");\n  return normalize(z); // end-dup\n}\n\n--- FIM DO ESTADO ---\n\n## BRIEFING DE PAREDES (disprovas formais; aprenda a geometria, não os loci)\nPAREDE: sandbox.byte-floor @ sandbox/task1-dedup-under-byte-cap.txt#single-step-removal — 1 colisões, ger. 1-1 [gate.sandbox.byte-floor]\nCONTRA-EXEMPLO sandbox.byte-floor::sandbox/task1-dedup-under-byte-cap.txt#single-step-removal: {\"removedByteCount\":406,\"byteCap\":220}\n\nFIM DAS INSTRUÇÕES. Responda apenas com o diff e a intenção.",
+      "promptSha256": "cfbd95dffbdc783284094afc67aaf2b44233107171b4ca559b83499af1c060f2",
+      "skeletonSha256": "107f2d890d1acd77c726dacc171f63b91a49702a4da47c1ca2ee4625075ccae1",
+      "briefingDigest": "e3f1821e32c9f24bc0c24ff36d53db10a0ca72f5368a6f622b07a763ce2a492f",
+      "briefingWallCount": 1
+    }
+  ]
+}

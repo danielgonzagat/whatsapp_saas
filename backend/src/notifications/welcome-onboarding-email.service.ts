@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
 import { Queue, Worker } from 'bullmq';
+import { NotificationPreferencesService } from './notification-preferences.service';
 import { EmailService } from '../auth/email.service';
 import { getRedisUrl } from '../common/redis/redis.util';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -26,6 +27,7 @@ export class WelcomeAndOnboardingEmailService implements OnModuleInit, OnModuleD
   private worker: Worker<OnboardingEmailJob> | null = null;
 
   constructor(
+    private readonly notificationPreferences: NotificationPreferencesService,
     private readonly emailService: EmailService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
@@ -41,6 +43,18 @@ export class WelcomeAndOnboardingEmailService implements OnModuleInit, OnModuleD
       this.worker = new Worker<OnboardingEmailJob>(
         QUEUE_NAME,
         async (job) => {
+          // ENFORCEMENT: the per-user emailTips preference gates the
+          // onboarding/tips sequence — OFF means this e-mail is NOT sent.
+          const allowed = await this.notificationPreferences.isOnboardingEmailAllowed(
+            job.data.workspaceId,
+            job.data.email,
+          );
+          if (!allowed) {
+            this.logger.log(
+              `Onboarding email skipped (emailTips preference off): ${job.data.template} for ${job.data.email}`,
+            );
+            return;
+          }
           const { email, agentName, template, workspaceId } = job.data;
           this.logger.log(`Processing onboarding email: ${template} for ${email}`);
           await this.emailService.sendOnboardingEmail(email, agentName, template, workspaceId);

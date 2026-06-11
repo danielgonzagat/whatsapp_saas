@@ -59,7 +59,7 @@ function getMocks() {
 
 function buildScheduler(opts?: {
   cognitiveHealth?: {
-    scanAndEscalate: jest.Mock<Promise<{ escalated: number }>>;
+    scanAndEscalate: jest.Mock<Promise<{ escalated: number }>, [string]>;
   };
 }) {
   const coordinator = new MultiTimescaleCoordinator();
@@ -93,8 +93,16 @@ function buildScheduler(opts?: {
   const cognitiveHealth = opts?.cognitiveHealth as unknown as
     | import('./cia/cia-cognitive-health.service').CiaCognitiveHealthService
     | undefined;
+  const moduleRef = {
+    get: jest.fn().mockReturnValue(cognitiveHealth),
+  };
   return {
-    scheduler: new MindBackgroundScheduler(processor, spine, undefined as never, cognitiveHealth),
+    scheduler: new MindBackgroundScheduler(
+      processor,
+      spine,
+      undefined as never,
+      moduleRef as never,
+    ),
     spine,
     processor,
     cognitiveHealth,

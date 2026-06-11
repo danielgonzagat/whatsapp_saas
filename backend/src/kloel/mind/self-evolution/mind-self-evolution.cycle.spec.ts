@@ -115,7 +115,7 @@ describe('MindSelfModificationService.runEvolutionCycle (full self-evolution cyc
     );
     expect(Math.abs(payload.cycleBucket - expectedBucket)).toBeLessThanOrEqual(1);
 
-    // (5) Spine envelope was emitted with the cognition.self.modification_proposed name
+    // (5) Spine envelope was emitted with the canonical cognition.self_modification.proposed name
     expect(fakeSpine.emit).toHaveBeenCalledTimes(1);
     const emitArg = fakeSpine.emit.mock.calls[0]?.[0] as {
       eventName: string;
@@ -123,7 +123,7 @@ describe('MindSelfModificationService.runEvolutionCycle (full self-evolution cyc
       truthMode: string;
       payload: { opportunityCount: number };
     };
-    expect(emitArg.eventName).toBe('cognition.self.modification_proposed');
+    expect(emitArg.eventName).toBe('cognition.self_modification.proposed');
     expect(emitArg.workspaceId).toBe('ws-cycle-1');
     expect(emitArg.truthMode).toBe('inferred');
     expect(emitArg.payload.opportunityCount).toBe(result.proposal.opportunities.length);

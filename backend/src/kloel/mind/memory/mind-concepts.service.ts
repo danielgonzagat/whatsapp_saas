@@ -59,19 +59,17 @@ export class MindConceptService {
     text: string;
     workspaceId: string;
   }) {
-    const detections = RULES.flatMap((rule) => {
+    const detections: Array<{ concept: string; confidence: number; evidence: string }> = [];
+    for (const rule of RULES) {
       const matched = rule.patterns.filter((pattern) => pattern.test(input.text));
-      if (matched.length === 0) {
-        return [];
-      }
-      return [
-        {
+      if (matched.length > 0) {
+        detections.push({
           concept: rule.concept,
           confidence: Math.min(0.95, 0.55 + matched.length * 0.12),
           evidence: input.text.slice(0, 500),
-        },
-      ];
-    });
+        });
+      }
+    }
 
     const rows = [];
     for (const detection of detections) {

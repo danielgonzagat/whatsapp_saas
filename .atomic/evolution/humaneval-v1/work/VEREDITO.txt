@@ -1,0 +1,12 @@
+ok=true dataset=external-jsonl tasks=164 datasetSha=1d49078ba3e2
+baseline: pass=140/164 (85.4%)
+scalar: pass=152/164 (92.7%)
+proof: pass=154/164 (93.9%)
+cego: pass=151/164 (92.1%) [falhas=13]
+deltas: proof-baseline=8.5pp proof-scalar=1.2pp
+claims: raw=false toolAugmented=true officialClaimRefused=false
+feedback: samples=24 pacotesVálidos=true receiptsBound=true promptsBound=true
+controls: sameModel=true modelIds=haiku budgets=1,2
+recuperação scalar: 12/24
+recuperação proof: 14/24
+recuperação cego: 11/24

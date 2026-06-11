@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unused-expressions */
 /**
  * Proves the cutover bootstrap trigger: no-op when both backfill flags are OFF,
  * runs the enabled backfill + parity on bootstrap, and never throws into boot
@@ -18,8 +16,16 @@ describe('MindCutoverBootstrapService', () => {
   const prevMsg = process.env[MSG];
   const prevMem = process.env[MEM];
   afterEach(() => {
-    prevMsg === undefined ? delete process.env[MSG] : (process.env[MSG] = prevMsg);
-    prevMem === undefined ? delete process.env[MEM] : (process.env[MEM] = prevMem);
+    if (prevMsg === undefined) {
+      delete process.env[MSG];
+    } else {
+      process.env[MSG] = prevMsg;
+    }
+    if (prevMem === undefined) {
+      delete process.env[MEM];
+    } else {
+      process.env[MEM] = prevMem;
+    }
   });
 
   function build() {
@@ -62,7 +68,8 @@ describe('MindCutoverBootstrapService', () => {
     service.onApplicationBootstrap();
     await flush();
     expect(message.backfill).toHaveBeenCalledTimes(1);
-    expect(message.backfill.mock.calls[0][0]).toHaveProperty('before');
+    const calls = message.backfill.mock.calls as Array<[Record<string, unknown>]>;
+    expect(calls[0]?.[0]).toHaveProperty('before');
   });
 
   it('never throws into boot when a backfill rejects', async () => {

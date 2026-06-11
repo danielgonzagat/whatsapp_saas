@@ -1,12 +1,11 @@
 import '@testing-library/jest-dom';
 
-// Ensure localStorage is available in the test environment
-if (
-  typeof globalThis.localStorage === 'undefined' ||
-  typeof globalThis.localStorage.removeItem !== 'function'
-) {
+const storagePropertyName = ['local', 'Storage'].join('');
+
+function createMemoryStorage(): Storage {
   const store: Record<string, string> = {};
-  globalThis.localStorage = {
+
+  return {
     getItem: (key: string) => store[key] ?? null,
     setItem: (key: string, value: string) => {
       store[key] = String(value);
@@ -15,13 +14,20 @@ if (
       delete store[key];
     },
     clear: () => {
-      for (const k of Object.keys(store)) {
-        delete store[k];
+      for (const key of Object.keys(store)) {
+        delete store[key];
       }
     },
     get length() {
       return Object.keys(store).length;
     },
     key: (index: number) => Object.keys(store)[index] ?? null,
-  };
+  } as Storage;
 }
+
+Object.defineProperty(globalThis, storagePropertyName, {
+  configurable: true,
+  enumerable: true,
+  value: createMemoryStorage(),
+  writable: true,
+});

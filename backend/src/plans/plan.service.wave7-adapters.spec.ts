@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { PlanService } from './plan.service';
@@ -31,7 +30,6 @@ describe('PlanService — Wave7 fine-grained adapters', () => {
       providers: [
         PlanService,
         { provide: PrismaService, useValue: prisma },
-        { provide: EventEmitter2, useValue: { emit: jest.fn() } },
         { provide: AuditService, useValue: { log: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();

@@ -397,5 +397,33 @@
     "reason": "PR#488 canonicalization P2-7: orphan KloelGlobalPriorService (@deprecated, ZERO injectors; bridge methods live in MindGlobalPriorService over RAC_MindGlobalPrior) removed; this spec covered the deleted orphan. Owner-approved.",
     "issue": "PR#488 canonicalization cleanup",
     "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/test/e2e/stubs/checkout-payment-e2e-stub.spec.ts",
+    "rule": "testDeletion",
+    "reason": "Byte-identical rename into the .e2e-spec.ts surface (commit b82e924b6): these are e2e stubs/suites that belonged to the e2e runner, not the unit jest surface. Content preserved; still executed via backend/test/jest-e2e.json.",
+    "issue": "PR#510",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/test/e2e/stubs/kloel-composer-web-search-e2e-stub.spec.ts",
+    "rule": "testDeletion",
+    "reason": "Byte-identical rename into the .e2e-spec.ts surface (commit b82e924b6): these are e2e stubs/suites that belonged to the e2e runner, not the unit jest surface. Content preserved; still executed via backend/test/jest-e2e.json.",
+    "issue": "PR#510",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/test/e2e/stubs/kloel-llm-test-stub.spec.ts",
+    "rule": "testDeletion",
+    "reason": "Byte-identical rename into the .e2e-spec.ts surface (commit b82e924b6): these are e2e stubs/suites that belonged to the e2e runner, not the unit jest surface. Content preserved; still executed via backend/test/jest-e2e.json.",
+    "issue": "PR#510",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/test/kloel-full-e2e.spec.ts",
+    "rule": "testDeletion",
+    "reason": "Byte-identical rename into the .e2e-spec.ts surface (commit b82e924b6): these are e2e stubs/suites that belonged to the e2e runner, not the unit jest surface. Content preserved; still executed via backend/test/jest-e2e.json.",
+    "issue": "PR#510",
+    "expires": "2026-12-31"
   }
 ]

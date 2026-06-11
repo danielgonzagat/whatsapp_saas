@@ -5,56 +5,26 @@ import { SORA, MONO, PILL_RADIUS } from './palette';
 interface StepBarProps {
   step: number;
   C: OnboardingPalette;
-  onStepClick?: (step: number) => void;
 }
 
 const STEP_BAR_COUNT = 4;
 
 /** Step bar — four abstract traces, no visible numbers (spec §5). */
-export function StepBar({ step, C, onStepClick }: StepBarProps) {
-  const interactive = typeof onStepClick === 'function';
-
+export function StepBar({ step, C }: StepBarProps) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
-      {Array.from({ length: STEP_BAR_COUNT }, (_, i) => i).map((i) => {
-        const traceStyle: CSSProperties = {
-          width: 28,
-          height: 2,
-          display: 'block',
-          background: i <= step ? C.ember : C.inactiveTrace,
-          opacity: i === step ? 1 : i < step ? 0.6 : 1,
-          transition: 'all .4s ease',
-        };
-
-        if (interactive) {
-          const buttonStyle: CSSProperties = {
+      {Array.from({ length: STEP_BAR_COUNT }, (_, i) => i).map((i) => (
+        <div
+          key={i}
+          style={{
             width: 28,
-            height: 12,
-            display: 'flex',
-            alignItems: 'center',
-            background: 'transparent',
-            border: 0,
-            padding: 0,
-            borderRadius: 0,
-            cursor: 'pointer',
-          };
-
-          return (
-            <button
-              key={i}
-              type="button"
-              aria-current={i === step ? 'step' : undefined}
-              aria-label={`Passo ${i + 1}`}
-              onClick={() => onStepClick(i)}
-              style={buttonStyle}
-            >
-              <span aria-hidden style={traceStyle} />
-            </button>
-          );
-        }
-
-        return <div key={i} style={traceStyle} />;
-      })}
+            height: 2,
+            background: i <= step ? C.ember : C.inactiveTrace,
+            opacity: i === step ? 1 : i < step ? 0.6 : 1,
+            transition: 'all .4s ease',
+          }}
+        />
+      ))}
     </div>
   );
 }

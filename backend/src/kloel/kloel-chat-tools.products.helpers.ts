@@ -23,33 +23,6 @@ export interface ToolDeleteProductArgs {
   productName?: string;
   actorId?: string;
 }
-export async function runSaveProduct(
-  prisma: PrismaService,
-  workspaceId: string,
-  args: ToolSaveProductArgs,
-): Promise<ToolResult> {
-  const product = await prisma.product.create({
-    data: {
-      workspaceId,
-      name: args.name,
-      price: args.price,
-      description: args.description || '',
-      format: args.format || 'DIGITAL',
-      category: args.category || null,
-      imageUrl: args.imageUrl || null,
-      tags: args.tags || [],
-      warrantyDays: args.warrantyDays || null,
-      salesPageUrl: args.salesPageUrl || null,
-      thankyouUrl: args.thankyouUrl || null,
-      thankyouPixUrl: args.thankyouPixUrl || null,
-      thankyouBoletoUrl: args.thankyouBoletoUrl || null,
-      supportEmail: args.supportEmail || null,
-      affiliateEnabled: args.affiliateEnabled ?? false,
-      active: true,
-    },
-  });
-  return { success: true, product, message: `Produto "${args.name}" cadastrado com sucesso!` };
-}
 export async function runListProducts(
   prisma: PrismaService,
   workspaceId: string,

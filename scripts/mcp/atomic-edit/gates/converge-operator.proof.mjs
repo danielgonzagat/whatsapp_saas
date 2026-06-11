@@ -134,6 +134,23 @@ try {
       r.residual.some((rd) => rd.gate === 'binding' && rd.fact.includes('totallyMadeUpSymbolXYZ')));
     // FALSIFIER: a needsIntent result is NEVER reported converged.
     check('needsIntent is NEVER reported converged (invariant)', !(r.converged && r.needsIntent));
+
+  // ── FORMAT (opt-in format-fixpoint) — wire-green but non-canonical ──────────
+  {
+    // *.test.ts → reachability treats it as a ROOT (no orphan red), so it is wire-green
+    // but deliberately NOT prettier-canonical. format:true must drain the formatting
+    // WITHOUT changing the wire facts (converged / finalReds / appliedEdits).
+    const frel = 'format.test.ts';
+    const ugly = 'export  const   y=1\nexport function f(){return y+1}\n';
+    const def = await converge(repoRoot, new Map([[frel, ugly]]));
+    check('FORMAT default path is opt-in (formatEdits===0, wire-green, no work invented)',
+      def.formatEdits === 0 && def.converged === true && def.appliedEdits === 0);
+    const fmt = await converge(repoRoot, new Map([[frel, ugly]]), { format: true });
+    check('FORMAT format:true preserves wire facts (converged, finalReds===0, appliedEdits===0)',
+      fmt.converged === true && fmt.finalReds === 0 && fmt.appliedEdits === 0);
+    check('FORMAT format:true drains formatting (formatEdits>0, rationale recorded)',
+      fmt.formatEdits > 0 && fmt.formatted.length > 0);
+  }
   }
 } finally {
   cleanup();

@@ -78,8 +78,10 @@ describe('KloelToolDispatcherService — plans.* aliases', () => {
         actorId: 'user-42',
         inputs: { productId: 'prod-1', name: 'Basic', price: 99 },
         outputs: objectContaining({ planId: 'plan-1' }),
-        domainEvents: ['plan.created'],
-        auditLogId: stringMatching(/^audit_/),
+        // Registry runtime truth (capability-registry-v2/partitions/tier-2-plans.ts):
+        // PlanService.create records mind.plan.observed on the spine — not plan.created.
+        domainEvents: ['mind.plan.observed'],
+        auditLogId: `audit_plans.create:${DEFAULT_WS_ID}:user-42`,
         evidenceUrl: '/produtos/prod-1/planos/plan-1',
         idempotencyKey: stringContaining('plans.create'),
         success: true,

@@ -42,12 +42,39 @@ export function extractWrappedPayload<T>(payload: unknown): T {
   return payload as T;
 }
 
+const GENERIC_STREAM_ERROR_MESSAGE = 'Não consegui concluir esta resposta agora. Tente novamente.';
+
+/**
+ * Chat error text must be human PT-BR product language, never a stack trace,
+ * parser dump, bare error code or multi-line technical payload. Anything
+ * technical-shaped collapses into the generic retry message; short human
+ * messages (product/backend PT-BR copy) pass through untouched.
+ */
+export function sanitizeStreamErrorMessageForChat(message: string): string {
+  const trimmed = message.trim();
+  if (!trimmed) {
+    return GENERIC_STREAM_ERROR_MESSAGE;
+  }
+  const technicalShaped =
+    trimmed.includes('\n') ||
+    /\bat [A-Za-z_$][\w.$<>[\]]* ?\(/.test(trimmed) ||
+    /Unexpected (?:token|end of (?:JSON )?input)/i.test(trimmed) ||
+    /\b(?:TypeError|ReferenceError|SyntaxError|RangeError)\b/.test(trimmed) ||
+    /\.(?:ts|tsx|js|mjs|cjs):\d+/.test(trimmed) ||
+    /^[A-Za-z]+(?:_[A-Za-z0-9]+)+$/.test(trimmed) ||
+    trimmed.length > 220;
+  return technicalShaped ? GENERIC_STREAM_ERROR_MESSAGE : trimmed;
+}
+
 /**
  * Build the `Error` object for a Kloel stream `error` event, attaching the
- * upstream code on the `.code` field for downstream handlers.
+ * upstream code on the `.code` field for downstream handlers. The message is
+ * sanitized for chat display; the raw code stays on `.code`.
  */
 export function createKloelStreamError(event: KloelStreamErrorEvent): Error & { code?: string } {
-  const error = new Error(event.content || event.error || 'stream_failed') as Error & {
+  const error = new Error(
+    sanitizeStreamErrorMessageForChat(event.content || event.error || 'stream_failed'),
+  ) as Error & {
     code?: string;
   };
   error.code = event.error || 'stream_failed';

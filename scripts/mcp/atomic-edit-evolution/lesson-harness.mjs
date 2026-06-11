@@ -240,5 +240,5 @@ if (isCliMain()) {
   const stdinText = mode === '--help' ? '' : fs.readFileSync(0, 'utf8');
   const result = runCli([mode], stdinText);
   process.stdout.write(JSON.stringify(result, null, 2) + '\n');
-  process.exit(result.ok === false ? 1 : 0);
+  process.exitCode = result.ok === false ? 1 : 0; // exit() truncava stdout >64KiB em pipe (ver disproof-corpus-harness)
 }

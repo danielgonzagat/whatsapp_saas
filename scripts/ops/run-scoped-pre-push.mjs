@@ -3,7 +3,7 @@
 import { execSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve, sep } from 'node:path';
 
 const ZERO_SHA = /^0+$/;
 const WHITESPACE_SPLIT_RE = /\s+/;
@@ -100,6 +100,19 @@ function runStep(label, command) {
   exec(command, { capture: false });
 }
 
+function changedFilesTempPath() {
+  const repoRoot = resolve(process.cwd());
+  const candidateRoot = resolve(tmpdir());
+  const repoPrefix = repoRoot.endsWith(sep) ? repoRoot : `${repoRoot}${sep}`;
+  const candidateInsideRepo = candidateRoot === repoRoot || candidateRoot.startsWith(repoPrefix);
+  if (!candidateInsideRepo) {
+    return join(candidateRoot, `kloel-prepush-changed-files-${process.pid}.txt`);
+  }
+
+  const gitPath = safeExec(`git rev-parse --git-path kloel-prepush-changed-files-${process.pid}.txt`);
+  return resolve(gitPath || `.git/kloel-prepush-changed-files-${process.pid}.txt`);
+}
+
 const CI_LIKE_ENV =
   'DATABASE_URL=postgresql://postgres:password@localhost:5432/whatsapp_saas_test ' +
   'JWT_SECRET=test_secret ' +
@@ -127,7 +140,7 @@ const FRONTEND_BUILD_ENV =
   'NEXT_PUBLIC_SENTRY_DSN=';
 
 const changedFiles = collectChangedFiles();
-const changedFilesEnvPath = join(tmpdir(), `kloel-prepush-changed-files-${process.pid}.txt`);
+const changedFilesEnvPath = changedFilesTempPath();
 writeFileSync(changedFilesEnvPath, `${changedFiles.join('\n')}\n`);
 const changedFilesEnv = `KLOEL_CHANGED_FILES_FILE=${JSON.stringify(changedFilesEnvPath)} `;
 

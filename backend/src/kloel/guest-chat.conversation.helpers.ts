@@ -14,8 +14,8 @@ export interface GuestConversation {
   lastMessageAt: Date;
   pendingAction?: PendingOperationalAction;
 }
-export const GUEST_CONVERSATION_TTL_SECONDS = 24 * 60 * 60;
-export function getRedisKey(sessionId: string): string {
+const GUEST_CONVERSATION_TTL_SECONDS = 24 * 60 * 60;
+function getRedisKey(sessionId: string): string {
   return `kloel:guest-chat:${sessionId}`;
 }
 

@@ -1,5 +1,69 @@
 # Changelog
 
+## [0.10.0](https://github.com/danielgonzagat/Kloel/compare/v0.9.0...v0.10.0) (2026-06-10)
+
+
+### Features
+
+* **atomic:** add codex memory note capability ([5108277](https://github.com/danielgonzagat/Kloel/commit/5108277e7c2a2792403272c872fd1485d3116c87))
+* **atomic:** fio Darwin-Gödel — promoção real via decidePromotion + arquivo evolutivo persistido ([a9bf3b6](https://github.com/danielgonzagat/Kloel/commit/a9bf3b643ddc17b50c1a6da7434d07e0bfaefe38))
+* **atomic:** pre-disk typecheck/lint verify + forged-fact rejection for positive-byte receipts ([aa2bcaf](https://github.com/danielgonzagat/Kloel/commit/aa2bcaf9e8f7e51b49866926b4aa6a87166e1c8d))
+* **atomic:** require lesson-rule proof feedback ([ee807ed](https://github.com/danielgonzagat/Kloel/commit/ee807edbd71defdf129dc0a4aa71a59c66deb8be))
+* **atomic:** self-evolution admission kernel + parallel async proof runner under Y certificate ([3fad39c](https://github.com/danielgonzagat/Kloel/commit/3fad39c53200175940498ee401ccc9a715259d71))
+* **atomic:** self-evolution com saída em arquivo + herança de socket do broker ([cf6a250](https://github.com/danielgonzagat/Kloel/commit/cf6a250cfc1c2cef429861aa76f2b431556438e6))
+* **atomic:** wire proof feedback shadow gate ([41309ee](https://github.com/danielgonzagat/Kloel/commit/41309ee4efec22d1b507be62d327144505b82fb8))
+* canonicalization + one-Kloel-Mind cognition + Brain→Mind cutovers + webhook security ([7a4f3eb](https://github.com/danielgonzagat/Kloel/commit/7a4f3ebdfcb31e43fa32fbfa71c46f749a6a1129))
+* **channels:** route IG controller + TikTok inbox sends through canonical dispatch; wire autopilot dispatch percept ([a8b67e0](https://github.com/danielgonzagat/Kloel/commit/a8b67e0931b3cf3e2d17d8dc38ba095b0997cefb))
+* cognition hygiene + percept dissolve + wallet cents prep + channel runbook + frontend fixes + accumulated work ([54defef](https://github.com/danielgonzagat/Kloel/commit/54defef444d9ccfa4710c5169ac07ae3d16bd1a8))
+* **copilot:** emit cognition.copilot.chat_reply percept into One-Mind spine ([b13c328](https://github.com/danielgonzagat/Kloel/commit/b13c328c839a8b4ccbf51f210e07aee9e2922cb0))
+* **evolution:** aparato do experimento III.f — controles C1-C5 executáveis + proof verde ([bfb3ec4](https://github.com/danielgonzagat/Kloel/commit/bfb3ec4f070bc7cb830f76ad7a64a21704827e4a))
+* **evolution:** colhedor de recusas reais + runner, conformes à constituição ([c32ced2](https://github.com/danielgonzagat/Kloel/commit/c32ced208585b97690b1525930687448bfad5c56))
+* **evolution:** colheita real III.a' — 6.778 recusas vivas viram corpus, 26 leis preditivas ([36b1722](https://github.com/danielgonzagat/Kloel/commit/36b17225145144ea7d4e0f20d493c56137162a02))
+* **evolution:** piloto ponta-a-ponta rodado — 90 registros encadeados, curvas M1-M5, exit 0 ([c6c14ad](https://github.com/danielgonzagat/Kloel/commit/c6c14adc0ae508f733a628ec397dbc581939f71b))
+* **evolution:** publish accumulated iiif run artifacts ([48565cf](https://github.com/danielgonzagat/Kloel/commit/48565cfb2c94b1bc8f8c2dbf12ee96acecad9280))
+* **evolution:** sintetizador de leis III.d — de instância a conhecimento, validado por previsão ([c1f9a7e](https://github.com/danielgonzagat/Kloel/commit/c1f9a7efb6591ac460f053058afe602bb4f458a2))
+* **evolution:** substrato do Movimento III — kernel do corpus de disprovas + proof verde ([2f2d0ec](https://github.com/danielgonzagat/Kloel/commit/2f2d0ec10bbc47d0ce79d3ee3f1d593b92a25caa))
+* **evolution:** suite de tarefas com stepping-stones PROVADOS por desigualdade ([703deb6](https://github.com/danielgonzagat/Kloel/commit/703deb628a55cb2f05537dc294d3ff54b760d98b))
+* **evolution:** varredura — driver iiif + archive em trânsito do fio Darwin-Gödel ([d16798b](https://github.com/danielgonzagat/Kloel/commit/d16798bdce1b72b3cc8f6fc086d96b0fe0ca9e41))
+* **frontend:** surface real tool names and public reasoning in chat trace (honest transparency) ([9d637fe](https://github.com/danielgonzagat/Kloel/commit/9d637fefd515eeaea08f9fef2e4936e9cbebea25))
+* **kloel-chat:** labels do trace derivados do nome real da tool — zero texto fixo ([a9a2f17](https://github.com/danielgonzagat/Kloel/commit/a9a2f17fa5341e2bd7b85c2bcab0343f846835d9))
+* **kloel-chat:** tema de syntax highlight + css do fallback de math no markdown ([ab4b266](https://github.com/danielgonzagat/Kloel/commit/ab4b266e7257fbf0b2a4d702779c931905ec2210))
+* **kloel:** expose public tool ids in traces; redact private reasoning by content markers ([4bd1ce5](https://github.com/danielgonzagat/Kloel/commit/4bd1ce527a8d24ac7b82abd16f810150f2c76891))
+* **marketing:** route inline-autopilot + agent doc send through canonical dispatch ([347e358](https://github.com/danielgonzagat/Kloel/commit/347e35872edee0e7c94f2de20ac4d04d375b1972))
+* **mcp:** add codebody-navigator, graphify-plus, saas-compiler, sentry-bridge, kaisser MCP servers ([798735b](https://github.com/danielgonzagat/Kloel/commit/798735b90fab5868ac0ca2fcb8428b5406ac866c))
+* **mcp:** add mcp-suite server with pulse/test-runner/task-graph/postgres/kloel-os toolsets ([41f3d17](https://github.com/danielgonzagat/Kloel/commit/41f3d17aeb982c39d8b918141ee26946fe6cf438))
+* **mcp:** add service MCP launchers sourcing credentials from gitignored .env.pulse.local ([4a75699](https://github.com/danielgonzagat/Kloel/commit/4a75699b6e064b1b8240716c5d361287598dc3e0))
+* **mcp:** launcher do dap-bridge (10º slot de protocolo do cognitive-hub) ([a5fe5c3](https://github.com/danielgonzagat/Kloel/commit/a5fe5c3c10ba2c95b3489c920774afcb6a291716))
+* **memory:** scope editing + origin/source-ref display in memory graph panel ([2a48323](https://github.com/danielgonzagat/Kloel/commit/2a483234366d9b819ed3dd271de8240a5d2134da))
+* **mind:** add read-only parity gate for the brain-to-mind backfill ([be295a4](https://github.com/danielgonzagat/Kloel/commit/be295a4e19497ba0a7db662696ff7374d03d45f7))
+* **mind:** brain-to-mind cutover phase 2 — idempotent historical message backfill ([caaa4ca](https://github.com/danielgonzagat/Kloel/commit/caaa4caf29c66ec0b8f0bc3fe8409d640191aaef))
+* **mind:** brain-to-mind memory cutover phase 2 — idempotent backfill + parity ([ce243f5](https://github.com/danielgonzagat/Kloel/commit/ce243f5d16e25f51e9279d8dd93985e712eddf08))
+* **mind:** cutover backfill trigger — flag-gated bootstrap runner + parity log ([f9d309f](https://github.com/danielgonzagat/Kloel/commit/f9d309fef7c52b8bb84ab8b25adddb0e535374ec))
+* **mind:** cutover backfill trigger (flag-gated bootstrap) ([632bc49](https://github.com/danielgonzagat/Kloel/commit/632bc49591f893f105fe4dd6d6a12eda86a6c764))
+* **mind:** memory-graph node scope editing + redact sensitive memory content at retrieval ([530740c](https://github.com/danielgonzagat/Kloel/commit/530740c7198d3ce44be3495eccbb317a2c3b64d3))
+* **mind:** safe brain reader-flip — mirror brain writes + source filter ([ce83632](https://github.com/danielgonzagat/Kloel/commit/ce83632d9699fd908f1bc880096884c24b164b3b))
+* **mind:** safe brain-chat reader-flip ([7de728f](https://github.com/danielgonzagat/Kloel/commit/7de728f38f91e4cced88b4e3374b25d2e109f54b))
+* **mind:** surface raw operator intent in runtime response text, drop curated label table ([2a88382](https://github.com/danielgonzagat/Kloel/commit/2a883822674a132f216d6d33762b5d302a31ebbb))
+* **money:** safe reversible Float-&gt;cents cutover machinery, flag-gated default-OFF ([4d3ab12](https://github.com/danielgonzagat/Kloel/commit/4d3ab12bdaaaff6bf9003e87ea307272e64ade1b))
+* **tools:** add cognitive protocol hub + LSP mesh router with MCP launchers and stdio smoke ([b2486d0](https://github.com/danielgonzagat/Kloel/commit/b2486d09dbe9d6ba0330974128b101974d4d0e9b))
+
+
+### Bug Fixes
+
+* **frontend:** commit accumulated reasoning/artifacts/graph work that defines the imported helpers ([194241b](https://github.com/danielgonzagat/Kloel/commit/194241bd4af2394bed9330e85fecf44e7dd3375d))
+* **frontend:** explicit re-export so Turbopack resolves message-reasoning helpers ([f5f23dd](https://github.com/danielgonzagat/Kloel/commit/f5f23dd4aa906082f112e2cbb42839d46241c1ea))
+* **frontend:** ship accumulated reasoning/artifacts work to unbreak Turbopack build ([1d023c3](https://github.com/danielgonzagat/Kloel/commit/1d023c3b6e52f8e22b7cf9c6adc3c23d0c8bdeb1))
+* **frontend:** Turbopack export resolution — unbreak production deploy ([b5a55a7](https://github.com/danielgonzagat/Kloel/commit/b5a55a72f8d06f22d3e26d804139387d088bcfb7))
+* **frontend:** wire canvas upload + real avatar initials, drop dead no-op buttons ([1d9758f](https://github.com/danielgonzagat/Kloel/commit/1d9758f293aa818ee97a6bd94de12f676b7ad0e2))
+* **graph:** overlay só fecha pelo controle explícito — remove fechamento por backdrop ([41ef4f0](https://github.com/danielgonzagat/Kloel/commit/41ef4f0904ad502732e7b7338a63ef6434f2aa2c))
+* **mcp:** harden chrome-devtools CDP lifecycle, answer roots/list, tmp-root override ([d96d6b1](https://github.com/danielgonzagat/Kloel/commit/d96d6b13d7672d595dbea3afbcd60f1eefcf5353))
+* **memory:** chip de sourceRef respeita raio máximo do design system (999→6px) ([ddb9b7e](https://github.com/danielgonzagat/Kloel/commit/ddb9b7edfd806e5fb3156dc6caf98d349b558e98))
+* **mind:** close cognition learning loop (retention + outbox consumer + widen) ([45e2869](https://github.com/danielgonzagat/Kloel/commit/45e28699aa1d10ca55bec2ab995c33b03d62b1cd))
+* **mind:** log instead of swallow in cognition async writes (ai-constitution) ([151e8ae](https://github.com/danielgonzagat/Kloel/commit/151e8ae470b0eee894dc5bbf3cdfb562946a1014))
+* **reports:** aplica filtro first-purchase antes da paginação em getVendas ([7bf9a14](https://github.com/danielgonzagat/Kloel/commit/7bf9a14a006e9f9c9442457970288566f2d87392))
+* **security:** timing-safe HMAC/token comparison on payment + meta webhooks ([bc5234a](https://github.com/danielgonzagat/Kloel/commit/bc5234a15fe87d28685c289c223429d3438b5279))
+* **tools:** make lsp-mesh portable via REPO_ROOT/HOME placeholders ([d5df364](https://github.com/danielgonzagat/Kloel/commit/d5df3646807f427aacfafa100b93e677fec40c0c))
+
 ## [0.9.0](https://github.com/danielgonzagat/Kloel/compare/v0.8.0...v0.9.0) (2026-06-08)
 
 

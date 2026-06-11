@@ -123,6 +123,25 @@ function relativeImportResolvesAbs(fromAbs: string, spec: string): boolean {
   });
 }
 
+/**
+ * Resolve a KLOEL `@/...` path alias using the `<pkg>/src/` convention derived from the
+ * importing file's absolute path — I/O-free beyond the existing candidate existsSync probe
+ * (NO tsconfig read on the byte floor). The repo maps `@/*` → `<frontend|backend|worker>/src/*`.
+ * Returns: true (resolves), false (the package-src root is locatable but the target is absent
+ * → a NEW dangling alias = a real connection red), or null (the `<pkg>/src` root cannot be
+ * located from the path → honestly NOT judged here, never red-by-guess).
+ */
+function aliasResolvesAbs(fromAbs: string, spec: string): boolean | null {
+  if (!spec.startsWith('@/')) return null;
+  const m = fromAbs.replaceAll('\\', '/').match(/^(.*\/(?:frontend|backend|worker)\/src)\//);
+  if (!m) return null; // cannot locate the package src root → unjudged (not our fact here)
+  const baseAbs = path.join(m[1], spec.slice(2));
+  return candidatesFor(baseAbs).some((cand) => {
+    const r = path.resolve(cand);
+    return pending.has(r) || fs.existsSync(cand);
+  });
+}
+
 export interface ConnectionVerdict {
   green: boolean;
   reds: string[];
@@ -144,6 +163,12 @@ export function checkConnectionByteFloor(absPath: string, content: string): Conn
   const reds: string[] = [];
   for (const spec of extractImportSpecifiers(content)) {
     if (beforeSpecs.has(spec)) continue; // unchanged wire — not this write's claim
+    if (spec.startsWith('@/')) {
+      // path alias: resolve via the <pkg>/src convention. A located-but-absent target is a
+      // NEW dangling alias (red); a non-locatable src root is honestly NOT judged here.
+      if (aliasResolvesAbs(absPath, spec) === false) reds.push(spec);
+      continue;
+    }
     if (!relativeImportResolvesAbs(absPath, spec)) reds.push(spec);
   }
   return { green: reds.length === 0, reds };

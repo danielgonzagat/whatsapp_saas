@@ -1,0 +1,20 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+
+def string_to_md5(text):
+    """
+    Given a string 'text', return its md5 hash equivalent string.
+    If 'text' is an empty string, return None.
+
+    >>> string_to_md5('Hello world') == '3e25960a79dbc69b674cd4ec67a72c62'
+    """
+
+SUA TENTATIVA ANTERIOR FALHOU NOS TESTES.
+
+--- FIM DA TAREFA ---

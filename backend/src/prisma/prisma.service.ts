@@ -14,6 +14,7 @@ import {
   sendFacebookCapiPurchaseFromPaidUpdate,
   sendPurchaseConfirmationEmailFromPaidCheckoutUpdate,
 } from './checkout-paid-effects';
+import { buildPrismaClientOptions } from './prisma-datasource-url';
 import {
   buildEnrollmentLockKey,
   computeMemberAreaAvgCompletion,
@@ -64,7 +65,9 @@ export class PrismaService
   }) => Promise<boolean>;
 
   constructor() {
-    super();
+    // Canonical pool bounds (connection_limit/pool_timeout) applied in ONE place
+    // for the backend runtime — see prisma-datasource-url.ts (issue #413).
+    super(buildPrismaClientOptions(process.env));
     this.installCheckoutPaidMemberAccessHook();
   }
 

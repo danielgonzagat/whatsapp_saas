@@ -63,6 +63,7 @@ const MANDATORY_SELF_EXPANSION_VALIDATORS: readonly SelfExpansionValidator[] = [
   { phase: 'self-evolution-disproof-briefing', command: 'node gates/self-evolution-disproof-briefing.proof.mjs --json' },
   { phase: 'self-evolution-lessons', command: 'node gates/self-evolution-lesson-rules.proof.mjs --json' },
   { phase: 'codex-memory', command: 'node gates/codex-memory-note-tool.proof.mjs --json' },
+  { phase: 'fixed-model-lift', command: 'node gates/fixed-model-lift.proof.mjs --json' },
   { phase: 'benchmark', command: 'node gates/atomic-agent-bench.proof.mjs' },
   { phase: 'test', command: 'node gates/test-execution-gate.proof.mjs --json' },
   { phase: 'ledger', command: 'node proof-chain.proof.mjs --json' },
@@ -388,16 +389,27 @@ function selfExpansionProofTempRoot(hostRoot: string): string {
   return hostRoot;
 }
 
-function selfExpansionHostProofEnv(socket: string, cwd: string): NodeJS.ProcessEnv {
+function selfExpansionProofSuppressesNestedBroker(command: string): boolean {
+  return [
+    'atomic-exec-readonly-usability.proof.mjs',
+    'atomic-exec-sandbox.proof.mjs',
+    'external-runtime-denial.proof.mjs',
+    'mcp-launcher-host-boundary.proof.mjs',
+    'compiled-mcp-y-certificate.proof.mjs',
+  ].some((name) => command.includes(name));
+}
+
+function selfExpansionHostProofEnv(socket: string, cwd: string, command: string): NodeJS.ProcessEnv {
   const hostRoot = selfExpansionProofRoot();
   const tempRoot = selfExpansionProofTempRoot(hostRoot);
+  const suppressNestedBroker = selfExpansionProofSuppressesNestedBroker(command);
   return {
     ...process.env,
     ATOMIC_BUILD_BROKER: '1',
-    ATOMIC_HOST_ATOMIC_ONLY: process.env.ATOMIC_HOST_ATOMIC_ONLY ?? '1',
-    ATOMIC_HOST_SANDBOX: process.env.ATOMIC_HOST_SANDBOX ?? 'macos-sandbox-exec',
+    ATOMIC_HOST_ATOMIC_ONLY: suppressNestedBroker ? '' : process.env.ATOMIC_HOST_ATOMIC_ONLY ?? '1',
+    ATOMIC_HOST_SANDBOX: suppressNestedBroker ? '' : process.env.ATOMIC_HOST_SANDBOX ?? 'macos-sandbox-exec',
     ATOMIC_HOST_WRITE_ROOT: hostRoot,
-    ATOMIC_EXEC_BROKER_SOCKET: socket,
+    ATOMIC_EXEC_BROKER_SOCKET: suppressNestedBroker ? '' : socket,
     ATOMIC_EXEC_BROKER_ROOT: hostRoot,
     CODEX_HOME: process.env.CODEX_HOME ?? path.join(hostRoot, '.codex'),
     CODEX_PROJECT_DIR: hostRoot,
@@ -432,7 +444,7 @@ async function runSingleProofCommand(command: string, cwd: string, deadlineMs: n
   const timeout = proofTimeoutForDeadline(command, deadlineMs);
   const socket = selfExpansionBrokerSocketPath();
   if (socket && selfExpansionProofMustRunHostDirect(command)) {
-    return runProofCommandDirect(command, cwd, timeout, selfExpansionHostProofEnv(socket, cwd));
+    return runProofCommandDirect(command, cwd, timeout, selfExpansionHostProofEnv(socket, cwd, command));
   }
   return (await runProofCommandViaBroker(command, cwd, timeout)) ?? runProofCommandDirect(command, cwd, timeout);
 }
@@ -570,17 +582,17 @@ function realSelfExpansionPolicy(requiredCommands: string[]): JsonRecord {
 
 function runSelfEvolutionHarness(mode: string, input: unknown): JsonRecord {
   const selfRoot = path.join(REPO_ROOT, 'scripts/mcp/atomic-edit');
-  const outputFile = path.join(
-    selfRoot,
-    '.self-evolution-harness-output.' + process.pid + '.' + Date.now() + '.' + Math.random().toString(16).slice(2) + '.json',
-  );
+  const token = process.pid + '.' + Date.now() + '.' + Math.random().toString(16).slice(2);
+  const outputFile = path.join(selfRoot, '.self-evolution-harness-output.' + token + '.json');
+  const inputFile = path.join(selfRoot, '.self-evolution-harness-input.' + token + '.json');
   try {
+    fs.writeFileSync(inputFile, JSON.stringify(input));
     const result = childProcess.spawnSync(process.execPath, ['self-evolution-harness.mjs', mode], {
       cwd: selfRoot,
-      input: JSON.stringify(input),
+      input: '',
       encoding: 'utf8',
       maxBuffer: 16 * 1024 * 1024,
-      env: { ...process.env, ATOMIC_SELF_EVOLUTION_OUTPUT_FILE: outputFile },
+      env: { ...process.env, ATOMIC_SELF_EVOLUTION_OUTPUT_FILE: outputFile, ATOMIC_SELF_EVOLUTION_INPUT_FILE: inputFile },
     });
     const stdout = result.stdout;
     const stderr = result.stderr;
@@ -600,10 +612,12 @@ function runSelfEvolutionHarness(mode: string, input: unknown): JsonRecord {
     if (parsed.ok !== true) throw new Error('self-evolution harness ' + mode + ' rejected: ' + stableJson(parsed));
     return parsed;
   } finally {
-    try {
-      fs.unlinkSync(outputFile);
-    } catch {
-      /* best-effort temp cleanup */
+    for (const tempFile of [outputFile, inputFile]) {
+      try {
+        fs.unlinkSync(tempFile);
+      } catch {
+        /* best-effort temp cleanup */
+      }
     }
   }
 }

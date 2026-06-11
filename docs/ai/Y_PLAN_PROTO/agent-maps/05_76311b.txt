@@ -1,0 +1,115 @@
+{
+  "domain": "Perfil + Dashboard",
+  "feasibility": "FEASIBLE — and for THIS domain the Option-C re-point is ALREADY STRUCTURALLY DONE on the live path; what is left is small. This output is fully grounded (all key files read end-to-end) and supersedes my two earlier attempts (1st falsely said prototype absent; 2nd guessed under output-suppression). GROUND TRUTH: (1) The literal prototype EXISTS at frontend/src/components/kloel/graph/KloelGraphPrototype.jsx (671 lines, 43218 bytes, @ts-nocheck/eslint-disable). It contains ONLY data seeds + node/edge builders; it has ZERO React screen components (file ends at buildWalletNodesEdges L671). (2) The LIVE graph DOES NOT IMPORT THE .jsx AT ALL — verified: KloelGraphShell.tsx (the mounted surface) builds its nodes from KLOEL_GRAPH_NODES in KloelGraph.static-nodes.ts via KloelGraph.routes.ts, and renders each route's REAL screen as {children} inside KloelGraphOverlay (an 80vw×80vh dialog, no re-theme, ErrorBoundary). So the prototype .jsx is DEAD CODE on the live path; the canonical node source for Perfil+Dashboard is KloelGraph.static-nodes.ts. (3) For this domain the real screens already render in the overlay through Next routing: perfil sun -> /settings -> ContaView; dashboard node -> /dashboard -> HomeView + DashboardPostPaymentPanel. MAJOR CORRECTION to the task's symbol list: DEFAULT_ACCOUNT_DATA, CoreSettingsPanel, Section{Pessoal,Fiscal,Documentos,Bancario,PerfilPublico,Team,Apps,Seguranca}, DesempenhoPanel, MetricDetailPanel, OPERATIONAL_DAYS, computeDesempenho, dzCards, buildOperationalDays = 0 matches in the .jsx, the whole repo, and all ~458 git refs (verified). They describe an older/other prototype draft never committed here. The ACTUAL prototype symbols are PROFILE_SECTIONS (L559-568) + buildProfileNodesEdges(accountData) (L570-626), and for the Dashboard/Consultar equivalent: DEFAULT_WALLET (L638-652) + buildWalletNodesEdges (L653-671). Because the live shell already uses real route screens, the ONLY remaining honest-empty work is in the data layer the real screens consume (already mostly real via SWR hooks).",
+  "protoSeeds": [
+    "DEFAULT_WALLET — KloelGraphPrototype.jsx L638-652: hardcoded {balance, withdrawals[], anticipations[], transactions[]} feeding buildWalletNodesEdges (the prototype's Dashboard/Consultar builder). DEAD on the live path (shell doesn't import the .jsx). If the .jsx is ever revived, replace with useWallet()+dashboard hooks honest-empty.",
+    "accountData arg of buildProfileNodesEdges — NOT a module constant; the builder (L570) early-returns empty on !accountData (L572). The task-named DEFAULT_ACCOUNT_DATA does NOT exist (0 matches in file/repo/all refs).",
+    "PRODUCTS (L222-260), DEFAULT_WALLET, and the *_SEED arrays are the prototype's hardcoded data; for Perfil/Dashboard the only relevant one is DEFAULT_WALLET. None of these reach the live UI because the live shell uses KloelGraph.static-nodes.ts + real route screens, not the .jsx."
+  ],
+  "protoBuilders": [
+    "buildProfileNodesEdges(accountData) — KloelGraphPrototype.jsx L570-626. Iterates PROFILE_SECTIONS (L559-568: pessoal/fiscal/documentos/bancario/perfilPublico/team/apps/seguranca) into 8 section nodes under parent 'core', then conditionally adds field/doc/team/app children from accountData. Already honest-empty-friendly (every child gated by 'if', whole fn early-returns empty). DEAD on live path.",
+    "buildWalletNodesEdges(wallet) — KloelGraphPrototype.jsx L653-671. Builds WALLET_BRANCHES (L628-637) under 'sun-carteira' + withdrawal/anticipation items from wallet.*. The prototype's Dashboard/Consultar builder. DEAD on live path.",
+    "LIVE builders (what actually runs): KloelGraph.static-nodes.ts toNode/seeds (no per-entity data; static route graph) + KloelGraph.product-nodes.ts buildKloelGraphProductNodes (only product subtree is data-driven). Perfil+Dashboard nodes in static-nodes.ts are STATIC route nodes with NO seed data, so there is no fake-data-to-replace for them — the realness comes from the route screens they open.",
+    "ABSENT (task-named, 0 matches anywhere): computeDesempenho, buildOperationalDays. No Desempenho builder exists."
+  ],
+  "protoInlineScreens": [
+    "NONE EXIST. KloelGraphPrototype.jsx (L1-671) has ZERO React screen components. The task-named inline panels (CoreSettingsPanel, Section{Pessoal..Seguranca}, DesempenhoPanel, MetricDetailPanel, dzCards) return 0 matches in the file, the repo, and all git refs.",
+    "The 'inline screen' mechanism is ALREADY REPLACED by real route screens via KloelGraphShell.tsx L323-327 -> KloelGraphOverlay.tsx (children = the real route screen). Nothing inline to swap for Perfil/Dashboard."
+  ],
+  "realScreens": [
+    {
+      "protoNode": "perfil sun (PRIMARY_NODE_SEEDS, KloelGraph.static-nodes.ts L50) + perfil-settings/perfil-account/perfil-privacy children (L63-73)",
+      "realRoute": "/settings (perfil sun route L50; /account L73 redirects to /settings)",
+      "realComponent": "ContaView",
+      "realPath": "frontend/src/components/kloel/conta/ContaView.tsx",
+      "wrapper": "frontend/src/app/(main)/settings/page.tsx returns <ContaView/>; frontend/src/app/(main)/account/page.tsx redirects /account -> /settings",
+      "notes": "VERIFIED: settings/page.tsx is a 6-line wrapper rendering ContaView. ContaView is the REAL Perfil/Conta screen and ALREADY renders inside the overlay when the perfil node opens (Next routing). The prototype's 8 PROFILE_SECTIONS (pessoal/fiscal/documentos/bancario/perfilPublico/team/apps/seguranca) are GRAPH NODE labels, not screens — ContaView is the single real screen behind them. There is NO /perfil/page.tsx route. Read ContaView.tsx to confirm it has internal sections matching the 8 prototype sections (likely tabs/accordions)."
+    },
+    {
+      "protoNode": "dashboard node (KloelGraph.static-nodes.ts L62: id 'dashboard', area 'perfil', route '/dashboard', parent 'perfil', overlay 'Dashboard')",
+      "realRoute": "/dashboard",
+      "realComponent": "HomeView (+ DashboardPostPaymentPanel inline in the page)",
+      "realPath": "frontend/src/components/kloel/home/HomeView.tsx (imported as @/components/kloel/home/HomeView); page at frontend/src/app/(main)/dashboard/page.tsx",
+      "notes": "VERIFIED: dashboard/page.tsx ('use client') renders <HomeView/> + <DashboardPostPaymentPanel/>. The post-payment panel is REAL: fed by useDashboardPostPayment() -> /dashboard/post-payment, with honest loading/error/empty states already ('Nenhum evento pós-pagamento registrado'). This is the Dashboard real screen and ALREADY renders in the overlay via routing. dzCards/MetricDetailPanel (task names) don't exist; the real KPI cards live here + in HomeView."
+    },
+    {
+      "protoNode": "consultar sun + WALLET_TABS/REPORT_TABS (KloelGraph.static-nodes.ts L56, L207-228)",
+      "realRoute": "/carteira/{saldo,extrato,saques,antecipacoes,movimentacoes} and /analytics?tab={vendas,assinaturas,abandonos,estornos}",
+      "realComponent": "the /carteira/* route screens (frontend/src/app/(main)/carteira/* exists: saldo/extrato/saques/antecipacoes/movimentacoes/page.tsx) and /analytics",
+      "realPath": "frontend/src/app/(main)/carteira/* , frontend/src/app/(main)/analytics",
+      "notes": "VERIFIED carteira subroutes exist. These are the real Consultar screens (the prototype's buildWalletNodesEdges/DEFAULT_WALLET equivalent), already wired as routes that open in the overlay."
+    }
+  ],
+  "realHooks": [
+    {
+      "hook": "useDashboardHome",
+      "path": "frontend/src/hooks/useDashboardHome.ts",
+      "endpoint": "/dashboard/home (GET, SWR swrFetcher, 60s refresh)",
+      "apiClient": "frontend/src/lib/api/home.ts (DashboardHomeResponse, DashboardHomePeriod)",
+      "backend": "backend/src/dashboard/dashboard.controller.ts @Controller('dashboard') @Get('home') -> DashboardService.getHomeSnapshot(workspaceId,{period,startDate,endDate}); JwtAuthGuard+WorkspaceGuard; @RouteClass('read'). CONFIRMED (read in full).",
+      "returns": "DashboardHomeResponse (kpis + products[] imageUrl-normalized + recent activity)",
+      "use": "Consumed by HomeView (the real Dashboard screen). Already real — no swap needed."
+    },
+    {
+      "hook": "useDashboardPostPayment",
+      "path": "frontend/src/hooks/useDashboardHome.ts (same file)",
+      "endpoint": "/dashboard/post-payment (GET, SWR)",
+      "backend": "dashboard.controller.ts @Get('post-payment') -> Prisma counts of approved/failed payments, member access, notifications, tracking, affiliate commissions, recent audit events. CONFIRMED (read in full).",
+      "returns": "DashboardPostPaymentResponse {payments, orders, memberAccess, notifications, tracking, affiliateCommissions, recentEvents}",
+      "use": "Consumed by DashboardPostPaymentPanel in dashboard/page.tsx. Already real with honest empty/error states."
+    },
+    {
+      "hook": "getDashboardStats",
+      "path": "frontend/src/lib/api/dashboard.ts",
+      "endpoint": "/dashboard/stats (GET)",
+      "backend": "dashboard.controller.ts @Get('stats') -> DashboardService.getStats(workspaceId). CONFIRMED.",
+      "returns": "DashboardStatsResponse {contacts,campaigns,flows,messages,deliveryRate,readRate,errorRate,activeConversations,healthScore,avgLatency,flowCompleted,flowRunning,flowFailed,billingSuspended}",
+      "use": "Supplemental KPI source."
+    },
+    {
+      "hook": "useWallet",
+      "path": "frontend/src/hooks/useWallet.ts (CONFIRMED present)",
+      "endpoint": "wallet endpoint (read useWallet.ts for exact path)",
+      "backend": "wallet module",
+      "returns": "wallet balance/transactions",
+      "use": "Powers /carteira/* real screens (the Consultar/DEFAULT_WALLET equivalent)."
+    },
+    {
+      "hook": "PERFIL/CONTA data source",
+      "path": "inside ContaView (frontend/src/components/kloel/conta/ContaView.tsx) — NOT a top-level useProfile (no such file; no frontend/src/lib/hooks/ dir). Read ContaView.tsx to confirm exact hook/endpoint. backend/src/kloel/onboarding-profile.controller.ts exists (CONFIRMED) and is a likely source.",
+      "endpoint": "confirm in ContaView.tsx + onboarding-profile.controller.ts",
+      "backend": "backend/src/kloel/onboarding-profile.controller.ts",
+      "returns": "account/profile object",
+      "use": "ContaView already self-fetches; it is the real Perfil screen behind the perfil node. NO seed-swap needed because the live perfil node has no data seed (it's a static route node) — realness is the ContaView screen itself."
+    }
+  ],
+  "overlaySwapStrategy": "ALREADY IMPLEMENTED — no overlay/mount work needed for Perfil+Dashboard. KloelGraphShell.tsx (L323-327) renders Next route {children} inside KloelGraphOverlay.tsx (80vw×80vh dialog, role=dialog labelled by active node, close button, ErrorBoundary, NO re-theme of the inner screen — casca quase-invisível by design, see overlay comment L10-16). The perfil node (route /settings) opens ContaView; the dashboard node (route /dashboard) opens HomeView+DashboardPostPaymentPanel; consultar opens /carteira/*. These are mounted under the (main) layout (MainAppLayoutShell), so SWR + auth + workspace context are present and the real hooks resolve. The graph itself is a custom SVG+CSS force-ish layout in KloelGraphShell (NOT reactflow, despite reactflow being a dependency).",
+  "decompositionModule": "NOT NEEDED for the live path. The live Perfil+Dashboard nodes live in KloelGraph.static-nodes.ts as static route seeds (PRIMARY_NODE_SEEDS L49-57 + CORE_ROUTE_SEEDS L61-171 + dynamicRouteSeeds L173-229) — already a clean, typed, decomposed module. The monolithic KloelGraphPrototype.jsx (671 lines) is dead code for this domain. If the owner wants the .jsx fully retired, that is a separate cleanup, not part of re-pointing Y for Perfil+Dashboard.",
+  "filesToCreate": [
+    "NONE strictly required for Perfil+Dashboard — the live path already uses real route screens fed by real SWR hooks against confirmed backend endpoints (/dashboard/home, /dashboard/post-payment, /dashboard/stats, /carteira/*).",
+    "OPTIONAL (only if owner wants entity-level perfil/consultar nodes data-driven like products): frontend/src/components/kloel/graph/domains/profileConsultar.nodes.ts — a typed builder (mirroring KloelGraph.product-nodes.ts) that derives child nodes from useDashboardHome/useWallet/profile, honest-empty on no data. Plus profileConsultar.adapter.ts to map real shapes -> KloelGraphNode."
+  ],
+  "filesToEdit": [
+    "frontend/src/components/kloel/graph/KloelGraph.static-nodes.ts — the canonical LIVE node source for Perfil+Dashboard (PRIMARY_NODE_SEEDS L49-57, CORE_ROUTE_SEEDS L61-171). Edit ONLY here if the node set / routes / overlay labels for perfil/dashboard/consultar need adjustment. This is the real Option-C re-point surface, NOT the .jsx.",
+    "frontend/src/components/kloel/graph/KloelGraph.routes.ts — only if path->node resolution for perfil/dashboard/carteira/analytics needs changes (e.g. /carteira -> consultar-wallet-saldo L101-103).",
+    "frontend/src/components/kloel/graph/KloelGraphPrototype.jsx — EDIT ONLY IF the owner explicitly wants the dead .jsx builders (buildProfileNodesEdges seed, DEFAULT_WALLET) wired to real hooks; otherwise leave untouched (it is not on the live path).",
+    "NO edits to ContaView / HomeView / DashboardPostPaymentPanel / KloelGraphOverlay / KloelGraphShell needed — they already render real data in the overlay."
+  ],
+  "wiringSteps": [
+    "STEP 0 (verification before any edit): read frontend/src/components/kloel/conta/ContaView.tsx to confirm the real Perfil screen's sections map to the 8 prototype PROFILE_SECTIONS and which hook/endpoint it uses (onboarding-profile.controller.ts likely). Read frontend/src/components/kloel/home/HomeView.tsx to confirm the real KPI rendering + its hook (useDashboardHome).",
+    "(a) RECOGNIZE the re-point is largely done: perfil sun -> /settings -> ContaView, dashboard -> /dashboard -> HomeView+DashboardPostPaymentPanel, consultar -> /carteira/* and /analytics?tab=* all already render real screens in the overlay via KloelGraph.static-nodes.ts + KloelGraphShell. No inline-panel swap exists to do.",
+    "(b) HONEST-EMPTY check (data layer, mostly already correct): HomeView/DashboardPostPaymentPanel already use useDashboardHome/useDashboardPostPayment with loading/error/empty states ('Nenhum evento pós-pagamento registrado'). Verify HomeView does NOT fall back to any seed; if it does, make it honest-empty (zero, '--', or empty-state). ContaView should self-fetch real profile, never the prototype accountData seed.",
+    "(c) IF entity-level perfil/consultar GRAPH nodes are desired (e.g. a node per connected app / per wallet item) instead of just static route nodes: add a typed builder in domains/ fed by real hooks (honest-empty), and merge its output into graphNodes in KloelGraphShell exactly as product nodes are merged (L68-69). Do NOT resurrect the .jsx buildProfileNodesEdges/DEFAULT_WALLET.",
+    "(d) PROVIDER/PROPS: none extra — shell is under (main) MainAppLayoutShell (SWR+auth+workspace). Real screens self-fetch and need no props from the overlay.",
+    "(e) Adjust node routes/labels (if needed) ONLY in KloelGraph.static-nodes.ts / KloelGraph.routes.ts. Confirm /dashboard/home + /dashboard/post-payment + /dashboard/stats backend endpoints (all CONFIRMED in dashboard.controller.ts) and the perfil hook (confirm in ContaView/onboarding-profile.controller.ts).",
+    "(f) HONEST-GAP: prototype sections fiscal/documentos/bancario have no dedicated route; they live inside ContaView and/or KYC. Do not fabricate separate real screens — the single ContaView screen already covers them as internal sections."
+  ],
+  "collisionRisk": "MEDIUM-HIGH (concurrency), LOW (technical). Concurrency: KloelGraph* is the single hottest contended surface in the repo RIGHT NOW. Current branch feat/kloelgraph-prototype-engine (HEAD a84a8ba63 'port prototype visual engine onto real-route shell') plus feat/kloelgraph-literal-prototype (172c924ae, added the .jsx), fix/kloelgraph-primary-shell (origin), feat/kloelgraph-foundation-criar, feat/kloelgraph-shell-2026-05-30, dedicated worktrees /Users/danielpenin/whatsapp_saas-kg, -kloelgraph-primary, /Users/danielpenin/wg-kloelgraph, and merged PR #473. Multiple agents are editing KloelGraph.static-nodes.ts / KloelGraph.routes.ts / KloelGraphShell.tsx concurrently — high clobber risk; rebase/coordinate before landing. Technical: LOW — the live path already renders real screens with real SWR data against confirmed backend endpoints; the change set is minimal (node-seed tweaks in static-nodes.ts and/or an honest-empty check in HomeView), not a structural rewrite. reactflow is not even used by the live shell.",
+  "blockers": [
+    "SELF-CORRECTION #1: my FIRST output wrongly declared the prototype absent and feasibility BLOCKED — false negative from cwd-reset/tool glitches. It exists (671 lines).",
+    "SELF-CORRECTION #2: my SECOND output guessed the .jsx had inline screen components and the task's named symbols. WRONG — verified by full read: the .jsx is seeds+builders only and NONE of DEFAULT_ACCOUNT_DATA / CoreSettingsPanel / Section{Pessoal..Seguranca} / DesempenhoPanel / MetricDetailPanel / OPERATIONAL_DAYS / computeDesempenho / dzCards / buildOperationalDays exist in the file, repo, or any of ~458 refs. The real symbols are PROFILE_SECTIONS (L559) + buildProfileNodesEdges (L570) + DEFAULT_WALLET (L638) + buildWalletNodesEdges (L653). The task's symbol list is from a different/uncommitted draft.",
+    "KEY FINDING: the prototype .jsx is DEAD CODE on the live path. KloelGraphShell.tsx does NOT import it; it builds nodes from KloelGraph.static-nodes.ts and renders real route screens (ContaView for /settings, HomeView+DashboardPostPaymentPanel for /dashboard) inside KloelGraphOverlay. So 'swap the seed in the builder' and 'swap the inline screen for the real component' are LARGELY ALREADY DONE for this domain. The real re-point surface is KloelGraph.static-nodes.ts, not the .jsx.",
+    "MINOR UNVERIFIED: (1) ContaView.tsx internals — confirm it self-fetches real profile and its sections cover the 8 prototype sections; (2) HomeView.tsx — confirm no seed fallback (honest-empty). Both are quick reads, not blockers.",
+    "CONCURRENCY: KloelGraph* hottest contended surface (5+ branches/worktrees + merged PR #473) — coordinate/rebase before landing any edit to KloelGraph.static-nodes.ts / KloelGraph.routes.ts / KloelGraphShell.tsx."
+  ]
+}

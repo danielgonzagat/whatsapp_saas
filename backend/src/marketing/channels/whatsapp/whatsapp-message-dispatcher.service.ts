@@ -60,7 +60,10 @@ export class WhatsappMessageDispatcherService {
       quotedMessageId?: string;
     },
   ) {
-    this.slog.info('send_message', { workspaceId: ws, to });
+    // messageCategory feeds Meta conversation-pricing debugging: free-form
+    // sends ride the customer-service window (SERVICE — free inside 24h);
+    // template sends bill by the template's Meta category (K4 quick win #7).
+    this.slog.info('send_message', { workspaceId: ws, to, messageCategory: 'service' });
     await this.planLimits.ensureSubscriptionActive(ws);
     const w = await this.workspaces.getWorkspace(ws);
     const ew = this.workspaces.toEngineWorkspace(w);
@@ -128,7 +131,12 @@ export class WhatsappMessageDispatcherService {
     to: string,
     template: { name: string; language: string; components?: unknown[] },
   ) {
-    this.slog.info('send_template', { workspaceId: ws, to, template: template.name });
+    this.slog.info('send_template', {
+      workspaceId: ws,
+      to,
+      template: template.name,
+      messageCategory: 'template',
+    });
     await this.planLimits.ensureSubscriptionActive(ws);
     const w = await this.workspaces.getWorkspace(ws);
     const ew = this.workspaces.toEngineWorkspace(w);
@@ -164,6 +172,7 @@ export class WhatsappMessageDispatcherService {
   }
 
   async sendDirectMessage(ws: string, to: string, message: string) {
+    this.slog.info('send_direct_message', { workspaceId: ws, to, messageCategory: 'service' });
     const r = await this.sendDirectlyViaProvider(ws, to, message);
     return r.ok === true
       ? { success: true, result: r }

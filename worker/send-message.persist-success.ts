@@ -1,8 +1,9 @@
 import { randomUUID as uuidv4 } from 'node:crypto';
 import type { WorkerLogger } from './logger';
+import { type MessageDelegateLike, createOutboundMessageDeduped } from './outbound-message-dedup';
 
 interface PrismaLike {
-  message: { create(args: unknown): Promise<unknown> };
+  message: MessageDelegateLike;
   conversation: { updateMany(args: unknown): Promise<unknown> };
 }
 
@@ -40,7 +41,19 @@ export async function persistSuccess(input: PersistSuccessInput) {
   } = input;
 
   try {
-    const created = (await prisma.message.create({
+    // F1-B (P0): worker-originated sends that route through the backend HTTP
+    // path (/internal/whatsapp-runtime/send-text) are already persisted there
+    // via inbox.saveMessageByPhone — which also emits the inbox WebSocket
+    // events. Dedupe on the (workspaceId, externalId) unique pair (shared
+    // recipe in outbound-message-dedup.ts) so we never create (and
+    // re-broadcast) a second OUTBOUND row for the same send. When externalId
+    // is absent we keep the legacy create-always behavior.
+    const created = await createOutboundMessageDeduped<{ id: string; createdAt: Date }>({
+      messages: prisma.message,
+      log,
+      workspaceId,
+      conversationId,
+      externalId,
       data: {
         id: uuidv4(),
         workspaceId,
@@ -54,7 +67,10 @@ export async function persistSuccess(input: PersistSuccessInput) {
         errorCode: providerError ? String(providerError) : null,
         externalId: externalId || null,
       },
-    })) as { id: string; createdAt: Date };
+    });
+    if (!created) {
+      return;
+    }
 
     await prisma.conversation.updateMany({
       where: { id: conversationId, workspaceId },

@@ -1,0 +1,101 @@
+{
+  "domain": "Criar / Produtos (KloelGraph \"Criar\" sun — product nerve-center subgraph). LIVE engine is TypeScript (KloelGraph.*.ts), NOT the .jsx prototype.",
+  "decompositionModule": "frontend/src/components/kloel/graph/KloelGraph.product-nodes.ts — already the extracted, per-domain Products node/edge builder. All Products graph logic is isolated here; the shell/overlay/routes files are domain-agnostic. Products-only enhancements (e.g. real nerve-tab count badges) extend this module + a small adapter, never the shared shell.",
+  "protoSeeds": [
+    "PRODUCTS (hardcoded 2-item array, jsx L222-260)",
+    "defaultProductEditor (jsx L138-220)",
+    "defaultPlan (jsx L121-136)",
+    "defaultCheckoutConfig (jsx L91-119)",
+    "PRODUCT_NERVE_TABS (jsx L76-86, 9 tabs)",
+    "PRODUCT_SUBNODE_TYPES (jsx L87)",
+    "PRODUCT_CATEGORIES (jsx L68-74)",
+    "PLAN_DETAIL_SUBTABS (jsx L89)"
+  ],
+  "protoBuilders": [
+    "buildProductSubnodes (jsx L300-323) — LIVE TS twin = buildKloelGraphProductNodes / buildProductGraphNodeSet in KloelGraph.product-nodes.ts L20-59 (also emits plan + checkout + order-bump nodes via buildPlanGraphNodes L61-99 / buildCheckoutGraphNodes L101-127)",
+    "planView (jsx L262-275)",
+    "checkoutView (jsx L276-295)",
+    "brl/pct (jsx L297-298)"
+  ],
+  "protoInlineScreens": [
+    "NONE. CRITICAL CORRECTION: KloelGraphPrototype.jsx (671 lines) is a DATA+BUILDERS-ONLY reference — seeds + build*NodesEdges + view-model helpers. ZERO exports, ZERO importers (grep-verified), untracked on branch feat/kloelgraph-prototype-engine. It contains NO screen components: no CriarProdutosScreen, ProductOverview, Tab{Dados,Planos,...}, CheckoutEditor, SplitEngine, NewProductModal, NodePanel, or overlay JSX. The 'inline screens' the task lists for this domain do not exist in the file. It is an inert owner reference, not the rendered surface."
+  ],
+  "realScreens": [
+    {
+      "prototypeSymbol": "PRODUCTS list-screen / sun-criar",
+      "realComponent": "/Users/danielpenin/whatsapp_saas/frontend/src/app/(main)/products/page.tsx -> <ProdutosView defaultTab=\"produtos\" /> (/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/produtos/ProdutosView.tsx)",
+      "props": "ProdutosView takes optional defaultTab; page passes 'produtos'. /produtos route also renders ProdutosView (default tab).",
+      "note": "Real list surface, overlayLabel 'Produtos'. graph 'criar' sun + 'criar-products' both route to /products."
+    },
+    {
+      "prototypeSymbol": "ProductOverview + 9 nerve Tabs (PRODUCT_NERVE_TABS)",
+      "realComponent": "/Users/danielpenin/whatsapp_saas/frontend/src/app/(main)/products/[id]/page.tsx -> <ProductNerveCenter/> (/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/products/ProductNerveCenter.tsx = `export { default } from './ProductNerveCenterRoot'`)",
+      "props": "ProductNerveCenter EXPLICIT props (verified): { productId: string, initialTab?, initialPlanSub?, initialComSub?, initialModal?, initialFocus?, onBack? }. The [id] page reads productId from route param and initial* from ?tab/?planSub/?comSub/?modal/?focus query. Wraps ProductNerveCenterProvider internally. Real per-tab components: ProductNerveCenter{Planos,Checkouts,Cupons,Comissao,Aval,IA,AfterPay,Campanhas}Tab.tsx + ProductUrlsTab. Tab contract pinned by product-nerve-tabs.const.ts + product-nerve-tabs.graph-contract.spec.ts.",
+      "note": "1:1 detail surface; already the route target for every product/p_* node, with deep-link via ?tab=<id>."
+    },
+    {
+      "prototypeSymbol": "CheckoutEditor (inline, per task)",
+      "realComponent": "standalone route /checkout/:id?source=products&productId=...&focus=checkout-appearance|order-bump (route built by buildCheckoutEditorRoute, product-nodes.ts L213-221)",
+      "props": "route/query-driven",
+      "note": "checkout + order-bump nodes already emitted with these routes."
+    },
+    {
+      "prototypeSymbol": "SplitEngine (inline, per task)",
+      "realComponent": "inside ProductNerveCenterComissaoTab.tsx (+ .coprod/.afiliados/.config) via /products/:id?tab=comissao",
+      "props": "tab/query-driven (initialComSub)",
+      "note": "Commission/split surface lives inside the Comissao tab."
+    },
+    {
+      "prototypeSymbol": "NewProductModal (per task)",
+      "realComponent": "route /products/new (/Users/danielpenin/whatsapp_saas/frontend/src/app/(main)/products/new/page.tsx — a real wizard using useProductCategories + buildProductCreatePayload + POST via apiFetch). graph node 'criar-new-product' (static-nodes.ts L83) already routes here.",
+      "note": "No NewProductModal COMPONENT exists, but the new-product affordance is a real wizard route + graph node — not a gap."
+    }
+  ],
+  "realHooks": [
+    {
+      "prototypeSeed": "PRODUCTS -> top-level product nodes",
+      "realHook": "/Users/danielpenin/whatsapp_saas/frontend/src/hooks/useProducts.ts (useProducts), consumed in KloelGraphShell.tsx L47; merged with /checkout/products (loadCheckoutGraphProducts) via mergeGraphProducts (KloelGraphShell.helpers.ts L81)",
+      "shape": "useProducts() -> { products, total, isLoading, error, mutate }; useSWR('/products', swrFetcher). graphProducts = mergeGraphProducts(products, checkoutProducts) -> buildKloelGraphProductNodes -> [...KLOEL_GRAPH_NODES, ...productNodes].",
+      "endpoint": "GET /products (+ GET /checkout/products, GET /checkout/products/:id) via swrFetcher Next-proxy -> backend. HONEST-EMPTY by construction: buildKloelGraphProductNodes(undefined|[]) returns [] so loading/empty/error yields only the static sun/route scaffold — never the PRODUCTS seed."
+    },
+    {
+      "prototypeSeed": "buildProductSubnodes per-product nerve tabs/plans/checkouts",
+      "realHook": "Plans/checkouts: loadCheckoutGraphProducts (helpers.ts L55) feeds buildPlanGraphNodes/buildCheckoutGraphNodes (product-nodes.ts L61-127), real data from /checkout/products/:id. The 9 nerve TAB nodes are emitted per product (product-nodes.ts L46-55) with route /products/:id?tab=<id>.",
+      "shape": "Tab nodes carry NO live counts; plan/checkout/order-bump nodes are real.",
+      "endpoint": "GET /checkout/products/:id. GAP: per-tab COUNT badges not populated — would need a useProductNerveCenter hook (absent) over GET /products/:id/nerve-center."
+    },
+    {
+      "prototypeSeed": "typed data client",
+      "realHook": "/Users/danielpenin/whatsapp_saas/frontend/src/lib/api/products.ts (productApi {getStats,list,get,create,update,delete,categories}, CatalogProduct) + useProductMutations (useProducts.ts L51)",
+      "shape": "apiFetch wrappers",
+      "endpoint": "/products, /products/:id, /products/categories/list"
+    }
+  ],
+  "wiringSteps": [
+    "TASK-PREMISE CORRECTION: Y is ALREADY pointed at the live TS engine, NOT the .jsx (which is inert: no exports/importers). Shipped path (verified): the (main) layout renders <KloelGraphShell>{children}</KloelGraphShell>; Shell builds nodes from real /products (useProducts + mergeGraphProducts + buildKloelGraphProductNodes); clicking a node does router.push(node.route); KloelGraphOverlay renders the REAL Next.js route page ({children}) in an 80vw/80vh role=dialog with the graph dimmed behind. Editing the .jsx has zero runtime effect.",
+    "(a) seed->hook (top-level product nodes): ALREADY DONE + honest-empty. No change needed. Optional: add a setup CTA on the empty/error 'criar' sun (today empty -> zero product nodes, which is already honest).",
+    "(a) seed->hook (per-product nerve-tab COUNTS): the ONLY real residual. The 9 tab nodes (product-nodes.ts L46-55) render without counts. To match the prototype's count badges: build a new useProductNerveCenter SWR hook (DOES NOT EXIST) over GET /products/:id/nerve-center, plus an adapter that threads plans/checkouts/coupons/etc. lengths into each tab node's subtitle. Honest-empty: omit counts while loading/errored; never derive from defaultProductEditor.",
+    "(b) inline-screen->real-component: ALREADY DONE via ROUTE-NAV (not import-mount). product/p_* -> /products/:id?tab=<id>; plan -> /products/:id/plans/:planId; checkout/order-bump -> /checkout/:id?focus=...; new -> /products/new. KloelGraphOverlay renders the real route page as {children}. The 1:1 nerve-tab deep-link round-trips: product-nodes.ts emits ?tab=<id> routes and resolveProductNode (routes.ts L118-139) maps path+?tab back to the node. ProductNerveCenter consumes ?tab/?planSub/?comSub/?modal/?focus via its initial* props ([id]/page.tsx).",
+    "(b) providers/props: the real /products/[id] route mounts ProductNerveCenter (which wraps ProductNerveCenterProvider) inside the (main) layout provider tree (auth/workspace/SWR). Because the overlay renders the actual route as children, NO provider duplication is needed — this is exactly why route-nav is the correct strategy.",
+    "(b) casca quase invisivel: ALREADY satisfied. KloelGraphOverlay.tsx (L10-17) is deliberately 'almost invisible' — no header, no re-theming of the inner screen, only a discreet close button; the real themed screen blends into the host void. PR #473 preserves graph context on close (closeOverlay re-adds graph=1). Do NOT restyle."
+  ],
+  "overlaySwapStrategy": "ROUTE-NAV (shipped, correct) — NOT import-direct. router.push(node.route) changes the URL; the (main) layout renders <KloelGraphShell>{children}</KloelGraphShell> so {children} IS the real Next.js page for the active route; KloelGraphOverlay wraps it in an 80vw/80vh role=dialog (graph dimmed behind, only a close button as chrome). Products routes already exist: list=/products & /produtos (ProdutosView), detail=/products/:id?tab=<id> (ProductNerveCenter with initial* props), plan=/products/:id/plans/:planId, checkout=/checkout/:id?focus=..., new=/products/new (wizard). Nerve-tab 1:1 deep-link round-trips via resolveProductNode (routes.ts L118-139). Import-mount-into-NodePanel would contradict the shipped overlay contract and re-introduce provider duplication — do NOT do it.",
+  "filesToCreate": [
+    "/Users/danielpenin/whatsapp_saas/frontend/src/hooks/useProductNerveCenter.ts (DOES NOT EXIST; needed ONLY if per-tab count badges are in scope — SWR hook over GET /products/:id/nerve-center returning {plans,checkouts,coupons,...} lengths; verify backend endpoint exists first)",
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/KloelGraph.product-counts.ts (adapter mapping nerve-center detail -> per-tab count for the 9 tab-node subtitles, honest loading/empty/error -> no count). Both OPTIONAL — only if count badges are wanted."
+  ],
+  "filesToEdit": [
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/KloelGraph.product-nodes.ts (ONLY if adding real per-tab count badges: thread counts into the 9 tab nodes' subtitle at L46-55). This is the single Products-domain module.",
+    "(NOTHING ELSE required for the core mapping — seed->hook and inline->real are already live and verified.)",
+    "(EXPLICITLY NOT KloelGraphPrototype.jsx — inert reference, zero runtime effect.)",
+    "(AVOID shared KloelGraph.routes.ts / KloelGraphOverlay.tsx / KloelGraphShell.helpers.ts / KloelGraph.static-nodes.ts — domain-agnostic, edited by all sibling domain agents.)"
+  ],
+  "collisionRisk": "LOW for Products. Products graph logic is isolated in KloelGraph.product-nodes.ts (single owner); the .jsx is inert (no collision). Real product screens (ProdutosView, ProductNerveCenter*, /products routes) are READ-ONLY in this mapping. WARNING: 8 .claude/worktrees agents currently hold locks on products.ts / ProductNerveCenterRoot.js / product-nerve-tabs.const.ts — any future edit to the real screens/client would collide; coordinate first. Shared graph files (routes/overlay/shell/static-nodes) are touched by sibling domain agents — keep Products work OUT of them (achievable: only residual is count badges in product-nodes.ts).",
+  "feasibility": "ALREADY LIVE for the core mapping; residual is small and optional. Verified end-to-end: real /products feeds the graph (useProducts -> mergeGraphProducts -> buildKloelGraphProductNodes), honest-empty holds, and every product/p_*/plan/checkout/new node routes to the REAL screen rendered inside the 80% overlay as Next.js children (ProdutosView, ProductNerveCenter with initial* props, checkout editor route, /products/new wizard). Nerve-tab 1:1 deep-link round-trips. The ONLY not-done item is real per-tab COUNT badges, which need a new useProductNerveCenter hook (absent) + small adapter in product-nodes.ts. No blocker prevents that.",
+  "blockers": [
+    "HEADLINE (task-premise error): re-pointing Y to 'the KloelGraphPrototype.jsx literal' is a NO-OP — that file is a DATA-only reference with no exports/importers and no screen components; the live, rendered KloelGraph is the KloelGraph.*.ts engine already wired to real APIs + real Next.js route screens via route-nav overlay. Confirm with owner that Option C = keep/finish the TS engine (which faithfully mirrors the .jsx data model), not literally render the .jsx (which would require converting it into an exported component — a large, currently-absent build).",
+    "useProductNerveCenter hook does NOT exist on disk — required only for per-tab count badges; must be built over GET /products/:id/nerve-center (backend endpoint existence NOT confirmed this pass).",
+    "NewProductModal referenced by the task does not exist as a component (creation = /products/new wizard route + apiFetch/useProductMutations). Confirm desired affordance.",
+    "8 concurrent worktree agents hold locks on products.ts / ProductNerveCenterRoot.js / product-nerve-tabs.const.ts — coordinate before any real-screen edit."
+  ]
+}

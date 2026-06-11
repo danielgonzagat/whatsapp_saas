@@ -5,7 +5,7 @@ import { Logger } from '@nestjs/common';
 // ---------------------------------------------------------------------------
 
 /** Classified AWS error category. */
-export type AwsErrorCategory =
+type AwsErrorCategory =
   | 'UNKNOWN_PROTOCOL'
   | 'ACCESS_DENIED'
   | 'NOT_FOUND'
@@ -273,15 +273,5 @@ export function buildAwsCallContext(params: {
 }
 
 /** Returns true if the error is safe to retry (transient). */
-export function isRetryable(category: AwsErrorCategory): boolean {
-  return category === 'NETWORK_ERROR' || category === 'TIMEOUT' || category === 'THROTTLING';
-}
 
 /** Returns true if the error indicates a configuration problem (region, IAM, credentials). */
-export function isConfigError(category: AwsErrorCategory): boolean {
-  return (
-    category === 'UNKNOWN_PROTOCOL' ||
-    category === 'ACCESS_DENIED' ||
-    category === 'CREDENTIALS_ERROR'
-  );
-}

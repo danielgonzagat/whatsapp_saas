@@ -6,6 +6,7 @@ import { V, inputStyle, labelStyle } from './analytics.design-tokens';
 import { clearReportAdvancedFilters } from './analytics.helpers';
 import { Button } from './shared/Components';
 import type { ReportFilters, SetFilters } from './analytics.types';
+import { productApi, type CatalogProduct } from '@/lib/api/products';
 
 interface FilterDrawerProps {
   open: boolean;
@@ -16,6 +17,28 @@ interface FilterDrawerProps {
 
 export function AnalyticsFilterDrawer({ open, onClose, filters, setFilters }: FilterDrawerProps) {
   const [draftFilters, setDraftFilters] = useState<ReportFilters>(filters);
+  const [productOptions, setProductOptions] = useState<CatalogProduct[]>([]);
+
+  useEffect(() => {
+    if (!open || productOptions.length > 0) {
+      return undefined;
+    }
+    let cancelled = false;
+    productApi
+      .list()
+      .then((res) => {
+        const products = res?.data?.products;
+        if (!cancelled && Array.isArray(products)) {
+          setProductOptions(products);
+        }
+      })
+      .catch(() => {
+        // Honest degradation: the select keeps only "Todos".
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, productOptions.length]);
 
   const updateDraftFilters: SetFilters = (nextFilters) => {
     setDraftFilters((current) =>
@@ -123,6 +146,11 @@ export function AnalyticsFilterDrawer({ open, onClose, filters, setFilters }: Fi
             <span style={labelStyle}>{kloelT(`Produto`)}</span>
             <select id="analytics-filter-product" name="analyticsFilterProduct" aria-label="Produto" style={inputStyle} value={draftFilters.product || ''} onChange={(e) => updateDraftFilters((f) => ({ ...f, product: e.target.value }))}>
               <option value="">{kloelT(`Todos`)}</option>
+              {productOptions.map((product) => (
+                <option key={product.id} value={product.name}>
+                  {product.name}
+                </option>
+              ))}
             </select>
           </div>
           <div>

@@ -29,7 +29,7 @@ export type ChatToolsPrismaMock = {
   $transaction: jest.Mock;
 };
 
-export type ProductServiceMock = {
+type ProductServiceMock = {
   create: jest.Mock;
   update: jest.Mock;
   get: jest.Mock;

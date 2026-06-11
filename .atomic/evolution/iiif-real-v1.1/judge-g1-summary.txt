@@ -1,0 +1,14 @@
+haiku haiku|ESCALAR|s1 promote 1 
+haiku haiku|ESCALAR|s2 promote 1 
+haiku haiku|ESCALAR|s3 promote 1 
+haiku haiku|GRADIENTE|s1 promote 0 
+haiku haiku|GRADIENTE|s2 reject  sandbox.byte-floor
+haiku haiku|GRADIENTE|s3 reject  sandbox.byte-floor
+haiku records=6
+opus opus|ESCALAR|s1 promote -3 
+opus opus|ESCALAR|s2 promote -3 
+opus opus|ESCALAR|s3 promote 1 
+opus opus|GRADIENTE|s1 promote 1 
+opus opus|GRADIENTE|s2 promote 1 
+opus opus|GRADIENTE|s3 promote 1 
+opus records=6

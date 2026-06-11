@@ -1,24 +1,32 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EmailService } from '../auth/email.service';
+import { NotificationPreferencesService } from './notification-preferences.service';
 import { WelcomeAndOnboardingEmailService } from './welcome-onboarding-email.service';
 
 jest.mock('bullmq', () => {
   const _add = jest.fn().mockResolvedValue(undefined);
   const _queueClose = jest.fn().mockResolvedValue(undefined);
   const _workerClose = jest.fn().mockResolvedValue(undefined);
+  const _processorRef: { current: ((job: unknown) => Promise<void>) | null } = { current: null };
 
   return {
     Queue: jest.fn().mockImplementation(() => ({
       add: _add,
       close: _queueClose,
     })),
-    Worker: jest.fn().mockImplementation(() => ({
-      close: _workerClose,
-      on: jest.fn(),
-    })),
+    Worker: jest
+      .fn()
+      .mockImplementation((_name: string, processor: (job: unknown) => Promise<void>) => {
+        _processorRef.current = processor;
+        return {
+          close: _workerClose,
+          on: jest.fn(),
+        };
+      }),
     __add: _add,
     __queueClose: _queueClose,
     __workerClose: _workerClose,
+    __processorRef: _processorRef,
   };
 });
 
@@ -26,6 +34,7 @@ describe('WelcomeAndOnboardingEmailService', () => {
   let module: TestingModule;
   let service: WelcomeAndOnboardingEmailService;
   let emailService: { sendWelcomeEmail: jest.Mock; sendOnboardingEmail: jest.Mock };
+  let notificationPreferences: { isOnboardingEmailAllowed: jest.Mock };
   let mockAdd: jest.Mock;
   let mockQueueClose: jest.Mock;
   let mockWorkerClose: jest.Mock;
@@ -44,6 +53,9 @@ describe('WelcomeAndOnboardingEmailService', () => {
       sendWelcomeEmail: jest.fn().mockResolvedValue(undefined),
       sendOnboardingEmail: jest.fn().mockResolvedValue(undefined),
     };
+    notificationPreferences = {
+      isOnboardingEmailAllowed: jest.fn().mockResolvedValue(true),
+    };
 
     jest.clearAllMocks();
 
@@ -51,6 +63,7 @@ describe('WelcomeAndOnboardingEmailService', () => {
       providers: [
         WelcomeAndOnboardingEmailService,
         { provide: EmailService, useValue: emailService },
+        { provide: NotificationPreferencesService, useValue: notificationPreferences },
       ],
     }).compile();
 
@@ -106,6 +119,53 @@ describe('WelcomeAndOnboardingEmailService', () => {
         'onboarding-day7',
         { email: 'agent@test.com', agentName: 'Agent', template: 'onboarding-day7' },
         expect.objectContaining({ delay: 7 * 24 * 60 * 60 * 1000 }),
+      );
+    });
+  });
+
+  describe('worker enforcement of per-user e-mail preferences', () => {
+    const job = {
+      data: {
+        email: 'agent@test.com',
+        agentName: 'Agent',
+        template: 'onboarding-day1',
+        workspaceId: 'ws-1',
+      },
+    };
+
+    function getProcessor(): (j: unknown) => Promise<void> {
+      const bullmq = jest.requireMock<{
+        __processorRef: { current: ((j: unknown) => Promise<void>) | null };
+      }>('bullmq');
+      const processor = bullmq.__processorRef.current;
+      if (!processor) {
+        throw new Error('worker processor was not captured');
+      }
+      return processor;
+    }
+
+    it('does NOT send the onboarding email when the user preference is off', async () => {
+      notificationPreferences.isOnboardingEmailAllowed.mockResolvedValue(false);
+
+      await getProcessor()(job);
+
+      expect(notificationPreferences.isOnboardingEmailAllowed).toHaveBeenCalledWith(
+        'ws-1',
+        'agent@test.com',
+      );
+      expect(emailService.sendOnboardingEmail).not.toHaveBeenCalled();
+    });
+
+    it('sends the onboarding email when the user preference allows it', async () => {
+      notificationPreferences.isOnboardingEmailAllowed.mockResolvedValue(true);
+
+      await getProcessor()(job);
+
+      expect(emailService.sendOnboardingEmail).toHaveBeenCalledWith(
+        'agent@test.com',
+        'Agent',
+        'onboarding-day1',
+        'ws-1',
       );
     });
   });

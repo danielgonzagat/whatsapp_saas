@@ -1,0 +1,113 @@
+{
+  "domain": "Kloel (IA central / unified agent) — the \"sun-kloel\" cluster of the KloelGraph LITERAL prototype",
+  "decompositionModule": "frontend/src/components/kloel/graph/KloelKloelDomain.module.tsx (PROPOSED — does not exist yet). The Opção-C literal prototype is ONE 489KB / ~6600-line file: frontend/src/components/kloel/graph/KloelGraphPrototype.jsx in the whatsapp_saas-kg worktree (branch feat/kloelgraph-literal-prototype, commit 172c924ae; carries // @ts-nocheck + eslint-disable + 'use client'; default export Kloel() at L6570). Opção C = render it VERBATIM. The honest seam is to carve ONLY the Kloel-domain unit out of that file into one co-located module so post-decomposition edits live in exactly that module. The CURRENT primary worktree (/Users/danielpenin/whatsapp_saas, feat/kloelgraph-prototype-engine) holds only a SPLIT 671-line .jsx (data+builders, NO Kloel screens) + KloelGraph*.tsx shell — wrong representation; Y must be re-pointed at the LITERAL file.",
+  "protoSeeds": [
+    "KLOEL_ACTIONS (literal L892) — STATIC nav affordances [+ Novo Chat / Buscar / Imagens / Recentes]; NOT entity data → always 4 nodes, never replaced.",
+    "kloel.conversations[] — ENTITY seed (chat history). Consumed by buildKloelNodesEdges (L904 → kloelConversation nodes under kl-recents), buildKloelSearchIndex (L5924), KloelChatScreen (read/write via kloel/setKloel), KloelRecentsScreen (L6042), KloelMassPanel (L6087). Source today = in-memory React state. REPLACE with real thread list (searchKloelThreads / loadKloelThreadMessages); honest-empty → [].",
+    "kloel.images[] — ENTITY seed (uploaded image memory). Consumed by buildKloelNodesEdges (L909 → kloelImageAsset under kl-images), KloelImagesScreen (L5988; uploads via FileReader→dataURL L5996), buildKloelSearchIndex (L5923), KloelRecentsScreen (L6043). Source today = client FileReader into state. REPLACE with real asset store (uploadChatFile lib/api/kloel.ts:121 + /api/kloel/download-image proxy) or honest-empty.",
+    "(out of scope — same file, adjacent domains) DEFAULT_WALLET L638, MY_AFFILIATES_SEED L344, MARKETPLACE_SEED L357, CRM_SEED L473, CONTACTS_SEED L488, CONVERSATIONS_SEED L493, ORDERS_SEED L465, AUTOPILOT_EVENTS_SEED L442, MEMBER_AREAS_SEED L390."
+  ],
+  "protoBuilders": [
+    "buildKloelNodesEdges(kloel) — literal L898. Emits 4 kloelAction nodes (from KLOEL_ACTIONS, parent sun-kloel) + one kloelConversation per kloel.conversations[] (parent kl-recents) + one kloelImageAsset per kloel.images[] (parent kl-images) + cross-edges. THE seed→real-hook swap point for the Kloel cluster.",
+    "buildKloelSearchIndex({products, conversar, affiliate, educar, wallet, kloel}) — literal L5904. Cross-domain command-palette index; Kloel slice = kloel.images (L5923) + kloel.conversations (L5924).",
+    "buildGraph(products, channelsState, accountData, affiliate, wallet, educar, conversar, desempenho, kloel) — literal L921; master assembler, calls buildKloelNodesEdges at L992-996. Must keep receiving a `kloel` object."
+  ],
+  "protoInlineScreens": [
+    "KloelOverlay (literal L5793) — generic 80vw/80vh modal chrome hosting the Kloel screens; renders KloelMushroom in header.",
+    "KloelChatScreen (literal L5817) — THE screen to rewire: send() at L5827-5853 calls raw fetch('https://api.anthropic.com/v1/messages') at L5841 (model claude-sonnet-4-20250514, system=kloelSystemPrompt(context)). Swap motor → real authenticated SSE stream; keep transcript/greeting/composer visuals.",
+    "KloelSearchScreen (literal L5928) — command-palette overlay over buildKloelSearchIndex. A REAL CommandPalette EXISTS (see realScreens) — but it is a different UX; per preserve-the-shell keep this literal panel and feed real index data (optionally route its onOpenNode through the same search backend).",
+    "KloelImagesScreen (literal L5988) — image memory grid; uploads via FileReader (L5992).",
+    "KloelRecentsScreen (literal L6038) — recents over kloel.conversations + kloel.images, day-bucketed.",
+    "KloelMassPanel (literal L6085) — sun-kloel top-right 420px drawer: 4 actions + last 4 conversations.",
+    "KloelOverlayRouter (literal L6074) — maps node.type/action → screen (newChat→KloelChatScreen, search→KloelSearchScreen, images→KloelImagesScreen, recents→KloelRecentsScreen).",
+    "KloelMushroom (literal L5585) — pure SVG glyph; real equivalent EXISTS (KloelMushroomVisual/Mark in KloelBrand.tsx)."
+  ],
+  "realHooks": [
+    {
+      "concern": "Kloel chat send/stream — REPLACES api.anthropic in KloelChatScreen.send()",
+      "entry": "streamAuthenticatedKloelMessage(...)",
+      "file": "frontend/src/lib/kloel-conversations.ts:147",
+      "endpoint": "POST /kloel/think (SSE token+tool stream; backend KloelController.think → kloel-thinker.service → kloel-stream-writer per backend/src/kloel/ARCHITECTURE.md:48). Internally does fetch(apiUrl('/kloel/think')) L178 with tokenStorage bearer, reads response.body via getReader() L201, parses SSE with parseKloelStreamPayload → KloelStreamEvent. Sync variant = sendAuthenticatedKloelMessage → POST /kloel/think/sync (L120/130). CONFIRMED live consumers: chat-container.message-sender.ts:247 (runAuthedChat) and dashboard/KloelDashboardSendMessage.ts:229 — mirror these."
+    },
+    {
+      "concern": "Conversation history / recents (kloel.conversations seed)",
+      "entry": "searchKloelThreads(q,limit) (L429 → /kloel/conversations/search), loadKloelThreadMessages(conversationId) (L357 → /kloel/threads/{id}/messages), regenerateKloelConversationMessage (L408)",
+      "file": "frontend/src/lib/kloel-conversations.ts",
+      "status": "EXISTS — real source for Recents/MassPanel history."
+    },
+    {
+      "concern": "Image/file memory (kloel.images seed)",
+      "entry": "uploadChatFile(file)",
+      "file": "frontend/src/lib/api/kloel.ts:121 (+ Next proxy frontend/src/app/api/kloel/download-image/route.ts)",
+      "status": "EXISTS as upload sink. A dedicated LIST endpoint for images was not confirmed this run → KloelImagesScreen renders honest-empty + working local preview until confirmed."
+    },
+    {
+      "concern": "Global search (real CommandPalette path)",
+      "entry": "useCommandPalette (frontend/src/hooks/useCommandPalette.ts) + use-command-palette (frontend/src/components/kloel/search/use-command-palette.ts) + command-palette-utils (frontend/src/components/kloel/search/command-palette-utils.ts)",
+      "file": "see entry",
+      "status": "EXISTS — a real command palette is wired in AppShell.tsx. Optional: back KloelSearchScreen's index/onOpenNode with this instead of the in-file buildKloelSearchIndex; but preserve-the-shell → keep the literal panel visuals, swap only the data source."
+    },
+    {
+      "concern": "Transport / auth",
+      "entry": "apiFetch + tokenStorage + apiUrl/API_BASE",
+      "file": "frontend/src/lib/api/core.ts + frontend/src/lib/http.ts",
+      "status": "EXISTS — all real calls route through these; the SSE stream uses tokenStorage bearer (same pattern as chat-container.agent-stream.ts)."
+    },
+    {
+      "concern": "Capability copy / quick actions (already in real chat)",
+      "entry": "KLOEL_CHAT_QUICK_ACTIONS / KLOEL_CHAT_CAPABILITY_LABELS",
+      "file": "frontend/src/lib/kloel-chat.ts:96/74",
+      "status": "EXISTS — reusable for real chips, optional, do not restyle."
+    }
+  ],
+  "realScreens": [
+    {
+      "protoScreen": "KloelMushroom (L5585)",
+      "realComponent": "frontend/src/components/kloel/KloelBrand.tsx → KloelMushroomVisual (L168) / KloelMushroomMark (L289)",
+      "status": "REAL EQUIVALENT CONFIRMED; props {size, traceColor, animated, spores}. Optional swap only if pixel-identical."
+    },
+    {
+      "protoScreen": "KloelChatScreen composer (textarea+send L5858-5869)",
+      "realComponent": "frontend/src/components/kloel/UniversalComposer.tsx (L97) + the live chat stack chat-container.* / useChatController.send.ts → runAuthedChat → streamAuthenticatedKloelMessage",
+      "status": "Real COMPOSER + real STREAM motor exist, but no full literal-equivalent transcript SCREEN. Per preserve-the-shell: KEEP KloelChatScreen's transcript/greeting/states; swap ONLY send() motor to streamAuthenticatedKloelMessage."
+    },
+    {
+      "protoScreen": "KloelSearchScreen (L5928)",
+      "realComponent": "frontend/src/components/kloel/CommandPalette.tsx + frontend/src/components/kloel/search/* + hooks/useCommandPalette.ts",
+      "status": "REAL command palette EXISTS (wired in AppShell). Different UX → keep literal panel, feed real index/onOpenNode data."
+    },
+    {
+      "protoScreen": "KloelImagesScreen / KloelRecentsScreen / KloelMassPanel / KloelOverlay",
+      "realComponent": "(none)",
+      "status": "NO real equivalent — keep verbatim; swap only data source to real hooks / honest-empty."
+    }
+  ],
+  "overlaySwapStrategy": "Import-direct, NOT route-based. The literal prototype is mounted client-only: KloelGraphClient.tsx → dynamic(() => import('./KloelGraphPrototype'), { ssr:false }), rendered by (main)/layout.tsx (literal worktree layout.tsx:24 returns <KloelGraphClient/>). Overlays are in-tree React modals selected by selectedNode.type ∈ {kloelAction, kloelConversation, kloelImageAsset} at literal L6428/L6486-6487 — NO router navigation, so DO NOT add routes. Swap procedure: (1) keep KloelOverlayRouter (L6074) as the single mount point; (2) for the brand glyph, import KloelMushroomVisual from KloelBrand into the existing KloelOverlay chrome; (3) for KloelChatScreen, keep the literal screen and replace ONLY send() body (L5827-5853): call streamAuthenticatedKloelMessage(messages, metadata{conversationId}, onEvent, {signal}) from @/lib/kloel-conversations (POST /kloel/think SSE) and accumulate KloelStreamEvent token events into the existing setKloel transcript-append calls, keeping the catch→honest-error at L5850. (4) Provider check: literal screens read C from a FILE-LOCAL ThemeProvider/useTheme (L43-53); real components (KloelBrand, UniversalComposer, CommandPalette) consume @/lib/design-tokens not useTheme → compose without conflict. The stream needs tokenStorage/API_BASE (global) and runs under (main) auth context → no extra SWRConfig/AuthProvider in the overlay.",
+  "filesToCreate": [
+    "frontend/src/components/kloel/graph/KloelKloelDomain.module.tsx — carved Kloel-domain unit (KLOEL_ACTIONS, buildKloelNodesEdges, buildKloelSearchIndex, KloelOverlay, KloelChatScreen, KloelSearchScreen, KloelImagesScreen, KloelRecentsScreen, KloelMassPanel, KloelOverlayRouter, KloelMushroom) so the literal file shrinks and only this module is edited going forward",
+    "frontend/src/components/kloel/graph/kloel-domain.data-adapter.ts — adapter mapping streamAuthenticatedKloelMessage + searchKloelThreads/loadKloelThreadMessages + uploadChatFile into the {conversations[], images[]} shape buildKloelNodesEdges/KloelChatScreen expect, with loading/empty/error → zero entity nodes (KLOEL_ACTIONS still render)"
+  ],
+  "filesToEdit": [
+    "frontend/src/components/kloel/graph/KloelGraphPrototype.jsx (whatsapp_saas-kg LITERAL file) — (a) the file Y must render verbatim; (b) replace KloelChatScreen.send() api.anthropic block (L5841-5846) with the real streamAuthenticatedKloelMessage adapter; (c) feed buildKloelNodesEdges/buildKloelSearchIndex from the real adapter instead of seeds. After carving, edits concentrate in KloelKloelDomain.module.tsx + this file's import lines.",
+    "frontend/src/components/kloel/graph/KloelGraphClient.tsx — the Y mount; ensure it imports the LITERAL prototype (already correct in -kg worktree), not the split 671-line stub.",
+    "frontend/src/app/(main)/layout.tsx — host that renders <KloelGraphClient/> as the authenticated shell; verify Y targets THIS (literal worktree already does at L24)."
+  ],
+  "wiringSteps": [
+    "STEP 0 (re-point Y — the actual ask): Y currently targets the SPLIT shell in /Users/danielpenin/whatsapp_saas (671-line .jsx + KloelGraph*.tsx, NO Kloel screens). Re-point Y to render the LITERAL prototype frontend/src/components/kloel/graph/KloelGraphPrototype.jsx (whatsapp_saas-kg, commit 172c924ae, default export Kloel() L6570) via the existing KloelGraphClient.tsx dynamic import + (main)/layout.tsx mount. No new routes — the mount already exists there.",
+    "STEP 1 (seed→real hook in builder, honest-empty): In buildKloelNodesEdges (L898) the 4 kloelAction nodes ALWAYS render (nav). Only the kloelConversation loop (L904) and kloelImageAsset loop (L909) are data-driven → feed from the adapter (searchKloelThreads for conversations; image store for images). On loading/empty/error → conversations:[] / images:[] so ZERO entity nodes emit (4 actions remain). Never fall back to seeds.",
+    "STEP 2 (swap inline chat motor, keep shell): In KloelChatScreen.send() (L5827-5853) delete the raw fetch('https://api.anthropic.com/v1/messages') block (L5841-5846) and call streamAuthenticatedKloelMessage(messages, { conversationId: id }, onEvent, { signal }) from @/lib/kloel-conversations (POST /kloel/think SSE). Map KloelStreamEvent tokens into the existing optimistic-append setKloel updates; keep greeting/composer/loading visuals byte-identical and keep the catch→honest-error at L5850. Mirror chat-container.message-sender.ts:247 (runAuthedChat) / dashboard/KloelDashboardSendMessage.ts:229.",
+    "STEP 3 (search): keep KloelSearchScreen + buildKloelSearchIndex visuals; feed it real products/conversar/affiliate/educar/wallet/kloel (buildGraph already threads these). Optionally back onOpenNode/index with the real palette (hooks/useCommandPalette.ts + components/kloel/search/*) but do not restyle.",
+    "STEP 4 (images/recents/masspanel): no real equivalents — keep verbatim; swap data source (kloel.images via uploadChatFile sink + /api/kloel/download-image, kloel.conversations via searchKloelThreads/loadKloelThreadMessages) with honest-empty. Keep KloelImagesScreen.onFiles upload UX; honest-empty + local preview until a list endpoint is confirmed.",
+    "STEP 5 (brand glyph, optional): replace in-file KloelMushroom (L5585) with KloelMushroomVisual/Mark from KloelBrand.tsx to drop duplicate SVG — ONLY if pixel-identical; else leave in-file.",
+    "STEP 6 (provider check): literal screens use file-local ThemeProvider/useTheme (L43-53); real imports use @/lib/design-tokens → compose fine. The stream needs tokenStorage/API_BASE (global) under (main) auth — no extra providers in the overlay.",
+    "STEP 7 (verify): frontend typecheck + build; smoke that sun-kloel opens KloelChatScreen, a message round-trips through POST /kloel/think (devtools shows NO call to api.anthropic.com), and that with no history the cluster shows the 4 action nodes + honest-empty Recents/Images."
+  ],
+  "collisionRisk": "HIGH. Five+ concurrent kloelgraph worktrees touch this exact file/domain: feat/kloelgraph-prototype-engine (current primary, a84a8ba63 — split stub), feat/kloelgraph-literal-prototype (whatsapp_saas-kg, 172c924ae — the literal), feat/kloelgraph-foundation-criar (wg-kloelgraph), fix/kloelgraph-primary-shell (merged PR #473), feat/kloelgraph-shell-2026-05-30. Y is currently pointed at a DIFFERENT physical representation (split) than Opção C wants (literal). Project memory flags concurrent-Claude-agents-fighting-the-same-working-tree as a recurring hazard. MUST agree which worktree/branch is canonical before editing and land the re-point as ONE atomic change. The literal .jsx carries // @ts-nocheck + eslint-disable (gates intentionally relaxed for the verbatim file) — keep mutations confined to the carved KloelKloelDomain.module.tsx where gates apply.",
+  "feasibility": "FEASIBLE — clean, small seam, all facts now confirmed from real code. Re-point Y to the literal KloelGraphPrototype.jsx (mount already exists via KloelGraphClient.tsx + (main)/layout.tsx in the -kg worktree); replace exactly ONE client call (KloelChatScreen.send api.anthropic at L5841 → streamAuthenticatedKloelMessage from frontend/src/lib/kloel-conversations.ts:147, endpoint POST /kloel/think SSE); feed two builder loops (conversations/images) from a real adapter with honest-empty. Every Kloel screen except the brand glyph stays verbatim (preserve-the-shell). Confirmed live: the literal file + exact symbol line numbers, the real stream entry + endpoint + two live consumers (chat-container.message-sender.ts:247, KloelDashboardSendMessage.ts:229), thread-history hooks (searchKloelThreads/loadKloelThreadMessages), upload sink (uploadChatFile), the real KloelBrand/UniversalComposer/CommandPalette, and the /api/kloel/download-image proxy.",
+  "blockers": [
+    "DIVERGENCE / which-worktree-is-canonical (decision, not technical): current primary worktree (/Users/danielpenin/whatsapp_saas, feat/kloelgraph-prototype-engine) holds only the SPLIT 671-line .jsx (data+builders, NO Kloel screens) + KloelGraph*.tsx shell; the LITERAL ~6600-line prototype with all Kloel screens lives in /Users/danielpenin/whatsapp_saas-kg (feat/kloelgraph-literal-prototype, 172c924ae). Opção C = render the literal verbatim → Y must re-point to the -kg representation. Owner must confirm which worktree/branch becomes canonical before edits land (HIGH collision risk among 5+ kloelgraph branches).",
+    "MOTOR-SWAP not component-replacement for chat: no full real chat-transcript SCREEN to drop into the overlay — only UniversalComposer + the chat-container/dashboard stack. KloelChatScreen stays as the literal shell; only its send() motor is replaced by streamAuthenticatedKloelMessage. Intentional (preserve-the-shell), not a gap.",
+    "api.anthropic in client (security/contract): KloelChatScreen calls api.anthropic.com directly from the browser (L5841) with no key, relying on catch→honest-error today. Real wiring MUST route through POST /kloel/think (apiUrl + tokenStorage → backend Kloel engine), never a 3rd-party LLM call from the client — aligns with CLAUDE.md (no fallback-falso, no secret in client).",
+    "image asset persistence partial: a real upload sink exists (uploadChatFile lib/api/kloel.ts:121 + /api/kloel/download-image proxy) but a confirmed LIST endpoint for kloel.images was not found this run → KloelImagesScreen renders honest-empty + working local preview until confirmed."
+  ]
+}

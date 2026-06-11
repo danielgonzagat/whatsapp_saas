@@ -91,14 +91,13 @@ export interface ProductEventPayload extends CommercialEventPayload {
 export interface CouponEventPayload extends CommercialEventPayload {
   eventType: 'coupon.created' | 'coupon.updated' | 'coupon.deleted';
   payload: {
-    couponId?: string;
-    productId?: string;
+    couponId: string;
     code?: string;
+    productId?: string;
     discountType?: string;
     discountValue?: number;
-    usageLimit?: number | null;
-    expiresAt?: string | null;
-    changes?: string[];
+    status?: string;
+    active?: boolean;
   };
 }
 

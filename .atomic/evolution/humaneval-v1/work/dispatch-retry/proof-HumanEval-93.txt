@@ -1,0 +1,51 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+Atomic proof-feedback repair prompt (tool-augmented; not raw HumanEval evidence).
+task_id: HumanEval/93
+entry_point: encode
+Return only the Python completion body that follows the given HumanEval prompt.
+
+HUMANEVAL_PROMPT:
+
+def encode(message):
+    """
+    Write a function that takes a message, and encodes in such a 
+    way that it swaps case of all letters, replaces all vowels in 
+    the message with the letter that appears 2 places ahead of that 
+    vowel in the english alphabet. 
+    Assume only letters. 
+    
+    Examples:
+    >>> encode('test')
+    'TGST'
+    >>> encode('This is a message')
+    'tHKS KS C MGSSCGG'
+    """
+
+
+ATOMIC_PROOF_FEEDBACK:
+package_sha256: 57ef50f4ca309bff007d82a18d7e7a98b4d4d6b1e3d07fc64317a4cf820aca00
+invariant: humaneval.assertion
+lesson: The baseline completion failed assertion; preserve entry point encode and satisfy the check(candidate) contract.
+proposal_digest: 89d8935e322c396e285bced0ed89611a3a8882c717b8a2611c2dfe6c304a3727
+rejected_completion_sha256: 9d46b881d036b2fe6d9bcc3568a904dd200cd8b03a8099711aaf85987b0d3c6d
+counterexample:
+def check(candidate):
+
+    # Check some simple cases
+    assert candidate('TEST') == 'tgst', "This prints if this assert fails 1 (good for debugging!)"
+    assert candidate('Mudasir') == 'mWDCSKR', "This prints if this assert fails 2 (good for debugging!)"
+    assert candidate('YES') == 'ygs', "This prints if this assert fails 3 (good for debugging!)"
+    
+    # Check some edge cases that are easy to work out by hand.
+    assert candidate('This is a message') == 'tHKS KS C MGSSCGG', "This prints if this assert fails 2 (also good for debugging!)"
+    assert candidate("I DoNt KnOw WhAt tO WrItE") == 'k dQnT kNqW wHcT Tq wRkTg', "This prints if this assert fails 2 (also good for debugging!)"
+
+
+--- FIM DA TAREFA ---

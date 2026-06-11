@@ -1,0 +1,59 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+Atomic proof-feedback repair prompt (tool-augmented; not raw HumanEval evidence).
+task_id: HumanEval/132
+entry_point: is_nested
+Return only the Python completion body that follows the given HumanEval prompt.
+
+HUMANEVAL_PROMPT:
+
+def is_nested(string):
+    '''
+    Create a function that takes a string as input which contains only square brackets.
+    The function should return True if and only if there is a valid subsequence of brackets 
+    where at least one bracket in the subsequence is nested.
+
+    is_nested('[[]]') ➞ True
+    is_nested('[]]]]]]][[[[[]') ➞ False
+    is_nested('[][]') ➞ False
+    is_nested('[]') ➞ False
+    is_nested('[[][]]') ➞ True
+    is_nested('[[]][[') ➞ True
+    '''
+
+
+ATOMIC_PROOF_FEEDBACK:
+package_sha256: a911024d3a23727e410901bfb71cc699c02da8702fe0f2ea6b9661df7035ffc9
+invariant: humaneval.assertion
+lesson: The baseline completion failed assertion; preserve entry point is_nested and satisfy the check(candidate) contract.
+proposal_digest: f64ed3c77cbc046654103db2e2845d2f9acec369668ceea2f2d36dcbf30e672e
+rejected_completion_sha256: 360a1b26a7afdd0ed0901c0592a7aec3ee2d663234ff0af4619e19d7cfbe0881
+counterexample:
+def check(candidate):
+
+    # Check some simple cases
+    assert candidate('[[]]') == True, "This prints if this assert fails 1 (good for debugging!)"
+    assert candidate('[]]]]]]][[[[[]') == False
+    assert candidate('[][]') == False
+    assert candidate(('[]')) == False
+    assert candidate('[[[[]]]]') == True
+    assert candidate('[]]]]]]]]]]') == False
+    assert candidate('[][][[]]') == True
+    assert candidate('[[]') == False
+    assert candidate('[]]') == False
+    assert candidate('[[]][[') == True
+    assert candidate('[[][]]') == True
+
+    # Check some edge cases that are easy to work out by hand.
+    assert candidate('') == False, "This prints if this assert fails 2 (also good for debugging!)"
+    assert candidate('[[[[[[[[') == False
+    assert candidate(']]]]]]]]') == False
+
+
+--- FIM DA TAREFA ---

@@ -1,0 +1,47 @@
+INVÓLUCRO DO EXPERIMENTO (byte-idêntico entre braços e modelos; não altera a tarefa):
+você responde dentro de um harness automatizado. Use APENAS a ferramenta StructuredOutput;
+não leia nenhum outro arquivo; não explore o repositório; não execute comandos.
+Responda com StructuredOutput({ codigoPython: <código Python puro, sem markdown> }).
+codigoPython deve ser SOMENTE a continuação (corpo, indentado com 4 espaços) do prompt
+Python da tarefa — OU a função completa começando em `def`. Nada de prosa fora de código.
+
+--- TAREFA ---
+Atomic proof-feedback repair prompt (tool-augmented; not raw HumanEval evidence).
+task_id: HumanEval/163
+entry_point: generate_integers
+Return only the Python completion body that follows the given HumanEval prompt.
+
+HUMANEVAL_PROMPT:
+
+def generate_integers(a, b):
+    """
+    Given two positive integers a and b, return the even digits between a
+    and b, in ascending order.
+
+    For example:
+    generate_integers(2, 8) => [2, 4, 6, 8]
+    generate_integers(8, 2) => [2, 4, 6, 8]
+    generate_integers(10, 14) => []
+    """
+
+
+ATOMIC_PROOF_FEEDBACK:
+package_sha256: 3cf4064a3f841b973b7f2185b048d34517ed3a0069e5016d9880677a3c2a3861
+invariant: humaneval.runtime
+lesson: The baseline completion failed runtime; preserve entry point generate_integers and satisfy the check(candidate) contract.
+proposal_digest: ab9b336ec4e8b558e425d7d29e2180cf3d8ca65563a39343f155bbf1df933169
+rejected_completion_sha256: 00130b89dac9c9a0f207fcd671bd9c29fb5c0d9baa5139e0353a9f5a46a6864d
+counterexample:
+def check(candidate):
+
+    # Check some simple cases
+    assert candidate(2, 10) == [2, 4, 6, 8], "Test 1"
+    assert candidate(10, 2) == [2, 4, 6, 8], "Test 2"
+    assert candidate(132, 2) == [2, 4, 6, 8], "Test 3"
+    assert candidate(17,89) == [], "Test 4"
+
+    # Check some edge cases that are easy to work out by hand.
+    assert True, "This prints if this assert fails 2 (also good for debugging!)"
+
+
+--- FIM DA TAREFA ---

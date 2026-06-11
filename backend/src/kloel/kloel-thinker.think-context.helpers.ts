@@ -61,7 +61,6 @@ export async function resolveThinkContext(params: {
 }): Promise<ResolvedThinkContext> {
   const {
     prisma,
-    wsContextService,
     threadService,
     replyEngine,
     workspaceId,
@@ -74,7 +73,6 @@ export async function resolveThinkContext(params: {
     enrichedCompanyContext,
   } = params;
 
-  let _context = enrichedCompanyContext || '';
   let companyName = 'sua empresa';
   let userName = 'Usuário';
   const marketingPromptAddendum = await replyEngine.buildMarketingPromptAddendum(
@@ -88,20 +86,13 @@ export async function resolveThinkContext(params: {
       : null;
 
   if (workspaceId) {
-    const [, agent] = await Promise.all([
-      prisma.workspace.findUnique({ where: { id: workspaceId } }),
-      userId
-        ? prisma.agent.findFirst({
-            where: { id: userId, workspaceId },
-            select: { name: true },
-          })
-        : Promise.resolve(null),
-    ]);
+    const agent = userId
+      ? await prisma.agent.findFirst({
+          where: { id: userId, workspaceId },
+          select: { name: true },
+        })
+      : null;
     companyName = 'sua empresa';
-    _context = await wsContextService.getWorkspaceContext(workspaceId, userId);
-    if (enrichedCompanyContext) {
-      _context = [_context, enrichedCompanyContext].filter(Boolean).join('\n\n');
-    }
     userName = replyEngine.contextFormatter.sanitizeUserNameForAssistant(
       reqUserName || agent?.name || userName,
     );
