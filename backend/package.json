@@ -44,7 +44,7 @@
     "backfill:person-lead-to-contact": "ts-node src/prisma/backfills/person-kloel-lead-to-contact.backfill.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.1065.0",
+    "@aws-sdk/client-s3": "3.1066.0",
     "@nestjs-modules/ioredis": "2.2.1",
     "@nestjs/common": "11.1.26",
     "@nestjs/config": "4.0.4",
@@ -80,7 +80,7 @@
     "joi": "18.2.1",
     "jsonwebtoken": "9.0.3",
     "multer": "^2.1.1",
-    "nodemailer": "^8.0.10",
+    "nodemailer": "^8.0.11",
     "openai": "6.42.0",
     "pdf-parse": "2.4.5",
     "prisma": "5.22.0",
@@ -103,7 +103,7 @@
     "@types/jest": "30.0.0",
     "@types/multer": "2.1.0",
     "@types/node": "22.19.20",
-    "@types/nodemailer": "^8.0.0",
+    "@types/nodemailer": "^8.0.1",
     "@types/qrcode": "1.5.6",
     "@types/supertest": "7.2.0",
     "eslint": "9.39.4",
