@@ -59,7 +59,7 @@
     "@vitejs/plugin-react": "6.0.2",
     "@vitest/coverage-v8": "4.1.8",
     "babel-plugin-react-compiler": "1.0.0",
-    "baseline-browser-mapping": "2.10.35",
+    "baseline-browser-mapping": "2.10.36",
     "eslint": "9.39.4",
     "eslint-config-next": "16.2.9",
     "jsdom": "29.1.1",
