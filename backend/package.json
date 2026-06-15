@@ -45,7 +45,7 @@
     "backfill:person-lead-to-contact": "ts-node src/prisma/backfills/person-kloel-lead-to-contact.backfill.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.1067.0",
+    "@aws-sdk/client-s3": "3.1068.0",
     "@nestjs-modules/ioredis": "2.2.1",
     "@nestjs/common": "11.1.26",
     "@nestjs/config": "4.0.4",
@@ -65,11 +65,11 @@
     "@types/cookie-parser": "1.4.10",
     "archiver": "^8.0.0",
     "bcrypt": "6.0.0",
-    "bullmq": "5.78.0",
+    "bullmq": "5.78.1",
     "class-transformer": "0.5.1",
     "class-validator": "0.15.1",
     "cookie-parser": "1.4.7",
-    "dd-trace": "5.107.0",
+    "dd-trace": "5.108.0",
     "dotenv": "17.4.2",
     "express": "^4.22.1",
     "firebase-admin": "13.10.0",
@@ -90,7 +90,7 @@
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2",
     "socket.io": "4.8.3",
-    "stripe": "22.2.0",
+    "stripe": "22.2.1",
     "swagger-ui-express": "5.0.1",
     "zod": "4.4.3"
   },
