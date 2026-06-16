@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
-    "@sentry/node": "10.57.0",
+    "@sentry/node": "10.58.0",
     "axios": "1.18.0",
     "bullmq": "5.78.1",
     "dd-trace": "5.108.0",
