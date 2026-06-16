@@ -149,22 +149,32 @@ function main() {
 
   record(
     results,
-    'compiled MCP certificate proof preserves inherited host broker instead of forcing stale state recovery',
-    !compiledProof.includes("ATOMIC_EXEC_BROKER_SOCKET: ''") &&
-      compiledProof.includes("ATOMIC_EXEC_BROKER_SOCKET: process.env.ATOMIC_EXEC_BROKER_SOCKET ?? ''") &&
-      compiledProof.includes("ATOMIC_HOST_SANDBOX: process.env.ATOMIC_HOST_SANDBOX ?? 'macos-sandbox-exec'") &&
-      compiledProof.includes("ATOMIC_HOST_ATOMIC_ONLY: process.env.ATOMIC_HOST_ATOMIC_ONLY ?? '1'"),
+    'compiled MCP certificate proof uses a live inherited broker or starts a proof broker fixture',
+    compiledProof.includes('function liveBrokerEndpoint') &&
+      compiledProof.includes('return fs.statSync(endpoint).isSocket() ? endpoint : null') &&
+      compiledProof.includes('const inheritedEndpoint = inheritedBrokerEndpoint();') &&
+      compiledProof.includes('const spawnedBroker = inheritedEndpoint ? null : await startBroker();') &&
+      compiledProof.includes('const brokerEndpoint = inheritedEndpoint ?? spawnedBroker.endpoint;') &&
+      compiledProof.includes('ATOMIC_EXEC_BROKER_SOCKET: brokerEndpoint') &&
+      compiledProof.includes("ATOMIC_EXEC_BROKER_ROOT: ''") &&
+      compiledProof.includes('function stateBrokerEndpoint') &&
+      compiledProof.includes("ATOMIC_HOST_SANDBOX: process.env.ATOMIC_HOST_SANDBOX || 'macos-sandbox-exec'") &&
+      compiledProof.includes("ATOMIC_HOST_ATOMIC_ONLY: process.env.ATOMIC_HOST_ATOMIC_ONLY || '1'"),
     {
-      blanksBroker: compiledProof.includes("ATOMIC_EXEC_BROKER_SOCKET: ''"),
-      preservesBroker: compiledProof.includes("ATOMIC_EXEC_BROKER_SOCKET: process.env.ATOMIC_EXEC_BROKER_SOCKET ?? ''"),
-      preservesSandbox: compiledProof.includes("ATOMIC_HOST_SANDBOX: process.env.ATOMIC_HOST_SANDBOX ?? 'macos-sandbox-exec'"),
-      preservesAtomicOnly: compiledProof.includes("ATOMIC_HOST_ATOMIC_ONLY: process.env.ATOMIC_HOST_ATOMIC_ONLY ?? '1'"),
+      hasLiveEndpointClassifier: compiledProof.includes('function liveBrokerEndpoint'),
+      checksUnixSocket: compiledProof.includes('return fs.statSync(endpoint).isSocket() ? endpoint : null'),
+      startsFixtureBroker: compiledProof.includes('const spawnedBroker = inheritedEndpoint ? null : await startBroker();'),
+      passesBrokerEndpoint: compiledProof.includes('ATOMIC_EXEC_BROKER_SOCKET: brokerEndpoint'),
+      clearsNestedBrokerRoot: compiledProof.includes("ATOMIC_EXEC_BROKER_ROOT: ''"),
+      hasStateBrokerEndpoint: compiledProof.includes('function stateBrokerEndpoint'),
+      preservesSandbox: compiledProof.includes("ATOMIC_HOST_SANDBOX: process.env.ATOMIC_HOST_SANDBOX || 'macos-sandbox-exec'"),
+      preservesAtomicOnly: compiledProof.includes("ATOMIC_HOST_ATOMIC_ONLY: process.env.ATOMIC_HOST_ATOMIC_ONLY || '1'"),
     },
   );
 
   record(
     results,
-    'compiled MCP proof requires all mandatory certificate domains GREEN',
+    'compiled MCP proof requires all mandatory certificate domains GREEN with parent-side audit proof',
     compiledProof.includes('const mandatoryDomains = [') &&
       compiledProof.includes("'codexEntrypointContract'") &&
       compiledProof.includes("'distFreshness'") &&
@@ -172,7 +182,12 @@ function main() {
       compiledProof.includes("'selfEvolutionAdmission'") &&
       compiledProof.includes("'capabilityMonotonicity'") &&
       compiledProof.includes("'atomicExecReadOnlyUsability'") &&
-      compiledProof.includes('mandatoryDomainReport(cert)') &&
+      compiledProof.includes('function runAtomicityAudit') &&
+      compiledProof.includes("includeAudits: false") &&
+      compiledProof.includes("atomicityAudit: atomicityAuditGreen ? 'GREEN' : 'RED'") &&
+      compiledProof.includes('const effectiveBlockerDomains = blockerDomains.filter') &&
+      compiledProof.includes('parentAuditCompletesCertificate') &&
+      compiledProof.includes('mandatoryDomainReport(cert,') &&
       /completeState[\s\S]*mandatory\.ok/.test(compiledProof) &&
       /honestBlockedState[\s\S]*mandatory\.ok/.test(compiledProof),
     {
@@ -183,6 +198,10 @@ function main() {
       checksSelfEvolutionAdmission: compiledProof.includes("'selfEvolutionAdmission'"),
       checksCapabilityMonotonicity: compiledProof.includes("'capabilityMonotonicity'"),
       checksReadOnlyUsability: compiledProof.includes("'atomicExecReadOnlyUsability'"),
+      hasParentAudit: compiledProof.includes('function runAtomicityAudit'),
+      childAuditIsNonRecursive: compiledProof.includes("includeAudits: false"),
+      overridesAtomicityDomain: compiledProof.includes("atomicityAudit: atomicityAuditGreen ? 'GREEN' : 'RED'"),
+      filtersParentAuditBlocker: compiledProof.includes('const effectiveBlockerDomains = blockerDomains.filter'),
     },
   );
 

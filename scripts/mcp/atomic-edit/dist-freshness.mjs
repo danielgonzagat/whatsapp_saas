@@ -33,6 +33,9 @@ const SOURCE_EXTENSIONS = new Set(['.ts', '.mjs', '.json', '.sh']);
 const DIST_EXTENSIONS = new Set(['.js', '.mjs', '.json']);
 const SKIP_DIRS = new Set([
   'dist',
+  'dist-lkg',
+  'dist.broken-last',
+  'launcher-blessed',
   'node_modules',
   '.atomic',
   '.git',
@@ -62,6 +65,7 @@ function skipGeneratedName(name) {
     name.startsWith('probe-gate-') ||
     name.startsWith('atomic-type-gate-') ||
     name.startsWith('.external-runtime-denial-') ||
+    name.startsWith('.supervisor-') ||
     name === '.build-manifest.json'
   );
 }

@@ -16,8 +16,8 @@
 import * as path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { REPO_ROOT } from './guard.js';
-import { readUtf8 } from './server-helpers-io.js';
+import { activeWorkspaceRoot, assertInsideActiveWorkspace, REPO_ROOT } from './guard.js';
+import { normalizeRepoRelPath, readUtf8 } from './server-helpers-io.js';
 import { ok, fail, type ToolOk } from './server-helpers-result.js';
 import {
   ensureReady,
@@ -37,11 +37,24 @@ async function nativeReadyOrFail(alt: string): Promise<ToolOk | null> {
   return null;
 }
 
-/** Resolve a repo-relative or absolute path and refuse escapes. Read-only, so no protected-file guard. */
+/** Resolve a workspace-relative or absolute path and refuse active-workspace escapes. */
 function containedAbs(p: string): string | null {
-  const abs = path.resolve(REPO_ROOT, p);
-  if (abs !== REPO_ROOT && !abs.startsWith(REPO_ROOT + path.sep)) return null;
+  const baseRoot = activeWorkspaceRoot();
+  const abs = path.isAbsolute(p) ? path.resolve(p) : path.resolve(baseRoot, p);
+  try {
+    assertInsideActiveWorkspace(abs, 'native io path');
+  } catch {
+    return null;
+  }
   return abs;
+}
+
+function displayPath(absPath: string): string {
+  const activeRel = normalizeRepoRelPath(path.relative(activeWorkspaceRoot(), path.resolve(absPath)));
+  if (activeRel === '') return '.';
+  if (!activeRel.startsWith('..') && !path.isAbsolute(activeRel)) return activeRel;
+  const repoRel = normalizeRepoRelPath(path.relative(REPO_ROOT, path.resolve(absPath)));
+  return repoRel || '.';
 }
 
 export function registerToolsNativeIo(server: McpServer): void {
@@ -52,7 +65,7 @@ export function registerToolsNativeIo(server: McpServer): void {
       description:
         'Search file contents with a regex across the repo via the native ripgrep engine. Returns structured ' +
         'matches {path, lineNumber, line} — faster and more structured than a shell grep, gitignore-aware. ' +
-        '`path` (file or dir) defaults to the repo root.',
+        '`path` (file or dir) defaults to the active workspace root.',
       inputSchema: {
         pattern: z.string(),
         path: z.string().optional(),
@@ -69,7 +82,7 @@ export function registerToolsNativeIo(server: McpServer): void {
         const gate = await nativeReadyOrFail('use a shell `grep`/`rg` instead.');
         if (gate) return gate;
         const abs = containedAbs(a.path ?? '.');
-        if (!abs) return fail(`path escapes repository root: ${a.path}`);
+        if (!abs) return fail(`path escapes active workspace root: ${a.path}`);
         const res = await nativeGrep({
           pattern: a.pattern,
           path: abs,
@@ -85,7 +98,7 @@ export function registerToolsNativeIo(server: McpServer): void {
           filesWithMatches: res.filesWithMatches,
           filesSearched: res.filesSearched,
           limitReached: res.limitReached,
-          matches: res.matches,
+          matches: res.matches.map((match) => ({ ...match, path: displayPath(match.path) })),
         });
       } catch (e) {
         return fail(e instanceof Error ? e.message : String(e));
@@ -99,7 +112,7 @@ export function registerToolsNativeIo(server: McpServer): void {
       title: 'Native glob file discovery (gitignore-aware)',
       description:
         'Find files/dirs by glob pattern via the native engine, gitignore-aware. Returns {path, fileType}. ' +
-        '`path` defaults to the repo root.',
+        '`path` defaults to the active workspace root.',
       inputSchema: {
         pattern: z.string(),
         path: z.string().optional(),
@@ -113,7 +126,7 @@ export function registerToolsNativeIo(server: McpServer): void {
         const gate = await nativeReadyOrFail('use a shell `find`/`ls` instead.');
         if (gate) return gate;
         const abs = containedAbs(a.path ?? '.');
-        if (!abs) return fail(`path escapes repository root: ${a.path}`);
+        if (!abs) return fail(`path escapes active workspace root: ${a.path}`);
         const res = await nativeGlob({
           pattern: a.pattern,
           path: abs,
@@ -121,7 +134,10 @@ export function registerToolsNativeIo(server: McpServer): void {
           hidden: a.hidden,
           maxResults: a.maxResults ?? 500,
         });
-        return ok({ totalMatches: res.totalMatches, matches: res.matches });
+        return ok({
+          totalMatches: res.totalMatches,
+          matches: res.matches.map((match) => ({ ...match, path: displayPath(match.path) })),
+        });
       } catch (e) {
         return fail(e instanceof Error ? e.message : String(e));
       }
@@ -147,9 +163,9 @@ export function registerToolsNativeIo(server: McpServer): void {
         const gate = await nativeReadyOrFail('read the file directly instead.');
         if (gate) return gate;
         const abs = containedAbs(a.file);
-        if (!abs) return fail(`path escapes repository root: ${a.file}`);
+        if (!abs) return fail(`path escapes active workspace root: ${a.file}`);
         const code = readUtf8(abs);
-        const rel = path.relative(REPO_ROOT, abs) || a.file;
+        const rel = displayPath(abs);
         const res = await summarize({ code, path: rel, lang: a.lang });
         return ok({
           parsed: res.parsed,

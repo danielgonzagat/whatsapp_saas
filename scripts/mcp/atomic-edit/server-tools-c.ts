@@ -305,7 +305,7 @@ server.registerTool(
         );
       } finally {
         if (symLockId) {
-          try { fs.rmdirSync(lockDir(symLockId), { recursive: true }); } catch { /* cleanup */ }
+          try { fs.rmSync(lockDir(symLockId), { recursive: true }); } catch { /* cleanup */ }
         }
       }
     } catch (e) {

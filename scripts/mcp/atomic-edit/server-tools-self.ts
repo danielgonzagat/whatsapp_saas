@@ -1,6 +1,7 @@
 import * as childProcess from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { resolveSafeTarget, REPO_ROOT } from './guard.js';
@@ -45,6 +46,7 @@ const MANDATORY_SELF_EXPANSION_VALIDATORS: readonly SelfExpansionValidator[] = [
   { phase: 'reachability', command: 'node dist/gates/reachability-gate.proof.js' },
   { phase: 'binding', command: 'node dist/gates/binding-gate.proof.js' },
   { phase: 'convergence', command: 'node gates/converge-operator.proof.mjs' },
+  { phase: 'convergence', command: 'node gates/converge-symbol-mutation.proof.mjs --json' },
   { phase: 'runtime-probe', command: 'node dist/gates/probe-convergence-gate.proof.js' },
   { phase: 'formal', command: 'node dist/gates/formal-gate.proof.js' },
   { phase: 'property', command: 'node dist/gates/property-gate.proof.js' },
@@ -67,11 +69,18 @@ const MANDATORY_SELF_EXPANSION_VALIDATORS: readonly SelfExpansionValidator[] = [
   { phase: 'benchmark', command: 'node gates/atomic-agent-bench.proof.mjs' },
   { phase: 'test', command: 'node gates/test-execution-gate.proof.mjs --json' },
   { phase: 'ledger', command: 'node proof-chain.proof.mjs --json' },
+  { phase: 'ledger', command: 'node gates/proof-snapshot-compact.proof.mjs --json' },
+  { phase: 'ledger', command: 'node gates/proof-ledger-external-root.proof.mjs --json' },
   { phase: 'certificate', command: 'node gates/y-certificate-mandatory-domains.proof.mjs --json' },
   { phase: 'runtime', command: 'node gates/codex-entrypoint-contract.proof.mjs --json' },
   { phase: 'agent-runtime', command: 'node gates/agent-hook-runtime-boundary.proof.mjs --json' },
+  { phase: 'agent-runtime', command: 'node gates/opencode-allin-permission-policy.proof.mjs --json' },
   { phase: 'runtime', command: 'node gates/compiled-mcp-y-certificate.proof.mjs --json' },
   { phase: 'usability', command: 'node gates/atomic-exec-readonly-usability.proof.mjs --json' },
+  { phase: 'usability', command: 'node gates/atomic-exec-output-compact.proof.mjs --json' },
+  { phase: 'usability', command: 'node gates/mcp-tool-list-compact.proof.mjs --json' },
+  { phase: 'usability', command: 'node gates/readcode-missing-path-recovery.proof.mjs --json' },
+  { phase: 'usability', command: 'node gates/readcode-selector-error-no-recovery.proof.mjs --json' },
   { phase: 'effect-metadata', command: 'node gates/effect-metadata-mode.proof.mjs --json' },
   { phase: 'effect-admission', command: 'node gates/atomic-exec-prove-effect-required.proof.mjs --json' },
   { phase: 'no-bypass', command: 'node gates/atomic-exec-indirection-denial.proof.mjs --json' },
@@ -141,14 +150,32 @@ function proofTimeoutMs(command: string): number {
   return 60000;
 }
 
+function brokerEndpointPath(endpoint: string): string | null {
+  const value = endpoint.trim();
+  if (!value) return null;
+  if (value.startsWith('file://')) {
+    try {
+      const dir = fileURLToPath(value);
+      return fs.existsSync(path.join(dir, 'requests')) && fs.existsSync(path.join(dir, 'responses')) ? value : null;
+    } catch {
+      return null;
+    }
+  }
+  try {
+    return fs.statSync(value).isSocket() ? value : null;
+  } catch {
+    return null;
+  }
+}
+
 function selfExpansionBrokerSocketPath(): string | null {
-  const explicit = process.env.ATOMIC_EXEC_BROKER_SOCKET?.trim();
-  if (explicit && fs.existsSync(explicit)) return explicit;
+  const explicit = brokerEndpointPath(process.env.ATOMIC_EXEC_BROKER_SOCKET ?? '');
+  if (explicit) return explicit;
   const statePath = path.join(REPO_ROOT, '.atomic', 'codex-broker-current.json');
   try {
     const state = JSON.parse(fs.readFileSync(statePath, 'utf8')) as { socket?: unknown };
-    const stateSocket = typeof state.socket === 'string' ? state.socket.trim() : '';
-    if (stateSocket && fs.existsSync(stateSocket)) return stateSocket;
+    const stateSocket = typeof state.socket === 'string' ? brokerEndpointPath(state.socket) : null;
+    if (stateSocket) return stateSocket;
   } catch {
     // Broker state is optional outside host-admitted sessions.
   }
@@ -162,7 +189,7 @@ function shellPath(value: string): string {
 type ProofCommandResult = { command: string; ok: boolean; stdout: string; stderr: string };
 
 const SELF_EXPANSION_PROOF_CONCURRENCY = 8;
-const SELF_EXPANSION_PROOF_GLOBAL_BUDGET_MS = 105000;
+const SELF_EXPANSION_PROOF_GLOBAL_BUDGET_MS = 180000;
 const SELF_EXPANSION_PROOF_DEADLINE_SAFETY_MS = 3000;
 const PROOF_OUTPUT_MAX_BYTES = 32 * 1024 * 1024;
 
@@ -204,8 +231,9 @@ function proofCommandPriority(command: string): number {
     ['self-evolution-mcp-tool', 4],
     ['codex-entrypoint-contract', 5],
     ['atomic-exec-readonly-usability', 6],
-    ['property-gate', 7],
-    ['formal-gate', 8],
+    ['atomic-exec-output-compact', 7],
+    ['property-gate', 8],
+    ['formal-gate', 9],
   ];
   return priorities.find(([needle]) => command.includes(needle))?.[1] ?? 100;
 }
@@ -337,11 +365,16 @@ function runProofCommandViaBroker(command: string, cwd: string, timeoutMs: numbe
         finish({ command, ok: false, stdout, stderr: 'proof broker returned unparseable output: ' + String(stdout).slice(0, 300) });
         return;
       }
+      const replyStderr = String(reply.stderr ?? reply.error ?? stderr ?? '');
+      if (reply.brokerUnreachable === true || /broker unreachable/i.test(replyStderr)) {
+        finish(null);
+        return;
+      }
       finish({
         command,
         ok: reply.ok === true && reply.exitCode === 0,
         stdout: String(reply.stdout ?? ''),
-        stderr: String(reply.stderr ?? reply.error ?? stderr ?? ''),
+        stderr: replyStderr,
       });
     });
     child.stdin?.end(JSON.stringify(req));
@@ -390,27 +423,23 @@ function selfExpansionProofTempRoot(hostRoot: string): string {
 }
 
 function selfExpansionProofSuppressesNestedBroker(command: string): boolean {
-  return [
-    'atomic-exec-readonly-usability.proof.mjs',
-    'atomic-exec-sandbox.proof.mjs',
-    'external-runtime-denial.proof.mjs',
-    'mcp-launcher-host-boundary.proof.mjs',
-    'compiled-mcp-y-certificate.proof.mjs',
-  ].some((name) => command.includes(name));
+  return command.includes('effect-metadata-mode.proof.mjs');
 }
 
 function selfExpansionHostProofEnv(socket: string, cwd: string, command: string): NodeJS.ProcessEnv {
   const hostRoot = selfExpansionProofRoot();
   const tempRoot = selfExpansionProofTempRoot(hostRoot);
   const suppressNestedBroker = selfExpansionProofSuppressesNestedBroker(command);
+  const inheritBroker = !suppressNestedBroker;
   return {
     ...process.env,
     ATOMIC_BUILD_BROKER: '1',
-    ATOMIC_HOST_ATOMIC_ONLY: suppressNestedBroker ? '' : process.env.ATOMIC_HOST_ATOMIC_ONLY ?? '1',
-    ATOMIC_HOST_SANDBOX: suppressNestedBroker ? '' : process.env.ATOMIC_HOST_SANDBOX ?? 'macos-sandbox-exec',
+    ATOMIC_HOST_ATOMIC_ONLY: inheritBroker ? process.env.ATOMIC_HOST_ATOMIC_ONLY || '1' : '',
+    ATOMIC_HOST_SANDBOX: inheritBroker ? process.env.ATOMIC_HOST_SANDBOX || 'macos-sandbox-exec' : '',
     ATOMIC_HOST_WRITE_ROOT: hostRoot,
-    ATOMIC_EXEC_BROKER_SOCKET: suppressNestedBroker ? '' : socket,
-    ATOMIC_EXEC_BROKER_ROOT: hostRoot,
+    ATOMIC_EXEC_BROKER_SOCKET: inheritBroker ? socket : '',
+    ATOMIC_EXEC_BROKER_ROOT: '',
+    ATOMIC_ALLOW_NESTED_PROOF_BROKER: inheritBroker ? '1' : '',
     CODEX_HOME: process.env.CODEX_HOME ?? path.join(hostRoot, '.codex'),
     CODEX_PROJECT_DIR: hostRoot,
     TMPDIR: tempRoot,
@@ -424,11 +453,21 @@ function selfExpansionProofCwd(): string {
 }
 
 function selfExpansionProofMustRunHostDirect(command: string): boolean {
+  if (
+    command.includes('atomic-exec-') ||
+    command.includes('effect-metadata-mode.proof.mjs')
+  ) {
+    return true;
+  }
   return [
     'build.mjs',
-    'atomic-exec-readonly-usability.proof.mjs',
-    'atomic-exec-sandbox.proof.mjs',
     'external-runtime-denial.proof.mjs',
+    'behavior-contract-gate.proof.mjs',
+    'security-monotonicity.proof.mjs',
+    'self-expansion-validator-lattice.proof.mjs',
+    'self-evolution-lesson-rules.proof.mjs',
+    'proof-chain.proof.mjs',
+    'y-certificate-mandatory-domains.proof.mjs',
     'mcp-launcher-host-boundary.proof.mjs',
     'codex-entrypoint-contract.proof.mjs',
     'compiled-mcp-y-certificate.proof.mjs',
@@ -1013,7 +1052,17 @@ function enforceSecurityMonotonicity(options: { ratchet?: boolean } = {}): void 
 
 function isEphemeralSelfExpansionEffect(file: string): boolean {
   const rel = file.replaceAll('\\', '/');
-  return rel.startsWith('.proof-') || rel.startsWith('.atomic-exec-sandbox-') || rel.startsWith('.external-runtime-denial-');
+  return (
+    rel.startsWith('.proof-') ||
+    rel.startsWith('.smoke-') ||
+    rel.startsWith('.self-expansion-') ||
+    rel.startsWith('.whole-host-launcher-allowed-') ||
+    rel.startsWith('.atomic-exec-sandbox-') ||
+    rel.startsWith('.external-runtime-denial-') ||
+    rel.startsWith('atomic-exec-broker-file-') ||
+    /^\.atomic-edit\.\d+\.\d+\.tmp$/.test(rel) ||
+    rel.startsWith('property-gate-')
+  );
 }
 
 function selfRootRelativeEffectPath(file: string): string {
@@ -1026,11 +1075,24 @@ function isSelfEvolutionArchiveEffect(file: string): boolean {
   return file === SELF_EVOLUTION_ARCHIVE_REL;
 }
 
+function isLauncherDurabilityMetadataEffect(file: string): boolean {
+  return (
+    file.startsWith('dist-lkg/') ||
+    file.startsWith('dist.broken-last/') ||
+    file === 'launcher-blessed/.blessed-manifest.json'
+  );
+}
+
 function assertNoUnexpectedSelfExpansionEffects(effects: FileEffect[], applied: { file: string }[]): void {
   const requested = new Set(applied.map((entry) => selfRootRelativeEffectPath(entry.file)));
   const unexpected = effects.filter((effect) => {
     const rel = selfRootRelativeEffectPath(effect.file);
-    return !requested.has(rel) && !isEphemeralSelfExpansionEffect(rel) && !isSelfEvolutionArchiveEffect(rel);
+    return (
+      !requested.has(rel) &&
+      !isEphemeralSelfExpansionEffect(rel) &&
+      !isSelfEvolutionArchiveEffect(rel) &&
+      !isLauncherDurabilityMetadataEffect(rel)
+    );
   });
   if (unexpected.length > 0) {
     throw new Error(

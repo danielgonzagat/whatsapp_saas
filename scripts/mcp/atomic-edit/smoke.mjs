@@ -18,6 +18,9 @@ const check = (name, cond) => {
   if (cond) { pass += 1; console.log('  PASS  ' + name); }
   else { fail += 1; console.log('  FAIL  ' + name); }
 };
+const markIsolatedAtomicRoot = (root) => {
+  fs.mkdirSync(path.join(root, '.atomic', 'traces'), { recursive: true });
+};
 
 // 1) build
 const b = spawnSync(process.execPath, [path.join(dir, 'build.mjs')], { stdio: 'inherit' });
@@ -123,7 +126,10 @@ fs.writeFileSync(path.join(work, 'a.rs'), 'async fn f() {\n    fetch(1);\n}\n');
 const awRs = await rpc(21, 'tools/call', { name: 'atomic_add_await_to_call', arguments: { file: 'a.rs', callee: 'fetch' } });
 check('atomic_add_await_to_call on Rust appends .await', !!awRs && /fetch\(1\)\.await/.test(fs.readFileSync(path.join(work, 'a.rs'), 'utf8')));
 
-srv.kill('SIGKILL');
+try { srv.stdin.end(); } catch { /* best effort */ }
+try { srv.kill('SIGTERM'); } catch {
+  try { srv.kill('SIGKILL'); } catch { /* host may deny child signals after checks pass */ }
+}
 
 // proof-chain CLI over the traces this run produced (.atomic/traces in `work`)
 const cli = (args) => spawnSync(process.execPath, [path.join(dir, 'atomic-cli.mjs'), ...args], { cwd: work, encoding: 'utf8' });
@@ -169,6 +175,7 @@ check('admitted gate persisted to the self-expansion registry', !fs.existsSync(r
 
 // governance installer: `atomic init` detects a repo + generates config
 const initDir = fs.mkdtempSync(path.join(os.tmpdir(), 'atomic-init-'));
+markIsolatedAtomicRoot(initDir);
 fs.writeFileSync(path.join(initDir, 'a.py'), 'def f():\n    return 1\n');
 const ini = spawnSync(process.execPath, [path.join(dir, 'atomic-cli.mjs'), 'init'], { cwd: initDir, encoding: 'utf8' });
 check('atomic init generates governance config', ini.status === 0 &&
@@ -177,6 +184,7 @@ check('atomic init generates governance config', ini.status === 0 &&
 
 // MCP trust firewall: scan this server's descriptors, approve, then poisoning -> RED
 const mcpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'atomic-mcp-'));
+markIsolatedAtomicRoot(mcpDir);
 const serverCmd = `${process.execPath} ${path.join(dir, 'dist', 'server.js')}`;
 const mcp = (args) => spawnSync(process.execPath, [path.join(dir, 'atomic-cli.mjs'), 'mcp', ...args, '--cmd', serverCmd], { cwd: mcpDir, encoding: 'utf8' });
 const scan = mcp(['scan']);

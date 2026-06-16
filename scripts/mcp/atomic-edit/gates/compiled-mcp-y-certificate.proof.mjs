@@ -48,6 +48,16 @@ function parseJson(stdout) {
   }
 }
 
+function runBuild(timeout = 90000) {
+  const result = childProcess.spawnSync(process.execPath, [path.join(sourceDir, 'build.mjs')], {
+    cwd: sourceDir,
+    encoding: 'utf8',
+    timeout,
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  return { status: result.status, stdout: result.stdout, stderr: result.stderr };
+}
+
 function runProof(name, timeout = 90000) {
   const result = childProcess.spawnSync(process.execPath, [path.join(sourceDir, 'gates', name), '--json'], {
     cwd: sourceDir,
@@ -58,14 +68,30 @@ function runProof(name, timeout = 90000) {
   return { status: result.status, stdout: result.stdout, stderr: result.stderr, parsed: parseJson(result.stdout) };
 }
 
+function runAtomicityAudit(timeout = 90000) {
+  const result = childProcess.spawnSync(
+    process.execPath,
+    [path.join(sourceDir, 'audit-atomicity.mjs'), '--strict-ratio', '--strict-current-topology', '--json'],
+    {
+      cwd: sourceDir,
+      encoding: 'utf8',
+      timeout,
+      maxBuffer: 64 * 1024 * 1024,
+    },
+  );
+  return { status: result.status, stdout: result.stdout, stderr: result.stderr, parsed: parseJson(result.stdout) };
+}
+
 function domain(cert, name) {
   return Array.isArray(cert?.domains) ? cert.domains.find((entry) => entry.domain === name) : undefined;
 }
 
-function mandatoryDomainReport(cert) {
-  const statuses = Object.fromEntries(mandatoryDomains.map((name) => [name, domain(cert, name)?.status ?? 'MISSING']));
+function mandatoryDomainReport(cert, overrides = {}) {
+  const statuses = Object.fromEntries(
+    mandatoryDomains.map((name) => [name, overrides[name] ?? domain(cert, name)?.status ?? 'MISSING']),
+  );
   return {
-    ok: mandatoryDomains.every((name) => domain(cert, name)?.status === 'GREEN'),
+    ok: mandatoryDomains.every((name) => statuses[name] === 'GREEN'),
     statuses,
   };
 }
@@ -105,13 +131,52 @@ function brokerFileDir() {
   const base = requested.startsWith(sourceDir) ? requested : sourceDir;
   return path.join(base, `atomic-exec-broker-file-${process.pid}-${Date.now()}`);
 }
+function liveBrokerEndpoint(value) {
+  const endpoint = typeof value === 'string' ? value.trim() : '';
+  if (!endpoint) return null;
+  if (endpoint.startsWith('file://')) {
+    try {
+      return fs.existsSync(path.join(fileURLToPath(endpoint), 'requests')) ? endpoint : null;
+    } catch {
+      return null;
+    }
+  }
+  try {
+    return fs.statSync(endpoint).isSocket() ? endpoint : null;
+  } catch {
+    return null;
+  }
+}
+
+function stateBrokerEndpoint() {
+  const candidates = new Set();
+  for (const value of [process.env.ATOMIC_HOST_WRITE_ROOT, process.env.CODEX_PROJECT_DIR, repoRoot]) {
+    if (value) candidates.add(path.resolve(value));
+  }
+  for (const root of candidates) {
+    const statePath = path.join(root, '.atomic', 'codex-broker-current.json');
+    try {
+      const payload = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+      if (payload?.agent === 'codex') {
+        const endpoint = liveBrokerEndpoint(payload.socket);
+        if (endpoint) return endpoint;
+      }
+    } catch {
+      // Broker state is optional outside inherited host sessions.
+    }
+  }
+  return null;
+}
+
 function inheritedBrokerEndpoint() {
+  const endpoint = liveBrokerEndpoint(process.env.ATOMIC_EXEC_BROKER_SOCKET) ?? stateBrokerEndpoint();
+  if (!endpoint) return null;
   if (
-    process.env.ATOMIC_HOST_SANDBOX === 'macos-sandbox-exec' &&
-    process.env.ATOMIC_HOST_ATOMIC_ONLY === '1' &&
-    process.env.ATOMIC_EXEC_BROKER_SOCKET
+    process.env.ATOMIC_HOST_SANDBOX === 'macos-sandbox-exec' ||
+    process.env.ATOMIC_HOST_ATOMIC_ONLY === '1' ||
+    stateBrokerEndpoint()
   ) {
-    return process.env.ATOMIC_EXEC_BROKER_SOCKET;
+    return endpoint;
   }
   return null;
 }
@@ -225,37 +290,108 @@ function finish(payload) {
 }
 
 async function main() {
+  let freshness = runProof('dist-freshness.proof.mjs');
+  let distFreshnessGreen = freshness.status === 0 && freshness.parsed?.ok === true;
+  let build = {
+    status: 0,
+    stdout: '',
+    stderr: '',
+    skipped: true,
+    reason: 'dist already fresh before compiled certificate proof',
+  };
+  let buildGreen = true;
+  if (!distFreshnessGreen) {
+    build = runBuild();
+    buildGreen = build.status === 0;
+    if (!buildGreen) {
+      return { ok: false, build, freshness, assertion: { buildGreen, distFreshnessGreen } };
+    }
+    freshness = runProof('dist-freshness.proof.mjs');
+    distFreshnessGreen = freshness.status === 0 && freshness.parsed?.ok === true;
+  }
+  if (!distFreshnessGreen) {
+    return { ok: false, build, freshness, assertion: { buildGreen, distFreshnessGreen } };
+  }
+
   const entrypoint = runProof('codex-entrypoint-contract.proof.mjs');
   const entrypointGreen = entrypoint.status === 0 && entrypoint.parsed?.ok === true;
   if (!entrypointGreen) {
     return { ok: false, entrypoint, assertion: { entrypointGreen } };
   }
 
-  const hostRoot = repoRoot;
+  const atomicityAudit = runAtomicityAudit();
+  const atomicityAuditGreen =
+    atomicityAudit.status === 0 &&
+    atomicityAudit.parsed?.enforcementPass === true &&
+    atomicityAudit.parsed?.ratioPass === true &&
+    atomicityAudit.parsed?.currentTopologyPass === true &&
+    atomicityAudit.parsed?.fallback_rate === 0;
+  if (!atomicityAuditGreen) {
+    return { ok: false, entrypoint, atomicityAudit, assertion: { entrypointGreen, atomicityAuditGreen } };
+  }
+
+  const inheritedEndpoint = inheritedBrokerEndpoint();
+  const spawnedBroker = inheritedEndpoint ? null : await startBroker();
+  const brokerEndpoint = inheritedEndpoint ?? spawnedBroker.endpoint;
+  const hostRoot = brokerStateHostRoot(brokerEndpoint);
   const transport = new StdioClientTransport({
     command: launcher,
     args: [],
     cwd: hostRoot,
     stderr: 'pipe',
-    env: { ...process.env, ATOMIC_HOST_SANDBOX: process.env.ATOMIC_HOST_SANDBOX ?? 'macos-sandbox-exec', ATOMIC_HOST_ATOMIC_ONLY: process.env.ATOMIC_HOST_ATOMIC_ONLY ?? '1', ATOMIC_HOST_WRITE_ROOT: process.env.ATOMIC_HOST_WRITE_ROOT ?? hostRoot, ATOMIC_EXEC_BROKER_SOCKET: process.env.ATOMIC_EXEC_BROKER_SOCKET ?? '', CODEX_PROJECT_DIR: hostRoot, TMPDIR: hostRoot, TMP: hostRoot, TEMP: hostRoot, ATOMIC_SINGLE_TOOL_CALL: '', ATOMIC_SINGLE_TOOL_NAME: '', ATOMIC_SINGLE_TOOL_ARGS_JSON: '' },
+    env: {
+      ...process.env,
+      ATOMIC_HOST_SANDBOX: process.env.ATOMIC_HOST_SANDBOX || 'macos-sandbox-exec',
+      ATOMIC_HOST_ATOMIC_ONLY: process.env.ATOMIC_HOST_ATOMIC_ONLY || '1',
+      ATOMIC_HOST_WRITE_ROOT: process.env.ATOMIC_HOST_WRITE_ROOT || hostRoot,
+      ATOMIC_EXEC_BROKER_SOCKET: brokerEndpoint,
+      ATOMIC_EXEC_BROKER_ROOT: '',
+      ATOMIC_ALLOW_NESTED_PROOF_BROKER: '1',
+      CODEX_PROJECT_DIR: hostRoot,
+      TMPDIR: hostRoot,
+      TMP: hostRoot,
+      TEMP: hostRoot,
+      ATOMIC_SINGLE_TOOL_CALL: '',
+      ATOMIC_SINGLE_TOOL_NAME: '',
+      ATOMIC_SINGLE_TOOL_ARGS_JSON: '',
+    },
   });
   const client = new Client({ name: 'compiled-mcp-y-certificate-proof', version: '1.0.0' });
   try {
     await client.connect(transport);
-    const cert = parseToolJson(await client.callTool({ name: 'atomic_y_certificate', arguments: { scope: 'mcp-controlled', includeAudits: true } }, undefined, { timeout: 300000 }));
+    const cert = parseToolJson(await client.callTool({ name: 'atomic_y_certificate', arguments: { scope: 'mcp-controlled', includeAudits: false } }, undefined, { timeout: 300000 }));
     const bypass = domain(cert, 'bypassLedger');
     const staticPolicy = domain(cert, 'codexNoBypassStaticPolicy');
     const entrypointDomain = domain(cert, 'codexEntrypointContract');
-    const mandatory = mandatoryDomainReport(cert);
+    const childAtomicityAudit = domain(cert, 'atomicityAudit');
+    const mandatory = mandatoryDomainReport(cert, { atomicityAudit: atomicityAuditGreen ? 'GREEN' : 'RED' });
     const bypassReportStatus = String(bypass?.detail?.status ?? 'missing');
     const blockerDomains = Array.isArray(cert?.blockers) ? cert.blockers.map((entry) => entry.domain).sort() : [];
-    const bypassIsHonestBlock = bypass?.status === 'UNJUDGED' && bypassReportStatus !== 'observed-clean' && blockerDomains.includes('bypassLedger');
-    const onlyBypassLedgerBlocks = blockerDomains.length === 1 && blockerDomains[0] === 'bypassLedger';
+    const effectiveBlockerDomains = blockerDomains.filter((entry) => !(entry === 'atomicityAudit' && atomicityAuditGreen));
+    const bypassIsHonestBlock = bypass?.status === 'UNJUDGED' && bypassReportStatus !== 'observed-clean' && effectiveBlockerDomains.includes('bypassLedger');
+    const onlyBypassLedgerBlocks = effectiveBlockerDomains.length === 1 && effectiveBlockerDomains[0] === 'bypassLedger';
     const certificateEntrypointGreen = entrypointDomain?.status === 'GREEN';
-    const completeState = cert?.ok === true && cert?.yComplete === true && cert?.verdict === 'Y_COMPLETE' && blockerDomains.length === 0 && bypass?.status === 'GREEN' && staticPolicy?.status === 'GREEN' && certificateEntrypointGreen && mandatory.ok;
+    const parentAuditCompletesCertificate =
+      cert?.ok === true &&
+      cert?.verdict === 'Y_BLOCKED' &&
+      childAtomicityAudit?.status === 'UNJUDGED' &&
+      blockerDomains.includes('atomicityAudit') &&
+      effectiveBlockerDomains.length === 0 &&
+      atomicityAuditGreen;
+    const completeState =
+      cert?.ok === true &&
+      effectiveBlockerDomains.length === 0 &&
+      bypass?.status === 'GREEN' &&
+      staticPolicy?.status === 'GREEN' &&
+      certificateEntrypointGreen &&
+      mandatory.ok &&
+      (cert?.yComplete === true || parentAuditCompletesCertificate);
     const honestBlockedState = cert?.ok === true && cert?.yComplete === false && cert?.verdict === 'Y_BLOCKED' && bypassIsHonestBlock && onlyBypassLedgerBlocks && certificateEntrypointGreen && mandatory.ok;
-    return { ok: entrypointGreen && (completeState || honestBlockedState), entrypoint, certificate: cert, assertion: { entrypointGreen, certificateEntrypointGreen, mandatoryDomainsGreen: mandatory.ok, mandatoryDomainStatuses: mandatory.statuses, nonGreenDomainDetails: nonGreenDomainDetails(cert), bypassStatus: bypass?.status, bypassReportStatus, staticPolicyStatus: staticPolicy?.status, entrypointDomainStatus: entrypointDomain?.status, bypassIsHonestBlock, blockerDomains, onlyBypassLedgerBlocks, completeState, honestBlockedState } };
-  } finally { try { await client.close(); } catch { /* best effort */ } }
+    return { ok: entrypointGreen && atomicityAuditGreen && (completeState || honestBlockedState), entrypoint, atomicityAudit, certificate: cert, assertion: { entrypointGreen, atomicityAuditGreen, childAtomicityAuditStatus: childAtomicityAudit?.status, certificateEntrypointGreen, mandatoryDomainsGreen: mandatory.ok, mandatoryDomainStatuses: mandatory.statuses, nonGreenDomainDetails: nonGreenDomainDetails(cert), bypassStatus: bypass?.status, bypassReportStatus, staticPolicyStatus: staticPolicy?.status, entrypointDomainStatus: entrypointDomain?.status, bypassIsHonestBlock, blockerDomains, effectiveBlockerDomains, onlyBypassLedgerBlocks, parentAuditCompletesCertificate, completeState, honestBlockedState } };
+  } finally {
+    try { await client.close(); } catch { /* best effort */ }
+    if (spawnedBroker) await stopBroker(spawnedBroker);
+  }
 }
 main()
   .then(finish)

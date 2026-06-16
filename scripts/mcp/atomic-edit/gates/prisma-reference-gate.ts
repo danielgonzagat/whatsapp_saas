@@ -398,15 +398,40 @@ const prismaReferenceGate: GateModule = {
     const note =
       'every type-erased Prisma reference (prismaAny.<model> accessor; $queryRaw FROM/JOIN "<table>") resolves to a model/@@map in schema.prisma';
 
-    // ── load the closed dictionary; no schema → UNJUDGED (never red-by-guess) ──
+    const introducesPrismaSurface = (): boolean => {
+      for (const rel of ctx.changedFiles) {
+        if (!this.appliesTo(rel)) continue;
+        if (rel === SCHEMA_REL) continue;
+        const body = ctx.readFile(rel);
+        if (body === null) continue;
+        const prior = ctx.priorOf(rel);
+        const beforeAccessorTokens = new Set(collectPrismaAnyRefs(prior).map((r) => r.token));
+        if (collectPrismaAnyRefs(body).some((r) => !beforeAccessorTokens.has(r.token))) return true;
+        const beforeRaw = collectRawTableRefs(prior);
+        const beforeTableTokens = new Set(beforeRaw.refs.map((r) => `${r.table}|${r.token}`));
+        const cur = collectRawTableRefs(body);
+        if (cur.dynamicRegions > 0) return true;
+        if (cur.refs.some((r) => !beforeTableTokens.has(`${r.table}|${r.token}`))) return true;
+      }
+      return false;
+    };
+
+    // ── load the closed dictionary. No schema is only UNJUDGED when this write
+    // introduces a Prisma/SQL claim that needs that dictionary. For ordinary TS
+    // modules, this domain is not applicable and must not block macro convergence.
     const rawSchema = ctx.readFile(SCHEMA_REL);
     if (rawSchema === null) {
-      return { gate: this.name, green: true, reds: [], note, unjudged: true };
+      return introducesPrismaSurface()
+        ? { gate: this.name, green: true, reds: [], note, unjudged: true }
+        : { gate: this.name, green: true, reds: [], note };
     }
     const index = parseSchema(rawSchema);
-    // A degenerate/empty schema parse is also undecidable rather than mass-red.
+    // A degenerate/empty schema parse is also undecidable rather than mass-red,
+    // but only for writes that actually need the Prisma dictionary.
     if (index.accessors.size === 0 && index.tables.size === 0) {
-      return { gate: this.name, green: true, reds: [], note, unjudged: true };
+      return introducesPrismaSurface()
+        ? { gate: this.name, green: true, reds: [], note, unjudged: true }
+        : { gate: this.name, green: true, reds: [], note };
     }
 
     const reds: GateRed[] = [];

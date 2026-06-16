@@ -2,7 +2,7 @@
 import * as childProcess from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { removePath, writeText } from './broker-fixture-io.mjs';
@@ -11,7 +11,10 @@ import { inheritedBrokerSocketFromState } from './proof-host-env.mjs';
 const jsonMode = process.argv.includes('--json');
 const sourceDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = path.resolve(sourceDir, '..', '..', '..');
-const launcher = path.resolve(sourceDir, '..', 'atomic-edit-mcp-launcher.sh');
+const launcher = path.resolve(sourceDir, '..', 'atomic-edit-mcp-launcher.sh')
+
+const launcherImpl = path.resolve(sourceDir, '..', 'atomic-edit-mcp-launcher-impl.sh');
+const launcherSupervisor = path.join(sourceDir, 'launcher-supervisor.mjs');;
 const brokerScript = path.join(sourceDir, 'atomic-exec-broker.mjs');
 const brokerState = path.join(repoRoot, '.atomic', 'codex-broker-current.json');
 
@@ -20,17 +23,32 @@ function record(results, name, ok, detail) {
 }
 
 function launcherSourceAssertions() {
-  const source = fs.readFileSync(launcher, 'utf8');
+  const bootstrapSource = fs.readFileSync(launcher, 'utf8');
+  const implSource = fs.readFileSync(launcherImpl, 'utf8');
+  const supervisorSource = fs.readFileSync(launcherSupervisor, 'utf8');
+  const source = [bootstrapSource, implSource, supervisorSource].join('\n');
   return {
     definesManifestFresh: source.includes('\nmanifest_fresh() {\n'),
-    checksDistFreshnessManifest: source.includes('node "${SRC_DIR}/dist-freshness.mjs" --check'),
+    checksDistFreshnessManifest: source.includes('"${NODE_BIN}" "${SRC_DIR}/dist-freshness.mjs" --check'),
     rebuildsWhenSourceOrManifestStale: source.includes('if needs_build || ! manifest_fresh; then'),
     refusesStillStaleAfterRebuild: source.includes('REFUSED: dist/server.js is stale after rebuild') && source.includes('exit 81'),
     capturesFindErrorsWithoutStdout: source.includes('-newer "${DIST}" -print -quit 2>&1'),
-    capturesFreshnessErrorsWithoutStdout: source.includes('freshness_output="$(node "${SRC_DIR}/dist-freshness.mjs" --check 2>&1)"'),
+    capturesFreshnessErrorsWithoutStdout: source.includes('freshness_output="$("${NODE_BIN}" "${SRC_DIR}/dist-freshness.mjs" --check 2>&1)"'),
     avoidsSandboxUnsafeDevNull: !source.includes('/dev/null'),
-    selfHostsUnhostedCodexMcp:
-      source.includes('ATOMIC_EDIT_MCP_SELF_HOSTED') && source.includes('codex-atomic-host-launcher.mjs'),
+    definesNodeResolver: source.includes('\nresolve_node_bin() {\n'),
+    usesResolvedNodeForInlineScripts: source.includes('"${NODE_BIN}" -e'),
+    usesResolvedNodeForServerExec: source.includes('exec "${NODE_BIN}" "${DIST}"'),
+    preservesCallerWorkspaceRoot:
+      source.includes('CALLER_WORKSPACE_ROOT="$(pwd -P)"') &&
+      source.includes('export ATOMIC_WORKSPACE_ROOT="${ATOMIC_WORKSPACE_ROOT:-${CALLER_WORKSPACE_ROOT}}"'),
+    requiresOptInBrokerStateRecovery:
+      source.includes('ATOMIC_RECOVER_HOST_FROM_STATE') &&
+      source.includes('if [[ "${ATOMIC_RECOVER_HOST_FROM_STATE:-}" == "1" ]]; then'),
+    routesUnhostedCodexMcpThroughHostLauncher:
+      source.includes('codex-atomic-host-launcher.mjs') &&
+      source.includes('REFUSED: atomic MCP requires the atomic host sandbox boundary') &&
+      source.includes('explicit degraded-mode development/CI admission') &&
+      !source.includes('host sandbox not available — auto-enabling SELF-HOSTED mode'),
   };
 }
 
@@ -40,7 +58,8 @@ function inheritedBrokerSocket() {
 }
 
 function startBroker() {
-  const socketPath = path.join(sourceDir, `.proof-broker-${process.pid}-${Date.now()}.sock`);
+  const brokerDir = path.join(sourceDir, `.proof-broker-${process.pid}-${Date.now()}`);
+  const socketPath = pathToFileURL(brokerDir).href;
   const proc = childProcess.spawn(process.execPath, [brokerScript, socketPath], {
     cwd: repoRoot,
     env: { ...process.env, ATOMIC_EXEC_BROKER_ROOT: repoRoot },
@@ -56,7 +75,7 @@ function startBroker() {
   });
   return new Promise((resolve, reject) => {
     const deadline = setTimeout(() => {
-      proc.kill('SIGTERM');
+      try { proc.kill('SIGTERM'); } catch { /* best effort */ }
       reject(new Error(`broker did not become ready: stdout=${stdout} stderr=${stderr}`));
     }, 5000);
     proc.on('exit', (code) => {
@@ -66,10 +85,10 @@ function startBroker() {
       }
     });
     const poll = setInterval(() => {
-      if (stdout.includes('ATOMIC_BROKER_READY') && fs.existsSync(socketPath)) {
+      if (stdout.includes('ATOMIC_BROKER_READY') && fs.existsSync(path.join(brokerDir, 'requests'))) {
         clearTimeout(deadline);
         clearInterval(poll);
-        resolve({ proc, socketPath, stdout, stderr });
+        resolve({ proc, socketPath, cleanupPath: brokerDir, stdout, stderr });
       }
     }, 25);
   });
@@ -129,17 +148,29 @@ async function unhostedLauncherStartsMcp() {
       ATOMIC_HOST_WRITE_ROOT: '',
       ATOMIC_EXEC_BROKER_SOCKET: '',
       ATOMIC_EDIT_MCP_SELF_HOSTED: '',
+      ATOMIC_EDIT_ALLOW_SELF_HOSTED: '',
       CODEX_PROJECT_DIR: '',
       TMPDIR: '',
       TMP: '',
       TEMP: '',
     },
   });
-  const client = new Client({ name: 'mcp-launcher-unhosted-self-host-proof', version: '1.0.0' });
+  const client = new Client({ name: 'mcp-launcher-unhosted-fail-closed-proof', version: '1.0.0' });
   try {
     await client.connect(transport);
     const listed = await client.listTools();
-    return { ok: listed.tools?.some((tool) => tool.name === 'atomic_y_certificate') === true, tools: listed.tools?.length ?? 0 };
+    return {
+      ok: listed.tools?.some((tool) => tool.name === 'atomic_y_certificate') === true,
+      mode: 'host-routed',
+      tools: listed.tools?.length ?? 0,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      ok: /Connection closed|REFUSED|requires the atomic host sandbox boundary|ATOMIC_EXEC_BROKER_SOCKET/.test(message),
+      mode: 'fail-closed',
+      error: message,
+    };
   } finally {
     try {
       await client.close();
@@ -184,6 +215,7 @@ async function stateFileLauncherStartsMcp(brokerSocket) {
       ATOMIC_HOST_ATOMIC_ONLY: '',
       ATOMIC_HOST_WRITE_ROOT: '',
       ATOMIC_EXEC_BROKER_SOCKET: '',
+      ATOMIC_RECOVER_HOST_FROM_STATE: '1',
       CODEX_PROJECT_DIR: '',
       TMPDIR: '',
       TMP: '',
@@ -238,7 +270,7 @@ async function main() {
       : null;
     let socketReady = false;
     if (inheritedSocketForHost.startsWith('file://')) {
-      socketReady = fs.existsSync(path.join(inheritedSocketForHost.slice(7), 'requests'));
+      socketReady = fs.existsSync(path.join(fileURLToPath(inheritedSocketForHost), 'requests'));
     } else {
       try {
         socketReady = fs.statSync(inheritedSocketForHost).isSocket();
@@ -303,7 +335,7 @@ async function main() {
   }
 
   const unhosted = await unhostedLauncherStartsMcp();
-  record(results, "unhosted MCP launcher self-hosts and starts the Atomic server", unhosted.ok === true, unhosted);
+  record(results, "unhosted MCP launcher routes through host or refuses fail-closed", unhosted.ok === true, unhosted);
 
   const noBroker = withBrokerStateSuppressed(() =>
     childProcess.spawnSync(launcher, [], {
@@ -348,8 +380,12 @@ async function main() {
       { ...recovered, inheritedBroker: Boolean(inherited) },
     );
   } finally {
-    if (!inherited && broker?.proc) broker.proc.kill('SIGTERM');
-    if (!inherited && broker?.socketPath) fs.rmSync(broker.socketPath, { force: true });
+    if (!inherited && broker?.proc) {
+      try { broker.proc.kill('SIGTERM'); } catch { /* best effort */ }
+    }
+    if (!inherited && (broker?.cleanupPath || broker?.socketPath)) {
+      fs.rmSync(broker.cleanupPath ?? broker.socketPath, { recursive: true, force: true });
+    }
   }
 
   return { ok: results.every((entry) => entry.ok), results };

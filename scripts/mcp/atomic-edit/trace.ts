@@ -274,8 +274,22 @@ export function chainHashOf(
 }
 
 /** Absolute path to the chain-head marker (.atomic/HEAD) for a given trace's repo. */
+function proofLedgerRootFor(trace: AtomicEditTrace): string {
+  const repoRoot = traceRepoRoot(trace);
+  const configured = process.env.ATOMIC_PROOF_LEDGER_ROOT?.trim();
+  if (!configured) return repoRoot;
+  const repoKey = crypto.createHash('sha256').update(repoRoot).digest('hex').slice(0, 16);
+  return path.join(path.resolve(configured), repoKey);
+}
+
+function receiptPathFor(repoRoot: string, absPath: string): string {
+  const rel = path.relative(repoRoot, absPath);
+  if (rel && !rel.startsWith('..') && !path.isAbsolute(rel)) return rel;
+  return absPath;
+}
+
 function headPathFor(trace: AtomicEditTrace): string {
-  return path.join(traceRepoRoot(trace), '.atomic', 'HEAD');
+  return path.join(proofLedgerRootFor(trace), '.atomic', 'HEAD');
 }
 
 /** Build a trace from what every mutation site already has in hand. */
@@ -409,7 +423,11 @@ function traceRepoRoot(trace: AtomicEditTrace): string {
 }
 
 function traceDirFor(trace: AtomicEditTrace): string {
-  return path.join(traceRepoRoot(trace), '.atomic', 'traces');
+  return path.join(proofLedgerRootFor(trace), '.atomic', 'traces');
+}
+
+function snapshotDirFor(trace: AtomicEditTrace): string {
+  return path.join(proofLedgerRootFor(trace), '.atomic', 'snapshots');
 }
 
 /**
@@ -460,14 +478,14 @@ export function writeTrace(
     let snapshotPath: string | undefined;
     if (content) {
       try {
-        const snapDir = path.join(repoRoot, '.atomic', 'snapshots');
+        const snapDir = snapshotDirFor(trace);
         fs.mkdirSync(snapDir, { recursive: true });
         const snap = buildSnapshot(trace.file, content.before, content.after);
         const snapAbs = path.join(snapDir, `${trace.operationId}.snap.json`);
         const snapTmp = `${snapAbs}.tmp`;
         fs.writeFileSync(snapTmp, JSON.stringify(snap, null, 2));
         fs.renameSync(snapTmp, snapAbs);
-        snapshotPath = path.relative(repoRoot, snapAbs);
+        snapshotPath = receiptPathFor(repoRoot, snapAbs);
         trace.snapshotPath = snapshotPath;
       } catch {
         // Snapshot is an ENHANCEMENT to the proof; its failure never blocks the edit.
@@ -493,7 +511,7 @@ export function writeTrace(
     fs.writeFileSync(headTmp, trace.chainHash);
     fs.renameSync(headTmp, headPath);
 
-    return { tracePath: path.relative(repoRoot, abs), chainHash: trace.chainHash, snapshotPath };
+    return { tracePath: receiptPathFor(repoRoot, abs), chainHash: trace.chainHash, snapshotPath };
   } catch (e) {
     return { traceWriteError: e instanceof Error ? e.message : String(e) };
   }

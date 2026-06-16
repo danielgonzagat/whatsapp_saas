@@ -41,7 +41,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, realpathSync, rmSync, mkdirSync } from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -170,13 +170,14 @@ function startBroker() {
   } catch {
     /* best-effort */
   }
-  const socket = path.join(atomicDir, `claude-broker-${process.pid}.sock`);
+  const brokerDir = path.join(atomicDir, `claude-broker-${process.pid}`);
+  const socket = pathToFileURL(brokerDir).href;
   try {
-    rmSync(socket, { force: true });
+    rmSync(brokerDir, { recursive: true, force: true });
   } catch {
     /* fresh */
   }
-  const child = spawn('node', [BROKER, socket], {
+  const child = spawn(process.execPath, [BROKER, socket], {
     cwd: REPO_ROOT,
     env: { ...process.env, ATOMIC_EXEC_BROKER_ROOT: REPO_ROOT },
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -193,7 +194,7 @@ function startBroker() {
       if (String(d).includes('ATOMIC_BROKER_READY') && !settled) {
         settled = true;
         clearTimeout(to);
-        resolve({ child, socket });
+        resolve({ child, socket, cleanupPath: brokerDir });
       }
     });
     child.stderr.on('data', (d) => process.stderr.write('[atomic-exec-broker] ' + d));
@@ -261,7 +262,7 @@ else if (argv[0].startsWith('-')) command = [launchCmd, ...argv];
 else command = argv;
 
 startBroker()
-  .then(({ child: brokerChild, socket }) => {
+  .then(({ child: brokerChild, socket, cleanupPath }) => {
     process.stderr.write(
       `[claude-atomic-host-launcher] host sandbox ACTIVE — writes restricted to ` +
         `repo(${REPO_ROOT}) + TMPDIR + ~/.claude; network ALLOWED (LLM transport); ` +
@@ -281,7 +282,7 @@ startBroker()
         /* best-effort */
       }
       try {
-        rmSync(socket, { force: true });
+        rmSync(cleanupPath ?? socket, { recursive: true, force: true });
       } catch {
         /* best-effort */
       }

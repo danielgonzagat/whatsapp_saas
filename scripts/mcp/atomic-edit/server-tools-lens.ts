@@ -17,7 +17,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { REPO_ROOT, resolveSafeTarget } from './guard.js';
+import { activeWorkspaceRoot, resolveSafeTarget } from './guard.js';
 import { readUtf8, sha256, targetDetails } from './server-helpers-io.js';
 import { ok, fail } from './server-helpers-result.js';
 import { runLens } from './gates/lens.js';
@@ -94,6 +94,17 @@ function directTextFileLabel(relPath: string): string | null {
 
 function directStructuralLanguageName(ext: string): string {
   return DIRECT_STRUCTURAL_LABELS[ext] ?? ext.slice(1).toUpperCase();
+}
+
+function workspaceDisplayPath(absPath: string, fallbackRelPath: string): string {
+  const activeRel = path.relative(activeWorkspaceRoot(), absPath).split(path.sep).join('/');
+  if (activeRel === '') return '.';
+  if (!activeRel.startsWith('..') && !path.isAbsolute(activeRel)) return activeRel;
+  return fallbackRelPath || '.';
+}
+
+function activeScopeRoot(): string {
+  return activeWorkspaceRoot();
 }
 
 /**
@@ -440,10 +451,12 @@ export function registerToolsLens(server: McpServer): void {
     async (a) => {
       try {
         const scope = a.scope && a.scope.trim().length > 0 ? a.scope : '.';
-        const report = await runLens(REPO_ROOT, scope);
+        const scopeRoot = activeScopeRoot();
+        const report = await runLens(scopeRoot, scope);
         return ok({
           ok: true,
           scope,
+          scopeRoot,
           scanned: report.scanned,
           ran: report.ran,
           unjudgedCount: report.unjudged.length,
@@ -493,13 +506,14 @@ export function registerToolsLens(server: McpServer): void {
     },
     async (a) => {
       try {
-        const { absPath, relPath, repoRoot } = resolveSafeTarget(a.file);
+        const { absPath, relPath } = resolveSafeTarget(a.file);
+        const displayPath = workspaceDisplayPath(absPath, relPath);
         const content = readUtf8(absPath);
         const window = atomicReadWindow(content, a.startLine, a.endLine);
-        const report = await runLens(repoRoot, relPath);
-        const directPositiveReason = report.scanned === 0 ? directNonSourcePositiveReason(relPath, content) : null;
+        const report = await runLens(activeScopeRoot(), displayPath);
+        const directPositiveReason = report.scanned === 0 ? directNonSourcePositiveReason(displayPath, content) : null;
         const directNegativeReason =
-          report.scanned === 0 && !directPositiveReason ? directNonSourceNegativeReason(relPath, content) : null;
+          report.scanned === 0 && !directPositiveReason ? directNonSourceNegativeReason(displayPath, content) : null;
         const zones = directPositiveReason
           ? [
               {
@@ -512,16 +526,16 @@ export function registerToolsLens(server: McpServer): void {
             ]
           : directNegativeReason
             ? [directNegativeReadZone(window.byteStart, window.byteEnd, directNegativeReason)]
-            : atomicReadZones(report, relPath, window.byteStart, window.byteEnd);
+            : atomicReadZones(report, displayPath, window.byteStart, window.byteEnd);
         const lensNegativeEvidence = report.negativeByteEvidence.filter(
           (entry) =>
-            entry.file === relPath &&
+            entry.file === displayPath &&
             entry.classification === 'negative' &&
             entry.byteEnd > window.byteStart &&
             entry.byteStart < window.byteEnd,
         );
         const directNegativeEvidence = directNegativeReason
-          ? [directNegativeByteEvidence(relPath, window.byteStart, window.byteEnd, directNegativeReason, window.text)]
+          ? [directNegativeByteEvidence(displayPath, window.byteStart, window.byteEnd, directNegativeReason, window.text)]
           : [];
         const negativeEvidence = [...lensNegativeEvidence, ...directNegativeEvidence];
         const verdict =
@@ -539,8 +553,8 @@ export function registerToolsLens(server: McpServer): void {
         const includeContent = a.includeContent ?? true;
         return ok({
           ok: true,
-          file: relPath,
-          ...targetDetails(absPath, relPath),
+          file: displayPath,
+          ...targetDetails(absPath, displayPath),
           sha256: sha256(content),
           bytes: byteLength(content),
           lineCount: atomicReadLineRanges(content).length,
@@ -576,7 +590,7 @@ export function registerToolsLens(server: McpServer): void {
                 : ['file readable, but no declared source-language battery could classify these bytes as positive']
               : report.unjudged.slice(0, 50),
           summaryForHuman:
-            `Atomic read ${relPath} L${window.startLine}-L${window.endLine}: ${verdict}; ` +
+            `Atomic read ${displayPath} L${window.startLine}-L${window.endLine}: ${verdict}; ` +
             `${zones.length} classified byte zone(s), ${negativeEvidence.length} negative evidence record(s).`,
         });
       } catch (e) {
@@ -618,9 +632,10 @@ export function registerToolsLens(server: McpServer): void {
         const maxFiles = a.maxFiles ?? 200;
         const maxEvidence = a.maxEvidencePerFile ?? 5;
         const includePositiveFiles = a.includePositiveFiles ?? true;
-        const files = enumerateScope(REPO_ROOT, scope);
-        const unjudgedDirectFiles = enumerateDirectNonSourceFiles(REPO_ROOT, scope).filter((file) => !files.includes(file));
-        const report = await runLens(REPO_ROOT, scope);
+        const scopeRoot = activeScopeRoot();
+        const files = enumerateScope(scopeRoot, scope);
+        const unjudgedDirectFiles = enumerateDirectNonSourceFiles(scopeRoot, scope).filter((file) => !files.includes(file));
+        const report = await runLens(scopeRoot, scope);
         type ScanVerdict = 'HAS_NEGATIVE_BYTES' | 'POSITIVE_WITHIN_DECLARED_BATTERY' | 'UNJUDGED';
         type ScanAction = 'repair-negative-byte' | 'extend-declared-battery' | 'preserve-positive-byte';
         const summaries: Array<{
@@ -654,7 +669,7 @@ export function registerToolsLens(server: McpServer): void {
         for (const rel of files) {
           let content: string;
           try {
-            content = readUtf8(path.resolve(REPO_ROOT, rel));
+            content = readUtf8(path.resolve(scopeRoot, rel));
           } catch {
             continue;
           }
@@ -707,7 +722,7 @@ export function registerToolsLens(server: McpServer): void {
         for (const rel of unjudgedDirectFiles) {
           let content: string;
           try {
-            content = readUtf8(path.resolve(REPO_ROOT, rel));
+            content = readUtf8(path.resolve(scopeRoot, rel));
           } catch {
             continue;
           }
@@ -847,14 +862,15 @@ export function registerToolsLens(server: McpServer): void {
     async (a) => {
       try {
         const scope = a.scope && a.scope.trim().length > 0 ? a.scope : '.';
-        const files = enumerateScope(REPO_ROOT, scope);
+        const scopeRoot = activeScopeRoot();
+        const files = enumerateScope(scopeRoot, scope);
         const matches: { file: string; line: number; column: number; callee: string; arg0: string | null }[] = [];
         const judgedFiles: string[] = [];
         const unjudged: string[] = [];
         for (const rel of files) {
           let content: string;
           try {
-            content = readUtf8(path.resolve(REPO_ROOT, rel));
+            content = readUtf8(path.resolve(scopeRoot, rel));
           } catch {
             unjudged.push(rel);
             continue;
@@ -910,7 +926,8 @@ export function registerToolsLens(server: McpServer): void {
     async (a) => {
       try {
         const scope = a.scope && a.scope.trim().length > 0 ? a.scope : '.';
-        const res = await repairScope(REPO_ROOT, scope);
+        const scopeRoot = activeScopeRoot();
+        const res = await repairScope(scopeRoot, scope);
         return ok({
           ok: true,
           scope,

@@ -27,7 +27,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { REPO_ROOT } from './guard.js';
+import { REPO_ROOT, activeWorkspaceRoot, bindWorkspaceRoot, workspaceBindingStatus } from './guard.js';
 import { ok, fail } from './server-helpers-result.js';
 import {
   assertCompleteEffectSnapshot,
@@ -118,10 +118,11 @@ function temporalSnapshots(sess: Session, commitEffects: FileEffect[], committed
 function normalizeSessionScope(paths: string[] | undefined): string[] | undefined {
   if (!paths || paths.length === 0) return undefined;
   const scoped = new Set<string>();
+  const baseRoot = activeWorkspaceRoot();
   for (const raw of paths) {
     const trimmed = raw.trim();
     if (!trimmed) throw new Error('atomic_session_begin paths cannot contain empty entries');
-    const abs = path.resolve(REPO_ROOT, trimmed);
+    const abs = path.isAbsolute(trimmed) ? path.resolve(trimmed) : path.resolve(baseRoot, trimmed);
     const rel = path.relative(REPO_ROOT, abs);
     if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) {
       throw new Error(`atomic_session_begin refused out-of-repo scope path: ${raw}`);
@@ -131,7 +132,45 @@ function normalizeSessionScope(paths: string[] | undefined): string[] | undefine
   return [...scoped].sort();
 }
 
+
 export function registerToolsSession(server: McpServer): void {
+  server.registerTool(
+    'atomic_workspace_bind',
+    {
+      title: 'Bind this MCP process to one workspace root before any relative read/edit/exec',
+      description:
+        'Declares the workspace root for this Atomic MCP process. After binding, every relative path in read/edit/exec tools resolves against this workspace, and absolute paths outside it are refused. Use this as the first ALL-IN worker preflight in linked worktrees or sub-project directories.',
+      inputSchema: {
+        root: z.string().min(1).describe('absolute workspace directory, or repo-relative directory to bind'),
+      },
+    },
+    async (a) => {
+      try {
+        const status = bindWorkspaceRoot(a.root);
+        return ok({ ok: true, ...status, summary: `atomic workspace bound to ${status.activeWorkspaceRoot}` });
+      } catch (e) {
+        return fail(`atomic_workspace_bind failed: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    },
+  );
+
+  server.registerTool(
+    'atomic_workspace_status',
+    {
+      title: 'Report the active Atomic workspace binding',
+      description:
+        'Read-only preflight: shows the repo root and active workspace root used for relative paths. If declaredBy is repo-root-default, linked-worktree workers should call atomic_workspace_bind before task work.',
+      inputSchema: {},
+    },
+    async () => {
+      try {
+        return ok({ ok: true, ...workspaceBindingStatus() });
+      } catch (e) {
+        return fail(`atomic_workspace_status failed: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    },
+  );
+
   server.registerTool(
     'atomic_session_begin',
     {

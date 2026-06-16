@@ -12,9 +12,10 @@
  * to .atomic/exec-ledger.jsonl, secret redaction on every returned/traced
  * surface, and a hard timeout.
  *
- * Envelope (STRICT): every command is classified. A small allowlist of read-only
- * commands may run with trace-only receipts; every mutable-or-unknown command
- * requires proveEffect:true before it is spawned. rollbackOnNonZero is recovery
+ * commands may run with trace-only receipts; mutable-or-unknown commands
+ * auto-run byte-effect proof when proveEffect is omitted, and are refused only
+ * when proveEffect:false is explicit. rollbackOnNonZero is recovery after proof,
+ * never admission. Known
  * after proof, never admission. Known
  * network/database/provider/remote-host/package/runtime-control commands are
  * external-or-host-effect and refused before spawn, because a filesystem snapshot
@@ -23,20 +24,23 @@
  *
  * Honest scope: on hosts with sandbox-exec, spawned commands run under a deny-by-default
  * OS sandbox. Trace-only commands get no file-write capability; byte-effect-proven
- * commands get write access only to cwd, with TMPDIR/TMP/TEMP forced to cwd so temp
- * bytes stay inside the captured effect root. When the whole Claude/Codex host is already
+ * commands get write access only to the captured effect root plus an Atomic-owned
+ * scratch temp root; TMPDIR/TMP/TEMP and common cache envs point at scratch so
+ * runtime caches do not become product byte effects. When the whole Claude/Codex host is already
  * inside the atomic host sandbox, nested sandbox-exec is impossible on macOS, so every
  * command is delegated to the out-of-sandbox broker (atomic-exec-broker.mjs), which
- * re-applies a fresh per-command sandbox-exec (network denied, writes confined to cwd) —
+ * re-applies a fresh per-command sandbox-exec (network denied, writes confined to effectRoot plus Atomic-owned scratch) —
  * host mode is therefore byte-for-byte as contained as non-host mode, and fails closed
  * if the broker socket is absent. On hosts without any sandbox, commands fail closed.
  */
 import * as childProcess from 'node:child_process';
+import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { REPO_ROOT, resolveAllowedRootForAbsolutePath, isProtectedRelative } from './guard.js';
+import { REPO_ROOT, activeWorkspaceRoot, assertInsideActiveWorkspace, resolveAllowedRootForAbsolutePath, isProtectedRelative } from './guard.js';
 import { ok, fail } from './server-helpers-result.js';
 import {
   assertCompleteEffectSnapshot,
@@ -147,7 +151,7 @@ const FORBIDDEN: { re: RegExp; reason: string }[] = [
  * each against isProtectedRelative. Best-effort (a shell can obfuscate), so it is
  * defense-in-depth, not a guarantee.
  */
-function protectedWriteTarget(cmd: string): string | null {
+function protectedWriteTarget(cmd: string, cwd: string): string | null {
   const candidates: string[] = [];
   for (const m of cmd.matchAll(/>>?\s*["']?([^\s"'|;&<>]+)/g)) candidates.push(m[1]);
   for (const m of cmd.matchAll(/\btee\b\s+(?:-\S+\s+)*["']?([^\s"'|;&]+)/g)) candidates.push(m[1]);
@@ -168,9 +172,11 @@ function protectedWriteTarget(cmd: string): string | null {
     if (args.length) candidates.push(args[args.length - 1]); // dest = last positional
   }
   for (const cand of candidates) {
-    const abs = path.isAbsolute(cand) ? cand : path.resolve(REPO_ROOT, cand);
-    const rel = path.relative(REPO_ROOT, abs).split(path.sep).join('/');
-    if (rel.startsWith('..')) continue; // outside the repo — not a repo-protected file
+    const abs = path.isAbsolute(cand) ? cand : path.resolve(cwd, cand);
+    const root = resolveAllowedRootForAbsolutePath(abs);
+    if (!root) continue; // outside an Atomic-controlled root; sandbox/effect proof will handle it.
+    const rel = path.relative(root, abs).split(path.sep).join('/');
+    if (rel.startsWith('..')) continue;
     const hit = isProtectedRelative(rel);
     if (hit) return `${rel} (matches \"${hit}\")`;
   }
@@ -189,21 +195,23 @@ export function protectedEffectHits(rootAbs: string, effects: { file: string }[]
   const hits: string[] = [];
   for (const e of effects) {
     const abs = path.isAbsolute(e.file) ? e.file : path.resolve(rootAbs, e.file);
-    const rel = path.relative(REPO_ROOT, abs).split(path.sep).join('/');
-    if (rel.startsWith('..')) continue; // outside the repo — not a repo-protected file
+    const root = resolveAllowedRootForAbsolutePath(abs) ?? rootAbs;
+    const rel = path.relative(root, abs).split(path.sep).join('/');
+    if (rel.startsWith('..')) continue; // outside the resolved root - not a repo-protected file
     const hit = isProtectedRelative(rel);
     if (hit) hits.push(`${rel} (matches "${hit}")`);
   }
   return hits;
 }
 
-function guardCommand(cmd: string): GuardVerdict {
+function guardCommand(cmd: string, cwd: string): GuardVerdict {
+  if (!cmd || typeof cmd !== 'string') return { allowed: false, reason: 'command is required' };
   const c = cmd.trim();
   if (!c) return { allowed: false, reason: 'empty command' };
   for (const f of FORBIDDEN) {
     if (f.re.test(c)) return { allowed: false, reason: f.reason };
   }
-  const prot = protectedWriteTarget(c);
+  const prot = protectedWriteTarget(c, cwd);
   if (prot) {
     return {
       allowed: false,
@@ -246,6 +254,11 @@ const EXTERNAL_OR_HOST_EFFECT_COMMANDS: { re: RegExp; reason: string }[] = [
       'package manager install/publish/deploy can mutate network, caches, hooks, or registries',
   },
   {
+    re: /^(?:npx|bunx|pnpm\s+dlx|yarn\s+dlx)\b/,
+    reason:
+      'package runner can download and execute registry code or mutate caches outside the filesystem byte snapshot',
+  },
+  {
     re: /\b(?:fetch\s*\(|XMLHttpRequest|https?:\/\/|node:https|node:http)\b/,
     reason: 'inline runtime network access is not a filesystem byte effect',
   },
@@ -265,12 +278,14 @@ const READ_ONLY_COMMANDS: RegExp[] = [
 ];
 
 function externalEffectReason(cmd: string): string | null {
+  if (!cmd || typeof cmd !== 'string') return null;
   const c = cmd.trim();
   const hit = EXTERNAL_OR_HOST_EFFECT_COMMANDS.find((entry) => entry.re.test(c));
   return hit?.reason ?? null;
 }
 
 function classifyCommand(cmd: string): CommandClass {
+  if (!cmd || typeof cmd !== 'string') return 'mutable-or-unknown';
   const c = cmd.trim();
   if (READ_ONLY_COMMANDS.some((re) => re.test(c))) return 'read-only';
   return externalEffectReason(c) ? 'external-or-host-effect' : 'mutable-or-unknown';
@@ -278,23 +293,81 @@ function classifyCommand(cmd: string): CommandClass {
 
 const SANDBOX_EXEC = '/usr/bin/sandbox-exec';
 
+let sandboxExecUsableCache: boolean | null = null;
 function sandboxExecAvailable(): boolean {
   return fs.existsSync(SANDBOX_EXEC);
+}
+
+function sandboxExecUsable(): boolean {
+  if (!sandboxExecAvailable()) return false;
+  if (sandboxExecUsableCache !== null) return sandboxExecUsableCache;
+  const probe = childProcess.spawnSync(
+    SANDBOX_EXEC,
+    ['-p', atomicSandboxProfile(null, null), '/bin/bash', '-c', 'true'],
+    {
+      cwd: REPO_ROOT,
+      encoding: 'utf8',
+      timeout: 5000,
+      maxBuffer: 1024 * 1024,
+    },
+  );
+  const stderr = String(probe.stderr ?? '');
+  sandboxExecUsableCache =
+    probe.status === 0 && !/sandbox_apply:\s*Operation not permitted/i.test(stderr);
+  return sandboxExecUsableCache;
 }
 
 function sandboxPath(value: string): string {
   return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
-function atomicSandboxProfile(writeRoot: string | null): string {
-  const writeRule = writeRoot
-    ? '(allow file-write* (subpath "' + sandboxPath(fs.realpathSync(writeRoot)) + '"))'
-    : null;
+function sandboxWriteRules(...roots: Array<string | null>): string[] {
+  const writeRoots = new Set<string>();
+  for (const root of roots) {
+    if (!root) continue;
+    writeRoots.add(fs.realpathSync(root));
+  }
+  return [...writeRoots].map(
+    (root) => '(allow file-write* (subpath "' + sandboxPath(root) + '"))',
+  );
+}
+
+function createSandboxTempRoot(): string {
+  const base = path.join(fs.realpathSync(os.tmpdir()), 'atomic-exec');
+  fs.mkdirSync(base, { recursive: true, mode: 0o700 });
+  return fs.mkdtempSync(path.join(base, 'run-'));
+}
+
+function removeSandboxTempRoot(tempRoot: string | null): void {
+  if (!tempRoot) return;
+  try {
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  } catch {
+    // Best-effort cleanup only; command result/proof is not rewritten by cleanup failure.
+  }
+}
+
+function sandboxTempEnv(tempRoot: string | null): Record<string, string> {
+  if (!tempRoot) return {};
+  return {
+    TMPDIR: tempRoot,
+    TMP: tempRoot,
+    TEMP: tempRoot,
+    NODE_COMPILE_CACHE: path.join(tempRoot, 'node-compile-cache'),
+    XDG_CACHE_HOME: path.join(tempRoot, 'xdg-cache'),
+    npm_config_cache: path.join(tempRoot, 'npm-cache'),
+    YARN_CACHE_FOLDER: path.join(tempRoot, 'yarn-cache'),
+    PNPM_HOME: path.join(tempRoot, 'pnpm-home'),
+    PIP_CACHE_DIR: path.join(tempRoot, 'pip-cache'),
+  };
+}
+
+function atomicSandboxProfile(writeRoot: string | null, tempRoot: string | null = null): string {
   return [
     '(version 1)',
     '(deny default)',
     '(allow file-read*)',
-    ...(writeRule ? [writeRule] : []),
+    ...sandboxWriteRules(writeRoot, tempRoot),
     '(allow file-write* (literal "/dev/null"))',
     '(allow file-write* (literal "/dev/stdout"))',
     '(allow file-write* (literal "/dev/stderr"))',
@@ -305,13 +378,17 @@ function atomicSandboxProfile(writeRoot: string | null): string {
   ].join(' ');
 }
 
-function sandboxReceipt(active: boolean, writeRoot: string | null): Record<string, unknown> {
+function sandboxReceipt(
+  active: boolean,
+  writeRoot: string | null,
+  tempRoot: string | null = null,
+): Record<string, unknown> {
   return {
     active,
     engine: active ? 'macos-sandbox-exec' : 'none',
     writeRoot,
-    fileWrites: active ? (writeRoot ? 'cwd-only' : 'denied') : 'unguarded',
-    tempRoot: active && writeRoot ? writeRoot : null,
+    fileWrites: active ? (writeRoot ? 'effectRoot+scratch-only' : 'denied') : 'unguarded',
+    tempRoot: active ? tempRoot : null,
     network: active ? 'denied' : 'unguarded',
   };
 }
@@ -333,9 +410,47 @@ function hostSandboxWriteRoot(): string | null {
   }
 }
 
-/** Path to a running out-of-sandbox broker socket, or null if none is configured. */
+/** Path to a running out-of-sandbox broker socket, or null if none is configured/live. */
+function brokerEndpointIfPresent(endpoint: string): string | null {
+  const trimmed = endpoint.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith('file://')) {
+    const dir = trimmed.slice('file://'.length);
+    const markerFile = path.join(dir, 'broker.json');
+    if (!fs.existsSync(path.join(dir, 'requests')) || !fs.existsSync(path.join(dir, 'responses'))) return null;
+    try {
+      const marker = JSON.parse(fs.readFileSync(markerFile, 'utf8')) as { pid?: unknown; protocol?: unknown };
+      const pid = typeof marker.pid === 'number' && Number.isInteger(marker.pid) ? marker.pid : 0;
+      if (marker.protocol !== 'atomic-file-broker-v1' || pid <= 1) return null;
+      try {
+        process.kill(pid, 0);
+      } catch (error) {
+        if (!(error && typeof error === 'object' && 'code' in error && error.code === 'EPERM')) return null;
+      }
+      return trimmed;
+    } catch {
+      return null;
+    }
+  }
+  try {
+    return fs.statSync(trimmed).isSocket() ? trimmed : null;
+  } catch {
+    return null;
+  }
+}
+
 function brokerSocketPath(): string | null {
-  return process.env.ATOMIC_EXEC_BROKER_SOCKET || null;
+  const envEndpoint = brokerEndpointIfPresent(process.env.ATOMIC_EXEC_BROKER_SOCKET ?? '');
+  if (envEndpoint) return envEndpoint;
+  const statePath = path.join(REPO_ROOT, '.atomic', 'codex-broker-current.json');
+  try {
+    const state = JSON.parse(fs.readFileSync(statePath, 'utf8')) as { socket?: unknown };
+    const stateEndpoint = typeof state.socket === 'string' ? brokerEndpointIfPresent(state.socket) : null;
+    if (stateEndpoint) return stateEndpoint;
+  } catch {
+    // Broker state is optional outside host-admitted Codex sessions.
+  }
+  return null;
 }
 
 /**
@@ -343,13 +458,16 @@ function brokerSocketPath(): string | null {
  * (cwd-only writes, network denied), but the OS sandbox is applied by the
  * out-of-sandbox broker per command rather than by a nested sandbox-exec.
  */
-function brokerSandboxReceipt(writeRoot: string | null): Record<string, unknown> {
+function brokerSandboxReceipt(
+  writeRoot: string | null,
+  tempRoot: string | null = null,
+): Record<string, unknown> {
   return {
     active: true,
     engine: 'macos-broker-sandbox',
     writeRoot,
-    fileWrites: writeRoot ? 'cwd-only' : 'denied',
-    tempRoot: writeRoot,
+    fileWrites: writeRoot ? 'effectRoot+scratch-only' : 'denied',
+    tempRoot,
     network: 'denied',
     nestedSandbox: false,
     broker: true,
@@ -384,6 +502,18 @@ function hostVisibleBrokerPath(target: string): string {
   return path.resolve(target);
 }
 
+function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
+function commandWithScratchEnv(command: string, tempRoot: string | null): string {
+  if (!tempRoot) return command;
+  const assignments = Object.entries(sandboxTempEnv(tempRoot))
+    .map(([key, value]) => `export ${key}=${shellQuote(value)}`)
+    .join('; ');
+  return `${assignments}; ${command}`;
+}
+
 interface SpawnLikeResult {
   error: (Error & { code?: string }) | null;
   status: number | null;
@@ -395,7 +525,7 @@ interface SpawnLikeResult {
 /**
  * Delegate a command to the out-of-sandbox broker via the synchronous client
  * bridge. The broker re-applies a fresh per-command sandbox-exec (network denied,
- * writes confined to effectRoot). Returns a spawnSync-shaped result so the
+ * writes confined to effectRoot plus Atomic-owned scratch). Returns a spawnSync-shaped result so the
  * caller's downstream handling is identical. Fails closed (error set) when the
  * broker socket is unset or the broker is unreachable.
  */
@@ -403,6 +533,7 @@ function runViaBroker(
   command: string,
   cwd: string,
   effectRoot: string | null,
+  tempRoot: string | null,
   timeoutMs: number,
   env: Record<string, string> | undefined,
   stdin: string | undefined,
@@ -411,7 +542,7 @@ function runViaBroker(
   if (!sockPath) {
     return {
       error: new Error(
-        'host-sandboxed atomic_exec requires a running broker (ATOMIC_EXEC_BROKER_SOCKET is unset). ' +
+        'host-sandboxed atomic_exec requires a live running broker (ATOMIC_EXEC_BROKER_SOCKET is unset, stale, or unreachable). ' +
           'Relaunch Claude through scripts/mcp/atomic-edit/claude-atomic-host-launcher.mjs, which starts the broker.',
       ),
       status: null,
@@ -425,10 +556,12 @@ function runViaBroker(
   );
   const brokerCwd = hostVisibleBrokerPath(cwd);
   const brokerEffectRoot = effectRoot ? hostVisibleBrokerPath(effectRoot) : null;
+  const brokerTempRoot = tempRoot ? hostVisibleBrokerPath(tempRoot) : null;
   const reqObj: Record<string, unknown> = {
-    command,
+    command: commandWithScratchEnv(command, brokerTempRoot),
     cwd: brokerCwd,
     effectRoot: brokerEffectRoot,
+    tempRoot: brokerTempRoot,
     timeoutMs,
   };
   if (env) reqObj.env = env;
@@ -499,19 +632,193 @@ function redactSecrets(s: string): string {
     .replace(/eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{6,}/g, '[REDACTED_JWT]');
 }
 
-function capText(s: string, max = 60000): { text: string; truncated: boolean } {
+const EXEC_OUTPUT_RETURN_LIMIT = 12000;
+
+function digestText(s: string): string {
+  return crypto.createHash('sha256').update(s).digest('hex');
+}
+
+function byteLength(s: string): number {
+  return Buffer.byteLength(s, 'utf8');
+}
+
+function capText(s: string, max = EXEC_OUTPUT_RETURN_LIMIT): { text: string; truncated: boolean } {
   if (s.length <= max) return { text: s, truncated: false };
-  return { text: s.slice(0, max) + `\n…[truncated ${s.length - max} chars]`, truncated: true };
+  return { text: s.slice(0, max) + `\n...[truncated ${s.length - max} chars]`, truncated: true };
+}
+
+interface ExecOutputSummary {
+  readonly kind: 'tap-green' | 'tap-red';
+  readonly returnedStdoutBytes: number;
+  readonly fullStdoutBytes: number;
+  readonly fullStdoutSha256: string;
+  readonly fullStdoutLines: number;
+  readonly tests: number | null;
+  readonly pass: number | null;
+  readonly fail: number | null;
+  readonly durationMs: number | null;
+  readonly failureLines?: readonly string[];
+}
+
+function tapNumber(stdout: string, field: string): number | null {
+  const match = stdout.match(new RegExp(`^# ${field}\\s+(\\d+(?:\\.\\d+)?)$`, 'm'));
+  if (!match) return null;
+  const value = Number(match[1]);
+  return Number.isFinite(value) ? value : null;
+}
+
+function isLikelyTestCommand(command: string): boolean {
+  const c = command.trim();
+  return (
+    /\b(?:npm|pnpm|yarn|bun)\s+(?:run\s+)?test\b/.test(c) ||
+    /\bnode\b[\s\S]*\s--test(?:\s|$)/.test(c) ||
+    /\bvitest\b/.test(c)
+  );
+}
+
+const TAP_FAILURE_LINE_LIMIT = 80;
+const TAP_FAILURE_LINE_CHAR_LIMIT = 280;
+
+function capFailureLine(line: string): string {
+  if (line.length <= TAP_FAILURE_LINE_CHAR_LIMIT) return line;
+  const omitted = line.length - TAP_FAILURE_LINE_CHAR_LIMIT;
+  return `${line.slice(0, TAP_FAILURE_LINE_CHAR_LIMIT)}...[truncated ${omitted} chars]`;
+}
+
+function compactFailingTapLines(stdoutFull: string, stderrFull: string): string[] {
+  const lines = `${stdoutFull}\n${stderrFull}`.split(/\r?\n/);
+  const picked: string[] = [];
+  let suppressed = 0;
+  let includeDiagnosticLines = 0;
+  let lastSubtest: string | null = null;
+
+  const remember = (line: string) => {
+    if (picked.length < TAP_FAILURE_LINE_LIMIT) {
+      picked.push(capFailureLine(line.trimEnd()));
+      return;
+    }
+    suppressed += 1;
+  };
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (/^# Subtest:/.test(trimmed)) {
+      lastSubtest = line;
+      continue;
+    }
+
+    if (/^not ok\b/.test(trimmed)) {
+      if (lastSubtest) remember(lastSubtest);
+      remember(line);
+      lastSubtest = null;
+      includeDiagnosticLines = 14;
+      continue;
+    }
+
+    if (
+      includeDiagnosticLines > 0 &&
+      (/^\s+(?:---|\.\.\.|location:|failureType:|error:|code:|name:|expected:|actual:|operator:|stack:)(?:\s|$)/.test(
+        line,
+      ) ||
+        /^\s+at\b/.test(line))
+    ) {
+      remember(line);
+      includeDiagnosticLines -= 1;
+      continue;
+    }
+
+    if (/^#\s*(?:fail|failure|error|not ok)\b/i.test(trimmed)) {
+      remember(line);
+      continue;
+    }
+
+    if (/\b(?:AssertionError|Error:|ERR_|expected:|actual:|operator:|location:)\b/.test(line)) {
+      remember(line);
+    }
+  }
+
+  if (suppressed > 0) {
+    picked.push(`[atomic_exec:test-summary] ${suppressed} additional failure line(s) suppressed`);
+  }
+  return picked;
+}
+
+function summarizeTestOutput(
+  command: string,
+  exitCode: number | null,
+  stdoutFull: string,
+  stderrFull: string,
+): { stdout: string; stderr: string; summary: ExecOutputSummary | null } {
+  if (!isLikelyTestCommand(command) || !stdoutFull.includes('TAP version 13')) {
+    return { stdout: stdoutFull, stderr: stderrFull, summary: null };
+  }
+
+  const fail = tapNumber(stdoutFull, 'fail');
+  const tests = tapNumber(stdoutFull, 'tests');
+  const pass = tapNumber(stdoutFull, 'pass');
+  const durationMs = tapNumber(stdoutFull, 'duration_ms');
+  const fullStdoutLines = stdoutFull.split(/\r?\n/).length;
+  const tapFooter = stdoutFull
+    .split(/\r?\n/)
+    .filter((line) => /^# (?:tests|suites|pass|fail|cancelled|skipped|todo|duration_ms)\b/.test(line))
+    .slice(-10);
+  const kind: ExecOutputSummary['kind'] = exitCode === 0 && (fail === null || fail === 0) ? 'tap-green' : 'tap-red';
+  const failureLines = kind === 'tap-red' ? compactFailingTapLines(stdoutFull, stderrFull) : [];
+  const summaryLines = [
+    kind === 'tap-green'
+      ? '[atomic_exec:test-summary] TAP test command exited 0; returning compact stdout.'
+      : `[atomic_exec:test-summary] TAP test command exited non-zero; returning compact failure stdout. exit=${
+          exitCode ?? 'unknown'
+        }`,
+    `tests=${tests ?? 'unknown'} pass=${pass ?? 'unknown'} fail=${fail ?? 'unknown'} duration_ms=${
+      durationMs ?? 'unknown'
+    }`,
+    ...tapFooter,
+  ];
+  if (kind === 'tap-red') {
+    summaryLines.push('[atomic_exec:test-summary] failing TAP excerpts:');
+    summaryLines.push(
+      ...(failureLines.length > 0
+        ? failureLines
+        : ['[atomic_exec:test-summary] no compact failure excerpt found; full output remains available by receipt hash']),
+    );
+  }
+  summaryLines.push(
+    `[atomic_exec:test-summary] full_stdout_sha256=${digestText(stdoutFull)} full_stdout_bytes=${byteLength(
+      stdoutFull,
+    )} full_stdout_lines=${fullStdoutLines}`,
+  );
+  const stdout = summaryLines.join('\n') + '\n';
+  return {
+    stdout,
+    stderr: stderrFull,
+    summary: {
+      kind,
+      returnedStdoutBytes: byteLength(stdout),
+      fullStdoutBytes: byteLength(stdoutFull),
+      fullStdoutSha256: digestText(stdoutFull),
+      fullStdoutLines,
+      tests,
+      pass,
+      fail,
+      durationMs,
+      failureLines: kind === 'tap-red' ? failureLines : undefined,
+    },
+  };
 }
 
 function resolveCwd(input?: string): string {
+  const baseRoot = activeWorkspaceRoot();
   const candidate = input
     ? path.isAbsolute(input)
-      ? input
-      : path.resolve(REPO_ROOT, input)
-    : REPO_ROOT;
+      ? path.resolve(input)
+      : path.resolve(baseRoot, input)
+    : baseRoot;
+  // Check allowed roots FIRST — paths in explicit roots are valid regardless
+  // of the active workspace. Only assert workspace containment as a fallback.
   const root = resolveAllowedRootForAbsolutePath(candidate);
   if (!root) {
+    assertInsideActiveWorkspace(candidate, 'exec cwd');
     throw new Error(
       `atomic_exec refused: cwd escapes allowed roots (${candidate}). Allowed = repo root + registered git worktrees.`,
     );
@@ -589,7 +896,7 @@ export function registerToolsExec(server: McpServer): void {
         'The universal computational-action operator: runs an arbitrary command line via /bin/bash -c, ' +
         'wrapped in the atomic envelope — a starting-directory guard (cwd must resolve inside the repo ' +
         'root / a registered git worktree), a host sandbox where available (macOS sandbox-exec: no writes ' +
-        'for trace-only commands; cwd-only writes for byte-effect-proven commands; network denied; ' +
+        'for trace-only commands; effectRoot+scratch-only writes for byte-effect-proven commands; network denied; ' +
         'host-launched mode delegates each command to the out-of-sandbox broker, which re-applies a fresh ' +
         'per-command sandbox-exec, allows read-only commands with no write permission, and fails closed if the broker socket is absent), plus a ' +
         'best-effort denylist (DEFENSE-IN-DEPTH — refuses git ' +
@@ -599,8 +906,10 @@ export function registerToolsExec(server: McpServer): void {
         'to .atomic/exec-ledger.jsonl, secret ' +
         'redaction on every returned/traced surface, and a hard timeout. Returns the REAL exit code (never ' +
         'fakes success): a non-zero exit comes back as {ok:false, exitCode, stdout, stderr}. Commands are ' +
-        'classified conservatively: read-only allowlisted commands may run trace-only, mutable-or-unknown ' +
-        'commands require proveEffect:true before spawn; rollbackOnNonZero is recovery after proof, never admission. host-mode read-only commands run trace-only through the broker no-write sandbox, and external-or-host-effect ' +
+        'classified conservatively: read-only allowlisted commands may run trace-only; mutable-or-unknown ' +
+        'commands auto-run byte-effect proof when proveEffect is omitted, or use explicit proveEffect:true; ' +
+        'explicit proveEffect:false is refused. rollbackOnNonZero is recovery after proof, never admission. ' +
+        'host-mode read-only commands run trace-only through the broker no-write sandbox, and external-or-host-effect ' +
         'commands (network/database/provider/remote-host/package/runtime-control) are refused because filesystem ' +
         'proof cannot approve external state. snapshot:true remains a ' +
         'tracked-content restore point only; byte-effect proof is the strict admission layer. Use this instead ' +
@@ -618,7 +927,7 @@ export function registerToolsExec(server: McpServer): void {
           .string()
           .optional()
           .describe(
-            'optional existing directory inside cwd that becomes the byte-effect snapshot root, sandbox write root, and TMPDIR for proveEffect commands; use for heavy validation outputs intentionally confined to a small writable root',
+            'optional existing directory inside cwd that becomes the byte-effect snapshot root and product write root for proveEffect commands; runtime temp/cache bytes are routed to an Atomic-owned scratch root outside this product effect root',
           ),
         timeoutMs: z
           .number()
@@ -651,10 +960,11 @@ export function registerToolsExec(server: McpServer): void {
           .boolean()
           .optional()
           .describe(
-            'govern the byte-EFFECT (the filesystem-effect substrate): snapshot the file-bytes under cwd before ' +
-              'the command, then report the EXACT per-file changes it made (modified/created/deleted, with char-level ' +
-              'diffs) and enable byte-exact, untracked-inclusive rollback — turns a shell command into a proven, ' +
-              'reversible transaction. Bounded (caps + skips node_modules/.git/dist); sets effect.limitReached on a cap.',
+            'MODEL USAGE: omit this field for normal npm test/typecheck/build and other validation commands; ' +
+              'atomic_exec auto-runs byte-effect proof when the command is mutable-or-unknown. Only pass true ' +
+              'when you explicitly need to force proof. Never pass false during normal work; false is reserved ' +
+              'for red-team refusal tests and will not run the command. Proof snapshots file bytes under cwd, ' +
+              'reports exact per-file changes, and records whether caps/skips made the proof incomplete.'
           ),
       },
     },
@@ -662,7 +972,7 @@ export function registerToolsExec(server: McpServer): void {
       const startedAt = Date.now();
       try {
         const cwd = resolveCwd(a.cwd);
-        const verdict = guardCommand(a.command);
+        const verdict = guardCommand(a.command, cwd);
         if (!verdict.allowed) {
           appendTrace({
             ts: startedAt,
@@ -707,9 +1017,11 @@ export function registerToolsExec(server: McpServer): void {
           return fail(`atomic_exec refused (host sandbox invalid): ${reason}`);
         }
         const needsEffectProof = commandClass === 'mutable-or-unknown';
-        if (needsEffectProof && !a.proveEffect) {
+        const proveEffectExplicitlySet = Object.prototype.hasOwnProperty.call(a, 'proveEffect');
+        const proveEffect = a.proveEffect === true || (needsEffectProof && !proveEffectExplicitlySet);
+        if (needsEffectProof && !proveEffect) {
           const reason =
-            'mutable-or-unknown command requires proveEffect:true under Y admission; rollbackOnNonZero is recovery, not proof, and unproven shell effects are not byte-correct-by-construction.';
+            'mutable-or-unknown command cannot run with explicit proveEffect:false under Y admission; omit proveEffect to auto-run byte-effect proof or set proveEffect:true. rollbackOnNonZero is recovery, not proof, and unproven shell effects are not byte-correct-by-construction.';
           appendTrace({
             ts: startedAt,
             kind: 'refused',
@@ -720,7 +1032,7 @@ export function registerToolsExec(server: McpServer): void {
           });
           return fail(`atomic_exec refused (effect proof required): ${reason}`);
         }
-        if (a.effectRoot && !a.proveEffect) {
+        if (a.effectRoot && !proveEffect) {
           const reason = 'effectRoot requires proveEffect:true so the declared write root is snapshotted and reversible.';
           appendTrace({
             ts: startedAt,
@@ -737,8 +1049,9 @@ export function registerToolsExec(server: McpServer): void {
         // Effect proof is only for commands admitted to write. Trace-only read
         // commands run under a no-write sandbox, so there is no write surface
         // to snapshot and no root-size cap to hide behind. With effectRoot,
-        // the sandbox and byte snapshot share the same smaller writable root.
-        const effectRoot: string | null = a.proveEffect ? resolveEffectRoot(cwd, a.effectRoot) : null;
+        // the product byte snapshot stays separate from the Atomic-owned
+        // scratch temp/cache root, so runtime caches do not become effects.
+        const effectRoot: string | null = proveEffect ? resolveEffectRoot(cwd, a.effectRoot) : null;
         const effectSnap: EffectSnapshot | null = effectRoot
           ? captureEffectSnapshot(effectRoot, {})
           : null;
@@ -751,23 +1064,21 @@ export function registerToolsExec(server: McpServer): void {
         const brokerSock = brokerSocketPath();
         if (hostSandbox && !brokerSock) {
           const reason =
-            'host-sandboxed atomic_exec requires a running broker (ATOMIC_EXEC_BROKER_SOCKET is unset). ' +
+            'host-sandboxed atomic_exec requires a live running broker (ATOMIC_EXEC_BROKER_SOCKET is unset, stale, or unreachable). ' +
             'Relaunch Claude through scripts/mcp/atomic-edit/claude-atomic-host-launcher.mjs, which starts the broker.';
           appendTrace({
-            ts: startedAt,
-            kind: 'refused',
-            reason,
-            commandClass,
-            command: redactSecrets(a.command),
-            cwd,
+            ts: startedAt, kind: 'refused', reason, commandClass,
+            command: redactSecrets(a.command), cwd,
           });
           return fail(`atomic_exec refused (broker required): ${reason}`);
         }
-        const sandboxActive = hostSandbox ? Boolean(brokerSock) : sandboxExecAvailable();
+        const directSandboxActive = sandboxExecUsable();
+        const useBroker = hostSandbox || (!directSandboxActive && Boolean(brokerSock));
+        const sandboxActive = useBroker ? Boolean(brokerSock) : directSandboxActive;
         if (!sandboxActive) {
           const reason =
             'atomic_exec requires a real process sandbox under Y admission; ' +
-            `${SANDBOX_EXEC} is not available on this host.`;
+            `${SANDBOX_EXEC} is unavailable or sandbox_apply is denied in this process, and no live broker endpoint was recovered.`;
           appendTrace({
             ts: startedAt,
             kind: 'refused',
@@ -779,36 +1090,38 @@ export function registerToolsExec(server: McpServer): void {
           return fail(`atomic_exec refused (sandbox unavailable): ${reason}`);
         }
         const sandboxWriteRoot = effectRoot;
-        const sandbox = hostSandbox
-          ? brokerSandboxReceipt(sandboxWriteRoot)
-          : sandboxReceipt(true, sandboxWriteRoot);
-        const sandboxEnv: Record<string, string> = {};
-        if (sandboxWriteRoot) {
-          sandboxEnv.TMPDIR = sandboxWriteRoot;
-          sandboxEnv.TMP = sandboxWriteRoot;
-          sandboxEnv.TEMP = sandboxWriteRoot;
-        }
-        const res: SpawnLikeResult = hostSandbox
-          ? runViaBroker(
-              a.command,
-              cwd,
-              effectRoot,
-              timeout,
-              { ...(a.env ?? {}), ...sandboxEnv },
-              a.stdin,
-            )
-          : (childProcess.spawnSync(
-              SANDBOX_EXEC,
-              ['-p', atomicSandboxProfile(sandboxWriteRoot), '/bin/bash', '-c', a.command],
-              {
+        const sandboxTempRoot = sandboxWriteRoot ? createSandboxTempRoot() : null;
+        const sandbox = useBroker
+          ? brokerSandboxReceipt(sandboxWriteRoot, sandboxTempRoot)
+          : sandboxReceipt(true, sandboxWriteRoot, sandboxTempRoot);
+        const sandboxEnv = sandboxTempEnv(sandboxTempRoot);
+        let res: SpawnLikeResult;
+        try {
+          res = useBroker
+            ? runViaBroker(
+                a.command,
                 cwd,
+                effectRoot,
+                sandboxTempRoot,
                 timeout,
-                encoding: 'utf8',
-                maxBuffer: 32 * 1024 * 1024,
-                env: { ...process.env, ...(a.env ?? {}), ...sandboxEnv },
-                ...(a.stdin !== undefined ? { input: a.stdin } : {}),
-              },
-            ) as unknown as SpawnLikeResult);
+                { ...(a.env ?? {}), ...sandboxEnv },
+                a.stdin,
+              )
+            : (childProcess.spawnSync(
+                SANDBOX_EXEC,
+                ['-p', atomicSandboxProfile(sandboxWriteRoot, sandboxTempRoot), '/bin/bash', '-c', a.command],
+                {
+                  cwd,
+                  timeout,
+                  encoding: 'utf8',
+                  maxBuffer: 32 * 1024 * 1024,
+                  env: { ...process.env, ...(a.env ?? {}), ...sandboxEnv },
+                  ...(a.stdin !== undefined ? { input: a.stdin } : {}),
+                },
+              ) as unknown as SpawnLikeResult);
+        } finally {
+          removeSandboxTempRoot(sandboxTempRoot);
+        }
         const durationMs = Date.now() - startedAt;
 
         if (res.error) {
@@ -836,8 +1149,13 @@ export function registerToolsExec(server: McpServer): void {
           for (const v of envVals) out = out.split(v).join('[REDACTED_ENV_VALUE]');
           return out;
         };
-        const stdout = capText(redactAll(res.stdout ?? ''));
-        const stderr = capText(redactAll(res.stderr ?? ''));
+        const stdoutFull = redactAll(res.stdout ?? '');
+        const stderrFull = redactAll(res.stderr ?? '');
+        const outputSummary = summarizeTestOutput(a.command, exitCode, stdoutFull, stderrFull);
+        const stdout = capText(outputSummary.stdout);
+        const stderr = capText(outputSummary.stderr);
+        const stdoutSha256 = digestText(stdoutFull);
+        const stderrSha256 = digestText(stderrFull);
 
         let rolledBack = false;
         // tracked-content-only: `git checkout <stash> -- .` restores tracked file
@@ -905,6 +1223,16 @@ export function registerToolsExec(server: McpServer): void {
           durationMs,
           snapshot: snap,
           rolledBack,
+          output: {
+            returnLimit: EXEC_OUTPUT_RETURN_LIMIT,
+            stdoutBytes: byteLength(stdoutFull),
+            stdoutSha256,
+            stdoutTruncated: stdout.truncated,
+            stderrBytes: byteLength(stderrFull),
+            stderrSha256,
+            stderrTruncated: stderr.truncated,
+            stdoutSummary: outputSummary.summary,
+          },
         });
 
         return ok({
@@ -918,9 +1246,15 @@ export function registerToolsExec(server: McpServer): void {
           commandClass,
           sandbox,
           stdout: stdout.text,
+          stdoutBytes: byteLength(stdoutFull),
+          stdoutSha256,
           stdoutTruncated: stdout.truncated,
           stderr: stderr.text,
+          stderrBytes: byteLength(stderrFull),
+          stderrSha256,
           stderrTruncated: stderr.truncated,
+          outputReturnLimit: EXEC_OUTPUT_RETURN_LIMIT,
+          stdoutSummary: outputSummary.summary,
           snapshot: snap,
           rolledBack,
           rollbackScope,
@@ -937,7 +1271,18 @@ export function registerToolsExec(server: McpServer): void {
                   ...(e.modeBefore === undefined ? {} : { modeBefore: e.modeBefore }),
                   ...(e.modeAfter === undefined ? {} : { modeAfter: e.modeAfter }),
                   ...(e.metadataOnly === true ? { metadataOnly: true } : {}),
-                  ...(e.atomicDiff ? { atomicDiff: redactAll(e.atomicDiff) } : {}),
+                  ...(e.atomicDiff
+                    ? (() => {
+                        const atomicDiffFull = redactAll(e.atomicDiff);
+                        const atomicDiff = capText(atomicDiffFull);
+                        return {
+                          atomicDiff: atomicDiff.text,
+                          atomicDiffBytes: byteLength(atomicDiffFull),
+                          atomicDiffSha256: digestText(atomicDiffFull),
+                          atomicDiffTruncated: atomicDiff.truncated,
+                        };
+                      })()
+                    : {}),
                 })),
               }
             : null,
@@ -945,6 +1290,8 @@ export function registerToolsExec(server: McpServer): void {
             guarded: true,
             effectProven: Boolean(effectSnap),
             effectProofRequired: needsEffectProof,
+            effectProofAuto: proveEffect && !proveEffectExplicitlySet,
+            effectProofExplicit: proveEffectExplicitlySet,
             sandbox,
             traced: true,
             redacted: true,

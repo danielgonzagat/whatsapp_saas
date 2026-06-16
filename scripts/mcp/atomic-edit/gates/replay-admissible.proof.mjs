@@ -14,7 +14,7 @@ const dir = path.dirname(fileURLToPath(import.meta.url));
 const sourceDir = path.resolve(dir, '..');
 const { replayAdmissible } = await import(path.join(dir, '..', 'dist', 'replay-admissible.js'));
 const { runRegistryGatesOverEditSync } = await import(path.join(dir, '..', 'dist', 'engine-gate-registry.js'));
-const { buildSnapshot, reexecValidate } = await import(path.join(dir, '..', 'dist', 'engine-proof-reexec.js'));
+const { buildSnapshot, reexecValidate, snapshotText } = await import(path.join(dir, '..', 'dist', 'engine-proof-reexec.js'));
 const { chainHashOf } = await import(path.join(dir, '..', 'dist', 'trace.js'));
 
 let pass = 0;
@@ -45,8 +45,8 @@ fs.writeFileSync(path.join(registryDir, 'registry.json'), JSON.stringify({
 const run = (green) => ({ green, reds: [], notApplicable: [], unjudged: [], ran: [] });
 const dynamicVerdict = (snapshot, repoRoot = registryRepoRoot) => runRegistryGatesOverEditSync({
   file: snapshot.file,
-  before: snapshot.before,
-  after: snapshot.after,
+  before: snapshotText(snapshot, 'before'),
+  after: snapshotText(snapshot, 'after'),
   repoRoot,
 }, repoRoot);
 const entry = (parent, file, before, after, verdict, neg, opts = {}) => {

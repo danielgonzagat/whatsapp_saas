@@ -3,17 +3,20 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { mkdirPath, removePath } from './broker-fixture-io.mjs';
+import { installInheritedAtomicHostEnv } from './proof-host-env.mjs';
 
 /**
  * atomic_exec pre-admission proof.
  *
- * Rollback is recovery, not proof. A mutable-or-unknown command must be refused
- * before spawn unless proveEffect:true is present. This proof calls the compiled
- * atomic_exec handler directly, so the refusal is verified before any nested MCP
+ * Rollback is recovery, not proof. Mutable-or-unknown commands must run with
+ * byte-effect proof: omitted proveEffect auto-enables proof, while explicit
+ * proveEffect:false is refused before spawn. This proof calls the compiled
+ * atomic_exec handler directly, so admission is verified before any nested MCP
  * server or broker socket can become part of the result.
  */
 const jsonMode = process.argv.includes('--json');
 const sourceDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const repoRoot = path.resolve(sourceDir, '..', '..', '..');
 const fixture = path.join(sourceDir, '.atomic-exec-prove-effect-required-' + process.pid + '-' + Date.now());
 
 function parseToolResponse(response) {
@@ -34,7 +37,22 @@ function writeCommand(file, text) {
     'const fs=require("node:fs");' +
     `fs.writeFileSync(${JSON.stringify(file)}, ${JSON.stringify(text)});` +
     'process.exit(0);';
-  return `node -e ${JSON.stringify(code)}`;
+  return `${JSON.stringify(process.execPath)} -e ${JSON.stringify(code)}`;
+}
+
+function writeTmpdirCommand(fileName, text) {
+  const code =
+    'const fs=require("node:fs");' +
+    'const path=require("node:path");' +
+    'fs.mkdirSync(process.env.TMPDIR,{recursive:true});' +
+    `fs.writeFileSync(path.join(process.env.TMPDIR, ${JSON.stringify(fileName)}), ${JSON.stringify(text)});` +
+    'process.exit(0);';
+  return `${JSON.stringify(process.execPath)} -e ${JSON.stringify(code)}`;
+}
+
+function isOutsidePath(child, root) {
+  const rel = path.relative(path.resolve(root), path.resolve(child));
+  return rel.startsWith('..') || path.isAbsolute(rel);
 }
 
 async function atomicExecHandler() {
@@ -60,31 +78,103 @@ async function main() {
   mkdirPath(fixture);
 
   try {
+    installInheritedAtomicHostEnv(repoRoot);
     const handler = await atomicExecHandler();
-    const rollbackOnlyFile = 'rollback-only.tmp';
-    const rollbackOnly = parseToolResponse(
+    const autoProofFile = 'auto-proof.tmp';
+    const autoProof = parseToolResponse(
       await handler({
-        command: writeCommand(rollbackOnlyFile, 'unproved'),
+        command: writeCommand(autoProofFile, 'proved'),
         cwd: fixture,
         rollbackOnNonZero: true,
         timeoutMs: 30000,
+        intent: 'proof omitted proveEffect auto-runs byte-effect proof before mutable spawn',
       }),
-    );
-    const rollbackOnlyText = String(
-      (rollbackOnly.error ?? '') + '\n' + (rollbackOnly.stdout ?? '') + '\n' + (rollbackOnly.stderr ?? ''),
     );
     record(
       results,
-      'rollbackOnNonZero alone is refused before mutable command spawn',
-      rollbackOnly.ok === false &&
-        /effect proof required|proveEffect:true/i.test(rollbackOnlyText) &&
-        !/broker unreachable|failed to spawn|exitCode/i.test(rollbackOnlyText) &&
-        !fs.existsSync(path.join(fixture, rollbackOnlyFile)),
+      'omitted proveEffect auto-runs byte-effect proof for mutable command',
+      autoProof.ok === true &&
+        autoProof.commandClass === 'mutable-or-unknown' &&
+        autoProof.atomicEnvelope?.effectProven === true &&
+        autoProof.atomicEnvelope?.effectProofAuto === true &&
+        autoProof.atomicEnvelope?.effectProofExplicit === false &&
+        autoProof.effect?.changedFiles === 1 &&
+        autoProof.effect?.files?.[0]?.file === autoProofFile &&
+        fs.existsSync(path.join(fixture, autoProofFile)),
       {
-        ok: rollbackOnly.ok,
-        exitCode: rollbackOnly.exitCode,
-        error: rollbackOnly.error,
-        fileExists: fs.existsSync(path.join(fixture, rollbackOnlyFile)),
+        ok: autoProof.ok,
+        exitCode: autoProof.exitCode,
+        commandClass: autoProof.commandClass,
+        envelope: autoProof.atomicEnvelope,
+        effect: autoProof.effect,
+        fileExists: fs.existsSync(path.join(fixture, autoProofFile)),
+        error: autoProof.error,
+      },
+    );
+    if (fs.existsSync(path.join(fixture, autoProofFile))) fs.unlinkSync(path.join(fixture, autoProofFile));
+
+    const explicitFalseFile = 'explicit-false.tmp';
+    const explicitFalse = parseToolResponse(
+      await handler({
+        command: writeCommand(explicitFalseFile, 'unproved'),
+        cwd: fixture,
+        rollbackOnNonZero: true,
+        proveEffect: false,
+        timeoutMs: 30000,
+        intent: 'proof explicit false refuses mutable shell effects before spawn',
+      }),
+    );
+    const explicitFalseText = String(
+      (explicitFalse.error ?? '') + '\n' + (explicitFalse.stdout ?? '') + '\n' + (explicitFalse.stderr ?? ''),
+    );
+    record(
+      results,
+      'explicit proveEffect:false is refused before mutable command spawn',
+      explicitFalse.ok === false &&
+        /explicit proveEffect:false|effect proof required|mutable-or-unknown/i.test(explicitFalseText) &&
+        !/broker unreachable|failed to spawn|exitCode/i.test(explicitFalseText) &&
+        !fs.existsSync(path.join(fixture, explicitFalseFile)),
+      {
+        ok: explicitFalse.ok,
+        exitCode: explicitFalse.exitCode,
+        error: explicitFalse.error,
+        fileExists: fs.existsSync(path.join(fixture, explicitFalseFile)),
+      },
+    );
+
+    const tmpOnlyFile = 'atomic-exec-temp-cache.tmp';
+    const tmpOnly = parseToolResponse(
+      await handler({
+        command: writeTmpdirCommand(tmpOnlyFile, 'cache'),
+        cwd: fixture,
+        effectRoot: fixture,
+        proveEffect: true,
+        timeoutMs: 30000,
+        intent: 'proof TMPDIR scratch writes do not become product byte effects',
+      }),
+    );
+    const leakedTempPath = path.join(fixture, tmpOnlyFile);
+    const tempRoot = tmpOnly.atomicEnvelope?.sandbox?.tempRoot;
+    const tempRootEscapesEffectRoot =
+      typeof tempRoot === 'string' && isOutsidePath(tempRoot, fixture);
+    record(
+      results,
+      'proveEffect TMPDIR writes use isolated scratch outside effectRoot',
+      tmpOnly.ok === true &&
+        tmpOnly.atomicEnvelope?.effectProven === true &&
+        tmpOnly.effect?.changedFiles === 0 &&
+        typeof tempRoot === 'string' &&
+        tempRootEscapesEffectRoot &&
+        !fs.existsSync(leakedTempPath),
+      {
+        ok: tmpOnly.ok,
+        effect: tmpOnly.effect,
+        tempRoot,
+        fixture,
+        tempRootEscapesEffectRoot,
+        leakedTempPath,
+        leakedTempExists: fs.existsSync(leakedTempPath),
+        error: tmpOnly.error,
       },
     );
 

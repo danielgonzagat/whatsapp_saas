@@ -241,6 +241,35 @@ export function extractPhoneFromChatId(chatId: string | null | undefined): strin
 }
 
 /**
+ * Format a normalized phone digit string into a human-readable display format.
+ *
+ * Brazilian numbers (detected by '55' prefix + 12-13 digit length) are formatted
+ * as (XX) XXXXX-XXXX for 11-digit domestic or (XX) XXXX-XXXX for 10-digit domestic.
+ * All other numbers are returned as-is.
+ *
+ * Returns an empty string for null, undefined, or empty input.
+ */
+export function formatDisplayPhone(digits: string | null | undefined): string {
+  if (digits === null || digits === undefined || digits === '') {
+    return '';
+  }
+
+  if (digits.startsWith('55') && digits.length >= 12 && digits.length <= 13) {
+    const domestic = digits.slice(2);
+    const ddd = domestic.slice(0, 2);
+    const number = domestic.slice(2);
+    if (domestic.length === 11) {
+      return `(${ddd}) ${number.slice(0, 5)}-${number.slice(5)}`;
+    }
+    if (domestic.length === 10) {
+      return `(${ddd}) ${number.slice(0, 4)}-${number.slice(4)}`;
+    }
+  }
+
+  return digits;
+}
+
+/**
  * Compare two free-form phones and decide whether they likely refer to the
  * same number.
  *

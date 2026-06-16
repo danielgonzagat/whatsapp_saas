@@ -46,18 +46,42 @@ const MANDATORY_MCP_CONTROLLED_DOMAINS: readonly string[] = [
 
 const RUNTIME_SOURCE_EXTENSIONS = new Set(['.ts', '.mjs', '.json', '.sh']);
 const RUNTIME_DIST_EXTENSIONS = new Set(['.js', '.mjs', '.json']);
-const RUNTIME_HASH_SKIP_DIRS = new Set(['dist', 'node_modules', '.atomic', '.git', 'node-compile-cache']);
+const RUNTIME_HASH_SKIP_DIRS = new Set([
+  'dist',
+  'dist-lkg',
+  'launcher-blessed',
+  'node_modules',
+  '.atomic',
+  '.git',
+  'node-compile-cache',
+  '.claude',
+  '.mcp-cache',
+  '.turbo',
+  '.cache',
+  'build',
+  '.positive-byte-sessions',
+]);
 const Y_CERTIFICATE_DELEGATE_DEPTH_ENV = 'ATOMIC_Y_CERTIFICATE_DELEGATE_DEPTH';
 const Y_CERTIFICATE_FORCE_STALE_ENV = 'ATOMIC_Y_CERTIFICATE_FORCE_STALE';
 
 function skipRuntimeHashEntry(name: string): boolean {
   return (
+    name.startsWith('.proof-') ||
+    name.startsWith('.smoke-') ||
+    name.startsWith('.self-expansion-') ||
     name.startsWith('.security-mono-proof-') ||
     name.startsWith('.atomic-exec-sandbox') ||
+    name.startsWith('.external-runtime-denial-') ||
+    name.startsWith('atomic-exec-broker-file-') ||
+    name.startsWith('atomic-edit-dist-') ||
+    name.startsWith('atomic-universal-') ||
     name.startsWith('.property-proof-') ||
     name.startsWith('.findings-') ||
     name.startsWith('.findings-probe-') ||
-    name.startsWith('.external-runtime-denial-') ||
+    name.startsWith('property-gate-') ||
+    name.startsWith('probe-gate-') ||
+    name.startsWith('atomic-type-gate-') ||
+    name.startsWith('.supervisor-') ||
     name === '.build-manifest.json'
   );
 }
@@ -210,12 +234,21 @@ function jsonScriptEnv(root: string): NodeJS.ProcessEnv {
 
 function jsonScriptMustRunHostDirect(name: string): boolean {
   return new Set([
+    'gates/whole-host-sandbox-launcher.proof.mjs',
+    'gates/no-bypass-static-policy.proof.mjs',
+    'bypass-report.mjs',
+    'gates/codex-bypass-observer-wiring.proof.mjs',
+    'audit-atomicity.mjs',
+    'gates/self-expansion-validator-lattice.proof.mjs',
+    'gates/self-evolution-mcp-tool.proof.mjs',
+    'gates/security-monotonicity.proof.mjs',
     'gates/atomic-exec-readonly-usability.proof.mjs',
+    'codex-atomic-only-hook.proof.mjs',
+    'gates/codex-entrypoint-contract.proof.mjs',
+    'gates/agent-hook-runtime-boundary.proof.mjs',
+    'gates/mcp-launcher-host-boundary.proof.mjs',
     'gates/atomic-exec-sandbox.proof.mjs',
     'gates/external-runtime-denial.proof.mjs',
-    'gates/mcp-launcher-host-boundary.proof.mjs',
-    'gates/codex-entrypoint-contract.proof.mjs',
-    'gates/whole-host-sandbox-launcher.proof.mjs',
   ]).has(name);
 }
 
@@ -662,7 +695,7 @@ export function registerToolsY(server: McpServer): void {
           detail: bypassObserverProof.ok ? bypassObserverProof.value : undefined,
         });
         if (a.includeAudits) {
-          const audit = runJsonScript('audit-atomicity.mjs', ['--strict-ratio', '--strict-current-topology', '--json']);
+          const audit = runJsonScript('audit-atomicity.mjs', ['--strict-ratio', '--strict-current-topology', '--json'], 60000);
           if (audit.ok) {
             domains.push({
               domain: 'atomicityAudit',
@@ -949,6 +982,9 @@ export function registerToolsY(server: McpServer): void {
         });
 
         const bad = blockers(domains);
+        const responseDomains = a.includeAudits
+          ? domains
+          : domains.map(({ detail, ...domain }) => domain);
         const yComplete = bad.length === 0;
         return ok({
           ok: true,
@@ -956,7 +992,7 @@ export function registerToolsY(server: McpServer): void {
           runtimePid: process.pid,
           yComplete,
           verdict: yComplete ? 'Y_COMPLETE' : 'Y_BLOCKED',
-          domains,
+          domains: responseDomains,
           blockers: bad.map((d) => ({ domain: d.domain, status: d.status, requiredChange: d.requiredChange ?? d.evidence })),
         });
       } catch (e) {

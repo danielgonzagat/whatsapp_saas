@@ -1,0 +1,20 @@
+{
+  "files": [
+    "CLAUDE.md",
+    "AGENTS.md",
+    "atomic-edit.protected.json",
+    ".github/workflows"
+  ],
+  "globs": [
+    "**/*.key",
+    "**/*.pem",
+    "**/.env*",
+    "**/secrets*",
+    "**/*.lock",
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "yarn.lock",
+    "Cargo.lock",
+    "go.sum"
+  ]
+}

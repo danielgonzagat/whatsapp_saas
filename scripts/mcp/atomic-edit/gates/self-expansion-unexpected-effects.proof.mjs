@@ -36,13 +36,24 @@ record(
     source.includes('selfRootRelativeEffectPath(effect.file)'),
 );
 record(
-  'guard allows only ephemeral proof fixtures outside requested files plus the named self-evolution archive',
+  'guard allows only ephemeral proof fixtures, the named self-evolution archive, and launcher durability metadata',
   source.includes("rel.startsWith('.proof-')") &&
+    source.includes("rel.startsWith('.smoke-')") &&
+    source.includes("rel.startsWith('.self-expansion-')") &&
     source.includes("rel.startsWith('.atomic-exec-sandbox-')") &&
     source.includes("rel.startsWith('.external-runtime-denial-')") &&
+    source.includes("rel.startsWith('atomic-exec-broker-file-')") &&
+    source.includes("rel.startsWith('.whole-host-launcher-allowed-')") &&
+    source.includes("/^\\.atomic-edit\\.\\d+\\.\\d+\\.tmp$/.test(rel)") &&
+    source.includes("rel.startsWith('property-gate-')") &&
     source.includes('function isSelfEvolutionArchiveEffect') &&
     source.includes("return file === SELF_EVOLUTION_ARCHIVE_REL") &&
-    source.includes('!isSelfEvolutionArchiveEffect(rel)'),
+    source.includes('!isSelfEvolutionArchiveEffect(rel)') &&
+    source.includes('function isLauncherDurabilityMetadataEffect') &&
+    source.includes("file.startsWith('dist-lkg/')") &&
+    source.includes("file.startsWith('dist.broken-last/')") &&
+    source.includes("file === 'launcher-blessed/.blessed-manifest.json'") &&
+    source.includes('!isLauncherDurabilityMetadataEffect(rel)'),
 );
 record(
   'successful path checks requested effects before promotion, then builds receipt, archives it, ratchets, and checks final effects before acceptance',

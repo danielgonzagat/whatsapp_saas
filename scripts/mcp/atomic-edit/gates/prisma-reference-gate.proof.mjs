@@ -137,7 +137,20 @@ function judge(overlaySrc, changed) {
   check('UNJUDGED-1: gate is unjudged when only a dynamic SQL region was seen', res.unjudged === true && res.green === true && res.reds.length === 0);
 }
 
-// 7) UNJUDGED-2 — no schema readable → no dictionary → unjudged.
+// 7) GREEN-NONDOMAIN — no schema readable, but the write introduces no Prisma
+//    surface. A domain-specific gate must be green/not-applicable instead of
+//    strict-blocking unrelated macro transactions.
+{
+  const fs = await import('node:fs');
+  const os = await import('node:os');
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'prisma-gate-nondomain-'));
+  const overlay = new Map(Object.entries({ 'workflow.ts': 'export const workflow = 1;\n' }));
+  const res = gate.run(makeContext(tmp, overlay, ['workflow.ts']));
+  check('GREEN-NONDOMAIN: no schema.prisma + non-Prisma TS write is green, not unjudged', res.green === true && res.reds.length === 0 && !res.unjudged);
+  fs.rmSync(tmp, { recursive: true, force: true });
+}
+
+// 8) UNJUDGED-2 — no schema readable + a Prisma claim → no dictionary → unjudged.
 {
   // overlay WITHOUT the schema key, and a repoRoot with no schema on disk.
   const fs = await import('node:fs');
@@ -145,11 +158,11 @@ function judge(overlaySrc, changed) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'prisma-gate-noschema-'));
   const overlay = new Map(Object.entries({ 'f.ts': 'this.prismaAny.ghost.x();' }));
   const res = gate.run(makeContext(tmp, overlay, ['f.ts']));
-  check('UNJUDGED-2: no schema.prisma → unjudged (never red-by-guess)', res.unjudged === true && res.green === true && res.reds.length === 0);
+  check('UNJUDGED-2: no schema.prisma + Prisma claim → unjudged (never red-by-guess)', res.unjudged === true && res.green === true && res.reds.length === 0);
   fs.rmSync(tmp, { recursive: true, force: true });
 }
 
-// 8) OUT-OF-SCOPE — computed member, comment, string/template text, and unquoted FROM are never extracted.
+// 9) OUT-OF-SCOPE — computed member, comment, string/template text, and unquoted FROM are never extracted.
 {
   const src =
     'const m = "ghost";\n' +

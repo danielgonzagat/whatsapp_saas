@@ -117,17 +117,37 @@ function shellPath(value) {
   return `'${String(value).replaceAll("'", "'\\''")}'`;
 }
 
+function liveBrokerSocket(value) {
+  const endpoint = typeof value === 'string' ? value.trim() : '';
+  if (!endpoint) return '';
+  if (endpoint.startsWith('file://')) {
+    try {
+      const dir = fileURLToPath(endpoint);
+      return fs.existsSync(path.join(dir, 'requests')) && fs.existsSync(path.join(dir, 'responses')) ? endpoint : '';
+    } catch {
+      return '';
+    }
+  }
+  try {
+    return fs.statSync(endpoint).isSocket() ? endpoint : '';
+  } catch {
+    return '';
+  }
+}
+
 function proofEnv() {
   const hostRoot = process.env.ATOMIC_HOST_WRITE_ROOT
     ? path.resolve(process.env.ATOMIC_HOST_WRITE_ROOT)
     : repoRoot;
   const codexHome = process.env.CODEX_HOME ?? path.join(hostRoot, '.codex');
+  const brokerSocket = liveBrokerSocket(process.env.ATOMIC_EXEC_BROKER_SOCKET);
   return {
     ...process.env,
     ATOMIC_BUILD_BROKER: '1',
     ATOMIC_HOST_ATOMIC_ONLY: '1',
     ATOMIC_HOST_SANDBOX: process.env.ATOMIC_HOST_SANDBOX ?? 'macos-sandbox-exec',
     ATOMIC_HOST_WRITE_ROOT: hostRoot,
+    ATOMIC_EXEC_BROKER_SOCKET: brokerSocket,
     CODEX_HOME: codexHome,
     CODEX_PROJECT_DIR: hostRoot,
     TMPDIR: sourceDir,
@@ -156,10 +176,11 @@ function runProofDirect(name, timeout, env) {
 }
 
 function runProofViaBroker(name, timeout, env) {
-  const socket = env.ATOMIC_EXEC_BROKER_SOCKET ?? '';
+  const socket = liveBrokerSocket(env.ATOMIC_EXEC_BROKER_SOCKET);
   const client = path.join(env.ATOMIC_HOST_WRITE_ROOT ?? repoRoot, 'scripts/mcp/atomic-edit/atomic-exec-broker-client.mjs');
+  const directEnv = socket ? env : { ...env, ATOMIC_EXEC_BROKER_SOCKET: '' };
   if (!socket || !fs.existsSync(client)) {
-    return runProofDirect(name, timeout, env);
+    return runProofDirect(name, timeout, directEnv);
   }
 
   const proofPath = path.join(sourceDir, 'gates', name);
@@ -207,11 +228,23 @@ function inspectHostEnv(env, mode) {
   };
   let socketExists = false;
   let socketIsSocket = false;
+  let brokerEndpointReady = false;
+  let brokerEndpointKind = 'none';
   let socketError = null;
   try {
-    const stat = fs.statSync(brokerSocket);
-    socketExists = true;
-    socketIsSocket = stat.isSocket();
+    if (brokerSocket.startsWith('file://')) {
+      const dir = fileURLToPath(brokerSocket);
+      const ready = fs.existsSync(path.join(dir, 'requests')) && fs.existsSync(path.join(dir, 'responses'));
+      socketExists = ready;
+      brokerEndpointReady = ready;
+      brokerEndpointKind = 'file';
+    } else {
+      const stat = fs.statSync(brokerSocket);
+      socketExists = true;
+      socketIsSocket = stat.isSocket();
+      brokerEndpointReady = socketIsSocket;
+      brokerEndpointKind = 'socket';
+    }
   } catch (error) {
     socketError = error instanceof Error ? error.message : String(error);
   }
@@ -229,6 +262,8 @@ function inspectHostEnv(env, mode) {
     brokerSocket,
     socketExists,
     socketIsSocket,
+    brokerEndpointReady,
+    brokerEndpointKind,
     socketError,
   };
 }
@@ -242,8 +277,7 @@ function hostEnvOk(detail) {
     detail.hostSandbox === 'macos-sandbox-exec' &&
     detail.atomicOnly === '1' &&
     detail.writeRootReal === repoRootReal &&
-    detail.socketExists === true &&
-    detail.socketIsSocket === true;
+    detail.brokerEndpointReady === true;
   // The Claude launcher (claude-atomic-host-launcher.mjs) is a first-class atomic
   // host: it sets the host markers (ATOMIC_HOST_SANDBOX / ATOMIC_HOST_ATOMIC_ONLY /
   // ATOMIC_HOST_WRITE_ROOT), runs the out-of-sandbox broker, and confines
@@ -268,7 +302,10 @@ function hostEnvOk(detail) {
 
 function staticLauncherContract() {
   const hostSource = readText(hostLauncher);
-  const mcpSource = readText(mcpLauncherSourcePath);
+  const mcpSource = [
+    readText(mcpLauncherSourcePath),
+    readText(path.resolve(sourceDir, '..', 'atomic-edit-mcp-launcher-impl.sh')),
+  ].join('\n');
   return {
     hostLauncher,
     mcpLauncher: mcpLauncherSourcePath,
@@ -308,13 +345,13 @@ function staticLauncherContract() {
 
 function hostBoundaryContract() {
   const agent = process.env.ATOMIC_HOST_AGENT ?? '';
-  if (
+  const hasInheritedHostMarkers =
     (agent === 'codex' || agent === 'claude') &&
     process.env.ATOMIC_HOST_SANDBOX === 'macos-sandbox-exec' &&
-    process.env.ATOMIC_HOST_ATOMIC_ONLY === '1'
-  ) {
-    const inherited = inspectHostEnv(process.env, 'inherited');
-    return { ok: hostEnvOk(inherited), live: true, detail: inherited };
+    process.env.ATOMIC_HOST_ATOMIC_ONLY === '1';
+  const inherited = hasInheritedHostMarkers ? inspectHostEnv(process.env, 'inherited') : null;
+  if (inherited && hostEnvOk(inherited)) {
+    return { ok: true, live: true, detail: inherited };
   }
   const statik = staticLauncherContract();
   const ok = statik.hostExportsAtomicEnv &&
@@ -326,7 +363,7 @@ function hostBoundaryContract() {
     statik.hostAllowsCodexOutboundNetwork &&
     statik.hostStartsBroker &&
     statik.mcpRefusesUnhosted;
-  return { ok, live: false, detail: statik };
+  return { ok, live: false, detail: inherited ? { ...statik, ignoredStaleInheritedHost: inherited } : statik };
 }
 
 function main() {

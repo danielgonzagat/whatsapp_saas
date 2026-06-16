@@ -132,6 +132,25 @@ function resolvesBare(ctx: GateContext, fromRel: string, pkg: string): boolean {
   return false;
 }
 
+/**
+ * True when the dependency substrate itself is visible on the same walk-up path
+ * Node would search. When no node_modules directory exists anywhere on that path,
+ * package absence is an environment proof debt, not a code-level dangling edge.
+ */
+function hasObservableNodeModulesSubstrate(ctx: GateContext, fromRel: string): boolean {
+  const norm = (p: string): string => p.replaceAll('\\', '/');
+  let dir = path.posix.dirname(norm(fromRel));
+  for (;;) {
+    const base = dir === '' || dir === '.' ? 'node_modules' : `${dir}/node_modules`;
+    if (ctx.existsInTree(base)) return true;
+    if (dir === '' || dir === '.') break;
+    const parent = path.posix.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return false;
+}
+
 const supplyChainGate: GateModule = {
   name: 'supply-chain',
   kind: 'static',
@@ -142,6 +161,7 @@ const supplyChainGate: GateModule = {
     const reds: GateRed[] = [];
     const note =
       'every NEW bare import resolves to a Node builtin or an installed node_modules/<pkg>/package.json';
+    let unjudgedReason: string | null = null;
     for (const rel of ctx.changedFiles) {
       if (!SOURCE_RE.test(rel)) continue;
       const newText = ctx.overlay.get(rel.replaceAll('\\', '/')) ?? ctx.readFile(rel);
@@ -165,12 +185,20 @@ const supplyChainGate: GateModule = {
         if (pkg === null) continue; // empty-scope alias (@/...) — not a node_modules package
         if (matchesTsconfigAlias(ctx, rel, spec)) continue; // configured path alias — not ours
         if (resolvesBare(ctx, rel, pkg)) continue; // installed part exists on disk/overlay
+        if (!hasObservableNodeModulesSubstrate(ctx, rel)) {
+          unjudgedReason ??=
+            `cannot judge NEW bare import '${spec}' from ${rel}: no node_modules dependency substrate is observable on the Node walk-up path; install dependencies or provide a package-resolver substrate before treating package absence as a dangling edge`;
+          continue;
+        }
         reds.push({
           file: rel,
           locus: `bare:${spec}`,
           fact: `bare import '${spec}' resolves to no installed node_modules/${pkg}/package.json (would introduce a dangling dependency edge)`,
         });
       }
+    }
+    if (reds.length === 0 && unjudgedReason !== null) {
+      return { gate: this.name, green: true, reds: [], note, unjudged: true, unjudgedReason };
     }
     return { gate: this.name, green: reds.length === 0, reds, note };
   },

@@ -5,7 +5,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { applyEdits, renameSymbol, replaceLiteral, type TextEditSpec, computeZones } from './engine.js';
 import { extractImportSpecifiers } from './connection-gate.js';
-import { resolveSafeTarget } from './guard.js';
+import { activeWorkspaceRoot, resolveSafeTarget } from './guard.js';
 import { buildTrace, levelFor, shapePayload, writeTrace } from './trace.js';
 import { browse, outline, readSymbol } from './nav.js';
 import { previewDiff, characterDiff } from './advanced.js';
@@ -157,6 +157,98 @@ function collectGeneratedTreeStats(absDir: string, maxFiles: number): { files: n
   };
   visit(absDir);
   return { files, bytes };
+}
+
+const BROWSE_SHALLOW_TREE_DEPTH = 2;
+const BROWSE_SHALLOW_TREE_ENTRY_LIMIT = 80;
+const BROWSE_BATCH_NEXT_LIMIT = 20;
+const BROWSE_SHALLOW_TREE_SKIP = new Set(['.git', 'node_modules', 'dist', 'dist-lkg', 'coverage', '.next', '.turbo']);
+
+interface BrowseShallowTree {
+  path: string;
+  type: 'dir' | 'file';
+  depth: number;
+  entryLimit: number;
+  truncated?: boolean;
+  children: BrowseShallowTree[];
+}
+
+function browseWorkspaceDisplayPath(absPath: string, relPath: string): string {
+  const activeRel = path.relative(activeWorkspaceRoot(), absPath).split(path.sep).join('/');
+  if (activeRel && !activeRel.startsWith('..') && !path.isAbsolute(activeRel)) return activeRel;
+  return relPath || '.';
+}
+
+function browseTargetDetails(displayPath: string): Record<string, unknown> {
+  return { target: { root: 'active-workspace', file: displayPath || '.' } };
+}
+
+function joinBrowsePath(dir: string, name: string): string {
+  return dir && dir !== '.' ? `${dir}/${name}`.replaceAll('\\', '/') : name;
+}
+
+function browseDirectoryTree(
+  displayDir: string,
+  absDir: string,
+  depth = BROWSE_SHALLOW_TREE_DEPTH,
+  entryLimit = BROWSE_SHALLOW_TREE_ENTRY_LIMIT,
+): BrowseShallowTree {
+  const node: BrowseShallowTree = {
+    path: displayDir || '.',
+    type: 'dir',
+    depth,
+    entryLimit,
+    children: [],
+  };
+  if (depth <= 0) return node;
+
+  let entries: fs.Dirent[] = [];
+  try {
+    entries = fs.readdirSync(absDir, { withFileTypes: true })
+      .filter((entry) => !BROWSE_SHALLOW_TREE_SKIP.has(entry.name))
+      .sort((a, b) => Number(b.isDirectory()) - Number(a.isDirectory()) || a.name.localeCompare(b.name));
+  } catch {
+    return node;
+  }
+  if (entries.length > entryLimit) {
+    node.truncated = true;
+    entries = entries.slice(0, entryLimit);
+  }
+  for (const entry of entries) {
+    const childPath = joinBrowsePath(displayDir, entry.name);
+    const childAbs = path.join(absDir, entry.name);
+    if (entry.isDirectory()) {
+      node.children.push(browseDirectoryTree(childPath, childAbs, depth - 1, entryLimit));
+    } else if (entry.isFile()) {
+      node.children.push({ path: childPath, type: 'file', depth: 0, entryLimit, children: [] });
+    }
+  }
+  return node;
+}
+
+function collectBrowseTreeFiles(tree: BrowseShallowTree, out: string[] = []): string[] {
+  if (tree.type === 'file') out.push(tree.path);
+  for (const child of tree.children) collectBrowseTreeFiles(child, out);
+  return out;
+}
+
+function browseBatchNextForDirectory(
+  dir: string,
+  entries: Array<{ name: string; type: string }>,
+  shallowTree: BrowseShallowTree,
+): { tool: 'code_readcode_batch'; reason: string; items: Array<{ path: string }> } | null {
+  const directFiles = entries
+    .filter((entry) => entry.type === 'file')
+    .map((entry) => joinBrowsePath(dir, entry.name));
+  const paths = directFiles.length >= 2 ? directFiles : collectBrowseTreeFiles(shallowTree);
+  const uniquePaths = Array.from(new Set(paths)).slice(0, BROWSE_BATCH_NEXT_LIMIT);
+  if (uniquePaths.length < 2) return null;
+  return {
+    tool: 'code_readcode_batch',
+    reason:
+      'code_browse found a small file cluster; batch-read these paths before issuing repeated single-file reads.',
+    items: uniquePaths.map((path) => ({ path })),
+  };
 }
 
 const pos = z.object({
@@ -621,7 +713,8 @@ server.registerTool(
     title: 'List a directory (structured)',
     description:
       'Repo-relative directory listing (dirs first, node_modules/.git hidden). Read-side step 1: ' +
-      'locate the file before reading its structure. Relative paths target the MCP server root; ' +
+      'locate the file before reading its structure. Returns batchNext when a small file cluster is visible; ' +
+      'call code_readcode_batch from batchNext before repeated single-file reads. Relative paths target the MCP server root; ' +
       'workers in linked worktrees should pass absolute paths from `pwd` to avoid editing the coordinator checkout.',
     inputSchema: {
       dir: z
@@ -634,11 +727,20 @@ server.registerTool(
   async (a) => {
     try {
       const { absPath, relPath } = resolveSafeTarget(a.dir || '.');
+      const entries = browse(absPath);
+      const dir = browseWorkspaceDisplayPath(absPath, relPath || '.');
+      const shallowTree = browseDirectoryTree(dir, absPath);
+      const batchNext = browseBatchNextForDirectory(dir, entries, shallowTree);
       return ok({
         ok: true,
-        dir: relPath || '.',
-        ...targetDetails(absPath, relPath),
-        entries: browse(absPath),
+        dir,
+        ...browseTargetDetails(dir),
+        entries,
+        shallowTree,
+        batchNext,
+        summaryForHuman:
+          `Directory: ${dir} (${entries.length} entries). ` +
+          (batchNext ? `Recommended next call: ${batchNext.tool} for ${batchNext.items.length} file(s).` : ''),
       });
     } catch (e) {
       return fail(e instanceof Error ? e.message : String(e));

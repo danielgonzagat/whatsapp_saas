@@ -7,6 +7,26 @@ import { fail, commit } from './server-helpers-result.js';
 import { requireNegativeProofForRemovedBytes } from './server-helpers-negative-proof.js';
 import { shaArg } from './server-helpers-schema.js';
 
+function unsafeAfterAnchorReason(anchorText: string): string | undefined {
+  const lines = anchorText.split(/\r?\n/);
+  const lastMeaningfulLine = [...lines].reverse().find((line) => line.trim() !== '');
+  if (lastMeaningfulLine === undefined) {
+    return undefined;
+  }
+
+  const danglingSwitchLabel = /^(?:case\b.*|default\s*):\s*(?:(?:\/\/.*)|(?:\/\*.*\*\/\s*))?$/.test(
+    lastMeaningfulLine.trim(),
+  );
+  if (!danglingSwitchLabel) {
+    return undefined;
+  }
+
+  return [
+    'anchor ends at a switch case/default label; insertion would split the label from its body.',
+    'Use a complete case-body replacement or choose an anchor after the body boundary.',
+  ].join(' ');
+}
+
 export function registerToolsE2(server: McpServer): void {
 server.registerTool(
   'atomic_insert_after_anchor',
@@ -57,6 +77,10 @@ server.registerTool(
       const targetIndex = a.occurrence === undefined ? 0 : a.occurrence - 1;
       if (targetIndex < 0 || targetIndex >= matches.length) {
         return fail(`occurrence ${a.occurrence} out of range (found ${matches.length} match(es)).`);
+      }
+      const unsafeReason = unsafeAfterAnchorReason(a.anchorText);
+      if (unsafeReason !== undefined) {
+        return fail(`unsafe insert_after_anchor in ${relPath}: ${unsafeReason}`);
       }
       const matchEnd = matches[targetIndex] + a.anchorText.length;
       const beforeMatch = before.slice(0, matchEnd);

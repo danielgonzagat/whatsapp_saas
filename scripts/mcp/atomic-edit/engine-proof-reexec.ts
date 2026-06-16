@@ -38,6 +38,7 @@
  */
 
 import * as crypto from 'node:crypto';
+import * as zlib from 'node:zlib';
 import { validate, type ValidationResult } from './engine.js';
 import { type RegistryRun } from './gates/registry.js';
 
@@ -65,28 +66,80 @@ export function canonicalJSON(value: unknown): string {
   return JSON.stringify(norm(value));
 }
 
+/** Encoded content chunk for a proof-carrying snapshot. */
+export interface SnapshotText {
+  /** utf8 is plain text; gzip-base64 is byte-exact compressed UTF-8 content. */
+  encoding: 'utf8' | 'gzip-base64';
+  /** Original UTF-8 byte length before any compression. */
+  byteLength: number;
+  /** Plain text when encoding=utf8, otherwise gzip(content).toString('base64'). */
+  data: string;
+}
+
 /** The before/after snapshot an op's re-exec needs, content-addressed for integrity. */
 export interface EditSnapshot {
   file: string;
-  /** Pre-edit content of the target span/file as the engine saw it. */
+  /** Legacy raw field accepted for old receipts. New receipts omit it; use snapshotText(). */
   before: string;
-  /** Post-edit content the engine wrote (or proposed). */
+  /** Legacy raw field accepted for old receipts. New receipts omit it; use snapshotText(). */
   after: string;
+  /** Pre-edit content of the target span/file as the engine saw it. */
+  beforeText?: SnapshotText;
+  /** Post-edit content the engine wrote (or proposed). */
+  afterText?: SnapshotText;
   /** sha256(before) — lets the verifier confirm the embedded before-content was not swapped. */
   beforeSha256: string;
   /** sha256(after) — MUST equal the trace afterSha256 the chain hash binds. */
   afterSha256: string;
 }
 
+const SNAPSHOT_COMPACT_THRESHOLD_BYTES = 1024;
+
+function encodeSnapshotText(text: string): SnapshotText {
+  const raw = Buffer.from(text, 'utf8');
+  if (raw.length >= SNAPSHOT_COMPACT_THRESHOLD_BYTES) {
+    const compressed = zlib.gzipSync(raw, { level: 9 }).toString('base64');
+    // Only switch formats when the encoded proof receipt is materially smaller.
+    if (Buffer.byteLength(compressed, 'utf8') + 96 < raw.length) {
+      return { encoding: 'gzip-base64', byteLength: raw.length, data: compressed };
+    }
+  }
+  return { encoding: 'utf8', byteLength: raw.length, data: text };
+}
+
+export function snapshotText(snapshot: EditSnapshot, side: 'before' | 'after'): string {
+  const legacy = (snapshot as unknown as Record<string, unknown>)[side];
+  if (typeof legacy === 'string') return legacy;
+  const encoded = (snapshot as unknown as Record<string, unknown>)[`${side}Text`];
+  if (!encoded || typeof encoded !== 'object') {
+    throw new Error(`snapshot is missing ${side}Text content`);
+  }
+  const payload = encoded as Partial<SnapshotText>;
+  const data = payload.data;
+  const expectedByteLength = payload.byteLength;
+  let decoded: string;
+  if (payload.encoding === 'utf8' && typeof data === 'string') {
+    decoded = data;
+  } else if (payload.encoding === 'gzip-base64' && typeof data === 'string') {
+    decoded = zlib.gunzipSync(Buffer.from(data, 'base64')).toString('utf8');
+  } else {
+    throw new Error(`snapshot has unsupported ${side}Text encoding`);
+  }
+  if (typeof expectedByteLength === 'number' && Buffer.byteLength(decoded, 'utf8') !== expectedByteLength) {
+    throw new Error(`snapshot ${side}Text byteLength mismatch`);
+  }
+  return decoded;
+}
+
 /** Build a content snapshot from the before/after a mutation site already holds. */
 export function buildSnapshot(file: string, before: string, after: string): EditSnapshot {
   return {
     file,
-    before,
-    after,
+    beforeText: encodeSnapshotText(before),
+    afterText: encodeSnapshotText(after),
     beforeSha256: sha256(before),
     afterSha256: sha256(after),
-  };
+  } as unknown as EditSnapshot;
 }
 
 /**
@@ -129,9 +182,26 @@ export function reexecValidate(
   recorded: ValidationResult | null,
   recordedAfterSha256: string,
 ): ReexecResult {
-  const recomputed = validate(snapshot.file, snapshot.before, snapshot.after);
-  const beforeContentOk = sha256(snapshot.before) === snapshot.beforeSha256;
-  const afterContentOk = sha256(snapshot.after) === recordedAfterSha256;
+  let before = '';
+  let after = '';
+  try {
+    before = snapshotText(snapshot, 'before');
+    after = snapshotText(snapshot, 'after');
+  } catch (error) {
+    const recomputed = validate(snapshot.file, '', '');
+    return {
+      recomputed,
+      recorded,
+      beforeContentOk: false,
+      afterContentOk: false,
+      verdictReproduces: false,
+      reproduces: false,
+      note: `snapshot content could not decode: ${error instanceof Error ? error.message : String(error)}`,
+    };
+  }
+  const recomputed = validate(snapshot.file, before, after);
+  const beforeContentOk = sha256(before) === snapshot.beforeSha256;
+  const afterContentOk = sha256(after) === recordedAfterSha256;
   const rcV = normV(recomputed);
   const reV = normV(recorded);
   const verdictReproduces =
@@ -142,7 +212,7 @@ export function reexecValidate(
     rcV.ok === reV.ok;
   const reproduces = beforeContentOk && afterContentOk && verdictReproduces;
   const note = reproduces
-    ? 're-executed engine.validate over the embedded before/after; the recorded verdict reproduces'
+    ? 're-executed engine.validate over the decoded embedded before/after; the recorded verdict reproduces'
     : !beforeContentOk
       ? 'embedded before-content hash != recorded beforeSha256 (content swapped)'
       : !afterContentOk

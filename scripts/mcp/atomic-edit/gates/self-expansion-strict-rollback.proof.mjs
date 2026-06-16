@@ -12,6 +12,8 @@ const helper = fs.readFileSync(path.join(root, 'atomic-rollback-broker.mjs'), 'u
 const checks = [
   ['strict rollback export exists', effect.includes('export function rollbackEffectStrict')],
   ['strict rollback verifies residual diff', effect.includes('const residual = diffEffect(snap)')],
+  ['strict rollback ignores transient broker scratch dirs', effect.includes('REPO_SCRATCH_PREFIXES') && effect.includes("'atomic-exec-broker-file-'")],
+  ['effect snapshot skips scratch prefixes for root files', effect.includes('REPO_SCRATCH_PREFIXES.some((prefix) => name.startsWith(prefix))')],
   ['rollback uses broker fallback only for permission errors', effect.includes("code === 'EPERM'") && effect.includes("code === 'EACCES'")],
   ['rollback delete helper exists', effect.includes('function rollbackDelete')],
   ['rollback write helper exists', effect.includes('function rollbackWrite')],

@@ -1,0 +1,26 @@
+name: Atomic Edit CI
+
+on:
+  push:
+    paths:
+      - 'scripts/mcp/atomic-edit/**'
+  pull_request:
+    paths:
+      - 'scripts/mcp/atomic-edit/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: scripts/mcp/atomic-edit
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: scripts/mcp/atomic-edit/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: node run-gates.mjs --json || true
