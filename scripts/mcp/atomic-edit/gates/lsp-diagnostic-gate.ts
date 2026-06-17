@@ -32,7 +32,7 @@ import type { EditGateContext, EditGateResult } from '../engine-gate-registry';
 
 // ── Language → LSP routing ──────────────────────────────────────────
 
-const EXT_TO_LSP: Record<string, string> = {
+export const EXT_TO_LSP: Record<string, string> = {
   '.ts': 'typescript', '.tsx': 'typescript', '.js': 'typescript',
   '.jsx': 'typescript', '.mjs': 'typescript', '.cjs': 'typescript',
   '.mts': 'typescript', '.cts': 'typescript',
@@ -63,7 +63,7 @@ const GATE_VERSION = '1.0.0';
 
 // ── LSP Mesh communication ──────────────────────────────────────────
 
-interface LspMeshResult {
+export interface LspMeshResult {
   ok: boolean;
   language: string;
   /** which workspace the mesh resolved the file into ('auto' when inferred). */
@@ -83,7 +83,7 @@ const LSP_MESH_ROUTER = path.resolve(
   'lsp-router.mjs'
 );
 
-async function queryLspMesh(
+export async function queryLspMesh(
   absPath: string,
   language: string,
   content: string,

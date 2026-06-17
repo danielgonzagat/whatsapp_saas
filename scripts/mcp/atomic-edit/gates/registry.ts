@@ -31,6 +31,7 @@ import lintFixGate from './lint-fix-gate.js';
 import securityGate from './security-gate.js';
 import testExecutionGate from './test-execution-gate.js';
 import publicContractGate from './public-contract-gate.js';
+import lspSemanticGate from './lsp-semantic-gate.js';
 
 /**
  * Static gates safe in the WRITE direction — each asserts "this write did not
@@ -116,6 +117,11 @@ export const DYNAMIC_GATES: GateModule[] = [
   // its canonical form via proposeFixes, so the convergence corpus spans formatting,
   // not just imports. Syntax-broken / no-parser / ignored → unjudged, never red.
   lintFixGate,
+  // DELTA semantic check via the LSP mesh — reds only on a NEW intrinsic single-file
+  // semantic error this edit introduces (cross-language: py/go/rust/… via real language
+  // servers). Pre-existing errors cancel; no server / cross-file resolution → unjudged.
+  // The capability tsc-based type-soundness cannot cover. Absent server → clean no-op.
+  lspSemanticGate,
 ];
 
 export interface UnifiedRed {

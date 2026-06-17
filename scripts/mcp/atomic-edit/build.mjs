@@ -255,6 +255,11 @@ atomic-edit build FAILED (${errors.length} error(s))
   for (const asset of ['worker-scope-check.mjs']) {
     fs.copyFileSync(path.join(dir, asset), path.join(BUILD_OUT, asset));
   }
+  // The LSP mesh router is a hand-written .mjs CLI (not a compiled .ts), spawned by the
+  // lsp-semantic dynamic gate. Copy it beside the compiled gates so the gate's
+  // `dirname(import.meta.url)/lsp-router.mjs` resolves at runtime from dist/gates.
+  fs.mkdirSync(path.join(BUILD_OUT, 'gates'), { recursive: true });
+  fs.copyFileSync(path.join(dir, 'gates', 'lsp-router.mjs'), path.join(BUILD_OUT, 'gates', 'lsp-router.mjs'));
 
   try {
     assertRequiredBuildArtifacts(BUILD_OUT);
