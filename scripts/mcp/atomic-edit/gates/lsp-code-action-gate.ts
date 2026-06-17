@@ -1,12 +1,19 @@
 /**
  * LSP Code Action Gate — auto-fix and refactor via LSP with atomic transaction.
  *
+ * STATUS (honest ceiling): like the other LSP gates this is an OPT-IN, ASYNC
+ * capability that is NOT a member of the synchronous WRITE lattice
+ * (`gates/registry.ts` → WRITE_GATES). Its synchronous entry abstains; the real
+ * work happens only through the async `evaluate(ctx)` path with a live language
+ * server installed. The flow below describes that async path — not something that
+ * runs on every edit.
+ *
  * When the LSP detects a fixable issue (unused import, missing await, wrong type,
- * deprecated API), this gate:
+ * deprecated API), the async path:
  *   1. Queries textDocument/codeAction for the file
  *   2. Receives a WorkspaceEdit with the fix
  *   3. Passes it through atomic_apply_workspace_edit
- *   4. The edit goes through the FULL gate lattice (including lsp-diagnostic-gate)
+ *   4. The resulting edit is itself driven through the synchronous WRITE lattice
  *   5. Returns a FounderBlock showing what was auto-fixed
  *
  * This creates a positive feedback loop: the LSP finds issues → the gate suggests
@@ -76,4 +83,4 @@ export function evaluateSync(): EditGateResult {
   return { id: ID, status: 'unjudged', fact: 'Code-action gate requires async LSP communication.', locus: undefined };
 }
 
-export function gate(ctx) { return evaluateSync(ctx); }
+export function gate(_ctx: EditGateContext): EditGateResult { return evaluateSync(); }

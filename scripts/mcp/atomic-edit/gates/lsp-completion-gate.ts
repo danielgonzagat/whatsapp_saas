@@ -16,9 +16,6 @@ import type { EditGateContext, EditGateResult } from '../engine-gate-registry';
 
 const ID = 'lsp-completion-gate';
 
-function green(fact: string, locus?: string): EditGateResult {
-  return { id: ID, status: 'green', fact, locus };
-}
 function unclear(fact: string, locus?: string): EditGateResult {
   return { id: ID, status: 'unjudged', fact, locus };
 }
@@ -42,8 +39,11 @@ export async function evaluate(ctx: EditGateContext): Promise<EditGateResult> {
   const language = EXT_TO_LSP[path.extname(ctx.file).toLowerCase()];
   if (!language) return unclear(`no completion-capable LSP for this file type`);
 
-  return green(
-    `completion suggestions available via LSP "${language}" — the FounderBlock can include context-aware API suggestions, deprecation warnings, and type information to enhance edit quality`
+  // HONEST: completion is an editor affordance, not an edit verification. This gate
+  // surfaces suggestions but proves nothing about the edit, so it abstains
+  // (`unjudged`) rather than returning green-by-assumption.
+  return unclear(
+    `completion suggestions available via LSP "${language}" (advisory affordance, not a verdict); this gate performs no blocking verification`
   );
 }
 
@@ -52,4 +52,4 @@ export function evaluateSync(ctx: EditGateContext): EditGateResult {
 }
 
 
-export function gate(ctx) { return evaluateSync(ctx); }
+export function gate(ctx: EditGateContext): EditGateResult { return evaluateSync(ctx); }

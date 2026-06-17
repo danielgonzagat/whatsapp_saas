@@ -1,20 +1,27 @@
 /**
- * LSP Diagnostic Gate — connects the LSP Mesh to the Atomic Gate Lattice.
+ * LSP Diagnostic Gate — bridges the LSP Mesh toward the Atomic Gate Lattice.
  *
  * This gate is the bridge between "single-file structural proof" (tree-sitter)
- * and "cross-file semantic proof" (language servers). Every edit that passes
- * through the gate lattice now ALSO gets checked by the appropriate LSP.
+ * and "cross-file semantic proof" (language servers).
  *
- * Architecture:
- *   1. Atomic edit → gate lattice → lsp-diagnostic-gate
- *   2. Gate detects language from file extension
- *   3. Routes to LSP Mesh via child process (same pattern as chrome-devtools-bridge)
- *   4. LSP Mesh spawns the correct language server lazily
- *   5. textDocument/didOpen → textDocument/diagnostic
- *   6. Returns verdict: diagnostics unchanged/worsened
+ * STATUS (be honest about the ceiling — the doctrine demands it): this is an
+ * OPT-IN, ASYNC capability, NOT yet a member of the synchronous WRITE lattice
+ * (`gates/registry.ts` → WRITE_GATES). The synchronous `gate(ctx)`/`evaluateSync`
+ * entry the floor calls ABSTAINS (`unjudged`) by design — real LSP verification
+ * needs an installed language server and an async round-trip, which the per-write
+ * floor neither has nor awaits. Use the async `evaluate(ctx)` path explicitly to
+ * route an edit through a live server. Until a gate is listed in WRITE_GATES it
+ * does not run on every edit, and this file does not claim it does.
  *
- * This gate is HONEST (like all Atomic gates): it proves semantic correctness
- * as reported by the language server, but explicitly states the ceiling —
+ * Async architecture (when invoked via `evaluate`):
+ *   1. Gate detects language from file extension
+ *   2. Routes to LSP Mesh via child process (same pattern as chrome-devtools-bridge)
+ *   3. LSP Mesh spawns the correct language server lazily
+ *   4. textDocument/didOpen → textDocument/diagnostic
+ *   5. Returns verdict: diagnostics unchanged/worsened
+ *
+ * This gate is HONEST (like all Atomic gates): when it does run, it proves semantic
+ * correctness as reported by the language server, but explicitly states the ceiling —
  * "LSP diagnostics passing ≠ product behavior correct."
  */
 
@@ -59,6 +66,8 @@ const GATE_VERSION = '1.0.0';
 interface LspMeshResult {
   ok: boolean;
   language: string;
+  /** which workspace the mesh resolved the file into ('auto' when inferred). */
+  workspace?: string;
   diagnostics?: Array<{
     range: { start: { line: number; character: number }; end: { line: number; character: number } };
     severity: number;
@@ -201,4 +210,4 @@ export function evaluateSync(ctx: EditGateContext): EditGateResult {
 // ── Export for registry ─────────────────────────────────────────────
 
 
-export function gate(ctx) { return evaluateSync(ctx); }
+export function gate(ctx: EditGateContext): EditGateResult { return evaluateSync(ctx); }

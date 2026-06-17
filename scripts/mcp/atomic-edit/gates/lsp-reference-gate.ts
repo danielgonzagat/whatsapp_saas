@@ -75,8 +75,8 @@ async function queryReferences(
       if (code !== 0) { resolve(null); return; }
       try {
         const r = JSON.parse(stdout);
-        const refs: Array<{ uri: string }> = r.data?.references ?? [];
-        const files = new Set(refs.map((ref: { uri: string }) => ref.uri));
+        const refs: Array<{ uri: string; line: number; character: number }> = r.data?.references ?? [];
+        const files = new Set(refs.map((ref) => ref.uri));
         resolve({ references: refs, totalCount: refs.length, filesCount: files.size });
       } catch { resolve(null); }
     });
@@ -120,4 +120,4 @@ export function evaluateSync(ctx: EditGateContext): EditGateResult {
 }
 
 
-export function gate(ctx) { return evaluateSync(ctx); }
+export function gate(ctx: EditGateContext): EditGateResult { return evaluateSync(ctx); }

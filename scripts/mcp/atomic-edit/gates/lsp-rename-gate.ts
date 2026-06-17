@@ -58,19 +58,24 @@ export async function evaluate(ctx: EditGateContext): Promise<EditGateResult> {
   const ext = path.extname(ctx.file).toLowerCase();
   const language = EXT_TO_LSP_RENAME[ext];
 
+  // HONEST: this gate does not itself perform a rename or verify one — it points
+  // at the capability. It must not return a passing (`green`) verdict it did not
+  // earn (doctrine: never green-by-assumption), so it abstains (`unjudged`). Real
+  // cross-file rename runs through `atomic_rename_symbol_cross_file`, which routes
+  // a textDocument/rename through the LSP mesh and applies the WorkspaceEdit atomically.
   if (!language) {
     return {
       id: GATE_NAME,
-      status: 'green',
-      fact: `No rename-capable LSP for "${ext}". Use single-file scope-correct rename via atomic_rename_symbol.`,
+      status: 'unjudged',
+      fact: `No rename-capable LSP for "${ext}"; abstaining. Single-file scope-correct rename: atomic_rename_symbol.`,
       locus: ctx.file,
     };
   }
 
   return {
     id: GATE_NAME,
-    status: 'green',
-    fact: `Cross-file rename available via LSP "${language}". Use atomic_rename_symbol_cross_file — it routes through lsp-mesh for semantic, multi-file safety.`,
+    status: 'unjudged',
+    fact: `Cross-file rename available via LSP "${language}" through atomic_rename_symbol_cross_file (advisory pointer, not a verdict); this gate performs no verification here.`,
     locus: ctx.file,
   };
 }
@@ -84,4 +89,4 @@ export function evaluateSync(ctx: EditGateContext): EditGateResult {
   };
 }
 
-export function gate(ctx) { return evaluateSync(ctx); }
+export function gate(ctx: EditGateContext): EditGateResult { return evaluateSync(ctx); }

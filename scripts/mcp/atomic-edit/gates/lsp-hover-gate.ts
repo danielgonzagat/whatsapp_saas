@@ -19,7 +19,6 @@
  */
 
 import * as path from 'node:path';
-import * as fs from 'node:fs';
 import { spawn } from 'child_process';
 import type { EditGateContext, EditGateResult } from '../engine-gate-registry';
 
@@ -45,12 +44,7 @@ const LSP_MESH_ROUTER = path.resolve(
   'lsp-router.mjs'
 );
 
-interface HoverResult {
-  contents?: string | { language: string; value: string } | Array<{ language: string; value: string }>;
-  range?: unknown;
-}
-
-async function queryLspHover(
+export async function queryLspHover(
   absPath: string,
   language: string,
   line: number,
@@ -103,15 +97,21 @@ export async function evaluate(ctx: EditGateContext): Promise<EditGateResult> {
   const ext = path.extname(ctx.file).toLowerCase();
   const language = EXT_TO_LSP_HOVER[ext];
 
+  // HONEST: this gate is advisory/informational — it surfaces hover docs for
+  // auditability, it does NOT verify the edit. It must therefore NEVER return a
+  // passing (`green`) verdict it did not earn (the doctrine: never green-by-
+  // assumption). It abstains (`unjudged`). The real doc-fetch lives in
+  // `queryLspHover` (LSP textDocument/hover via the router) for callers that want
+  // to surface documentation explicitly; it is not a pass/fail signal.
   if (!language) {
-    return { id: GATE_NAME, status: 'green', fact: `No hover-capable LSP for "${ext}". FounderBlock will show structural-only audit info.`, locus: ctx.file };
+    return { id: GATE_NAME, status: 'unjudged', fact: `No hover-capable LSP for "${ext}"; advisory gate abstains.`, locus: ctx.file };
   }
 
-  return { id: GATE_NAME, status: 'green', fact: `Hover documentation available via LSP "${language}". Symbol docs captured in FounderBlock for non-technical auditability.`, locus: ctx.file };
+  return { id: GATE_NAME, status: 'unjudged', fact: `Hover docs available via LSP "${language}" through queryLspHover (advisory, not a verdict); this gate performs no blocking verification.`, locus: ctx.file };
 }
 
 export function evaluateSync(ctx: EditGateContext): EditGateResult {
   return { id: GATE_NAME, status: 'unjudged', fact: 'Hover gate requires async LSP communication for symbol documentation.', locus: ctx.file };
 }
 
-export function gate(ctx) { return evaluateSync(ctx); }
+export function gate(ctx: EditGateContext): EditGateResult { return evaluateSync(ctx); }
