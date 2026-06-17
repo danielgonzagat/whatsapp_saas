@@ -13,13 +13,16 @@
  * Falsifiable: revert the statSync capture in atomicWrite and this exits 1.
  */
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { atomicWrite } from '../dist/server-helpers-io.js';
 
 const jsonMode = process.argv.includes('--json');
-const gatesDir = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(gatesDir, '../../../..');
+// Scratch fixtures go in a fresh tmpdir — never the repo. Writing under a layout-
+// derived repoRoot was both non-portable (it overshot to an unwritable parent in a
+// flat clone → EACCES) and a source-tree polluter. atomicWrite is path-agnostic, so
+// a tmpdir faithfully exercises the mode-preservation primitive.
+const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'byte-floor-mode-proof-'));
 const stamp = `${process.pid}-${Date.now()}`;
 
 let failures = 0;
@@ -32,7 +35,7 @@ const modeOf = (file) => fs.statSync(file).mode & 0o777;
 
 const made = [];
 const tmpPath = (suffix) => {
-  const p = path.join(repoRoot, `.byte-floor-mode-proof-${stamp}-${suffix}.txt`);
+  const p = path.join(tmpRoot, `${stamp}-${suffix}.txt`);
   made.push(p);
   return p;
 };
@@ -62,6 +65,7 @@ try {
   expect(false, `threw: ${error instanceof Error ? error.message : String(error)}`);
 } finally {
   for (const p of made) { try { fs.unlinkSync(p); } catch { /* best-effort */ } }
+  try { fs.rmSync(tmpRoot, { recursive: true, force: true }); } catch { /* best-effort */ }
 }
 
 if (jsonMode) {
