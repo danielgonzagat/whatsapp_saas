@@ -1,0 +1,4127 @@
+{
+  "ok": true,
+  "proofId": "atomic-deepseek-v4-pro-aider-polyglot-public-proof-v1",
+  "generatedAt": "2026-06-17T21:08:12.232Z",
+  "benchmarkSource": {
+    "name": "Aider Polyglot Benchmark",
+    "url": "https://github.com/Aider-AI/polyglot-benchmark",
+    "commit": "7e0611e77b54e2dea774cdc0aa00cf9f7ed6144f"
+  },
+  "leaderboardReference": {
+    "url": "https://aider.chat/docs/leaderboards/",
+    "currentLeader": "gpt-5 (high)",
+    "currentLeaderScore": 88,
+    "metric": "pass_rate_2_pct",
+    "observedAt": "2026-06-17"
+  },
+  "atomicSource": {
+    "repositoryCommit": "7a5f30623b95e06bf47dd61f9ac0c2e432a0d71b",
+    "runnerRoot": "/workspaces/Kloel"
+  },
+  "summary": {
+    "runDir": "/workspaces/Kloel/artifacts/atomic-edit-bench/atomic-deepseek-v4-pro-aider-polyglot-all-225-remote-20260617T162708Z",
+    "model": "deepseek-v4-pro",
+    "totalCases": 225,
+    "passedCases": 225,
+    "failedCases": 0,
+    "languageCounts": {
+      "cpp": 26,
+      "go": 39,
+      "java": 47,
+      "javascript": 49,
+      "python": 34,
+      "rust": 30
+    },
+    "languagePassed": {
+      "cpp": 26,
+      "go": 39,
+      "java": 47,
+      "javascript": 49,
+      "python": 34,
+      "rust": 30
+    },
+    "runDurationSeconds": 5208.945,
+    "caseDurationTotalSeconds": 5208.945,
+    "summaryOutcomeCount": 225
+  },
+  "validation": {
+    "errors": [],
+    "warnings": []
+  },
+  "manifest": {
+    "all225Path": "/workspaces/Kloel/artifacts/atomic-edit-bench/atomic-deepseek-v4-pro-aider-polyglot-all-225-remote-20260617T162708Z/all-225.json",
+    "all225Sha256": "88297b562f10097ade3ac624f8124d5c2c22fbabcfed4ce9f8daa6e1a56bb294",
+    "caseListSha256": "535f5252cc8ca3eb790e131684506088778054ac45ea1cf55a3a41c053c63260",
+    "caseArtifactSetSha256": "b50c43513fcf176d868db2e1d0bbf39052adc846e684092e29d996efcf136f34",
+    "expectedTotal": 225,
+    "expectedModel": "deepseek-v4-pro",
+    "expectedLanguageCounts": {
+      "cpp": 26,
+      "go": 39,
+      "java": 47,
+      "javascript": 49,
+      "python": 34,
+      "rust": 30
+    }
+  },
+  "atomic": {
+    "runnerFileSha256": {
+      "scripts/mcp/atomic-edit-bench/aider-polyglot-deepseek-runner.mjs": "7681133ede0b81bf252ae5bc81c6eb2540666e382fd3f640517a6fc54b3af43e",
+      "scripts/mcp/atomic-edit-bench/aider-polyglot-deepseek-runner.proof.mjs": "d24b5159a90148e7ce61b35336a8c4362e3226c08e6ec460a851f42344f3cf48",
+      "scripts/mcp/atomic-edit-bench/aider-polyglot-deepseek-batch-runner.mjs": "0c859f2f77a91a6a30e11d88817886c564a3770b3209e9fd30bfd18ec4cf8549",
+      "scripts/mcp/atomic-edit-bench/aider-polyglot-deepseek-batch-runner.proof.mjs": "d42d764e6ead06f5f52f0b4456cc49326e83c8638326b513d9f9ffbe6c1bbf83"
+    }
+  },
+  "cases": [
+    {
+      "file": "cpp-all-your-base.json",
+      "sha256": "d3a64ec420b4c99d8aec0463a23fb411a7e67b3ea601e446c6375b9a6939ddfd",
+      "testcase": "cpp/all-your-base",
+      "language": "cpp",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 15.993,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "edf76b128eb931531f61eeef7e719384dfcba543ae1b0628896bd4c89911496c"
+    },
+    {
+      "file": "cpp-allergies.json",
+      "sha256": "505c80a16ec149d5cb68ea81635dd2af1dc37c909aae2c0e98ee4f9ac071ca45",
+      "testcase": "cpp/allergies",
+      "language": "cpp",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 15.97,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "0fabfb71e07574189a4a143cd7cdd9d2392362784ec9dbc82fe71f54eabf09de"
+    },
+    {
+      "file": "cpp-bank-account.json",
+      "sha256": "4e3a1f377efda83304ef0c35f247b8a35faa191baa86970921e3e0e7eb813997",
+      "testcase": "cpp/bank-account",
+      "language": "cpp",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 16.37,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "32718be197f6d8ff75063462ac28956aa6a34dbae369667c76d89030a0c0e49f"
+    },
+    {
+      "file": "cpp-binary-search-tree.json",
+      "sha256": "bc2c1344b63739abd363048004cc2db56f5cda65073a25a6ac684e4173d98c47",
+      "testcase": "cpp/binary-search-tree",
+      "language": "cpp",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 21.322,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "a2effec809c1aa7490cf793a3c05b11ec2813fa0c7d11be95ba182a9d3865c55"
+    },
+    {
+      "file": "cpp-circular-buffer.json",
+      "sha256": "6f075b799d7e80df4bf763f8844ac680ad8ebea85b2b2c342a67d21c37228fb0",
+      "testcase": "cpp/circular-buffer",
+      "language": "cpp",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 21.579,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "d7a93fb2a24bb8c0bd5b9bcd8f0bdc36b102b763edc396c7b95cc782cca624c0"
+    },
+    {
+      "file": "cpp-clock.json",
+      "sha256": "732a6cb2f2ba42189ce29b16e90d74c3e91c1ca802905315eca1990c9bd864d0",
+      "testcase": "cpp/clock",
+      "language": "cpp",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 15.422,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "40bb6369242a9da24d895bb2ace09f2367e553bcd8de65c2cbf301294ffa42ef"
+    },
+    {
+      "file": "cpp-complex-numbers.json",
+      "sha256": "d7bdca1e3f4cc4e4fd84241b7bc5688894be59b4fdb25fd9a602bc3def6f653e",
+      "testcase": "cpp/complex-numbers",
+      "language": "cpp",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 17.954,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "ed6b1799a2f1a555c55204ea4641f6c9034bf9c9f180726074bc9b8cddff31a7"
+    },
+    {
+      "file": "cpp-crypto-square.json",
+      "sha256": "55b9ec0dc67c1b6030139130efbadd5c742ab996d561fd72278f727f116f4b20",
+      "testcase": "cpp/crypto-square",
+      "language": "cpp",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 26.046,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "f0b15e0b3d8c56912520358a40fb9e06a03ef25efee576efe328a8d80931ae8a"
+    },
+    {
+      "file": "cpp-diamond.json",
+      "sha256": "a7213782a3e8f65495e3dd153a8034e6c315e6643e11f6bfd27808086d5cb344",
+      "testcase": "cpp/diamond",
+      "language": "cpp",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 14.527,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "7c838db0177a9b074ae3afe4b31f093be85e2a8c4d24d391507e61a80246f628"
+    },
+    {
+      "file": "cpp-dnd-character.json",
+      "sha256": "3a05a11289eaab3d79a4e716c30defbc8b49568feb75d0ea38aa3f1c0aa5d546",
+      "testcase": "cpp/dnd-character",
+      "language": "cpp",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 29.717,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "5ba074bd04d560319cdddedda7d53083d216f3fec67d7fc8fc4f7b648ca3eea3"
+    },
+    {
+      "file": "cpp-gigasecond.json",
+      "sha256": "5b7bb5bbf8f8991d1961d9ae6280826f3ca484a5dcd72caf55cbe785d1e08508",
+      "testcase": "cpp/gigasecond",
+      "language": "cpp",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 20.438,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "8b2ffc18d6e7783860665dd382e65bf48db167698eaf2ef06993ca6770e5cb92"
+    },
+    {
+      "file": "cpp-grade-school.json",
+      "sha256": "633f6a0c4f815f9a8b3e6c2895c9825dc97e791e3598740e0637a43db8ffc48f",
+      "testcase": "cpp/grade-school",
+      "language": "cpp",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 14.917,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "7e1e7d28170545ee4989a37a0818b87d324e52bb825bb21c72d744ef682cb173"
+    },
+    {
+      "file": "cpp-kindergarten-garden.json",
+      "sha256": "5a3d86e7abc7eb76545bc3708ce0ac683da1c8bf4e298a5b899a64da6d35b35b",
+      "testcase": "cpp/kindergarten-garden",
+      "language": "cpp",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 16.013,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "b014ad68810672f128b29ca3d4476192a6cc65f68ad579eb8fd17bd7f2ddb277"
+    },
+    {
+      "file": "cpp-knapsack.json",
+      "sha256": "7cf4642ddacc33911f3f166fd9f8a0fee12fe0371149db152828a2be327b34df",
+      "testcase": "cpp/knapsack",
+      "language": "cpp",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 13.61,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "48448b946603bcdbc49811b5c937600a39b83682e99a2198e99579d3719fb5ae"
+    },
+    {
+      "file": "cpp-linked-list.json",
+      "sha256": "531ecac7eba642d43baa384f9933ee7eef993a34702be0419d674de3ecd31cd1",
+      "testcase": "cpp/linked-list",
+      "language": "cpp",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 18.51,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "9fb45879b19097bd11dcb0ee051248500800a721fc0c52c3f45ea93532ca9e8a"
+    },
+    {
+      "file": "cpp-meetup.json",
+      "sha256": "1c9740b0132f3433c3cb1f2ebfb58bb41e4eeb8d8843a14b7c78a51cfb7a07ef",
+      "testcase": "cpp/meetup",
+      "language": "cpp",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 29.837,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "161540b7faf8218b7b7b4c62f0e51f91c577c22a2f4064fc175c59af2f4576aa"
+    },
+    {
+      "file": "cpp-parallel-letter-frequency.json",
+      "sha256": "d2b6e076d12958bfef8b53cca34f9dc70bac274d499f24e1b7c9140238ad5add",
+      "testcase": "cpp/parallel-letter-frequency",
+      "language": "cpp",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 22.673,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "9f66f3a459765d81c637ee41ee3b1b68bfb22e60b56ffdcd495ec57183a029f2"
+    },
+    {
+      "file": "cpp-perfect-numbers.json",
+      "sha256": "232fa2610c0a3592819199e16238adcad0cad753b212328efcb8b91c721ecf61",
+      "testcase": "cpp/perfect-numbers",
+      "language": "cpp",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 14.141,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "304f566e80e583af6c382d2365330ba0bce7a928cfc486561bc54c0cfe6f82f0"
+    },
+    {
+      "file": "cpp-phone-number.json",
+      "sha256": "5cc0785e601c14bdcc483bc65bbf42d655d363682640b8a74dda6a69c0fd6e3e",
+      "testcase": "cpp/phone-number",
+      "language": "cpp",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 15.924,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "7170b4fe994426f8d2ac56a15feb94a5c23611d7f6dd05a42ed3656f753520b6"
+    },
+    {
+      "file": "cpp-queen-attack.json",
+      "sha256": "5c8fa685d162c16679dab4d6015e44668db7c337cc53a42f6fd86e885aed33e5",
+      "testcase": "cpp/queen-attack",
+      "language": "cpp",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 15.33,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "288e5b16d72ea2881b2325794dc80d1d349443477ad9bf96589334bcbd2690d0"
+    },
+    {
+      "file": "cpp-robot-name.json",
+      "sha256": "509f23c5c9a128b9197661635d2701d41a1f53f6b08935a0265d508392cb2b81",
+      "testcase": "cpp/robot-name",
+      "language": "cpp",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 35.769,
+      "repairAttempts": 2,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 1,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "e0fa41d8c308a791b227e785456063eb507ff67a9cbc7be23aafae2ef9c01ca4"
+    },
+    {
+      "file": "cpp-space-age.json",
+      "sha256": "c5776bc1713c9252e19b440edb53eb80a62db5eb61a64129f198e67ea68e6c58",
+      "testcase": "cpp/space-age",
+      "language": "cpp",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 15.907,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "56b64a4711a02c7fed59522af6bcc45b5d6f7d79994e6cdab5294ae12f815ddf"
+    },
+    {
+      "file": "cpp-spiral-matrix.json",
+      "sha256": "7fa95218eaebd77f34affb166d35187765ffc9576312123caa32e0e8a882c49a",
+      "testcase": "cpp/spiral-matrix",
+      "language": "cpp",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 14.533,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "249e0979aeaaf6afc21eb7e9b09b147f48601f9ce95d625db961a34ffc0cd1bc"
+    },
+    {
+      "file": "cpp-sublist.json",
+      "sha256": "1d87a0ca41352beea5c10a7de2201031281cf1b73be2e4a2a4071c99ec4342dc",
+      "testcase": "cpp/sublist",
+      "language": "cpp",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 14.33,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "dc12499fde96479d716e90ae2dbae5bba439869961b5595e53057dacf8d990fb"
+    },
+    {
+      "file": "cpp-yacht.json",
+      "sha256": "4e743267258ec4e40c5ef4dd3962d9a1ca9109a148fbe1d292038a6c4f304a0b",
+      "testcase": "cpp/yacht",
+      "language": "cpp",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 16.87,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "1c4e659d96523480a6585ef24e3890d7241b1ef73e1512c0f3c996d9c4b7dca1"
+    },
+    {
+      "file": "cpp-zebra-puzzle.json",
+      "sha256": "30bff4c7985c02a04001c1904ee9adf0d59c9474f3a24e415a23176a778682b7",
+      "testcase": "cpp/zebra-puzzle",
+      "language": "cpp",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 238.385,
+      "repairAttempts": 2,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 1,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "fb9f5820e07e6faadde5667ff316d55974bd880543de4416c6c83c085e66a7dd"
+    },
+    {
+      "file": "go-alphametics.json",
+      "sha256": "665d1c11bd5586324d22c59cc190a9fcb1210dcc31fcaf727ce90af710d47dca",
+      "testcase": "go/alphametics",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 20.676,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "d12c56160cbac36eb9868020843cc6741f8c584a7e9bc00e4fd9c90e3e4afd9f"
+    },
+    {
+      "file": "go-beer-song.json",
+      "sha256": "ee7d1bd350bc838ed03d7eb368cf6ea612c3e73c71eb6f0e34353b133a4f023a",
+      "testcase": "go/beer-song",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 12.328,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "3043f190de97d364b932d7f4a0fbf852782483fddeb77df27590cdc1f25afded"
+    },
+    {
+      "file": "go-book-store.json",
+      "sha256": "4ba3c4e92f1772a90462c0642eb5f91754a69ab61ef1fa1661587fac31f7d2c5",
+      "testcase": "go/book-store",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 31.403,
+      "repairAttempts": 3,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "6fe3fb3a824dae9547893fe375dcb2b68cf55a0d5bc6694db21e1beb99720f54"
+    },
+    {
+      "file": "go-bottle-song.json",
+      "sha256": "b064f79dc958a6f8db968dad1f2eb57ce95fafee29d9c05fa9fd03af11685880",
+      "testcase": "go/bottle-song",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 10.741,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "64b6d056c2b43f6eec81429e15e0152a11b7a28f5262c552a9f58a1ff99a31e5"
+    },
+    {
+      "file": "go-bowling.json",
+      "sha256": "a7d3365093b5da9c22fa98c96c84fa8b387d2322f8ce56edb5cb841282a2bc4e",
+      "testcase": "go/bowling",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 33.165,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "95a2c44fb66a62cc46b4c4f8629d401195dc0d78af875ddd2a66df8868b9243e"
+    },
+    {
+      "file": "go-connect.json",
+      "sha256": "4fdf8bfbdf512314bd2bc92343cc103a11fa85bd4b641fa4f5258003074e0117",
+      "testcase": "go/connect",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 8.864,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "4fc91959866b2d2e028a518bb5c25442c51d30e4666227c0483b382c19e0283a"
+    },
+    {
+      "file": "go-counter.json",
+      "sha256": "aaedee565dd11f7e7fc2212bab67ab7aa7c5ca64f46df61bb48aa899f01cf222",
+      "testcase": "go/counter",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 8.332,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "f01fafd3348209b04816572289f1a9335f723a1898a8a01ff989b1fa67c085d3"
+    },
+    {
+      "file": "go-crypto-square.json",
+      "sha256": "2648827413c7d83727e26ba3282f9ebdda74f3c5683cbb9ad42cdc8eb55b3995",
+      "testcase": "go/crypto-square",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 6.317,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "bf2c3514711bfadeeb3117a3f670f2b742b294b062d188eeda89a11379eac4d4"
+    },
+    {
+      "file": "go-dnd-character.json",
+      "sha256": "211dc1d9daa7f999ffada1eab4b1d78e646ca639dbc74b3447f061fbeebe1523",
+      "testcase": "go/dnd-character",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 4.432,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "b5b84b7d9ce52ba0b38784705de6392e20fa891d0f5e2b030cdd80cdae55f40a"
+    },
+    {
+      "file": "go-dominoes.json",
+      "sha256": "f1425c626ddc0507af4333fee1832325558e93d4dbfb76e0450a27315a50bbd1",
+      "testcase": "go/dominoes",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 62.02,
+      "repairAttempts": 4,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "07eb174af81bd9b4462ab14170f089bcee3e60751687977c84ee4833d6fd49f8"
+    },
+    {
+      "file": "go-error-handling.json",
+      "sha256": "bf6665602060683933c74f71a6d5fabd4c05457df03f05d6f22b41f9b583c49e",
+      "testcase": "go/error-handling",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 3.532,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "9af629135b51db39778aa2156637a303b04b70f57058b7611e1c70ba7c56f55c"
+    },
+    {
+      "file": "go-food-chain.json",
+      "sha256": "88cc4b1a9a80f851e7630a48dae58019783b342a758c15a4c848b99f206cc66b",
+      "testcase": "go/food-chain",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 14.131,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "7d607c28fb8c0724c6eaf982b398e30bf37329a26a463a74354aecb62c37b097"
+    },
+    {
+      "file": "go-forth.json",
+      "sha256": "3cab22be5f41eaf5c3c82281808dae382222cb1557646d0cc621316215f3e571",
+      "testcase": "go/forth",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 30.748,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "1d4f0c71aa36a979708a6f892d5be547b93ec7bef0dfa38f78db3ff17043e9db"
+    },
+    {
+      "file": "go-hexadecimal.json",
+      "sha256": "b4b2492283c081630be8d7dcd3f4e7a17ff7a14a2500a352d347fbcb1b35dfee",
+      "testcase": "go/hexadecimal",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 5.086,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "2384f256c3448ed9eb4ab7f5f5288dae19ec837e2cb61cfbaae2c35acb46eda8"
+    },
+    {
+      "file": "go-kindergarten-garden.json",
+      "sha256": "79eedcc29c44a589d0f3ef0f9fdd9e25b4e9c26d142e48edf59e6ad8f67b4811",
+      "testcase": "go/kindergarten-garden",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 8.836,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "99bbad6131ee5929d88aa0d79dfffbc572f5a49585917484e9587d46d0433dce"
+    },
+    {
+      "file": "go-ledger.json",
+      "sha256": "0558e7f6b3b96894c0a877bc26dab143bc929978bf7e8984e5d3d260568f5f46",
+      "testcase": "go/ledger",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 11.079,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "dd611c23ff85e182caa935f5f193b19aaaf7b3688a81a7b73344337151a9bf0b"
+    },
+    {
+      "file": "go-markdown.json",
+      "sha256": "f98f97a69080fa337ea781ad210c8f3a7a7e1d5ea33306ef7bcbebc30d852a29",
+      "testcase": "go/markdown",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 27.109,
+      "repairAttempts": 2,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "f345a7530a36f744ab6c7f07396f1ed71dfdd9e5c30898ede60356c1a1c38d2a"
+    },
+    {
+      "file": "go-matrix.json",
+      "sha256": "1537c654b921ebc903e7cb112b47e81aaf55c433e5dc4b2dce12e8bc349ba3ea",
+      "testcase": "go/matrix",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 18.383,
+      "repairAttempts": 2,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "b187627b1ecc40b09b189f5b8f283d4b170717bf5258627d1fc34a177dff87cd"
+    },
+    {
+      "file": "go-octal.json",
+      "sha256": "13325c7cb9ed2789f44e22841f575350e19b913cef6ff58d63f016591aacb642",
+      "testcase": "go/octal",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 3.048,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "0ec7bc8336e10b5e570e047a6b0c271c5712bbd09c485cda7ad508ec0ecf8e9f"
+    },
+    {
+      "file": "go-paasio.json",
+      "sha256": "9edd7a11679b7b7f0a4ebe914699872fe024d048180ff2c6fb0a690227589bcb",
+      "testcase": "go/paasio",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 11.649,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "47009e6677619a10a55892d4be82c473d75580843742395ea7217413b3736b2a"
+    },
+    {
+      "file": "go-palindrome-products.json",
+      "sha256": "8e0db0ff1567cc36f7d806988b2d35c1243ebf7041c8631c6240653fb4bbcace",
+      "testcase": "go/palindrome-products",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 7.311,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "4f5ab8a7916c8794c190bd6dc57e8f4d21de51a121db9e4e160e29bfd1b560aa"
+    },
+    {
+      "file": "go-pig-latin.json",
+      "sha256": "378dce964d2839f41451f3bf948aab0e9e90cf6b6eb087fe2b0ad26ee70a0aa6",
+      "testcase": "go/pig-latin",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 6.23,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "f6db9c901a3a0541ee5067d2dab17504c76e372cd4fb2035a316ce2bf1305c0b"
+    },
+    {
+      "file": "go-poker.json",
+      "sha256": "72f4a5686576a9c1d0ca8635ff3ddbc342cfd3467a5d47cb168a29ebe3092096",
+      "testcase": "go/poker",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 49.026,
+      "repairAttempts": 2,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "c3476bec27f3a9784e72c0771bf1e377256f4937ebae97f76499301e22a0ed59"
+    },
+    {
+      "file": "go-pov.json",
+      "sha256": "214e335f7446ee58267acc4475884ae2cc61a89b371fe4f4d66d1dbd75647d70",
+      "testcase": "go/pov",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 12.203,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "f2b97d6775dbdaebb49a3b3a62f9ce957e0b81678ad084c068339b720ca583a5"
+    },
+    {
+      "file": "go-protein-translation.json",
+      "sha256": "75e233765e500656f55340fe5401bb9031176bf344b5caf8b818ffa89e645552",
+      "testcase": "go/protein-translation",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 4.183,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "839b3ba4a008333a90966e563356829e04ca7d2b4adef40e15da9b2048520945"
+    },
+    {
+      "file": "go-react.json",
+      "sha256": "f61d7add9168892d33c2ae71d72ab06f5cfc46a69d676780ceef72cf4fe004f8",
+      "testcase": "go/react",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 22.577,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "8483b53bf8c8f3e233f7d588021665f05b86f3a9f9b8f97eaf91b5df979a5129"
+    },
+    {
+      "file": "go-robot-simulator.json",
+      "sha256": "cfbccc744f09c17d77636b27fa585ad1e59dc476c874decfd36010b9ddd25607",
+      "testcase": "go/robot-simulator",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 217.255,
+      "repairAttempts": 2,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "f4845349f80e2214977f7ef3892844f93404e92267d38c750b1b13e65c85c2df"
+    },
+    {
+      "file": "go-say.json",
+      "sha256": "a879a31b75c031942bdef104aad7b73f0c96270ae959dd71f35926be025135cf",
+      "testcase": "go/say",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 6.322,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "19ec65eda3f4b6154064a62b88841d4ee2280d65c9a7fd1bf5a2081e0d6d0268"
+    },
+    {
+      "file": "go-scale-generator.json",
+      "sha256": "697f7081e118dfa69e2e5d88aab62d8bbb8932ca22bb7ec33e0fa15509d196f7",
+      "testcase": "go/scale-generator",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 11.044,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "14dd7c2dec0578656af1501d1d757edeee89eef93eccbb76661c2ede27f24507"
+    },
+    {
+      "file": "go-simple-linked-list.json",
+      "sha256": "da2783f19b8171c87eea3201f9274a3f8eca271c98b924711ddbda4d78f089c6",
+      "testcase": "go/simple-linked-list",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 14.889,
+      "repairAttempts": 2,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "b25924384e553a928d623e02f8b6f1c25a6aba1bc03f3fd6adb60a867b33b862"
+    },
+    {
+      "file": "go-sublist.json",
+      "sha256": "a7e1bb9dd497cb8d348cffa015f7a583b87e45e237fd2aef2b350266024cb1e8",
+      "testcase": "go/sublist",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 4.771,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "c16f5efeae0063d76e44260b596a834111d05b31d7d87e8ea4a04a9f8f00b737"
+    },
+    {
+      "file": "go-transpose.json",
+      "sha256": "98574a28309568d56014682e9a30f3c58a7fdce2bcca24b0a00b364c16a26580",
+      "testcase": "go/transpose",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 5.447,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "9cf47c3263a9c41ea75c1dd9c2990199b612ff377e203e2f1b5bb898d308bc1f"
+    },
+    {
+      "file": "go-tree-building.json",
+      "sha256": "f4d052b5f4997b5073b9f0c017ab8467f01ada8581b7c404ac742f49309c217d",
+      "testcase": "go/tree-building",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 17.741,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "e9ec429f622474c40c8a36534444280e609bdd1d1690c07d39ba13fbbb15b36c"
+    },
+    {
+      "file": "go-trinary.json",
+      "sha256": "e27bad09671e4a0f9ddfeaf305b79c933f81b91ae561ec0e776d0be37c46892d",
+      "testcase": "go/trinary",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 3.296,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "2acc2b13983222691e5d60ca05121a06765a0926fca0a03a2ccee16d4a34d00d"
+    },
+    {
+      "file": "go-two-bucket.json",
+      "sha256": "43b4c6343a6d9446bf06da7ab5efb93124e79eda47e1ee93e3e45da34c184bf6",
+      "testcase": "go/two-bucket",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 20.155,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "15d818d45d0006fea00dc367b934cf14f2afeade3a88fa4adcccbb24aad54df0"
+    },
+    {
+      "file": "go-variable-length-quantity.json",
+      "sha256": "5ed5a1f125199f78716c5f15ee8da84d83ed2e1472259c851f0bbe473154cfc4",
+      "testcase": "go/variable-length-quantity",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 4.289,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "4db63e7d28eddb3cd018b151f56cf706795ae9af608e83a9b7c5a4454a82751c"
+    },
+    {
+      "file": "go-word-search.json",
+      "sha256": "b0a5e00878d49d68bdff5e21df91e0c21c20703d4b952ce6787cab5d56fa4628",
+      "testcase": "go/word-search",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 76.58,
+      "repairAttempts": 3,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "f19da2d20f67e9b6508f0c3dce1d3890e0c690632398e727453d80683ff46bd2"
+    },
+    {
+      "file": "go-wordy.json",
+      "sha256": "aee897a6c4ce76d01a5e35a1e404b18c1670becf231db23659949f067a8f268b",
+      "testcase": "go/wordy",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 11.657,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "633eed3135b8b8991d9cb8364e1a2ff5d4ae3e5d53617ab8abc0bfafe8efacd7"
+    },
+    {
+      "file": "go-zebra-puzzle.json",
+      "sha256": "803d8d4f93825086a97a047878f22bb21f78400e3c1c633351926b8cbefee2c0",
+      "testcase": "go/zebra-puzzle",
+      "language": "go",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 41.64,
+      "repairAttempts": 3,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "507d948ef1315d26ecccb71564e65acdc7f330e2f3ca86c91906007d38bb1684"
+    },
+    {
+      "file": "java-affine-cipher.json",
+      "sha256": "bfb1a935373dc02b3c0f12abf753dd3c89c004800ab10127da3b0e68f4e57cc6",
+      "testcase": "java/affine-cipher",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 22.196,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "c193af4498872c49b59e4233ef68db9b0709a92428864898803d2288c62e1a15"
+    },
+    {
+      "file": "java-all-your-base.json",
+      "sha256": "d2b134631f9e0705851a41411b131aa4e5724973fef3b56cadd50ba947c601b8",
+      "testcase": "java/all-your-base",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 15.785,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "ac9324cbb0dd5c922ec2790092f0ede58c5e08d15e11e32c78d74cecfaa5b0f3"
+    },
+    {
+      "file": "java-alphametics.json",
+      "sha256": "21adb738f2a17389d5ba8f9ab4fe5da24e2ba6701ce2eb7c4b86fcbd12b053e1",
+      "testcase": "java/alphametics",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 76.814,
+      "repairAttempts": 4,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "67a884787f55a2241e78611bb72d340b0d7a57aa126cd7deaaab3ae4f18f9a28"
+    },
+    {
+      "file": "java-bank-account.json",
+      "sha256": "77357688dc8da52bd7a27193217928c79199a2d2c1344e845bf4e4ae72893c8e",
+      "testcase": "java/bank-account",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 14.022,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "9b0c03dec9b7876ae35e0b749316590fbb96e62595d1a17ee9af57ac70aec194"
+    },
+    {
+      "file": "java-book-store.json",
+      "sha256": "5af462824e40fc5d5ba12ff07d8ff414ed3ebea6f634d2091c653b282718e3ad",
+      "testcase": "java/book-store",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 19.276,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "2fef55992fd46ac6dbfd83a3dbc78907b32068b78ec43b4847d50460fe6d1ac8"
+    },
+    {
+      "file": "java-bottle-song.json",
+      "sha256": "b0af837a5ea93e288e68da0336078d7add9a386c02b33fc8606094b6b21fd3ac",
+      "testcase": "java/bottle-song",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 14.552,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "15d56e9bd6358220e60293237b48dc0816f75d8703b8c8572966380bbea03bbd"
+    },
+    {
+      "file": "java-bowling.json",
+      "sha256": "ecb4a64fb58f6698e744f78319def619acfee224f3070b6f8e1fa605d30452ec",
+      "testcase": "java/bowling",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 218.567,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "620946154d0bc7e4352937b94ff5ef0d73c545b20eb442aeb06131d354030789"
+    },
+    {
+      "file": "java-change.json",
+      "sha256": "7bc0933e933da03e3b85370d8c4c9aaf6505751f2b1a9300b38e0745950e6958",
+      "testcase": "java/change",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 14.029,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "22b629b0dd9486d90a18888757e4c64b513e7a695d6281c7481472e4adc17216"
+    },
+    {
+      "file": "java-circular-buffer.json",
+      "sha256": "897ed5900fa98174af075dc56f85246401f893202b0d7f8f000ad3a98ef63a5a",
+      "testcase": "java/circular-buffer",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 26.159,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "51b90582aad0b8aad92c7b854247e80ff27386ca290c10f00f6186715029beaa"
+    },
+    {
+      "file": "java-connect.json",
+      "sha256": "84871dcdce5eda29883e0da29f047f418e1f33d23b51c4495c26601cbbb70f9d",
+      "testcase": "java/connect",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 65.699,
+      "repairAttempts": 3,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "0f7db75e4546398ebb81ae56e9f5dd840d7ce194f25a282c778e2433b1904e65"
+    },
+    {
+      "file": "java-custom-set.json",
+      "sha256": "37128f37e31ee8fd560d239025a941830a29d5679b4202516f6355f02ff9e3d0",
+      "testcase": "java/custom-set",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 15.808,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "ef2abe99950e109d8793b685e0fef99a495024c1f320a9d0ffde046c3a455d10"
+    },
+    {
+      "file": "java-dominoes.json",
+      "sha256": "ea827e87ee37ec7edd7167984c885c542951056ee308068f57a31ba9b9a58419",
+      "testcase": "java/dominoes",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 31.052,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "504f09e177bdc3483398c5cf2c24553729bad3fe2f839907b9f7d157f378f5a3"
+    },
+    {
+      "file": "java-food-chain.json",
+      "sha256": "f8a0c8e488463d4e48b103902f1b1fabd8c8ad4d6e3ccc7ac325fc6a21ee09c5",
+      "testcase": "java/food-chain",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 16.327,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "ea655c2c64eeab3383ab3d3bf53404a2b461624f13b500e2239f76680c0e3a87"
+    },
+    {
+      "file": "java-forth.json",
+      "sha256": "755a78c6e1953d88cd9d83fd6fe4b7e49bf695c06165eef606aaecffbeceb4c5",
+      "testcase": "java/forth",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 58.309,
+      "repairAttempts": 2,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "23baa6a10b3137b3d7c5e020eed21afcfac801bce0bcef6978e8f89b59183aab"
+    },
+    {
+      "file": "java-go-counting.json",
+      "sha256": "eee6de66f1e902e22f0d8145a3e634bc3eaaae12a02db99fcfc69fa72727ecc5",
+      "testcase": "java/go-counting",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 41.395,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "0dd8760129194c65b23aa197b52c07a280a873f377568857d389bcc8ed5aa46a"
+    },
+    {
+      "file": "java-hangman.json",
+      "sha256": "46c6b7df9a1e2efb52bb800a1d7d2dc5839a52b7a9c4d11a65ded4b7b004d8d3",
+      "testcase": "java/hangman",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 42.295,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 3,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "48c06fb6dab0e0b0f2877ae9730f79b60293367d8ccd49aefe221119e9daab63"
+    },
+    {
+      "file": "java-house.json",
+      "sha256": "577476bbc85e3e93efb80173ed5bc6301bc29767fc0056b78a17287a8eb3edd6",
+      "testcase": "java/house",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 14.353,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "4fe5fb1f5c43c03afe751b311fa4fb6f0e56def60a91b132ef73e68906cf12c9"
+    },
+    {
+      "file": "java-kindergarten-garden.json",
+      "sha256": "7c57069ebbfdf938c0a15c44a5ab54e3fe09a02be31290398f361cf4f89e049e",
+      "testcase": "java/kindergarten-garden",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 14.548,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "2f2889f132ed35fe872f9a83922d36e43cf30fd896f01e132db801e16070eebb"
+    },
+    {
+      "file": "java-ledger.json",
+      "sha256": "cc88986c84bba0e610fb6c3b6130c7392d741c248c4af0fdd57819fef1ec0fc8",
+      "testcase": "java/ledger",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 21.176,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "ed8c1bb995d4ab34659eb924958caaacd38f0b874de3e150d163c856f08b4cb7"
+    },
+    {
+      "file": "java-mazy-mice.json",
+      "sha256": "9f5d965403562839996eb257c5e2f1dfb16e03285bb24bb16c4b0bfceaffbcd8",
+      "testcase": "java/mazy-mice",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 57.481,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "9cfc15edd7979f1e96bc9c997c57003a83defa466ce01dd58263d6c68449f686"
+    },
+    {
+      "file": "java-ocr-numbers.json",
+      "sha256": "891283940618d2c1a9f7f2dc866ec4a0a84525e779e2c9285d786ba29892e47d",
+      "testcase": "java/ocr-numbers",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 17.335,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "28e756ca7bbd1326966fcf0600586c6f251afee0f5b54e489ed087335de1029d"
+    },
+    {
+      "file": "java-palindrome-products.json",
+      "sha256": "d7c97a06109d9f88f2c1cad4299d3c2101d1b07864e8bd7fd5e86ea58f7cb790",
+      "testcase": "java/palindrome-products",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 27.756,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "6dd417f159c34ce2ce8106a303129cf16540032966e9714682c33d1e616c8185"
+    },
+    {
+      "file": "java-phone-number.json",
+      "sha256": "68b0f63cb651771c35450fbdcfc195d792de9cc83339030867b6a31f040243a5",
+      "testcase": "java/phone-number",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 15.264,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "c6e6f20715429f27c75f4daf418bc2e8df7bc1bdf9df7bee03e54f21278679fd"
+    },
+    {
+      "file": "java-pig-latin.json",
+      "sha256": "f155c7d2a9cdaea6e2fbb07f10798ca02afcf6971eb8f5e3893981404b3d3566",
+      "testcase": "java/pig-latin",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 19.117,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "b0368c455f72442d35a69e8acde603d14eeba78e4c1307329f0e26fa86a86568"
+    },
+    {
+      "file": "java-poker.json",
+      "sha256": "f3c7b2bdb27333ee6a1d23dd582b7a7b6c2bce210e0a087f4f74e93d3b6b6268",
+      "testcase": "java/poker",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 45.422,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "aae083452b849dd49e7660d9e71bb2ef2e622f721c925ce415d3210b35291279"
+    },
+    {
+      "file": "java-pov.json",
+      "sha256": "1dedf2d38120cddb836aa796f2aa019ca872636fb6c2e589cf5cb7e797335072",
+      "testcase": "java/pov",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 21.549,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "0e070079c944a77b7d9249717586f18941ee2fb7dcdef449fbc932a6355bddf1"
+    },
+    {
+      "file": "java-protein-translation.json",
+      "sha256": "4aaae9e45733f625b023109460aad68df3d680b74bc531f32f5fb25928e1bfd2",
+      "testcase": "java/protein-translation",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 15.552,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "92270274d2a7c1f2bc8f6d1ede97b121c1c8f46caac6772a71162a2528eeed9d"
+    },
+    {
+      "file": "java-pythagorean-triplet.json",
+      "sha256": "20680ed353ce7a650f5e190afa8f32affe9d923f6b3b2d9829e742995c1950c4",
+      "testcase": "java/pythagorean-triplet",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 14.752,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "5c2d22ec2dfb696aca6e9411d846062bc3b21ded8d6a713c6c91fc780e12ae44"
+    },
+    {
+      "file": "java-queen-attack.json",
+      "sha256": "5a57b5ea6f0f7a26e780c279c52aab9f96c3ff13e1cf21cac5f1ecd6d5c6efaa",
+      "testcase": "java/queen-attack",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 17.549,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 1,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "e3154882e976a74bd372503c25de0a0939113cba7f56b08c0b4de19bf471438b"
+    },
+    {
+      "file": "java-rational-numbers.json",
+      "sha256": "0052a0806a72846454c628f860c744008e3cecba9bb709ff4df78802fe5e7d6a",
+      "testcase": "java/rational-numbers",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 16.313,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "4934b7e1fc363b9f29499d11cef411cf1de323089862a6387511ef9acc559991"
+    },
+    {
+      "file": "java-react.json",
+      "sha256": "b5bd0148ea9592cd07e5e51f547e3d1c48018f6f083f84c68686a10c1ecf272b",
+      "testcase": "java/react",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 17.732,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "5a8a3925fe2c604eb2a55681399016dd5e167552ae73e46a8814715b99e4fdd5"
+    },
+    {
+      "file": "java-resistor-color-trio.json",
+      "sha256": "76c4b4e7071f375b821969c70bfa96ecc0374d5f13e66e726875176e4d2ad543",
+      "testcase": "java/resistor-color-trio",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 13.942,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "7a1f9486188e5425e808ee0e3af5f2d77ace0ecf1aee0baed73bb920a1eb8eea"
+    },
+    {
+      "file": "java-rest-api.json",
+      "sha256": "c79d9919737953ba07fedae4e66d7ba7df0d6c0925bbb38113c2b0e6f0f57fe7",
+      "testcase": "java/rest-api",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 36.749,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 1,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "e92eb192ac2e5124879484ccd07ba485e64da62c09c3eab52db683a49788b3fe"
+    },
+    {
+      "file": "java-satellite.json",
+      "sha256": "fca520402d756e2a038d15e55be704ebca50cdeba9f781d7b2f5a1ad0d3e9a33",
+      "testcase": "java/satellite",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 54.19,
+      "repairAttempts": 3,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "8e8474a50604a067295fd9537946c8baffcc4ead072c856e32acac871851accc"
+    },
+    {
+      "file": "java-series.json",
+      "sha256": "d2b5a990dc27bad05e791f189d617070a5b7ff718c099daf7abb85901b8f3e99",
+      "testcase": "java/series",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 11.996,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "3fcf8ceccbb35d5004604de936a7fc8773d7157085d758b9e0d89efe476d8dd0"
+    },
+    {
+      "file": "java-sgf-parsing.json",
+      "sha256": "26b6469a180e34efcff39136a759ef91ecb1827dbacb753ccda46be77bb7848d",
+      "testcase": "java/sgf-parsing",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 22.02,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "cba7206bba0f68c34e43c05a70927ee2dbb0b4efcb9e0ba1abaaf4c28669318c"
+    },
+    {
+      "file": "java-simple-linked-list.json",
+      "sha256": "45bdda8ea0706c97ba5bb8115282883586fc6f5652b6c52c643868af056f87f2",
+      "testcase": "java/simple-linked-list",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 13.677,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "aac5bd7c8c4a62f80b6108fefcecc9b68161664a9ac99ce69b6d2b3baf76acd0"
+    },
+    {
+      "file": "java-state-of-tic-tac-toe.json",
+      "sha256": "f7d2231a17481f77aa31215a011c229bc6559baf528c58bdb1ab6359bb2e27f4",
+      "testcase": "java/state-of-tic-tac-toe",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 15.679,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "ff6bf35b2e3c9a5e08c40237656b52c106e7a5a4a35d114285920fc7f44564e6"
+    },
+    {
+      "file": "java-transpose.json",
+      "sha256": "207d57ac29bb5b707e952bf2854ca5521a2392e953d6c74d5789cd458aaa9c1a",
+      "testcase": "java/transpose",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 13.599,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "ff09fcc02842774e3dc0bf6a0684db6cbe34e6c63a33749294dadb76d1f1aa2d"
+    },
+    {
+      "file": "java-tree-building.json",
+      "sha256": "9fd24ed8f67fa21d58db7652459b6365cdf6a0c025932bceee75d1d318df5c5a",
+      "testcase": "java/tree-building",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 17.498,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "2241bd17e1b0125e8223f3712af03c9140fcfdcbbc7e3005770820e54014d8c7"
+    },
+    {
+      "file": "java-twelve-days.json",
+      "sha256": "471028d5354f6833f60ce3911b185e75bdee9c607dbcc8057bff52ebaa97703d",
+      "testcase": "java/twelve-days",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 14.098,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "b44780da989db3c2b6ea2e40539f9c994e41fca48d62813187a409fa2f9d9e82"
+    },
+    {
+      "file": "java-two-bucket.json",
+      "sha256": "a938632f5bda212f728f18999086d8177ef1eff3c79eebae21fe33930d4a8113",
+      "testcase": "java/two-bucket",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 38.822,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "478fc41dc587e93d29ad6c41e721827d67368b4f7f00ca042469b118b3e1293e"
+    },
+    {
+      "file": "java-variable-length-quantity.json",
+      "sha256": "b993ebc71ea8fcebfc9b8d26630854022b5d05c0f0a35e3a8e2faabfd8aa520b",
+      "testcase": "java/variable-length-quantity",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 13.663,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "0b2180a19b279983159af3fe783d7e149b8946ea37e7dd4e15b646114a443364"
+    },
+    {
+      "file": "java-word-search.json",
+      "sha256": "f31156d83513b1e7eb5ae616683abffe74b2e612f88956dca2a81146e4f2f8a4",
+      "testcase": "java/word-search",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 17.845,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "47f26a301e678785c337630393c6f16d37f2023cc77c1896b049b4899f8c69a4"
+    },
+    {
+      "file": "java-wordy.json",
+      "sha256": "834713123f97c218c58e92c4772890692462611134e1b0bc139c0a6b69195f39",
+      "testcase": "java/wordy",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 14.976,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "c115232f6e072dc744c078bc70eb3b2b7accf66ab5ac243738362d75c1559052"
+    },
+    {
+      "file": "java-zebra-puzzle.json",
+      "sha256": "1cc0b4785d5f81847b3fb81afbfcbddd252dae4caef48493865d3722989c4c8b",
+      "testcase": "java/zebra-puzzle",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 218.24,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "e4562d5f50ee25e82ae1110a71eb194924124567b9e426bf7ae5c7f526d05e82"
+    },
+    {
+      "file": "java-zipper.json",
+      "sha256": "c3d3b767db21e2947015d44ab543a60839db5b7bfa4000e85700923b1437ee16",
+      "testcase": "java/zipper",
+      "language": "java",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 29.386,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "08d00a96c1cba2b09f3759d1cffefad6d9ccce77ead4863bfbdb8d4209cd57ac"
+    },
+    {
+      "file": "javascript-affine-cipher.json",
+      "sha256": "4598b37b2c602c6c3eecf4c429e3274967d4cb5dc585e9c0f5c6228e79bff31f",
+      "testcase": "javascript/affine-cipher",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 16.579,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "c74a8e37506823772454682bc9e83ce0dbcd9375667623069a5397ed5474b848"
+    },
+    {
+      "file": "javascript-alphametics.json",
+      "sha256": "fd0e8bd9ab5558d5ed5214f75d4f0ac716ebeb8a2e06f5ead87af81a6c6957cc",
+      "testcase": "javascript/alphametics",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 18.466,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "67a6c9cda82bca253368b82ef74f1a0ff6fd9e3ed68d0655550686b0d8a8ab51"
+    },
+    {
+      "file": "javascript-beer-song.json",
+      "sha256": "83b84d8e3246e06d7d282c5806b023ecc0a055b9313fea1f6b819ec8bd7fb3f0",
+      "testcase": "javascript/beer-song",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 14.883,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "0286da25b6e493de50d11aea50de42468f32bfea00c2fa59f34ba29ca5c544d0"
+    },
+    {
+      "file": "javascript-binary.json",
+      "sha256": "5b2370882fecd250d5268c88eb39a3465c4e5c59ac4f8b08ebc5f0ecd307825d",
+      "testcase": "javascript/binary",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 14.454,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "6da2c98a3db7e5ff8a844f7275c8045ae23548472010c3da5bc6b49987136532"
+    },
+    {
+      "file": "javascript-book-store.json",
+      "sha256": "c5ebcd70fad5c3431af154d1ec119e234968aee6940b7269bfef722e1101bff7",
+      "testcase": "javascript/book-store",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 16.981,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "2163abd01c10608a90727e82b68d69ab0a23c8e2ad94239aeca61c963cd2ead3"
+    },
+    {
+      "file": "javascript-bottle-song.json",
+      "sha256": "29545a848cbfff0808c56a22a655b6a14329230a65b37556c83a34835fabd068",
+      "testcase": "javascript/bottle-song",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 29.934,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "f8967a2f60125b3467777c8c2b09a19b99fccb72f93a90f929af2b737eee4267"
+    },
+    {
+      "file": "javascript-bowling.json",
+      "sha256": "a084a96fcecc047e7dbb8ea984e72dc99a4e458c048244786a71c2cb6ac68692",
+      "testcase": "javascript/bowling",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 22.037,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "7c40eee56b2f4cb91121f20a050a7f40275740298e1e05d23ead96126afa9339"
+    },
+    {
+      "file": "javascript-complex-numbers.json",
+      "sha256": "04d8cdcc147648a7826413ebaf472cfcc527626a244402bc8ff80fd948a6febc",
+      "testcase": "javascript/complex-numbers",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 14.725,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "346bc2655064df5e29b770cb7622a63ae595ccd908f1a3c6be6151b8659a32c7"
+    },
+    {
+      "file": "javascript-connect.json",
+      "sha256": "a6698939936206108503fc86629a1941c481f4228e589deeaa9e21049da48560",
+      "testcase": "javascript/connect",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 16.641,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "98fe3a5c3048e3a00a08cb9c84410f6489ce300baa7612b73729e5e529dc5b05"
+    },
+    {
+      "file": "javascript-food-chain.json",
+      "sha256": "29b4b3080ffe62e4df4164f9ef050a55aa68a2f9e9a0a335806d8541635fa48e",
+      "testcase": "javascript/food-chain",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 47.655,
+      "repairAttempts": 2,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "1c6fff0db022afd380918d8c4578e0fc95c52773bdc3f944beb1307cac58b02d"
+    },
+    {
+      "file": "javascript-forth.json",
+      "sha256": "1352fe589fb1e8da6e8d6a6770fc419ace75e10727ccbaf2ab032636209d22b3",
+      "testcase": "javascript/forth",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 17.786,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "df1ba3160dad8f350a9bb7f6a7a3178335e25acc3515970f4be76c94b0e74f77"
+    },
+    {
+      "file": "javascript-go-counting.json",
+      "sha256": "042402979d7115cf760fa2da88a4d147bf4bbdca3cf0cdc148bdbe63cdfefa3b",
+      "testcase": "javascript/go-counting",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 69.86,
+      "repairAttempts": 2,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "40bfd3901f2cdbc2025985bcfb653274656052e9c0a5239004481311e477fcd0"
+    },
+    {
+      "file": "javascript-grade-school.json",
+      "sha256": "3eb1a78a54ec4b0cbc6288ba3e20de8b1f2501b2698cc01eb2954aa2bf0670cd",
+      "testcase": "javascript/grade-school",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 15.069,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "8d5270b4ad003486272f761192f704e38ce85913feb945af9a3adccc625a6054"
+    },
+    {
+      "file": "javascript-grep.json",
+      "sha256": "95f6a33b1bee283f7810e4d218b5ac8b49c8b641b448b2ee035471a38b72b223",
+      "testcase": "javascript/grep",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 39.198,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "7492b6a59b8e9c10a595a9f876ffce4cb1745ee0ff4de7eeca2aa40807da8eea"
+    },
+    {
+      "file": "javascript-house.json",
+      "sha256": "bbc672c728052d7920cde02589b645f6ce367dc685c167c80d9ab1c506fd3ebf",
+      "testcase": "javascript/house",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 33.406,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "32c5028cf8953b5d5e4794477f0979d2f32bccc905c2d4b043e305d95ffc7cf5"
+    },
+    {
+      "file": "javascript-killer-sudoku-helper.json",
+      "sha256": "7b95637e3518cdb4280737e0f06eddf6445aed9fdcf77359ea36d7a6024c3cac",
+      "testcase": "javascript/killer-sudoku-helper",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 16.064,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "cb5d43f265cde51d6a645d37e90fc5ca3120df42923e2eb0dfb2b80716d6d576"
+    },
+    {
+      "file": "javascript-ledger.json",
+      "sha256": "534ad30975f8d193332d17bad429b9f126507b46d4331083c2efc35ce20e74a3",
+      "testcase": "javascript/ledger",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 25.584,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "f98db646f3096d80d7a041a38d1338f1bdfd210ea1034e96b6d20b8131bb310e"
+    },
+    {
+      "file": "javascript-list-ops.json",
+      "sha256": "41a6e042dbbefaae0ced0c307c8ce20f55702c891c583e8df56d47b4e5788fa8",
+      "testcase": "javascript/list-ops",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 16.105,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "355610ae259b45f27b4f18be625c869ac3771a18a34c1092701d69de4cff76cd"
+    },
+    {
+      "file": "javascript-meetup.json",
+      "sha256": "e89fa693ac380579d7748eadb398284fed26658aa9fd9f7454fdb6c63d2ba322",
+      "testcase": "javascript/meetup",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 17.511,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "9c447a000ee4e32dae93f0cdbfdff0bbc1e4b82767465000868da10c4aa4d98e"
+    },
+    {
+      "file": "javascript-ocr-numbers.json",
+      "sha256": "35ba56f88416bfb338194e39633fb93b5ce0a8fdf1a72b341fbc1de7bbcf4fd4",
+      "testcase": "javascript/ocr-numbers",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 17.071,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "055c0daadf1b9d69ed711e6588e664dac414a698c1f1bdf6c44642b384e48dc6"
+    },
+    {
+      "file": "javascript-palindrome-products.json",
+      "sha256": "e43e7239185a2bc9dbc454149c1ca13b7e0cc8a2a087d6d5e201bcf0d5bf76c6",
+      "testcase": "javascript/palindrome-products",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 15.981,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "c06762c6fe740afe22996fbd6b84b3e0111d92c4a67b1cbc6bd3ba1d8d0bf71b"
+    },
+    {
+      "file": "javascript-parallel-letter-frequency.json",
+      "sha256": "fead14f13f13c811108b00f3eb9c473e65a383d08f8699f19aec6ff8d0fdd32f",
+      "testcase": "javascript/parallel-letter-frequency",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 17.513,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "4b4cfe3de1385eda7528b528fcbf6ea129606b2b6311b63839645b466648e4e9"
+    },
+    {
+      "file": "javascript-phone-number.json",
+      "sha256": "035dca51d8fa47e9fac944efbc9e42d3fd0ec4142718578cf3838c31012cbf2a",
+      "testcase": "javascript/phone-number",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 16.06,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "a5f0067a2638959de4091b0c2f0c8c444baae734ed5ae512b0c82fd0b7a34b12"
+    },
+    {
+      "file": "javascript-pig-latin.json",
+      "sha256": "6bc9c18a3d08ae6a843ba54ac9849062163753e520816729b18f229ff96d1df1",
+      "testcase": "javascript/pig-latin",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 42.15,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "4e999c631e1404905aaf387c46e4f8897291f2ade43263c5848f0957f07ed056"
+    },
+    {
+      "file": "javascript-poker.json",
+      "sha256": "b51fcfa2f2cd9b64db72a0ca025bad77c3e83beebd428ce28496c74da0341c23",
+      "testcase": "javascript/poker",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 22.032,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "784b26a18af2f6d195246bfad9192cbdd7ca9b9b5ee5a69d2fcc6541d02271bb"
+    },
+    {
+      "file": "javascript-promises.json",
+      "sha256": "af7766f1d5d3102d6834c8548e629e3a43c880f8faaf988496e89462ad11f32c",
+      "testcase": "javascript/promises",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 17.248,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "2338c1973e4a512d8bdef0cf9c8ab84aeeef85b83ee7c24509fe36d853db4c44"
+    },
+    {
+      "file": "javascript-queen-attack.json",
+      "sha256": "77f8690e406f022e1e6d58dd4943d5d734f9e5f5bb8f94daca132b9d50e15e9e",
+      "testcase": "javascript/queen-attack",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 25.351,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "a9b1dc927ad583508dbc1b3945b88727e838ac6b33d9655818960adc3c03ce9e"
+    },
+    {
+      "file": "javascript-rational-numbers.json",
+      "sha256": "cc26602d9490837e98087af4b6220294af0ad0e0d3a9fe1c4cd47d992d8b2c00",
+      "testcase": "javascript/rational-numbers",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 19.46,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "4dbd83dd49f06a61a9bdc30946ed5b632cb2080871bcd1b100a5259a66f2a042"
+    },
+    {
+      "file": "javascript-react.json",
+      "sha256": "d99fd0a515001c0077762cf5380108f616fb875509b7ea2ccdbfaeacb42d7649",
+      "testcase": "javascript/react",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 17.711,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "0842720dfd51edfa56463bb3d43214a3378174b7c64832c70f46d6324361650d"
+    },
+    {
+      "file": "javascript-rectangles.json",
+      "sha256": "fcba2a38905ae41cf19986c68ee3df8e23931a4a75519d6089966bee7646902e",
+      "testcase": "javascript/rectangles",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 16.541,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "77bbd827db322b507f817dfea2ce3f1499d34f86551e6bc8bb6f1f3fe5012dfa"
+    },
+    {
+      "file": "javascript-resistor-color-trio.json",
+      "sha256": "b43dfe096ccaaf6873648c98c61c9adeb6abeab29a346d0c4507562d194e48dc",
+      "testcase": "javascript/resistor-color-trio",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 14.58,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "df28477b0f7fa1af298efc7f2161eb8d50b62e93b172f0866dd18038966f5f70"
+    },
+    {
+      "file": "javascript-rest-api.json",
+      "sha256": "9ebfcc97c5f1ca5baf939418570d78d48d23da527ccc7eba820da01e65129e95",
+      "testcase": "javascript/rest-api",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 19.547,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "f00f08ff602f0779586541149f1da3e470704005668705d6dccc96bf61c83d84"
+    },
+    {
+      "file": "javascript-robot-name.json",
+      "sha256": "4971b4b6d0a308ab05bd74c5fbfa85648d69cff6bf247d7fcc971c63e4de1c44",
+      "testcase": "javascript/robot-name",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 15.813,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "8dceec1884119bd5a6a6a981f81c7d60e656f630e299bb4c0d4f3c019fc6f938"
+    },
+    {
+      "file": "javascript-say.json",
+      "sha256": "257a57e8f22d53f5e46d6ead6f12241c05ce3112595b48fc99b4f25b87e46c57",
+      "testcase": "javascript/say",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 34.898,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "547ff7305167045ce502df0782ed05bed6979a541074c9ba956ea6416294d223"
+    },
+    {
+      "file": "javascript-scale-generator.json",
+      "sha256": "9689d6f01b6bd4fa4cf3e2a9a97b9d82e2454f3d6cb4157513806d801ba95825",
+      "testcase": "javascript/scale-generator",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 17.723,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "ee07d649ca60f171e1b9b987d6704ee0825551b3b8b0a4f25b21fc2e779d7a4b"
+    },
+    {
+      "file": "javascript-simple-linked-list.json",
+      "sha256": "905e70590b0949c56b3e1e5aa22f9b55b877be1fb68445dcd92be7ddfecd30b3",
+      "testcase": "javascript/simple-linked-list",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 14.254,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "e781ac0d03cd667304019fe898abdf6e7b23637afd0ec5a9a8d7500858e7a479"
+    },
+    {
+      "file": "javascript-space-age.json",
+      "sha256": "2f791c845a2385b40d3b6f759dbfc4f747267371eddd545e6f238477e7b664c5",
+      "testcase": "javascript/space-age",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 14.413,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "88447e89a38a93e3c8d962a2b33e547def9743c8804f48f9f469749e3906e6c5"
+    },
+    {
+      "file": "javascript-state-of-tic-tac-toe.json",
+      "sha256": "3421e8b2ba56d67b7ad86262b5b1ec26e14a023e1d7efa2c59942ad77679375e",
+      "testcase": "javascript/state-of-tic-tac-toe",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 46.063,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "e9a627b02ff8f3fa32775d40d69eb8e259661dc5a80c16d8d4325eb4920ba279"
+    },
+    {
+      "file": "javascript-sum-of-multiples.json",
+      "sha256": "510a1f20c03045f61cf4187ac8bb5f9ea3cce24ba5cd6ccf981106630f919ae4",
+      "testcase": "javascript/sum-of-multiples",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 15.94,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "b9001e50caa004407f2dd8b47489bd497b2539ac4dc37509d49ee1626a0a68eb"
+    },
+    {
+      "file": "javascript-tournament.json",
+      "sha256": "138244dda33be43a80f76e2d83a2515440f4c3b173ad2d10510bf95635f999a8",
+      "testcase": "javascript/tournament",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 15.246,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "adf47ec9d4e21abf514878cef54b57ed5ca862ab4bc97b136d18d952c71d3681"
+    },
+    {
+      "file": "javascript-transpose.json",
+      "sha256": "470f30479d83e53e4c27df48ad9779b2392f907b1ebb29dfe799370bf1de85fd",
+      "testcase": "javascript/transpose",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 92.049,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "17e01c6d07a4861604f03b053edb45ec12254548027a2bd39e3d759685c50d79"
+    },
+    {
+      "file": "javascript-triangle.json",
+      "sha256": "e40ee50bff05a43d6b1676d1c168c22061af9fd7b3c4aac1214ed3df233a9391",
+      "testcase": "javascript/triangle",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 13.194,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "ad3864039101ed5c85a3f3c507eb84deef8ec8f066145f7b1032252b3f5b0207"
+    },
+    {
+      "file": "javascript-twelve-days.json",
+      "sha256": "0e07bccc32d2bab6ac803f5a37579debc010559175b2a91cca26646f793f6018",
+      "testcase": "javascript/twelve-days",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 13.908,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "886ae13fed91fe26fd1c74f2ba07c512fa2dd2cfae7a457ebaaa98f2296e1918"
+    },
+    {
+      "file": "javascript-two-bucket.json",
+      "sha256": "46dc20600665d9b4907ff0043eee2b7aee35a85c389a4d372a6227fa36dff134",
+      "testcase": "javascript/two-bucket",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 39.767,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "1d54fe47c6351dd4839742de6e9a56c154e641815c24428e235aafc861331bf7"
+    },
+    {
+      "file": "javascript-variable-length-quantity.json",
+      "sha256": "0228da76f3e501e7a5505242ca453bdc93aab028d8c4d6346478693d3b7243ce",
+      "testcase": "javascript/variable-length-quantity",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 13.532,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "21dd0556a054ab6d275044d107d823398324df98f6563248508a316b5c762ae5"
+    },
+    {
+      "file": "javascript-word-search.json",
+      "sha256": "31453d88a3224822d9a797911ed72cbd76537b541f859c1518bb2cb94b990cbb",
+      "testcase": "javascript/word-search",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 15.097,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "bae9828994221ef5643bdc75aafc98a1818d4fde27456c20e4f05f078d79cba4"
+    },
+    {
+      "file": "javascript-wordy.json",
+      "sha256": "b9e9e726963d09b8752bcdb89c7b9269cbf01bc4a42add76045791a723068959",
+      "testcase": "javascript/wordy",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 15.88,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "e1e437fe9846df6b7df6f6721f1a0560cda3a40fe4fe65f0228810fad2795b83"
+    },
+    {
+      "file": "javascript-zebra-puzzle.json",
+      "sha256": "2a70c48e0c5163d88cb7e43898d837247e243602559fef68eaf65d310383ee07",
+      "testcase": "javascript/zebra-puzzle",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 13.508,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "504aefa8134076ff9d85e69a817b48a07160396501c0e0b19a2d571707e513cc"
+    },
+    {
+      "file": "javascript-zipper.json",
+      "sha256": "76f16c9ceac431270815772a683c6c27d44843566d88c26b23c9ccd1272dd2de",
+      "testcase": "javascript/zipper",
+      "language": "javascript",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 15.437,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "af321238636b76be700f24904c3751633d5a17b3df1fbeee7208a3830f9a7abc"
+    },
+    {
+      "file": "python-affine-cipher.json",
+      "sha256": "69c90fb9159e46246d31c44498d97ee31cfd11638baa90a0e86ae4bf3d6ebb09",
+      "testcase": "python/affine-cipher",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 6.802,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "b7538e1995ad3c0881cdf216e8d7dbec69272d2c01163da0e49691cb82763489"
+    },
+    {
+      "file": "python-beer-song.json",
+      "sha256": "d000b7f7b0b7c60144f4a711aa8c5b61c198f939c8cf06bd7d9fcd2e883ab276",
+      "testcase": "python/beer-song",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 3.56,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "162143fb8ddd145179f11f1c6b5fccc5a44db3742711620c23f4570a82d41ca9"
+    },
+    {
+      "file": "python-book-store.json",
+      "sha256": "22c1d290ba616c1a61041df0a4cc0a02579cd75f16207bf5cddc15d1dc1ace9b",
+      "testcase": "python/book-store",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 5.166,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "7460549353bdc9be0954be3984d602643ecb545ecdcf4e4d432f6f9d6d620379"
+    },
+    {
+      "file": "python-bottle-song.json",
+      "sha256": "b3048e80207503e79b755cbd1edb01e5b762c53acb82096718b6f6011658e841",
+      "testcase": "python/bottle-song",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 5.887,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "963cf4fce86e316514bdfccf82594d89d9ddda4b9c7b83aa4657aa158e155a88"
+    },
+    {
+      "file": "python-bowling.json",
+      "sha256": "64e78a11afeb576b7f5b308a3a93e5066c39cffb081d7c5189949732b29809b0",
+      "testcase": "python/bowling",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 18.18,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "171cded44124a3e86b67415c582c467746a422d163287a2e0223b97b44ab27c6"
+    },
+    {
+      "file": "python-connect.json",
+      "sha256": "7444a3f0ccbf5248a8c02ec295481f2edf69b3c9e65f09c295909f5ab4680679",
+      "testcase": "python/connect",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 8.724,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "b8e9ed7f730bc7b04012b77e998fc0592979f05c664064720e99341595b12d78"
+    },
+    {
+      "file": "python-dominoes.json",
+      "sha256": "42d925e37bda8797de54dbd2b58015c3f2158adc9d744f889704faa8eaa46e08",
+      "testcase": "python/dominoes",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 6.089,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "83194d0c934b2518ef42b9165cc53f6d90f7bcc1d2517ff00d474f4a60f907d6"
+    },
+    {
+      "file": "python-dot-dsl.json",
+      "sha256": "ea53372045d67ce2828c34c2a7d000a9be574be843cd815820f0ae246ac6a10b",
+      "testcase": "python/dot-dsl",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 13.07,
+      "repairAttempts": 2,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "059e203e47f0c090eaf7bea82c327446ad50ac77fc551910819e3aedee75995a"
+    },
+    {
+      "file": "python-food-chain.json",
+      "sha256": "0f76d23311103518fbea979fa922bd0727c4512c54325f903ea086edd6ea73ed",
+      "testcase": "python/food-chain",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 4.721,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "cd99f2b8f80d478077bb11e823061f46bc92e454f8ef413b65d35d1980b8a9a5"
+    },
+    {
+      "file": "python-forth.json",
+      "sha256": "a0b051e654e6c56245f34fe2b4388bd06aeb10454d1c1c1b6bb9d952dcbc86ee",
+      "testcase": "python/forth",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 219.161,
+      "repairAttempts": 4,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "ecf0824c746473c81a81489ddccdc16d07fa43ffbb647788315c6449d8413c85"
+    },
+    {
+      "file": "python-go-counting.json",
+      "sha256": "dc3db1495b3722c9b8f87ad717ac4211ec194a68cde13907d147f5a1bf137c8d",
+      "testcase": "python/go-counting",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 5.469,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "6e2ff25cae47900cb1fdbf63297dc7f941099724bd609c93c5aef29e6b099a03"
+    },
+    {
+      "file": "python-grade-school.json",
+      "sha256": "a2ed2976ff27fae913abcdc090244d2744dfaed8edb322a6c8a3ce1e1bb674b8",
+      "testcase": "python/grade-school",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 2.958,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "46f5dcf02f26a9f239f06c5d9eb0559b4be4f2be3c6e0ab72523dc3306f0777e"
+    },
+    {
+      "file": "python-grep.json",
+      "sha256": "e618674e535890051c61bafa5e7414fc9507e041cd71d1b0cbe7acf5ab1bca82",
+      "testcase": "python/grep",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 8.113,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "c59a83605c7d2cc05e143463cd2455016dcef7e9c19b12c99d6ed1e2ebd1fff5"
+    },
+    {
+      "file": "python-hangman.json",
+      "sha256": "8a15d68bed993c58a271dfa8b00dba9b0183dda3de51ee668ba21895c990e8a9",
+      "testcase": "python/hangman",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 3.316,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "9a72173163739436c6a289ac4670a137f908dc0b063f8b49465e798bcc2f4ca5"
+    },
+    {
+      "file": "python-list-ops.json",
+      "sha256": "cfaed79eceeba897d5be27f4c0a4c470b9cd3a4d553833cfd0a02572efbacaf6",
+      "testcase": "python/list-ops",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 3.058,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "5c454ebf6f11b9d65caaf00b4e97ead29881e8b56a32a75cf844223cf0254b9f"
+    },
+    {
+      "file": "python-paasio.json",
+      "sha256": "f91cae72de8b0c5a7e906884f367de5b0be889fe57f77797b41e7ca79b2d816a",
+      "testcase": "python/paasio",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 6.07,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "1da5856b2b62d453ea75d162e3c6d1d36fe91b29f297afb934f1b561026887fc"
+    },
+    {
+      "file": "python-phone-number.json",
+      "sha256": "f0adfda528b47307ef7d24f51081e22eefdeac8632a45426a77914736f7d323b",
+      "testcase": "python/phone-number",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 4.136,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "92057a108be543136bce443e03094bc6aa256872223dcb9bef525901976db824"
+    },
+    {
+      "file": "python-pig-latin.json",
+      "sha256": "34d15540fde1b056e403b933d98c969b116d14f72e385782136c27854a687f77",
+      "testcase": "python/pig-latin",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 3.928,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "44d23b1cf0c10212867dc43bb7158c88f5dec27c11aaf3aaf3742a7fc5d6bb26"
+    },
+    {
+      "file": "python-poker.json",
+      "sha256": "f746b8b225ec1888eb5080cb3b8fa23a46ca8b5f2130d3e9f6e4df9ef8833dc3",
+      "testcase": "python/poker",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 7.512,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "0ef34325979cbf5c5685e1eea8cf686529a9f4b0433224495ec1cf55ef22cc3c"
+    },
+    {
+      "file": "python-pov.json",
+      "sha256": "d38ad29c4036e1c63c12000364cf03668de4c12ca3a61e73815c6291828e631c",
+      "testcase": "python/pov",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 6.744,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "99c8cf65a382694eff5fded0bd9632568216fe44bc4f5a3f99b89351a5ea9a01"
+    },
+    {
+      "file": "python-proverb.json",
+      "sha256": "ccf9ea3f7f563b4aedd83c415f76caababec0f2f4b1ba33fb4eab5cf73f3c04f",
+      "testcase": "python/proverb",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 2.195,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "a9c3312f062b58fac9403eebd2e501c5ff5c08c4943a4d40b02aae1bb28e1004"
+    },
+    {
+      "file": "python-react.json",
+      "sha256": "be3b3bf3bfae1c888daafbf8a88aa680b5099d4ae1ce130db040990b9dfe87ae",
+      "testcase": "python/react",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 28.721,
+      "repairAttempts": 4,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "ecebfa9e73e9b5a8a4889852f481248fe9d6524145d737c45516fec11c6e6ad7"
+    },
+    {
+      "file": "python-rest-api.json",
+      "sha256": "317e3cfbd7acb31914db2f707db8a38ea85b979531c394b3a34fa4d661c2ac53",
+      "testcase": "python/rest-api",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 6.855,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "902db60d9afa830213775e0c19b43e76199be312b10d02c4c251b6df8c6b5187"
+    },
+    {
+      "file": "python-robot-name.json",
+      "sha256": "98e28ba48131e9447da2d4435b05f31085f6db87a76520cc494823b34e325426",
+      "testcase": "python/robot-name",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 2.738,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "819f011626ea3153dd41b3bdba5c614b4e3ed4812ab2bff6f79e637849d27fe3"
+    },
+    {
+      "file": "python-scale-generator.json",
+      "sha256": "8cc722cc70cd0a096673b18fa2310cd2da35383210ffb9d335f1c7b2a8225e90",
+      "testcase": "python/scale-generator",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 11.448,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "28d309ebdd42ff52ffe61c4e0b48155f4bacc4df8554abefaab1357a4e6bed29"
+    },
+    {
+      "file": "python-sgf-parsing.json",
+      "sha256": "c3398e173820a1cc54f1a91000ffcbfb36e477f36fdada814c0a3a6c79eba8dd",
+      "testcase": "python/sgf-parsing",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 23.75,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "d3ee3110c1eba45da4daee2ef2fe429f0c193abb1b086b9efff4082b2e94cea5"
+    },
+    {
+      "file": "python-simple-linked-list.json",
+      "sha256": "6fdca8f59b17674731039ea3a2a763d17e979e09ad6fb0071d41d85c55f66178",
+      "testcase": "python/simple-linked-list",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 3.436,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "36bed192e05e5f12dd593b256527b8505b16bb620801cb81e7fe6a5c0777331e"
+    },
+    {
+      "file": "python-transpose.json",
+      "sha256": "2af96957ff467f5cf631d596e9dd518364c7e72a82db58f3c526c2e0167b0023",
+      "testcase": "python/transpose",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 12.886,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "d099b2fd8783deffe144b5173f935a509d6504f137672222a37a7f891c8b0c4e"
+    },
+    {
+      "file": "python-tree-building.json",
+      "sha256": "3483bffd794131a0e1bb8f101270c79a7433859aad542f9d85b113df57b5f23e",
+      "testcase": "python/tree-building",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 6.559,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "60f915fdb6b16bebc8369c326926fb91355e691f1d998c38fe2c266a1211f24f"
+    },
+    {
+      "file": "python-two-bucket.json",
+      "sha256": "4a3b382c1ccc18288a5de2178dc6e8a2d33fbaa8bfaa622d8fa112fdfd858723",
+      "testcase": "python/two-bucket",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 12.121,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "6117cf806c7c4da7fde0d9c828bcccdd0f91c746ac8403d92f8005d5c17f1362"
+    },
+    {
+      "file": "python-variable-length-quantity.json",
+      "sha256": "c305e9841c7cca053285608c996ffc04fb370bc13440f4380f51d0d228a98afc",
+      "testcase": "python/variable-length-quantity",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 2.842,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "e9cb3e947e640ff8509fd602674481c8822cc40a0d8ed3876b6b26fe198632d6"
+    },
+    {
+      "file": "python-wordy.json",
+      "sha256": "b30e0d4290d00fd94f8c2d6735eba2e9a8bd25437d3c04fd821c17684e34e37c",
+      "testcase": "python/wordy",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 17.665,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "470ac4e83b48e014df4b3edb7e66aa491c2f4031dbaf531d91a757a3549b7d90"
+    },
+    {
+      "file": "python-zebra-puzzle.json",
+      "sha256": "85df71313a04cae10ed5aa0d2f801022e968b3814e83885cc35a08d5a319f950",
+      "testcase": "python/zebra-puzzle",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 15.536,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "da85f74b1955a990b8d1691bb8c451e896f5d92cda6ad3d4f25460171200b9eb"
+    },
+    {
+      "file": "python-zipper.json",
+      "sha256": "609d0972897062eed8a03ffb4523fe2b90e351ccbc29aec3766b33e759ca39c8",
+      "testcase": "python/zipper",
+      "language": "python",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 4.813,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "8900a417e364aef41f378c6f92d72cc138bf485b21e99c13c9487900de786862"
+    },
+    {
+      "file": "rust-accumulate.json",
+      "sha256": "3f065ae5bbe358633c79bc11900b6e9a348f977cce33e45a704450e6aef8af6a",
+      "testcase": "rust/accumulate",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 28.366,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "3831bef55c369649f882f263427bf7b2cc38e35e68e7fabac97b8a6ba8409ff9"
+    },
+    {
+      "file": "rust-acronym.json",
+      "sha256": "cef5bdc1d706494effb33ae6862e5c7efeade8836e7096871591ed70dafa995e",
+      "testcase": "rust/acronym",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 3.485,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "cdf77dd91671b4de5ee344647a40961f89f6e6448660944f3131f084234b823b"
+    },
+    {
+      "file": "rust-alphametics.json",
+      "sha256": "59b965073e20c5f1b9dd619712162fbe98c078198991b667c3e94e4a4641fd55",
+      "testcase": "rust/alphametics",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 10.342,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "7ceb08032e5de78490edf5ac84a77378cb4f0c99f49a8cf0cd5a4513b35925d4"
+    },
+    {
+      "file": "rust-book-store.json",
+      "sha256": "2d7123fa333f885bab07b27700658ef9718e6ab2fc52a74144de0495e4b92844",
+      "testcase": "rust/book-store",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 13.627,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "1d52cdcb144508dc5bf5d77190cc05ca8deb35e4c2dabe0a5291b0c79081a942"
+    },
+    {
+      "file": "rust-bowling.json",
+      "sha256": "083a978e1e724d4e4f576b2de3f98c2d67cdb43e85db2700ac77ce3cba36bf5f",
+      "testcase": "rust/bowling",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 42.886,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "e68ec0a22233cce78d45e29d9994f44dfaadf5dd7098a372756f9db3b7384448"
+    },
+    {
+      "file": "rust-decimal.json",
+      "sha256": "b846899a5253e25604f7a9d5e6c69ac18e1094dcad4d4b4f020159d6f9486801",
+      "testcase": "rust/decimal",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 29.833,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "8e9151a8ef8ef09ad97ef681007a2f1ad99118716a127ba4034bd6e24d780a0b"
+    },
+    {
+      "file": "rust-dot-dsl.json",
+      "sha256": "61f45490f7bba18aceef7ce0955c4e695f50e72146fcf907b850fdc324ed5e06",
+      "testcase": "rust/dot-dsl",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 6.411,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "b27f03f14065d2fbed61a068fea66371c85e707515e6bffc4308af3b461bff40"
+    },
+    {
+      "file": "rust-doubly-linked-list.json",
+      "sha256": "28cb7cafc16b67ea89c0f0c684ecf68202a3c94d2cb729760ab67a59b763ee3f",
+      "testcase": "rust/doubly-linked-list",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 35.873,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "deb0ecf09ceda9536e7c30a54d13ae24de691b9cb6dd2667364518e3c5648e78"
+    },
+    {
+      "file": "rust-fizzy.json",
+      "sha256": "68aa4fad22bdefe295d10d90a61f1b2b231630668368d24ffb3b1cdb6c48294a",
+      "testcase": "rust/fizzy",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 11.859,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "77e27bd8563a4074d93b1916ce3acb5fe85f3b04d2c1cb3be3339607504fe177"
+    },
+    {
+      "file": "rust-forth.json",
+      "sha256": "802b8369d564a1252a7abe59d5a07696c7408f1e7fc673dcbc0e3a6947c1e2c1",
+      "testcase": "rust/forth",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 11.062,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "e889ad693ba688ff76c9295e4d9a265dbb88b4a1abd0ade5de85d1e0b62e8dac"
+    },
+    {
+      "file": "rust-gigasecond.json",
+      "sha256": "fa2f31839edee99e2f2947ffda427bda21a6751c298983a95231c7138670ea96",
+      "testcase": "rust/gigasecond",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 5.648,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "da7a6c6e47a96e9730b242ce66ed098ad231ea3bae1f59228c6d133cba449cdb"
+    },
+    {
+      "file": "rust-grade-school.json",
+      "sha256": "256d9335560ea192cb140af4d80cd5f979fa6b98ed0ccd3b942f4efbc0d9ce7e",
+      "testcase": "rust/grade-school",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 6.442,
+      "repairAttempts": 1,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "a26eb008491e3dffd217a97b2e9ab1214d2ab2baeb043c13ed028f086219d25e"
+    },
+    {
+      "file": "rust-grep.json",
+      "sha256": "59210585f8b7e462d2a9ba67e077d66a320ef87a35bb3b511f31c250b41f431c",
+      "testcase": "rust/grep",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 8.119,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "21393c35bce36c41b45ab0648db303dc398a06cacf9ecba8d368cfdfd913d17a"
+    },
+    {
+      "file": "rust-luhn-from.json",
+      "sha256": "c8bc80d777c66c4bf28aa6dfd51bd42590067346def00231d410445f91405d49",
+      "testcase": "rust/luhn-from",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 6.224,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "33ebeb23b4802bd32ce0631e21c10bf8a63f745a2cf7d7da4dfec53065ea9a75"
+    },
+    {
+      "file": "rust-macros.json",
+      "sha256": "25610479c038104c64626dd1fb7ae49347f1dc4e2841149be12758b38feb314e",
+      "testcase": "rust/macros",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 3.33,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "a9183751363017a35d597d570c24fb96abe379312ae9622ad6dad5755c2838fe"
+    },
+    {
+      "file": "rust-nucleotide-codons.json",
+      "sha256": "8178993061dddf7d43486b7c93a21f6aad5cfdf155c5731d9fa78c51057fcab0",
+      "testcase": "rust/nucleotide-codons",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 7.124,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "e1b13b92601b5f8c56327c2bb2c36968fd93ca6543cf56707ab62ea441569654"
+    },
+    {
+      "file": "rust-ocr-numbers.json",
+      "sha256": "cf96304a9fa8387de60e552ffc2287ac11f68adb0090e5882d293d9b8c51a169",
+      "testcase": "rust/ocr-numbers",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 6.926,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "47e8d33f004f0f6c0c3744604a062d7e00e6ca853d1914c918b7f3d65ba70a8f"
+    },
+    {
+      "file": "rust-parallel-letter-frequency.json",
+      "sha256": "44d2c0d56249c1266ffc30745189ab94997257778b3eb737f27ddcdfc3e06a79",
+      "testcase": "rust/parallel-letter-frequency",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 15.103,
+      "repairAttempts": 3,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "e8322c4ba332403daea9c7cd7dcd795cb4acd7a29a7decbc81e0e5b156f7d9ac"
+    },
+    {
+      "file": "rust-pig-latin.json",
+      "sha256": "cdf6dedae3b196f634e7d80de0bf6a4e88a5ff8bf18d4738bcb41b54d4b49eef",
+      "testcase": "rust/pig-latin",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 6.566,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "524f759432527385bb7a09e089695c17cd7ad86e5f4caae590fc7aa6eab88348"
+    },
+    {
+      "file": "rust-poker.json",
+      "sha256": "63796b5c4d9ee10c4c0321b40764a68c3e288ffea354b88562dfd0fd4a2fa428",
+      "testcase": "rust/poker",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 17.433,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "1095a24ea4f4e6887f656c6416f5189d3ccbb1d4f458bfcfdca415ed3665eef6"
+    },
+    {
+      "file": "rust-react.json",
+      "sha256": "6cf93785b41bd4c606fd57bfe17b8a6ffe4283385529667b9739334116f3f167",
+      "testcase": "rust/react",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 58.604,
+      "repairAttempts": 3,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "0aac14e75b5e0e6838ffc3a35f1d9fe6057e55020dc0fb8adfe6868fd281e48b"
+    },
+    {
+      "file": "rust-robot-name.json",
+      "sha256": "48a9fc247bd4b34b6fdf61d8c1e0a2ccc59aca3397bc83c01a11ba6a31219a3f",
+      "testcase": "rust/robot-name",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 3.902,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "1a17b5594787edc9c2e82f9ce059ee7a64297736f74ba700fcbbd50d630ce048"
+    },
+    {
+      "file": "rust-say.json",
+      "sha256": "67499de90ea6450218412e27386e179786f8d8d04a45464c132e4f696d39e9b3",
+      "testcase": "rust/say",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 8.399,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "8e0ef6fabb44afb364e0299b3a8a10147df17ea6a6b299992aba247f8828157b"
+    },
+    {
+      "file": "rust-scale-generator.json",
+      "sha256": "064fe366b7baa9ccb0b88a06a29ef626571e7fc77e94e658db15ed789f47133c",
+      "testcase": "rust/scale-generator",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 28.448,
+      "repairAttempts": 3,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "3a6ba8791cdd237cecbde5e5888ceb666e80f855bc0af95f7565cf6f9ef4a218"
+    },
+    {
+      "file": "rust-simple-cipher.json",
+      "sha256": "d214594b271302bf538dde915612f6e94de016d38fb9f3218e2d81669933cbfc",
+      "testcase": "rust/simple-cipher",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 15.479,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "9a4cc8009d4172672d144c8a994e0fb7684743f73d7a9f96a490d074ccf7cfae"
+    },
+    {
+      "file": "rust-two-bucket.json",
+      "sha256": "b5ea3c37460f7994eebb88f80511d3a31ffbe53c25d1d13acbde5e79a70b4da0",
+      "testcase": "rust/two-bucket",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 8.89,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "cbfdfbcf5eb05ace26bc28e1f2aad1ba38d01a176e1aa6c92385c21fb279aab3"
+    },
+    {
+      "file": "rust-variable-length-quantity.json",
+      "sha256": "4fd9af391f1f1489104cf6d9b7ef3e337a2f7967fa072128e02e90b6b3232f8f",
+      "testcase": "rust/variable-length-quantity",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 6.584,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "2d0cac08d00093c0810b70fbb1cce63cc495a72f83b9914267b6cdca0deb8255"
+    },
+    {
+      "file": "rust-word-count.json",
+      "sha256": "173c8d6914d7f8b37ff853d5588f22f8fb418a88f7c539e82dca496ff921eeef",
+      "testcase": "rust/word-count",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 6.613,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "d40d9da2c780812018133af7e06547f2b93b7701c1ca7bf823951163487e893e"
+    },
+    {
+      "file": "rust-wordy.json",
+      "sha256": "722b080ab8e91002a440b0168c854c673c5ac966db8c69fa628add599b80110c",
+      "testcase": "rust/wordy",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 8.468,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "e0c03b207e79440f2335aa80af77fb643aa936fcc9b0bc288b3c4aa23b817b1c"
+    },
+    {
+      "file": "rust-xorcism.json",
+      "sha256": "ba79865272e1aea9d6129422b72f18f867441f5430ac0aa49e66645d33ff6de6",
+      "testcase": "rust/xorcism",
+      "language": "rust",
+      "passed": true,
+      "tests_outcomes": [
+        true
+      ],
+      "test_timeouts": 0,
+      "duration": 6.619,
+      "repairAttempts": 0,
+      "syntax_errors": 0,
+      "indentation_errors": 0,
+      "malformed_responses": 0,
+      "model": "deepseek-v4-pro",
+      "candidateSha256": "3e09f2fbebd0356bb20c5dd3cc5e026a0d0d05069a8678af75df5ec36f93e5e2"
+    }
+  ]
+}
