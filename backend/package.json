@@ -81,7 +81,7 @@
     "joi": "18.2.3",
     "jsonwebtoken": "9.0.3",
     "multer": "^2.2.0",
-    "nodemailer": "^8.0.11",
+    "nodemailer": "^9.0.1",
     "openai": "6.44.0",
     "pdf-parse": "2.4.5",
     "prisma": "5.22.0",
