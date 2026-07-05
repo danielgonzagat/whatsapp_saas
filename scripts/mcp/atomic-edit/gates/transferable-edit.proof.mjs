@@ -20,7 +20,7 @@ const dir = path.dirname(fileURLToPath(import.meta.url));
 const NP = await import(path.join(dir, '..', 'dist', 'server-helpers-negative-proof.js'));
 const { recomputeDisproof, removedByteCountBetween } = NP;
 const { commute } = await import(path.join(dir, '..', 'dist', 'gates', 'algebra.js'));
-const { buildSnapshot, reexecValidate } = await import(path.join(dir, '..', 'dist', 'engine-proof-reexec.js'));
+const { buildSnapshot, reexecValidate, snapshotText } = await import(path.join(dir, '..', 'dist', 'engine-proof-reexec.js'));
 
 const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');
 
@@ -41,10 +41,12 @@ const makeArtifact = (file, before, after, witness) => {
 function verifyTransfer(a) {
   if (sha(a.after) !== a.afterSha256) return { ok: false, reason: 'afterSha256 mismatch (tampered result)' };
   if (!a.snapshot || !a.validation) return { ok: false, reason: 'missing snapshot or syntactic validation verdict' };
+  const snapshotBefore = snapshotText(a.snapshot, 'before');
+  const snapshotAfter = snapshotText(a.snapshot, 'after');
   if (
     a.snapshot.file !== a.file ||
-    a.snapshot.before !== a.before ||
-    a.snapshot.after !== a.after ||
+    snapshotBefore !== a.before ||
+    snapshotAfter !== a.after ||
     a.snapshot.afterSha256 !== a.afterSha256
   ) {
     return { ok: false, reason: 'embedded snapshot does not match artifact bytes' };

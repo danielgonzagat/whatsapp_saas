@@ -1,14 +1,16 @@
 {
-  "version": 1,
-  "description": "Kloel LSP Mesh — per-workspace LSP server definitions",
+  "version": 2,
+  "description": "Kloel LSP Mesh — per-workspace LSP server definitions. 22 LSPs, 14 languages, universal coverage.",
   "workspaces": {
-    "root": {"cwd":"${REPO_ROOT}","tsconfig":null,"servers":["json","yaml","bash","markdown","toml","dockerfile","compose"]},
+    "root": {"cwd":"${REPO_ROOT}","tsconfig":null,"servers":["json","yaml","bash","markdown","toml","compose"]},
+    "atomic-edit": {"cwd":"${REPO_ROOT}/scripts/mcp/atomic-edit","tsconfig":"${REPO_ROOT}/scripts/mcp/atomic-edit/tsconfig.json","servers":["typescript","eslint","json","bash"]},
     "backend": {"cwd":"${REPO_ROOT}/backend","tsconfig":"${REPO_ROOT}/backend/tsconfig.json","servers":["typescript","eslint","prisma","json","sql","dockerfile"]},
     "frontend": {"cwd":"${REPO_ROOT}/frontend","tsconfig":"${REPO_ROOT}/frontend/tsconfig.json","servers":["typescript","eslint","tailwindcss","css","html","json"]},
     "frontend-admin": {"cwd":"${REPO_ROOT}/frontend-admin","tsconfig":"${REPO_ROOT}/frontend-admin/tsconfig.json","servers":["typescript","eslint","tailwindcss","css","html","json"]},
     "worker": {"cwd":"${REPO_ROOT}/worker","tsconfig":"${REPO_ROOT}/worker/tsconfig.json","servers":["typescript","eslint","prisma","json","dockerfile"]},
     "e2e": {"cwd":"${REPO_ROOT}/e2e","tsconfig":null,"servers":["typescript","json"]},
-    "scripts": {"cwd":"${REPO_ROOT}/scripts","tsconfig":null,"servers":["json","bash","yaml","markdown","toml"]}
+    "scripts": {"cwd":"${REPO_ROOT}/scripts","tsconfig":null,"servers":["json","bash","yaml","markdown","toml"]},
+    "kloel": {"cwd":"${REPO_ROOT}","tsconfig":null,"servers":["typescript","json","yaml","bash","markdown","toml","compose","dockerfile"]}
   },
   "servers": {
     "typescript": {"command":"typescript-language-server","args":["--stdio"],"fileTypes":[".ts",".tsx",".js",".jsx",".mjs",".cjs",".mts",".cts"]},
@@ -22,8 +24,24 @@
     "bash": {"command":"bash-language-server","args":["start"],"fileTypes":[".sh",".bash",".zsh"]},
     "markdown": {"command":"marksman","args":["server"],"fileTypes":[".md",".markdown"]},
     "toml": {"command":"taplo","args":["lsp","stdio"],"fileTypes":[".toml"]},
-    "sql": {"command":"${HOME}/go/bin/sqls","args":[],"fileTypes":[".sql"]},
+    "sql": {"command":"sql-language-server","args":["up","--method","stdio"],"fileTypes":[".sql"]},
     "dockerfile": {"command":"docker-langserver","args":["--stdio"],"fileTypes":["Dockerfile",".dockerfile"]},
-    "compose": {"command":"docker-compose-langserver","args":["--stdio"],"fileTypes":[".yml",".yaml"]}
+    "compose": {"command":"docker-compose-langserver","args":["--stdio"],"fileTypes":[".yml",".yaml"]},
+
+    "python": {"command":"pyright","args":["--stdio"],"fileTypes":[".py",".pyi",".pyx"]},
+    "go": {"command":"${HOME}/go/bin/gopls","args":["-mode=stdio"],"fileTypes":[".go"]},
+    "rust": {"command":"rust-analyzer","args":[],"fileTypes":[".rs"]},
+    "clangd": {"command":"/opt/homebrew/opt/llvm/bin/clangd","args":[],"fileTypes":[".c",".h",".cpp",".hpp",".cc",".cxx",".hh",".hxx"]},
+    "java": {"command":"jdtls","args":["-data","${REPO_ROOT}/.jdtls-data"],"fileTypes":[".java"]},
+    "kotlin": {"command":"kotlin-language-server","args":[],"fileTypes":[".kt",".kts"]},
+    "php": {"command":"intelephense","args":["--stdio"],"fileTypes":[".php"]},
+    "swift": {"command":"sourcekit-lsp","args":[],"fileTypes":[".swift"]},
+    "lua": {"command":"lua-language-server","args":[],"fileTypes":[".lua"]},
+    "graphql": {"command":"graphql-lsp","args":["server","-m","stdio"],"fileTypes":[".graphql",".gql"]},
+    "csharp": {"command":"${HOME}/.dotnet/tools/csharp-ls-vs","args":[],"fileTypes":[".cs",".csx"]},
+    "ruby": {"command":"${HOME}/.rbenv/shims/ruby-lsp","args":[],"fileTypes":[".rb",".rake",".gemspec"]},
+    "elixir": {"command":"elixir-ls","args":[],"fileTypes":[".ex",".exs",".eex",".heex"]},
+    "zig": {"command":"zls","args":[],"fileTypes":[".zig",".zon"]},
+    "haskell": {"command":"haskell-language-server","args":["--lsp"],"fileTypes":[".hs",".lhs"]}
   }
 }

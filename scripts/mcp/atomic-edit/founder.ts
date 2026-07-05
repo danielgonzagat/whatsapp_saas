@@ -25,7 +25,7 @@ export interface FounderBlock {
   howToValidate: string;
   /** What this tool did NOT and CANNOT prove (anti-fachada honesty). */
   notProven: string;
-  /** Single-file scope statement: everything else is provably untouched. */
+  /** Scope statement only; policy/protected status is proven by governance gates. */
   nonTouched: string;
   promiseClass: PromiseClass;
   /**
@@ -90,8 +90,8 @@ export function buildFounderBlock(args: {
       `Runtime/product behavior is NOT proven by this tool. Structural validity ≠ ` +
       `correct behavior. Prove behavior by running the flow in the app.`,
     nonTouched:
-      `Single-file, single-span: auth, payments, database, protected files, and every ` +
-      `other source file are provably untouched by this operation.`,
+      `Single-file, single-span: every file other than \`${args.file}\` is provably ` +
+      `untouched by this operation. Policy/protected-file status requires the governance gate.`,
     promiseClass,
     zeroCodeTrust,
     trustCeilingReason,

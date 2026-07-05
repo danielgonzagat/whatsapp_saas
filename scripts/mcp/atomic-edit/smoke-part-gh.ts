@@ -36,6 +36,11 @@ export function partG(): void {
     /behaviou?r is NOT proven|NOT proven by this tool/i.test(fb.notProven),
     fb.notProven,
   );
+  check(
+    'founder: nonTouched does not claim protected status without governance gate',
+    !/\bprotected files\b/i.test(fb.nonTouched) && /governance gate/i.test(fb.nonTouched),
+    fb.nonTouched,
+  );
   // structural-only language is honestly a weaker promise class
   const fbS = buildFounderBlock({
     file: 'main.py',

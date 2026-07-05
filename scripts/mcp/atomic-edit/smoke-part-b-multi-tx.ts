@@ -7,7 +7,7 @@ export async function partBMultiTx(ctx: PartBCtx): Promise<void> {
   const { client, fixtureAbs, fixtureRel, repoRoot } = ctx;
     // ── Lever #3: multi-file atomic transaction ──
     const txA = path.join('scripts', 'mcp', 'atomic-edit', `.smoke-tx-a.${process.pid}.ts`);
-    const txB = path.join('scripts', 'mcp', 'atomic-edit', `.smoke-tx-b.ts`);
+    const txB = path.join('scripts', 'mcp', 'atomic-edit', `.smoke-tx-b.${process.pid}.ts`);
     const txAAbs = path.join(repoRoot, txA);
     const txBAbs = path.join(repoRoot, txB);
     fs.writeFileSync(txAAbs, 'export const A = 1;\n');

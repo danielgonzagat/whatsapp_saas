@@ -17,6 +17,10 @@ const checks = [
     ok: /function startBroker\(/.test(source) && /ATOMIC_BROKER_READY/.test(source),
   },
   {
+    name: 'Codex host launcher uses a file broker endpoint that survives nested sandbox socket denial',
+    ok: /pathToFileURL/.test(source) && /cleanupPath/.test(source) && /file:\/\//.test(source),
+  },
+  {
     name: 'Codex host launcher exports ATOMIC_EXEC_BROKER_SOCKET to child env',
     ok: /ATOMIC_EXEC_BROKER_SOCKET/.test(source) && /childEnv\(socket, codexHome\)/.test(source),
   },
@@ -25,8 +29,8 @@ const checks = [
     ok: source.includes("'(deny default)'") && /allow network-outbound/.test(source) && !source.includes('(allow network*)'),
   },
   {
-    name: 'Codex host launcher cleans broker socket on child exit',
-    ok: /brokerChild\.kill\('SIGTERM'\)/.test(source) && /rmSync\(socket, \{ force: true \}\)/.test(source),
+    name: 'Codex host launcher cleans broker endpoint on child exit',
+    ok: /brokerChild\.kill\('SIGTERM'\)/.test(source) && /rmSync\(cleanupPath \?\? socket, \{ recursive: true, force: true \}\)/.test(source),
   },
   {
     name: "Codex host launcher persists broker state for MCP child env recovery",

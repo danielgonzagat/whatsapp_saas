@@ -229,7 +229,7 @@ export function commit(
   } finally {
     if (commitLockId) {
       try {
-        fs.rmdirSync(lockDir(commitLockId), { recursive: true });
+        fs.rmSync(lockDir(commitLockId), { recursive: true });
       } catch {
         // best-effort cleanup
       }

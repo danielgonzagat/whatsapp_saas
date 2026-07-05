@@ -1,6 +1,7 @@
 import {
   extractAsciiDigits,
   extractPhoneFromChatId,
+  formatDisplayPhone,
   normalizePhone,
   phonesMatch,
 } from './phone-normalization.util';
@@ -222,6 +223,36 @@ describe('phone-normalization.util', () => {
       const lhs = '5511987654321'; // tail-8 = "87654321"
       const rhs = '999999999987654321'; // 18 digits, fails canonicalize; tail-8 = "87654321"
       expect(phonesMatch(lhs, rhs)).toBe(true);
+    });
+  });
+
+  describe('formatDisplayPhone', () => {
+    test('returns empty string for null input', () => {
+      expect(formatDisplayPhone(null)).toBe('');
+    });
+
+    test('returns empty string for undefined input', () => {
+      expect(formatDisplayPhone(undefined)).toBe('');
+    });
+
+    test('returns empty string for empty string input', () => {
+      expect(formatDisplayPhone('')).toBe('');
+    });
+
+    test('formats BR 11-digit mobile (with country code)', () => {
+      expect(formatDisplayPhone('5511987654321')).toBe('(11) 98765-4321');
+    });
+
+    test('formats BR 10-digit landline (with country code)', () => {
+      expect(formatDisplayPhone('551133334444')).toBe('(11) 3333-4444');
+    });
+
+    test('returns US number as-is', () => {
+      expect(formatDisplayPhone('12125551234')).toBe('12125551234');
+    });
+
+    test('returns international number as-is', () => {
+      expect(formatDisplayPhone('442071234567')).toBe('442071234567');
     });
   });
 });

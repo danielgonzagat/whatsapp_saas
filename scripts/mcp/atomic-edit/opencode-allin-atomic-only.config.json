@@ -1,0 +1,40 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "autoupdate": false,
+  "snapshot": false,
+  "mcp": {
+    "atomic-edit": {
+      "type": "local",
+      "command": [
+        "bash",
+        "/Users/danielpenin/kloel/scripts/mcp/atomic-edit-mcp-launcher.sh"
+      ],
+      "enabled": true
+    }
+  },
+  "permission": {
+    "*": "deny",
+    "atomic-edit_*": "allow",
+    "atomic_edit_*": "allow",
+    "atomic_*": "allow",
+    "code_*": "allow",
+    "chrome_devtools_*": "allow",
+    "bash": "deny",
+    "read": "deny",
+    "edit": "deny",
+    "write": "deny",
+    "apply_patch": "deny",
+    "grep": "deny",
+    "glob": "deny",
+    "lsp": "deny",
+    "skill": "deny",
+    "task": "deny",
+    "todowrite": "deny",
+    "webfetch": "deny",
+    "websearch": "deny",
+    "question": "deny",
+    "external_directory": {
+      "*": "deny"
+    }
+  }
+}

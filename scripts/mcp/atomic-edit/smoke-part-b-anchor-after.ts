@@ -75,6 +75,48 @@ export async function partBAnchorAfter(ctx: PartBCtx): Promise<void> {
         anchorEmpty.content[0]?.text ?? '',
       );
 
+      const switchRel = path.join(
+        'scripts',
+        'mcp',
+        'atomic-edit',
+        `.smoke-anchor-switch.${process.pid}.ts`,
+      );
+      const switchAbs = path.join(repoRoot, switchRel);
+      fs.writeFileSync(
+        switchAbs,
+        [
+          'export function value(kind: string): number {',
+          '  switch (kind) {',
+          "    case 'float32':",
+          '      return 32;',
+          '    default:',
+          '      return 0;',
+          '  }',
+          '}',
+          '',
+        ].join('\n'),
+      );
+      try {
+        const switchBefore = fs.readFileSync(switchAbs, 'utf8');
+        const switchRefusal = (await client.callTool({
+          name: 'atomic_insert_after_anchor',
+          arguments: {
+            file: switchRel,
+            anchorText: "case 'float32':",
+            insertText: "\n    case 'float64':\n      return 64;",
+          },
+        })) as { content: { text: string }[]; isError?: boolean };
+        check(
+          'insert_after_anchor refuses dangling switch label anchor',
+          switchRefusal.isError === true &&
+            /switch case\/default label/.test(switchRefusal.content[0]?.text ?? '') &&
+            fs.readFileSync(switchAbs, 'utf8') === switchBefore,
+          switchRefusal.content[0]?.text ?? '',
+        );
+      } finally {
+        if (fs.existsSync(switchAbs)) fs.unlinkSync(switchAbs);
+      }
+
       const ambigRel = path.join(
         'scripts',
         'mcp',

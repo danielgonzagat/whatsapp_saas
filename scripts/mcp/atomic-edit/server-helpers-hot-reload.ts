@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { activeWorkspaceRoot } from './guard.js';
 
 export const SINGLE_TOOL_CALL_ENV = 'ATOMIC_SINGLE_TOOL_CALL';
 export const SINGLE_TOOL_NAME_ENV = 'ATOMIC_SINGLE_TOOL_NAME';
@@ -128,6 +129,7 @@ async function defaultCallFreshTool(atomicRoot: string, env: NodeJS.ProcessEnv, 
       [SINGLE_TOOL_NAME_ENV]: toolName,
       [SINGLE_TOOL_ARGS_ENV]: JSON.stringify(args ?? {}),
       [DISABLE_HOT_RELOAD_ENV]: '1',
+      ATOMIC_WORKSPACE_ROOT: activeWorkspaceRoot(),
       CODEX_PROJECT_DIR: env.CODEX_PROJECT_DIR ?? repoRoot,
       TMPDIR: env.TMPDIR ?? repoRoot,
       TMP: env.TMP ?? repoRoot,

@@ -28,7 +28,8 @@ export interface AstReplaceChange { path: string; before: string; after: string;
 export interface AstReplaceResult { changes: AstReplaceChange[]; fileChanges: { path: string; count: number }[]; totalReplacements: number; filesTouched: number; filesSearched: number; applied: boolean; limitReached: boolean; parseErrors?: string[]; }
 export interface GrepMatch { path: string; lineNumber: number; line: string; }
 export interface GrepResult { matches: GrepMatch[]; totalMatches: number; filesWithMatches: number; filesSearched: number; limitReached: boolean; }
-export interface GlobMatch { path: string; fileType: number; }
+export type GlobFileType = 'file' | 'dir' | 'symlink';
+export interface GlobMatch { path: string; fileType: GlobFileType; }
 export interface GlobResult { matches: GlobMatch[]; totalMatches: number; }
 
 // --------------------------- grammar registry ---------------------------
@@ -175,28 +176,84 @@ function match(P: TsNode, S: TsNode, b: Record<string, { text: string }>): boole
 
 // --------------------------- file resolution ---------------------------
 
-function listFiles(target: string, glob?: string): string[] {
+const SKIP_DIRS = new Set(['node_modules', '.git', 'dist']);
+
+function normalizeRelPath(value: string): string {
+  return value.replaceAll(path.sep, '/').replace(/^\.\//, '').replace(/^\/+/g, '');
+}
+
+function hasHiddenSegment(relPath: string): boolean {
+  return normalizeRelPath(relPath).split('/').some((segment) => segment.startsWith('.'));
+}
+
+function globMatches(re: RegExp | null, relPath: string): boolean {
+  if (!re) return true;
+  const rel = normalizeRelPath(relPath);
+  return re.test(rel) || re.test(path.basename(rel));
+}
+
+function listEntries(
+  target: string,
+  glob?: string,
+  opts: { fileType?: GlobFileType; hidden?: boolean } = {},
+): GlobMatch[] {
   let st: fs.Stats;
   try { st = fs.statSync(target); } catch { return []; }
-  if (st.isFile()) return [target];
-  const out: string[] = [];
+  const out: GlobMatch[] = [];
   const re = glob ? globToRe(glob) : null;
-  const walk = (dir: string) => {
+  const includeHidden = opts.hidden === true;
+  const add = (full: string, rel: string, fileType: GlobFileType): void => {
+    if (opts.fileType && opts.fileType !== fileType) return;
+    if (!includeHidden && hasHiddenSegment(rel)) return;
+    if (globMatches(re, rel)) out.push({ path: full, fileType });
+  };
+  if (st.isFile()) {
+    add(target, path.basename(target), 'file');
+    return out;
+  }
+  if (st.isSymbolicLink()) {
+    add(target, path.basename(target), 'symlink');
+    return out;
+  }
+  if (!st.isDirectory()) return out;
+  const walk = (dir: string, relDir: string): void => {
     let ents: fs.Dirent[];
-    try { ents = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+    try { ents = fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name)); } catch { return; }
     for (const e of ents) {
-      if (e.name === 'node_modules' || e.name === '.git' || e.name === 'dist') continue;
+      if (SKIP_DIRS.has(e.name)) continue;
       const full = path.join(dir, e.name);
-      if (e.isDirectory()) walk(full);
-      else if (e.isFile()) { if (!re || re.test(e.name)) out.push(full); }
+      const rel = relDir ? `${relDir}/${e.name}` : e.name;
+      if (e.isDirectory()) {
+        add(full, rel, 'dir');
+        walk(full, rel);
+      } else if (e.isSymbolicLink()) {
+        add(full, rel, 'symlink');
+      } else if (e.isFile()) {
+        add(full, rel, 'file');
+      }
     }
   };
-  walk(target);
+  walk(target, '');
   return out;
 }
+
+function listFiles(target: string, glob?: string): string[] {
+  return listEntries(target, glob, { fileType: 'file', hidden: true }).map((entry) => entry.path);
+}
+
 function globToRe(glob: string): RegExp {
-  const esc = glob.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*\*/g, ' ').replace(/\*/g, '[^/]*').replace(/ /g, '.*');
-  return new RegExp('^' + esc + '$');
+  const normalized = normalizeRelPath(glob);
+  if (!normalized || normalized === '.') return /^.*$/;
+  const tokenSlash = '__ATOMIC_GLOBSTAR_SLASH__';
+  const tokenAny = '__ATOMIC_GLOBSTAR__';
+  const source = normalized
+    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    .replace(/\*\*\//g, tokenSlash)
+    .replace(/\*\*/g, tokenAny)
+    .replace(/\*/g, '[^/]*')
+    .replaceAll(tokenSlash, '(?:.*/)?')
+    .replaceAll(tokenAny, '.*');
+  return new RegExp('^' + source + '$');
 }
 
 // --------------------------- public engine ops ---------------------------
@@ -306,10 +363,12 @@ export async function nativeGrep(opts: Record<string, unknown>): Promise<GrepRes
 
 export async function nativeGlob(opts: Record<string, unknown>): Promise<GlobResult> {
   const target = String(opts.path ?? '.');
-  const files = listFiles(target, String(opts.pattern ?? '*'));
+  const entries = listEntries(target, String(opts.pattern ?? '*'), {
+    fileType: opts.fileType as GlobFileType | undefined,
+    hidden: opts.hidden === true,
+  });
   const maxResults = Number(opts.maxResults ?? 500);
-  const matches: GlobMatch[] = files.slice(0, maxResults).map((p) => ({ path: p, fileType: 1 }));
-  return { matches, totalMatches: files.length };
+  return { matches: entries.slice(0, maxResults), totalMatches: entries.length };
 }
 
 /** Syntax validity via web-tree-sitter. realParser:false means no grammar (cannot judge); parsed reflects zero ERROR/MISSING nodes. */

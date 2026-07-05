@@ -1,5 +1,5 @@
 import { runRegistryGatesOverEditSync, type RegistryGateRun } from './engine-gate-registry.js';
-import { reexecValidate, type EditSnapshot } from './engine-proof-reexec.js';
+import { reexecValidate, snapshotText, type EditSnapshot } from './engine-proof-reexec.js';
 import { chainHashOf } from './trace.js';
 import type { ValidationResult } from './engine.js';
 import type { RegistryRun } from './gates/registry.js';
@@ -87,8 +87,10 @@ export function replayAdmissible(ledger: ReplayLedgerEntry[]): ReplayVerdict {
         dynamicRegistryFailures += 1;
       } else {
         const snapshot = e.syntacticReexec.snapshot;
+        const before = snapshotText(snapshot, 'before');
+        const after = snapshotText(snapshot, 'after');
         const rerun = runRegistryGatesOverEditSync(
-          { file: snapshot.file, before: snapshot.before, after: snapshot.after, repoRoot: e.dynamicRegistryReexec.repoRoot },
+          { file: snapshot.file, before, after, repoRoot: e.dynamicRegistryReexec.repoRoot },
           e.dynamicRegistryReexec.repoRoot,
         );
         if (

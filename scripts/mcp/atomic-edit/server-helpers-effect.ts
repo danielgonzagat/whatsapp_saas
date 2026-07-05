@@ -21,10 +21,14 @@ import { REPO_ROOT } from './guard.js';
 const SKIP_DIRS = new Set([
   'node_modules', '.git', 'dist', '.next', 'build', 'coverage', '.atomic', '.codex-artifacts',
   '.codex-hook-tmp', '.turbo', 'vendor', '.cache', 'node-compile-cache', 'jest_dx', 'test-results',
-  '.serena', '.codegraph', '.claude',
+  '.serena', '.codegraph', '.claude', '.mcp-cache', '.positive-byte-sessions',
 ]);
 
-const SKIP_FILE_NAMES = new Set(['.DS_Store']);
+const SKIP_FILE_NAMES = new Set([
+  '.DS_Store',
+  '.build-manifest.json',
+  'self-evolution-archive.jsonl',
+]);
 
 const REPO_SCRATCH_DIRS = new Set([
   '.claude/worktrees',
@@ -55,11 +59,26 @@ const REPO_SCRATCH_FILES = new Set([
 ]);
 
 const REPO_SCRATCH_PREFIXES = [
+  '.proof-',
+  '.smoke-',
+  '.self-expansion-',
+  '.security-mono-proof-',
+  '.property-proof-',
+  '.findings-',
+  '.findings-probe-',
+  '.atomic-exec-sandbox-',
+  '.external-runtime-denial-',
+  '.whole-host-launcher-allowed-',
+  '.supervisor-',
   'atomic-proof-',
   'atomic-type-gate-',
   'atomic-edit-dist-',
-  '.atomic-exec-sandbox-',
-  '.external-runtime-denial-',
+  'atomic-universal-',
+  'atomic-exec-broker-file-',
+  'property-gate-',
+  'probe-gate-',
+  'formal-gate-',
+  'formal-model-cex',
   'v8-compile-cache-',
 ];
 
@@ -78,6 +97,7 @@ function shouldSkipEffectDir(rootAbs: string, full: string, name: string): boole
 
 function shouldSkipEffectFile(full: string, name: string): boolean {
   if (SKIP_FILE_NAMES.has(name)) return true;
+  if (REPO_SCRATCH_PREFIXES.some((prefix) => name.startsWith(prefix))) return true;
   const repoRel = repoRelativeEffectPath(full);
   return repoRel !== null && REPO_SCRATCH_FILES.has(repoRel);
 }

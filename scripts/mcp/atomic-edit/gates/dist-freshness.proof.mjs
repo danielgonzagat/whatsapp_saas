@@ -198,6 +198,51 @@ function makeRoot() {
   }
 }
 
+// 9. runtime Y certificate fingerprint ignores the same generated artifact classes.
+{
+  const ySource = fs.readFileSync(new URL("../server-tools-y.ts", import.meta.url), "utf8");
+  const requiredRuntimeGeneratedSnippets = Object.freeze([
+    "name.startsWith('.proof-')",
+    "name.startsWith('.smoke-')",
+    "name.startsWith('.self-expansion-')",
+    "name.startsWith('.security-mono-proof-')",
+    "name.startsWith('.atomic-exec-sandbox')",
+    "name.startsWith('.external-runtime-denial-')",
+    "name.startsWith('atomic-exec-broker-file-')",
+    "name.startsWith('atomic-edit-dist-')",
+    "name.startsWith('atomic-universal-')",
+    "name.startsWith('.property-proof-')",
+    "name.startsWith('.findings-')",
+    "name.startsWith('.findings-probe-')",
+    "name.startsWith('property-gate-')",
+    "name.startsWith('probe-gate-')",
+    "name.startsWith('atomic-type-gate-')",
+    "name.startsWith('.supervisor-')",
+  ]);
+  const requiredRuntimeSkipDirs = Object.freeze([
+    "'dist'",
+    "'dist-lkg'",
+    "'launcher-blessed'",
+    "'node_modules'",
+    "'.atomic'",
+    "'.git'",
+    "'node-compile-cache'",
+    "'.claude'",
+    "'.mcp-cache'",
+    "'.turbo'",
+    "'.cache'",
+    "'build'",
+    "'.positive-byte-sessions'",
+  ]);
+  const missingGenerated = requiredRuntimeGeneratedSnippets.filter((snippet) => !ySource.includes(snippet));
+  const missingSkipDirs = requiredRuntimeSkipDirs.filter((snippet) => !ySource.includes(snippet));
+  rec(
+    "Y runtime fingerprint excludes generated artifacts that freshness excludes",
+    missingGenerated.length === 0 && missingSkipDirs.length === 0,
+    { missingGenerated, missingSkipDirs },
+  );
+}
+
 const ok = results.every((r) => r.ok);
 if (jsonMode) console.log(JSON.stringify({ ok, results }, null, 2));
 else for (const r of results) console.log((r.ok ? 'PASS ' : 'FAIL ') + r.name);

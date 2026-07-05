@@ -7,9 +7,12 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
   const { client, fixtureAbs, fixtureRel, repoRoot } = ctx;
   const tools = await client.listTools();
   const names = tools.tools.map((t: { name: string }) => t.name).sort();
+  const batchTool = tools.tools.find((tool: { name: string; description?: string }) =>
+    tool.name === 'atomic_batch_replace_text',
+  );
     check(
-      'server lists all 86 tools (incl. atomic_expand_self + Y certificate + host re-entry receipt + apex: lens/read/scan (atomic_lens/atomic_read_file/atomic_scan_bytes/atomic_grep_calls/atomic_repair_scope) + atomic_session_* (begin/savepoint/rollback/commit) + atomic_prove/atomic_seal + atomic_exec shell operator + atomic_converge + atomic_intent_converge + content-addressed atomic_replace_at + atomic_locate + universal native engine + product apex layer + unified router + code_outline_batch)',
-      names.length === 86 &&
+      'server lists the required Atomic tool surface (registry may grow monotonically)',
+      names.length >= 86 &&
           names.includes('atomic_exec') &&
           names.includes('atomic_expand_self') &&
           names.includes('atomic_y_certificate') &&
@@ -32,6 +35,8 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
         names.includes('atomic_session_savepoint') &&
         names.includes('atomic_session_rollback') &&
         names.includes('atomic_session_commit') &&
+        names.includes('atomic_workspace_bind') &&
+        names.includes('atomic_workspace_status') &&
         names.includes('atomic_prove') &&
         names.includes('atomic_seal') &&
         names.includes('atomic_create_file') &&
@@ -65,9 +70,135 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
         names.includes('atomic_lock_status') &&
         names.includes('atomic_lock_release') &&
         names.includes('atomic_edit') &&
-        names.includes('code_outline_batch'),
+        names.includes('code_outline_batch') &&
+        names.includes('code_readcode_batch') &&
+        names.includes('code_read_symbols_batch') &&
+        names.includes('atomic_batch_replace_text'),
       names.join(','),
     );
+
+    check(
+      'atomic_batch_replace_text advertises macro fast path and intent-derived proof',
+      typeof batchTool?.description === 'string' &&
+        /one coherent intent/i.test(batchTool.description) &&
+        /serial micro-edits/i.test(batchTool.description) &&
+        /auto-derives/i.test(batchTool.description),
+      batchTool?.description ?? 'missing atomic_batch_replace_text descriptor',
+    );
+
+    const batchReadRel = path.join('scripts', 'mcp', 'atomic-edit', `.smoke-read-symbols-batch.${process.pid}.ts`);
+    const batchReadAbs = path.join(repoRoot, batchReadRel);
+    const batchReadSource = [
+      'export function alphaSymbol(input: number): number {',
+      '  return input + 1;',
+      '}',
+      '',
+      'export function betaSymbol(input: string): string {',
+      '  return input.toUpperCase();',
+      '}',
+      '',
+    ].join('\n');
+    fs.writeFileSync(batchReadAbs, batchReadSource);
+    const batchNextDirRel = path.join(
+      'scripts',
+      'mcp',
+      'atomic-edit',
+      `.smoke-readcode-batch-next.${process.pid}`,
+    );
+    const batchNextDirAbs = path.join(repoRoot, batchNextDirRel);
+    fs.mkdirSync(batchNextDirAbs, { recursive: true });
+    fs.writeFileSync(path.join(batchNextDirAbs, 'first.ts'), 'export const first = 1;\n');
+    fs.writeFileSync(path.join(batchNextDirAbs, 'second.ts'), 'export const second = 2;\n');
+    try {
+      const directoryRead = (await client.callTool({
+        name: 'code_readcode',
+        arguments: { path: batchNextDirRel },
+      })) as { content: { text: string }[]; isError?: boolean };
+      const directoryReadBody = jsonBody(directoryRead);
+      check(
+        'code_readcode directory response advertises ready code_readcode_batch next call',
+        directoryRead.isError !== true &&
+          directoryReadBody.ok === true &&
+          directoryReadBody.mode === 'directory' &&
+          directoryReadBody.batchNext?.tool === 'code_readcode_batch' &&
+          directoryReadBody.batchNext?.items?.some(
+            (entry: { path?: string }) => entry.path === path.join(batchNextDirRel, 'first.ts'),
+          ) &&
+          directoryReadBody.batchNext?.items?.some(
+            (entry: { path?: string }) => entry.path === path.join(batchNextDirRel, 'second.ts'),
+          ),
+        directoryRead.content.map((p) => p.text).join('\n'),
+      );
+      const batchRead = (await client.callTool({
+        name: 'code_read_symbols_batch',
+        arguments: {
+          items: [
+            { path: batchReadRel, selector: 'alphaSymbol' },
+            { path: batchReadRel, selector: 'betaSymbol' },
+          ],
+        },
+      })) as { content: { text: string }[]; isError?: boolean };
+      const batchReadBody = jsonBody(batchRead);
+      const alphaRead = batchReadBody.results?.find(
+        (entry: { resolvedSelector?: string }) => entry.resolvedSelector === 'alphaSymbol',
+      );
+      const betaRead = batchReadBody.results?.find(
+        (entry: { resolvedSelector?: string }) => entry.resolvedSelector === 'betaSymbol',
+      );
+      check(
+        'code_read_symbols_batch reads clustered known symbols in one compact call',
+        batchRead.isError !== true &&
+          batchReadBody.ok === true &&
+          batchReadBody.mode === 'symbols-batch' &&
+          batchReadBody.requested === 2 &&
+          batchReadBody.returned === 2 &&
+          batchReadBody.failed === 0 &&
+          alphaRead?.fileSha256 === sha(batchReadSource) &&
+          betaRead?.fileSha256 === sha(batchReadSource) &&
+          alphaRead?.code?.includes('return input + 1') &&
+          !alphaRead?.code?.includes('betaSymbol') &&
+          betaRead?.code?.includes('return input.toUpperCase()') &&
+          !betaRead?.code?.includes('alphaSymbol') &&
+          !('content' in batchReadBody),
+        batchRead.content.map((p) => p.text).join('\n'),
+      );
+      const adaptiveBatchRead = (await client.callTool({
+        name: 'code_readcode_batch',
+        arguments: {
+          items: [
+            { path: batchReadRel },
+            { path: batchReadRel, selector: 'betaSymbol' },
+          ],
+        },
+      })) as { content: { text: string }[]; isError?: boolean };
+      const adaptiveBatchReadBody = jsonBody(adaptiveBatchRead);
+      const fullRead = adaptiveBatchReadBody.results?.find(
+        (entry: { mode?: string }) => entry.mode === 'full',
+      );
+      const symbolRead = adaptiveBatchReadBody.results?.find(
+        (entry: { mode?: string; resolvedSelector?: string }) =>
+          entry.mode === 'symbol' && entry.resolvedSelector === 'betaSymbol',
+      );
+      check(
+        'code_readcode_batch reads clustered mixed file/symbol context in one adaptive call',
+        adaptiveBatchRead.isError !== true &&
+          adaptiveBatchReadBody.ok === true &&
+          adaptiveBatchReadBody.mode === 'readcode-batch' &&
+          adaptiveBatchReadBody.requested === 2 &&
+          adaptiveBatchReadBody.returned === 2 &&
+          adaptiveBatchReadBody.failed === 0 &&
+          fullRead?.content === batchReadSource &&
+          fullRead?.fileSha256 === sha(batchReadSource) &&
+          fullRead?.symbols?.some((entry: { selector?: string }) => entry.selector === 'alphaSymbol') &&
+          symbolRead?.code?.includes('return input.toUpperCase()') &&
+          !symbolRead?.code?.includes('alphaSymbol') &&
+          !('content' in adaptiveBatchReadBody),
+        adaptiveBatchRead.content.map((p) => p.text).join('\n'),
+      );
+    } finally {
+      if (fs.existsSync(batchReadAbs)) fs.unlinkSync(batchReadAbs);
+      fs.rmSync(batchNextDirAbs, { recursive: true, force: true });
+    }
 
     const scanRel = path.join('scripts', 'mcp', 'atomic-edit', 'server.ts');
     const scanSource = fs.readFileSync(path.join(repoRoot, scanRel), 'utf8');
@@ -289,13 +420,15 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
         files: [{ op: 'create', file: selfAllowedRel, content: 'export const SELF_EXPANSION_ALLOWED = true;\n' }],
         proofCommands: ['node build.mjs', 'node codex-atomic-only-hook.proof.mjs --json'],
       },
-    }, undefined, { timeout: 120000 })) as { content: { text: string }[]; isError?: boolean };
+    }, undefined, { timeout: 240000 })) as { content: { text: string }[]; isError?: boolean };
     const selfAllowedBody = jsonBody(selfAllowed);
     check(
       'atomic_expand_self creates atomic source only after proofs pass',
       selfAllowed.isError !== true &&
         selfAllowedBody.ok === true &&
-        selfAllowedBody.admission === 'self-expansion-validator-lattice-green' &&
+        selfAllowedBody.admission === 'self-expansion-validator-lattice-green-and-darwin-godel-promoted' &&
+        typeof selfAllowedBody.selfEvolution?.promotionReceipt?.receiptSha256 === 'string' &&
+        typeof selfAllowedBody.selfEvolution?.archive?.archiveEntrySha256 === 'string' &&
         fs.existsSync(selfAllowedAbs),
       selfAllowed.content.map((p) => p.text).join('\n'),
     );
@@ -312,7 +445,7 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
         ],
         proofCommands: ['node build.mjs', 'node codex-atomic-only-hook.proof.mjs --json'],
       },
-    }, undefined, { timeout: 120000 })) as { content: { text: string }[]; isError?: boolean };
+    }, undefined, { timeout: 240000 })) as { content: { text: string }[]; isError?: boolean };
     const selfCleanupBody = jsonBody(selfCleanup);
     check(
       'atomic_expand_self deletes only with explicit negative-byte proof',
@@ -338,27 +471,56 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
       readOnlyExec.content.map((p) => p.text).join('\n'),
     );
 
-    const execUnprovenRel = path.join('scripts', 'mcp', 'atomic-edit', `.smoke-exec-unproven.${process.pid}.txt`);
-    const execUnprovenAbs = path.join(repoRoot, execUnprovenRel);
+    const execAutoFile = `smoke-exec-auto-${process.pid}.txt`;
+    const execAutoAbs = path.join(repoRoot, 'scripts', 'mcp', 'atomic-edit', execAutoFile);
     try {
-      const execUnproven = (await client.callTool({
+      const execAuto = (await client.callTool({
         name: 'atomic_exec',
         arguments: {
-          command: `node -e 'require("node:fs").writeFileSync(${JSON.stringify(execUnprovenRel)}, "UNPROVEN")'`,
-          cwd: repoRoot,
-          intent: 'smoke unproven shell write must be refused',
+          command: `node -e 'require("node:fs").writeFileSync(${JSON.stringify(execAutoFile)}, "AUTO")'`,
+          cwd: 'scripts/mcp/atomic-edit',
+          intent: 'smoke omitted proveEffect auto-proves mutable shell write',
         },
       })) as { content: { text: string }[]; isError?: boolean };
-      const unprovenText = execUnproven.content.map((p) => p.text).join('\n');
+      const execAutoBody = jsonBody(execAuto);
       check(
-        'atomic_exec refuses mutable-or-unknown command without proveEffect',
-        execUnproven.isError === true &&
-          /requires proveEffect:true|mutable-or-unknown/i.test(unprovenText) &&
-          !fs.existsSync(execUnprovenAbs),
-        unprovenText,
+        'atomic_exec auto-proves mutable-or-unknown command when proveEffect is omitted',
+        execAuto.isError !== true &&
+          execAutoBody.ok === true &&
+          execAutoBody.commandClass === 'mutable-or-unknown' &&
+          execAutoBody.atomicEnvelope?.effectProven === true &&
+          execAutoBody.atomicEnvelope?.effectProofAuto === true &&
+          execAutoBody.effect?.changedFiles === 1 &&
+          execAutoBody.effect?.files?.[0]?.file === execAutoFile &&
+          fs.existsSync(execAutoAbs),
+        execAuto.content.map((p) => p.text).join('\n'),
       );
     } finally {
-      if (fs.existsSync(execUnprovenAbs)) fs.unlinkSync(execUnprovenAbs);
+      if (fs.existsSync(execAutoAbs)) fs.unlinkSync(execAutoAbs);
+    }
+
+    const execFalseFile = `smoke-exec-explicit-false-${process.pid}.txt`;
+    const execFalseAbs = path.join(repoRoot, 'scripts', 'mcp', 'atomic-edit', execFalseFile);
+    try {
+      const execFalse = (await client.callTool({
+        name: 'atomic_exec',
+        arguments: {
+          command: `node -e 'require("node:fs").writeFileSync(${JSON.stringify(execFalseFile)}, "FALSE")'`,
+          cwd: 'scripts/mcp/atomic-edit',
+          proveEffect: false,
+          intent: 'smoke explicit false shell write must be refused',
+        },
+      })) as { content: { text: string }[]; isError?: boolean };
+      const falseText = execFalse.content.map((p) => p.text).join('\n');
+      check(
+        'atomic_exec refuses mutable-or-unknown command with explicit proveEffect false',
+        execFalse.isError === true &&
+          /explicit proveEffect:false|effect proof required|mutable-or-unknown/i.test(falseText) &&
+          !fs.existsSync(execFalseAbs),
+        falseText,
+      );
+    } finally {
+      if (fs.existsSync(execFalseAbs)) fs.unlinkSync(execFalseAbs);
     }
 
     const externalExec = (await client.callTool({
@@ -462,6 +624,62 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
       badSha.isError === true && /sha256 mismatch/.test(badSha.content[0].text),
       badSha.content[0].text,
     );
+
+    const batchRel = path.join('scripts', 'mcp', 'atomic-edit', '.smoke-batch-replace.' + process.pid + '.ts');
+    const batchAbs = path.join(repoRoot, batchRel);
+    const batchBefore = 'export const alpha = 1;\nexport const beta = 2;\n';
+    fs.writeFileSync(batchAbs, batchBefore);
+    try {
+      const batchPreview = (await client.callTool({
+        name: 'atomic_batch_replace_text',
+        arguments: {
+          intent: 'prove clustered replacements can preview as one transaction',
+          preview: true,
+          replacements: [
+            { file: batchRel, oldText: 'alpha = 1', newText: 'alpha = 10' },
+            { file: batchRel, oldText: 'beta = 2', newText: 'beta = 20' },
+          ],
+        },
+      })) as { content: { text: string }[]; isError?: boolean };
+      const batchPreviewBody = jsonBody(batchPreview);
+      check(
+        'atomic_batch_replace_text previews clustered replacements without writing',
+        batchPreview.isError !== true &&
+          batchPreviewBody.ok === true &&
+          batchPreviewBody.preview === true &&
+          batchPreviewBody.replacements === 2 &&
+          fs.readFileSync(batchAbs, 'utf8') === batchBefore,
+        batchPreview.content[0]?.text ?? '',
+      );
+
+      const batchCommit = (await client.callTool({
+        name: 'atomic_batch_replace_text',
+        arguments: {
+          intent: 'prove clustered replacements commit as one compact transaction',
+          replacements: [
+            { file: batchRel, oldText: 'alpha = 1', newText: 'alpha = 10' },
+            { file: batchRel, oldText: 'beta = 2', newText: 'beta = 20' },
+          ],
+        },
+      })) as { content: { text: string }[]; isError?: boolean };
+      const batchCommitBody = jsonBody(batchCommit);
+      check(
+        'atomic_batch_replace_text commits multiple replacements with one receipt',
+        batchCommit.isError !== true &&
+          batchCommitBody.ok === true &&
+          batchCommitBody.transaction === true &&
+          batchCommitBody.replacements === 2 &&
+          batchCommitBody.files?.[0]?.replacements === 2 &&
+          batchCommitBody.files?.[0]?.negativeActionProofAuto === true &&
+          Array.isArray(batchCommitBody.traceRefs) &&
+          batchCommitBody.traceRefs.length === 1 &&
+          fs.readFileSync(batchAbs, 'utf8').includes('alpha = 10') &&
+          fs.readFileSync(batchAbs, 'utf8').includes('beta = 20'),
+        batchCommit.content[0]?.text ?? '',
+      );
+    } finally {
+      if (fs.existsSync(batchAbs)) fs.unlinkSync(batchAbs);
+    }
 
     // ── Inescapable convergence at the byte floor (immutable; no env, no flag) ──
     // EVERY write funnels through atomicWrite, which refuses any write that would

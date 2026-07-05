@@ -173,7 +173,7 @@ const EXT_VALIDATORS: Record<string, {
 /** Extensions covered by tree-sitter fallback (tried when native parser unavailable). */
 const TREE_SITTER_FALLBACK_EXTS = new Set([
   '.java', '.kt', '.c', '.h', '.cc', '.cpp', '.hpp', '.cs',
-  '.swift', '.scala', '.php', '.css', '.scss', '.less', '.sql',
+  '.swift', '.scala', '.php', '.css', '.scss', '.less', '.sql', '.html',
   '.go', '.rs',
 ]);
 
@@ -186,8 +186,9 @@ const EXT_TO_TS_LANG_PRE: Record<string, string> = {
   '.swift': 'cpp',
   '.scala': 'java',
   '.php': 'cpp',
-  '.css': 'javascript', '.scss': 'javascript', '.less': 'javascript',
-  '.sql': 'javascript',
+  '.css': 'css', '.scss': 'javascript', '.less': 'javascript',
+  '.sql': 'sql',
+  '.html': 'html',
   '.go': 'go',
   '.rs': 'rust',
 };
@@ -261,11 +262,36 @@ export function validateLanguage(file: string, text: string): LangValidationResu
   }
 }
 
-/** Try tree-sitter validation — writes text to temp file, calls Python script. */
+const ATOMIC_ROOT = path.dirname(path.dirname(new URL(import.meta.url).pathname));
+const WASM_VALIDATE_SCRIPT = path.join(ATOMIC_ROOT, 'lang-validate-wasm.mjs');
+const WASM_TS_LANGS = new Set(['css', 'sql', 'html']);
+
+function validateWasmGrammar(absPath: string, lang: string): { errorCount: number; firstError?: string } {
+  const r = childProcess.spawnSync(process.execPath, [WASM_VALIDATE_SCRIPT, absPath, lang], {
+    timeout: 15000,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  if (r.error || r.status !== 0) return { errorCount: -1 };
+  const out = (r.stdout ?? '').trim();
+  if (!out) return { errorCount: -1 };
+  try {
+    const parsed = JSON.parse(out) as { skipped?: boolean; errors?: number; firstError?: string };
+    if (parsed.skipped) return { errorCount: -1 };
+    return {
+      errorCount: Number.isFinite(parsed.errors) ? Number(parsed.errors) : 0,
+      firstError: typeof parsed.firstError === 'string' ? parsed.firstError : undefined,
+    };
+  } catch {
+    return { errorCount: -1 };
+  }
+}
+
+/** Try tree-sitter validation — writes text to temp file, calls Python or WASM parser. */
 function tryTreeSitterValidation(ext: string, text: string): { errorCount: number; firstError?: string } | null {
-  if (!ts3Available()) return null;
   const lang = EXT_TO_TS_LANG_PRE[ext];
   if (!lang) return null;
+  if (!WASM_TS_LANGS.has(lang) && !ts3Available()) return null;
 
   const tmpDir = os.tmpdir();
   const tmpPath = path.join(tmpDir, `.atomic-lang-${process.pid}-${Date.now()}${ext}`);
@@ -282,23 +308,21 @@ function tryTreeSitterValidation(ext: string, text: string): { errorCount: numbe
 
 // ─────────────────────────── tree-sitter bridge ───────────────────────────
 
-const TREE_SITTER_SCRIPT = path.join(
-  path.dirname(path.dirname(new URL(import.meta.url).pathname)),
-  'lang-validate.py',
-);
+const TREE_SITTER_SCRIPT = path.join(ATOMIC_ROOT, 'lang-validate.py');
 /** Map extension to tree-sitter language tag. */
 const EXT_TO_TS_LANG: Record<string, string> = {
   '.java': 'java',   '.kt': 'java',     // Kotlin uses Java grammar as approximation
   '.c': 'c',         '.h': 'c',
   '.cc': 'cpp',      '.cpp': 'cpp',     '.hpp': 'cpp',
-  '.cs': 'cpp',                          // C# ≈ C++ grammar for structural parse
-  '.swift': 'cpp',                       // Swift ≈ C++ grammar for structural parse
-  '.scala': 'java',                      // Scala ≈ Java grammar
-  '.php': 'cpp',                         // PHP ≈ C++ grammar
-  '.css': 'javascript',                  // CSS/SCSS → JS grammar (catches brace errors)
+  '.cs': 'cpp',                          // C# approximate grammar fallback
+  '.swift': 'cpp',                       // Swift approximate grammar fallback
+  '.scala': 'java',                      // Scala approximate grammar fallback
+  '.php': 'cpp',                         // PHP approximate grammar fallback
+  '.css': 'css',
   '.scss': 'javascript',
   '.less': 'javascript',
-  '.sql': 'javascript',                  // SQL → JS grammar (catches string/brace issues)
+  '.sql': 'sql',
+  '.html': 'html',
   '.go': 'go',
   '.rs': 'rust',
 };
@@ -323,9 +347,10 @@ function ts3Available(): boolean {
  * Returns errorCount=-1 if tree-sitter is not available.
  */
 function validateTreeSitter(absPath: string, ext: string, text: string): { errorCount: number; firstError?: string } {
-  if (!ts3Available()) return { errorCount: -1 };
   const lang = EXT_TO_TS_LANG[ext];
   if (!lang) return { errorCount: -1 };
+  if (WASM_TS_LANGS.has(lang)) return validateWasmGrammar(absPath, lang);
+  if (!ts3Available()) return { errorCount: -1 };
 
   const tmpDir = os.tmpdir();
   const tmpPath = path.join(tmpDir, `.atomic-ts-${process.pid}-${Date.now()}${ext}`);

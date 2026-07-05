@@ -3,7 +3,7 @@
   "mcpServers": {
     "atomic-edit": {
       "command": "bash",
-      "args": ["scripts/mcp/atomic-edit-mcp-launcher.sh"],
+      "args": ["/Users/danielpenin/kloel/scripts/mcp/atomic-edit-mcp-launcher.sh"],
       "description": "Structured code action space for atomic, validated code edits."
     },
     "atomic-swarm": {

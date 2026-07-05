@@ -366,6 +366,36 @@ function writeTypesPkg(d, name, body) {
   fs.rmSync(d, { recursive: true, force: true });
 }
 
+// 13) OVERLAY VIRTUAL DIRECTORIES — a macro transaction can create a new
+//     directory and multiple files inside it; TypeScript must resolve sibling
+//     imports from the overlay before any bytes touch disk. Without virtual
+//     directoryExists/getDirectories, this falsely reddened TS2307 and forced
+//     agents back to split writes or native fallbacks.
+{
+  const d = mkTmp();
+  writeTsconfig(d, {
+    target: 'ES2022',
+    module: 'ES2022',
+    moduleResolution: 'bundler',
+    allowImportingTsExtensions: true,
+  });
+  const siblingSpec = './' + 'b.js';
+  const res = await judge(
+    d,
+    {
+      'src/new/a.ts': "import { b } from '" + siblingSpec + "';\nexport const a: number = b;\n",
+      'src/new/b.ts': 'export const b = 41;\n',
+    },
+    ['src/new/a.ts', 'src/new/b.ts'],
+  );
+  check(
+    'OVERLAY: sibling import in a newly-created virtual directory resolves before disk write',
+    res.green === true && res.reds.length === 0 && !res.unjudged,
+    { reds: res.reds, unjudged: res.unjudged, unjudgedReason: res.unjudgedReason },
+  );
+  fs.rmSync(d, { recursive: true, force: true });
+}
+
 function finish() { const payload = { ok: fail === 0, pass, fail, results }; if (jsonMode) { process.stdout.write(JSON.stringify(payload, null, 2) + '\n', () => process.exit(payload.ok ? 0 : 1)); return; } process.stdout.write(`\n${pass} passed, ${fail} failed\n`, () => process.exit(payload.ok ? 0 : 1)); }
 
 finish();

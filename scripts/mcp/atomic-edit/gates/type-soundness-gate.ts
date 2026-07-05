@@ -206,16 +206,43 @@ function diagnoseChanged(
   const overrideAbs = new Map<string, string>();
   for (const [rel, content] of overrides) overrideAbs.set(absOf(rel), content);
 
+  const virtualDirs = new Set<string>();
+  const repoAbs = path.normalize(path.resolve(repoRoot));
+  for (const abs of overrideAbs.keys()) {
+    let dir = path.dirname(abs);
+    for (;;) {
+      virtualDirs.add(path.normalize(dir));
+      if (dir === repoAbs) break;
+      const parent = path.dirname(dir);
+      if (parent === dir || !path.normalize(dir).startsWith(repoAbs)) break;
+      dir = parent;
+    }
+  }
+
   const host = ts.createCompilerHost(options, true);
   const origGetSource = host.getSourceFile.bind(host);
   const origReadFile = host.readFile.bind(host);
   const origFileExists = host.fileExists.bind(host);
+  const origDirectoryExists = host.directoryExists?.bind(host);
+  const origGetDirectories = host.getDirectories?.bind(host);
   host.readFile = (fileName) => {
     const ov = overrideAbs.get(path.normalize(fileName));
     return ov !== undefined ? ov : origReadFile(fileName);
   };
   host.fileExists = (fileName) =>
     overrideAbs.has(path.normalize(fileName)) || origFileExists(fileName);
+  host.directoryExists = (dirName) => {
+    const normalized = path.normalize(dirName);
+    return virtualDirs.has(normalized) || (origDirectoryExists ? origDirectoryExists(dirName) : ts.sys.directoryExists(dirName));
+  };
+  host.getDirectories = (dirName) => {
+    const normalizedParent = path.normalize(dirName);
+    const names = new Set(origGetDirectories ? origGetDirectories(dirName) : ts.sys.getDirectories(dirName));
+    for (const virtualDir of virtualDirs) {
+      if (path.dirname(virtualDir) === normalizedParent) names.add(path.basename(virtualDir));
+    }
+    return [...names];
+  };
   host.getSourceFile = (fileName, languageVersionOrOptions, onError, shouldCreate) => {
     const ov = overrideAbs.get(path.normalize(fileName));
     if (ov !== undefined) return ts.createSourceFile(fileName, ov, languageVersionOrOptions, true);

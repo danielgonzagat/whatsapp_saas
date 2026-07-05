@@ -11,10 +11,13 @@
  * from: the agent can only commit what converges green.
  */
 import * as childProcess from 'node:child_process';
+import * as path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { REPO_ROOT, resolveSafeTarget } from './guard.js';
-import { atomicWrite } from './server-helpers-io.js';
+import { REPO_ROOT, activeWorkspaceRoot, resolveSafeTarget } from './guard.js';
+import { replaceText } from './engine.js';
+import { editSymbol, type SymbolOp } from './advanced.js';
+import { atomicWrite, readUtf8 } from './server-helpers-io.js';
 import { ok, fail } from './server-helpers-result.js';
 import { convergeStatic, type Mutation } from './server-helpers-converge.js';
 import { captureEffectSnapshot, diffEffect, rollbackEffect } from './server-helpers-effect.js';
@@ -30,20 +33,31 @@ export function registerToolsConverge(server: McpServer): void {
     {
       title: 'Correct-by-construction action — commit a mutation ONLY if it converges green across every gate',
       description:
-        'The unified atomic action: give one or more candidate file mutations (full new content). It runs ALL ' +
-        'applicable gates and commits ONLY if they ALL go green — otherwise NOTHING is written and it reports ' +
+        'The unified atomic action: give compact or full candidate mutations: exact oldText replacements, ' +
+        'symbol edits, or full new content. It composes same-file mutations in memory, runs ALL ' +
+        'applicable gates, and commits ONLY if they ALL go green — otherwise NOTHING is written and it reports ' +
         'exactly which gate reddened. Static gates (no disk write, refused before touching the tree): syntax ' +
         '(web-tree-sitter, any language) + connection (every new relative import resolves to a real file — a ' +
         'dangling wire is a fact, no heuristic). Optional dynamic gate: pass effectCommand to additionally require ' +
         'that running it stays green AFTER applying — on a non-zero exit the whole mutation is reverted BYTE-EXACT ' +
         '(untracked-inclusive). This makes construction and validation one act: the agent can only commit what ' +
-        'converges green. Default is preview (commit:true to persist).',
+        'converges green. Persists by default (commit:false for preview-only).',
       inputSchema: {
         mutations: z
-          .array(z.object({ file: z.string(), newText: z.string() }))
+          .array(z.object({
+            file: z.string(),
+            newText: z.string().optional(),
+            oldText: z.string().optional(),
+            occurrence: z.number().int().min(1).optional(),
+            selector: z.string().optional(),
+            symbolOp: z.enum(['replace', 'insert_after', 'remove']).optional(),
+            code: z.string().optional(),
+          }))
           .min(1)
-          .describe('candidate: full new content per repo-relative file'),
-        commit: z.boolean().optional().describe('persist if it converges green (default false = preview only)'),
+          .describe(
+            'candidate mutations per repo-relative file. Prefer compact oldText+newText for exact spans and selector+symbolOp+code for class/function/type changes; use full-file newText only for true whole-file rewrites.',
+          ),
+        commit: z.boolean().optional().describe('set to false for preview-only (default: true = persist if green)'),
         effectCommand: z
           .string()
           .optional()
@@ -53,16 +67,98 @@ export function registerToolsConverge(server: McpServer): void {
     },
     async (a) => {
       try {
-        const mutations: Mutation[] = a.mutations.map((m) => ({ file: m.file, newText: m.newText }));
-        // Guard every target first (path-escape + protected-file refusal) before any work.
-        let repoRoot = REPO_ROOT;
-        for (const m of mutations) {
+        const repoRoot = activeWorkspaceRoot();
+        const targetsByFile = new Map<string, {
+          absPath: string;
+          relPath: string;
+          repoRoot: string;
+          workspaceRelPath: string;
+          newText: string;
+          targetUnit: string;
+          inlinePreview: string;
+        }>();
+
+        for (const m of a.mutations) {
           const t = resolveSafeTarget(m.file);
-          repoRoot = t.repoRoot;
+          const workspaceRelPath = path.relative(repoRoot, t.absPath).split(path.sep).join('/');
+          if (workspaceRelPath === '' || workspaceRelPath.startsWith('..') || path.isAbsolute(workspaceRelPath)) {
+            throw new Error(`atomic_converge target ${m.file} resolved outside active workspace ${repoRoot}`);
+          }
+
+          const existing = targetsByFile.get(workspaceRelPath);
+          const current = existing?.newText ?? readUtf8(t.absPath);
+          let newText: string;
+          let targetUnit = 'converged_file';
+          let inlinePreview = `converge committed ${workspaceRelPath}`;
+
+          if (typeof m.oldText === 'string') {
+            if (m.selector || m.symbolOp || m.code !== undefined) {
+              throw new Error(`atomic_converge ${workspaceRelPath}: oldText replacement cannot also declare selector/symbolOp/code`);
+            }
+            if (typeof m.newText !== 'string') {
+              throw new Error(`atomic_converge ${workspaceRelPath}: oldText replacement requires newText`);
+            }
+            const r = replaceText(workspaceRelPath, current, m.oldText, m.newText, m.occurrence);
+            if (!r.validation.ok) {
+              throw new Error(`atomic_converge ${workspaceRelPath}: exact text mutation would break syntax: ${r.validation.introduced ?? ''}`);
+            }
+            newText = r.newText;
+            targetUnit = 'converged_text_span';
+            inlinePreview = `converge committed ${workspaceRelPath}:text-span`;
+          } else if (m.selector || m.symbolOp) {
+            if (!m.selector || !m.symbolOp) {
+              throw new Error(`atomic_converge ${workspaceRelPath}: symbol mutation requires selector+symbolOp`);
+            }
+            if (typeof m.newText === 'string') {
+              throw new Error(`atomic_converge ${workspaceRelPath}: symbol mutation uses code, not full-file newText`);
+            }
+            const r = await editSymbol(workspaceRelPath, current, m.selector, m.symbolOp as SymbolOp, m.code);
+            if (!r.validation.ok) {
+              throw new Error(`atomic_converge ${workspaceRelPath}: symbol mutation on ${r.selector} would break syntax: ${r.validation.introduced ?? ''}`);
+            }
+            newText = r.newText;
+            targetUnit = 'converged_symbol';
+            inlinePreview = `converge committed ${workspaceRelPath}:${r.selector}`;
+          } else if (typeof m.newText === 'string') {
+            if (existing) {
+              throw new Error(`atomic_converge ${workspaceRelPath}: full-file newText cannot follow another same-file mutation`);
+            }
+            if (m.occurrence !== undefined || m.code !== undefined) {
+              throw new Error(`atomic_converge ${workspaceRelPath}: full-file newText cannot declare occurrence/code`);
+            }
+            newText = m.newText;
+          } else {
+            throw new Error(`atomic_converge ${workspaceRelPath}: mutation requires oldText+newText, selector+symbolOp+code, or full-file newText`);
+          }
+
+          const mergedTargetUnit = existing
+            ? existing.targetUnit === targetUnit
+              ? targetUnit
+              : 'converged_composite'
+            : targetUnit;
+          const mergedInlinePreview = existing
+            ? `${existing.inlinePreview}; ${inlinePreview}`
+            : inlinePreview;
+          targetsByFile.set(workspaceRelPath, {
+            ...t,
+            workspaceRelPath,
+            newText,
+            targetUnit: mergedTargetUnit,
+            inlinePreview: mergedInlinePreview,
+          });
         }
 
+        const targets = [...targetsByFile.values()];
+        const mutations: Mutation[] = targets.map((t) => ({ file: t.workspaceRelPath, newText: t.newText }));
+
         // ── static convergence (no disk write) ──
-        const conv = await convergeStatic(repoRoot, mutations);
+        registerPendingWrites(targets.map((t) => t.absPath));
+        let conv;
+        try {
+          conv = await convergeStatic(repoRoot, mutations);
+        } finally {
+          clearPendingWrites();
+        }
         if (!conv.converged) {
           const r = conv.firstRed!;
           return ok({
@@ -76,12 +172,12 @@ export function registerToolsConverge(server: McpServer): void {
               `Nothing written — only a green-convergent mutation commits.`,
           });
         }
-        if (!a.commit) {
+        if (a.commit === false) {
           return ok({
             converged: true,
             committed: false,
             gates: conv.gates,
-            summaryForHuman: `✅ converges green (${conv.gates.map((g) => g.gate).join(' + ')}). preview — not written (commit:true to persist).`,
+            summaryForHuman: `✅ converges green (${conv.gates.map((g) => g.gate).join(' + ')}). preview — not written (default is persist; set commit:false for preview).`,
           });
         }
 
@@ -95,7 +191,6 @@ export function registerToolsConverge(server: McpServer): void {
         const effectSnap =
           a.effectCommand || hasProbes || hasBehaviorContract ? captureEffectSnapshot(repoRoot) : null;
         const written: string[] = [];
-        const targets = mutations.map((m) => ({ ...resolveSafeTarget(m.file), newText: m.newText }));
         // Register the whole set as pending so the byte-floor connection gate sees
         // the files this atomic set is about to create (A may legitimately import a
         // brand-new B written later in the same loop). Cleared unconditionally.
@@ -103,7 +198,7 @@ export function registerToolsConverge(server: McpServer): void {
         try {
           for (const t of targets) {
             atomicWrite(t.absPath, t.newText);
-            written.push(t.relPath);
+            written.push(t.workspaceRelPath);
           }
         } finally {
           clearPendingWrites();
@@ -173,15 +268,15 @@ export function registerToolsConverge(server: McpServer): void {
           const overlay = new Map<string, string>();
           const priors = new Map<string, string>();
           for (const t of targets) {
-            overlay.set(t.relPath, t.newText);
-            priors.set(t.relPath, effectSnap.files.get(t.relPath) ?? '');
+            overlay.set(t.workspaceRelPath, t.newText);
+            priors.set(t.workspaceRelPath, effectSnap.files.get(t.workspaceRelPath) ?? '');
           }
           let behavior;
           try {
             // Put PRIOR bytes on disk for ctx.priorOf; the target stays stable for
             // the gate's own dirty-tree check (it only writes ephemeral siblings).
             for (const t of targets) {
-              const prior = priors.get(t.relPath);
+              const prior = priors.get(t.workspaceRelPath);
               if (prior !== undefined && prior !== '') fs.writeFileSync(t.absPath, prior);
             }
             behavior = await runGates([behaviorContractGate], repoRoot, overlay, written);
@@ -218,17 +313,17 @@ export function registerToolsConverge(server: McpServer): void {
         // each binding the verdict that admitted it into the append-only chain.
         const verdict = { green: true, reds: [], notApplicable: [], unjudged: [], ran: conv.gates.map((g) => g.gate) };
         for (const t of targets) {
-          const prior = effectSnap?.files.get(t.relPath) ?? '';
+          const prior = effectSnap?.files.get(t.workspaceRelPath) ?? '';
           writeTrace(
             buildTrace({
-              file: t.relPath,
+              file: t.workspaceRelPath,
               repoRoot,
               operator: 'atomic_converge',
               before: prior,
               newText: t.newText,
-              inlinePreview: `converge committed ${t.relPath}`,
+              inlinePreview: t.inlinePreview,
               validation: { language: 'ts', before: 0, after: 0 },
-              targetUnit: 'converged_file',
+              targetUnit: t.targetUnit,
               intention: 'correct-by-construction commit',
               semanticImpact: 'green_convergent_commit',
               changed: true,

@@ -2,7 +2,7 @@ import * as childProcess from "node:child_process";
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { resolveAllowedRootForAbsolutePath, REPO_ROOT } from './guard.js';
+import { assertIntentMutationAllowed, resolveAllowedRootForAbsolutePath, REPO_ROOT } from './guard.js';
 import { checkConnectionByteFloor, checkSupplyChainByteFloor, pendingWriteCount } from './connection-gate.js';
 // Full-gate byte floor. The async WRITE_GATES (contract-edge, render-conformance,
 // binding, telemetry-emission, findings-delta, supply-chain) pull the tree-sitter
@@ -57,12 +57,12 @@ const SYNC_WRITE_GATES: GateModule[] = [typeSoundnessGate, iacReferenceGate, sec
  * blocks, and UNJUDGED also blocks at this strict byte floor because it is not
  * green approval.
  */
-function runSyncWriteGatesAt(relPath: string, content: string): {
+function runSyncWriteGatesAt(repoRoot: string, relPath: string, content: string): {
   reds: { gate: string; locus: string; fact: string }[];
   unjudged: { gate: string; fact: string }[];
 } {
   const overlay = new Map<string, string>([[relPath, content]]);
-  const ctx = makeContext(REPO_ROOT, overlay, [relPath]);
+  const ctx = makeContext(repoRoot, overlay, [relPath]);
   const reds: { gate: string; locus: string; fact: string }[] = [];
   const unjudged: { gate: string; fact: string }[] = [];
   for (const g of SYNC_WRITE_GATES) {
@@ -190,10 +190,12 @@ export function atomicWrite(absPath: string, content: string): void {
   // of an A→B set (it would falsely red A's import of a not-yet-written B). When a set is in
   // flight (pendingWriteCount > 1) type-soundness is honestly deferred to convergeStatic,
   // which type-checks the full overlay. Single-file writes (count ≤ 1) run all sync gates.
-  const relPath = path.relative(REPO_ROOT, absPath);
-  assertSelfExpansionAdmission(REPO_ROOT, absPath, content);
+  const repoRoot = resolveAllowedRootForAbsolutePath(absPath) ?? REPO_ROOT;
+  const relPath = path.relative(repoRoot, absPath).split(path.sep).join('/');
+  assertIntentMutationAllowed(absPath, 'atomicWrite');
+  assertSelfExpansionAdmission(repoRoot, absPath, content);
   const multiFileInFlight = pendingWriteCount() > 1;
-  const syncVerdict = runSyncWriteGatesAt(relPath, content);
+  const syncVerdict = runSyncWriteGatesAt(repoRoot, relPath, content);
   for (const r of syncVerdict.reds) {
     if (multiFileInFlight && r.gate === 'type-soundness') continue; // sibling-blind → defer to converge
     throw new Error(
@@ -230,7 +232,7 @@ export function atomicWrite(absPath: string, content: string): void {
     file: relPath,
     before: priorBytes,
     after: content,
-    repoRoot: REPO_ROOT,
+    repoRoot,
   });
   for (const r of registryVerdict.reds) {
     throw new Error(

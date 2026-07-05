@@ -14,20 +14,26 @@
  * verifiedEvidenceWeight) and the corresponding assertions flip and exit 1.
  */
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import {
+
+const jsonMode = process.argv.includes('--json');
+// artifactExists resolves RELATIVE artifact paths against the engine's REPO_ROOT, so
+// this proof must write its fixtures where REPO_ROOT points. The old code hand-derived
+// repoRoot via a fixed `../../../..` that matched the monorepo but overshot to an
+// unwritable parent (`/private`) in a flat clone → EACCES. Instead, point REPO_ROOT at
+// a fresh tmpdir via its documented override and import the engine AFTER, so resolution
+// and fixtures agree, it is always writable, and nothing pollutes the source tree.
+const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'receipt-proof-'));
+process.env.ATOMIC_EDIT_REPO_ROOT = repoRoot;
+const {
   classifyTruth,
   artifactExists,
   productEvidenceVerified,
   hasVerifiedProductProof,
   verifiedEvidenceWeight,
   evidenceWeight,
-} from '../dist/server-helpers-product-locks.js';
-
-const jsonMode = process.argv.includes('--json');
-const gatesDir = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(gatesDir, '../../../..');
+} = await import('../dist/server-helpers-product-locks.js');
 
 let failures = 0;
 const results = [];
@@ -121,6 +127,7 @@ try {
   for (const p of [realAbs, emptyAbs]) {
     try { fs.unlinkSync(p); } catch { /* best-effort */ }
   }
+  try { fs.rmSync(repoRoot, { recursive: true, force: true }); } catch { /* best-effort */ }
 }
 
 if (jsonMode) {

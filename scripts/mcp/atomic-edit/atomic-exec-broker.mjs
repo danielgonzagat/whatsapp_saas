@@ -8,8 +8,8 @@
  * per-command sandbox-exec, and the host sandbox must ALLOW network (Claude's
  * reasoning is the remote Anthropic API) so it cannot itself deny per-command
  * network. This broker, started OUTSIDE the host sandbox, re-applies a fresh
- * deny-by-default sandbox-exec per command (writes confined to effectRoot,
- * TMPDIR forced into effectRoot, NETWORK DENIED). It returns the REAL exit code
+ * deny-by-default sandbox-exec per command (writes confined to effectRoot plus
+ * an Atomic-owned scratch temp root, NETWORK DENIED). It returns the REAL exit code
  * (never fakes success) and re-enforces the invariant denylist + allowed-root
  * containment as defense-in-depth.
  *
@@ -27,21 +27,27 @@
 import net from 'node:net';
 import { spawn } from 'node:child_process';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const SANDBOX_EXEC = '/usr/bin/sandbox-exec';
-const endpointValue = process.argv[2] || process.env.ATOMIC_EXEC_BROKER_SOCKET;
+const brokerArgs = process.argv.slice(2);
+const noSandbox = brokerArgs.includes('--no-sandbox');
+const endpointValue =
+  brokerArgs.find((a) => a !== '--no-sandbox' && !a.startsWith('ATOMIC_')) ||
+  process.env.ATOMIC_EXEC_BROKER_SOCKET;
 const allowedRoot = canonicalPathForContainment(
   process.env.ATOMIC_EXEC_BROKER_ROOT ? process.env.ATOMIC_EXEC_BROKER_ROOT : process.cwd(),
 );
-
+const allowedScratchRoot = canonicalPathForContainment(path.join(realOr(os.tmpdir()), 'atomic-exec'));
+const allowedRootScratchRoot = canonicalPathForContainment(path.join(allowedRoot, 'atomic-exec'));
 if (!endpointValue) {
   process.stderr.write('[atomic-exec-broker] endpoint required (argv[2] or ATOMIC_EXEC_BROKER_SOCKET)\n');
   process.exit(2);
 }
-if (!fs.existsSync(SANDBOX_EXEC)) {
-  process.stderr.write('[atomic-exec-broker] requires macOS sandbox-exec\n');
+if (!noSandbox && !fs.existsSync(SANDBOX_EXEC)) {
+  process.stderr.write('[atomic-exec-broker] requires macOS sandbox-exec (or --no-sandbox for passthrough)\n');
   process.exit(78);
 }
 
@@ -92,11 +98,12 @@ function darwinScratchDir(name) {
   const scratch = process.env[name];
   return scratch ? scratch.trim().replace(/\/+$/, '') : null;
 }
-function browserRuntimeWriteRules(effectRoot) {
+function browserRuntimeWriteRules(effectRoot, tempRoot = null) {
   const writable = new Set();
-  if (effectRoot) {
-    writable.add(effectRoot);
-    writable.add(realOr(effectRoot));
+  for (const root of [effectRoot, tempRoot]) {
+    if (!root) continue;
+    writable.add(root);
+    writable.add(realOr(root));
   }
   for (const name of ['DARWIN_USER_TEMP_DIR', 'DARWIN_USER_CACHE_DIR']) {
     const scratch = darwinScratchDir(name);
@@ -117,14 +124,23 @@ function browserRuntimeWriteRules(effectRoot) {
   }
   return [...writable].map(subpathWriteRule);
 }
-function profile(effectRoot, profileName = 'atomic-exec') {
-  const writeRule = effectRoot ? subpathWriteRule(realOr(effectRoot)) : '';
+function sandboxWriteRules(...roots) {
+  const writable = new Set();
+  for (const root of roots) {
+    if (!root) continue;
+    writable.add(realOr(root));
+  }
+  return [...writable].map(subpathWriteRule);
+}
+
+function profile(effectRoot, profileName = 'atomic-exec', tempRoot = null) {
+  const writeRules = sandboxWriteRules(effectRoot, tempRoot);
   if (profileName === 'chrome-devtools') {
     return [
       '(version 1)',
       '(deny default)',
       '(allow file-read*)',
-      ...browserRuntimeWriteRules(effectRoot),
+      ...browserRuntimeWriteRules(effectRoot, tempRoot),
       '(allow file-write* (subpath "/var/folders"))',
       '(allow file-write* (subpath "/private/var/folders"))',
       '(allow file-write* (literal "/dev/null"))',
@@ -143,7 +159,7 @@ function profile(effectRoot, profileName = 'atomic-exec') {
     '(version 1)',
     '(deny default)',
     '(allow file-read*)',
-    writeRule,
+    ...writeRules,
     '(allow file-write* (literal "/dev/null"))',
     '(allow file-write* (literal "/dev/stdout"))',
     '(allow file-write* (literal "/dev/stderr"))',
@@ -176,13 +192,71 @@ function appendCapped(current, chunk, maxBytes = 32 * 1024 * 1024) {
   return next.slice(0, maxBytes) + '\n[atomic broker output truncated]';
 }
 
-function runSandboxed(command, runCwd, eRoot, profileName, req) {
+function tempEnv(tempRoot) {
+  if (!tempRoot) return {};
+  return {
+    TMPDIR: tempRoot,
+    TMP: tempRoot,
+    TEMP: tempRoot,
+    NODE_COMPILE_CACHE: path.join(tempRoot, 'node-compile-cache'),
+    XDG_CACHE_HOME: path.join(tempRoot, 'xdg-cache'),
+    npm_config_cache: path.join(tempRoot, 'npm-cache'),
+    YARN_CACHE_FOLDER: path.join(tempRoot, 'yarn-cache'),
+    PNPM_HOME: path.join(tempRoot, 'pnpm-home'),
+    PIP_CACHE_DIR: path.join(tempRoot, 'pip-cache'),
+  };
+}
+
+function runPassthrough(command, runCwd, eRoot, req) {
   return new Promise((resolve) => {
-    const tempRoot = eRoot || runCwd;
-    const child = spawn(SANDBOX_EXEC, ['-p', profile(eRoot, profileName), '/bin/bash', '-c', command], {
+    const tempRoot = req.tempRoot || eRoot || runCwd;
+    fs.mkdirSync(tempRoot, { recursive: true });
+    const child = spawn('/bin/bash', ['-c', command], {
       cwd: runCwd,
       stdio: ['pipe', 'pipe', 'pipe'],
-      env: { ...process.env, ...(req.env || {}), TMPDIR: tempRoot, TMP: tempRoot, TEMP: tempRoot },
+      env: { ...process.env, ...(req.env || {}), ...tempEnv(tempRoot) },
+    });
+    let stdout = '';
+    let stderr = '';
+    let settled = false;
+    let timedOut = false;
+    const timeoutMs = req.timeoutMs || 120000;
+    const forceKill = () => {
+      try { child.kill('SIGKILL'); } catch { /* best-effort */ }
+    };
+    const timer = setTimeout(() => {
+      timedOut = true;
+      stderr = appendCapped(stderr, '\n[atomic broker command timed out after ' + timeoutMs + 'ms]');
+      try { child.kill('SIGTERM'); } catch { /* best-effort */ }
+      setTimeout(forceKill, 1000).unref();
+    }, timeoutMs);
+    const finish = (reply) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(reply);
+    };
+    child.stdout.on('data', (chunk) => { stdout = appendCapped(stdout, chunk); });
+    child.stderr.on('data', (chunk) => { stderr = appendCapped(stderr, chunk); });
+    child.on('error', (error) => {
+      finish({ ok: false, error: String(error.message || error), exitCode: null, signal: null, stdout, stderr });
+    });
+    child.on('close', (code, signal) => {
+      finish({ ok: !timedOut && code === 0, exitCode: code, signal: signal ?? null, stdout, stderr });
+    });
+    if (typeof req.stdin === 'string') child.stdin.end(req.stdin);
+    else child.stdin.end();
+  });
+}
+
+function runSandboxed(command, runCwd, eRoot, profileName, req) {
+  return new Promise((resolve) => {
+    const tempRoot = req.tempRoot || eRoot || runCwd;
+    fs.mkdirSync(tempRoot, { recursive: true });
+    const child = spawn(SANDBOX_EXEC, ['-p', profile(eRoot, profileName, tempRoot), '/bin/bash', '-c', command], {
+      cwd: runCwd,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, ...(req.env || {}), ...tempEnv(tempRoot) },
     });
     let stdout = '';
     let stderr = '';
@@ -247,7 +321,14 @@ async function handle(req) {
     ? (typeof req.effectRoot === 'string' && req.effectRoot.length > 0 ? path.resolve(req.effectRoot) : null)
     : runCwd;
   if (eRoot && !within(eRoot, allowedRoot)) return { ok: false, error: 'broker: effectRoot escapes allowed root' };
-  return runSandboxed(command, runCwd, eRoot, profileName, req);
+  const tRoot =
+    typeof req.tempRoot === 'string' && req.tempRoot.length > 0 ? path.resolve(req.tempRoot) : null;
+  if (tRoot && !within(tRoot, allowedScratchRoot) && !within(tRoot, allowedRootScratchRoot)) {
+    return { ok: false, error: 'broker: tempRoot escapes atomic scratch roots' };
+  }
+  const runReq = tRoot ? { ...req, tempRoot: tRoot } : req;
+  if (noSandbox) return runPassthrough(command, runCwd, eRoot, runReq);
+  return runSandboxed(command, runCwd, eRoot, profileName, runReq);
 }
 
 function frame(obj) {
@@ -338,8 +419,15 @@ function startFileBroker(root) {
   }
   const requests = path.join(root, 'requests');
   const responses = path.join(root, 'responses');
+  const marker = path.join(root, 'broker.json');
   fs.mkdirSync(requests, { recursive: true, mode: 0o700 });
   fs.mkdirSync(responses, { recursive: true, mode: 0o700 });
+  writeJsonAtomic(marker, {
+    protocol: 'atomic-file-broker-v1',
+    pid: process.pid,
+    parentPid: process.ppid,
+    startedAt: new Date().toISOString(),
+  });
   const inFlight = new Set();
   const processRequest = async (name) => {
     if (!name.endsWith('.json') || inFlight.has(name)) return;
@@ -410,3 +498,43 @@ function shutdown() {
 }
 process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
+
+// Parent-death reaper. This broker is ALWAYS spawned as a child of the host
+// launcher / supervisor that owns its lifetime (claude-/codex-atomic-host-launcher
+// and the launcher-supervisor LKG path) — never a standalone daemon. On a CLEAN
+// parent exit those owners SIGTERM us (handled above). But on an ABNORMAL parent
+// death (SIGKILL, crash, a timeout-killed gate run) no SIGTERM is delivered, and
+// because the broker reads no stdin nothing else signals us: we are reparented to
+// launchd (ppid 1) and would keep listening forever. That orphaning was the
+// dominant source of leaked atomic-exec brokers accumulating until the machine ran
+// out of RAM.
+//
+// NB: process.ppid is captured ONCE by Node and is NOT updated on reparent, so we
+// cannot watch it change. Instead record the owning parent's pid at startup and
+// poll its LIVENESS with signal 0: once that throws ESRCH (no such process) the
+// owner is gone and we have been orphaned — reap cleanly so the socket / file
+// endpoint is removed and the process exits. EPERM means the pid still exists
+// (owner alive, just not signalable) so we keep serving.
+const BROKER_PARENT_PID = process.ppid;
+if (BROKER_PARENT_PID > 1) {
+  const parentReaper = setInterval(() => {
+    let parentAlive = true;
+    try {
+      process.kill(BROKER_PARENT_PID, 0);
+    } catch (err) {
+      parentAlive = err && err.code === 'EPERM';
+    }
+    if (!parentAlive) {
+      try {
+        process.stderr.write(
+          '[atomic-exec-broker] owning parent ' + BROKER_PARENT_PID +
+            ' gone; reaping orphaned broker\n',
+        );
+      } catch {
+        /* best-effort */
+      }
+      shutdown();
+    }
+  }, 2000);
+  parentReaper.unref();
+}

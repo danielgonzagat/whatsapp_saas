@@ -43,7 +43,7 @@ export interface TextEditSpec {
 }
 
 export interface ValidationResult {
-  language: 'ts' | 'json' | 'structural' | 'generic' | 'python' | 'go' | 'rust' | 'ruby' | 'shell' | 'java' | 'c' | 'cpp' | 'javascript';
+  language: 'ts' | 'json' | 'structural' | 'generic' | 'python' | 'go' | 'rust' | 'ruby' | 'shell' | 'java' | 'c' | 'cpp' | 'javascript' | 'css' | 'sql' | 'html';
   /** Syntactic-diagnostic count before the edit. */
   before: number;
   /** Syntactic-diagnostic count after the edit. */

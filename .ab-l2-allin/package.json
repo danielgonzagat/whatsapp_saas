@@ -1,0 +1,13 @@
+{
+  "name": "priority-task-queue",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "test": "node --import /opt/homebrew/lib/node_modules/vercel/node_modules/tsx/dist/loader.mjs --test 'src/**/*.test.ts'",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "typescript": "^5.7.0"
+  }
+}

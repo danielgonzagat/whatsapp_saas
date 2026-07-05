@@ -11,30 +11,21 @@ const __dirname = dirname(__filename);
 const MESH_PATH = resolve(__dirname, 'lsp-mesh.json');
 const mesh = JSON.parse(readFileSync(MESH_PATH, 'utf8'));
 
-// Portability: expand ${REPO_ROOT} / ${HOME} placeholders in lsp-mesh.json values.
-// REPO_ROOT is derived from this script's own location (tools/lsp-mesh/../../),
-// so the mesh resolves correctly on any machine/checkout. Absolute paths without
-// placeholders are kept as-is (backward compatible).
 const REPO_ROOT = resolve(__dirname, '..', '..');
 const HOME = homedir();
 function expandPlaceholders(value) {
-  if (typeof value === 'string') {
-    return value
-      .replace(/\$\{REPO_ROOT\}/g, REPO_ROOT)
-      .replace(/\$\{HOME\}/g, HOME);
-  }
-  if (Array.isArray(value)) {
-    for (let i = 0; i < value.length; i++) value[i] = expandPlaceholders(value[i]);
-    return value;
-  }
-  if (value && typeof value === 'object') {
-    for (const k of Object.keys(value)) value[k] = expandPlaceholders(value[k]);
-    return value;
-  }
+  if (typeof value === 'string') return value.replace(/\$\{REPO_ROOT\}/g, REPO_ROOT).replace(/\$\{HOME\}/g, HOME);
+  if (Array.isArray(value)) { for (let i = 0; i < value.length; i++) value[i] = expandPlaceholders(value[i]); return value; }
+  if (value && typeof value === 'object') { for (const k of Object.keys(value)) value[k] = expandPlaceholders(value[k]); return value; }
   return value;
 }
 expandPlaceholders(mesh);
 
+const CLI_MODE = process.argv.length >= 3;
+
+// ═══════════════════════════════════════════════════════════════════════
+// LSP Pool
+// ═══════════════════════════════════════════════════════════════════════
 class LspPool {
   constructor() { this.servers = new Map(); this.openedDocs = new Map(); }
   key(l,w) { return `${l}@${w}`; }
@@ -43,20 +34,21 @@ class LspPool {
     const k = this.key(language, workspace);
     let s = this.servers.get(k);
     if (s) { s.lastUsed = Date.now(); return s; }
-
     const ws = mesh.workspaces[workspace];
     if (!ws) throw new Error(`Unknown workspace: ${workspace}`);
     const serverDef = mesh.servers[language];
     if (!serverDef) throw new Error(`Unknown language/LSP: ${language}`);
-
     const proc = spawn(serverDef.command, serverDef.args || [], {
-      cwd: ws.cwd, stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env },
+      cwd: ws.cwd, stdio: ['pipe', 'pipe', 'pipe'],
+      env: {
+        ...process.env,
+        PATH: [process.env.PATH, `${HOME}/go/bin`, `${HOME}/.rbenv/shims`, `${HOME}/.dotnet`, `${HOME}/.dotnet/tools`].join(':'),
+        DOTNET_ROOT: `${HOME}/.dotnet`,
+      },
     });
-
-    // ID-keyed resolver map — fixes concurrent-request response routing.
     let buffer = '';
-    const resolvers = new Map();      // id -> (msg) => void
-    const notifications = [];         // server-initiated notifications (no id)
+    const resolvers = new Map();
+    const notifications = [];
     proc.stdout.on('data', (chunk) => {
       buffer += chunk.toString();
       while (true) {
@@ -73,11 +65,8 @@ class LspPool {
         try {
           const msg = JSON.parse(body);
           if (msg.id !== undefined && resolvers.has(msg.id)) {
-            const r = resolvers.get(msg.id);
-            resolvers.delete(msg.id);
-            r(msg);
+            const r = resolvers.get(msg.id); resolvers.delete(msg.id); r(msg);
           } else if (msg.method) {
-            // server notification (publishDiagnostics, etc.) — buffer for diagnostics call
             notifications.push(msg);
             if (notifications.length > 50) notifications.shift();
           }
@@ -85,25 +74,20 @@ class LspPool {
       }
     });
     proc.stderr.on('data', () => {});
-    proc.on('exit', () => { this.servers.delete(k); for (const r of resolvers.values()) r({error: 'lsp process exited'}); });
-
+    proc.on('exit', () => { this.servers.delete(k); for (const r of resolvers.values()) r({error:'lsp exited'}); });
     s = { proc, resolvers, notifications, seq: 0, workspace, lastUsed: Date.now() };
-    this.servers.set(k, s);     // ← bug fix: previously `set(k)` lost the value, spawning new procs on every call
-
+    this.servers.set(k, s);
     await this._request(s, 'initialize', {
-      processId: process.pid,
-      rootUri: `file://${ws.cwd}`,
+      processId: process.pid, rootUri: `file://${ws.cwd}`,
       capabilities: {
         textDocument: {
           synchronization: { didOpen: true, didChange: true, didClose: true },
-          definition: { linkSupport: true },
-          references: {},
+          definition: { linkSupport: true }, references: {},
           hover: { contentFormat: ['plaintext', 'markdown'] },
           documentSymbol: { hierarchicalDocumentSymbolSupport: true },
           completion: { completionItem: { snippetSupport: false } },
           codeAction: { codeActionLiteralSupport: { codeActionKind: { valueSet: ['quickfix','refactor','source'] } } },
-          rename: { prepareSupport: true },
-          publishDiagnostics: {},
+          rename: { prepareSupport: true }, publishDiagnostics: {},
         },
         workspace: { workspaceFolders: true, configuration: true },
       },
@@ -118,28 +102,24 @@ class LspPool {
     const id = ++s.seq;
     const req = JSON.stringify({ jsonrpc: '2.0', id, method, params });
     return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => { s.resolvers.delete(id); reject(new Error(`LSP request timeout: ${method}`)); }, 15000);
+      const timeout = setTimeout(() => { s.resolvers.delete(id); reject(new Error(`timeout: ${method}`)); }, 30000);
       s.resolvers.set(id, (msg) => { clearTimeout(timeout); resolve(msg); });
       s.proc.stdin.write(`Content-Length: ${Buffer.byteLength(req)}\r\n\r\n${req}`);
     });
   }
-
   _notify(s, method, params) {
     const req = JSON.stringify({ jsonrpc: '2.0', method, params });
     s.proc.stdin.write(`Content-Length: ${Buffer.byteLength(req)}\r\n\r\n${req}`);
   }
-
   shutdownAll() { for (const [, s] of this.servers) try { s.proc.kill(); } catch {} this.servers.clear(); }
-
   async ensureOpen(s, language, file) {
     const uri = toUri(file);
     if (this.openedDocs.has(uri)) return;
-    const text = readFileSync(file, 'utf8');
+    let text = ''; try { text = readFileSync(file, 'utf8'); } catch {}
     this._notify(s, 'textDocument/didOpen', { textDocument: { uri, languageId: language, version: 1, text } });
     this.openedDocs.set(uri, true);
     await new Promise(r => setTimeout(r, 200));
   }
-
   resolveFile(fp) {
     const abs = resolve(fp), ext = extname(fp).toLowerCase();
     let bestWs = null, bestPrefix = '';
@@ -148,7 +128,17 @@ class LspPool {
     }
     if (!bestWs) bestWs = 'root';
     const ws = mesh.workspaces[bestWs];
-    const extMap = { '.ts':'typescript','.tsx':'typescript','.js':'typescript','.jsx':'typescript','.mjs':'typescript','.cjs':'typescript','.prisma':'prisma','.css':'css','.html':'html','.htm':'html','.json':'json','.yaml':'yaml','.yml':'yaml','.sh':'bash','.bash':'bash','.zsh':'bash','.sql':'sql','.md':'markdown','.markdown':'markdown','.toml':'toml' };
+    const extMap = {
+      '.ts':'typescript','.tsx':'typescript','.js':'typescript','.jsx':'typescript','.mjs':'typescript','.cjs':'typescript','.mts':'typescript','.cts':'typescript',
+      '.py':'python','.pyi':'python','.pyx':'python','.go':'go','.rs':'rust',
+      '.c':'clangd','.h':'clangd','.cpp':'clangd','.hpp':'clangd','.cc':'clangd','.cxx':'clangd',
+      '.java':'java','.kt':'kotlin','.kts':'kotlin','.php':'php','.swift':'swift','.lua':'lua',
+      '.cs':'csharp','.csx':'csharp','.rb':'ruby','.rake':'ruby','.gemspec':'ruby',
+      '.ex':'elixir','.exs':'elixir','.graphql':'graphql','.gql':'graphql',
+      '.prisma':'prisma','.css':'css','.html':'html','.htm':'html',
+      '.json':'json','.yaml':'yaml','.yml':'yaml','.sh':'bash','.bash':'bash','.zsh':'bash',
+      '.sql':'sql','.md':'markdown','.markdown':'markdown','.toml':'toml'
+    };
     const lang = extMap[ext] || 'typescript';
     if (ws.servers.includes(lang)) return { language: lang, workspace: bestWs };
     for (const [n, w] of Object.entries(mesh.workspaces)) { if (w.servers.includes(lang)) return { language: lang, workspace: n }; }
@@ -156,125 +146,249 @@ class LspPool {
   }
 }
 
-const pool = new LspPool();
+function toUri(fp) { return `file://${resolve(fp)}`; }
 
-process.stdin.setEncoding('utf8');
-let buf = '';
-process.stdin.on('data', (c) => { buf += c; const lines = buf.split('\n'); buf = lines.pop() || ''; for (const l of lines) { if (l.trim()) try { handle(JSON.parse(l)); } catch {} } });
-process.stdin.on('end', () => { pool.shutdownAll(); process.exit(0); });
+// ═══════════════════════════════════════════════════════════════════════
+// CLI mode
+// ═══════════════════════════════════════════════════════════════════════
+if (CLI_MODE) {
+  const op = process.argv[2];
+  const file = resolve(process.argv[3] || '.');
+  const language = process.argv[4] || null;
+  const line = parseInt(process.argv[5]) || 1;
+  const character = parseInt(process.argv[6]) || 0;
+  const extra = process.argv[7] || null;
 
-async function handle(msg) {
-  try {
-    switch (msg.method) {
-      case 'initialize': return respond(msg.id, { protocolVersion: PROTO_VERSION, capabilities: { tools:{}, resources:{} }, serverInfo: { name:'kloel-lsp-router', version:'2.0.0' } });
-      case 'tools/list': return respond(msg.id, { tools: TOOLS });
-      case 'tools/call': return await handleToolCall(msg);
-      default: return respond(msg.id, {});
+  const pool = new LspPool();
+  (async () => {
+    try {
+      let result;
+      switch (op) {
+        case 'diagnostics': result = await cliDiagnostics(file, language, pool); break;
+        case 'hover': result = await cliHover(file, language, line, character, pool); break;
+        case 'references': result = await cliReferences(file, language, line, character, pool); break;
+        case 'definition': result = await cliDefinition(file, language, line, character, pool); break;
+        case 'symbols': result = await cliSymbols(file, language, pool); break;
+        case 'rename': result = await cliRename(file, language, line, character, extra || 'renamed', pool); break;
+        case 'completion': result = await cliCompletion(file, language, line, character, pool); break;
+        case 'code_actions': result = await cliCodeActions(file, language, line, parseInt(process.argv[6]) || line, pool); break;
+        case 'health': result = await cliHealth(language, pool); break;
+        case 'shutdown': pool.shutdownAll(); result = { ok: true, message: 'shutdown complete' }; break;
+        default: result = { ok: false, error: `unknown op: ${op}` };
+      }
+      process.stdout.write(JSON.stringify(result) + '\n');
+    } catch (e) {
+      process.stdout.write(JSON.stringify({ ok: false, error: e.message }) + '\n');
+    } finally {
+      pool.shutdownAll();
+      process.exit(0);
     }
-  } catch(e) { respond(msg.id, { content:[{type:'text', text:JSON.stringify({error:e.message})}], isError:true }); }
+  })();
 }
 
-const TOOLS = [
-  { name:'lsp_definition', description:'Go to definition of a symbol', inputSchema:{ type:'object', properties:{ file:{type:'string'}, line:{type:'number'}, character:{type:'number'}, symbol:{type:'string'} }, required:['file','line'] } },
-  { name:'lsp_references', description:'Find all references to a symbol', inputSchema:{ type:'object', properties:{ file:{type:'string'}, line:{type:'number'}, character:{type:'number'}, symbol:{type:'string'} }, required:['file','line'] } },
-  { name:'lsp_hover', description:'Get type info and documentation', inputSchema:{ type:'object', properties:{ file:{type:'string'}, line:{type:'number'}, character:{type:'number'}, symbol:{type:'string'} }, required:['file','line'] } },
-  { name:'lsp_symbols', description:'List document symbols in a file', inputSchema:{ type:'object', properties:{ file:{type:'string'} }, required:['file'] } },
-  { name:'lsp_diagnostics', description:'Get diagnostics for a file', inputSchema:{ type:'object', properties:{ file:{type:'string'} }, required:['file'] } },
-  { name:'lsp_completion', description:'Get completions at a position', inputSchema:{ type:'object', properties:{ file:{type:'string'}, line:{type:'number'}, character:{type:'number'} }, required:['file','line'] } },
-  { name:'lsp_code_actions', description:'Get code actions for a range', inputSchema:{ type:'object', properties:{ file:{type:'string'}, startLine:{type:'number'}, endLine:{type:'number'} }, required:['file','startLine','endLine'] } },
-  { name:'lsp_rename', description:'Preview rename of a symbol', inputSchema:{ type:'object', properties:{ file:{type:'string'}, line:{type:'number'}, character:{type:'number'}, symbol:{type:'string'}, newName:{type:'string'} }, required:['file','line','newName'] } },
-  { name:'lsp_health', description:'Health check all LSP servers', inputSchema:{ type:'object', properties:{ language:{type:'string'} } } },
-  { name:'lsp_shutdown', description:'Shutdown all LSP server processes', inputSchema:{ type:'object', properties:{} } },
-];
-
-async function handleToolCall(msg) {
-  const id = msg.id, { name, arguments: args } = msg.params;
-  try {
-    switch (name) {
-      case 'lsp_definition': return await lspOp(id, args, 'textDocument/definition');
-      case 'lsp_references': return await lspOp(id, args, 'textDocument/references', {context:{includeDeclaration:true}});
-      case 'lsp_hover': return await lspOp(id, args, 'textDocument/hover');
-      case 'lsp_symbols': return await lspSymbols(id, args);
-      case 'lsp_diagnostics': return await lspDiagnostics(id, args);
-      case 'lsp_completion': return await lspOp(id, args, 'textDocument/completion');
-      case 'lsp_code_actions': return await lspCodeActions(id, args);
-      case 'lsp_rename': return await lspRename(id, args);
-      case 'lsp_health': return await lspHealth(id, args);
-      case 'lsp_shutdown': pool.shutdownAll(); return respond(id, { content:[{type:'text', text:'All LSP servers shut down'}] });
-      default: return respond(id, { content:[{type:'text', text:JSON.stringify({error:`unknown tool: ${name}`})}] });
+async function cliDiagnostics(file, language, pool) {
+  const resolved = pool.resolveFile(file);
+  const usedLang = language || resolved.language;
+  let ws = resolved.workspace;
+  if (!mesh.workspaces[ws]?.servers.includes(usedLang)) {
+    for (const [wn, w] of Object.entries(mesh.workspaces)) {
+      if (w.servers.includes(usedLang)) { ws = wn; break; }
     }
-  } catch(e) { return respond(id, { content:[{type:'text', text:JSON.stringify({error:e.message})}] }); }
-}
+  }
+  const s = await pool.getOrStart(usedLang, ws);
+  const uri = toUri(file);
+  let text = ''; try { text = readFileSync(file, 'utf8'); } catch {}
 
-async function lspOp(id, args, method, extraParams={}) {
-  const { file, line, character } = args;
-  const { language, workspace } = pool.resolveFile(file);
-  const s = await pool.getOrStart(language, workspace);
-  await pool.ensureOpen(s, language, file);
-  const r = await pool._request(s, method, {
-    textDocument: { uri: toUri(file) },
-    position: { line: (line||1)-1, character: character||0 },
-    ...extraParams,
+  // Open the document and force re-analysis with didChange
+  pool._notify(s, 'textDocument/didOpen', { textDocument: { uri, languageId: usedLang, version: 1, text } });
+  pool.openedDocs.set(uri, true);
+  await new Promise(r => setTimeout(r, 500));
+
+  // Force re-analysis by sending didChange with full content
+  pool._notify(s, 'textDocument/didChange', {
+    textDocument: { uri, version: 2 },
+    contentChanges: [{ text }]
   });
-  const rr = r?.result;
-  let formatted = rr;
-  if (method === 'textDocument/definition' && Array.isArray(rr)) formatted = rr.map(l=>({ uri:l.uri, range:l.range }));
-  else if (method === 'textDocument/references' && Array.isArray(rr)) formatted = { count: rr.length, locations: rr.slice(0,30).map(l=>({ uri:l.uri, range:l.range })) };
-  return respond(id, { content:[{type:'text', text:JSON.stringify({ language, workspace, result: formatted }, null, 2)}] });
+  await new Promise(r => setTimeout(r, 500));
+
+  // Poll for diagnostics up to 10 times (5 seconds total)
+  for (let attempt = 0; attempt < 10; attempt++) {
+    await new Promise(r => setTimeout(r, 500));
+    const diags = s.notifications
+      .filter(n => n.method === 'textDocument/publishDiagnostics' && n.params?.uri === uri)
+      .flatMap(n => n.params.diagnostics || []);
+    if (diags.length > 0) {
+      const errors = diags.filter(d => d.severity === 1);
+      return { ok: true, language: usedLang, workspace: ws, data: { uri, diagnostics: diags, totalCount: diags.length, errors: errors.length, warnings: diags.length - errors.length } };
+    }
+  }
+  // No diagnostics after polling — file is clean or LSP didn't report
+  return { ok: true, language: usedLang, workspace: ws, data: { uri, diagnostics: [], totalCount: 0, errors: 0, warnings: 0 } };
 }
 
-async function lspSymbols(id, args) {
-  const { file } = args;
-  const { language, workspace } = pool.resolveFile(file);
-  const s = await pool.getOrStart(language, workspace);
-  await pool.ensureOpen(s, language, file);
-  const r = await pool._request(s, 'textDocument/documentSymbol', { textDocument: { uri: toUri(file) } });
-  const symbols = (r?.result || []).map(s=>({ name:s.name, kind:s.kind, line:s.range?.start?.line+1, children: s.children?.length }));
-  return respond(id, { content:[{type:'text', text:JSON.stringify({ language, workspace, symbols, count: symbols.length }, null, 2)}] });
+async function cliHover(file, language, line, character, pool) {
+  const r = pool.resolveFile(file);
+  const lang = language || r.language;
+  const s = await pool.getOrStart(lang, r.workspace);
+  await pool.ensureOpen(s, lang, file);
+  const resp = await pool._request(s, 'textDocument/hover', { textDocument: { uri: toUri(file) }, position: { line: line - 1, character } });
+  const contents = resp?.result?.contents;
+  let text = null;
+  if (typeof contents === 'string') text = contents;
+  else if (contents?.value) text = contents.value;
+  else if (Array.isArray(contents)) text = contents.map(c => c.value || c).join('\n');
+  return { ok: !!text, language: lang, workspace: r.workspace, data: { contents: text || 'no hover info at this position' } };
 }
 
-async function lspDiagnostics(id, args) {
-  const { file } = args;
-  const { language, workspace } = pool.resolveFile(file);
-  const s = await pool.getOrStart(language, workspace);
-  await pool.ensureOpen(s, language, file);
-  await new Promise(r => setTimeout(r, 300));
-  return respond(id, { content:[{type:'text', text:JSON.stringify({ language, workspace, file, opened:true }, null, 2)}] });
+async function cliReferences(file, language, line, character, pool) {
+  const r = pool.resolveFile(file);
+  const lang = language || r.language;
+  const s = await pool.getOrStart(lang, r.workspace);
+  await pool.ensureOpen(s, lang, file);
+  const resp = await pool._request(s, 'textDocument/references', {
+    textDocument: { uri: toUri(file) }, position: { line: line - 1, character }, context: { includeDeclaration: true }
+  });
+  const refs = (resp?.result || []).map(ref => ({ uri: ref.uri, line: (ref.range?.start?.line || 0) + 1, character: ref.range?.start?.character || 0 }));
+  const files = new Set(refs.map(ref => ref.uri));
+  return { ok: true, language: lang, workspace: r.workspace, data: { references: refs, totalCount: refs.length, filesCount: files.size } };
 }
 
-async function lspCodeActions(id, args) {
-  const { file, startLine, endLine } = args;
-  const { language, workspace } = pool.resolveFile(file);
-  const s = await pool.getOrStart(language, workspace);
-  const r = await pool._request(s, 'textDocument/codeAction', { textDocument:{uri:toUri(file)}, range:{start:{line:(startLine||1)-1,character:0},end:{line:(endLine||1)-1,character:0}}, context:{diagnostics:[]} });
-  return respond(id, { content:[{type:'text', text:JSON.stringify({ language, workspace, actions: r?.result || [] }, null, 2)}] });
+async function cliDefinition(file, language, line, character, pool) {
+  const r = pool.resolveFile(file);
+  const lang = language || r.language;
+  const s = await pool.getOrStart(lang, r.workspace);
+  await pool.ensureOpen(s, lang, file);
+  const resp = await pool._request(s, 'textDocument/definition', { textDocument: { uri: toUri(file) }, position: { line: line - 1, character } });
+  return { ok: true, language: lang, workspace: r.workspace, data: { definitions: resp?.result || [] } };
 }
 
-async function lspRename(id, args) {
-  const { file, line, character, newName } = args;
-  const { language, workspace } = pool.resolveFile(file);
-  const s = await pool.getOrStart(language, workspace);
-  await pool.ensureOpen(s, language, file);
-  const r = await pool._request(s, 'textDocument/rename', { textDocument:{uri:toUri(file)}, position:{line:(line||1)-1,character:character||0}, newName });
-  return respond(id, { content:[{type:'text', text:JSON.stringify({ language, workspace, changes: r?.result }, null, 2)}] });
+async function cliSymbols(file, language, pool) {
+  const r = pool.resolveFile(file);
+  const lang = language || r.language;
+  const s = await pool.getOrStart(lang, r.workspace);
+  await pool.ensureOpen(s, lang, file);
+  const resp = await pool._request(s, 'textDocument/documentSymbol', { textDocument: { uri: toUri(file) } });
+  const symbols = (resp?.result || []).map(sy => ({ name: sy.name, kind: sy.kind, line: (sy.range?.start?.line || 0) + 1, children: sy.children?.length || 0 }));
+  return { ok: true, language: lang, workspace: r.workspace, data: { symbols, count: symbols.length } };
 }
 
-async function lspHealth(id, args) {
-  // dedup by (language, workspace) — not just language — so all 5 typescript
-  // workspaces (backend/frontend/frontend-admin/worker/e2e) report independently.
+async function cliRename(file, language, line, character, newName, pool) {
+  const r = pool.resolveFile(file);
+  const lang = language || r.language;
+  const s = await pool.getOrStart(lang, r.workspace);
+  await pool.ensureOpen(s, lang, file);
+  const resp = await pool._request(s, 'textDocument/rename', { textDocument: { uri: toUri(file) }, position: { line: line - 1, character }, newName: newName || 'renamedSymbol' });
+  return { ok: true, language: lang, workspace: r.workspace, data: { changes: resp?.result?.changes || {}, documentChanges: resp?.result?.documentChanges || [] } };
+}
+
+async function cliCompletion(file, language, line, character, pool) {
+  const r = pool.resolveFile(file);
+  const lang = language || r.language;
+  const s = await pool.getOrStart(lang, r.workspace);
+  await pool.ensureOpen(s, lang, file);
+  const resp = await pool._request(s, 'textDocument/completion', { textDocument: { uri: toUri(file) }, position: { line: line - 1, character } });
+  const items = (resp?.result?.items || resp?.result || []).slice(0, 10).map(it => ({ label: it.label, detail: it.detail, kind: it.kind }));
+  return { ok: true, language: lang, workspace: r.workspace, data: { items, count: items.length } };
+}
+
+async function cliCodeActions(file, language, startLine, endLine, pool) {
+  const r = pool.resolveFile(file);
+  const lang = language || r.language;
+  const s = await pool.getOrStart(lang, r.workspace);
+  const resp = await pool._request(s, 'textDocument/codeAction', {
+    textDocument: { uri: toUri(file) },
+    range: { start: { line: (startLine || 1) - 1, character: 0 }, end: { line: (endLine || startLine || 1) - 1, character: 0 } },
+    context: { diagnostics: [] }
+  });
+  return { ok: true, language: lang, workspace: r.workspace, data: { actions: resp?.result || [] } };
+}
+
+async function cliHealth(language, pool) {
   const results = {}, checked = new Set();
   for (const [wn, ws] of Object.entries(mesh.workspaces)) {
     for (const sn of ws.servers) {
-      if (args?.language && sn !== args.language) continue;
-      const key = `${sn}@${wn}`;
-      if (checked.has(key)) continue;
+      if (language && sn !== language) continue;
+      const key = `${sn}@${wn}`; if (checked.has(key)) continue;
       checked.add(key);
-      try { const s = await pool.getOrStart(sn, wn); results[key] = { status:'running', pid:s.proc.pid }; }
-      catch(e) { results[key] = { status:'error', message:e.message }; }
+      try { const s = await pool.getOrStart(sn, wn); results[key] = { status: 'running', pid: s.proc.pid }; }
+      catch (e) { results[key] = { status: 'error', message: e.message }; }
     }
   }
-  return respond(id, { content:[{type:'text', text:JSON.stringify(results, null, 2)}] });
+  return { ok: true, data: results };
 }
 
-function respond(id, result) { if (id === undefined) return; process.stdout.write(JSON.stringify({ jsonrpc:'2.0', id, result })+'\n'); }
-function toUri(fp) { return `file://${resolve(fp)}`; }
+// ═══════════════════════════════════════════════════════════════════════
+// MCP mode (only when no CLI args)
+// ═══════════════════════════════════════════════════════════════════════
+if (!CLI_MODE) {
+  const pool = new LspPool();
+  process.stdin.setEncoding('utf8');
+  let buf = '';
+  process.stdin.on('data', (c) => { buf += c; const lines = buf.split('\n'); buf = lines.pop() || ''; for (const l of lines) { if (l.trim()) try { handle(JSON.parse(l)); } catch {} } });
+  process.stdin.on('end', () => { pool.shutdownAll(); process.exit(0); });
+
+  const TOOLS = [
+    { name:'lsp_definition', description:'Go to definition of a symbol', inputSchema:{ type:'object', properties:{ file:{type:'string'}, line:{type:'number'}, character:{type:'number'} }, required:['file','line'] } },
+    { name:'lsp_references', description:'Find all references to a symbol', inputSchema:{ type:'object', properties:{ file:{type:'string'}, line:{type:'number'}, character:{type:'number'} }, required:['file','line'] } },
+    { name:'lsp_hover', description:'Get type info and documentation', inputSchema:{ type:'object', properties:{ file:{type:'string'}, line:{type:'number'}, character:{type:'number'} }, required:['file','line'] } },
+    { name:'lsp_symbols', description:'List document symbols', inputSchema:{ type:'object', properties:{ file:{type:'string'} }, required:['file'] } },
+    { name:'lsp_diagnostics', description:'Get diagnostics for a file', inputSchema:{ type:'object', properties:{ file:{type:'string'} }, required:['file'] } },
+    { name:'lsp_completion', description:'Get completions at a position', inputSchema:{ type:'object', properties:{ file:{type:'string'}, line:{type:'number'}, character:{type:'number'} }, required:['file','line'] } },
+    { name:'lsp_code_actions', description:'Get code actions', inputSchema:{ type:'object', properties:{ file:{type:'string'}, startLine:{type:'number'}, endLine:{type:'number'} }, required:['file','startLine','endLine'] } },
+    { name:'lsp_rename', description:'Rename a symbol', inputSchema:{ type:'object', properties:{ file:{type:'string'}, line:{type:'number'}, character:{type:'number'}, newName:{type:'string'} }, required:['file','line','newName'] } },
+    { name:'lsp_health', description:'Health check all LSP servers', inputSchema:{ type:'object', properties:{ language:{type:'string'} } } },
+    { name:'lsp_shutdown', description:'Shutdown all LSP servers', inputSchema:{ type:'object', properties:{} } },
+  ];
+
+  async function handle(msg) {
+    try {
+      switch (msg.method) {
+        case 'initialize': return respond(msg.id, { protocolVersion: PROTO_VERSION, capabilities: { tools:{}, resources:{} }, serverInfo: { name:'kloel-lsp-router', version:'2.0.0' } });
+        case 'tools/list': return respond(msg.id, { tools: TOOLS });
+        case 'tools/call': return await mcpToolCall(msg);
+        default: return respond(msg.id, {});
+      }
+    } catch(e) { respond(msg.id, { content:[{type:'text', text:JSON.stringify({error:e.message})}], isError:true }); }
+  }
+
+  async function mcpToolCall(msg) {
+    const id = msg.id, { name, arguments: args } = msg.params;
+    try {
+      switch (name) {
+        case 'lsp_definition': return mcpOp(id, args, 'definition');
+        case 'lsp_references': return mcpOp(id, args, 'references');
+        case 'lsp_hover': return mcpOp(id, args, 'hover');
+        case 'lsp_symbols': return mcpOp(id, args, 'symbols');
+        case 'lsp_diagnostics': return mcpOp(id, args, 'diagnostics');
+        case 'lsp_completion': return mcpOp(id, args, 'completion');
+        case 'lsp_code_actions': return mcpOp(id, args, 'code_actions');
+        case 'lsp_rename': return mcpOp(id, args, 'rename');
+        case 'lsp_health': { const r = await cliHealth(args?.language, pool); return respond(id, { content: [{type:'text', text: JSON.stringify(r)}] }); }
+        case 'lsp_shutdown': pool.shutdownAll(); return respond(id, { content: [{type:'text', text: 'shutdown complete'}] });
+        default: return respond(id, { content: [{type:'text', text: JSON.stringify({error: `unknown tool: ${name}`})}] });
+      }
+    } catch(e) { return respond(id, { content: [{type:'text', text: JSON.stringify({error: e.message})}] }); }
+  }
+
+  async function mcpOp(id, args, op) {
+    const r = await (async () => {
+      switch (op) {
+        case 'diagnostics': return await cliDiagnostics(args.file, args.language, pool);
+        case 'hover': return await cliHover(args.file, args.language, args.line, args.character, pool);
+        case 'references': return await cliReferences(args.file, args.language, args.line, args.character, pool);
+        case 'definition': return await cliDefinition(args.file, args.language, args.line, args.character, pool);
+        case 'symbols': return await cliSymbols(args.file, args.language, pool);
+        case 'rename': return await cliRename(args.file, args.language, args.line, args.character, args.newName, pool);
+        case 'completion': return await cliCompletion(args.file, args.language, args.line, args.character, pool);
+        case 'code_actions': return await cliCodeActions(args.file, args.language, args.startLine, args.endLine, pool);
+        default: return { ok: false, error: `unknown op: ${op}` };
+      }
+    })();
+    return respond(id, { content: [{ type: 'text', text: JSON.stringify(r) }] });
+  }
+
+  function respond(id, result) {
+    if (id === undefined) return;
+    process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id, result }) + '\n');
+  }
+}

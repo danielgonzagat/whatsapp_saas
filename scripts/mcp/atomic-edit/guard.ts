@@ -36,11 +36,133 @@ function findRepoRoot(start: string): string {
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 // Optional explicit root override (dynamic scope rooting): when set, the OS
 // operates rooted at that dir instead of where its code lives. Lets a harness/
-// worktree arm run the SAME OS binary while resolving relative paths against —
-// and being sandboxed to — its own tree, never the code's repo.
+// worktree arm run the SAME OS binary while resolving relative paths against -
+// and being sandboxed to - its own tree, never the code's repo.
 const ROOT_OVERRIDE = process.env.ATOMIC_EDIT_REPO_ROOT?.trim();
 const HOST_WRITE_ROOT = process.env.ATOMIC_HOST_WRITE_ROOT?.trim();
+const ENV_WORKSPACE_ROOT =
+  process.env.ATOMIC_WORKSPACE_ROOT?.trim() || process.env.ATOMIC_DECLARED_WORKSPACE_ROOT?.trim() || '';
 export const REPO_ROOT = canonicalPath(ROOT_OVERRIDE ? ROOT_OVERRIDE : findRepoRoot(HERE));
+
+let sessionWorkspaceRoot: string | null = null;
+
+interface IntentScopePolicyFile {
+  reason?: unknown;
+  allowedMutationPaths?: unknown;
+  forbiddenMutationPaths?: unknown;
+}
+
+interface LoadedIntentScopePolicy {
+  policyPath: string;
+  reason: string | null;
+  allowedMutationPaths: string[];
+  forbiddenMutationPaths: string[];
+}
+
+let cachedIntentScopePolicy: {
+  workspaceRoot: string;
+  policyPath: string;
+  mtimeMs: number | null;
+  policy: LoadedIntentScopePolicy | null;
+} | null = null;
+
+function normalizeScopePath(value: string): string {
+  return value.replaceAll("\\", "/").replace(/^\.\//, "").replace(/\/+/g, "/").replace(/^\/+/g, "");
+}
+
+function scopeStringList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    .map((item) => normalizeScopePath(item.trim()));
+}
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^\x24{}()|[\]\\]/g, "\\$&");
+}
+
+function scopePatternMatches(pattern: string, relPath: string): boolean {
+  const normalizedPattern = normalizeScopePath(pattern);
+  const rel = normalizeScopePath(relPath);
+  if (!normalizedPattern || normalizedPattern === "**" || normalizedPattern === "**/*") return true;
+  if (normalizedPattern.endsWith("/**")) {
+    const prefix = normalizedPattern.slice(0, -3);
+    return rel === prefix || rel.startsWith(prefix + "/");
+  }
+  if (!normalizedPattern.includes("*")) {
+    return rel === normalizedPattern || rel.startsWith(normalizedPattern + "/");
+  }
+  const source = normalizedPattern
+    .split("/")
+    .map((segment) => (segment === "**" ? ".*" : escapeRegex(segment).replaceAll("\\*", "[^/]*")))
+    .join("/");
+  return new RegExp("^" + source + "$").test(rel);
+}
+
+function readIntentScopePolicy(workspaceRoot: string): LoadedIntentScopePolicy | null {
+  const policyPath = path.join(workspaceRoot, ".atomic", "intent-scope.json");
+  let stat: fs.Stats;
+  try {
+    stat = fs.statSync(policyPath);
+  } catch {
+    cachedIntentScopePolicy = { workspaceRoot, policyPath, mtimeMs: null, policy: null };
+    return null;
+  }
+  if (cachedIntentScopePolicy?.workspaceRoot === workspaceRoot && cachedIntentScopePolicy.mtimeMs === stat.mtimeMs) {
+    return cachedIntentScopePolicy.policy;
+  }
+  let parsed: IntentScopePolicyFile;
+  try {
+    parsed = JSON.parse(fs.readFileSync(policyPath, "utf8")) as IntentScopePolicyFile;
+  } catch (error) {
+    throw new Error(
+      "atomic intent scope policy is not valid JSON at " + policyPath + ": " + (error instanceof Error ? error.message : String(error)),
+    );
+  }
+  const policy: LoadedIntentScopePolicy = {
+    policyPath,
+    reason: typeof parsed.reason === "string" && parsed.reason.trim().length > 0 ? parsed.reason.trim() : null,
+    allowedMutationPaths: scopeStringList(parsed.allowedMutationPaths),
+    forbiddenMutationPaths: scopeStringList(parsed.forbiddenMutationPaths),
+  };
+  cachedIntentScopePolicy = { workspaceRoot, policyPath, mtimeMs: stat.mtimeMs, policy };
+  return policy;
+}
+
+function activeWorkspaceRel(absPath: string): string | null {
+  const workspaceRoot = activeWorkspaceRoot();
+  const rel = path.relative(workspaceRoot, canonicalPath(absPath));
+  if (rel === "") return ".";
+  if (rel.startsWith("..") || path.isAbsolute(rel)) return null;
+  return normalizeScopePath(rel);
+}
+
+export function intentScopeStatus(): { policyPath: string; policy: LoadedIntentScopePolicy | null } {
+  const workspaceRoot = activeWorkspaceRoot();
+  const policy = readIntentScopePolicy(workspaceRoot);
+  return { policyPath: path.join(workspaceRoot, ".atomic", "intent-scope.json"), policy };
+}
+
+export function assertIntentMutationAllowed(absPath: string, subject = "mutation"): void {
+  const workspaceRoot = activeWorkspaceRoot();
+  const policy = readIntentScopePolicy(workspaceRoot);
+  if (!policy) return;
+  const rel = activeWorkspaceRel(absPath);
+  if (rel === null || rel.startsWith(".atomic/")) return;
+  const forbidden = policy.forbiddenMutationPaths.find((pattern) => scopePatternMatches(pattern, rel));
+  if (forbidden) {
+    throw new Error(
+      "atomic " + subject + " refused by intent scope: " + rel + " matches forbiddenMutationPaths entry " +
+        JSON.stringify(forbidden) + " from " + policy.policyPath + ".",
+    );
+  }
+  if (policy.allowedMutationPaths.length > 0 && !policy.allowedMutationPaths.some((pattern) => scopePatternMatches(pattern, rel))) {
+    throw new Error(
+      "atomic " + subject + " refused by intent scope: " + rel + " is outside allowedMutationPaths from " +
+        policy.policyPath + ". Allowed: " + policy.allowedMutationPaths.join(", "),
+    );
+  }
+}
 
 function nearestExistingPath(target: string): { existing: string; suffix: string[] } | null {
   let cursor = path.resolve(target);
@@ -142,8 +264,85 @@ export function resolveAllowedRootForAbsolutePath(absPath: string): string | nul
   return allowedRepoRoots().find((root) => containsPath(root, abs)) ?? null;
 }
 
+function workspaceRootCandidate(): string | null {
+  return sessionWorkspaceRoot ?? validatedEnvWorkspaceRoot();
+}
+
+function validatedEnvWorkspaceRoot(): string | null {
+  if (!ENV_WORKSPACE_ROOT) return null;
+  try {
+    return validateWorkspaceRoot(ENV_WORKSPACE_ROOT);
+  } catch {
+    return null;
+  }
+}
+
+function validateWorkspaceRoot(rawRoot: string): string {
+  const abs = canonicalPath(path.isAbsolute(rawRoot) ? rawRoot : path.resolve(REPO_ROOT, rawRoot));
+  if (!fs.existsSync(abs) || !fs.statSync(abs).isDirectory()) {
+    throw new Error(`atomic workspace root does not exist or is not a directory: ${rawRoot}`);
+  }
+  const containingRoot = resolveAllowedRootForAbsolutePath(abs);
+  if (!containingRoot) {
+    throw new Error(
+      `atomic workspace root escapes allowed roots (${rawRoot}). ` +
+        `Allowed roots: ${allowedRepoRoots().join(", ")}`,
+    );
+  }
+  return abs;
+}
+
+export function activeWorkspaceRoot(): string {
+  if (sessionWorkspaceRoot !== null) return sessionWorkspaceRoot;
+  const envRoot = validatedEnvWorkspaceRoot();
+  return envRoot ?? REPO_ROOT;
+}
+
+export function workspaceBindingStatus(): Record<string, unknown> {
+  const envRoot = validatedEnvWorkspaceRoot();
+  const intentScope = intentScopeStatus();
+  return {
+    repoRoot: REPO_ROOT,
+    activeWorkspaceRoot: activeWorkspaceRoot(),
+    declaredBy: sessionWorkspaceRoot !== null ? 'atomic_workspace_bind' : envRoot ? 'environment' : 'repo-root-default',
+    envWorkspaceRoot: ENV_WORKSPACE_ROOT || null,
+    sessionWorkspaceRoot,
+    intentScopePolicyPath: intentScope.policyPath,
+    intentScopePolicy: intentScope.policy,
+  };
+}
+
+export function bindWorkspaceRoot(root: string): Record<string, unknown> {
+  const next = validateWorkspaceRoot(root);
+  const envRoot = validatedEnvWorkspaceRoot();
+  if (envRoot && envRoot !== next) {
+    throw new Error(
+      `atomic workspace root already fixed by environment: ${envRoot}; refused conflicting bind to ${next}`,
+    );
+  }
+  if (sessionWorkspaceRoot !== null && sessionWorkspaceRoot !== next) {
+    throw new Error(`atomic workspace root already bound to ${sessionWorkspaceRoot}; refused conflicting bind to ${next}`);
+  }
+  sessionWorkspaceRoot = next;
+  return workspaceBindingStatus();
+}
+
+export function assertInsideActiveWorkspace(absPath: string, subject = 'path'): void {
+  if (!workspaceRootCandidate()) return;
+  const workspaceRoot = activeWorkspaceRoot();
+  const abs = canonicalPath(absPath);
+  if (containsPath(workspaceRoot, abs)) return;
+  throw new Error(
+    `atomic ${subject} refused: resolved target ${abs} is outside declared workspace root ${workspaceRoot}. ` +
+      `Pass an absolute path inside the workspace or bind the correct workspace before reading/editing/executing.`,
+  );
+}
+
+
 function resolveTargetRoot(file: string): { absPath: string; repoRoot: string } {
-  const absPath = path.isAbsolute(file) ? canonicalPath(file) : canonicalPath(path.resolve(REPO_ROOT, file));
+  const baseRoot = activeWorkspaceRoot();
+  const absPath = path.isAbsolute(file) ? canonicalPath(file) : canonicalPath(path.resolve(baseRoot, file));
+  assertInsideActiveWorkspace(absPath, 'target');
   const repoRoot = resolveAllowedRootForAbsolutePath(absPath);
   if (!repoRoot) {
     throw new Error(
@@ -153,6 +352,7 @@ function resolveTargetRoot(file: string): { absPath: string; repoRoot: string } 
   }
   return { absPath, repoRoot };
 }
+
 
 /** Exact repo-relative paths that no AI CLI may modify. */
 const PROTECTED_FILES = new Set<string>([

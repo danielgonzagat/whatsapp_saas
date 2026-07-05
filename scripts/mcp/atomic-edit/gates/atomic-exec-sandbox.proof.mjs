@@ -11,12 +11,15 @@ import { installInheritedAtomicHostEnv } from './proof-host-env.mjs';
  * atomic_exec sandbox proof.
  *
  * Asserts that atomic_exec confines every command under a real OS sandbox:
- * cwd-only writes for byte-effect-proven commands, no command write permission
- * for trace-only read commands, and network denied. With the out-of-sandbox
- * broker now backing host-launched mode (macOS forbids nested sandbox-exec),
- * host mode preserves the same command containment as direct mode: effect-proven
- * commands report fileWrites:'cwd-only', while trace-only read commands report
- * fileWrites:'denied'. Both modes report active:true and network:'denied'.
+ * effectRoot+scratch-only writes for byte-effect-proven commands, no command
+ * write permission for trace-only read commands, and network denied. Runtime
+ * temp/cache bytes are routed to an Atomic-owned scratch root outside the
+ * product effectRoot so they do not become product byte effects. With the
+ * out-of-sandbox broker backing host-launched mode (macOS forbids nested
+ * sandbox-exec), host mode preserves the same command containment as direct
+ * mode: effect-proven commands report fileWrites:'effectRoot+scratch-only',
+ * while trace-only read commands report fileWrites:'denied'. Both modes
+ * report active:true and network:'denied'.
  */
 const jsonMode = process.argv.includes('--json');
 const sourceDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -36,6 +39,11 @@ function parseToolResult(result) {
 
 function record(results, name, ok, detail) {
   results.push({ name, ok: Boolean(ok), detail });
+}
+
+function isOutsidePath(child, root) {
+  const rel = path.relative(path.resolve(root), path.resolve(child));
+  return rel.startsWith('..') || path.isAbsolute(rel);
 }
 
 async function callAtomicExec(client, command, args = {}) {
@@ -74,10 +82,9 @@ function serverTransport() {
 async function main() {
   const results = [];
   const hostMode = process.env.ATOMIC_HOST_SANDBOX === 'macos-sandbox-exec' && process.env.ATOMIC_HOST_ATOMIC_ONLY === '1';
-  // Effect-proven commands use cwd-only writes in both direct and broker mode;
-  // trace-only read commands are checked separately for fileWrites=denied.
-  const expectedWriteMode = 'cwd-only';
-  const expectedTempRoot = fixture;
+  // Effect-proven commands use product effectRoot + isolated scratch writes in
+  // both direct and broker mode; trace-only reads remain write-denied.
+  const expectedWriteMode = 'effectRoot+scratch-only';
   removePath(fixture);
   mkdirPath(fixture);
   removePath(forbidden);
@@ -117,7 +124,8 @@ async function main() {
         allowed.atomicEnvelope?.sandbox?.active === true &&
         allowed.atomicEnvelope?.sandbox?.network === 'denied' &&
         allowed.atomicEnvelope?.sandbox?.fileWrites === expectedWriteMode &&
-        allowed.atomicEnvelope?.sandbox?.tempRoot === expectedTempRoot &&
+        typeof allowed.atomicEnvelope?.sandbox?.tempRoot === 'string' &&
+        isOutsidePath(allowed.atomicEnvelope.sandbox.tempRoot, fixture) &&
         allowed.effect?.limitReached === false &&
         allowedFileCaptured &&
         allowed.effect?.changedFiles === 1 &&
